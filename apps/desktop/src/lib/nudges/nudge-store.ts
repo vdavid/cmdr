@@ -20,6 +20,7 @@ import { type NudgeKind, type NudgeLedger } from './nudge-ledger'
 const NUDGE_SETTINGS = {
   dockPin: 'behavior.dockPinNudgeOfferedAt',
   reveal: 'behavior.revealNudgeOfferedAt',
+  finderExtension: 'behavior.finderExtensionNudgeOfferedAt',
   // `as const` so each id keeps its literal type and `getSetting` answers a
   // `string` rather than the whole `SettingsValues` union.
 } as const satisfies Record<NudgeKind, SettingId>
@@ -29,6 +30,7 @@ export function readNudgeLedger(): NudgeLedger {
   return {
     dockPin: getSetting(NUDGE_SETTINGS.dockPin),
     reveal: getSetting(NUDGE_SETTINGS.reveal),
+    finderExtension: getSetting(NUDGE_SETTINGS.finderExtension),
   }
 }
 

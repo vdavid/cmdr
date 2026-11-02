@@ -531,6 +531,14 @@ view. Give a combo to two sibling scopes only when the losing side handles the k
 Pressing just `⌘` or `Shift` doesn't capture anything. The `isModifierKey()` check prevents this. Users must combine a
 modifier with a non-modifier key.
 
+### Shift+letter combos are refused
+
+`⇧A` types a capital: `routeTypingKey` takes it as a filter or jump keystroke before the dispatcher sees it, so a
+binding on it would never fire in the file list. Settings shows a Cancel-only banner (`shortcuts.conflict.shiftLetter`),
+and `setShortcut` / `addShortcut` refuse it through `isShiftLetterCombo`, so MCP can't bind one either. It holds in
+every scope, the windows without type-to-jump too, so the rule stays one sentence. An entry already in `shortcuts.json`
+stays until the user changes it.
+
 ### Key capture is client-side only
 
 The 500ms confirmation delay happens in the UI (`KeyboardShortcutsSection.svelte`). The store layer

@@ -2275,6 +2275,14 @@
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "sourceHash": "fa3d324"
   },
+  "settings.behavior.finderExtensionNudgeOfferedAt.label": "Fecha de la oferta del elemento de menú del Finder",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.label": {
+    "sourceHash": "204988e"
+  },
+  "settings.behavior.finderExtensionNudgeOfferedAt.description": "Cuándo se hizo la oferta única de añadir “Abrir en Cmdr” al menú contextual del Finder.",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.description": {
+    "sourceHash": "18bb28e"
+  },
   "settings.behavior.revealNudgeOfferedAt.label": "Fecha de la oferta de “Mostrar en el Finder”",
   "@settings.behavior.revealNudgeOfferedAt.label": {
     "sourceHash": "aaae0a8"

@@ -103,6 +103,18 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Internal (FE-owned): when the once-ever offer of the Finder extension was made.
+    // Same shape and the same cooldown as the two stamps above.
+    id: 'behavior.finderExtensionNudgeOfferedAt',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.finderExtensionNudgeOfferedAt.label',
+    descriptionKey: 'settings.behavior.finderExtensionNudgeOfferedAt.description',
+    type: 'string',
+    default: '',
+    component: 'text-input',
+    hidden: true,
+  },
+  {
     // Internal (FE-owned): whether the once-ever notice that fires the FIRST time
     // a reveal actually lands in Cmdr has been shown. ❌ Not a nudge: it answers
     // something the user set up themselves, so it takes no part in the cooldown.

@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "‘Open in Cmdr’ toevoegen aan het contextmenu van Finder?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Daarmee staat Cmdr op één klik afstand van elk bestand en elke map op je opstartschijf. Dit voegt een klein proces toe dat naast Finder draait.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "Je kunt dit altijd terugzetten in Instellingen.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "Nee, bedankt",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Ja, voeg toe",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "‘Open in Cmdr’ staat nu in het contextmenu van Finder.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Cmdr kon het menu-item deze keer niet toevoegen. De schakelaar staat in Instellingen als je het opnieuw wilt proberen.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# map geopend} other {# mappen geopend}}. Voor nog {dropped} was geen plek, omdat een paneel maximaal {limit} tabbladen kan bevatten.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "要把「在 Cmdr 中開啟」加入 Finder 右鍵選單嗎？",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "這樣一來，從啟動磁碟上的任何檔案或資料夾，只要按一下就能開啟 Cmdr。這會加入一個小型程序，和 Finder 一起執行。",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "隨時都可以在設定中改回來。",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "不，謝謝",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "好，加入",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "「在 Cmdr 中開啟」已經在 Finder 右鍵選單裡了。",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Cmdr 這次沒能加入這個選單項目。想再試一次的話，開關在設定中。",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "已開啟 {opened, plural, other {# 個資料夾}}。還有 {dropped} 個放不下，因為一個窗格最多只能有 {limit} 個分頁。",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

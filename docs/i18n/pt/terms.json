@@ -152,8 +152,8 @@
   },
   "app-switcher": {
     "chosen": "alternador de apps",
-    "confidence": "tentative",
-    "sources": "shipped pt catalog"
+    "confidence": "high",
+    "sources": "macOS pt_BR Teclas Modificadoras (KeyboardSettings Modifier Keys sheet, macOS 27.0.1 26A434, 2026-11-02); MS tecla modificadora; shipped pt catalog"
   },
   "apple-account": {
     "chosen": "Conta Apple",

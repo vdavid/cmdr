@@ -4,6 +4,7 @@ import {
   physicalKeyCombo,
   toPlatformShortcut,
   isTypingKeyCombo,
+  isShiftLetterCombo,
   toDisplayShortcut,
   toCanonicalShortcut,
   comboHasShift,
@@ -374,6 +375,13 @@ describe('isTypingKeyCombo', () => {
     expect(isTypingKeyCombo('A')).toBe(true)
     expect(isTypingKeyCombo('Space')).toBe(true)
     expect(isTypingKeyCombo('Enter')).toBe(true)
+  })
+
+  it('names only Shift plus a letter as a Shift+letter combo', () => {
+    for (const combo of ['⇧A', '⇧Ő', '⇧Д', 'Shift+A']) expect(isShiftLetterCombo(combo)).toBe(true)
+    for (const combo of ['⇧Space', '⇧Tab', '⇧F5', '⇧↓', '*', 'A', '⌘⇧A', '⌥⇧A', 'Ctrl+Shift+A', 'Shift+F5', '']) {
+      expect(isShiftLetterCombo(combo)).toBe(false)
+    }
   })
 
   it('treats shift-only combos as typing (⇧Tab reverse-tab, ⇧A capital letter)', () => {

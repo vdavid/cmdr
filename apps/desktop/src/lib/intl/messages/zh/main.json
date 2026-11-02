@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "要把“在 Cmdr 中打开”添加到 Finder 右键菜单吗？",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "这样，从启动磁盘上的任何文件或文件夹，只要点按一下就能打开 Cmdr。这会添加一个小进程，和 Finder 一起运行。",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "随时可以在设置里改回来。",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "不用了，谢谢",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "好，添加",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "“在 Cmdr 中打开”已经在 Finder 右键菜单里了。",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Cmdr 这次没能添加这个菜单项。想再试的话，开关在设置里。",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "已打开 {opened, plural, other {# 个文件夹}}。还有 {dropped} 个放不下，因为一个窗格最多只能有 {limit} 个标签页。",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

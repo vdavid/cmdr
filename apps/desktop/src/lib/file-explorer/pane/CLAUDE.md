@@ -33,7 +33,7 @@ their helper siblings are listed in `DETAILS.md` § File map.
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`): mutate the store and let it
   react, ❌ never a scattered `saveAppStatus`.
 - **The `network` pane is the SERVERS HUB** (`NetworkMountView`): it owns its MCP push, so `pane-mcp-sync` skips it, and
-  ❗ its NAME is spelled in four places (`../network/DETAILS.md` § Gotchas).
+  ❗ its identity is the id `network`, ❌ never its translated name (`../network/DETAILS.md` § Gotchas).
 - **ONE typed state renders every remote wait** (`remote-connect-state.ts` + `RemoteConnectView`), gating in FRONT of
   the kind chain. ❌ No second renderer, no inert affordance. ❗ `device-connect` is a phone's ONE dialer and HOLDS the
   listing.

@@ -3,7 +3,9 @@
 use std::path::Path;
 
 use super::app::{TabMoveAck, TabMoveRefusal, parse_tab_move_response, parse_tab_opened_response, tab_move_result};
-use super::nav::{PaneChoice, SelectableVolume, nav_result, resolve_volume_selector, select_volume_result};
+use super::nav::{
+    PaneChoice, SelectableVolume, nav_result, pane_reports_volume, resolve_volume_selector, select_volume_result,
+};
 use super::search::parse_human_size;
 use super::*;
 
@@ -554,6 +556,45 @@ fn select_volume_result_says_the_folder_is_stalled() {
         stalled.data,
         Some(json!({ "reason": "folderStalled", "path": "/Volumes/naspi/photos" }))
     );
+}
+
+// === pane_reports_volume: a switch landed when the pane reports the volume's id ===
+
+fn servers_hub() -> SelectableVolume {
+    SelectableVolume {
+        id: "network".to_string(),
+        name: crate::volume_listing::SERVERS_VOLUME_NAME.to_string(),
+        is_favorite: false,
+    }
+}
+
+#[test]
+fn the_servers_hub_lands_whatever_language_the_pane_names_it_in() {
+    // Regression: Czech pushes "Servery", so comparing names failed every select of the hub.
+    assert!(pane_reports_volume(Some("network"), Some("Servery"), &servers_hub()));
+    assert!(pane_reports_volume(
+        Some("network"),
+        Some("Servery > naspi"),
+        &servers_hub()
+    ));
+}
+
+#[test]
+fn another_volume_is_not_the_one_selected_even_under_the_same_name() {
+    assert!(!pane_reports_volume(Some("root"), Some("Servers"), &servers_hub()));
+    assert!(!pane_reports_volume(None, None, &servers_hub()));
+}
+
+#[test]
+fn a_selection_without_an_id_falls_back_to_the_name() {
+    // Off macOS the selector isn't resolved against the volume list, so a name-only call has no id.
+    let by_name = SelectableVolume {
+        id: String::new(),
+        name: "naspi".to_string(),
+        is_favorite: false,
+    };
+    assert!(pane_reports_volume(Some("smb-1"), Some("naspi"), &by_name));
+    assert!(!pane_reports_volume(Some("smb-1"), Some("other"), &by_name));
 }
 
 // === select_volume_result: the ack says where the switch left the pane ===

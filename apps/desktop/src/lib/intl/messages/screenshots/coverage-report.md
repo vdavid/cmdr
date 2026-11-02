@@ -16,14 +16,14 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 3800 / 5470 keys have a screenshot (69%):** 2076 direct (38%) and 1724 representative (32%). 1478 remain
+**Total: 3803 / 5490 keys have a screenshot (69%):** 2076 direct (38%) and 1727 representative (31%). 1495 remain
 uncoupled, and 192 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
 | adb             |      3 |              0 |        19 |      0 |    22 |   14% |
 | ai              |      1 |            143 |         0 |      0 |   144 |  100% |
-| askCmdr         |    187 |            288 |        42 |      0 |   517 |   92% |
+| askCmdr         |    187 |            290 |        42 |      0 |   519 |   92% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
 | commands        |    230 |              5 |        87 |      0 |   322 |   73% |
 | common          |      9 |              1 |         9 |      0 |    19 |   53% |
@@ -38,7 +38,7 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | indexing        |     34 |             18 |        18 |      0 |    70 |   74% |
 | licensing       |     49 |             35 |        25 |      0 |   109 |   77% |
 | lowDiskSpace    |      0 |              0 |         5 |      0 |     5 |    0% |
-| main            |      7 |              0 |        46 |      2 |    55 |   13% |
+| main            |      7 |              0 |        54 |      2 |    63 |   11% |
 | menu            |      4 |              0 |         0 |    190 |   194 |    2% |
 | mtp             |     18 |              4 |         0 |      0 |    22 |  100% |
 | multiRename     |     90 |              0 |       140 |      0 |   230 |   39% |
@@ -51,12 +51,12 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | securityNotices |      0 |              0 |        16 |      0 |    16 |    0% |
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |
 | servers         |     95 |             79 |        57 |      0 |   231 |   75% |
-| settings        |    449 |             45 |       392 |      0 |   886 |   56% |
-| shortcuts       |     35 |             28 |         0 |      0 |    63 |  100% |
+| settings        |    449 |             45 |       400 |      0 |   894 |   55% |
+| shortcuts       |     35 |             29 |         0 |      0 |    64 |  100% |
 | stateRecovery   |      0 |              0 |        33 |      0 |    33 |    0% |
 | suggestedOps    |     85 |              0 |        25 |      0 |   110 |   77% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |
-| ui              |     10 |              0 |        45 |      0 |    55 |   18% |
+| ui              |     10 |              0 |        46 |      0 |    56 |   18% |
 | updates         |      6 |             26 |         0 |      0 |    32 |  100% |
 | viewer          |     30 |             90 |         0 |      0 |   120 |  100% |
 | whatsNew        |      8 |              1 |         2 |      0 |    11 |   82% |

@@ -367,6 +367,12 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   `preferencesUnreadable` / `writeRejected` / `dockNotRestarted` / `timedOut`). ❌ Never a message string
   (`error-string-match`). `dockNotRestarted` counts here even though the tile IS stored: the person didn't get what
   they asked for on the spot.
+- `finder_extension_offered` (frontend, `#lib/reveal/finder-extension-nudge.ts`): no props, once per install at most, as
+  the toast goes up. macOS-only.
+- `finder_extension_answered` (frontend, `#lib/reveal/finder-extension-nudge-answer.ts`): `answer` (`yes` / `no` /
+  `dismissed`), and `yes` records the press, ❌ never the outcome.
+- `finder_extension_not_enabled` (frontend, same file): `reason` after an accepted offer: the `RevealHandlerBlocker`
+  variant, `stayedOff`, or `unavailable`.
 - `reveal_handler_offered` (frontend, `#lib/reveal/reveal-nudge.ts` `offerRevealHandler`): no props. Fires once per
   install at most, as the "open Show in Finder in Cmdr?" toast goes up, so it's the denominator of the reveal funnel.
   macOS-only.

@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "¿Añadir “Abrir en Cmdr” al menú contextual del Finder?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Deja Cmdr a un clic de cualquier archivo o carpeta de tu disco de arranque. Añade un pequeño proceso que se ejecuta junto al Finder.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "Puedes volver a cambiarlo cuando quieras en los Ajustes.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "No, gracias",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Sí, añadirlo",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "“Abrir en Cmdr” ya está en el menú contextual del Finder.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Cmdr no ha podido añadir el elemento de menú esta vez. El interruptor está en los Ajustes cuando quieras volver a intentarlo.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {Se ha abierto # carpeta} many {Se han abierto # carpetas} other {Se han abierto # carpetas}}. No ha habido sitio para {dropped} más, porque un panel admite hasta {limit} pestañas.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "Lägg till ”Öppna i Cmdr” i Finders snabbmeny?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Då har du Cmdr ett klick bort från alla filer och mappar på din startskiva. Det lägger till en liten process som körs bredvid Finder.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "Du kan ändra tillbaka det när som helst i Inställningar.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "Nej tack",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Ja, lägg till",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "”Öppna i Cmdr” finns nu i Finders snabbmeny.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Cmdr kunde inte lägga till menyalternativet den här gången. Reglaget finns i Inställningar när du vill försöka igen.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {Öppnade # mapp} other {Öppnade # mappar}}. {dropped} till fick inte plats, eftersom en panel rymmer högst {limit} flikar.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "Přidat „Otevřít v Cmdru“ do místní nabídky Finderu?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Cmdr budete mít na jedno kliknutí od každého souboru a složky na startovacím disku. Přidá se malý proces, který běží vedle Finderu.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "V Nastavení to můžete kdykoli přepnout zpátky.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "Ne, díky",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Ano, přidat",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "„Otevřít v Cmdru“ je teď v místní nabídce Finderu.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Cmdru se tentokrát položku nepodařilo přidat. Přepínač najdete v Nastavení, kdykoli to budete chtít zkusit znovu.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "Otevřeno: {opened, plural, one {# složka} few {# složky} many {# složky} other {# složek}}. Nevešlo se: {dropped}, protože jeden panel pojme nejvýš {limit} záložek.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

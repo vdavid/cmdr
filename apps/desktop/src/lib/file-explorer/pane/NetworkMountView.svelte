@@ -39,12 +39,8 @@
     const log = getAppLogger('fileExplorer')
 
     /**
-     * The hub row's own name, for the `volumeName` this pane pushes to MCP.
-     *
-     * ❗ One source with the switcher's label AND with Rust's
-     * `volume_listing::SERVERS_VOLUME_NAME`: `tools/actions/nav.rs` waits for this
-     * pushed name to equal that const before it reports a `select_volume` done, so
-     * a second spelling here is a 30 s timeout in the MCP tool.
+     * The hub row's own name, for the `volumeName` this pane pushes to MCP: the switcher's label,
+     * in the UI language. Display only: `tools/actions/nav.rs` waits on the pushed volume id.
      */
     function serversVolumeName(): string {
         return tString('fileExplorer.navigation.networkVolume')

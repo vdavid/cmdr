@@ -18,6 +18,28 @@ Measured with a throwaway sandboxed extension on macOS 27.0.1, 2026-11-02:
 needs no file access. ❗ If someone switches the service off in System Settings, this item stops working too, with a log
 line in the extension's process. That's accepted: they turned off this very action.
 
+## Translation
+
+The item follows the system's language, with English where the system's language isn't one Cmdr ships. Cmdr's own
+language setting can't reach it: macOS reads these titles from files, and nothing lets a sandboxed extension read Cmdr's
+settings without an app group. Both titles come from `settings.finderExtension.card`, through `pnpm intl:native-strings`
+(guarded by `native-strings-fresh`).
+
+- **The extension's item**: a `Localizable.strings` per language in its own bundle, the standard way. An app bundle
+  holding the same `Resources` resolved `de`, `uk`, `zh-TW` → `zh-Hant`, `pt-BR` → `pt`, and `ja` → English
+  (`-AppleLanguages`, macOS 27.0.1, 2026-11-02). Test it with the strings in the MAIN bundle: a non-main one follows the
+  process's language.
+- **The service's item**: language keys in the `NSMenuItem` dictionary in `src-tauri/Info.plist`. `pbs -dump_pboard`
+  keeps them, and it's the same dictionary `ServicesMenu.strings` feeds (`en = …` beside `default`). That Finder picks
+  the right one hasn't been seen on a non-English Mac: if it doesn't, the title is English.
+- **Decision: no `ServicesMenu.strings`, though it's Apple's documented way.** It needs `.lproj` folders in the MAIN
+  bundle, and those decide the language of everything AppKit and WebKit draw in Cmdr (open panels, text menus), which
+  today is English and unaffected by Cmdr's language setting. That's a separate change with its own testing. It's also
+  where to go if the plist keys turn out not to work. A lone `de.lproj` was read as `en` by `pbs`, so it'd need
+  `en.lproj` too (macOS 27.0.1, 2026-11-02).
+- **`NSPerformService` takes the English title in any language**, and refuses a translated one (a probe app with
+  `-AppleLanguages (de)`, macOS 27.0.1, 2026-11-02). That's why `serviceName` is fixed.
+
 ## Costs, and why it's opt-in
 
 - **Off by default in macOS.** The Settings row switches it through `pluginkit` (`-e use` and `-e ignore`).

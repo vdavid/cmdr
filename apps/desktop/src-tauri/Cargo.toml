@@ -323,7 +323,7 @@ plist = "1.10.3"
 # CommonMark rendering for the What's-new popup, so a lead renders the way GitHub and the website
 # render the same changelog, and for the viewer's rendered Markdown view. `html` only: the default
 # `getopts` feature is the crate's own CLI.
-pulldown-cmark = { version = "0.13.5", default-features = false, features = ["html"] }
+pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
 # Sanitizes the HTML the viewer renders from an untrusted Markdown file (READMEs carry raw `<img>`,
 # `<details>`, `<a>`): an allowlist of tags and attributes, so no script, handler, form, or frame
 # reaches the viewer's webview. Also hands back the parsed DOM, where the image sources get rewritten.

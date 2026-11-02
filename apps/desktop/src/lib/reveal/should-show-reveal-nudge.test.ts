@@ -49,12 +49,12 @@ describe('shouldShowRevealNudge', () => {
   })
 
   it('never asks twice, however long the ledger gets', () => {
-    const ledger = { dockPin: '', reveal: daysAgo(900) }
+    const ledger = { dockPin: '', reveal: daysAgo(900), finderExtension: '' }
     expect(shouldShowRevealNudge({ ...ready, ledger, launchDayCount: 400 })).toBe(false)
   })
 
   it('waits its turn when another nudge spoke a day ago', () => {
-    const ledger = { dockPin: daysAgo(1), reveal: '' }
+    const ledger = { dockPin: daysAgo(1), reveal: '', finderExtension: '' }
     expect(shouldShowRevealNudge({ ...ready, ledger })).toBe(false)
   })
 

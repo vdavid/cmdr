@@ -1,7 +1,6 @@
 # Reveal in Cmdr: architecture and decisions
 
-Up: `CLAUDE.md`. What's still open: the folder-open handler
-([#271](https://github.com/vdavid/cmdr/issues/271)), the onboarding offer ([#272](https://github.com/vdavid/cmdr/issues/272)), and per-app coverage ([#273](https://github.com/vdavid/cmdr/issues/273)).
+Up: `CLAUDE.md`. What's still open: the onboarding offer ([#272](https://github.com/vdavid/cmdr/issues/272)), and per-app coverage ([#273](https://github.com/vdavid/cmdr/issues/273)).
 
 ## The mechanism
 
@@ -154,8 +153,8 @@ A macOS service, always on, with no Settings row: one item for files and folders
 - **A cold launch works** (macOS 27.0.1, bundled build, `NSPerformService`, 2026-11-02): LaunchServices launches the app,
   the call arrives after `setup`, and the request is parked until the frontend drains it. Twelve folders at a pane with
   four tabs opened six and reported six dropped.
-- **Translation**: English only so far. Service titles localize through `ServicesMenu.strings` in each `.lproj`, outside
-  the message catalogs.
+- **Translation**: language keys in `Info.plist`, generated from the catalogs. `apps/desktop/finder-extension/DETAILS.md`
+  § Translation.
 
 `NSPerformService` is what the Finder extension calls too. ❗ The pasteboard's data belongs to its owner, so a caller that
 exits straight after the call hands over zero paths. Finder and the extension both stay alive; a throwaway test client
@@ -292,8 +291,11 @@ the once-ever notice the first time a reveal actually lands.
 
 ## What's not built
 
-The `public.folder` LaunchServices handler (so `open .` and Spotlight folder hits land in Cmdr) and an onboarding
-offer: GitHub [#271](https://github.com/vdavid/cmdr/issues/271) and [#272](https://github.com/vdavid/cmdr/issues/272).
+An onboarding offer: GitHub [#272](https://github.com/vdavid/cmdr/issues/272).
+
+**Decision: no `public.folder` LaunchServices handler** (so `open .` and Spotlight folder hits would land in Cmdr). David
+closed [#271](https://github.com/vdavid/cmdr/issues/271) on 2026-11-02: reveal and "Open in Cmdr" cover most of the need,
+and the only route left is the fragile `defaults write` recipe.
 
 **The folder handler has no official route on macOS 27.** `NSWorkspace.setDefaultApplication(at:toOpen:)` and
 `LSSetDefaultRoleHandlerForContentType` both answer `-50` for `public.folder`, even when re-setting Finder to itself, while

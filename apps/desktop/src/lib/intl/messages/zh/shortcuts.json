@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "抱歉，{combo} 是用来输入大写字母的，所以不能作为快捷键。试试再添加一个修饰键。",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "{combo} 通常被 macOS 占用（{label}），因此可能永远传不到 Cmdr。你可以在“系统设置 > 键盘”中将它释放出来。",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

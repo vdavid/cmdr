@@ -481,6 +481,8 @@ var AllChecks = []CheckDefinition{
 			"apps/desktop/src/lib/intl/messages/**",
 			"apps/desktop/scripts/gen-native-strings*.ts",
 			"apps/desktop/src-tauri/src/intl/**",
+			"apps/desktop/src-tauri/Info.plist",
+			"apps/desktop/finder-extension/lproj/**",
 		}),
 		Run: RunDesktopNativeStringsFresh,
 	},

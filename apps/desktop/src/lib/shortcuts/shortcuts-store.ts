@@ -12,7 +12,7 @@ import { commands, FIXED_KEY_COMMAND_IDS, NATIVE_SHORTCUT_COMMAND_IDS } from '#l
 import { resolveStorePath } from '#lib/settings/store-path.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { pluralize } from '#lib/utils/pluralize.js'
-import { toCanonicalShortcut, toPlatformShortcut } from './key-capture'
+import { isShiftLetterCombo, toCanonicalShortcut, toPlatformShortcut } from './key-capture'
 
 const log = getAppLogger('shortcuts')
 
@@ -492,6 +492,13 @@ function cleanupIfMatchesDefaults(commandId: string): void {
   }
 }
 
+/** A Shift+letter combo types a capital instead of reaching a command, so no writer may bind one. */
+function refusesShiftLetter(commandId: string, shortcut: string): boolean {
+  if (!isShiftLetterCombo(shortcut)) return false
+  log.warn('Refusing to bind {shortcut} to {commandId}: Shift+letter types a capital letter', { shortcut, commandId })
+  return true
+}
+
 /**
  * Set a specific shortcut for a command at an index.
  */
@@ -503,6 +510,7 @@ export function setShortcut(commandId: string, index: number, shortcut: string):
     )
     return
   }
+  if (refusesShiftLetter(commandId, shortcut)) return
   log.debug('setShortcut({commandId}, {index}, {shortcut})', { commandId, index, shortcut })
   // Canonicalize at the store boundary so every writer (the Settings capture, MCP
   // events, any future caller) lands one vocabulary in `shortcuts.json`.
@@ -537,6 +545,7 @@ export function addShortcut(commandId: string, shortcut: string): void {
     )
     return
   }
+  if (refusesShiftLetter(commandId, shortcut)) return
   const current = getEffectiveShortcuts(commandId)
   current.push(toCanonicalShortcut(shortcut)) // canonical at the boundary, see `setShortcut`
   customShortcuts.set(commandId, current)

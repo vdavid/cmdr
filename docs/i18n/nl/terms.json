@@ -2104,7 +2104,7 @@
     "accept": ["wijzigingstoetsen"],
     "chosen": "wijzigingstoets",
     "confidence": "high",
-    "sources": "macOS / standard NL"
+    "sources": "MS wijzigingstoets; shipped catalog; macOS nl says Speciale toetsen (KeyboardSettings Modifier Keys sheet, macOS 27.0.1 26A434, 2026-11-02), open in review-queue.md"
   },
   "mount": {
     "accept": ["koppel", "gekoppeld"],

@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Désolé, {combo} sert à taper une majuscule, donc ce ne peut pas être un raccourci. Essayez d’ajouter une autre touche de modification.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "{combo} est généralement pris par macOS ({label}), donc il pourrait ne jamais atteindre Cmdr. Vous pouvez le libérer dans Réglages Système > Clavier.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

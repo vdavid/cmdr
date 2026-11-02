@@ -3095,7 +3095,7 @@
     },
     {
       "name": "pulldown-cmark",
-      "version": "0.13.5",
+      "version": "0.13.6",
       "license": "MIT",
       "url": "https://github.com/raphlinus/pulldown-cmark"
     },

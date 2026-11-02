@@ -2281,6 +2281,14 @@
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "sourceHash": "fa3d324"
   },
+  "settings.behavior.finderExtensionNudgeOfferedAt.label": "Aanbod voor Finder-menu-item gedaan op",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.label": {
+    "sourceHash": "204988e"
+  },
+  "settings.behavior.finderExtensionNudgeOfferedAt.description": "Wanneer het eenmalige aanbod om ‘Open in Cmdr’ aan het contextmenu van Finder toe te voegen is gedaan.",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.description": {
+    "sourceHash": "18bb28e"
+  },
   "settings.behavior.revealNudgeOfferedAt.label": "‘Toon in Finder’-aanbod gedaan op",
   "@settings.behavior.revealNudgeOfferedAt.label": {
     "sourceHash": "aaae0a8"

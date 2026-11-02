@@ -50,7 +50,7 @@ describe('shouldShowDockNudge', () => {
   })
 
   it('never asks twice, however long the ledger gets', () => {
-    const ledger = { dockPin: daysAgo(900), reveal: '' }
+    const ledger = { dockPin: daysAgo(900), reveal: '', finderExtension: '' }
     expect(shouldShowDockNudge({ ...ready, ledger, launchDayCount: 400 })).toBe(false)
   })
 
@@ -61,7 +61,7 @@ describe('shouldShowDockNudge', () => {
    * exempt the Dock from the floor to "fix" this.
    */
   it('waits three days after the reveal offer rather than firing on its own day', () => {
-    const ledger = { dockPin: '', reveal: daysAgo(1) }
+    const ledger = { dockPin: '', reveal: daysAgo(1), finderExtension: '' }
     expect(shouldShowDockNudge({ ...ready, ledger, launchDayCount: 400 })).toBe(false)
   })
 

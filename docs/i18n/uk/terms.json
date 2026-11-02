@@ -3901,6 +3901,7 @@
       }
     ],
     "exceptions": {
+      "menu.app.services": "Names macOS's Services submenu, «Служби» on macOS (live AppKit Services.loctable, macOS 27.0, 2026-11-02).",
       "settings.finderExtension.description": "Quotes macOS's Services submenu, which is «Служби» on macOS (live AppKit Services.loctable, macOS 27.0, 2026-11-02), and the sense this ruling keeps out."
     }
   },

@@ -17,8 +17,34 @@
         <dict>
             <key>NSMenuItem</key>
             <dict>
+                <!-- generated: pnpm intl:native-strings -->
                 <key>default</key>
                 <string>Open in Cmdr</string>
+                <key>cs</key>
+                <string>Otevřít v Cmdru</string>
+                <key>de</key>
+                <string>In Cmdr öffnen</string>
+                <key>es</key>
+                <string>Abrir en Cmdr</string>
+                <key>fr</key>
+                <string>Ouvrir dans Cmdr</string>
+                <key>hu</key>
+                <string>Megnyitás a Cmdrben</string>
+                <key>pt</key>
+                <string>Abrir no Cmdr</string>
+                <key>ru</key>
+                <string>Открыть в Cmdr</string>
+                <key>sv</key>
+                <string>Öppna i Cmdr</string>
+                <key>uk</key>
+                <string>Відкрити у Cmdr</string>
+                <key>vi</key>
+                <string>Mở trong Cmdr</string>
+                <key>zh-Hans</key>
+                <string>在 Cmdr 中打开</string>
+                <key>zh-Hant</key>
+                <string>在 Cmdr 中開啟</string>
+                <!-- end generated -->
             </dict>
             <key>NSMessage</key>
             <string>openInCmdr</string>

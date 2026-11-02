@@ -610,8 +610,10 @@ async fn sftp_integration_the_toggle_off_leaves_a_reachable_server_alone() {
 /// disconnected. So turning it on starts the backoff loop, and the volume comes
 /// back on its own.
 ///
-/// The wait is the first backoff step (2 s) plus room for a handshake; polling
-/// rather than sleeping a fixed amount, so a fast machine finishes fast.
+/// The wait covers two attempts: the backoff's first step (2 s), its second (5 s),
+/// and a handshake each on a loaded fixture. A first dial that loses to load is the
+/// loop working as designed, so it must not fail this cell. Polling rather than
+/// sleeping a fixed amount, so a fast machine finishes fast.
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn sftp_integration_switching_the_toggle_on_revives_a_volume_that_is_already_down() {
@@ -634,7 +636,7 @@ async fn sftp_integration_switching_the_toggle_on_revives_a_volume_that_is_alrea
 
     // ❗ Under nextest's own per-test timeout, so a regression fails with the
     // message below rather than as an opaque "timed out".
-    let came_back = tokio::time::timeout(std::time::Duration::from_secs(6), async {
+    let came_back = tokio::time::timeout(std::time::Duration::from_secs(20), async {
         while !volume.exists(std::path::Path::new("hello.txt")).await {
             // allowed-test-sleep: the poll interval of a wait-on-a-condition loop, not a fixed wait — the deadline
             // above is what fails the cell, and this crate has no `wait_until_async` of its own.

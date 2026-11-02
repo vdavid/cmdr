@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Вибачте, комбінація {combo} вводить велику літеру, тож скороченням бути не може. Спробуйте додати ще одну клавішу-модифікатор.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "Комбінацію {combo} зазвичай використовує macOS ({label}), тож до Cmdr вона може й не дійти. Звільнити її можна тут: Системні параметри > Клавіатура.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
