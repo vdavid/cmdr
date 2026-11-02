@@ -20,7 +20,8 @@ pub mod commands;
 pub mod delivery;
 #[cfg(target_os = "macos")]
 pub mod finder_extension;
-#[cfg(target_os = "macos")]
+// An E2E build records "Show in Finder" instead of doing it (`commands/file_actions.rs`).
+#[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
 pub mod finder_handoff;
 #[cfg(target_os = "macos")]
 pub mod registration;
