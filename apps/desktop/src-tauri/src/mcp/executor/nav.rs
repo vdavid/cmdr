@@ -157,25 +157,46 @@ pub(super) fn resolve_volume_selector(
     }
 }
 
-/// Wait for the pane's pushed `volume_name` to equal the one selected, so a `cmdr://state`
-/// read right after the tool returns names it.
+/// Whether a pane's pushed state shows the selected volume. By id: a display name follows the UI
+/// language (the servers hub pushes `Servery` in Czech), so it can't say which volume this is. The
+/// name is only the fallback for a selection with no id, which is a name-only call off macOS.
+pub(super) fn pane_reports_volume(
+    pushed_id: Option<&str>,
+    pushed_name: Option<&str>,
+    selected: &SelectableVolume,
+) -> bool {
+    if selected.id.is_empty() {
+        pushed_name == Some(selected.name.as_str())
+    } else {
+        pushed_id == Some(selected.id.as_str())
+    }
+}
+
+/// Wait for the pane's pushed state to show the selected volume, so a `cmdr://state` read right
+/// after the tool returns reports it.
 ///
 /// The pane is at rest by the time this runs, so it usually matches on the first look.
-/// The servers hub is why it stays: it pushes its own name (`NetworkMountView`), which
+/// The servers hub is why it stays: it pushes its own state (`NetworkMountView`), which
 /// can trail the FE's reply.
-async fn wait_for_pane_volume_name(store: &PaneStateStore, pane: &str, volume_name: &str) -> Result<(), ToolError> {
+async fn wait_for_pane_volume(
+    store: &PaneStateStore,
+    pane: &str,
+    selected: &SelectableVolume,
+) -> Result<(), ToolError> {
     let deadline = tokio::time::Instant::now() + NAV_ACK_TIMEOUT;
     let poll_interval = std::time::Duration::from_millis(250);
     loop {
-        let current_name = if pane == "left" {
-            store.get_left().volume_name
+        let state = if pane == "left" {
+            store.get_left()
         } else {
-            store.get_right().volume_name
+            store.get_right()
         };
-        if current_name.as_deref() == Some(volume_name) {
+        if pane_reports_volume(state.volume_id.as_deref(), state.volume_name.as_deref(), selected) {
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
+            let volume_name = &selected.name;
+            let current_name = state.volume_name;
             return Err(ToolError::internal(format!(
                 "The {pane} pane came to rest on volume '{volume_name}', but its state still reports volume {current_name:?}. Read cmdr://state to triage."
             )));
@@ -412,9 +433,9 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
             }
             let ack = mcp_nav_round_trip(app, "mcp-volume-select", select_payload, SELECT_VOLUME_TIMEOUT_SECS).await?;
             // A favorite leaves the pane on the volume that holds it, and that's the
-            // name it reports: waiting for the favorite's name failed a select that landed.
+            // one it reports: waiting for the favorite itself failed a select that landed.
             if matches!(ack, NavAck::Navigated { .. }) && !selected.is_favorite {
-                wait_for_pane_volume_name(&store, pane, &selected.name).await?;
+                wait_for_pane_volume(&store, pane, &selected).await?;
             }
             select_volume_result(pane, &selected.name, ack)
         }

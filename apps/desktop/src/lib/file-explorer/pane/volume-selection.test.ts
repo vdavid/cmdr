@@ -34,9 +34,8 @@ describe('createVolumeSelection', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('selectVolumeByName("Servers") navigates to the synthetic hub volume', async () => {
-    // ❗ The name is read from the catalog, ❌ never a literal: the hub row is
-    // synthesized by `volume-grouping.ts`, so no `findIndex` over the volume list
-    // can reach it, and a second spelling makes `select_volume` time out.
+    // The hub row is synthesized by `volume-grouping.ts`, so no `findIndex` over the volume list
+    // can reach it.
     const { ops, navigate, started } = setup([])
     const outcome = await ops.selectVolumeByName('left', 'Servers')
     expect(outcome).toEqual({ kind: 'selected', volumeId: 'network', navigation: started })
@@ -45,6 +44,20 @@ describe('createVolumeSelection', () => {
       to: { selectVolume: { volumeId: 'network', path: 'smb://' } },
       source: 'user',
     })
+  })
+
+  it('selectVolumeByName reaches the hub by either name when the UI speaks another language', async () => {
+    // Regression: an agent reads `Servers` in `cmdr://volumes`, while a Czech UI calls it `Servery`.
+    const { setLocale } = await import('#lib/intl/messages.svelte.js')
+    await setLocale('cs')
+    try {
+      const { ops, started } = setup([])
+      const hub = { kind: 'selected', volumeId: 'network', navigation: started }
+      expect(await ops.selectVolumeByName('left', 'Servers')).toEqual(hub)
+      expect(await ops.selectVolumeByName('left', 'Servery')).toEqual(hub)
+    } finally {
+      await setLocale(null)
+    }
   })
 
   it('selectVolumeByName for a real volume opens it at its root', async () => {

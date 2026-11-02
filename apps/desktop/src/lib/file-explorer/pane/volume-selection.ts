@@ -28,6 +28,9 @@ import type { NavigateIntent, NavigateResult } from './navigate'
 
 const log = getAppLogger('fileExplorer')
 
+/** The hub's name in `cmdr://volumes`, whatever the UI language: Rust's `volume_listing::SERVERS_VOLUME_NAME`. */
+const SERVERS_MCP_NAME = 'Servers'
+
 export interface VolumeSelectionDeps {
   getVolumes: () => VolumeInfo[]
   navigate: (intent: NavigateIntent) => NavigateResult
@@ -128,10 +131,9 @@ export function createVolumeSelection(deps: VolumeSelectionDeps): VolumeSelectio
 
   async function selectVolumeByName(pane: 'left' | 'right', name: string): Promise<VolumeSelectOutcome> {
     // ❗ The servers hub row is SYNTHETIC: `volume-grouping.ts` builds it, so it
-    // is not in the volume list and no `findIndex` can reach it. Its name comes
-    // from the catalog rather than a literal, so the label, the MCP pane push,
-    // and Rust's `volume_listing::SERVERS_VOLUME_NAME` stay one word.
-    if (name === tString('fileExplorer.navigation.networkVolume')) {
+    // is not in the volume list and no `findIndex` can reach it. An agent names it
+    // the way `cmdr://volumes` does (`SERVERS_MCP_NAME`), or the way the UI does.
+    if (name === SERVERS_MCP_NAME || name === tString('fileExplorer.navigation.networkVolume')) {
       return select(pane, 'network', 'smb://')
     }
 

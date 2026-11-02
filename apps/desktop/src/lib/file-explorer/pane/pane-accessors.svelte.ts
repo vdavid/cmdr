@@ -55,10 +55,8 @@ export function createPaneAccessors(paneRefs: Record<'left' | 'right', FilePaneA
   const rightVolumePath = $derived(
     rightVolumeId === 'network' ? 'smb://' : (volumes.find((v) => v.id === rightVolumeId)?.path ?? '/'),
   )
-  // Derived volume names for MCP state sync. ❗ The hub row's name comes from the
-  // catalog, the one place the switcher label, this push, and Rust's
-  // `volume_listing::SERVERS_VOLUME_NAME` agree: `mcp/executor/nav.rs` waits for
-  // this pushed name to equal that const before it calls a volume switch done.
+  // Derived volume names for MCP state sync, in the UI language like the switcher's label.
+  // Display only: `mcp/executor/nav.rs` tells a landed switch by the pushed volume id.
   const serversVolumeName = $derived(tString('fileExplorer.navigation.networkVolume'))
   const leftVolumeName = $derived(
     leftVolumeId === 'network' ? serversVolumeName : volumes.find((v) => v.id === leftVolumeId)?.name,

@@ -703,12 +703,12 @@ the hosts it found, so a view opens on them at once and the fresh browse adds an
 - **The hub's MCP sync encodes metadata into the `name` field** as a flat string because MCP `PaneFileEntry` has only
   `name` / `path` / `isDirectory`; the encoding lets agents read what the UI shows without a schema change.
   `servers-hub-mcp.ts` owns it, and its status token stays untranslated on purpose.
-- **The hub row's NAME has four spellings to keep in step**, and three of them are not in this directory: the catalog
-  key `fileExplorer.navigation.networkVolume`, Rust's `volume_listing::SERVERS_VOLUME_NAME`,
-  `../pane/volume-selection.ts::selectVolumeByName` (which special-cases the hub because it is synthetic and no
-  `findIndex` over the volume list reaches it), and `DualPaneExplorer`'s `leftVolumeName` / `rightVolumeName`. ❗ A
-  fifth spelling is not a wrong word on screen, it is a 30 s MCP timeout: `mcp/executor/nav.rs` waits for the
-  frontend-pushed pane name to equal the const before it calls a `select_volume` done.
+- **The hub row's identity is the id `network`; its name is display.** The pane pushes the catalog word
+  (`fileExplorer.navigation.networkVolume`, `Servery` in Czech), while agents read Rust's
+  `volume_listing::SERVERS_VOLUME_NAME` (`Servers`) in `cmdr://volumes` in every language.
+  `../pane/volume-selection.ts::selectVolumeByName` takes both, because the row is synthetic and no `findIndex` over the
+  volume list reaches it. ❌ Never tell where a pane is by this name: `mcp/executor/nav.rs` did, and every
+  `select_volume` on the hub failed outside English.
 
 ## Dependencies
 

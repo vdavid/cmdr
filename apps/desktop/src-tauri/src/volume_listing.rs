@@ -74,12 +74,10 @@ pub(crate) fn network_mount_under(_path: &std::path::Path) -> Option<NetworkMoun
 
 /// What the synthetic hub row is called: the row that opens the servers hub.
 ///
-/// ❗ **This literal must equal the English `fileExplorer.navigation.networkVolume`
-/// catalog value byte for byte.** Three Rust sites spell the name (this row's own
-/// `VolumeInfo` in `commands/volumes.rs`, the MCP volumes resource, and
-/// `mcp/executor/nav.rs`, which waits for the FRONTEND-pushed pane name to match
-/// it before reporting a volume switch done). A name that differs by a character
-/// makes `select_volume` on the hub time out instead of answering.
+/// This is the name agents see in every UI language (this row's own `VolumeInfo` in
+/// `commands/volumes.rs`, the MCP volumes resource, and `mcp/executor/nav.rs`'s selector), and it
+/// equals the English `fileExplorer.navigation.networkVolume` catalog value. It says nothing about
+/// where a pane is: the frontend pushes its UI language's word, so that's told by the id, `network`.
 ///
 /// The GROUP the row sits in is still called "Network"
 /// (`fileExplorer.navigation.groupNetwork`), and the row's path is still the
