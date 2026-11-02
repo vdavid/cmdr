@@ -113,27 +113,29 @@ unsafe fn image_extent(header: *const MachHeader64, slide: isize) -> Option<(u64
         return None;
     }
     // SAFETY: the caller promises a live header; a 64-bit one is the only kind macOS loads here,
-    // and the magic check below refuses anything else before a 64-bit field is read.
-    let header = unsafe { &*header.cast::<MachHeader64>() };
-    if header.magic != MH_MAGIC_64 {
+    // and the magic check below refuses anything else before a 64-bit field is used.
+    let fixed = unsafe { &*header };
+    if fixed.magic != MH_MAGIC_64 {
         return None;
     }
-    let commands_start = (header as *const MachHeader64 as usize) + size_of::<MachHeader64>();
-    let commands_end = commands_start + header.sizeofcmds as usize;
-    let mut command = commands_start;
+    // Offsets from `header` itself, never from `fixed`: a reference covers only the 32 bytes of
+    // its type, so a pointer derived from it can't reach the commands after them (Miri caught
+    // that as undefined behavior, `macos_test.rs`).
+    let commands_end = size_of::<MachHeader64>() + fixed.sizeofcmds as usize;
+    let mut command = size_of::<MachHeader64>();
     let (mut low, mut high) = (u64::MAX, 0u64);
-    for _ in 0..header.ncmds {
+    for _ in 0..fixed.ncmds {
         if command + size_of::<LoadCommand>() > commands_end {
             return None;
         }
         // SAFETY: `command` lies inside the load-command area the header sizes, checked above.
-        let load = unsafe { &*(command as *const LoadCommand) };
+        let load = unsafe { &*header.byte_add(command).cast::<LoadCommand>() };
         if (load.cmdsize as usize) < size_of::<LoadCommand>() || command + load.cmdsize as usize > commands_end {
             return None;
         }
         if load.cmd == LC_SEGMENT_64 && load.cmdsize as usize >= size_of::<SegmentCommand64>() {
             // SAFETY: an `LC_SEGMENT_64` command of at least this size is a `segment_command_64`.
-            let segment = unsafe { &*(command as *const SegmentCommand64) };
+            let segment = unsafe { &*header.byte_add(command).cast::<SegmentCommand64>() };
             let is_page_zero = segment.vmaddr == 0 && segment.initprot == 0 && segment.maxprot == 0;
             if !is_page_zero && segment.vmsize > 0 {
                 let start = segment.vmaddr.wrapping_add_signed(slide as i64);
@@ -211,3 +213,7 @@ pub(super) fn would_recover(address: u64) -> bool {
     )
     .is_some()
 }
+
+#[cfg(test)]
+#[path = "macos_test.rs"]
+mod tests;

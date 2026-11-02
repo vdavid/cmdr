@@ -1378,6 +1378,9 @@ recovered and read as zeros, and the process lived. Without the handler the same
 (`apps/desktop/src-tauri/src/volumes/DETAILS.md` § "The unmount approver").
 
 **Tests.** The verdict, the range table, and the maps parser are pure cells in `tests.rs` (every host); the macOS cells
-prove the table holds our own code and libSystem and that a plain file mapping qualifies. `real_image.rs` force-detaches
-an APFS image under a live mapping, in the `pnpm check disk-images` lane. A consumer's cell moves the generation with
-`simulate_recovery` (behind `testing`).
+prove the table holds our own code and libSystem and that a plain file mapping qualifies. `macos_test.rs` walks
+hand-built Mach-O headers through `image_extent`, so Miri checks its pointer work (`desktop-rust-miri`). That walk
+offsets from the raw header pointer dyld hands over, never from a `&MachHeader64`: a reference covers only the header's
+32 bytes, and reading the load commands through it was undefined behavior Miri caught (2026-11-03). `real_image.rs`
+force-detaches an APFS image under a live mapping, in the `pnpm check disk-images` lane. A consumer's cell moves the
+generation with `simulate_recovery` (behind `testing`).
