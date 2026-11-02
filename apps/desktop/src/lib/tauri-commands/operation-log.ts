@@ -5,6 +5,7 @@
 
 import {
   commands,
+  type Initiator,
   type OperationRow,
   type OperationItemView,
   type OperationUndoOutcome,
@@ -84,8 +85,8 @@ export async function undoOperations(operationIds: string[]): Promise<UndoReport
  * A refusal arrives TYPED (`asRollbackRefusal`), because each reason gets its own
  * sentence: already rolling back, already rolled back, a drive that went away.
  */
-export async function rollbackOperation(operationId: string): Promise<RollbackDispatch> {
-  const res = await commands.rollbackOperation(operationId)
+export async function rollbackOperation(operationId: string, initiator: Initiator): Promise<RollbackDispatch> {
+  const res = await commands.rollbackOperation(operationId, initiator)
   if (res.status === 'error') throwRollbackRefusal(res.error)
   return res.data
 }

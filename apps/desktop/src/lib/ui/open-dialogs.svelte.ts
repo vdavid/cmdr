@@ -78,9 +78,14 @@ export function isDialogOpen(id: SoftDialogId): boolean {
  * the one the user or the agent has to deal with first.
  */
 export function blockingSoftDialog(): SoftDialogId | null {
+  return blockingSoftDialogBesides([])
+}
+
+/** {@link blockingSoftDialog}, not counting `ids`: for an action that belongs to one of them. */
+export function blockingSoftDialogBesides(ids: readonly SoftDialogId[]): SoftDialogId | null {
   let blocking: SoftDialogId | null = null
   for (const id of openDialogs) {
-    if (dialogBlocksOperations(id)) blocking = id
+    if (dialogBlocksOperations(id) && !ids.includes(id)) blocking = id
   }
   return blocking
 }

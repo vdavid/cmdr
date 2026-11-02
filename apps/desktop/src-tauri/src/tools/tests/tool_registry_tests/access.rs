@@ -159,7 +159,13 @@ fn test_every_dev_only_tool_says_why_and_stays_away_from_the_agent() {
     names.sort();
     assert_eq!(
         names,
-        ["ai_search", "connect_to_server", "dialog_confirm", "resolve_conflict"]
+        [
+            "ai_search",
+            "connect_to_server",
+            "dialog_confirm",
+            "queue_move_locked",
+            "resolve_conflict"
+        ]
     );
 }
 

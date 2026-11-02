@@ -389,15 +389,25 @@ mcp_tools! {
         id: Queue,
         brief: "Pause, resume, or cancel running operations, or answer what they wait on.",
         desc: "Control the operation queue: pause / resume / cancel one operationId, or \
-               pause_all / resume_all. cancel also takes operationIds (array) for several; \
-               rollback: true deletes already-copied files (single op). continue_without_gone \
-               answers a pendingSourcesGone question; move_locked / skip_locked answer a \
+               pause_all / resume_all. cancel keeps what's written, and also takes operationIds \
+               (array) for several; operations_rollback asks a person to undo it instead. \
+               continue_without_gone answers a pendingSourcesGone question; skip_locked answers a \
                pendingLockedSources one. See cmdr://state operations for ids.",
         schema: schemas::queue_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
         access: Access::AppState,
         run: params_only queue::execute_queue
+    },
+    "queue_move_locked" => {
+        id: QueueMoveLocked,
+        brief: "Answer a move's Locked items question by unlocking them for the move.",
+        desc: "Answer a move's pendingLockedSources question in a person's place: unlock its Locked items for the move, and lock each again where it lands. See cmdr://state operations for ids.",
+        schema: schemas::queue_move_locked_schema(),
+        subject: SubjectSpec::Operation("operationId"),
+        consumers: &[Consumer::AiClient],
+        access: Access::DevOnly("the question is already in front of the person, and it clears their Locked flag or deny ACL"),
+        run: params_only queue::execute_queue_move_locked
     },
     "resolve_conflict" => {
         id: ResolveConflict,
@@ -539,7 +549,7 @@ mcp_tools! {
     "operations_rollback" => {
         id: OperationsRollback,
         brief: "Open the rollback dialog for an operation, for a person to confirm.",
-        desc: "Reverse a logged operation (delete the copies, move back, restore from trash). Rechecks each item and never overwrites; a drifted or occupied item is skipped. Returns after dispatch: poll operations_get until rollbackState leaves 'rollingBack'.",
+        desc: "Ask a person to reverse an operation, finished or running: opens the rollback dialog, or refuses with a typed reason and no dialog when it can't roll back. A reversal deletes the copies, moves back, or restores from trash; it rechecks each item, never overwrites, and skips a drifted or occupied item. Answers awaitingPerson, and nothing has happened yet: once the dialog leaves cmdr://state dialogs, read rollbackState with operations_get.",
         schema: schemas::operations_rollback_schema(),
         subject: SubjectSpec::Operation("operationId"),
         consumers: &[Consumer::AiClient],

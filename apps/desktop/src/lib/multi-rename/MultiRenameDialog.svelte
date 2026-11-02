@@ -238,7 +238,7 @@
         undoing = true
         undoNotice = null
         try {
-            await rollbackOperation(run.operationId)
+            await rollbackOperation(run.operationId, 'user')
             setLastMultiRenameRun(null)
             onUndoStarted(run)
         } catch (e) {

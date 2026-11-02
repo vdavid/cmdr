@@ -143,7 +143,7 @@ describe('createDoneUndo', () => {
 
     await undo.confirm()
 
-    expect(rollbackOperation).toHaveBeenCalledWith('op-1')
+    expect(rollbackOperation).toHaveBeenCalledWith('op-1', 'user')
     expect(onDispatched).toHaveBeenCalledTimes(1)
   })
 

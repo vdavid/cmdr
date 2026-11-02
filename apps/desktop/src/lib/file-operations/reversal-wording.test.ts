@@ -15,6 +15,7 @@ import type { OpKind, RollbackSupport } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import {
   type RollbackConfirmVariant,
+  liveRollbackBlock,
   rollbackConfirmVariant,
   inFlightRollbackVariant,
   reversalLabelKey,
@@ -261,5 +262,28 @@ describe('rollbackBlockedTooltipKey', () => {
   it('blocks every other reason too, with the plain fallback', () => {
     const others: RollbackSupport[] = ['nothingToPutBack', 'instantChange', 'isReversal', 'settled']
     for (const support of others) expect(blocked(support)).toBe('Rollback isn’t available for this operation.')
+  })
+})
+
+describe('liveRollbackBlock', () => {
+  const base = { status: 'running', rollbackSupport: 'supported', phase: 'copying', kind: 'copy' } as const
+
+  it('lets a running or paused operation roll back once it has written', () => {
+    expect(liveRollbackBlock(base)).toBeNull()
+    expect(liveRollbackBlock({ ...base, status: 'paused' })).toBeNull()
+    expect(liveRollbackBlock({ ...base, phase: null })).toBeNull()
+  })
+
+  it('says why not, one reason per fact', () => {
+    expect(liveRollbackBlock({ ...base, status: 'queued' })).toBe('notRunning')
+    expect(liveRollbackBlock({ ...base, status: 'failed' })).toBe('notRunning')
+    expect(liveRollbackBlock({ ...base, rollbackSupport: 'crossVolumeMove' })).toBe('cantReverse')
+    expect(liveRollbackBlock({ ...base, phase: 'rolling_back' })).toBe('alreadyRollingBack')
+    expect(liveRollbackBlock({ ...base, phase: 'scanning' })).toBe('nothingWrittenYet')
+    expect(liveRollbackBlock({ ...base, kind: 'move', phase: 'deleting' })).toBe('reversalWindowClosed')
+  })
+
+  it("a copy's deleting phase doesn't close anything: only a move's sweep has landed", () => {
+    expect(liveRollbackBlock({ ...base, phase: 'deleting' })).toBeNull()
   })
 })

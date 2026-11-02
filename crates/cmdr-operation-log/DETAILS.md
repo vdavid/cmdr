@@ -741,8 +741,8 @@ env-var hooks".
 ### Undoing a job: several operations, newest first
 
 `crates/cmdr-operations/src/rollback.rs::undo_operations` is the frontend-facing entry (IPC:
-`commands/operation_log.rs::undo_operations`; the MCP `operations_rollback` tool still dispatches ONE op and polls). It
-exists for the Ask Cmdr rename rail, where one run can approve several batches.
+`commands/operation_log.rs::undo_operations`; a yes to the MCP `operations_rollback` tool's question dispatches ONE op,
+and its caller polls). It exists for the Ask Cmdr rename rail, where one run can approve several batches.
 
 - **Order is data safety, not cosmetics** (`rollback/order.rs::undo_order`). Batch one renames `a.txt` → `b.txt`; batch
   three then renames `c.txt` → `a.txt`. Newest-first, batch three vacates `a.txt` before batch one needs it back and

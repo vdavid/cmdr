@@ -1,13 +1,11 @@
-//! Operation-log tool handlers (the MCP tools): read the durable journal and dispatch a
-//! rollback, so an agent can test the whole feature end to end without the FE.
+//! Operation-log tool handlers: read the durable journal, and open the rollback question for
+//! a person to answer.
 //!
 //! `operations_list` / `operations_get` are pure reads over a short-lived
 //! read-only connection (the same pattern as `commands/operation_log.rs`: the
 //! writer thread owns the one write connection, reads never contend under WAL).
-//! `operations_rollback` dispatches the rollback engine and returns after
-//! DISPATCH, not completion — the reversal is an async managed op, so the caller
-//! polls `operations_get` until the operation's `rollbackState` leaves
-//! `rollingBack` (the "dispatch then poll" contract, `tools/actions/DETAILS.md`).
+//! `operations_rollback` opens `RollbackConfirmDialog` and answers that a person decides
+//! (`tools/actions/DETAILS.md` § `operations_rollback`).
 //!
 //! Every classification param (`kind`, `initiator`, `executionStatus`,
 //! `rollbackState`) and every field of the results crosses the wire as the typed
@@ -15,13 +13,19 @@
 //! string: the enum params deserialize with serde, so input
 //! tokens match the output the results already serialize.
 
+use serde::Serialize;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Runtime};
 
+use super::dialog_confirm::ROLLBACK_CONFIRMATION;
+use super::file_ops::open_dialog;
 use super::{ToolError, ToolResult};
+use crate::operations_host::AppOperationVolumes;
 use cmdr_operation_log::query::{self, NameFilter, NameMatch, OperationSearchFilters};
-use cmdr_operation_log::store::{OperationLogStoreError, open_read_connection, operation_log_db_path};
-use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind, OperationId, RollbackState};
+use cmdr_operation_log::rollback::{RollbackRefusal, VolumeLookup, check_rollbackable};
+use cmdr_operation_log::store::{OperationLogStoreError, OperationRow, open_read_connection, operation_log_db_path};
+use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind, RollbackState};
+use cmdr_operations::{LifecycleStatus, OperationSnapshot};
 
 /// Default op page for `operations_list`.
 const DEFAULT_LIST_LIMIT: u32 = 50;
@@ -92,62 +96,111 @@ pub async fn execute_operations_get<R: Runtime>(app: &AppHandle<R>, params: &Val
     }
 }
 
-/// Reverse a logged operation through the rollback engine.
+/// Open the rollback question for an operation, for a person to answer.
 ///
-/// Requires `autoConfirm: true`: a rollback writes to the filesystem, so it must never run
-/// through an accidental default. Without a confirmation dialog (an alpha-UI surface), the only
-/// safe path over MCP is an explicit request from an authenticated client, so a call missing
-/// `autoConfirm` is refused rather than acting unconfirmed.
+/// Whether it CAN roll back is checked here, so a refusal raises no dialog. What it says and
+/// whether it's the right moment are the frontend's: `mcp-rollback-dialog` carries the facts
+/// its wording is picked from, and its answer says the question is up, or what's in the way
+/// (`#lib/file-operations/tool-rollback.svelte.ts`). The answer is typed
+/// `{ awaitingPerson, dialog }`: nothing has been reversed.
 ///
-/// Returns after DISPATCH: the inverse operation spawns as an async managed op, so
-/// the caller polls `operations_get` until this operation's `rollbackState` leaves
-/// `rollingBack`. A domain refusal (unknown / already rolling back / not
-/// rollbackable / a volume disconnected) comes back as a typed `refusal` body, not
-/// a message the caller must parse.
-pub async fn execute_operations_rollback<R: Runtime>(_app: &AppHandle<R>, params: &Value) -> ToolResult {
+/// Confirming runs the path a person's press runs, and `dialog_confirm` is the only way past
+/// them (`dialog_confirm.rs`).
+pub async fn execute_operations_rollback<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let op_id = required_operation_id(params)?;
-    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
-    if !auto_confirm {
-        return Err(ToolError::invalid_params(
-            "operations_rollback needs autoConfirm: true. A rollback writes to disk, and \
-             interactive confirmation over MCP isn't available yet.",
-        ));
-    }
-
-    // `dispatch_rollback` opens a read connection and gates synchronously before
-    // spawning the async inverse, so run it off the MCP task like every other
-    // blocking DB touch. The token was already validated at the HTTP boundary
-    // before dispatch reached here.
-    // The sink is built at the edge like every other managed op's; this edge is
-    // generic over the runtime, so it takes one from the engine host's factory.
     let engine = crate::operations_host::operations()
         .map_err(|_| ToolError::internal("the app isn't wired up to report operation progress yet"))?;
-    let events = engine
-        .host()
-        .operation_sink()
-        .ok_or_else(|| ToolError::internal("the app isn't wired up to report operation progress yet"))?;
-    let outcome = tokio::task::spawn_blocking(move || {
-        engine.dispatch_rollback(&OperationId::from(op_id), Initiator::AiClient, events)
-    })
-    .await
-    .map_err(|e| ToolError::internal(e.to_string()))?;
 
-    match outcome {
-        Ok(dispatch) => Ok(json!({
-            "status": "dispatched",
-            "inverseOpId": dispatch.inverse_op_id,
-            "note": "Reversal runs asynchronously as a managed operation. Poll operations_get on \
-                     this operationId until rollbackState leaves 'rollingBack' (settling to \
-                     'rolledBack' or 'partiallyRolledBack')."
-        })),
-        Err(refusal) => {
-            let refusal = serde_json::to_value(&refusal).map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({ "status": "refused", "refusal": refusal }))
-        }
-    }
+    let snapshot = engine.list_operations();
+    let live = snapshot
+        .iter()
+        .find(|op| op.operation_id == op_id && op.status != LifecycleStatus::Failed);
+    let question = if let Some(op) = live {
+        live_question(op)?
+    } else {
+        let id = op_id.clone();
+        let row = with_read_connection(app, None, move |conn| query::get_operation(conn, &id, 0, 0))
+            .await?
+            .map(|detail| detail.operation);
+        logged_question(row, &AppOperationVolumes)?
+    };
+    open_rollback_question(app, &op_id, question).await
+}
+
+/// Asks the frontend to raise the question, and waits until it's on screen.
+async fn open_rollback_question<R: Runtime>(app: &AppHandle<R>, op_id: &str, question: RollbackQuestion) -> ToolResult {
+    let mut payload = serde_json::to_value(&question).map_err(|e| ToolError::internal(e.to_string()))?;
+    payload["operationId"] = op_id.into();
+    open_dialog(app, "roll back", "mcp-rollback-dialog", payload, ROLLBACK_CONFIRMATION).await
 }
 
 // ── Pure decision cores (unit-tested) ─────────────────────────────────────────
+
+/// The facts the frontend words a rollback question from. They're facts rather than a chosen
+/// variant so the words stay in `reversal-wording.ts`, the one place that picks them.
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "target", rename_all = "camelCase", rename_all_fields = "camelCase")]
+enum RollbackQuestion {
+    /// Still running: confirming takes the existing cancel-with-rollback path.
+    Live,
+    /// Over: confirming dispatches the rollback engine.
+    Logged {
+        kind: OpKind,
+        /// It's already partly rolled back, so a yes picks that up.
+        finishing: bool,
+    },
+}
+
+/// What to ask about a running operation. Its strategy decides here, and whether now's the moment
+/// is the frontend's call, on the phase.
+fn live_question(op: &OperationSnapshot) -> Result<RollbackQuestion, ToolError> {
+    if op.can_reverse() {
+        Ok(RollbackQuestion::Live)
+    } else {
+        Err(live_refusal(op))
+    }
+}
+
+/// What to ask about a finished operation, through the gate its dispatch will run.
+fn logged_question(row: Option<OperationRow>, volumes: &dyn VolumeLookup) -> Result<RollbackQuestion, ToolError> {
+    let row = row.ok_or_else(|| refusal_error(&RollbackRefusal::UnknownOperation))?;
+    check_rollbackable(volumes, &row).map_err(|refusal| refusal_error(&refusal))?;
+    Ok(RollbackQuestion::Logged {
+        kind: row.kind,
+        finishing: row.rollback_state == RollbackState::PartiallyRolledBack,
+    })
+}
+
+/// A running operation whose strategy can't reverse. `data.refusal` is what a caller branches on.
+fn live_refusal(op: &OperationSnapshot) -> ToolError {
+    ToolError::invalid_params(format!(
+        "Operation {} can't roll back while it runs ({:?}), so no dialog opened. queue cancel stops it and keeps what it wrote.",
+        op.operation_id, op.rollback_support
+    ))
+    .with_data(json!({ "refusal": "cantReverse", "detail": op.rollback_support }))
+}
+
+/// The journal's typed refusal as a tool error: `data.refusal` is its `kind`, `data.detail` what
+/// it carries (the stored reason, the missing volume). ❌ Never only in the sentence.
+fn refusal_error(refusal: &RollbackRefusal) -> ToolError {
+    let message = match refusal {
+        RollbackRefusal::UnknownOperation => "No operation has that id, so no dialog opened.".to_string(),
+        RollbackRefusal::AlreadyRollingBack => "It's already rolling back, so no dialog opened.".to_string(),
+        RollbackRefusal::AlreadyRolledBack => "It's already rolled back, so no dialog opened.".to_string(),
+        RollbackRefusal::NotRollbackable(reason) => {
+            format!("This operation can't be rolled back ({reason:?}), so no dialog opened.")
+        }
+        RollbackRefusal::VolumeUnavailable { volume_id } => {
+            format!("A volume it touched isn't connected ({volume_id}), so no dialog opened.")
+        }
+    };
+    let wire = serde_json::to_value(refusal).unwrap_or(Value::Null);
+    let mut data = json!({ "refusal": wire.get("kind").cloned().unwrap_or(Value::Null) });
+    if let Some(detail) = wire.get("detail") {
+        data["detail"] = detail.clone();
+    }
+    ToolError::invalid_params(message).with_data(data)
+}
 
 /// Parse `operations_list`'s filters + paging into the query API's shape, or a
 /// typed `invalid_params` on a malformed value.

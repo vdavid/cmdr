@@ -54,6 +54,8 @@ Umbrella-level files:
   held while the window is busy, an answer that never landed leaving it up, and the reconcile against live rows.
 - `RollbackConfirmDialog.svelte` + `reversal-wording.ts`: the question every Rollback goes through, the typed variant
   that decides what it says, and the same variant's catalog keys for the running bar (§ below).
+- `ToolRollbackDialog.svelte` + `tool-rollback.svelte.ts`: that question when a tool asks for it, and
+  `rollback-confirmers.ts`: what `dialog_confirm` presses (§ "Rollback asks first").
 - `mutation-error.ts` + `mutation-error-messages.ts`: the rename / New Folder / New File refusal path (§ below).
 - `NewEntryNameField.svelte` + `new-entry-name-check.svelte.ts`: the "Create <kind> in <dir>" subtitle and name field
   the New folder and New file dialogs share, and the rune-backed check behind it (sync validators, then the debounced
@@ -543,14 +545,26 @@ ones anybody rolls back. The undo variants say nothing about a count either, and
 this app spends that colour on operations that take something away. The safe answer holds focus in every variant, so a
 reflex Enter never reverses anything.
 
-**Raised by the surface, not the session.** Four hosts hold the pending question in their own `$state`
-(`TransferProgressDialog`, `OperationConflictDialog`, `QueueRow`, and `#lib/operation-log/OperationLogDialog.svelte`),
-each stacking the dialog over itself; the progress dialog asks it twice, for its in-flight Rollback and for its done
-state's Undo of the finished operation (`transfer/DETAILS.md` § "The done state"); the session stays a command surface
-with no view in it. In the first two the question stacks over a dialog from the same subtree, which is what DOM order
-and the trap stack already handle (`#lib/ui/DETAILS.md` § ModalDialog). The queue window raises its own copy — a soft
-dialog, ❌ never a native `ask`, which would need a capability the queue window deliberately drops and would be
-undriveable from the E2E suite.
+**Raised by the surface, not the session.** Five hosts hold the pending question in their own `$state`
+(`TransferProgressDialog`, `OperationConflictDialog`, `QueueRow`, `#lib/operation-log/OperationLogDialog.svelte`, and
+`ToolRollbackDialog`), the first four stacking the dialog over themselves; the progress dialog asks it twice, for its
+in-flight Rollback and for its done state's Undo of the finished operation (`transfer/DETAILS.md` § "The done state");
+the session stays a command surface with no view in it. In the first two the question stacks over a dialog from the same
+subtree, which is what DOM order and the trap stack already handle (`#lib/ui/DETAILS.md` § ModalDialog). The queue
+window raises its own copy — a soft dialog, ❌ never a native `ask`, which would need a capability the queue window
+deliberately drops and would be undriveable from the E2E suite.
+
+**A question a tool asked for** (`operations_rollback`, `tool-rollback.svelte.ts`) ❌ never stacks. A running operation
+with its progress dialog up asks through that dialog's own `rollback.request`, so a second tool call lands on the one
+question already up, and the dialog's withdrawal rules hold. Otherwise any other modal refuses, typed, and the question
+stands alone in `ToolRollbackDialog`, mounted by the main page. There a running operation's question comes down on
+`liveRollbackBlock` (`reversal-wording.ts`), the verdict `QueueRow`'s button reads too. A finished operation's stays up:
+its yes runs the journal's gate and toasts a refusal, the same words the history dialog gives it.
+
+**`dialog_confirm` presses whichever question is up**, through `rollback-confirmers.ts`, where `RollbackConfirmDialog`
+registers itself, so a new host can't be missed. That's why `onConfirm` returns what came of it: a finished operation's
+host answers the dispatch or the refusal, and a host stopping a running operation returns nothing. The queue window's
+copy is another webview, so it isn't reachable from there and a confirm answers "not ready".
 
 **All four variants sit in the dialog gallery** (Debug > Soft dialogs), one state each, because getting one of four
 confirmations wrong is a copy problem you can only catch by reading them side by side.

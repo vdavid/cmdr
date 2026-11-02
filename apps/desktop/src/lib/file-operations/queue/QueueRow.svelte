@@ -17,7 +17,7 @@
     import {
         inFlightRollbackTooltipKey,
         inFlightRollbackVariant,
-        reversalWindowClosed,
+        liveRollbackBlock,
         rollbackConfirmVariant,
         reversalLabelKey,
     } from '../reversal-wording'
@@ -186,11 +186,12 @@
      *  nothing can come back (`../reversal-wording.ts`). Same verdict the progress
      *  dialog reaches, same wording. */
     const canRollback = $derived(
-        snapshot.rollbackSupport === 'supported' &&
-            (isRunning || isPaused) &&
-            !isRollingBack &&
-            !isScanning &&
-            !reversalWindowClosed(opKindForWireType(snapshot.operationType), progress?.phase ?? null),
+        liveRollbackBlock({
+            status,
+            rollbackSupport: snapshot.rollbackSupport,
+            phase: progress?.phase ?? null,
+            kind: opKindForWireType(snapshot.operationType),
+        }) === null,
     )
 
     /** Show hands this operation back to the main window's progress dialog, the

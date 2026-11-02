@@ -168,8 +168,8 @@ apart without subscribing to anything:
 A row carrying a `pendingSourcesGone` block is a queued operation that found some of its sources gone (moved or deleted)
 when its turn came, and waits for an answer: `queue` with `continue_without_gone` carries on with the rest, `cancel`
 ends it. A row carrying a `pendingLockedSources` block is a move that found the user's Locked items among what it moves,
-waiting before any byte moves: `queue` with `move_locked` unlocks them for the move (they end up Locked where they
-land), `skip_locked` leaves them where they are and moves the rest, `cancel` ends it.
+waiting before any byte moves: `queue_move_locked` (direct mode) unlocks them for the move (they end up Locked where
+they land), `skip_locked` leaves them where they are and moves the rest, `cancel` ends it.
 
 A row with no `waitingOn` at all means the backend can't classify itself (a local copy keeps no in-flight table). Read
 that as "can't tell", never as "it's fine".

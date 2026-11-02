@@ -383,7 +383,7 @@ fn a_move_asking_about_locked_items_says_how_many_and_how_to_answer() {
     assert!(yaml.contains("lockedCount: 3"), "yaml: {yaml}");
     assert!(yaml.contains("\"/src/contract.pdf\""), "yaml: {yaml}");
     assert!(
-        yaml.contains("move_locked") && yaml.contains("skip_locked"),
+        yaml.contains("queue_move_locked") && yaml.contains("skip_locked"),
         "yaml: {yaml}"
     );
 }

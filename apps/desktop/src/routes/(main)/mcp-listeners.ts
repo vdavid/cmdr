@@ -33,6 +33,8 @@ import type {
 } from '#lib/commands/index.js'
 import { applySearchPrefill, type SearchPrefill, type SearchMode } from '#lib/search/search-state.svelte.js'
 import type { Initiator } from '#lib/tauri-commands/index.js'
+import type { OpKind } from '#lib/ipc/bindings.js'
+import { raiseToolRollback, type ToolRollbackFacts } from '#lib/file-operations/tool-rollback.svelte.js'
 import { resolveLocation } from '#lib/file-explorer/navigation/resolve-location.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { getAppLogger } from '#lib/logging/logger.js'
@@ -134,9 +136,31 @@ export function parseConfirmDialogType(value: unknown): ConfirmDialogType | unde
     value === 'archive-password' ||
     value === 'rename' ||
     value === 'mkdir-confirmation' ||
-    value === 'new-file-confirmation'
+    value === 'new-file-confirmation' ||
+    value === 'rollback-confirmation'
     ? value
     : undefined
+}
+
+const OP_KINDS: readonly OpKind[] = [
+  'copy',
+  'move',
+  'delete',
+  'trash',
+  'rename',
+  'createFolder',
+  'createFile',
+  'archiveEdit',
+]
+
+/** The `mcp-rollback-dialog` payload, or `undefined` if it's malformed. */
+export function parseToolRollbackFacts(raw: Record<string, unknown>): ToolRollbackFacts | undefined {
+  const operationId = raw.operationId
+  if (typeof operationId !== 'string' || operationId === '') return undefined
+  if (raw.target === 'live') return { target: 'live', operationId, initiator: aiClientInitiator }
+  const kind = OP_KINDS.find((known) => known === raw.kind)
+  if (raw.target !== 'logged' || kind === undefined || typeof raw.finishing !== 'boolean') return undefined
+  return { target: 'logged', operationId, kind, finishing: raw.finishing, initiator: aiClientInitiator }
 }
 
 /** Selection count: a number, or the `'all'` sentinel. */
@@ -686,6 +710,17 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const permanent = typeof raw.permanent === 'boolean' ? raw.permanent : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     void dispatch(fileDeleteCommand, { pane, permanent, mcpRequestId, initiator: aiClientInitiator })
+  })
+
+  await listenTauri('mcp-rollback-dialog', (event) => {
+    // Round-trip: answered once the question is up, or with what's in the way. No dispatch: the
+    // question is a person's, and `dialog_confirm` is its one other answer.
+    const raw = asRecord(event.payload)
+    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    if (requestId === undefined) return
+    const facts = parseToolRollbackFacts(raw)
+    const reply = facts ? raiseToolRollback(facts) : { ok: false, error: 'Invalid rollback payload' }
+    void import('@tauri-apps/api/event').then(({ emit }) => emit('mcp-response', { requestId, ...reply }))
   })
 
   await listenTauri('mcp-confirm-dialog', (event) => {

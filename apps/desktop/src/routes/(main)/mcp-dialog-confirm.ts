@@ -8,10 +8,11 @@
  * (`transfer-dispatch.ts::startTransferOperation`) with the spawned
  * `operationId`, or by the start gate with what's in the way. A rename or a create has no start, so its end answers
  * here, and so does a press that didn't get anywhere: a refusal crosses as the
- * typed `refusal` field, ❌ never as text.
+ * typed `refusal` field, ❌ never as text. A rollback question answers with what its yes led to.
  */
 
 import type { ConfirmDialogType } from '#lib/commands/index.js'
+import { pressRollbackConfirm } from '#lib/file-operations/rollback-confirmers.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import type { ExplorerAPI } from './explorer-api'
 
@@ -32,6 +33,17 @@ export async function confirmDialogForMcp(args: {
     if (requestId === undefined) return
     const { emit } = await import('@tauri-apps/api/event')
     await emit('mcp-response', { requestId, ...body })
+  }
+
+  // A rollback question belongs to no pane, and `RollbackConfirmDialog` answers for every host.
+  if (type === 'rollback-confirmation') {
+    const answer = await pressRollbackConfirm()
+    await reply(
+      answer === null
+        ? { ok: false, error: `No ${type} dialog is open and ready to confirm` }
+        : { ok: true, rollback: answer },
+    )
+    return
   }
 
   if (!explorer) {

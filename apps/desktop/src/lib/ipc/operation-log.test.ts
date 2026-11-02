@@ -31,17 +31,17 @@ describe('commands.rollbackOperation', () => {
     const dispatch: RollbackDispatch = { inverseOpId: 'op-inverse-1' }
     ipc.mock('rollback_operation', () => dispatch)
 
-    const result = await commands.rollbackOperation('op-1')
+    const result = await commands.rollbackOperation('op-1', 'user')
 
     expect(result).toEqual({ status: 'ok', data: dispatch })
-    expect(ipc.calls).toEqual([{ command: 'rollback_operation', payload: { operationId: 'op-1' } }])
+    expect(ipc.calls).toEqual([{ command: 'rollback_operation', payload: { operationId: 'op-1', initiator: 'user' } }])
   })
 
   it('reaches IPC exactly once per press, so a confirmed rollback never double-dispatches', async () => {
     const ipc = installIpcMock()
     ipc.mock('rollback_operation', () => ({ inverseOpId: 'op-inverse-1' }))
 
-    await commands.rollbackOperation('op-1')
+    await commands.rollbackOperation('op-1', 'user')
 
     expect(ipc.callCount('rollback_operation')).toBe(1)
   })
@@ -52,7 +52,7 @@ describe('commands.rollbackOperation', () => {
       throw { kind: 'alreadyRollingBack' }
     })
 
-    const result = await commands.rollbackOperation('op-1')
+    const result = await commands.rollbackOperation('op-1', 'user')
 
     expect(result.status).toBe('error')
     if (result.status === 'error') {
@@ -68,7 +68,7 @@ describe('commands.rollbackOperation', () => {
       throw { kind: 'volumeUnavailable', detail: { volumeId: 'smb-nas-photos' } }
     })
 
-    const result = await commands.rollbackOperation('op-1')
+    const result = await commands.rollbackOperation('op-1', 'user')
 
     expect(result.status).toBe('error')
     if (result.status === 'error') {

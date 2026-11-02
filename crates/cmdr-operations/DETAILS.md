@@ -2259,7 +2259,7 @@ then stopped in Phase 4 with every original kept: the files in both places and a
   with an empty plan, so a Locked original stays and the move reports it. A `0500` folder still refuses its children's
   removal on a cross-drive move after its lock is lifted: a mode, which no Locked answer covers.
 - **Observable and answerable by an agent**: `cmdr://state` renders the parked question as `pendingLockedSources`, and
-  the `queue` tool's `move_locked` / `skip_locked` answer it.
+  `queue_move_locked` (`DevOnly`, since it clears the lock) and the `queue` tool's `skip_locked` answer it.
 - `OperationEventSink::emit_locked_sources` defaults to a no-op; a wrapping sink forwards it (`SinkDecorator` does by
   default), as a dropped one leaves nobody asked and the move waiting until cancelled.
 

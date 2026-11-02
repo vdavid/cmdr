@@ -61,6 +61,7 @@ use tauri::AppHandle;
 use cmdr_operations::{OperationEventSink, Operations, OperationsBuilder};
 pub(crate) use events::VolumesBusyChanged;
 pub use sinks::{TauriEventSink, TauriScanPreviewSink};
+pub(crate) use volumes::AppOperationVolumes;
 
 /// The app's write engine, once [`install`] built it.
 static OPERATIONS: OnceLock<Operations> = OnceLock::new();
@@ -210,7 +211,7 @@ pub(crate) fn test_engine_journaling_into(log: &cmdr_operations::testing::TestOp
 /// journal it records into.
 fn app_answers(app: Option<AppHandle>, operation_log: OperationLog) -> OperationsBuilder {
     Operations::builder(
-        Arc::new(volumes::AppOperationVolumes),
+        Arc::new(AppOperationVolumes),
         Arc::new(events::TauriEngineEvents::new(app)),
     )
     .volume_host(crate::volume_host::host())

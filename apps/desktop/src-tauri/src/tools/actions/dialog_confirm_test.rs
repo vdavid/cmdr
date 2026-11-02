@@ -466,6 +466,83 @@ async fn a_rename_that_needs_the_move_dialog_says_so_typed() {
     assert_eq!(error.data, Some(json!({ "refusal": "needsMoveDialog" })));
 }
 
+/// A dispatch keeps the wire shape a poll loop reads, with its `inverseOpId`.
+#[tokio::test]
+async fn confirming_a_rollback_answers_with_the_dispatch() {
+    let app = app_with_stores();
+    let handle = app.handle().clone();
+    handle
+        .state::<SoftDialogTracker>()
+        .open(ROLLBACK_CONFIRMATION.to_string());
+    answer_confirm(
+        &handle,
+        ROLLBACK_CONFIRMATION,
+        json!({ "ok": true, "rollback": { "status": "dispatched", "inverseOpId": "op-inverse" } }),
+    );
+
+    let answer = execute_dialog_confirm(&handle, &json!({ "type": ROLLBACK_CONFIRMATION }))
+        .await
+        .unwrap();
+    assert_eq!(answer["status"], json!("dispatched"));
+    assert_eq!(answer["inverseOpId"], json!("op-inverse"));
+    assert!(answer["note"].as_str().unwrap().contains("operations_get"), "{answer}");
+}
+
+/// A running operation stops in place, so there's no inverse to poll, and the answer says what to watch.
+#[tokio::test]
+async fn confirming_a_running_rollback_says_to_await_the_operation() {
+    let app = app_with_stores();
+    let handle = app.handle().clone();
+    handle
+        .state::<SoftDialogTracker>()
+        .open(ROLLBACK_CONFIRMATION.to_string());
+    answer_confirm(
+        &handle,
+        ROLLBACK_CONFIRMATION,
+        json!({ "ok": true, "rollback": { "status": "dispatched", "inverseOpId": null } }),
+    );
+
+    let answer = execute_dialog_confirm(&handle, &json!({ "type": ROLLBACK_CONFIRMATION }))
+        .await
+        .unwrap();
+    assert_eq!(answer["inverseOpId"], Value::Null);
+    assert!(
+        answer["note"].as_str().unwrap().contains("operation_complete"),
+        "{answer}"
+    );
+}
+
+/// A refusal stays the typed body, ❌ never a sentence and ❌ never a reported success.
+#[tokio::test]
+async fn a_refused_rollback_keeps_its_typed_body() {
+    let app = app_with_stores();
+    let handle = app.handle().clone();
+    handle
+        .state::<SoftDialogTracker>()
+        .open(ROLLBACK_CONFIRMATION.to_string());
+    let refused = json!({ "status": "refused", "refusal": { "kind": "alreadyRolledBack" } });
+    answer_confirm(
+        &handle,
+        ROLLBACK_CONFIRMATION,
+        json!({ "ok": true, "rollback": refused }),
+    );
+
+    let answer = execute_dialog_confirm(&handle, &json!({ "type": ROLLBACK_CONFIRMATION }))
+        .await
+        .unwrap();
+    assert_eq!(answer, refused);
+}
+
+#[tokio::test]
+async fn confirming_a_rollback_with_none_open_is_refused_up_front() {
+    let app = app_with_stores();
+    let handle = app.handle().clone();
+    let error = execute_dialog_confirm(&handle, &json!({ "type": ROLLBACK_CONFIRMATION }))
+        .await
+        .expect_err("nothing is open");
+    assert!(!error.outcome_is_unknown(), "{}", error.message);
+}
+
 #[tokio::test]
 async fn confirming_a_name_with_nothing_open_is_refused_up_front() {
     let app = app_with_stores();

@@ -8,10 +8,10 @@ use crate::tools::get_all_tools;
 #[test]
 fn test_all_tools_count() {
     // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 3 dialog + 3 app
-    // + 2 search + 1 settings + 1 indexing + 1 queue + 1 conflict + 1 archive unlock + 1 favorites
+    // + 2 search + 1 settings + 1 indexing + 2 queue + 1 conflict + 1 archive unlock + 1 favorites
     // + 3 network + 1 eject + 1 await + 1 downloads + 3 operation_log + 2 photo (search + facts)
-    // + 1 index listing (list_dir) + 2 diagnostics (memory_diagnostics, cpu_diagnostics) + 1 multi_rename = 51
-    assert_eq!(get_all_tools().len(), 51);
+    // + 1 index listing (list_dir) + 2 diagnostics (memory_diagnostics, cpu_diagnostics) + 1 multi_rename = 52
+    assert_eq!(get_all_tools().len(), 52);
 }
 
 #[test]
@@ -321,8 +321,9 @@ fn test_operations_rollback_schema() {
     let schema = &tool(&tools, "operations_rollback").input_schema;
     let props = schema.get("properties").unwrap();
     assert!(props.get("operationId").is_some());
-    // Rollback has no review dialog, so the caller must opt into it explicitly.
-    assert!(props.get("autoConfirm").is_some());
+    // The dialog is the review: no parameter gets past it, and an old `autoConfirm` is refused.
+    assert_eq!(schema["additionalProperties"], json!(false));
+    assert_eq!(props.as_object().unwrap().len(), 1);
 
     let required = schema.get("required").unwrap().as_array().unwrap();
     assert_eq!(required.len(), 1);
@@ -370,13 +371,18 @@ fn test_queue_tool_schema() {
     let schema = &tool(&tools, "queue").input_schema;
     let props = schema.get("properties").unwrap();
 
-    for key in ["action", "operationId", "operationIds", "rollback"] {
+    for key in ["action", "operationId", "operationIds"] {
         assert!(props.get(key).is_some(), "queue schema missing '{key}'");
     }
+    // Closed, so a `rollback: true` from an old client is refused, ❌ not read as a plain cancel
+    // that keeps what the caller wanted gone.
+    assert!(props.get("rollback").is_none());
+    assert_eq!(schema["additionalProperties"], json!(false));
     let actions = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
-    for action in ["pause", "resume", "cancel", "pause_all", "resume_all"] {
+    for action in ["pause", "resume", "cancel", "skip_locked", "pause_all", "resume_all"] {
         assert!(actions.contains(&json!(action)), "missing action '{action}'");
     }
+    assert!(!actions.contains(&json!("move_locked")), "move_locked is its own tool");
     let required = schema.get("required").unwrap().as_array().unwrap();
     assert_eq!(required, &[json!("action")]);
 }
@@ -442,13 +448,10 @@ fn test_rename_tool_schema() {
     );
 }
 
-/// `copy` means "open the dialog" for everyone. Rollback's own bypass goes next.
+/// `copy` means "open the dialog" for everyone, and a rollback too.
 #[test]
-fn no_schema_but_rollback_has_a_bypass_parameter() {
+fn no_schema_has_a_bypass_parameter() {
     for tool in get_all_tools() {
-        if tool.name == "operations_rollback" {
-            continue;
-        }
         let props = tool.input_schema.get("properties");
         assert!(
             props.and_then(|p| p.get("autoConfirm")).is_none(),

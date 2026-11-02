@@ -75,7 +75,7 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'transfer-progress', description: 'Active during a copy/move operation', whileOpen: BLOCKS_OPERATIONS },
   {
     id: 'rollback-confirmation',
-    description: 'Asks before Rollback deletes what a running copy or move has written',
+    description: 'Asks before an operation is rolled back, running or finished. Opened by operations_rollback',
     whileOpen: BLOCKS_OPERATIONS,
   },
   {

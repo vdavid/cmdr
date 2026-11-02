@@ -81,13 +81,10 @@ pub fn operations_rollback_schema() -> Value {
         "properties": {
             "operationId": {
                 "type": "string",
-                "description": "The operation to reverse. Same id as operations_list, a copy/move/delete response, or cmdr://state operations."
-            },
-            "autoConfirm": {
-                "type": "boolean",
-                "description": "Must be true to roll back: a rollback writes to disk. Returns once the reversal is dispatched; poll operations_get until rollbackState leaves 'rollingBack'."
+                "description": "The operation to reverse, finished or running. Same id as operations_list, a dialog_confirm response, or cmdr://state operations."
             }
         },
-        "required": ["operationId"]
+        "required": ["operationId"],
+        "additionalProperties": false
     })
 }

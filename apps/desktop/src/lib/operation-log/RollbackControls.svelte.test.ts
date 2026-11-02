@@ -426,7 +426,7 @@ describe('a rollback started from this dialog gets the controls immediately', ()
     if (!confirm) throw new Error('the confirmation has no confirming button')
     confirm.click()
     await vi.waitFor(() => {
-      expect(commandMocks.rollbackOperation).toHaveBeenCalledWith('op-copy')
+      expect(commandMocks.rollbackOperation).toHaveBeenCalledWith('op-copy', 'user')
     })
     flushSync()
 

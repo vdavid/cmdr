@@ -3597,11 +3597,11 @@ export const commands = {
    *  rollbackable / a volume disconnected) crosses TYPED, so the dialog words it
    *  itself instead of parsing a sentence.
    *
-   *  `Initiator::User`: whoever ran the original operation, pressing Roll back is the
-   *  user's own action.
+   *  `initiator` is who started the question a person answered: `user` for their own Roll back
+   *  button, or the agent whose dialog they confirmed. Required, so provenance can't fail open.
    */
-  rollbackOperation: (operationId: string) =>
-    typedError<RollbackDispatch, RollbackRefusal>(__TAURI_INVOKE('rollback_operation', { operationId })),
+  rollbackOperation: (operationId: string, initiator: Initiator) =>
+    typedError<RollbackDispatch, RollbackRefusal>(__TAURI_INVOKE('rollback_operation', { operationId, initiator })),
   /**
    *  Undo the given operations as one action, **newest first** (a multi-batch rename
    *  run is the case this exists for; the order is data-safety-critical, see

@@ -230,6 +230,11 @@ export const TOOL_LABEL_KEYS: Partial<Record<string, PhaseKeys>> = {
     done: 'askCmdr.tool.queue.done',
     tried: 'askCmdr.tool.queue.tried',
   },
+  queue_move_locked: {
+    doing: 'askCmdr.tool.queueMoveLocked.doing',
+    done: 'askCmdr.tool.queueMoveLocked.done',
+    tried: 'askCmdr.tool.queueMoveLocked.tried',
+  },
   resolve_conflict: {
     doing: 'askCmdr.tool.resolveConflict.doing',
     done: 'askCmdr.tool.resolveConflict.done',

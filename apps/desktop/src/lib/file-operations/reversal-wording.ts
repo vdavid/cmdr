@@ -12,7 +12,7 @@
  * placeholders.
  */
 
-import type { OpKind, RollbackSupport, WriteOperationPhase } from '#lib/ipc/bindings.js'
+import type { LifecycleStatus, OpKind, RollbackSupport, WriteOperationPhase } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 
 /**
@@ -141,6 +141,40 @@ export function rollbackBlockedTooltipKey(support: RollbackSupport): MessageKey 
  */
 export function reversalWindowClosed(kind: OpKind, phase: WriteOperationPhase | null): boolean {
   return kind === 'move' && phase === 'deleting'
+}
+
+/** Why a live operation can't roll back right now. */
+export type LiveRollbackBlock =
+  /** It's queued or over: nothing is running to stop. */
+  | 'notRunning'
+  /** Its strategy can't reverse. */
+  | 'cantReverse'
+  /** It's already undoing what it wrote. */
+  | 'alreadyRollingBack'
+  /** It's still counting, so it has written nothing to put back. */
+  | 'nothingWrittenYet'
+  /** {@link reversalWindowClosed}: everything has already landed. */
+  | 'reversalWindowClosed'
+
+/**
+ * Whether a live operation can roll back right now: the queue row's button and a tool's question
+ * read the same verdict, so one can't offer what the other turns down.
+ *
+ * The status is the snapshot's: a parked operation emits no more ticks, so its last phase describes
+ * a transfer that has stopped.
+ */
+export function liveRollbackBlock(facts: {
+  status: LifecycleStatus
+  rollbackSupport: RollbackSupport
+  phase: WriteOperationPhase | null
+  kind: OpKind
+}): LiveRollbackBlock | null {
+  if (facts.status !== 'running' && facts.status !== 'paused') return 'notRunning'
+  if (facts.rollbackSupport !== 'supported') return 'cantReverse'
+  if (facts.phase === 'rolling_back') return 'alreadyRollingBack'
+  if (facts.phase === 'scanning') return 'nothingWrittenYet'
+  if (reversalWindowClosed(facts.kind, facts.phase)) return 'reversalWindowClosed'
+  return null
 }
 
 /**

@@ -13,7 +13,7 @@
 //! - [`Operations::dispatch_rollback`](super::Operations::dispatch_rollback) returns after DISPATCH, not after the reversal finishes:
 //!   the inverse is an async managed op, so the caller polls the original op's
 //!   `rollback_state` until it leaves `rolling_back` to observe the terminal result
-//!   (the "dispatch then poll" contract). The MCP `operations_rollback` tool uses it.
+//!   (the "dispatch then poll" contract). The history dialog's Roll back uses it, and so does a yes to `operations_rollback`'s question.
 //! - [`Operations::undo_operations`](super::Operations::undo_operations) reverses SEVERAL operations as one action, **newest first**,
 //!   awaiting each before dispatching the next, and resolves with the whole tally. The
 //!   frontend's undo (`commands::operation_log::undo_operations`) uses it: a user-facing
@@ -277,6 +277,14 @@ async fn delete_clearing_blockers(
             RemovalRefused::Volume(e) => ActRefusal::Volume(e),
             RemovalRefused::Locked => ActRefusal::Locked,
         })
+}
+
+impl super::types::OperationSnapshot {
+    /// Whether this operation's strategy can reverse. Whether to offer it right now is the
+    /// view's call on top of it, keyed on the phase.
+    pub fn can_reverse(&self) -> bool {
+        self.rollback_support == super::types::RollbackSupport::Supported
+    }
 }
 
 impl crate::Operations {

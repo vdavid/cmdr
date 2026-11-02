@@ -3,8 +3,10 @@
 //! (read connection, rollback dispatch) are exercised by the live MCP E2E.
 
 use super::*;
-use cmdr_operation_log::rollback::RollbackRefusal;
-use cmdr_operation_log::types::{ExecutionStatus, Initiator, NotRollbackableReason, OpKind, RollbackState};
+use cmdr_operation_log::types::{
+    ExecutionStatus, Initiator, NotRollbackableReason, OpKind, RollbackState, SearchCoverage,
+};
+use cmdr_operations::testing::RollbackSupport;
 use serde_json::json;
 
 #[test]
@@ -128,4 +130,200 @@ fn refusal_serializes_as_a_typed_tagged_shape() {
         serde_json::to_value(&already).expect("serialize")["kind"],
         "alreadyRollingBack"
     );
+}
+
+// ── operations_rollback: what opens a dialog, and what refuses with none ─────────
+
+struct NoVolumes;
+impl VolumeLookup for NoVolumes {
+    fn get(&self, _volume_id: &str) -> Option<std::sync::Arc<dyn cmdr_fs::volume::Volume>> {
+        None
+    }
+}
+
+fn logged_row(rollback_state: RollbackState) -> OperationRow {
+    OperationRow {
+        op_id: "op-1".to_string(),
+        kind: OpKind::Move,
+        archive_subkind: None,
+        initiator: Initiator::User,
+        execution_status: ExecutionStatus::Done,
+        rollback_state,
+        not_rollbackable_reason: None,
+        rolls_back_op_id: None,
+        inverse_op_id: None,
+        source_volume_id: None,
+        dest_volume_id: None,
+        started_at: 0,
+        ended_at: Some(1),
+        item_count: 1,
+        items_done: 1,
+        bytes_total: 0,
+        search_coverage: SearchCoverage::Full,
+        search_coverage_reason: None,
+        dev_summary: None,
+    }
+}
+
+fn live_op(rollback_support: RollbackSupport) -> OperationSnapshot {
+    OperationSnapshot {
+        operation_id: "op-1".to_string(),
+        operation_type: cmdr_operations::WriteOperationType::Copy,
+        status: LifecycleStatus::Running,
+        source: None,
+        destination: None,
+        rollback_support,
+        reverses: None,
+        error: None,
+        can_retry: false,
+        items: None,
+        conflict_policy: None,
+        started_at: None,
+    }
+}
+
+fn refusal_of(result: Result<RollbackQuestion, ToolError>) -> Value {
+    result.expect_err("should refuse").data.expect("a typed refusal")
+}
+
+#[test]
+fn a_finished_operation_asks_in_its_own_terms() {
+    assert_eq!(
+        logged_question(Some(logged_row(RollbackState::Rollbackable)), &NoVolumes).unwrap(),
+        RollbackQuestion::Logged {
+            kind: OpKind::Move,
+            finishing: false
+        }
+    );
+    assert_eq!(
+        logged_question(Some(logged_row(RollbackState::PartiallyRolledBack)), &NoVolumes).unwrap(),
+        RollbackQuestion::Logged {
+            kind: OpKind::Move,
+            finishing: true
+        }
+    );
+}
+
+/// What the journal's gate refuses comes back typed, so nothing opens and nothing parses a sentence.
+#[test]
+fn what_the_journal_refuses_is_typed_with_no_dialog() {
+    assert_eq!(
+        refusal_of(logged_question(None, &NoVolumes)),
+        json!({ "refusal": "unknownOperation" })
+    );
+    assert_eq!(
+        refusal_of(logged_question(Some(logged_row(RollbackState::RolledBack)), &NoVolumes)),
+        json!({ "refusal": "alreadyRolledBack" })
+    );
+    assert_eq!(
+        refusal_of(logged_question(
+            Some(logged_row(RollbackState::RollingBack)),
+            &NoVolumes
+        )),
+        json!({ "refusal": "alreadyRollingBack" })
+    );
+
+    let mut permanent = logged_row(RollbackState::NotRollbackable);
+    permanent.not_rollbackable_reason = Some(NotRollbackableReason::PermanentDelete);
+    let data = refusal_of(logged_question(Some(permanent), &NoVolumes));
+    assert_eq!(data["refusal"], json!("notRollbackable"));
+    assert_eq!(data["detail"], json!("permanentDelete"));
+
+    let mut gone = logged_row(RollbackState::Rollbackable);
+    gone.dest_volume_id = Some("backup".to_string());
+    let data = refusal_of(logged_question(Some(gone), &NoVolumes));
+    assert_eq!(data["refusal"], json!("volumeUnavailable"));
+}
+
+#[test]
+fn a_running_operation_asks_only_when_its_strategy_can_reverse() {
+    assert_eq!(
+        live_question(&live_op(RollbackSupport::Supported)).unwrap(),
+        RollbackQuestion::Live
+    );
+    assert_eq!(
+        refusal_of(live_question(&live_op(RollbackSupport::CrossVolumeMove))),
+        json!({ "refusal": "cantReverse", "detail": "crossVolumeMove" })
+    );
+    // A reversal offers no rollback of itself: that would re-apply what a person chose to undo.
+    assert_eq!(
+        refusal_of(live_question(&live_op(RollbackSupport::IsReversal))),
+        json!({ "refusal": "cantReverse", "detail": "isReversal" })
+    );
+}
+
+#[test]
+fn the_question_crosses_as_facts_the_frontend_words() {
+    assert_eq!(
+        serde_json::to_value(RollbackQuestion::Live).unwrap(),
+        json!({ "target": "live" })
+    );
+    assert_eq!(
+        serde_json::to_value(RollbackQuestion::Logged {
+            kind: OpKind::CreateFolder,
+            finishing: true
+        })
+        .unwrap(),
+        json!({ "target": "logged", "kind": "createFolder", "finishing": true })
+    );
+}
+
+/// The tool opens the dialog and says a person decides. The answer is ❌ never a dispatch.
+#[tokio::test]
+async fn opening_the_question_answers_that_a_person_decides() {
+    use crate::ui_state::dialog_state::SoftDialogTracker;
+    use tauri::{Emitter, Listener, Manager};
+
+    let app = tauri::test::mock_app();
+    app.manage(SoftDialogTracker::new());
+    let handle = app.handle().clone();
+    let seen = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let (responder, recorded) = (handle.clone(), seen.clone());
+    handle.listen("mcp-rollback-dialog", move |event| {
+        let payload: Value = serde_json::from_str(event.payload()).unwrap();
+        *recorded.lock().unwrap() = Some(payload.clone());
+        responder
+            .state::<SoftDialogTracker>()
+            .open(ROLLBACK_CONFIRMATION.to_string());
+        responder
+            .emit("mcp-response", json!({ "requestId": payload["requestId"], "ok": true }))
+            .unwrap();
+    });
+
+    let answer = open_rollback_question(&handle, "op-9", RollbackQuestion::Live)
+        .await
+        .unwrap();
+    assert_eq!(answer["awaitingPerson"], json!(true));
+    assert_eq!(answer["dialog"], json!(ROLLBACK_CONFIRMATION));
+    assert!(answer.get("status").is_none(), "nothing was dispatched: {answer}");
+
+    let payload = seen.lock().unwrap().take().expect("the event went out");
+    assert_eq!(payload["operationId"], json!("op-9"));
+    assert_eq!(payload["target"], json!("live"));
+}
+
+/// Another modal up is the frontend's refusal to give, typed, and the question never rises.
+#[tokio::test]
+async fn a_modal_in_the_way_refuses_with_its_id() {
+    use crate::ui_state::dialog_state::SoftDialogTracker;
+    use tauri::{Emitter, Listener, Manager};
+
+    let app = tauri::test::mock_app();
+    app.manage(SoftDialogTracker::new());
+    let handle = app.handle().clone();
+    let responder = handle.clone();
+    handle.listen("mcp-rollback-dialog", move |event| {
+        let payload: Value = serde_json::from_str(event.payload()).unwrap();
+        responder
+            .emit(
+                "mcp-response",
+                json!({ "requestId": payload["requestId"], "ok": false, "blockedBy": "operation-log", "error": "x" }),
+            )
+            .unwrap();
+    });
+
+    let error = open_rollback_question(&handle, "op-9", RollbackQuestion::Live)
+        .await
+        .expect_err("a dialog is in the way");
+    assert_eq!(error.data, Some(json!({ "blockingDialog": "operation-log" })));
 }

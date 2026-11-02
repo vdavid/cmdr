@@ -15,8 +15,8 @@
 //!   with the tally. Ask Cmdr's rename undo needs that tally to report what came
 //!   back, which a dispatch can't say yet.
 //!
-//! Both sit on the same engine (`cmdr_operation_log::rollback`); the MCP
-//! `operations_rollback` tool is the third consumer.
+//! Both sit on the same engine (`cmdr_operation_log::rollback`). The MCP
+//! `operations_rollback` tool opens the question whose yes calls the first one.
 
 use tauri::AppHandle;
 
@@ -94,18 +94,22 @@ pub async fn get_operation_log_detail(
 /// rollbackable / a volume disconnected) crosses TYPED, so the dialog words it
 /// itself instead of parsing a sentence.
 ///
-/// `Initiator::User`: whoever ran the original operation, pressing Roll back is the
-/// user's own action.
+/// `initiator` is who started the question a person answered: `user` for their own Roll back
+/// button, or the agent whose dialog they confirmed. Required, so provenance can't fail open.
 #[tauri::command]
 #[specta::specta]
-pub async fn rollback_operation(app: AppHandle, operation_id: String) -> Result<RollbackDispatch, RollbackRefusal> {
+pub async fn rollback_operation(
+    app: AppHandle,
+    operation_id: String,
+    initiator: Initiator,
+) -> Result<RollbackDispatch, RollbackRefusal> {
     // The gate opens a read connection and reads the operation's row before it
     // spawns anything, so it runs on the blocking pool like every other DB touch here.
     // Before `install` there's no journal, so every operation is unknown.
     let engine = operations().map_err(|_| RollbackRefusal::UnknownOperation)?;
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     tauri::async_runtime::spawn_blocking(move || {
-        engine.dispatch_rollback(&OperationId::from(operation_id), Initiator::User, events)
+        engine.dispatch_rollback(&OperationId::from(operation_id), initiator, events)
     })
     .await
     // The gate panicked, so nothing was dispatched and nothing changed on disk.

@@ -17,6 +17,7 @@ import { getOperationLogDetail, rollbackOperation } from '#lib/tauri-commands/in
 import { getAppLogger } from '#lib/logging/logger.js'
 import { asRollbackRefusal } from '#lib/operation-log/rollback-refusal.js'
 import { rollbackRefusalNotice, rowRollbackAction, rowStandingNotice } from '#lib/operation-log/operation-log-labels.js'
+import type { RollbackAnswer } from '../rollback-confirmers'
 
 const log = getAppLogger('transferProgress')
 
@@ -96,20 +97,22 @@ export function createDoneUndo(inputs: DoneUndoInputs) {
   }
 
   /** The answer was yes: hand the reversal to the queue, or say why not. */
-  async function confirm(): Promise<void> {
+  async function confirm(): Promise<RollbackAnswer> {
     confirming = false
     const operationId = inputs.operationId()
-    if (operationId === null || dispatching) return
+    if (operationId === null || dispatching) return { status: 'refused', refusal: { kind: 'alreadyRollingBack' } }
     dispatching = true
     try {
-      await rollbackOperation(operationId)
+      const { inverseOpId } = await rollbackOperation(operationId, 'user')
       log.info('Undo of op={operationId} handed to the queue', { operationId })
       inputs.onDispatched()
+      return { status: 'dispatched', inverseOpId }
     } catch (e) {
       const typed = asRollbackRefusal(e)
       refusal = rollbackRefusalNotice(typed)
       if (typed) log.info("Couldn't undo op={operationId}: {reason}", { operationId, reason: typed.kind })
       else log.warn("Couldn't undo op={operationId}: {error}", { operationId, error: e })
+      return { status: 'refused', refusal: typed ?? { kind: 'unknownOperation' } }
     } finally {
       dispatching = false
     }

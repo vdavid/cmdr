@@ -615,7 +615,7 @@ describe('MultiRenameDialog', () => {
       expect(undoLink(root)).toBeTruthy()
       pressUndo(root)
       await settle()
-      expect(ipc.rollbackOperation).toHaveBeenCalledWith('op9')
+      expect(ipc.rollbackOperation).toHaveBeenCalledWith('op9', 'user')
       expect(onUndoStarted).toHaveBeenCalledWith({ operationId: 'op9', renaming: 3 })
       expect(undoLink(root)).toBeUndefined()
     })

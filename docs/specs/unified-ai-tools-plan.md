@@ -278,6 +278,20 @@ Where a lead's review refined one of David's decisions, the refined form is writ
   moves the cursor itself: the backend does, then pins `expectedName`.
 - M18: `tools/actions/DETAILS.md`, `mcp/DETAILS.md`, and `docs/guides/mcp-development.md` still describe `autoConfirm`.
 
+## Carried from M9
+
+- M10: `ToolRollbackDialog` is an agent-started dialog: it takes the guard, and `RollbackConfirmDialog` needs the prop.
+  A question routed through a progress dialog (`askRollbackFromTool`) needs it too, though that dialog's own Rollback
+  button doesn't. `parseToolRollbackFacts` hardcodes `aiClientInitiator`, like the other `mcp-*` listeners: `initiator`
+  has to cross on `mcp-rollback-dialog` once `ToolCtx.caller` exists. `rollback_operation`'s `initiator` is already
+  required, so don't redo it.
+- M11b: `queue`, `queue_move_locked`, and `operations_rollback` are already closed, since a `rollback: true` or
+  `autoConfirm: true` from an old client must refuse, not act on less than was asked.
+- M12: `operations_rollback`'s refusals carry a string `data.refusal`, so `outcome_of` has it once the agent result
+  carries `data`. `dialog_confirm`'s refused body has an object under `refusal`, which `typed_refusal` ignores; only
+  `DevOnly` callers read it.
+- M18: `docs/guides/mcp-development.md` and `mcp/DETAILS.md` still describe the old rollback, if they mention it.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,

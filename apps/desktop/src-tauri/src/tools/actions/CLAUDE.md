@@ -35,8 +35,8 @@ which calls these by path. Up: `../CLAUDE.md`.
   `stale_answer` / `no_pending_conflict` into an `OK`, and ❌ never default the id to "whatever is pending": the
   operation may have moved on.
 - **Tools that START a file operation fast-fail while a dialog is up** (`refuse_while_dialog_blocks`), naming the
-  blocker in the TYPED `data.blockingDialog`. ❌ Never widen it to `queue`, `operations_rollback`, or `dialog`:
-  steering a RUNNING operation is what an agent needs while a dialog is up.
+  blocker in the TYPED `data.blockingDialog`. ❌ Never widen it to `queue` or `dialog`: steering a RUNNING operation
+  is what an agent needs then. `operations_rollback` refuses from the frontend (DETAILS.md § `operations_rollback`).
   `src/lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
 - **Tools that start something require `pane`, and `copy`, `move`, and `tag` refuse without a selection**: focus moves
   silently. ❌ Never fall back to focus or the cursor. DETAILS.md § Ack contract.

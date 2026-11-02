@@ -314,7 +314,7 @@ fn pending_locked_sources_yaml(question: &WriteLockedSourcesEvent) -> String {
         yaml.push_str(&format!("        - {path:?}\n"));
     }
     yaml.push_str(
-        "      answerWith: queue (action move_locked to unlock them for the move, skip_locked to leave them, or cancel)\n",
+        "      answerWith: queue_move_locked to unlock them for the move, or queue (action skip_locked to leave them, or cancel)\n",
     );
     yaml
 }

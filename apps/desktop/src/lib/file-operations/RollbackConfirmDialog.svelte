@@ -12,13 +12,16 @@
      *
      * The safe answer takes focus in every variant, so a reflex Enter never rolls back.
      * Presentational: each host owns the pending-rollback state and calls its own
-     * rollback in `onConfirm`.
+     * rollback in `onConfirm`. It registers that yes for `dialog_confirm`
+     * (`rollback-confirmers.ts`), whichever host raised it.
      */
+    import { onMount } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import Button from '#lib/ui/Button.svelte'
     import type { MessageKey } from '#lib/intl/keys.gen.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import type { RollbackConfirmVariant } from './reversal-wording'
+    import { registerRollbackConfirmer, type RollbackConfirmResult } from './rollback-confirmers'
 
     interface Props {
         variant: RollbackConfirmVariant
@@ -29,13 +32,16 @@
          * because what happens to the files is the same either way.
          */
         finishing?: boolean
-        /** Go ahead: reverse the operation. */
-        onConfirm: () => void
+        /** Go ahead: reverse the operation. A host undoing a finished operation returns what
+         *  came of it; one stopping a running operation returns nothing. */
+        onConfirm: () => RollbackConfirmResult
         /** Leave the operation exactly as it is. Also what Escape and × do. */
         onCancel: () => void
     }
 
     const { variant, finishing = false, onConfirm, onCancel }: Props = $props()
+
+    onMount(() => registerRollbackConfirmer(() => onConfirm()))
 
     /**
      * Body + cancel wording + whether the confirming button reads as destructive.
@@ -100,7 +106,11 @@
     {#snippet footer()}
         <!-- The safe answer takes focus, so a reflex Enter keeps things as they are. -->
         <Button variant="secondary" autoFocus onclick={onCancel}>{tString(words.cancel)}</Button>
-        <Button variant={words.destructive ? 'danger' : 'primary'} onclick={onConfirm}
+        <Button
+            variant={words.destructive ? 'danger' : 'primary'}
+            onclick={() => {
+                void onConfirm()
+            }}
             >{tString(
                 finishing
                     ? 'fileOperations.rollbackConfirm.finishRollBack'

@@ -50,6 +50,8 @@
     import type { FileEntry } from '#lib/file-explorer/types.js'
     import StatusCorner from '#lib/status-corner/StatusCorner.svelte'
     import OperationConflictDialog from '#lib/file-operations/OperationConflictDialog.svelte'
+    import ToolRollbackDialog from '#lib/file-operations/ToolRollbackDialog.svelte'
+    import { dismissToolRollback } from '#lib/file-operations/tool-rollback.svelte.js'
     import SourcesGonePrompt from '#lib/file-operations/SourcesGonePrompt.svelte'
     import LockedSourcesPrompt from '#lib/file-operations/LockedSourcesPrompt.svelte'
     import StaleDriveDialog from '#lib/indexing/StaleDriveDialog.svelte'
@@ -970,6 +972,9 @@
             </DialogBoundary>
             <DialogBoundary name="operationConflict" onClose={() => void cancelConflictPrompt(false)}>
                 <OperationConflictDialog />
+            </DialogBoundary>
+            <DialogBoundary name="toolRollback" onClose={dismissToolRollback}>
+                <ToolRollbackDialog />
             </DialogBoundary>
             <DialogBoundary name="sourcesGone" onClose={() => void cancelSourcesGonePrompt()}>
                 <SourcesGonePrompt />

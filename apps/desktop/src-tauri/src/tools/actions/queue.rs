@@ -5,8 +5,9 @@
 //! backend / thin frontend). It dispatches no FE action and invents no ack — it
 //! calls the backend directly and returns OK (the `connect_to_server` /
 //! `indexing` precedent, so there is no FE action to ack). These are transient runtime actions on a
-//! crash-safe pipeline. A `rollback: true` cancel DELETES already-copied files, so keep the tool
-//! out of the in-process agent view even though authenticated external MCP clients may request it.
+//! crash-safe pipeline, and none of them takes anything away: a rollback goes through
+//! `operations_rollback`'s dialog, and `queue_move_locked` is its own `DevOnly` tool, since moving
+//! Locked items clears the user's lock.
 //!
 //! Discovery of operation ids + their status lives in `cmdr://state` under
 //! `operations:` (the two-source join in `resources/operations.rs`).
@@ -67,26 +68,30 @@ pub async fn execute_queue(params: &Value) -> ToolResult {
                 }),
             )
         }
-        "move_locked" | "skip_locked" => {
-            let id = require_operation_id(params)?;
-            require_operation_exists(&id)?;
-            let answer = if action == "move_locked" {
-                LockedSourcesAnswer::MoveAnyway
-            } else {
-                LockedSourcesAnswer::Skip
-            };
-            locked_reply(
-                &id,
-                answer,
-                engine().map_or(LockedSourcesAnswerOutcome::UnknownOperation, |ops| {
-                    ops.answer_locked_sources(&id, answer)
-                }),
-            )
-        }
+        "skip_locked" => answer_locked(params, LockedSourcesAnswer::Skip),
         other => Err(ToolError::invalid_params(format!(
-            "action must be 'pause', 'resume', 'cancel', 'continue_without_gone', 'move_locked', 'skip_locked', 'pause_all', or 'resume_all' (got '{other}')"
+            "action must be 'pause', 'resume', 'cancel', 'continue_without_gone', 'skip_locked', 'pause_all', or 'resume_all' (got '{other}')"
         ))),
     }
+}
+
+/// The `queue_move_locked` tool: unlock a move's Locked items for it. `DevOnly`, because it clears
+/// the user's Finder Locked flag or deny ACL: `crates/cmdr-operations/DETAILS.md` § Moving Locked
+/// items.
+pub async fn execute_queue_move_locked(params: &Value) -> ToolResult {
+    answer_locked(params, LockedSourcesAnswer::MoveAnyway)
+}
+
+fn answer_locked(params: &Value, answer: LockedSourcesAnswer) -> ToolResult {
+    let id = require_operation_id(params)?;
+    require_operation_exists(&id)?;
+    locked_reply(
+        &id,
+        answer,
+        engine().map_or(LockedSourcesAnswerOutcome::UnknownOperation, |ops| {
+            ops.answer_locked_sources(&id, answer)
+        }),
+    )
 }
 
 /// The agent-facing answer to a pause request, from what the manager actually
@@ -257,15 +262,9 @@ fn locked_reply(
     }
 }
 
-/// Cancel one or several operations. `rollback: true` (single-op only) routes to
-/// the rollback-capable cancel that deletes already-copied files; everything else
-/// keeps partials.
+/// Cancel one or several operations, keeping what they wrote. Rolling back asks a person first:
+/// `operations_rollback`.
 fn execute_cancel(params: &Value) -> ToolResult {
-    let rollback = params.get("rollback").and_then(|v| v.as_bool()).unwrap_or(false);
-
-    // Multi-op cancel via `operationIds`. Rollback is single-op only (there's no
-    // batch rollback backend), so combining the two is an honest error, not a
-    // silent partial.
     if let Some(ids_value) = params.get("operationIds") {
         let ids: Vec<OperationId> = ids_value
             .as_array()
@@ -274,11 +273,6 @@ fn execute_cancel(params: &Value) -> ToolResult {
         if ids.is_empty() {
             return Err(ToolError::invalid_params(
                 "'operationIds' must be a non-empty array of operation id strings",
-            ));
-        }
-        if rollback {
-            return Err(ToolError::invalid_params(
-                "rollback is only supported for a single operationId, not operationIds",
             ));
         }
         if let Some(ops) = engine() {
@@ -290,21 +284,12 @@ fn execute_cancel(params: &Value) -> ToolResult {
 
     let id = require_operation_id(params)?;
     require_operation_exists(&id)?;
-    if rollback {
-        if let Some(ops) = engine() {
-            ops.cancel_write_operation(&id, true);
-        }
-        Ok(json!(format!(
-            "OK: Cancelled operation {id} and rolled back (deleted already-copied files)."
-        )))
-    } else {
-        if let Some(ops) = engine() {
-            ops.cancel_operation(&id);
-        }
-        Ok(json!(format!(
-            "OK: Cancelled operation {id} (kept already-copied files)."
-        )))
+    if let Some(ops) = engine() {
+        ops.cancel_operation(&id);
     }
+    Ok(json!(format!(
+        "OK: Cancelled operation {id} (kept already-copied files)."
+    )))
 }
 
 fn require_operation_id(params: &Value) -> Result<OperationId, ToolError> {
@@ -410,14 +395,23 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn answering_locked_items_nobody_asked_about_is_refused() {
         let fixture = QueuedOperationFixture::park_on(app_engine(), "mcp-queue-locked");
-        for action in ["move_locked", "skip_locked"] {
-            let result = execute_queue(&json!({
-                "action": action,
-                "operationId": fixture.queued_id().as_str(),
-            }))
-            .await;
-            assert!(result.is_err(), "{action}: nothing was asked: {result:?}");
-        }
+        let params = json!({ "action": "skip_locked", "operationId": fixture.queued_id().as_str() });
+        let result = execute_queue(&params).await;
+        assert!(result.is_err(), "skip_locked: nothing was asked: {result:?}");
+        let result = execute_queue_move_locked(&params).await;
+        assert!(result.is_err(), "queue_move_locked: nothing was asked: {result:?}");
+    }
+
+    /// `queue` can't clear a user's lock: that's `queue_move_locked`.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn queue_no_longer_answers_move_locked() {
+        let fixture = QueuedOperationFixture::park_on(app_engine(), "mcp-queue-no-move-locked");
+        let result = execute_queue(&json!({
+            "action": "move_locked",
+            "operationId": fixture.queued_id().as_str(),
+        }))
+        .await;
+        assert!(result.is_err(), "move_locked left queue: {result:?}");
     }
 
     #[test]

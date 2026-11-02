@@ -27,8 +27,8 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
   or a `VolumeError` as the message. Slow is `stillRunning`, not failure. DETAILS § "Mutation refusals".
 - **An error dialog is a HANDOVER, not a release.** `handleTransferError` passes the id to `setForegroundFailureId`
   while the dialog still owns it; closing releases it. Skip it and the chip and toast announce what the user is reading.
-- **Rollback asks first, Cancel doesn't.** Every surface stacks `RollbackConfirmDialog` and calls nothing until the
-  answer lands. ❌ Never a native `ask`, ❌ no file count in it.
+- **Rollback asks first, Cancel doesn't.** Every surface raises `RollbackConfirmDialog` and calls nothing until the
+  answer lands. ❌ Never a native `ask`, ❌ no file count in it. A tool's question ❌ never stacks.
 - **Its `variant` says what the reversal DOES, in the question AND on the running bar; wrong is a data-safety lie in
   copy.** Running: `stopAndDelete` (copy), `stopAndMoveBack` (move). Finished: the three `undo*`, mirroring
   `inverse_kind`. Both pickers: `reversal-wording.ts`, keyed on `OpKind` (`op-kind.ts` maps the wire spellings). ❌

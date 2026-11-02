@@ -77,6 +77,7 @@ export type ConfirmDialogType =
   | 'rename'
   | 'mkdir-confirmation'
   | 'new-file-confirmation'
+  | 'rollback-confirmation'
 
 /**
  * Override slot for commands whose dispatch payload is REQUIRED. Each key is the

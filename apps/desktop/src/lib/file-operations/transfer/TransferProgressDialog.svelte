@@ -38,7 +38,8 @@
     import { stallNoticeFor, waitLineFor } from './transfer-stall'
     import TransferStallNotice from './TransferStallNotice.svelte'
     import { archivePhaseLabel, isIndeterminateProgressPhase, progressCountKind } from '../progress-readout'
-    import { rollbackConfirmVariant, reversalTitleKey } from '../reversal-wording'
+    import { rollbackConfirmVariant, reversalTitleKey, type LiveRollbackBlock } from '../reversal-wording'
+    import { registerProgressRollbackAsker } from '../tool-rollback.svelte'
     import TransferRollbackControls from './TransferRollbackControls.svelte'
     import { createTransferRollback } from './transfer-rollback.svelte'
     import { conflictPolicyCaption } from './conflict-policy-labels'
@@ -278,6 +279,22 @@
         rollbackSupport: () => rollbackSupport,
         operationSettled: () => progress.operationSettled,
         rollBack: () => void progress.handleCancel(true),
+    })
+
+    /** A tool's question about the operation on show goes through this dialog's own, so nothing
+     *  stacks a second one over it (`../tool-rollback.svelte.ts`). The verdict is the button's. */
+    function askRollbackFromTool(): LiveRollbackBlock | null {
+        if (operationSettled) return 'notRunning'
+        if (isRollingBack || isCancelling) return 'alreadyRollingBack'
+        if (isScanning) return 'nothingWrittenYet'
+        rollback.request()
+        return rollback.confirming ? null : 'cantReverse'
+    }
+
+    $effect(() => {
+        const operationId = progress.operationId
+        if (operationId === null) return
+        return registerProgressRollbackAsker(operationId, askRollbackFromTool)
     })
     const conflictPolicy = $derived(progress.conflictPolicy)
     /** The finished operation this dialog stays open on, or `null` while it runs
@@ -809,7 +826,7 @@
     <RollbackConfirmDialog
         variant={rollbackConfirmVariant(undoState.opKind)}
         finishing={undoState.finishing}
-        onConfirm={() => void doneUndo.confirm()}
+        onConfirm={() => doneUndo.confirm()}
         onCancel={doneUndo.dismiss}
     />
 {/if}

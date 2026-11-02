@@ -33,7 +33,7 @@ pub(super) fn awaiting_person(dialog: &str) -> Value {
 
 /// Asks the frontend to open a dialog on `pane`, waits for it to say so, and for the tracker to
 /// show it, so the next tool sees a dialog to wait for.
-async fn open_dialog<R: Runtime>(
+pub(super) async fn open_dialog<R: Runtime>(
     app: &AppHandle<R>,
     verb: &str,
     event: &str,

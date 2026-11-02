@@ -17,7 +17,7 @@ use cmdr_operations::host::{OperationVolumes, UnregisteredVolume, VolumeAnswer};
 
 /// The app's `VolumeManager`, plus `unregistered_volumes` for an id it doesn't
 /// hold.
-pub(super) struct AppOperationVolumes;
+pub(crate) struct AppOperationVolumes;
 
 impl VolumeLookup for AppOperationVolumes {
     fn get(&self, volume_id: &str) -> Option<Arc<dyn Volume>> {

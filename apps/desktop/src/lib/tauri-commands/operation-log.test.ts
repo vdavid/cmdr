@@ -18,14 +18,14 @@ const getRecentMock = vi.fn<(payload: { limit: number; offset: number }) => Prom
 const getDetailMock =
   vi.fn<(payload: { operationId: string; itemLimit: number; itemOffset: number }) => Promise<Res<unknown>>>()
 const undoMock = vi.fn<(ids: string[]) => Promise<Res<unknown>>>()
-const rollbackMock = vi.fn<(id: string) => Promise<Res<unknown, { kind: string }>>>()
+const rollbackMock = vi.fn<(args: { id: string; initiator: string }) => Promise<Res<unknown, { kind: string }>>>()
 vi.mock('#lib/ipc/bindings.js', () => ({
   commands: {
     getRecentOperationLogEntries: (limit: number, offset: number) => getRecentMock({ limit, offset }),
     getOperationLogDetail: (id: string, l: number, o: number) =>
       getDetailMock({ operationId: id, itemLimit: l, itemOffset: o }),
     undoOperations: (ids: string[]) => undoMock(ids),
-    rollbackOperation: (id: string) => rollbackMock(id),
+    rollbackOperation: (id: string, initiator: string) => rollbackMock({ id, initiator }),
   },
 }))
 
@@ -98,15 +98,15 @@ describe('rollbackOperation', () => {
 
   it("returns the inverse operation's id once the reversal is queued", async () => {
     rollbackMock.mockResolvedValue({ status: 'ok', data: { inverseOpId: 'op-2' } })
-    expect(await rollbackOperation('op-1')).toEqual({ inverseOpId: 'op-2' })
-    expect(rollbackMock).toHaveBeenCalledWith('op-1')
+    expect(await rollbackOperation('op-1', 'agent')).toEqual({ inverseOpId: 'op-2' })
+    expect(rollbackMock).toHaveBeenCalledWith({ id: 'op-1', initiator: 'agent' })
   })
 
   it('throws the refusal TYPED, so the caller can word each reason itself', async () => {
     rollbackMock.mockResolvedValue({ status: 'error', error: { kind: 'alreadyRollingBack' } })
     // A flattened string here would put wire JSON in front of the user; the typed
     // value is what lets the history dialog pick the right sentence.
-    const thrown = await rollbackOperation('op-1').catch((e: unknown) => e)
+    const thrown = await rollbackOperation('op-1', 'user').catch((e: unknown) => e)
     expect(asRollbackRefusal(thrown)).toEqual({ kind: 'alreadyRollingBack' })
   })
 })

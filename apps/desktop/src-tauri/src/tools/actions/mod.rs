@@ -158,9 +158,11 @@ pub(super) fn validate_conflict_policy(policy: &str) -> Result<(), ToolError> {
 /// blocking dialog's id rides in `data.blockingDialog`, which is what the agent
 /// acts on to decide what to close.
 ///
-/// ❌ Scope is STARTING an operation. `queue`, `operations_rollback`, `dialog`, and
-/// everything else that steers or answers a running one stays open, which is
-/// exactly what an agent needs while a progress dialog or a clash prompt is up.
+/// ❌ Scope is STARTING an operation. `queue`, `dialog`, and everything else that
+/// steers or answers a running one stays open, which is exactly what an agent
+/// needs while a progress dialog or a clash prompt is up. `operations_rollback`
+/// opens a dialog, so it refuses too, from the frontend: it alone knows whether a
+/// progress dialog is that operation's own, which raises the question itself.
 pub(super) fn refuse_while_dialog_blocks<R: Runtime>(app: &AppHandle<R>, verb: &str) -> Result<(), ToolError> {
     let Some(tracker) = app.try_state::<crate::ui_state::dialog_state::SoftDialogTracker>() else {
         return Ok(()); // No tracker yet; the FE is the authority and refuses on its own.

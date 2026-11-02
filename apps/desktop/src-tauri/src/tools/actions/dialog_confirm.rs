@@ -10,6 +10,9 @@
 //! - `rename`, `mkdir-confirmation`, `new-file-confirmation` → a round-trip the rename or create
 //!   itself answers, when it ended or when a slow volume is still on it. Then the tracker loses the
 //!   id, unless it's still running: that dialog stays up saying so.
+//! - `rollback-confirmation` → a round-trip the rollback answers: `{ status: "dispatched",
+//!   inverseOpId }` (null for a running operation, which stops in place), or the typed
+//!   `{ status: "refused", refusal }`. Then the tracker loses the id.
 //! - `quit-confirmation` → no ack: the answer goes to the quit gate, which starts a teardown that
 //!   ends the process. See `quit.rs`.
 //!
@@ -32,6 +35,8 @@ const TRANSFER: &str = "transfer-confirmation";
 const DELETE: &str = "delete-confirmation";
 const NEW_FOLDER: &str = "mkdir-confirmation";
 const NEW_FILE: &str = "new-file-confirmation";
+/// `RollbackConfirmDialog`'s id in `SoftDialogTracker`, and in the frontend's `dialog-registry.ts`.
+pub(super) const ROLLBACK_CONFIRMATION: &str = "rollback-confirmation";
 
 /// What a confirm led to, as the frontend answers it. The refusals mirror
 /// `ProgrammaticConfirmVerdict` in `src/lib/file-explorer/pane/programmatic-confirm.ts`.
@@ -54,6 +59,8 @@ pub(crate) enum ConfirmAck {
     NameRefused { reason: String },
     /// The rename copies too much to start unasked, so it moved on to the Move dialog.
     NeedsMoveDialog,
+    /// What a rollback question's yes led to, as the wire body `dialog_confirm` answers with.
+    Rollback(Value),
 }
 
 /// Parse an `mcp-response` for a confirm. Same `requestId` correlation as the other round-trips; a
@@ -75,6 +82,9 @@ fn parse_confirm_response(payload: &str, expected_id: &str) -> Option<Result<Con
         }
         Some("needsMoveDialog") => return Some(Ok(ConfirmAck::NeedsMoveDialog)),
         _ => {}
+    }
+    if let Some(rollback) = resp.get("rollback") {
+        return Some(Ok(ConfirmAck::Rollback(rollback.clone())));
     }
     if resp.get("committed").and_then(|v| v.as_bool()) == Some(true) {
         let still_running = resp.get("stillRunning").and_then(|v| v.as_bool()).unwrap_or(false);
@@ -134,6 +144,7 @@ pub async fn execute_dialog_confirm<R: Runtime>(app: &AppHandle<R>, params: &Val
             confirm_and_await_start(app, dialog_type, payload, background).await
         }
         RENAME_EDITOR | NEW_FOLDER | NEW_FILE => commit_name(app, dialog_type, name).await,
+        ROLLBACK_CONFIRMATION => confirm_rollback(app).await,
         // Confirming the quit means quitting NOW, skipping the rest of the countdown.
         // Answered on the gate rather than the dialog, and with no ack: the process is on
         // its way out, so there is nothing left to observe. See `quit.rs`.
@@ -146,7 +157,7 @@ pub async fn execute_dialog_confirm<R: Runtime>(app: &AppHandle<R>, params: &Val
         )),
         _ => Err(ToolError::invalid_params(format!(
             "Cannot confirm dialog type '{dialog_type}'. Only '{TRANSFER}', '{DELETE}', '{RENAME_EDITOR}', \
-             '{NEW_FOLDER}', '{NEW_FILE}', and 'quit-confirmation' can be confirmed."
+             '{NEW_FOLDER}', '{NEW_FILE}', '{ROLLBACK_CONFIRMATION}', and 'quit-confirmation' can be confirmed."
         ))),
     }
 }
@@ -199,7 +210,7 @@ fn refusal_error(dialog_type: &str, ack: &ConfirmAck) -> ToolError {
             ),
             "needsMoveDialog",
         ),
-        ConfirmAck::NotStarted | ConfirmAck::Started(_) | ConfirmAck::Committed { .. } => (
+        ConfirmAck::NotStarted | ConfirmAck::Started(_) | ConfirmAck::Committed { .. } | ConfirmAck::Rollback(_) => (
             format!(
                 "The {dialog_type} dialog took the confirm but started nothing, and it's still open. Read \
                  cmdr://state dialogs for what it shows, then confirm again or close it."
@@ -282,6 +293,39 @@ async fn commit_name<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, name: Op
         }
         other => Err(refusal_error(dialog_type, &other)),
     }
+}
+
+/// Says yes to the open rollback question, whichever surface raised it, and answers what the yes
+/// led to. A refusal is an answer here, in the body a poll loop already reads: the question came
+/// down either way.
+async fn confirm_rollback<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    let answer = match press(app, ROLLBACK_CONFIRMATION, json!({ "type": ROLLBACK_CONFIRMATION })).await? {
+        ConfirmAck::Rollback(answer) => answer,
+        other => return Err(refusal_error(ROLLBACK_CONFIRMATION, &other)),
+    };
+    wait_for_ack(
+        app,
+        AckSignal::SoftDialogDisappeared(ROLLBACK_CONFIRMATION.to_string()),
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
+    Ok(rollback_reply(answer))
+}
+
+/// How to watch what a confirmed rollback does: one that stopped a running operation ends with
+/// it, and one of a finished operation runs as its own.
+fn rollback_reply(mut answer: Value) -> Value {
+    if answer.get("status").and_then(Value::as_str) != Some("dispatched") {
+        return answer;
+    }
+    answer["note"] = if answer.get("inverseOpId").is_some_and(Value::is_null) {
+        "It's stopping and undoing what it wrote. await operation_complete on its operationId.".into()
+    } else {
+        "Reversal runs asynchronously as a managed operation. Poll operations_get on this operationId until \
+         rollbackState leaves 'rollingBack' (settling to 'rolledBack' or 'partiallyRolledBack')."
+            .into()
+    };
+    answer
 }
 
 #[cfg(test)]

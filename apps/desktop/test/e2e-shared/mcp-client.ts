@@ -100,7 +100,7 @@ async function mcpConfirmed(
 ): Promise<string> {
   const dialog = expectAwaitingPerson(await mcpCall(tool, args))
   const confirmed = await mcpCall('dialog_confirm', { type: dialog, ...confirm })
-  if (!confirmed.includes('confirmed')) throw new Error(`Expected ${dialog} to be confirmed, got: ${confirmed}`)
+  if (!confirmed.startsWith('OK')) throw new Error(`Expected ${dialog} to be confirmed, got: ${confirmed}`)
   return confirmed
 }
 

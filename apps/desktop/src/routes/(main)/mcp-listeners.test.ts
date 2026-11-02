@@ -20,6 +20,7 @@ import {
   parseTabAction,
   parseViewMode,
   parseConfirmDialogType,
+  parseToolRollbackFacts,
   parseSelectCount,
   parseCursorTarget,
   setupMcpListeners,
@@ -115,10 +116,40 @@ describe('parseViewMode', () => {
   })
 })
 
+describe('parseToolRollbackFacts', () => {
+  it('reads both questions, and names the outside client as who asked', () => {
+    expect(parseToolRollbackFacts({ operationId: 'op-1', target: 'live' })).toEqual({
+      target: 'live',
+      operationId: 'op-1',
+      initiator: 'aiClient',
+    })
+    expect(parseToolRollbackFacts({ operationId: 'op-1', target: 'logged', kind: 'trash', finishing: true })).toEqual({
+      target: 'logged',
+      operationId: 'op-1',
+      kind: 'trash',
+      finishing: true,
+      initiator: 'aiClient',
+    })
+  })
+  it('rejects anything it would have to guess the wording of', () => {
+    for (const bad of [
+      {},
+      { operationId: '', target: 'live' },
+      { operationId: 'op-1' },
+      { operationId: 'op-1', target: 'logged', finishing: false },
+      { operationId: 'op-1', target: 'logged', kind: 'nonsense', finishing: false },
+      { operationId: 'op-1', target: 'logged', kind: 'copy' },
+    ]) {
+      expect(parseToolRollbackFacts(bad)).toBeUndefined()
+    }
+  })
+})
+
 describe('parseConfirmDialogType', () => {
-  it('accepts the two dialog kinds', () => {
+  it('accepts the dialog kinds', () => {
     expect(parseConfirmDialogType('transfer-confirmation')).toBe('transfer-confirmation')
     expect(parseConfirmDialogType('delete-confirmation')).toBe('delete-confirmation')
+    expect(parseConfirmDialogType('rollback-confirmation')).toBe('rollback-confirmation')
   })
   it('rejects unknowns (including the bare `transfer` short form)', () => {
     for (const bad of ['transfer', 'delete', '', null]) {

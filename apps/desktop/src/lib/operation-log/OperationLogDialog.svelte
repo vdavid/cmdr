@@ -23,6 +23,7 @@
     import { formatInteger } from '#lib/intl/number-format.js'
     import { formatDateTime, getOperationLogRecording } from '#lib/settings/reactive-settings.svelte.js'
     import RollbackConfirmDialog from '#lib/file-operations/RollbackConfirmDialog.svelte'
+    import type { RollbackAnswer } from '#lib/file-operations/rollback-confirmers.js'
     import RollbackControls from './RollbackControls.svelte'
     import type { MessageKey } from '#lib/intl/keys.gen.js'
     import {
@@ -145,13 +146,14 @@
      * dialog here on purpose: the user is reading their history, not watching a
      * transfer, and the status corner already surfaces what's running.
      */
-    async function confirmRollback(opId: string) {
+    async function confirmRollback(opId: string): Promise<RollbackAnswer> {
         rollbackAskedId = null
-        if (dispatching.has(opId)) return
+        if (dispatching.has(opId)) return { status: 'refused', refusal: { kind: 'alreadyRollingBack' } }
         dispatching.add(opId)
         try {
-            const dispatch = await rollbackOperation(opId)
+            const dispatch = await rollbackOperation(opId, 'user')
             markOperationRollingBack(opId, dispatch.inverseOpId)
+            return { status: 'dispatched', inverseOpId: dispatch.inverseOpId }
         } catch (e) {
             const refusal = asRollbackRefusal(e)
             refusals.set(opId, rollbackRefusalNotice(refusal))
@@ -159,6 +161,7 @@
             // throw is a diagnostic worth a warn.
             if (refusal) log.info("Couldn't roll {opId} back: {reason}", { opId, reason: refusal.kind })
             else log.warn("Couldn't roll {opId} back: {error}", { opId, error: e })
+            return { status: 'refused', refusal: refusal ?? { kind: 'unknownOperation' } }
         } finally {
             dispatching.delete(opId)
         }
@@ -433,7 +436,7 @@
     <RollbackConfirmDialog
         variant={rollbackConfirmVariant(rollbackAsked.op.kind)}
         finishing={rollbackAsked.action === 'finish'}
-        onConfirm={() => void confirmRollback(rollbackAsked.op.opId)}
+        onConfirm={() => confirmRollback(rollbackAsked.op.opId)}
         onCancel={() => (rollbackAskedId = null)}
     />
 {/if}

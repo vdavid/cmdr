@@ -40,7 +40,7 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
 3. `rollbackAsked` re-resolves the row out of `operationLogState.entries` on every read and yields `null` once it stops
    offering an action. A reversal started elsewhere while the question is up therefore takes the question down, the way
    `QueueRow` withdraws its own: there'd be nothing left for an answer to act on.
-4. Confirming calls `rollbackOperation(opId)` and, on the `Ok`, flips the row to `rollingBack` AND records the
+4. Confirming calls `rollbackOperation(opId, 'user')` and, on the `Ok`, flips the row to `rollingBack` AND records the
    dispatch's `inverseOpId` on it. The `dispatching` set guards the window between the two so a double press can't
    double-dispatch.
 5. A rejection lands in `refusals`, keyed by opId, and renders as a `role="status"` line under the row. The row keeps

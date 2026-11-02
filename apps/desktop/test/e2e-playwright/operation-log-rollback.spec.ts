@@ -216,7 +216,7 @@ async function settledRollbackState(page: TauriPage, opId: string): Promise<stri
 function dispatchRollback(page: TauriPage, opId: string): Promise<{ ok: boolean; refusal: string }> {
   return page.evaluate<{ ok: boolean; refusal: string }>(`(async function() {
     try {
-      await window.__TAURI_INTERNALS__.invoke('rollback_operation', { operationId: ${JSON.stringify(opId)} });
+      await window.__TAURI_INTERNALS__.invoke('rollback_operation', { operationId: ${JSON.stringify(opId)}, initiator: 'user' });
       return { ok: true, refusal: '' };
     } catch (e) {
       return { ok: false, refusal: (e && e.kind) ? String(e.kind) : JSON.stringify(e) };
