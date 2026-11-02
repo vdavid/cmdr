@@ -41,6 +41,11 @@ function openSentence(facts: Extract<AskFacts, { kind: 'openFile' }>): AskSenten
   }
 }
 
+/** An empty setting has no word of its own, and the bare blank read "from  to some-model". */
+function settingValueWords(value: string): string {
+  return value === '' ? tString('ui.toolAsk.setSetting.emptyValue') : value
+}
+
 export function askSentence(facts: AskFacts): AskSentence {
   switch (facts.kind) {
     case 'openFile':
@@ -50,8 +55,8 @@ export function askSentence(facts: AskFacts): AskSentence {
         title: tString('ui.toolAsk.setSetting.title'),
         body: tString('ui.toolAsk.setSetting.body', {
           label: facts.label,
-          oldValue: facts.oldValue,
-          newValue: facts.newValue,
+          oldValue: settingValueWords(facts.oldValue),
+          newValue: settingValueWords(facts.newValue),
         }),
       }
     case 'quit':

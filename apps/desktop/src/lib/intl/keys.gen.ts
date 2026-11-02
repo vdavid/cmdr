@@ -5311,6 +5311,7 @@ export type MessageKey =
   | 'ui.toolAsk.removeServer.body'
   | 'ui.toolAsk.removeServer.title'
   | 'ui.toolAsk.setSetting.body'
+  | 'ui.toolAsk.setSetting.emptyValue'
   | 'ui.toolAsk.setSetting.title'
   | 'updates.failure.check'
   | 'updates.failure.checkUntyped'

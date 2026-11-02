@@ -221,6 +221,10 @@
       "newValue": "what the assistant wants to set it to"
     }
   },
+  "ui.toolAsk.setSetting.emptyValue": "nothing",
+  "@ui.toolAsk.setSetting.emptyValue": {
+    "description": "Stands in for a setting's value in that body when the value is empty, as in: This changes Ask Cmdr model from nothing to some-model."
+  },
   "ui.toolAsk.quit.title": "Quit Cmdr?",
   "@ui.toolAsk.quit.title": {
     "description": "Title of a dialog asking whether an AI assistant may quit the app."

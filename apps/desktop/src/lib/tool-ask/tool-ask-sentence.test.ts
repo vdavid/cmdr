@@ -50,6 +50,18 @@ describe('askSentence', () => {
     expect(body).toContain('Vim')
   })
 
+  it('an empty value reads as nothing, so the sentence never says "from to"', () => {
+    const { body } = askSentence({
+      kind: 'setSetting',
+      id: 'askCmdr.interactiveModel',
+      label: 'Ask Cmdr model',
+      oldValue: '',
+      newValue: 'some-model',
+    })
+    expect(body).not.toContain('from  to')
+    expect(body).toContain('from nothing to some-model')
+  })
+
   it('quit says what happens to what is running', () => {
     expect(askSentence({ kind: 'quit' }).body).toContain('running')
   })
