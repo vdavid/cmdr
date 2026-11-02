@@ -95,7 +95,7 @@
     },
     "apps/desktop/src/lib/file-explorer/pane/rename-flow.svelte.ts": {
       "lines": 816,
-      "reason": "TODO: move the extension and conflict dialog answers to a sibling, as `rename-tool-commit.ts` did for the tool's commit; they read the session state this file owns, so it's a real cut and past this milestone's scope"
+      "reason": "TODO: move the extension and conflict dialog answers to a sibling, as `rename-tool-commit.ts` did for the tool's commit; they read the session state this file owns, so it's a real cut"
     },
     "apps/desktop/src/lib/file-explorer/views/BriefList.svelte": {
       "lines": 1384,

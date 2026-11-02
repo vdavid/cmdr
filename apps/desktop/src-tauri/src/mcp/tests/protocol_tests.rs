@@ -80,25 +80,6 @@ fn test_tool_input_schemas_are_valid() {
 }
 
 #[test]
-fn test_total_tool_count() {
-    let tools = get_all_tools();
-    // The registry is the single source, so this count is a cheap guard over a by-construction
-    // property, not a hand-synced number: adding an `mcp_tools!` entry bumps the list, dispatch,
-    // and gate together. It just flags an unintended add/remove.
-    // 6 nav + 2 cursor + 1 select + 8 file_op + 1 tag + 3 view + 1 tab + 3 dialog + 3 app + 2
-    // search + 1 settings + 1 indexing + 2 queue + 1 conflict + 1 archive unlock + 1 favorites + 3
-    // network + 1 eject + 1 await + 1 downloads + 3 operation_log + 2 photo (search + facts) + 1
-    // index listing (list_dir) + 2 diagnostics (memory_diagnostics, cpu_diagnostics) + 1 multi_rename
-    // + 15 reads, proposals, memory, and connecting + 1 resource read = 68
-    assert_eq!(
-        tools.len(),
-        68,
-        "Expected 67 tools, got {}. Did you add/remove tools?",
-        tools.len()
-    );
-}
-
-#[test]
 fn test_no_duplicate_tool_names() {
     let tools = get_all_tools();
     let mut names: Vec<&str> = tools.iter().map(|t| t.name.as_str()).collect();

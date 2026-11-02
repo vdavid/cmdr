@@ -103,8 +103,6 @@ agent's one line in the prompt, and `tool_details` and `use_tool` reaching it; a
    write (`every_known_tool_has_an_ask_cmdr_rail_label`). English only: the translator does the rest.
 3. **The class's allowlist**, for anything but `Read` and `AppState`: its `EXPECTED_*_TOOL_NAMES`, having read the handler.
 4. **The wire fixture**: `UPDATE_SNAPSHOT=1` over `tests/tool_snapshot_tests.rs`, then read the diff.
-5. **Two hand-kept counts**: `test_total_tool_count` in `../mcp/tests/protocol_tests.rs`, and `get_all_tools().len()` in
-   `tests/tool_registry_tests/schemas.rs`.
 
 **Only when the tool does more:**
 

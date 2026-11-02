@@ -6,18 +6,6 @@ use super::{EXPECTED_TOOL_NAMES, tool};
 use crate::tools::get_all_tools;
 
 #[test]
-fn test_all_tools_count() {
-    // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 3 dialog + 3 app
-    // + 2 search + 1 settings + 1 indexing + 2 queue + 1 conflict + 1 archive unlock + 1 favorites
-    // + 3 network + 1 eject + 1 await + 1 downloads + 3 operation_log + 2 photo (search + facts)
-    // + 1 index listing (list_dir) + 2 diagnostics (memory_diagnostics, cpu_diagnostics) + 1 multi_rename
-    // + 6 reads (app_state, list_pane_files, important_folders, folder_importance, list_suggestions,
-    //   get_suggestion_group) + list_volumes + inspect_file + nothing_to_suggest + 3 propose + 2 memory
-    //   + connect_volume = 67
-    assert_eq!(get_all_tools().len(), 68);
-}
-
-#[test]
 fn test_tool_names_are_exactly_the_expected_set() {
     use std::collections::BTreeSet;
     let actual: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();

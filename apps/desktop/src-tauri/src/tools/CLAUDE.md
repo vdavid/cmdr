@@ -47,7 +47,7 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
 - **A proposal claiming file CONTENTS must prove it** through `ImageFactsLedger`. `propose/DETAILS.md`.
 - **Read handlers never touch a live filesystem, except `inspect_file` and `list_dir`'s live read**, bounded. Anything
   yielding contents passes `sensitive.rs`. A new content KIND is a copy change plus a `CLOUD_AI_CONSENT_VERSION` bump.
-- **New tool** = table entry + handler and schema + its class's `EXPECTED_*_TOOL_NAMES` + a rail label + the wire fixture +
-  two hand-kept counts. `DETAILS.md` § Adding a tool.
+- **New tool** = table entry + handler and schema + its class's `EXPECTED_*_TOOL_NAMES` + a rail label + the wire fixture.
+  `DETAILS.md` § Adding a tool.
 
 Depth: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
