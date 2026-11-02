@@ -4857,6 +4857,7 @@ export type MessageKey =
   | 'settings.window.title'
   | 'shortcuts.conflict.fixedKey'
   | 'shortcuts.conflict.reservedByMacOs'
+  | 'shortcuts.conflict.shiftLetter'
   | 'shortcuts.conflict.systemShortcut'
   | 'shortcuts.list.addedTooltip'
   | 'shortcuts.list.disabledTooltip'

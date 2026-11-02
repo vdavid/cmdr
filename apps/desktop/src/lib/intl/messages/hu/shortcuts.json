@@ -84,6 +84,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Bocs, {combo}: ezzel nagybetűt írsz, ezért nem lehet billentyűparancs. Próbálj hozzáadni még egy módosítóbillentyűt.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "{combo}: ezt általában a macOS használja ({label}), ezért lehet, hogy soha nem jut el a Cmdrhez. Itt szabadíthatod fel: Rendszerbeállítások > Billentyűzet.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

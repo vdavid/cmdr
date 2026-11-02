@@ -58,6 +58,9 @@ vi.mock('#lib/shortcuts/index.js', async () => ({
   capturedKeyCombo: (
     await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js')
   ).capturedKeyCombo,
+  isShiftLetterCombo: (
+    await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js')
+  ).isShiftLetterCombo,
   findConflictsForShortcut: (shortcut: string, scope: string, excludeCommandId: string) =>
     findConflictsForShortcut({ shortcut, scope, excludeCommandId }),
   getConflictingCommandIds: () => new Set<string>(),
@@ -271,6 +274,28 @@ describe('capture + conflict engine', () => {
     c.startEditingShortcut('file.copy', 0)
     c.handleKeyDown(keyEvent({ key: 'X', metaKey: true }))
     expect(c.pendingKey).toBe('⌘X')
+    vi.advanceTimersByTime(500)
+    expect(setShortcut).toHaveBeenCalledWith({ commandId: 'file.copy', index: 0, shortcut: '⌘X' })
+    vi.useRealTimers()
+  })
+
+  // ⇧+letter types a capital, so the file list takes it as a filter or jump keystroke
+  // and the binding would never fire.
+  it('refuses a Shift+letter combo: a banner, no save, and the next key still captures', () => {
+    vi.useFakeTimers()
+    effectiveShortcuts.set('file.copy', ['F5'])
+    const c = create()
+    c.startEditingShortcut('file.copy', 0)
+
+    c.handleKeyDown(keyEvent({ key: 'A', code: 'KeyA', shiftKey: true }))
+    expect(c.pendingKey).toBe('⇧A')
+    expect(c.conflictWarning).toEqual({ shortcut: '⇧A', conflict: { kind: 'shiftLetter' } })
+    vi.advanceTimersByTime(500)
+    expect(setShortcut).not.toHaveBeenCalled()
+    expect(findConflictsForShortcut).not.toHaveBeenCalled()
+
+    c.handleKeyDown(keyEvent({ key: 'X', metaKey: true }))
+    expect(c.conflictWarning).toBe(null)
     vi.advanceTimersByTime(500)
     expect(setShortcut).toHaveBeenCalledWith({ commandId: 'file.copy', index: 0, shortcut: '⌘X' })
     vi.useRealTimers()

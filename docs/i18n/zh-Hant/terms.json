@@ -2444,6 +2444,17 @@
     "forms": "date modified → 修改日期",
     "sources": "AP-TW = AP-HK = AP-CN"
   },
+  "modifier-key": {
+    "chosen": "變更鍵",
+    "confidence": "high",
+    "sources": "macOS zh_TW 變更鍵 (KeyboardSettings Modifier Keys sheet, macOS 27.0.1 26A434, 2026-11-02); shipped downloads.shortcutRow.addModifier",
+    "avoid": [
+      {
+        "form": "輔助按鍵",
+        "why": "Microsoft's form; macOS's Keyboard settings say 變更鍵"
+      }
+    ]
+  },
   "mount": {
     "accept": ["卸除"],
     "avoid": [

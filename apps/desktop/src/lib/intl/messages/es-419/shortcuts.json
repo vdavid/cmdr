@@ -3,6 +3,10 @@
   "@shortcuts.list.addedTooltip": {
     "sourceHash": "f52c88f"
   },
+  "shortcuts.conflict.shiftLetter": "Lo sentimos, {combo} es la forma de escribir una mayúscula, así que no puede ser un atajo. Intenta agregar otro modificador.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "332a220"
+  },
   "shortcuts.conflict.systemShortcut": "macOS suele usar {combo} ({label}), así que puede que nunca llegue a Cmdr. Puedes liberarla en Configuración del Sistema > Teclado.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "3c00012"

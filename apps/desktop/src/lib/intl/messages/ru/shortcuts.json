@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Извините, сочетание {combo} вводит заглавную букву, поэтому назначить его не получится. Попробуйте добавить еще одну клавишу модификации.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "Сочетание {combo} обычно занято macOS ({label}), поэтому может не доходить до Cmdr. Освободить его можно в разделе «Системные настройки» > «Клавиатура».",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

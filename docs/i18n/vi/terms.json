@@ -1954,8 +1954,8 @@
   },
   "modifier-key": {
     "chosen": "phím bổ trợ",
-    "confidence": "tentative",
-    "sources": "descriptive; glyphs ⌘ ⌥ ⌃ ⇧ stay literal"
+    "confidence": "high",
+    "sources": "macOS vi Phím bổ trợ (KeyboardSettings Modifier Keys sheet, macOS 27.0.1 26A434, 2026-11-02); glyphs ⌘ ⌥ ⌃ ⇧ stay literal"
   },
   "mount": {
     "chosen": "gắn kết",

@@ -33,6 +33,7 @@ import {
   capturedKeyCombo,
   isModifierKey,
   isMacOS,
+  isShiftLetterCombo,
   findConflictsForShortcut,
   getConflictingCommandIds,
   getConflictCount,
@@ -177,6 +178,14 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
     // Clear any existing timeout
     if (confirmTimeout) {
       clearTimeout(confirmTimeout)
+    }
+    // This key replaces the last one, so the last one's banner no longer applies.
+    conflictWarning = null
+
+    // Refused for every command, so no in-app or system clash matters.
+    if (isShiftLetterCombo(combo)) {
+      conflictWarning = { shortcut: combo, conflict: { kind: 'shiftLetter' } }
+      return
     }
 
     // Check for conflicts (editingShortcut is guaranteed non-null here due to early return)

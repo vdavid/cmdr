@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Xin lỗi, {combo} là cách gõ chữ hoa, nên không thể dùng làm phím tắt. Hãy thử thêm một phím bổ trợ nữa.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "{combo} thường được macOS dùng ({label}), nên nó có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng nó trong Cài đặt hệ thống > Bàn phím.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

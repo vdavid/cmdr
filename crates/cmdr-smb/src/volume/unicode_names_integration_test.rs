@@ -314,19 +314,21 @@ async fn an_outside_change_in_an_accented_directory_names_the_path_the_pane_open
     let host = VolumeHost::builder()
         .listings(Arc::clone(&listings) as Arc<dyn ListingHost>)
         .build();
-    let vol = make_docker_volume_with_host(host).await;
+    // ❗ The `both` fixture's `public` share, a twin of `guest`'s that no suite writes
+    // to. Samba's `notifyd` runs per container and fans every write on a share out to
+    // every recursive watch on it, so on `guest`, where every `cmdr-smb` suite writes
+    // and watches, delivery fell 20 s and more behind with several worktrees' lanes on
+    // one stack. Measurements: the override for this cell in `.config/nextest.toml`.
+    let vol = make_docker_volume_through(smb2::testing::both_port(), host).await;
     let (top, pane_path) = seed_album(&vol).await;
 
     // The watcher's session arms on its own schedule after connect, so an event
     // written before it's armed is never sent. Keep writing fresh files until one
-    // is heard, and identify ours by this cell's unique name: the watch covers
-    // the whole share, which other suites (and other runs of this one) are busy on.
+    // is heard, and identify ours by this cell's unique name: other runs of this
+    // cell can be on the share too.
     //
-    // 20 s, though delivery takes ~0.3 s on a quiet stack: Samba's `notifyd` in the
-    // CPU-capped fixture container fans every write on the share out to every
-    // recursive watch on it, and with several worktrees' lanes on one stack it falls
-    // seconds behind and keeps draining after they stop. A 6 s budget failed there
-    // with nothing heard at all. The cap above it is in `.config/nextest.toml`.
+    // 20 s, though delivery takes ~0.3 s here: the container is CPU-capped and shares
+    // its host with the whole lane. The cap above it is in `.config/nextest.toml`.
     let ours = format!("outside-{top}-");
     let deadline = std::time::Instant::now() + Duration::from_secs(20);
     let mut heard = None;

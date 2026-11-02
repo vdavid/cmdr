@@ -506,6 +506,21 @@ describe('shortcuts-store refuses to customize macOS-native commands', () => {
   })
 })
 
+describe('shortcuts-store refuses a Shift+letter combo', () => {
+  it('setShortcut and addShortcut are no-ops for one (no write, no emit)', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.setShortcut('file.copy', 0, '⇧A')
+    store.addShortcut('file.copy', '⇧A')
+    await flushSave()
+
+    expect(store.isShortcutModified('file.copy')).toBe(false)
+    expect(disk.has('shortcut:file.copy')).toBe(false)
+    expect(changedEmits()).toHaveLength(0)
+  })
+})
+
 describe('shortcuts-store refuses to customize fixed-key commands', () => {
   // The Family-2/3 fixed-key commands (nav arrows, palette navigation, modal
   // Enter/Escape) are hardcoded in their owning component's keydown handler and

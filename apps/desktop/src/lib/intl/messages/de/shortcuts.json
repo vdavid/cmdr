@@ -84,6 +84,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Tut mir leid, mit {combo} tippst du einen Großbuchstaben, daher kann das kein Kurzbefehl sein. Füge am besten noch eine Sondertaste hinzu.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "{combo} wird meist von macOS belegt ({label}) und erreicht Cmdr daher womöglich nie. Du kannst sie in Systemeinstellungen > Tastatur freigeben.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

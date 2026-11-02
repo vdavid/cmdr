@@ -2008,7 +2008,7 @@
     "confidence": "tentative",
     "decision": "Shortcut conflicts",
     "forms": "Lägg till en modifierare (⌘, ⌃, ⌥ eller ⇧)",
-    "sources": "no macOS source; MS låstangent is the lock-key sense"
+    "sources": "composed; MS låstangent is the lock-key sense; macOS sv says Specialtangenter (KeyboardSettings Modifier Keys sheet, macOS 27.0.1 26A434, 2026-11-02), open in review-queue.md"
   },
   "mount": {
     "accept": ["montering"],

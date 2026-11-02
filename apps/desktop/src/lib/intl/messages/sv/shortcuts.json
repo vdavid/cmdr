@@ -84,6 +84,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Tyvärr, med {combo} skriver du en stor bokstav, så det kan inte vara en genväg. Testa att lägga till ytterligare en modifierare.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "{combo} brukar vara upptagen av macOS ({label}), så den når kanske aldrig fram till Cmdr. Du kan frigöra den i Systeminställningar > Tangentbord.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

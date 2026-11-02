@@ -16,7 +16,7 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 3631 / 5266 keys have a screenshot (69%):** 2076 direct (39%) and 1555 representative (30%). 1443 remain
+**Total: 3632 / 5274 keys have a screenshot (69%):** 2076 direct (39%) and 1556 representative (30%). 1450 remain
 uncoupled, and 192 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
@@ -38,7 +38,7 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | indexing        |     34 |             18 |        18 |      0 |    70 |   74% |
 | licensing       |     49 |             35 |        25 |      0 |   109 |   77% |
 | lowDiskSpace    |      0 |              0 |         5 |      0 |     5 |    0% |
-| main            |      7 |              0 |        46 |      2 |    55 |   13% |
+| main            |      7 |              0 |        47 |      2 |    56 |   13% |
 | menu            |      4 |              0 |         0 |    190 |   194 |    2% |
 | mtp             |     18 |              4 |         0 |      0 |    22 |  100% |
 | multiRename     |     90 |              0 |       140 |      0 |   230 |   39% |
@@ -51,8 +51,8 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | securityNotices |      0 |              0 |        13 |      0 |    13 |    0% |
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |
 | servers         |     95 |             79 |        57 |      0 |   231 |   75% |
-| settings        |    449 |             45 |       388 |      0 |   882 |   56% |
-| shortcuts       |     35 |             28 |         0 |      0 |    63 |  100% |
+| settings        |    449 |             45 |       394 |      0 |   888 |   56% |
+| shortcuts       |     35 |             29 |         0 |      0 |    64 |  100% |
 | stateRecovery   |      0 |              0 |        33 |      0 |    33 |    0% |
 | suggestedOps    |     85 |              0 |        25 |      0 |   110 |   77% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |
