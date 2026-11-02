@@ -163,7 +163,10 @@ the `вы` there, a bare `Убедитесь, что подключены` drops
   `Недоступно`, `Не проверено`); whether a server column should go all masculine is open (`review-queue.md`). For an app
   server, `Работает`; for an operation, `Выполняется`.
 - **AI status lines**: the present tense, first person for the assistant as Russian chat apps do (`Думаю…`), or a noun;
-  ❌ never past (`Думал…`), which genders it. Tool lines stay nominal (`Поиск файлов`).
+  ❌ never past (`Думал…`), which genders it. Tool lines stay nominal (`Поиск файлов`), and their three phases share a
+  verb: a verbal noun, a participle, `Попытка` + infinitive (`Перемещение курсора`, `Курсор перемещен`,
+  `Попытка переместить курсор`), since a short reason follows the last one. A dialog there is `диалог`. The private key
+  of the cloud consent copy is `закрытый ключ` (MS; macOS has no hit).
 - **Dialog titles**: a question in the infinitive (`Удалить «{name}»?`, `Заменить объект?`) or a short noun phrase.
 - **Hints and tooltips**: a full sentence with `Нажмите, чтобы …`; for very short ones `Нажмите для …` is fine.
 - **Short labels and chips**: obey the description's length limit. A chip that holds "Regex" can't take 20 characters,

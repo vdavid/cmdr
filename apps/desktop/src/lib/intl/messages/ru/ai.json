@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Поиск обычными словами</b>: введенный вами текст",
+  "ai.cloudConsent.search": "<b>Поиск обычными словами</b>: введенный вами текст или запрос подключенного инструмента ИИ, если вы включили прямой режим MCP",
   "@ai.cloudConsent.search": {
-    "sourceHash": "e6d4ef9"
+    "sourceHash": "b5c8d93"
   },
   "ai.cloudConsent.selection": "<b>Выделение по описанию</b>: введенный вами текст и до 240 имен из текущей папки",
   "@ai.cloudConsent.selection": {
@@ -91,21 +91,21 @@
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
-  "ai.cloudConsent.askCmdr.item.messages": "Ваши сообщения",
+  "ai.cloudConsent.askCmdr.item.messages": "Ваши сообщения, в том числе любой пароль, который вы вводите в чате, чтобы разблокировать архив или резервную копию",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "sourceHash": "befc6e9"
+    "sourceHash": "66e656b"
   },
-  "ai.cloudConsent.askCmdr.item.names": "Имена и пути файлов и папок, которые Cmdr просматривает для ответа",
+  "ai.cloudConsent.askCmdr.item.names": "Имена и пути файлов и папок, которые просматривает Cmdr",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "sourceHash": "ce3259d"
+    "sourceHash": "4d5ea2c"
   },
   "ai.cloudConsent.askCmdr.item.sizes": "Размеры и даты этих файлов и папок",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Части файлов, которые Cmdr открывает для ответа: текст, страницы PDF, содержимое архива, сведения о камере и месте съемки фотографии",
+  "ai.cloudConsent.askCmdr.item.contents": "Части файлов, которые открывает Cmdr: часть текста, страницы PDF, содержимое архива, сведения о камере и месте съемки фотографии, а также текст, который Cmdr распознал на фотографиях",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "sourceHash": "fcd0b73"
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.item.envelope": "Что вы сейчас просматриваете: текущая папка, курсор, выделенные объекты и подключенные диски",
   "@ai.cloudConsent.askCmdr.item.envelope": {
@@ -115,19 +115,19 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Сведения о фотографиях и песнях, если они нужны для переименования: дата съемки, камера, название, исполнитель, альбом и тому подобное",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {
     "sourceHash": "e96157a"
   },
-  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "ai.cloudConsent.askCmdr.item.appState": "Чем занят Cmdr: выполняемые и прошлые операции, открытые диалоговые окна, избранное, сохраненные места, индексация дисков и какие папки важнее всего",
   "@ai.cloudConsent.askCmdr.item.appState": {
     "sourceHash": "4159dde"
   },
-  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "ai.cloudConsent.askCmdr.item.settings": "Ваши настройки Cmdr и сочетания клавиш, в том числе папки, выбранные для индексации изображений, и адрес вашего сервиса ИИ. Все, что похоже на пароль, ключ или токен, скрывается, как и ваш адрес электронной почты",
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "c7c0657"
   },
-  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "ai.cloudConsent.askCmdr.item.logs": "Последние строки журнала Cmdr, в которых имена, пути, адреса и все, что похоже на ключ, сначала заменяются заполнителями. Некоторые простые сведения остаются, например расширения файлов и распространенные имена папок вроде «Документы»",
   "@ai.cloudConsent.askCmdr.item.logs": {
     "sourceHash": "7aabf35"
   },
@@ -135,15 +135,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr никогда не отправляет файлы целиком, фотографии или миниатюры. Когда вы спрашиваете о файле, Cmdr может прочитать ограниченную часть: строки текста, несколько страниц PDF вместе с названием и автором, список файлов в архиве или сведения о камере и месте съемки фотографии. Поиск фотографий работает так же: распознанный текст в подходящих фотографиях и их теги отправляются вашему поставщику ИИ, чтобы он мог их найти. Cmdr может предложить переименование, перемещение и наведение порядка, но файлы не меняются без вашего согласия.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr никогда не отправляет файлы целиком, фотографии или миниатюры. Когда Cmdr нужно больше узнать о файле, он может прочитать ограниченную часть: строки текста, несколько страниц PDF вместе с названием и автором, список файлов в архиве или сведения о камере и месте съемки фотографии. Поиск фотографий работает так же: распознанный текст в подходящих фотографиях и их теги отправляются вашему поставщику ИИ, чтобы он мог их найти.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "Некоторое содержимое остается дома, кто бы о нем ни просил: ключи SSH, учетные данные облачных сервисов и инструментов, ваши Связки ключей, данные браузера, приложения «Почта», «Сообщения» и «Заметки», собственные данные Cmdr и любой файл с закрытым ключом. Имена таких файлов все же могут попасть к вашему поставщику ИИ.",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "В начатом вами чате Ask Cmdr также может управлять приложением за вас: переходить по папкам, выделять, сортировать, открывать вкладки и диалоговые окна и подключать сохраненное вами место. Копирование, перемещение, сжатие, удаление, переименование и отмена операции открывают диалоговое окно или редактор, где нужно подтвердить действие, и без вашего подтверждения ничего не происходит. Перед открытием файла, изменением настройки (кроме внешнего вида Cmdr), завершением работы, извлечением диска, удалением сервера из списка и изменением индексации Ask Cmdr сначала спросит вас. Создание папки или файла с заданным именем и изменение тегов файлов выполняются сразу, без вопросов, а отменить изменение тегов нельзя. Переименования и наведение порядка, подготовленные в виде плана, ждут вашего одобрения.",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "bf002cc"
   },
@@ -151,17 +151,17 @@
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr также следит за папками, с которыми вы работаете, и начинает разговор, когда есть что предложить, поэтому сообщения могут уходить вашему поставщику ИИ без вашего запроса. Это можно отключить в настройках Ask Cmdr, в группе «По своей инициативе».",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr также следит за папками, с которыми вы работаете, и начинает разговор, когда есть что предложить, поэтому сообщения могут уходить вашему поставщику ИИ без вашего запроса. В таких разговорах Cmdr может читать то, что перечислено выше, готовить планы и записывать свои заметки, и больше ничего. Это можно отключить в настройках Ask Cmdr, в группе «По своей инициативе».",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "abfa80b"
+    "sourceHash": "95b18ac"
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "Ваши чаты Ask Cmdr остаются на вашем Mac, в локальной базе данных, которую можно открыть и прочитать.",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Если включить запись вызовов моделей ИИ в дополнительных настройках, Cmdr будет также сохранять каждый запрос и ответ в папку на вашем Mac. Эти журналы тоже остаются локальными и никуда не отправляются.",
+  "ai.cloudConsent.logsNote": "Если включить запись вызовов моделей ИИ в дополнительных настройках, Cmdr будет также сохранять каждый запрос и ответ в папку на вашем Mac. Эти журналы вызовов остаются локальными и никуда не отправляются.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7e211fc"
+    "sourceHash": "d89adfb"
   },
   "ai.cloudConsent.turnOffAnyTime": "Выключите этот параметр в любой момент, и Cmdr сразу перестанет отправлять данные. Сервис, ключ и чаты сохранятся.",
   "@ai.cloudConsent.turnOffAnyTime": {

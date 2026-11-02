@@ -226,7 +226,10 @@
     "accept": ["разреш"],
     "forms": "Allow all → Разрешить все; Always allow → Всегда разрешать; Never allow → Никогда не разрешать; Allow cloud AI → Разрешить облачный ИИ",
     "confidence": "high",
-    "sources": "macOS live FindMy, Maps, Tips (Allow → Разрешить); macOS Finder MR18 (Разрешить мое обнаружение); MS (allow → разрешить); DC, Thunar"
+    "sources": "macOS live FindMy, Maps, Tips (Allow → Разрешить); macOS Finder MR18 (Разрешить мое обнаружение); MS (allow → разрешить); DC, Thunar",
+    "exceptions": {
+      "ui.toolAsk.decline": "Don’t allow is the safe button, and the deny evidence says Запретить (macOS live Books Don’t Allow → Запретить; MS deny → запретить)"
+    }
   },
   "already-exists": {
     "chosen": "уже существует",
@@ -405,6 +408,7 @@
     "sources": "macOS live Mail MainMenu (Ask → Спрашивать), Podcasts (Always Ask → Спрашивать всегда); DC (Ask;Overwrite;Skip → Спрашивать;Перезаписывать;Пропускать); Dolphin (Always ask → Всегда спрашивать)",
     "decision": "Option labels",
     "exceptions": {
+      "askCmdr.tool.outcome.inBackground": "English sense: “for you to ask” is the person requesting something, not Cmdr asking a question, so it says просьба",
       "settings.fileOperations.defaultConflictPolicy.opt.stop": "Reuses the one-clash wording of the dialog radio fileOperations.transferDialog.policyStop (Спросить позже), so Settings and the dialog name the choice identically."
     }
   },
@@ -1184,6 +1188,15 @@
     "confidence": "tentative",
     "sources": "no pile source for a vendor's billing page; MS (dashboard → панель мониторинга, an analytics view)"
   },
+  "data": {
+    "chosen": "данные",
+    "accept": ["данн"],
+    "confidence": "high",
+    "sources": "catalog (ai.cloudConsent.whereItGoes, ai.cloudConsent.turnOffAnyTime); MS (data → данные); macOS live (database → база данных, same root)",
+    "exceptions": {
+      "errors.listing.diskReadProblem.suggestion": "“Back up your data” is the whole phrase создайте резервную копию; backing up already says what it covers"
+    }
+  },
   "database": {
     "chosen": "база данных",
     "accept": ["баз"],
@@ -1343,7 +1356,8 @@
     "accept": ["напрям", "прям"],
     "forms": "Connect directly → Подключиться напрямую; Cmdr's fast direct connection → быстрое прямое подключение Cmdr",
     "confidence": "high",
-    "sources": "MS (direct connect → прямое соединение); Thunar (Send directly → Отправить напрямую); macOS live Framework (directly connected → при непосредственном подключении)"
+    "sources": "MS (direct connect → прямое соединение); Thunar (Send directly → Отправить напрямую); macOS live Framework (directly connected → при непосредственном подключении)",
+    "note": "The MCP setting Direct mode shares the root: Прямой режим, in prose прямой режим MCP (settings.developer.mcpDirectMode.label). No pile source names it."
   },
   "directory-hotlist": {
     "chosen": "Избранные каталоги",
@@ -1889,6 +1903,9 @@
       }
     ],
     "exceptions": {
+      "askCmdr.tool.navToParent.doing": "Same spatial phrase as commands.navParent.label.",
+      "askCmdr.tool.navToParent.done": "Same spatial phrase as commands.navParent.label.",
+      "askCmdr.tool.navToParent.tried": "Same spatial phrase as commands.navParent.label.",
       "commands.navParent.label": "Navigation uses the conventional spatial label «на уровень выше»; folder is implicit, not renamed.",
       "menu.go.parentFolder": "Native navigation label expresses parent relation as «на уровень выше».",
       "settings.behavior.doubleClickPaneNavigatesToParent.label": "The parent folder is expressed by the spatial navigation phrase «на уровень выше».",
@@ -2111,7 +2128,10 @@
     ],
     "confidence": "tentative",
     "sources": "git's own po/ru.po (HEAD detached at → Отсоединённый указатель HEAD указывает на; detached HEAD → отделённый HEAD; (no branch) → (нет ветки)). No pile source has git",
-    "decision": "Git words"
+    "decision": "Git words",
+    "exceptions": {
+      "askCmdr.tool.eject.done": "English sense: “detached a drive” is ejecting or disconnecting it, so it takes the disconnect word (отключен)"
+    }
   },
   "git-unborn": {
     "chosen": "еще нет коммитов",
@@ -2650,7 +2670,10 @@
     "accept": ["подробн"],
     "forms": "More about X → Подробнее о X",
     "confidence": "high",
-    "sources": "macOS Finder (NE115 Learn More → Подробнее; InfoWindowMoreInfoView More Info: → Подробнее:)"
+    "sources": "macOS Finder (NE115 Learn More → Подробнее; InfoWindowMoreInfoView More Info: → Подробнее:)",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.contentsRule": "English sense: “needs to know more” is Cmdr needing information, not an info link"
+    }
   },
   "leave-alone": {
     "chosen": "оставлено как есть",
@@ -5039,7 +5062,11 @@
       }
     ],
     "confidence": "high",
-    "sources": "Live macOS MapKit: Step %d of %d → Шаг %d из %d; AirPort Utility: Step %1$@ of %2$@: → Шаг %1$@ из %2$@:; MS: step → шаг"
+    "sources": "Live macOS MapKit: Step %d of %d → Шаг %d из %d; AirPort Utility: Step %1$@ of %2$@: → Шаг %1$@ из %2$@:; MS: step → шаг",
+    "exceptions": {
+      "askCmdr.tool.navBack.tried": "English sense: “step back” is going back in a pane’s history, not a numbered stage",
+      "askCmdr.tool.navForward.tried": "English sense: “step forward” is going forward in a pane’s history, not a numbered stage"
+    }
   },
   "stop": {
     "chosen": "Остановить",
@@ -5705,7 +5732,12 @@
       }
     ],
     "confidence": "high",
-    "sources": "Live macOS (password unlock): Enter your password to unlock “%@” → Чтобы разблокировать доступ …, введите пароль; password you use to unlock Mac → для разблокировки Mac; MS: unlock → разблокировать; DC: Unlock → Разблокировать; AppKit Document: Unlock → Снять защиту (the Locked-file sense)"
+    "sources": "Live macOS (password unlock): Enter your password to unlock “%@” → Чтобы разблокировать доступ …, введите пароль; password you use to unlock Mac → для разблокировки Mac; MS: unlock → разблокировать; DC: Unlock → Разблокировать; AppKit Document: Unlock → Снять защиту (the Locked-file sense)",
+    "exceptions": {
+      "askCmdr.tool.queueMoveLocked.doing": "The Finder Locked flag, so the `locked` ruling’s снять защиту",
+      "askCmdr.tool.queueMoveLocked.done": "The Finder Locked flag, so the `locked` ruling’s снять защиту",
+      "askCmdr.tool.queueMoveLocked.tried": "The Finder Locked flag, so the `locked` ruling’s снять защиту"
+    }
   },
   "unplug": {
     "chosen": "отсоединить",
