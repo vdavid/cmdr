@@ -68,15 +68,15 @@ them with production figures.
 
 ### `proptest` (property-based testing)
 
-Dev-dependency on `cmdr-lib`. Use for pure functions where the input space is large enough that example tests miss edge
-cases: comparators, parsers, transforms, generators. State a property (round-trip, idempotence, "output is valid for the
-consumer"), let proptest fuzz inputs. Patterns to copy: `indexing/aggregator/tests.rs` (topological sort),
-`search/query.rs` (glob_to_regex + scope parsing), `indexing/store/tests/path_resolution.rs` (platform_case_compare
-comparator laws). Keep properties **tight**: "function doesn't panic" is too weak.
+A dependency of `cmdr-lib` and `cmdr-index`. Use for pure functions where the input space is large enough that example
+tests miss edge cases: comparators, parsers, transforms, generators. State a property (round-trip, idempotence, "output
+is valid for the consumer"), let proptest fuzz inputs. Patterns to copy: `indexing/aggregator/tests.rs` (topological
+sort), `search/query.rs` (glob_to_regex + scope parsing), `indexing/store/tests/path_resolution.rs`
+(platform_case_compare comparator laws). Keep properties **tight**: "function doesn't panic" is too weak.
 
 ### `cargo-fuzz` (fuzzing the parsers that read untrusted bytes)
 
-libFuzzer targets for the ADB, WebDAV, S3, archive, PDF, and image parsers live in `fuzz/` (repo root, outside the
+libFuzzer targets for the ADB, WebDAV, S3, NFS, archive, PDF, and image parsers live in `fuzz/` (repo root, outside the
 workspace, pinned nightly). `pnpm check fuzz` runs every target for `CMDR_FUZZ_SECONDS` (default 60); CI runs it in
 `slow-checks.yml`. Targets, adding one, and the reproduce-and-fix loop: `fuzz/DETAILS.md`.
 

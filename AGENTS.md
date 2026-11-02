@@ -114,12 +114,12 @@ Writing them:
   SMB fixtures), `scripts/`. The other three apps are above.
 - `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file, media, and folder-importance
   indexes), `cmdr-archive` (zip/tar/7z; the model a new backend crate copies), `cmdr-smb` (SMB and its protocol layer),
-  `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB phones), `cmdr-git` (repos, the `.git` portal), `cmdr-restic` (restic
-  backups), `cmdr-http` (proxy routing), `cmdr-listing` (pane listings), `cmdr-collation` (file-name order),
-  `cmdr-local` (the local disk), `cmdr-media-meta` (EXIF, video dates, and media tags), `cmdr-operation-log` (the
-  mutation journal and rollback planner), `cmdr-operations` (the write engine), `cmdr-update-trust` (the updater's trust
-  check) carry no `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a vendored `fsevent-stream` fork.
-  Map: `docs/architecture.md`.
+  `cmdr-nfs`, `cmdr-s3`, `cmdr-sftp`, and `cmdr-webdav` (those servers), `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB
+  phones), `cmdr-git` (repos, the `.git` portal), `cmdr-restic` (restic backups), `cmdr-http` (proxy routing),
+  `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-local` (the local disk), `cmdr-media-meta`
+  (EXIF, video dates, and media tags), `cmdr-operation-log` (the mutation journal and rollback planner),
+  `cmdr-operations` (the write engine), `cmdr-update-trust` (the updater's trust check) carry no `tauri`, enforced by
+  `index-crate-isolation`; plus two dev CLIs and a vendored `fsevent-stream` fork. Map: `docs/architecture.md`.
 - `brand/`: brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/business/README.md` (pricing, licensing, product facts), `docs/specs/DETAILS.md` (big design docs; open work is
