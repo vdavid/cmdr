@@ -1,19 +1,13 @@
-import { refreshListing } from '#lib/tauri-commands/index.js'
-import { moveToTrash, type RenameValidityResult } from '#lib/tauri-commands/index.js'
-import { asMutationError } from '#lib/file-operations/mutation-error.js'
-import { renderMutationError } from '#lib/file-operations/mutation-error-messages.js'
 import { validateFilename } from '#lib/utils/filename-validation.js'
-import { fileExtension, nameKindOf, kindOfRenamedName, withExtension } from '#lib/utils/file-extension.js'
+import { nameKindOf } from '#lib/utils/file-extension.js'
 import { cancelClickToRename } from '../rename/rename-activation'
-import { executeRenameSave, performRename, checkPermission, type RenameResult } from '../rename/rename-operations'
+import { executeRenameSave, checkPermission, type RenameResult } from '../rename/rename-operations'
 import { getSetting } from '#lib/settings/index.js'
-import type { RenameConflictResolution } from '../rename/rename-operations'
 import { addToastForPane, dismissTransientToastsForPane, type ToastOriginPane } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { pathInsideArchive } from './archive-paths'
 import { rowIsServedByGitPortal } from './volume-capabilities'
-import { paneOffersTrash } from './trash-availability'
-import { getVolumes } from '#lib/stores/volume-store.svelte.js'
+import { createRenameDialogAnswers } from './rename-dialog-answers.svelte'
 import type { FileEntry } from '../types'
 import type { StartRenameOptions } from './types'
 import type { createRenameState, RenameSessionId, RenameTarget } from '../rename/rename-state.svelte'
@@ -90,17 +84,6 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   const addToast = (content: Parameters<typeof addToastForPane>[1], options?: Parameters<typeof addToastForPane>[2]) =>
     addToastForPane(deps.paneId, content, options)
 
-  // Extension change dialog state
-  let extensionDialogState = $state<{ oldExtension: string; newExtension: string; isDirectory: boolean } | null>(null)
-
-  // Conflict dialog state
-  let conflictDialogState = $state<{
-    validity: RenameValidityResult
-    trimmedName: string
-    /** Whether the file being clobbered has a Trash to go to, read when the dialog opened. */
-    supportsTrash: boolean
-  } | null>(null)
-
   // Post-rename: name to select after file watcher refresh
   let pendingCursorName = $state<string | null>(null)
 
@@ -175,6 +158,23 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     if (origin) restoreFocusTo(origin)
     else onRequestFocus()
   }
+
+  function closeAndRefocus() {
+    closeEditor()
+    restoreFocus()
+  }
+
+  // The extension and conflict questions, and what their answers do (`rename-dialog-answers.svelte.ts`).
+  const dialogs = createRenameDialogAnswers({
+    rename,
+    paneId: deps.paneId,
+    getListingId: deps.getListingId,
+    getCurrentPath: deps.getCurrentPath,
+    getVolumeId: deps.getVolumeId,
+    saveSkippingExtensionCheck: () => void executeFlow(true),
+    land: handleRenameResult,
+    closeAndRefocus,
+  })
 
   // When true, treat the extension-change policy as 'yes' for the current rename
   // session (no warning/dialog). Set by an auto-started rename (paste-clipboard-
@@ -454,22 +454,11 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         // A click-away already spent the blur, so arming it would eat the NEXT
         // cancel (the user's Escape) instead.
         suppressBlurCancel = !commitFromClickAway
-        extensionDialogState = {
-          oldExtension: result.oldExtension,
-          newExtension: result.newExtension,
-          isDirectory: target.isDirectory,
-        }
+        dialogs.askExtension(result, target)
         break
       case 'conflict':
         suppressBlurCancel = !commitFromClickAway
-        // Snapshot at open: the dialog lives for a few seconds, and the answer
-        // decides which buttons it draws, so re-deriving it mid-dialog could move
-        // the primary action under the user's hand.
-        conflictDialogState = {
-          validity: result.validity,
-          trimmedName,
-          supportsTrash: paneOffersTrash(deps.getVolumeId(), deps.getCurrentPath(), getVolumes()),
-        }
+        dialogs.askConflict(result, trimmedName)
         break
       case 'success':
         finalizeRename(result.newName)
@@ -500,8 +489,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     clearPendingRenameActivation()
     endChain()
     closeEditor()
-    extensionDialogState = null
-    conflictDialogState = null
+    dialogs.dismiss()
     suppressExtensionWarningOnce = false
     restoreFocus()
   }
@@ -562,10 +550,10 @@ export function createRenameFlow(deps: RenameFlowDeps) {
 
   return {
     get extensionDialogState() {
-      return extensionDialogState
+      return dialogs.extensionDialogState
     },
     get conflictDialogState() {
-      return conflictDialogState
+      return dialogs.conflictDialogState
     },
     get pendingCursorName() {
       return pendingCursorName
@@ -645,8 +633,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       cancelClickToRename()
       endChain()
       closeEditor()
-      extensionDialogState = null
-      conflictDialogState = null
+      dialogs.dismiss()
       suppressExtensionWarningOnce = false
       restoreFocus()
     },
@@ -661,10 +648,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     commitFromTool: createRenameToolCommit({
       rename,
       applyName,
-      closeAndRefocus: () => {
-        closeEditor()
-        restoreFocus()
-      },
+      closeAndRefocus,
       extensionPolicy: effectiveExtensionPolicy,
       getVolumeId: deps.getVolumeId,
       setPendingCommit: (pending) => {
@@ -684,7 +668,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       if (!rename.active || pendingCommit) return
       // The editor stays mounted under the extension/conflict dialogs, so clicking
       // a dialog button reaches here too. The dialog owns the decision.
-      if (extensionDialogState || conflictDialogState) return
+      if (dialogs.isAsking) return
 
       if (rename.severity === 'error') {
         // Don't trap the click and don't swallow the reason: drop the edit and say
@@ -706,87 +690,9 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       })
     },
 
-    handleExtensionKeepOld() {
-      extensionDialogState = null
-      if (rename.target) {
-        // Put the old extension back, also when the edit removed it or added one
-        // where there was none, so "Keep" always means the original extension.
-        const { originalName, nameKind } = rename.target
-        const oldExt = fileExtension(originalName, nameKind)
-        const typed = rename.getTrimmedName()
-        rename.setCurrentName(withExtension(typed, oldExt, kindOfRenamedName(nameKind, typed)))
-      }
-      rename.requestRefocus()
-    },
-
-    handleExtensionUseNew() {
-      extensionDialogState = null
-      void executeFlow(true)
-    },
-
-    handleConflictResolve(resolution: RenameConflictResolution) {
-      const target = rename.target
-      const sessionId = rename.sessionId
-      const trimmedName = conflictDialogState?.trimmedName
-      conflictDialogState = null
-
-      if (!target || !trimmedName) {
-        closeEditor()
-        restoreFocus()
-        return
-      }
-
-      const currentVolumeId = deps.getVolumeId()
-
-      switch (resolution) {
-        case 'overwrite-trash': {
-          const conflictPath = target.parentPath + '/' + trimmedName
-          void moveToTrash(conflictPath, target.initiator)
-            .then(() => performRename(target, trimmedName, true, currentVolumeId))
-            .then((result) => {
-              handleRenameResult(result, target, trimmedName, sessionId)
-            })
-            .catch((e: unknown) => {
-              const failure = asMutationError(e)
-              if (failure?.type === 'timedOut') {
-                addToast(tString('fileExplorer.pane.trashUnconfirmedToast'), {
-                  level: 'warn',
-                  dismissal: 'persistent',
-                })
-                // Unforced: a top-up after an unconfirmed rename.
-                void refreshListing(deps.getListingId(), false)
-              } else {
-                // Worded in the user's language either way: a value that never
-                // reached the typed path reads as the backend's own honest
-                // fallback rather than as raw English.
-                addToast(
-                  renderMutationError(
-                    failure ?? { type: 'unexpected', detail: '' },
-                    target.isDirectory ? 'folder' : 'file',
-                  ),
-                  { level: 'error' },
-                )
-              }
-              if (rename.isSuperseded(sessionId)) return
-              closeEditor()
-              restoreFocus()
-            })
-          break
-        }
-        case 'overwrite-delete':
-          void performRename(target, trimmedName, true, currentVolumeId).then((result) => {
-            handleRenameResult(result, target, trimmedName, sessionId)
-          })
-          break
-        case 'cancel':
-          closeEditor()
-          restoreFocus()
-          break
-        case 'continue':
-          rename.requestRefocus()
-          break
-      }
-    },
+    handleExtensionKeepOld: dialogs.keepOldExtension,
+    handleExtensionUseNew: dialogs.useNewExtension,
+    handleConflictResolve: dialogs.resolveConflict,
 
     /**
      * Escape, Tab, or the editor losing focus: discard.

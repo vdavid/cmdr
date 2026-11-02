@@ -139,9 +139,11 @@ suite:
   (`../rename/DETAILS.md`, "In a chain, the Move dialog waits").
 - `rename-neighbour.ts`: the row beside the rename editor for a chained arrow step, anchored on the editor's own file
   (`../rename/DETAILS.md` § Chaining).
-- `rename-flow.svelte.ts`: the whole inline-rename flow (activation, save, the dialogs, the arrow-key chain). It lives
-  here because it hangs off the pane, but everything it does is documented next to the rest of rename in
-  `../rename/DETAILS.md`, whose `CLAUDE.md` you won't get autoloaded while editing this directory.
+- `rename-flow.svelte.ts`: the whole inline-rename flow (activation, save, the arrow-key chain). Its two siblings take
+  what came out whole: `rename-dialog-answers.svelte.ts` (the extension and conflict dialogs' state and answers) and
+  `rename-tool-commit.ts` (the MCP `dialog_confirm`). They live here because they hang off the pane, but everything they
+  do is documented next to the rest of rename in `../rename/DETAILS.md`, whose `CLAUDE.md` you won't get autoloaded
+  while editing this directory.
 - `rename-in-place.ts`: a single-item Move confirmed inside its own folder goes to the SOURCE pane's
   `startRename({ commitTarget })` instead of a transfer. Why: `../../file-operations/transfer/DETAILS.md` § "Single-item
   destinations".

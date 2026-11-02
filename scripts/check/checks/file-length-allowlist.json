@@ -9,10 +9,6 @@
     "scripts/check/checks/registry.go": "append-only check registry (one CheckDefinition entry per check); line count tracks the number of checks, not splittable logic"
   },
   "files": {
-    "apps/desktop/src-tauri/src/tools/table.rs": {
-      "lines": 821,
-      "reason": "The one authored tool table: nothing but entries, a new tool is one entry, and its schemas already live in `schemas/`. Cutting it by category would hide the order the wire pins and the single view of every tool's access and load."
-    },
     "apps/desktop/src-tauri/src/crash_reporter/mod.rs": {
       "lines": 812,
       "reason": "TODO: the panic path is its own concern and already has `panic_courier.rs` and `panic_courier_tests.rs` as neighbors. Move `install_panic_hook`, `contained_panic_warning`, `PanicDisposition`, `handle_panic`, `write_first_crash_report`, `build_panic_report`, and the message/backtrace helpers (`extract_panic_message`, `sanitize_panic_message`, `sanitize_thread_name`, `cap_chars`, `cap_panic_message`, `parse_backtrace_frames`, `current_image_base_hex`) into `panic_hook.rs`, about 260 lines. `mod.rs` keeps the `CrashReport` shape, `init`, the pending-report read/write, and the active-settings snapshot."
@@ -53,6 +49,10 @@
       "lines": 834,
       "reason": "Test support that the file-length check budgets as source only because its name ends in `_test_support.rs`: the backend-blind transfer scenarios every network backend runs, plus the one copy driver they share (`RunningCopy`, `start_copy` / `run_copy` and their `_on` twins for a cell on an engine of its own). The scenarios and the driver change together, and the cells in the backend files reach both. TODO: move the copy driver (`RunningCopy` and the start/run functions) into its own `network_copy_driver_test_support.rs` if the scenarios grow further."
     },
+    "apps/desktop/src-tauri/src/tools/table.rs": {
+      "lines": 821,
+      "reason": "The one authored tool table: nothing but entries, a new tool is one entry, and its schemas already live in `schemas/`. Cutting it by category would hide the order the wire pins and the single view of every tool's access and load."
+    },
     "apps/desktop/src/app.css": {
       "lines": 1267,
       "reason": "About 1,060 of the 1,267 lines are custom-property declarations: one semantic token table in `:root` plus the light, dark, high-contrast, Increase contrast, Differentiate without color, size-palette, date-palette, old-WebKit, and reduced-transparency blocks that each redefine the same names, so a split by token group would force every group to carry its own dark and contrast twin and make file load order load-bearing (the file itself flags stacking order where the dark and contrast blocks meet). The raw palette already lives in the imported `app-palette.css`; this is the semantic layer every component's `var()` resolves against. The ~130 lines of base element rules at the end (`.sr-only`, the `:focus-visible` outline, `@layer typography`, the per-surface leading list, `html` / `body` / `#app-root`, the scroll-bounce reset) are the one part that is not tokens and could move to a sibling, though that alone would not bring the file under the limit."
@@ -92,10 +92,6 @@
     "apps/desktop/src/lib/file-explorer/pane/listing-loader.ts": {
       "lines": 889,
       "reason": "TODO: the `onListingError` handler inside `loadDirectory` (the MTP fallback, the archive-password prompt, the not-connected refusal, and the deleted-path existence probe plus walk-up, about 110 lines) is one decision, what a failed listing turns into, and reads only the load's captured `volumeId` / `loadPath` plus a handful of deps. Move it to `listing-error-outcome.ts` as a function taking those, beside `listing-loader.outcomes.test.ts`, which already tests exactly that branch."
-    },
-    "apps/desktop/src/lib/file-explorer/pane/rename-flow.svelte.ts": {
-      "lines": 816,
-      "reason": "TODO: move the extension and conflict dialog answers to a sibling, as `rename-tool-commit.ts` did for the tool's commit; they read the session state this file owns, so it's a real cut"
     },
     "apps/desktop/src/lib/file-explorer/views/BriefList.svelte": {
       "lines": 1384,

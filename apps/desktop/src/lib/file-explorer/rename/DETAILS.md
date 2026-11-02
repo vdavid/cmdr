@@ -98,16 +98,18 @@ once. A chain opens ONE Move dialog (`claim`): confirming it starts a move that 
 couldn't open anyway. Its other renames that need one keep their names, in the kept-names toast
 (`fileExplorer.rename.needsOwnMoveDialog`).
 
+Both dialogs' state and answers live in `pane/rename-dialog-answers.svelte.ts`; `rename-flow` decides when to ask, and
+an answer that saves lands through the flow's own `handleRenameResult`, so the session guards apply to it unchanged.
 Conflict resolution calls `performRename(target, newName, force: true)` after "Overwrite and trash/delete". The
 `moveToTrash` call in the overwrite-trash path also has timeout detection (persistent toast + refresh).
 
 **The trash option appears only where a trash exists.** `RenameConflictDialog` takes `supportsTrash`, which
-`rename-flow` reads once as the dialog opens (`pane/trash-availability.ts::paneOffersTrash`: the volume's own answer,
-plus the archive boundary), and a `false` drops the button AND moves Enter to the permanent overwrite. ❗ Offering it
-anyway isn't cosmetic: `moveToTrash` is refused on a volume serving its own I/O and inside an archive, the chained
-`performRename` behind it never runs, and the dialog closes having done nothing. Snapshot at open rather than derived,
-so a volume list refreshing mid-dialog can't move the primary button under the user's hand. Enter is destructive by
-design here: overwriting is the answer the dialog exists to take, reversibly where the volume allows it.
+`rename-dialog-answers` reads once as the dialog opens (`pane/trash-availability.ts::paneOffersTrash`: the volume's own
+answer, plus the archive boundary), and a `false` drops the button AND moves Enter to the permanent overwrite. ❗
+Offering it anyway isn't cosmetic: `moveToTrash` is refused on a volume serving its own I/O and inside an archive, the
+chained `performRename` behind it never runs, and the dialog closes having done nothing. Snapshot at open rather than
+derived, so a volume list refreshing mid-dialog can't move the primary button under the user's hand. Enter is
+destructive by design here: overwriting is the answer the dialog exists to take, reversibly where the volume allows it.
 
 **A folder holding the name is never deleted for good from here.** The validity check's `conflict.isDirectory` words the
 dialog for a folder, hides sizes (a folder's listing says 0), drops "Overwrite and delete", and, with no trash, sends
