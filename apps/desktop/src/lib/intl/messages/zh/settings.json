@@ -2076,9 +2076,33 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "在 Cmdr 中打开",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0"
+  },
+  "settings.finderExtension.label": "显示在 Finder 右键菜单顶部",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "“在 Cmdr 中打开”始终在菜单的“服务”部分。这个开关会在你的启动磁盘上把它移到顶层。它会添加一个小进程，和 Finder 一起运行。",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "把 Cmdr 移到你的“应用程序”文件夹，才能开启这一项。",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "只有正式发布的 Cmdr 版本才能开启这一项。开发版和测试版不带 Finder 扩展。",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "让其他 App 在 Cmdr 中显示文件",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "右键菜单、右键、快捷菜单、上下文菜单、Finder 扩展",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "默认文件管理器、文件管理器、显示位置、所在位置、打开所在文件夹、浏览器、下载",
   "@settings.behavior.revealHandler.keywords": {

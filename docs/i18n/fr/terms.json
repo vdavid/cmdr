@@ -803,6 +803,12 @@
     "sources": "MS terminology (conversation, f.); same word as the chat ruling",
     "accept": ["conversations", "discut"]
   },
+  "finder-extension": {
+    "chosen": "extension du Finder",
+    "accept": ["extension"],
+    "confidence": "high",
+    "sources": "macOS pane Ouverture et extensions (errors.provider.pCloudFuse.needsAction); le Finder takes its article"
+  },
   "learn-more": {
     "chosen": "En savoir plus sur",
     "confidence": "high",

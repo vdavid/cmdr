@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "已打开 {opened, plural, other {# 个文件夹}}。还有 {dropped} 个放不下，因为一个窗格最多只能有 {limit} 个标签页。",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "“在 Finder 中显示”在这里打开了",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"

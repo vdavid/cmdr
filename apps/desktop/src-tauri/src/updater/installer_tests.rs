@@ -347,3 +347,26 @@ fn a_staged_bundle_without_a_readable_version_is_refused() {
     let empty = tempfile::tempdir().unwrap();
     assert!(refuse_unless_newer(&empty.path().join("Cmdr.app"), "0.50.0").is_err());
 }
+
+#[test]
+fn an_update_brings_the_finder_extension_along_and_a_bundle_without_one_still_syncs() {
+    use std::fs;
+
+    let staged = tempfile::tempdir().unwrap();
+    let installed = tempfile::tempdir().unwrap();
+    let appex = "PlugIns/CmdrFinderExtension.appex/Contents/MacOS/CmdrFinderExtension";
+    fs::create_dir_all(staged.path().join(appex).parent().unwrap()).unwrap();
+    fs::create_dir_all(staged.path().join("MacOS")).unwrap();
+    fs::write(staged.path().join(appex), "new extension").unwrap();
+    fs::write(staged.path().join("MacOS/Cmdr"), "new").unwrap();
+
+    sync_bundle(staged.path(), installed.path()).expect("the first sync");
+    assert_eq!(
+        fs::read_to_string(installed.path().join(appex)).unwrap(),
+        "new extension"
+    );
+
+    fs::remove_dir_all(staged.path().join("PlugIns")).unwrap();
+    sync_bundle(staged.path(), installed.path()).expect("a staged bundle with no extension");
+    assert!(!installed.path().join(appex).exists(), "a stale extension must go");
+}

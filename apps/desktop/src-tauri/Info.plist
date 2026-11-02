@@ -9,6 +9,30 @@
     <key>CFBundleIconName</key>
     <string>Sequoia</string>
 
+    <!-- "Open in Cmdr" in Finder's right-click menu, for files and folders. `NSMessage` plus
+         `:userData:error:` is the method on `reveal/service.rs`'s provider. The empty
+         `NSRequiredContext` is what lets macOS show it without the person enabling it first. -->
+    <key>NSServices</key>
+    <array>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict>
+                <key>default</key>
+                <string>Open in Cmdr</string>
+            </dict>
+            <key>NSMessage</key>
+            <string>openInCmdr</string>
+            <key>NSPortName</key>
+            <string>Cmdr</string>
+            <key>NSRequiredContext</key>
+            <dict/>
+            <key>NSSendFileTypes</key>
+            <array>
+                <string>public.item</string>
+            </array>
+        </dict>
+    </array>
+
     <!-- Privacy usage descriptions shown in macOS TCC prompts. Value-first copy with the
          "grant FDA for fewer popups" hint where it applies. Keep each string ≤200 chars. -->
     <key>NSDownloadsFolderUsageDescription</key>

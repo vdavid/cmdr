@@ -2076,9 +2076,33 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "在 Cmdr 中開啟",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0"
+  },
+  "settings.finderExtension.label": "顯示在 Finder 右鍵選單的最上方",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "「在 Cmdr 中開啟」一定會出現在選單的「服務」區段。這個開關會在你的啟動磁碟上把它移到最上層。它會加入一個小型程序，和 Finder 一起執行。",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "把 Cmdr 移到「應用程式」資料夾，才能開啟這一項。",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "只有正式發行的 Cmdr 版本才能開啟這一項。開發版和測試版不含 Finder 延伸功能。",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "讓其他 App 在 Cmdr 中顯示檔案",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "右鍵選單, 右鍵, 快顯選單, 內容選單, Finder 延伸功能",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "顯示位置, 顯示檔案, 預設檔案管理器, 檔案管理員, 瀏覽器, 下載, 下載項目",
   "@settings.behavior.revealHandler.keywords": {

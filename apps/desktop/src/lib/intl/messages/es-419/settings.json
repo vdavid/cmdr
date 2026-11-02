@@ -203,6 +203,10 @@
   "@settings.onboarding.fullDiskAccessChoice.label": {
     "sourceHash": "1cf6c6c"
   },
+  "settings.finderExtension.description": "“Abrir en Cmdr” siempre está en la sección Servicios del menú. Esta opción lo sube al nivel superior, en tu disco de arranque. Agrega un pequeño proceso que se ejecuta junto al Finder.",
+  "@settings.finderExtension.description": {
+    "sourceHash": "3e663dc"
+  },
   "settings.revealHandler.description": "Cuando otra app ejecuta “Mostrar en el Finder”, Cmdr abre esa carpeta con el archivo bajo el cursor. Para todo lo demás, el Finder sigue siendo tu administrador de archivos predeterminado.",
   "@settings.revealHandler.description": {
     "sourceHash": "d46bf80"

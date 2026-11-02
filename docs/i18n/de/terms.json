@@ -785,6 +785,12 @@
     "forms": "button Verbinden; Connect to server → Mit Server verbinden( …); Connecting … → Verbindung wird hergestellt …; Connecting to {name} … → Verbindung zu {name} wird hergestellt …; Connected → Verbunden; Connect as guest → Als Gast verbinden; reflexive with du: wenn du dich … verbindest",
     "sources": "macOS Finder (Mit Server verbinden, Verbinden, Serveradresse); NetAuthAgent (CONNECT)"
   },
+  "finder-extension": {
+    "chosen": "Finder-Erweiterung",
+    "accept": ["Erweiterung"],
+    "confidence": "high",
+    "sources": "macOS pane Anmeldeobjekte & Erweiterungen (errors.provider.pCloudFuse.needsAction); compounds like Systemerweiterung"
+  },
   "learn-more": {
     "chosen": "Mehr über",
     "confidence": "high",

@@ -212,7 +212,8 @@ impl PaneChoice {
     }
 }
 
-/// Where a [`go_to_in_pane`] lands: which pane, and whether in a fresh tab there.
+/// Where a request to show paths lands: which pane, and whether in a fresh tab there.
+#[cfg(target_os = "macos")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct GoToTarget {
     pub pane: PaneChoice,
@@ -220,12 +221,28 @@ pub(crate) struct GoToTarget {
     pub new_tab: bool,
 }
 
+#[cfg(target_os = "macos")]
 impl GoToTarget {
     /// The focused pane's current tab: what a reveal and the latest-download hotkey use.
     pub(crate) const FOCUSED: Self = Self {
         pane: PaneChoice::Focused,
         new_tab: false,
     };
+}
+
+/// Open a new tab in a pane, and report whether the pane took it.
+///
+/// `Ok(false)` is a pane at its tab limit. The frontend owns the limit (`MAX_TABS_PER_PANE`)
+/// and answers on the request id, so a refusal comes back at once and the limit lives in
+/// one place. The new tab is the frontend's clone trick: the clone keeps the old location
+/// to the LEFT and the active tab moves on, so the next navigation lands in the active tab.
+#[cfg(target_os = "macos")]
+pub(crate) async fn open_tab_in_pane<R: Runtime>(app: &AppHandle<R>, pane: PaneChoice) -> Result<bool, ToolError> {
+    let focused = app
+        .try_state::<PaneStateStore>()
+        .map(|store| store.get_focused_pane())
+        .unwrap_or_default();
+    super::app::open_tab_round_trip(app, pane.resolve(&focused)).await
 }
 
 /// Take a pane to `dir` and point it at `entries`: cursor on the first, all of them
@@ -237,31 +254,22 @@ impl GoToTarget {
 /// would drift on the parts that are easy to get wrong: the typed landing check that stops
 /// a cursor move in the wrong directory, and the pane the move applies to.
 ///
-/// Ordering is load-bearing: the new tab opens before the navigation (so the navigation
-/// lands in it), and the cursor moves before the multi-select, because the frontend's
-/// cursor move resets the selection.
+/// Ordering is load-bearing: the cursor moves before the multi-select, because the
+/// frontend's cursor move resets the selection. A new tab, when one is wanted, is
+/// `open_tab_in_pane`'s job and comes before this call, so the navigation lands in it.
 pub(crate) async fn go_to_in_pane<R: Runtime>(
     app: &AppHandle<R>,
-    target: GoToTarget,
+    pane: PaneChoice,
     dir: &str,
     entries: &[String],
 ) -> Result<(), ToolError> {
     let store = app.try_state::<PaneStateStore>();
     let focused = store.as_ref().map(|store| store.get_focused_pane()).unwrap_or_default();
-    let pane = target.pane.resolve(&focused).to_string();
+    let pane = pane.resolve(&focused).to_string();
     if let Some(store) = &store {
         // Same as `nav_to_path`: the FE moves focus to the navigated pane, so the store
         // follows now and a focused-pane op right after acts on the right one.
         store.set_focused_pane(pane.clone());
-    }
-
-    if target.new_tab {
-        // Reuses the `tab` tool's `new`, ack and all. A pane at its tab limit refuses, and
-        // then the move still happens in the current tab: landing where the user asked
-        // matters more than the tab it lands in.
-        if let Err(err) = super::app::execute_tab(app, &json!({"action": "new", "pane": pane})).await {
-            log::warn!(target: "mcp::nav", "Couldn't open a new tab in the {pane} pane, so going there in the current one: {}", err.message);
-        }
     }
 
     // Reuses the FE's `mcp-nav-to-path` handler, so every volume / listing edge case it

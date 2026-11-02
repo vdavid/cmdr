@@ -67,6 +67,7 @@ import { initSnapshotPurge, destroySnapshotPurge } from '#lib/search/snapshot-pu
 import { getSetting } from '#lib/settings/index.js'
 import { drainPendingReveals } from '#lib/tauri-commands/index.js'
 import { startRevealActivationNotice } from '#lib/reveal/reveal-activation-notice.js'
+import { startRevealTabsDroppedNotice } from '#lib/reveal/reveal-tabs-dropped-notice.js'
 import { refreshCliCommandName } from '#lib/cli-command/toggle-cli-command.js'
 import {
   startOperationFailureWatch,
@@ -325,6 +326,10 @@ export async function startWindowServices(scope: MountScope, ctx: WindowServices
     // people ever see — delivers with nobody listening. See `#lib/reveal/CLAUDE.md`.
     async (s) => {
       s.add(await startRevealActivationNotice())
+    },
+    // Same ordering rule: a cold launch from "Open in Cmdr" with more folders than fit.
+    async (s) => {
+      s.add(await startRevealTabsDroppedNotice())
     },
     // A "Show in Cmdr" that arrived before this window existed: a cold launch delivers the OS
     // event long before we mount, so the backend parks it and this drains it. ⚠️ Must stay

@@ -719,6 +719,12 @@
     "sources": "MS terminology (conversación); shipped settings.askCmdr.chatMemorySize.description",
     "accept": ["conversaciones", "chat"]
   },
+  "finder-extension": {
+    "chosen": "extensión del Finder",
+    "accept": ["extensión"],
+    "confidence": "high",
+    "sources": "macOS pane Ítems de inicio y extensiones (errors.provider.pCloudFuse.needsAction); el Finder takes its article"
+  },
   "key-combination": {
     "chosen": "combinación",
     "accept": ["combinación de teclas", "combinaciones"],

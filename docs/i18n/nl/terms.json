@@ -716,6 +716,12 @@
     "sources": "MS terminology (gesprek); shipped settings.askCmdr.chatMemorySize.description",
     "accept": ["chat"]
   },
+  "finder-extension": {
+    "chosen": "Finder-extensie",
+    "accept": ["extensie"],
+    "confidence": "high",
+    "sources": "macOS pane Inlogonderdelen en extensies (errors.provider.pCloudFuse.needsAction); systeemextensie"
+  },
   "learn-more": {
     "chosen": "Meer over",
     "confidence": "high",

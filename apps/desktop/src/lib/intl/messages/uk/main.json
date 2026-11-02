@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "Відкрито: {opened, plural, one {# папка} few {# папки} many {# папок} other {# папки}}. Не вмістилося: {dropped}, бо вкладок на одній панелі може бути не більше ніж {limit}.",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "Команда «Показати у Finder» відкрила папку тут",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"

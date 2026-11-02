@@ -710,6 +710,12 @@
     "accept": ["聊天内容", "聊天"],
     "sources": "MS terminology (对话); the chat ruling accepts 对话 mid-sentence"
   },
+  "finder-extension": {
+    "chosen": "Finder 扩展",
+    "accept": ["扩展"],
+    "confidence": "high",
+    "sources": "macOS pane 登录项与扩展 (errors.provider.pCloudFuse.needsAction); 系统扩展; kept apart from the file name ending 扩展名"
+  },
   "learn-more": {
     "chosen": "进一步了解",
     "confidence": "high",

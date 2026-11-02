@@ -730,6 +730,10 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
       void dispatch(tabMcpActionCommand, { pane, action, tabId, toPane, toIndex, mcpRequestId })
       return
     }
+    if (action === 'new' && typeof raw.requestId === 'string') {
+      void dispatch(tabMcpActionCommand, { pane, action, mcpRequestId: raw.requestId })
+      return
+    }
     const pinned = typeof raw.pinned === 'boolean' ? raw.pinned : undefined
     void dispatch(tabMcpActionCommand, { pane, action, tabId, pinned })
   })

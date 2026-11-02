@@ -2079,9 +2079,33 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "Abrir no Cmdr",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0"
+  },
+  "settings.finderExtension.label": "Mostrar no topo do menu de contexto do Finder",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "“Abrir no Cmdr” está sempre na seção Serviços do menu. Esta opção leva o item para o nível superior, no seu disco de inicialização. Ela adiciona um pequeno processo que roda junto com o Finder.",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "Mova o Cmdr para a sua pasta Aplicativos para poder ativar isto.",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "Só uma versão lançada do Cmdr pode ativar isto. Builds de desenvolvimento e de teste não incluem a extensão do Finder.",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "Permitir que outros apps mostrem arquivos no Cmdr",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "menu de contexto, clique direito, botão direito, clique secundário, extensão do Finder",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "mostrar no Finder, revelar, gerenciador de arquivos padrão, navegador, downloads, outros apps",
   "@settings.behavior.revealHandler.keywords": {

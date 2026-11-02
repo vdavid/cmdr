@@ -5,21 +5,28 @@
 //! delivers the reveal as an open-documents Apple Event, which Tauri surfaces as
 //! `RunEvent::Opened`, handled in `app_lifecycle.rs`.
 //!
-//! This file itself carries only [`RevealDelivered`], because that type has to resolve on
-//! every platform while all three submodules are macOS-only.
+//! This file itself carries only the event types, because they have to resolve on every
+//! platform while all the submodules are macOS-only.
 
 use serde::{Deserialize, Serialize};
 use tauri_specta::Event;
 
-// Every part that talks to macOS. This module itself holds only the event type, so
-// [`RevealDelivered`] resolves on every platform for `ipc.rs`'s `collect_events!`,
+// Every part that talks to macOS. This module itself holds only the event types, so
+// they resolve on every platform for `ipc.rs`'s `collect_events!`,
 // which can't cfg-gate inline.
 #[cfg(target_os = "macos")]
 pub mod commands;
 #[cfg(target_os = "macos")]
 pub mod delivery;
 #[cfg(target_os = "macos")]
+pub mod finder_extension;
+// An E2E build records "Show in Finder" instead of doing it (`commands/file_actions.rs`).
+#[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
+pub mod finder_handoff;
+#[cfg(target_os = "macos")]
 pub mod registration;
+#[cfg(target_os = "macos")]
+pub mod service;
 
 /// The one door every arriving reveal comes through, under its old name.
 #[cfg(target_os = "macos")]
@@ -38,3 +45,15 @@ pub use delivery::on_urls_opened;
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct RevealDelivered {}
+
+/// Typed `reveal-tabs-dropped` Tauri event: a pane's tab limit turned away some of what the
+/// person asked to open, so the frontend says so. Without it, nine folders opening out of a
+/// selection of 12 looks complete.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct RevealTabsDropped {
+    /// How many landed.
+    pub opened: u32,
+    /// How many the limit turned away.
+    pub dropped: u32,
+}
