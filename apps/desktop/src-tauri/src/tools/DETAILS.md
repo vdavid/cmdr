@@ -117,6 +117,10 @@ generated line per other tool it can reach (`deferred_tool_lines`). An outside c
     and said the logs were clean.
   - Ministral 3B: new tab 1 of 3 to 5 of 5, after one wrong `dialog` call. The logs 1 of 3 to 5 of 5, and 0 of 3 to 5 of 5.
     Before, it searched the pane's folder and said it found no warnings.
+  - In the running app, real handlers and the loop guard on: `gpt-4.1-mini` opened a tab three of three (one on the first
+    call, two after the refusal handed it `pane`), read the logs five of five, and sorted once after `sortBy` corrected
+    itself. Ministral 3B opened a tab after opening the About dialog on the way and one `dialog type: tab`, and read the
+    logs two of two.
 - **`cmdr://logs`'s `filter` is case-sensitive and levels read `WARN`,** so `filter=warning` finds nothing and a model reads
   that as clean. A model sent exactly that until the prompt line named `filter=WARN`.
 - **What a sentence can't fix:** a model that answers in words without a tool call. The prompt's "never say you read
