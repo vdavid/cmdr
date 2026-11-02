@@ -42,21 +42,23 @@ pub enum Protected {
     PrivateKey,
 }
 
-impl From<Protected> for ProtectedContent {
-    fn from(reason: Protected) -> Self {
-        match reason {
-            Protected::Credentials => Self::Credentials,
-            Protected::BrowserData => Self::BrowserData,
-            Protected::MessageStore => Self::MessageStore,
-            Protected::CmdrData => Self::CmdrData,
-            Protected::PrivateKey => Self::PrivateKey,
+impl Protected {
+    /// A method here rather than a `From` on the log's type: `module-cycles` reads an impl as the
+    /// module defining the type it produces, which would weld `security_log` to this file.
+    fn log_reason(self) -> ProtectedContent {
+        match self {
+            Protected::Credentials => ProtectedContent::Credentials,
+            Protected::BrowserData => ProtectedContent::BrowserData,
+            Protected::MessageStore => ProtectedContent::MessageStore,
+            Protected::CmdrData => ProtectedContent::CmdrData,
+            Protected::PrivateKey => ProtectedContent::PrivateKey,
         }
     }
 }
 
 /// The security log's line for one refusal: the tool and the reason, never the path.
 pub(crate) fn note_refusal(tool: ContentTool, reason: Protected) {
-    security_log::note_content_refusal(tool, reason.into());
+    security_log::note_content_refusal(tool, reason.log_reason());
 }
 
 /// Why [`path_gate_within`] said no.

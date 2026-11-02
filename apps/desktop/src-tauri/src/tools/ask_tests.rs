@@ -10,8 +10,8 @@ use tokio_util::sync::CancellationToken;
 
 use super::*;
 use crate::test_support::wait_until_async;
-use crate::tools::Caller;
 use crate::tools::table::execute_tool;
+use crate::tools::{Caller, ToolCtx};
 
 fn app_without_window() -> App<MockRuntime> {
     let app = mock_app();
@@ -190,15 +190,6 @@ fn external(direct: bool) -> ToolCtx {
     }
 }
 
-fn agent() -> ToolCtx {
-    ToolCtx {
-        caller: Caller::Agent {
-            origin: crate::agent::types::TurnOrigin::Text,
-        },
-        ..external(false)
-    }
-}
-
 fn eject_facts(name: &str) -> AskFacts {
     AskFacts::Eject {
         volume_id: "disk2".into(),
@@ -225,9 +216,14 @@ fn plans(answers: Vec<AskPlan>) -> impl Fn() -> std::future::Ready<AskPlan> {
 async fn no_ask_runs_straight_through() {
     let app = app_with_window();
     let seen = person_answering(&app, ToolAskResponse::Declined);
-    let asked = gate(app.handle(), &agent(), plans(vec![AskPlan::NoAsk]))
-        .await
-        .expect("no ask");
+    let asked = gate(
+        app.handle(),
+        Initiator::Agent,
+        &CancellationToken::new(),
+        plans(vec![AskPlan::NoAsk]),
+    )
+    .await
+    .expect("no ask");
     assert_eq!(asked, None);
     assert!(seen.lock().expect("no poison in a test").is_empty());
 }
@@ -237,9 +233,14 @@ async fn a_refusing_plan_refuses_before_anyone_is_asked() {
     let app = app_with_window();
     let seen = person_answering(&app, ToolAskResponse::Allowed);
     let refusal = ToolError::invalid_params("no").with_data(json!({ "refusal": "notSettableOverMcp" }));
-    let err = gate(app.handle(), &agent(), plans(vec![AskPlan::Refuse(refusal)]))
-        .await
-        .expect_err("refused");
+    let err = gate(
+        app.handle(),
+        Initiator::Agent,
+        &CancellationToken::new(),
+        plans(vec![AskPlan::Refuse(refusal)]),
+    )
+    .await
+    .expect_err("refused");
     assert_eq!(err.data, Some(json!({ "refusal": "notSettableOverMcp" })));
     assert!(seen.lock().expect("no poison in a test").is_empty());
 }
@@ -250,7 +251,8 @@ async fn a_yes_on_what_is_still_true_goes_ahead_with_those_facts() {
     person_answering(&app, ToolAskResponse::Allowed);
     let asked = gate(
         app.handle(),
-        &agent(),
+        Initiator::Agent,
+        &CancellationToken::new(),
         plans(vec![
             AskPlan::Ask(eject_facts("Backup")),
             AskPlan::Ask(eject_facts("Backup")),
@@ -268,7 +270,8 @@ async fn a_yes_on_what_changed_refuses() {
         person_answering(&app, ToolAskResponse::Allowed);
         let err = gate(
             app.handle(),
-            &agent(),
+            Initiator::Agent,
+            &CancellationToken::new(),
             plans(vec![AskPlan::Ask(eject_facts("Backup")), after]),
         )
         .await

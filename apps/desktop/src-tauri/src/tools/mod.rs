@@ -30,6 +30,7 @@ pub mod read;
 pub mod resources;
 mod schemas;
 pub mod sensitive;
+mod subject;
 pub mod suggestions;
 
 // `table.rs` expands the `mcp_tools!` macro that `registry` defines, so `registry` comes first.
@@ -59,10 +60,13 @@ pub(crate) use actions::{ToolError, ToolResult, fit_to_result_budget, is_virtual
 #[cfg(target_os = "macos")]
 pub(crate) use actions::nav::{GoToTarget, PaneChoice, go_to_in_pane};
 pub(crate) use policy::{Caller, ToolCtx};
-pub(crate) use registry::{Access, Load, SubjectSpec, Tool, validate_params};
+pub(crate) use registry::{Access, Load, Tool};
+pub(crate) use subject::SubjectSpec;
 pub use table::ToolId;
-pub(crate) use table::{execute_tool, get_all_tools, tool_access, tool_load};
-use table::{table_tools, tool_schema};
+use table::table_tools;
+#[cfg(test)]
+use table::tool_schema;
+pub(crate) use table::{execute_tool, get_all_tools, tool_access, tool_load, validate_params};
 
 use crate::agent::llm::types::ToolDeclaration;
 use policy::{Verdict, admit};

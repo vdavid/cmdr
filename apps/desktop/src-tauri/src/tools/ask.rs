@@ -18,7 +18,6 @@ use tokio::sync::oneshot;
 use tokio_util::sync::CancellationToken;
 
 use super::actions::ToolError;
-use super::policy::ToolCtx;
 use crate::ui_state::dialog_state::SoftDialogTracker;
 
 /// The soft dialog id in `SoftDialogTracker` and the frontend's `dialog-registry.ts`.
@@ -287,7 +286,8 @@ async fn ask_within<R: Runtime>(
 /// direct mode never reaches it.
 pub(super) async fn gate<R, Plan, Planned>(
     app: &AppHandle<R>,
-    ctx: &ToolCtx,
+    started_by: Initiator,
+    cancel: &CancellationToken,
     plan: Plan,
 ) -> Result<Option<AskFacts>, ToolError>
 where
@@ -300,7 +300,7 @@ where
         AskPlan::Refuse(refusal) => return Err(refusal),
         AskPlan::Ask(facts) => facts,
     };
-    let answer = ask(app, facts.clone(), ctx.caller.initiator(), &ctx.cancel).await;
+    let answer = ask(app, facts.clone(), started_by, cancel).await;
     log::info!(target: "tools::ask", "A question ended: {answer:?}");
     if answer != AskAnswer::Allowed {
         return Err(refusal_for(answer));

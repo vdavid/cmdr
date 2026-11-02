@@ -12,12 +12,12 @@
 //! - [`tool_access`](super::tool_access): what `admit` reads, and the structural tests too.
 //! - [`ToolId`](super::ToolId): the typed name of every entry, with `KNOWN`, the wire-name
 //!   conversions, and serde. `agent::llm::types` re-exports it.
-//! - [`SubjectSpec`]: what a call's tool line names (`agent/line/`).
+//! - [`SubjectSpec`](super::SubjectSpec): what a call's tool line names (`agent/line/`), in `subject.rs`.
 //!
 //! Adding a tool means adding one entry: you can't add it without supplying an id, a brief, a schema,
 //! a subject, an access class, a load, and a handler, and you can't add a handler the dispatch doesn't
 //! know about. No enum, no `KNOWN`, and no `agent/line/` arm unless it says
-//! [`SubjectSpec::Custom`]. The count and coverage tests are then cheap guards over a property that's
+//! `SubjectSpec::Custom`. The count and coverage tests are then cheap guards over a property that's
 //! true by construction.
 //!
 //! **One table, one axis.** A tool declares what it does (`access`), and
@@ -32,15 +32,12 @@
 //! `preserve_order` for the whole build, so reordering a `json!` block's keys changes the bytes (and
 //! the snapshot). Anything a model reads as a key LIST sorts explicitly (`params.rs`).
 //!
-//! Split: this file is the mechanism (the access classes, the params gate, and the `mcp_tools!` macro);
+//! Split: this file is the mechanism (the access classes and the `mcp_tools!` macro);
 //! `table.rs` is the data the macro expands. Layering: the table depends on the `actions` handlers and
 //! on `schemas`.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-use super::params;
-use super::{ToolError, tool_schema};
 
 /// A tool definition: the registry's output type, one `tools/list` element (serde `camelCase`, so
 /// `input_schema` serializes as `inputSchema`).
@@ -149,43 +146,6 @@ impl Access {
     }
 }
 
-/// What a call's tool line names, read off its arguments by `agent/line/`. The strings are argument
-/// keys. A tool here flows through the line's one generic arm: its subject comes from this, its
-/// outcome reads as an answer unless its result carries a typed refusal, and its preview has no rows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SubjectSpec {
-    /// Nothing to name: the tool's own words say it all.
-    None,
-    /// A place, at this argument.
-    Path(&'static str),
-    /// A volume id, at this argument.
-    Volume(&'static str),
-    /// An operation id, at this argument.
-    Operation(&'static str),
-    /// The pane the `pane` argument names; an absent one means the focused pane.
-    Pane,
-    /// The setting the `id` argument names.
-    Setting,
-    /// `read_resource`: which `cmdr://` view its `uri` names.
-    Resource,
-    /// A rich tool: `agent/line/` has hand arms for its subject, outcome, and preview.
-    Custom,
-}
-
-/// Refuse a params object its tool's own declared schema doesn't allow, before a handler
-/// reads a single field off it.
-///
-/// Handlers pluck fields off the raw value, so without this an undeclared property is
-/// swallowed in silence and the call runs as something the caller never asked for. What the
-/// check does and (just as deliberately) doesn't look at: [`params`]. An unknown name passes
-/// through untouched — the dispatch paths refuse it on their own, with their own wording.
-pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
-    match tool_schema(name) {
-        Some(schema) => params::gate(name, &schema, params),
-        None => Ok(()),
-    }
-}
-
 /// Declarative tool table → `get_all_tools`, `execute_tool`, `ToolId`, `tool_access`, and `tool_schema`.
 ///
 /// Entry form:
@@ -226,88 +186,96 @@ macro_rules! mcp_tools {
         $( ask: $ask:path, )?
         run: $shape:tt $path:path
     } ),* $(,)? ) => {
-        /// A tool's typed name, one variant per table entry.
-        ///
-        /// [`ToolId::Unrecognized`] holds any name outside the table: a provider returns each tool
-        /// call's name as a raw string, and a hallucinated or mistyped one has to stay representable
-        /// for the transparent UI and the typed refusal. It carries no dispatch path. A name in the
-        /// table parses as known whether or not the agent may run it: that's the gate's call
-        /// (`crate::agent::tool_gate`), never this parse's.
-        ///
-        /// Serializes transparently as its wire name (a bare string), so the DB token, the genai
-        /// `fn_name`, and the IPC form are one identical value. A stored name reloads through the
-        /// same parse, so a thread that once asked for a tool keeps that tool's line.
-        #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-        pub enum ToolId {
-            $( $id, )*
-            /// A name outside the table. Always refused by dispatch.
-            Unrecognized(String),
-        }
+        /// [`ToolId`] alone, so `agent::llm::types` can hold one without reaching the handlers: a
+        /// module of its own is what stops `tools` and `agent` welding into one tangle
+        /// (`DETAILS.md` § What's left of the cycle).
+        pub mod tool_id {
+            use crate::tools::subject::SubjectSpec;
 
-        impl ToolId {
-            /// Every table entry, in wire order. Excludes [`ToolId::Unrecognized`] by design: it's
-            /// the refusal case, never an entry.
-            pub const KNOWN: [ToolId; <[&str]>::len(&[$( $name ),*])] = [ $( ToolId::$id ),* ];
+            /// A tool's typed name, one variant per table entry.
+            ///
+            /// [`ToolId::Unrecognized`] holds any name outside the table: a provider returns each tool
+            /// call's name as a raw string, and a hallucinated or mistyped one has to stay representable
+            /// for the transparent UI and the typed refusal. It carries no dispatch path. A name in the
+            /// table parses as known whether or not the agent may run it: that's the gate's call
+            /// (`crate::agent::tool_gate`), never this parse's.
+            ///
+            /// Serializes transparently as its wire name (a bare string), so the DB token, the genai
+            /// `fn_name`, and the IPC form are one identical value. A stored name reloads through the
+            /// same parse, so a thread that once asked for a tool keeps that tool's line.
+            #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+            pub enum ToolId {
+                $( $id, )*
+                /// A name outside the table. Always refused by dispatch.
+                Unrecognized(String),
+            }
 
-            /// The wire name for this tool: the genai `fn_name`, the DB token, and the IPC
-            /// string, all one value.
-            pub fn as_wire_name(&self) -> &str {
-                match self {
-                    $( ToolId::$id => $name, )*
-                    ToolId::Unrecognized(name) => name.as_str(),
+            impl ToolId {
+                /// Every table entry, in wire order. Excludes [`ToolId::Unrecognized`] by design: it's
+                /// the refusal case, never an entry.
+                pub const KNOWN: [ToolId; <[&str]>::len(&[$( $name ),*])] = [ $( ToolId::$id ),* ];
+
+                /// The wire name for this tool: the genai `fn_name`, the DB token, and the IPC
+                /// string, all one value.
+                pub fn as_wire_name(&self) -> &str {
+                    match self {
+                        $( ToolId::$id => $name, )*
+                        ToolId::Unrecognized(name) => name.as_str(),
+                    }
+                }
+
+                /// Resolves a raw provider-supplied tool name to a typed [`ToolId`]. Total: a name
+                /// outside the table resolves to [`ToolId::Unrecognized`] rather than failing.
+                pub fn from_wire_name(name: &str) -> Self {
+                    match name {
+                        $( $name => ToolId::$id, )*
+                        other => ToolId::Unrecognized(other.to_string()),
+                    }
+                }
+
+                /// True for a table entry. Says nothing about who may run it.
+                pub fn is_known(&self) -> bool {
+                    !matches!(self, ToolId::Unrecognized(_))
+                }
+
+                /// True when the provider named no function at all. A nameless call is never a real
+                /// invocation: nothing can dispatch it, and providers that validate the field reject
+                /// it on replay, so both directions of `genai_impl` drop it rather than carry it.
+                pub fn is_nameless(&self) -> bool {
+                    self.as_wire_name().trim().is_empty()
+                }
+
+                /// What this tool's line names, or `None` for a name outside the table.
+                pub fn subject_spec(&self) -> Option<SubjectSpec> {
+                    match self {
+                        $( ToolId::$id => Some($subject), )*
+                        ToolId::Unrecognized(_) => None,
+                    }
+                }
+
+                /// This tool's one-line summary, or `None` for a name outside the table.
+                pub fn brief(&self) -> Option<&'static str> {
+                    match self {
+                        $( ToolId::$id => Some($brief), )*
+                        ToolId::Unrecognized(_) => None,
+                    }
                 }
             }
 
-            /// Resolves a raw provider-supplied tool name to a typed [`ToolId`]. Total: a name
-            /// outside the table resolves to [`ToolId::Unrecognized`] rather than failing.
-            pub fn from_wire_name(name: &str) -> Self {
-                match name {
-                    $( $name => ToolId::$id, )*
-                    other => ToolId::Unrecognized(other.to_string()),
+            impl serde::Serialize for ToolId {
+                fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                    serializer.serialize_str(self.as_wire_name())
                 }
             }
 
-            /// True for a table entry. Says nothing about who may run it.
-            pub fn is_known(&self) -> bool {
-                !matches!(self, ToolId::Unrecognized(_))
-            }
-
-            /// True when the provider named no function at all. A nameless call is never a real
-            /// invocation: nothing can dispatch it, and providers that validate the field reject
-            /// it on replay, so both directions of `genai_impl` drop it rather than carry it.
-            pub fn is_nameless(&self) -> bool {
-                self.as_wire_name().trim().is_empty()
-            }
-
-            /// What this tool's line names, or `None` for a name outside the table.
-            pub fn subject_spec(&self) -> Option<SubjectSpec> {
-                match self {
-                    $( ToolId::$id => Some($subject), )*
-                    ToolId::Unrecognized(_) => None,
-                }
-            }
-
-            /// This tool's one-line summary, or `None` for a name outside the table.
-            pub fn brief(&self) -> Option<&'static str> {
-                match self {
-                    $( ToolId::$id => Some($brief), )*
-                    ToolId::Unrecognized(_) => None,
+            impl<'de> serde::Deserialize<'de> for ToolId {
+                fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                    let name = <String as serde::Deserialize>::deserialize(deserializer)?;
+                    Ok(ToolId::from_wire_name(&name))
                 }
             }
         }
-
-        impl serde::Serialize for ToolId {
-            fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-                serializer.serialize_str(self.as_wire_name())
-            }
-        }
-
-        impl<'de> serde::Deserialize<'de> for ToolId {
-            fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-                let name = <String as serde::Deserialize>::deserialize(deserializer)?;
-                Ok(ToolId::from_wire_name(&name))
-            }
-        }
+        pub use tool_id::ToolId;
 
         /// Every entry in table order: what the views below filter.
         pub fn table_tools() -> Vec<Tool> {
@@ -364,6 +332,20 @@ macro_rules! mcp_tools {
             }
         }
 
+        /// Refuse a params object its tool's own declared schema doesn't allow, before a handler
+        /// reads a single field off it.
+        ///
+        /// Handlers pluck fields off the raw value, so without this an undeclared property is
+        /// swallowed in silence and the call runs as something the caller never asked for. What the
+        /// check does and (just as deliberately) doesn't look at: `params.rs`. An unknown name passes
+        /// through untouched: the dispatch paths refuse it on their own, with their own wording.
+        pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
+            match tool_schema(name) {
+                Some(schema) => params::gate(name, &schema, params),
+                None => Ok(()),
+            }
+        }
+
         /// The dispatch, for both callers. [`admit`](super::policy::admit) decides first, so a refused
         /// call never reaches a schema check, a person, or a handler. A name outside the table refuses
         /// as `INVALID_PARAMS` "Unknown tool". Generic over `Runtime`.
@@ -416,7 +398,7 @@ macro_rules! mcp_tools {
     (@has_plan $p:path) => { true };
     (@ask [] $app:ident, $ctx:ident, $params:ident) => { None };
     (@ask [$p:path] $app:ident, $ctx:ident, $params:ident) => {
-        super::ask::gate($app, $ctx, || $p($app, $ctx, $params)).await?
+        super::ask::gate($app, $ctx.caller.initiator(), &$ctx.cancel, || $p($app, $ctx, $params)).await?
     };
 
     // Handler-shape arms: each evaluates to a `ToolResult`. Sync handlers deliberately

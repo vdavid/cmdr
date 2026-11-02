@@ -22,9 +22,11 @@ pub enum ResourceError {
     Unavailable(String),
 }
 
-impl From<ResourceError> for ToolError {
-    fn from(error: ResourceError) -> Self {
-        match error {
+impl ResourceError {
+    /// A method rather than a `From` on `ToolError`, which `module-cycles` would read as `actions`
+    /// reaching into this file.
+    pub(crate) fn into_tool_error(self) -> ToolError {
+        match self {
             ResourceError::UnknownUri(uri) => ToolError::invalid_params(format!(
                 "Unknown resource URI: {uri}. It takes cmdr://state, cmdr://settings, cmdr://logs, cmdr://indexing, cmdr://importance, or cmdr://dialogs/available."
             ))
@@ -119,7 +121,9 @@ pub async fn execute_read_resource<R: Runtime>(app: &AppHandle<R>, params: &Valu
     let offset = params.get("offset").and_then(Value::as_u64).unwrap_or(0);
     let offset = usize::try_from(offset).unwrap_or(usize::MAX);
 
-    let content = super::read_resource(app, uri).await?;
+    let content = super::read_resource(app, uri)
+        .await
+        .map_err(ResourceError::into_tool_error)?;
     serde_json::to_value(window_of(uri, &content.text, offset)).map_err(|e| ToolError::internal(e.to_string()))
 }
 

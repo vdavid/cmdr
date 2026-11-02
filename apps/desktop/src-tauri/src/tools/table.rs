@@ -13,8 +13,9 @@ use super::actions::{
     indexing, memory, multi_rename, nav, operation_log, photos, queue, quit, search, tags, unlock, view,
 };
 use super::ask_plans;
+use super::params;
 use super::policy::ToolCtx;
-use super::registry::{Access, Load, SubjectSpec, Tool, validate_params};
+use super::registry::{Access, Load, Tool};
 use super::resources::read_tool;
 use super::schemas;
 

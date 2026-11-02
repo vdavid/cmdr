@@ -44,6 +44,12 @@ llm::types, AgentDb}`, because proposal and memory handlers write the agent's st
 token estimator. `agent` imports `tools`, and `mcp` imports `tools` but no `agent`. The `tools-module-boundary` check pins
 exactly that list.
 
+That isn't a circle of modules, and `module-cycles` holds it there. The one edge from those `agent` modules back is
+`agent::llm::types` holding a `ToolId`, so the macro generates `ToolId` into `table::tool_id`, a module that reaches nothing
+but `subject.rs`. Don't give `ToolId` a method that returns a type from `registry` or the handlers. Likewise, a `From` onto
+`ToolError` or a `security_log` type prints as those modules reaching back into `tools` (`scripts/check/checks/DETAILS.md`
+§ "The six traps"), so `ResourceError` and `Protected` have plain methods.
+
 ## The table
 
 Every AI-callable tool is authored once in the `mcp_tools!` table in `table.rs` — name, `id`, `brief`, description, JSON
@@ -69,7 +75,7 @@ for the exact schemas (don't transcribe them here); the sections below summarize
 **Directory split (`tools/`).** The table's `json!` schema blocks dominate the line count and serialize
 identically wherever they live, so they're hoisted into `schemas/*.rs` (one `fn <tool>_schema() -> Value` per tool,
 grouped by category) and the entries call them (`schema: schemas::copy_schema()`). `registry.rs` holds the mechanism (the
-macro, `Access`, `Load`, `SubjectSpec`, the params gate), `mod.rs` re-exports what the macro generates, and `table.rs`
+macro, `Access`, and `Load`), `subject.rs` holds `SubjectSpec`, `mod.rs` re-exports what the macro generates, and `table.rs`
 holds nothing but the authored entries, so the file that grows per tool is pure data.
 
 ## Adding a tool: #871's sync as the worked example
@@ -233,6 +239,8 @@ otherwise search literally and report a zero.
   - `DevOnly(reason)`: never the agent, and an outside client only in direct mode (§ Direct mode).
 
   Every class except `Read` and `AppState` is hand-allowlisted (`EXPECTED_*_TOOL_NAMES`), and `DevOnly` is pinned by name.
+
+**Decision: `unlock` is `AppState`, so an archive password goes through the model.** David accepted that: what the provider keeps is the user's retention policy, and `docs/security.md` § Cloud AI egress (to the user's LLM provider) lists it among what reaches the provider.
 
 **A tool's class must be honest**, so a tool whose power depends on a parameter gets split: `dialog_confirm` left `dialog`,
 and `queue_move_locked` left `queue`. Three can't split, so each takes its upper bound: `mkdir` and `mkfile` are `LightWrite`

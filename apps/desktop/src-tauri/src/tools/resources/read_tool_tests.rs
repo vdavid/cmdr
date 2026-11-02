@@ -121,7 +121,7 @@ fn a_log_holding_a_private_key_refuses_whatever_the_query_picks() {
     for opts in [log_options(), narrow] {
         assert_eq!(log_lines_of_window(window, false, &opts), Err(Protected::PrivateKey));
     }
-    let error: ToolError = ResourceError::Protected(Protected::PrivateKey).into();
+    let error: ToolError = ResourceError::Protected(Protected::PrivateKey).into_tool_error();
     assert_eq!(
         error.data,
         Some(json!({ "refusal": "protected", "reason": "privateKey" }))

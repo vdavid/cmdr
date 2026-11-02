@@ -144,7 +144,7 @@ impl<R: Runtime> ServerHandler for CmdrMcpHandler<R> {
     ) -> Result<ReadResourceResponse, ErrorData> {
         let content = read_resource(&self.app, &request.uri)
             .await
-            .map_err(|refused| wire_error(refused.into()))?;
+            .map_err(|refused| wire_error(refused.into_tool_error()))?;
         let contents = ResourceContents::TextResourceContents {
             uri: shown(content.uri),
             mime_type: Some(content.mime_type),
