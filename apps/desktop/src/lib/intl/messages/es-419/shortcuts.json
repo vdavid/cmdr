@@ -5,7 +5,7 @@
   },
   "shortcuts.conflict.bareKey": "Lo sentimos, al escribir {combo} en la lista de archivos se filtra o se salta a un archivo, así que aquí no puede ser un atajo. Intenta agregar un modificador.",
   "@shortcuts.conflict.bareKey": {
-    "sourceHash": "6c50fbe"
+    "sourceHash": "9b04204"
   },
   "shortcuts.conflict.shiftLetter": "Lo sentimos, {combo} es la forma de escribir una mayúscula, así que no puede ser un atajo. Intenta agregar otro modificador.",
   "@shortcuts.conflict.shiftLetter": {

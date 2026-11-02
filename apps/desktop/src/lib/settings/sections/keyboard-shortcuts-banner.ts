@@ -40,9 +40,7 @@ export interface NormalConflict {
 }
 
 /** A refusal, not a clash: typing takes the key first (`typingRefusal`), so a binding would never fire. */
-export interface TypingConflict {
-  kind: 'shiftLetter' | 'bareKey'
-}
+export type TypingConflict = { kind: 'shiftLetter' } | { kind: 'bareKey' }
 
 export type ConflictKind = NativeConflict | FixedConflict | SystemConflict | NormalConflict | TypingConflict
 
