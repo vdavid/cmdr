@@ -20,7 +20,8 @@ pub fn select_volume_schema() -> Value {
                 "description": "Stable volume id from cmdr://state. Preferred because names can collide; wins when both selectors are supplied."
             }
         },
-        "required": ["pane"]
+        "required": ["pane"],
+        "additionalProperties": false
     })
 }
 
@@ -38,7 +39,8 @@ pub fn nav_to_path_schema() -> Value {
                 "description": "Path to navigate to: absolute, ~-relative, or mtp://. An smb:// path is refused: a mounted share is its own volume (select_volume by the name in cmdr://state volumes), and an unmounted one opens from the Network volume's host list."
             }
         },
-        "required": ["pane", "path"]
+        "required": ["pane", "path"],
+        "additionalProperties": false
     })
 }
 
@@ -56,7 +58,8 @@ pub fn scroll_to_schema() -> Value {
                 "description": "Zero-based index to scroll to"
             }
         },
-        "required": ["pane", "index"]
+        "required": ["pane", "index"],
+        "additionalProperties": false
     })
 }
 
@@ -78,7 +81,8 @@ pub fn move_cursor_schema() -> Value {
                 "description": "Filename to move cursor to"
             }
         },
-        "required": ["pane"]
+        "required": ["pane"],
+        "additionalProperties": false
     })
 }
 
@@ -114,6 +118,7 @@ pub fn select_schema() -> Value {
                 "description": "Selection mode (default: replace)"
             }
         },
-        "required": ["pane"]
+        "required": ["pane"],
+        "additionalProperties": false
     })
 }

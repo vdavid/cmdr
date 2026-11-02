@@ -46,6 +46,7 @@ pub fn no_params_schema() -> Value {
     json!({
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
     })
 }

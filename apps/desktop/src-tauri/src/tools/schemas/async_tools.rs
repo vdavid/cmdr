@@ -33,6 +33,7 @@ pub fn await_schema() -> Value {
                 "description": "Only consider state updates after this generation number. Prevents matching stale state from before an action. Get the current generation from cmdr://state or a previous await result. Pane conditions only."
             }
         },
-        "required": ["condition"]
+        "required": ["condition"],
+        "additionalProperties": false
     })
 }

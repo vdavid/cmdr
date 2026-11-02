@@ -25,7 +25,8 @@
         },
         "required": [
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -50,7 +51,8 @@
         "required": [
           "pane",
           "path"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -59,7 +61,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
@@ -68,7 +71,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
@@ -77,7 +81,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
@@ -102,7 +107,8 @@
         "required": [
           "pane",
           "index"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -130,7 +136,8 @@
         },
         "required": [
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -139,7 +146,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
@@ -187,7 +195,8 @@
         },
         "required": [
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -219,7 +228,8 @@
         },
         "required": [
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -251,7 +261,8 @@
         },
         "required": [
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -271,7 +282,8 @@
         },
         "required": [
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -299,7 +311,8 @@
         },
         "required": [
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -328,7 +341,8 @@
         "required": [
           "pane",
           "newName"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -464,7 +478,8 @@
         },
         "required": [
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -488,7 +503,8 @@
         },
         "required": [
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -497,7 +513,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
@@ -550,7 +567,8 @@
         "required": [
           "pane",
           "action"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -559,7 +577,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
@@ -588,7 +607,8 @@
         "required": [
           "pane",
           "mode"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -630,7 +650,8 @@
           "pane",
           "by",
           "order"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -685,7 +706,8 @@
         "required": [
           "action",
           "pane"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -719,7 +741,8 @@
         "required": [
           "action",
           "type"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -755,7 +778,8 @@
         },
         "required": [
           "type"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -814,7 +838,8 @@
             "description": "Default true: open and run the search. False: open and prefill without running."
           }
         },
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
@@ -823,16 +848,18 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
       "name": "switch_pane",
-      "description": "Toggle focus to the other pane. Takes no parameters (a pane arg is ignored). To focus a SPECIFIC pane, use select (with count 0 to clear) or select_volume / nav_to_path on that pane, which focus it.",
+      "description": "Toggle focus to the other pane. Takes no parameters. To focus a SPECIFIC pane, use select (with count 0 to clear) or select_volume / nav_to_path on that pane, which focus it.",
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
@@ -841,7 +868,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {
@@ -953,7 +981,8 @@
         },
         "required": [
           "query"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -973,7 +1002,8 @@
         "required": [
           "id",
           "value"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1000,7 +1030,8 @@
         "required": [
           "action",
           "volumeId"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1091,7 +1122,8 @@
           "operationId",
           "conflictId",
           "resolution"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1112,7 +1144,8 @@
         "required": [
           "path",
           "password"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1153,7 +1186,8 @@
         },
         "required": [
           "action"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1169,7 +1203,8 @@
         },
         "required": [
           "address"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1185,7 +1220,8 @@
         },
         "required": [
           "hostId"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1201,7 +1237,8 @@
         },
         "required": [
           "volumeId"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1225,7 +1262,8 @@
         },
         "required": [
           "volumeId"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1276,7 +1314,8 @@
         },
         "required": [
           "condition"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1285,7 +1324,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "required": []
+        "required": [],
+        "additionalProperties": false
       }
     },
     {

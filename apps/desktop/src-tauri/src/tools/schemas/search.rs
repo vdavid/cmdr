@@ -78,9 +78,6 @@ pub fn search_schema() -> Value {
             }
         },
         "required": [],
-        // Closed because `search` is in the agent view, where nobody reads a call before it
-        // runs: an undeclared property (a guessed `name`, a guessed `contains`) is refused by
-        // `validate_params` instead of being swallowed into a confident empty answer.
         "additionalProperties": false
     })
 }
@@ -106,6 +103,7 @@ pub fn ai_search_schema() -> Value {
                 "description": "How long to wait for the search, 1-120 (on top of the LLM translation, which runs first). Cmdr walks whatever the index hasn't covered yet, so a first search of a folder takes as long as reading it does. When the wait runs out you get what was found so far plus a note. Default: 20"
             }
         },
-        "required": ["query"]
+        "required": ["query"],
+        "additionalProperties": false
     })
 }

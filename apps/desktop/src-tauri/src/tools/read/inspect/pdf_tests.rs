@@ -17,7 +17,7 @@ use super::pdf::{
 use super::tests::assert_text_only;
 use super::*;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_viewer::MAX_SEARCH_MATCHES;
+use crate::file_viewer::{MAX_SEARCH_MATCHES, SearchMode};
 use crate::test_support::TestDir;
 use cmdr_archive::test_fixtures::{build_zip, stored};
 use cmdr_local::LocalPosixVolume;

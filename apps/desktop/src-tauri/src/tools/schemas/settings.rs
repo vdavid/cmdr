@@ -14,6 +14,7 @@ pub fn set_setting_schema() -> Value {
                 "description": "New value for the setting"
             }
         },
-        "required": ["id", "value"]
+        "required": ["id", "value"],
+        "additionalProperties": false
     })
 }

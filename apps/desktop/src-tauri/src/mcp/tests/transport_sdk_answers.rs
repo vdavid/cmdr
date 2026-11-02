@@ -533,7 +533,7 @@ async fn a_client_leaving_mid_call_stops_the_handler() {
         .bearer_auth(TOKEN)
         .json(&json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{
             "name":"await",
-            "arguments":{"pane":"left","condition":"path","value":"/never","timeout":60},
+            "arguments":{"pane":"left","condition":"path","value":"/never","timeoutSeconds":60},
         }}))
         .send();
     let client = tokio::spawn(call);

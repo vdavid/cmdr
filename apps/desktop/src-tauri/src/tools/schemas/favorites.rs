@@ -29,6 +29,7 @@ pub fn favorites_schema() -> Value {
                 "description": "For reorder: the complete new ordering of favorite ids."
             }
         },
-        "required": ["action"]
+        "required": ["action"],
+        "additionalProperties": false
     })
 }

@@ -17,7 +17,8 @@ pub fn set_view_mode_schema() -> Value {
                 "description": "View mode to set"
             }
         },
-        "required": ["pane", "mode"]
+        "required": ["pane", "mode"],
+        "additionalProperties": false
     })
 }
 
@@ -41,7 +42,8 @@ pub fn sort_schema() -> Value {
                 "description": "Sort order"
             }
         },
-        "required": ["pane", "by", "order"]
+        "required": ["pane", "by", "order"],
+        "additionalProperties": false
     })
 }
 
@@ -78,6 +80,7 @@ pub fn tab_schema() -> Value {
                 "description": "For move: the 0-based index the tab holds once moved, as `i:` in cmdr://state then shows it. Defaults to the end; a larger index also means the end. move needs toPane, toIndex, or both."
             }
         },
-        "required": ["action", "pane"]
+        "required": ["action", "pane"],
+        "additionalProperties": false
     })
 }

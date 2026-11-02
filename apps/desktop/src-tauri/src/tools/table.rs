@@ -317,7 +317,7 @@ mcp_tools! {
     "switch_pane" => {
         id: SwitchPane,
         brief: "Move focus to the other pane.",
-        desc: "Toggle focus to the other pane. Takes no parameters (a pane arg is ignored). To focus a SPECIFIC pane, use select (with count 0 to clear) or select_volume / nav_to_path on that pane, which focus it.",
+        desc: "Toggle focus to the other pane. Takes no parameters. To focus a SPECIFIC pane, use select (with count 0 to clear) or select_volume / nav_to_path on that pane, which focus it.",
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],

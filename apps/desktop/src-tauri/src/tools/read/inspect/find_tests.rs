@@ -107,6 +107,15 @@ fn find_params_reject_a_missing_or_empty_query_and_non_boolean_flags() {
 }
 
 #[test]
+fn a_find_flag_nobody_declared_is_refused_by_name() {
+    // A guessed `regexp: true` would otherwise search literally and report a confident zero. The
+    // schema gate reads one level, so `find` checks itself.
+    let err = parse_params(&json!({ "paths": ["/a.txt"], "find": { "query": "x", "regexp": true } })).unwrap_err();
+    assert_eq!(err.code, ToolError::invalid_params("").code);
+    assert_eq!(err.data.expect("typed detail")["unknownProperties"], json!(["regexp"]));
+}
+
+#[test]
 fn an_invalid_or_cross_line_regex_is_invalid_params_carrying_the_matchers_reason() {
     let code = ToolError::invalid_params("").code;
     let err =

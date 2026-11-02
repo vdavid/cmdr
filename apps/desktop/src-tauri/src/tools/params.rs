@@ -19,7 +19,7 @@
 //!   `propose_suggestions`) deserialize them into serde structs carrying
 //!   `deny_unknown_fields`, which already refuses an unknown field and names it. What those
 //!   structs can't do is name the ROW, which is why [`check_object`] is public: the rename
-//!   boundary points it at one row at a time.
+//!   boundary points it at one row at a time, and `inspect_file` at its `find`.
 //!
 //! The one look past that level ([`row_property_home`]) EXPLAINS a violation rather than
 //! finding one: an undeclared key is refused either way, and the lookup only decides whether
@@ -28,8 +28,9 @@
 //! one `volumeId` beside `renames`, was told only that the top level has no such parameter,
 //! and re-sent the identical call.
 //!
-//! So a schema that never declared `additionalProperties` (most of the ai-client family) stays
-//! open exactly as it always was, and closing one is what opts a tool in.
+//! Every schema in the table closes itself, all the way down
+//! (`every_tool_in_the_table_closes_its_schema_all_the_way_down`), so the open branch below only
+//! ever answers a schema from outside the table.
 
 use serde_json::Value;
 

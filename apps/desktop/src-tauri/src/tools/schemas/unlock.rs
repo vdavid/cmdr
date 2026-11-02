@@ -15,6 +15,7 @@ pub fn unlock_schema() -> Value {
                 "description": "The password to try. Handed to the archive or repo only, never echoed back, never rendered in cmdr://state, never logged, and never saved to the Keychain."
             }
         },
-        "required": ["path", "password"]
+        "required": ["path", "password"],
+        "additionalProperties": false
     })
 }

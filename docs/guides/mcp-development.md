@@ -138,10 +138,10 @@ the registry and automatically covers every entry.
   wire bytes. A tools/list snapshot test (`tools/tests/tool_snapshot_tests.rs`) pins the exact output; run it after any
   schema edit and update the fixture when the change is intentional.
 - **The schema is ENFORCED, so author it as the truth.** `validate_params` refuses a call whose params miss a `required`
-  property, and (on a schema declaring `additionalProperties: false`) one carrying a property `properties` doesn't list,
-  before your handler runs. Don't mark a field `required` the handler is happy without. An `[Agent]` tool MUST declare
-  `additionalProperties: false` (a structural test fails otherwise): its calls reach a person as facts, and a swallowed
-  argument becomes a confident wrong answer. `apps/desktop/src-tauri/src/tools/DETAILS.md` § The schema gate.
+  property, or one carrying a property `properties` doesn't list, before your handler runs. Don't mark a field
+  `required` the handler is happy without. Every object in every schema MUST declare `additionalProperties: false` (a
+  structural test fails otherwise): a swallowed argument becomes a confident wrong answer. The gate reads one level, so
+  a nested object checks itself. `apps/desktop/src-tauri/src/tools/DETAILS.md` § The schema gate.
 
 That's the whole change. No separate dispatch match and no hand-bumped tool count — the count and coverage tests are
 cheap guards over a property that's now true by construction.

@@ -30,8 +30,9 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
   § The human gate.
 - **`DevOnly` tools refuse an outside client off direct mode** (`policy.rs`), and ❌ the JSON setting alone never turns it
   on. `DETAILS.md` § Direct mode.
-- **A call is checked against its declared schema before a handler sees it** (`params.rs`). An agent tool closes itself
-  with `additionalProperties: false`. Params are camelCase, tool names snake_case.
+- **A call is checked against its declared schema before a handler sees it** (`params.rs`). Every schema closes itself
+  with `additionalProperties: false`, nested objects too, and a nested one checks itself. Params are camelCase, tool
+  names snake_case.
 - **Whatever a user can reach, an agent must reach, answer, and OBSERVE.** ❌ No modal state with no way to see or answer
   it: a conflict wedge lived in one for months.
 - **Reuse the shipped core.** A handler calls a deterministic core and only SHAPES the result.

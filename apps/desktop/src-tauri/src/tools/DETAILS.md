@@ -72,9 +72,12 @@ handler that reads the field, so nothing was silent there. Nesting stays uncheck
 unknown field and names it. What those structs can't do is name the ROW, which is why `check_object` is public and the
 rename boundary points it at one row at a time (`propose/DETAILS.md`).
 
-A schema that never declared `additionalProperties` stays open exactly as it was, so closing one is what opts a tool
-in. Every AGENT tool closes its schema, pinned by `every_agent_tool_closes_its_schema`: nobody reads an agent call
-before it runs, and its answer reaches a person as a fact. An ai-client schema may stay open, and several do.
+Every schema in the table closes itself, all the way down, pinned by
+`every_tool_in_the_table_closes_its_schema_all_the_way_down`: nobody reads a call before it runs, its answer reaches a
+person as a fact, and an old client's `rollback: true` must refuse rather than act on less than was asked. The gate runs
+before the ask, so a stray argument on a `Sensitive` tool refuses before it reaches a person. A nested object the gate
+can't reach checks itself: `inspect_file`'s `parse_find` runs `gate` on `find`, since a guessed `regexp: true` would
+otherwise search literally and report a zero.
 
 ## Consumer and access views
 

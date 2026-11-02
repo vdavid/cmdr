@@ -932,7 +932,7 @@ async fn no_reply_shows_a_twins_nul_pick() {
     let result = server
         .tool(
             "await",
-            json!({"pane":"left","condition":"path","value":twin,"timeout":1}),
+            json!({"pane":"left","condition":"path","value":twin,"timeoutSeconds":1}),
         )
         .await;
     let text = result["result"]["content"][0]["text"].as_str().expect("a text result");

@@ -24,7 +24,8 @@ pub fn dialog_schema() -> Value {
                 "description": "For file-viewer: file path. On open without path, uses cursor file. On close without path, closes all."
             },
         },
-        "required": ["action", "type"]
+        "required": ["action", "type"],
+        "additionalProperties": false
     })
 }
 
@@ -50,7 +51,8 @@ pub fn dialog_confirm_schema() -> Value {
                 "description": "For transfer-confirmation: conflict resolution policy for clashing FILES. Folders always merge (a source folder landing on a same-named dest folder merges into it), and this policy governs the files inside. 'stop' decides nothing upfront: the operation asks per file and parks until you answer each one with resolve_conflict (watch cmdr://state operations for the pendingConflict block). The *_all policies decide every clash upfront. overwrite_smaller_all / overwrite_older_all overwrite only when the destination is strictly smaller / strictly older, and skip otherwise. Default: the policy the dialog shows."
             }
         },
-        "required": ["type"]
+        "required": ["type"],
+        "additionalProperties": false
     })
 }
 
@@ -104,6 +106,7 @@ pub fn open_search_dialog_schema() -> Value {
                 "description": "Default true: open and run the search. False: open and prefill without running."
             }
         },
-        "required": []
+        "required": [],
+        "additionalProperties": false
     })
 }

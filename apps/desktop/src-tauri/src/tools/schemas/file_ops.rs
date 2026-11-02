@@ -24,7 +24,8 @@ pub fn copy_schema() -> Value {
             "pane": pane_prop("The pane to copy from; the other pane's folder is the destination."),
             "onConflict": on_conflict_prop()
         },
-        "required": ["pane"]
+        "required": ["pane"],
+        "additionalProperties": false
     })
 }
 
@@ -35,7 +36,8 @@ pub fn move_schema() -> Value {
             "pane": pane_prop("The pane to move from; the other pane's folder is the destination."),
             "onConflict": on_conflict_prop()
         },
-        "required": ["pane"]
+        "required": ["pane"],
+        "additionalProperties": false
     })
 }
 
@@ -45,7 +47,8 @@ pub fn compress_schema() -> Value {
         "properties": {
             "pane": pane_prop("The pane to compress from; the archive lands in the other pane's folder.")
         },
-        "required": ["pane"]
+        "required": ["pane"],
+        "additionalProperties": false
     })
 }
 
@@ -60,7 +63,8 @@ pub fn delete_schema() -> Value {
                 "description": "What the dialog opens on: trash = move to Trash; delete = permanent. Omit for the pane's default (a volume without a trash forces permanent)."
             }
         },
-        "required": ["pane"]
+        "required": ["pane"],
+        "additionalProperties": false
     })
 }
 
@@ -78,7 +82,8 @@ pub fn rename_schema() -> Value {
                 "description": "The proposed new name (a name, not a path)."
             }
         },
-        "required": ["pane", "newName"]
+        "required": ["pane", "newName"],
+        "additionalProperties": false
     })
 }
 
@@ -92,7 +97,8 @@ pub fn mkdir_schema() -> Value {
             },
             "pane": pane_prop("Which pane to create in.")
         },
-        "required": ["pane"]
+        "required": ["pane"],
+        "additionalProperties": false
     })
 }
 
@@ -106,7 +112,8 @@ pub fn mkfile_schema() -> Value {
             },
             "pane": pane_prop("Which pane to create in.")
         },
-        "required": ["pane"]
+        "required": ["pane"],
+        "additionalProperties": false
     })
 }
 
@@ -134,6 +141,7 @@ pub fn tag_schema() -> Value {
                 "description": "Finder color names. Required for set and toggle; ignored for clear."
             }
         },
-        "required": ["pane", "action"]
+        "required": ["pane", "action"],
+        "additionalProperties": false
     })
 }

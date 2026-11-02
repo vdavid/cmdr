@@ -16,6 +16,7 @@ pub fn indexing_schema() -> Value {
                 "description": "Volume ID to control (for example 'root', 'smb-…', 'mtp-…:1'). See cmdr://state volumes."
             }
         },
-        "required": ["action", "volumeId"]
+        "required": ["action", "volumeId"],
+        "additionalProperties": false
     })
 }

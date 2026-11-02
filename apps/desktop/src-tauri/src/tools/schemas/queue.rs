@@ -62,6 +62,7 @@ pub fn resolve_conflict_schema() -> Value {
                 "description": "Apply this answer to every later clash in the same operation, so it stops asking. Default false: this answers one file."
             }
         },
-        "required": ["operationId", "conflictId", "resolution"]
+        "required": ["operationId", "conflictId", "resolution"],
+        "additionalProperties": false
     })
 }

@@ -8,9 +8,10 @@
 //! conversion in the tree.
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{LazyLock, Mutex};
+use std::sync::{Arc, LazyLock, Mutex};
 
 use serde::Serialize;
+use serde_json::Value;
 
 use crate::file_viewer::range_read::clamp_utf16_offset_to_byte;
 use crate::file_viewer::{
@@ -18,6 +19,7 @@ use crate::file_viewer::{
 };
 use crate::ignore_poison::IgnorePoison;
 use crate::search::format_size;
+use crate::tools::ToolError;
 use crate::tools::read::is_false;
 use crate::tools::sensitive::PRIVATE_KEY_PATTERN;
 
@@ -27,6 +29,52 @@ pub(crate) const MAX_FIND_LINES: usize = 50;
 /// A matched line is cut to this many chars around its first match: enough context to
 /// quote, never a whole minified bundle because one token in it matched.
 pub(crate) const FIND_SNIPPET_CHARS: usize = 300;
+
+/// `inspect_file`'s `find`, on its own because [`parse_find`] checks it too: the schema gate reads
+/// one level, and a guessed `regexp: true` swallowed here would search literally and report a zero.
+pub(super) fn find_schema() -> Value {
+    serde_json::json!({
+        "type": "object",
+        "properties": {
+            "query": { "type": "string" },
+            "regex": { "type": "boolean" },
+            "caseSensitive": { "type": "boolean" }
+        },
+        "required": ["query"],
+        "additionalProperties": false,
+        "description": "Search text files and PDFs; matching lines replace the window."
+    })
+}
+
+/// `find`, when present, as one built matcher. A query the viewer's matcher rejects (an
+/// invalid regex, a pattern that would have to cross a newline) is `INVALID_PARAMS` with
+/// the matcher's own reason, before any file is opened.
+pub(super) fn parse_find(params: &Value) -> Result<Option<Arc<Matcher>>, ToolError> {
+    let Some(raw) = params.get("find").filter(|v| !v.is_null()) else {
+        return Ok(None);
+    };
+    let find = raw
+        .as_object()
+        .ok_or_else(|| ToolError::invalid_params("'find' must be an object with a 'query' string"))?;
+    crate::tools::params::gate("inspect_file's find", &find_schema(), raw)?;
+    let query = find
+        .get("query")
+        .and_then(Value::as_str)
+        .filter(|q| !q.is_empty())
+        .ok_or_else(|| ToolError::invalid_params("'find.query' must be a non-empty string"))?;
+    let flag = |name: &str| match find.get(name) {
+        None | Some(Value::Null) => Ok(false),
+        Some(v) => v
+            .as_bool()
+            .ok_or_else(|| ToolError::invalid_params(format!("'find.{name}' must be true or false"))),
+    };
+    let mode = SearchMode {
+        use_regex: flag("regex")?,
+        case_sensitive: flag("caseSensitive")?,
+    };
+    let matcher = Matcher::build(query, mode).map_err(|e| ToolError::invalid_params(format!("'find.query': {e}")))?;
+    Ok(Some(Arc::new(matcher)))
+}
 
 /// One matching line, as the model reads it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

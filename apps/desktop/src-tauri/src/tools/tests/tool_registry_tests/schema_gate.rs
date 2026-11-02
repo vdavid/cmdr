@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use crate::tools::{agent_tool_view, get_all_tools, tool_schema, validate_params};
+use crate::tools::{ToolId, agent_tool_view, get_all_tools, tool_schema, validate_params};
 
 #[test]
 fn a_call_carrying_a_property_the_schema_never_declared_is_refused() {
@@ -103,45 +103,93 @@ fn a_call_missing_a_required_property_is_refused_by_name() {
     assert_eq!(error.data.expect("typed detail")["missingProperties"], json!(["path"]));
 }
 
+/// Every object a schema describes that leaves itself open, by its path through the schema.
+/// Walks the schema's own shape, so a property that happens to be called `type` or `properties`
+/// isn't mistaken for the keyword.
+fn open_objects(schema: &serde_json::Value, at: &str, open: &mut Vec<String>) {
+    let Some(map) = schema.as_object() else { return };
+    let is_object = map.get("type").and_then(|t| t.as_str()) == Some("object") || map.contains_key("properties");
+    if is_object && map.get("additionalProperties") != Some(&json!(false)) {
+        open.push(at.to_string());
+    }
+    for (keyword, value) in map {
+        match keyword.as_str() {
+            "properties" => {
+                for (name, property) in value.as_object().into_iter().flatten() {
+                    open_objects(property, &format!("{at}.{name}"), open);
+                }
+            }
+            "enum" | "const" | "default" | "examples" => {}
+            _ => match value {
+                serde_json::Value::Array(branches) => {
+                    for (i, branch) in branches.iter().enumerate() {
+                        open_objects(branch, &format!("{at}.{keyword}[{i}]"), open);
+                    }
+                }
+                other => open_objects(other, &format!("{at}.{keyword}"), open),
+            },
+        }
+    }
+}
+
 #[test]
-fn a_schema_that_never_closed_itself_still_takes_whatever_it_is_given() {
-    // Most ai-client schemas declare no `additionalProperties`, so they stay open by
-    // construction: an extra key there is the schema's own choice, not a silent swallow, and
-    // the gate must not start refusing calls that work today.
-    for name in ["move_cursor", "sort", "select"] {
-        let schema = tool_schema(name).expect("a registered tool has a schema");
-        assert!(
-            schema.get("additionalProperties").is_none(),
-            "{name} closed its schema; pick another open one for this test"
-        );
+fn every_tool_in_the_table_closes_its_schema_all_the_way_down() {
+    // The gate only refuses an undeclared property on a schema that CLOSED itself, so one left
+    // open swallows a guessed argument exactly as `list_dir` did, and a stale `rollback: true`
+    // would act on less than was asked. Walks the table, not a caller's view, so no tool escapes
+    // by who may call it.
+    let mut open = Vec::new();
+    for tool in ToolId::KNOWN {
+        let name = tool.as_wire_name();
+        let schema = tool_schema(name).expect("a table entry has a schema");
+        open_objects(&schema, name, &mut open);
     }
     assert!(
-        validate_params(
-            "sort",
-            &json!({ "pane": "left", "by": "name", "order": "asc", "somethingElse": 1 })
-        )
-        .is_ok(),
-        "an open schema keeps accepting what it always did"
+        open.is_empty(),
+        "these schemas leave an object open, so a property they never declared would be swallowed in silence: {open:#?}"
     );
 }
 
 #[test]
-fn every_agent_tool_closes_its_schema() {
-    // The gate only refuses an undeclared property on a schema that CLOSED itself, so an
-    // agent tool that left its schema open would swallow a guessed argument exactly as
-    // `list_dir` did. The agent view is where that costs the most: nobody reads its calls
-    // before they run, and the answer goes straight to a person as a fact. An ai-client
-    // schema may stay open (a human is driving, and several always have been); an agent one
-    // may not.
-    for tool in agent_tool_view() {
-        let schema = tool_schema(&tool.name).expect("a registered tool has a schema");
+fn the_walk_finds_an_open_object_however_it_is_nested() {
+    // The test above is only as good as its walk. `type` here is a property, not a keyword.
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "type": { "type": "string" },
+            "rows": { "type": "array", "items": { "type": "object", "properties": {} } },
+            "either": { "anyOf": [{ "type": "object", "properties": {}, "additionalProperties": false }, { "type": "object" }] }
+        },
+        "additionalProperties": false
+    });
+    let mut open = Vec::new();
+    open_objects(&schema, "t", &mut open);
+    open.sort();
+    assert_eq!(open, vec!["t.either.anyOf[1]", "t.rows.items"]);
+}
+
+#[test]
+fn every_tool_in_the_table_refuses_a_property_it_never_declared() {
+    // What closing is for, end to end through the gate. It runs before the ask, so a stray argument
+    // on `quit` or `eject` refuses before it reaches a person.
+    for tool in ToolId::KNOWN {
+        let name = tool.as_wire_name();
+        let error = validate_params(name, &json!({ "notARealParameter": true }))
+            .expect_err("a property nobody declared is refused");
         assert_eq!(
-            schema.get("additionalProperties"),
-            Some(&json!(false)),
-            "agent tool '{}' leaves its schema open, so a property it never declared would be swallowed in silence",
-            tool.name
+            error.data.expect("typed detail")["unknownProperties"],
+            json!(["notARealParameter"]),
+            "{name} must name the offender"
         );
     }
+}
+
+#[test]
+fn switch_pane_refuses_a_pane_rather_than_ignoring_it() {
+    // A pane here reads as "focus this pane", and the call toggles to whichever pane isn't focused,
+    // which can be the opposite one.
+    let error = validate_params("switch_pane", &json!({ "pane": "left" })).expect_err("switch_pane takes nothing");
+    assert_eq!(error.data.expect("typed detail")["unknownProperties"], json!(["pane"]));
 }
 
 #[test]

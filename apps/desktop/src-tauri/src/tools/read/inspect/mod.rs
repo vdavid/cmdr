@@ -84,7 +84,7 @@ use crate::file_viewer::content_kind::{
 use crate::file_viewer::encoding::detect_from_head;
 use crate::file_viewer::materialize::{MaterializedFile, extract_if_routed_for_inspect, materialize_for_inspect};
 use crate::file_viewer::media::read_image_dimensions;
-use crate::file_viewer::{ArchiveFailureKind, Matcher, SearchMode, ViewerError};
+use crate::file_viewer::{ArchiveFailureKind, Matcher, ViewerError};
 use crate::search::{format_size, format_timestamp};
 use crate::security_log::ContentTool;
 use crate::tools::sensitive::{self, PROTECTED_NOTE, Protected};
@@ -94,6 +94,7 @@ pub use archive::{ArchiveContent, ArchiveEntry};
 use archive::{ExtractFn, Routed};
 pub use exif::{Degrees, ExifFacts, GpsCoordinates, Orientation};
 pub use find::{FindHits, FindLine};
+use find::{find_schema, parse_find};
 use pdf::{DEFAULT_MAX_PAGES, MAX_MAX_PAGES};
 pub use pdf::{PdfContent, PdfPage, PdfTextUnavailable, PdfWindow};
 pub use place::InspectRow;
@@ -335,16 +336,7 @@ pub fn inspect_file_schema() -> Value {
                 "type": "integer", "minimum": 1, "maximum": MAX_MAX_LINES,
                 "description": "Text: window lines (default 200)."
             },
-            "find": {
-                "type": "object",
-                "properties": {
-                    "query": { "type": "string" },
-                    "regex": { "type": "boolean" },
-                    "caseSensitive": { "type": "boolean" }
-                },
-                "required": ["query"],
-                "description": "Search text files and PDFs; matching lines replace the window."
-            },
+            "find": find_schema(),
             "pageStart": {
                 "type": "integer", "minimum": 1,
                 "description": "PDF: first page to read (default 1)."
@@ -397,35 +389,6 @@ pub(crate) enum TextAsk {
 struct Params {
     paths: Vec<String>,
     ask: TextAsk,
-}
-
-/// `find`, when present, as one built matcher. A query the viewer's matcher rejects (an
-/// invalid regex, a pattern that would have to cross a newline) is `INVALID_PARAMS` with
-/// the matcher's own reason, before any file is opened.
-fn parse_find(params: &Value) -> Result<Option<Arc<Matcher>>, ToolError> {
-    let find = match params.get("find") {
-        None | Some(Value::Null) => return Ok(None),
-        Some(v) => v
-            .as_object()
-            .ok_or_else(|| ToolError::invalid_params("'find' must be an object with a 'query' string"))?,
-    };
-    let query = find
-        .get("query")
-        .and_then(Value::as_str)
-        .filter(|q| !q.is_empty())
-        .ok_or_else(|| ToolError::invalid_params("'find.query' must be a non-empty string"))?;
-    let flag = |name: &str| match find.get(name) {
-        None | Some(Value::Null) => Ok(false),
-        Some(v) => v
-            .as_bool()
-            .ok_or_else(|| ToolError::invalid_params(format!("'find.{name}' must be true or false"))),
-    };
-    let mode = SearchMode {
-        use_regex: flag("regex")?,
-        case_sensitive: flag("caseSensitive")?,
-    };
-    let matcher = Matcher::build(query, mode).map_err(|e| ToolError::invalid_params(format!("'find.query': {e}")))?;
-    Ok(Some(Arc::new(matcher)))
 }
 
 fn parse_params(params: &Value) -> Result<Params, ToolError> {
