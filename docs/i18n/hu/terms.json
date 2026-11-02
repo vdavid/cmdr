@@ -168,6 +168,7 @@
     "confidence": "high",
     "sources": "macOS AppKit (Engedélyezés, Engedélyezés mindenképp); AOSP SystemUI usb_debugging_allow = Engedélyezés; ms (allow → engedélyez)",
     "exceptions": {
+      "ui.toolAsk.decline": "Don’t allow is the safe button, and the settled deny word is Elutasítás (macOS AppKit; askCmdr.renameReview.deny)",
       "errors.write.trashRefused.message.folderNotWritable": "English sense: “isn’t allowed to change” is a file-system permission, not granting consent, so it takes the -hat/-het potential (nem módosíthatja)"
     }
   },
@@ -330,6 +331,8 @@
     "confidence": "tentative",
     "sources": "descriptive; nominal form fits a one-cell control",
     "exceptions": {
+      "askCmdr.tool.upgradeSmbToDirect.tried": "English sense: “ask for a direct connection” is requesting one (kér), not asking a question",
+      "askCmdr.tool.outcome.inBackground": "English sense: “for you to ask” is the person requesting something, not Cmdr asking a question",
       "servers.sheet.nfsIdentityHelp": "English sense: “ask for a password” is requesting one, not asking a question, so it takes kér (nem kér jelszót)"
     }
   },
@@ -706,6 +709,12 @@
     "confidence": "high",
     "sources": "macOS AppKit Printing (kattintson … gombra, here in te form); ms (click → kattint); catalog (38 keys)"
   },
+  "client": {
+    "chosen": "kliens",
+    "forms": "an AI client → AI-kliens",
+    "confidence": "high",
+    "sources": "ms (client → kliens, 2148780); Total Commander (Kliens); catalog (operationLog.initiator.aiClient)"
+  },
   "clipboard": {
     "chosen": "vágólap",
     "forms": "on the clipboard → a vágólapon (no possessive: there is one clipboard); clipboard content → vágólaptartalom",
@@ -862,11 +871,34 @@
     "note": "The two stems are a deliberate split: the pane title keeps Apple's kapcsolód-, the sheet's button and its siblings keep csatlakoz- because Connect is shared with fileExplorer.network.connect.",
     "decision": "A szerverlap"
   },
+  "data": {
+    "chosen": "adat",
+    "accept": ["adatok", "adatai", "adatait", "adatainak", "adataid"],
+    "confidence": "high",
+    "sources": "catalog (settings.dataWipe.card); macOS (adatok)"
+  },
+  "details": {
+    "chosen": "részletek",
+    "accept": ["részlet", "adat", "leírás"],
+    "forms": "Show details → Részletek megjelenítése; the facts about a photo, a song, or the app itself in prose → adatai (Fotók és zeneszámok adatai)",
+    "confidence": "high",
+    "sources": "macOS AppKit (Részletek megjelenítése, Részletek elrejtése); catalog (errorReporter.pageCrash.detailsLabel)"
+  },
+  "direct-connection": {
+    "chosen": "közvetlen kapcsolat",
+    "accept": ["közvetlen", "közvetlenül"],
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.pane.connectedDirectlyToast, fileExplorer.network.osMountFallback.message)",
+    "note": "The MCP setting Direct mode shares the root: Közvetlen mód (settings.developer.mcpDirectMode.label)."
+  },
   "learn-more": {
     "chosen": "Bővebben",
     "confidence": "high",
     "forms": "More about “X” → Bővebben: X (a colon, no quotes)",
-    "sources": "shipped catalog frame, the same in onboarding.moreAbout, servers.sheet.autoReconnectInfoLabel, and fileOperations.transferDialog.rememberChoiceInfoLabel"
+    "sources": "shipped catalog frame, the same in onboarding.moreAbout, servers.sheet.autoReconnectInfoLabel, and fileOperations.transferDialog.rememberChoiceInfoLabel",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.contentsRule": "English sense: “needs to know more” is the assistant needing information, not an info link"
+    }
   },
   "level": {
     "chosen": "szint",
@@ -886,6 +918,14 @@
     "forms": "X menu → X menü, two words (Kedvencek menü, Előbeállítások menü); context menu → Helyi menü",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Menü megnyitása); catalog Kedvencek menü, Helyi menü"
+  },
+  "message": {
+    "chosen": "üzenet",
+    "confidence": "high",
+    "sources": "catalog (ai.cloudConsent.askCmdr.proactive); macOS Messages.app (Üzenetek)",
+    "exceptions": {
+      "licensing.dialog.retryExhausted": "English sense: “message us” is a verb, rendered írj nekünk"
+    }
   },
   "pane-divider": {
     "accept": ["elválasztó"],
@@ -1659,7 +1699,10 @@
     "chosen": "levált",
     "forms": "Detached at {id} → Levált állapot itt: {id}; the pill → (levált) {id} / (levált)",
     "confidence": "tentative",
-    "sources": "catalog (fileExplorer.git.tooltip.worktreeDetached); no pile source has detached HEAD (DC’s detached window → külön ablak is a different sense)"
+    "sources": "catalog (fileExplorer.git.tooltip.worktreeDetached); no pile source has detached HEAD (DC’s detached window → külön ablak is a different sense)",
+    "exceptions": {
+      "askCmdr.tool.eject.done": "English sense: “detached a drive” is ejecting or disconnecting it, so it takes the disconnect word (leválasztva)"
+    }
   },
   "git-unborn": {
     "chosen": "még nincs commit",
@@ -1729,6 +1772,13 @@
     "confidence": "high",
     "sources": "ms (digital signature → aláírás)"
   },
+  "swap-panes": {
+    "chosen": "Panelek felcserélése",
+    "accept": ["felcserél"],
+    "forms": "done → Panelek felcserélve",
+    "confidence": "high",
+    "sources": "catalog (menu.view.swapPanes, commands.paneSwap.label); Total Commander (Minden fül felcserélése)"
+  },
   "sync": {
     "chosen": "szinkronizálás",
     "accept": ["szinkron"],
@@ -1791,7 +1841,11 @@
     "chosen": "lépés",
     "confidence": "high",
     "forms": "Step 1 of 2: X → 1/2. lépés: X (the AI install steps); the onboarding counter reads Lépés: 1/2",
-    "sources": "MS terminology (step → lépés); shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting)"
+    "sources": "MS terminology (step → lépés); shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting)",
+    "exceptions": {
+      "askCmdr.tool.navForward.tried": "English sense: “step forward” is going forward in a pane’s history, not a numbered stage",
+      "askCmdr.tool.navBack.tried": "English sense: “step back” is going back in a pane’s history, not a numbered stage"
+    }
   },
   "storage": {
     "chosen": "tárhely",
@@ -2961,7 +3015,7 @@
   },
   "quit": {
     "chosen": "kilépés",
-    "accept": ["kilép", "bezárul", "lépj ki", "lépjen ki"],
+    "accept": ["kilép", "bezárul", "lépj ki", "lépjen ki", "ki nem lép"],
     "forms": "Quit Cmdr → Kilépés a Cmdrből (the menu's lowercase cmdr → Kilépés a cmdrből); Quit now → Kilépés most; Quit & Reopen → Kilépés és újranyitás; the question Kilépsz, amíg egy művelet folyamatban van?; quit unexpectedly → váratlanul bezárult",
     "avoid": [
       {
@@ -4104,7 +4158,8 @@
       "írjon",
       "létrehoz",
       "ki van írva",
-      "épp ír"
+      "épp ír",
+      "írhat"
     ],
     "forms": "flush → Az utolsó darab kiírása…; may already be partly written → lehet, hogy már részben ki van írva; half-written file → félig megírt fájl; were saved on a drive → kiíródtak-e ide: {volumeName}",
     "confidence": "high",

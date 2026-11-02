@@ -1496,19 +1496,19 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "Direct mode",
+  "settings.developer.mcpDirectMode.label": "Közvetlen mód",
   "@settings.developer.mcpDirectMode.label": {
     "sourceHash": "8273bcf"
   },
-  "settings.developer.mcpDirectMode.description": "Let connected AI tools read your files and confirm dialogs without asking you. Only turn this on while you’re testing or developing with them.",
+  "settings.developer.mcpDirectMode.description": "A csatlakoztatott AI-eszközök anélkül olvashatják a fájljaidat és erősíthetnek meg párbeszédablakokat, hogy megkérdeznének. Csak akkor kapcsold be, ha éppen tesztelsz vagy fejlesztesz velük.",
   "@settings.developer.mcpDirectMode.description": {
     "sourceHash": "d85f109"
   },
-  "settings.developer.mcpDirectMode.keywords": "testing, automation, confirm, bypass, developer",
+  "settings.developer.mcpDirectMode.keywords": "tesztelés, automatizálás, megkerülés, fejlesztő, felügyelet nélkül, automatikus jóváhagyás",
   "@settings.developer.mcpDirectMode.keywords": {
     "sourceHash": "285cb60"
   },
-  "settings.mcp.directModeThisSessionOnly": "Direct mode stays on until you quit Cmdr, since this computer can’t keep it safely across a restart.",
+  "settings.mcp.directModeThisSessionOnly": "A közvetlen mód csak addig marad bekapcsolva, amíg ki nem lépsz a Cmdrből, mert ez a számítógép nem tudja biztonságosan megőrizni újraindítás után.",
   "@settings.mcp.directModeThisSessionOnly": {
     "sourceHash": "f5d30da"
   },

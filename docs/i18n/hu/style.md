@@ -245,6 +245,10 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   `decisions.md` § A Dock helyi menüje.
 - **⚠️ ❌ A `Programok mappa` soha nem jön vissza**: az a régi Mac OS X-es név, nem a mai macOS-é. Semmilyen ellenőrzés
   nem fogja el a visszaesést, mert az érintett kulcsok angolja nem betű szerint azonos.
+- **Az AI-eszköz kérdéseinek törzse `Ezzel …`, a futásidejű név kettőspont után áll vagy a mondatot nyitja**:
+  `Ezzel kiadod ezt a kötetet: {name}.`, `{name} megnyílik ebben az appban: {app}.` (`ui.toolAsk.eject.body`,
+  `ui.toolAsk.openFile.body`). A `Don’t allow` gomb `Elutasítás` (a `deny` ruling), a `private key` `titkos kulcs` (ms;
+  a macOS-ban nincs találat).
 
 ## Open terms (resolved by evidence, not by David)
 

@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Keresés hétköznapi szavakkal</b>: a beírt szöveg",
+  "ai.cloudConsent.search": "<b>Keresés hétköznapi szavakkal</b>: a beírt szöveg, vagy amit egy csatlakoztatott AI-eszköz kér, ha bekapcsoltad az MCP közvetlen módját",
   "@ai.cloudConsent.search": {
-    "sourceHash": "e6d4ef9"
+    "sourceHash": "b5c8d93"
   },
   "ai.cloudConsent.selection": "<b>Kijelölés leírás alapján</b>: amit beírsz, valamint legfeljebb 240 név a jelenlegi mappából",
   "@ai.cloudConsent.selection": {
@@ -91,21 +91,21 @@
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
-  "ai.cloudConsent.askCmdr.item.messages": "Az üzeneteid",
+  "ai.cloudConsent.askCmdr.item.messages": "Az üzeneteid, köztük bármilyen jelszó, amit ott beírsz egy archívum vagy biztonsági mentés feloldásához",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "sourceHash": "befc6e9"
+    "sourceHash": "66e656b"
   },
-  "ai.cloudConsent.askCmdr.item.names": "Azoknak a fájloknak és mappáknak a nevei és útvonalai, amelyeket a Cmdr megnéz, hogy válaszolhasson neked",
+  "ai.cloudConsent.askCmdr.item.names": "Azoknak a fájloknak és mappáknak a nevei és útvonalai, amelyeket a Cmdr megnéz",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "sourceHash": "ce3259d"
+    "sourceHash": "4d5ea2c"
   },
   "ai.cloudConsent.askCmdr.item.sizes": "A méretük és a dátumuk",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Részletek azokból a fájlokból, amelyeket a Cmdr megnyit, hogy válaszolhasson neked: némi szöveg, PDF-oldalak, egy archívumban lévő fájlok listája, valamint egy fotó kameraadatai és készítési helye",
+  "ai.cloudConsent.askCmdr.item.contents": "Részletek azokból a fájlokból, amelyeket a Cmdr megnyit: némi szöveg, PDF-oldalak, egy archívumban lévő fájlok listája, egy fotó kameraadatai és készítési helye, valamint a Cmdr által a fotókban felismert szöveg",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "sourceHash": "fcd0b73"
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.item.envelope": "Amit épp most nézel: a jelenlegi mappád, a kurzorod, a kijelölésed és a csatlakoztatott meghajtóid",
   "@ai.cloudConsent.askCmdr.item.envelope": {
@@ -115,19 +115,19 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Fotók és zeneszámok adatai, ha egy átnevezés használja őket: felvétel dátuma, kamera, cím, előadó, album és hasonlók",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {
     "sourceHash": "e96157a"
   },
-  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "ai.cloudConsent.askCmdr.item.appState": "Amivel a Cmdr épp foglalkozik: futó és korábbi műveletek, nyitott párbeszédablakok, kedvencek, mentett helyek, a meghajtó indexelése, és az, hogy mely mappák a legfontosabbak",
   "@ai.cloudConsent.askCmdr.item.appState": {
     "sourceHash": "4159dde"
   },
-  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "ai.cloudConsent.askCmdr.item.settings": "A Cmdr-beállításaid és a billentyűparancsaid, köztük a képek indexeléséhez kiválasztott mappák és az AI-szolgáltatásod címe. Minden, ami jelszónak, kulcsnak vagy tokennek tűnik, ki van takarva, és ugyanígy az e-mail-címed is",
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "c7c0657"
   },
-  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "ai.cloudConsent.askCmdr.item.logs": "A Cmdr legutóbbi naplósorai: a neveket, útvonalakat, címeket és mindent, ami kulcsnak tűnik, előbb helyőrzők váltják fel. Néhány egyszerű adat megmarad, például a fájlkiterjesztések és a gyakori mappanevek, mint a Dokumentumok",
   "@ai.cloudConsent.askCmdr.item.logs": {
     "sourceHash": "7aabf35"
   },
@@ -135,15 +135,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "A Cmdr soha nem küld el egész fájlokat, fotókat vagy bélyegképeket. Ha egy fájlról kérdezel, annak egy korlátozott részét olvashatja el: néhány sor szöveget, egy PDF néhány oldalát a címével és a szerzőjével együtt, egy archívumban lévő fájlok listáját, vagy egy fotó kameraadatait, beleértve azt, hogy hol készült. A fotókeresés ugyanígy működik: a Cmdr által a találati fotókban felismert szöveg és azok címkéi a szolgáltatódhoz kerülnek, hogy meg tudja találni őket. A Cmdr javasolhat átnevezést, áthelyezést és rendrakást, de egyetlen fájllal sem történik semmi, amíg jóvá nem hagyod.",
+  "ai.cloudConsent.askCmdr.contentsRule": "A Cmdr soha nem küld el egész fájlokat, fotókat vagy bélyegképeket. Ha többet kell tudnia egy fájlról, annak egy korlátozott részét olvashatja el: néhány sor szöveget, egy PDF néhány oldalát a címével és a szerzőjével együtt, egy archívumban lévő fájlok listáját, vagy egy fotó kameraadatait, beleértve azt, hogy hol készült. A fotókeresés ugyanígy működik: a Cmdr által a találati fotókban felismert szöveg és azok címkéi a szolgáltatódhoz kerülnek, hogy meg tudja találni őket.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "Bizonyos tartalmak otthon maradnak, bárki bármit is kér: SSH-kulcsok, felhőszolgáltatások és eszközök hitelesítő adatai, a kulcskarikáid, böngészőadatok, a Mail, az Üzenetek, a Jegyzetek, a Cmdr saját adatai és minden fájl, amelyben titkos kulcs van. A nevük viszont így is eljuthat a szolgáltatódhoz.",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "Egy általad indított csevegésben az Ask Cmdr az appot is kezelheti helyetted: navigálhat, kijelölhet, rendezhet, lapokat és párbeszédablakokat nyithat, és csatlakoztathat egy általad mentett helyet. A másolás, az áthelyezés, a tömörítés, a törlés, az átnevezés és egy művelet visszavonása mindig megnyit egy párbeszédablakot vagy szerkesztőt, ahol te erősíted meg, és addig semmi sem történik, amíg meg nem teszed. Egy fájl megnyitása, egy beállítás módosítása (kivéve a Cmdr megjelenését), a kilépés, egy meghajtó kiadása, egy szerver eltávolítása és az indexelés módosítása előtt először megkérdez. Egy megnevezett mappa vagy fájl létrehozása és a fájlok címkézése azonnal, kérdés nélkül megtörténik, és a címkézést nem lehet visszavonni. A tervként előkészített átnevezések és rendrakások a jóváhagyásodra várnak.",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "bf002cc"
   },
@@ -151,17 +151,17 @@
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "A Cmdr figyeli azokat a mappákat is, amiket használsz, és beszélgetést kezd, ha van mit javasolnia, így úgy is mehetnek üzenetek a szolgáltatódhoz, hogy te nem kérdeztél semmit. Ezt az Ask Cmdr beállításaiban, a „Magától” résznél kapcsolhatod ki.",
+  "ai.cloudConsent.askCmdr.proactive": "A Cmdr figyeli azokat a mappákat is, amiket használsz, és beszélgetést kezd, ha van mit javasolnia, így úgy is mehetnek üzenetek a szolgáltatódhoz, hogy te nem kérdeztél semmit. Ezekben a beszélgetésekben el tudja olvasni a fent felsoroltakat, terveket készíthet elő, és megírhatja a jegyzeteit, de semmi mást nem tehet. Ezt az Ask Cmdr beállításaiban, a „Magától” résznél kapcsolhatod ki.",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "abfa80b"
+    "sourceHash": "95b18ac"
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "Az Ask Cmdr-csevegéseid a Mac-eden maradnak, egy helyi adatbázisban, amelyet megnyithatsz és elolvashatsz.",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Ha bekapcsolod az LLM-hívások naplózását a Speciális beállításokban, a Cmdr minden kérést és választ elment egy mappába a Mac-eden. Ezek a naplók is helyben maradnak, és sosem kerülnek elküldésre sehova.",
+  "ai.cloudConsent.logsNote": "Ha bekapcsolod az LLM-hívások naplózását a Speciális beállításokban, a Cmdr minden kérést és választ elment egy mappába a Mac-eden. Ezek a hívásnaplók helyben maradnak, a Cmdr sehova nem küldi el őket.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7e211fc"
+    "sourceHash": "d89adfb"
   },
   "ai.cloudConsent.turnOffAnyTime": "Bármikor kikapcsolhatod, és a Cmdr azonnal abbahagyja a küldést. A szolgáltatásod, a kulcsod és a csevegéseid maradnak, ahogy vannak.",
   "@ai.cloudConsent.turnOffAnyTime": {

@@ -397,7 +397,7 @@
   "@fileOperations.transferDialog.policyAskEach": {
     "sourceHash": "4302843"
   },
-  "fileOperations.transferDialog.presetOverwriteNote": "{reach, select, smaller {This dialog opened set to overwrite files already there that are smaller.} older {This dialog opened set to overwrite files already there that are older.} other {This dialog opened set to overwrite the files already there.}}",
+  "fileOperations.transferDialog.presetOverwriteNote": "{reach, select, smaller {Ez a párbeszédablak a célhelyen már meglévő, kisebb fájlok felülírására beállítva nyílt meg.} older {Ez a párbeszédablak a célhelyen már meglévő, régebbi fájlok felülírására beállítva nyílt meg.} other {Ez a párbeszédablak a célhelyen már meglévő fájlok felülírására beállítva nyílt meg.}}",
   "@fileOperations.transferDialog.presetOverwriteNote": {
     "sourceHash": "241c70e"
   },
