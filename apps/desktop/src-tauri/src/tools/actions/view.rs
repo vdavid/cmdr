@@ -39,18 +39,29 @@ pub async fn execute_set_view_mode<R: Runtime>(app: &AppHandle<R>, params: &Valu
         return Err(ToolError::invalid_params("mode must be 'brief' or 'full'"));
     }
 
+    let mut already_there = false;
     if let Some(store) = app.try_state::<PaneStateStore>() {
         store.set_focused_pane(pane.to_string());
+        let state = if pane == "left" {
+            store.get_left()
+        } else {
+            store.get_right()
+        };
+        already_there = state.view_mode == mode;
     }
 
+    // Nothing changes, so the frontend pushes nothing, and waiting would call a pane already in
+    // this view an unknown outcome. The event still goes out, in case this copy of the state lags.
     let pre_gen = snapshot_generation(app);
     app.emit("mcp-set-view-mode", json!({"pane": pane, "mode": mode}))?;
-    wait_for_ack(
-        app,
-        AckSignal::GenerationAdvanced { from: pre_gen },
-        DEFAULT_ACK_TIMEOUT,
-    )
-    .await?;
+    if !already_there {
+        wait_for_ack(
+            app,
+            AckSignal::GenerationAdvanced { from: pre_gen },
+            DEFAULT_ACK_TIMEOUT,
+        )
+        .await?;
+    }
     Ok(json!(format!("OK: Set {pane} pane to {mode} view")))
 }
 
@@ -97,4 +108,30 @@ pub async fn execute_sort<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
 
     let order_name = if order == "asc" { "ascending" } else { "descending" };
     Ok(json!(format!("OK: Sorted {pane} pane by {by} ({order_name})")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ui_state::pane_state::PaneState;
+
+    /// Found in a live run: a pane in `full` view asked for `full` waited out the ack and came
+    /// back an unknown outcome, because the frontend had nothing to push.
+    #[tokio::test]
+    async fn a_view_the_pane_already_has_is_an_ok_with_nothing_to_wait_for() {
+        let app = tauri::test::mock_app();
+        let store = PaneStateStore::new();
+        store.set_right(PaneState {
+            view_mode: "full".to_string(),
+            ..Default::default()
+        });
+        app.manage(store);
+
+        let answer = execute_set_view_mode(app.handle(), &json!({ "pane": "right", "mode": "full" })).await;
+
+        assert_eq!(
+            answer.map_err(|error| error.message),
+            Ok(json!("OK: Set right pane to full view"))
+        );
+    }
 }
