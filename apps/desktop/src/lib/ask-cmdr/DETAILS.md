@@ -466,7 +466,8 @@ registry lives below `commands/` rather than inside the chat command.
 - **Sessions panel** (`AskCmdrSessions.svelte`, opened from the rail header's "Chats" button) overlays the rail body
   (`position: absolute; inset: 0`) with a search box, an active/archived filter, and the thread list. Its state lives in
   a separate slice, `ask-cmdr-sessions.svelte.ts` (`sessionsState`), which calls the trigger's `switchToThread` /
-  `newChat`; the trigger never imports it back (no cycle). Selecting a thread switches the rail and closes the panel.
+  `openNewChat`; the trigger never imports it back (no cycle). Selecting a thread switches the rail and closes the
+  panel.
 - **List paging mirrors the operation-log dialog**: the offset is `conversations.length` (one source of truth), so an
   append can't overlap or desync; a full page (`SESSIONS_PAGE`) means "load more" is offered. Rename edits the row's
   title in place. The archived filter has two states: active-only (default) and "show archived", which shows ALL threads
@@ -475,7 +476,10 @@ registry lives below `commands/` rather than inside the chat command.
   a flip just updates the badge in place.
 - **Search** is debounced (`SEARCH_DEBOUNCE_MS`) and guarded by a monotonic `searchSeq` so a slow earlier response can't
   overwrite a newer one. A non-empty query replaces the list with FTS hits (`searchAskCmdrConversations`); clearing it
-  restores the list. Each hit's `snippet` is backend FTS text rendered as plain `{text}` (never `{@html}`).
+  restores the list and bumps `searchSeq`, so an answer still in flight lands nowhere. Closing the panel clears the
+  search (`closeSessions` → `clearSearch`): a kept query would reopen the panel on old hits, and `noteThreadStarted`
+  skips while one is active, so a new thread wouldn't show either. Each hit's `snippet` is backend FTS text rendered as
+  plain `{text}` (never `{@html}`).
 - **A thread the agent opened wears a `bot` glyph**, the same one the status corner shows while a wake thinks, in the
   list AND in search results (`ConversationSearchHit.origin` exists for that second half: a hit that lost the mark reads
   as a thread the user started and forgot). ❌ The test is `origin === 'notification'`, never "origin is not null": the

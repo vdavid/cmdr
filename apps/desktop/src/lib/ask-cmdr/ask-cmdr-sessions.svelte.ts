@@ -5,7 +5,8 @@
  *
  * Paging mirrors the operation-log dialog: the offset is `conversations.length` (one
  * source of truth), so an append can't overlap or desync from what's shown. Search
- * replaces the list while a query is active; clearing it restores the list.
+ * replaces the list while a query is active; clearing it, or closing the panel,
+ * restores the list.
  */
 
 import { getAppLogger } from '#lib/logging/logger.js'
@@ -73,10 +74,12 @@ export function openSessions(): void {
   void loadSessions()
 }
 
-/** Close the sessions panel (leaves the loaded list in place for a quick reopen). The panel's
- * focused control leaves the page with it, so focus goes to the prompt box, never `<body>`. */
+/** Close the sessions panel. The loaded list stays for a quick reopen, but the search goes, so
+ * the panel reopens on the recent threads rather than old hits. The panel's focused control
+ * leaves the page with it, so focus goes to the prompt box, never `<body>`. */
 export function closeSessions(): void {
   sessionsState.open = false
+  clearSearch()
   requestComposerFocus()
 }
 
@@ -133,11 +136,12 @@ let searchSeq = 0
 const searchFailures = new LogOnceGate()
 
 /** Set the query and (debounced) run the cross-thread search. An empty query restores
- * the list. */
+ * the list and drops any search still in flight. */
 export function setSearchQuery(query: string): void {
   sessionsState.query = query
   if (searchTimer) clearTimeout(searchTimer)
   if (query.trim().length === 0) {
+    searchSeq++ // an answer still in flight belongs to a query that's gone
     sessionsState.hits = []
     sessionsState.searching = false
     return

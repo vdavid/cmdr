@@ -28,17 +28,20 @@ vi.mock('#lib/logging/logger.js', () => ({
 }))
 vi.mock('./ask-cmdr-trigger.svelte', () => ({
   switchToThread: (id: number) => switchMock(id),
-  newChat: () => {
+  openNewChat: () => {
     newChatMock()
   },
+  requestComposerFocus: vi.fn(),
 }))
 
 import {
   SESSIONS_PAGE,
   chooseThread,
   clearSearch,
+  closeSessions,
   loadMoreSessions,
   loadSessions,
+  openSessions,
   renameConversation,
   sessionsState,
   setArchived,
@@ -188,6 +191,45 @@ describe('sessions search', () => {
     await vi.runAllTimersAsync()
     expect(sessionsState.query).toBe('')
     expect(sessionsState.hits).toEqual([])
+  })
+
+  it('reopening the panel after a search shows the recent threads with an empty box', async () => {
+    searchMock.mockResolvedValueOnce([hit(1)])
+    listMock.mockResolvedValue([row(1), row(2)])
+    openSessions()
+    setSearchQuery('budget')
+    await vi.runAllTimersAsync()
+    expect(sessionsState.hits).toEqual([hit(1)])
+
+    closeSessions()
+    openSessions()
+    await vi.runAllTimersAsync()
+
+    expect(sessionsState.query).toBe('')
+    expect(sessionsState.hits).toEqual([])
+    expect(sessionsState.conversations.map((c) => c.id)).toEqual([1, 2])
+  })
+
+  it('closing the panel drops a search that was still waiting out its debounce', async () => {
+    setSearchQuery('budget')
+    closeSessions()
+    await vi.runAllTimersAsync()
+    expect(searchMock).not.toHaveBeenCalled()
+  })
+
+  it('a search still in flight when the panel closes lands nowhere', async () => {
+    let resolveSearch: (v: ConversationSearchHit[]) => void = () => {}
+    searchMock.mockReturnValueOnce(new Promise((r) => (resolveSearch = r)))
+    setSearchQuery('budget')
+    await vi.advanceTimersByTimeAsync(250)
+    expect(sessionsState.searching).toBe(true)
+
+    closeSessions()
+    resolveSearch([hit(1)])
+    await vi.runAllTimersAsync()
+
+    expect(sessionsState.hits).toEqual([])
+    expect(sessionsState.searching).toBe(false)
   })
 })
 
