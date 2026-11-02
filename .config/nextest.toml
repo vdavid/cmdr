@@ -327,6 +327,10 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # second until one is heard, inside a 20 s budget; 30 s keeps that budget the
 # authority and the cap a hang-catcher.
 #
+# ❗ It runs on the `both` container's `public` share, which no suite writes to, because
+# of what follows. On `guest` it still failed its 20 s budget with several lanes on one
+# stack. Everything below measures `guest`, and is why this cell must stay off it.
+#
 # Delivery is ~0.3 s on a quiet stack, but it rides Samba's `notifyd`, one process in
 # the `guest` container (`cpus: 1.0`) that fans every write on `public` out to every
 # recursive watch on it (one per connected test volume), logging each failed send to
@@ -350,6 +354,14 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # `cpus: 0.5` with ~110 leaked watches; 3.5–5.3 s at 1.0, then 11–13.7 s on the next
 # round once that round's timeouts had leaked theirs. So 20 s stays.
 filter = 'test(an_outside_change_in_an_accented_directory_names_the_path_the_pane_opened)'
+slow-timeout = { period = "30s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# SFTP cells against the Docker fixture (`#[ignore]`d, integration lane only). Each pays
+# real SSH handshakes in a CPU-capped container, and the reconnect cells also wait out
+# real backoff steps (2 s, then 5 s), so the 8 s default leaves a loaded lane no room. A
+# hang-catcher, as for `smb_integration_`.
+filter = 'test(sftp_integration_)'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
 [[profile.default.overrides]]
