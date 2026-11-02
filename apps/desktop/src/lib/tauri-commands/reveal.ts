@@ -5,7 +5,7 @@
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '#lib/ipc/bindings.js'
-import type { RevealHandlerStatus } from '#lib/ipc/bindings.js'
+import type { RevealHandlerStatus, RevealTabsDropped } from '#lib/ipc/bindings.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 
 const log = getAppLogger('reveal')
@@ -74,5 +74,12 @@ export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealH
 export function onRevealDelivered(handler: () => void): Promise<UnlistenFn> {
   return events.revealDelivered.listen(() => {
     handler()
+  })
+}
+
+/** Fires when a pane's tab limit turned away some of what the person asked to open. */
+export function onRevealTabsDropped(handler: (counts: RevealTabsDropped) => void): Promise<UnlistenFn> {
+  return events.revealTabsDropped.listen((event) => {
+    handler(event.payload)
   })
 }

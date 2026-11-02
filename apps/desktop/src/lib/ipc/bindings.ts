@@ -5699,6 +5699,7 @@ export const events = {
   restrictedPathsChanged: makeEvent<RestrictedPathsChangedPayload>('restricted-paths-changed'),
   revealDelivered: makeEvent<RevealDelivered>('reveal-delivered'),
   revealPath: makeEvent<RevealPath>('reveal-path'),
+  revealTabsDropped: makeEvent<RevealTabsDropped>('reveal-tabs-dropped'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
   scanPreviewCancelled: makeEvent<ScanPreviewCancelledEvent>('scan-preview-cancelled'),
   scanPreviewComplete: makeEvent<ScanPreviewCompleteEvent>('scan-preview-complete'),
@@ -15727,6 +15728,18 @@ export type RevealSecurityLogError =
   | { kind: 'noDataDir' }
   // The file manager didn't open, or the check didn't finish in time.
   | { kind: 'unavailable' }
+
+/**
+ *  Typed `reveal-tabs-dropped` Tauri event: a pane's tab limit turned away some of what the
+ *  person asked to open, so the frontend says so. Without it, nine folders opening out of a
+ *  selection of 12 looks complete.
+ */
+export type RevealTabsDropped = {
+  // How many landed.
+  opened: number
+  // How many the limit turned away.
+  dropped: number
+}
 
 /**
  *  How far an approved group can be taken back, stored in `proposals.reversible`. A FACT

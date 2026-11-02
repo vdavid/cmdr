@@ -2766,6 +2766,7 @@ export type MessageKey =
   | 'main.revealNudge.switchBackNote'
   | 'main.revealNudge.title'
   | 'main.revealNudge.turnedOn'
+  | 'main.revealTabsDropped'
   | 'main.upgradeNudge.mac'
   | 'main.upgradeNudge.other'
   | 'menu.app.about'

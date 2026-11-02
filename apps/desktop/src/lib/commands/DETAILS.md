@@ -41,7 +41,10 @@ interface CommandArgsOverrides {
   'cursor.moveTo': { pane: PaneId; to: number | string }
   'cursor.scrollTo': { pane: PaneId; index: number }
   'volume.selectByName': { pane: PaneId; name?: string; volumeId?: string; mcpRequestId?: string } // id wins; the MCP reply's round-trip id
-  'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean } | McpTabMoveArgs // `move` carries toPane / toIndex + the reply's round-trip id
+  'tab.mcpAction':
+    | { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean; mcpRequestId?: undefined }
+    | McpTabMoveArgs
+    | McpTabOpenArgs // `move` carries toPane / toIndex; both of those carry the reply's round-trip id
   'dialog.confirm': { type: ConfirmDialogType; onConflict?: string }
 }
 interface CommandArgsOptionalOverrides {

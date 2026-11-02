@@ -77,7 +77,7 @@ use crate::network::{
     SmbFellBackToOsMount, SmbOsMountNoticeWithdrawn, VolumeConnectionChanged, VolumeReconnectRequested,
 };
 use crate::operations_host::{VolumesBusyChanged, wire};
-use crate::reveal::RevealDelivered;
+use crate::reveal::{RevealDelivered, RevealTabsDropped};
 use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchProgressEvent};
 use crate::security_notices::SecurityNoticeRaised;
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
@@ -1200,6 +1200,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             // The mechanism is macOS-only but the type resolves everywhere, for
             // the same reason the two above it do.
             RevealDelivered,
+            RevealTabsDropped,
             // Indexing (indexing/, commands/search.rs). Each pins its wire name
             // via `event_name` because the struct names carry an `…Event` suffix
             // (or live in a differently-named module) that wouldn't kebab-case to

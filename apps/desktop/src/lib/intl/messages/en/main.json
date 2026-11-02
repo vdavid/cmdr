@@ -86,6 +86,15 @@
   "@main.revealNudge.notTurnedOn": {
     "description": "Notification shown when the user accepted the offer but the macOS setting did not change, for a reason the user can do nothing about here. It points at the switch in Cmdr's Settings as the way to try again. Must not use the words \"error\" or \"failed\". “Show in Finder” is the macOS command name; use your locale's macOS wording."
   },
+  "main.revealTabsDropped": "Opened {opened, plural, one {# folder} other {# folders}}. {dropped} more didn’t fit, since a pane holds up to {limit} tabs.",
+  "@main.revealTabsDropped": {
+    "description": "Brief notification after the user chose “Open in Cmdr” on more folders than the pane has room for, so Cmdr opened some of them and left out the rest. A \"pane\" is one of Cmdr's two side-by-side file lists; use the word the rest of this locale's Cmdr uses for it. It disappears on its own. Must not use the words \"error\" or \"failed\".",
+    "placeholders": {
+      "opened": "How many folders opened.",
+      "dropped": "How many folders were left out.",
+      "limit": "The most tabs one pane can hold, for example 10."
+    }
+  },
   "main.revealActivation.title": "“Show in Finder” opened here",
   "@main.revealActivation.title": {
     "description": "Title of a one-time notification that appears the first time another app's “Show in Finder” actually opens a folder in Cmdr, which can be days or weeks after the user turned the option on. It disappears on its own after ten seconds. States what just happened, calmly; it is not an apology and not a warning. “Show in Finder” is the macOS command name; use your locale's macOS wording."
