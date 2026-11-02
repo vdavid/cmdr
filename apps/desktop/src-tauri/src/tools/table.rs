@@ -261,7 +261,7 @@ mcp_tools! {
     // ── Tabs ────────────────────────────────────────────────────────────────
     "tab" => {
         id: Tab,
-        brief: "Open, close, activate, pin, reopen, or move a pane's tabs.",
+        brief: "Make a new tab, or close, activate, pin, reopen, or move a pane's tabs.",
         desc: "Manage a pane's tabs: new, close, close_others, activate, set_pinned, reopen (restore the last-closed tab), or move (reorder with toIndex, or send to the other pane with toPane). tabId defaults to the active tab where it applies; see each pane's tabs in cmdr://state.",
         schema: schemas::tab_schema(),
         subject: SubjectSpec::Pane,
