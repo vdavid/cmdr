@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Sök med vanliga ord</b>: texten du skriver",
+  "ai.cloudConsent.search": "<b>Sök med vanliga ord</b>: texten du skriver, eller det som ett anslutet AI-verktyg frågar efter när du har slagit på MCP-direktläge",
   "@ai.cloudConsent.search": {
-    "sourceHash": "e6d4ef9"
+    "sourceHash": "b5c8d93"
   },
   "ai.cloudConsent.selection": "<b>Markera med en beskrivning</b>: det du skriver, plus upp till 240 namn från den aktuella mappen",
   "@ai.cloudConsent.selection": {
@@ -91,21 +91,21 @@
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
-  "ai.cloudConsent.askCmdr.item.messages": "Dina meddelanden",
+  "ai.cloudConsent.askCmdr.item.messages": "Dina meddelanden, inklusive lösenord som du skriver där för att låsa upp ett arkiv eller en säkerhetskopia",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "sourceHash": "befc6e9"
+    "sourceHash": "66e656b"
   },
-  "ai.cloudConsent.askCmdr.item.names": "Namnen och sökvägarna för filer och mappar som Cmdr tittar på för att svara dig",
+  "ai.cloudConsent.askCmdr.item.names": "Namnen och sökvägarna för filer och mappar som Cmdr tittar på",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "sourceHash": "ce3259d"
+    "sourceHash": "4d5ea2c"
   },
   "ai.cloudConsent.askCmdr.item.sizes": "Deras storlekar och datum",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Delar av filer som Cmdr öppnar för att svara dig: lite text, PDF-sidor, vad som finns i ett arkiv samt en bilds kamerauppgifter och var den togs",
+  "ai.cloudConsent.askCmdr.item.contents": "Delar av filer som Cmdr öppnar: lite text, PDF-sidor, vad som finns i ett arkiv, en bilds kamerauppgifter och var den togs samt text som Cmdr känt igen i bilder",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "sourceHash": "fcd0b73"
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.item.envelope": "Vad du tittar på just nu: din aktuella mapp, markör, markering och anslutna enheter",
   "@ai.cloudConsent.askCmdr.item.envelope": {
@@ -115,19 +115,19 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Uppgifter om bilder och låtar när ett namnbyte använder dem: tagningsdatum, kamera, titel, artist, album och liknande",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {
     "sourceHash": "e96157a"
   },
-  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "ai.cloudConsent.askCmdr.item.appState": "Vad Cmdr håller på med: pågående och tidigare åtgärder, öppna dialoger, favoriter, sparade platser, enhetsindexering och vilka mappar som är viktigast",
   "@ai.cloudConsent.askCmdr.item.appState": {
     "sourceHash": "4159dde"
   },
-  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "ai.cloudConsent.askCmdr.item.settings": "Dina Cmdr-inställningar och tangentbordsgenvägar, inklusive mappar du har valt för bildindexering och adressen till din AI-tjänst. Allt som ser ut som ett lösenord, en nyckel eller en token maskeras, och det gör din e-postadress också",
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "c7c0657"
   },
-  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "ai.cloudConsent.askCmdr.item.logs": "Cmdrs senaste loggrader, där namn, sökvägar, adresser och allt som ser ut som en nyckel först byts ut mot platshållare. Några enkla uppgifter blir kvar, som filtillägg och vanliga mappnamn som Dokument",
   "@ai.cloudConsent.askCmdr.item.logs": {
     "sourceHash": "7aabf35"
   },
@@ -135,15 +135,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr skickar aldrig hela filer, bilder eller miniatyrer. När du frågar om en fil kan Cmdr läsa en begränsad del av den: några rader text, några sidor ur en PDF tillsammans med dess titel och författare, vilka filer som finns i ett arkiv, eller en bilds kamerauppgifter, inklusive var den togs. Bildsökningen fungerar på samma sätt: texten som Cmdr känt igen i de matchande bilderna och deras taggar skickas till din leverantör så att den kan hitta dem. Cmdr kan föreslå namnbyten, flyttar och upprensningar, och ingenting händer med en fil förrän du godkänner det.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr skickar aldrig hela filer, bilder eller miniatyrer. När Cmdr behöver veta mer om en fil kan Cmdr läsa en begränsad del av den: några rader text, några sidor ur en PDF tillsammans med dess titel och författare, vilka filer som finns i ett arkiv, eller en bilds kamerauppgifter, inklusive var den togs. Bildsökningen fungerar på samma sätt: texten som Cmdr känt igen i de matchande bilderna och deras taggar skickas till din leverantör så att den kan hitta dem.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "Visst innehåll stannar hemma, vad någon än ber om: SSH-nycklar, inloggningsuppgifter för moln och verktyg, dina nyckelringar, webbläsardata, Mail, Meddelanden, Anteckningar, Cmdrs egna data och alla filer som innehåller en privat nyckel. Filernas namn kan ändå nå din leverantör.",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "I en chatt som du har startat kan Ask Cmdr också sköta appen åt dig: gå till mappar, markera, sortera, öppna flikar och dialoger och ansluta till en plats du har sparat. Att kopiera, flytta, komprimera, radera, byta namn och ångra en åtgärd öppnar varje gång en dialog eller redigerare där du bekräftar, och ingenting händer förrän du gör det. Innan Ask Cmdr öppnar en fil, ändrar en inställning (utom hur Cmdr ser ut), avslutar, matar ut en enhet, tar bort en server eller ändrar indexeringen frågar Ask Cmdr dig först. Att skapa en namngiven mapp eller fil och att tagga filer sker direkt utan någon fråga, och taggar går inte att ångra. Namnbyten och upprensningar som Ask Cmdr förbereder som en plan väntar på ditt godkännande.",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "bf002cc"
   },
@@ -151,17 +151,17 @@
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr håller också koll på mapparna du använder och startar ett samtal när den har något att föreslå, så meddelanden kan gå till din leverantör utan att du frågat om något. Du kan stänga av det i inställningarna för Ask Cmdr, under ”På eget initiativ”.",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr håller också koll på mapparna du använder och startar ett samtal när den har något att föreslå, så meddelanden kan gå till din leverantör utan att du frågat om något. I de samtalen kan Cmdr läsa det som står ovan, förbereda planer och skriva sina anteckningar, men inget annat. Du kan stänga av det i inställningarna för Ask Cmdr, under ”På eget initiativ”.",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "abfa80b"
+    "sourceHash": "95b18ac"
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "Dina chattar i Ask Cmdr stannar på din Mac, i en lokal databas som du kan öppna och läsa.",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Om du aktiverar loggning av LLM-anrop i Avancerat i inställningarna sparar Cmdr också varje förfrågan och svar till en mapp på din Mac. Även de loggarna stannar lokalt, de skickas aldrig någonstans.",
+  "ai.cloudConsent.logsNote": "Om du aktiverar loggning av LLM-anrop i Avancerat i inställningarna sparar Cmdr också varje förfrågan och svar till en mapp på din Mac. De anropsloggarna stannar lokalt och skickas aldrig någonstans.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7e211fc"
+    "sourceHash": "d89adfb"
   },
   "ai.cloudConsent.turnOffAnyTime": "Stäng av det här när som helst, så slutar Cmdr skicka direkt. Tjänsten, nyckeln och chattarna finns kvar som de är.",
   "@ai.cloudConsent.turnOffAnyTime": {

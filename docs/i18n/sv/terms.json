@@ -102,6 +102,12 @@
     "forms": "Cmdr Settings section → Avancerat; quote settings.section.advanced exactly in navigation paths",
     "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
+  "ai-client": {
+    "chosen": "AI-klient",
+    "confidence": "high",
+    "forms": "En AI-klient startade det här",
+    "sources": "catalog operationLog.initiator.aiClient, ui.startedElsewhere.aiClient; Total Commander klient"
+  },
   "ai-context": {
     "chosen": "kontext",
     "confidence": "tentative",
@@ -297,6 +303,7 @@
     "sources": "MS terminology (archive verb → arkivera)"
   },
   "ask": {
+    "accept": ["be om", "ber om", "bad om"],
     "chosen": "fråga",
     "confidence": "high",
     "forms": "segmented option Fråga; Fråga för varje / Fråga senare",
@@ -606,6 +613,12 @@
     "forms": "click X → klicka på X; pressing a key is tryck på",
     "sources": "macOS AppKit (Klicka på ”Fortsätt” om du vill …)"
   },
+  "client": {
+    "chosen": "klient",
+    "confidence": "high",
+    "forms": "klienten, klienter; AI-klient",
+    "sources": "Total Commander (FTP-klient, Klientcertifikat); catalog operationLog.initiator.aiClient"
+  },
   "clipboard": {
     "chosen": "urklipp",
     "confidence": "high",
@@ -736,6 +749,30 @@
     "accept": ["konversation", "chatt"],
     "sources": "shipped settings.askCmdr.chatMemorySize.description and the chat ruling's note (conversation → samtal); MS terminology says konversation"
   },
+  "data": {
+    "chosen": "data",
+    "accept": ["uppgifter"],
+    "confidence": "high",
+    "forms": "takes plural agreement: dina data, Cmdrs egna data; compounds webbläsardata; personal data → personuppgifter",
+    "sources": "catalog ai.cloudConsent.whereItGoes (dina data … dem), errors.git.shallowBoundary.message"
+  },
+  "details": {
+    "accept": ["uppgifter", "information"],
+    "chosen": "detaljer",
+    "confidence": "high",
+    "forms": "behind a disclosure → detaljer (Visa rapportdetaljer); facts about a thing → uppgifter (kamerauppgifter, Cmdrs uppgifter); license details → Licensinformation",
+    "sources": "catalog crashReporter.dialog.showDetails, askCmdr.tool.readResource.doing, ai.cloudConsent.askCmdr.item.mediaFields"
+  },
+  "direct-connection": {
+    "exceptions": {
+      "settings.network.directSmbConnection.description": "Verb form with the subject between: ansluter Cmdr direkt."
+    },
+    "accept": ["anslut direkt", "ansluta direkt", "ansluter direkt", "ansluten direkt", "direkta anslutning"],
+    "chosen": "direktanslutning",
+    "confidence": "high",
+    "forms": "Cmdrs direktanslutning; a failure in prose → Det gick inte att ansluta direkt",
+    "sources": "catalog fileExplorer.navigation.useDirectConnection, fileExplorer.network.osMountFallback.message, askCmdr.tool.upgradeSmbToDirect.doing"
+  },
   "learn-more": {
     "chosen": "Mer om",
     "confidence": "high",
@@ -765,6 +802,13 @@
     "forms": "compounds close up (snabbmeny, Favoritmeny, förinställningsmenyn); a named menu in prose → Hjälp-menyn",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Öppna meny); catalog Favoritmeny, snabbmeny"
+  },
+  "message": {
+    "accept": ["meddelanden", "meddelandet"],
+    "chosen": "meddelande",
+    "confidence": "high",
+    "forms": "neuter; Apple app Messages → Meddelanden",
+    "sources": "macOS AppKit Services; live Messages.app CFBundleName sv (macOS 26, plutil, 2026-11-02); catalog ai.cloudConsent.askCmdr.item.messages"
   },
   "pane-divider": {
     "accept": ["avdelare"],
@@ -846,7 +890,7 @@
   "cursor": {
     "chosen": "markör",
     "confidence": "high",
-    "forms": "under markören; panelmarkören; the viewer's textmarkör",
+    "forms": "under markören; panelmarkören; the viewer's textmarkör; highlighted item → objektet under markören (markerat means selected)",
     "sources": "macOS (markören)"
   },
   "custom": {
@@ -1419,6 +1463,9 @@
     "sources": "MS terminology commit → incheckning / checka in; catalog fileExplorer.git.size.commits, tooltip.pinnedCommit"
   },
   "git-detached": {
+    "exceptions": {
+      "askCmdr.tool.eject.done": "A drive detached, not a git checkout: kopplade från is the software disconnect verb."
+    },
     "accept": ["frånkopplad"],
     "chosen": "frikopplad",
     "confidence": "high",
@@ -3192,6 +3239,13 @@
     "forms": "har stöd för / stöds; stöder … inte än",
     "sources": "macOS Finder (… eftersom den inte stöds.)"
   },
+  "swap-panes": {
+    "accept": ["byter plats på panelerna", "bytte plats på panelerna", "byta plats på panelerna"],
+    "chosen": "byt plats på panelerna",
+    "confidence": "high",
+    "forms": "menu and command Byt plats på panelerna; progress Byter plats på panelerna",
+    "sources": "catalog menu.view.swapPanes, commands.paneSwap.label"
+  },
   "symlink": {
     "accept": ["symbolisk länk", "symboliska länkar"],
     "chosen": "symlänk",
@@ -3451,7 +3505,7 @@
     "sources": "macOS AppKit (Okänd), Nautilus and Thunar (Okänd / okänd); catalog ai.local.modelUnknown"
   },
   "unlock": {
-    "accept": ["låsa upp", "låser upp", "upplåst", "låste inte upp"],
+    "accept": ["låsa upp", "låser upp", "låste upp", "upplåst", "låste inte upp"],
     "chosen": "lås upp",
     "confidence": "high",
     "sources": "macOS AppKit (Lås upp)"
