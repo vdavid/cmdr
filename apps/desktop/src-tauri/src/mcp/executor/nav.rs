@@ -256,7 +256,7 @@ pub(crate) async fn open_tab_in_pane<R: Runtime>(app: &AppHandle<R>, pane: PaneC
 ///
 /// Ordering is load-bearing: the cursor moves before the multi-select, because the
 /// frontend's cursor move resets the selection. A new tab, when one is wanted, is
-/// [`open_tab_in_pane`]'s job and comes before this call, so the navigation lands in it.
+/// `open_tab_in_pane`'s job and comes before this call, so the navigation lands in it.
 pub(crate) async fn go_to_in_pane<R: Runtime>(
     app: &AppHandle<R>,
     pane: PaneChoice,
