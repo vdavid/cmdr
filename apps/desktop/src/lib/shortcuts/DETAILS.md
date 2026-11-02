@@ -64,8 +64,6 @@ a void). The store enforces this at its boundary, the real seam for MCP events a
   commands (no write, no `notifyListeners`, no cross-window emit). `resetShortcut` stays permissive — it only ever
   DELETES a custom entry, never writes the illusion, so it can usefully clear a leaked native customization.
 - `isNativeShortcutCommand(commandId)` is the exported predicate; the editor uses it to render native rows read-only.
-- MCP shortcut edits route through these same mutators (`mcp-shortcuts-listener.ts`), so they inherit the guard for
-  free.
 
 ### Fixed-key commands are not customizable either
 
@@ -235,11 +233,6 @@ strings for the same reason — Apple spells force-quit `⌥⌘⎋`, but the use
 
 The one place canonical strings surface as-is to a user is the Settings key-search box: it holds what `formatKeyCombo`
 produced so it can filter against stored combos, so it reads `⌘Backspace`, not `⌘⌫`.
-
-### MCP integration (`mcp-shortcuts-listener.ts`)
-
-Main window listens for MCP events to modify shortcuts even when settings window is closed. This allows AI agents to
-customize shortcuts on the fly.
 
 ### Centralized dispatch (`shortcut-dispatch.ts`)
 
@@ -471,16 +464,6 @@ require a `when`-clause system (like VS Code's `fileListFocused && !renameActive
 things depending on context (file list vs volume chooser vs command palette). That's a significant architecture
 investment with low payoff for Cmdr's current scope. Tier 1 commands are the ones where the "two sources of truth" bug
 hurt (adding F8 to the registry but forgetting to add it to the keydown handler).
-
-### Why separate MCP listener for main window?
-
-`mcp-shortcuts-listener.ts` listens for the backend's `mcp-shortcuts-set` / `-remove` / `-reset` events (a distinct
-backend→main channel) so MCP tools can rebind even when the Settings window is closed. It calls the same store mutators
-(`setShortcut` / `removeShortcut` / `resetShortcut`), so an MCP-driven change in the main window now also rides the
-`shortcuts:changed` cross-window event to the Settings window for free — no special handling needed. The MCP listener
-stays separate because its trigger (a backend event with a different payload shape) is unrelated to the window-to-window
-`shortcuts:changed` channel; folding them together would conflate two transports. (If a future change makes the two
-channels share a payload, revisit — but today it's not a trivial merge, so leave it.)
 
 ## Gotchas
 

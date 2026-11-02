@@ -37,6 +37,3 @@ export { eventMatchesCommand, comboMatchesCommand, resolveKeyCombo } from './sho
 // ❌ `claimKey` is deliberately NOT re-exported here. A local handler imports it from
 // the leaf `#lib/shortcuts/claim-key`, so a test that mocks this barrel can't replace
 // the claim with a no-op and hide a double-dispatch. See `claim-key.ts`.
-
-// MCP shortcuts listener
-export { setupMcpShortcutsListener, cleanupMcpShortcutsListener } from './mcp-shortcuts-listener'

@@ -818,6 +818,8 @@ the check, so "whole file" holds up to where it stopped, and nothing past that c
 - **OCR**: `image_facts` reads the full stored text before its cap. `search_photos` reads it behind every text hit, because
   a query matching a key's body gets a snippet with no armor in it.
 
+**A model-chosen host through a path isn't a channel here**: `connect_to_server` is `DevOnly` because a model-chosen address could exfiltrate, and a path into `/net/<host>/…` would do the same if the autofs hosts map were live. It isn't (verified on macOS Darwin 27.0.0, `/etc/auto_master` has `/net -hosts` commented out, read-only, 2026-11-02), so nothing refuses that prefix. `/home` maps to `auto_home`, which names no host from a path.
+
 **Refusals** are typed, never a false "not found", and reach the security log as tool and reason, with no path
 (`note_refusal`, coalesced per tool and reason: an injected turn can ask for a thousand files).
 

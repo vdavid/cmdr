@@ -274,7 +274,7 @@ mcp_tools! {
     "dialog" => {
         id: Dialog,
         brief: "Open, focus, or close a dialog.",
-        desc: "Open, focus, or close a dialog. Open/focus: settings, file-viewer, about, onboarding. Close: any id from cmdr://dialogs/available. cmdr://state lists what's open.",
+        desc: "Open, focus, or close a dialog. Open/focus: settings, file-viewer, about. Close: any id from cmdr://dialogs/available. cmdr://state lists what's open.",
         schema: schemas::dialog_schema(),
         subject: SubjectSpec::None,
         access: Access::AppState,

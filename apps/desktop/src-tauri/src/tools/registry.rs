@@ -34,8 +34,7 @@
 //!
 //! Split: this file is the mechanism (the access classes, the params gate, and the `mcp_tools!` macro);
 //! `table.rs` is the data the macro expands. Layering: the table depends on the `actions` handlers and
-//! on `schemas`; `auth` depends on this module. Neither may depend on `server` or `auth` (that would
-//! cycle).
+//! on `schemas`.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -204,7 +203,7 @@ pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
 /// so the shape helper passes the macro's own `app`/`params`/`name` positionally):
 ///
 /// - `app_params` — `handler(app, params).await` (async; most tools).
-/// - `app_only` — `handler(app).await` (async; no params: `toggle_hidden`, `mkdir`, …).
+/// - `app_only` — `handler(app).await` (async; no params: `toggle_hidden`, …).
 /// - `params_only` — `handler(params).await` (async; no `app`: `search`, `favorites`, …).
 /// - `sync_app` — `handler(app)` (sync; `quit`, `switch_pane`, `swap_panes`).
 /// - `sync_app_params` — `handler(app, params)` (sync; `remove_manual_server`).

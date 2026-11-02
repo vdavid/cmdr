@@ -470,8 +470,8 @@ amend-a-row writer message; the not-rollbackable flag keeps it from doing harm m
 Every write-start command now carries an optional `initiator` (default `user`): the local commands (provenance
 threading) plus the volume commands (`copy_between_volumes`, `move_between_volumes`, `compress_files`) and the
 `run_instant` commands (`create`, `rename`). The FE `mcp-listeners.ts` tags MCP-originated write dispatches `ai_client`
-(threaded through the typed command bus alongside `autoConfirm`/`onConflict`, mirroring navigation's `source: 'mcp'`).
-The one gap: an into-archive-edit via a volume command defaults to `user` (see the bypass boundary above).
+(threaded through the typed command bus alongside `onConflict`, mirroring navigation's `source: 'mcp'`). The one gap: an
+into-archive-edit via a volume command defaults to `user` (see the bypass boundary above).
 
 ### Row-volume tradeoff
 

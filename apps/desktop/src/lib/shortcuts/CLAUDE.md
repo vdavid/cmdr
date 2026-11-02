@@ -1,7 +1,7 @@
 # Keyboard shortcuts system
 
-Customizable keyboard shortcuts for all Cmdr commands (edit/add/remove/reset via Settings or MCP). Defaults live in the
-sibling `../commands/command-registry.ts`; only customizations persist to `shortcuts.json`.
+Customizable keyboard shortcuts for all Cmdr commands (edit/add/remove/reset via Settings). Defaults live in the sibling
+`../commands/command-registry.ts`; only customizations persist to `shortcuts.json`.
 
 Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-research.md`.
 
@@ -9,7 +9,7 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
 
 - `shortcuts-store.ts` (delta-only persistence, cross-window emit, the native/fixed boundary),
   `reactive-shortcuts.svelte.ts` (reactive reads), `scope-hierarchy.ts` + `conflict-detector.ts` (overlap → conflict),
-  `key-capture.ts`, `shortcut-dispatch.ts` (Tier 1 reverse lookup), `mcp-shortcuts-listener.ts`.
+  `key-capture.ts`, `shortcut-dispatch.ts` (Tier 1 reverse lookup).
 - Read-only help window (Help > Keyboard shortcuts): `shortcuts-window.ts` (opener), `ShortcutsList.svelte` (grouped
   list), `shortcut-diff.ts` (pure default-vs-effective diff). Route at `routes/shortcuts/`. See DETAILS.md § "Keyboard
   shortcuts help window".
@@ -27,7 +27,7 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
   it would delete or roll back a rebind it never heard of. DETAILS § Shortcuts store.
 - **macOS-native (`app.quit`/`hide`/`hideOthers`/`showAll`) and fixed-key (`FIXED_KEY_COMMAND_IDS`) commands are not
   customizable, enforced at the store boundary.** Load drops persisted entries, the mutators no-op with `log.warn`,
-  `resetShortcut` stays permissive. MCP edits route through the same mutators, so they inherit the guard.
+  `resetShortcut` stays permissive.
 - **Every mutation emits `shortcuts:changed` after saving; the per-window `SENDER_ID` is the loop guard.** The listener
   updates the local map and calls `notifyListeners`, never saving or re-emitting. Without this a rebind stays stale in
   other windows until restart.

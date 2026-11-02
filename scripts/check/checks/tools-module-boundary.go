@@ -16,7 +16,7 @@ import (
 // What's left of the old `mcp` and `agent` cycle is the short list below: proposal and memory
 // handlers write the agent's stores, and the size contract shares the one token estimator.
 // Handlers grow the list one convenient import at a time, so it's pinned here, and adding to it
-// is a design decision. Why each entry exists: `tools/DETAILS.md` § The two-view registry model.
+// is a design decision. Why each entry exists: `tools/DETAILS.md` § The rule.
 
 // toolsAllowedAgentImports are the only `crate::agent` paths `tools/` may name, matched as
 // a whole path or a prefix ending at a `::`.

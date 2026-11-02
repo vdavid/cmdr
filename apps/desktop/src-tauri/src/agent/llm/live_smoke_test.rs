@@ -608,7 +608,7 @@ async fn answer_deferred_call(effective: &super::types::AgentToolCall) -> serde_
             answer
         }
         ToolId::Dialog if effective.arguments["type"] == "tab" => serde_json::json!({
-            "problem": "tab isn't a dialog. It opens settings, file-viewer, about, or onboarding. Call the tab tool instead, through use_tool if it isn't declared to you.",
+            "problem": "tab isn't a dialog. It opens settings, file-viewer, or about. Call the tab tool instead, through use_tool if it isn't declared to you.",
         }),
         ToolId::ReadResource => serde_json::json!({
             "uri": effective.arguments["uri"],

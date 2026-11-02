@@ -21,7 +21,7 @@
     import { logWebkitCompat } from '#lib/utils/webkit-compat.js'
     import { initFocusWatchdog } from '#lib/focus-watchdog.js'
     import { initTextSize, cleanupTextSize } from '#lib/text-size.svelte.js'
-    import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '#lib/shortcuts/index.js'
+    import { initializeShortcuts } from '#lib/shortcuts/index.js'
     import {
         setupMcpMainBridge,
         cleanupMcpMainBridge,
@@ -263,8 +263,6 @@
             },
             // Initialize keyboard shortcuts store (loads custom shortcuts from disk)
             { name: 'shortcuts', run: initializeShortcuts },
-            // Set up MCP shortcuts listener (allows MCP tools to modify shortcuts)
-            { name: 'mcpShortcutsListener', run: setupMcpShortcutsListener },
             // Set up MCP settings bridge (allows MCP tools to query/modify settings)
             { name: 'mcpMainBridge', run: setupMcpMainBridge },
             // Questions a tool puts to a person (`tools/ask.rs`).
@@ -347,7 +345,6 @@
         cleanupReactiveSettings()
         cleanupSettingsApplier()
         cleanupVolumeTints()
-        cleanupMcpShortcutsListener()
         cleanupMcpMainBridge()
         cleanupToolAsk()
         cleanupRestrictedSettingsBridge()

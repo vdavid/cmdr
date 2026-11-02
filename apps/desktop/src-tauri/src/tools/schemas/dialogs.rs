@@ -13,7 +13,7 @@ pub fn dialog_schema() -> Value {
             },
             "type": {
                 "type": "string",
-                "description": "Dialog type. Openable/focusable: settings, file-viewer, about, onboarding. Closable: any dialog id from cmdr://dialogs/available (also settings, file-viewer). 'close' on quit-confirmation calls the quit off and keeps what's running; the quit tool raises it, never 'open'. 'close' on rename ends the inline rename editor without saving."
+                "description": "Dialog type. Openable/focusable: settings, file-viewer, about. Closable: any dialog id from cmdr://dialogs/available (also settings, file-viewer). 'close' on quit-confirmation calls the quit off and keeps what's running; the quit tool raises it, never 'open'. 'close' on rename ends the inline rename editor without saving."
             },
             "section": {
                 "type": "string",
