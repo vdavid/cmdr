@@ -81,6 +81,7 @@ export const updatesPrivacySettings: SettingDefinitionSource[] = [
     type: 'string',
     default: '',
     component: 'text-input',
+    mcpMasked: true,
   },
   {
     id: 'updates.crashReports',

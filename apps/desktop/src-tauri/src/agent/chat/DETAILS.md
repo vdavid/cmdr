@@ -463,7 +463,7 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and this section together.
 
-- **Fixed overhead: 15,263 tokens** on every single call — 2,925 for the system prompt and 12,338 for the 62 tool
+- **Fixed overhead: 15,263 tokens** on every single call — 2,925 for the system prompt and 12,338 for the 63 tool
   declarations. The old flat 8k budget, against a prefix half this size, still left only ~4.9k for the actual work, so
   an 11-file `image_facts` batch fit and a 12-file one did not. **It grows with the tool view**: the four suggested-ops
   tools are ~1,300 tokens of schema (`propose_suggestions` alone 759, the most expensive declaration), which every call pays whether or not it suggests anything, and which costs a 16k budget

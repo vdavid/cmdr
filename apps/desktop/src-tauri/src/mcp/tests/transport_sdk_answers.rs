@@ -138,6 +138,32 @@ async fn a_foreign_host_gets_403_and_an_unknown_protocol_version_gets_400() {
     assert_eq!(unknown_version.status, 400);
 }
 
+/// One builder for both ways in, seen from the wire: `resources/read` and the `read_resource` tool
+/// say the same string.
+#[tokio::test]
+async fn resources_read_and_the_read_resource_tool_say_the_same_string() {
+    let _token_guard = TOKEN_TEST_LOCK.lock().await;
+    let app = app_with_stores();
+    let server = TestServer::start(&app).await;
+
+    let native = server
+        .call(json!({"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"cmdr://dialogs/available"}}))
+        .await;
+    let through_the_tool = server
+        .call(json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"read_resource","arguments":{"uri":"cmdr://dialogs/available"}}}))
+        .await;
+    let answer: Value = serde_json::from_str(
+        through_the_tool["result"]["content"][0]["text"]
+            .as_str()
+            .expect("a text block"),
+    )
+    .expect("the tool's answer is JSON");
+
+    assert!(native["result"]["contents"][0]["text"].is_string(), "{native}");
+    assert_eq!(answer["text"], native["result"]["contents"][0]["text"]);
+    assert_eq!(answer["truncated"], json!(false));
+}
+
 /// The SDK reads a `tools/call` it can't parse as a method it doesn't know.
 #[tokio::test(flavor = "current_thread")]
 async fn a_call_missing_what_it_needs_is_method_not_found() {

@@ -340,6 +340,19 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - M18: `agent/DETAILS.md`'s principle 3, invariant 7, D26, D49, and D60 still describe the old promise.
   `tools/DETAILS.md` § The rule is the matrix's canonical home.
 
+## Carried from M13
+
+- M14: `read_resource` is `Deferred`, so it becomes a one-liner, and its brief is ready. `FIXED_PROMPT_OVERHEAD_TOKENS`
+  still reads M12's 15,263 while the real prefix is about 200 tokens higher (inside the test's slack): re-pin with the
+  rest. The system prompt names `read_resource`, and `every_call_pays_the_pinned_fixed_overhead` counts 63 declarations.
+- M14: `SubjectSpec::Resource` is generic, so `use_tool` reaching it needs no arm. `read_resource` takes `offset`, past
+  the design's `read_resource(uri)`, because `cmdr://settings` alone runs past one result.
+- Translator: the consent copy's EDITED keys go stale, and `desktop-i18n-stale` only warns. Every `ai.cloudConsent.*`
+  value changed in M13 has to be re-translated before the land, or a locale's users re-consent to the old wording.
+- M16: a `cmdr://settings` read against the real webview, since only Vitest has seen the masked YAML end to end.
+- M18: the tool descriptions' `cmdr://` mentions now resolve through `read_resource`.
+  `apps/website/src/pages/llms*.txt.ts` and the features page weren't checked for Ask Cmdr's old promise.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,

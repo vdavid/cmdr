@@ -31,7 +31,7 @@ const FILES: usize = 100;
 // them, and divides the reply's own ceiling by the plan row), so they're imported rather than
 // restated: this file is what keeps them honest against the real shapes.
 
-/// Every call: the system prompt plus the 62 tool declarations, before the user has said a word.
+/// Every call: the system prompt plus the 63 tool declarations, before the user has said a word.
 const FIXED_OVERHEAD: usize = FIXED_PROMPT_OVERHEAD_TOKENS;
 const SYSTEM_PROMPT_TOKENS: usize = 2_925;
 const TOOL_DECLARATION_TOKENS: usize = 12_338;
@@ -107,13 +107,13 @@ fn assert_near(measured: usize, documented: usize, what: &str) {
 #[test]
 fn every_call_pays_the_pinned_fixed_overhead() {
     let tools = crate::tools::agent_tool_declarations();
-    assert_eq!(tools.len(), 62, "the overhead below is the cost of THESE declarations");
+    assert_eq!(tools.len(), 63, "the overhead below is the cost of THESE declarations");
 
     let system = estimate_prompt_tokens(&crate::agent::chat::system_prompt::system_prompt(), &[], &[]);
     let declarations = estimate_prompt_tokens("", &tools, &[]);
 
     assert_near(system, SYSTEM_PROMPT_TOKENS, "the system prompt");
-    assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 62 tool declarations");
+    assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 63 tool declarations");
     assert_near(system + declarations, FIXED_OVERHEAD, "the fixed per-call overhead");
 }
 

@@ -1711,6 +1711,30 @@
       }
     },
     {
+      "name": "read_resource",
+      "description": "Read a cmdr:// view, the way to follow any cmdr:// another tool mentions. cmdr://state (?include=panes,volumes,dialogs,listings,recentErrors,operations,favorites, ?compact=true), cmdr://settings (******** is private), cmdr://logs (redacted; ?since=<iso>&filter=<text>&limit=<n>), cmdr://indexing (?volume=<id>), cmdr://importance (?path=, ?top=&volume=, ?threshold=), cmdr://dialogs/available. truncated: true comes with nextOffset: pass it as offset for the rest.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string",
+            "description": "cmdr://state, cmdr://settings, cmdr://logs, cmdr://indexing, cmdr://importance, or cmdr://dialogs/available, with its query if any"
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Characters to skip: the nextOffset of the answer before."
+          }
+        },
+        "required": [
+          "uri"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
       "name": "app_state",
       "description": "Snapshot the live app state: both panes (folder, cursor item, selection, view mode, sort) and the mounted volumes with index freshness and connectivity: what the user is looking at right now.",
       "inputSchema": {

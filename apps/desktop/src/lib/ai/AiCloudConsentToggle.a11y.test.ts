@@ -90,10 +90,27 @@ describe('what the disclosure promises', () => {
     target.remove()
   })
 
-  /** ❌ The old promise must not come back: the agent proposes changes and writes its notes. */
-  it('never claims the agent changes nothing', async () => {
+  /** ❌ The old promise must not come back: the agent starts things, and tags with no question. */
+  it('never claims the agent changes nothing, and says what it can do', async () => {
     const target = await mountToggle()
     expect(target.textContent).not.toContain('never changes anything')
+    expect(target.textContent).not.toContain('nothing happens to a file until you approve it')
+    expect(target.textContent).toContain(getMessage('ai.cloudConsent.askCmdr.actions'))
+    target.remove()
+  })
+
+  /** New egress, each named: the rule for widening the line (agent invariant 8). */
+  it('names the settings, the logs, what a rename reads, and what stays home', async () => {
+    const target = await mountToggle()
+    for (const key of [
+      'ai.cloudConsent.askCmdr.item.settings',
+      'ai.cloudConsent.askCmdr.item.logs',
+      'ai.cloudConsent.askCmdr.item.appState',
+      'ai.cloudConsent.askCmdr.item.mediaFields',
+      'ai.cloudConsent.askCmdr.protectedContents',
+    ] as const) {
+      expect(target.textContent, key).toContain(getMessage(key))
+    }
     target.remove()
   })
 

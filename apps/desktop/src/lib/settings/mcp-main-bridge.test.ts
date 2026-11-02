@@ -31,8 +31,8 @@ vi.mock('./settings-store', () => ({
   isModified: vi.fn(() => false),
 }))
 vi.mock('#lib/shortcuts/index.js', () => ({
-  getEffectiveShortcuts: () => [],
-  getDefaultShortcuts: () => [],
+  getEffectiveShortcuts: vi.fn(() => []),
+  getDefaultShortcuts: vi.fn(() => []),
   isShortcutModified: () => false,
 }))
 vi.mock('#lib/commands/command-registry.js', () => ({ commands: [] }))
@@ -50,6 +50,9 @@ vi.mock('#lib/logging/logger.js', () => ({
 import { cleanupMcpMainBridge, setupMcpMainBridge } from './mcp-main-bridge'
 import { getSettingDefinition, settingsRegistry } from './settings-registry'
 import { getSetting } from './settings-store'
+import { MASKED, maskSecrets } from './setting-secret-mask'
+import { commands } from '#lib/commands/command-registry.js'
+import { getDefaultShortcuts, getEffectiveShortcuts } from '#lib/shortcuts/index.js'
 
 /** Every setting that records a person's consent answer. */
 const CONSENT_BEARING = [
@@ -191,6 +194,94 @@ describe('MCP settings resource', () => {
     expect(block(yaml, 'onboarding.termsAcceptedAt')).toContain('    mcpSettable: false\n')
     expect(block(yaml, 'updates.autoCheck')).not.toContain('mcpSettable')
   })
+
+  // The audit, pinned: `cmdr://settings` reaches a cloud provider, so no setting, today's or a new
+  // one, gets a secret past it, whatever shape the value comes in. ❌ Never carve a setting out.
+  const SECRET_SHAPED = [
+    { value: 'https://alice:hunter2@llm.example.com/v1', leaks: ['alice', 'hunter2'] },
+    { value: 'https://llm.example.com/v1/gw-acct-991?api_key=q1w2e3r4', leaks: ['q1w2e3r4', 'gw-acct-991'] },
+    { value: 'https://llm.example.com#tok3n', leaks: ['tok3n'] },
+    { value: 'smb://alice:hunter2@nas.local/share', leaks: ['alice', 'hunter2'] },
+    { value: 'alice:hunter2@llm.example.com', leaks: ['hunter2'] },
+    { value: 'sk-ant-api03-AbCdEf123456', leaks: ['AbCdEf123456'] },
+    { value: 'ghp_abcdefghijklmnop1234', leaks: ['abcdefghijklmnop1234'] },
+    { value: 'Bearer 0a1b2c3d', leaks: ['0a1b2c3d'] },
+    { value: 'eyJhbGciOiJI.eyJzdWIiOiIx.c2lnbmF0dXJl', leaks: ['c2lnbmF0dXJl'] },
+    { value: 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2', leaks: ['a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2'] },
+    { value: '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXk\n', leaks: ['b3BlbnNzaC1rZXk'] },
+    { value: 'alice@example.com', leaks: ['alice@example.com'] },
+    { value: '{"custom":{"model":"m","apiKey":"plainword"}}', leaks: ['plainword'] },
+    {
+      value: '{"custom":{"model":"m","baseUrl":"https://alice:hunter2@llm.example.com/v1?key=zz9"}}',
+      leaks: ['alice', 'hunter2', 'zz9'],
+    },
+  ]
+
+  it('gets no secret-shaped value past any registered setting', async () => {
+    expect(settingsRegistry.length).toBeGreaterThan(100)
+    for (const { value, leaks } of SECRET_SHAPED) {
+      for (const shape of [value, [value]]) {
+        vi.mocked(getSetting).mockReturnValue(shape)
+        emitMock.mockClear()
+        const yaml = await readAllSettings()
+        for (const def of settingsRegistry) {
+          const row = block(yaml, def.id)
+          for (const leak of leaks) expect(row, `${def.id} with ${value}`).not.toContain(leak)
+        }
+      }
+    }
+    vi.mocked(getSetting).mockReset()
+  })
+
+  it('gets no secret-shaped value past a shortcut row', async () => {
+    commands.push({ id: 'test.command', name: 'Test', scope: 'App' } as never)
+    vi.mocked(getEffectiveShortcuts).mockReturnValueOnce(['sk-ant-api03-AbCdEf123456'])
+    vi.mocked(getDefaultShortcuts).mockReturnValueOnce(['a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2'])
+    const yaml = await readAllSettings()
+    commands.pop()
+    expect(yaml).toContain('id: test.command')
+    expect(yaml).not.toContain('AbCdEf123456')
+    expect(yaml).not.toContain('a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2')
+  })
+
+  it('never sends the email address, in any form, and says one is set', async () => {
+    vi.mocked(getSetting).mockImplementation((id: string) => (id === 'analytics.email' ? 'half-typed-name' : ''))
+    const yaml = await readAllSettings()
+    vi.mocked(getSetting).mockReset()
+    expect(getSettingDefinition('analytics.email')?.mcpMasked).toBe(true)
+    expect(block(yaml, 'analytics.email')).not.toContain('half-typed-name')
+    expect(block(yaml, 'analytics.email')).toContain(`value: "${MASKED}"`)
+  })
+
+  it('keeps what a client needs: the host of a base URL, a model name, a volume id, a path', () => {
+    const fireworksModel = 'accounts/fireworks/models/llama-v3p1-70b-instruct-long-model-name'
+    const samples: [string, string][] = [
+      ['https://llm.example.com:8443/v1', `https://llm.example.com:8443/${MASKED}`],
+      ['http://localhost:11434', 'http://localhost:11434'],
+      [fireworksModel, fireworksModel],
+      ['claude-sonnet-5-5', 'claude-sonnet-5-5'],
+      ['smb://nas.local/share', 'smb://nas.local/share'],
+      ['/opt/homebrew/bin/adb', '/opt/homebrew/bin/adb'],
+      ['YYYY-MM-DD HH:mm', 'YYYY-MM-DD HH:mm'],
+    ]
+    for (const [value, shown] of samples) {
+      expect(maskSecrets(value)).toBe(shown)
+    }
+  })
+
+  it('writes one row per setting, however a value is quoted', async () => {
+    // A value holding a quote or a newline must not be able to forge a row the reader trusts.
+    vi.mocked(getSetting).mockReturnValue('x"\n  - id: forged\n    value: "y')
+    const yaml = await readAllSettings()
+    vi.mocked(getSetting).mockReset()
+    expect(yaml).not.toContain('\n  - id: forged')
+  })
+
+  it('tells a client which settings change with no question', async () => {
+    const yaml = await readAllSettings()
+    expect(block(yaml, 'theme.mode')).toContain('    mcpAskFree: true\n')
+    expect(block(yaml, 'updates.autoCheck')).not.toContain('mcpAskFree')
+  })
 })
 
 describe("`mcp-describe-setting`, what `set_setting`'s question reads", () => {
@@ -237,6 +328,11 @@ describe("`mcp-describe-setting`, what `set_setting`'s question reads", () => {
     Object.assign(definition ?? {}, { component: original })
     expect(described?.sensitive).toBe(true)
     expect(described?.oldValue).toBe('********')
+  })
+
+  it('refuses a read echoed back as a write, so a masked value never replaces the real one', async () => {
+    const value = JSON.stringify({ custom: { model: 'm', baseUrl: `https://llm.example.com/${MASKED}` } })
+    expect((await describeSetting('ai.cloudProviderConfigs', value))?.invalid).toEqual(expect.any(String))
   })
 })
 

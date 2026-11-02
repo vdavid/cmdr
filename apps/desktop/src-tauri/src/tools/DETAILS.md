@@ -734,7 +734,7 @@ so a dev build can't read the prod `mcp.token`.
   - **Gotcha/Why:** taking an open sheet's answers (`adopt_where`) runs no reader, so it would walk past the gate. The
     tool only takes answers when the folder passes the gate and the file is neither protected nor a symlink.
 
-**The private-key check** (`refuse_private_key_text`, both armor lines) catches a copy in `~/Desktop/backup` that no path
+**The private-key check** (`refuse_private_key_text`, both armor lines; `cmdr://logs` reads it too) catches a copy in `~/Desktop/backup` that no path
 rule can see. A hit refuses the whole file, and neither `startLine` nor a `find` needle can skip it:
 
 - **Windows** (`text.rs`): the window plus a look of about 200 lines behind it, through the backend's decoder. A head scan

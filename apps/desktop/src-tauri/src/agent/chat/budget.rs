@@ -90,7 +90,7 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 
 /// What every call pays before the user has said a word: the system prompt plus the tool
 /// declarations. Measured against the shipped assets, and pinned there —
-/// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. /// prompt is 2,925 of it, the 62 tool declarations the rest.
+/// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. /// prompt is 2,925 of it, the 63 tool declarations the rest.
 ///
 /// It grows whenever a tool joins the view, and every call pays it whether or not it uses
 /// that tool: the four suggested-ops tools cost about 1,300 tokens of schema between them,

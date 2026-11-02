@@ -14,7 +14,7 @@ fn test_all_tools_count() {
     // + 6 reads (app_state, list_pane_files, important_folders, folder_importance, list_suggestions,
     //   get_suggestion_group) + list_volumes + inspect_file + nothing_to_suggest + 3 propose + 2 memory
     //   + connect_volume = 67
-    assert_eq!(get_all_tools().len(), 67);
+    assert_eq!(get_all_tools().len(), 68);
 }
 
 #[test]

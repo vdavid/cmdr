@@ -80,6 +80,18 @@ pub enum LinePane {
     Right,
 }
 
+/// One of the `cmdr://` views, as a tool line names it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum LineResource {
+    State,
+    Dialogs,
+    Indexing,
+    Importance,
+    Settings,
+    Logs,
+}
+
 /// What one call looked at. Every string is bounded; every path is a [`LinePath`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
@@ -126,6 +138,11 @@ pub enum ToolSubject {
     /// `set_setting`: the setting's id.
     Setting {
         id: String,
+    },
+    /// `read_resource`: which of Cmdr's own views. The line names it, since a person should see
+    /// their logs or settings being read. A URI outside the six has no subject.
+    Resource {
+        view: LineResource,
     },
     /// The volume id a tool names: `connect_volume`, or `SubjectSpec::Volume`.
     Volume {

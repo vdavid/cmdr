@@ -126,9 +126,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.search": "<b>Search in plain words</b>: the text you type",
+  "ai.cloudConsent.search": "<b>Search in plain words</b>: the text you type, or what a connected AI tool asks for once you’ve turned on MCP direct mode",
   "@ai.cloudConsent.search": {
-    "description": "List item in the Allow cloud AI fold for natural-language search in the Search dialog: only the typed query is sent. The bold part (inside <b></b>, keep the tags) names the feature. Sentence case, no period.",
+    "description": "List item in the Allow cloud AI fold for natural-language search: the Search dialog sends the typed query, and an outside AI tool connected over MCP can send one too, only with the developer setting \"MCP direct mode\" on. The bold part (inside <b></b>, keep the tags) names the feature. MCP stays as it is. Sentence case, no period. The apostrophe is U+2019.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -144,15 +144,15 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.askCmdr.item.messages": "Your messages",
+  "ai.cloudConsent.askCmdr.item.messages": "Your messages, including any password you type there to unlock an archive or a backup",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "description": "Now shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends. First item: the text the user types. Short noun phrase, sentence case.",
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends. First item: the text the user types, and it says plainly that a password typed into the chat to unlock an archive or a backup goes along with it. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.askCmdr.item.names": "The names and paths of files and folders Cmdr looks at to answer you",
+  "ai.cloudConsent.askCmdr.item.names": "The names and paths of files and folders Cmdr looks at",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "description": "Now shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends: the file and folder names and paths Cmdr reads to answer. The contents Cmdr can read on request are a separate item, ai.cloudConsent.askCmdr.item.contents. Sentence case, no period.",
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends: the file and folder names and paths the assistant reads. The contents it can read are a separate item, ai.cloudConsent.askCmdr.item.contents. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -162,9 +162,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Parts of files Cmdr opens to answer you: some text, PDF pages, what’s inside an archive, and a photo’s camera details and location",
+  "ai.cloudConsent.askCmdr.item.contents": "Parts of files Cmdr opens: some text, PDF pages, what’s inside an archive, a photo’s camera details and location, and text Cmdr recognized inside photos",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "description": "Now shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends. Names the file contents Ask Cmdr can read on request through its inspect tool: some lines of a text file, PDF text by page, the names of the files inside an archive, and a photo's EXIF data including where it was taken. Sentence case, no period. The apostrophes are U+2019.",
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends. Names the file contents the assistant can read: some lines of a text file, PDF text by page, the names of the files inside an archive, a photo's EXIF data including where it was taken, and text recognized inside photos. Sentence case, no period. The apostrophes are U+2019.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -180,15 +180,51 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "@ai.cloudConsent.askCmdr.item.mediaFields": {
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends: when a batch rename's name pattern uses a file's EXIF or music tags, those values reach the provider as part of the preview. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "@ai.cloudConsent.askCmdr.item.appState": {
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends: the app's own state it can read. \"which folders matter most\" is Cmdr's folder-importance score. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "@ai.cloudConsent.askCmdr.item.settings": {
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends: the assistant can read the app's settings. Keep both facts: folder paths and the AI service's address are in there; secret-looking values and the user's email address are masked. Sentence case, no final period. The apostrophe is U+2019.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "@ai.cloudConsent.askCmdr.item.logs": {
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends: the assistant can read the app's own recent log, redacted first. Keep both facts: identifying details become placeholders, and a few plain details stay. Sentence case, no final period. The apostrophe is U+2019.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
   "ai.cloudConsent.askCmdr.item.memory": "The notes Cmdr keeps about you, sent again with every message",
   "@ai.cloudConsent.askCmdr.item.memory": {
     "description": "Now shown under Settings > AI > Provider, in the Allow cloud AI fold, as the last item of the nested list of what the Ask Cmdr assistant sends: the assistant's own memory notes about the user, which are re-sent with every single message. \"Cmdr\" here is the assistant doing the remembering, matching the other items in the list. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr never sends whole files, photos, or thumbnails. When you ask about a file, it can read a limited part of it: some lines of text, a few pages of a PDF along with its title and author, the list of files inside an archive, or a photo’s camera details, including where it was taken. Photo search works the same way: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr never sends whole files, photos, or thumbnails. When it needs to know more about a file, it can read a limited part of it: some lines of text, a few pages of a PDF along with its title and author, the list of files inside an archive, or a photo’s camera details, including where it was taken. Photo search works the same way: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "description": "Now shown under Settings > AI > Provider, in the Allow cloud AI fold, as a reassurance paragraph after the Ask Cmdr list. Four facts to keep: whole files, photos, and thumbnails are never sent; when the user asks about a file, the assistant reads a limited part of it (some lines of text, a few PDF pages plus the PDF's title and author, the names of the files inside an archive, a photo's camera details including where it was taken); photo search sends the text recognized inside the matching photos and their tags; and the assistant proposes file changes but never carries one out without the user approving it. Must NOT promise that no file contents are sent, and must NOT promise that the assistant changes nothing (it writes its own notes and proposes renames and moves). The apostrophes are U+2019.",
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list. Three facts to keep: whole files, photos, and thumbnails are never sent; the assistant can read a limited part of a file (some lines of text, a few PDF pages plus the PDF's title and author, the names of the files inside an archive, a photo's camera details including where it was taken); photo search sends the text recognized inside the matching photos and their tags. Must NOT promise that no file contents are sent. The apostrophes are U+2019.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "@ai.cloudConsent.askCmdr.protectedContents": {
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list: the assistant is never given the contents of these places, even if a prompt asks for them, but their file names may still reach the provider. Keep the whole list and that last sentence. Mail, Messages, and Notes are Apple app names. The apostrophe is U+2019.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "@ai.cloudConsent.askCmdr.actions": {
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list, saying what the assistant can DO, so what its answers can make happen. Keep every group and what each one waits for: free app actions; dialogs the user confirms; questions asked first; the two things that run with no question, and that tags can't be undone; plans that wait for approval. Must NOT promise that nothing changes without the user. \"Ask Cmdr\" is the assistant's product name.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -198,9 +234,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr also watches the folders you use and starts a conversation when it has something to suggest, so messages can reach your provider without you asking first. You can turn that off in the Ask Cmdr settings, under “On its own”.",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr also watches the folders you use and starts a conversation when it has something to suggest, so messages can reach your provider without you asking first. In those conversations it can read what’s listed above, prepare plans, and write its notes, and that’s all. You can turn that off in the Ask Cmdr settings, under “On its own”.",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "description": "Now shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list: the assistant can start conversations by itself, so messages reach the provider without the user typing anything, and the user can switch that off. The quoted phrase is the heading of that settings group (settings.askCmdr.proactive.title), so translate it exactly the same way in both places. The quotes are U+201C and U+201D.",
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list: the assistant can start conversations by itself, so messages reach the provider without the user typing anything; in those it can only read, prepare plans for later approval, and write its own notes; the user can switch that off. The quoted phrase is the heading of that settings group (settings.askCmdr.proactive.title), so translate it exactly the same way in both places. The quotes are U+201C and U+201D, the apostrophe U+2019.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -210,9 +246,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.logsNote": "If you turn on LLM call logging in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those logs stay local too, never sent anywhere.",
+  "ai.cloudConsent.logsNote": "If you turn on LLM call logging in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those call logs stay local, never sent anywhere.",
   "@ai.cloudConsent.logsNote": {
-    "description": "Now shown under Settings > AI > Provider, as a smaller note near the end of the Allow cloud AI fold, about the optional local LLM call log (the logLlmCalls setting): the logs are written to a local folder and never transmitted.",
+    "description": "Shown under Settings > AI > Provider, as a smaller note near the end of the Allow cloud AI fold, about the optional local LLM call log (the logLlmCalls setting): those logs are written to a local folder and never transmitted. It's a different thing from the app's own log, ai.cloudConsent.askCmdr.item.logs, so keep \"call logs\" distinct.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

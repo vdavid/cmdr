@@ -110,6 +110,8 @@ pub enum ContentTool {
     ImageFacts,
     SearchPhotos,
     MultiRename,
+    /// `cmdr://logs`, the one resource that reads a file's text.
+    CmdrLogs,
 }
 
 /// Why an AI tool wasn't given a file's contents.

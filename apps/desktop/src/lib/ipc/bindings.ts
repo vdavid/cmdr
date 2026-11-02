@@ -11156,6 +11156,9 @@ export type LineRef = {
   callId: string
 }
 
+// One of the `cmdr://` views, as a tool line names it.
+export type LineResource = 'state' | 'dialogs' | 'indexing' | 'importance' | 'settings' | 'logs'
+
 // A sign-in on another server, through a link, that nobody has allowed.
 export type LinkSignIn = {
   // The path that was refused.
@@ -19285,6 +19288,11 @@ export type ToolSubject =
   | { kind: 'pane'; pane: LinePane | null }
   // `set_setting`: the setting's id.
   | { kind: 'setting'; id: string }
+  /**
+   *  `read_resource`: which of Cmdr's own views. The line names it, since a person should see
+   *  their logs or settings being read. A URI outside the six has no subject.
+   */
+  | { kind: 'resource'; view: LineResource }
   // The volume id a tool names: `connect_volume`, or `SubjectSpec::Volume`.
   | { kind: 'volume'; id: string }
   // `operations_list`.

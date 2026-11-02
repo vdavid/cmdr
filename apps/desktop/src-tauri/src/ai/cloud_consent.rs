@@ -27,7 +27,7 @@ const LOG_TARGET: &str = "ai::cloud_consent";
 /// whenever the `ai.cloudConsent.*` copy changes materially**, so a stale acceptance no longer
 /// counts and users re-consent to the new wording. The copy lives in the frontend catalog; this
 /// integer is its machine-checkable version, recorded in `main.db`.
-pub const CLOUD_AI_CONSENT_VERSION: u32 = 1;
+pub const CLOUD_AI_CONSENT_VERSION: u32 = 2;
 
 /// Whether a "no" to cloud AI is still waiting to reach `main.db`.
 ///

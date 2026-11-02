@@ -3,9 +3,17 @@
   "@ai.translateError.unknownProvider.title": {
     "sourceHash": "794a4c7"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr never sends whole files, photos, or thumbnails. When you ask about a file, it can read a limited part of it: some lines of text, a few pages of a PDF along with its title and author, the list of files inside an archive, or a photo’s camera details, including where it was taken. Photo search works the same way: the text Cmdr recognised inside the matching photos and their tags go to your provider so it can find them. Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr never sends whole files, photos, or thumbnails. When it needs to know more about a file, it can read a limited part of it: some lines of text, a few pages of a PDF along with its title and author, the list of files inside an archive, or a photo’s camera details, including where it was taken. Photo search works the same way: the text Cmdr recognised inside the matching photos and their tags go to your provider so it can find them.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
+  },
+  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favourites, saved places, drive indexing, and which folders matter most",
+  "@ai.cloudConsent.askCmdr.item.appState": {
+    "sourceHash": "4159dde"
+  },
+  "ai.cloudConsent.askCmdr.item.contents": "Parts of files Cmdr opens: some text, PDF pages, what’s inside an archive, a photo’s camera details and location, and text Cmdr recognised inside photos",
+  "@ai.cloudConsent.askCmdr.item.contents": {
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr writes itself notes about you: how you like things organised, what you’ve turned down before, anything you ask it to remember. Those notes ride along with every message you send, for as long as they exist, and they can include text Cmdr recognised inside your photos. You can read them, or wipe them, any time in the Ask Cmdr settings.",
   "@ai.cloudConsent.askCmdr.memory": {

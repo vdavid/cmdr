@@ -4,7 +4,7 @@ use std::path::Path;
 
 use serde_json::Value;
 
-use super::{Arm, LinePane, LinePath, ToolSubject, bounded, len_u32};
+use super::{Arm, LinePane, LinePath, LineResource, ToolSubject, bounded, len_u32};
 use crate::agent::llm::types::{AgentToolCall, ToolId};
 use crate::tools::SubjectSpec;
 use crate::tools::read::expand_tilde;
@@ -34,6 +34,7 @@ fn generic_subject(spec: SubjectSpec, args: &Value) -> Option<ToolSubject> {
         SubjectSpec::Operation(key) => str_arg(args, key).map(|id| ToolSubject::Operation { id: bounded(id) }),
         SubjectSpec::Pane => Some(ToolSubject::Pane { pane: pane_arg(args) }),
         SubjectSpec::Setting => str_arg(args, "id").map(|id| ToolSubject::Setting { id: bounded(id) }),
+        SubjectSpec::Resource => str_arg(args, "uri").and_then(resource_view),
         SubjectSpec::Custom => None,
     }
 }
@@ -68,6 +69,21 @@ pub(super) fn hand_subject(
         ToolId::Unrecognized(name) => Some(ToolSubject::UnknownTool { name: bounded(name) }),
         _ => return Arm::Generic,
     })
+}
+
+/// Which view a `cmdr://` URI reads. `None` for one that isn't a view.
+fn resource_view(uri: &str) -> Option<ToolSubject> {
+    let (base, _query) = crate::tools::resources::split_uri(uri);
+    let view = match base {
+        "cmdr://state" => LineResource::State,
+        "cmdr://dialogs/available" => LineResource::Dialogs,
+        "cmdr://indexing" => LineResource::Indexing,
+        "cmdr://importance" => LineResource::Importance,
+        "cmdr://settings" => LineResource::Settings,
+        "cmdr://logs" => LineResource::Logs,
+        _ => return None,
+    };
+    Some(ToolSubject::Resource { view })
 }
 
 /// `list_pane_files`' folder and scope, read off its success shape. A refusal or a still-running

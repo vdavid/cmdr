@@ -419,6 +419,15 @@ fn redactor_regex() -> &'static Regex {
                 \b manual- [\p{L}\p{N}_-]+ - [0-9]{1,5} \b
             )
             | (?P<email>         [A-Za-z0-9][A-Za-z0-9._%+-]* @ [A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,} )
+            # A provider or server echoing a credential in its error text. The shapes match
+            # `setting-secret-mask.ts`'s, the same question about settings.
+            | (?P<credential>
+                \b (?: sk- | gh[pousr]_ | github_pat_ | gsk_ | xai- | glpat- | hf_ | pplx- | fw_ | AIza | xox[abprs]- )
+                   [A-Za-z0-9_-]{8,}
+                | \b (?: AKIA | ASIA ) [A-Z0-9]{16}
+                | \b eyJ [A-Za-z0-9_-]+ \. [A-Za-z0-9_-]+ \. [A-Za-z0-9_-]+
+                | (?i: \b bearer ) \s+ [^\s"']+
+            )
             # Account name in a `key=value` / `key: value` log field. Our SMB paths log the
             # account someone signs in to a share with (`user=david`, `user=Some("david")`,
             # `username: "david"` in a debug struct); nothing else redacts it, and an account
@@ -585,6 +594,9 @@ fn dispatch(caps: &Captures<'_>, context: Option<&RedactionContext>) -> (String,
     }
     if caps.name("email").is_some() {
         return ("<email>".to_string(), whole_len(caps));
+    }
+    if caps.name("credential").is_some() {
+        return ("<credential>".to_string(), whole_len(caps));
     }
     if let Some(m) = caps.name("account") {
         return (

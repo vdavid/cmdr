@@ -14,7 +14,10 @@ pub(crate) mod indexing;
 pub(crate) mod logs;
 pub(crate) mod operations;
 pub(crate) mod panes;
+pub(crate) mod read_tool;
 pub(crate) mod volumes;
+
+pub use read_tool::ResourceError;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -301,17 +304,19 @@ async fn resource_round_trip<R: Runtime>(
     }
 }
 
-/// Read a resource by URI.
+/// Read a resource by URI: the one path both callers read through, `resources/read` for an outside
+/// client and the `read_resource` tool for either ([`read_tool`]).
 ///
 /// Supports query parameters on `cmdr://state` (`?include=...&compact=...`) and
 /// `cmdr://logs` (`?since=...&filter=...&limit=...`). See the resource entries
 /// in [`get_all_resources`] for full syntax.
-pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result<ResourceContent, String> {
+pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result<ResourceContent, ResourceError> {
     let (base, query) = split_uri(uri);
     let (content, mime_type) = match base {
         "cmdr://state" => {
             let opts = parse_state_options(query);
-            (build_state_yaml(app, &opts).await?, "text/yaml")
+            let yaml = build_state_yaml(app, &opts).await;
+            (yaml.map_err(ResourceError::Unavailable)?, "text/yaml")
         }
         "cmdr://dialogs/available" => {
             let yaml = build_available_dialogs_yaml(app);
@@ -330,7 +335,7 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
             (text, "text/plain")
         }
         "cmdr://importance" => {
-            let data_dir = crate::config::resolved_app_data_dir(app)?;
+            let data_dir = crate::config::resolved_app_data_dir(app).map_err(ResourceError::Unavailable)?;
             let now = indexing::now_unix_seconds();
             (
                 importance::build_importance_resource(&data_dir, query, now),
@@ -338,14 +343,17 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
             )
         }
         "cmdr://settings" => {
-            let text = resource_round_trip(app, "mcp-get-all-settings", json!({})).await?;
+            // The webview builds this one, and a wake can catch it asleep or gone.
+            let text = resource_round_trip(app, "mcp-get-all-settings", json!({}))
+                .await
+                .map_err(|_| ResourceError::WindowSilent)?;
             (text, "text/yaml")
         }
         "cmdr://logs" => {
             let opts = parse_log_options(query);
             (read_log_tail(&opts)?, "text/plain")
         }
-        _ => return Err(format!("Unknown resource URI: {}", uri)),
+        _ => return Err(ResourceError::UnknownUri(uri.to_string())),
     };
 
     Ok(ResourceContent {

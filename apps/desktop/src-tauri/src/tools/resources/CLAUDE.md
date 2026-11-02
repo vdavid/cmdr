@@ -3,10 +3,14 @@
 The read-only `cmdr://` views an AI client reads instead of asking: `state`, `dialogs/available`, `indexing`,
 `importance`, `settings`, and `logs`. `mod.rs` is the shared spine (registry, URI/query parsing, `read_resource`
 dispatch, and the `cmdr://state` builder); the independently-evolving builders sit in `logs.rs`, `indexing.rs`,
-`importance.rs`, `operations.rs`, and `volumes.rs`.
+`importance.rs`, `operations.rs`, and `volumes.rs`. `read_tool.rs` is the `read_resource` tool, the same builders with a
+size bound, so both callers read one thing.
 
 ## Must-knows
 
+- **What a view shows, it shows a cloud provider too**: `read_resource` is `Access::Read`, on every origin. A new view or
+  a new kind of fact in one is a disclosure change (`../../agent/DETAILS.md`, invariant 8). `cmdr://settings` masks in
+  `apps/desktop/src/lib/settings/setting-secret-mask.ts`; `cmdr://logs` redacts per line and refuses a window holding a private key.
 - **An agent ACTS on what it reads here, so a number has to say how strong it is.** A directory size is never bare:
   `≥` is a SETTLED lower bound, `~` a number still moving (it wins over `≥`, which has no floor to promise while a walk
   rewrites it), `[size-unsettled]` / `[size-stale]` qualify it, and `(N on disk)` counts hard links and clones in FULL,

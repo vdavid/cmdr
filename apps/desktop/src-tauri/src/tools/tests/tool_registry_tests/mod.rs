@@ -69,6 +69,7 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "operations_list",
     "operations_get",
     "operations_rollback",
+    "read_resource",
     "queue_move_locked",
     "search_photos",
     "image_facts",

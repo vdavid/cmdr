@@ -215,6 +215,11 @@ export const TOOL_LABEL_KEYS: Partial<Record<string, PhaseKeys>> = {
     doing: 'askCmdr.tool.aiSearch.doing',
     done: 'askCmdr.tool.aiSearch.done',
   },
+  read_resource: {
+    doing: 'askCmdr.tool.readResource.doing',
+    done: 'askCmdr.tool.readResource.done',
+    tried: 'askCmdr.tool.readResource.tried',
+  },
   set_setting: {
     doing: 'askCmdr.tool.setSetting.doing',
     done: 'askCmdr.tool.setSetting.done',

@@ -89,10 +89,10 @@ fn test_total_tool_count() {
     // search + 1 settings + 1 indexing + 2 queue + 1 conflict + 1 archive unlock + 1 favorites + 3
     // network + 1 eject + 1 await + 1 downloads + 3 operation_log + 2 photo (search + facts) + 1
     // index listing (list_dir) + 2 diagnostics (memory_diagnostics, cpu_diagnostics) + 1 multi_rename
-    // + 15 reads, proposals, memory, and connecting = 67
+    // + 15 reads, proposals, memory, and connecting + 1 resource read = 68
     assert_eq!(
         tools.len(),
-        67,
+        68,
         "Expected 67 tools, got {}. Did you add/remove tools?",
         tools.len()
     );

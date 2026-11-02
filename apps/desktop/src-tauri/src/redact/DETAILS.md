@@ -21,6 +21,7 @@ Depth and rationale. `CLAUDE.md` holds the must-knows and the pattern table.
 | `derived_id` | current `smb`/`sftp`/`webdav`/`s3`/`adb`/`mtp`/`vol`/`path` ID with 16-hex digest | scheme kept, opaque ID tokenized; MTP storage number kept |
 | `manual_server_id` | `manual-<address-derived name>-<port>` | `manual-<server-id>-<port>` |
 | `email` | `local@domain.tld` | `<email>` |
+| `credential` | a key's own shape (`sk-…`, `ghp_…`, a JWT, `Bearer …`), as a provider's error may echo it | `<credential>` |
 | `account` | `user=`/`username:` fields | `user=<user>`, `None` untouched |
 | `identity_field` | quoted `host=`, `server=`, `share=`, `volumeName=`, `source_volume=`, `dest_volume=`, the ID keys | the value tokenized in its identity's domain |
 | `label_field` | bare `share=`, `source_volume=`, `dest_volume=` (`share=Family Photos, …`) | `share=<share:T>`, value ends like any bare field value |

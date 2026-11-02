@@ -4,7 +4,9 @@
 //! selection and mandatory per-line PII redaction. See the resource entry in
 //! [`super::get_all_resources`] for the query syntax.
 
-use super::parse_query;
+use super::{ResourceError, parse_query};
+use crate::security_log::ContentTool;
+use crate::tools::sensitive::{Protected, note_refusal, refuse_private_key_text};
 
 /// Options parsed from a `cmdr://logs?...` URI.
 #[derive(Debug, Clone, Default)]
@@ -50,29 +52,43 @@ pub fn parse_log_options(query: Option<&str>) -> LogOptions {
 /// limit of 100. If the user passes a `since` older than the start of the
 /// window, lines beyond the window are silently dropped; we keep the read
 /// bounded so a 50 MB rotated log doesn't blow up MCP memory.
-pub fn read_log_tail(opts: &LogOptions) -> Result<String, String> {
+pub fn read_log_tail(opts: &LogOptions) -> Result<String, ResourceError> {
     use std::io::{Read, Seek, SeekFrom};
 
-    let log_dir = crate::logging::log_dir().ok_or("Log directory is not configured yet")?;
+    let unavailable = |what: String| ResourceError::Unavailable(what);
+    let log_dir =
+        crate::logging::log_dir().ok_or_else(|| unavailable("Log directory is not configured yet".to_string()))?;
     let log_path = log_dir.join("cmdr.log");
 
-    let mut file = std::fs::File::open(&log_path).map_err(|e| format!("Can't open {}: {}", log_path.display(), e))?;
+    let mut file =
+        std::fs::File::open(&log_path).map_err(|e| unavailable(format!("Can't open {}: {}", log_path.display(), e)))?;
     let file_size = file
         .metadata()
-        .map_err(|e| format!("Can't stat {}: {}", log_path.display(), e))?
+        .map_err(|e| unavailable(format!("Can't stat {}: {}", log_path.display(), e)))?
         .len();
 
     let window = LOG_TAIL_WINDOW_BYTES.min(file_size);
     let start_pos = file_size.saturating_sub(window);
     file.seek(SeekFrom::Start(start_pos))
-        .map_err(|e| format!("Can't seek log file: {}", e))?;
+        .map_err(|e| unavailable(format!("Can't seek log file: {}", e)))?;
     let mut buf = Vec::with_capacity(window as usize);
     file.read_to_end(&mut buf)
-        .map_err(|e| format!("Can't read log file: {}", e))?;
+        .map_err(|e| unavailable(format!("Can't read log file: {}", e)))?;
     // Drop a possibly-partial leading line so the first surviving line is
     // structurally intact. Only do this if we didn't read from byte 0.
     let text = String::from_utf8_lossy(&buf);
-    Ok(select_log_lines(&text, start_pos == 0, opts))
+    log_lines_of_window(&text, start_pos != 0, opts).map_err(|reason| {
+        note_refusal(ContentTool::CmdrLogs, reason);
+        ResourceError::Protected(reason)
+    })
+}
+
+/// [`select_log_lines`] behind the private-key check, which reads the WHOLE window: a `limit`, a
+/// `since`, or a `filter` could otherwise pick a key's body and leave its armor behind, and a key is
+/// no less a key once redaction has passed over it. A hit refuses every line until the log moves on.
+pub fn log_lines_of_window(text: &str, skip_partial_first: bool, opts: &LogOptions) -> Result<String, Protected> {
+    refuse_private_key_text(text)?;
+    Ok(select_log_lines(text, skip_partial_first, opts))
 }
 
 /// Apply the `since` / `filter` / `limit` selection and per-line redaction to a

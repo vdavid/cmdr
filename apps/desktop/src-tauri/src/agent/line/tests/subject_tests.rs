@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 use super::call;
 use super::fixtures;
-use crate::agent::line::{LinePane, LinePath, MAX_TEXT_CHARS, ToolSubject, subject_of};
+use crate::agent::line::{LinePane, LinePath, LineResource, MAX_TEXT_CHARS, ToolSubject, subject_of};
 use crate::agent::llm::types::ToolId;
 use crate::tools::read::pane_listing::PaneListingScope;
 
@@ -176,6 +176,25 @@ fn the_tables_subject_column_names_what_a_generic_tool_aims_at() {
             ToolSubject::Setting {
                 id: "appearance.theme".into(),
             },
+        ),
+        (
+            ToolId::ReadResource,
+            json!({ "uri": "cmdr://logs?filter=WARN&limit=20" }),
+            ToolSubject::Resource {
+                view: LineResource::Logs,
+            },
+        ),
+        (
+            ToolId::ReadResource,
+            json!({ "uri": "cmdr://settings" }),
+            ToolSubject::Resource {
+                view: LineResource::Settings,
+            },
+        ),
+        (
+            ToolId::ReadResource,
+            json!({ "uri": "cmdr://nope" }),
+            ToolSubject::Unparsed,
         ),
         // Missing what its column names.
         (ToolId::NavToPath, json!({}), ToolSubject::Unparsed),

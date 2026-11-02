@@ -732,6 +732,31 @@ Linux without Secret Service) via `crate::secrets`. Access goes through the `sav
 of Time Machine, cloud-sync backups, and any tool that mirrors `~/Library/Application Support`. Same secret store backs
 SMB credentials. See `src-tauri/src/secrets/CLAUDE.md`.
 
+### What the settings resource shows
+
+The resource is built here (`mcp-main-bridge.ts`), and since the agent reads it, it reaches a cloud provider. Every
+value, default, and shortcut row goes through `formatYamlValue`, so through `maskSecrets` (`setting-secret-mask.ts`) and
+then JSON, which is also what stops a quote or newline in a value forging a row.
+
+- **Why shape, and not a list of secret settings**: a list misses the next setting.
+  `gets no secret-shaped value past any registered setting` walks the whole registry with every shape, in a string and
+  in an array, so a new setting is covered by construction. ❌ Never carve one out.
+- **What it masks**: a URL's userinfo, query, and fragment, and any path on `http(s)` (a webhook or a gateway account
+  can be the credential; a share's path is its name, so `smb://host/share` stays); key-shaped runs (`sk-…`, `ghp_…`,
+  JWTs, `Bearer …`, a long letters-and-digits run, an address, `user:pass@host`); anything holding `PRIVATE KEY`; and,
+  in JSON held in a string, any value under a credential-named key. A `-` or `_` doesn't count toward the long run, so a
+  long model name survives.
+- **`mcpMasked`**: the whole value goes, because no shape catches it half-typed. Today that's `analytics.email`.
+- **A masked value can't come back**: `set_setting`'s question refuses a value holding the placeholder (`invalidValue`),
+  or copying what it read would overwrite a real base URL with `https://host/********`.
+- **The audit** (every registered setting, 2026-11-02, 156 of them): booleans, numbers, durations, and enums hold no
+  free text. Of the 18 strings and four string arrays, only `ai.cloudProviderConfigs` can hold a credential (`baseUrl`),
+  and `analytics.email` is personal. The rest name things the disclosure already covers: folder paths and volume ids
+  (`mediaIndex.*`, `indexing.silencedDrives`), a model id (`askCmdr.interactiveModel`), app ids, versions, dates, and
+  formats. API keys and SMB passwords are in the OS secret store, outside the registry.
+- **`set_setting`'s question shows the person the real old value** (only `sensitive` masks it there): it reaches the
+  dialog, never the tool result (`ask_plans.rs`).
+
 ### Why debounced saves?
 
 Users often change multiple related settings in quick succession (for example, tweaking slider values). Debouncing the

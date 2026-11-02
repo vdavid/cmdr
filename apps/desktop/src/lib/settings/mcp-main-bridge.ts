@@ -12,6 +12,7 @@
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { getSettingDefinition, settingsRegistry, validateSettingValue } from './settings-registry'
 import { getSetting, setSetting, isModified } from './settings-store'
+import { MASKED, holdsMaskedPlaceholder, maskSecrets } from './setting-secret-mask'
 import type { SettingDefinition, SettingId, SettingsValues } from './types'
 import { getEffectiveShortcuts, getDefaultShortcuts, isShortcutModified } from '#lib/shortcuts/index.js'
 import { commands } from '#lib/commands/command-registry.js'
@@ -31,18 +32,15 @@ interface GetAllSettingsPayload {
   requestId: string
 }
 
-const maskedPlaceholder = '********'
-
-/** Returns true for settings that contain secrets (API keys, tokens, etc.). AI provider API keys
- *  live in the OS secret store now, so `ai.cloudProviderConfigs` no longer needs special-case
- *  redaction: it only holds model and base URL. */
+/** A setting whose whole value stays home, whatever it looks like. Every other value still passes
+ *  `maskSecrets`: AI provider keys live in the OS secret store, but a base URL can carry a credential. */
 function isSensitive(def: SettingDefinition): boolean {
-  return def.component === 'password-input'
+  return def.component === 'password-input' || def.mcpMasked === true
 }
 
 /** Mask a sensitive value for safe display. */
 function maskValue(_def: SettingDefinition, value: unknown): unknown {
-  return typeof value === 'string' && value.length > 0 ? maskedPlaceholder : ''
+  return typeof value === 'string' && value.length > 0 ? MASKED : ''
 }
 
 /** Build a YAML representation of all settings grouped by section. */
@@ -71,7 +69,7 @@ function buildAllSettingsYaml(): string {
       const displayDefault = sensitive ? maskValue(def, def.default) : def.default
 
       lines.push(`  - id: ${def.id}`)
-      lines.push(`    label: "${def.label}"`)
+      lines.push(`    label: ${JSON.stringify(def.label)}`)
       lines.push(`    type: ${def.type}`)
       lines.push(`    value: ${formatYamlValue(displayValue)}`)
       lines.push(`    default: ${formatYamlValue(displayDefault)}`)
@@ -81,6 +79,9 @@ function buildAllSettingsYaml(): string {
       }
       if (def.mcpSettable !== undefined) {
         lines.push(`    mcpSettable: ${String(def.mcpSettable)}`)
+      }
+      if (def.mcpAskFree) {
+        lines.push('    mcpAskFree: true')
       }
       // `value` above is already what the setting READS as under the policy; this says why.
       if (isSettingManaged(id)) {
@@ -98,20 +99,20 @@ function buildAllSettingsYaml(): string {
     const modified = isShortcutModified(cmd.id)
 
     lines.push(`  - id: ${cmd.id}`)
-    lines.push(`    name: "${cmd.name}"`)
+    lines.push(`    name: ${JSON.stringify(cmd.name)}`)
     lines.push(`    scope: ${cmd.scope}`)
-    lines.push(`    shortcuts: [${shortcuts.map((s) => `"${s}"`).join(', ')}]`)
-    lines.push(`    defaults: [${defaults.map((s) => `"${s}"`).join(', ')}]`)
+    lines.push(`    shortcuts: ${formatYamlValue(shortcuts)}`)
+    lines.push(`    defaults: ${formatYamlValue(defaults)}`)
     lines.push(`    modified: ${String(modified)}`)
   }
 
   return lines.join('\n')
 }
 
+/** The one way a value gets into the YAML: masked, then JSON, which YAML reads as a flow scalar, so
+ *  a quote or a newline in a value can't end its row and forge another one. */
 function formatYamlValue(value: unknown): string {
-  if (typeof value === 'string') return `"${value}"`
-  if (typeof value === 'boolean' || typeof value === 'number') return String(value)
-  return JSON.stringify(value)
+  return JSON.stringify(maskSecrets(value))
 }
 
 async function handleGetAllSettings(event: { payload: GetAllSettingsPayload }): Promise<void> {
@@ -219,6 +220,10 @@ function describeSetting(settingId: string, value: unknown): Record<string, unkn
     validateSettingValue(settingId, value)
   } catch (error) {
     invalid = error instanceof Error ? error.message : String(error)
+  }
+  // `cmdr://settings` shows a masked form, so a client copying a value it read would write the mask.
+  if (invalid === null && holdsMaskedPlaceholder(value)) {
+    invalid = `it holds the placeholder ${MASKED}, which stands for a part of the value only the person can see. Ask them to change it in Cmdr itself.`
   }
   return {
     label: def.label,

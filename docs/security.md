@@ -294,8 +294,8 @@ description (the prompt and up to 240 names), MCP `ai_search`, and Ask Cmdr (det
   `ai::cloud_consent::has_current_cloud_consent` for Cloud before the key or endpoint, and `AiBackend::remote` is
   private to `ai/`, so no code path builds a cloud backend around the check. An absent, stale, or unreadable record, or
   a held "no", refuses. The connection check (`GET /models`) is gated too. Turning it off cancels in-flight Ask Cmdr
-  turns and suggestion streams at once. The disclosure (`ai.cloudConsent.*`) enumerates exactly what egresses; bump
-  `CLOUD_AI_CONSENT_VERSION` when that set changes so users re-accept. MCP can't flip it. Depth:
+  turns and suggestion streams at once. The disclosure (`ai.cloudConsent.*`) enumerates exactly what egresses and what
+  the agent can do; bump `CLOUD_AI_CONSENT_VERSION` when that set changes so users re-accept. MCP can't flip it. Depth:
   `apps/desktop/src-tauri/src/ai/DETAILS.md` § Cloud AI consent.
 - **An organization's policy comes before consent.** `resolve_backend` asks the managed policy first (AI off, on-device
   only, or a cloud host list), the LLM client re-asks before every request and at every redirect hop, and no consent the
@@ -304,15 +304,24 @@ description (the prompt and up to 240 names), MCP `ai_search`, and Ask Cmdr (det
 Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask Cmdr also has its own on/off switch
 (`askCmdr.enabled`); that's a feature switch, not consent.
 
-- **The agent can propose; only the user can approve.** The agent has no tool that touches the user's files. Its
-  dispatch view admits `Access::Read`, `Access::Propose`, `Access::Memory`, and `Access::Session` entries and never
-  `Access::Write` (pinned structurally in `tools/tests/tool_registry_tests/access.rs`, and again at runtime in
-  `agent/tool_gate.rs`). A `Propose` tool mutates nothing: it stages a proposal and opens a review surface. Approval
-  originates in the frontend as a user action, and there is no tool — and never will be one — that approves a proposal.
-  No agent-visible tool can reach the `autoConfirm` confirmation bypass. `Propose` adds no egress: proposals flow agent
-  → user, never to the provider, so consent is unchanged by it. What reaches the provider by default is file/folder
-  names, paths, sizes, dates, and the app-state envelope (spec §2.1); file contents reach it only through the two read
-  tools below, on request. Depth: `apps/desktop/src-tauri/src/tools/DETAILS.md` § The `Propose` tier.
+- **The agent can start anything; a person finishes anything sensitive.** On a turn the user started it works the app,
+  opens the dialog or editor a person confirms, and puts a question to a person before anything `Sensitive`; `mkdir`,
+  `mkfile`, and `tag` are the one written exception, running with no question. A turn Cmdr started gets reads,
+  proposals, and memory only. `tools::policy::admit` alone decides, and no tool answers a dialog, a question, or a
+  proposal for a person: the matrix is `apps/desktop/src-tauri/src/tools/DETAILS.md` § The rule. None of this moves data
+  by itself, but it's why the disclosure says what the agent can do as well as what it sends.
+- **What reaches the provider, as a set:** the user's messages (a password typed there to unlock an archive included);
+  file and folder names, paths, sizes, and dates; the app-state envelope; the bounded file contents and image-derived
+  text below; EXIF and music tags a `multi_rename` mask reads, which come back in its preview; the agent's notes; and
+  Cmdr's own views through `read_resource`, the next bullet. The disclosure names each of these (`ai.cloudConsent.*`),
+  so a new kind is a copy change and a `CLOUD_AI_CONSENT_VERSION` bump.
+- **`read_resource` hands the agent Cmdr's own views, through the same builders as `resources/read`.** App state,
+  indexing, importance, and available dialogs render as they do for an outside client. `cmdr://settings` passes every
+  value and shortcut row through `maskSecrets` (URL credentials, queries, and web paths; key-shaped text;
+  credential-named keys in JSON) and shows the email address only as set or not. `cmdr://logs` runs `redact_line` over
+  each line, and refuses the whole read when the recent log holds private-key armor, so no query can pick a key's body
+  off its armor. Canonical: `apps/desktop/src/lib/settings/DETAILS.md` § What the settings resource shows and
+  `apps/desktop/src-tauri/src/tools/resources/DETAILS.md`.
 - **The agent may connect a place the user saved, and only when the user asked.** `Access::Session` opens a session to a
   SAVED place by volume id with STORED credentials, and adds or edits no file, server, account, credential, pin, or
   setting, so it can't add a host, type a password, or approve a key (what an injected file name would want). The

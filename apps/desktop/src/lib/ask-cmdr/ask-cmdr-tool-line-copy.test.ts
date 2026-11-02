@@ -226,6 +226,7 @@ describe('toolLineLabel', () => {
     'go_to_latest_download',
     'operations_rollback',
     'memory_diagnostics',
+    'read_resource',
     'cpu_diagnostics',
   ])('gives %s its own words, running and done', (tool) => {
     const running = said(tool, { kind: 'nothing' }, { running: true, outcome: null })
@@ -280,6 +281,7 @@ describe('toolLineLabel', () => {
       place: ['nav_to_path', { kind: 'place', path: { text: '/a', linkable: true } }],
       pane: ['sort', { kind: 'pane', pane: 'left' }],
       setting: ['set_setting', { kind: 'setting', id: 'appearance.theme' }],
+      resource: ['read_resource', { kind: 'resource', view: 'logs' }],
       focusedPane: [
         'list_pane_files',
         { kind: 'focusedPane', folder: { text: '/a', linkable: true }, selectionOnly: false },

@@ -687,10 +687,12 @@ const toc = [
             <strong>Ask Cmdr</strong> (the assistant, off by default): file and folder names, paths, sizes, and dates,
             the names of drives, network shares, and favorites, and the assistant's own notes. When the user's question
             needs it, also parts of text files, text from PDF pages, archive listings, photo metadata (which can include
-            GPS location), and text read from images. When Ask Cmdr is on, it also looks at folders that changed
-            recently on its own and suggests what to do, sending the same kinds of data; turn that off in Settings ›
-            AI. The assistant can't change or delete files by itself. It can suggest renames, moves, copies, and
-            deletes, and nothing happens until the user reviews and approves each one.
+            GPS location), and text read from images. It can also read Cmdr's own state, its settings with anything
+            that looks like a secret masked, and its recent logs with identifying details replaced. When Ask Cmdr is
+            on, it also looks at folders that changed recently on its own and suggests what to do, sending the same
+            kinds of data; turn that off in Settings › AI. In a chat the user started, the assistant can work the app
+            and create folders, create files, and tag files right away. Copies, moves, deletes, renames, and anything
+            else sensitive wait for the user to confirm, and plans it prepares wait for approval.
         </li>
         <li>
             <strong>Folder name suggestions, select-by-description, and natural-language search</strong>: up to a few

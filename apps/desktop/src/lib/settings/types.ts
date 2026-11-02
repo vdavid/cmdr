@@ -256,6 +256,11 @@ export interface SettingDefinition {
    * safe by default. `mcp-main-bridge.test.ts` pins the set.
    */
   mcpAskFree?: true
+  /**
+   * `cmdr://settings` and `set_setting`'s question say only whether this holds a value, never what:
+   * for a personal value no shape could catch half-typed. Every other value passes `maskSecrets`.
+   */
+  mcpMasked?: true
 
   // UI hints
   component?:

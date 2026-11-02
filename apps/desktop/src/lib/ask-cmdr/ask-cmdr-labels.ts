@@ -112,6 +112,42 @@ function searchWords(subject: SubjectOf<'search'>): SubjectWords | null {
   return { keys, params: { placesText, folders }, places }
 }
 
+const READ_RESOURCE_TRIED: MessageKey = 'askCmdr.tool.readResource.tried'
+
+/** Which of Cmdr's own views a `read_resource` read: a person should see their logs being read. */
+const RESOURCE_KEYS: Record<SubjectOf<'resource'>['view'], PhaseKeys> = {
+  state: {
+    doing: 'askCmdr.tool.readResource.state.doing',
+    done: 'askCmdr.tool.readResource.state.done',
+    tried: READ_RESOURCE_TRIED,
+  },
+  dialogs: {
+    doing: 'askCmdr.tool.readResource.dialogs.doing',
+    done: 'askCmdr.tool.readResource.dialogs.done',
+    tried: READ_RESOURCE_TRIED,
+  },
+  indexing: {
+    doing: 'askCmdr.tool.readResource.indexing.doing',
+    done: 'askCmdr.tool.readResource.indexing.done',
+    tried: READ_RESOURCE_TRIED,
+  },
+  importance: {
+    doing: 'askCmdr.tool.readResource.importance.doing',
+    done: 'askCmdr.tool.readResource.importance.done',
+    tried: READ_RESOURCE_TRIED,
+  },
+  settings: {
+    doing: 'askCmdr.tool.readResource.settings.doing',
+    done: 'askCmdr.tool.readResource.settings.done',
+    tried: READ_RESOURCE_TRIED,
+  },
+  logs: {
+    doing: 'askCmdr.tool.readResource.logs.doing',
+    done: 'askCmdr.tool.readResource.logs.done',
+    tried: READ_RESOURCE_TRIED,
+  },
+}
+
 /**
  * The words each subject gives its line, or `null` to keep the tool's param-less label (a subject
  * that names nothing worth saying, or one this tool doesn't word). A `Record` over every kind, so
@@ -168,6 +204,7 @@ const SUBJECT_WORDS: { [K in ToolSubject['kind']]: (subject: SubjectOf<K>, tool:
   pane: noWords,
   // An id is a token (`appearance.theme`), not the name the person knows the setting by.
   setting: noWords,
+  resource: (subject) => ({ keys: RESOURCE_KEYS[subject.view], params: {} }),
   importantFolders: noWords,
   drives: noWords,
   // A volume id is a token (`smb-192-168-1-5-…`), not a name a person knows the server by.

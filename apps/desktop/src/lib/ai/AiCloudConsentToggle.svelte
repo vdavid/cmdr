@@ -126,9 +126,15 @@
                         <li>{tString('ai.cloudConsent.askCmdr.item.contents')}</li>
                         <li>{tString('ai.cloudConsent.askCmdr.item.envelope')}</li>
                         <li>{tString('ai.cloudConsent.askCmdr.item.attachments')}</li>
+                        <li>{tString('ai.cloudConsent.askCmdr.item.mediaFields')}</li>
+                        <li>{tString('ai.cloudConsent.askCmdr.item.appState')}</li>
+                        <li>{tString('ai.cloudConsent.askCmdr.item.settings')}</li>
+                        <li>{tString('ai.cloudConsent.askCmdr.item.logs')}</li>
                         <li>{tString('ai.cloudConsent.askCmdr.item.memory')}</li>
                     </ul>
                     <p>{tString('ai.cloudConsent.askCmdr.contentsRule')}</p>
+                    <p>{tString('ai.cloudConsent.askCmdr.protectedContents')}</p>
+                    <p>{tString('ai.cloudConsent.askCmdr.actions')}</p>
                     <p>{tString('ai.cloudConsent.askCmdr.memory')}</p>
                     <p>{tString('ai.cloudConsent.askCmdr.proactive')}</p>
                     <p>{tString('ai.cloudConsent.askCmdr.chatsStayLocal')}</p>

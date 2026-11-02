@@ -22,6 +22,7 @@ export const SUBJECT_CATEGORY: Record<ToolSubject['kind'], GroupCategory> = {
   nothing: 'other',
   pane: 'other',
   setting: 'other',
+  resource: 'check',
   focusedPane: 'folder',
   folder: 'folder',
   place: 'folder',

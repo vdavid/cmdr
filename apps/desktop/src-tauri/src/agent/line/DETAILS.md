@@ -18,7 +18,7 @@ Each table entry says `subject: SubjectSpec::…` (`../../tools/registry.rs`), s
 
 - `None` → `Nothing`; `Path(key)` → `Place { path }`; `Volume(key)` → `Volume { id }`; `Operation(key)` →
   `Operation { id }`; `Pane` → `Pane { pane }` (`None` when absent or not a pane, which is what the handlers default to
-  the focused one); `Setting` → `Setting { id }`. Arguments missing what it names → `Unparsed`.
+  the focused one); `Setting` → `Setting { id }`; `Resource` → `Resource { view }`, the view its `uri` names, so a person sees their logs or settings being read. Arguments missing what it names → `Unparsed`.
 - Its outcome is `Answered` past the shared check order, and it has no rows. Many of these tools answer a plain "OK: …"
   sentence, so there's nothing typed to read.
 - `Custom` is the 22 rich tools. `hand_subject`, `hand_answer`, and `hand_rows` return `Arm::Hand` for those plus

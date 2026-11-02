@@ -167,6 +167,8 @@ pub enum SubjectSpec {
     Pane,
     /// The setting the `id` argument names.
     Setting,
+    /// `read_resource`: which `cmdr://` view its `uri` names.
+    Resource,
     /// A rich tool: `agent/line/` has hand arms for its subject, outcome, and preview.
     Custom,
 }

@@ -15,6 +15,7 @@ use super::actions::{
 use super::ask_plans;
 use super::policy::ToolCtx;
 use super::registry::{Access, Load, SubjectSpec, Tool, validate_params};
+use super::resources::read_tool;
 use super::schemas;
 
 mcp_tools! {
@@ -613,6 +614,18 @@ mcp_tools! {
         access: Access::Read,
         load: Load::Deferred,
         run: params_only cpu::execute_cpu_diagnostics
+    },
+
+    // ── Resources ───────────────────────────────────────────────────────────
+    "read_resource" => {
+        id: ReadResource,
+        brief: "Read one of Cmdr's own views: state, settings, logs, indexing, importance, or dialogs.",
+        desc: "Read a cmdr:// view, the way to follow any cmdr:// another tool mentions. cmdr://state (?include=panes,volumes,dialogs,listings,recentErrors,operations,favorites, ?compact=true), cmdr://settings (******** is private), cmdr://logs (redacted; ?since=<iso>&filter=<text>&limit=<n>), cmdr://indexing (?volume=<id>), cmdr://importance (?path=, ?top=&volume=, ?threshold=), cmdr://dialogs/available. truncated: true comes with nextOffset: pass it as offset for the rest.",
+        schema: schemas::read_resource_schema(),
+        subject: SubjectSpec::Resource,
+        access: Access::Read,
+        load: Load::Deferred,
+        run: app_params read_tool::execute_read_resource
     },
 
     // ── Reads, proposals, memory, and connecting ──────────────────────────────
