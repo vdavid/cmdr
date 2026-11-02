@@ -92,14 +92,14 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 /// What every call pays before the user has said a word: the system prompt plus the tool
 /// declarations. Measured against the shipped assets, and pinned there —
 /// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. The system
-/// prompt is 3,880 of it, with one line for each deferred tool, and the 21 declarations (the core
+/// prompt is 4,006 of it, with one line for each deferred tool, and the 21 declarations (the core
 /// and the tool-search pair) the rest.
 ///
 /// A deferred tool costs its one line here, and a core tool its whole schema on every call,
 /// whether or not it's used: `propose_suggestions`, the most expensive single declaration, costs
 /// 759 even trimmed, and that's about two files off a 16,000-token rename batch. Keep a new schema
 /// terse, and a new tool deferred.
-pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 8_516;
+pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 8_717;
 
 /// What one `image_facts` row costs at the corpus' average OCR length.
 pub const IMAGE_FACTS_TOKENS_PER_FILE: usize = 269;
@@ -199,7 +199,7 @@ pub fn wake_digest_budget(prompt_tokens: usize) -> usize {
 /// byte of memory is a permanent tax on every thread, paid again in each turn whose memory
 /// changed (`context::memory_notes_for_turn`). Run the numbers a
 /// flat 8 KB would give at the smallest window the app supports: [`MIN_LOCAL_CONTEXT_TOKENS`]
-/// resolves to a 17,652-token budget, the fixed overhead takes 8,516 of it, and 8 KB of memory
+/// resolves to a 17,652-token budget, the fixed overhead takes 8,717 of it, and 8 KB of memory
 /// at [`CHARS_PER_TOKEN_ESTIMATE`] takes 2,048 more, so memory alone would claim about a fifth
 /// of what is left for the digest, the envelope, the history, and every tool result, and it would
 /// claim the same 2,048 on a window a tenth the size. **And the agent writes this file itself**,

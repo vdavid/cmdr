@@ -569,7 +569,11 @@ async fn answer_deferred_call(effective: &super::types::AgentToolCall) -> serde_
         return serde_json::json!({ "available": false, "requested": name });
     }
     if let Err(problem) = crate::tools::validate_params(name, &effective.arguments) {
-        return refused(problem);
+        let mut answer = refused(problem);
+        if let Some(schema) = crate::tools::meta::schema_for_a_refusal(name) {
+            answer["tool"] = schema;
+        }
+        return answer;
     }
     match &effective.tool {
         ToolId::ToolDetails => crate::tools::meta::execute_tool_details(&effective.arguments)
@@ -597,6 +601,19 @@ async fn answer_deferred_call(effective: &super::types::AgentToolCall) -> serde_
             "left": { "path": "/Users/test/work", "sort": { "by": "name", "order": "asc" } },
             "right": { "path": "/Users/test", "sort": { "by": "name", "order": "asc" } },
         }),
+        // The handler's own refusal: the schema gate reads keys, never a value.
+        ToolId::Tab if effective.arguments["action"] != "new" => {
+            let mut answer = serde_json::json!({ "problem": "Unknown tab action. It takes new, close, close_others, activate, set_pinned, reopen, and move." });
+            answer["tool"] = crate::tools::meta::schema_for_a_refusal(name).unwrap_or_default();
+            answer
+        }
+        ToolId::Dialog if effective.arguments["type"] == "tab" => serde_json::json!({
+            "problem": "tab isn't a dialog. It opens settings, file-viewer, about, or onboarding. Call the tab tool instead, through use_tool if it isn't declared to you.",
+        }),
+        ToolId::ReadResource => serde_json::json!({
+            "uri": effective.arguments["uri"],
+            "text": "09:20:01 WARN volume: Couldn't reach the share, retrying\n09:21:44 INFO fileExplorer: Loaded 12 files",
+        }),
         _ => serde_json::json!({ "ok": true }),
     }
 }
@@ -608,7 +625,18 @@ async fn run_deferred_tool_turn(backend: AiBackend, request: &str) -> DeferredRu
     let llm = GenaiAgentLlm::new(backend);
     let system = crate::agent::chat::system_prompt::system_prompt();
     let tools = crate::tools::agent_tool_declarations();
-    let mut messages = user_turn(request);
+    // The shape a rail turn opens with: the app's facts, then what the person typed.
+    let mut messages = vec![AgentMessage {
+        role: AgentRole::User,
+        parts: vec![
+            AgentPart::Envelope(
+                "[Mon 2026-11-02 09:24 · focused: /Users/test/work · cursor: .. · 0 selected · rename batch: up to 101 files]"
+                    .to_string(),
+            ),
+            AgentPart::Text(request.to_string()),
+        ],
+        at: 0,
+    }];
     let mut run = DeferredRun {
         calls: Vec::new(),
         problems: Vec::new(),
@@ -788,4 +816,97 @@ async fn smoke_local_list_only_tool() {
         .parse()
         .expect("LLAMA_PORT must be a port number");
     assert_reaches_a_tool_only_the_list_names("local", AiBackend::local_for_tests(port)).await;
+}
+
+/// A plain request a person makes, and what doing it takes.
+struct PlainRequest {
+    request: &'static str,
+    wanted: ToolId,
+    done: fn(&serde_json::Value) -> bool,
+}
+
+fn opens_a_new_tab(arguments: &serde_json::Value) -> bool {
+    arguments["action"] == "new" && arguments["pane"] == "left"
+}
+
+fn reads_the_logs(arguments: &serde_json::Value) -> bool {
+    arguments["uri"]
+        .as_str()
+        .is_some_and(|uri| uri.starts_with("cmdr://logs"))
+}
+
+/// The requests a person types without knowing Cmdr's tool names, which `gpt-4.1-mini` and Ministral 3B
+/// fumbled in the running app. Words don't count here: each run reached the tool with what does the
+/// job, or it didn't. `PLAIN_RUNS` sets the runs per request (default three), and the tally lands in the
+/// log (`tools/DETAILS.md` § Lazy loading has the last one).
+async fn tally_plain_requests(label: &str, backend: impl Fn() -> AiBackend) {
+    let _ = env_logger::builder().is_test(true).try_init();
+    let requests = [
+        PlainRequest {
+            request: "Open a new tab in the left pane.",
+            wanted: ToolId::Tab,
+            done: opens_a_new_tab,
+        },
+        PlainRequest {
+            request: "Check Cmdr's logs: is there any warning from the last few minutes?",
+            wanted: ToolId::ReadResource,
+            done: reads_the_logs,
+        },
+        PlainRequest {
+            request: "check the logs",
+            wanted: ToolId::ReadResource,
+            done: reads_the_logs,
+        },
+    ];
+    let runs: usize = std::env::var("PLAIN_RUNS")
+        .ok()
+        .and_then(|runs| runs.parse().ok())
+        .unwrap_or(3);
+    let mut empty_handed = Vec::new();
+    for PlainRequest { request, wanted, done } in requests {
+        let mut reached = 0;
+        for attempt in 0..runs {
+            let run = run_deferred_tool_turn(backend(), request).await;
+            let road: Vec<String> = run
+                .calls
+                .iter()
+                .map(|(sent, ran, arguments)| format!("{}>{} {arguments}", sent.as_wire_name(), ran.as_wire_name()))
+                .collect();
+            log::info!(target: "agent::llm", "{label} #{attempt} {request:?}: {road:?}");
+            log::info!(target: "agent::llm", "{label} #{attempt} answered: {}", run.answer);
+            if run
+                .calls
+                .iter()
+                .any(|(_, ran, arguments)| *ran == wanted && done(arguments))
+            {
+                reached += 1;
+            }
+        }
+        log::info!(target: "agent::llm", "{label} TALLY {request:?}: {reached} of {runs}");
+        if reached == 0 {
+            empty_handed.push(request);
+        }
+    }
+    assert!(
+        empty_handed.is_empty(),
+        "{label} never got these done: {empty_handed:?}"
+    );
+}
+
+#[tokio::test]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
+async fn smoke_openai_plain_requests() {
+    tally_plain_requests("gpt-4.1-mini", || {
+        remote("OPENAI_API_KEY", "https://api.openai.com/v1/", "gpt-4.1-mini")
+    })
+    .await;
+}
+
+#[tokio::test]
+#[ignore = "local server: set LLAMA_PORT to a running OpenAI-compatible local server to run"]
+async fn smoke_local_plain_requests() {
+    let port: u16 = env_or_skip("LLAMA_PORT")
+        .parse()
+        .expect("LLAMA_PORT must be a port number");
+    tally_plain_requests("local", || AiBackend::local_for_tests(port)).await;
 }

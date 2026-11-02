@@ -811,7 +811,7 @@ mcp_tools! {
     "use_tool" => {
         id: UseTool,
         brief: "Run a tool from your More tools list.",
-        desc: "Run a tool that isn't declared here, such as sort, tab, tag, nav_to_parent, set_view_mode, or set_setting: your instructions' More tools list has them all. name is the tool, and params its arguments, following the schema tool_details gave you.",
+        desc: "Run a tool that isn't declared here, such as sort, tab (new tabs), tag, read_resource (Cmdr's own logs and settings: uri cmdr://logs), nav_to_parent, set_view_mode, or set_setting: your instructions' More tools list has them all. name is the tool, and params its arguments, following its schema: a refusal hands you the schema if you guess wrong.",
         schema: crate::tools::meta::use_tool_schema(),
         subject: SubjectSpec::None,
         access: Access::Read,

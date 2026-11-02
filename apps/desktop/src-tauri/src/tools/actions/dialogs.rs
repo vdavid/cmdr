@@ -172,7 +172,20 @@ async fn execute_dialog_open<R: Runtime>(
         "quit-confirmation" => Err(ToolError::invalid_params(
             "Cannot open the quit confirmation directly. Call quit: the gate raises it only when operations are still running.",
         )),
-        _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
+        _ => Err(ToolError::invalid_params(cant_open_message(dialog_type))),
+    }
+}
+
+/// A weak model reads "open" and reaches for `dialog`: Ministral 3B sent `type: tab` four times of four
+/// for "open a new tab" (live smoke, 2026-11-02). So the refusal points at the tool it meant, when
+/// there's one close.
+pub(crate) fn cant_open_message(dialog_type: &str) -> String {
+    let openable = "It opens settings, file-viewer, about, or onboarding.";
+    match crate::tools::meta::closest_tools(dialog_type).first() {
+        Some(tool) => format!(
+            "{dialog_type} isn't a dialog. {openable} Call the {tool} tool instead, through use_tool if it isn't declared to you."
+        ),
+        None => format!("{dialog_type} isn't a dialog. {openable}"),
     }
 }
 

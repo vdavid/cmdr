@@ -96,13 +96,32 @@ generated line per other tool it can reach (`deferred_tool_lines`). An outside c
   making do with `list_dir`'s `sortBy` or wandering through `search` and `dialog`, then saying they'd sorted. With them,
   `gpt-4.1-mini` reached one eight times of eight, and Ministral 3B three times of four (verified on those models, live
   smokes, 2026-11-02). An `enum` of every name on `name` and the list at the end of the prompt didn't help.
-- **Weak models skip `tool_details` and guess.** Both call `use_tool` straight away, get `sortBy` wrong, and recover on the
-  next round because the schema gate names what the tool takes. That refusal is doing real work: keep it specific.
-  The `smoke_*_deferred_tool` logs show each model's road. In the running app, `claude-haiku-5-5` called `tool_details`,
-  while `gpt-4.1-mini` (the OpenAI preset's default) never did across eight threads and fumbled what a guess can't reach:
-  an action name in an `enum` (`tab`'s `new`, which it kept calling `open`), and `read_resource` unless the user named
-  `cmdr://logs`. Ministral 3B reached `sort` through `use_tool` but still claimed a log check it never ran (verified on
-  those models, rail turns on a dev build, 2026-11-02).
+- **Weak models skip `tool_details` and guess, so a refusal teaches.** `claude-haiku-5-5` calls `tool_details`;
+  `gpt-4.1-mini` (the OpenAI preset's default) never did across eight rail threads, and Ministral 3B seldom does. So what a
+  refusal says is what they read about the tool, and for a deferred tool (`meta::schema_for_a_refusal`, never a core one,
+  whose schema went out with the call) it adds `tool: { name, description, inputSchema }`, the entry `tool_details`
+  answers, capped at `MAX_REFUSAL_SCHEMA_TOKENS`:
+  - the schema gate's refusal, by whichever road the call came (`use_tool`, flattened beside `name`, `params` that isn't an
+    object, the wrapper skipped);
+  - a handler's `INVALID_PARAMS` with no typed `data`, like `Unknown tab action: open`, since the gate reads keys and never
+    a value. Typed `data` means something else stopped it (a person's no, a dialog in the way), so nothing's added.
+- **A guessed name is pointed at the tool it wanted.** `meta::closest_tools` compares a guess's words to each tool's name
+  and brief: `new_tab` lands on `tab`, `read_logs` on `read_resource`. `unknown_tool` answers `closest` plus the best one's
+  schema, and `dialog`'s `type: tab` refusal names `tab`, since "open" reads as a dialog to Ministral 3B.
+- **Decision: `tab` and `read_resource` stay deferred.** Why: three sentences do the job for 201 tokens a call, where the two
+  in the core cost about 500. Two say where the plain request goes (the system prompt's logs and new-tab lines), and `use_tool`'s
+  description names both with a gloss. Measured with `smoke_*_plain_requests` (real prefix, canned tool results), runs that
+  reached the tool with arguments that do the job, before and after (verified 2026-11-02):
+  - `gpt-4.1-mini`: new tab 3 of 3 before and 4 of 4 after, now on the first call. "Check Cmdr's logs: any warning?" 1 of 3
+    to 4 of 4, and "check the logs" 0 of 3 to 4 of 4. Before, it searched files for "warning" or read `operations_list`
+    and said the logs were clean.
+  - Ministral 3B: new tab 1 of 3 to 5 of 5, after one wrong `dialog` call. The logs 1 of 3 to 5 of 5, and 0 of 3 to 5 of 5.
+    Before, it searched the pane's folder and said it found no warnings.
+- **`cmdr://logs`'s `filter` is case-sensitive and levels read `WARN`,** so `filter=warning` finds nothing and a model reads
+  that as clean. A model sent exactly that until the prompt line named `filter=WARN`.
+- **What a sentence can't fix:** a model that answers in words without a tool call. The prompt's "never say you read
+  something unless a tool result shows it" lowers it and doesn't end it; Ministral 3B also invents details around a real
+  result.
 
 ## The schema gate (`params.rs`)
 

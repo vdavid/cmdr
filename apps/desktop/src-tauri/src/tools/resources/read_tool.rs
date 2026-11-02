@@ -25,8 +25,10 @@ pub enum ResourceError {
 impl From<ResourceError> for ToolError {
     fn from(error: ResourceError) -> Self {
         match error {
-            ResourceError::UnknownUri(uri) => ToolError::invalid_params(format!("Unknown resource URI: {uri}"))
-                .with_data(json!({ "reason": "unknownResource" })),
+            ResourceError::UnknownUri(uri) => ToolError::invalid_params(format!(
+                "Unknown resource URI: {uri}. It takes cmdr://state, cmdr://settings, cmdr://logs, cmdr://indexing, cmdr://importance, or cmdr://dialogs/available."
+            ))
+            .with_data(json!({ "reason": "unknownResource" })),
             ResourceError::Protected(reason) => ToolError::invalid_params(
                 "Cmdr's recent log holds text that looks like a private key, so Cmdr doesn't hand it to AI tools. \
                  Tell the user; asking again won't change it until the log moves on.",

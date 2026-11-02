@@ -389,6 +389,55 @@ async fn tool_details_fits_one_result_and_says_when_it_doesnt() {
     );
 }
 
+/// A refusal carries one tool's schema, and it has to stay a small answer whichever tool got it wrong.
+#[test]
+fn every_deferred_schema_fits_what_a_refusal_may_carry() {
+    for name in names_of_load(Load::Deferred) {
+        let carried = crate::tools::meta::schema_for_a_refusal(&name);
+        let refused = matches!(
+            admit(USER_TURN, tool_access(&name).expect("listed")),
+            Verdict::Refuse(_)
+        );
+        assert_eq!(carried.is_none(), refused, "{name}");
+    }
+    assert!(crate::tools::meta::schema_for_a_refusal("list_dir").is_none(), "core");
+    assert!(
+        crate::tools::meta::schema_for_a_refusal("dialog_confirm").is_none(),
+        "devOnly"
+    );
+    assert!(crate::tools::meta::schema_for_a_refusal("no_such_tool").is_none());
+}
+
+/// The words of a guess, against the tool names and briefs. The last two are the ones that matter most:
+/// a model that doesn't know `read_resource` asks for what it wants in its own words.
+#[test]
+fn a_guess_finds_the_tool_it_was_reaching_for() {
+    for (guess, expected) in [
+        ("new_tab", "tab"),
+        ("open_tab", "tab"),
+        ("create_tab", "tab"),
+        ("sort_files", "sort"),
+        ("read_logs", "read_resource"),
+        ("get_logs", "read_resource"),
+        ("logs", "read_resource"),
+    ] {
+        let closest = crate::tools::meta::closest_tools(guess);
+        assert_eq!(
+            closest.first().map(String::as_str),
+            Some(expected),
+            "{guess}: {closest:?}"
+        );
+        assert!(closest.len() <= 3, "{closest:?}");
+    }
+    assert!(crate::tools::meta::closest_tools("zzz_qqq").is_empty());
+    for guess in ["dialog_confirm_now", "confirm_dialog"] {
+        assert!(
+            !crate::tools::meta::closest_tools(guess).contains(&"dialog_confirm".to_string()),
+            "never point at a tool the agent can't run"
+        );
+    }
+}
+
 fn tool_description(name: &str) -> String {
     get_all_tools()
         .into_iter()

@@ -147,6 +147,113 @@ async fn tool_details_runs_through_the_gate_on_a_wake_too() {
     assert_eq!(answer["unavailable"][0]["refusal"], "devOnly", "{answer}");
 }
 
+// ── A refusal that teaches ────────────────────────────────────────────────────
+
+/// A weak model never calls `tool_details`, so the first thing it reads about a deferred tool is what
+/// it got wrong. That answer holds the schema, so one failed try is enough.
+#[tokio::test]
+async fn refused_params_on_a_deferred_tool_carry_its_schema() {
+    for call in [
+        // Missing what it needs, and a name it guessed.
+        use_tool("tab", json!({ "whichPane": "right" })),
+        // The wrapper skipped.
+        (ToolId::Tab, json!({ "whichPane": "right" })),
+        // Flattened beside the wrapper's own two keys.
+        (
+            ToolId::UseTool,
+            json!({ "name": "tab", "action": "new", "pane": "left" }),
+        ),
+        // `params` as a string, which never unwraps.
+        (
+            ToolId::UseTool,
+            json!({ "name": "tab", "params": "{\"action\":\"new\"}" }),
+        ),
+    ] {
+        let answer = through_the_gate(call.clone(), TurnOrigin::Text).await;
+        assert!(answer["problem"].is_string(), "{call:?}: {answer}");
+        assert_eq!(answer["tool"]["name"], "tab", "{call:?}: {answer}");
+        assert!(answer["tool"]["description"].is_string(), "{call:?}: {answer}");
+        assert!(
+            answer["tool"]["inputSchema"]["properties"]["action"]["enum"]
+                .as_array()
+                .is_some_and(|actions| actions.contains(&json!("new"))),
+            "{call:?}: {answer}"
+        );
+    }
+}
+
+/// The gate reads only keys, so a value it can't judge comes back from the handler. That's the same
+/// kind of mistake, and the model needs the same answer: in the running app, `Unknown tab action: open`.
+#[tokio::test]
+async fn a_wrong_value_only_the_handler_can_judge_carries_the_schema_too() {
+    let answer = through_the_gate(
+        use_tool("sort", json!({ "pane": "left", "by": "bigness", "order": "asc" })),
+        TurnOrigin::Text,
+    )
+    .await;
+    assert!(answer["problem"].is_string(), "{answer}");
+    assert_eq!(answer["tool"]["name"], "sort", "{answer}");
+}
+
+/// A core tool's schema went out with the call that got it wrong, so repeating it buys nothing.
+#[tokio::test]
+async fn a_refused_core_tool_carries_no_schema() {
+    let answer = through_the_gate((ToolId::ListDir, json!({ "notAParameter": true })), TurnOrigin::Text).await;
+    assert!(answer["problem"].is_string(), "{answer}");
+    assert!(answer.get("tool").is_none(), "{answer}");
+}
+
+/// A background turn hears it can't, in the gate's words, rather than how to try harder.
+#[tokio::test]
+async fn a_refusal_about_who_is_asking_carries_no_schema() {
+    let answer = through_the_gate(use_tool("tab", json!({ "action": "new" })), TurnOrigin::Wake).await;
+    assert_eq!(answer["refusal"], "refusedInBackground", "{answer}");
+    assert!(answer.get("tool").is_none(), "{answer}");
+}
+
+/// A guessed name lands on the tool it was reaching for, schema included, by whichever road.
+#[tokio::test]
+async fn a_guessed_name_is_pointed_at_the_tool_it_was_reaching_for() {
+    for call in [
+        use_tool("new_tab", json!({ "pane": "left" })),
+        (ToolId::from_wire_name("open_tab"), json!({ "pane": "left" })),
+    ] {
+        let answer = through_the_gate(call.clone(), TurnOrigin::Text).await;
+        assert_eq!(answer["available"], false, "{call:?}: {answer}");
+        assert_eq!(answer["closest"][0], "tab", "{call:?}: {answer}");
+        assert_eq!(answer["tool"]["name"], "tab", "{call:?}: {answer}");
+    }
+
+    let answer = through_the_gate(use_tool("read_logs", json!({})), TurnOrigin::Text).await;
+    assert_eq!(answer["closest"][0], "read_resource", "{answer}");
+    assert_eq!(answer["tool"]["name"], "read_resource", "{answer}");
+}
+
+/// "Open a new tab" reads as a dialog to a weak model, and the refusal sends it to the right tool.
+#[tokio::test]
+async fn opening_a_tab_as_a_dialog_is_pointed_at_the_tab_tool() {
+    let answer = through_the_gate(
+        (ToolId::Dialog, json!({ "action": "open", "type": "tab" })),
+        TurnOrigin::Text,
+    )
+    .await;
+    assert!(
+        answer["problem"]
+            .as_str()
+            .is_some_and(|problem| problem.contains("the tab tool")),
+        "{answer}"
+    );
+}
+
+/// Nothing close means nothing suggested: a wrong pointer is worse than none.
+#[tokio::test]
+async fn a_guess_like_nothing_cmdr_has_suggests_nothing() {
+    let answer = through_the_gate(use_tool("zzz_qqq", json!({})), TurnOrigin::Text).await;
+    assert_eq!(answer["available"], false, "{answer}");
+    assert!(answer.get("closest").is_none(), "{answer}");
+    assert!(answer.get("tool").is_none(), "{answer}");
+}
+
 // ── What the dispatcher sees ──────────────────────────────────────────────────
 
 /// Records exactly what it was asked to run.

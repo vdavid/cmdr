@@ -16,10 +16,11 @@ use tokio_util::sync::CancellationToken;
 
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ToolId};
 use crate::agent::types::TurnOrigin;
+use crate::tools::error_codes::INVALID_PARAMS;
 use crate::tools::policy::{Refusal, Verdict, admit};
 use crate::tools::propose::evidence::EvidenceScope;
 use crate::tools::propose::rename::{RenameDispatchOutcome, RenameProposalSnapshot};
-use crate::tools::{Access, Caller, ToolCtx, ToolError, execute_tool, tool_access, validate_params};
+use crate::tools::{Access, Caller, ToolCtx, ToolError, execute_tool, meta, tool_access, validate_params};
 
 /// What a tool call knows about the turn it runs in: who started it, for the gate, and the
 /// turn's Stop. One value, so a dispatch path can't take one and forget the other.
@@ -61,15 +62,45 @@ fn refused(call_id: &str, tool: &ToolId, refusal: Refusal) -> AgentToolResult {
 }
 
 fn unknown_tool(call_id: &str, tool: &ToolId) -> AgentToolResult {
+    let closest = meta::closest_tools(tool.as_wire_name());
+    let mut content = json!({
+        "available": false,
+        "requested": tool.as_wire_name(),
+        "reason": "Cmdr has no tool by that name. Use a tool from your list.",
+    });
+    if let Some(best) = closest.first() {
+        if let Some(schema) = meta::schema_for_a_refusal(best) {
+            content["tool"] = schema;
+            content["reason"] = json!(format!(
+                "Cmdr has no tool by that name. Closest: {best}. Run it with use_tool, following the schema in tool."
+            ));
+        } else {
+            content["reason"] = json!("Cmdr has no tool by that name, and closest has the nearest ones.");
+        }
+        content["closest"] = json!(closest);
+    }
     AgentToolResult {
         call_id: call_id.to_string(),
-        content: json!({
-            "available": false,
-            "requested": tool.as_wire_name(),
-            "reason": "Cmdr has no tool by that name. Use a tool from your list.",
-        }),
+        content,
         elided: false,
     }
+}
+
+/// [`error_content`] for a call whose params were wrong, plus the schema when the model was never
+/// declared it, so it can fix the call on its next try.
+fn wrong_params_content(call: &AgentToolCall, error: &ToolError) -> Value {
+    let mut content = error_content(error);
+    if let Some(schema) = meta::schema_for_a_refusal(meta::refused_tool_name(&call.tool, &call.arguments)) {
+        content["tool"] = schema;
+    }
+    content
+}
+
+/// Whether a handler's refusal is about what the call asked for. Its typed `data` marks one that's about
+/// something else: a dialog in the way, a person's no, a setting. Reading only the code and that shape,
+/// and at worst it hands over a schema nobody needed.
+fn is_about_the_params(error: &ToolError) -> bool {
+    error.code == INVALID_PARAMS && error.data.is_none()
 }
 
 /// A `ToolError` as the model reads it. `data` rides along, since it's the contract and the message
@@ -176,7 +207,7 @@ async fn route_call<R: Runtime>(
         return DispatchOutcome {
             result: AgentToolResult {
                 call_id: call.call_id.clone(),
-                content: error_content(&problem),
+                content: wrong_params_content(call, &problem),
                 elided: false,
             },
             proposal: None,
@@ -205,7 +236,11 @@ async fn route_call<R: Runtime>(
         },
         Err(err) => AgentToolResult {
             call_id: call.call_id.clone(),
-            content: error_content(&err),
+            content: if is_about_the_params(&err) {
+                wrong_params_content(call, &err)
+            } else {
+                error_content(&err)
+            },
             elided: false,
         },
     };

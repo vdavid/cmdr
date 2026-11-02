@@ -377,9 +377,8 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 
 - M17: `tag` refuses when every path was skipped, and a partial tag stays `OK`. `dialog open settings` can't promise a
   section: the frontend owns the names (`resolveSettingsSection`), so its answer says so.
-- M18: `tools/DETAILS.md` § Lazy loading has what each model did live. David's call, still open: `gpt-4.1-mini` is the
-  OpenAI preset's default and doesn't reach `tab` or `read_resource` from a plain request. The system prompt names both
-  flows ("open tabs", "logs"), so `tab`, `sort`, and `read_resource` are core candidates, at a prefix cost.
+- M18: `tools/DETAILS.md` § Lazy loading has what each model did live, and why `tab`, `sort`, and `read_resource` stayed
+  deferred once a refusal started carrying the schema.
 
 ## Running unattended
 

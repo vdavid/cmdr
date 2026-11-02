@@ -120,7 +120,7 @@ fn a_wake_digest_is_capped_on_a_large_window() {
     assert_eq!(wake_digest_budget(budget_for_window(1_000_000)), WAKE_DIGEST_MAX_TOKENS);
     assert_eq!(
         wake_digest_budget(budget_for_window(MIN_LOCAL_CONTEXT_TOKENS as usize)),
-        1_827,
+        1_787,
         "a small window still gets its fifth, below the cap"
     );
 }
@@ -353,10 +353,10 @@ fn memory_claims_a_share_of_the_budget_rather_than_a_fixed_block() {
 
 #[test]
 fn a_batch_hint_derives_from_the_budget() {
-    // (budget − 10% headroom − 8,516 of prefix) / 349 per file, while the prompt is what
+    // (budget − 10% headroom − 8,717 of prefix) / 349 per file, while the prompt is what
     // binds.
     assert_eq!(files_per_batch(16_000), 16);
-    assert_eq!(files_per_batch(32_000), 58);
+    assert_eq!(files_per_batch(32_000), 57);
     // Past roughly 49,000 the reply's own ceiling binds instead, and the hint stops
     // growing with the budget: 6,000 emittable tokens / 59 per row.
     assert_eq!(files_per_batch(60_000), 101);

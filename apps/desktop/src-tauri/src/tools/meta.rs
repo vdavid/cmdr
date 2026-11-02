@@ -22,6 +22,7 @@ use serde_json::{Value, json};
 use super::policy::{Verdict, admit};
 use super::table::{table_tools, tool_access, tool_load};
 use super::{Caller, Load, ToolError, ToolId, ToolResult, fit_to_result_budget};
+use crate::agent::chat::budget::estimate_tokens_of_value;
 use crate::agent::types::TurnOrigin;
 
 /// The one thing `use_tool` declares beyond [`NAME`] is [`PARAMS`], and anything else means the call
@@ -97,6 +98,84 @@ impl UseToolProblem {
         };
         ToolError::invalid_params(message)
     }
+}
+
+/// One tool's whole schema is what a refusal may carry, and past this it says where to read it instead.
+/// `every_deferred_schema_fits_what_a_refusal_may_carry` keeps every tool but the odd big one under it.
+const MAX_REFUSAL_SCHEMA_TOKENS: usize = 1_000;
+
+/// What a refusal hands a model about a tool it wasn't declared: the same entry `tool_details` answers.
+///
+/// A weak model never calls `tool_details` (`DETAILS.md` § Lazy loading has what each one did), so the
+/// first thing it hears about a deferred tool is what it got wrong. With the schema there, one failed
+/// try is enough, and a model that got it right never pays for it. `None` for a core tool, whose schema
+/// went out with the call that got it wrong, and for one the agent can't run.
+pub fn schema_for_a_refusal(name: &str) -> Option<Value> {
+    if tool_load(name) != Some(Load::Deferred) || !super::agent_reaches(name) {
+        return None;
+    }
+    let tool = table_tools().into_iter().find(|tool| tool.name == name)?;
+    let entry = json!({
+        "name": tool.name,
+        "description": tool.description,
+        "inputSchema": tool.input_schema,
+    });
+    (estimate_tokens_of_value(&entry) <= MAX_REFUSAL_SCHEMA_TOKENS).then_some(entry)
+}
+
+/// The tool a refused call was reaching for: itself, or for a `use_tool` that never unwrapped, the one
+/// it names.
+pub fn refused_tool_name<'a>(tool: &'a ToolId, arguments: &'a Value) -> &'a str {
+    match tool {
+        ToolId::UseTool => arguments.get(NAME).and_then(Value::as_str).unwrap_or_default().trim(),
+        other => other.as_wire_name(),
+    }
+}
+
+/// Words that say what a call does to anything, so they can't tell one tool from another.
+const NOT_DISTINCTIVE: &[&str] = &[
+    "and", "check", "cmdr", "from", "get", "list", "open", "read", "show", "the", "view", "with", "your",
+];
+
+/// A name or brief as words to compare: lowercase, no plural, nothing too short to mean anything.
+fn words(text: &str) -> Vec<String> {
+    text.split(|c: char| !c.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .map(|word| word.strip_suffix('s').map(str::to_string).unwrap_or(word))
+        .filter(|word| word.len() > 2 && !NOT_DISTINCTIVE.contains(&word.as_str()))
+        .collect()
+}
+
+/// The tools a guessed name may have meant, best first, at most three: the words it shares with each
+/// tool's name and brief, so `new_tab` finds `tab`, and `read_logs` finds `read_resource`, whose brief
+/// says logs. A word that IS a tool's whole name beats one it merely holds. Only tools the agent can
+/// run, in table order on a tie, so two runs agree.
+pub fn closest_tools(guess: &str) -> Vec<String> {
+    let wanted = words(guess);
+    let mut scored: Vec<(usize, &str)> = ToolId::KNOWN
+        .iter()
+        .map(ToolId::as_wire_name)
+        .filter(|name| !matches!(tool_load(name), Some(Load::Meta(_))) && super::agent_reaches(name))
+        .filter_map(|name| {
+            let in_name = words(name);
+            let in_brief = words(ToolId::from_wire_name(name).brief().unwrap_or_default());
+            let score: usize = wanted
+                .iter()
+                .map(|word| {
+                    if in_name.len() == 1 && in_name[0] == *word {
+                        5
+                    } else if in_name.contains(word) {
+                        2
+                    } else {
+                        usize::from(in_brief.contains(word))
+                    }
+                })
+                .sum();
+            (score > 0).then_some((score, name))
+        })
+        .collect();
+    scored.sort_by_key(|(score, _)| std::cmp::Reverse(*score));
+    scored.into_iter().take(3).map(|(_, name)| name.to_string()).collect()
 }
 
 /// What a `use_tool` call's arguments ask to run: the tool, and its own arguments. Absent `params` and
