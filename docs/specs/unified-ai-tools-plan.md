@@ -315,6 +315,15 @@ Where a lead's review refined one of David's decisions, the refined form is writ
   way to answer one. No E2E covers a real question yet: E2E is direct, so only Rust and Vitest do.
 - M18: `docs/guides/mcp-development.md` should say a new `Sensitive` tool needs an `ask:` plan.
 
+## Carried from M11b
+
+- M12: `every_declared_schema_accepts_a_call_that_only_uses_what_it_declares` still chains `get_all_tools` and
+  `agent_tool_view`; once those go, walk `ToolId::KNOWN` like its neighbors. The gate's open branch in `params.rs` now
+  only answers schemas outside the table.
+- M14: `use_tool`'s `params` is free-form by design, and `every_tool_in_the_table_closes_its_schema_all_the_way_down`
+  flags any `type: object` that isn't closed. Declare it with no `type` (as `set_setting`'s `value` does) rather than
+  exempting the name. The effective inner call gets its own tool's gate.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,
