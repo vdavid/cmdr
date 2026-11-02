@@ -17,7 +17,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use crate::tools::resources::{get_all_resources, read_resource};
-use crate::tools::{ToolCtx, ToolError, execute_tool, get_all_tools};
+use crate::tools::{ToolCtx, ToolError, ToolId, execute_tool, get_all_tools};
 
 /// What a client reads at `initialize` to decide when to reach for this server.
 const INSTRUCTIONS: &str = concat!(
@@ -86,11 +86,9 @@ impl<R: Runtime> ServerHandler for CmdrMcpHandler<R> {
     ) -> Result<CallToolResponse, ErrorData> {
         let name = request.name;
         let arguments = Value::Object(request.arguments.unwrap_or_default());
-        if name == "ai_search" {
-            log::debug!("MCP ai_search: tools/call received, id={}", context.id);
-        }
-        // allowed-log-private: an MCP tool name of our own
-        log::debug!("MCP: executing tool {name}");
+        let logged_name = logged_tool_name(&name);
+        // allowed-log-private: a name from the tool table
+        log::debug!("MCP: executing tool {logged_name}");
 
         #[cfg(test)]
         let _running = tests::ToolCallRunning::enter();
@@ -102,8 +100,8 @@ impl<R: Runtime> ServerHandler for CmdrMcpHandler<R> {
         let outcome = tokio::select! {
             outcome = execute_tool(&self.app, &ctx, &name, &arguments) => outcome,
             () = client_left.cancelled() => {
-                // allowed-log-private: an MCP tool name of our own
-                log::debug!("MCP: tool {name} stopped, the client went away");
+                // allowed-log-private: a name from the tool table
+                log::debug!("MCP: tool {logged_name} stopped, the client went away");
                 Err(ToolError::internal("The client went away before this finished."))
             }
         };
@@ -111,18 +109,12 @@ impl<R: Runtime> ServerHandler for CmdrMcpHandler<R> {
         match outcome {
             Ok(value) => {
                 let text = rendered_for_a_client(value);
-                // allowed-log-private: an MCP tool name of our own
-                log::debug!("MCP: tool {name} succeeded, response length={}", text.len());
+                // allowed-log-private: a name from the tool table
+                log::debug!("MCP: tool {logged_name} succeeded, response length={}", text.len());
                 Ok(CallToolResult::success(vec![ContentBlock::text(text)]).into())
             }
             Err(e) => {
-                let verdict = if e.outcome_is_unknown() {
-                    "outcome unknown"
-                } else {
-                    "failed"
-                };
-                // allowed-log-private: an MCP tool name of our own
-                log::warn!("MCP: tool {name} {verdict}, code={}, message={}", e.code, e.message);
+                log_failed_call(&name, &e);
                 Err(wire_error(e))
             }
         }
@@ -174,6 +166,40 @@ fn wire_tool(tool: crate::tools::Tool) -> Tool {
     annotations.read_only_hint = hints.read_only_hint;
     annotations.destructive_hint = hints.destructive_hint;
     Tool::new(tool.name, tool.description, schema).with_annotations(annotations)
+}
+
+/// A client-sent tool name as a log line may show it: `name` is any string a client sends, so one
+/// outside the table doesn't get written.
+fn logged_tool_name(name: &str) -> String {
+    let id = ToolId::from_wire_name(name);
+    match id.is_known() {
+        true => id.as_wire_name().to_string(),
+        false => "(not in the table)".to_string(),
+    }
+}
+
+/// The failure's line: its code and typed token. ❌ Never the message: refusals echo arguments, the
+/// log ships in error reports, and its redactor only knows paths.
+fn log_failed_call(name: &str, error: &ToolError) {
+    let verdict = if error.outcome_is_unknown() {
+        "outcome unknown"
+    } else {
+        "failed"
+    };
+    let name = logged_tool_name(name);
+    let token = error_token(error.data.as_ref());
+    // allowed-log-private: a name from the tool table, a code, and a typed token
+    log::warn!("MCP: tool {name} {verdict}, code={}, token={token}", error.code);
+}
+
+/// `data`'s typed token, the part a caller branches on, or `none`. Only an identifier gets through,
+/// since `data` holds free values beside it.
+fn error_token(data: Option<&Value>) -> &str {
+    let is_token = |text: &&str| !text.is_empty() && text.chars().all(|c| c.is_ascii_alphanumeric() || c == '_');
+    ["refusal", "reason", "outcome"]
+        .into_iter()
+        .find_map(|field| data?.get(field)?.as_str().filter(is_token))
+        .unwrap_or("none")
 }
 
 /// A tool's error as the client gets it: still a JSON-RPC error, with the typed `data` a caller
@@ -276,6 +302,36 @@ pub(super) mod tests {
             wire_error(ToolError::invalid_params(format!("can't open {twin}")).with_data(json!({"path": twin})));
         assert_eq!(refusal.message, "can't open /DCIM/IMG_1.JPG");
         assert_eq!(refusal.data, Some(json!({"path": "/DCIM/IMG_1.JPG"})));
+    }
+
+    /// `cmdr.log` ships in error reports and its redactor is path-shaped, so free text a client put
+    /// in an argument would travel intact. A refusal's sentence echoes arguments.
+    #[test]
+    fn a_failed_call_logs_its_code_and_token_and_no_words_from_the_call() {
+        let refused = ToolError::invalid_params("unknown value 'my-private-words'")
+            .with_data(json!({"refusal": "invalidValue", "path": "/my-private-words"}));
+        let ((), records) = crate::test_support::capture_logs(|| {
+            log_failed_call("no_such_my-private-words", &refused);
+            log_failed_call("search", &ToolError::outcome_unknown("my-private-words"));
+            log_failed_call("search", &ToolError::invalid_params("my-private-words"));
+        });
+
+        let lines: Vec<&str> = records.iter().map(|record| record.message.as_str()).collect();
+        assert!(lines.iter().all(|line| !line.contains("my-private-words")), "{lines:?}");
+        assert!(lines[0].contains("code=-32602") && lines[0].contains("token=invalidValue"));
+        assert!(lines[1].contains("search") && lines[1].contains("token=unknown"));
+        assert!(lines[2].contains("token=none"));
+    }
+
+    /// A token comes from our own code today, but `data` carries free values too, so only a
+    /// token-shaped one gets written.
+    #[test]
+    fn a_data_value_that_isnt_a_token_isnt_logged() {
+        assert_eq!(error_token(Some(&json!({"reason": "folderStalled"}))), "folderStalled");
+        assert_eq!(error_token(Some(&json!({"refusal": "two words"}))), "none");
+        assert_eq!(error_token(Some(&json!({"outcome": 5}))), "none");
+        assert_eq!(error_token(Some(&json!({"path": "/a"}))), "none");
+        assert_eq!(error_token(None), "none");
     }
 
     #[test]

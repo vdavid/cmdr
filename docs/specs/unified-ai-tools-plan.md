@@ -111,7 +111,7 @@ Where a lead's review refined one of David's decisions, the refined form is writ
   no Full Disk Access could write `developer.mcpDirectMode: true` to `settings.json`, or start Cmdr with a crafted
   `CMDR_DATA_DIR` (`config.rs:30`), then read `~/Documents` through Cmdr's Full Disk Access and pass `dialog_confirm`;
   the launch event only goes to a log in that same data dir. So outside `E2E_HONORED`, the setting counts only when a
-  Keychain item (`secrets`) written by `set_mcp_direct_mode` backs it. The JSON value is display only; if they disagree,
+  Keychain item (`secrets`) that reads without a prompt backs it. The JSON value is display only; if they disagree,
   direct mode stays off. It still works in every build.
 - **What external clients lose with direct mode off**: `ai_search`, `connect_to_server`, `resolve_conflict`, `memory_*`,
   `dialog_confirm`, and the two content tools they have today, `image_facts` and `search_photos`. The refusal names the
@@ -380,6 +380,14 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - M18: `tools/DETAILS.md` § Lazy loading has what each model did live, and why `tab`, `sort`, and `read_resource` stayed
   deferred once a refusal started carrying the schema.
 
+## Carried from M17
+
+- David, QA: `dialog focus settings` and `dialog open settings|file-viewer` move window focus with no guard, so someone
+  typing in the rail keeps typing into that window. Nothing there was found that a stray key can commit, but invariant 6
+  doesn't cover window focus, so try typing through it once.
+- David, QA: the keyboard waiting on the Locked question, the clash prompt, the transfer error dialog, and the two
+  sheets a tool can raise. Timing is your call (`opensOnItsOwn`).
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,
@@ -430,8 +438,8 @@ for 30 minutes.
    skips it. External clients read file contents only in direct mode.
 8. Provider-facing prefix bytes are identical across a thread's calls. Stored assistant parts are what the provider
    sent; `effective()` is derived, never persisted.
-9. Must-survive transport items hold, proven by the same black-box file before and after the swap. No token or tool
-   argument reaches any log.
+9. Must-survive transport items hold, proven by the same black-box file before and after the swap. No token, password,
+   or whole tool arguments reach any log. A path may: paths are normal in logs and redacted in reports.
 10. `ToolError.data` reaches both callers. Nothing classifies by message text.
 11. `CLOUD_AI_CONSENT_VERSION` bumps exactly once, with the disclosure rewritten as a whole. Direct mode is on only via
     the setting backed by its `secrets` item (the JSON value alone never turns it on), or an E2E run in a build that
