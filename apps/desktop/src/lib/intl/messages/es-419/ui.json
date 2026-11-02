@@ -26,5 +26,17 @@
   "ui.dialogBoundary.closedToast": "Ese diálogo tuvo un problema, así que lo cerramos. Inténtalo de nuevo.",
   "@ui.dialogBoundary.closedToast": {
     "sourceHash": "ec54fee"
+  },
+  "ui.startedElsewhere.agent": "Ask Cmdr inició esto.",
+  "@ui.startedElsewhere.agent": {
+    "sourceHash": "0f61531"
+  },
+  "ui.startedElsewhere.aiClient": "Un cliente de IA inició esto.",
+  "@ui.startedElsewhere.aiClient": {
+    "sourceHash": "5534e20"
+  },
+  "ui.toolAsk.setSetting.title": "¿Cambiar esta opción?",
+  "@ui.toolAsk.setSetting.title": {
+    "sourceHash": "48ab07b"
   }
 }

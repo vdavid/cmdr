@@ -510,5 +510,9 @@
   "settings.fileOperations.showAlreadyGoneToast.description": "Cuando eliminas algo que otra app ya movió o eliminó, Cmdr lo da por hecho y te avisa con una nota breve. Desactiva esta opción (o haz clic en “No volver a mostrar” en la nota) para omitir esa nota.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
     "sourceHash": "8650516"
+  },
+  "settings.mcp.directModeThisSessionOnly": "El modo directo seguirá activado hasta que salgas de Cmdr, porque esta computadora no puede conservarlo de forma segura tras un reinicio.",
+  "@settings.mcp.directModeThisSessionOnly": {
+    "sourceHash": "8546298"
   }
 }

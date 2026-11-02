@@ -310,5 +310,9 @@
   "fileOperations.alreadyGone.many": "{count, plural, one {{countText} elemento ya no estaba. Seguramente se movió o se eliminó desde otra app.} many {{countText} elementos ya no estaban. Seguramente se movieron o se eliminaron desde otra app.} other {{countText} elementos ya no estaban. Seguramente se movieron o se eliminaron desde otra app.}}",
   "@fileOperations.alreadyGone.many": {
     "sourceHash": "e3c9537"
+  },
+  "fileOperations.transferDialog.presetOverwriteNote": "{reach, select, smaller {Este diálogo se abrió configurado para sobrescribir los archivos que ya hay ahí y son más pequeños.} older {Este diálogo se abrió configurado para sobrescribir los archivos que ya hay ahí y son más antiguos.} other {Este diálogo se abrió configurado para sobrescribir los archivos que ya hay ahí.}}",
+  "@fileOperations.transferDialog.presetOverwriteNote": {
+    "sourceHash": "6d30a11"
   }
 }

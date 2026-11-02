@@ -107,115 +107,115 @@
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "ui.startedElsewhere.agent": "Ask Cmdr started this.",
+  "ui.startedElsewhere.agent": "Ask Cmdr ha iniciado esto.",
   "@ui.startedElsewhere.agent": {
     "sourceHash": "ca967be"
   },
-  "ui.startedElsewhere.aiClient": "An AI client started this.",
+  "ui.startedElsewhere.aiClient": "Un cliente de IA ha iniciado esto.",
   "@ui.startedElsewhere.aiClient": {
     "sourceHash": "3c290c7"
   },
-  "ui.startedElsewhere.keysWait": "The keyboard waits until you stop typing.",
+  "ui.startedElsewhere.keysWait": "El teclado espera hasta que dejes de escribir.",
   "@ui.startedElsewhere.keysWait": {
     "sourceHash": "ddc13ba"
   },
-  "ui.toolAsk.allow": "Allow",
+  "ui.toolAsk.allow": "Permitir",
   "@ui.toolAsk.allow": {
     "sourceHash": "e213c16"
   },
-  "ui.toolAsk.decline": "Don’t allow",
+  "ui.toolAsk.decline": "No permitir",
   "@ui.toolAsk.decline": {
     "sourceHash": "aeba8b1"
   },
-  "ui.toolAsk.openFile.title": "Open this file?",
+  "ui.toolAsk.openFile.title": "¿Abrir este archivo?",
   "@ui.toolAsk.openFile.title": {
     "sourceHash": "41da881"
   },
-  "ui.toolAsk.openFile.body": "This opens {name} in {app}.",
+  "ui.toolAsk.openFile.body": "Esto abre {name} en {app}.",
   "@ui.toolAsk.openFile.body": {
     "sourceHash": "b0d7609"
   },
-  "ui.toolAsk.openFile.bodyUnknownApp": "This opens {name}, and Cmdr can’t tell which app that uses.",
+  "ui.toolAsk.openFile.bodyUnknownApp": "Esto abre {name}, y Cmdr no sabe con qué app.",
   "@ui.toolAsk.openFile.bodyUnknownApp": {
     "sourceHash": "82c1e2e"
   },
-  "ui.toolAsk.openBundle.title": "Run this bundle?",
+  "ui.toolAsk.openBundle.title": "¿Ejecutar este paquete?",
   "@ui.toolAsk.openBundle.title": {
     "sourceHash": "ad2c442"
   },
-  "ui.toolAsk.openBundle.body": "{name} is a bundle, so opening it runs it as a program.",
+  "ui.toolAsk.openBundle.body": "{name} es un paquete, así que al abrirlo se ejecuta como un programa.",
   "@ui.toolAsk.openBundle.body": {
     "sourceHash": "5643ed3"
   },
-  "ui.toolAsk.setSetting.title": "Change this setting?",
+  "ui.toolAsk.setSetting.title": "¿Cambiar este ajuste?",
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
-  "ui.toolAsk.setSetting.body": "This changes {label} from {oldValue} to {newValue}.",
+  "ui.toolAsk.setSetting.body": "Esto cambia {label} de {oldValue} a {newValue}.",
   "@ui.toolAsk.setSetting.body": {
     "sourceHash": "8831e19"
   },
-  "ui.toolAsk.setSetting.emptyValue": "nothing",
+  "ui.toolAsk.setSetting.emptyValue": "nada",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"
   },
-  "ui.toolAsk.quit.title": "Quit Cmdr?",
+  "ui.toolAsk.quit.title": "¿Salir de Cmdr?",
   "@ui.toolAsk.quit.title": {
     "sourceHash": "b1f6e98"
   },
-  "ui.toolAsk.quit.body": "This closes Cmdr. If anything’s still running, you get to decide about that first.",
+  "ui.toolAsk.quit.body": "Esto cierra Cmdr. Si hay algo todavía en curso, antes podrás decidir qué hacer.",
   "@ui.toolAsk.quit.body": {
     "sourceHash": "c1ca732"
   },
-  "ui.toolAsk.eject.title": "Eject this volume?",
+  "ui.toolAsk.eject.title": "¿Expulsar este volumen?",
   "@ui.toolAsk.eject.title": {
     "sourceHash": "d0d7554"
   },
-  "ui.toolAsk.eject.body": "This ejects {name}.",
+  "ui.toolAsk.eject.body": "Esto expulsa {name}.",
   "@ui.toolAsk.eject.body": {
     "sourceHash": "56a93f1"
   },
-  "ui.toolAsk.eject.bodyWholeDisk": "This ejects the whole disk {name} is on, with every volume on it.",
+  "ui.toolAsk.eject.bodyWholeDisk": "Esto expulsa todo el disco en el que está {name}, con todos sus volúmenes.",
   "@ui.toolAsk.eject.bodyWholeDisk": {
     "sourceHash": "0948b81"
   },
-  "ui.toolAsk.removeServer.title": "Remove this server?",
+  "ui.toolAsk.removeServer.title": "¿Quitar este servidor?",
   "@ui.toolAsk.removeServer.title": {
     "sourceHash": "6ec8216"
   },
-  "ui.toolAsk.removeServer.body": "This removes {name} from your saved servers.",
+  "ui.toolAsk.removeServer.body": "Esto quita {name} de tus servidores guardados.",
   "@ui.toolAsk.removeServer.body": {
     "sourceHash": "fd047ab"
   },
-  "ui.toolAsk.indexing.enable.title": "Turn indexing on?",
+  "ui.toolAsk.indexing.enable.title": "¿Activar la indexación?",
   "@ui.toolAsk.indexing.enable.title": {
     "sourceHash": "ef30ae9"
   },
-  "ui.toolAsk.indexing.enable.body": "This turns indexing on for {name} and starts scanning it.",
+  "ui.toolAsk.indexing.enable.body": "Esto activa la indexación de {name} y empieza a analizar su contenido.",
   "@ui.toolAsk.indexing.enable.body": {
     "sourceHash": "028739c"
   },
-  "ui.toolAsk.indexing.disable.title": "Turn indexing off?",
+  "ui.toolAsk.indexing.disable.title": "¿Desactivar la indexación?",
   "@ui.toolAsk.indexing.disable.title": {
     "sourceHash": "edfb775"
   },
-  "ui.toolAsk.indexing.disable.body": "This turns indexing off for {name}, and keeps what it has indexed so far.",
+  "ui.toolAsk.indexing.disable.body": "Esto desactiva la indexación de {name} y conserva lo indexado hasta ahora.",
   "@ui.toolAsk.indexing.disable.body": {
     "sourceHash": "d9c8371"
   },
-  "ui.toolAsk.indexing.rescan.title": "Scan this volume again?",
+  "ui.toolAsk.indexing.rescan.title": "¿Volver a analizar este volumen?",
   "@ui.toolAsk.indexing.rescan.title": {
     "sourceHash": "f6e08c5"
   },
-  "ui.toolAsk.indexing.rescan.body": "This scans all of {name} again, which can take a while.",
+  "ui.toolAsk.indexing.rescan.body": "Esto vuelve a analizar todo el volumen {name}, y puede tardar un rato.",
   "@ui.toolAsk.indexing.rescan.body": {
     "sourceHash": "c3484a9"
   },
-  "ui.toolAsk.indexing.forget.title": "Forget this index?",
+  "ui.toolAsk.indexing.forget.title": "¿Olvidar este índice?",
   "@ui.toolAsk.indexing.forget.title": {
     "sourceHash": "2a861bd"
   },
-  "ui.toolAsk.indexing.forget.body": "This deletes the index of {name}. The files on it stay where they are.",
+  "ui.toolAsk.indexing.forget.body": "Esto elimina el índice de {name}. Los archivos que contiene se quedan donde están.",
   "@ui.toolAsk.indexing.forget.body": {
     "sourceHash": "f9c5160"
   },

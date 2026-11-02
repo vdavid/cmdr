@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Búsqueda con tus propias palabras</b>: el texto que escribes",
+  "ai.cloudConsent.search": "<b>Búsqueda con tus propias palabras</b>: el texto que escribes o, una vez que actives el modo directo de MCP, lo que pida una herramienta de IA conectada",
   "@ai.cloudConsent.search": {
-    "sourceHash": "e6d4ef9"
+    "sourceHash": "b5c8d93"
   },
   "ai.cloudConsent.selection": "<b>Selección por descripción</b>: lo que escribes, más hasta 240 nombres de la carpeta actual",
   "@ai.cloudConsent.selection": {
@@ -91,21 +91,21 @@
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
-  "ai.cloudConsent.askCmdr.item.messages": "Tus mensajes",
+  "ai.cloudConsent.askCmdr.item.messages": "Tus mensajes, incluida cualquier contraseña que escribas en ellos para desbloquear un archivo comprimido o una copia de seguridad",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "sourceHash": "befc6e9"
+    "sourceHash": "66e656b"
   },
-  "ai.cloudConsent.askCmdr.item.names": "Los nombres y las rutas de los archivos y carpetas que Cmdr consulta para responderte",
+  "ai.cloudConsent.askCmdr.item.names": "Los nombres y las rutas de los archivos y carpetas que Cmdr consulta",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "sourceHash": "ce3259d"
+    "sourceHash": "4d5ea2c"
   },
   "ai.cloudConsent.askCmdr.item.sizes": "Sus tamaños y fechas",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Partes de los archivos que Cmdr abre para responderte: algo de texto, páginas de un PDF, lo que hay dentro de un archivo comprimido y los datos de la cámara y la ubicación de una foto",
+  "ai.cloudConsent.askCmdr.item.contents": "Partes de los archivos que Cmdr abre: algo de texto, páginas de un PDF, lo que hay dentro de un archivo comprimido, los datos de la cámara y la ubicación de una foto, y el texto que Cmdr ha reconocido dentro de las fotos",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "sourceHash": "fcd0b73"
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.item.envelope": "Lo que estás viendo ahora mismo: tu carpeta actual, el cursor, la selección y las unidades conectadas",
   "@ai.cloudConsent.askCmdr.item.envelope": {
@@ -115,19 +115,19 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Datos de fotos y canciones cuando un cambio de nombre los usa: fecha de captura, cámara, título, artista, álbum y similares",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {
     "sourceHash": "e96157a"
   },
-  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "ai.cloudConsent.askCmdr.item.appState": "Lo que Cmdr está haciendo: operaciones en curso y pasadas, diálogos abiertos, favoritos, ubicaciones guardadas, indexación de unidades y qué carpetas importan más",
   "@ai.cloudConsent.askCmdr.item.appState": {
     "sourceHash": "4159dde"
   },
-  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "ai.cloudConsent.askCmdr.item.settings": "Tus ajustes de Cmdr y tus atajos de teclado, incluidas las carpetas que has elegido para la indexación de imágenes y la dirección de tu servicio de IA. Todo lo que parezca una contraseña, una clave o un token se oculta, y tu dirección de correo también",
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "c7c0657"
   },
-  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "ai.cloudConsent.askCmdr.item.logs": "Las líneas recientes del registro de Cmdr, con los nombres, las rutas, las direcciones y todo lo que parezca una clave sustituidos antes por marcadores. Algunos datos sencillos se quedan tal cual, como las extensiones de archivo y los nombres de carpeta habituales, por ejemplo Documentos",
   "@ai.cloudConsent.askCmdr.item.logs": {
     "sourceHash": "7aabf35"
   },
@@ -135,15 +135,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr nunca envía archivos completos, fotos ni miniaturas. Cuando preguntas por un archivo, puede leer una parte limitada de su contenido: algunas líneas de texto, unas pocas páginas de un PDF junto con su título y su autor, la lista de archivos que contiene un archivo comprimido o los datos de la cámara de una foto, incluido el lugar donde se hizo. La búsqueda de fotos funciona igual: el texto que Cmdr ha reconocido dentro de las fotos coincidentes y sus etiquetas se envían a tu proveedor para que pueda encontrarlas. Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta que tú lo apruebas.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr nunca envía archivos completos, fotos ni miniaturas. Cuando necesita saber más sobre un archivo, puede leer una parte limitada de su contenido: algunas líneas de texto, unas pocas páginas de un PDF junto con su título y su autor, la lista de archivos que contiene un archivo comprimido o los datos de la cámara de una foto, incluido el lugar donde se hizo. La búsqueda de fotos funciona igual: el texto que Cmdr ha reconocido dentro de las fotos coincidentes y sus etiquetas se envían a tu proveedor para que pueda encontrarlas.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "Algunos contenidos se quedan en casa, lo pida quien lo pida: claves SSH, credenciales de la nube y de herramientas, tus llaveros, datos del navegador, Mail, Mensajes, Notas, los datos de Cmdr y cualquier archivo que contenga una clave privada. Aun así, sus nombres pueden llegar a tu proveedor.",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "En un chat que hayas empezado tú, Ask Cmdr también puede manejar la app por ti: navegar, seleccionar, ordenar, abrir pestañas y diálogos, y conectar una ubicación que hayas guardado. Copiar, mover, comprimir, eliminar, renombrar y deshacer una operación abren cada uno un diálogo o un editor para que confirmes, y no pasa nada hasta que lo hagas. Antes de abrir un archivo, cambiar un ajuste (que no sea el aspecto de Cmdr), salir, expulsar una unidad, quitar un servidor o cambiar la indexación, te pregunta. Al instante y sin preguntarte nada, etiqueta archivos y crea carpetas o archivos con nombre, y las etiquetas no se pueden deshacer. Los cambios de nombre y las limpiezas que prepara como plan esperan tu aprobación.",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "bf002cc"
   },
@@ -151,17 +151,17 @@
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr también observa las carpetas que usas y abre una conversación cuando tiene algo que sugerir, así que pueden salir mensajes hacia tu proveedor sin que tú lo pidas. Puedes desactivarlo en los ajustes de Ask Cmdr, en “Por su cuenta”.",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr también observa las carpetas que usas y abre una conversación cuando tiene algo que sugerir, así que pueden salir mensajes hacia tu proveedor sin que tú lo pidas. En esas conversaciones puede leer lo que se indica arriba, preparar planes y escribir sus notas, y nada más. Puedes desactivarlo en los ajustes de Ask Cmdr, en “Por su cuenta”.",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "abfa80b"
+    "sourceHash": "95b18ac"
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "Tus chats de Ask Cmdr se quedan en tu Mac, en una base de datos local que puedes abrir y leer.",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Si activas el registro de llamadas al modelo de IA en Ajustes avanzados, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros también son locales y nunca se envían a ningún sitio.",
+  "ai.cloudConsent.logsNote": "Si activas el registro de llamadas al modelo de IA en Ajustes avanzados, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún sitio.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7e211fc"
+    "sourceHash": "d89adfb"
   },
   "ai.cloudConsent.turnOffAnyTime": "Desactívalo cuando quieras y Cmdr dejará de enviar al instante. Tu servicio, tu clave y tus chats se quedan como están.",
   "@ai.cloudConsent.turnOffAnyTime": {

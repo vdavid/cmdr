@@ -207,9 +207,9 @@
   "@askCmdr.tool.preview.copyRefused": {
     "sourceHash": "0a5eac8"
   },
-  "askCmdr.toolGroup.summary": "Echó un vistazo: {parts}",
+  "askCmdr.toolGroup.summary": "Trabajó en: {parts}",
   "@askCmdr.toolGroup.summary": {
-    "sourceHash": "873bd78"
+    "sourceHash": "543c3b8"
   },
   "askCmdr.error.noKey": "Agrega tu clave de API en Configuración para empezar a chatear.",
   "@askCmdr.error.noKey": {
@@ -518,5 +518,433 @@
   "askCmdr.decision.savedNotShare": "Se guardó el servidor, pero no su recurso compartido",
   "@askCmdr.decision.savedNotShare": {
     "sourceHash": "a319b16"
+  },
+  "askCmdr.tool.selectVolume.done": "Se cambió la unidad de un panel",
+  "@askCmdr.tool.selectVolume.done": {
+    "sourceHash": "5b6f3a6"
+  },
+  "askCmdr.tool.selectVolume.tried": "Se intentó cambiar la unidad de un panel",
+  "@askCmdr.tool.selectVolume.tried": {
+    "sourceHash": "7fc44d9"
+  },
+  "askCmdr.tool.navToPath.done": "Se fue a una carpeta",
+  "@askCmdr.tool.navToPath.done": {
+    "sourceHash": "38026c7"
+  },
+  "askCmdr.tool.navToPath.tried": "Se intentó ir a una carpeta",
+  "@askCmdr.tool.navToPath.tried": {
+    "sourceHash": "dcded78"
+  },
+  "askCmdr.tool.navToParent.done": "Se subió a la carpeta superior",
+  "@askCmdr.tool.navToParent.done": {
+    "sourceHash": "4fd60c3"
+  },
+  "askCmdr.tool.navToParent.tried": "Se intentó subir a la carpeta superior",
+  "@askCmdr.tool.navToParent.tried": {
+    "sourceHash": "0f44792"
+  },
+  "askCmdr.tool.navBack.done": "Se volvió atrás",
+  "@askCmdr.tool.navBack.done": {
+    "sourceHash": "5fca496"
+  },
+  "askCmdr.tool.navBack.tried": "Se intentó volver atrás",
+  "@askCmdr.tool.navBack.tried": {
+    "sourceHash": "b951e7c"
+  },
+  "askCmdr.tool.navForward.done": "Se fue hacia adelante",
+  "@askCmdr.tool.navForward.done": {
+    "sourceHash": "509df85"
+  },
+  "askCmdr.tool.navForward.tried": "Se intentó ir hacia adelante",
+  "@askCmdr.tool.navForward.tried": {
+    "sourceHash": "5b2d22f"
+  },
+  "askCmdr.tool.scrollTo.done": "Se desplazó un panel",
+  "@askCmdr.tool.scrollTo.done": {
+    "sourceHash": "c1e1007"
+  },
+  "askCmdr.tool.scrollTo.tried": "Se intentó desplazar un panel",
+  "@askCmdr.tool.scrollTo.tried": {
+    "sourceHash": "289c490"
+  },
+  "askCmdr.tool.moveCursor.done": "Se movió el cursor",
+  "@askCmdr.tool.moveCursor.done": {
+    "sourceHash": "ee325c7"
+  },
+  "askCmdr.tool.moveCursor.tried": "Se intentó mover el cursor",
+  "@askCmdr.tool.moveCursor.tried": {
+    "sourceHash": "dba1de0"
+  },
+  "askCmdr.tool.openUnderCursor.done": "Se abrió el elemento bajo el cursor",
+  "@askCmdr.tool.openUnderCursor.done": {
+    "sourceHash": "c9e099b"
+  },
+  "askCmdr.tool.openUnderCursor.tried": "Se intentó abrir el elemento bajo el cursor",
+  "@askCmdr.tool.openUnderCursor.tried": {
+    "sourceHash": "66cc2f1"
+  },
+  "askCmdr.tool.select.done": "Se seleccionaron archivos",
+  "@askCmdr.tool.select.done": {
+    "sourceHash": "6021b47"
+  },
+  "askCmdr.tool.select.tried": "Se intentó seleccionar archivos",
+  "@askCmdr.tool.select.tried": {
+    "sourceHash": "88032fe"
+  },
+  "askCmdr.tool.copy.done": "Se abrió el diálogo Copiar",
+  "@askCmdr.tool.copy.done": {
+    "sourceHash": "cadfa18"
+  },
+  "askCmdr.tool.copy.tried": "Se intentó abrir el diálogo Copiar",
+  "@askCmdr.tool.copy.tried": {
+    "sourceHash": "378ca8c"
+  },
+  "askCmdr.tool.move.done": "Se abrió el diálogo Mover",
+  "@askCmdr.tool.move.done": {
+    "sourceHash": "edb9c33"
+  },
+  "askCmdr.tool.move.tried": "Se intentó abrir el diálogo Mover",
+  "@askCmdr.tool.move.tried": {
+    "sourceHash": "722d126"
+  },
+  "askCmdr.tool.compress.done": "Se abrió el diálogo Comprimir",
+  "@askCmdr.tool.compress.done": {
+    "sourceHash": "5ae23ba"
+  },
+  "askCmdr.tool.compress.tried": "Se intentó abrir el diálogo Comprimir",
+  "@askCmdr.tool.compress.tried": {
+    "sourceHash": "642bed7"
+  },
+  "askCmdr.tool.delete.done": "Se abrió el diálogo Eliminar",
+  "@askCmdr.tool.delete.done": {
+    "sourceHash": "4613ed3"
+  },
+  "askCmdr.tool.delete.tried": "Se intentó abrir el diálogo Eliminar",
+  "@askCmdr.tool.delete.tried": {
+    "sourceHash": "e104f76"
+  },
+  "askCmdr.tool.rename.done": "Se abrió el editor para renombrar",
+  "@askCmdr.tool.rename.done": {
+    "sourceHash": "4a9045e"
+  },
+  "askCmdr.tool.rename.tried": "Se intentó abrir el editor para renombrar",
+  "@askCmdr.tool.rename.tried": {
+    "sourceHash": "769b6d6"
+  },
+  "askCmdr.tool.multiRename.done": "Se prepararon nombres nuevos",
+  "@askCmdr.tool.multiRename.done": {
+    "sourceHash": "cf72071"
+  },
+  "askCmdr.tool.multiRename.tried": "Se intentó preparar nombres nuevos",
+  "@askCmdr.tool.multiRename.tried": {
+    "sourceHash": "f7b9d39"
+  },
+  "askCmdr.tool.mkdir.done": "Se creó una carpeta",
+  "@askCmdr.tool.mkdir.done": {
+    "sourceHash": "557f346"
+  },
+  "askCmdr.tool.mkdir.tried": "Se intentó crear una carpeta",
+  "@askCmdr.tool.mkdir.tried": {
+    "sourceHash": "39031a3"
+  },
+  "askCmdr.tool.mkfile.done": "Se creó un archivo",
+  "@askCmdr.tool.mkfile.done": {
+    "sourceHash": "4869459"
+  },
+  "askCmdr.tool.mkfile.tried": "Se intentó crear un archivo",
+  "@askCmdr.tool.mkfile.tried": {
+    "sourceHash": "d5c3b69"
+  },
+  "askCmdr.tool.refresh.done": "Se actualizó un panel",
+  "@askCmdr.tool.refresh.done": {
+    "sourceHash": "852dce8"
+  },
+  "askCmdr.tool.refresh.tried": "Se intentó actualizar un panel",
+  "@askCmdr.tool.refresh.tried": {
+    "sourceHash": "52c4a3c"
+  },
+  "askCmdr.tool.tag.done": "Se cambiaron las etiquetas del Finder",
+  "@askCmdr.tool.tag.done": {
+    "sourceHash": "0ca3a0f"
+  },
+  "askCmdr.tool.tag.tried": "Se intentó cambiar las etiquetas del Finder",
+  "@askCmdr.tool.tag.tried": {
+    "sourceHash": "e8e83a2"
+  },
+  "askCmdr.tool.toggleHidden.done": "Se cambió si se muestran los archivos ocultos",
+  "@askCmdr.tool.toggleHidden.done": {
+    "sourceHash": "f51348b"
+  },
+  "askCmdr.tool.toggleHidden.tried": "Se intentó cambiar si se muestran los archivos ocultos",
+  "@askCmdr.tool.toggleHidden.tried": {
+    "sourceHash": "32ce486"
+  },
+  "askCmdr.tool.setViewMode.done": "Se cambió la vista de un panel",
+  "@askCmdr.tool.setViewMode.done": {
+    "sourceHash": "f27603e"
+  },
+  "askCmdr.tool.setViewMode.tried": "Se intentó cambiar la vista de un panel",
+  "@askCmdr.tool.setViewMode.tried": {
+    "sourceHash": "8b696d4"
+  },
+  "askCmdr.tool.sort.done": "Se ordenó un panel",
+  "@askCmdr.tool.sort.done": {
+    "sourceHash": "7186ed9"
+  },
+  "askCmdr.tool.sort.tried": "Se intentó ordenar un panel",
+  "@askCmdr.tool.sort.tried": {
+    "sourceHash": "44efdf8"
+  },
+  "askCmdr.tool.tab.done": "Se cambiaron las pestañas de un panel",
+  "@askCmdr.tool.tab.done": {
+    "sourceHash": "3820be7"
+  },
+  "askCmdr.tool.tab.tried": "Se intentó cambiar las pestañas de un panel",
+  "@askCmdr.tool.tab.tried": {
+    "sourceHash": "f71b88d"
+  },
+  "askCmdr.tool.dialog.done": "Se usó un diálogo",
+  "@askCmdr.tool.dialog.done": {
+    "sourceHash": "f626d26"
+  },
+  "askCmdr.tool.dialog.tried": "Se intentó usar un diálogo",
+  "@askCmdr.tool.dialog.tried": {
+    "sourceHash": "70320f5"
+  },
+  "askCmdr.tool.openSearchDialog.done": "Se abrió la búsqueda",
+  "@askCmdr.tool.openSearchDialog.done": {
+    "sourceHash": "724709e"
+  },
+  "askCmdr.tool.openSearchDialog.tried": "Se intentó abrir la búsqueda",
+  "@askCmdr.tool.openSearchDialog.tried": {
+    "sourceHash": "39933ff"
+  },
+  "askCmdr.tool.quit.done": "Se le pidió a Cmdr que se cierre",
+  "@askCmdr.tool.quit.done": {
+    "sourceHash": "08a4428"
+  },
+  "askCmdr.tool.quit.tried": "Se intentó salir de Cmdr",
+  "@askCmdr.tool.quit.tried": {
+    "sourceHash": "2b9e286"
+  },
+  "askCmdr.tool.switchPane.done": "Se cambió de panel",
+  "@askCmdr.tool.switchPane.done": {
+    "sourceHash": "fc297fb"
+  },
+  "askCmdr.tool.switchPane.tried": "Se intentó cambiar de panel",
+  "@askCmdr.tool.switchPane.tried": {
+    "sourceHash": "ef44cf3"
+  },
+  "askCmdr.tool.swapPanes.done": "Se intercambiaron los paneles",
+  "@askCmdr.tool.swapPanes.done": {
+    "sourceHash": "541e8b2"
+  },
+  "askCmdr.tool.swapPanes.tried": "Se intentó intercambiar los paneles",
+  "@askCmdr.tool.swapPanes.tried": {
+    "sourceHash": "9aaaa39"
+  },
+  "askCmdr.tool.aiSearch.done": "Se buscó con IA",
+  "@askCmdr.tool.aiSearch.done": {
+    "sourceHash": "bfe239b"
+  },
+  "askCmdr.tool.setSetting.doing": "Cambiando una opción",
+  "@askCmdr.tool.setSetting.doing": {
+    "sourceHash": "db90513"
+  },
+  "askCmdr.tool.setSetting.done": "Se cambió una opción",
+  "@askCmdr.tool.setSetting.done": {
+    "sourceHash": "1300f99"
+  },
+  "askCmdr.tool.setSetting.tried": "Se intentó cambiar una opción",
+  "@askCmdr.tool.setSetting.tried": {
+    "sourceHash": "b9f8c10"
+  },
+  "askCmdr.tool.toolDetails.done": "Se leyó cómo funciona una herramienta",
+  "@askCmdr.tool.toolDetails.done": {
+    "sourceHash": "ff30930"
+  },
+  "askCmdr.tool.readResource.done": "Se leyeron los datos de Cmdr",
+  "@askCmdr.tool.readResource.done": {
+    "sourceHash": "4d9ec31"
+  },
+  "askCmdr.tool.readResource.tried": "Se intentó leer los datos de Cmdr",
+  "@askCmdr.tool.readResource.tried": {
+    "sourceHash": "aa225fa"
+  },
+  "askCmdr.tool.readResource.state.done": "Se miró qué hay abierto en Cmdr",
+  "@askCmdr.tool.readResource.state.done": {
+    "sourceHash": "0bec9a6"
+  },
+  "askCmdr.tool.readResource.dialogs.done": "Se comprobó qué diálogos tiene Cmdr",
+  "@askCmdr.tool.readResource.dialogs.done": {
+    "sourceHash": "66785c1"
+  },
+  "askCmdr.tool.readResource.indexing.done": "Se comprobó la indexación de unidades",
+  "@askCmdr.tool.readResource.indexing.done": {
+    "sourceHash": "4592f10"
+  },
+  "askCmdr.tool.readResource.importance.done": "Se comprobó qué carpetas importan",
+  "@askCmdr.tool.readResource.importance.done": {
+    "sourceHash": "7a7ca0b"
+  },
+  "askCmdr.tool.readResource.settings.doing": "Leyendo la configuración de Cmdr",
+  "@askCmdr.tool.readResource.settings.doing": {
+    "sourceHash": "4711ee0"
+  },
+  "askCmdr.tool.readResource.settings.done": "Se leyó la configuración de Cmdr",
+  "@askCmdr.tool.readResource.settings.done": {
+    "sourceHash": "17bb5e7"
+  },
+  "askCmdr.tool.readResource.logs.done": "Se leyeron los registros de Cmdr",
+  "@askCmdr.tool.readResource.logs.done": {
+    "sourceHash": "96458f6"
+  },
+  "askCmdr.tool.indexing.done": "Se cambió la indexación de una unidad",
+  "@askCmdr.tool.indexing.done": {
+    "sourceHash": "9e31063"
+  },
+  "askCmdr.tool.indexing.tried": "Se intentó cambiar la indexación de una unidad",
+  "@askCmdr.tool.indexing.tried": {
+    "sourceHash": "eff11f9"
+  },
+  "askCmdr.tool.queue.done": "Se ajustaron las operaciones en curso",
+  "@askCmdr.tool.queue.done": {
+    "sourceHash": "a722021"
+  },
+  "askCmdr.tool.queue.tried": "Se intentó ajustar las operaciones en curso",
+  "@askCmdr.tool.queue.tried": {
+    "sourceHash": "e24d82c"
+  },
+  "askCmdr.tool.queueMoveLocked.done": "Se desbloquearon elementos bloqueados para un movimiento",
+  "@askCmdr.tool.queueMoveLocked.done": {
+    "sourceHash": "5e8cb79"
+  },
+  "askCmdr.tool.queueMoveLocked.tried": "Se intentó desbloquear elementos bloqueados para un movimiento",
+  "@askCmdr.tool.queueMoveLocked.tried": {
+    "sourceHash": "8a1266f"
+  },
+  "askCmdr.tool.dialogConfirm.done": "Se confirmó un diálogo",
+  "@askCmdr.tool.dialogConfirm.done": {
+    "sourceHash": "0115fcf"
+  },
+  "askCmdr.tool.dialogConfirm.tried": "Se intentó confirmar un diálogo",
+  "@askCmdr.tool.dialogConfirm.tried": {
+    "sourceHash": "e0ef670"
+  },
+  "askCmdr.tool.resolveConflict.done": "Se respondió a un conflicto de nombres",
+  "@askCmdr.tool.resolveConflict.done": {
+    "sourceHash": "80ba4de"
+  },
+  "askCmdr.tool.resolveConflict.tried": "Se intentó responder a un conflicto de nombres",
+  "@askCmdr.tool.resolveConflict.tried": {
+    "sourceHash": "b56c38b"
+  },
+  "askCmdr.tool.unlock.done": "Se envió una contraseña",
+  "@askCmdr.tool.unlock.done": {
+    "sourceHash": "7cdbbec"
+  },
+  "askCmdr.tool.unlock.tried": "Se intentó enviar una contraseña",
+  "@askCmdr.tool.unlock.tried": {
+    "sourceHash": "fda6b16"
+  },
+  "askCmdr.tool.favorites.done": "Se cambiaron tus favoritos",
+  "@askCmdr.tool.favorites.done": {
+    "sourceHash": "73382bb"
+  },
+  "askCmdr.tool.favorites.tried": "Se intentó cambiar tus favoritos",
+  "@askCmdr.tool.favorites.tried": {
+    "sourceHash": "a151f0e"
+  },
+  "askCmdr.tool.connectToServer.doing": "Agregando un servidor",
+  "@askCmdr.tool.connectToServer.doing": {
+    "sourceHash": "e299480"
+  },
+  "askCmdr.tool.connectToServer.done": "Se agregó un servidor",
+  "@askCmdr.tool.connectToServer.done": {
+    "sourceHash": "3366d29"
+  },
+  "askCmdr.tool.connectToServer.tried": "Se intentó agregar un servidor",
+  "@askCmdr.tool.connectToServer.tried": {
+    "sourceHash": "449a0d7"
+  },
+  "askCmdr.tool.removeManualServer.done": "Se quitó un servidor",
+  "@askCmdr.tool.removeManualServer.done": {
+    "sourceHash": "1b16701"
+  },
+  "askCmdr.tool.removeManualServer.tried": "Se intentó quitar un servidor",
+  "@askCmdr.tool.removeManualServer.tried": {
+    "sourceHash": "f5d12e7"
+  },
+  "askCmdr.tool.upgradeSmbToDirect.done": "Se pidió una conexión directa a un recurso compartido",
+  "@askCmdr.tool.upgradeSmbToDirect.done": {
+    "sourceHash": "2190360"
+  },
+  "askCmdr.tool.upgradeSmbToDirect.tried": "Se intentó pedir una conexión directa a un recurso compartido",
+  "@askCmdr.tool.upgradeSmbToDirect.tried": {
+    "sourceHash": "6f8479d"
+  },
+  "askCmdr.tool.eject.done": "Se desconectó una unidad",
+  "@askCmdr.tool.eject.done": {
+    "sourceHash": "c13b31e"
+  },
+  "askCmdr.tool.eject.tried": "Se intentó desconectar una unidad",
+  "@askCmdr.tool.eject.tried": {
+    "sourceHash": "fdaa4dd"
+  },
+  "askCmdr.tool.await.done": "Se esperó a Cmdr",
+  "@askCmdr.tool.await.done": {
+    "sourceHash": "ff23ebc"
+  },
+  "askCmdr.tool.goToLatestDownload.done": "Se fue a tu última descarga",
+  "@askCmdr.tool.goToLatestDownload.done": {
+    "sourceHash": "78e88eb"
+  },
+  "askCmdr.tool.goToLatestDownload.tried": "Se intentó ir a tu última descarga",
+  "@askCmdr.tool.goToLatestDownload.tried": {
+    "sourceHash": "8811c60"
+  },
+  "askCmdr.tool.operationsRollback.done": "Se abrió el diálogo de reversión",
+  "@askCmdr.tool.operationsRollback.done": {
+    "sourceHash": "d550ab2"
+  },
+  "askCmdr.tool.operationsRollback.tried": "Se intentó abrir el diálogo de reversión",
+  "@askCmdr.tool.operationsRollback.tried": {
+    "sourceHash": "d3b4038"
+  },
+  "askCmdr.tool.memoryDiagnostics.done": "Se comprobó el uso de memoria de Cmdr",
+  "@askCmdr.tool.memoryDiagnostics.done": {
+    "sourceHash": "e3a346c"
+  },
+  "askCmdr.tool.cpuDiagnostics.done": "Se comprobó el uso de CPU de Cmdr",
+  "@askCmdr.tool.cpuDiagnostics.done": {
+    "sourceHash": "af1c5c7"
+  },
+  "askCmdr.tool.navToPath.place.done": "Se fue a <place>{name}</place>",
+  "@askCmdr.tool.navToPath.place.done": {
+    "sourceHash": "8245d90"
+  },
+  "askCmdr.tool.navToPath.place.tried": "Se intentó ir a <place>{name}</place>",
+  "@askCmdr.tool.navToPath.place.tried": {
+    "sourceHash": "8ed64df"
+  },
+  "askCmdr.tool.unlock.place.done": "Se envió la contraseña de <place>{name}</place>",
+  "@askCmdr.tool.unlock.place.done": {
+    "sourceHash": "0efabc6"
+  },
+  "askCmdr.tool.unlock.place.tried": "Se intentó enviar la contraseña de <place>{name}</place>",
+  "@askCmdr.tool.unlock.place.tried": {
+    "sourceHash": "9d33d53"
+  },
+  "askCmdr.tool.mkdir.waiting": "Se abrió el diálogo Nueva carpeta",
+  "@askCmdr.tool.mkdir.waiting": {
+    "sourceHash": "5b3a517"
+  },
+  "askCmdr.tool.mkfile.waiting": "Se abrió el diálogo Nuevo archivo",
+  "@askCmdr.tool.mkfile.waiting": {
+    "sourceHash": "a7a9391"
+  },
+  "askCmdr.tool.outcome.declined": "dijiste que no",
+  "@askCmdr.tool.outcome.declined": {
+    "sourceHash": "215915c"
   }
 }

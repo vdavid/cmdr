@@ -84,6 +84,13 @@
     "forms": "Cmdr Settings section → Avanzado; quote settings.section.advanced exactly in navigation paths",
     "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
+  "ai-client": {
+    "chosen": "cliente de IA",
+    "accept": ["clientes de IA"],
+    "forms": "started by an outside AI app → Un cliente de IA ha iniciado esto",
+    "confidence": "high",
+    "sources": "catalog (operationLog.initiator.aiClient); MS (client → cliente)"
+  },
   "ai-context": {
     "chosen": "contexto",
     "confidence": "high",
@@ -124,7 +131,7 @@
   },
   "ai-tool": {
     "chosen": "herramienta",
-    "forms": "tool status lines: gerund for doing (Mirando dentro de los archivos), impersonal Se + compound perfect for done (Se ha buscado en tus fotos, Se ha usado una herramienta) and Se ha intentado for a tried line, which es-419 forks to the preterite (Se buscó); a counted tool call → consulta (as lookup in askCmdr.event.contextTrimmed); Android platform tools → herramientas de plataforma de Android",
+    "forms": "tool status lines: gerund for doing (Mirando dentro de los archivos), impersonal Se + compound perfect for done (Se ha buscado en tus fotos, Se ha usado una herramienta) and Se ha intentado for a tried line, which es-419 forks to the preterite (Se buscó); a counted tool call → consulta (as lookup in askCmdr.event.contextTrimmed); Android platform tools → herramientas de plataforma de Android; a dialog a tool opens is named (el diálogo Copiar; rollback has no dialog name, so el diálogo de reversión); highlighted item → el elemento bajo el cursor; the detach line covers shares and phones, so Desconectando una unidad",
     "exceptions": {
       "askCmdr.turnStats.summary": "Counts tool calls, which the chat already calls consultas (askCmdr.event.contextTrimmed, askCmdr.error.repeatedToolCall); herramienta would name the tool, not the request.",
       "askCmdr.turnStats.summaryNoDuration": "Same line as askCmdr.turnStats.summary without the time: consultas."
@@ -256,7 +263,7 @@
   "ask": {
     "chosen": "Preguntar",
     "accept": ["pregunt"],
-    "proseAccept": ["pedi", "pide"],
+    "proseAccept": ["pedi", "pide", "pidas"],
     "confidence": "high",
     "sources": "standard option label",
     "note": "Asking someone FOR something (a password, a yes) is pedir in prose (te pedirá la contraseña); the option label stays Preguntar."
@@ -575,6 +582,12 @@
     "confidence": "high",
     "sources": "macOS es (haz clic ×44 vs pulsa ×2); catalog (fileExplorer.breadcrumb.navigateTooltip)"
   },
+  "client": {
+    "chosen": "cliente",
+    "accept": ["clientes"],
+    "confidence": "high",
+    "sources": "MS (client → cliente); catalog (operationLog.initiator.aiClient)"
+  },
   "clipboard": {
     "chosen": "portapapeles",
     "forms": "el portapapeles, never tu portapapeles; clipboard content → contenido del portapapeles",
@@ -719,6 +732,20 @@
     "sources": "MS terminology (conversación); shipped settings.askCmdr.chatMemorySize.description",
     "accept": ["conversaciones", "chat"]
   },
+  "data": {
+    "chosen": "datos",
+    "forms": "mass noun, plural: los datos de Cmdr, datos del navegador",
+    "confidence": "high",
+    "sources": "macOS (datos), catalog (datos de la cámara)",
+    "accept": ["dato"]
+  },
+  "details": {
+    "chosen": "detalles",
+    "accept": ["detalle", "datos"],
+    "forms": "behind a disclosure → Mostrar detalles; facts a file or the app holds → datos (datos de fotos y canciones, los datos de Cmdr), as camera details → datos de la cámara",
+    "confidence": "high",
+    "sources": "TC (Todos los detalles); catalog (Mostrar detalles, El registro tiene los detalles)"
+  },
   "key-combination": {
     "chosen": "combinación",
     "accept": ["combinación de teclas", "combinaciones"],
@@ -730,7 +757,10 @@
     "chosen": "Más información sobre",
     "confidence": "high",
     "forms": "More about “X” → Más información sobre “X”",
-    "sources": "shipped catalog frame, the same in onboarding.moreAbout, servers.sheet.autoReconnectInfoLabel, and fileOperations.transferDialog.rememberChoiceInfoLabel"
+    "sources": "shipped catalog frame, the same in onboarding.moreAbout, servers.sheet.autoReconnectInfoLabel, and fileOperations.transferDialog.rememberChoiceInfoLabel",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.contentsRule": "\"needs to know more about a file\" is Cmdr wanting information, with no info link."
+    }
   },
   "level": {
     "chosen": "nivel",
@@ -755,6 +785,16 @@
     "forms": "Open the X menu → Abrir el menú de X (Abrir el menú contextual, Menú de favoritos)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Abrir menú); catalog Menú de favoritos, menú contextual"
+  },
+  "message": {
+    "chosen": "mensaje",
+    "accept": ["mensajes"],
+    "forms": "the Apple app → Mensajes",
+    "confidence": "high",
+    "sources": "TC (este mensaje); catalog (Esas notas viajan con cada mensaje)",
+    "exceptions": {
+      "licensing.dialog.retryExhausted": "The verb \"message us\": Escríbenos is the email ruling, no mensaje noun in play."
+    }
   },
   "pane-divider": {
     "accept": ["separador"],
@@ -1487,7 +1527,10 @@
     "chosen": "desacoplado",
     "forms": "masculine, agreeing with the implied HEAD: Desacoplado en {id}; the pill → (desacoplado) {id}",
     "confidence": "high",
-    "sources": "git's own es.po (HEAD desacoplado, ×6); catalog (fileExplorer.git.tooltip.worktreeDetached Desacoplado en {id})"
+    "sources": "git's own es.po (HEAD desacoplado, ×6); catalog (fileExplorer.git.tooltip.worktreeDetached Desacoplado en {id})",
+    "exceptions": {
+      "askCmdr.tool.eject.done": "A drive being disconnected, nothing to do with git: desconectar, as its doing and tried lines."
+    }
   },
   "git-dirty": {
     "chosen": "con cambios",
@@ -2496,7 +2539,19 @@
   },
   "quit": {
     "chosen": "Salir",
-    "accept": ["salir", "cerrar", "cerrará", "se cerró", "se cierra", "cierre", "sal de", "salida", "sales de"],
+    "accept": [
+      "salir",
+      "cerrar",
+      "cerrará",
+      "se cerró",
+      "se cierra",
+      "cierre",
+      "sal de",
+      "salida",
+      "sales de",
+      "saliendo",
+      "salgas"
+    ],
     "forms": "the USER quitting → salir (Salir de Cmdr, Salir ahora); the APP ending itself → cerrarse (Cmdr se cerrará…); a crash → se cerró inesperadamente",
     "confidence": "high",
     "sources": "macOS Finder A17 (No se puede salir del Finder…), BN36 (El Finder está a punto de cerrarse), AppKit (Quit → Salir)",
@@ -3109,7 +3164,11 @@
     ],
     "confidence": "high",
     "forms": "Step 1 of 2: X → Paso 1 de 2: X",
-    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology gives etapa (tiebreak only)"
+    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology gives etapa (tiebreak only)",
+    "exceptions": {
+      "askCmdr.tool.navBack.tried": "\"step back\" is the pane going back a folder, not a numbered stage: volver atrás.",
+      "askCmdr.tool.navForward.tried": "\"step forward\" is the pane going forward a folder, not a numbered stage: ir hacia adelante."
+    }
   },
   "stop": {
     "chosen": "Detener",
@@ -3192,6 +3251,13 @@
     "confidence": "high",
     "sources": "macOS Finder (no es compatible)",
     "decision": "Avisos de macOS y WebKit antiguos"
+  },
+  "swap-panes": {
+    "chosen": "Intercambiar paneles",
+    "accept": ["intercambi"],
+    "forms": "progress Intercambiando los paneles; done Se han intercambiado los paneles",
+    "confidence": "high",
+    "sources": "Total Commander and Double Commander (Intercambiar paneles); catalog (commands.paneSwap.label, menu.view.swapPanes)"
   },
   "symlink": {
     "chosen": "enlace simbólico",

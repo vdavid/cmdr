@@ -37,6 +37,12 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **Terminal's article**: the catalog writes `En la Terminal` 24 times and `en Terminal` five; Apple's Spanish help says
   `Abrir en Terminal` with no article. Settle one form.
 
+- **`Se ha ido a una carpeta`** (`askCmdr.tool.navToPath.done`, es-419 `Se fue a …`): follows the `Se ha …` line rule,
+  but `irse` can read as "left". A native eye may prefer another verb across the go-to lines.
+- **`Mail`, `Mensajes`, `Notas`** (`ai.cloudConsent.askCmdr.protectedContents`): Apple's Spanish app names, not in the
+  pile's macOS folders; composed from general knowledge.
+- **`Se oculta`** for masked secrets (`ai.cloudConsent.askCmdr.item.settings`): no catalog or pile word for "masked".
+
 ## Surfaces
 
 - **`a {destination}` with no object** (`fileOperations.operationConflict.context`): "Copiando a Ana" can momentarily

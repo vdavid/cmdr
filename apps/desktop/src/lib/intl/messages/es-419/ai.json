@@ -3,21 +3,21 @@
   "@ai.translateError.off.body": {
     "sourceHash": "f566ad2"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr nunca envía archivos completos, fotos ni miniaturas. Cuando preguntas por un archivo, puede leer una parte limitada de su contenido: algunas líneas de texto, unas pocas páginas de un PDF junto con su título y su autor, la lista de archivos que contiene un archivo comprimido o los datos de la cámara de una foto, incluido el lugar donde se tomó. La búsqueda de fotos funciona igual: el texto que Cmdr reconoció dentro de las fotos coincidentes y sus etiquetas se envían a tu proveedor para que pueda encontrarlas. Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta que tú lo apruebas.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr nunca envía archivos completos, fotos ni miniaturas. Cuando necesita saber más sobre un archivo, puede leer una parte limitada de su contenido: algunas líneas de texto, unas pocas páginas de un PDF junto con su título y su autor, la lista de archivos que contiene un archivo comprimido o los datos de la cámara de una foto, incluido el lugar donde se tomó. La búsqueda de fotos funciona igual: el texto que Cmdr reconoció dentro de las fotos coincidentes y sus etiquetas se envían a tu proveedor para que pueda encontrarlas.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "39d92b4"
+    "sourceHash": "10bc377"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr se escribe notas sobre ti: cómo te gusta tener las cosas organizadas, qué rechazaste antes, todo lo que le pidas que recuerde. Esas notas viajan con cada mensaje que envías, mientras existan, y pueden incluir texto que Cmdr reconoció dentro de tus fotos. Puedes leerlas, o borrarlas, cuando quieras en la configuración de Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "79b1f07"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr también observa las carpetas que usas y abre una conversación cuando tiene algo que sugerir, así que pueden salir mensajes hacia tu proveedor sin que tú lo pidas. Puedes desactivarlo en la configuración de Ask Cmdr, en “Por su cuenta”.",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr también observa las carpetas que usas y abre una conversación cuando tiene algo que sugerir, así que pueden salir mensajes hacia tu proveedor sin que tú lo pidas. En esas conversaciones puede leer lo que se indica arriba, preparar planes y escribir sus notas, y nada más. Puedes desactivarlo en la configuración de Ask Cmdr, en “Por su cuenta”.",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "2cf155d"
+    "sourceHash": "2e3443b"
   },
-  "ai.cloudConsent.logsNote": "Si activas el registro de llamadas al modelo de IA en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros también son locales y nunca se envían a ningún lado.",
+  "ai.cloudConsent.logsNote": "Si activas el registro de llamadas al modelo de IA en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún lado.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "f73c665"
+    "sourceHash": "7eb59db"
   },
   "ai.cloudConsent.notSaved": "Cmdr no pudo guardar tu elección. ¿Lo intentas de nuevo?",
   "@ai.cloudConsent.notSaved": {
@@ -114,5 +114,21 @@
   "ai.managed.aiOff": "Tu organización desactivó la IA en Cmdr.",
   "@ai.managed.aiOff": {
     "sourceHash": "8db6399"
+  },
+  "ai.cloudConsent.askCmdr.item.messages": "Tus mensajes, incluida cualquier contraseña que escribas en ellos para desbloquear un archivo comprimido o un respaldo",
+  "@ai.cloudConsent.askCmdr.item.messages": {
+    "sourceHash": "b9bb964"
+  },
+  "ai.cloudConsent.askCmdr.item.contents": "Partes de los archivos que Cmdr abre: algo de texto, páginas de un PDF, lo que hay dentro de un archivo comprimido, los datos de la cámara y la ubicación de una foto, y el texto que Cmdr reconoció dentro de las fotos",
+  "@ai.cloudConsent.askCmdr.item.contents": {
+    "sourceHash": "fa91240"
+  },
+  "ai.cloudConsent.askCmdr.item.settings": "Tu configuración de Cmdr y tus atajos de teclado, incluidas las carpetas que elegiste para la indexación de imágenes y la dirección de tu servicio de IA. Todo lo que parezca una contraseña, una clave o un token se oculta, y tu dirección de correo también",
+  "@ai.cloudConsent.askCmdr.item.settings": {
+    "sourceHash": "921b5f6"
+  },
+  "ai.cloudConsent.askCmdr.actions": "En un chat que hayas empezado tú, Ask Cmdr también puede manejar la app por ti: navegar, seleccionar, ordenar, abrir pestañas y diálogos, y conectar una ubicación que hayas guardado. Copiar, mover, comprimir, eliminar, renombrar y deshacer una operación abren cada uno un diálogo o un editor para que confirmes, y no pasa nada hasta que lo hagas. Antes de abrir un archivo, cambiar una opción (que no sea el aspecto de Cmdr), salir, expulsar una unidad, quitar un servidor o cambiar la indexación, te pregunta. Al instante y sin preguntarte nada, etiqueta archivos y crea carpetas o archivos con nombre, y las etiquetas no se pueden deshacer. Los cambios de nombre y las limpiezas que prepara como plan esperan tu aprobación.",
+  "@ai.cloudConsent.askCmdr.actions": {
+    "sourceHash": "6d90410"
   }
 }
