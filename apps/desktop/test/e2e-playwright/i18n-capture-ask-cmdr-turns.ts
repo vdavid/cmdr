@@ -37,7 +37,7 @@ import { type SurfaceEntry, captureCall, captureSurface } from './i18n-capture-h
 import { RAIL, closeRail, openRail, sendToRail, unlockChat } from './i18n-capture-ask-cmdr.js'
 import { stubIpcAnswer } from './i18n-capture-ipc-stub.js'
 
-const NEW_CHAT = `${RAIL} .header-actions [aria-label="New chat"]`
+const NEW_CHAT = `${RAIL} [data-rail-action="new-chat"]`
 
 /** Starts a surface's sink, on the rail, on a thread with nothing in it. */
 async function onFreshThread(main: TauriPage, label: string): Promise<void> {
@@ -60,7 +60,7 @@ async function openChat(main: TauriPage): Promise<void> {
 
 /** Opens the threads panel from the rail header. */
 async function openThreads(main: TauriPage): Promise<void> {
-  await main.evaluate(`document.querySelector('${RAIL} [aria-label="Chats"]')?.click()`)
+  await main.evaluate(`document.querySelector('${RAIL} [data-rail-action="threads"]')?.click()`)
   await main.waitForSelector(`${RAIL} .sessions`, 5000)
 }
 
@@ -130,7 +130,7 @@ export async function captureAskCmdrRename(
     await onFreshThread(main, 'ask-cmdr-rename-undo')
     await sendToRail(main, `[rename] ${left}`)
     // The review opens at the turn's end, and its Rename button waits for the preflight.
-    const rename = `[data-dialog-id="bulk-rename-review"] .modal-footer button[aria-label^="Rename"]:not([disabled])`
+    const rename = `[data-dialog-id="bulk-rename-review"] .modal-footer button:last-child:not([disabled])`
     await main.waitForSelector(rename, waitBudget(15000))
     await main.evaluate(`document.querySelector(${JSON.stringify(rename)})?.click()`)
     await main.waitForSelector(undoButton, waitBudget(15000))
@@ -311,7 +311,7 @@ export async function captureAskCmdrSessionStates(
     await captureCall(main, 'reset')
     await captureCall(main, 'setSurface', 'ask-cmdr-sessions-rename')
     await captureCall<boolean>(main, 'enable')
-    await main.evaluate(`document.querySelector('${RAIL} .sessions .conversation [aria-label="Rename"]')?.click()`)
+    await main.evaluate(`document.querySelector('${RAIL} .sessions .conversation [data-row-action="rename"]')?.click()`)
     await main.waitForSelector(`${RAIL} .sessions .conversation input`, waitBudget(5000))
     return { page: main, readySelector: `${RAIL} .sessions .conversation input` }
   })
@@ -320,7 +320,7 @@ export async function captureAskCmdrSessionStates(
   await main.evaluate(`document.querySelector('${RAIL} .sessions .conversation input')?.blur()`)
   await main.waitForSelector(`${RAIL} .sessions .conversation .row`, waitBudget(5000))
 
-  await main.evaluate(`document.querySelector('${RAIL} .sessions .conversation [aria-label="Archive"]')?.click()`)
+  await main.evaluate(`document.querySelector('${RAIL} .sessions .conversation [data-row-action="archive"]')?.click()`)
   await captureSurface('ask-cmdr-sessions-archived', report, failed, async () => {
     await captureCall(main, 'reset')
     await captureCall(main, 'setSurface', 'ask-cmdr-sessions-archived')
@@ -330,7 +330,9 @@ export async function captureAskCmdrSessionStates(
     return { page: main, readySelector: `${RAIL} .sessions .archived-badge` }
   })
   await captureCall(main, 'disable').catch(() => {})
-  await main.evaluate(`document.querySelector('${RAIL} .sessions .conversation [aria-label="Unarchive"]')?.click()`)
+  await main.evaluate(
+    `document.querySelector('${RAIL} .sessions .conversation [data-row-action="unarchive"]')?.click()`,
+  )
   await main.evaluate(`document.querySelector('${RAIL} .sessions .archived-toggle')?.click()`)
   await main.evaluate(`document.querySelector('${RAIL} .sessions-header button')?.click()`)
   await closeRail(main).catch(() => {})

@@ -112,7 +112,11 @@ export async function unlockChat(main: TauriPage): Promise<void> {
   await waitForAskCmdrOnInBackend(main)
 }
 
-/** Types a message into the composer and sends it. */
+/**
+ * Types a message into the composer and sends it. Two evaluates on purpose, like a person's two
+ * keystrokes: in one tick, Svelte sees the box's text go from empty to empty and never clears it,
+ * and every rail shot then photographs a sent message still sitting in the prompt box.
+ */
 export async function sendToRail(main: TauriPage, text: string): Promise<void> {
   await main.evaluate(`(function(){
     var ta = document.querySelector('${RAIL} textarea');
@@ -120,8 +124,10 @@ export async function sendToRail(main: TauriPage, text: string): Promise<void> {
     ta.focus();
     ta.value = ${JSON.stringify(text)};
     ta.dispatchEvent(new Event('input', { bubbles: true }));
-    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   })()`)
+  await main.evaluate(
+    `document.querySelector('${RAIL} textarea').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))`,
+  )
 }
 
 /**
@@ -179,7 +185,7 @@ export async function captureAskCmdrSurfaces(
     await unlockChat(main)
     // A fresh chat, whatever the profile holds: opening the rail loads its latest thread,
     // and a lane shard reaches here after the Ask Cmdr specs have left threads behind.
-    await main.evaluate(`document.querySelector('${RAIL} .header-actions [aria-label="New chat"]')?.click()`)
+    await main.evaluate(`document.querySelector('${RAIL} [data-rail-action="new-chat"]')?.click()`)
     await main.waitForSelector(`${RAIL} .empty .empty-title`, 5000)
     return { page: main }
   })
@@ -210,7 +216,7 @@ export async function captureAskCmdrSurfaces(
     await captureCall(main, 'reset')
     await captureCall(main, 'setSurface', 'ask-cmdr-tools')
     await captureCall<boolean>(main, 'enable')
-    await main.evaluate(`document.querySelector('${RAIL} .header-actions [aria-label="New chat"]')?.click()`)
+    await main.evaluate(`document.querySelector('${RAIL} [data-rail-action="new-chat"]')?.click()`)
     await sendToRail(main, '[tools] Which of my drives has the most room?')
     await main.waitForSelector(`${RAIL} .msg .turn-stats`, waitBudget(15000))
     await expect

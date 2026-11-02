@@ -91,13 +91,21 @@ export async function keysFor(page: TauriPage, surface: string): Promise<string[
  * where it would otherwise never fire and hang the eval. The timeout is a safety
  * net, not the primary signal: a foreground window resolves on the real frame in
  * ~16 ms, and `shoot()`'s pixel check is what actually guards the result.
+ *
+ * Running CSS transitions finish first: the file list's columns take 300 ms to reach a new width,
+ * and a shot or clip scan inside that window reports a header as clipped when it only hasn't
+ * arrived yet (`Přípona` read `Příp…` that way). Transitions only: an animation may loop forever.
  */
 export async function settlePaint(page: TauriPage): Promise<void> {
   await page.evaluate(`new Promise(function(resolve) {
     var done = false;
     var finish = function() { if (!done) { done = true; resolve(true); } };
-    requestAnimationFrame(function() { requestAnimationFrame(finish); });
-    setTimeout(finish, 500);
+    var afterFrames = function() {
+      var running = document.getAnimations().filter(function(a) { return a instanceof CSSTransition; });
+      Promise.allSettled(running.map(function(a) { return a.finished; })).then(finish);
+    };
+    requestAnimationFrame(function() { requestAnimationFrame(afterFrames); });
+    setTimeout(finish, 1000);
   })`)
 }
 

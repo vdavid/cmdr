@@ -172,12 +172,13 @@
         {/if}
         <span class="header-actions">
             {#if chatting}
-                <button type="button" class="icon-button" onclick={openSessions} aria-label={tString('askCmdr.threads.open')} use:tooltip={tString('askCmdr.threads.open')}>
+                <button type="button" class="icon-button" data-rail-action="threads" onclick={openSessions} aria-label={tString('askCmdr.threads.open')} use:tooltip={tString('askCmdr.threads.open')}>
                     <Icon name="messages-square" size={16} aria-hidden="true" />
                 </button>
                 <button
                     type="button"
                     class="icon-button"
+                    data-rail-action="new-chat"
                     onclick={openNewChat}
                     aria-label={tString('askCmdr.newChat')}
                     use:tooltip={{ text: tString('askCmdr.newChat'), shortcut: newChatShortcut }}

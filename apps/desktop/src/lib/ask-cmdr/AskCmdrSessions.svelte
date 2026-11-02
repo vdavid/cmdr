@@ -233,6 +233,7 @@
                                 <button
                                     type="button"
                                     class="icon-button small"
+                                    data-row-action="rename"
                                     onclick={() => void startRename(conversation.id, conversation.title)}
                                     aria-label={tString('askCmdr.sessions.rename')}
                                 >
@@ -241,6 +242,7 @@
                                 <button
                                     type="button"
                                     class="icon-button small"
+                                    data-row-action={conversation.archived ? 'unarchive' : 'archive'}
                                     onclick={() => void setArchived(conversation.id, !conversation.archived)}
                                     aria-label={conversation.archived
                                         ? tString('askCmdr.sessions.unarchive')
