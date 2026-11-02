@@ -251,8 +251,8 @@ fn direct_mode_at_launch(
     json_on && !file_backed() && item_backs_it()
 }
 
-/// Whether the store's item says direct mode is on. A refused read means the item is there and Cmdr
-/// can't show it wrote it, so it doesn't count.
+/// Whether the store's item says direct mode is on. A refused read means the item is there and won't
+/// read without a prompt, so it doesn't count.
 fn item_backs_direct_mode(store: &dyn SecretStore) -> bool {
     match store.get(DIRECT_MODE_ITEM) {
         Ok(value) => value == DIRECT_MODE_ITEM_VALUE,
@@ -261,7 +261,7 @@ fn item_backs_direct_mode(store: &dyn SecretStore) -> bool {
             false
         }
         Err(error) => {
-            log::warn!(target: "mcp::direct_mode", "Direct mode stays off, since its item doesn't read as Cmdr's own: {error}");
+            log::warn!(target: "mcp::direct_mode", "Direct mode stays off, since its item doesn't read without a prompt: {error}");
             false
         }
     }

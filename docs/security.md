@@ -397,8 +397,8 @@ only way to turn it on (`mcpSettable: false`), and every change lands in the sec
 mechanism: `apps/desktop/src-tauri/src/tools/DETAILS.md` § Direct mode.
 
 - **`settings.json` alone doesn't turn it on**, since a same-user process with no Full Disk Access can write that file,
-  and the prize is everything Cmdr's Full Disk Access can read. Launch also needs a Keychain item Cmdr wrote, read
-  without a prompt.
+  and the prize is everything Cmdr's Full Disk Access can read. Launch also needs a Keychain item that reads without a
+  prompt, which isn't proof of who wrote it.
 - **Gaps in this check are tracked privately** and reviewed before every release.
 
 ## AI API keys

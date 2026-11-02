@@ -23,8 +23,9 @@ notes.
 
 ## Vouching
 
-`SecretStore::vouching()` is for an item whose being there has to say Cmdr put it there (today only direct mode's,
-`../tools/DETAILS.md` § Direct mode). On macOS it's `PinnedKeychainStore`.
+`SecretStore::vouching()` is for an item that counts only if it reads without a prompt (today only direct mode's,
+`../tools/DETAILS.md` § Direct mode). That raises the bar over a JSON value, and isn't proof of who wrote the item. On
+macOS it's `PinnedKeychainStore`.
 
 - **It refuses prompts**, through `SecKeychain::disable_user_interaction`, the process-wide switch, so a launch can't
   raise a Keychain dialog. `kSecUseAuthenticationUIFail` isn't enough on the file keychain. Another thread's Keychain
