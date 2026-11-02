@@ -37,7 +37,7 @@
 
 import { waitBudget } from './wait-budget.js'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, dismissAllToasts, getFixtureRoot } from './helpers.js'
+import { ensureAppReady, dismissAllToasts, getFixtureRoot, runAnimationFramesOnTimers } from './helpers.js'
 import {
   closeGallerySurface,
   createFixtureDir,
@@ -297,6 +297,9 @@ test.describe('Dialog wrapping at 125 % zoom', () => {
     // wholesale; `dialog-inset.spec.ts` explains the 10 s this saves.
     recreateFixtures(getFixtureRoot())
     await ensureAppReady(tauriPage)
+    // `settleLayout` waits on frames, which an occluded window never fires: it hung the
+    // eval for its whole 30 s, and the dialog it left up failed the rest of the shard.
+    await runAnimationFramesOnTimers(tauriPage)
   })
 
   test.afterEach(async ({ tauriPage }) => {
