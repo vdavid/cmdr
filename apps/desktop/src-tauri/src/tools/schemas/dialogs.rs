@@ -17,7 +17,7 @@ pub fn dialog_schema() -> Value {
             },
             "section": {
                 "type": "string",
-                "description": "For settings: which section to open (e.g., 'shortcuts')"
+                "description": "For settings: which section to open, by its sidebar name (e.g., 'Keyboard shortcuts'). cmdr://settings groups every setting under these names."
             },
             "path": {
                 "type": "string",

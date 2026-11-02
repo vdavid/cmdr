@@ -55,6 +55,7 @@ import { isCommandId, type CommandId } from '#lib/commands/index.js'
 import type { ViewMode } from '#lib/app-status-store.js'
 import { adoptedOperationFor } from '#lib/file-operations/foreground-request.js'
 import { getMainWindowOperationRows } from '#lib/file-operations/queue/main-window-operations.svelte.js'
+import { resolveSettingsSection } from '#lib/settings/settings-section-lookup.js'
 import { openSettingsWindow } from '#lib/settings/settings-window.js'
 import { refreshCliCommandName } from '#lib/cli-command/toggle-cli-command.js'
 import { seedSettingForE2E, setSetting } from '#lib/settings/index.js'
@@ -379,8 +380,10 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   // same discipline as `mcp-listeners.ts`) and wrap the bare string in an array.
   await pushTauri(scope, () =>
     onOpenSettings((payload) => {
-      const section = payload.section || undefined
-      void openSettingsWindow('ipc', section ? [section] : undefined)
+      // An AI tool's `section` lands here as the model chose it, and a path that isn't a section
+      // opens a blank page. Unknown, the window opens where it was last.
+      const section = payload.section ? resolveSettingsSection(payload.section) : undefined
+      void openSettingsWindow('ipc', section)
     }),
   )
 

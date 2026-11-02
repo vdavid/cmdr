@@ -110,7 +110,11 @@ async fn execute_dialog_open<R: Runtime>(
                 }
                 .emit_to(app, "main")?;
                 wait_for_ack(app, AckSignal::WindowAppeared("settings"), DEFAULT_ACK_TIMEOUT).await?;
-                Ok(json!(format!("OK: Opened settings at {section}")))
+                // The frontend owns the section names, and one it doesn't know opens where the
+                // window was last. So this can't promise the section it was handed.
+                Ok(json!(format!(
+                    "OK: Opened settings. It shows {section} if that names a section in its sidebar, else the last one viewed."
+                )))
             } else {
                 ExecuteCommand {
                     command_id: "app.settings".to_string(),

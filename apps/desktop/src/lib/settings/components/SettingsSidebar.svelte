@@ -2,6 +2,7 @@
     import Icon from '#lib/ui/Icon.svelte'
     import TextInput from '#lib/ui/TextInput.svelte'
     import { buildSectionTree, type SettingsSection } from '#lib/settings/index.js'
+    import { SPECIAL_SETTINGS_SECTIONS } from '#lib/settings/settings-section-lookup.js'
     import { sectionHasMatches } from '#lib/settings/settings-search.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { sectionTitle } from '#lib/settings/section-i18n.js'
@@ -27,10 +28,7 @@
     // Special sections have dedicated UI (not driven by the registry). Advanced is
     // NOT special: it's a normal registry section (every entry is `section: ['Advanced']`)
     // that auto-renders, so it comes from `sectionTree` via `TOP_LEVEL_ORDER`.
-    const specialSections: Record<string, { name: string; path: string[] }> = {
-        'Keyboard shortcuts': { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'] },
-        License: { name: 'License', path: ['License'] },
-    }
+    const specialSections: Record<string, { name: string; path: readonly string[] }> = SPECIAL_SETTINGS_SECTIONS
 
     // Explicit top-to-bottom sidebar order. Registry-driven sections are looked up by name in
     // `sectionTree`; special sections come from `specialSections`. Keep this in sync with the
@@ -57,7 +55,7 @@
     // `Partial<...>` because only a few entries in `TOP_LEVEL_ORDER` are special sections.
     // Without it the index returns the value type unconditionally, and the `if (special)`
     // check below trips `no-unnecessary-condition`.
-    const specialByName: Partial<Record<TopLevelName, { name: string; path: string[] }>> = specialSections
+    const specialByName: Partial<Record<TopLevelName, { name: string; path: readonly string[] }>> = specialSections
 
     const orderedEntries = $derived.by((): SidebarEntry[] => {
         const treeByName = new Map(sectionTree.map((s) => [s.name, s]))
