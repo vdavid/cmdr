@@ -9,8 +9,8 @@ Pull-tier docs for `tools/suggestions/`. Must-knows: `CLAUDE.md`. The rows and t
 - `get_suggestion_group` — `Read`. One group's ops, paged and budget-cut.
 - `propose_suggestions` — `Propose`. A staged sweep, or an amended pending group.
 
-`Propose` means "stages a proposal and opens a review surface, mutates nothing"; `Write` means "mutates the filesystem
-OR app state" and is never reachable from the agent view. Staging rows in `main.db` IS the proposal, which is why it
+`Propose` means "stages a proposal and opens a review surface, mutates nothing" (`../DETAILS.md` § The access classes
+has the others). Staging rows in `main.db` IS the proposal, which is why it
 stays `Propose` — but a standalone `amend` tool would be a stored-state mutation with no review surface of its own, so
 it would be a second way to change what the user reviews. Folding the amend
 into `propose_suggestions` is what keeps the surface honest.
@@ -211,7 +211,7 @@ review that can't contain anything.
 
 **"Last opened" is not expressible**, and it is the feature's flagship example ("installers you've already opened"). The
 drive index carries size, modification time, and inode; there is no access time, and `importance.db`'s visit counts are
-per-FOLDER, not per-file (verified against M1's selector resolver and the importance schema, 2026-08-18). A predicate
+per-FOLDER, not per-file (verified against the selector resolver and the importance schema, 2026-08-18). A predicate
 that compiled and matched nothing would be worse than its absence: the agent would propose over it and the user would
 review an empty group. So the schema omits it and the system prompt carries the positive instruction — say when the
 file last CHANGED, never imply Cmdr knows what the user opened. Wiring an access-time source is its own effort.
@@ -243,7 +243,7 @@ user already dealt with, which is an answer, not a fault.
 
 `../../agent/tool_gate.rs` routes `propose_suggestions` through `propose_in_thread` with `EvidenceScope::conversation_id()`, so a sweep
 records the thread it came out of. The registry path (an external MCP client) has no thread and stores `NULL`, which is
-what a background wake will store in M5 too. The column is `ON DELETE SET NULL`, so tidying a chat thread away later
+what a background wake stores too. The column is `ON DELETE SET NULL`, so tidying a chat thread away later
 leaves the decision record whole.
 
 ## Caps, and what they're for

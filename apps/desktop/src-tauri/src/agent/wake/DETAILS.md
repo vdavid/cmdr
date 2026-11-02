@@ -571,7 +571,7 @@ batch's own instant, ❌ never a window start**.
 Access decision, and on `configure_ai`. ⚠️ Reading `WakeReadiness` per batch would mean a
 `settings.json` read and a SQLite round trip on the live loop's path, since cloud consent lives in
 `main.db`. It fails CLOSED: before anything is read the answer is `AskCmdrOff`, so nothing is
-stored for a feature nobody switched on. M2 item 5's IPC reads the same snapshot.
+stored for a feature nobody switched on. The IPC reads the same snapshot.
 
 `refresh_readiness` returns nothing on purpose: `readiness_snapshot()` is the one way to read the
 value, so no caller can act on a copy a later refresh has already moved past. On a real move it
@@ -713,7 +713,7 @@ reserved quiet-wakes thread first, in one transaction with the delete (`agent/st
 **The `reason` is memory, not a log line.** ⚠️ Never log it verbatim: `cmdr.log` ships inside error
 reports, including the auto-dispatched ones the user never previews, and the report-context redaction
 pass is path-shaped, so a sentence naming which of the user's folders were boring travels intact. The
-outcome line says THAT a wake was quiet; `WakeOutcome::Quiet` carries the reason for M3's memory.
+outcome line says THAT a wake was quiet; `WakeOutcome::Quiet` carries the reason for later memory.
 
 ## The turn a rejection earns
 

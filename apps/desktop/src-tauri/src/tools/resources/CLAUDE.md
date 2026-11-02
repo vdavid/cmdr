@@ -1,6 +1,7 @@
 # MCP resources (`tools/resources/`)
 
-The read-only `cmdr://` views an AI client reads instead of asking: `state`, `dialogs/available`, `indexing`,
+The read-only `cmdr://` views both callers read instead of asking (an outside client natively, the agent through
+`read_resource`): `state`, `dialogs/available`, `indexing`,
 `importance`, `settings`, and `logs`. `mod.rs` is the shared spine (registry, URI/query parsing, `read_resource`
 dispatch, and the `cmdr://state` builder); the independently-evolving builders sit in `logs.rs`, `indexing.rs`,
 `importance.rs`, `operations.rs`, and `volumes.rs`. `read_tool.rs` is the `read_resource` tool, the same builders with a
@@ -20,7 +21,7 @@ size bound, so both callers read one thing.
 - **Capacity and free space come from the space poller's CACHE, ❌ never a `statfs` here**: that syscall blocks
   30–120 s on a hung mount, and `cmdr://state` is read constantly. An unwatched volume omits both fields, ❌ never
   renders a zero that reads as a full disk.
-- **The user's paths and names render verbatim; raw diagnostic text is redacted.** A read-only agent is trusted and
+- **The user's paths and names render verbatim; raw diagnostic text is redacted.** The caller is trusted and
   must name the user's files to serve them, so panes, `volumes:` `mountPath`, `favorites:`, and every `operations:`
   field stay as-is. `recentErrors` and `cmdr://logs` go through unsalted `crate::redact::redact_line` (bare tokens, ❌
   never a `RedactionContext`); `logs` `filter` matches the REDACTED line, ❌ never the raw one (a raw match lets a

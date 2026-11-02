@@ -391,7 +391,7 @@ describe('BulkRenameReviewDialog', () => {
   })
 
   /**
-   * The whole point of M1: `old name → new name → a quote` is what let 12 fabricated names
+   * The whole point of the row: `old name → new name → a quote` is what let 12 fabricated names
    * get approved, because the reviewer could not see the file. Every row shows its own image,
    * and the focused row's file opens in the full viewer.
    */
@@ -550,7 +550,7 @@ describe('BulkRenameReviewDialog', () => {
   })
 
   /**
-   * The point of M2: a row used to be allow-or-deny, so a plausible wrong name left the user
+   * The point of editing: a row used to be allow-or-deny, so a plausible wrong name left the user
    * with the model's name or the old one, which is the pressure that produces "approved because
    * it looked plausible". Now the name is a field, and leaving it (or pressing Enter) sends the
    * edit to the server, which owns validation, the row's evidence, and the preflight it clears.
@@ -685,7 +685,7 @@ describe('BulkRenameReviewDialog', () => {
   })
 
   /**
-   * The other half of M2: M4 will tell the model to keep a neutral name when it couldn't read a
+   * The other half: the prompt tells the model to keep a neutral name when it couldn't read a
    * file, and that instruction is worthless if the user can't see which rows took that path. The
    * state stays on the row, and it keeps saying nothing inside the file was read.
    */

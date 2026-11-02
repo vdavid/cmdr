@@ -285,7 +285,7 @@ export async function mediaIndexFindSimilar(
 }
 
 /**
- * Natural-language semantic image search (plan M3): encode `query` with the on-device CLIP
+ * Natural-language semantic image search: encode `query` with the on-device CLIP
  * text tower and return the images whose visual content best matches it (cosine), highest
  * first. Returns `[]` (never an error) when image indexing is off, no CLIP model is
  * installed, or the volume has no CLIP embeddings — so the grid degrades to OCR keywords.

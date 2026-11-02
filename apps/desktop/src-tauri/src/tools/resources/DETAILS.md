@@ -1,6 +1,6 @@
 # MCP resources details
 
-The six read-only views an MCP client reads over `cmdr://`. Read this before any non-trivial work here: editing,
+The six read-only views both callers read over `cmdr://`. Read this before any non-trivial work here: editing,
 planning, reorganizing, or advising. The tool table beside these: `../DETAILS.md`. The server and auth:
 `../../mcp/DETAILS.md`.
 
@@ -139,6 +139,6 @@ in `../../redact/DETAILS.md` § "Decision: one policy; the context only salts to
 
 Decision (#749): `cmdr://state`'s `volumes:` lists volumes only; favorites ride their own `favorites:` section, which
 already listed every one of them. As `volumes:` rows they read as `kind: local` (the Pixel's MTP storage, saved as a
-favorite, included), so an AI client met each favorite twice and one phone as a local disk. The change is an ai-client
-contract change, deliberately: every other `volumes:` row renders byte for byte as before (`mountPath` included). The
+favorite, included), so an AI client met each favorite twice and one phone as a local disk. The change is a contract change for
+outside clients, deliberately: every other `volumes:` row renders byte for byte as before (`mountPath` included). The
 mechanism and its test: the `cmdr://state` entry in `DETAILS.md` § "The module".

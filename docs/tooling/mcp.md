@@ -6,12 +6,20 @@ Two MCP servers are available when the app is running via `pnpm dev`.
 
 - **cmdr** (Cmdr MCP HTTP server): High-level app control: navigation, file operations, search, dialogs, state
   inspection. This is the primary way to test and interact with the running app. Architecture docs:
-  `src-tauri/src/mcp/CLAUDE.md`.
+  `src-tauri/src/mcp/CLAUDE.md` (the transport) and `src-tauri/src/tools/CLAUDE.md` (the tools).
 - **tauri** (`tauri-plugin-mcp-bridge` WebSocket bridge): Low-level Tauri access: screenshots, DOM inspection, JS
   execution, IPC calls. Use for visual verification and UI automation.
 
 Both bind `127.0.0.1` only (the bridge had to be forced; the plugin default is `0.0.0.0`, which would expose the
 WebSocket to the LAN).
+
+## Direct mode
+
+`pnpm dev` isn't enough for everything. Off direct mode a client refuses the `DevOnly` tools (`dialog_confirm`,
+`resolve_conflict`, `queue_move_locked`, `connect_to_server`, `ai_search`), memory, and file contents, with
+`data: { reason: "directModeOff", setting: "developer.mcpDirectMode" }`, and a `Sensitive` tool shows a person a
+question. An E2E or capture run of a debug or `playwright-e2e` build has it on; otherwise the Settings row is the only
+switch. `apps/desktop/src-tauri/src/tools/DETAILS.md` § Direct mode.
 
 ## Port discovery
 
@@ -106,7 +114,7 @@ Full token model (why a per-launch CSPRNG token, the `CMDR_MCP_TOKEN` override, 
 ## Action-tool ack contract
 
 Action tools (`copy`, `move`, `delete`, `mkdir`, `mkfile`, `select`, `toggle_hidden`, `set_view_mode`, `sort`, `tab`,
-`nav_to_parent`, `nav_back`, `nav_forward`, and `dialog` open/close/focus/confirm) now wait for the frontend to
+`nav_to_parent`, `nav_back`, `nav_forward`, `dialog` open/close/focus, and `dialog_confirm`) wait for the frontend to
 acknowledge the dispatched action before returning `OK`. Default budget is 1500 ms; the navigation family
 (`nav_to_parent`, `nav_back`, `nav_forward`) gets 5 s because remote backends (SMB, MTP) routinely need a few seconds
 for their directory listing even on success. `open_under_cursor` uses a true round-trip (`mcp-response` from the FE
@@ -135,8 +143,10 @@ directory the pane never reached.
 
 What this means for automation:
 
-- `OK` is now a meaningful contract: the FE accepted the action. The downstream operation may still be running (a copy
-  of 10 GB returns `OK` when the FE accepts the dialog, not when bytes finish).
+- `OK` is a meaningful contract: the FE accepted the action. The downstream operation may still be running. `copy`,
+  `move`, `compress`, `delete`, and `rename` answer `{ awaitingPerson: true, dialog, next }` once the dialog or editor
+  is open, and nothing has happened yet; `dialog_confirm` answers with the `operationId` when the operation starts, not
+  when bytes finish.
 - For long-running operations, poll completion via the `await` tool just like before.
 - A timeout is an UNKNOWN outcome, not a failure: the action was dispatched and may still run (under heavy load, a
   `copy` started 2 s after its 10 s budget ran out). It surfaces as a JSON-RPC error with `data.outcome: "unknown"` and
@@ -181,8 +191,8 @@ answer, which is what a person gets by leaving the dialog on "Ask for each". Dri
 
 ```bash
 ./scripts/mcp-call.sh select '{"pane":"left","names":["photos"]}'
-./scripts/mcp-call.sh copy '{}'
-./scripts/mcp-call.sh dialog '{"action":"confirm","type":"transfer-confirmation","onConflict":"stop"}'
+./scripts/mcp-call.sh copy '{"pane":"left"}'
+./scripts/mcp-call.sh dialog_confirm '{"type":"transfer-confirmation","onConflict":"stop"}'
 
 # The parked clash shows up under the operation, with the id an answer must carry.
 ./scripts/mcp-call.sh --read-resource 'cmdr://state?include=operations'
@@ -201,7 +211,7 @@ The reply carries a typed `outcome`: `resolved` (yours is the answer the operati
 answered the same clash first). A refusal carries `data.outcome` instead: `stale_answer` (the operation has moved on,
 re-read `cmdr://state`), `no_pending_conflict`, or `unknown_operation`. Branch on those, never on the sentence.
 `applyToAll: true` answers the rest of the operation's clashes the same way. Both `dialog_confirm` and
-`resolve_conflict` require the authenticated connection, so route them through `./scripts/mcp-call.sh`.
+`resolve_conflict` need direct mode.
 
 ## Unlocking an encrypted archive or a restic backup
 
@@ -242,9 +252,10 @@ Keychain. The full contract: `apps/desktop/src-tauri/src/tools/actions/DETAILS.m
 
 ## Quitting the app
 
-`quit` goes through the same gate ⌘Q does, so it can't kill a running transfer by surprise. With nothing that moves data
-running it answers `{"outcome": "quitting"}` and the app goes. While a copy, move, delete, trash, or archive edit is
-still going it does **not** quit: it raises the quit confirmation, starts the 15-second countdown, and answers
+`quit` is `Sensitive`, so off direct mode a person confirms it first. Then it goes through the same gate ⌘Q does, so it
+can't kill a running transfer by surprise. With nothing that moves data running it answers `{"outcome": "quitting"}` and
+the app goes. While a copy, move, delete, trash, or archive edit is still going it does **not** quit: it raises the quit
+confirmation, starts the 15-second countdown, and answers
 
 ```json
 {
@@ -260,14 +271,14 @@ Answer it, either way:
 
 ```bash
 # Quit now, stopping what's running.
-./scripts/mcp-call.sh dialog '{"action":"confirm","type":"quit-confirmation"}'
+./scripts/mcp-call.sh dialog_confirm '{"type":"quit-confirmation"}'
 
 # Or leave the operations alone. The countdown is deleted, not deferred.
 ./scripts/mcp-call.sh dialog '{"action":"close","type":"quit-confirmation"}'
 ```
 
-`confirm` answers `{"outcome": "quitting"}`, `close` answers `{"outcome": "kept_working"}` plus `promptClosed` (whether
-the dialog left the screen; a `false` there doesn't undo the answer), and either is a refusal carrying
+`dialog_confirm` answers `{"outcome": "quitting"}`, `close` answers `{"outcome": "kept_working"}` plus `promptClosed`
+(whether the dialog left the screen; a `false` there doesn't undo the answer), and either is a refusal carrying
 `data.outcome: "no_quit_pending"` when the gate had nothing pending: the countdown ran out, or somebody answered first.
 Branch on those, never on the sentence. `dialog open quit-confirmation` is refused, since only the gate raises it.
 

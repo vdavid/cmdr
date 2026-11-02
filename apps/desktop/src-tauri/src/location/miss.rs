@@ -1,8 +1,7 @@
 //! A location miss as a tool result: an `Ok` carrying a typed token, never a
 //! `ToolError`.
 //!
-//! `view::dispatch` flattens a `ToolError` to `{ problem }`, which a model can't
-//! branch on, so every tool that can't place or read a location answers this one
+//! A `ToolError` reads as a `problem`, which the repeat breaker counts, so every tool that can't place or read a location answers this one
 //! shape (`tools/DETAILS.md` § The location contract):
 //! `{ miss, location, detail, root?, nearby?, sameShareAs? }`.
 

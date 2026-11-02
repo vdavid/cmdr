@@ -20,7 +20,7 @@ Two implementations:
   `exec_chat_stream_request` (the prompt-only helpers can't express a multipart tool loop).
 - `FakeAgentLlm` (`fake.rs`) is scripted with `ScriptedTurn`s (one consumed per `respond`, or picked per call from the
   prompt with `by_prompt`, which `latest_user_turn` serves) and records every `messages` slice via `calls_seen()`, so a
-  test asserts the exact assembled prompts. `CallRawTool(name, args)` emits a raw tool name to exercise the read-only
+  test asserts the exact assembled prompts. `CallRawTool(name, args)` emits a raw tool name to exercise the
   parse gate. `SayThenCall` narrates, then calls: its text and call starts interleave on the wire while its `End`
   message holds one text, then every call (genai's `StreamEnd` order). Each turn's `End` reports zero usage, or what `script_with_usage` gives it. Call ids are
   `fake-call-{index}` PER ROUND, so they collide across rounds on purpose: the tool-line tests rely on it (❌ don't
@@ -64,7 +64,7 @@ genai → agent (parse), per `genai_content_to_agent_parts(content, origin)`, st
   back is right for all three; any dedupe here would have to know which copy each adapter reads.
 - `ToolCall` → `AgentToolCall`, with `tool = ToolId::from_wire_name(fn_name)` and its own `thought_signatures` kept as
   its reasoning. A call with a blank `fn_name` is dropped instead.
-- `Binary` → dropped (the agent's read-only toolset never produces it).
+- `Binary` → dropped (no tool result carries bytes).
 - After the parts, `build_agent_message_from_stream_end` adds the stream's `captured_reasoning_content` as a LEADING
   `Reasoning{reasoning_content}` part, for a chat-completions endpoint that takes it back, when the content holds no
   `ReasoningContent` already: genai's chat-completions streamer keeps reasoning text out of `captured_content`.

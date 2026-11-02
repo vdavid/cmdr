@@ -32,10 +32,9 @@ spike before M2 starts.
 - **Parking on a person**: the write-operations engine already parks a running operation on a human answer for name
   clashes (`crates/cmdr-operations/src/conflict_slot.rs`, `crates/cmdr-operations/src/human_wait.rs`). The elevation
   question parks the same way.
-- **MCP writes without a dialog**: `copy` / `move` / `delete` with `autoConfirm: true` plus the token from
-  `<data_dir>/mcp.token`, and `dialog` with `action: "confirm"`, apply an operation with no human click
-  (`apps/desktop/src-tauri/src/mcp/auth.rs`, `apps/desktop/src-tauri/src/tools/actions/file_ops.rs`). Seven Playwright
-  specs use `autoConfirm` (34 call sites) and two more use `dialog confirm`. The in-app agent can only propose.
+- **MCP writes without a dialog**: `dialog_confirm` applies an operation with no human click, for a client holding the
+  token from `<data_dir>/mcp.token` in direct mode (`apps/desktop/src-tauri/src/tools/DETAILS.md` § Direct mode). The
+  in-app agent opens dialogs a person confirms, and never gets direct mode.
 - **Signing**: `apps/desktop/src-tauri/Entitlements.plist` is an empty dict, so the hardened runtime has no holes and
   nothing can inject code into Cmdr. That's what makes decision 8's "trust whatever runs inside Cmdr" sound.
   `docs/security.md` § Entitlements holds the invariant.
@@ -53,9 +52,8 @@ spike before M2 starts.
 - **Routing every operation through the helper**: every write would run as root and pay an XPC hop per syscall.
 - **`SMJobBless` for macOS 12 and below**: deprecated, needs a hand-rolled caller check, more attack surface for few
   users.
-- **Removing `autoConfirm` from MCP**: it wouldn't close the gap (`dialog confirm` does the same thing), it breaks nine
-  E2E specs and David's own agent workflows, and it isn't needed once the elevation question lives outside every MCP
-  tool (decision 13).
+- **Refusing `dialog_confirm` on anything that might elevate**: it breaks E2E and David's own agent workflows, and it
+  isn't needed once the elevation question lives outside every MCP tool (decision 13).
 
 ## Threat model
 
@@ -125,9 +123,9 @@ spike before M2 starts.
     destination so the transfer dialog can warn "needs administrator rights" before starting; the refusal stays the only
     trigger.
 13. **MCP and the agent can see the wait but never answer it.** `cmdr://state` shows the parked operation as waiting for
-    administrator approval, and no tool answers the alert. `autoConfirm` and `dialog confirm` stay: they reach only the
-    normal confirmation. This is a deliberate exception to `apps/desktop/src-tauri/src/mcp/CLAUDE.md`'s "whatever a user
-    can reach, an agent must reach, answer, and observe", to be written there in M4.
+    administrator approval, and no tool answers the alert. `dialog_confirm` stays: it reaches only the normal
+    confirmation. This is a deliberate exception to `apps/desktop/src-tauri/src/tools/CLAUDE.md`'s "whatever a user can
+    reach, an agent must reach, answer, and observe", to be written there in M4.
 14. **A denylist as a backstop.** The helper refuses writes under `/Library/LaunchDaemons`, `/Library/LaunchAgents`,
     `/Library/PrivilegedHelperTools`, `/private/etc`, and `/var/root`, checked on the resolved descriptor
     (`fcntl(F_GETPATH)`), ❌ never on a caller's string. It can't list every root-run file, so it only backs up

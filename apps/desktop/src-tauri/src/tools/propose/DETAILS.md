@@ -246,7 +246,7 @@ Load-bearing details a future reader should not "simplify":
 - **Surrounding context is not required for a row to be judgeable.** A quote can be an entire
   line of its own ("Payment confirmation" is, in the incident text), so demanding context would
   fail the exact case this eval exists for.
-- **An `imageText` claim accepted with NO coverage scores as not judgeable.** That is the M1
+- **An `imageText` claim accepted with NO coverage scores as not judgeable.** That is the
   regression this catches: suppress coverage and four of these tests fail while every unit test
   in `evidence/tests.rs` still passes. Verified by mutation.
 - **A fair name and an unfair one must score identically.** If they ever diverge, something

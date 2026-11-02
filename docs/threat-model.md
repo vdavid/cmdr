@@ -115,8 +115,9 @@ risk.
   - **Process launches pass paths as argv**, never through a shell string. AppleScript takes paths through `on run argv`
     or `quoted form of`.
 - **Residual risk**:
-  - With MCP turned on, a holder of the token can run destructive tools without a dialog; that's the feature, for the
-    developer who turned it on.
+  - With MCP turned on, a holder of the token can work the app and read Cmdr's own views and what it shows, and can open
+    dialogs a person confirms. With direct mode on too, it can read file contents and run destructive tools without a
+    dialog; that's the feature, for the developer who turned it on.
   - Gaps found in MCP direct mode's check are tracked privately and reviewed before every release (`docs/security.md` §
     MCP direct mode).
   - `llama-server` has no API key, so any local process or user can run inference on it. It holds no user data beyond
@@ -310,16 +311,20 @@ risk.
   names, `inspect_file` text, PDF pages, archive entry names, EXIF, OCR text); the model's replies, tool calls, and
   memory writes.
 - **Threats**: data sent to a third party (disclosure); a key harvested by a malicious base URL; injected instructions
-  steering the agent to propose harmful operations, to read and send sensitive content, or to plant persistent
+  steering the agent to start or propose harmful operations, to read and send sensitive content, or to plant persistent
   instructions in its memory.
 - **Mitigations**: one fail-closed, versioned consent gate in the backend before any cloud request; the key never
-  returns to a webview; plaintext `http://` refused for a non-loopback base URL; the agent can read and propose but
-  never write files, and only the user approves a proposal; the memory folder is jailed, capped, and fenced in the
-  prompt; no tool returns raw file bytes (`docs/security.md` § Cloud AI egress, § AI API keys).
+  returns to a webview; plaintext `http://` refused for a non-loopback base URL; the agent can start anything on a turn
+  the user started, but a person finishes anything sensitive through a dialog that arms before a keystroke counts, a
+  typed question, or a proposal, and no tool answers for them; a turn Cmdr started only reads and proposes; one gate
+  refuses sensitive paths and private keys; the memory folder is jailed, capped, and fenced in the prompt; no tool
+  returns raw file bytes (`docs/security.md` § Cloud AI egress, § AI API keys).
 - **Residual risk**:
   - **Prompt injection is mitigated, not solved.** Injected text can make the agent read more than the user meant (and
-    so send it to the provider), propose a harmful operation (which the user still has to approve), or save a note that
-    rides along on every later turn. Medium likelihood, medium impact. The approval step is the hard boundary.
+    so send it to the provider), start or propose a harmful operation (which a person still has to confirm), or save a
+    note that rides along on every later turn. On a turn the user started it can also tag files or create a named folder
+    with no question, the one written exception, and a tag has no undo. Medium likelihood, medium impact. A person's
+    confirmation is the hard boundary.
   - **What reaches the provider is governed by the provider's terms**, not Cmdr's. An organization can turn AI off,
     allow only on-device AI, or allow only listed cloud hosts through managed preferences, enforced in the backend at
     every request and redirect hop (`apps/desktop/src-tauri/src/managed_policy/DETAILS.md`).
@@ -407,8 +412,8 @@ Impact × likelihood, highest first. Gaps tracked privately aren't ranked here.
 2. **A parser bug in a dependency or Apple framework, reached by a downloaded file or a hostile server, runs with Full
    Disk Access** (boundaries 3 and 4). Impact: high. Likelihood: low. Cmdr isn't sandboxed and parses in process.
 3. **Prompt injection through file names or contents steers Ask Cmdr** into reading and sending more than intended,
-   proposing a harmful operation, or saving a persistent note (boundary 8). Impact: medium (writes still need approval).
-   Likelihood: medium, and rising as the agent does more.
+   starting or proposing a harmful operation, or saving a persistent note (boundary 8). Impact: medium (writes still
+   need a person, apart from a tag or a named folder). Likelihood: medium, and rising as the agent does more.
 4. **Credentials or traffic exposed on a hostile LAN**: user-chosen plaintext WebDAV or S3, optional SMB encryption,
    NTLMv2 to a spoofed Bonjour name (boundary 4). Impact: medium. Likelihood: medium on untrusted networks.
 5. **Personal data in reports**: free-text file names in error reports, opt-out usage stats, data leaving the EU

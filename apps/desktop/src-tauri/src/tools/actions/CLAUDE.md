@@ -48,8 +48,7 @@ which calls these by path. Up: `../CLAUDE.md`.
 
 ## Adding new tools
 
-The handler goes in a category file here; the tool is authored ONCE as an `mcp_tools!` entry in
-`../registry.rs`. Full workflow: `docs/guides/mcp-development.md`.
+`../DETAILS.md` § Adding a tool.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

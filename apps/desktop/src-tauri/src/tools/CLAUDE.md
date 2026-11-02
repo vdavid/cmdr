@@ -11,7 +11,7 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
 - `resources/`: the read-only `cmdr://` views. `resources/CLAUDE.md`.
 - `read/`: the agent's reads (`state`, `pane_listing`, `listing`, `importance`, `volumes`, `inspect/`).
 - `propose/`, `suggestions/`: staged plans. `propose/CLAUDE.md`, `suggestions/CLAUDE.md`.
-- `memory.rs`: the only tools that write; every rule lives in `../agent/memory/`. `quiet.rs`: `nothing_to_suggest`, a
+- `memory.rs`: the agent's notes; every rule lives in `../agent/memory/`. `quiet.rs`: `nothing_to_suggest`, a
   pure signal. `connect.rs`: `connect_volume`. `meta.rs`: the tool-search pair. `sensitive.rs`: the content gate. `policy.rs`: `admit`, `Caller`, `ToolCtx`, and
   direct mode. `ask.rs` + `ask_plans.rs`: the one way a tool waits for a person. `mod.rs`:
   `agent_tool_declarations()`.
@@ -45,10 +45,9 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
   declared property needs a `type`, or llama-server refuses the request. `DETAILS.md` § Lazy loading.
 - **Every result voices its coverage**: a typed field, never a wrong zero.
 - **A proposal claiming file CONTENTS must prove it** through `ImageFactsLedger`. `propose/DETAILS.md`.
-- **Handlers never touch a live filesystem, except `inspect_file` and `list_dir`'s live read**, bounded. A new content
-  KIND is a copy change plus a `CLOUD_AI_CONSENT_VERSION` bump.
-- **Anything yielding file contents passes `sensitive.rs`.**
-- **New tool** = table entry (`ToolId` generates from it) + handler/schema/result + its class's `EXPECTED_*_TOOL_NAMES` +
-  a rail label in `ask-cmdr-tool-label-keys.ts`. `../agent/line/` arms only with `subject: SubjectSpec::Custom`.
+- **Read handlers never touch a live filesystem, except `inspect_file` and `list_dir`'s live read**, bounded. Anything
+  yielding contents passes `sensitive.rs`. A new content KIND is a copy change plus a `CLOUD_AI_CONSENT_VERSION` bump.
+- **New tool** = table entry + handler and schema + its class's `EXPECTED_*_TOOL_NAMES` + a rail label + the wire fixture +
+  two hand-kept counts. `DETAILS.md` § Adding a tool.
 
 Depth: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

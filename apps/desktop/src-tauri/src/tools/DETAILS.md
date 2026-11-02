@@ -16,18 +16,25 @@ access)` in `policy.rs` is pure, is the only thing deciding, and answers Allow, 
 - Outside client, not direct: `Sensitive` asks; `ReadContents`, `Memory`, and `DevOnly` refuse `directModeOff` naming
   `developer.mcpDirectMode`; the rest allow.
 
+Dialogs are for "right now, on a turn you started"; proposals are for batches and background work. Both stay, and the
+system prompt says which to use.
+
 **There are no per-caller lists.** Every tool is reachable by both callers, or its entry carries a reason (`DevOnly`,
 `Load::Meta`), pinned by `every_tool_is_reachable_by_both_callers_or_carries_a_reason`. `execute_tool` asks `admit` before
 the schema check, a question, or a handler; `../agent/tool_gate.rs` asks it too, to shape a refusal as a tool result and
 because `propose_rename_plan` goes around `execute_tool`. It's pure, so the two can't disagree.
 
-The agent's declarations are every tool `admit` doesn't refuse on a user-started turn, whatever turn the call serves: a user
-turn and a follow-up can share a thread, and those bytes are the provider's cache key. So a wake sees `copy` and hears
-`refusedInBackground` if it calls it.
+What the agent is told about (the declarations plus the prompt's one-liners, § Lazy loading) is every tool `admit` doesn't
+refuse on a user-started turn, whatever turn the call serves: a user turn and a follow-up can share a thread, and those
+bytes are the provider's cache key. So a wake sees `copy` and hears `refusedInBackground` if it calls it.
 
 `tools/list` shows an outside client the whole table but `Meta` entries, each with annotations generated from `access`
 (`Access::hints`): `Read` and `ReadContents` `readOnlyHint: true`; `Propose`, `Memory`, `Session`, `AppState`, and
 `LightWrite` `destructiveHint: false`; `Initiate`, `Sensitive`, and `DevOnly` `destructiveHint: true`.
+
+**Why one table.** Two surfaces once existed because of one `consumers` field nobody chose: every tool was tagged
+outside-client-only when the agent was fenced off from writes, and each new tool defaulted to agent-only. So nothing here
+may bring back a per-caller list: a split needs a reason in the entry.
 
 **Decision: a module, not a crate.** Crates here carry no `tauri`, and handlers need `AppHandle`, events, and pane stores,
 so a crate would need a host abstraction over nearly every handler for little gain.
@@ -42,10 +49,10 @@ exactly that list.
 Every AI-callable tool is authored once in the `mcp_tools!` table in `table.rs` — name, `id`, `brief`, description, JSON
 schema, `subject`, `access`, `load`, and handler per entry. That one table generates `get_all_tools()` (the whole table but
 `Meta` entries: `tools/list`), `execute_tool()` (the dispatch), `tool_access()`, and `ToolId` (the enum, `KNOWN`, the
-wire-name conversions, and serde), so the facets can't drift and adding a tool is a single entry. `registry.rs` also
+wire-name conversions, and serde), so the facets can't drift (§ Adding a tool). `registry.rs` also
 defines `Tool`, the `tools/list` element. Read the entries
-for the exact schemas (don't transcribe them here); the sections below summarize behavior. Wire output is byte-identical
-and pinned by `tests/tool_snapshot_tests.rs`.
+for the exact schemas (don't transcribe them here); the sections below summarize behavior. Wire output is pinned by
+`tests/tool_snapshot_tests.rs`.
 
 **The per-entry columns that aren't dispatch.**
 
@@ -63,8 +70,61 @@ and pinned by `tests/tool_snapshot_tests.rs`.
 identically wherever they live, so they're hoisted into `schemas/*.rs` (one `fn <tool>_schema() -> Value` per tool,
 grouped by category) and the entries call them (`schema: schemas::copy_schema()`). `registry.rs` holds the mechanism (the
 macro, `Access`, `Load`, `SubjectSpec`, the params gate), `mod.rs` re-exports what the macro generates, and `table.rs`
-holds nothing but the authored entries, so the file that grows per tool is pure data. The
-splits changed no wire bytes — the snapshot passes unmodified.
+holds nothing but the authored entries, so the file that grows per tool is pure data.
+
+## Adding a tool: #871's sync as the worked example
+
+[#871](https://github.com/vdavid/cmdr/issues/871) (Synchronize folders) wants two tools, `compare_folders` and
+`propose_sync`, and it's the acceptance test for one table.
+
+**What one entry gives you, with no other edit**: `ToolId` with `KNOWN`, the wire names, and serde; `tools/list` with its
+annotations; the dispatch; `admit`'s answer for every caller and origin, so both callers have it the moment it exists; the
+agent's one line in the prompt, and `tool_details` and `use_tool` reaching it; and the generic rail line.
+
+```rust
+"compare_folders" => {
+    id: CompareFolders,
+    brief: "Compare two folders and count what differs.",
+    desc: "...",
+    schema: schemas::compare_folders_schema(),
+    subject: SubjectSpec::None,
+    access: Access::Read,
+    load: Load::Deferred,
+    run: app_params compare::execute_compare_folders
+},
+```
+
+**What every new tool also needs, each failing a test when it's missing:**
+
+1. **The handler and the schema**: a `compare.rs` under `actions/`, over `crates/cmdr-sync`'s pure `classify`, sharing the core with the
+   dialog, with each place as `path` + optional `volumeId` (§ The location contract), and `fit_to_result_budget` on its
+   rows. The schema closes itself, and every property has a `type`.
+2. **A rail label**: `doing` and `done` in `ask-cmdr-tool-label-keys.ts` and `messages/en/askCmdr.json`, plus `tried` on a
+   write (`every_known_tool_has_an_ask_cmdr_rail_label`). English only: the translator does the rest.
+3. **The class's allowlist**, for anything but `Read` and `AppState`: its `EXPECTED_*_TOOL_NAMES`, having read the handler.
+4. **The wire fixture**: `UPDATE_SNAPSHOT=1` over `tests/tool_snapshot_tests.rs`, then read the diff.
+5. **Two hand-kept counts**: `test_total_tool_count` in `../mcp/tests/protocol_tests.rs`, and `get_all_tools().len()` in
+   `tests/tool_registry_tests/schemas.rs`.
+
+**Only when the tool does more:**
+
+- A new `mcp-*` event: a parser in `mcp-listeners.ts`, and its name in `capability_tests.rs`'s `FRONTEND_EVENTS`.
+- A richer rail line: `subject: SubjectSpec::Custom` and hand arms in `../agent/line/`, held to the table both ways.
+- `Sensitive`: an `ask:` plan, and an `AskFacts` variant if no existing one says it (§ The human gate).
+- `Load::Core`, because a flow or the prompt names it: the whole schema joins the prefix, so raise the core's test cap and
+  re-pin `FIXED_PROMPT_OVERHEAD_TOKENS`. A deferred line costs about 15 tokens, inside that test's slack until many add up.
+
+**The class follows what the handler does, so `propose_sync` isn't `Propose`.** #871 says "propose, Ask Cmdr only", written
+before this table. "Ask Cmdr only" can't be said anymore: it's reachable by both callers unless `DevOnly`. And a tool that
+opens the sync dialog filled in, with nothing running until a person confirms, is `Initiate`:
+
+- It's `ctx_params`, its event payload goes through `ctx.stamp`, and it answers `{ awaitingPerson, dialog }` (`open_dialog`).
+- The dialog takes `startedBy`, so it arms before a keystroke counts, and its write commands carry the required `initiator`.
+- A wake gets `refusedInBackground`, and the name joins `EXPECTED_INITIATE_TOOL_NAMES`.
+
+It'd be `Propose` only if it staged a card on the spine, which a wake could do: then `EXPECTED_PROPOSE_TOOL_NAMES`, a capped
+payload, and `readyForReview`. `compare_folders` compares names, sizes, and dates, so it stays `Read`. Comparing bytes is out
+of scope for the agent's entries; a tool that returned file text would be `ReadContents`, through `sensitive.rs`.
 
 ## Lazy loading (`meta.rs`)
 
@@ -131,8 +191,7 @@ generated line per other tool it can reach (`deferred_tool_lines`). An outside c
 
 `validate_params(name, params)` checks a call against the tool's OWN declared schema before a handler reads a field off
 it, at both dispatch entries: `execute_tool` for everything routed through the registry, and `agent/tool_gate.rs`
-ahead of its branch, because `propose_rename_plan`, `propose_suggestions`, and `propose_server` need the thread's scope and never reach
-`execute_tool`. Both run for an agent call; one small object checked twice costs nothing against a provider round trip,
+ahead of its branch, because `propose_rename_plan` needs the thread's evidence scope and never reaches `execute_tool`. Both run for an agent call; one small object checked twice costs nothing against a provider round trip,
 and neither path has to know what the other does.
 
 It reads ONE level of ONE object schema and answers two questions: is every `required` property present, and (only when
@@ -177,8 +236,12 @@ otherwise search literally and report a zero.
 
   Every class except `Read` and `AppState` is hand-allowlisted (`EXPECTED_*_TOOL_NAMES`), and `DevOnly` is pinned by name.
 
-⚠️ **`Access::Memory` was a deliberate widening of the app's central agent-safety invariant.** "The agent never changes
-anything" became "the agent writes only into `<data-dir>/ai/memory/`". Three things hold the narrowed promise: the jail
+**A tool's class must be honest**, so a tool whose power depends on a parameter gets split: `dialog_confirm` left `dialog`,
+and `queue_move_locked` left `queue`. Three can't split, so each takes its upper bound: `mkdir` and `mkfile` are `LightWrite`
+(a name creates, no name opens the dialog, and `admit` answers the same for `Initiate` and `LightWrite`), and
+`open_under_cursor` is `Sensitive`, with a plan answering "no ask" when opening would only browse.
+
+⚠️ **`Access::Memory` writes only `<data-dir>/ai/memory/`.** Three things hold that: the jail
 in `../agent/memory/` (relative `.md` paths only, no `..`, no symlink along the chain, containment re-checked against a
 canonicalized parent); the hand-authored `EXPECTED_MEMORY_TOOL_NAMES` allowlist, which exists for the same reason the
 `Propose` one does (no structural check can prove a handler stays in a jail, so a human puts each name there having
@@ -256,6 +319,10 @@ The switch that lets an outside client use the tools that go past a person (`pol
   So launch seeds the atomic only when the JSON says on AND `secrets`'s `mcp.directMode` item reads through
   `store().vouching()`. It reads the item only when the JSON says on, so nobody else gets a Keychain touch at launch. A
   fallback file store vouches for nothing, so there the toggle lasts the session and the row says so.
+- **Decision: an outside client reads file contents only in direct mode.** `ReadContents` covers `inspect_file`,
+  `image_facts`, and `search_photos`, and `multi_rename`'s media fields refuse the same way, closing the side door.
+  Otherwise any local process able to read `mcp.token` could read what Cmdr's Full Disk Access reaches, silently. Reading
+  `cmdr://` resources stays allowed.
 - **Gaps in this check are tracked privately** and reviewed before every release. The check itself:
   `../secrets/DETAILS.md` § Vouching. The user-facing account: `docs/security.md` § MCP direct mode.
 - **The Settings row is the only writer** (`McpServerSection.svelte`, `set_mcp_direct_mode`). The setting is
@@ -268,7 +335,7 @@ The switch that lets an outside client use the tools that go past a person (`pol
 
 ## The `Session` tier
 
-`upgrade_smb_to_direct` moves a share that's already mounted to a direct session, and it's an outside client's tool.
+`upgrade_smb_to_direct` moves a share that's already mounted to a direct session.
 `connect_volume` connects a saved place without taking a pane over; `select_volume` on one (a pinned server or share in
 `cmdr://state`) switches a pane to it, and the pane brings it to life itself (`place-connect.svelte.ts`, through
 `servers/connect-flow.ts`), with the sign-in sheet for anything missing. Handler and rules: § Connecting a saved place.
@@ -276,7 +343,7 @@ The switch that lets an outside client use the tools that go past a person (`pol
 ## The `Propose` tier
 
 **The invariant: the agent can propose; only the user can approve.** Approval originates in the frontend as a user
-action. There is no tool, and never will be a tool, that approves a proposal. Without that, `Propose` is `Write` with
+action. There is no tool, and never will be a tool, that approves a proposal. Without that, `Propose` is a write with
 extra steps. A `Propose` tool stages a proposal and opens a review surface; it mutates nothing — no filesystem write, no
 silent config mutation. That is its entire power.
 
@@ -284,14 +351,11 @@ Three things make it hold rather than merely be intended:
 
 - **A hand-authored allowlist, not inference.** No structural check can prove a handler doesn't mutate, so
   `EXPECTED_PROPOSE_TOOL_NAMES` (in `tests/tool_registry_tests/access.rs`) lists every `Propose` tool by name, and
-  `test_propose_tools_are_an_explicit_allowlist` fails if a registry entry in EITHER view is tagged `Propose` without
-  being listed: the agent's `propose_rename_plan`, `propose_suggestions`, and `propose_server`, and the ai-client's
-  `multi_rename`.
+  `each_hand_authored_class_is_exactly_its_allowlist` fails if an entry is tagged `Propose` without being listed:
+  `propose_rename_plan`, `propose_suggestions`, `propose_server`, and `multi_rename`.
   Widening that power remains a deliberate act a human signs off, having read the handler.
-- **No proposal reaches the confirmation bypass.** `autoConfirm` and `queue`'s `rollback` let an external MCP client
-  skip the user's confirmation dialog — exactly the approval a proposal must never grant itself.
-  `test_no_agent_tool_reaches_the_confirmation_bypass` asserts every agent-view tool declares no bypass parameter in
-  its schema.
+- **No schema has a way past a person.** `dialog_confirm` is the one way there is, and it's `DevOnly`:
+  `no_schema_has_a_way_past_a_person_and_the_agent_never_gets_the_one_there_is`.
 - **Payloads are capped, per tool.** A `Propose` payload must be bounded the way `image_facts` caps at 200 paths: a
   proposal the user can't actually review is one they can only rubber-stamp, which dissolves the invariant. The cap
   can't be enforced generically (payload shapes differ), so each `Propose` tool honours it explicitly and pins it with
@@ -301,18 +365,15 @@ Three things make it hold rather than merely be intended:
 **Consent is unaffected.** Proposals flow agent → user, never to the provider. `Propose` adds no egress, so the
 provider-egress question and `CLOUD_AI_CONSENT_VERSION` are unchanged by this tier.
 
-**Param naming is camelCase** (`tabId`, `timeoutSeconds`, `sizeMin`, `autoConfirm`). Tool names stay snake_case. Don't add snake_case params; agents pattern-match across tools and every inconsistency is a guessed-wrong call.
+**Param naming is camelCase** (`tabId`, `timeoutSeconds`, `sizeMin`, `onConflict`). Tool names stay snake_case. Don't add snake_case params; agents pattern-match across tools and every inconsistency is a guessed-wrong call.
 
 ## Why the TS parse layer stays separate from the registry
 
-
-The `mcp_tools!` registry single-sources the three **Rust** consumers (list, dispatch, auth gate). The frontend's
+The `mcp_tools!` registry single-sources the **Rust** side (list, dispatch, and what `admit` reads). The frontend's
 per-event validate-parse layer in `apps/desktop/src/routes/(main)/mcp-listeners.ts` is deliberately NOT folded in. It's
 a transport adapter on the other side of the IPC boundary: it validates the *event payloads* the handlers emit, not the
 tool schemas, and those payloads are unchanged. Folding it into the registry would require generating TypeScript from
-the Rust table (a Rust→TS codegen pipeline) — a much larger, separate effort, out of scope here. The event-payload
-contracts stay in sync across the boundary exactly as they did before the registry existed, so nothing was lost by
-leaving this side hand-written.
+the Rust table (a Rust→TS codegen pipeline) — a much larger, separate effort.
 
 ## Key decisions about the surface
 
@@ -327,9 +388,9 @@ Tool results and resource content are consumed by LLMs, not parsed by code. Outp
 
 Without state, resources would need to query the frontend on every read (slow, async). Storing state in Rust allows synchronous reads. The frontend syncs state after meaningful changes (file load, cursor move, selection).
 
-### Why no file system access?
+### Why no `fs.read` or `fs.write` tools?
 
-Security via parity: agents can only do what users can do. Giving agents `fs.read`/`fs.write` would violate this. Agents navigate the UI just like users, using `move_cursor`, `open_under_cursor`, etc.
+A tool does what a person could do in the UI, through the same gates, so `admit` has a class to judge and a person has a dialog to read. Reading inside a file is `inspect_file`: bounded, through the viewer, and past `sensitive.rs`. Writing is a dialog, a question, or a proposal. `../mcp/tests/security_tests.rs` pins that no `fs.` or `shell.` tool exists.
 
 ### No `open_select_dialog` twin
 
@@ -369,8 +430,8 @@ Directory module split by test category:
 
 ## The tool catalog
 
-Each handler is `async fn(&AppHandle<R>, &Value) -> ToolResult` (the `app_params` macro shape; `search` is the only one here
-authored `params_only`, since it needs no `AppHandle`), reuses a shipped core, and returns a typed serde shape as the
+Each handler is `async fn(&AppHandle<R>, &Value) -> ToolResult` (the `app_params` macro shape; `ctx_params` adds the
+`ToolCtx`, and `search` is the only one here authored `params_only`, since it needs no `AppHandle`), reuses a shipped core, and returns a typed serde shape as the
 tool-result JSON the model reads.
 
 - **`app_state`** (`read/state.rs`) — both panes (path, cursor item, selection count, view/sort) plus the volume list.
@@ -419,7 +480,7 @@ tool-result JSON the model reads.
     sentences ride in `notes` beside the flags.
   - **❌ No `offset`, by decision.** Ranking is top-k, and an offset over a re-ranked run would skip and double-count
     rows. The model narrows instead (a tighter pattern, a smaller scope, a date range), and the description says so.
-  - **❌ `ai_search` is deliberately NOT in the agent view.** It spends an LLM call turning prose into a structured
+  - **❌ `ai_search` is `DevOnly`.** It spends an LLM call turning prose into a structured
     query, and Ask Cmdr is already an LLM holding the user's prose: exposing it would nest a second model call, bill
     two providers, and hide a translation the agent can't see or correct, for a schema that rides every turn. The agent
     writes the structured query itself.
@@ -486,7 +547,7 @@ tool-result JSON the model reads.
     volume that isn't connected the root it last had (its `connectionState` says so). Absent only on a row no location
     lives on (the `Network` hub). It's also the scope a `search` of that drive names. ❌ No `mountPath` here: a saved
     share's LAST mount point read as "where it is" is what sent the model to a dead `/Volumes/naspi`. `cmdr://state`'s
-    YAML keeps `mountPath` (an ai-client contract).
+    YAML keeps `mountPath` (an outside client's contract).
   - **The offline vocabulary.** A volume that isn't live, whose index database is on disk with a completed scan,
     reads `indexStatus: stale` plus `asOf` (that scan's date, spoken), the same pair `list_dir`'s offline coverage
     voices; with no database it stays `off`. The date comes off the index's read-only opener through the facts shell
@@ -500,8 +561,8 @@ tool-result JSON the model reads.
   - **Two sources, one per kind of fact.** `VolumeSummary` is shared with `cmdr://state` and the envelope; `root`,
     `asOf`, and the favorites' locations come from `VolumeFacts` in the pure `to_volume_map`, so a field added for this
     tool can't reach the YAML by accident. `app_state` embeds the same map's `volumes`.
-- **`operations_list` / `operations_get`** — the shipped executors (`tools/actions/operation_log.rs`), shared into the
-  agent view unchanged (their schemas + coverage flags already fit an agent reader).
+- **`operations_list` / `operations_get`** — the shipped handlers (`tools/actions/operation_log.rs`), whose schemas and
+  coverage flags fit either caller.
 - **`search_photos`** (`tools/actions/photos.rs`) — photo search by description (CLIP),
   in-image text (OCR), or Vision tag. Shapes the `media_index` read API into a TEXT-ONLY DTO (path + volume + typed
   `matchKind` + optional score + optional OCR snippet / no image bytes), reuses `media_index`'s own `volume_state` for
@@ -537,7 +598,7 @@ tool-result JSON the model reads.
 
 Turns "the NAS isn't connected" from a dead end into one call, without any power an injected file name would want: the
 schema is `{ volumeId }` and nothing else, so it can't add a host, take a password, or approve a key. The gate admits
-it only on a turn the user started (§ The dispatch gate); the promise is agent invariant 7 in `../agent/DETAILS.md`.
+it for the agent only on a turn the user started (§ The dispatch gate), and an outside client counts as one; the promise is agent invariant 7 in `../agent/DETAILS.md`.
 
 **One move per standing, the frontend's own** (`apps/desktop/src/lib/servers/DETAILS.md` § The three arms), because
 the wrong move is silent: re-dialing a registered volume registers a SECOND one, and dialing one the backoff loop owns
@@ -570,9 +631,8 @@ wants. The handler races the turn's token itself, so a stop reads `outcome: canc
 name for `rejected` / `unreachable` / `needsApproval`, mapped exhaustively in `connect.rs::classify` (no `_ =>`, so a
 new `ServerConnectOutcome` is a compile error there). `refusedInBackground` is the gate's, never the handler's.
 
-**Not shared with AI clients.** `select_volume` on a saved place already brings it to life for them: the pane lands on
-it and `place-connect.svelte.ts` dials, with the sign-in sheet for anything missing. `apps/desktop/src-tauri/src/tools/DETAILS.md` § The `Session`
-tier.
+`select_volume` on a saved place also brings it to life, for either caller, and takes a pane over: the pane lands on
+it and `place-connect.svelte.ts` dials, with the sign-in sheet for anything missing. § The `Session` tier.
 
 ## A tool that is only a signal (`nothing_to_suggest`)
 
@@ -606,8 +666,8 @@ file holds only root resolution (`memory::store_for`, which reads the app data d
 not tidiness: there is no Tauri mock runtime in the tree and every registry handler takes an `AppHandle`, so a rule
 placed here is a rule no test can reach. `../agent/memory/DETAILS.md` § Testing shape.
 
-**A refusal is an `Ok` carrying a typed token, ❌ never a `ToolError`.** `view::dispatch` flattens a `ToolError` to
-`{ "problem": <sentence> }`, and a model that has to read prose to learn its memory is full will keep writing into a
+**A refusal is an `Ok` carrying a typed token, ❌ never a `ToolError`.** A `ToolError` reads as a `problem`, which the repeat
+breaker counts, and a model that has to read prose to learn its memory is full will keep writing into a
 folder that is saving nothing. So the result is `{ saved: false, refused: <token>, detail: <sentence> }`, where
 `refused` is `MemoryRefusal::token()` and the sentence names a next move — a refusal with no next move gets retried
 verbatim. Same rule as `error-string-match`, pointed at the model instead of at our own code.
@@ -978,10 +1038,9 @@ index: folder rows and the folder's own `size` are ABSENT, never the inode's 4 K
   volume: the slot frees only when the task really returns, so a second call behind a hung mount answers `unreachable`
   at once instead of parking another thread.
 - **Stop reaches it.** The turn races every call against Stop (`agent/chat/DETAILS.md` § Stop reaches every tool
-  call); `view::dispatch` also hands `list_dir` the turn's token through `execute_list_dir_cancellable`, so the read
+  call); `list_dir` also takes the turn's token off `ToolCtx::cancel`, so the read
   stops itself and answers `cancelled` with its `location` before the turn's generic answer would. The abandoned task
-  frees its slot when it returns. An AI client's call gets a fresh token, and dropping it (the client hanging up)
-  flips the read's token too.
+  frees its slot when it returns. An outside client's token is its connection, so hanging up flips the read's token too.
 - **The cap**: `LIVE_ENTRY_CAP` = 10,000 entries kept, the first ones in the provider's order (folders first, then
   names), so a capped folder pages over a stable set; the requested sort applies within it, with `truncated: true`,
   `totalIsLowerBound: true`, and `authoritative: false`. An `offset` at or past the cap is refused before reading,
@@ -1000,7 +1059,7 @@ Its misses ride the same shape as the resolver's (`LocationMissResult::on`, `loc
 **A dropped session points at `connect_volume`, not at the user.** When the volume is a session Cmdr owns
 (`connectionState` `direct` or `disconnected`, `live.rs::reconnects`), a mid-read drop's `detail` says Cmdr is
 reconnecting it and to call `connect_volume` with its `volumeId` (which waits out the reconnect, § Connecting a saved
-place), or wait a few seconds where that tool isn't offered (AI clients), then read again. An OS mount or a local disk
+place), then read again. An OS mount or a local disk
 keeps "tell the user". Why: a stale smb2 session failed one read with "Tell the user it may have disconnected", the
 agent wrote the NAS off for the whole answer, and the backoff loop had it back nine seconds later (verified on a dev
 build, `main.db` conversation 689 plus `cmdr.log` `ConnectionLost` then `session: established`, 2026-10-28). A location
@@ -1215,10 +1274,9 @@ a rename plan's content claim checkable; the guardrail, its refusal shape, and t
 - `tools` re-exports `Access`, `execute_tool`, `tool_access`, `ToolError`, `ToolResult` as `pub(crate)` for the agent
   runtime and the transport. `snapshot_volumes` and the `importance::snapshot_*` functions are `pub(crate)` too.
 
-## Not covered here (the runtime harness)
+## Where whole calls get tested
 
-A full fake-driven dispatch of a REAL agent tool (success path through `execute_tool`) needs a Tauri app with managed
-state (`PaneStateStore`, the index registry, a data dir). That app harness is the chat runtime's concern, so this layer
-covers the success path with per-tool pure-shaper tests (fixtures for the coverage flags) and the refusal path in full
-(no app needed). The dispatch entry point the runtime calls is `agent::tool_gate::dispatch`; the declaration API is
+This layer covers the success path with per-tool pure-shaper tests (fixtures for the coverage flags) and the refusal path
+in full. A whole call through the real handlers needs an app with managed state, which the chat runtime's
+`capability_tests.rs` and `class_smoke_tests.rs` build on `mock_app`. The dispatch entry point the runtime calls is `agent::tool_gate::dispatch`; the declaration API is
 `tools::agent_tool_declarations`.

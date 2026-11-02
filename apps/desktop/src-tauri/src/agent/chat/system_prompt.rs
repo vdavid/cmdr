@@ -513,7 +513,7 @@ mod tests {
         );
     }
 
-    /// M5's stubs carry a `refetch` hint, which is worth nothing if the model reads a stub as
+    /// An elided result's stub carries a `refetch` hint, which is worth nothing if the model reads a stub as
     /// a failure or, worse, as content it may name a file after.
     #[test]
     fn prompt_says_how_to_read_a_set_aside_result_again() {

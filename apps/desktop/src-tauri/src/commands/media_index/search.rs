@@ -112,7 +112,7 @@ pub async fn media_index_search_tag(
     .map_err(|e| format!("tag-search task panicked: {e}"))?
 }
 
-/// Natural-language semantic image search (plan M3): encode `query` with the CLIP text
+/// Natural-language semantic image search: encode `query` with the CLIP text
 /// tower and return the up-to-`limit` images whose CLIP embeddings are closest by cosine —
 /// the headline "search photos by description". Each hit is a snippet-less tile with a
 /// "matched description" reason (the match is on the whole-image embedding, not text).

@@ -5,7 +5,7 @@ live in `CLAUDE.md`.
 
 ## Purpose
 
-Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Agents can control the app using the same capabilities available to users, no more, no less.
+Carries `crate::tools` to outside AI clients over the Model Context Protocol. What a client may do is `admit`'s call, not the transport's: `../tools/DETAILS.md` § The rule.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ at `/mcp` with `auth::guard` in front of it (`route_layer`, so `/mcp/health` sta
 is one-directional: `server` depends on `auth`, never the reverse.
 
 - Runs in a background tokio task spawned at app startup
-- Binds `127.0.0.1` only (localhost). Port defaults to ephemeral: when `developer.mcpPort` (the user setting) is 0 (the new default), the server binds `127.0.0.1:0` and asks the kernel for an unused port. A non-zero setting pins that port. `resolve_bind_strategy` turns the resolved port into `BindStrategy::Ephemeral` or `BindStrategy::Pinned(port)`; `bind_listener` then binds it under one of two `BindMode`s: **`ProbeOnCollision`** (startup auto-start — probe upward up to 100 ports so *a* server comes up when nobody's watching) or **`Exact`** (interactive settings changes — fail with `BindError::PortInUse` so the user is told their chosen port is busy instead of silently landing elsewhere). Both helpers are unit-tested in `server.rs`. The legacy fixed defaults (`19224` prod / `19225` dev) still live in `config.rs::DEFAULT_PORT` as the fallback for `CMDR_MCP_PORT` parse failures and are mirrored in the FE registry for users who want to pin a port.
+- Binds `127.0.0.1` only (localhost). Port defaults to ephemeral: when `developer.mcpPort` (the user setting) is 0 (the default), the server binds `127.0.0.1:0` and asks the kernel for an unused port. A non-zero setting pins that port. `resolve_bind_strategy` turns the resolved port into `BindStrategy::Ephemeral` or `BindStrategy::Pinned(port)`; `bind_listener` then binds it under one of two `BindMode`s: **`ProbeOnCollision`** (startup auto-start — probe upward up to 100 ports so *a* server comes up when nobody's watching) or **`Exact`** (interactive settings changes — fail with `BindError::PortInUse` so the user is told their chosen port is busy instead of silently landing elsewhere). Both helpers are unit-tested in `server.rs`. The legacy fixed defaults (`19224` prod / `19225` dev) still live in `config.rs::DEFAULT_PORT` as the fallback for `CMDR_MCP_PORT` parse failures and are mirrored in the FE registry for users who want to pin a port.
 - Writes the actual bound port to `<data_dir>/mcp.port` atomically (tempfile + fsync + rename, mode 0o600) after `bind`, plus a fresh per-instance bearer token to `<data_dir>/mcp.token` (same atomic write, 0o600). External readers (the `scripts/mcp-call.sh` CLI, E2E fixtures, agent helpers) discover the port and token from those files and send `Authorization: Bearer <token>` on every request; the FE still uses the `get_mcp_port` / `get_mcp_token` IPC to read the same in-process state. On clean shutdown both files are removed and the in-process token is cleared; on crash they stay and readers discover staleness via `ECONNREFUSED`. See `port_file.rs` for the `write_port_file` / `write_secret_file` / read / remove API and typed `PortDiscoveryError`.
 - **Auth**: every `/mcp` request, whatever its HTTP method, runs `validate_origin` (browser-CSRF / DNS-rebinding layer) and requires the bearer token before `rmcp` sees it. `validate_token` reads `Authorization: Bearer <token>`, compares against the in-process token in constant time, and returns a typed `TokenRejection` (`Missing` for an absent or empty bearer, `Wrong`, or `NotConfigured` when no token is set, failing closed). The response a client sees is the same for each, so it's no oracle; the reason goes to the security event log, coalesced per episode (`security_log::note_mcp_rejection`), as does a refused `Origin`. Only a refused `Origin` also
 tells the person, in a toast (`../security_notices/CLAUDE.md`): a wrong or missing token is a client being set up or
@@ -45,7 +45,7 @@ rejection is HTTP 200 rather than 401 — is in the Authentication section below
 
 ### Configuration (`config.rs`)
 
-Constants and configuration for the MCP server (port, bind address, transport settings). The default port for users who pin (setting `developer.mcpPort` to non-zero) is build-mode-dependent: 19224 in prod, 19225 in dev. Different defaults so a dev session and an installed prod build don't collide when both pin. With the post-instance-isolation default of `developer.mcpPort = 0`, the server binds ephemeral and these constants only matter as the pinned-mode fallback. Mirrored in the FE registry; both are in 10000–29999 per AGENTS.md. See `docs/tooling/instance-isolation.md` for the cross-resource view.
+Constants and configuration for the MCP server (port, bind address, transport settings). The default port for users who pin (setting `developer.mcpPort` to non-zero) is build-mode-dependent: 19224 in prod, 19225 in dev. Different defaults so a dev session and an installed prod build don't collide when both pin. With the default of `developer.mcpPort = 0`, the server binds ephemeral and these constants only matter as the pinned-mode fallback. Mirrored in the FE registry; both are in 10000–29999 per AGENTS.md. See `docs/tooling/instance-isolation.md` for the cross-resource view.
 
 ### Redacting request headers (`safe_headers.rs`)
 
@@ -63,15 +63,14 @@ Directory module split by test category. Tool, resource, and store tests live wi
 - `spec_compliance_tests.rs`: Origin validation and the JSON-RPC codes
 - `transport_characterization.rs`: everything an outside client can see that's ours to keep, black-box over a real listener
   and registered from `server.rs` with `#[path]` because `build_router` is private: binding, the discovery files, Origin,
-  the token, logs, typed errors, and dispatch. It proved the swap to `rmcp` with the same cells before and after, and it
-  must survive any upgrade unedited. A cell can't see the refused-Origin toast (it needs a real `AppHandle`), so it pins
+  the token, logs, typed errors, and dispatch. It must survive any upgrade unedited. A cell can't see the refused-Origin toast (it needs a real `AppHandle`), so it pins
   the security event that raises it
 - `transport_sdk_answers.rs`, its child: what `rmcp` answers on its own (statelessness, the plain-text statuses, the
   2026-07-28 revision, a client leaving mid-call). An upgrade may move these, so read the diff
 
 ## Clients and the SDK's visible answers
 
-What `rmcp` changed for an outside client, each with a cell in `transport_sdk_answers.rs`:
+What `rmcp` answers on its own, each with a cell in `transport_sdk_answers.rs`:
 
 - Malformed JSON, a wrong `jsonrpc`, `id: null` or a float, and an envelope with no `method` get a plain-text 415, with a valid token. A bad token is answered first: in-band when an `id` can be read, else 403.
 - `tools/call` with no `name` or non-object `arguments`, `resources/read` with no `uri`, and `initialize` with no `capabilities` or `clientInfo` get `-32601` with the method as the message, since the SDK can't parse them as what they name. On the 2026 path `-32601` is HTTP 404.
@@ -151,7 +150,7 @@ To let an external MCP client (for example Claude Code) connect, export `CMDR_MC
 }
 ```
 
-Without that header the client still works for everything else (reads, nav, search, and destructive ops that prompt in the app); only auto-confirm and `dialog_confirm` are rejected (as the in-band JSON-RPC error above).
+Without that header every `/mcp` request is refused (§ What's authenticated). The token gets a client in; what it may then do is `admit`'s call, and `dialog_confirm` also needs direct mode (`../tools/DETAILS.md` § Direct mode).
 
 ## Gotchas
 
@@ -169,4 +168,4 @@ The live-control commands (`set_mcp_enabled`, `set_mcp_port`, no restart needed)
 
 ### Error codes are JSON-RPC standard
 
-`INVALID_PARAMS = -32602`, `INTERNAL_ERROR = -32603`, etc. These are defined by the JSON-RPC spec, not MCP. Don't change them.
+`INVALID_PARAMS = -32602`, `INTERNAL_ERROR = -32603`, etc. These are defined by the JSON-RPC spec, not MCP, and live in `../tools/error_codes.rs`, so tools don't depend on the transport. Don't change them.

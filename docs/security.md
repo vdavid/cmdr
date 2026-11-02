@@ -287,7 +287,8 @@ shipping a new binary. Mechanism, the rotation caveat, and the test that guards 
 
 AI features deliberately send user data OFF the Mac, to the cloud AI service the user configured, with their own API
 key: folder name suggestions (the folder path and up to 100 names), search in plain words (the typed query), select by
-description (the prompt and up to 240 names), MCP `ai_search`, and Ask Cmdr (detailed below). Local AI sends nothing.
+description (the prompt and up to 240 names), MCP `ai_search` (direct mode only), and Ask Cmdr (detailed below). Local
+AI sends nothing.
 
 - **One consent, enforced in the backend, fail-closed.** Nothing reaches a cloud service until the user turns on "Allow
   cloud AI". Every LLM backend comes from `ai::manager::resolve_backend(app)`, which checks
@@ -324,12 +325,13 @@ Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask 
   `apps/desktop/src-tauri/src/tools/resources/DETAILS.md`.
 - **The agent may connect a place the user saved, and only when the user asked.** `Access::Session` opens a session to a
   SAVED place by volume id with STORED credentials, and adds or edits no file, server, account, credential, pin, or
-  setting, so it can't add a host, type a password, or approve a key (what an injected file name would want). The
-  dispatch gate admits it only on a turn the user started; a wake or a follow-up is refused, typed, because a background
+  setting, so it can't add a host, type a password, or approve a key (what an injected file name would want). `admit`
+  lets the agent run it only on a turn the user started; a wake or a follow-up is refused, typed, because a background
   connect can wake a sleeping NAS nobody asked about. A Keychain prompt on a user-started turn is acceptable; a missing
-  credential raises nothing. One `Session` tool ships, `connect_volume`, hand-allowlisted in
-  `EXPECTED_SESSION_TOOL_NAMES`; its schema takes a volume id and nothing else. No egress moves, so consent doesn't
-  either. Canonical: agent invariant 7 in `apps/desktop/src-tauri/src/agent/DETAILS.md`.
+  credential raises nothing. Two `Session` tools ship, `connect_volume` and `upgrade_smb_to_direct` (which moves a share
+  that's already mounted), hand-allowlisted in `EXPECTED_SESSION_TOOL_NAMES`; each schema takes a volume id and nothing
+  else. No egress moves, so consent doesn't either. Canonical: agent invariant 7 in
+  `apps/desktop/src-tauri/src/agent/DETAILS.md`.
 - **The agent may suggest a server, and only the user saves it.** `propose_server` (`Access::Propose`) stages a card for
   a server to add or a change to a saved one; the user's approval saves it through the servers hub's own code, and
   nothing contacts the server until the user connects it. No password, key, key file, or switch that unlocks one can
@@ -378,15 +380,16 @@ Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask 
     match), so one call can search many files. Every cut is reported (`truncated`, `linesCut`, `returnedLines` /
     `totalMatches`, `unanswered`); a path the tool can't or won't read answers a typed status (`folder`, `missing`,
     `unreadable { permission | io | encrypted | corrupt | unsupported | tooLargeToExtract }`, `unreachable` after the 5
-    s per-path deadline, `unsupportedVolume` for `mtp://` and direct `smb://`), and an encrypted PDF or archive entry
-    stays closed: the tool has no password path. The PDF parser runs inside `crash_reporter::contain_panics`, so a
-    malformed PDF is a message-free `warn` line and an `unparseable` row, never a crash report carrying its bytes. Same
-    consent gate, named in its disclosure (the Ask Cmdr contents item and rule under `ai.cloudConsent.*`).
+    s per-path deadline, `unsupportedVolume` for a virtual path no connected volume owns), and an encrypted PDF or
+    archive entry stays closed: the tool has no password path. The PDF parser runs inside
+    `crash_reporter::contain_panics`, so a malformed PDF is a message-free `warn` line and an `unparseable` row, never a
+    crash report carrying its bytes. Same consent gate, named in its disclosure (the Ask Cmdr contents item and rule
+    under `ai.cloudConsent.*`).
 - **Raw bytes of any file never egress.** Every result DTO the agent can receive is text-only by construction: the photo
   tools' shapes and `inspect_file`'s rows have no field that can hold bytes, each pinned by a walk-the-JSON test
   (`photo_hit_is_text_only_no_byte_fields`, `file_facts_is_text_only_no_byte_fields`,
   `every_row_shape_is_text_only_no_byte_fields`). Image bytes, thumbnails, and archive entry contents are unreachable by
-  any tool in the agent's view.
+  any tool.
 - **Chats and optional call logs stay local.** Conversations live in a local `main.db`; the optional LLM call log writes
   to a local folder and is never transmitted.
 
@@ -396,6 +399,12 @@ Direct mode lets an outside MCP client use the tools that go past a person. It's
 only way to turn it on (`mcpSettable: false`), and every change lands in the security log. The agent never gets it. The
 mechanism: `apps/desktop/src-tauri/src/tools/DETAILS.md` § Direct mode.
 
+- **Off, the token gets a client in and little past a person.** It can work the app, open the dialogs a person confirms,
+  and read Cmdr's own views, and a person answers before anything `Sensitive`. It can't read file contents or memory, or
+  call a `DevOnly` tool. On, those all open, and each successful content read lands in the security log by tool, never
+  by path.
+- **It's never on quietly.** A launch that comes up in direct mode raises a persistent notice, and a recovered
+  `settings.json` clears the Keychain item, so direct mode can't outlast a reset.
 - **`settings.json` alone doesn't turn it on**, since a same-user process with no Full Disk Access can write that file,
   and the prize is everything Cmdr's Full Disk Access can read. Launch also needs a Keychain item that reads without a
   prompt, which isn't proof of who wrote it.

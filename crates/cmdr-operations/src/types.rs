@@ -691,7 +691,7 @@ pub enum ScanPreviewRefusal {
 
 /// Cached scan-preview totals, returned by `check_scan_preview_status` when the
 /// scan has already completed. Lets the FE recover from a race where events
-/// fired between IPC dispatch and listener registration (M2a's watcher-backed
+/// fired between IPC dispatch and listener registration (the watcher-backed
 /// oracle can finish a scan in ~5 ms, so the FE sometimes registers its
 /// listeners too late and never sees the progress/complete events).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]

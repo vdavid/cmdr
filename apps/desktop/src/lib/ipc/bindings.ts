@@ -3276,7 +3276,7 @@ export const commands = {
   mediaIndexSearchTag: (volumeId: string, label: string, minScore: number | null) =>
     typedError<TagHit[], string>(__TAURI_INVOKE('media_index_search_tag', { volumeId, label, minScore })),
   /**
-   *  Natural-language semantic image search (plan M3): encode `query` with the CLIP text
+   *  Natural-language semantic image search: encode `query` with the CLIP text
    *  tower and return the up-to-`limit` images whose CLIP embeddings are closest by cosine —
    *  the headline "search photos by description". Each hit is a snippet-less tile with a
    *  "matched description" reason (the match is on the whole-image embedding, not text).
@@ -16589,7 +16589,7 @@ export type ScanPreviewStartResult = {
 /**
  *  Cached scan-preview totals, returned by `check_scan_preview_status` when the
  *  scan has already completed. Lets the FE recover from a race where events
- *  fired between IPC dispatch and listener registration (M2a's watcher-backed
+ *  fired between IPC dispatch and listener registration (the watcher-backed
  *  oracle can finish a scan in ~5 ms, so the FE sometimes registers its
  *  listeners too late and never sees the progress/complete events).
  */

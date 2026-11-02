@@ -690,8 +690,8 @@ file" would open Advanced with every card filtered out.
 
 ## Ask Cmdr section (`AskCmdrSection.svelte`)
 
-The `AI › Ask Cmdr` subsection (second card under the AI card-menu), over the read-only chat rail. Its `askCmdr.*`
-registry entries all live at `section: ['AI', 'Ask Cmdr']`. Its parts:
+The `AI › Ask Cmdr` subsection (second card under the AI card-menu), over the chat rail. Its `askCmdr.*` registry
+entries all live at `section: ['AI', 'Ask Cmdr']`. Its parts:
 
 - **The on/off is the `askCmdr.enabled` registry setting** (a `SettingSwitch`), a plain feature switch that grants no
   data flow. Consent to send anything to a cloud service is the Allow cloud AI switch in `AI › Provider`; this section

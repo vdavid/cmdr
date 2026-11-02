@@ -56,7 +56,8 @@ rule.
 
 ## Adding a new tool
 
-Two edits: one registry entry, and one handler function.
+The full list, with #871's sync as the worked example, is `apps/desktop/src-tauri/src/tools/DETAILS.md` § Adding a tool.
+The how-to for the two parts you write:
 
 ### Step 1: add the handler to the right `tools/actions/` category file
 
@@ -77,8 +78,8 @@ pub async fn execute_my_action<R: Runtime>(app: &AppHandle<R>, params: &Value) -
 }
 ```
 
-Follow the executor must-knows: read path params through `user_path_param`, choose the right ack (`wait_for_ack` vs
-`mcp_round_trip`), and never return `OK` without waiting for the ack.
+Follow the `tools/actions/CLAUDE.md` must-knows: read path params through `user_path_param`, choose the right ack
+(`wait_for_ack` vs `mcp_round_trip`), and never return `OK` without waiting for the ack.
 
 ### Step 2: add the schema to `schemas/` and ONE entry to the `mcp_tools!` table in `tools/table.rs`
 
@@ -86,7 +87,7 @@ Add a `fn <tool>_schema() -> Value` to the matching `schemas/<category>.rs` (a n
 `schemas::no_params_schema()`):
 
 ```rust
-// in tool_registry/schemas/view.rs
+// in tools/schemas/view.rs
 pub fn my_action_schema() -> Value {
     json!({
         "type": "object",
@@ -103,32 +104,38 @@ Then the table entry:
 
 ```rust
 "my_action" => {
+    id: MyAction,
+    brief: "Do the thing to a target.",
     desc: "Do the thing to a target",
     schema: schemas::my_action_schema(),
+    subject: SubjectSpec::None,
     access: Access::AppState,
     load: Load::Deferred,
     run: app_params view::execute_my_action
 },
 ```
 
-Each entry bundles every facet: name, description, JSON schema, the `access` class, the `load`, and the handler (as a
-shape tag plus a path). You can't add an entry without all of them, and you can't add a handler the dispatch doesn't
-know about, so schema and dispatch can't fall out of sync. HTTP authentication sits above the registry and automatically
-covers every entry.
+Each entry bundles every facet: name, `ToolId` variant, brief, description, JSON schema, the rail line's subject, the
+`access` class, the `load`, and the handler (as a shape tag plus a path). You can't add an entry without all of them,
+and you can't add a handler the dispatch doesn't know about, so schema and dispatch can't fall out of sync. HTTP
+authentication sits above the registry and automatically covers every entry.
 
-- **`desc`** is PREFIX for the agent: every declaration rides every turn of every conversation, whether or not the turn
-  calls that tool, so a sentence here is paid thousands of times. Say what the tool answers and, when a neighboring tool
-  would be the wrong pick, where the line falls (`search` vs `list_dir`); leave everything else to the schema, the
-  result, or the system prompt. `test_tools_have_bounded_descriptions` caps a description at 512 chars, and most sit far
-  under; `agent/chat/context/cost_tests.rs` is what actually holds the prefix to `FIXED_PROMPT_OVERHEAD_TOKENS`.
+- **`brief`** is one line, at most 100 characters, and PREFIX for a `Deferred` tool: the prompt lists it on every call.
+  It describes what the tool does, and names no parameter.
+- **`desc`** is PREFIX for a `Core` tool, whose declaration rides every call, so a sentence here is paid thousands of
+  times. Say what the tool answers and, when a neighboring tool would be the wrong pick, where the line falls (`search`
+  vs `list_dir`); leave everything else to the schema, the result, or the system prompt.
+  `test_tools_have_bounded_descriptions` caps a description at 512 chars, and most sit far under;
+  `agent/chat/context/cost_tests.rs` is what actually holds the prefix to `FIXED_PROMPT_OVERHEAD_TOKENS`.
 - **`access`** says what the tool does, and `admit` decides from it alone who may run it, so pick the class honestly:
   `Read`, `ReadContents`, `Propose`, `Memory`, `Session`, `AppState`, `Initiate`, `LightWrite`, `Sensitive` (it needs an
-  `ask:` plan), or `DevOnly("one-line reason")`. Every class but `Read` and `AppState` means adding the name to its
-  hand-written allowlist in `tool_registry_tests/access.rs`, having read the handler. Split a tool whose power depends
-  on a parameter.
+  `ask:` plan the table entry names, and a person confirms before it runs), or `DevOnly("one-line reason")`. Every class
+  but `Read` and `AppState` means adding the name to its hand-written allowlist in `tool_registry_tests/access.rs`,
+  having read the handler. Split a tool whose power depends on a parameter.
 - **`load`** is `Core` when an everyday flow or the system prompt names the tool, else `Deferred`.
 - **`run`** is a shape tag then the handler path. The tag tells the generated dispatch how to call the handler:
-  `app_params` (`handler(app, params).await`, most tools), `app_only` (`handler(app).await`, no params), `params_only`
+  `app_params` (`handler(app, params).await`, most tools), `app_only` (`handler(app).await`, no params), `ctx_params`
+  (`handler(app, ctx, params).await`, for a handler that needs the caller or a dialog opener's stamp), `params_only`
   (`handler(params).await`, no `app` — `search`, `ai_search`), `sync_app` / `sync_app_params` (sync handlers, no
   `.await`), and `nav` / `nav_params` (the nav family, which routes several tools through one handler by passing the
   tool name). See the macro doc comment in `tools/registry.rs` for the full list.
@@ -141,14 +148,14 @@ covers every entry.
   structural test fails otherwise): a swallowed argument becomes a confident wrong answer. The gate reads one level, so
   a nested object checks itself. `apps/desktop/src-tauri/src/tools/DETAILS.md` § The schema gate.
 
-That's the whole change. No separate dispatch match and no hand-bumped tool count — the count and coverage tests are
-cheap guards over a property that's now true by construction.
+No separate dispatch match, and nothing else names the tool in Rust unless its `subject` is `Custom`.
 
 ### Step 3: handle the event in the frontend (if the tool emits one)
 
 If the handler emits a new Tauri event, add a parser plus dispatch for it in the frontend's MCP transport adapter,
 `apps/desktop/src/routes/(main)/mcp-listeners.ts` (`setupMcpListeners`). That adapter validate-parses each `mcp-*`
-payload into a typed command and dispatches on the command bus. No business logic lives there.
+payload into a typed command and dispatches on the command bus. No business logic lives there. Add the event's name to
+`FRONTEND_EVENTS` in `agent/chat/runtime/capability_tests.rs`, and a dialog opener's payload goes through `ctx.stamp`.
 
 ### Step 4: add tests
 
@@ -206,12 +213,13 @@ Every `/mcp` request needs the bearer token from `<data_dir>/mcp.token` (or `CMD
 When adding new tools, follow these principles:
 
 1. **Match user capabilities**: tools do only what a user can do through the UI.
-2. **No direct file access**: don't add `fs.read`, `fs.write`, or similar.
+2. **No raw file access**: don't add `fs.read`, `fs.write`, or similar. `inspect_file` is the bounded way in, and
+   anything yielding file contents passes `tools/sensitive.rs`.
 3. **No shell execution**: don't add `shell.run` or similar.
 4. **Validate all inputs**: check types, bounds, and sanitize strings.
 5. **Use events, not direct calls**: emit events the frontend handles.
-6. **Keep destructive shortcuts explicit**: a tool that bypasses the user's confirmation dialog must require an explicit
-   parameter such as `autoConfirm`; transport auth does not replace action-level intent.
+6. **No way past a person in a schema**: a tool opens a dialog (`Initiate`) or asks (`Sensitive`). `dialog_confirm` is
+   the one way past a person, and it's `DevOnly`; transport auth does not replace action-level intent.
 
 A `tests/security_tests.rs` check enforces the no-`fs.`/`shell.` rule and name charset for every tool in
 `get_all_tools()`, so a new tool is covered automatically.
@@ -250,7 +258,7 @@ cd apps/desktop/src-tauri && cargo check
 ### Tests failing
 
 ```bash
-cargo test mcp::tests::tool_registry_tests::schemas::test_my_action_schema -- --nocapture
+cargo test tools::tests::tool_registry_tests::schemas::test_my_action_schema -- --nocapture
 ```
 
 ### Events not reaching the frontend
@@ -262,5 +270,5 @@ cargo test mcp::tests::tool_registry_tests::schemas::test_my_action_schema -- --
 ### tools/list snapshot mismatch
 
 `tools/tests/tool_snapshot_tests.rs` pins the exact `tools/list` bytes. A mismatch means a schema, name, description, or
-the tool set changed. If the change is intentional, update the committed fixture; otherwise you drifted the wire output.
-</content>
+the tool set changed. If the change is intentional, regenerate the fixture with `UPDATE_SNAPSHOT=1` and read the diff;
+otherwise you drifted the wire output.

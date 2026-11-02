@@ -201,7 +201,7 @@ impl MediaIndex {
     ///
     /// Below [`ann::ANN_MIN_VECTORS`] stored vectors this is the exact brute-force
     /// scan over the resident CLIP cache; at or above it, the per-volume usearch
-    /// index answers (mmap view, over-fetch + exact re-rank — plan M6), and any
+    /// index answers (mmap view, over-fetch + exact re-rank), and any
     /// unusable index falls back to the exact scan while a background rebuild heals
     /// it. Callers never see the difference except in latency.
     pub fn search_semantic(&self, query: &[f32], k: usize) -> Vec<SemanticHit> {
@@ -251,7 +251,7 @@ impl MediaIndex {
             .collect()
     }
 
-    /// The ANN path (plan M6): over-fetch `k ×` [`ann::ANN_OVERFETCH_FACTOR`]
+    /// The ANN path: over-fetch `k ×` [`ann::ANN_OVERFETCH_FACTOR`]
     /// approximate candidates from the HNSW view, then re-rank them EXACTLY — read
     /// each candidate's stored f16 vector and CURRENT path from the DB and score
     /// with the same `cosine_f16` the brute-force scan uses — and return the top
@@ -367,7 +367,7 @@ impl MediaIndex {
 
             // Enrichment presence: a `media_status` row is what makes "indexed, no text
             // found" distinguishable from "never enriched". Joined to `media_file` for the
-            // path (plan M4).
+            // path.
             let mut stmt = conn.prepare(&format!(
                 "SELECT f.path FROM media_status s JOIN media_file f ON f.id = s.file_id
                  WHERE f.path IN ({placeholders})"
@@ -454,7 +454,7 @@ fn ocr_window(
     // `snippet(media_ocr, 2, ...)`: column 2 is `text` (0 is the UNINDEXED `file_id`,
     // 1 the UNINDEXED `source`). `[`/`]` mark the matched terms; `…` is the
     // ellipsis; 12 is the max snippet token count. The join maps the matched `file_id`
-    // back to its path (plan M4).
+    // back to its path.
     let mut stmt = conn.prepare(
         "SELECT f.path, snippet(media_ocr, 2, '[', ']', '…', 12) AS snip
          FROM media_ocr JOIN media_file f ON f.id = media_ocr.file_id

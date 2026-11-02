@@ -12,7 +12,7 @@ use cmdr_fs::volume::CopyScanResult;
 /// has completed. Pins the contract the FE relies on to recover its
 /// display state when scan events fire before listeners attach (the
 /// regression that flaked `mtp-copy-preflight-uses-cache.spec.ts` after
-/// M2a's watcher-backed oracle made scans nearly instant).
+/// the watcher-backed oracle made scans nearly instant).
 #[test]
 fn get_scan_preview_totals_returns_cached_counts_after_complete() {
     let engine = TestOperations::new();

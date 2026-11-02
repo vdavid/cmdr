@@ -502,7 +502,7 @@
             {/if}
             {#if provenance === 'nothingRead' || provenance === 'nameKept'}
                 <!-- Scannable per row, not only inferable from the evidence column: this is the
-                     state M4's "keep a neutral name" path lands in, and it must keep saying
+                     state the "keep a neutral name" path lands in, and it must keep saying
                      nothing inside the file was read. -->
                 <span class="badges">
                     <span

@@ -508,8 +508,8 @@ registry lives below `commands/` rather than inside the chat command.
 
 - The composer stages `AttachmentRef { path, kind }` chips (`askCmdrState.attachments`), sent with the next message and
   cleared after. They ride into the context envelope as `attached: <path> (<kind>)` on the latest user turn — **path +
-  kind only, structurally never contents** (the read-only privacy line). History user rows carry no chips (the refs were
-  envelope text, not stored blocks).
+  kind only, structurally never contents** (the egress line). History user rows carry no chips (the refs were envelope
+  text, not stored blocks).
 - **"Ask about selection"** (the paperclip button) calls its `readSelection` prop (`+page.svelte` →
   `ExplorerAPI.readSelectionAttachments` → `../file-explorer/pane/selection-attachments-read.ts`): the focused pane's
   WHOLE selection (or cursor item) as typed refs, resolved against the BACKEND listing, revision-checked, no filesystem
@@ -765,10 +765,10 @@ wrong name gets corrected in place.
   The backend's own wording is written for the model and stays in the log.
 - **The row's provenance state is scannable** (`rename-name-provenance.ts`, unit tested): `contentRead` (an image
   source, so the backend verified something was read), `nothingRead`, `nameKept` (nothing read AND the name didn't
-  change), `userEdited`. The last two badges exist because M4 tells the model to keep a neutral name when it couldn't
-  read a file, and that instruction is worthless if the user can't see which rows took that path — so the copy keeps
-  saying nothing inside the file was read, and never softens into something reassuring. A case-only change is a rename,
-  not a kept name.
+  change), `userEdited`. The last two badges exist because the prompt tells the model to keep a neutral name when it
+  couldn't read a file, and that instruction is worthless if the user can't see which rows took that path — so the copy
+  keeps saying nothing inside the file was read, and never softens into something reassuring. A case-only change is a
+  rename, not a kept name.
 - A `userEdited` row renders the label alone ("You typed this name"): its detail is empty by construction, because the
   user's name claims nothing and must never inherit the model's quote. Provenance in the operation log follows: a batch
   carrying one user-edited row is logged as `agentEdited`, not `agent`.

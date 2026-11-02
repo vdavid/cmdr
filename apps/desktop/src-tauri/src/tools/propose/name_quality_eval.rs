@@ -143,7 +143,7 @@ fn evaluate(fixture: &Fixture) -> Verdict {
             // metadata): the typed source already tells the human this name rests on something
             // other than the file's contents.
             //
-            // For an ImageText claim it is NOT correct, and that is the M1 regression this eval
+            // For an ImageText claim it is NOT correct, and that is the regression this eval
             // exists to catch: a quote accepted with nothing to locate it leaves the human the
             // model's own retyping and no way to weigh it.
             reviewable: fixture.claimed.0 != EvidenceSource::ImageText,
@@ -180,7 +180,7 @@ mod tests {
     /// must reach the human, carrying what they need to disagree — not be refused (impossible
     /// without understanding the image), and not arrive as a bare assertion either.
     ///
-    /// It fails if M1's coverage regresses: drop `EvidenceCoverage`, stop reporting the delivered
+    /// It fails if coverage regresses: drop `EvidenceCoverage`, stop reporting the delivered
     /// spelling, or return a match the offsets don't support, and `reviewable` goes false here
     /// while every existing unit test still passes.
     #[test]

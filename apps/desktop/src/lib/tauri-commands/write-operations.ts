@@ -106,7 +106,7 @@ export async function cancelScanPreview(previewId: string): Promise<void> {
 
 /** Returns the cached scan-preview totals if the scan has completed; `null` otherwise.
  * Used to recover FE display state when scan events fire before listeners attach
- * (M2a's watcher-backed oracle can finish in ~5 ms, beating the FE round-trip). */
+ * (the watcher-backed oracle can finish in ~5 ms, beating the FE round-trip). */
 export async function checkScanPreviewStatus(previewId: string): Promise<ScanPreviewTotals | null> {
   return commands.checkScanPreviewStatus(previewId)
 }

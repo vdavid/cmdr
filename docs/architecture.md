@@ -273,15 +273,13 @@ All under `apps/desktop/src-tauri/src/`.
   model that keeps opaque provider reasoning state lossless. Its `agent/store/proposals/` holds the durable proposal
   spine (sweeps, reviewable groups, ops, and the claim transaction that binds an approval to what the user saw), with
   `agent/suggested_ops/` as the service over it. Its `agent/wake/` is the proactive half: the pure noticing pipeline
-  plus the thread that owns the inbox, the timer, and the wakes it hands off. Its `agent/memory/` is the one place the
-  agent writes: a jailed, capped Markdown folder under the app data dir, fed back into every turn's prefix. Its
+  plus the thread that owns the inbox, the timer, and the wakes it hands off. Its `agent/memory/` is the agent's own
+  notes: a jailed, capped Markdown folder under the app data dir, fed back into every turn's prefix. Its
   `agent/outcomes.rs` closes the loop, recording what the user did with each proposal on the two channels that reach
-  them and the agent. Its `agent/tool_gate.rs` dispatches the top-level `tools/` toolset, gated by access tier (`Read`,
-  `Propose`, `Memory`, and `Session`, whose one tool, `connect_volume`, connects a saved place only on a turn the user
-  started, in one flight with the pane's own dial (`saved_servers/`), and `propose_server` stages a server for the user
-  to save, contacting nothing, which the user's click saves through the hub's own cores (`agent/suggested_ops/server/`);
-  invariant 7 in `apps/desktop/src-tauri/src/agent/DETAILS.md`); `tools/read/inspect/` is the one tool that reads file
-  contents, through `file_viewer`'s headless seam. See its `apps/desktop/src-tauri/src/agent/CLAUDE.md`
+  them and the agent. Its `agent/tool_gate.rs` dispatches the top-level `tools/` toolset, where `tools::policy::admit`
+  alone decides (`apps/desktop/src-tauri/src/tools/DETAILS.md` § The rule), and `agent/line/` says what the rail shows
+  of each call. The promise is in `apps/desktop/src-tauri/src/agent/DETAILS.md` § The promise. See its
+  `apps/desktop/src-tauri/src/agent/CLAUDE.md`
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher

@@ -86,10 +86,10 @@ overlapping `rustHeap`, and `physFootprintBytes` is the honest total. Per-tag `s
 readings, so a rename on either side can't silently line up the wrong rows (verified on macOS 27.0, a live dev instance,
 2026-09-22).
 
-The tool is `[AiClient]`, ungated, and ships in release builds on purpose: the interesting numbers only appear in a
-shipped build under a real workload. **A release older than the tool can't answer it** — there's no way to add a tool to
-a process that's already running, so a live instance predating it has to be measured with `vmmap` below and gets the
-tool at its next update. Implementation: `apps/desktop/src-tauri/src/tools/actions/memory.rs` over the
+The tool is `Read`, so both callers reach it, and it ships in release builds on purpose: the interesting numbers only
+appear in a shipped build under a real workload. **A release older than the tool can't answer it** — there's no way to
+add a tool to a process that's already running, so a live instance predating it has to be measured with `vmmap` below
+and gets the tool at its next update. Implementation: `apps/desktop/src-tauri/src/tools/actions/memory.rs` over the
 `get_memory_diagnostics` IPC command, whose module docs say how to read every field.
 
 ## Live bytes vs allocator slack

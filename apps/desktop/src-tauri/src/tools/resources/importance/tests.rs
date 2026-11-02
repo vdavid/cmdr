@@ -1,5 +1,5 @@
 //! `cmdr://importance` builder tests, over a real `importance.db` written through
-//! the store's own writer (no app, no index) — the M2 red→green targets.
+//! the store's own writer (no app, no index).
 //!
 //! Split by concern: the snapshot functions (the reads) and the pure text builders
 //! (the formatting an agent reads). The builders are the risky part — a wrong label

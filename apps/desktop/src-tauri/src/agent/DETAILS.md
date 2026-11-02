@@ -5,14 +5,12 @@ Pull-tier docs for `src-tauri/src/agent/`. Must-knows live in `CLAUDE.md`.
 The agent is the app's AI agent. Its design principles and its numbered decision log are at the end of this file
 (§ Principles, § Decision log); what's designed and unbuilt is in [GitHub issues labelled `ai`](https://github.com/vdavid/cmdr/issues?q=is%3Aopen+label%3Aai). Its first
 shipped slice is **Ask Cmdr**:
-a read-only chat rail where the user talks to a BYO-key LLM that can see what Cmdr already knows (the drive index,
-importance, the operation log, live app state) and answers questions about their files. It deliberately ships ahead of
-the agent's proactive machinery (wake loop, proposals, notifications) — the wow reaches beta users cheaply while the
-risky proactivity bakes.
+a chat rail where the user talks to a BYO-key LLM that can see what Cmdr already knows (the drive index, importance, the
+operation log, live app state), answers questions about their files, and works the app on a turn the user started.
 
 ## Why "agent", not "ask-cmdr"
 
-The persistent entity is "the agent" (agent decision D44); "Ask Cmdr" is the user-facing name of this one read-only slice.
+The persistent entity is "the agent" (agent decision D44); "Ask Cmdr" is the user-facing name of this slice.
 Naming the subsystem after the entity means the later proactive surfaces (proposals, notifications) grow inside `agent/`
 rather than forcing a rename. `name-internals-after-the-UI` still applies to the surfaces (`ask-cmdr/` on the frontend).
 
@@ -49,6 +47,21 @@ The backend modules:
   indexer's tap reaches it through a process-global channel and a prepared wake runs on its own thread, so neither the
   live loop nor the inbox is ever held across a model call. Depth: `wake/DETAILS.md`.
 
+## The promise
+
+**The agent can start anything. A person finishes anything sensitive.** This is the canonical statement; the matrix behind
+it is `../tools/DETAILS.md` § The rule, and `chat/runtime/capability_tests.rs` proves it through whole turns.
+
+- **On a turn the user started**, the agent works the app, opens the dialog or editor a person confirms, and asks a person
+  before anything `Sensitive`. Only `tag`, a named `mkdir` or `mkfile` (`LightWrite`, the one written exception, accepted by
+  David, including that `tag` has no undo), and its own memory folder change anything with no person.
+- **On a turn Cmdr started** (a wake, a follow-up), it reads and proposes, and writes only its memory folder.
+- **Nothing answers for a person.** No agent path reaches `dialog_confirm`, `resolve_conflict`, `queue_move_locked`, a
+  proposal's approval, or an Ask's yes, on any origin, and the agent never gets direct mode.
+- **Prompt injection**: the worst a malicious file can do is a weird suggestion in a review queue on a wake, and on a turn
+  the user started, a dialog or question a person declines, a tag, or a new folder. What a person confirms from an
+  agent-started dialog records `Initiator::Agent`, and the dialog arms before a keystroke counts.
+
 ## The agent can propose; only the user can approve
 
 A staged rename proposal is one group on the durable proposal spine, addressed by opaque id; the tool can stage one, but
@@ -58,8 +71,7 @@ no agent path can approve or apply it.
 action. There is no tool, and never will be a tool, that approves a proposal. Without that, `Propose` is `Write` with
 extra steps.
 
-The agent can look, speak, ask, write its own notes, and, when the user asks, connect a place they saved (principle 3):
-no tool in its dispatch view touches the user's files. Names, paths, and metadata reach the provider on every turn; file contents reach it only on request, through
+**What reaches the provider.** Names, paths, and metadata reach the provider on every turn; file contents reach it only on request, through
 three read tools whose egress the cloud AI disclosure names item by item: `search_photos` and `image_facts` (image-derived
 text) and `inspect_file` (bounded text windows, `find` lines, PDF pages plus title and author, one level of archive
 entry names, EXIF including GPS). No tool can return bytes: every result DTO is text-only by construction, each pinned
@@ -76,29 +88,27 @@ could ignore it. This is the privacy line, and it's structural: the one content 
 `CLOUD_AI_CONSENT_VERSION` bump (`ai::cloud_consent`), never a silent widening; `docs/security.md` § Cloud AI egress,
 the user-facing account, has to move with it.
 
-**`Access::Memory`: what the widening cost, and what holds it.** The agent's promise used to be "it never changes
-anything". `memory_write` and `memory_edit` made that false, so the promise narrowed to "it writes only into its own
-memory folder" — still structural, and held by three things rather than one. First, `memory/`'s jail: relative `.md`
+**`Access::Memory`: what holds it.** `memory_write` and `memory_edit` write only into the agent's own memory folder, held by
+three things. First, `memory/`'s jail: relative `.md`
 paths only, no `..`, no symlink anywhere along the chain, containment re-checked against a canonicalized parent.
 Second, a hand-authored allowlist (`EXPECTED_MEMORY_TOOL_NAMES`), for the same reason `Propose` has one: no
-structural check can prove a handler stays in the jail, so a human puts each name there having read it. Third, the
-folder is unreachable from the external MCP transport, whose own security story is "no filesystem access".
+structural check can prove a handler stays in the jail, so a human puts each name there having read it. Third, `admit`
+keeps an outside client out of it off direct mode.
 
-⚠️ The widening also opened an injection surface, because the write path is reachable from text the agent read
+⚠️ It's also an injection surface, because the write path is reachable from text the agent read
 (`image_facts` OCR, file names off disk) and what it writes reaches every later thread. The defences are in
 `memory/DETAILS.md` § The injection surface; don't weaken the fence in `chat/context/memory_notes.rs` or move memory
 into the system string without reading it.
 
-**`Access::Session`: the second widening, and what holds it.** "It writes only into its memory folder" gains "and it
-may connect a place you saved, when you ask". A connect touches no file and no config, but it reaches past the app: a
+**`Access::Session`: what holds it.** The agent may connect a place the user saved, when they ask. A connect touches no file and no config, but it reaches past the app: a
 sleeping NAS spins up its disks, and a server logs a login. So it is held by three things. First, the gate admits it
 only on a turn the user started (`text`, a retry included, which is a fresh send; `resume` is reserved and no
 production caller sets it; an action the user approved counts as theirs, per `docs/design-principles.md`); a wake or a
 follow-up gets a typed `refusedInBackground`
-(`tool_gate.rs`), reading the turn's own origin, never the opener's shape. Second, a hand-authored allowlist
+(`admit`), reading the turn's own origin, never the opener's shape. Second, a hand-authored allowlist
 (`EXPECTED_SESSION_TOOL_NAMES`), for the reason the other two have one. Third, what a `Session` tool may dial: a SAVED
 place, by volume id, with STORED credentials only. It can't add a host, type a password, or approve a key, which is
-exactly what an injected file name would want. `connect_volume` is the one tool on the allowlist
+exactly what an injected file name would want. `connect_volume` and `upgrade_smb_to_direct` are on the allowlist
 (`../tools/DETAILS.md` § Connecting a saved place). No egress moves, so consent doesn't either (invariant 8).
 
 **Where a proposal LIVES.** `store/proposals/`, the durable spine in `main.db`, for every verb including rename. Its
@@ -110,7 +120,7 @@ fresh one (`../tools/propose/DETAILS.md`).
 write, no silent config mutation, no self-approval. Because no structural check can prove a handler doesn't mutate,
 `Propose` tools are an explicit hand-authored allowlist (`EXPECTED_PROPOSE_TOOL_NAMES` in
 `../tools/tests/tool_registry_tests/access.rs`) rather than something inferred — adding one is a deliberate act a human signs off,
-having read the handler. It holds three names: `propose_rename_plan`, `propose_suggestions`, and `propose_server`
+having read the handler. It holds four names: `multi_rename`, `propose_rename_plan`, `propose_suggestions`, and `propose_server`
 (a server to save, or a change to a saved one: no secret in either direction, no contact with any server, and only on a
 turn the user started; `../tools/suggestions/DETAILS.md` § Proposing a server).
 
@@ -143,8 +153,10 @@ Each line is a pointer, not a restatement: the mechanism lives in the doc named 
 6. **A content claim needs a delivery the ledger recorded, in that thread.** Digests, envelopes, patterns, and
    summaries describe deliveries and are never deliveries. `../tools/propose/CLAUDE.md`, `../tools/propose/DETAILS.md`
    § Evidence.
-7. **The agent proposes; only the user approves.** Approval originates in the frontend as a user action, and there is
-   no tool that approves. The agent writes in one place only, its own memory folder (jailed and hand-allowlisted), and
+7. **The agent can start anything; a person finishes anything sensitive** (§ The promise). Approval originates in the
+   frontend as a user action, and no tool approves a proposal, confirms a dialog, or answers an Ask for the agent. It writes
+   with no person in two places only: `LightWrite` on a turn the user started, and its own memory folder (jailed and
+   hand-allowlisted). It
    opens a session in one way only: on a turn the user started, to a place the user saved, with credentials the user
    stored (`Access::Session`, hand-allowlisted). That session adds or edits no file, server, account, credential, pin,
    or setting; the saved place's own connection bookkeeping moves exactly as it does when the user connects it.
@@ -152,7 +164,7 @@ Each line is a pointer, not a restatement: the mechanism lives in the doc named 
    missing credential answers `needsCredentials` and raises nothing. A proposal may describe a server to save or a
    change to a saved one; it carries no secret, and only the user's approval saves it. `CLAUDE.md`, § The agent can
    propose above,
-   `memory/DETAILS.md`, `../tools/DETAILS.md` § The dispatch gate.
+   `../tools/DETAILS.md` § The rule, `memory/DETAILS.md`, `../tools/DETAILS.md` § The dispatch gate.
 8. **No new egress category without a `CLOUD_AI_CONSENT_VERSION` bump**, and no bump without revisiting the whole
    disclosure (`ai::cloud_consent`, `../ai/DETAILS.md` § Cloud AI consent). `CLAUDE.md`.
 9. **Every cut, cap, or trim is visible** in the result, the log, and (where the user could be misled) the UI.
@@ -177,11 +189,10 @@ These govern anything the decision log below doesn't answer. `(principle 3)` cit
    ❌ Never put a model in a per-event hot path.
 2. **The agent costs about nothing when nothing interesting happens.** No idle wakes, no heartbeat calls. Noise is
    absorbed deterministically and reaches the model only as one digest line at the next real wake.
-3. **Propose, never act.** No tool reaches the user's files; the only path to them is a proposal the user approves,
-   executed by the ordinary file-op pipeline. This is also the structural prompt-injection defense: the worst a
-   malicious file can do is produce a weird suggestion in a review queue. The two bounded exceptions are the agent's
-   own memory folder and, on a turn the user started, a session to a place the user saved (§ The agent can propose
-   above, invariant 7).
+3. **Start, never finish.** The agent can start anything; a person finishes anything sensitive, through a dialog, a
+   question, or a proposal, executed by the ordinary file-op pipeline. This is also the structural prompt-injection defense
+   (§ The promise). The bounded exceptions are `LightWrite`, the agent's own memory folder, and, on a turn the user started,
+   a session to a place the user saved (invariant 7).
 4. **Continuity through state, not transcript.** A wake gets a fresh, budgeted context assembled from the database and
    memory; only chat threads keep (bounded) transcripts.
 5. **Radical transparency, applied to the agent itself.** Every decision, proposal, and file read should be visible to
@@ -198,7 +209,7 @@ The agent's design decisions, numbered. **The numbers are load-bearing**: code c
 `agent decision D49`, so a number is never reused or renumbered. Each entry: the decision, its why, and its state today
 (built, superseded, or unbuilt). Unbuilt work lives in [GitHub issues labelled `ai`](https://github.com/vdavid/cmdr/issues?q=is%3Aopen+label%3Aai).
 
-Vocabulary: "the agent" is this feature; external MCP consumers are "AI clients"; any future sub-entity is a
+Vocabulary: "the agent" is this feature; external MCP clients are "outside clients" or "AI clients"; any future sub-entity is a
 "subagent". "AI" stays the umbrella for capabilities (the settings section, provider config, one-shot features).
 
 - **D1**: Two DB families: the per-volume drive index (a regenerable cache) and `main.db` (the durable catch-all). Why:
@@ -264,9 +275,10 @@ Vocabulary: "the agent" is this feature; external MCP consumers are "AI clients"
 - **D25**: Agent memory is separate from the user's rules, capped, and auditable. Why: "the user told me" and "I
   inferred" never blur. Built, at `<data-dir>/ai/memory/` rather than the planned `~/.cmdr/memory/`;
   `memory/DETAILS.md`.
-- **D26**: No direct write tools; proposals are the only write path, shared by every AI consumer. Why: safety by
-  construction, a structural injection defense, one consent surface. Built, and refined: the agent also writes its own
-  memory folder (`Access::Memory`), so the invariant is "nothing changes outside that folder".
+- **D26**: No tool finishes a write for a person: a dialog (on a turn the user started) and a proposal (batches and
+  background work) are the two paths, shared by every AI caller. Why: safety by construction, a structural injection
+  defense. Built, with two written exceptions: `LightWrite` and the memory folder. `dialog_confirm` is the one way past a
+  person, and it's `DevOnly`.
 - **D27**: A proposal freezes at creation: a pattern resolves to a concrete op list, and the pattern survives only as
   display text. Why: no drift between what was shown and what runs. Built (`store/proposals/DETAILS.md`).
 - **D28**: Per-op rows with their own statuses, so partial apply is reportable. Why: "apply 11, skip 3 stale" beats
@@ -315,9 +327,9 @@ Vocabulary: "the agent" is this feature; external MCP consumers are "AI clients"
   mustn't block the agent.
 - **D48**: A navigation-intent log is local-only, opt-out, with ~90-day retention. Why: high-signal input needs a
   privacy posture. Unbuilt.
-- **D49**: One tool registry, agent-first; AI clients get the same surface. Why: the interface stays natural for its
-  primary consumer, with one write path for all AI. Built: the agent extends the consolidated `mcp_tools!` registry
-  rather than forking a parallel table.
+- **D49**: One tool registry, agent-first; outside clients get the same surface. Why: the interface stays natural for its
+  primary caller, with one write path for all AI. Built: one `mcp_tools!` table with no per-caller list, where a tool is
+  reachable by both callers or its entry says why not (`../tools/DETAILS.md` § The rule).
 - **D50**: The index relocation migrates by moving files when cheap; a full rescan is the acceptable fallback. Why:
   kind to existing users without heavy migration code. Unbuilt (see D2).
 - **D51**: The agent is enabled from the onboarding AI step, gated on a working key, after the FDA step. Why: it meets
@@ -342,4 +354,5 @@ Vocabulary: "the agent" is this feature; external MCP consumers are "AI clients"
 - **D60**: User-granted autonomy is an auto-apply policy on the proposal pipeline's apply step (a Settings toggle,
   default off), never raw tool exposure; the toggle is changeable only in the Settings UI, never via `set_setting` or
   the agent. A CLI flag was rejected: it's invisible to whoever reviews what the app may do. Why: drop only the review
-  click, keep the audit and safety machinery, and make self-enabled autonomy impossible. Unbuilt.
+  click, keep the audit and safety machinery, and make self-enabled autonomy impossible. Unbuilt. `developer.mcpDirectMode`
+  is a different switch: it's for outside clients, and the agent never gets it.

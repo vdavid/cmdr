@@ -1009,8 +1009,8 @@ one delete per object, which needs a scan, byte progress, pause, cancel, conflic
   needs no data dir. The dialog's scan preview then feeds the cost line it shows
   (`apps/desktop/src-tauri/src/s3_costs/DETAILS.md`); a rename that starts without the dialog costs nothing worth a
   line.
-- **The MCP rename tool** (autoConfirm) calls `rename_file_replying`, so it takes F2's route; a `StillRunning` reply
-  becomes an `OK` saying the rename is still running.
+- **The `rename` tool** opens F2's editor, so it takes F2's route; `dialog_confirm rename` answers a `StillRunning`
+  reply as `stillRunning`.
 - **Bulk rename and Ask Cmdr's proposals** go through `start_renames`: every row's `rename_work` is asked (eight at a
   time; free on a volume that renames in one call), and a batch with any copying row runs as ONE move with the new names
   (`rename/bulk/by_move.rs`): the executor's dependency order (a chain moves its last link first), conflicts skipped (a
@@ -1072,8 +1072,8 @@ identical-looking twin beside the user's entry.
   "existed" (not rollbackable, like any overwrite); else the target is a new name, spelled the parent's way. Two or more
   look-alikes are refused as `DestinationExists` before anything is seeded. Replacing is safe because the dialog warned:
   its overwrite warning asks `destination_exists` (`transfer-dest-exists.svelte.ts`), which counts a look-alike via
-  `held_in_another_spelling`, and MCP auto-confirm refuses to proceed on the same answer. Cells:
-  `archive_edit/compress_remote_tests.rs`, `apps/desktop/src-tauri/src/commands/file_system/destination_exists_test.rs`.
+  `held_in_another_spelling`. Cells: `archive_edit/compress_remote_tests.rs`,
+  `apps/desktop/src-tauri/src/commands/file_system/destination_exists_test.rs`.
 - **The dialogs' existence probe**
   (`apps/desktop/src-tauri/src/commands/file_system/path_checks.rs::destination_exists`) is the look-alike-aware twin of
   `path_exists`, which stays byte-exact for the panes (a remembered path and the eviction poll then LIST the path, and a

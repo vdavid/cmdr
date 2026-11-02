@@ -211,7 +211,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     // Check if the scan already completed while we were awaiting the IPC return.
     // Events that arrived before previewId was set were dropped (isOurScanEvent returned false),
     // so we need to read the backend's cached totals and hydrate the dialog from them.
-    // Without this, M2a's watcher-backed oracle (a ~5 ms scan) lands its events
+    // Without this, the watcher-backed oracle (a ~5 ms scan) lands its events
     // before we register listeners and the dialog shows "✓ 0 files" forever.
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- may have changed during await
     if (isScanning) {
