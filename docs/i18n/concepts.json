@@ -1482,6 +1482,7 @@
     "distinct": ["git-branch", "git-commit"],
     "en": "detached",
     "match": ["detached"],
+    "notMatch": ["detached a drive"],
     "sense": "A git checkout sitting on one exact commit with no branch open (git's \"detached HEAD\")."
   },
   "git-dirty": {
@@ -3475,7 +3476,7 @@
     "en": "step",
     "match": ["step", "steps"],
     "note": "A bare Step label is the Multi-Rename counter's increment, not a stage.",
-    "notMatch": ["=step", "step per file", "minus step"],
+    "notMatch": ["=step", "step per file", "minus step", "step back", "step forward"],
     "sense": "One numbered stage of a multi-step flow: the onboarding wizard, a setup guide, an install, or an operation that runs in stages (Step 1 of 2: Compressing)."
   },
   "stop": {
@@ -4098,5 +4099,17 @@
     "match": ["type-to-jump", "switch to jump", "=jump"],
     "sense": "Cmdr’s Jump typing mode: typing in a pane moves the cursor to the best-matching name without hiding anything. The other mode is the quick filter. Not navigating to a typed path, and not the plain verb “jump to”.",
     "distinct": ["quick-filter", "go-to-path"]
+  },
+  "mcp-direct-mode": {
+    "distinct": ["direct-connection"],
+    "en": "direct mode",
+    "match": ["direct mode"],
+    "sense": "The MCP server setting that lets outside AI tools read file contents and confirm dialogs with no person involved. Nothing to do with Cmdr's direct SMB connection."
+  },
+  "private-key": {
+    "distinct": ["host-key", "password"],
+    "en": "private key",
+    "match": ["private key", "private keys"],
+    "sense": "The secret half of an SSH or other key pair, which Cmdr keeps away from the AI."
   }
 }

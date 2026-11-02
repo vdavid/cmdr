@@ -4234,11 +4234,7 @@
     "accept": ["крок"],
     "forms": "«Крок 1 з 4: …»",
     "confidence": "high",
-    "sources": "macOS live MapKit Step %d of %d → «Крок %d із %d»",
-    "exceptions": {
-      "askCmdr.tool.navBack.tried": "\"step back\" is the pane's Back navigation («перейти назад»), not a numbered step.",
-      "askCmdr.tool.navForward.tried": "\"step forward\" is the pane's Forward navigation («перейти вперед»), not a numbered step."
-    }
+    "sources": "macOS live MapKit Step %d of %d → «Крок %d із %d»"
   },
   "stop": {
     "chosen": "Зупинити",

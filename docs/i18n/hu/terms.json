@@ -1699,10 +1699,7 @@
     "chosen": "levált",
     "forms": "Detached at {id} → Levált állapot itt: {id}; the pill → (levált) {id} / (levált)",
     "confidence": "tentative",
-    "sources": "catalog (fileExplorer.git.tooltip.worktreeDetached); no pile source has detached HEAD (DC’s detached window → külön ablak is a different sense)",
-    "exceptions": {
-      "askCmdr.tool.eject.done": "English sense: “detached a drive” is ejecting or disconnecting it, so it takes the disconnect word (leválasztva)"
-    }
+    "sources": "catalog (fileExplorer.git.tooltip.worktreeDetached); no pile source has detached HEAD (DC’s detached window → külön ablak is a different sense)"
   },
   "git-unborn": {
     "chosen": "még nincs commit",
@@ -1841,11 +1838,7 @@
     "chosen": "lépés",
     "confidence": "high",
     "forms": "Step 1 of 2: X → 1/2. lépés: X (the AI install steps); the onboarding counter reads Lépés: 1/2",
-    "sources": "MS terminology (step → lépés); shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting)",
-    "exceptions": {
-      "askCmdr.tool.navForward.tried": "English sense: “step forward” is going forward in a pane’s history, not a numbered stage",
-      "askCmdr.tool.navBack.tried": "English sense: “step back” is going back in a pane’s history, not a numbered stage"
-    }
+    "sources": "MS terminology (step → lépés); shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting)"
   },
   "storage": {
     "chosen": "tárhely",

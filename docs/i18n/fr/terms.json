@@ -1556,9 +1556,6 @@
     "sources": "catalog (fileExplorer.git.tooltip.filesChanged, fileExplorer.git.tooltip.pinnedCommit); Double Commander doublecmd.po"
   },
   "git-detached": {
-    "exceptions": {
-      "askCmdr.tool.eject.done": "Detached a drive means ejecting or disconnecting it, unrelated to git: A déconnecté un disque"
-    },
     "accept": ["détachée"],
     "chosen": "détaché",
     "confidence": "high",
@@ -3299,10 +3296,6 @@
     "sources": "Feedback Assistant CommonStrings.loctable (STATUS_SECTION_TITLE → État); Bluetooth settings (État : %@)"
   },
   "step": {
-    "exceptions": {
-      "askCmdr.tool.navBack.tried": "Tried to step back is the pane’s Back, no numbered stage: revenir au dossier précédent",
-      "askCmdr.tool.navForward.tried": "Tried to step forward is the pane’s Forward, no numbered stage: passer au dossier suivant"
-    },
     "chosen": "étape",
     "accept": ["Étape"],
     "confidence": "high",

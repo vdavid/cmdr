@@ -3860,9 +3860,6 @@
   "git-detached": {
     "chosen": "losgelöst",
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.tool.eject.done": "Detached a drive is unmounting, not git’s detached HEAD."
-    },
     "accept": ["Losgelöst"],
     "forms": "pill → (losgelöst) {id}; sentence → Losgelöst bei {id}.",
     "sources": "git po/de.po („HEAD losgelöst bei “); catalog `fileExplorer.git.tooltip.worktreeDetached` „Losgelöst bei {id}“; reference pile has no git sense"

@@ -2128,10 +2128,7 @@
     ],
     "confidence": "tentative",
     "sources": "git's own po/ru.po (HEAD detached at → Отсоединённый указатель HEAD указывает на; detached HEAD → отделённый HEAD; (no branch) → (нет ветки)). No pile source has git",
-    "decision": "Git words",
-    "exceptions": {
-      "askCmdr.tool.eject.done": "English sense: “detached a drive” is ejecting or disconnecting it, so it takes the disconnect word (отключен)"
-    }
+    "decision": "Git words"
   },
   "git-unborn": {
     "chosen": "еще нет коммитов",
@@ -5062,11 +5059,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "Live macOS MapKit: Step %d of %d → Шаг %d из %d; AirPort Utility: Step %1$@ of %2$@: → Шаг %1$@ из %2$@:; MS: step → шаг",
-    "exceptions": {
-      "askCmdr.tool.navBack.tried": "English sense: “step back” is going back in a pane’s history, not a numbered stage",
-      "askCmdr.tool.navForward.tried": "English sense: “step forward” is going forward in a pane’s history, not a numbered stage"
-    }
+    "sources": "Live macOS MapKit: Step %d of %d → Шаг %d из %d; AirPort Utility: Step %1$@ of %2$@: → Шаг %1$@ из %2$@:; MS: step → шаг"
   },
   "stop": {
     "chosen": "Остановить",

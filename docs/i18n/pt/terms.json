@@ -1373,9 +1373,6 @@
   },
   "git-detached": {
     "chosen": "desanexado",
-    "exceptions": {
-      "askCmdr.tool.eject.done": "Detached a drive covers ejecting, unmounting, and disconnecting, so Desconectou um disco, not git’s detached HEAD."
-    },
     "accept": ["desanexad"],
     "forms": "masculine, agreeing with the implied HEAD: Desanexado em {id}; the pill → (desanexado) {id}",
     "confidence": "high",
@@ -2982,10 +2979,6 @@
   },
   "step": {
     "chosen": "etapa",
-    "exceptions": {
-      "askCmdr.tool.navBack.tried": "Step back is browser-style navigation, Tentou voltar, never a numbered stage.",
-      "askCmdr.tool.navForward.tried": "Step forward is browser-style navigation, Tentou avançar, never a numbered stage."
-    },
     "avoid": [
       {
         "form": "passo",

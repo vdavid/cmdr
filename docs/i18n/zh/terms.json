@@ -1508,9 +1508,6 @@
   "git-detached": {
     "chosen": "分离",
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.tool.eject.done": "English “Detached a drive” means ejecting, so 推出 (eject); the concept match is a false friend."
-    },
     "forms": "tooltip 分离状态，位于 {id}; the narrow pill （分离）{id}",
     "avoid": [
       {
@@ -3304,10 +3301,6 @@
     "chosen": "步",
     "accept": ["步骤"],
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.tool.navBack.tried": "English “step back” is pane navigation, 返回上一个文件夹, not a numbered stage.",
-      "askCmdr.tool.navForward.tried": "English “step forward” is pane navigation, 前进到下一个文件夹, not a numbered stage."
-    },
     "forms": "Step 1 of 2: X → 第 1 步，共 2 步：X; the standalone noun is 步骤 (MS terminology)",
     "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology (step → 步骤)"
   },

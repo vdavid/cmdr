@@ -1463,9 +1463,6 @@
     "sources": "MS terminology commit → incheckning / checka in; catalog fileExplorer.git.size.commits, tooltip.pinnedCommit"
   },
   "git-detached": {
-    "exceptions": {
-      "askCmdr.tool.eject.done": "A drive detached, not a git checkout: kopplade från is the software disconnect verb."
-    },
     "accept": ["frånkopplad"],
     "chosen": "frikopplad",
     "confidence": "high",

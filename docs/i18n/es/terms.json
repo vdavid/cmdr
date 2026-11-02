@@ -1527,10 +1527,7 @@
     "chosen": "desacoplado",
     "forms": "masculine, agreeing with the implied HEAD: Desacoplado en {id}; the pill → (desacoplado) {id}",
     "confidence": "high",
-    "sources": "git's own es.po (HEAD desacoplado, ×6); catalog (fileExplorer.git.tooltip.worktreeDetached Desacoplado en {id})",
-    "exceptions": {
-      "askCmdr.tool.eject.done": "A drive being disconnected, nothing to do with git: desconectar, as its doing and tried lines."
-    }
+    "sources": "git's own es.po (HEAD desacoplado, ×6); catalog (fileExplorer.git.tooltip.worktreeDetached Desacoplado en {id})"
   },
   "git-dirty": {
     "chosen": "con cambios",
@@ -3164,11 +3161,7 @@
     ],
     "confidence": "high",
     "forms": "Step 1 of 2: X → Paso 1 de 2: X",
-    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology gives etapa (tiebreak only)",
-    "exceptions": {
-      "askCmdr.tool.navBack.tried": "\"step back\" is the pane going back a folder, not a numbered stage: volver atrás.",
-      "askCmdr.tool.navForward.tried": "\"step forward\" is the pane going forward a folder, not a numbered stage: ir hacia adelante."
-    }
+    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology gives etapa (tiebreak only)"
   },
   "stop": {
     "chosen": "Detener",

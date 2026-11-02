@@ -1688,10 +1688,7 @@
     "chosen": "分離狀態",
     "confidence": "high",
     "forms": "detached at {id} → 分離狀態，位於 {id}; the narrow pill → （分離狀態）{id}",
-    "sources": "git CLI zh_TW.po (HEAD detached at → 開頭指標分離於, detached HEAD → 分離 HEAD 指標); catalog fileExplorer.git.tooltip.worktreeDetached (分離狀態，位於 {id})",
-    "exceptions": {
-      "askCmdr.tool.eject.done": "English sense: a drive coming off, not a git state, so 卸下."
-    }
+    "sources": "git CLI zh_TW.po (HEAD detached at → 開頭指標分離於, detached HEAD → 分離 HEAD 指標); catalog fileExplorer.git.tooltip.worktreeDetached (分離狀態，位於 {id})"
   },
   "git-dirty": {
     "avoid": [
@@ -3820,11 +3817,7 @@
     "accept": ["步驟"],
     "confidence": "high",
     "forms": "Step 1 of 2: X → 第 1 步（共 2 步）：X (the AI install steps); the onboarding counter reads 第 1 步，共 2 步; the standalone noun is 步驟 (MS terminology)",
-    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology (step → 步驟)",
-    "exceptions": {
-      "askCmdr.tool.navBack.tried": "Going back in the pane history: the catalog’s Back label 返回 (commands.navBack.label).",
-      "askCmdr.tool.navForward.tried": "Going forward in the pane history: the catalog’s Forward label 往前 (commands.navForward.label)."
-    }
+    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology (step → 步驟)"
   },
   "stop": {
     "accept": ["停"],

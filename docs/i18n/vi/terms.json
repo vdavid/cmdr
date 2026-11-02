@@ -1375,9 +1375,6 @@
     "sources": "dev loanword; no clean native UI source"
   },
   "git-detached": {
-    "exceptions": {
-      "askCmdr.tool.eject.done": "Detached a drive means ejecting or disconnecting it, unrelated to git: Đã tháo một ổ đĩa"
-    },
     "chosen": "tách rời",
     "confidence": "high",
     "forms": "Detached at X → Tách rời tại X; the chip’s (detached) → (tách rời)",
@@ -1913,10 +1910,6 @@
     "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
   },
   "step": {
-    "exceptions": {
-      "askCmdr.tool.navBack.tried": "\"Step back\" is going back in the folder history, not a numbered stage: trở lại thư mục trước",
-      "askCmdr.tool.navForward.tried": "\"Step forward\" is going forward in the folder history, not a numbered stage: đi tới thư mục tiếp theo"
-    },
     "chosen": "bước",
     "accept": ["Bước"],
     "confidence": "high",

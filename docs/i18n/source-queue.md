@@ -323,3 +323,12 @@ All (uk) unless noted.
   `servers.sheet.nfsOtherGidsTooMany`, concepts `badge` and `link`: same problems as the fr, es, nl, and pt entries
   above; zh-Hant wrote `要透過連結連到另一個伺服器`, `開啟篩選標記，沿用目前的樣式` (also wrong when the badge opens in
   Jump mode), `清除「跳至」的輸入內容`, and `這裡列出了 {count} 個` as best readings. (zh-Hant)
+- `askCmdr.tool.outcome.protected`, `askCmdr.tool.preview.status.protected`: both read "kept private", though one says
+  what happened and the other describes the file. Say in the descriptions if one phrase is fine, or word them apart.
+  (all)
+- `ai.cloudConsent.askCmdr.item.logs`: unclear whether "Documents" is the literal folder name (stays English) or an
+  example to localize. Say which in the description. (all)
+- Concept `credentials`: the sense says "a username and password pair", too narrow for
+  `ai.cloudConsent.askCmdr.protectedContents`'s "cloud and tool credentials" (tokens, key files). Widen it. (all)
+- `pnpm i18n:brief --lang pt` points at the European `_ignored/i18n/pt/` pile, while `docs/i18n/pt/style.md` requires
+  `pt-BR`. Point it at `_ignored/i18n/pt-BR/`. (pt)
