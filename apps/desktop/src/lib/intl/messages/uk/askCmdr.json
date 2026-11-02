@@ -409,11 +409,11 @@
   "@askCmdr.tool.outcome.toolUnavailable": {
     "sourceHash": "9d46d4e"
   },
-  "askCmdr.tool.outcome.inBackground": "waits for you to ask",
+  "askCmdr.tool.outcome.inBackground": "чекає на ваш запит",
   "@askCmdr.tool.outcome.inBackground": {
     "sourceHash": "9fbcafe"
   },
-  "askCmdr.tool.outcome.outcomeUnknown": "may still be going",
+  "askCmdr.tool.outcome.outcomeUnknown": "може ще тривати",
   "@askCmdr.tool.outcome.outcomeUnknown": {
     "sourceHash": "9cfa28d"
   },
@@ -629,13 +629,13 @@
   "@askCmdr.tool.preview.copyRefused": {
     "sourceHash": "5b856ff"
   },
-  "askCmdr.toolGroup.summary": "Переглянуто: {parts}",
+  "askCmdr.toolGroup.summary": "Опрацьовано: {parts}",
   "@askCmdr.toolGroup.summary": {
-    "sourceHash": "2808d11"
+    "sourceHash": "36aa191"
   },
-  "askCmdr.toolGroup.summaryRunning": "Перегляд: {parts}",
+  "askCmdr.toolGroup.summaryRunning": "Опрацювання: {parts}",
   "@askCmdr.toolGroup.summaryRunning": {
-    "sourceHash": "db287ea"
+    "sourceHash": "07bb931"
   },
   "askCmdr.toolGroup.folders": "{count, plural, one {{countText} папка} few {{countText} папки} many {{countText} папок} other {{countText} папки}}",
   "@askCmdr.toolGroup.folders": {
@@ -1429,651 +1429,651 @@
   "@askCmdr.railBoundary.closedToast": {
     "sourceHash": "18caa70"
   },
-  "askCmdr.tool.selectVolume.doing": "Switching a pane’s drive",
+  "askCmdr.tool.selectVolume.doing": "Зміна диска на панелі",
   "@askCmdr.tool.selectVolume.doing": {
     "sourceHash": "b02b8f9"
   },
-  "askCmdr.tool.selectVolume.done": "Switched a pane’s drive",
+  "askCmdr.tool.selectVolume.done": "Змінено диск на панелі",
   "@askCmdr.tool.selectVolume.done": {
     "sourceHash": "d18ed0e"
   },
-  "askCmdr.tool.selectVolume.tried": "Tried to switch a pane’s drive",
+  "askCmdr.tool.selectVolume.tried": "Спроба змінити диск на панелі",
   "@askCmdr.tool.selectVolume.tried": {
     "sourceHash": "de9108a"
   },
-  "askCmdr.tool.navToPath.doing": "Going to a folder",
+  "askCmdr.tool.navToPath.doing": "Перехід до папки",
   "@askCmdr.tool.navToPath.doing": {
     "sourceHash": "dbf8820"
   },
-  "askCmdr.tool.navToPath.done": "Went to a folder",
+  "askCmdr.tool.navToPath.done": "Перейдено до папки",
   "@askCmdr.tool.navToPath.done": {
     "sourceHash": "b59db66"
   },
-  "askCmdr.tool.navToPath.tried": "Tried to go to a folder",
+  "askCmdr.tool.navToPath.tried": "Спроба перейти до папки",
   "@askCmdr.tool.navToPath.tried": {
     "sourceHash": "3ddcff2"
   },
-  "askCmdr.tool.navToParent.doing": "Going up a folder",
+  "askCmdr.tool.navToParent.doing": "Перехід у батьківську папку",
   "@askCmdr.tool.navToParent.doing": {
     "sourceHash": "3280f0c"
   },
-  "askCmdr.tool.navToParent.done": "Went up a folder",
+  "askCmdr.tool.navToParent.done": "Перейдено в батьківську папку",
   "@askCmdr.tool.navToParent.done": {
     "sourceHash": "8779297"
   },
-  "askCmdr.tool.navToParent.tried": "Tried to go up a folder",
+  "askCmdr.tool.navToParent.tried": "Спроба перейти в батьківську папку",
   "@askCmdr.tool.navToParent.tried": {
     "sourceHash": "8088d5e"
   },
-  "askCmdr.tool.navBack.doing": "Stepping back",
+  "askCmdr.tool.navBack.doing": "Перехід назад",
   "@askCmdr.tool.navBack.doing": {
     "sourceHash": "b8e89aa"
   },
-  "askCmdr.tool.navBack.done": "Stepped back",
+  "askCmdr.tool.navBack.done": "Перейдено назад",
   "@askCmdr.tool.navBack.done": {
     "sourceHash": "76896a6"
   },
-  "askCmdr.tool.navBack.tried": "Tried to step back",
+  "askCmdr.tool.navBack.tried": "Спроба перейти назад",
   "@askCmdr.tool.navBack.tried": {
     "sourceHash": "02594af"
   },
-  "askCmdr.tool.navForward.doing": "Stepping forward",
+  "askCmdr.tool.navForward.doing": "Перехід уперед",
   "@askCmdr.tool.navForward.doing": {
     "sourceHash": "0c416a2"
   },
-  "askCmdr.tool.navForward.done": "Stepped forward",
+  "askCmdr.tool.navForward.done": "Перейдено вперед",
   "@askCmdr.tool.navForward.done": {
     "sourceHash": "2b8fbb7"
   },
-  "askCmdr.tool.navForward.tried": "Tried to step forward",
+  "askCmdr.tool.navForward.tried": "Спроба перейти вперед",
   "@askCmdr.tool.navForward.tried": {
     "sourceHash": "20d2a3c"
   },
-  "askCmdr.tool.scrollTo.doing": "Scrolling a pane",
+  "askCmdr.tool.scrollTo.doing": "Прокручування панелі",
   "@askCmdr.tool.scrollTo.doing": {
     "sourceHash": "b09900f"
   },
-  "askCmdr.tool.scrollTo.done": "Scrolled a pane",
+  "askCmdr.tool.scrollTo.done": "Прокручено панель",
   "@askCmdr.tool.scrollTo.done": {
     "sourceHash": "5067ed3"
   },
-  "askCmdr.tool.scrollTo.tried": "Tried to scroll a pane",
+  "askCmdr.tool.scrollTo.tried": "Спроба прокрутити панель",
   "@askCmdr.tool.scrollTo.tried": {
     "sourceHash": "c96b5f8"
   },
-  "askCmdr.tool.moveCursor.doing": "Moving the cursor",
+  "askCmdr.tool.moveCursor.doing": "Переміщення курсора",
   "@askCmdr.tool.moveCursor.doing": {
     "sourceHash": "90a9627"
   },
-  "askCmdr.tool.moveCursor.done": "Moved the cursor",
+  "askCmdr.tool.moveCursor.done": "Переміщено курсор",
   "@askCmdr.tool.moveCursor.done": {
     "sourceHash": "f0f8cc9"
   },
-  "askCmdr.tool.moveCursor.tried": "Tried to move the cursor",
+  "askCmdr.tool.moveCursor.tried": "Спроба перемістити курсор",
   "@askCmdr.tool.moveCursor.tried": {
     "sourceHash": "70b7cb0"
   },
-  "askCmdr.tool.openUnderCursor.doing": "Opening the highlighted item",
+  "askCmdr.tool.openUnderCursor.doing": "Відкриття елемента під курсором",
   "@askCmdr.tool.openUnderCursor.doing": {
     "sourceHash": "cdfffda"
   },
-  "askCmdr.tool.openUnderCursor.done": "Opened the highlighted item",
+  "askCmdr.tool.openUnderCursor.done": "Відкрито елемент під курсором",
   "@askCmdr.tool.openUnderCursor.done": {
     "sourceHash": "09c7e77"
   },
-  "askCmdr.tool.openUnderCursor.tried": "Tried to open the highlighted item",
+  "askCmdr.tool.openUnderCursor.tried": "Спроба відкрити елемент під курсором",
   "@askCmdr.tool.openUnderCursor.tried": {
     "sourceHash": "3dc0896"
   },
-  "askCmdr.tool.select.doing": "Selecting files",
+  "askCmdr.tool.select.doing": "Вибір файлів",
   "@askCmdr.tool.select.doing": {
     "sourceHash": "21aed4d"
   },
-  "askCmdr.tool.select.done": "Selected files",
+  "askCmdr.tool.select.done": "Вибрано файли",
   "@askCmdr.tool.select.done": {
     "sourceHash": "d9ac098"
   },
-  "askCmdr.tool.select.tried": "Tried to select files",
+  "askCmdr.tool.select.tried": "Спроба вибрати файли",
   "@askCmdr.tool.select.tried": {
     "sourceHash": "e87c070"
   },
-  "askCmdr.tool.copy.doing": "Opening the copy dialog",
+  "askCmdr.tool.copy.doing": "Відкриття діалогового вікна копіювання",
   "@askCmdr.tool.copy.doing": {
     "sourceHash": "f12697b"
   },
-  "askCmdr.tool.copy.done": "Opened the copy dialog",
+  "askCmdr.tool.copy.done": "Відкрито діалогове вікно копіювання",
   "@askCmdr.tool.copy.done": {
     "sourceHash": "08643aa"
   },
-  "askCmdr.tool.copy.tried": "Tried to open the copy dialog",
+  "askCmdr.tool.copy.tried": "Спроба відкрити діалогове вікно копіювання",
   "@askCmdr.tool.copy.tried": {
     "sourceHash": "ca20124"
   },
-  "askCmdr.tool.move.doing": "Opening the move dialog",
+  "askCmdr.tool.move.doing": "Відкриття діалогового вікна переміщення",
   "@askCmdr.tool.move.doing": {
     "sourceHash": "4320e9e"
   },
-  "askCmdr.tool.move.done": "Opened the move dialog",
+  "askCmdr.tool.move.done": "Відкрито діалогове вікно переміщення",
   "@askCmdr.tool.move.done": {
     "sourceHash": "dc9afd0"
   },
-  "askCmdr.tool.move.tried": "Tried to open the move dialog",
+  "askCmdr.tool.move.tried": "Спроба відкрити діалогове вікно переміщення",
   "@askCmdr.tool.move.tried": {
     "sourceHash": "6d259bf"
   },
-  "askCmdr.tool.compress.doing": "Opening the compress dialog",
+  "askCmdr.tool.compress.doing": "Відкриття діалогового вікна архівування",
   "@askCmdr.tool.compress.doing": {
     "sourceHash": "3a5f25d"
   },
-  "askCmdr.tool.compress.done": "Opened the compress dialog",
+  "askCmdr.tool.compress.done": "Відкрито діалогове вікно архівування",
   "@askCmdr.tool.compress.done": {
     "sourceHash": "486c68f"
   },
-  "askCmdr.tool.compress.tried": "Tried to open the compress dialog",
+  "askCmdr.tool.compress.tried": "Спроба відкрити діалогове вікно архівування",
   "@askCmdr.tool.compress.tried": {
     "sourceHash": "05ee679"
   },
-  "askCmdr.tool.delete.doing": "Opening the delete dialog",
+  "askCmdr.tool.delete.doing": "Відкриття діалогового вікна видалення",
   "@askCmdr.tool.delete.doing": {
     "sourceHash": "d32692c"
   },
-  "askCmdr.tool.delete.done": "Opened the delete dialog",
+  "askCmdr.tool.delete.done": "Відкрито діалогове вікно видалення",
   "@askCmdr.tool.delete.done": {
     "sourceHash": "bb1551b"
   },
-  "askCmdr.tool.delete.tried": "Tried to open the delete dialog",
+  "askCmdr.tool.delete.tried": "Спроба відкрити діалогове вікно видалення",
   "@askCmdr.tool.delete.tried": {
     "sourceHash": "f713143"
   },
-  "askCmdr.tool.rename.doing": "Opening the rename editor",
+  "askCmdr.tool.rename.doing": "Відкриття редактора перейменування",
   "@askCmdr.tool.rename.doing": {
     "sourceHash": "c808a09"
   },
-  "askCmdr.tool.rename.done": "Opened the rename editor",
+  "askCmdr.tool.rename.done": "Відкрито редактор перейменування",
   "@askCmdr.tool.rename.done": {
     "sourceHash": "4e17e71"
   },
-  "askCmdr.tool.rename.tried": "Tried to open the rename editor",
+  "askCmdr.tool.rename.tried": "Спроба відкрити редактор перейменування",
   "@askCmdr.tool.rename.tried": {
     "sourceHash": "576a72e"
   },
-  "askCmdr.tool.multiRename.doing": "Working out new names",
+  "askCmdr.tool.multiRename.doing": "Добір нових назв",
   "@askCmdr.tool.multiRename.doing": {
     "sourceHash": "67ddd5b"
   },
-  "askCmdr.tool.multiRename.done": "Worked out new names",
+  "askCmdr.tool.multiRename.done": "Дібрано нові назви",
   "@askCmdr.tool.multiRename.done": {
     "sourceHash": "27945de"
   },
-  "askCmdr.tool.multiRename.tried": "Tried to work out new names",
+  "askCmdr.tool.multiRename.tried": "Спроба дібрати нові назви",
   "@askCmdr.tool.multiRename.tried": {
     "sourceHash": "3595757"
   },
-  "askCmdr.tool.mkdir.doing": "Creating a folder",
+  "askCmdr.tool.mkdir.doing": "Створення папки",
   "@askCmdr.tool.mkdir.doing": {
     "sourceHash": "e1827e9"
   },
-  "askCmdr.tool.mkdir.done": "Created a folder",
+  "askCmdr.tool.mkdir.done": "Створено папку",
   "@askCmdr.tool.mkdir.done": {
     "sourceHash": "af38948"
   },
-  "askCmdr.tool.mkdir.tried": "Tried to create a folder",
+  "askCmdr.tool.mkdir.tried": "Спроба створити папку",
   "@askCmdr.tool.mkdir.tried": {
     "sourceHash": "ce4aae3"
   },
-  "askCmdr.tool.mkfile.doing": "Creating a file",
+  "askCmdr.tool.mkfile.doing": "Створення файлу",
   "@askCmdr.tool.mkfile.doing": {
     "sourceHash": "689cfca"
   },
-  "askCmdr.tool.mkfile.done": "Created a file",
+  "askCmdr.tool.mkfile.done": "Створено файл",
   "@askCmdr.tool.mkfile.done": {
     "sourceHash": "ca289f0"
   },
-  "askCmdr.tool.mkfile.tried": "Tried to create a file",
+  "askCmdr.tool.mkfile.tried": "Спроба створити файл",
   "@askCmdr.tool.mkfile.tried": {
     "sourceHash": "7d64656"
   },
-  "askCmdr.tool.refresh.doing": "Refreshing a pane",
+  "askCmdr.tool.refresh.doing": "Оновлення панелі",
   "@askCmdr.tool.refresh.doing": {
     "sourceHash": "1ff91da"
   },
-  "askCmdr.tool.refresh.done": "Refreshed a pane",
+  "askCmdr.tool.refresh.done": "Оновлено панель",
   "@askCmdr.tool.refresh.done": {
     "sourceHash": "04496fa"
   },
-  "askCmdr.tool.refresh.tried": "Tried to refresh a pane",
+  "askCmdr.tool.refresh.tried": "Спроба оновити панель",
   "@askCmdr.tool.refresh.tried": {
     "sourceHash": "0485890"
   },
-  "askCmdr.tool.tag.doing": "Changing Finder tags",
+  "askCmdr.tool.tag.doing": "Зміна тегів Finder",
   "@askCmdr.tool.tag.doing": {
     "sourceHash": "f5d1dc8"
   },
-  "askCmdr.tool.tag.done": "Changed Finder tags",
+  "askCmdr.tool.tag.done": "Змінено теги Finder",
   "@askCmdr.tool.tag.done": {
     "sourceHash": "49b80d2"
   },
-  "askCmdr.tool.tag.tried": "Tried to change Finder tags",
+  "askCmdr.tool.tag.tried": "Спроба змінити теги Finder",
   "@askCmdr.tool.tag.tried": {
     "sourceHash": "ec93cb8"
   },
-  "askCmdr.tool.toggleHidden.doing": "Changing whether hidden files show",
+  "askCmdr.tool.toggleHidden.doing": "Зміна показу прихованих файлів",
   "@askCmdr.tool.toggleHidden.doing": {
     "sourceHash": "24cc396"
   },
-  "askCmdr.tool.toggleHidden.done": "Changed whether hidden files show",
+  "askCmdr.tool.toggleHidden.done": "Змінено показ прихованих файлів",
   "@askCmdr.tool.toggleHidden.done": {
     "sourceHash": "cbb61cc"
   },
-  "askCmdr.tool.toggleHidden.tried": "Tried to change whether hidden files show",
+  "askCmdr.tool.toggleHidden.tried": "Спроба змінити показ прихованих файлів",
   "@askCmdr.tool.toggleHidden.tried": {
     "sourceHash": "e5d138f"
   },
-  "askCmdr.tool.setViewMode.doing": "Changing a pane’s view",
+  "askCmdr.tool.setViewMode.doing": "Зміна вигляду панелі",
   "@askCmdr.tool.setViewMode.doing": {
     "sourceHash": "3453107"
   },
-  "askCmdr.tool.setViewMode.done": "Changed a pane’s view",
+  "askCmdr.tool.setViewMode.done": "Змінено вигляд панелі",
   "@askCmdr.tool.setViewMode.done": {
     "sourceHash": "bd7a8d6"
   },
-  "askCmdr.tool.setViewMode.tried": "Tried to change a pane’s view",
+  "askCmdr.tool.setViewMode.tried": "Спроба змінити вигляд панелі",
   "@askCmdr.tool.setViewMode.tried": {
     "sourceHash": "f48bda1"
   },
-  "askCmdr.tool.sort.doing": "Sorting a pane",
+  "askCmdr.tool.sort.doing": "Сортування панелі",
   "@askCmdr.tool.sort.doing": {
     "sourceHash": "d5f69d2"
   },
-  "askCmdr.tool.sort.done": "Sorted a pane",
+  "askCmdr.tool.sort.done": "Відсортовано панель",
   "@askCmdr.tool.sort.done": {
     "sourceHash": "0127d82"
   },
-  "askCmdr.tool.sort.tried": "Tried to sort a pane",
+  "askCmdr.tool.sort.tried": "Спроба відсортувати панель",
   "@askCmdr.tool.sort.tried": {
     "sourceHash": "f8465cb"
   },
-  "askCmdr.tool.tab.doing": "Changing a pane’s tabs",
+  "askCmdr.tool.tab.doing": "Зміна вкладок панелі",
   "@askCmdr.tool.tab.doing": {
     "sourceHash": "60de709"
   },
-  "askCmdr.tool.tab.done": "Changed a pane’s tabs",
+  "askCmdr.tool.tab.done": "Змінено вкладки панелі",
   "@askCmdr.tool.tab.done": {
     "sourceHash": "6d0e53d"
   },
-  "askCmdr.tool.tab.tried": "Tried to change a pane’s tabs",
+  "askCmdr.tool.tab.tried": "Спроба змінити вкладки панелі",
   "@askCmdr.tool.tab.tried": {
     "sourceHash": "0dc72d7"
   },
-  "askCmdr.tool.dialog.doing": "Using a dialog",
+  "askCmdr.tool.dialog.doing": "Використання діалогового вікна",
   "@askCmdr.tool.dialog.doing": {
     "sourceHash": "db95cc2"
   },
-  "askCmdr.tool.dialog.done": "Used a dialog",
+  "askCmdr.tool.dialog.done": "Використано діалогове вікно",
   "@askCmdr.tool.dialog.done": {
     "sourceHash": "ae69f4d"
   },
-  "askCmdr.tool.dialog.tried": "Tried to use a dialog",
+  "askCmdr.tool.dialog.tried": "Спроба використати діалогове вікно",
   "@askCmdr.tool.dialog.tried": {
     "sourceHash": "0e8b968"
   },
-  "askCmdr.tool.openSearchDialog.doing": "Opening search",
+  "askCmdr.tool.openSearchDialog.doing": "Відкриття пошуку",
   "@askCmdr.tool.openSearchDialog.doing": {
     "sourceHash": "12dbca8"
   },
-  "askCmdr.tool.openSearchDialog.done": "Opened search",
+  "askCmdr.tool.openSearchDialog.done": "Відкрито пошук",
   "@askCmdr.tool.openSearchDialog.done": {
     "sourceHash": "408d2d6"
   },
-  "askCmdr.tool.openSearchDialog.tried": "Tried to open search",
+  "askCmdr.tool.openSearchDialog.tried": "Спроба відкрити пошук",
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "Quitting Cmdr",
+  "askCmdr.tool.quit.doing": "Завершення роботи Cmdr",
   "@askCmdr.tool.quit.doing": {
     "sourceHash": "b26d1c8"
   },
-  "askCmdr.tool.quit.done": "Asked Cmdr to quit",
+  "askCmdr.tool.quit.done": "Надіслано Cmdr запит на завершення роботи",
   "@askCmdr.tool.quit.done": {
     "sourceHash": "b9083af"
   },
-  "askCmdr.tool.quit.tried": "Tried to quit Cmdr",
+  "askCmdr.tool.quit.tried": "Спроба завершити роботу Cmdr",
   "@askCmdr.tool.quit.tried": {
     "sourceHash": "ab34547"
   },
-  "askCmdr.tool.switchPane.doing": "Switching panes",
+  "askCmdr.tool.switchPane.doing": "Перемикання панелі",
   "@askCmdr.tool.switchPane.doing": {
     "sourceHash": "ef8cd35"
   },
-  "askCmdr.tool.switchPane.done": "Switched panes",
+  "askCmdr.tool.switchPane.done": "Перемкнено панель",
   "@askCmdr.tool.switchPane.done": {
     "sourceHash": "c5d4f4e"
   },
-  "askCmdr.tool.switchPane.tried": "Tried to switch panes",
+  "askCmdr.tool.switchPane.tried": "Спроба перемкнути панель",
   "@askCmdr.tool.switchPane.tried": {
     "sourceHash": "59e64b4"
   },
-  "askCmdr.tool.swapPanes.doing": "Swapping the panes",
+  "askCmdr.tool.swapPanes.doing": "Обмін панелей місцями",
   "@askCmdr.tool.swapPanes.doing": {
     "sourceHash": "dc3eb2d"
   },
-  "askCmdr.tool.swapPanes.done": "Swapped the panes",
+  "askCmdr.tool.swapPanes.done": "Поміняно панелі місцями",
   "@askCmdr.tool.swapPanes.done": {
     "sourceHash": "75e181c"
   },
-  "askCmdr.tool.swapPanes.tried": "Tried to swap the panes",
+  "askCmdr.tool.swapPanes.tried": "Спроба поміняти панелі місцями",
   "@askCmdr.tool.swapPanes.tried": {
     "sourceHash": "acf2e50"
   },
-  "askCmdr.tool.aiSearch.doing": "Searching with AI",
+  "askCmdr.tool.aiSearch.doing": "Пошук за допомогою ШІ",
   "@askCmdr.tool.aiSearch.doing": {
     "sourceHash": "8a62bc1"
   },
-  "askCmdr.tool.aiSearch.done": "Searched with AI",
+  "askCmdr.tool.aiSearch.done": "Пошук за допомогою ШІ завершено",
   "@askCmdr.tool.aiSearch.done": {
     "sourceHash": "3140020"
   },
-  "askCmdr.tool.setSetting.doing": "Changing a setting",
+  "askCmdr.tool.setSetting.doing": "Зміна параметра",
   "@askCmdr.tool.setSetting.doing": {
     "sourceHash": "63af0fd"
   },
-  "askCmdr.tool.setSetting.done": "Changed a setting",
+  "askCmdr.tool.setSetting.done": "Змінено параметр",
   "@askCmdr.tool.setSetting.done": {
     "sourceHash": "e584650"
   },
-  "askCmdr.tool.setSetting.tried": "Tried to change a setting",
+  "askCmdr.tool.setSetting.tried": "Спроба змінити параметр",
   "@askCmdr.tool.setSetting.tried": {
     "sourceHash": "14df8c7"
   },
-  "askCmdr.tool.toolDetails.doing": "Reading how a tool works",
+  "askCmdr.tool.toolDetails.doing": "Читання про роботу інструмента",
   "@askCmdr.tool.toolDetails.doing": {
     "sourceHash": "2674ec0"
   },
-  "askCmdr.tool.toolDetails.done": "Read how a tool works",
+  "askCmdr.tool.toolDetails.done": "Прочитано про роботу інструмента",
   "@askCmdr.tool.toolDetails.done": {
     "sourceHash": "df55774"
   },
-  "askCmdr.tool.readResource.doing": "Reading Cmdr’s details",
+  "askCmdr.tool.readResource.doing": "Читання деталей про Cmdr",
   "@askCmdr.tool.readResource.doing": {
     "sourceHash": "fc4138a"
   },
-  "askCmdr.tool.readResource.done": "Read Cmdr’s details",
+  "askCmdr.tool.readResource.done": "Прочитано деталі про Cmdr",
   "@askCmdr.tool.readResource.done": {
     "sourceHash": "d3fa3e1"
   },
-  "askCmdr.tool.readResource.state.doing": "Looking at what’s open in Cmdr",
+  "askCmdr.tool.readResource.state.doing": "Перегляд того, що відкрито в Cmdr",
   "@askCmdr.tool.readResource.state.doing": {
     "sourceHash": "2e59e7e"
   },
-  "askCmdr.tool.readResource.state.done": "Looked at what’s open in Cmdr",
+  "askCmdr.tool.readResource.state.done": "Переглянуто те, що відкрито в Cmdr",
   "@askCmdr.tool.readResource.state.done": {
     "sourceHash": "df11436"
   },
-  "askCmdr.tool.readResource.dialogs.doing": "Checking which dialogs Cmdr has",
+  "askCmdr.tool.readResource.dialogs.doing": "Перевірка, які діалогові вікна є в Cmdr",
   "@askCmdr.tool.readResource.dialogs.doing": {
     "sourceHash": "4a2eeb2"
   },
-  "askCmdr.tool.readResource.dialogs.done": "Checked which dialogs Cmdr has",
+  "askCmdr.tool.readResource.dialogs.done": "Перевірено, які діалогові вікна є в Cmdr",
   "@askCmdr.tool.readResource.dialogs.done": {
     "sourceHash": "fb0068a"
   },
-  "askCmdr.tool.readResource.indexing.doing": "Checking drive indexing",
+  "askCmdr.tool.readResource.indexing.doing": "Перевірка індексування дисків",
   "@askCmdr.tool.readResource.indexing.doing": {
     "sourceHash": "f60df29"
   },
-  "askCmdr.tool.readResource.indexing.done": "Checked drive indexing",
+  "askCmdr.tool.readResource.indexing.done": "Перевірено індексування дисків",
   "@askCmdr.tool.readResource.indexing.done": {
     "sourceHash": "218ab6e"
   },
-  "askCmdr.tool.readResource.importance.doing": "Checking which folders matter",
+  "askCmdr.tool.readResource.importance.doing": "Перевірка, які папки важливі",
   "@askCmdr.tool.readResource.importance.doing": {
     "sourceHash": "f82cdf6"
   },
-  "askCmdr.tool.readResource.importance.done": "Checked which folders matter",
+  "askCmdr.tool.readResource.importance.done": "Перевірено, які папки важливі",
   "@askCmdr.tool.readResource.importance.done": {
     "sourceHash": "88f26b9"
   },
-  "askCmdr.tool.readResource.settings.doing": "Reading Cmdr’s settings",
+  "askCmdr.tool.readResource.settings.doing": "Читання параметрів Cmdr",
   "@askCmdr.tool.readResource.settings.doing": {
     "sourceHash": "612fd8e"
   },
-  "askCmdr.tool.readResource.settings.done": "Read Cmdr’s settings",
+  "askCmdr.tool.readResource.settings.done": "Прочитано параметри Cmdr",
   "@askCmdr.tool.readResource.settings.done": {
     "sourceHash": "064e6e7"
   },
-  "askCmdr.tool.readResource.logs.doing": "Reading Cmdr’s logs",
+  "askCmdr.tool.readResource.logs.doing": "Читання журналів Cmdr",
   "@askCmdr.tool.readResource.logs.doing": {
     "sourceHash": "1ae660b"
   },
-  "askCmdr.tool.readResource.logs.done": "Read Cmdr’s logs",
+  "askCmdr.tool.readResource.logs.done": "Прочитано журнали Cmdr",
   "@askCmdr.tool.readResource.logs.done": {
     "sourceHash": "feb72f1"
   },
-  "askCmdr.tool.readResource.tried": "Tried to read Cmdr’s details",
+  "askCmdr.tool.readResource.tried": "Спроба прочитати деталі про Cmdr",
   "@askCmdr.tool.readResource.tried": {
     "sourceHash": "345e6ff"
   },
-  "askCmdr.tool.indexing.doing": "Changing a drive’s indexing",
+  "askCmdr.tool.indexing.doing": "Зміна індексування диска",
   "@askCmdr.tool.indexing.doing": {
     "sourceHash": "0cb6fe3"
   },
-  "askCmdr.tool.indexing.done": "Changed a drive’s indexing",
+  "askCmdr.tool.indexing.done": "Змінено індексування диска",
   "@askCmdr.tool.indexing.done": {
     "sourceHash": "a7d4c42"
   },
-  "askCmdr.tool.indexing.tried": "Tried to change a drive’s indexing",
+  "askCmdr.tool.indexing.tried": "Спроба змінити індексування диска",
   "@askCmdr.tool.indexing.tried": {
     "sourceHash": "47c6703"
   },
-  "askCmdr.tool.queue.doing": "Adjusting running operations",
+  "askCmdr.tool.queue.doing": "Коригування операцій, що виконуються",
   "@askCmdr.tool.queue.doing": {
     "sourceHash": "7f264bc"
   },
-  "askCmdr.tool.queue.done": "Adjusted running operations",
+  "askCmdr.tool.queue.done": "Скориговано операції, що виконуються",
   "@askCmdr.tool.queue.done": {
     "sourceHash": "9d514ca"
   },
-  "askCmdr.tool.queue.tried": "Tried to adjust running operations",
+  "askCmdr.tool.queue.tried": "Спроба скоригувати операції, що виконуються",
   "@askCmdr.tool.queue.tried": {
     "sourceHash": "a3fd260"
   },
-  "askCmdr.tool.queueMoveLocked.doing": "Unlocking Locked items for a move",
+  "askCmdr.tool.queueMoveLocked.doing": "Відмикання замкнених елементів для переміщення",
   "@askCmdr.tool.queueMoveLocked.doing": {
     "sourceHash": "d21d66f"
   },
-  "askCmdr.tool.queueMoveLocked.done": "Unlocked Locked items for a move",
+  "askCmdr.tool.queueMoveLocked.done": "Відімкнено замкнені елементи для переміщення",
   "@askCmdr.tool.queueMoveLocked.done": {
     "sourceHash": "c526a08"
   },
-  "askCmdr.tool.queueMoveLocked.tried": "Tried to unlock Locked items for a move",
+  "askCmdr.tool.queueMoveLocked.tried": "Спроба відімкнути замкнені елементи для переміщення",
   "@askCmdr.tool.queueMoveLocked.tried": {
     "sourceHash": "a4eafda"
   },
-  "askCmdr.tool.dialogConfirm.doing": "Confirming a dialog",
+  "askCmdr.tool.dialogConfirm.doing": "Підтвердження діалогового вікна",
   "@askCmdr.tool.dialogConfirm.doing": {
     "sourceHash": "8dd9fec"
   },
-  "askCmdr.tool.dialogConfirm.done": "Confirmed a dialog",
+  "askCmdr.tool.dialogConfirm.done": "Підтверджено діалогове вікно",
   "@askCmdr.tool.dialogConfirm.done": {
     "sourceHash": "e8b7aa1"
   },
-  "askCmdr.tool.dialogConfirm.tried": "Tried to confirm a dialog",
+  "askCmdr.tool.dialogConfirm.tried": "Спроба підтвердити діалогове вікно",
   "@askCmdr.tool.dialogConfirm.tried": {
     "sourceHash": "04b9203"
   },
-  "askCmdr.tool.resolveConflict.doing": "Answering a name clash",
+  "askCmdr.tool.resolveConflict.doing": "Відповідь на конфлікт назв",
   "@askCmdr.tool.resolveConflict.doing": {
     "sourceHash": "32d516f"
   },
-  "askCmdr.tool.resolveConflict.done": "Answered a name clash",
+  "askCmdr.tool.resolveConflict.done": "Дано відповідь на конфлікт назв",
   "@askCmdr.tool.resolveConflict.done": {
     "sourceHash": "a88de7b"
   },
-  "askCmdr.tool.resolveConflict.tried": "Tried to answer a name clash",
+  "askCmdr.tool.resolveConflict.tried": "Спроба відповісти на конфлікт назв",
   "@askCmdr.tool.resolveConflict.tried": {
     "sourceHash": "4d098ef"
   },
-  "askCmdr.tool.unlock.doing": "Sending a password",
+  "askCmdr.tool.unlock.doing": "Надсилання пароля",
   "@askCmdr.tool.unlock.doing": {
     "sourceHash": "c7d516f"
   },
-  "askCmdr.tool.unlock.done": "Sent a password",
+  "askCmdr.tool.unlock.done": "Надіслано пароль",
   "@askCmdr.tool.unlock.done": {
     "sourceHash": "0c13633"
   },
-  "askCmdr.tool.unlock.tried": "Tried to send a password",
+  "askCmdr.tool.unlock.tried": "Спроба надіслати пароль",
   "@askCmdr.tool.unlock.tried": {
     "sourceHash": "e82e99a"
   },
-  "askCmdr.tool.favorites.doing": "Changing your favorites",
+  "askCmdr.tool.favorites.doing": "Зміна ваших улюблених",
   "@askCmdr.tool.favorites.doing": {
     "sourceHash": "e7a267b"
   },
-  "askCmdr.tool.favorites.done": "Changed your favorites",
+  "askCmdr.tool.favorites.done": "Змінено ваші улюблені",
   "@askCmdr.tool.favorites.done": {
     "sourceHash": "e5b7117"
   },
-  "askCmdr.tool.favorites.tried": "Tried to change your favorites",
+  "askCmdr.tool.favorites.tried": "Спроба змінити ваші улюблені",
   "@askCmdr.tool.favorites.tried": {
     "sourceHash": "cd7fc23"
   },
-  "askCmdr.tool.connectToServer.doing": "Adding a server",
+  "askCmdr.tool.connectToServer.doing": "Додавання сервера",
   "@askCmdr.tool.connectToServer.doing": {
     "sourceHash": "108385d"
   },
-  "askCmdr.tool.connectToServer.done": "Added a server",
+  "askCmdr.tool.connectToServer.done": "Додано сервер",
   "@askCmdr.tool.connectToServer.done": {
     "sourceHash": "9e4c43b"
   },
-  "askCmdr.tool.connectToServer.tried": "Tried to add a server",
+  "askCmdr.tool.connectToServer.tried": "Спроба додати сервер",
   "@askCmdr.tool.connectToServer.tried": {
     "sourceHash": "4d270a5"
   },
-  "askCmdr.tool.removeManualServer.doing": "Removing a server",
+  "askCmdr.tool.removeManualServer.doing": "Вилучення сервера",
   "@askCmdr.tool.removeManualServer.doing": {
     "sourceHash": "871c0c3"
   },
-  "askCmdr.tool.removeManualServer.done": "Removed a server",
+  "askCmdr.tool.removeManualServer.done": "Вилучено сервер",
   "@askCmdr.tool.removeManualServer.done": {
     "sourceHash": "2b85c19"
   },
-  "askCmdr.tool.removeManualServer.tried": "Tried to remove a server",
+  "askCmdr.tool.removeManualServer.tried": "Спроба вилучити сервер",
   "@askCmdr.tool.removeManualServer.tried": {
     "sourceHash": "d7749ce"
   },
-  "askCmdr.tool.upgradeSmbToDirect.doing": "Asking for a direct connection to a share",
+  "askCmdr.tool.upgradeSmbToDirect.doing": "Запит прямого підʼєднання до спільної папки",
   "@askCmdr.tool.upgradeSmbToDirect.doing": {
     "sourceHash": "a927be1"
   },
-  "askCmdr.tool.upgradeSmbToDirect.done": "Asked for a direct connection to a share",
+  "askCmdr.tool.upgradeSmbToDirect.done": "Запитано пряме підʼєднання до спільної папки",
   "@askCmdr.tool.upgradeSmbToDirect.done": {
     "sourceHash": "0b8f767"
   },
-  "askCmdr.tool.upgradeSmbToDirect.tried": "Tried to ask for a direct connection to a share",
+  "askCmdr.tool.upgradeSmbToDirect.tried": "Спроба запитати пряме підʼєднання до спільної папки",
   "@askCmdr.tool.upgradeSmbToDirect.tried": {
     "sourceHash": "fdaca5e"
   },
-  "askCmdr.tool.eject.doing": "Detaching a drive",
+  "askCmdr.tool.eject.doing": "Відʼєднання диска",
   "@askCmdr.tool.eject.doing": {
     "sourceHash": "bb735ba"
   },
-  "askCmdr.tool.eject.done": "Detached a drive",
+  "askCmdr.tool.eject.done": "Відʼєднано диск",
   "@askCmdr.tool.eject.done": {
     "sourceHash": "44306fb"
   },
-  "askCmdr.tool.eject.tried": "Tried to detach a drive",
+  "askCmdr.tool.eject.tried": "Спроба відʼєднати диск",
   "@askCmdr.tool.eject.tried": {
     "sourceHash": "4cbe93f"
   },
-  "askCmdr.tool.await.doing": "Waiting for Cmdr",
+  "askCmdr.tool.await.doing": "Очікування Cmdr",
   "@askCmdr.tool.await.doing": {
     "sourceHash": "3f28b35"
   },
-  "askCmdr.tool.await.done": "Waited for Cmdr",
+  "askCmdr.tool.await.done": "Очікування Cmdr завершено",
   "@askCmdr.tool.await.done": {
     "sourceHash": "049e100"
   },
-  "askCmdr.tool.goToLatestDownload.doing": "Going to your latest download",
+  "askCmdr.tool.goToLatestDownload.doing": "Перехід до останнього викачаного файлу",
   "@askCmdr.tool.goToLatestDownload.doing": {
     "sourceHash": "7a88382"
   },
-  "askCmdr.tool.goToLatestDownload.done": "Went to your latest download",
+  "askCmdr.tool.goToLatestDownload.done": "Перейдено до останнього викачаного файлу",
   "@askCmdr.tool.goToLatestDownload.done": {
     "sourceHash": "18c886c"
   },
-  "askCmdr.tool.goToLatestDownload.tried": "Tried to go to your latest download",
+  "askCmdr.tool.goToLatestDownload.tried": "Спроба перейти до останнього викачаного файлу",
   "@askCmdr.tool.goToLatestDownload.tried": {
     "sourceHash": "6c30209"
   },
-  "askCmdr.tool.operationsRollback.doing": "Opening the rollback dialog",
+  "askCmdr.tool.operationsRollback.doing": "Відкриття діалогового вікна відкату",
   "@askCmdr.tool.operationsRollback.doing": {
     "sourceHash": "c974842"
   },
-  "askCmdr.tool.operationsRollback.done": "Opened the rollback dialog",
+  "askCmdr.tool.operationsRollback.done": "Відкрито діалогове вікно відкату",
   "@askCmdr.tool.operationsRollback.done": {
     "sourceHash": "d70feb4"
   },
-  "askCmdr.tool.operationsRollback.tried": "Tried to open the rollback dialog",
+  "askCmdr.tool.operationsRollback.tried": "Спроба відкрити діалогове вікно відкату",
   "@askCmdr.tool.operationsRollback.tried": {
     "sourceHash": "419c9d2"
   },
-  "askCmdr.tool.memoryDiagnostics.doing": "Checking Cmdr’s memory use",
+  "askCmdr.tool.memoryDiagnostics.doing": "Перевірка, скільки памʼяті використовує Cmdr",
   "@askCmdr.tool.memoryDiagnostics.doing": {
     "sourceHash": "52f1541"
   },
-  "askCmdr.tool.memoryDiagnostics.done": "Checked Cmdr’s memory use",
+  "askCmdr.tool.memoryDiagnostics.done": "Перевірено, скільки памʼяті використовує Cmdr",
   "@askCmdr.tool.memoryDiagnostics.done": {
     "sourceHash": "f0485d9"
   },
-  "askCmdr.tool.cpuDiagnostics.doing": "Checking Cmdr’s CPU use",
+  "askCmdr.tool.cpuDiagnostics.doing": "Перевірка, скільки CPU використовує Cmdr",
   "@askCmdr.tool.cpuDiagnostics.doing": {
     "sourceHash": "d1330e2"
   },
-  "askCmdr.tool.cpuDiagnostics.done": "Checked Cmdr’s CPU use",
+  "askCmdr.tool.cpuDiagnostics.done": "Перевірено, скільки CPU використовує Cmdr",
   "@askCmdr.tool.cpuDiagnostics.done": {
     "sourceHash": "0393d6f"
   },
-  "askCmdr.tool.navToPath.place.doing": "Going to <place>{name}</place>",
+  "askCmdr.tool.navToPath.place.doing": "Перехід до папки <place>{name}</place>",
   "@askCmdr.tool.navToPath.place.doing": {
     "sourceHash": "0719a4d"
   },
-  "askCmdr.tool.navToPath.place.done": "Went to <place>{name}</place>",
+  "askCmdr.tool.navToPath.place.done": "Перейдено до папки <place>{name}</place>",
   "@askCmdr.tool.navToPath.place.done": {
     "sourceHash": "29b2a5d"
   },
-  "askCmdr.tool.navToPath.place.tried": "Tried to go to <place>{name}</place>",
+  "askCmdr.tool.navToPath.place.tried": "Спроба перейти до папки <place>{name}</place>",
   "@askCmdr.tool.navToPath.place.tried": {
     "sourceHash": "9974955"
   },
-  "askCmdr.tool.unlock.place.doing": "Sending the password for <place>{name}</place>",
+  "askCmdr.tool.unlock.place.doing": "Надсилання пароля: <place>{name}</place>",
   "@askCmdr.tool.unlock.place.doing": {
     "sourceHash": "1322d1d"
   },
-  "askCmdr.tool.unlock.place.done": "Sent the password for <place>{name}</place>",
+  "askCmdr.tool.unlock.place.done": "Надіслано пароль: <place>{name}</place>",
   "@askCmdr.tool.unlock.place.done": {
     "sourceHash": "8e0f9a5"
   },
-  "askCmdr.tool.unlock.place.tried": "Tried to send the password for <place>{name}</place>",
+  "askCmdr.tool.unlock.place.tried": "Спроба надіслати пароль: <place>{name}</place>",
   "@askCmdr.tool.unlock.place.tried": {
     "sourceHash": "3c519dd"
   },
-  "askCmdr.tool.mkdir.waiting": "Opened the new folder dialog",
+  "askCmdr.tool.mkdir.waiting": "Відкрито діалогове вікно нової папки",
   "@askCmdr.tool.mkdir.waiting": {
     "sourceHash": "fa83e05"
   },
-  "askCmdr.tool.mkfile.waiting": "Opened the new file dialog",
+  "askCmdr.tool.mkfile.waiting": "Відкрито діалогове вікно нового файлу",
   "@askCmdr.tool.mkfile.waiting": {
     "sourceHash": "651559c"
   },
-  "askCmdr.tool.outcome.awaitingPerson": "waiting for you",
+  "askCmdr.tool.outcome.awaitingPerson": "чекає на вас",
   "@askCmdr.tool.outcome.awaitingPerson": {
     "sourceHash": "7d49e28"
   },
-  "askCmdr.tool.outcome.declined": "you said no",
+  "askCmdr.tool.outcome.declined": "ви сказали «ні»",
   "@askCmdr.tool.outcome.declined": {
     "sourceHash": "b8fd119"
   },
-  "askCmdr.tool.outcome.protected": "kept private",
+  "askCmdr.tool.outcome.protected": "залишається приватним",
   "@askCmdr.tool.outcome.protected": {
     "sourceHash": "6a22c60"
   }

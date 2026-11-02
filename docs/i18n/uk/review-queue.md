@@ -195,3 +195,7 @@ record the outcome in `terms.json` or `decisions.md`).
   natural it reads.
 - **Jump badge clear** (`fileExplorer.typeToJump.clear`): «Очистити «Перехід»» needs a native check, since a screen
   reader drops the quotes.
+- **Stays home** (`ai.cloudConsent.askCmdr.protectedContents`): «Деякий вміст залишається вдома» keeps the English image
+  in a consent text; confirm it reads as "never leaves your Mac" to a native reader.
+- **Tool group header** (`askCmdr.toolGroup.summary`, `askCmdr.toolGroup.summaryRunning`): «Опрацьовано: 6 папок, 2
+  пошуки» and «Опрацювання: …» need a native check for how natural they read with counts.

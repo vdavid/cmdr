@@ -1494,19 +1494,19 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "Direct mode",
+  "settings.developer.mcpDirectMode.label": "Прямий режим",
   "@settings.developer.mcpDirectMode.label": {
     "sourceHash": "8273bcf"
   },
-  "settings.developer.mcpDirectMode.description": "Let connected AI tools read your files and confirm dialogs without asking you. Only turn this on while you’re testing or developing with them.",
+  "settings.developer.mcpDirectMode.description": "Дозволити підʼєднаним інструментам ШІ читати ваші файли й підтверджувати діалогові вікна, не питаючи вас. Вмикайте це лише на час тестування чи розробки з ними.",
   "@settings.developer.mcpDirectMode.description": {
     "sourceHash": "d85f109"
   },
-  "settings.developer.mcpDirectMode.keywords": "testing, automation, confirm, bypass, developer",
+  "settings.developer.mcpDirectMode.keywords": "тестування, автоматизація, автоматично, підтвердження, обхід, без запитань, розробник, розробка",
   "@settings.developer.mcpDirectMode.keywords": {
     "sourceHash": "285cb60"
   },
-  "settings.mcp.directModeThisSessionOnly": "Direct mode stays on until you quit Cmdr, since this computer can’t keep it safely across a restart.",
+  "settings.mcp.directModeThisSessionOnly": "Прямий режим залишається ввімкненим, доки ви не завершите Cmdr, бо цей компʼютер не може безпечно зберегти його після перезапуску.",
   "@settings.mcp.directModeThisSessionOnly": {
     "sourceHash": "f5d30da"
   },

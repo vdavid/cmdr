@@ -108,115 +108,115 @@
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "ui.startedElsewhere.agent": "Ask Cmdr started this.",
+  "ui.startedElsewhere.agent": "Це запустив Ask Cmdr.",
   "@ui.startedElsewhere.agent": {
     "sourceHash": "ca967be"
   },
-  "ui.startedElsewhere.aiClient": "An AI client started this.",
+  "ui.startedElsewhere.aiClient": "Це запустив клієнт ШІ.",
   "@ui.startedElsewhere.aiClient": {
     "sourceHash": "3c290c7"
   },
-  "ui.startedElsewhere.keysWait": "The keyboard waits until you stop typing.",
+  "ui.startedElsewhere.keysWait": "Клавіатура чекає, доки ви не припините вводити текст.",
   "@ui.startedElsewhere.keysWait": {
     "sourceHash": "ddc13ba"
   },
-  "ui.toolAsk.allow": "Allow",
+  "ui.toolAsk.allow": "Дозволити",
   "@ui.toolAsk.allow": {
     "sourceHash": "e213c16"
   },
-  "ui.toolAsk.decline": "Don’t allow",
+  "ui.toolAsk.decline": "Не дозволяти",
   "@ui.toolAsk.decline": {
     "sourceHash": "aeba8b1"
   },
-  "ui.toolAsk.openFile.title": "Open this file?",
+  "ui.toolAsk.openFile.title": "Відкрити цей файл?",
   "@ui.toolAsk.openFile.title": {
     "sourceHash": "41da881"
   },
-  "ui.toolAsk.openFile.body": "This opens {name} in {app}.",
+  "ui.toolAsk.openFile.body": "Буде відкрито файл «{name}» у програмі «{app}».",
   "@ui.toolAsk.openFile.body": {
     "sourceHash": "b0d7609"
   },
-  "ui.toolAsk.openFile.bodyUnknownApp": "This opens {name}, and Cmdr can’t tell which app that uses.",
+  "ui.toolAsk.openFile.bodyUnknownApp": "Буде відкрито файл «{name}», але Cmdr не може визначити, якою програмою.",
   "@ui.toolAsk.openFile.bodyUnknownApp": {
     "sourceHash": "82c1e2e"
   },
-  "ui.toolAsk.openBundle.title": "Run this bundle?",
+  "ui.toolAsk.openBundle.title": "Запустити цей пакет?",
   "@ui.toolAsk.openBundle.title": {
     "sourceHash": "ad2c442"
   },
-  "ui.toolAsk.openBundle.body": "{name} is a bundle, so opening it runs it as a program.",
+  "ui.toolAsk.openBundle.body": "«{name}» — це пакет, тож якщо його відкрити, він запуститься як програма.",
   "@ui.toolAsk.openBundle.body": {
     "sourceHash": "5643ed3"
   },
-  "ui.toolAsk.setSetting.title": "Change this setting?",
+  "ui.toolAsk.setSetting.title": "Змінити цей параметр?",
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
-  "ui.toolAsk.setSetting.body": "This changes {label} from {oldValue} to {newValue}.",
+  "ui.toolAsk.setSetting.body": "Буде змінено параметр «{label}». Було: {oldValue}. Стане: {newValue}.",
   "@ui.toolAsk.setSetting.body": {
     "sourceHash": "8831e19"
   },
-  "ui.toolAsk.setSetting.emptyValue": "nothing",
+  "ui.toolAsk.setSetting.emptyValue": "нічого",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"
   },
-  "ui.toolAsk.quit.title": "Quit Cmdr?",
+  "ui.toolAsk.quit.title": "Завершити Cmdr?",
   "@ui.toolAsk.quit.title": {
     "sourceHash": "b1f6e98"
   },
-  "ui.toolAsk.quit.body": "This closes Cmdr. If anything’s still running, you get to decide about that first.",
+  "ui.toolAsk.quit.body": "Cmdr закриється. Якщо щось ще виконується, ви спершу вирішите, що з цим робити.",
   "@ui.toolAsk.quit.body": {
     "sourceHash": "c1ca732"
   },
-  "ui.toolAsk.eject.title": "Eject this volume?",
+  "ui.toolAsk.eject.title": "Вийняти цей том?",
   "@ui.toolAsk.eject.title": {
     "sourceHash": "d0d7554"
   },
-  "ui.toolAsk.eject.body": "This ejects {name}.",
+  "ui.toolAsk.eject.body": "Буде вийнято том «{name}».",
   "@ui.toolAsk.eject.body": {
     "sourceHash": "56a93f1"
   },
-  "ui.toolAsk.eject.bodyWholeDisk": "This ejects the whole disk {name} is on, with every volume on it.",
+  "ui.toolAsk.eject.bodyWholeDisk": "Буде вийнято весь диск, де є том «{name}», разом з усіма іншими томами цього диска.",
   "@ui.toolAsk.eject.bodyWholeDisk": {
     "sourceHash": "0948b81"
   },
-  "ui.toolAsk.removeServer.title": "Remove this server?",
+  "ui.toolAsk.removeServer.title": "Вилучити цей сервер?",
   "@ui.toolAsk.removeServer.title": {
     "sourceHash": "6ec8216"
   },
-  "ui.toolAsk.removeServer.body": "This removes {name} from your saved servers.",
+  "ui.toolAsk.removeServer.body": "Сервер «{name}» буде вилучено зі збережених серверів.",
   "@ui.toolAsk.removeServer.body": {
     "sourceHash": "fd047ab"
   },
-  "ui.toolAsk.indexing.enable.title": "Turn indexing on?",
+  "ui.toolAsk.indexing.enable.title": "Увімкнути індексування?",
   "@ui.toolAsk.indexing.enable.title": {
     "sourceHash": "ef30ae9"
   },
-  "ui.toolAsk.indexing.enable.body": "This turns indexing on for {name} and starts scanning it.",
+  "ui.toolAsk.indexing.enable.body": "Для тому «{name}» буде ввімкнено індексування й почнеться сканування.",
   "@ui.toolAsk.indexing.enable.body": {
     "sourceHash": "028739c"
   },
-  "ui.toolAsk.indexing.disable.title": "Turn indexing off?",
+  "ui.toolAsk.indexing.disable.title": "Вимкнути індексування?",
   "@ui.toolAsk.indexing.disable.title": {
     "sourceHash": "edfb775"
   },
-  "ui.toolAsk.indexing.disable.body": "This turns indexing off for {name}, and keeps what it has indexed so far.",
+  "ui.toolAsk.indexing.disable.body": "Для тому «{name}» буде вимкнено індексування, а вже проіндексоване збережеться.",
   "@ui.toolAsk.indexing.disable.body": {
     "sourceHash": "d9c8371"
   },
-  "ui.toolAsk.indexing.rescan.title": "Scan this volume again?",
+  "ui.toolAsk.indexing.rescan.title": "Просканувати цей том ще раз?",
   "@ui.toolAsk.indexing.rescan.title": {
     "sourceHash": "f6e08c5"
   },
-  "ui.toolAsk.indexing.rescan.body": "This scans all of {name} again, which can take a while.",
+  "ui.toolAsk.indexing.rescan.body": "Том «{name}» буде проскановано повністю ще раз, і це може зайняти деякий час.",
   "@ui.toolAsk.indexing.rescan.body": {
     "sourceHash": "c3484a9"
   },
-  "ui.toolAsk.indexing.forget.title": "Forget this index?",
+  "ui.toolAsk.indexing.forget.title": "Забути цей індекс?",
   "@ui.toolAsk.indexing.forget.title": {
     "sourceHash": "2a861bd"
   },
-  "ui.toolAsk.indexing.forget.body": "This deletes the index of {name}. The files on it stay where they are.",
+  "ui.toolAsk.indexing.forget.body": "Індекс тому «{name}» буде видалено. Файли на цьому томі залишаться на місці.",
   "@ui.toolAsk.indexing.forget.body": {
     "sourceHash": "f9c5160"
   },

@@ -1221,7 +1221,8 @@
     "chosen": "пряме підʼєднання",
     "accept": ["прям", "напряму", "безпосередн"],
     "confidence": "tentative",
-    "sources": "MS (direct connect → пряме підключення); connect ruling (підʼєднати, macOS Finder and AppKit); no source names Cmdr's own SMB path"
+    "sources": "MS (direct connect → пряме підключення); connect ruling (підʼєднати, macOS Finder and AppKit); no source names Cmdr's own SMB path",
+    "note": "MCP direct mode is «Прямий режим» on the same root (settings.developer.mcpDirectMode.label)."
   },
   "directory-hotlist": {
     "chosen": "Обрані директорії",
@@ -2354,7 +2355,10 @@
     "chosen": "Докладніше",
     "accept": ["докладн"],
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged (Learn More → Докладніше); live Home (Learn more → Докладніше)"
+    "sources": "macOS Finder LocalizableMerged (Learn More → Докладніше); live Home (Learn more → Докладніше)",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.contentsRule": "\"needs to know more about a file\" is plain prose («знати про файл більше»), not the Learn more link."
+    }
   },
   "leave-alone": {
     "chosen": "залишити як є",
@@ -4121,7 +4125,7 @@
   },
   "sort": {
     "chosen": "Сортувати",
-    "accept": ["сорту", "зростан", "спадан"],
+    "accept": ["сорту", "сортов", "зростан", "спадан"],
     "forms": "«Сортувати за:»; ascending «За зростанням», descending «За спаданням»",
     "confidence": "high",
     "sources": "macOS Finder Sort By: → «Сортувати за:», Sort by Name → «Сортувати за назвою»; live AMPDesktopUI Ascending → «За зростанням»; Dolphin Descending → «За спаданням»"
@@ -4230,7 +4234,11 @@
     "accept": ["крок"],
     "forms": "«Крок 1 з 4: …»",
     "confidence": "high",
-    "sources": "macOS live MapKit Step %d of %d → «Крок %d із %d»"
+    "sources": "macOS live MapKit Step %d of %d → «Крок %d із %d»",
+    "exceptions": {
+      "askCmdr.tool.navBack.tried": "\"step back\" is the pane's Back navigation («перейти назад»), not a numbered step.",
+      "askCmdr.tool.navForward.tried": "\"step forward\" is the pane's Forward navigation («перейти вперед»), not a numbered step."
+    }
   },
   "stop": {
     "chosen": "Зупинити",
@@ -4239,7 +4247,8 @@
     "confidence": "high",
     "sources": "macOS Finder Stop → «Зупинити»; AppKit stop → «зупинити»; live PrintKit Stopped → «Зупинено»",
     "exceptions": {
-      "multiRename.error.timedOut": "\"stopped waiting\" is giving up a wait («перестав чекати»), not the Stop command"
+      "multiRename.error.timedOut": "\"stopped waiting\" is giving up a wait («перестав чекати»), not the Stop command",
+      "ui.startedElsewhere.keysWait": "\"stop typing\" is the person pausing («припините вводити»), not the Stop command"
     }
   },
   "storage": {

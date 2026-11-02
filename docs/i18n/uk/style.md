@@ -51,9 +51,9 @@ The must-know rules; the rest of this file elaborates them.
   `Емодзі та символи`, `Повноекранний режим`, `Доступність` (Accessibility), `Експертні` (Finder's Advanced tab),
   `Спільний доступ і привілеї`, `Сховати решту`, `Повернути назад` (Put Back), `Стартовий диск`, `Панель стану`. Apple
   app names localized in Ukrainian: `Термінал`, `Мініредактор` (TextEdit), `Ключар` (Keychain Access),
-  `Монітор активності`, `Дискова утиліта` / `Швидка допомога` (First Aid). Kept Latin: Finder, Dock, Spotlight, Mission
-  Control, AirDrop, iCloud Drive, Time Machine. Verify any other macOS label in the pile or the live bundle before
-  quoting it.
+  `Монітор активності`, `Дискова утиліта` / `Швидка допомога` (First Aid), `Пошта`, `Повідомлення`, `Нотатки` (Mail,
+  Messages, Notes; live bundles). Kept Latin: Finder, Dock, Spotlight, Mission Control, AirDrop, iCloud Drive, Time
+  Machine. Verify any other macOS label in the pile or the live bundle before quoting it.
 - **Product vocabulary** (rulings in `terms.json`): item → `елемент` (macOS, ❌ not `обʼєкт`); delete → `Видалити`,
   remove from a list → `Вилучити` (macOS keeps the two apart); Undo → `Відмінити`, Cancel → `Скасувати` (macOS keeps
   these apart too); Settings → `Параметри`; folder → `папка` (❌ not `тека`, the GNOME word); pane → `панель`; tab →
@@ -61,9 +61,9 @@ The must-know rules; the rest of this file elaborates them.
   / upload → `викачати` / `закачати` (macOS); name (a file's) → `назва`, a person's or account name → `імʼя`; Resume →
   `Поновити`; Pause → `Призупинити`; Merge → `Обʼєднати`; app → `програма` (❌ not `застосунок` / `додаток`, macOS and
   Microsoft agree); default → `типовий` (❌ not `за замовчуванням`, a Russian calque); select / choose → `вибрати`,
-  selected → `вибрано`; mount → `змонтувати`; permissions → `привілеї`. Ask Cmdr stays verbatim and takes no case
-  ending: put case on a head noun (`у вікні Ask Cmdr`). click → `натиснути` / `клацнути`; double-click →
-  `двічі клацнути`.
+  selected → `вибрано`; mount → `змонтувати`; permissions → `привілеї`; private key → `приватний ключ` (live Keychain
+  Access, ❌ not Microsoft's `закритий ключ`). Ask Cmdr stays verbatim and takes no case ending: put case on a head noun
+  (`у вікні Ask Cmdr`). click → `натиснути` / `клацнути`; double-click → `двічі клацнути`.
 - **Placeholders**: a `{name}`, `{path}`, `{server}`, `{app}` can't decline and has no known gender. Keep it nominative:
   a type noun in front (`папка {name}`, `сервер «{server}»`), a quoted name like Finder (`Перейменувати «{name}»`), a
   label colon (`Пропущено: {name}`), or the sentence subject in the present tense. ❌ Never a bare insert where
