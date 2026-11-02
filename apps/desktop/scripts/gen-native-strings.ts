@@ -17,10 +17,17 @@
  * table and the freshness check would report permanent phantom drift.
  */
 
-import { writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listLocales, loadCatalog } from './i18n-catalog-lib.ts'
-import { buildNativeStrings, emitRustModule, NATIVE_KEY_PREFIXES } from './gen-native-strings-lib.ts'
+import {
+  buildNativeStrings,
+  emitLocalizableStrings,
+  emitRustModule,
+  finderMenuTitles,
+  NATIVE_KEY_PREFIXES,
+  replaceServiceMenuItem,
+} from './gen-native-strings-lib.ts'
 
 const desktopDir = join(import.meta.dirname, '..')
 const outFile = join(desktopDir, 'src-tauri', 'src', 'intl', 'native_strings.gen.rs')
@@ -30,6 +37,19 @@ for (const locale of listLocales()) catalogs[locale] = loadCatalog(locale).messa
 
 const table = buildNativeStrings(catalogs)
 writeFileSync(outFile, emitRustModule(table))
+
+// The Finder menu item macOS draws from files, not from Rust: the service's title in the app's
+// `Info.plist`, and the extension's own strings. `DETAILS.md` in `finder-extension/`.
+const titles = finderMenuTitles(catalogs)
+const infoPlist = join(desktopDir, 'src-tauri', 'Info.plist')
+writeFileSync(infoPlist, replaceServiceMenuItem(readFileSync(infoPlist, 'utf8'), titles))
+const stringsRoot = join(desktopDir, 'finder-extension', 'lproj')
+rmSync(stringsRoot, { recursive: true, force: true })
+for (const { lproj, title } of titles) {
+  const dir = join(stringsRoot, `${lproj}.lproj`)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'Localizable.strings'), emitLocalizableStrings(title))
+}
 
 const english = table.find((locale) => locale.tag === 'en')?.entries.length ?? 0
 const translated = table.filter((locale) => locale.tag !== 'en' && locale.entries.length > 0).map((l) => l.tag)

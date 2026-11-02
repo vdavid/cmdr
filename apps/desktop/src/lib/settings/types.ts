@@ -463,6 +463,7 @@ export interface SettingsValues {
    * cooldown, stamped by `#lib/reveal/reveal-nudge`. macOS-only.
    */
   'behavior.revealNudgeOfferedAt': string
+  'behavior.finderExtensionNudgeOfferedAt': string
 
   /**
    * Whether the once-ever notice that fires the FIRST time a reveal from another

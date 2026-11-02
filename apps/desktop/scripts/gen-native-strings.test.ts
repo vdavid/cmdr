@@ -10,6 +10,10 @@
  */
 import { describe, it, expect } from 'vitest'
 import {
+  appleLanguageName,
+  emitLocalizableStrings,
+  finderMenuTitles,
+  replaceServiceMenuItem,
   buildNativeStrings,
   emitRustModule,
   isNativeKey,
@@ -100,5 +104,62 @@ describe('emitRustModule', () => {
   it('writes an empty slice rather than an empty block for a locale with no entries', () => {
     const rust = emitRustModule(buildNativeStrings({ hu: {} }))
     expect(rust).toContain('entries: &[],')
+  })
+})
+
+describe('the Finder menu item', () => {
+  const key = 'settings.finderExtension.card'
+
+  it('names Simplified Chinese the way macOS does', () => {
+    expect(appleLanguageName('zh')).toBe('zh-Hans')
+    expect(appleLanguageName('zh-Hant')).toBe('zh-Hant')
+    expect(appleLanguageName('de')).toBe('de')
+  })
+
+  it('puts English first and leaves out what falls back to it anyway', () => {
+    const titles = finderMenuTitles({
+      sv: { [key]: 'Öppna i Cmdr' },
+      en: { [key]: 'Open in Cmdr' },
+      nl: { [key]: 'Open in Cmdr' },
+      de: { [key]: 'In Cmdr öffnen' },
+      'en-XA': { [key]: 'Ōpēn' },
+      fr: {},
+    })
+    expect(titles).toEqual([
+      { lproj: 'en', title: 'Open in Cmdr' },
+      { lproj: 'de', title: 'In Cmdr öffnen' },
+      { lproj: 'sv', title: 'Öppna i Cmdr' },
+    ])
+  })
+
+  it('refuses to generate from a catalog with no English title', () => {
+    expect(() => finderMenuTitles({ de: { [key]: 'x' } })).toThrow()
+  })
+
+  it('keys each strings file by the English title and escapes its value', () => {
+    expect(emitLocalizableStrings('In Cmdr "öffnen"')).toContain('"Open in Cmdr" = "In Cmdr \\"öffnen\\"";')
+  })
+
+  it('rewrites only the block between its markers, the same way every time', () => {
+    const plist = 'a <!-- generated: pnpm intl:native-strings -->\nold\n<!-- end generated --> b'
+    const once = replaceServiceMenuItem(plist, [
+      { lproj: 'en', title: 'Open in Cmdr' },
+      { lproj: 'de', title: 'A & B' },
+    ])
+    expect(once).toContain('<key>default</key>')
+    expect(once).toContain('<key>de</key>')
+    expect(once).toContain('<string>A &amp; B</string>')
+    expect(once).not.toContain('old')
+    expect(once.endsWith('<!-- end generated --> b')).toBe(true)
+    expect(
+      replaceServiceMenuItem(once, [
+        { lproj: 'en', title: 'Open in Cmdr' },
+        { lproj: 'de', title: 'A & B' },
+      ]),
+    ).toBe(once)
+  })
+
+  it('throws when the markers are gone, so a bad merge can not ship an English-only menu', () => {
+    expect(() => replaceServiceMenuItem('no markers', [])).toThrow()
   })
 })

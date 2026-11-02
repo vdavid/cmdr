@@ -2114,7 +2114,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
             ("menu.app.licenseEnter", "Ввести ліцензійний ключ…"),
             ("menu.app.onboarding", "Початкове налаштування…"),
             ("menu.app.quit", "Завершити Cmdr"),
-            ("menu.app.services", "Сервіси"),
+            ("menu.app.services", "Служби"),
             ("menu.app.settings", "Параметри…"),
             ("menu.app.showAll", "Показати всі"),
             ("menu.bar.edit", "Редагування"),

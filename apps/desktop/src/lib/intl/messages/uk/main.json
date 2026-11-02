@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "Додати «Відкрити у Cmdr» до контекстного меню Finder?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Так Cmdr буде на відстані одного клацання від будь-якого файлу чи папки на стартовому диску. Додається невеликий процес, який працює поруч із Finder.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "Повернути все як було можна будь-коли в Параметрах.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "Ні, дякую",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Так, додати",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "«Відкрити у Cmdr» тепер є в контекстному меню Finder.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Цього разу Cmdr не вдалося додати пункт меню. Перемикач є в Параметрах, коли захочете спробувати ще раз.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "Відкрито: {opened, plural, one {# папка} few {# папки} many {# папок} other {# папки}}. Не вмістилося: {dropped}, бо вкладок на одній панелі може бути не більше ніж {limit}.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

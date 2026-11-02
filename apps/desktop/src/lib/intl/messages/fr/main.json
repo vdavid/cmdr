@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "Ajouter « Ouvrir dans Cmdr » au menu contextuel du Finder ?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Cmdr se retrouve ainsi à un clic de n’importe quel fichier ou dossier de votre disque de démarrage. Cette option ajoute un petit processus qui s’exécute à côté du Finder.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "Vous pourrez revenir en arrière à tout moment dans les Réglages.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "Non, merci",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Oui, l’ajouter",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "« Ouvrir dans Cmdr » figure maintenant dans le menu contextuel du Finder.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Cmdr n’a pas pu ajouter l’élément de menu cette fois-ci. L’option est dans les Réglages si vous voulez réessayer.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# dossier ouvert} many {# dossiers ouverts} other {# dossiers ouverts}}. Pas assez de place pour {dropped} de plus, car un panneau peut contenir jusqu’à {limit} onglets.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

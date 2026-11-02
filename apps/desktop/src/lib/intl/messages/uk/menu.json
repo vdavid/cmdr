@@ -75,7 +75,7 @@
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
-  "menu.app.services": "Сервіси",
+  "menu.app.services": "Служби",
   "@menu.app.services": {
     "sourceHash": "604dce4"
   },

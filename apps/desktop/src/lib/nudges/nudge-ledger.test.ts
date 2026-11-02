@@ -57,19 +57,23 @@ describe('nudgeCooldownActive', () => {
   })
 
   it('holds the floor for another nudge made today', () => {
-    expect(nudgeCooldownActive({ dockPin: daysAgo(0), reveal: '' }, NOW)).toBe(true)
+    expect(nudgeCooldownActive({ dockPin: daysAgo(0), reveal: '', finderExtension: '' }, NOW)).toBe(true)
   })
 
   it('still holds the day before the cooldown runs out', () => {
-    expect(nudgeCooldownActive({ dockPin: '', reveal: daysAgo(NUDGE_COOLDOWN_DAYS - 1) }, NOW)).toBe(true)
+    expect(
+      nudgeCooldownActive({ dockPin: '', reveal: daysAgo(NUDGE_COOLDOWN_DAYS - 1), finderExtension: '' }, NOW),
+    ).toBe(true)
   })
 
   it('lets go once the cooldown has passed', () => {
-    expect(nudgeCooldownActive({ dockPin: daysAgo(NUDGE_COOLDOWN_DAYS), reveal: '' }, NOW)).toBe(false)
+    expect(nudgeCooldownActive({ dockPin: daysAgo(NUDGE_COOLDOWN_DAYS), reveal: '', finderExtension: '' }, NOW)).toBe(
+      false,
+    )
   })
 
   it('takes the most recent nudge, not the first one it finds', () => {
-    expect(nudgeCooldownActive({ dockPin: daysAgo(400), reveal: daysAgo(1) }, NOW)).toBe(true)
+    expect(nudgeCooldownActive({ dockPin: daysAgo(400), reveal: daysAgo(1), finderExtension: '' }, NOW)).toBe(true)
   })
 
   /**
@@ -81,7 +85,7 @@ describe('nudgeCooldownActive', () => {
     ['an unreadable stamp', 'whenever'],
     ['a stamp from the future', new Date(NOW.getTime() + 60_000).toISOString()],
   ])('ignores %s rather than going quiet forever', (_case, stamp) => {
-    expect(nudgeCooldownActive({ dockPin: stamp, reveal: '' }, NOW)).toBe(false)
+    expect(nudgeCooldownActive({ dockPin: stamp, reveal: '', finderExtension: '' }, NOW)).toBe(false)
   })
 })
 
@@ -100,7 +104,9 @@ describe('nudgeCouldFire', () => {
   })
 
   it('never asks the same thing twice', () => {
-    expect(nudgeCouldFire({ ...ready, ledger: { dockPin: '', reveal: daysAgo(900) } }, 'reveal')).toBe(false)
+    expect(
+      nudgeCouldFire({ ...ready, ledger: { dockPin: '', reveal: daysAgo(900), finderExtension: '' } }, 'reveal'),
+    ).toBe(false)
   })
 
   /**
@@ -109,12 +115,12 @@ describe('nudgeCouldFire', () => {
    * exemption.
    */
   it('holds one nudge back while another one is still fresh', () => {
-    const ledger = { dockPin: '', reveal: daysAgo(1) }
+    const ledger = { dockPin: '', reveal: daysAgo(1), finderExtension: '' }
     expect(nudgeCouldFire({ ...ready, ledger }, 'dockPin')).toBe(false)
   })
 
   it('lets the next nudge through once the floor has passed', () => {
-    const ledger = { dockPin: '', reveal: daysAgo(NUDGE_COOLDOWN_DAYS) }
+    const ledger = { dockPin: '', reveal: daysAgo(NUDGE_COOLDOWN_DAYS), finderExtension: '' }
     expect(nudgeCouldFire({ ...ready, ledger }, 'dockPin')).toBe(true)
   })
 })

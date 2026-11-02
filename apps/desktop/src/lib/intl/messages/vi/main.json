@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "Thêm “Mở trong Cmdr” vào menu chuột phải của Finder?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Cmdr sẽ chỉ cách mọi tệp hoặc thư mục trên đĩa khởi động của bạn một cú bấm. Việc này sẽ thêm một tiến trình nhỏ chạy song song với Finder.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "Bạn có thể đổi lại bất cứ lúc nào trong Cài đặt.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "Không, cảm ơn",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Có, thêm vào",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "“Mở trong Cmdr” giờ đã có trong menu chuột phải của Finder.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Lần này Cmdr chưa thêm được mục menu đó. Công tắc nằm trong Cài đặt nếu bạn muốn thử lại.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "Đã mở {opened, plural, other {# thư mục}}. Còn {dropped} thư mục nữa không vừa, vì mỗi khung chỉ chứa được tối đa {limit} tab.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

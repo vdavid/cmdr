@@ -13,8 +13,9 @@ launch boundary, the llama-server fetch, and the type-drift check.
 - **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`
 - **`gen-shipped-locales.ts`** (+ `-lib.ts`): the Rust locale resolver's tables: shipped catalogs with their CLDR
   scripts, plus `cldr-core`'s parent-locale overrides (`pnpm intl:shipped-locales`, `shipped-locales-fresh`)
-- **`gen-native-strings.ts`** (+ `-lib.ts`): the catalog subset Rust draws itself (`menu.`, the window title, the
-  already-running alert), read by `menu_t`. `pnpm intl:native-strings`, guarded by `native-strings-fresh`
+- **`gen-native-strings.ts`** (+ `-lib.ts`): the catalog subset Rust draws itself (`menu.`, window title,
+  already-running alert), plus the Finder menu item's titles. `pnpm intl:native-strings`, guarded by
+  `native-strings-fresh`
 - **`gen-boot-guard-lib.ts`**: the old-WebKit block screen's translated strings, spliced into the app shell by
   `vite.config.js` at config-load time (no CLI, nothing committed). `src/lib/utils/DETAILS.md` § Old-WebKit boot guard
 - **`i18n-*.ts`**: catalog lib, locale checks, generators, key sync, `pnpm i18n:brief`, and the termbase/mechanics
