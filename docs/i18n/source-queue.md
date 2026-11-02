@@ -7,9 +7,6 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 
 ## Open
 
-- `settings.finderExtension.card`, `settings.finderExtension.description`: the Finder item itself is English in every
-  locale (`NSMenuItem` has only `default`, `serviceName` is hardcoded), so a translated name won't match Finder.
-  Localize the item, or quote it in English. (all)
 - `mtp.readiness.connecting`: "Unlock your phone" matches the `unlock` concept (password-protected archives), while
   `unlock-device` stays out of the batch. Add it to `unlock`'s `notMatch`. `mtp-browse.png` doesn't show the row. (all)
 - `fileExplorer.pane.ejectAllFailedToast`, `.ejectAllHeldToast`: the descriptions call `{message}` one sentence, but the
