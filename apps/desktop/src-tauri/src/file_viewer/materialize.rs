@@ -622,7 +622,7 @@ pub(super) fn map_volume_error(err: VolumeError, routed: Option<RoutedKind>) -> 
         VolumeError::LinkTargetUnreachable(_) => ViewerError::LinkTargetUnreachable,
         VolumeError::LinkNeedsConsent(_) => ViewerError::LinkNeedsConsent,
         other => match routed {
-            Some(RoutedKind::Archive) => ViewerError::Archive {
+            Some(RoutedKind::Archive | RoutedKind::ArchiveInSnapshot) => ViewerError::Archive {
                 failure: match other {
                     VolumeError::NotSupported => ArchiveFailureKind::Unsupported,
                     VolumeError::NeedsPassword { .. } => ArchiveFailureKind::NeedsPassword,

@@ -6,7 +6,8 @@
 //! (`restic_routing.rs`), and archives (`archive_routing.rs`). Each mints a
 //! volume on demand, registers it, and caps how many stay registered; each
 //! hands the caller's path back verbatim. The dispatcher's one decision is the
-//! ORDER: the leftmost confirmed boundary wins.
+//! ORDER: the leftmost confirmed boundary wins. One route nests: an archive
+//! inside a restic snapshot reads through the snapshot's view.
 //!
 //! It's another inherent `impl VolumeManager` block (a type's impl can span
 //! files within a crate), so every method stays at `VolumeManager::…`.
@@ -45,6 +46,15 @@ pub fn path_routes_over_its_parent(path: &Path) -> bool {
     inside_an_archive
         || crate::file_system::git::wiring::portal_serves(path)
         || cmdr_fs::restic_view::restic_route(path).is_some()
+}
+
+/// What a path naming an archive inside a restic snapshot ITSELF (no inner
+/// path) resolves to: the snapshot's file, for every caller acting on it, or the
+/// archive's root, for a listing entering it ([`VolumeManager::resolve_to_list`]).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum ArchiveRoot {
+    File,
+    Folder,
 }
 
 /// A place in a path where a route could take over, by the component it sits
@@ -104,12 +114,30 @@ impl VolumeManager {
     /// [`resolve_local_only`](Self::resolve_local_only) exists for the one
     /// caller that can't `.await` (the write-op fresh-listing oracle).
     pub async fn resolve(&self, volume_id: &str, path: &Path) -> ResolvedVolume {
+        self.resolve_as(volume_id, path, ArchiveRoot::File).await
+    }
+
+    /// [`resolve`](Self::resolve) for a LISTING, the one place an archive's root
+    /// is a folder to enter rather than a file to act on. Differs only for an
+    /// archive inside a restic snapshot: there the lexical gate every other
+    /// caller asks ([`path_routes_over_its_parent`]) can't keep the `.zip` file a
+    /// file (everything under `Browse snapshots` routes), so `resolve` keeps its
+    /// root on the view, and only a listing enters it. A plain archive's root
+    /// routes the same either way, since the gate already answers for it.
+    pub async fn resolve_to_list(&self, volume_id: &str, path: &Path) -> ResolvedVolume {
+        self.resolve_as(volume_id, path, ArchiveRoot::Folder).await
+    }
+
+    async fn resolve_as(&self, volume_id: &str, path: &Path, archive_root: ArchiveRoot) -> ResolvedVolume {
         let mut undecided = false;
         for boundary in boundaries(path) {
             let routed = match boundary {
                 Boundary::GitPortal => self.resolve_git_portal(volume_id, path),
                 Boundary::Restic(repo_root) => match self.resolve_restic(volume_id, &repo_root, path).await {
-                    ResticAnswer::Routed(routed) => Some(routed),
+                    ResticAnswer::Routed(routed) => Some(
+                        self.inside_the_snapshot(volume_id, &repo_root, routed, path, archive_root)
+                            .await,
+                    ),
                     ResticAnswer::PassOn => None,
                     ResticAnswer::Undecided => {
                         undecided = true;
@@ -132,10 +160,32 @@ impl VolumeManager {
         ResolvedVolume::passthrough(self.get(volume_id), path)
     }
 
+    /// What serves a path the restic view `routed` took: an archive inside the
+    /// snapshot when the path crosses into one the view confirms (#631), else the
+    /// view. The one nesting a route does: an archive reads through any `Volume`,
+    /// so it reads through a snapshot's too.
+    async fn inside_the_snapshot(
+        &self,
+        volume_id: &str,
+        repo_root: &Path,
+        routed: ResolvedVolume,
+        path: &Path,
+        archive_root: ArchiveRoot,
+    ) -> ResolvedVolume {
+        let Some(view) = routed.volume.clone() else {
+            return routed;
+        };
+        let view_id = super::restic_routing::restic_volume_id(volume_id, repo_root);
+        self.resolve_archive_in_snapshot(&view_id, view, path, archive_root)
+            .await
+            .unwrap_or(routed)
+    }
+
     /// Sync sibling of [`resolve`](Self::resolve), with the same leftmost order,
     /// that does no network or remote I/O. It confirms **only local** archive
     /// boundaries (a remote `.zip` path passes through, its confirm needs async
-    /// I/O), routes restic only on the hub's memo (❌ no confirm listing: a
+    /// I/O, and so does an archive inside a snapshot, which the view answers
+    /// for), routes restic only on the hub's memo (❌ no confirm listing: a
     /// `read_dir` on a wedged OS mount would block a scan walker), and routes git
     /// identically, since that's lexical.
     ///

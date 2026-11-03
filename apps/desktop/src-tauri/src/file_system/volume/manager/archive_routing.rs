@@ -11,13 +11,14 @@
 
 use super::super::{Volume, WatchCoverage};
 use super::VolumeManager;
+use super::routing::ArchiveRoot;
 use crate::file_system::volume::{ResolvedVolume, RoutedKind};
 use crate::ignore_poison::IgnorePoison;
 use cmdr_archive::{
     ARCHIVE_MAGIC_PREFIX_LEN, ArchiveFormat, ArchiveVolume, bytes_match_archive_magic, confirm_archive_boundary,
     format_for_path,
 };
-use cmdr_fs::archive_format::archive_boundary_candidate;
+use cmdr_fs::archive_format::{archive_boundary_candidate, archive_boundary_candidates};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -92,7 +93,39 @@ impl VolumeManager {
             return ResolvedVolume::passthrough(Some(parent), path);
         }
 
-        self.register_archive(volume_id, parent, zip_path, path)
+        let archive_id = archive_volume_id(&zip_path);
+        self.register_archive(archive_id, volume_id, parent, zip_path, path, RoutedKind::Archive)
+            .unwrap_or_else(|| ResolvedVolume::passthrough(self.get(volume_id), path))
+    }
+
+    /// An archive INSIDE a restic snapshot (#631): the first archive-named
+    /// component below `view`'s root, confirmed and read THROUGH the view, as
+    /// [`RoutedKind::ArchiveInSnapshot`]. `None` when there's no such component,
+    /// when `path` is the archive itself and `archive_root` says that's a file,
+    /// or when the view can't vouch for it (the repo is locked, the name is a
+    /// folder, the magic doesn't match); the view then answers for the path.
+    ///
+    /// The confirm is the remote one: a snapshot's files are blobs in pack files,
+    /// never something `std::fs` can stat. ❌ No `canonicalize` for the id either:
+    /// the path isn't real, and on an OS-mounted share a stat of it is a network
+    /// round trip that a wedged mount turns into minutes.
+    pub(super) async fn resolve_archive_in_snapshot(
+        &self,
+        view_id: &str,
+        view: Arc<dyn Volume>,
+        path: &Path,
+        archive_root: ArchiveRoot,
+    ) -> Option<ResolvedVolume> {
+        let (zip_path, inner) = archive_boundary_candidates(path)
+            .find(|(zip, _)| zip.starts_with(view.root()) && zip.as_path() != view.root())?;
+        if inner.as_os_str().is_empty() && archive_root == ArchiveRoot::File {
+            return None;
+        }
+        if !confirm_remote_archive_boundary(view.as_ref(), &zip_path).await {
+            return None;
+        }
+        let archive_id = archive_in_snapshot_volume_id(&view, &zip_path);
+        self.register_archive(archive_id, view_id, view, zip_path, path, RoutedKind::ArchiveInSnapshot)
     }
 
     /// The archive half of [`resolve_local_only`](Self::resolve_local_only):
@@ -105,7 +138,9 @@ impl VolumeManager {
         let Some(parent) = self.get(volume_id) else {
             return ResolvedVolume::passthrough(None, path);
         };
-        self.register_archive(volume_id, parent, zip_path, path)
+        let archive_id = archive_volume_id(&zip_path);
+        self.register_archive(archive_id, volume_id, parent, zip_path, path, RoutedKind::Archive)
+            .unwrap_or_else(|| ResolvedVolume::passthrough(self.get(volume_id), path))
     }
 
     /// Async, parent-aware sibling of the sync
@@ -154,23 +189,27 @@ impl VolumeManager {
         confirmed.then_some((zip_path, inner))
     }
 
-    /// Registers (or reuses) the [`ArchiveVolume`] for a confirmed `.zip`, bumps
-    /// the LRU, and returns it resolved. Shared by both [`resolve`](Self::resolve)
-    /// and [`resolve_local_only`](Self::resolve_local_only); the confirm step (the
-    /// only local-vs-remote difference) happens before this.
+    /// Registers (or reuses) the [`ArchiveVolume`] for a confirmed `.zip` under
+    /// `archive_id`, bumps the LRU, and returns it resolved as `kind`. Shared by
+    /// [`resolve`](Self::resolve) and [`resolve_local_only`](Self::resolve_local_only);
+    /// the confirm step (the only local-vs-remote difference) happens before this.
+    /// `None` when it was evicted before it could be read back, which only a
+    /// pathologically small cap reaches; the caller picks the fallback.
     fn register_archive(
         &self,
+        archive_id: String,
         volume_id: &str,
         parent: Arc<dyn Volume>,
         zip_path: PathBuf,
         path: &Path,
-    ) -> ResolvedVolume {
-        let archive_id = archive_volume_id(&zip_path);
+        kind: RoutedKind,
+    ) -> Option<ResolvedVolume> {
         // The format is decided from the confirmed archive's name. A confirmed
         // boundary always carries a supported extension, so `format_for_path`
         // yields `Some`; the `Zip` fallback only guards a future path shape.
         let format = format_for_path(&zip_path).unwrap_or(ArchiveFormat::Zip);
         let backing_path = zip_path.clone();
+        let parent_is_local = parent.supports_local_fs_access();
         let archive = Arc::new(ArchiveVolume::new(parent, zip_path, format, crate::volume_host::host()));
         // Only the resolve that actually registered starts the content watch, so
         // repeated resolves of an already-registered archive don't churn notify
@@ -180,10 +219,10 @@ impl VolumeManager {
         // watch only refreshes frontend listings, so there's nothing to watch
         // before the frontend exists — and this keeps headless unit tests from
         // starting real OS watches (production sets the handle at startup, before
-        // any archive is browsed). A non-local parent gets no watch at all
-        // (notify can't watch an `smb://` / `sftp://` path, and asking warns per
-        // registration), so a remote archive's `listing_watch_coverage` stays
-        // `None` — pre-op rescans stay honest.
+        // any archive is browsed). A non-local parent (direct SMB / MTP, a restic
+        // snapshot) gets no watch at all: notify can't watch an `smb://` or a
+        // snapshot path, so its `listing_watch_coverage` stays `None`, which keeps
+        // pre-op rescans honest, and its coverage isn't even asked.
         //
         // The coverage ceiling is resolved HERE because the mount probe is
         // per-platform and app-side: the watch is an FSEvents watch on the
@@ -191,22 +230,20 @@ impl VolumeManager {
         // only ever report this machine's writes. One `statfs` per archive
         // registration, off any hot path (this runs once, and only when the
         // register actually happened).
-        if self.register_if_absent(&archive_id, archive.clone()) && crate::file_system::watcher::app_handle_present() {
+        if self.register_if_absent(&archive_id, archive.clone())
+            && parent_is_local
+            && crate::file_system::watcher::app_handle_present()
+        {
             archive.start_content_watch(volume_id, watch_coverage_for_backing_file(&backing_path));
         }
         self.touch_archive_lru(&archive_id);
 
-        match self.get(&archive_id) {
-            Some(volume) => ResolvedVolume {
-                volume: Some(volume),
-                path: path.to_path_buf(),
-                routed: Some(RoutedKind::Archive),
-                unconfirmed: None,
-            },
-            // Registered-then-evicted before we could read it back (only reachable
-            // under a pathologically small cap). Fall back to the parent volume.
-            None => ResolvedVolume::passthrough(self.get(volume_id), path),
-        }
+        self.get(&archive_id).map(|volume| ResolvedVolume {
+            volume: Some(volume),
+            path: path.to_path_buf(),
+            routed: Some(kind),
+            unconfirmed: None,
+        })
     }
 
     /// Records `id` as the most-recently-resolved archive and unregisters the
@@ -286,6 +323,19 @@ fn archive_volume_id(zip_path: &Path) -> String {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     canonical.hash(&mut hasher);
     format!("archive-{:016x}", hasher.finish())
+}
+
+/// The registry id for an archive inside a restic snapshot: the zip's path
+/// hashed with the VIEW it reads through, by identity. A view is re-minted when
+/// its parent is replaced (an SMB share reconnecting), and an archive keyed by
+/// path alone would keep reading through the retired one. The address can't be
+/// reused while this archive lives, since the archive holds its view.
+fn archive_in_snapshot_volume_id(view: &Arc<dyn Volume>, zip_path: &Path) -> String {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    std::ptr::addr_of!(**view).cast::<()>().hash(&mut hasher);
+    zip_path.hash(&mut hasher);
+    format!("archive-in-snapshot-{:016x}", hasher.finish())
 }
 
 #[cfg(test)]

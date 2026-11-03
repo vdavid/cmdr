@@ -500,7 +500,8 @@ The feature's guardrails, crate and app together, numbered so reviews can cite t
 6. Every mutation inside the view is refused with a typed read-only refusal, on every seam, the ones that bypass
    `resolve` included; a move out is refused before anything is copied (the app's DETAILS § "Write guards").
 7. The leftmost CONFIRMED route boundary wins across git, restic, and archive routes; an unconfirmed candidate hands
-   over to the next (`apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Resolving a path: the three routes").
+   over to the next, and an archive inside a snapshot reads through the view, read-only
+   (`apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Resolving a path: the three routes").
 8. Every `rustic_core` call runs on the blocking pool; every long one (unlock, index load, file read) is cancelable, and
    a cancelled unlock keeps and files nothing. No hub-wide lock is held across scrypt, a Keychain call, or a read.
 9. One index load per repo at a time, shared by its waiters (the engine's stall retries included), with progress in real

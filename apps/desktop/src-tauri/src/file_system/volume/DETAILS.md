@@ -127,6 +127,20 @@ and each is capped by an LRU of its own; `ResolvedVolume.routed` says which one 
   right, and takes the first that confirms. An unconfirmed one (a real folder named `photos.zip`, a non-repo
   `Browse snapshots`, the portal switched off) hands over to the next, ❌ never ends routing: a repo inside a real
   folder named `backups.zip/` still browses. The restic and archive confirms are why `resolve` is `async`.
+- **One route nests: an archive inside a restic snapshot** (#631, `RoutedKind::ArchiveInSnapshot`). Once the restic
+  boundary confirms, the first archive-named component below the view's root is confirmed THROUGH the view (the remote
+  confirm: `get_metadata` plus a magic `read_range`) and served by an `ArchiveVolume` whose parent is the view, so its
+  bytes come out of the snapshot's packs. A locked repo or a non-archive leaves the path with the view. It's browsable
+  and copyable, and ❌ never written: the kind takes no write and gives up no file, so every write gate refuses it
+  typed before an archive edit could start. Its registry id hashes the zip path with the view's identity, so a view
+  re-minted over a replaced parent never leaves an archive reading through the retired one.
+- **`resolve` keeps a snapshot zip's ROOT on the view; `resolve_to_list` enters it.** Everyone acting ON a path asks
+  the lexical gate first, which keeps a plain `.zip` FILE a file, but under `Browse snapshots` the gate answers yes for
+  everything. So `resolve` nests only paths strictly inside the zip (copy, F3, drag, and Open with get the backed-up
+  file), and the listing seam (`listing_host/volumes.rs`, every resolve the listing engine makes) calls
+  `resolve_to_list`, which also enters the root. `resolve_local_only` never nests (the confirm needs I/O); the
+  fresh-listing oracle declines such a path on its own. Pinned by `restic_routing_tests.rs` and
+  `apps/desktop/src-tauri/src/operations_host/restic_archive_tests.rs`.
 
 - **`ResolvedVolume.path` is the caller's input path, verbatim.** A routed resolve only swaps the volume; the
   `ArchiveVolume` maps the whole `/…/foo.zip/inner` path into its own namespace via `inner_path()`, and the

@@ -17,8 +17,8 @@ use std::sync::Arc;
 /// ask [`ResolvedVolume::is_routed`]. A write path asks the two capability
 /// methods below, which match exhaustively so the next routed kind has to
 /// answer them. Compare to ONE variant only where the answer is genuinely about
-/// that backend (the archive-edit driver, the archive preview, the routed
-/// materialization's error mapping).
+/// that backend (the archive-edit driver); a reader that cares whether an
+/// archive serves the path, wherever it sits, asks [`RoutedKind::is_archive`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RoutedKind {
     /// The path crossed a `.zip` boundary into a `cmdr_archive::ArchiveVolume`.
@@ -29,6 +29,11 @@ pub enum RoutedKind {
     /// The path reached into a restic repo's `Browse snapshots` view, so a
     /// `cmdr_restic::ResticVolume` serves it.
     Restic,
+    /// The path crossed into an archive that sits INSIDE a restic snapshot, so a
+    /// `cmdr_archive::ArchiveVolume` reading through the snapshot's view serves
+    /// it. Browsable like any archive, but the snapshot can't be rewritten, so it
+    /// takes no write and gives up no file.
+    ArchiveInSnapshot,
 }
 
 impl RoutedKind {
@@ -38,7 +43,7 @@ impl RoutedKind {
     pub fn takes_writes(self) -> bool {
         match self {
             Self::Archive => true,
-            Self::GitPortal | Self::Restic => false,
+            Self::GitPortal | Self::Restic | Self::ArchiveInSnapshot => false,
         }
     }
 
@@ -49,6 +54,15 @@ impl RoutedKind {
     pub fn can_give_up_files(self) -> bool {
         match self {
             Self::Archive => true,
+            Self::GitPortal | Self::Restic | Self::ArchiveInSnapshot => false,
+        }
+    }
+
+    /// Whether an `ArchiveVolume` serves the path, wherever the archive sits: what
+    /// the archive preview, the viewer's error mapping, and `inspect_file` ask.
+    pub fn is_archive(self) -> bool {
+        match self {
+            Self::Archive | Self::ArchiveInSnapshot => true,
             Self::GitPortal | Self::Restic => false,
         }
     }

@@ -187,10 +187,11 @@ async fn resolve_local_only_routes_on_the_memo_and_never_lists() {
     );
 }
 
-/// A `.zip` inside a snapshot is backed-up bytes, not a file on the parent:
-/// the restic boundary sits further left, so it wins.
+/// A `.zip` inside a snapshot the view can't vouch for (here: a repo-shaped
+/// folder nobody unlocked, so the view can't read the file) stays with the view,
+/// which answers for the path as it would for any other.
 #[tokio::test]
-async fn a_zip_inside_a_snapshot_belongs_to_the_view() {
+async fn an_unconfirmed_zip_inside_a_snapshot_stays_with_the_view() {
     let (manager, _parent) = manager_over_a_repo("restic-zip-inside").await;
     let path = Path::new(VIEW).join("latest/Users/me/bundle.zip/readme.txt");
 
@@ -443,4 +444,102 @@ async fn entering_the_row_lists_the_snapshots() {
         .collect();
     assert_eq!(names.len(), 2, "one snapshot plus latest: {names:?}");
     assert!(names.iter().any(|name| name == "latest"), "{names:?}");
+}
+
+/// End to end (#631): a real repo whose snapshot holds a real zip. The zip FILE
+/// is the view's (a file in the backup, copyable as bytes), and everything inside
+/// it is an archive read THROUGH the view: listed, read, and refused every write,
+/// since a snapshot can't be rewritten.
+#[tokio::test]
+async fn a_zip_inside_a_snapshot_browses_as_an_archive_over_the_view() {
+    use cmdr_archive::test_fixtures::{build_zip, dir, stored};
+    use cmdr_restic::test_fixtures::{FixtureRepo, unlock};
+    use std::time::{Duration, SystemTime};
+
+    let source = crate::test_support::TestDir::new("restic-zip-in-snapshot");
+    let zip_bytes = build_zip(&[
+        stored("readme.txt", b"hello from the backup".to_vec()),
+        dir("docs/"),
+        stored("docs/notes.txt", b"inner notes".to_vec()),
+    ]);
+    std::fs::write(source.join("bundle.zip"), &zip_bytes).expect("source zip");
+    let fixture = FixtureRepo::init("pw");
+    fixture.backup(&source, SystemTime::UNIX_EPOCH + Duration::from_secs(1_791_000_000));
+    let inner = InMemoryVolume::new("naspi");
+    fixture.write_into(&inner, Path::new(REPO)).await;
+    let manager = VolumeManager::new();
+    manager.register("restic-zip-browse", Arc::new(inner));
+    let view = manager
+        .resolve("restic-zip-browse", Path::new(VIEW))
+        .await
+        .volume
+        .expect("the view");
+    let restic = view
+        .as_any()
+        .downcast_ref::<cmdr_restic::ResticVolume>()
+        .expect("a restic view");
+    assert!(unlock(restic, "pw").await);
+    let canonical = std::fs::canonicalize(&*source).expect("canonical source");
+    let zip = Path::new(VIEW)
+        .join("latest")
+        .join(canonical.strip_prefix("/").expect("absolute"));
+    let zip = zip.join("bundle.zip");
+
+    // Acting ON the zip (copy it out, view it, drag it) gets the backup's file;
+    // only a listing enters it.
+    let file = manager.resolve("restic-zip-browse", &zip).await;
+    assert_eq!(
+        file.routed,
+        Some(RoutedKind::Restic),
+        "the zip itself is a file in the backup"
+    );
+    let file = file.volume.expect("the view");
+    let meta = file.get_metadata(&zip).await.expect("the backed-up zip");
+    assert!(!meta.is_directory);
+    assert_eq!(meta.size, Some(zip_bytes.len() as u64));
+    let entered = manager.resolve_to_list("restic-zip-browse", &zip).await;
+    assert_eq!(
+        entered.routed,
+        Some(RoutedKind::ArchiveInSnapshot),
+        "a listing enters it"
+    );
+
+    let inside = manager.resolve("restic-zip-browse", &zip.join("docs")).await;
+    assert_eq!(inside.routed, Some(RoutedKind::ArchiveInSnapshot));
+    assert_eq!(inside.path, zip.join("docs"), "the path travels through untouched");
+    let archive = inside.volume.expect("the archive");
+    assert!(
+        archive.as_any().downcast_ref::<cmdr_archive::ArchiveVolume>().is_some(),
+        "an archive volume serves the inside"
+    );
+    let mut names: Vec<String> = archive
+        .list_directory(&zip, None)
+        .await
+        .expect("lists the archive's root")
+        .into_iter()
+        .map(|entry| entry.name)
+        .collect();
+    names.sort();
+    assert_eq!(names, ["docs", "readme.txt"]);
+    let notes = archive
+        .list_directory(&zip.join("docs"), None)
+        .await
+        .expect("lists a folder inside");
+    assert_eq!(notes.iter().map(|e| e.name.as_str()).collect::<Vec<_>>(), ["notes.txt"]);
+    let mut stream = archive
+        .open_read_stream(&zip.join("readme.txt"))
+        .await
+        .expect("opens an entry");
+    let mut bytes = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        bytes.extend_from_slice(&chunk.expect("a chunk"));
+    }
+    assert_eq!(bytes, b"hello from the backup");
+
+    let kind = RoutedKind::ArchiveInSnapshot;
+    assert!(
+        !kind.takes_writes() && !kind.can_give_up_files(),
+        "a snapshot is never rewritten"
+    );
+    assert!(kind.is_archive(), "every archive reader treats it as one");
 }

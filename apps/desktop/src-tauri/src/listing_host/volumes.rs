@@ -31,7 +31,9 @@ impl ListingVolumes for AppVolumes {
         volume_id: &'a str,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = ResolvedVolume> + Send + 'a>> {
-        Box::pin(get_volume_manager().resolve(volume_id, path))
+        // Every resolve the engine makes is for a listing, which enters an archive's
+        // root where a caller acting on the path would get the file.
+        Box::pin(get_volume_manager().resolve_to_list(volume_id, path))
     }
 
     fn resolve_local_only(&self, volume_id: &str, path: &Path) -> ResolvedVolume {

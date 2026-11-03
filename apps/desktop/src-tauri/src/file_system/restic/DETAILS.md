@@ -73,6 +73,9 @@ The leftmost CONFIRMED boundary wins across git, restic, and archive routes; the
   because it's memoized; git's is free because it's lexical.
 - **A view is never a restic parent**: the overlay never applies on a routed volume, so a repo backed up inside a
   snapshot (or zipped in an archive) stays bytes in it, on both seams.
+- **A view IS an archive's parent** (#631): a `.zip` backed up in a snapshot browses as an archive read through the
+  view, read-only, while the zip file itself stays the snapshot's file to copy, view, or drag. The rule lives in the
+  volume DETAILS section above.
 
 ## A replaced parent gets a new view
 

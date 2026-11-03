@@ -172,35 +172,44 @@ pub fn has_supported_archive_extension(name: &str) -> bool {
 /// (ERR-J2U6A). `Path`'s `Eq` is a component compare and reads the two spellings
 /// as equal, so ❌ a `PathBuf` assertion can't defend this; compare strings.
 pub fn archive_boundary_candidate(path: &Path) -> Option<(PathBuf, PathBuf)> {
+    archive_boundary_candidates(path).next()
+}
+
+/// Every archive-named component in `path`, left to right, each split as
+/// [`archive_boundary_candidate`] splits the first: the archive path SLICED out
+/// of the input, and the inner path after it. For a router that has to find the
+/// archive inside another route's namespace (a `.zip` in a restic snapshot), where
+/// an archive-named folder further left isn't the one it's after.
+pub fn archive_boundary_candidates(path: &Path) -> impl Iterator<Item = (PathBuf, PathBuf)> + '_ {
     // Byte-wise, because a path component is only required to be UTF-8 where the
     // extension check reads it: `to_str()` on the whole path would decline a
     // valid archive under a non-UTF-8 ancestor directory.
     use std::os::unix::ffi::OsStrExt;
 
     let bytes = path.as_os_str().as_bytes();
-    let mut start = 0;
-    loop {
-        let end = bytes[start..]
-            .iter()
-            .position(|byte| *byte == b'/')
-            .map_or(bytes.len(), |offset| start + offset);
-        if std::str::from_utf8(&bytes[start..end])
-            .ok()
-            .is_some_and(has_supported_archive_extension)
-        {
-            // Everything past the separator is the inner path, empty when the
-            // archive component is the last one.
-            let inner_start = bytes.len().min(end + 1);
-            return Some((
-                PathBuf::from(OsStr::from_bytes(&bytes[..end])),
-                PathBuf::from(OsStr::from_bytes(&bytes[inner_start..])),
-            ));
+    let mut start = Some(0);
+    std::iter::from_fn(move || {
+        loop {
+            let from = start?;
+            let end = bytes[from..]
+                .iter()
+                .position(|byte| *byte == b'/')
+                .map_or(bytes.len(), |offset| from + offset);
+            start = (end < bytes.len()).then_some(end + 1);
+            if std::str::from_utf8(&bytes[from..end])
+                .ok()
+                .is_some_and(has_supported_archive_extension)
+            {
+                // Everything past the separator is the inner path, empty when the
+                // archive component is the last one.
+                let inner_start = bytes.len().min(end + 1);
+                return Some((
+                    PathBuf::from(OsStr::from_bytes(&bytes[..end])),
+                    PathBuf::from(OsStr::from_bytes(&bytes[inner_start..])),
+                ));
+            }
         }
-        if end == bytes.len() {
-            return None;
-        }
-        start = end + 1;
-    }
+    })
 }
 
 #[cfg(test)]
@@ -361,6 +370,29 @@ mod tests {
         let (zip, inner) = archive_boundary_candidate(Path::new("/a.zip/b.zip/x")).expect("boundary");
         assert_eq!(zip, PathBuf::from("/a.zip"));
         assert_eq!(inner, PathBuf::from("b.zip/x"));
+    }
+
+    #[test]
+    fn candidates_list_every_archive_component_left_to_right_sliced() {
+        let found: Vec<(String, String)> =
+            archive_boundary_candidates(Path::new("sftp://nas/backups.zip/r/Browse snapshots/latest/b.zip/x/"))
+                .map(|(zip, inner)| (zip.to_string_lossy().into_owned(), inner.to_string_lossy().into_owned()))
+                .collect();
+        assert_eq!(
+            found,
+            [
+                (
+                    "sftp://nas/backups.zip".to_string(),
+                    "r/Browse snapshots/latest/b.zip/x/".to_string()
+                ),
+                (
+                    "sftp://nas/backups.zip/r/Browse snapshots/latest/b.zip".to_string(),
+                    "x/".to_string()
+                ),
+            ]
+        );
+        assert_eq!(archive_boundary_candidates(Path::new("")).count(), 0);
+        assert_eq!(archive_boundary_candidates(Path::new("/a/b.txt")).count(), 0);
     }
 
     #[test]

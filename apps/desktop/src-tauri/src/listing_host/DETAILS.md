@@ -30,7 +30,7 @@ first read (`test_listings`).
 Each is a unit struct that resolves the subsystem it answers from per call (never at construction: `install` runs
 before `index_host::install`, and capturing `index()` would win its slot with an unconfigured index).
 
-- `volumes.rs`, `AppVolumes`: the `VolumeManager`'s `get` / `resolve` / `resolve_local_only`. `unregistered` first
+- `volumes.rs`, `AppVolumes`: the `VolumeManager`'s `get` / `resolve_to_list` / `resolve_local_only` (the listing's resolve enters a snapshot zip's root, `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Resolving a path: the three routes"). `unregistered` first
   tries to adopt the mount under the path when it derives exactly that id (a cloud drive mounted into the home folder
   posts no `NSWorkspace` notification, and the startup sweep can lose the race to a restored tab), bounded at 2 s, then
   asks `unregistered_volumes::why_unregistered`.

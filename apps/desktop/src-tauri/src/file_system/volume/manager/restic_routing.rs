@@ -163,7 +163,7 @@ impl VolumeManager {
 /// `restic-{hash(volume id, repo root)}`. Backend-internal only (the frontend
 /// holds the parent drive id), and lexical, ❌ no `canonicalize`: it's a `stat`,
 /// on a network parent a slow one, and the hub keys its repos the same way.
-fn restic_volume_id(volume_id: &str, repo_root: &Path) -> String {
+pub(super) fn restic_volume_id(volume_id: &str, repo_root: &Path) -> String {
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     volume_id.hash(&mut hasher);

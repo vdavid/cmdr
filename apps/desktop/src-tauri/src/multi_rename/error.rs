@@ -62,7 +62,10 @@ impl From<cmdr_fs::volume::RoutedKind> for ReadOnlyPlace {
         match kind {
             cmdr_fs::volume::RoutedKind::Archive => Self::Archive,
             cmdr_fs::volume::RoutedKind::GitPortal => Self::GitPortal,
-            cmdr_fs::volume::RoutedKind::Restic => Self::ResticSnapshots,
+            // Read-only because it's in a backup, which is what the user needs to hear.
+            cmdr_fs::volume::RoutedKind::Restic | cmdr_fs::volume::RoutedKind::ArchiveInSnapshot => {
+                Self::ResticSnapshots
+            }
         }
     }
 }

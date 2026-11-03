@@ -256,7 +256,7 @@ pub enum OpenWithCopySource {
 impl From<RoutedKind> for OpenWithCopySource {
     fn from(routed: RoutedKind) -> Self {
         match routed {
-            RoutedKind::Archive => Self::Archive,
+            RoutedKind::Archive | RoutedKind::ArchiveInSnapshot => Self::Archive,
             RoutedKind::GitPortal => Self::RepoHistory,
             RoutedKind::Restic => Self::Backup,
         }

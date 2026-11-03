@@ -46,6 +46,8 @@ mod portal_rename_tests;
 #[cfg(test)]
 mod registry_routing_tests;
 #[cfg(test)]
+mod restic_archive_tests;
+#[cfg(test)]
 mod restic_copy_out_tests;
 #[cfg(test)]
 mod restic_guard_tests;

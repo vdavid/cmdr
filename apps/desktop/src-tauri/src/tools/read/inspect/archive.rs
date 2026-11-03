@@ -108,7 +108,7 @@ pub(super) fn route_archive_path(
         return Routed::Plain;
     };
     let resolved = tauri::async_runtime::block_on(get_volume_manager().resolve(volume_id, p));
-    if resolved.routed != Some(RoutedKind::Archive) {
+    if !resolved.routed.is_some_and(RoutedKind::is_archive) {
         return Routed::Plain;
     }
     // `None` is an unmount race after the boundary confirmed; the plain pipeline's stat

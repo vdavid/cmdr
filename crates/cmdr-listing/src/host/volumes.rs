@@ -28,9 +28,11 @@ pub trait ListingVolumes: Send + Sync {
     /// The volume registered under `volume_id`, with no path routing.
     fn get(&self, volume_id: &str) -> Option<Arc<dyn Volume>>;
 
-    /// The volume that serves `path` under `volume_id`, routing a path that
-    /// crosses into an archive or a repo's virtual `.git` trees to the volume
-    /// for that.
+    /// The volume that LISTS `path` under `volume_id`, routing a path that
+    /// crosses into an archive, a repo's virtual `.git` trees, or a restic
+    /// snapshot to the volume for that. A listing enters an archive's root, so
+    /// a `.zip` inside a snapshot lists as the archive, where a caller acting on
+    /// the path itself would get the backed-up file.
     fn resolve<'a>(
         &'a self,
         volume_id: &'a str,
