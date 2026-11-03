@@ -136,6 +136,18 @@
   "@commands.askCmdrNewChat.description": {
     "sourceHash": "957741b"
   },
+  "commands.askCmdrFind.label": "Sök i chatten",
+  "@commands.askCmdrFind.label": {
+    "sourceHash": "df9554c"
+  },
+  "commands.askCmdrFindNext.label": "Nästa träff i chatten",
+  "@commands.askCmdrFindNext.label": {
+    "sourceHash": "1c2da9b"
+  },
+  "commands.askCmdrFindPrevious.label": "Föregående träff i chatten",
+  "@commands.askCmdrFindPrevious.label": {
+    "sourceHash": "d28d025"
+  },
   "commands.feedbackSend.label": "Skicka återkoppling",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
