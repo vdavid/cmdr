@@ -747,6 +747,10 @@ fn spawn_search_worker(
             }
         };
 
+        // Test-only gate: park before the scan, so a test's cancel can't arrive
+        // after a small file was already searched. No-op unless a test armed it.
+        #[cfg(test)]
+        test_gate::SEARCH_PRE_SCAN.wait_if_armed();
         let result = backend.search(&matcher, &cancel, &matches, &bytes_scanned);
 
         finalize_search_status(&status, &cancel, /*errored=*/ result.is_err());

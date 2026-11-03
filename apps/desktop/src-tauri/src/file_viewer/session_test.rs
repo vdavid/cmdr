@@ -218,12 +218,19 @@ fn search_cancel_works() {
     let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
+    // Held before its scan, so the cancel below lands on a running search. ❌ Not
+    // "cancel immediately": the whole file searches in milliseconds, and a loaded
+    // CI runner kept this thread off the CPU (or behind the upgrade's `SESSIONS`
+    // lock) that long, so the search sometimes ended `Done` first.
+    session::test_gate::SEARCH_PRE_SCAN.arm();
     session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+    session::test_gate::SEARCH_PRE_SCAN.wait_until_reached(Duration::from_secs(5));
 
-    // Cancel immediately. The cancel flag is set synchronously; the search
-    // thread will see it on its next iteration and exit, writing the final
-    // `SearchStatus::Cancelled` to the shared status mutex.
+    // The cancel flag is set synchronously; the search thread sees it on its
+    // next iteration and exits, writing the final `SearchStatus::Cancelled` to
+    // the shared status mutex.
     session::search_cancel(sid).unwrap();
+    session::test_gate::SEARCH_PRE_SCAN.release();
 
     // Wait for the thread to observe the cancel and transition to Cancelled.
     // We accept Running (thread still in flight) along the way.
