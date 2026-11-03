@@ -723,11 +723,11 @@
   },
   "askCmdr.error.modelNotInPlan.named": "Din plan hos {provider} innehåller inte den här modellen. Välj en annan modell i Inställningar eller uppgradera din plan.",
   "@askCmdr.error.modelNotInPlan.named": {
-    "sourceHash": "4de572a"
+    "sourceHash": "9f2c237"
   },
   "askCmdr.error.modelNotInPlan.unnamed": "Din plan hos den här AI-leverantören innehåller inte den här modellen. Välj en annan modell i Inställningar eller uppgradera din plan.",
   "@askCmdr.error.modelNotInPlan.unnamed": {
-    "sourceHash": "de08c60"
+    "sourceHash": "b90bf30"
   },
   "askCmdr.error.requestTooLarge.named": "{provider} avvisade det här: gränsen i din plan är lägre än en enda förfrågan från Cmdr, eftersom varje förfrågan alltid innehåller Cmdrs instruktioner. Ett kortare meddelande hjälper inte. Byt till en större plan hos {provider} eller välj en annan leverantör i Inställningar.",
   "@askCmdr.error.requestTooLarge.named": {

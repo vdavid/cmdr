@@ -723,11 +723,11 @@
   },
   "askCmdr.error.modelNotInPlan.named": "Ваш тариф у поставщика {provider} не включает эту модель. Выберите другую модель в настройках или перейдите на более высокий тариф.",
   "@askCmdr.error.modelNotInPlan.named": {
-    "sourceHash": "4de572a"
+    "sourceHash": "9f2c237"
   },
   "askCmdr.error.modelNotInPlan.unnamed": "Ваш тариф у этого поставщика ИИ не включает эту модель. Выберите другую модель в настройках или перейдите на более высокий тариф.",
   "@askCmdr.error.modelNotInPlan.unnamed": {
-    "sourceHash": "de08c60"
+    "sourceHash": "b90bf30"
   },
   "askCmdr.error.requestTooLarge.named": "Поставщик {provider} отклонил запрос: лимит вашего тарифа меньше одного запроса Cmdr, ведь каждый запрос всегда содержит инструкции Cmdr. Более короткое сообщение не поможет. Перейдите на тариф побольше у поставщика {provider} или выберите другого поставщика в настройках.",
   "@askCmdr.error.requestTooLarge.named": {

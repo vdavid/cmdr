@@ -723,11 +723,11 @@
   },
   "askCmdr.error.modelNotInPlan.named": "Ваш тариф у постачальника {provider} не включає цю модель. Виберіть іншу модель у Параметрах або перейдіть на вищий тариф.",
   "@askCmdr.error.modelNotInPlan.named": {
-    "sourceHash": "4de572a"
+    "sourceHash": "9f2c237"
   },
   "askCmdr.error.modelNotInPlan.unnamed": "Ваш тариф у цього постачальника ШІ не включає цю модель. Виберіть іншу модель у Параметрах або перейдіть на вищий тариф.",
   "@askCmdr.error.modelNotInPlan.unnamed": {
-    "sourceHash": "de08c60"
+    "sourceHash": "b90bf30"
   },
   "askCmdr.error.requestTooLarge.named": "Постачальник {provider} відхилив запит: ліміт вашого тарифу менший, ніж один запит від Cmdr, адже кожен запит завжди містить інструкції Cmdr. Коротше повідомлення не допоможе. Перейдіть на більший тариф у постачальника {provider} або виберіть іншого постачальника в Параметрах.",
   "@askCmdr.error.requestTooLarge.named": {

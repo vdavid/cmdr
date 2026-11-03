@@ -340,5 +340,3 @@ All (uk) unless noted.
 - Concept `upgrade` (a Cmdr license) matched "upgrade your plan" in `askCmdr.error.modelNotInPlan.*`, which upgrades a
   plan with the AI provider; I added `notMatch` "upgrade your plan" and the new concept `ai-plan`. A future "upgrade"
   about a provider plan needs the same exclusion, so consider widening `ai-plan` to own it. (all)
-- `askCmdr.error.modelNotInPlan.*` says "in Settings" while its sibling `askCmdr.error.requestTooLarge.*` says "in
-  settings"; pick one casing for the family. (all)

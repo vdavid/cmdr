@@ -1185,7 +1185,7 @@
     "description": "Shown when the provider is rate-limiting or the account is out of quota. Friendly; avoids the words error and failed. The apostrophe is U+2019.",
     "screenshot": "ask-cmdr-errors.png"
   },
-  "askCmdr.error.modelNotInPlan.named": "Your {provider} plan doesn’t include this model. Pick another model in Settings, or upgrade your plan.",
+  "askCmdr.error.modelNotInPlan.named": "Your {provider} plan doesn’t include this model. Pick another model in settings, or upgrade your plan.",
   "@askCmdr.error.modelNotInPlan.named": {
     "description": "Shown in the Ask Cmdr chat when the AI provider refused the request because the person's plan doesn't include the chosen model at all (for example, a free Mistral plan and a model only paid plans get). Every message gets the same answer, so waiting won't help; it says what does. Different from askCmdr.error.rateLimited, which is about the provider being busy. The provider's own explanation shows on a line under this one. Friendly and actionable; avoids the words error and failed. The apostrophe is U+2019. Sentence case.",
     "placeholders": {
@@ -1194,7 +1194,7 @@
     "screenshot": "ask-cmdr-chat.png",
     "screenshotNote": "A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line."
   },
-  "askCmdr.error.modelNotInPlan.unnamed": "Your plan with this AI provider doesn’t include this model. Pick another model in Settings, or upgrade your plan.",
+  "askCmdr.error.modelNotInPlan.unnamed": "Your plan with this AI provider doesn’t include this model. Pick another model in settings, or upgrade your plan.",
   "@askCmdr.error.modelNotInPlan.unnamed": {
     "description": "The same message as askCmdr.error.modelNotInPlan.named, for a provider Cmdr has no name for (a custom endpoint). Shown in the Ask Cmdr chat when the person's plan doesn't include the chosen model at all, so every message gets the same answer and waiting won't help. Friendly and actionable; avoids the words error and failed. The apostrophe is U+2019. Sentence case.",
     "screenshot": "ask-cmdr-chat.png",
