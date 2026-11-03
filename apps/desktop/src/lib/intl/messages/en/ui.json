@@ -212,18 +212,21 @@
   "@ui.toolAsk.setSetting.title": {
     "description": "Title of a dialog asking whether an AI assistant may change one of the app's settings."
   },
-  "ui.toolAsk.setSetting.body": "This changes {label} from {oldValue} to {newValue}.",
-  "@ui.toolAsk.setSetting.body": {
-    "description": "Body of that dialog. The two values are shown as they're stored, which can be technical words like true or stop.",
-    "placeholders": {
-      "label": "the setting's name",
-      "oldValue": "what it's set to now",
-      "newValue": "what the assistant wants to set it to"
-    }
+  "ui.toolAsk.setSetting.oldValue": "Old value:",
+  "@ui.toolAsk.setSetting.oldValue": {
+    "description": "Caption of the first row under the setting's name in the change-a-setting dialog. The row shows the value the setting has now: a friendly name plus the stored value in code style, like TextEdit com.apple.TextEdit."
+  },
+  "ui.toolAsk.setSetting.newValue": "New value:",
+  "@ui.toolAsk.setSetting.newValue": {
+    "description": "Caption of the second row in that dialog: the value the AI assistant wants to set, shown the same way as the old value."
+  },
+  "ui.toolAsk.setSetting.systemDefault": "System default",
+  "@ui.toolAsk.setSetting.systemDefault": {
+    "description": "Friendly name of the text editor setting's 'system' value in that dialog, shown before the stored value: System default system. It means F4 opens files in whatever app macOS uses for plain text. Use the wording your locale's macOS uses for a system-wide default."
   },
   "ui.toolAsk.setSetting.emptyValue": "nothing",
   "@ui.toolAsk.setSetting.emptyValue": {
-    "description": "Stands in for a setting's value in that body when the value is empty, as in: This changes Ask Cmdr model from nothing to some-model."
+    "description": "Stands in for a setting's value in the change-a-setting dialog when the value is empty, as in the row: Old value: nothing."
   },
   "ui.toolAsk.quit.title": "Quit Cmdr?",
   "@ui.toolAsk.quit.title": {

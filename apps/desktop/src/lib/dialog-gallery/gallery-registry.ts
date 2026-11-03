@@ -176,6 +176,8 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'openFileUnknownApp', label: 'Open a file nothing claims' },
       { id: 'openBundle', label: 'Run a bundle' },
       { id: 'setSetting', label: 'Change a setting' },
+      { id: 'setSettingApp', label: 'An app pick (System default)' },
+      { id: 'setSettingRawAndEmpty', label: 'No friendly name, and empty' },
       { id: 'setSettingLongValue', label: 'A very long value' },
       { id: 'quit', label: 'Quit' },
       { id: 'eject', label: 'Eject a volume' },

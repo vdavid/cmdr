@@ -221,6 +221,12 @@ interface DescribeSettingPayload {
   value: unknown
 }
 
+/** An enum option's label for `value`, so the question can name it (`null` when the setting has no
+ * options, or this value isn't one of them). */
+function optionLabel(def: SettingDefinition, value: unknown): string | null {
+  return def.constraints?.options?.find((option) => option.value === value)?.label ?? null
+}
+
 /** What the registry says about a setting and this value, for `tools/ask_plans.rs` to decide on. */
 function describeSetting(settingId: string, value: unknown): Record<string, unknown> | null {
   const def = getSettingDefinition(settingId)
@@ -245,6 +251,10 @@ function describeSetting(settingId: string, value: unknown): Record<string, unkn
     sensitive,
     locked: !lockAllowsWrite(getSettingLock(settingId), value),
     invalid,
+    // Labels are display only, and a secret's never leave: the question shows its mask alone.
+    oldValueLabel: sensitive ? null : optionLabel(def, current),
+    newValueLabel: sensitive ? null : optionLabel(def, value),
+    valueNamesApp: def.valueNamesApp === true,
   }
 }
 

@@ -152,10 +152,6 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
-  "ui.toolAsk.setSetting.body": "Tím se změní nastavení {label}: teď {oldValue}, nově {newValue}.",
-  "@ui.toolAsk.setSetting.body": {
-    "sourceHash": "8831e19"
-  },
   "ui.toolAsk.setSetting.emptyValue": "nic",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"

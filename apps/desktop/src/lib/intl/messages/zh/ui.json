@@ -151,10 +151,6 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
-  "ui.toolAsk.setSetting.body": "这会把“{label}”从 {oldValue} 改为 {newValue}。",
-  "@ui.toolAsk.setSetting.body": {
-    "sourceHash": "8831e19"
-  },
   "ui.toolAsk.setSetting.emptyValue": "无",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"

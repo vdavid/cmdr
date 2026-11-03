@@ -37,29 +37,33 @@ describe('askSentence', () => {
     expect(sentence.body).toContain('runs')
   })
 
-  it('a setting shows its label, its old value, and its new value', () => {
-    const { body } = askSentence({
+  it('a setting names itself, then each value by its friendly name and its raw id', () => {
+    const sentence = askSentence({
       kind: 'setSetting',
       id: 'behavior.textEditorApp',
       label: 'Text editor',
-      oldValue: 'Zed',
-      newValue: 'Vim',
+      oldValue: { raw: 'system', name: { kind: 'systemDefault' } },
+      newValue: { raw: 'com.apple.TextEdit', name: { kind: 'named', text: 'TextEdit' } },
     })
-    expect(body).toContain('Text editor')
-    expect(body).toContain('Zed')
-    expect(body).toContain('Vim')
+    expect(sentence.body).toBe('Text editor')
+    expect(sentence.values).toEqual([
+      { caption: 'Old value:', name: 'System default', code: 'system' },
+      { caption: 'New value:', name: 'TextEdit', code: 'com.apple.TextEdit' },
+    ])
   })
 
-  it('an empty value reads as nothing, so the sentence never says "from to"', () => {
-    const { body } = askSentence({
+  it('a value with no friendly name shows its raw id alone, and an empty one reads as nothing', () => {
+    const { values } = askSentence({
       kind: 'setSetting',
       id: 'askCmdr.interactiveModel',
       label: 'Ask Cmdr model',
-      oldValue: '',
-      newValue: 'some-model',
+      oldValue: { raw: '', name: null },
+      newValue: { raw: 'some-model', name: null },
     })
-    expect(body).not.toContain('from  to')
-    expect(body).toContain('from nothing to some-model')
+    expect(values).toEqual([
+      { caption: 'Old value:', name: 'nothing', code: null },
+      { caption: 'New value:', name: null, code: 'some-model' },
+    ])
   })
 
   it('quit says what happens to what is running', () => {

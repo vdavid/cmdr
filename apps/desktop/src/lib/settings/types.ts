@@ -257,6 +257,12 @@ export interface SettingDefinition {
    */
   mcpAskFree?: true
   /**
+   * The value names an app (a bundle id, an `.app` path, or the text editor's `system`), so
+   * `set_setting`'s question names the app beside the raw id. The backend resolves the name
+   * (`tools/ask_plans.rs` `app_display_name`).
+   */
+  valueNamesApp?: true
+  /**
    * `cmdr://settings` and `set_setting`'s question say only whether this holds a value, never what:
    * for a personal value no shape could catch half-typed. Every other value passes `maskSecrets`.
    */

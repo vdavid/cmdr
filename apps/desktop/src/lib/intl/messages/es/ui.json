@@ -151,10 +151,6 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
-  "ui.toolAsk.setSetting.body": "Esto cambia {label} de {oldValue} a {newValue}.",
-  "@ui.toolAsk.setSetting.body": {
-    "sourceHash": "8831e19"
-  },
   "ui.toolAsk.setSetting.emptyValue": "nada",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"

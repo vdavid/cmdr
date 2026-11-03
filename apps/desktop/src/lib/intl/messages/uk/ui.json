@@ -152,10 +152,6 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
-  "ui.toolAsk.setSetting.body": "Буде змінено параметр «{label}». Було: {oldValue}. Стане: {newValue}.",
-  "@ui.toolAsk.setSetting.body": {
-    "sourceHash": "8831e19"
-  },
   "ui.toolAsk.setSetting.emptyValue": "нічого",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"

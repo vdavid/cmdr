@@ -30,6 +30,27 @@ const ASK_EXPIRY: Duration = Duration::from_secs(5 * 60);
 /// name's end (its extension) is what says what it does.
 const MAX_FACT_CHARS: usize = 400;
 
+/// One side of a setting change, as the question shows it: the stored value, and what a person calls
+/// it when Cmdr knows a different name.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingValueFact {
+    /// The value as stored, through [`fact_text`]: `""` when empty, the mask for a secret.
+    pub raw: String,
+    /// The friendly name, or `None` when the raw value is all Cmdr has (or is already the name).
+    pub name: Option<SettingValueName>,
+}
+
+/// What a person calls a setting's value.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum SettingValueName {
+    /// Ready to show: the registry's option label, or an app's name the way Finder shows it.
+    Named { text: String },
+    /// The text editor's `system` choice, which the frontend words in the person's language.
+    SystemDefault,
+}
+
 /// What a question is about. Each arm is one sentence in `tool-ask-sentence.ts`, and every string in
 /// here passes through [`fact_text`], since a file name or a setting value can be anything.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -50,8 +71,8 @@ pub enum AskFacts {
     SetSetting {
         id: String,
         label: String,
-        old_value: String,
-        new_value: String,
+        old_value: SettingValueFact,
+        new_value: SettingValueFact,
     },
     Quit,
     Eject {

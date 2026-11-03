@@ -65,6 +65,11 @@ impl std::fmt::Display for OpenInEditorError {
 
 impl std::error::Error for OpenInEditorError {}
 
+/// The stored `behavior.textEditorApp` value meaning "whatever macOS opens plain text in". The
+/// frontend mirrors it as `SYSTEM_DEFAULT_EDITOR_CHOICE`. Cross-platform so `set_setting`'s question
+/// can word it on any OS.
+pub(crate) const SYSTEM_DEFAULT_CHOICE: &str = "system";
+
 #[cfg(target_os = "macos")]
 #[path = "text_editor_macos.rs"]
 mod imp;

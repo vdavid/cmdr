@@ -12,7 +12,8 @@ use tauri::{AppHandle, Runtime};
 use super::ToolCtx;
 use super::actions::async_tools::managed_write_refusal;
 use super::actions::{ROUND_TRIP_TIMEOUT_SECS, ToolError, mcp_round_trip_parsed};
-use super::ask::{AskFacts, AskPlan, IndexingAction, fact_text};
+use super::ask::{AskFacts, AskPlan, IndexingAction, SettingValueFact, SettingValueName, fact_text};
+use crate::file_system::text_editor::SYSTEM_DEFAULT_CHOICE;
 use crate::tools::resources::volumes::snapshot_volumes;
 
 // ── open_under_cursor ───────────────────────────────────────────────────────
@@ -121,12 +122,28 @@ pub(super) struct SettingDescription {
     pub locked: bool,
     /// Why the registry refuses this value, when it does.
     pub invalid: Option<String>,
+    /// The registry's option label for the current value, when the setting has options.
+    #[serde(default)]
+    pub old_value_label: Option<String>,
+    /// The registry's option label for the asked-for value, when the setting has options.
+    #[serde(default)]
+    pub new_value_label: Option<String>,
+    /// The value names an app (a bundle id, an `.app` path, or the text editor's `system`), so the
+    /// question names the app.
+    #[serde(default)]
+    pub value_names_app: bool,
 }
 
 const MASKED: &str = "********";
 
 /// `None` is a setting the registry doesn't know: it refuses, since nothing can say what it does.
-pub(super) fn setting_plan(id: &str, new_value: &Value, described: Option<SettingDescription>) -> AskPlan {
+/// `app_name` names the app an app-picker value points at (`app_display_name` outside tests).
+pub(super) fn setting_plan(
+    id: &str,
+    new_value: &Value,
+    described: Option<SettingDescription>,
+    app_name: impl Fn(&str) -> Option<String>,
+) -> AskPlan {
     let Some(setting) = described else {
         return AskPlan::Refuse(
             ToolError::invalid_params(format!("Cmdr has no setting called '{id}'."))
@@ -168,20 +185,70 @@ pub(super) fn setting_plan(id: &str, new_value: &Value, described: Option<Settin
     if setting.ask_free || (!setting.sensitive && &setting.old_value == new_value) {
         return AskPlan::NoAsk;
     }
+    let side = |value: &Value, label: Option<String>| {
+        if setting.sensitive {
+            SettingValueFact {
+                raw: MASKED.to_string(),
+                name: None,
+            }
+        } else {
+            value_fact(value, label, setting.value_names_app, &app_name)
+        }
+    };
     AskPlan::Ask(AskFacts::SetSetting {
         id: fact_text(id),
         label: fact_text(&setting.label),
-        old_value: if setting.sensitive {
-            MASKED.to_string()
-        } else {
-            fact_text(&value_text(&setting.old_value))
-        },
-        new_value: if setting.sensitive {
-            MASKED.to_string()
-        } else {
-            fact_text(&value_text(new_value))
-        },
+        old_value: side(&setting.old_value, setting.old_value_label.clone()),
+        new_value: side(new_value, setting.new_value_label.clone()),
     })
+}
+
+/// One side of the change: the raw value, plus the name a person knows it by. An option's label wins;
+/// an app-picker value names its app. A name that only repeats the raw value is dropped, so the
+/// question doesn't say the same thing twice.
+fn value_fact(
+    value: &Value,
+    label: Option<String>,
+    names_app: bool,
+    app_name: &impl Fn(&str) -> Option<String>,
+) -> SettingValueFact {
+    let raw = fact_text(&value_text(value));
+    let name = if raw.is_empty() {
+        None
+    } else if let Some(label) = label {
+        Some(SettingValueName::Named {
+            text: fact_text(&label),
+        })
+    } else if names_app && raw == SYSTEM_DEFAULT_CHOICE {
+        Some(SettingValueName::SystemDefault)
+    } else if names_app {
+        app_name(&raw).map(|text| SettingValueName::Named { text: fact_text(&text) })
+    } else {
+        None
+    };
+    let name = name.filter(|name| !matches!(name, SettingValueName::Named { text } if text.eq_ignore_ascii_case(&raw)));
+    SettingValueFact { raw, name }
+}
+
+/// The app a stored app-picker value names, the way Finder shows it. A bundle id resolves through
+/// LaunchServices; a "Choose an app…" path reads its bundle, or its file name once it's gone.
+/// `None` when nothing on this Mac answers to it: the question then shows the raw id alone.
+#[cfg(target_os = "macos")]
+fn app_display_name(choice: &str) -> Option<String> {
+    use crate::file_system::open_with::{installed_app_path, read_app_display_name};
+    let path = std::path::Path::new(choice);
+    if path.is_absolute() {
+        if path.is_dir() {
+            return Some(read_app_display_name(path));
+        }
+        return path.file_stem().map(|stem| stem.to_string_lossy().into_owned());
+    }
+    installed_app_path(choice).map(|app| read_app_display_name(&app))
+}
+
+#[cfg(not(target_os = "macos"))]
+fn app_display_name(_choice: &str) -> Option<String> {
+    None
 }
 
 /// A value as a person reads it: a string as itself, anything else as JSON.
@@ -217,7 +284,7 @@ pub(super) async fn plan_set_setting<R: Runtime>(app: &AppHandle<R>, _ctx: &Tool
     )
     .await;
     match described {
-        Ok(described) => setting_plan(id, value, described),
+        Ok(described) => setting_plan(id, value, described, app_display_name),
         Err(_) => AskPlan::Refuse(couldnt_read("that setting")),
     }
 }

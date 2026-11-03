@@ -211,6 +211,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     // The options are whatever macOS lists right now, so they can't be registry
     // constants.
     component: 'select',
+    valueNamesApp: true,
     // Linux keeps `xdg-open` and renders no Text editor card.
     macOSOnly: true,
   },
@@ -241,6 +242,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     // Rendered by `TerminalAppSelect.svelte`, not `SettingSelect`: the options
     // are whatever is installed right now, so they can't be registry constants.
     component: 'select',
+    valueNamesApp: true,
     // The whole feature is macOS-only, and so is the Terminal card.
     macOSOnly: true,
   },

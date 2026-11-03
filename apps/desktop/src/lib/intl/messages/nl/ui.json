@@ -152,10 +152,6 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
-  "ui.toolAsk.setSetting.body": "Dit wijzigt {label} van {oldValue} naar {newValue}.",
-  "@ui.toolAsk.setSetting.body": {
-    "sourceHash": "8831e19"
-  },
   "ui.toolAsk.setSetting.emptyValue": "niets",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"

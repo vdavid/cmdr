@@ -330,6 +330,21 @@ describe("`mcp-describe-setting`, what `set_setting`'s question reads", () => {
     expect(described?.oldValue).toBe('********')
   })
 
+  it('names both values by their option labels, so the question can say more than the stored id', async () => {
+    vi.mocked(getSetting).mockReturnValueOnce('light')
+    const described = await describeSetting('theme.mode', 'dark')
+    const options = getSettingDefinition('theme.mode')?.constraints?.options ?? []
+    expect(described?.oldValueLabel).toBe(options.find((o) => o.value === 'light')?.label)
+    expect(described?.newValueLabel).toBe(options.find((o) => o.value === 'dark')?.label)
+    expect(described?.valueNamesApp).toBe(false)
+  })
+
+  it('flags an app-picker setting, whose value has no label of its own', async () => {
+    const described = await describeSetting('behavior.textEditorApp', 'com.apple.TextEdit')
+    expect(described?.valueNamesApp).toBe(true)
+    expect(described?.newValueLabel).toBeNull()
+  })
+
   it('refuses a read echoed back as a write, so a masked value never replaces the real one', async () => {
     const value = JSON.stringify({ custom: { model: 'm', baseUrl: `https://llm.example.com/${MASKED}` } })
     expect((await describeSetting('ai.cloudProviderConfigs', value))?.invalid).toEqual(expect.any(String))

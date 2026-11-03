@@ -46,4 +46,26 @@ describe('ToolAskDialog a11y', () => {
     expect(target.querySelector('[role="status"]')?.textContent).toContain('Ask Cmdr started this.')
     await expectNoA11yViolations(target)
   })
+
+  it('a setting question with its value rows has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ToolAskHost, { target })
+    receiveToolAsk({
+      requestId: 'r1',
+      startedBy: 'agent',
+      facts: {
+        kind: 'setSetting',
+        id: 'behavior.textEditorApp',
+        label: 'Edit files in',
+        oldValue: { raw: 'system', name: { kind: 'systemDefault' } },
+        newValue: { raw: 'com.apple.TextEdit', name: { kind: 'named', text: 'TextEdit' } },
+      },
+    })
+    flushSync()
+    await tick()
+
+    expect(target.querySelector('dl.tool-ask-values code')?.textContent).toBe('system')
+    await expectNoA11yViolations(target)
+  })
 })

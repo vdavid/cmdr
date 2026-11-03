@@ -6696,7 +6696,7 @@ export type AskFacts =
       // The app that opens it, or `None` when nothing can tell.
       opener: string | null
     }
-  | { kind: 'setSetting'; id: string; label: string; oldValue: string; newValue: string }
+  | { kind: 'setSetting'; id: string; label: string; oldValue: SettingValueFact; newValue: SettingValueFact }
   | { kind: 'quit' }
   | {
       kind: 'eject'
@@ -17906,6 +17906,24 @@ export type SettingLock =
  *  shape outside this set means the value can't fit in `lookup_*` helpers anyway.
  */
 export type SettingValue = boolean | number | string
+
+/**
+ *  One side of a setting change, as the question shows it: the stored value, and what a person calls
+ *  it when Cmdr knows a different name.
+ */
+export type SettingValueFact = {
+  // The value as stored, through [`fact_text`]: `""` when empty, the mask for a secret.
+  raw: string
+  // The friendly name, or `None` when the raw value is all Cmdr has (or is already the name).
+  name: SettingValueName | null
+}
+
+// What a person calls a setting's value.
+export type SettingValueName =
+  // Ready to show: the registry's option label, or an app's name the way Finder shows it.
+  | { kind: 'named'; text: string }
+  // The text editor's `system` choice, which the frontend words in the person's language.
+  | { kind: 'systemDefault' }
 
 /**
  *  `settings-changed`: a CheckMenuItem toggle (currently only "Show hidden

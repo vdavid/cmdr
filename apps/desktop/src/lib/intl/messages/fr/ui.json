@@ -153,10 +153,6 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
-  "ui.toolAsk.setSetting.body": "Ceci modifie le réglage {label}. Valeur actuelle : {oldValue}. Nouvelle valeur : {newValue}.",
-  "@ui.toolAsk.setSetting.body": {
-    "sourceHash": "8831e19"
-  },
   "ui.toolAsk.setSetting.emptyValue": "rien",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"

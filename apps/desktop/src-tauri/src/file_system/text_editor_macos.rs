@@ -10,14 +10,10 @@ use core_services::{
     LSCopyAllRoleHandlersForContentType, LSCopyDefaultRoleHandlerForContentType, kLSRolesAll, kLSRolesEditor,
 };
 
-use super::{EditorOpenOutcome, EditorOpenReport, OpenInEditorError};
+use super::{EditorOpenOutcome, EditorOpenReport, OpenInEditorError, SYSTEM_DEFAULT_CHOICE};
 use crate::file_system::open_with::{
     app_icon_data_url, installed_app_path, read_app_display_name, read_bundle_identifier,
 };
-
-/// The stored value meaning "whatever macOS opens plain text in". The frontend
-/// mirrors it as `SYSTEM_DEFAULT_EDITOR_CHOICE`.
-const SYSTEM_DEFAULT_CHOICE: &str = "system";
 
 /// The content type whose editors F4 offers. VS Code claims text by extension and
 /// OSType only, which LaunchServices files under plain text and none of its

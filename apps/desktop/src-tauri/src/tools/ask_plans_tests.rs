@@ -129,7 +129,40 @@ fn setting() -> SettingDescription {
         sensitive: false,
         locked: false,
         invalid: None,
+        old_value_label: None,
+        new_value_label: None,
+        value_names_app: false,
     }
+}
+
+/// A resolver that knows no app, for every question that isn't about one.
+fn no_app(_choice: &str) -> Option<String> {
+    None
+}
+
+fn raw(value: &str) -> SettingValueFact {
+    SettingValueFact {
+        raw: value.to_string(),
+        name: None,
+    }
+}
+
+fn named(value: &str, name: &str) -> SettingValueFact {
+    SettingValueFact {
+        raw: value.to_string(),
+        name: Some(SettingValueName::Named { text: name.to_string() }),
+    }
+}
+
+/// The two sides of a setting question.
+fn sides(plan: &AskPlan) -> (SettingValueFact, SettingValueFact) {
+    let AskFacts::SetSetting {
+        old_value, new_value, ..
+    } = asks(plan)
+    else {
+        panic!("a setting question");
+    };
+    (old_value.clone(), new_value.clone())
 }
 
 fn refusal_of(plan: AskPlan) -> Value {
@@ -141,22 +174,94 @@ fn refusal_of(plan: AskPlan) -> Value {
 
 #[test]
 fn a_setting_shows_its_old_and_new_value() {
-    let plan = setting_plan("behavior.textEditorApp", &json!("Vim"), Some(setting()));
+    let plan = setting_plan("behavior.textEditorApp", &json!("Vim"), Some(setting()), no_app);
     assert_eq!(
         asks(&plan),
         &AskFacts::SetSetting {
             id: "behavior.textEditorApp".to_string(),
             label: "Text editor".to_string(),
-            old_value: "Zed".to_string(),
-            new_value: "Vim".to_string(),
+            old_value: raw("Zed"),
+            new_value: raw("Vim"),
         }
     );
 }
 
 #[test]
+fn an_option_setting_names_both_values_by_their_labels() {
+    let described = SettingDescription {
+        old_value: json!("stop"),
+        old_value_label: Some("Stop and ask".to_string()),
+        new_value_label: Some("Replace it".to_string()),
+        ..setting()
+    };
+    let plan = setting_plan(
+        "fileOperations.defaultConflictPolicy",
+        &json!("overwrite"),
+        Some(described),
+        no_app,
+    );
+    assert_eq!(
+        sides(&plan),
+        (named("stop", "Stop and ask"), named("overwrite", "Replace it"))
+    );
+}
+
+#[test]
+fn an_app_picker_names_the_app_and_words_the_system_default() {
+    let described = SettingDescription {
+        old_value: json!("system"),
+        value_names_app: true,
+        ..setting()
+    };
+    let resolve = |choice: &str| (choice == "com.apple.TextEdit").then(|| "TextEdit".to_string());
+    let plan = setting_plan(
+        "behavior.textEditorApp",
+        &json!("com.apple.TextEdit"),
+        Some(described),
+        resolve,
+    );
+    let (old, new) = sides(&plan);
+    assert_eq!(
+        old,
+        SettingValueFact {
+            raw: "system".to_string(),
+            name: Some(SettingValueName::SystemDefault),
+        }
+    );
+    assert_eq!(new, named("com.apple.TextEdit", "TextEdit"));
+}
+
+#[test]
+fn an_app_nothing_answers_to_shows_its_raw_id_alone() {
+    let described = SettingDescription {
+        value_names_app: true,
+        ..setting()
+    };
+    let plan = setting_plan(
+        "behavior.openTerminalHereApp",
+        &json!("com.example.gone"),
+        Some(described),
+        no_app,
+    );
+    assert_eq!(sides(&plan).1, raw("com.example.gone"));
+}
+
+#[test]
+fn a_name_that_repeats_the_raw_value_is_dropped_and_empty_stays_empty() {
+    let described = SettingDescription {
+        old_value: json!(""),
+        old_value_label: Some("Ignored".to_string()),
+        new_value_label: Some("dark".to_string()),
+        ..setting()
+    };
+    let plan = setting_plan("theme.mode", &json!("Dark"), Some(described), no_app);
+    assert_eq!(sides(&plan), (raw(""), raw("Dark")));
+}
+
+#[test]
 fn a_setting_outside_the_registry_refuses() {
     assert_eq!(
-        refusal_of(setting_plan("made.up", &json!(1), None)),
+        refusal_of(setting_plan("made.up", &json!(1), None, no_app)),
         json!("unknownSetting")
     );
 }
@@ -168,7 +273,7 @@ fn a_setting_marked_ask_free_needs_nobody() {
         ..setting()
     };
     assert!(matches!(
-        setting_plan("theme.mode", &json!("dark"), Some(described)),
+        setting_plan("theme.mode", &json!("dark"), Some(described), no_app),
         AskPlan::NoAsk
     ));
 }
@@ -176,7 +281,7 @@ fn a_setting_marked_ask_free_needs_nobody() {
 #[test]
 fn a_setting_that_would_not_change_needs_nobody() {
     assert!(matches!(
-        setting_plan("x", &json!("Zed"), Some(setting())),
+        setting_plan("x", &json!("Zed"), Some(setting()), no_app),
         AskPlan::NoAsk
     ));
 }
@@ -189,7 +294,7 @@ fn a_consent_answer_refuses_even_if_marked_ask_free() {
         ..setting()
     };
     assert_eq!(
-        refusal_of(setting_plan("x", &json!(1), Some(described))),
+        refusal_of(setting_plan("x", &json!(1), Some(described), no_app)),
         json!("notSettableOverMcp")
     );
 }
@@ -202,11 +307,11 @@ fn a_data_sharing_switch_only_goes_off() {
         ..setting()
     };
     assert_eq!(
-        refusal_of(setting_plan("x", &json!(true), Some(off_only.clone()))),
+        refusal_of(setting_plan("x", &json!(true), Some(off_only.clone()), no_app)),
         json!("onlyOffOverMcp")
     );
     assert!(matches!(
-        setting_plan("x", &json!(false), Some(off_only)),
+        setting_plan("x", &json!(false), Some(off_only), no_app),
         AskPlan::Ask(_)
     ));
 }
@@ -218,7 +323,7 @@ fn a_locked_setting_refuses_before_any_question() {
         ..setting()
     };
     assert_eq!(
-        refusal_of(setting_plan("x", &json!("Vim"), Some(described))),
+        refusal_of(setting_plan("x", &json!("Vim"), Some(described), no_app)),
         json!("managedByOrganization")
     );
 }
@@ -230,7 +335,7 @@ fn a_value_the_registry_refuses_never_reaches_a_person() {
         ..setting()
     };
     assert_eq!(
-        refusal_of(setting_plan("x", &json!("Vim"), Some(described))),
+        refusal_of(setting_plan("x", &json!("Vim"), Some(described), no_app)),
         json!("invalidValue")
     );
 }
@@ -242,20 +347,13 @@ fn a_secret_stays_masked_both_ways() {
         old_value: json!("********"),
         ..setting()
     };
-    let plan = setting_plan("x", &json!("hunter2"), Some(described));
-    let AskFacts::SetSetting {
-        old_value, new_value, ..
-    } = asks(&plan)
-    else {
-        panic!("a setting question");
-    };
-    assert_eq!(old_value, MASKED);
-    assert_eq!(new_value, MASKED);
+    let plan = setting_plan("x", &json!("hunter2"), Some(described), no_app);
+    assert_eq!(sides(&plan), (raw(MASKED), raw(MASKED)));
 }
 
 #[test]
 fn a_changed_old_value_makes_different_facts() {
-    let before = setting_plan("x", &json!("Vim"), Some(setting()));
+    let before = setting_plan("x", &json!("Vim"), Some(setting()), no_app);
     let after = setting_plan(
         "x",
         &json!("Vim"),
@@ -263,6 +361,7 @@ fn a_changed_old_value_makes_different_facts() {
             old_value: json!("Emacs"),
             ..setting()
         }),
+        no_app,
     );
     assert_ne!(asks(&before), asks(&after));
 }
