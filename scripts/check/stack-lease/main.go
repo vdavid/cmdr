@@ -9,6 +9,7 @@
 //	release <stack> <holder-id>          drop a lease; down the stack at zero
 //	reconcile <stack> <mode>             additive up -d under the lock (no down)
 //	status [<stack>]                     print lease + stack state (every stack when omitted)
+//	ports <stack>                        print the pinned host-port env, one KEY=value per line
 //
 // On `acquire` success the stack is guaranteed adopted-or-up, so the bash caller
 // skips its own `compose up` and proceeds straight to its TCP/health probe. Exit
@@ -59,6 +60,8 @@ func run(verb string, args []string) error {
 		return stack.Reconcile(args[1])
 	case "status":
 		return status(args)
+	case "ports":
+		return ports(args)
 	default:
 		usage()
 		os.Exit(2)
@@ -104,12 +107,29 @@ func status(args []string) error {
 	return nil
 }
 
+// ports prints the stack's pinned port env for a process that dials the stack
+// from outside the check runner (`scripts/soak-smb.sh`), which would otherwise
+// fall back to the compose file's defaults: smb2's 10480+ for SMB.
+func ports(args []string) error {
+	if len(args) != 1 {
+		return usageErr("ports <stack>")
+	}
+	stack, err := stacklease.Lookup(args[0])
+	if err != nil {
+		return err
+	}
+	for _, kv := range stack.PinnedPortEnv() {
+		fmt.Println(kv)
+	}
+	return nil
+}
+
 func usageErr(form string) error {
 	return fmt.Errorf("usage: stack-lease %s (stacks: %s)", form, strings.Join(stacklease.Names(), ", "))
 }
 
 func usage() {
 	fmt.Fprintf(os.Stderr,
-		"usage: stack-lease <acquire <stack> <holder-id> <mode> | release <stack> <holder-id> | reconcile <stack> <mode> | status [<stack>]>\nstacks: %s\n",
+		"usage: stack-lease <acquire <stack> <holder-id> <mode> | release <stack> <holder-id> | reconcile <stack> <mode> | status [<stack>] | ports <stack>>\nstacks: %s\n",
 		strings.Join(stacklease.Names(), ", "))
 }

@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -890,6 +891,32 @@ func TestSmbStackPinsItsOwnHostPortRange(t *testing.T) {
 		if vals := seen[key]; len(vals) != 1 || vals[0] != strconv.Itoa(want) {
 			t.Errorf("compose env carries %s=%v, want exactly [%d]", key, vals, want)
 		}
+	}
+}
+
+// ❗ The regression: `scripts/soak-smb.sh` runs its test outside the check
+// runner, so nothing exported the table and the soak dialed smb2's 10481 while
+// the stack sat on 11481 (CI run 40959407180, "ConnectionRefused"). The script
+// exports PinnedPortEnv instead, so it has to be the whole table, and a stray
+// caller export mustn't leak into it.
+func TestPinnedPortEnvIsTheWholeTableWhateverTheCallerExports(t *testing.T) {
+	t.Setenv("SMB_CONSUMER_AUTH_PORT", "10481")
+	t.Setenv("SMB_CONSUMER_EXTRA_PORT", "10999")
+	got := SMB.PinnedPortEnv()
+	if len(got) != len(smbHostPorts) {
+		t.Fatalf("PinnedPortEnv has %d entries, want one per pinned port (%d): %v", len(got), len(smbHostPorts), got)
+	}
+	if !sort.StringsAreSorted(got) {
+		t.Errorf("PinnedPortEnv isn't sorted, so its output would shuffle run to run: %v", got)
+	}
+	for svc, port := range smbHostPorts {
+		want := "SMB_CONSUMER_" + svc + "_PORT=" + strconv.Itoa(port)
+		if !slices.Contains(got, want) {
+			t.Errorf("PinnedPortEnv lacks %s: %v", want, got)
+		}
+	}
+	if len(SFTP.PinnedPortEnv()) != 0 {
+		t.Errorf("SFTP pins nothing, yet PinnedPortEnv says %v", SFTP.PinnedPortEnv())
 	}
 }
 

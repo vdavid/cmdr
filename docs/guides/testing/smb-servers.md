@@ -75,7 +75,9 @@ Both excludes matter: `VENDORED.md` and `docker-compose.override.yml` are cmdr-o
 The table's 10480+ numbers are smb2's compose defaults. cmdr's stack always runs on 11480+, in the same order: the lease
 helper (which `start.sh`, the check runner, and `e2e-linux.sh` all go through) pins `SMB_CONSUMER_*_PORT` on every
 compose call, from the `hostPorts` table on `stacklease.SMB` (`scripts/check/stacklease/registry.go`). Exporting a
-different `SMB_CONSUMER_*_PORT` doesn't move it.
+different `SMB_CONSUMER_*_PORT` doesn't move it. The check runner exports the same table to every test it starts; a
+script dialing the stack from outside the runner (`scripts/soak-smb.sh`) reads it with
+`(cd scripts/check && go run ./stack-lease ports smb)`.
 
 Every container publishes to **127.0.0.1 only**, via `${SMB_BIND_ADDR:-127.0.0.1}` in the vendored compose file.
 Docker's default is `0.0.0.0`, which would put unauthenticated Samba servers on your LAN and tailnet for as long as the

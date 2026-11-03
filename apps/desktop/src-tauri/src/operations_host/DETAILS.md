@@ -342,7 +342,10 @@ other modules reach `smb_test_support` from there: `listing_host/tests/smb_pane_
 - **SMB soak test** (`smb_soak_copy_loop` in `smb_soak_test.rs`): repeats the SMB→Local copy pipeline for hundreds to
   thousands of iterations and watches RSS, open FDs, SMB credits, and per-iteration wall-clock drift. Catches
   accumulating bugs the single-shot integration tests can't see (credit leak, FD leak, memory growth, slowdown).
-  Default mode: `CMDR_SOAK_ITERATIONS=100` (≈5 s against Docker). Long mode: `CMDR_SOAK_DURATION_SECS=1800` (30 min,
-  via `./scripts/soak-smb.sh`). CI has a `workflow_dispatch`-only job in `slow-checks.yml`. It is deliberately outside
-  the gating lane, so it carries no `smb_integration_` prefix.
+  Short mode: `CMDR_SOAK_ITERATIONS=100 ./scripts/soak-smb.sh` (≈90 s against Docker). Long mode: the script with no
+  env runs `CMDR_SOAK_DURATION_SECS=1800` (30 min). CI has a `workflow_dispatch`-only job in `slow-checks.yml`. It is
+  deliberately outside the gating lane, so it carries no `smb_integration_` prefix. ❗ Always go through the script:
+  it's the one SMB test that runs outside the check runner, so the script exports the stack's `SMB_CONSUMER_*_PORT`
+  itself (`stack-lease ports smb`). A raw `cargo test` dials smb2's 10481, where nothing listens, which is how the CI
+  soak sat red with `ConnectionRefused` from 2026-09-23 to 2026-11-03.
 

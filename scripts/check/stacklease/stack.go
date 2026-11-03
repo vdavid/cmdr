@@ -278,6 +278,19 @@ func (s *Stack) PortEnvName(suffix string) string {
 	return s.portEnvPrefix + suffix + "_PORT"
 }
 
+// PinnedPortEnv is the pinned table as sorted `KEY=value` pairs
+// (`SMB_CONSUMER_AUTH_PORT=11481`), ignoring the caller's env: what a process
+// outside the check runner exports to dial the ports the stack binds
+// (`stack-lease ports`). Empty for a stack with no pinned ports.
+func (s *Stack) PinnedPortEnv() []string {
+	out := make([]string, 0, len(s.hostPorts))
+	for svc, port := range s.hostPorts {
+		out = append(out, s.PortEnvName(svc)+"="+strconv.Itoa(port))
+	}
+	sort.Strings(out)
+	return out
+}
+
 // portEnv is the stack's effective port env, sorted `KEY=value` pairs: the
 // caller's own `<portEnvPrefix>*_PORT` vars, with every pinned port overriding
 // whatever the caller set for it. Both the config hash and every compose call

@@ -31,9 +31,9 @@ use cmdr_smb::volume::*;
 // - Explicit iteration count:    `CMDR_SOAK_ITERATIONS=3000 ...`
 // - Time-bounded:                `CMDR_SOAK_DURATION_SECS=1800 ...` (30 min)
 //
-// Uses `smb-consumer-auth` (port 10481, share `private`, `testuser` /
-// `testpass`) because it permits writes. Never runs by default; gated
-// on `#[ignore]`.
+// Uses `smb-consumer-auth` (share `private`, `testuser` / `testpass`)
+// because it permits writes. Never runs by default; gated on `#[ignore]`.
+// Run it through `scripts/soak-smb.sh`, which exports the stack's ports.
 
 /// `getrusage(RUSAGE_SELF).ru_maxrss`: peak resident set size. On macOS the
 /// value is in bytes; on Linux it's in kilobytes. Returns megabytes.
@@ -97,9 +97,11 @@ async fn smb_credits_snapshot(vol: &SmbVolume) -> Option<u16> {
 }
 
 /// Connects to the `smb-consumer-auth` Docker container (share `private`,
-/// writable, credentials `testuser` / `testpass`). Default port 10481
-/// matches smb2's auth test container; override via
-/// `SMB_CONSUMER_AUTH_PORT`.
+/// writable, credentials `testuser` / `testpass`) on `SMB_CONSUMER_AUTH_PORT`.
+///
+/// The fallback is smb2's own 10481, where Cmdr's stack never listens: it sits
+/// on 11481. The check runner exports the port for every other SMB test, and
+/// `scripts/soak-smb.sh` exports it for this one.
 async fn make_docker_auth_volume() -> SmbVolume {
     let port: u16 = std::env::var("SMB_CONSUMER_AUTH_PORT")
         .ok()
@@ -115,7 +117,12 @@ async fn make_docker_auth_volume() -> SmbVolume {
         crate::volume_host::host(),
     )
     .await
-    .unwrap_or_else(|e| panic!("Failed to connect to Docker SMB auth container at 127.0.0.1:{port} ({e:?})"))
+    .unwrap_or_else(|e| {
+        panic!(
+            "Failed to connect to Docker SMB auth container at 127.0.0.1:{port} ({e:?}). \
+             Run through scripts/soak-smb.sh, which exports the stack's ports."
+        )
+    })
 }
 
 #[tokio::test]
