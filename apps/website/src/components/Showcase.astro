@@ -1,9 +1,10 @@
 ---
 /**
- * The landing page's clip-led tour, in the order of issue #693: trust first (nothing else does
- * rollback), then multi-rename, reach, optional AI, and the craft. Copy is a draft for David's review.
+ * The landing page's clip-led tour: trust first (nothing else does rollback), then reach, multi-rename,
+ * the viewer, optional AI, and the craft. The reach section's copy is a draft for David's review.
  * Every `/features#…` link targets a card id that `src/pages/features.astro` renders.
  */
+import DevTodo from './DevTodo.astro'
 import ProductClip from './ProductClip.astro'
 import ShowcaseSection from './ShowcaseSection.astro'
 import Icon from './icons/Icon.astro'
@@ -20,19 +21,25 @@ const reach = [
         href: '/features#network-drives',
         icon: 'server',
         title: 'Network drives',
-        text: 'Its own SMB client, 4–200x faster than the macOS one.',
+        text: 'Its own SMB client, 4–200x faster than the macOS one, and NFS with no system mount.',
     },
     {
         href: '/features#connect',
         icon: 'globe',
-        title: 'Servers',
-        text: 'SFTP, WebDAV, and S3, like any local folder.',
+        title: 'Servers and cloud',
+        text: 'SFTP, WebDAV, and S3-compatible buckets, like any local folder.',
     },
     {
         href: '/features#git-browser',
         icon: 'git-branch',
         title: 'Git',
         text: 'Browse history, branches, and stashes as folders.',
+    },
+    {
+        href: '/features#restic-backups',
+        icon: 'database',
+        title: 'Backups',
+        text: 'Open a restic backup and copy files out of any snapshot.',
     },
     {
         href: '/features#archives',
@@ -67,7 +74,52 @@ const reach = [
         </div>
     </ShowcaseSection>
 
-    <!-- (b) Multi-rename -->
+    <!-- (b) Reach: second, because it's what people switching from Finder feel first. -->
+    <ShowcaseSection id="reach" eyebrow="Connections" title="Reaches well beyond your disk" layout="stacked">
+        <DevTodo>
+            Draft copy for this section, the two clip captions, and the six cards: please review. The
+            <code>reach-network</code> and <code>reach-devices</code> clips show placeholders until they're recorded.
+        </DevTodo>
+        <p>
+            NAS shares, servers, cloud buckets, backups, repos, and phones open right in the pane, and you browse and copy
+            them like any folder on your Mac.
+        </p>
+        <p class="text-base text-text-tertiary">
+            See <a href="/features#connect">every connection</a> and how far along each one is.
+        </p>
+        <div slot="media" class="grid gap-10 md:grid-cols-2 md:gap-8">
+            <ProductClip
+                slug="reach-network"
+                label="Adding an SMB server, an NFS share, and an S3 bucket in Cmdr, then browsing each one in a pane."
+                caption="Add an SMB server, an NFS share, and an S3 bucket"
+            />
+            <ProductClip
+                slug="reach-devices"
+                label="Browsing a git repo's history, a restic backup's snapshots, and an Android phone over MTP, each as folders in Cmdr."
+                caption="Git history, restic snapshots, and an Android phone, as folders"
+            />
+        </div>
+        <ul slot="after" class="mx-auto mt-14 grid max-w-6xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {
+                reach.map((item) => (
+                    <li>
+                        <a
+                            href={item.href}
+                            class="group flex h-full flex-col gap-2 rounded-xl border border-border bg-surface p-4 no-underline transition-colors duration-300 hover:border-accent/40 hover:bg-surface-elevated"
+                        >
+                            <span class="flex items-center gap-2">
+                                <Icon name={item.icon} size={20} />
+                                <span class="font-semibold text-text-primary">{item.title}</span>
+                            </span>
+                            <span class="text-sm/relaxed text-text-secondary">{item.text}</span>
+                        </a>
+                    </li>
+                ))
+            }
+        </ul>
+    </ShowcaseSection>
+
+    <!-- (c) Multi-rename -->
     <ShowcaseSection id="multi-rename" eyebrow="Multi-rename" title="Bulk rename files">
         <p>Use a pattern, counters, search & replace, with a live preview. Changed your mind? You can undo it.</p>
         <p>
@@ -85,8 +137,8 @@ const reach = [
         />
     </ShowcaseSection>
 
-    <!-- (c) Viewer plus a compact reach strip -->
-    <ShowcaseSection id="opens-everything" eyebrow="Viewer and connections" title="Opens everything, fast" flip>
+    <!-- (d) Viewer -->
+    <ShowcaseSection id="opens-everything" eyebrow="Viewer" title="Opens everything, fast" flip>
         <p>
             The built-in viewer opens a 10 GB file in about a second, and searches it. Text, images, binary, and hex,
             all driven from the keyboard.
@@ -96,39 +148,10 @@ const reach = [
             slot="media"
             slug="viewer"
             label="Cmdr's viewer opening a 10 GB log file instantly, searching it, then switching to hex view."
-            credit={{
-                kind: 'Photo',
-                title: 'Autumn bouquet',
-                titleHref: 'https://commons.wikimedia.org/wiki/File:Autumn_bouquet_(30427779760).jpg',
-                author: 'Susanne Nilsson',
-                license: 'CC BY-SA 2.0',
-                licenseHref: 'https://creativecommons.org/licenses/by-sa/2.0/',
-            }}
         />
-        <div slot="after" class="mx-auto mt-20 max-w-6xl">
-            <h3 class="mb-6 text-lg font-semibold text-text-primary">And it reaches well beyond your disk</h3>
-            <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                {
-                    reach.map((item) => (
-                        <li>
-                            <a
-                                href={item.href}
-                                class="group flex h-full flex-col gap-2 rounded-xl border border-border bg-surface p-4 no-underline transition-colors duration-300 hover:border-accent/40 hover:bg-surface-elevated"
-                            >
-                                <span class="flex items-center gap-2">
-                                    <Icon name={item.icon} size={20} />
-                                    <span class="font-semibold text-text-primary">{item.title}</span>
-                                </span>
-                                <span class="text-sm/relaxed text-text-secondary">{item.text}</span>
-                            </a>
-                        </li>
-                    ))
-                }
-            </ul>
-        </div>
     </ShowcaseSection>
 
-    <!-- (d) AI, opt-in -->
+    <!-- (e) AI, opt-in -->
     <ShowcaseSection id="optional-ai" eyebrow="AI" title="AI, only if you want it">
         <p>
             Describe what you’re looking for, like “my tax report from last year”, and Cmdr turns it into filters and
@@ -162,7 +185,7 @@ const reach = [
         />
     </ShowcaseSection>
 
-    <!-- (e) Craft -->
+    <!-- (f) Craft -->
     <ShowcaseSection id="made-with-care" eyebrow="Details" title="Made with care" flip>
         <p>
             Cmdr follows your Mac’s look and accessibility settings, and speaks 15 languages. Switch between them

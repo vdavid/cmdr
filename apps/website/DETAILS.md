@@ -279,7 +279,10 @@ without JS (falls back to system preference) while supporting explicit overrides
 ## Product clips
 
 The landing page leads with short screen recordings of the app (`Showcase.astro`, order and pitch from issue #693):
-trust (copy and rollback, the queue), multi-rename, viewer plus a reach strip, optional AI, and craft.
+trust (copy and rollback, the queue), reach (two clips plus a card strip), multi-rename, the viewer, optional AI, and
+craft. The markup and styles are `ProductClip.astro`; its browser runtime is `src/client/product-clip-player.ts`, which
+the component's `<script>` imports. `src/client/` is where a component's script goes once it outgrows inline; eslint
+gives it browser globals.
 
 - **Files**: `pnpm marketing:clips` (apps/desktop) writes `public/clips/{slug}-{light,dark}-{av1,h264}.mp4`, a
   `{slug}-{theme}.webp` poster per theme, and `clips.json` (`{ clips: [{ slug, width, height, duration, themes }] }`).
@@ -297,14 +300,23 @@ trust (copy and rollback, the queue), multi-rename, viewer plus a reach strip, o
   Up/Down (5 s), Home, and End seek while Space and Enter toggle. A seek before the clip has loaded loads it first.
   **Decision/Why**: the slider carries the clip's description through `aria-describedby`, so the `<video>` stays
   `aria-hidden` (html-validate rejects naming a video) and the slider and the play/pause button are the honest controls.
+- **Key captions** (KeyCastr-style): an optional `public/clips/{slug}-{theme}.keys.json` (`{ keys: [{ at, label }] }`,
+  `at` in seconds from the encoded clip's start) is read at build time by `parseClipKeys`, which drops invalid entries,
+  and lands on the clip as `data-keys-{theme}`. The player shows the presses from the last 1.6 s as a row of caps in the
+  bottom tenth (up to five, newest last), sized in container units so phone and desktop match, with a short pop-in and a
+  fade over the last 0.4 s. It's computed from `currentTime`, never from events, so scrubbing, seeking, looping, and a
+  theme swap (each theme has its own timings) need nothing special. Reduced motion drops the pop and the fade. The
+  overlay is `aria-hidden` (the description covers it) and waits for `data-ready`. `/clip-fixture`
+  (`src/pages/clip-fixture.astro`, keys from `src/fixtures/clip-keys.json`, unlinked, `noindex`, out of the sitemap)
+  lets the E2E test timing without depending on recorded keys.
 - **Third-party media in a recording** gets a `credit` prop on its `ProductClip` (kind, linked title, author, linked
-  license), rendered as a small tertiary line under that clip only. The `viewer` clip shows a CC BY-SA 2.0 photo, so it
-  carries one; the homepage E2E pins it.
+  license), rendered as a small tertiary line under that clip only. No clip carries one right now.
 - **Window chrome is CSS**: the recordings have no alpha, so the rounded corners, hairline rim, and shadow come from
   `.clip-window`.
 - **A missing clip** (no manifest entry, or a missing H.264 file or poster) renders a placeholder card labeled as one,
   so a half-recorded set never breaks the build. The homepage E2E asserts every landing clip renders as a video, which
-  catches a `clips.json` shape drift that would silently turn them all into placeholders.
+  catches a `clips.json` shape drift that would silently turn them all into placeholders; only `reach-network` and
+  `reach-devices` may be placeholders while they wait to be recorded.
 
 ## Typed linting
 

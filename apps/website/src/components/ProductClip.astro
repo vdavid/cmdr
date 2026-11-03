@@ -8,13 +8,15 @@
  * - A thin accent line along the bottom shows the playback position. The whole frame is a slider:
  *   click or tap toggles play, a horizontal drag scrubs (pausing only while dragging), and when
  *   focused, the arrow keys, Page Up/Down, Home, and End seek while Space toggles play.
+ * - With a `.keys.json` per theme, key presses show as KeyCastr-style captions near the bottom,
+ *   computed from the playback position, so they follow scrubbing and looping.
  * - The recordings have no alpha channel, so the rounded corners and the shadow are CSS.
  * - A clip missing from `public/clips/` renders a placeholder card that says so.
  *
- * File contract and availability rules: `src/build/product-clips.ts`.
+ * File contract and availability rules: `src/build/product-clips.ts`. Runtime: `src/client/product-clip-player.ts`.
  */
 import Icon from './icons/Icon.astro'
-import { getProductClip, type ClipSlug } from '../build/product-clips'
+import { getProductClip, type ClipKey, type ClipSlug, type ClipTheme } from '../build/product-clips'
 
 interface Props {
     slug: ClipSlug
@@ -28,6 +30,11 @@ interface Props {
     caption?: string
     /** Attribution for third-party media the recording shows, rendered as a quiet line under the clip. */
     credit?: ClipCredit
+    /**
+     * Key presses to caption, per theme, in place of the clip's `.keys.json` files. For the
+     * `/clip-fixture` E2E page; the landing reads the files.
+     */
+    keys?: Record<ClipTheme, ClipKey[]>
     class?: string
 }
 
@@ -41,7 +48,7 @@ interface ClipCredit {
     licenseHref: string
 }
 
-const { slug, label, caption, credit, class: className } = Astro.props
+const { slug, label, caption, credit, keys: keysOverride, class: className } = Astro.props
 
 const placeholderTitles: Record<ClipSlug, string> = {
     'copy-rollback': 'Copy, pause, and roll back',
@@ -51,11 +58,16 @@ const placeholderTitles: Record<ClipSlug, string> = {
     'language-switch': 'Switching languages',
     viewer: 'The file viewer',
     settings: 'Settings',
+    'reach-network': 'SMB, NFS, and S3',
+    'reach-devices': 'Git, restic, and an Android phone',
 }
 
 const clip = getProductClip(slug)
 // A page shows each clip once, so the slug keeps the id unique.
 const descriptionId = `clip-${slug}-description`
+const keysLight = keysOverride?.light ?? clip?.files.light.keys ?? []
+const keysDark = keysOverride?.dark ?? clip?.files.dark.keys ?? []
+const hasKeys = keysLight.length > 0 || keysDark.length > 0
 ---
 
 <figure class:list={['product-clip', className]}>
@@ -71,6 +83,8 @@ const descriptionId = `clip-${slug}-description`
                 data-h264-light={clip.files.light.h264}
                 data-h264-dark={clip.files.dark.h264}
                 data-duration={clip.duration}
+                data-keys-light={keysLight.length > 0 ? JSON.stringify(keysLight) : undefined}
+                data-keys-dark={keysDark.length > 0 ? JSON.stringify(keysDark) : undefined}
             >
                 <img
                     class="clip-poster clip-poster--light"
@@ -101,6 +115,8 @@ const descriptionId = `clip-${slug}-description`
                     preload="none"
                     aria-hidden="true"
                 />
+                {/* Key captions are decoration: the description already says what the clip does. */}
+                {hasKeys && <div class="clip-keys" aria-hidden="true" data-clip-keys />}
                 <span class="sr-only" id={descriptionId} data-clip-description>
                     {label}
                 </span>
@@ -127,7 +143,12 @@ const descriptionId = `clip-${slug}-description`
                 </button>
             </div>
         ) : (
-            <div class="clip-placeholder" role="img" aria-label={`Placeholder for a clip: ${label}`}>
+            <div
+                class="clip-placeholder"
+                role="img"
+                aria-label={`Placeholder for a clip: ${label}`}
+                data-clip-placeholder={slug}
+            >
                 <span class="clip-placeholder__pill">Placeholder</span>
                 <Icon name="clapperboard" size={32} />
                 <span class="clip-placeholder__title">{placeholderTitles[slug]}</span>
@@ -291,6 +312,44 @@ const descriptionId = `clip-${slug}-description`
         transform-origin: left;
     }
 
+    /* KeyCastr-style captions: a row of key caps in the bottom tenth, sized to the clip, not the page. */
+    .clip-window:has(.clip-keys) {
+        container-type: inline-size;
+    }
+
+    .clip-keys {
+        position: absolute;
+        right: 0;
+        bottom: 4%;
+        left: 0;
+        z-index: 1;
+        display: flex;
+        justify-content: center;
+        gap: 0.5cqi;
+        pointer-events: none;
+    }
+
+    /* Over the poster, the position is meaningless: captions wait for the video. */
+    .clip-window:not([data-ready]) .clip-keys {
+        visibility: hidden;
+    }
+
+    /* The player creates the caps at runtime, so they carry no scope attribute. */
+    .clip-keys :global(.clip-key) {
+        padding: 0.5cqi 1.4cqi;
+        font-family: inherit;
+        border: 1px solid var(--color-border);
+        border-radius: 1cqi;
+        background: color-mix(in srgb, var(--color-surface-elevated) 86%, transparent);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+        font-size: clamp(11px, 2.6cqi, 22px);
+        font-weight: 600;
+        line-height: 1.3;
+        white-space: nowrap;
+        color: var(--color-text-primary);
+    }
+
     .clip-toggle {
         position: absolute;
         right: 12px;
@@ -409,332 +468,5 @@ const descriptionId = `clip-${slug}-description`
 </style>
 
 <script>
-    type Theme = 'light' | 'dark'
-
-    interface Clip {
-        root: HTMLElement
-        video: HTMLVideoElement
-        button: HTMLButtonElement
-        visible: boolean
-        /** Whether the clip should play while on screen: autoplay, unless reduced motion or the visitor paused it. */
-        wantsPlay: boolean
-        /** Theme of the loaded sources; `null` until the clip first comes on screen. */
-        theme: Theme | null
-        slider: HTMLElement
-        progress: HTMLElement
-        /** The whole second last written to `aria-valuenow`, so a 60 fps redraw doesn't churn the a11y tree. */
-        announcedSecond: number
-        /** The animation frame driving the progress line while playing, if any. */
-        frame: number | null
-        drag: Drag | null
-        /** Where to seek once the metadata arrives, for a seek made before the clip loaded. */
-        pendingSeek: number | null
-    }
-
-    interface Drag {
-        pointerId: number
-        startX: number
-        startTime: number
-        wasPlaying: boolean
-        /** False until the pointer travels past `DRAG_THRESHOLD_PX`; a press that never does is a click. */
-        moved: boolean
-    }
-
-    const AV1_TYPE = 'video/mp4; codecs="av01.0.08M.08"'
-    const DRAG_THRESHOLD_PX = 6
-    const ARROW_STEP_S = 1
-    const PAGE_STEP_S = 5
-    /** Seeking to the very end of a looping video lands on its first frame, so End stops just short. */
-    const END_MARGIN_S = 0.05
-    const clips = new Set<Clip>()
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const prefersLight = window.matchMedia('(prefers-color-scheme: light)')
-
-    function activeTheme(): Theme {
-        const explicit = document.documentElement.dataset.theme
-        if (explicit === 'light' || explicit === 'dark') return explicit
-        return prefersLight.matches ? 'light' : 'dark'
-    }
-
-    function source(src: string, type: string): HTMLSourceElement {
-        const el = document.createElement('source')
-        el.src = src
-        el.type = type
-        return el
-    }
-
-    /** Points the video at the active theme's files, keeping its position and play state. */
-    function loadSources(clip: Clip): void {
-        const theme = activeTheme()
-        if (clip.theme === theme) return
-        const { video, root } = clip
-        const resumeAt = video.currentTime
-        const wasPlaying = !video.paused
-        const av1 = theme === 'light' ? root.dataset.av1Light : root.dataset.av1Dark
-        const h264 = theme === 'light' ? root.dataset.h264Light : root.dataset.h264Dark
-        const sources: HTMLSourceElement[] = []
-        if (av1) sources.push(source(av1, AV1_TYPE))
-        if (h264) sources.push(source(h264, 'video/mp4'))
-        video.replaceChildren(...sources)
-        clip.theme = theme
-        delete root.dataset.ready
-        video.preload = 'auto'
-        video.load()
-        if (resumeAt > 0) {
-            video.addEventListener(
-                'loadedmetadata',
-                () => {
-                    video.currentTime = resumeAt
-                },
-                { once: true },
-            )
-        }
-        if (wasPlaying) play(clip)
-    }
-
-    function play(clip: Clip): void {
-        loadSources(clip)
-        clip.video.play().catch(() => {
-            // Autoplay refused (data saver, an old browser policy): stay on the poster with the play button showing.
-            syncState(clip)
-        })
-    }
-
-    function syncState(clip: Clip): void {
-        const paused = clip.video.paused
-        clip.root.dataset.state = paused ? 'paused' : 'playing'
-        clip.button.setAttribute('aria-label', paused ? 'Play clip' : 'Pause clip')
-        if (paused || reducedMotion.matches) stopFrames(clip)
-        else startFrames(clip)
-    }
-
-    /** Seconds; the manifest's value until the video's own metadata arrives. */
-    function duration(clip: Clip): number {
-        const fromVideo = clip.video.duration
-        return Number.isFinite(fromVideo) && fromVideo > 0 ? fromVideo : Number(clip.root.dataset.duration) || 0
-    }
-
-    function renderProgress(clip: Clip): void {
-        const total = duration(clip)
-        const now = clip.video.currentTime
-        const fraction = total > 0 ? Math.min(1, now / total) : 0
-        clip.progress.style.transform = `scaleX(${fraction})`
-        const second = Math.round(now)
-        if (second === clip.announcedSecond) return
-        clip.announcedSecond = second
-        clip.slider.setAttribute('aria-valuenow', String(second))
-        clip.slider.setAttribute('aria-valuetext', `${second} of ${Math.round(total)} seconds`)
-    }
-
-    /**
-     * A smooth line needs a redraw per frame, so it runs only while the clip plays. With reduced motion
-     * the line steps on `timeupdate` (a few times a second) instead of gliding.
-     */
-    function startFrames(clip: Clip): void {
-        if (clip.frame !== null) return
-        const tick = () => {
-            renderProgress(clip)
-            clip.frame = requestAnimationFrame(tick)
-        }
-        clip.frame = requestAnimationFrame(tick)
-    }
-
-    function stopFrames(clip: Clip): void {
-        if (clip.frame === null) return
-        cancelAnimationFrame(clip.frame)
-        clip.frame = null
-    }
-
-    /** Seeks to `seconds`, loading the sources first when the clip hasn't come on screen yet. */
-    function seekTo(clip: Clip, seconds: number): void {
-        const { video } = clip
-        const go = (to: number) => {
-            video.currentTime = Math.max(0, Math.min(to, duration(clip) - END_MARGIN_S))
-            renderProgress(clip)
-        }
-        if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
-            go(seconds)
-            return
-        }
-        // A drag fires many seeks before the metadata lands; only the latest one matters.
-        const firstWait = clip.pendingSeek === null
-        clip.pendingSeek = seconds
-        if (!firstWait) return
-        video.addEventListener(
-            'loadedmetadata',
-            () => {
-                if (clip.pendingSeek !== null) go(clip.pendingSeek)
-                clip.pendingSeek = null
-            },
-            { once: true },
-        )
-        loadSources(clip)
-    }
-
-    function apply(clip: Clip): void {
-        // A drag owns the play state until it ends, then restores it itself.
-        if (clip.drag?.moved) return
-        if (clip.visible && clip.wantsPlay) play(clip)
-        else if (!clip.video.paused) clip.video.pause()
-    }
-
-    const visibility = new IntersectionObserver(
-        (entries) => {
-            for (const entry of entries) {
-                const clip = [...clips].find((c) => c.root === entry.target)
-                if (!clip) continue
-                clip.visible = entry.isIntersecting
-                apply(clip)
-            }
-        },
-        { rootMargin: '120px 0px', threshold: 0.15 },
-    )
-
-    function bind(root: HTMLElement): void {
-        const video = root.querySelector('video')
-        const button = root.querySelector<HTMLButtonElement>('[data-clip-toggle]')
-        const slider = root.querySelector<HTMLElement>('[data-clip-scrub]')
-        const progress = root.querySelector<HTMLElement>('[data-clip-progress]')
-        if (!video || !button || !slider || !progress) return
-        const clip: Clip = {
-            root,
-            video,
-            button,
-            visible: false,
-            wantsPlay: !reducedMotion.matches,
-            theme: null,
-            slider,
-            progress,
-            announcedSecond: 0,
-            frame: null,
-            drag: null,
-            pendingSeek: null,
-        }
-        clips.add(clip)
-        root.dataset.bound = ''
-
-        const toggle = () => {
-            clip.wantsPlay = clip.video.paused
-            if (clip.wantsPlay) play(clip)
-            else clip.video.pause()
-        }
-        button.addEventListener('click', toggle)
-        video.addEventListener('play', () => syncState(clip))
-        video.addEventListener('pause', () => syncState(clip))
-        video.addEventListener('loadeddata', () => {
-            root.dataset.ready = ''
-            renderProgress(clip)
-        })
-        video.addEventListener('seeked', () => renderProgress(clip))
-        video.addEventListener('timeupdate', () => {
-            if (clip.frame === null) renderProgress(clip)
-        })
-
-        // Press and release in place toggles play; a horizontal drag scrubs relative to where it
-        // started (the frame's full width spans the whole clip), pausing only while it lasts.
-        slider.addEventListener('pointerdown', (event) => {
-            if (event.pointerType === 'mouse' && event.button !== 0) return
-            clip.drag = {
-                pointerId: event.pointerId,
-                startX: event.clientX,
-                startTime: video.currentTime,
-                wasPlaying: !video.paused,
-                moved: false,
-            }
-            slider.setPointerCapture(event.pointerId)
-        })
-        slider.addEventListener('pointermove', (event) => {
-            const drag = clip.drag
-            if (!drag || drag.pointerId !== event.pointerId) return
-            const dx = event.clientX - drag.startX
-            if (!drag.moved) {
-                if (Math.abs(dx) < DRAG_THRESHOLD_PX) return
-                drag.moved = true
-                root.dataset.scrubbing = ''
-                video.pause()
-            }
-            seekTo(clip, drag.startTime + (dx / slider.clientWidth) * duration(clip))
-        })
-        const endDrag = (event: PointerEvent, completed: boolean) => {
-            const drag = clip.drag
-            if (!drag || drag.pointerId !== event.pointerId) return
-            clip.drag = null
-            if (slider.hasPointerCapture(event.pointerId)) slider.releasePointerCapture(event.pointerId)
-            if (!drag.moved) {
-                if (completed) toggle()
-                return
-            }
-            delete root.dataset.scrubbing
-            if (drag.wasPlaying && clip.visible) play(clip)
-        }
-        slider.addEventListener('pointerup', (event) => endDrag(event, true))
-        // The browser took the gesture over (a vertical swipe became a page scroll): no toggle.
-        slider.addEventListener('pointercancel', (event) => endDrag(event, false))
-
-        slider.addEventListener('keydown', (event) => {
-            const now = video.currentTime
-            let target: number
-            switch (event.key) {
-                case ' ':
-                case 'Enter':
-                    event.preventDefault()
-                    toggle()
-                    return
-                case 'ArrowRight':
-                case 'ArrowUp':
-                    target = now + ARROW_STEP_S
-                    break
-                case 'ArrowLeft':
-                case 'ArrowDown':
-                    target = now - ARROW_STEP_S
-                    break
-                case 'PageUp':
-                    target = now + PAGE_STEP_S
-                    break
-                case 'PageDown':
-                    target = now - PAGE_STEP_S
-                    break
-                case 'Home':
-                    target = 0
-                    break
-                case 'End':
-                    target = duration(clip)
-                    break
-                default:
-                    return
-            }
-            event.preventDefault()
-            seekTo(clip, target)
-        })
-        visibility.observe(root)
-    }
-
-    function reloadAllForTheme(): void {
-        for (const clip of clips) if (clip.theme !== null) loadSources(clip)
-    }
-
-    new MutationObserver(reloadAllForTheme).observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-theme'],
-    })
-    prefersLight.addEventListener('change', reloadAllForTheme)
-    reducedMotion.addEventListener('change', () => {
-        for (const clip of clips) {
-            clip.wantsPlay = !reducedMotion.matches
-            apply(clip)
-            syncState(clip)
-        }
-    })
-
-    document.addEventListener('astro:page-load', () => {
-        // Forget clips a client-side navigation removed.
-        for (const clip of clips) {
-            if (!clip.root.isConnected) {
-                stopFrames(clip)
-                visibility.unobserve(clip.root)
-                clips.delete(clip)
-            }
-        }
-        document.querySelectorAll<HTMLElement>('[data-product-clip]:not([data-bound])').forEach(bind)
-    })
+    import '../client/product-clip-player'
 </script>

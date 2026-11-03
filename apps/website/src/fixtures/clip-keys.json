@@ -1,0 +1,9 @@
+{
+  "keys": [
+    { "at": 1, "label": "F5" },
+    { "at": 1.3, "label": "⏎" },
+    { "at": 5, "label": "⌘Z" },
+    { "at": "bad", "label": "dropped: no number" },
+    { "at": 6, "label": " " }
+  ]
+}

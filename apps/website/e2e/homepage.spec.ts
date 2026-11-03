@@ -31,13 +31,18 @@ test.describe('Homepage', () => {
     expect(pageContent).toMatch(/\$59|free.*personal/i)
   })
 
-  test('every landing clip renders as a video, not a placeholder', async ({ page }) => {
+  test('every recorded landing clip renders as a video, not a placeholder', async ({ page }) => {
     // A `public/clips/clips.json` shape the build can't read turns every clip into a placeholder
-    // card without failing anything, so this is the guard for the manifest contract.
+    // card without failing anything, so this is the guard for the manifest contract. Only the two
+    // reach clips may still be placeholders while they wait to be recorded.
+    const notRecordedYet = ['reach-network', 'reach-devices']
     await page.goto('/')
-    await expect(page.locator('.clip-placeholder')).toHaveCount(0)
+    const placeholders = await page
+      .locator('[data-clip-placeholder]')
+      .evaluateAll((els) => els.map((el) => el.getAttribute('data-clip-placeholder')))
+    for (const slug of placeholders) expect(notRecordedYet).toContain(slug)
     const clips = page.locator('[data-product-clip]')
-    await expect(clips).toHaveCount(6)
+    await expect(clips).toHaveCount(8 - placeholders.length)
     for (const description of await clips.locator('[data-clip-description]').all()) {
       await expect(description).toHaveText(/\w/)
     }
@@ -108,27 +113,50 @@ test.describe('Homepage', () => {
     await expect(clip).toHaveAttribute('data-state', 'playing')
   })
 
-  test('the viewer clip credits the photo it shows, and only that clip carries a credit', async ({ page }) => {
-    await page.goto('/')
-    const credit = page.locator('[data-clip-credit]')
-    await expect(credit).toHaveCount(1)
-    await expect(credit).toContainText('by Susanne Nilsson')
-    await expect(credit.getByRole('link', { name: 'Autumn bouquet' })).toHaveAttribute(
-      'href',
-      'https://commons.wikimedia.org/wiki/File:Autumn_bouquet_(30427779760).jpg',
-    )
-    await expect(credit.getByRole('link', { name: 'CC BY-SA 2.0' })).toHaveAttribute(
-      'href',
-      'https://creativecommons.org/licenses/by-sa/2.0/',
-    )
-  })
+  test('key captions follow the playback position, and an invalid keys entry is dropped', async ({ page }) => {
+    // `/clip-fixture` renders one clip with `src/fixtures/clip-keys.json`: F5 at 1 s, ⏎ at 1.3 s,
+    // ⌘Z at 5 s, plus two invalid entries. Reduced motion stops autoplay and the fade, so each
+    // seek gives a still, exact state.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/clip-fixture')
+    const clip = page.locator('[data-product-clip]')
+    const slider = clip.getByRole('slider', { name: 'Clip position' })
+    const captions = clip.locator('[data-clip-keys]')
+    await expect(captions).toHaveAttribute('aria-hidden', 'true')
+    const seek = (seconds: number) =>
+      clip.locator('video').evaluate((v: HTMLVideoElement, s) => {
+        v.currentTime = s
+      }, seconds)
 
+    // Home loads the clip; then seek to moments around the presses.
+    await slider.focus()
+    await page.keyboard.press('Home')
+    await expect(clip).toHaveAttribute('data-ready', '')
+    await seek(1.5)
+    await expect(captions.locator('.clip-key')).toHaveText(['F5', '⏎'])
+    await seek(2.8)
+    await expect(captions.locator('.clip-key')).toHaveText(['⏎'])
+    await seek(3.5)
+    await expect(captions.locator('.clip-key')).toHaveCount(0)
+    await seek(5.2)
+    await expect(captions.locator('.clip-key')).toHaveText(['⌘Z'])
+    // ⌘Z is gone 1.6 s after its press, and the blank label at 6 s and the non-numeric one never show.
+    await seek(6.8)
+    await expect(captions.locator('.clip-key')).toHaveCount(0)
+    // Back to the start, as a loop would: the early presses come back.
+    await seek(1.1)
+    await expect(captions.locator('.clip-key')).toHaveText(['F5'])
+  })
   test('testimonials name real users', async ({ page }) => {
     await page.goto('/')
-    const section = page.locator('section', { has: page.getByRole('heading', { name: 'From early users' }) })
-    await expect(section.locator('blockquote')).toHaveCount(3)
+    const section = page.getByRole('region', { name: 'Testimonials' })
+    await expect(section.locator('blockquote')).toHaveCount(2)
     await expect(section).toContainText('Sven Kopetzki')
     await expect(section).toContainText('Robert Benedict')
+    // The avatar is a local, pipeline-optimized copy, never a hotlink to Gravatar.
+    const avatar = section.locator('img')
+    await expect(avatar).toHaveCount(1)
+    await expect(avatar).toHaveAttribute('src', /^\/_astro\/.+\.webp$/)
   })
 
   test('has navigation header', async ({ page }) => {
