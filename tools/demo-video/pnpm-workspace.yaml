@@ -1,0 +1,14 @@
+# A standalone pnpm root, so installs here never touch the monorepo's workspace or lockfile.
+# Same install-side guardrails as the repo root's `pnpm-workspace.yaml`.
+packages: []
+
+minimumReleaseAge: 4320
+trustPolicy: no-downgrade
+blockExoticSubdeps: true
+# Vetted in the root `pnpm-workspace.yaml`: an old major that predates npm's provenance rollout.
+trustPolicyExclude:
+  - semver@6.3.1
+
+# esbuild's postinstall only verifies the native binary that its optional platform package already ships.
+allowBuilds:
+  esbuild: false

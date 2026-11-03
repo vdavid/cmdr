@@ -1,0 +1,31 @@
+---
+/**
+ * One clip with its own short text beside it, for a `stacked` `ShowcaseSection` that shows
+ * several clips: one per row, so they read one at a time rather than as a busy pair. The clip
+ * goes in the `clip` slot, the text in the default slot. `flip` puts the clip on the right, so
+ * consecutive rows can zigzag. Below `lg`, the text comes first and the clip under it.
+ */
+interface Props {
+    title: string
+    flip?: boolean
+}
+
+const { title, flip = false } = Astro.props
+---
+
+<div
+    class:list={[
+        'clip-row grid items-center gap-8 lg:gap-14',
+        flip ? 'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]' : 'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]',
+    ]}
+>
+    <div class:list={['clip-row-text', !flip && 'lg:order-2']}>
+        <h3 class="mb-3 text-xl font-semibold tracking-tight text-text-primary md:text-2xl">{title}</h3>
+        <div class="space-y-3 text-base/relaxed text-text-secondary md:text-lg/relaxed">
+            <slot />
+        </div>
+    </div>
+    <div class:list={[!flip && 'lg:order-1']}>
+        <slot name="clip" />
+    </div>
+</div>

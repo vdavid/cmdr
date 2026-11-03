@@ -29,10 +29,10 @@ export default defineConfig({
     inlineStylesheets: 'always',
   },
   integrations: [
-    // /visual-fixture is the Playwright rendering fixture (src/pages/visual-fixture.astro): it has to
-    // build so the baselines can shoot it, but it's not content, so keep it out of the sitemap. It
-    // carries `noindex` too.
-    sitemap({ filter: (page) => !page.includes('/visual-fixture') }),
+    // /visual-fixture and /clip-fixture are Playwright fixtures (src/pages/visual-fixture.astro,
+    // src/pages/clip-fixture.astro): they have to build so the E2E can load them, but they're not
+    // content, so keep them out of the sitemap. They carry `noindex` too.
+    sitemap({ filter: (page) => !page.includes('/visual-fixture') && !page.includes('/clip-fixture') }),
     smartQuotesIntegration(),
     stripEmptySrcsetIntegration(),
     // After every integration that rewrites HTML, so it versions the URLs they've finished writing.

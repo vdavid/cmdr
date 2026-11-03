@@ -57,7 +57,7 @@ an APFS clonefile (`cp -c`), falling back to a plain copy, and downloading only 
 
 ## The capture binary
 
-Neither capture orchestrator (`i18n-capture.ts`, `marketing-shots.ts`) builds or picks a binary itself.
+No capture orchestrator (`i18n-capture.ts`, `marketing-shots.ts`, `marketing-clips.ts`) builds or picks a binary itself.
 `capture-runtime.ts`'s `ensureE2eBinary` asks the check runner (`scripts/check.sh --ensure-e2e-binary`), which reuses
 the Playwright lane's stamped binary when it matches the tree, builds it otherwise, and prints its path. The build
 command and the fingerprint inputs stay in Go (`scripts/check/checks/e2e-build.go`), so the capture and the lane can't

@@ -1,16 +1,16 @@
 {
   "$comment": "Baseline for the website-bundle-size check (warn-only). Asset names are content-hash-normalized (About.DvK3R9p1.css → About.*.css) so rebuilds compare stably. A local run ratchets totalBytes down when dist/ shrinks. Raising it is FINE without asking, unlike most allowlists here: delete this file and run `pnpm check bundle-size` against a fresh build to regenerate. The warn at the moment of growth is the signal; the number is only a record of where the bundle stands.",
-  "totalBytes": 7316135,
+  "totalBytes": 29348181,
   "topAssets": {
-    "_astro/no-dir-sizes-across-file-managers.*.webp": 381206,
-    "_astro/no-dir-sizes-across-file-managers.IIBRI5iX_G2UDv.webp": 164626,
-    "blog/total-commander-for-macos/index.html": 162389,
-    "blog/total-commander-for-macos/totalcmd.webp": 216490,
-    "changelog/index.html": 642764,
-    "fonts/inter-400.ttf": 324820,
-    "fonts/inter-700.ttf": 326468,
-    "og-default.png": 604127,
-    "roadmap/index.html": 224832,
-    "trust/accessibility/index.html": 188708
+    "changelog/index.html": 740741,
+    "clips/multi-rename-light-h264.mp4": 643299,
+    "clips/search-dark-av1.mp4": 734028,
+    "clips/search-dark-h264.mp4": 816439,
+    "clips/search-light-av1.mp4": 802696,
+    "clips/search-light-h264.mp4": 824371,
+    "clips/viewer-dark-av1.mp4": 1067129,
+    "clips/viewer-dark-h264.mp4": 794942,
+    "clips/viewer-light-av1.mp4": 1068321,
+    "clips/viewer-light-h264.mp4": 817541
   }
 }

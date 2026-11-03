@@ -236,8 +236,8 @@ Using it:
 
 - `<Icon name="rocket" size={40} />`. Default gold comes from `.icon { color: var(--color-accent) }` plus Lucide's
   `currentColor` stroke; recolor by passing a `class` (e.g. a Tailwind `text-text-secondary`).
-- When a data array feeds `<Icon name={…}>` (the `Features.astro` / `features.astro` grids), type its `icon` field as
-  `IconName` via `satisfies { …; icon: IconName }[]` so a bad name is a compile error at the data site.
+- When a data array feeds `<Icon name={…}>` (the `features.astro` grid, the `Showcase.astro` reach strip), type its
+  `icon` field as `IconName` via `satisfies { …; icon: IconName }[]` so a bad name is a compile error at the data site.
 - **Size is applied as CSS `width`/`height`, never as width/height attributes.** Lucide glyphs already ship
   `width="1.2em" height="1.2em"`; passing width/height props too emits duplicate attributes, which `html-validate`'s
   `no-dup-attr` rejects (it runs over `dist/**/*.html`). `Icon.astro` sizes via a scoped `.icon :global(svg)` rule.
@@ -275,6 +275,48 @@ All pages support both light and dark mode. Users can override their system pref
 
 **Decision/Why**: The dual-selector pattern (media query + `data-theme` attribute) ensures the site works correctly
 without JS (falls back to system preference) while supporting explicit overrides via the toggle.
+
+## Product clips
+
+The landing page leads with short screen recordings of the app (`Showcase.astro`, order and pitch from issue #693):
+trust (copy and rollback, the queue), reach (two clips plus a card strip), multi-rename, the viewer, optional AI, and
+craft. The markup and styles are `ProductClip.astro`; its browser runtime is `src/client/product-clip-player.ts`, which
+the component's `<script>` imports. `src/client/` is where a component's script goes once it outgrows inline; eslint
+gives it browser globals.
+
+- **Files**: `pnpm marketing:clips` (apps/desktop) writes `public/clips/{slug}-{light,dark}-{av1,h264}.mp4`, a
+  `{slug}-{theme}.webp` poster per theme, and `clips.json` (`{ clips: [{ slug, width, height, duration, themes }] }`).
+  The contract and the "available" rule (manifest entry, both H.264 files, and both posters; AV1 optional) live in
+  `src/build/product-clips.ts`, read at build time.
+- **Player** (`ProductClip.astro`): no `src` until the clip scrolls near the viewport, then AV1 with H.264 as the
+  fallback (Safari decodes AV1 only in hardware), for the active theme. A theme toggle swaps the files and keeps the
+  position. Offscreen pauses. A play/pause button is always reachable (WCAG 2.2.2); with `prefers-reduced-motion` the
+  clip waits on its poster until clicked. Posters are lazy `<img>` pairs hidden per theme by CSS, so only the visible
+  one downloads, the same reasoning as the hero's background images.
+- **Progress and scrubbing**: a 2 px accent line along the bottom shows the position, redrawn per animation frame only
+  while playing (with reduced motion it steps on `timeupdate` instead of gliding). The whole frame is a `role="slider"`
+  overlay with `touch-action: pan-y`: a press without travel toggles play, a horizontal drag seeks relative to where it
+  started (full width spans the clip) and pauses only for the drag's length, and when focused, arrows (1 s), Page
+  Up/Down (5 s), Home, and End seek while Space and Enter toggle. A seek before the clip has loaded loads it first.
+  **Decision/Why**: the slider carries the clip's description through `aria-describedby`, so the `<video>` stays
+  `aria-hidden` (html-validate rejects naming a video) and the slider and the play/pause button are the honest controls.
+- **Key captions** (KeyCastr-style): an optional `public/clips/{slug}-{theme}.keys.json` (`{ keys: [{ at, label }] }`,
+  `at` in seconds from the encoded clip's start) is read at build time by `parseClipKeys`, which drops invalid entries,
+  and lands on the clip as `data-keys-{theme}`. The player shows the presses from the last 1.6 s as a row of caps in the
+  bottom tenth (up to five, newest last), sized in container units so phone and desktop match, with a short pop-in and a
+  fade over the last 0.4 s. It's computed from `currentTime`, never from events, so scrubbing, seeking, looping, and a
+  theme swap (each theme has its own timings) need nothing special. Reduced motion drops the pop and the fade. The
+  overlay is `aria-hidden` (the description covers it) and waits for `data-ready`. `/clip-fixture`
+  (`src/pages/clip-fixture.astro`, keys from `src/fixtures/clip-keys.json`, unlinked, `noindex`, out of the sitemap)
+  lets the E2E test timing without depending on recorded keys.
+- **Third-party media in a recording** gets a `credit` prop on its `ProductClip` (kind, linked title, author, linked
+  license), rendered as a small tertiary line under that clip only. No clip carries one right now.
+- **Window chrome is CSS**: the recordings have no alpha, so the rounded corners, hairline rim, and shadow come from
+  `.clip-window`.
+- **A missing clip** (no manifest entry, or a missing H.264 file or poster) renders a placeholder card labeled as one,
+  so a half-recorded set never breaks the build. The homepage E2E asserts every landing clip renders as a video, which
+  catches a `clips.json` shape drift that would silently turn them all into placeholders; only `reach-network` and
+  `reach-devices` may be placeholders while they wait to be recorded.
 
 ## Typed linting
 

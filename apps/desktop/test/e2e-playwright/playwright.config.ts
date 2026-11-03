@@ -27,7 +27,10 @@ const i18nCaptureSpecMatch = /i18n-capture\.spec\.ts$/
 // must never land on a lane that arms the fixture-restore guard. It is also macOS
 // only, hence excluded from `all`, which is what the Linux Docker lane runs.
 const marketingShotsSpecMatch = /marketing-shots\.spec\.ts$/
-const captureSpecMatches = [i18nCaptureSpecMatch, marketingShotsSpecMatch]
+// The marketing clips (`pnpm marketing:clips`): same shape, a recorder driver on its own
+// staged demo tree, macOS only.
+const marketingClipsSpecMatch = /marketing-clips\.spec\.ts$/
+const captureSpecMatches = [i18nCaptureSpecMatch, marketingShotsSpecMatch, marketingClipsSpecMatch]
 const testMatch =
   shardKind === 'mtp'
     ? mtpSpecMatch
@@ -35,9 +38,11 @@ const testMatch =
       ? i18nCaptureSpecMatch
       : shardKind === 'marketing-shots'
         ? marketingShotsSpecMatch
-        : '*.spec.ts'
+        : shardKind === 'marketing-clips'
+          ? marketingClipsSpecMatch
+          : '*.spec.ts'
 const testIgnore =
-  shardKind === 'i18n-capture' || shardKind === 'marketing-shots'
+  shardKind === 'i18n-capture' || shardKind === 'marketing-shots' || shardKind === 'marketing-clips'
     ? undefined
     : shardKind === 'non-mtp'
       ? [mtpSpecMatch, ...captureSpecMatches]

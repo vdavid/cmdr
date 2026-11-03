@@ -109,3 +109,35 @@ fn an_untouched_copy_reverses_completely() {
     assert!(!dir.exists(), "the created directory goes with its contents");
     assert_eq!(frames.last().unwrap().files_done, 0);
 }
+
+/// The host's rollback pace reaches a cancelled copy's own reversal, one pause per
+/// item, so an E2E run (and the marketing clip of a Rollback) can watch the bar
+/// drain instead of seeing it snap to zero.
+#[test]
+fn the_rollback_pace_holds_each_item_of_the_reversal() {
+    let pacing = Arc::new(crate::host::testing::SettablePacing::default());
+    let engine_pacing = Arc::clone(&pacing);
+    let engine = TestOperations::with(|builder| builder.pacing(engine_pacing));
+    pacing.set_rollback_pace(Some(Duration::from_millis(40)));
+
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().join("album");
+    fs::create_dir(&dir).unwrap();
+    let recorded: Vec<WrittenFile> = (0..3)
+        .map(|i| {
+            let file = dir.join(format!("{i}.txt"));
+            fs::write(&file, b"bytes").unwrap();
+            WrittenFile::local(file)
+        })
+        .collect();
+
+    let started = Instant::now();
+    let (_frames, report) = reverse(&engine, &dir, recorded);
+
+    assert_eq!(report.outcome, CancelRollbackOutcome::RolledBack);
+    assert!(
+        started.elapsed() >= Duration::from_millis(120),
+        "three items at 40 ms each, took {:?}",
+        started.elapsed()
+    );
+}

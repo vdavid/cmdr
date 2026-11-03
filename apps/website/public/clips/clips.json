@@ -1,0 +1,68 @@
+{
+  "generatedBy": "pnpm marketing:clips (apps/desktop/scripts/marketing-clips.ts)",
+  "clips": [
+    {
+      "slug": "copy-rollback",
+      "width": 1500,
+      "height": 960,
+      "duration": 11.933,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "language-switch",
+      "width": 1500,
+      "height": 1056,
+      "duration": 10,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "multi-rename",
+      "width": 1500,
+      "height": 960,
+      "duration": 7.533,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "ops-queue",
+      "width": 1500,
+      "height": 960,
+      "duration": 10.133,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "reach-devices",
+      "width": 1500,
+      "height": 960,
+      "duration": 20.267,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "reach-network",
+      "width": 1500,
+      "height": 960,
+      "duration": 24.933,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "search",
+      "width": 1500,
+      "height": 960,
+      "duration": 22.567,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "settings",
+      "width": 1500,
+      "height": 1056,
+      "duration": 8.567,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "viewer",
+      "width": 1500,
+      "height": 1062,
+      "duration": 19.9,
+      "themes": ["dark", "light"]
+    }
+  ]
+}

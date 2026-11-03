@@ -36,7 +36,8 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
 - **A spec that writes the `CMDR_MANAGED_PREFS_FILE` policy removes it and waits for unmanaged**, or the shard's later
   specs inherit it. DETAILS § "The managed-policy (MDM) specs".
 - **`marketing-shots.spec.ts` shoots real folders**: ❌ never set `CMDR_E2E_START_PATH` for it (its guard deletes
-  anything outside the manifest), and it needs the machine left alone; say both first.
+  anything outside the manifest), and it needs the machine left alone; say both first. `marketing-clips.spec.ts` is the
+  same, on its own staged demo tree (`marketing-clips-demo.ts`), deleted only when it carries its marker.
 - **A `*.test.ts` here runs under Vitest** through `vitest-playwright-shim.ts`, without the Tauri matchers. DETAILS §
   "The Vitest shim".
 

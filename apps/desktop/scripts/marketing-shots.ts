@@ -9,6 +9,9 @@
  *
  * The binary comes from `ensureE2eBinary`: the Playwright lane's E2E binary, rebuilt
  * first only when the tree changed, so a master can never be shot from a stale build.
+ * The launch itself (data dir, suppressions, warm index, env) is `marketing-launch.ts`,
+ * shared with `pnpm marketing:clips`; read its header for why `CMDR_E2E_MODE` and
+ * `CMDR_E2E_START_PATH` stay unset.
  *
  * ❗ The machine must be left alone while it shoots. macOS draws the wide window shadow
  * only for the KEY window, so every shot takes the front position first, and clicking
@@ -17,272 +20,28 @@
  * nobody has to step away in advance. Unlike `pnpm i18n:shots`, this does NOT refuse to
  * start behind another app: it claims the front through System Events, which works
  * across apps, and then proves it in the pixels.
- *
- * How it differs from `i18n-capture.ts`, and why:
- *
- * - **`CMDR_E2E_MODE` stays unset.** That variable paints the blue `E2E MODE` title
- *   bar AND sets `ActivationPolicy::Prohibited`, which makes the app permanently
- *   unable to become the key window. A marketing master needs both the prod-looking
- *   title bar and the key-window shadow, so an E2E-mode run could not produce one even
- *   in principle. The Playwright plugin is gated on the cargo FEATURE, not the mode
- *   (`src-tauri/src/lib.rs:285-292`), so the socket still works.
- * - **`CMDR_E2E_START_PATH` stays unset**, and the shard skips the fixture machinery.
- *   The suite's post-test guard deletes anything not in the fixture manifest, and this
- *   run photographs REAL folders. See `apps/desktop/test/e2e-playwright/DETAILS.md`
- *   § "Real data comes from the data dir".
- * - **The data dir persists.** Its index stays warm, so the whole-drive reconcile that
- *   makes every size cell an hourglass is a one-time cost rather than a 20-minute tax
- *   on every round.
  */
 
-import { spawn, spawnSync } from 'node:child_process'
-import type { ChildProcess, SpawnSyncOptions } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { backup, DatabaseSync } from 'node:sqlite'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startCaptureStopwatch } from './capture-countdown.ts'
-import { ensureE2eBinary, frontmostApp, reserveFreePort, waitForSocket, warnIfForeignCmdr } from './capture-runtime.ts'
-import { EN_US_LOCALE_ARGS, OVERLAY_SCROLLBAR_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
+import { ensureE2eBinary, frontmostApp, warnIfForeignCmdr } from './capture-runtime.ts'
+import { captureInstance, launchCaptureApp, prepareCaptureInstance, runCaptureShard } from './marketing-launch.ts'
 
 const LOG = '[marketing-shots]'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const desktopDir = join(here, '..')
-const repoRoot = join(desktopDir, '..', '..')
+const repoRoot = join(here, '..', '..', '..')
 
 const outIdx = process.argv.indexOf('--out')
 const outDir = outIdx >= 0 ? (process.argv.at(outIdx + 1) ?? '') : join(repoRoot, 'brand', 'screenshots')
 
-/**
- * The shots instance's own data dir, deliberately OUTSIDE the repo and deliberately
- * not throwaway.
- *
- * Its own path so it can never collide with prod, plain dev, a `--worktree` dev
- * instance, or an E2E shard; and persistent so its file index stays warm. A cold dir
- * costs one whole-drive reconcile, during which every size cell shows an hourglass and
- * every folder size reads `≥` — which is what a whole round of unusable masters looks
- * like.
- */
-const dataDir = join(homedir(), 'Library', 'Application Support', 'com.veszelovszki.cmdr-shots')
+const instance = captureInstance('shots')
 
-/**
- * The shots instance's cache dir, passed as `CMDR_CACHE_DIR`. Its `drive-index/` holds the
- * warm file index, out of Time Machine like production's (`config.rs` `drive_index_dir`).
- */
-const cacheDir = join(homedir(), 'Library', 'Caches', 'com.veszelovszki.cmdr-shots')
-const driveIndexDir = join(cacheDir, 'drive-index')
-
-let appProc: ChildProcess | null = null
-
-function run(cmd: string, args: string[], opts: SpawnSyncOptions = {}) {
-  const res = spawnSync(cmd, args, { cwd: desktopDir, stdio: 'inherit', ...opts })
-  if (res.status !== 0) throw new Error(`${cmd} ${args.join(' ')} exited ${String(res.status)}`)
-}
-
-/**
- * Stops ONLY the app this script launched.
- *
- * ❌ Never `pkill -f 'target.*Cmdr'`: that pattern matches every worktree's Cmdr, and
- * it has killed a parallel session's app mid-shoot twice. We spawned the process, so
- * its pid is the exact thing to signal.
- */
-function killApp() {
-  const pid = appProc?.pid
-  if (pid === undefined) return
-  try {
-    process.kill(pid, 'SIGTERM')
-  } catch {
-    // Already gone; ESRCH is the normal way this ends.
-  }
-  appProc = null
-}
-
-/**
- * Writes the shots instance's settings on first run, and leaves them alone after.
- *
- * Every entry here is something a prod-mode launch would otherwise put ON TOP of a
- * master, or send somewhere it shouldn't. `isE2eRun()` is false by design in this run
- * (see the file header), and these are the suppressions that come back with it:
- *
- * - `analytics.enabled` off, because a release build points at the PRODUCTION analytics
- *   server and a fresh data dir mints a new install id, i.e. a phantom user.
- * - `updates.autoCheck` off, because its poll loop can raise a "Restart to update"
- *   toast over a shot.
- * - `whatsNew.showOnUpdate` off and the upgrade nudge marked shown: on a fresh data dir
- *   both fire once, which would be precisely the run that proves the pipeline.
- * - The cosmetics are the look the masters are supposed to have, set explicitly rather
- *   than inherited from whatever a previous round left behind.
- *
- * Not written after the first run, so David can adjust the instance by hand (pane
- * paths, favorites, tabs) and keep it.
- *
- * ❗ Which is why anything a master is JUDGED on (view modes, size colors and units,
- * theme) is staged by the spec instead, on every run: a look seeded here can't be
- * changed later without deleting the instance, and a data dir cloned from the
- * production app arrives with its owner's choices already in it.
- */
-function seedSettingsIfNew(): void {
-  const settingsPath = join(dataDir, 'settings.json')
-  if (existsSync(settingsPath)) return
-  console.log(`${LOG} first run: seeding ${settingsPath}`)
-  writeFileSync(
-    settingsPath,
-    `${JSON.stringify(
-      {
-        isOnboarded: true,
-        'analytics.enabled': false,
-        'updates.autoCheck': false,
-        'whatsNew.showOnUpdate': false,
-        'onboarding.upgradeNudgeShown': true,
-        'appearance.appColor': 'cmdr-gold',
-        'appearance.showFunctionKeyBar': true,
-        'mediaIndex.enabled': false,
-      },
-      null,
-      2,
-    )}\n`,
-  )
-}
-
-/**
- * Settings the app must launch with on every run, merged over whatever the instance holds.
- *
- * - `askCmdr.enabled` on, so the chat shot's rail opens past its "Ask Cmdr is off" gate.
- * - `askCmdr.proactive` off. With Ask Cmdr on, disk access, and the `CMDR_E2E_ASK_CMDR_FAKE`
- *   provider in place, every wake gate is open: a wake could start a thread of its own
- *   mid-run, or put its spinner in the status corner of a master.
- *
- * Applied on every run because the instance persists: a suppression added to
- * `seedSettingsIfNew` would never reach an instance that already exists.
- */
-function pinRunSettings(): void {
-  const settingsPath = join(dataDir, 'settings.json')
-  const settings = existsSync(settingsPath)
-    ? (JSON.parse(readFileSync(settingsPath, 'utf8')) as Record<string, unknown>)
-    : {}
-  settings['askCmdr.proactive'] = false
-  settings['askCmdr.enabled'] = true
-  writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`)
-}
-
-/** Where the installed production app keeps its warm drive index. */
-const PROD_DRIVE_INDEX_DIR = join(homedir(), 'Library', 'Caches', 'com.veszelovszki.cmdr', 'drive-index')
-/** Where a production build older than the move to the cache dir still keeps it. */
-const PROD_LEGACY_INDEX_DIR = join(homedir(), 'Library', 'Application Support', 'com.veszelovszki.cmdr')
-
-/**
- * The boot disk's index file. `root` is the literal volume id the boot volume always
- * resolves to (`cmdr-fs/src/volume/ids.rs`), and volume ids are derived from the
- * machine's own UUIDs, so the same filename means the same drive in every instance.
- */
-const ROOT_INDEX_DB = 'index-root.db'
-
-/**
- * The FSEvents id an index database has caught up to, 0 when it can't say: the number
- * the app's startup gate compares against the system's to decide whether to rebuild.
- */
-function storedEventId(path: string): number {
-  try {
-    const db = new DatabaseSync(path, { readOnly: true })
-    try {
-      const row = db.prepare("SELECT value FROM meta WHERE key='last_event_id'").get()
-      return Number(row?.value) || 0
-    } finally {
-      db.close()
-    }
-  } catch {
-    return 0
-  }
-}
-
-/**
- * Copies production's warm drive index into the shots instance, so folder sizes are
- * real numbers from the first frame instead of hourglasses.
- *
- * Why this is safe rather than a hack: nothing in the index encodes a data dir, an
- * instance id, or a bundle id, and the startup freshness check compares FSEvents event
- * ids against a MACHINE-GLOBAL counter. So the copied index is judged by exactly the
- * rule production's own restart would use. If it is too far behind (a gap over ten
- * million events) or was written by a different schema version, the app throws it away
- * and does a full scan, which is the fallback either way.
- *
- * ❗ SQLite's backup API in ONE step, not `cp`. The index runs in WAL mode, so a plain
- * copy of the `.db` while production has it open is a torn read — the repo says so at
- * `index-size-probe.rs` and in `docs/tooling/index-query.md`. One step copies every page
- * under a single read lock, so it is a consistent snapshot; measured at 1.9 s for 1.1 GB
- * against a running production app (2026-10-26).
- * ❌ Not the `sqlite3` CLI's `.backup`: it copies 100 pages per step, and the backup
- * RESTARTS whenever another connection writes the source between steps. A running
- * production Cmdr writes its index every few seconds, so that copy looped for 18 minutes
- * at full CPU. ❌ Not `VACUUM INTO` either: it rebuilds the indexes, which need Cmdr's
- * custom `platform_case` collation, so it fails outright.
- * The `-wal` and `-shm` sidecars are deliberately NOT carried across: the destination
- * recreates them, and a stale pair would contradict the snapshot.
- *
- * ❗ The copy skips the wait only when production is current. Startup compares the
- * index's stored FSEvents `last_event_id` against the system's current one and rebuilds
- * when the gap passes ten million (`JOURNAL_GAP_THRESHOLD`). On a machine that compiles
- * all day that gap is about an hour (14 million in 90 minutes with two E2E builds,
- * 2026-10-26), so the shots instance's own index is usually too old by the next run,
- * while a RUNNING production app keeps its own seconds behind. Copy that one in and the
- * launch replays the journal instead of rebuilding. A production app that was quit
- * hours ago still leaves a reconcile, and then the copy buys CONTENT: the reconcile walks
- * a populated index instead of building one from nothing. Either way the wait is the
- * spec's job (`waitForIndexedSizes`), which is what guarantees no hourglass reaches a
- * master.
- *
- * ❌ Don't "fix" this by writing the current event id into the copy. That claims the
- * index has seen changes it hasn't, and the app would then trust stale sizes forever
- * instead of for one reconcile.
- *
- * Best-effort by design. No production install or no readable index both fall through
- * to a normal scan with a line saying so.
- */
-async function cloneProdIndex(): Promise<void> {
-  const source =
-    [PROD_DRIVE_INDEX_DIR, PROD_LEGACY_INDEX_DIR]
-      .map((dir) => join(dir, ROOT_INDEX_DB))
-      .find((path) => existsSync(path)) ?? join(PROD_DRIVE_INDEX_DIR, ROOT_INDEX_DB)
-  const target = join(driveIndexDir, ROOT_INDEX_DB)
-  mkdirSync(driveIndexDir, { recursive: true })
-  if (!existsSync(source)) {
-    console.log(`${LOG} no production index at ${source}; the instance will scan the drive itself (~1 min).`)
-    return
-  }
-  // Never trade a fresher index for an older one, judged by the same number the app's
-  // startup gate reads. ❌ Not `scan_completed_at`: a running production Cmdr keeps its
-  // `last_event_id` current through its live watcher without ever finishing a new scan,
-  // so comparing scan times kept a shots index 14 M events behind (a five-minute rebuild)
-  // over a production one that was seconds behind (2026-10-26).
-  const sourceEventId = storedEventId(source)
-  const targetEventId = existsSync(target) ? storedEventId(target) : 0
-  if (targetEventId >= sourceEventId) {
-    console.log(`${LOG} the shots index is at least as fresh as production's; keeping it.`)
-    return
-  }
-  const incoming = `${target}.incoming`
-  rmSync(incoming, { force: true })
-  try {
-    const db = new DatabaseSync(source, { readOnly: true })
-    try {
-      // A page budget above any real index makes it ONE step (the ❗ above says why).
-      await backup(db, incoming, { rate: 2 ** 31 - 1 })
-    } finally {
-      db.close()
-    }
-  } catch (err) {
-    rmSync(incoming, { force: true })
-    console.warn(`${LOG} couldn't copy the production index (${(err as Error).message}); scanning.`)
-    return
-  }
-
-  renameSync(incoming, target)
-  rmSync(`${target}-wal`, { force: true })
-  rmSync(`${target}-shm`, { force: true })
-  console.log(`${LOG} copied production's drive index in; sizes should be real from the first frame.`)
-}
+/** Stops the launched app; set once it's up, so every exit path can reach it. */
+let stopApp: () => void = () => {}
 
 /**
  * Fails before the app launches if ImageMagick is missing.
@@ -323,83 +82,27 @@ async function main(): Promise<void> {
 
   const binary = ensureE2eBinary(LOG)
 
-  mkdirSync(dataDir, { recursive: true })
   mkdirSync(outDir, { recursive: true })
-  seedSettingsIfNew()
-  // Every run, not just the first: the language is something a master is JUDGED on,
-  // and the app would otherwise resolve it from whatever the machine's preference
-  // list says. The masters are English. Merges, so a hand-adjusted instance keeps
-  // its pane paths, tabs, and favorites.
-  pinUiLanguage(dataDir)
-  pinRunSettings()
-  // Before the launch: the app opens its index at startup, so a copy afterwards is a copy
-  // the running instance never reads.
-  await cloneProdIndex()
+  // `askCmdr.enabled` on, so the chat shot's rail opens past its "Ask Cmdr is off" gate.
+  await prepareCaptureInstance(instance, LOG, { 'askCmdr.enabled': true })
 
-  const socket = `/tmp/tauri-playwright-shots-${String(process.pid)}.sock`
-  const mcpPort = await reserveFreePort()
-  const sharedEnv = {
-    CMDR_PLAYWRIGHT_SOCKET: socket,
-    CMDR_MCP_PORT: String(mcpPort),
-    CMDR_MCP_ENABLED: '1',
-    CMDR_SHOTS_OUT_DIR: outDir,
-  }
-
-  console.log(`${LOG} launching the app; data dir ${dataDir}, MCP port ${String(mcpPort)}…`)
-  // en-US for this process alone, so a master never shows the developer's own
-  // region's dates and number grouping. See `test/e2e-shared/pin-locale.ts`.
-  appProc = spawn(binary, [...EN_US_LOCALE_ARGS, ...OVERLAY_SCROLLBAR_ARGS], {
-    cwd: desktopDir,
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      ...sharedEnv,
-      CMDR_DATA_DIR: dataDir,
-      CMDR_CACHE_DIR: cacheDir,
-      // Keeps a Keychain approval dialog from landing over a shot. Without E2E mode
-      // the app would otherwise talk to the REAL macOS Keychain
-      // (`secrets/mod.rs:103-120`), and this override is checked before that branch.
-      CMDR_SECRET_STORE: 'file',
-      // The chat shot runs off a seeded thread, so no provider is ever called. This
-      // keeps the composer from rendering its "provider off" hint over the shot.
-      CMDR_E2E_ASK_CMDR_FAKE: '1',
-      // No analytics hook is needed here: `CMDR_DATA_DIR` above IS the contract.
-      // `analytics::suppression_reason` reads an isolated data dir as proof this isn't a
-      // real install, and `every_tooling_launcher_is_recognized` pins this launcher's
-      // exact env. The seeded `analytics.enabled: false` is the belt to that suspenders.
-      // The same list gates the macOS update check, so this launcher stays out of
-      // `update_checks` too, whether or not it seeds `updates.autoCheck: false`.
-      // ❗ Deliberately absent: CMDR_E2E_MODE (would make the window permanently
-      // unfocusable and paint the blue title bar) and CMDR_E2E_START_PATH (would arm
-      // the fixture guard against real folders). See this file's header.
-    },
-  })
-  appProc.on('exit', (code) => {
-    if (code != null && code !== 0) console.warn(`${LOG} app exited with code ${String(code)}`)
-  })
-
-  await waitForSocket(socket, 60000)
+  const app = await launchCaptureApp({ binary, instance, logPrefix: LOG, extraEnv: { CMDR_SHOTS_OUT_DIR: outDir } })
+  stopApp = app.stop
   console.log(`${LOG} socket ready; staging and shooting…`)
 
   // The spec waits for the drive index BEFORE its countdown, and the stopwatch times
   // from the countdown's end, so a reconcile never lands in the estimate.
   const stopwatch = startCaptureStopwatch('marketing', LOG)
   try {
-    // No `--project`: Playwright treats a positional as a project filter when
-    // `--project` is set, and the shard's own `testMatch` already restricts the run.
-    run('npx', ['playwright', 'test', '--config', 'test/e2e-playwright/playwright.config.ts'], {
-      env: {
-        ...process.env,
-        ...sharedEnv,
-        CMDR_E2E_SHARD_KIND: 'marketing-shots',
-        CMDR_SHOTS_PID: String(appProc.pid ?? ''),
-        // The chat test seeds its thread into this instance's `main.db`.
-        CMDR_SHOTS_DATA_DIR: dataDir,
-        ...stopwatch.env,
-      },
+    runCaptureShard('marketing-shots', {
+      ...app.sharedEnv,
+      CMDR_SHOTS_PID: String(app.pid),
+      // The chat test seeds its thread into this instance's `main.db`.
+      CMDR_SHOTS_DATA_DIR: instance.dataDir,
+      ...stopwatch.env,
     })
   } finally {
-    killApp()
+    stopApp()
   }
   stopwatch.recordSuccess()
 
@@ -409,11 +112,11 @@ async function main(): Promise<void> {
 
 main()
   .then(() => {
-    killApp()
+    stopApp()
     process.exit(0)
   })
   .catch((e: unknown) => {
     console.error(`${LOG} ${e instanceof Error ? e.message : String(e)}`)
-    killApp()
+    stopApp()
     process.exit(1)
   })

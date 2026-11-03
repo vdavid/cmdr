@@ -1,0 +1,61 @@
+---
+/**
+ * One clip-led landing section: an eyebrow, a heading, a short pitch, and the clips.
+ * `split` puts text and media side by side from `lg` up (`flip` puts the media first);
+ * `stacked` centers the text above full-width media. Below `lg`, both stack text-first.
+ */
+interface Props {
+    id: string
+    eyebrow: string
+    title: string
+    layout?: 'split' | 'stacked'
+    flip?: boolean
+}
+
+const { id, eyebrow, title, layout = 'split', flip = false } = Astro.props
+const headingId = `${id}-heading`
+---
+
+<section id={id} class="showcase relative scroll-mt-24 px-6 py-20 md:py-28" aria-labelledby={headingId}>
+    <div
+        class:list={[
+            'mx-auto max-w-6xl',
+            layout === 'split' && 'grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16',
+            layout === 'split' && flip && 'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]',
+        ]}
+    >
+        <div
+            class:list={[
+                layout === 'stacked' && 'mx-auto mb-14 max-w-2xl text-center',
+                layout === 'split' && flip && 'lg:order-2',
+            ]}
+        >
+            <p class="mb-3 text-sm font-semibold tracking-wide text-accent-text uppercase">{eyebrow}</p>
+            <h2 id={headingId} class="mb-5 text-3xl font-bold tracking-tight text-balance md:text-4xl">
+                {title}
+            </h2>
+            <div class="showcase-body space-y-4 text-lg/relaxed text-text-secondary">
+                <slot />
+            </div>
+        </div>
+        <div class:list={[layout === 'split' && flip && 'lg:order-1']}>
+            <slot name="media" />
+        </div>
+    </div>
+    <slot name="after" />
+</section>
+
+<style>
+    /* Inline links in the pitch: muted, with the accent on hover, like `.link-muted`. */
+    .showcase-body :global(a) {
+        color: var(--color-text-primary);
+        text-decoration-line: underline;
+        text-decoration-color: var(--color-link-underline);
+        text-underline-offset: 3px;
+        transition: text-decoration-color 200ms;
+    }
+
+    .showcase-body :global(a:hover) {
+        text-decoration-color: var(--color-accent);
+    }
+</style>

@@ -24,6 +24,7 @@
         type MarkdownLanding,
         type PlaceholderLabels,
     } from './markdown-view'
+    import { focusQuietly } from './quiet-focus'
 
     const log = getAppLogger('viewer')
 
@@ -46,12 +47,6 @@
     let remoteImagesLoaded = $state(false)
     let scrollRef: HTMLDivElement | undefined = $state()
     let articleRef: HTMLElement | undefined = $state()
-    /**
-     * True from the view focusing its own scroll container until that focus leaves. WebKit
-     * matches `:focus-visible` for a programmatic `focus()` that follows a key press (the `0`
-     * that switched here), which painted a window-sized ring (#761). Tab focus still rings.
-     */
-    let quietFocus = $state(false)
 
     function placeholderLabels(): PlaceholderLabels {
         return {
@@ -74,7 +69,7 @@
                 await tick()
                 if (articleRef) wireImages(articleRef, placeholderLabels())
                 land(landing)
-                focusQuietly()
+                if (scrollRef) focusQuietly(scrollRef)
             })
             .catch((e: unknown) => {
                 if (id !== sessionId) return
@@ -104,13 +99,6 @@
         } else {
             scrollToElement(target?.elementId ?? null)
         }
-    }
-
-    /** Focuses the document for the scroll keys, without the keyboard-focus ring. */
-    function focusQuietly(): void {
-        if (!scrollRef) return
-        quietFocus = true
-        scrollRef.focus({ focusVisible: false })
     }
 
     /** A click on a link never navigates the webview: the page decides where it goes. */
@@ -162,8 +150,6 @@
         <div class="markdown-scroll" bind:this={scrollRef} tabindex="0"
             role="document"
             aria-label={fileName}
-            class:quiet-focus={quietFocus}
-            onblur={() => (quietFocus = false)}
             onclick={handleClick}
         >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by the backend's ammonia allowlist (`markdown_render.rs`): no script, handler, form, frame, or style survives -->
@@ -224,7 +210,7 @@
         outline: none;
     }
 
-    .markdown-scroll:focus-visible:not(.quiet-focus) {
+    .markdown-scroll:focus-visible:not([data-quiet-focus]) {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;
     }

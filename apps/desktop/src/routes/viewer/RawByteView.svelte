@@ -17,6 +17,7 @@
         type RawChunk,
         type RawViewMode,
     } from './raw-byte-view'
+    import { focusQuietly } from './quiet-focus'
 
     interface Props {
         sessionId: string
@@ -83,7 +84,7 @@
         viewportHeight = container.clientHeight
         topRow = clampRawTopRow(Math.floor(initialOffset / bytesPerRow), viewportRows, totalRows)
         syncScrollbar()
-        container.focus()
+        focusQuietly(container)
         return () => { resize.disconnect(); }
     })
 
@@ -169,10 +170,12 @@
         color: var(--color-text-primary);
         user-select: text;
         -webkit-user-select: text;
+        outline: none;
     }
 
-    .raw-byte-view:focus {
-        outline: none;
+    .raw-byte-view:focus-visible:not([data-quiet-focus]) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
     }
 
     .raw-spacer {

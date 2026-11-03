@@ -1,0 +1,34 @@
+{
+  "name": "cmdr-demo-video",
+  "private": true,
+  "type": "module",
+  "description": "Cmdr's 90-second promo videos, built with Remotion from a script, TTS voice, CC music, and app footage",
+  "scripts": {
+    "prepare-assets": "node scripts/prepare-assets.ts",
+    "voice": "node scripts/voice.ts",
+    "footage": "node scripts/footage.ts",
+    "timeline": "node scripts/timeline.ts",
+    "align-jump": "node scripts/align-jump.ts",
+    "studio": "remotion studio src/index.ts",
+    "render:demo": "remotion render src/index.ts CmdrDemo out/cmdr-demo-90s.mp4 --codec=h264 --audio-codec=aac --crf=16",
+    "poster:demo": "remotion still src/index.ts CmdrDemo out/cmdr-demo-90s-poster.png --frame=2640",
+    "stems:demo": "remotion render src/index.ts CmdrDemo out/demo-stem-voice.wav --codec=wav --props=props/stem-voice.json && remotion render src/index.ts CmdrDemo out/demo-stem-music.wav --codec=wav --props=props/stem-music.json && remotion render src/index.ts CmdrDemo out/demo-stem-mix.wav --codec=wav",
+    "render:anywhere": "remotion render src/index.ts CmdrAnywhere out/cmdr-anywhere-90s.mp4 --codec=h264 --audio-codec=aac --crf=16",
+    "poster:anywhere": "remotion still src/index.ts CmdrAnywhere out/cmdr-anywhere-90s-poster.png --frame=2640",
+    "stems:anywhere": "remotion render src/index.ts CmdrAnywhere out/anywhere-stem-voice.wav --codec=wav --props=props/stem-voice.json && remotion render src/index.ts CmdrAnywhere out/anywhere-stem-music.wav --codec=wav --props=props/stem-music.json && remotion render src/index.ts CmdrAnywhere out/anywhere-stem-mix.wav --codec=wav",
+    "check-levels": "node scripts/check-levels.ts",
+    "web-copy": "node scripts/web-copy.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.536",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.536"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "typescript": "6.0.3"
+  }
+}

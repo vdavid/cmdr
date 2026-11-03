@@ -25,11 +25,12 @@ pub struct NfsServer {
 
 impl NfsServer {
     /// A server found the standard way: portmap on 111 names the MOUNT port.
+    /// An E2E build may move it for the Docker fixture ([`PORTMAP_PORT_ENV`]).
     pub fn new(host: &str, port: Option<u16>) -> Self {
         Self {
             host: host.to_string(),
             port,
-            portmap_port: None,
+            portmap_port: e2e_portmap_port(),
         }
     }
 
@@ -39,6 +40,36 @@ impl NfsServer {
     pub fn identity_port(&self) -> u16 {
         self.port.unwrap_or(NFS_PORT)
     }
+}
+
+/// Where an E2E build asks the portmapper instead of 111: the Docker fixture's
+/// relocated `rpcbind` (`apps/desktop/test/nfs-servers/README.md`), which the app
+/// can't reach otherwise, since binding 111 on this Mac takes root and nothing a
+/// person types names a portmapper port. Read only with the `playwright-e2e`
+/// feature, which the app turns on only in its E2E build, so no release build can.
+#[cfg_attr(
+    not(feature = "playwright-e2e"),
+    expect(dead_code, reason = "read only by the E2E build; named here for the docs")
+)]
+const PORTMAP_PORT_ENV: &str = "CMDR_NFS_PORTMAP_PORT";
+
+#[cfg(feature = "playwright-e2e")]
+fn e2e_portmap_port() -> Option<u16> {
+    portmap_port_override(std::env::var(PORTMAP_PORT_ENV).ok().as_deref())
+}
+
+#[cfg(not(feature = "playwright-e2e"))]
+fn e2e_portmap_port() -> Option<u16> {
+    None
+}
+
+/// The override's value as a port: unset, empty, zero, or not a number keeps 111.
+#[cfg_attr(
+    not(any(test, feature = "playwright-e2e")),
+    expect(dead_code, reason = "only the E2E build and the tests read the override")
+)]
+fn portmap_port_override(value: Option<&str>) -> Option<u16> {
+    value?.trim().parse::<u16>().ok().filter(|port| *port != 0)
 }
 
 /// Who a place acts as on the server: the uid and the groups every call's

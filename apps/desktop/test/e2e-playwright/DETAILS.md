@@ -630,7 +630,7 @@ different pins, both applied by every harness before the binary launches. `../e2
   (`src/lib/intl/CLAUDE.md`). Inert on Linux, which has no `NSUserDefaults`.
 
 Callers: `apps/desktop/scripts/e2e-linux.sh` (settings half only), `apps/desktop/scripts/i18n-capture.ts`, and
-`apps/desktop/scripts/marketing-shots.ts`. The checker launches its shards itself, so
+`apps/desktop/scripts/marketing-launch.ts` (the marketing shots and clips). The checker launches its shards itself, so
 `scripts/check/checks/e2e-locale-pin.go` carries a Go twin of both; keep the two in sync.
 
 **Measured on this machine, both halves** (verified 2026-08-19, release Playwright binary):

@@ -9,6 +9,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 import MediaMarkdownView from './MediaMarkdownView.svelte'
+import { QUIET_FOCUS_ATTRIBUTE } from './quiet-focus'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   viewerRenderMarkdown: vi.fn(() => Promise.resolve({ html: '<p>Hello</p>', hasRemoteImages: false })),
@@ -42,7 +43,7 @@ describe('MediaMarkdownView focus', () => {
   it('focuses the document after rendering without the focus ring', async () => {
     const { scroll, destroy } = await mountRendered()
     await tick()
-    expect(scroll.classList.contains('quiet-focus')).toBe(true)
+    expect(scroll.hasAttribute(QUIET_FOCUS_ATTRIBUTE)).toBe(true)
     destroy()
   })
 
@@ -50,10 +51,10 @@ describe('MediaMarkdownView focus', () => {
     const { scroll, destroy } = await mountRendered()
     scroll.blur()
     await tick()
-    expect(scroll.classList.contains('quiet-focus')).toBe(false)
+    expect(scroll.hasAttribute(QUIET_FOCUS_ATTRIBUTE)).toBe(false)
     scroll.focus()
     await tick()
-    expect(scroll.classList.contains('quiet-focus')).toBe(false)
+    expect(scroll.hasAttribute(QUIET_FOCUS_ATTRIBUTE)).toBe(false)
     destroy()
   })
 })

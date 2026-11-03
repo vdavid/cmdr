@@ -41,7 +41,7 @@ fn every_tooling_launcher_is_suppressed_even_when_bundled() {
     let e2e_checker = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR", "CMDR_E2E_MODE", "CMDR_MOCK_FDA"];
     // `apps/desktop/scripts/i18n-capture.ts`.
     let i18n_capture = ["CMDR_E2E_MODE", "CMDR_DATA_DIR", "CMDR_MOCK_FDA"];
-    // `apps/desktop/scripts/marketing-shots.ts` deliberately leaves `CMDR_E2E_MODE` unset.
+    // `apps/desktop/scripts/marketing-launch.ts` (shots and clips) deliberately leaves `CMDR_E2E_MODE` unset.
     let marketing_shots = ["CMDR_DATA_DIR"];
     // `apps/desktop/scripts/tauri-wrapper.ts` (dev and per-worktree dev).
     let dev_wrapper = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR"];

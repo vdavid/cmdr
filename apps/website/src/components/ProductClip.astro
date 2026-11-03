@@ -1,0 +1,478 @@
+---
+/**
+ * A short, muted, looping screen recording of the app, framed as a macOS window.
+ *
+ * - Picks the light or dark recording to match the site theme, and follows the theme toggle live.
+ * - Loads and plays only while on screen; pauses offscreen. A play/pause button is always reachable
+ *   (WCAG 2.2.2), and with `prefers-reduced-motion` the clip waits on its poster until clicked.
+ * - A thin accent line along the bottom shows the playback position. The whole frame is a slider:
+ *   click or tap toggles play, a horizontal drag scrubs (pausing only while dragging), and when
+ *   focused, the arrow keys, Page Up/Down, Home, and End seek while Space toggles play.
+ * - With a `.keys.json` per theme, key presses show as KeyCastr-style captions near the bottom,
+ *   computed from the playback position, so they follow scrubbing and looping.
+ * - The recordings have no alpha channel, so the rounded corners and the shadow are CSS.
+ * - A clip missing from `public/clips/` renders a placeholder card that says so.
+ *
+ * File contract and availability rules: `src/build/product-clips.ts`. Runtime: `src/client/product-clip-player.ts`.
+ */
+import Icon from './icons/Icon.astro'
+import { getProductClip, type ClipKey, type ClipSlug, type ClipTheme } from '../build/product-clips'
+
+interface Props {
+    slug: ClipSlug
+    /**
+     * What the clip shows, for screen readers, as visually hidden text that describes the position
+     * slider. The video itself stays `aria-hidden`: html-validate rejects naming a `<video>`
+     * (`aria-label` and `aria-labelledby` alike, rule aria-label-misuse), and the slider and the
+     * play/pause button are the clip's controls.
+     */
+    label: string
+    caption?: string
+    /** Attribution for third-party media the recording shows, rendered as a quiet line under the clip. */
+    credit?: ClipCredit
+    /**
+     * Key presses to caption, per theme, in place of the clip's `.keys.json` files. For the
+     * `/clip-fixture` E2E page; the landing reads the files.
+     */
+    keys?: Record<ClipTheme, ClipKey[]>
+    class?: string
+}
+
+interface ClipCredit {
+    /** What the media is, like "Photo". */
+    kind: string
+    title: string
+    titleHref: string
+    author: string
+    license: string
+    licenseHref: string
+}
+
+const { slug, label, caption, credit, keys: keysOverride, class: className } = Astro.props
+
+const placeholderTitles: Record<ClipSlug, string> = {
+    'copy-rollback': 'Copy, pause, and roll back',
+    'ops-queue': 'The operation queue',
+    'multi-rename': 'Multi-rename',
+    search: 'Natural-language search',
+    'language-switch': 'Switching languages',
+    viewer: 'The file viewer',
+    settings: 'Settings',
+    'reach-network': 'SMB, NFS, and S3',
+    'reach-devices': 'Git, restic, and an Android phone',
+}
+
+const clip = getProductClip(slug)
+// A page shows each clip once, so the slug keeps the id unique.
+const descriptionId = `clip-${slug}-description`
+const keysLight = keysOverride?.light ?? clip?.files.light.keys ?? []
+const keysDark = keysOverride?.dark ?? clip?.files.dark.keys ?? []
+const hasKeys = keysLight.length > 0 || keysDark.length > 0
+---
+
+<figure class:list={['product-clip', className]}>
+    {
+        clip ? (
+            <div
+                class="clip-window"
+                style={`aspect-ratio: ${clip.width} / ${clip.height}`}
+                data-product-clip
+                data-state="paused"
+                data-av1-light={clip.files.light.av1}
+                data-av1-dark={clip.files.dark.av1}
+                data-h264-light={clip.files.light.h264}
+                data-h264-dark={clip.files.dark.h264}
+                data-duration={clip.duration}
+                data-keys-light={keysLight.length > 0 ? JSON.stringify(keysLight) : undefined}
+                data-keys-dark={keysDark.length > 0 ? JSON.stringify(keysDark) : undefined}
+            >
+                <img
+                    class="clip-poster clip-poster--light"
+                    src={clip.files.light.poster}
+                    width={clip.width}
+                    height={clip.height}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                />
+                <img
+                    class="clip-poster clip-poster--dark"
+                    src={clip.files.dark.poster}
+                    width={clip.width}
+                    height={clip.height}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                />
+                <video
+                    class="clip-video"
+                    width={clip.width}
+                    height={clip.height}
+                    muted
+                    loop
+                    playsinline
+                    disablepictureinpicture
+                    preload="none"
+                    aria-hidden="true"
+                />
+                {/* Key captions are decoration: the description already says what the clip does. */}
+                {hasKeys && <div class="clip-keys" aria-hidden="true" data-clip-keys />}
+                <span class="sr-only" id={descriptionId} data-clip-description>
+                    {label}
+                </span>
+                <div
+                    class="clip-scrub"
+                    role="slider"
+                    tabindex="0"
+                    aria-label="Clip position"
+                    aria-describedby={descriptionId}
+                    aria-keyshortcuts="Space"
+                    aria-valuemin="0"
+                    aria-valuemax={Math.round(clip.duration)}
+                    aria-valuenow="0"
+                    aria-valuetext={`0 of ${Math.round(clip.duration)} seconds`}
+                    data-clip-scrub
+                >
+                    <span class="clip-progress" aria-hidden="true">
+                        <span class="clip-progress__fill" data-clip-progress />
+                    </span>
+                </div>
+                <button type="button" class="clip-toggle" data-clip-toggle aria-label="Play clip">
+                    <Icon name="play" size={16} class="clip-toggle__play" />
+                    <Icon name="pause" size={16} class="clip-toggle__pause" />
+                </button>
+            </div>
+        ) : (
+            <div
+                class="clip-placeholder"
+                role="img"
+                aria-label={`Placeholder for a clip: ${label}`}
+                data-clip-placeholder={slug}
+            >
+                <span class="clip-placeholder__pill">Placeholder</span>
+                <Icon name="clapperboard" size={32} />
+                <span class="clip-placeholder__title">{placeholderTitles[slug]}</span>
+                <span class="clip-placeholder__note">Clip not recorded yet</span>
+            </div>
+        )
+    }
+    {
+        (caption || credit) && (
+            <figcaption>
+                {caption && <span class="clip-caption">{caption}</span>}
+                {credit && (
+                    <span class="clip-credit" data-clip-credit>
+                        {credit.kind}: “<a href={credit.titleHref}>{credit.title}</a>” by {credit.author},{' '}
+                        <a href={credit.licenseHref}>{credit.license}</a>
+                    </span>
+                )}
+            </figcaption>
+        )
+    }
+</figure>
+
+<style>
+    .product-clip {
+        margin: 0;
+        /* Window shadow, tuned per theme below. Videos carry no alpha, so this IS the window shadow. */
+        --clip-shadow:
+            0 0 0 1px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.3), 0 24px 48px -12px rgb(0 0 0 / 0.55);
+        --clip-rim: color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+    }
+
+    @media (prefers-color-scheme: light) {
+        :global(:root:not([data-theme='dark'])) .product-clip {
+            --clip-shadow:
+                0 0 0 1px rgb(0 0 0 / 0.12), 0 2px 6px rgb(0 0 0 / 0.08), 0 24px 48px -16px rgb(0 0 0 / 0.28);
+            --clip-rim: transparent;
+        }
+    }
+
+    :global(:root[data-theme='light']) .product-clip {
+        --clip-shadow:
+            0 0 0 1px rgb(0 0 0 / 0.12), 0 2px 6px rgb(0 0 0 / 0.08), 0 24px 48px -16px rgb(0 0 0 / 0.28);
+        --clip-rim: transparent;
+    }
+
+    .clip-window {
+        position: relative;
+        overflow: hidden;
+        border-radius: clamp(8px, 1.4vw, 12px);
+        background: var(--color-surface);
+        box-shadow: var(--clip-shadow);
+        isolation: isolate;
+    }
+
+    /* The macOS window's hairline highlight, drawn above the video so it never gets covered. */
+    .clip-window::after {
+        content: '';
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border-radius: inherit;
+        box-shadow: inset 0 0 0 1px var(--clip-rim);
+    }
+
+    .clip-poster,
+    .clip-video {
+        display: block;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .clip-video {
+        opacity: 0;
+        transition: opacity 250ms ease;
+    }
+
+    .clip-window[data-ready] .clip-video {
+        opacity: 1;
+    }
+
+    /* Show only the poster matching the theme. Lazy images that aren't rendered never download. */
+    .clip-poster--light {
+        display: none;
+    }
+
+    @media (prefers-color-scheme: light) {
+        :global(:root:not([data-theme='dark'])) .clip-poster--dark {
+            display: none;
+        }
+        :global(:root:not([data-theme='dark'])) .clip-poster--light {
+            display: block;
+        }
+    }
+
+    :global(:root[data-theme='light']) .clip-poster--dark {
+        display: none;
+    }
+    :global(:root[data-theme='light']) .clip-poster--light {
+        display: block;
+    }
+
+    /* The whole frame is the scrub surface. `pan-y` keeps vertical page scrolling on touch while a
+       horizontal drag reaches the slider. */
+    .clip-scrub {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        cursor: grab;
+        touch-action: pan-y;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .clip-scrub:focus-visible {
+        outline: none;
+    }
+
+    .clip-window[data-scrubbing] .clip-scrub {
+        cursor: grabbing;
+    }
+
+    /* The ring goes on the window: the slider sits inside `overflow: hidden`, which would clip it. */
+    .clip-window:has(.clip-scrub:focus-visible) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 3px;
+    }
+
+    .clip-progress {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 2px;
+        background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+        opacity: 0;
+        transition:
+            opacity 250ms ease,
+            height 150ms ease;
+    }
+
+    .clip-window[data-ready] .clip-progress {
+        opacity: 1;
+    }
+
+    /* Thicker while it's being handled, so the drag has something to look at. */
+    .clip-window[data-scrubbing] .clip-progress,
+    .clip-window:has(.clip-scrub:focus-visible) .clip-progress {
+        height: 4px;
+    }
+
+    .clip-progress__fill {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: color-mix(in srgb, var(--color-accent) 80%, transparent);
+        transform: scaleX(0);
+        transform-origin: left;
+    }
+
+    /* KeyCastr-style captions: a row of key caps in the bottom tenth, sized to the clip, not the page. */
+    .clip-window:has(.clip-keys) {
+        container-type: inline-size;
+    }
+
+    .clip-keys {
+        position: absolute;
+        right: 0;
+        bottom: 4%;
+        left: 0;
+        z-index: 1;
+        display: flex;
+        justify-content: center;
+        gap: 0.5cqi;
+        padding: 0 6%;
+        pointer-events: none;
+    }
+
+    /* Over the poster, the position is meaningless: captions wait for the video. */
+    .clip-window:not([data-ready]) .clip-keys {
+        visibility: hidden;
+    }
+
+    /* The player creates the caps at runtime, so they carry no scope attribute. */
+    .clip-keys :global(.clip-key) {
+        padding: 0.5cqi 1.4cqi;
+        font-family: inherit;
+        border: 1px solid var(--color-border);
+        border-radius: 1cqi;
+        background: color-mix(in srgb, var(--color-surface-elevated) 86%, transparent);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+        font-size: clamp(11px, 2.6cqi, 22px);
+        font-weight: 600;
+        line-height: 1.3;
+        /* A typed string is one cap (`invoice`), so a long one shrinks and truncates within the row. */
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--color-text-primary);
+    }
+
+    .clip-toggle {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        z-index: 3;
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
+        backdrop-filter: blur(8px);
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 200ms ease;
+    }
+
+    .clip-toggle :global(.icon) {
+        color: var(--color-text-primary);
+    }
+
+    /* Visible while hovering, when focused, and whenever the clip sits paused. */
+    .clip-window:hover .clip-toggle,
+    .clip-toggle:focus-visible,
+    .clip-scrub:focus-visible ~ .clip-toggle,
+    .clip-window[data-state='paused'] .clip-toggle {
+        opacity: 1;
+    }
+
+    .clip-toggle:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    .clip-window[data-state='playing'] .clip-toggle :global(.clip-toggle__play),
+    .clip-window[data-state='paused'] .clip-toggle :global(.clip-toggle__pause) {
+        display: none;
+    }
+
+    .clip-placeholder {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        aspect-ratio: 16 / 10;
+        padding: 24px;
+        border: 1.5px dashed var(--color-border);
+        border-radius: clamp(8px, 1.4vw, 12px);
+        text-align: center;
+        background:
+            radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 60%),
+            var(--color-surface);
+    }
+
+    .clip-placeholder__pill {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        padding: 2px 10px;
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--color-text-tertiary);
+    }
+
+    .clip-placeholder__title {
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .clip-placeholder__note {
+        font-size: 0.875rem;
+        color: var(--color-text-tertiary);
+    }
+
+    .clip-credit {
+        display: block;
+        margin-top: 10px;
+        font-size: 0.75rem;
+        line-height: 1.5;
+        color: var(--color-text-tertiary);
+    }
+
+    .clip-credit a {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+        text-underline-offset: 2px;
+    }
+
+    .clip-credit a:hover {
+        color: var(--color-text-secondary);
+    }
+
+    .clip-caption {
+        display: block;
+        margin-top: 14px;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        text-align: center;
+        color: var(--color-text-secondary);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .clip-video,
+        .clip-toggle,
+        .clip-progress {
+            transition: none;
+        }
+    }
+</style>
+
+<script>
+    import '../client/product-clip-player'
+</script>

@@ -24,7 +24,8 @@ pub trait Pacing: Send + Sync {
     /// How long a scan preview's worker waits before it walks.
     fn scan_preview_delay(&self) -> Option<Duration>;
 
-    /// The pause before a rollback reverses each item.
+    /// The pause before a rollback reverses each item, and after each item a
+    /// Rollback-cancelled transfer's own reversal walks (`WindDown::pace`).
     fn rollback_pace(&self) -> Option<Duration>;
 }
 

@@ -143,6 +143,11 @@ pub(super) async fn volume_rollback_with_progress(
             emit(Some(current_file_name), files_left, bytes_left);
             last_progress_time = Instant::now();
         }
+
+        // E2E-only, like the local reversal's: the host's rollback pace.
+        if let Some(pause) = wind_down.pace() {
+            tokio::time::sleep(pause).await;
+        }
     }
 
     // Prune the directories this operation newly created, deepest-first.

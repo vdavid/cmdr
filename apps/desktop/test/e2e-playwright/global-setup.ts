@@ -26,13 +26,15 @@ export default function globalSetup(): void {
   // the app. Every shard kind starts from "the app is alive". See `app-death.ts`.
   clearAppDeathMarker()
 
-  // ❗ The marketing capture is the one shard with NO fixture tree: it photographs the
-  // developer's REAL folders, and `CMDR_E2E_START_PATH` is what arms the post-test
-  // guard that deletes anything not in the fixture manifest. Creating a tree here
-  // would also SET that variable, so "the orchestrator leaves it unset" is only half
-  // the protection; this is the other half. It skips `recreateMtpFixtures()` for the
+  // ❗ The marketing captures are the shards with NO fixture tree: the stills photograph
+  // the developer's REAL folders, and the clips stage a demo tree of their own
+  // (`marketing-clips-demo.ts`). `CMDR_E2E_START_PATH` is what arms the post-test guard
+  // that deletes anything not in the fixture manifest. Creating a tree here would also
+  // SET that variable, so "the orchestrator leaves it unset" is only half the
+  // protection; this is the other half. It skips `recreateMtpFixtures()` for the
   // ordinary reason too: the backing dir is shared, and a parallel MTP shard is real.
-  if (process.env.CMDR_E2E_SHARD_KIND === 'marketing-shots') return
+  const shardKind = process.env.CMDR_E2E_SHARD_KIND
+  if (shardKind === 'marketing-shots' || shardKind === 'marketing-clips') return
 
   const existingRoot = process.env.CMDR_E2E_START_PATH
   if (existingRoot && fs.existsSync(existingRoot)) {

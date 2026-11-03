@@ -858,7 +858,9 @@ E2E test hooks split along two axes:
     to the folder it staged, so the indexer's own rollups can't join the digest; `stage_agent_rollup` stages one without
     waking, which is how a spec proves that. Its `quiet` argument picks which script the wake's fake assistant plays
     (the ordinary reply, or the `nothing_to_suggest` call that makes a wake delete its own thread); the flag is sticky,
-    so a spec wanting an ordinary wake afterwards passes it explicitly.
+    so a spec wanting an ordinary wake afterwards passes it explicitly. It also forwards `cmdr-nfs/playwright-e2e`,
+    under which `CMDR_NFS_PORTMAP_PORT` moves where every `NfsServer::new` asks the portmapper (the NFS Docker fixture's
+    `rpcbind` is on 15480, and 111 on a Mac takes root); `crates/cmdr-nfs/DETAILS.md` § "The E2E portmapper override".
   - `virtual-mtp`: virtual MTP device with deterministic fixtures.
   - `smb-e2e`: virtual SMB hosts injected into mDNS discovery.
 
@@ -902,14 +904,16 @@ E2E test hooks split along two axes:
   dev-and-E2E fixture command); this variable and `set_test_throttle` win over it.
 - **`CMDR_E2E_ROLLBACK_THROTTLE_MS`** (**needs `CMDR_E2E_MODE=1` too**, else it does nothing at all): Per-item sleep
   inside the operation-log ROLLBACK engine's file loop (`crates/cmdr-operation-log/src/rollback.rs`), so a spec can
-  watch a reversal run and press Cancel inside it. Its own knob rather than a reuse of the copy throttle: pacing the
-  reversal must not also pace the copy that staged it. Parsed once into a `LazyLock` (a rollback item can be one
-  `unlink`, and the engine streams up to a million of them), which also means the value is read ONCE per process:
-  changing it needs a relaunch, not just a new export. The `set_test_rollback_throttle` IPC override below carries no
-  E2E-mode gate and no caching, so it's the one to reach for when driving a running app by hand. It sits ABOVE the
-  loop's stop and pause gates, so a click landing inside the window is honored for THAT item. The deferred-directory
-  phase is deliberately NOT paced: it removes empty leftovers, so slowing it buys dead time rather than a window. How a
-  RUST test paces a reversal: `crates/cmdr-operation-log/DETAILS.md` § "The E2E pacing hook in the item loop".
+  watch a reversal run and press Cancel inside it. The same pace also holds each item of a Rollback-cancelled transfer's
+  own reversal (`WindDown::pace`, local and cross-volume), which is what lets the progress bar visibly drain (the
+  `copy-rollback` marketing clip). Its own knob rather than a reuse of the copy throttle: pacing the reversal must not
+  also pace the copy that staged it. Parsed once into a `LazyLock` (a rollback item can be one `unlink`, and the engine
+  streams up to a million of them), which also means the value is read ONCE per process: changing it needs a relaunch,
+  not just a new export. The `set_test_rollback_throttle` IPC override below carries no E2E-mode gate and no caching, so
+  it's the one to reach for when driving a running app by hand. It sits ABOVE the loop's stop and pause gates, so a
+  click landing inside the window is honored for THAT item. The deferred-directory phase is deliberately NOT paced: it
+  removes empty leftovers, so slowing it buys dead time rather than a window. How a RUST test paces a reversal:
+  `crates/cmdr-operation-log/DETAILS.md` § "The E2E pacing hook in the item loop".
 - **`CMDR_E2E_SCAN_PREVIEW_DELAY_MS`** (**needs `CMDR_E2E_MODE=1` too**, and so does its IPC override, unlike the
   rollback throttle's): Holds every scan-preview worker at its starting line before it walks, so a spec can act while a
   transfer is still counting (`background-while-scanning.spec.ts`). Fixture trees are tiny and `data-scan-state` signals

@@ -25,6 +25,11 @@ use std::time::Duration;
 /// this var to append `--features virtual-mtp` to the dev build.
 pub const VIRTUAL_MTP_ENV: &str = "CMDR_VIRTUAL_MTP";
 
+/// Env var naming the virtual device's model, for screen recordings that should show a
+/// plausible phone ("Pixel 8") rather than "Virtual Pixel 9". Unset or empty keeps the
+/// default every test relies on.
+const VIRTUAL_MTP_MODEL_ENV: &str = "CMDR_VIRTUAL_MTP_MODEL";
+
 /// Holds the watcher guard while the watcher is paused. Protected by a mutex
 /// so it can be accessed from Tauri commands (which run on arbitrary threads).
 static WATCHER_GUARD: Mutex<Option<WatcherGuard>> = Mutex::new(None);
@@ -205,7 +210,12 @@ fn register_virtual_mtp_device_at(root: &Path, watch_backing_dirs: bool) -> u64 
 
     let config = VirtualDeviceConfig {
         manufacturer: "Google".into(),
-        model: "Virtual Pixel 9".into(),
+        // The marketing recordings name it like a real phone (`CMDR_VIRTUAL_MTP_MODEL`,
+        // `docs/tooling/virtual-mtp.md`); every test keeps the default.
+        model: std::env::var(VIRTUAL_MTP_MODEL_ENV)
+            .ok()
+            .filter(|model| !model.trim().is_empty())
+            .unwrap_or_else(|| "Virtual Pixel 9".into()),
         serial: "cmdr-e2e-virtual".into(),
         storages: vec![
             VirtualStorageConfig {

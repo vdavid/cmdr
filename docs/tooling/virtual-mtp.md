@@ -8,8 +8,9 @@ files.
 CMDR_VIRTUAL_MTP=1 pnpm dev
 ```
 
-The device appears as **Google Virtual Pixel 9** with two storages: **Internal Storage** (writable) and **SD Card**
-(read-only). Both are backed by local directories under `/tmp/cmdr-mtp-e2e-fixtures/`, seeded with:
+The device appears as **Google Virtual Pixel 9** (`CMDR_VIRTUAL_MTP_MODEL` renames the model, which the marketing
+recordings use to show a "Pixel 8") with two storages: **Internal Storage** (writable) and **SD Card** (read-only). Both
+are backed by local directories under `/tmp/cmdr-mtp-e2e-fixtures/`, seeded with:
 
 ```
 Internal Storage/

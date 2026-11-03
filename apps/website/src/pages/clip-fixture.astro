@@ -1,0 +1,26 @@
+---
+/**
+ * The product-clip E2E fixture: one real clip with hand-written key captions, so
+ * `e2e/homepage.spec.ts` can test caption timing without depending on what the clips agent
+ * recorded. The keys go through `parseClipKeys`, the same parser the `.keys.json` files do, and
+ * `src/fixtures/clip-keys.json` carries two invalid entries it must drop.
+ *
+ * Unlinked, `noindex`, and out of the sitemap (astro.config.ts), like `/visual-fixture`.
+ */
+import Layout from '../layouts/Layout.astro'
+import ProductClip from '../components/ProductClip.astro'
+import { parseClipKeys } from '../build/product-clips'
+import fixture from '../fixtures/clip-keys.json'
+
+const keys = parseClipKeys(fixture)
+---
+
+<Layout title="Clip fixture" noindex>
+    <main class="mx-auto max-w-3xl px-6 py-32">
+        <ProductClip
+            slug="copy-rollback"
+            label="Fixture: a clip with hand-written key captions."
+            keys={{ light: keys, dark: keys }}
+        />
+    </main>
+</Layout>

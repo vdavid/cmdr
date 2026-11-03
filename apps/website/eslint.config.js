@@ -81,7 +81,8 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/dev/**/*.ts'],
+    // Browser code: dev tools, and the modules a component's `<script>` imports.
+    files: ['src/dev/**/*.ts', 'src/client/**/*.ts'],
     languageOptions: {
       globals: {
         ...globals.browser,

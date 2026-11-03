@@ -139,6 +139,17 @@ The volume redials through the whole `mount` (§ "The volume").
   `dial_fixture_test::capture_knfsd_replies_as_decoding_fixtures` with `NFS_CAPTURE_DIR` set, and decoded to the last
   byte in `src/proto/knfsd_replies_test.rs`.
 
+### The E2E portmapper override
+
+With the crate's `playwright-e2e` feature (turned on only by the app's E2E build), `NfsServer::new` reads
+`CMDR_NFS_PORTMAP_PORT` into `portmap_port`, so every place the app builds (the add sheet's export list, the identity
+guess, the connect, a saved place) asks the portmapper there instead of on 111. Why: the Docker fixture publishes its
+`rpcbind` on 15480, binding 111 on a Mac takes root, and nothing a person types names a portmapper port, so without it
+no app-driven run (`pnpm marketing:clips`' `reach-network`) reaches NFS. Decision: a compile-time feature, ❌ not a soft
+`CMDR_E2E_MODE` hook, because it REPLACES where production dials, and with the feature off the read isn't compiled in at
+all (`a_build_without_the_e2e_feature_always_asks_portmap_on_111`). Unset, empty, zero, or not a port keeps 111. The
+port isn't identity (§ "The model"), so ids and app paths don't change with it.
+
 ## The volume
 
 `NfsVolume` is WebDAV's shape (`{ name, root, inner }`, `sharing_connection` sharing `inner`) over
