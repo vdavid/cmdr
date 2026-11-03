@@ -400,6 +400,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Ez a fájl már nincs a helyén. Ha visszakerül, próbáld újra.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "Nem sikerült újra beolvasni a fájlt. Ellenőrizd, hogy még meg tudod-e nyitni, aztán próbáld újra.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Próbáld újra",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "A lemez lassan válaszol. Megpróbálod újra egy pillanat múlva?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "Nem sikerült bekapcsolni a követés módot. Megpróbálod újra?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "Nem sikerült kikapcsolni a követés módot. Megpróbálod újra?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "Nem sikerült átváltani a kódolást. Megpróbálod újra?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "{size} a vágólapodon",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

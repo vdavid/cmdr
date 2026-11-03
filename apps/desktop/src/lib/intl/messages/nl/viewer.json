@@ -403,6 +403,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Dit bestand is er niet meer. Als het terugkomt, probeer het dan opnieuw.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "Kon het bestand niet opnieuw lezen. Controleer of je het nog kunt openen en probeer het dan nog eens.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Probeer opnieuw",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "De schijf doet er even over om te reageren. Zo meteen opnieuw proberen?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "Tail-modus kon niet worden ingeschakeld. Opnieuw proberen?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "Tail-modus kon niet worden uitgeschakeld. Opnieuw proberen?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "De codering kon niet worden gewijzigd. Opnieuw proberen?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "{size} op je klembord",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

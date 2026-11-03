@@ -399,6 +399,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Цього файлу більше немає. Якщо він зʼявиться знову, спробуйте ще раз.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "Не вдалося знову прочитати файл. Перевірте, чи ви досі можете його відкрити, а тоді спробуйте ще раз.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Спробувати ще раз",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "Диск довго не відповідає. Спробувати ще раз за мить?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "Не вдалося увімкнути режим стеження. Спробувати ще раз?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "Не вдалося вимкнути режим стеження. Спробувати ще раз?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "Не вдалося перемкнути кодування. Спробувати ще раз?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "У буфері обміну: {size}",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

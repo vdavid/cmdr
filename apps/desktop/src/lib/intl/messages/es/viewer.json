@@ -400,6 +400,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Este archivo ya no está ahí. Si vuelve a aparecer, inténtalo de nuevo.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "No se ha podido volver a leer el archivo. Comprueba que todavía puedes abrirlo y vuelve a intentarlo.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Reintentar",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "El disco está tardando en responder. ¿Lo intentas de nuevo en un momento?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "No se ha podido activar el modo seguimiento. ¿Reintentar?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "No se ha podido desactivar el modo seguimiento. ¿Reintentar?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "No se ha podido cambiar la codificación. ¿Reintentar?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "{size} en tu portapapeles",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

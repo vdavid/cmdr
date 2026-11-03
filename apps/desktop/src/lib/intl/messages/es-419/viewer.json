@@ -39,6 +39,22 @@
   "@viewer.reloadToast.rotated": {
     "sourceHash": "97ad053"
   },
+  "viewer.reloadToast.couldNotReload": "No se pudo volver a leer el archivo. Comprueba que todavía puedes abrirlo y vuelve a intentarlo.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "27f3bc4"
+  },
+  "viewer.tail.couldNotTurnOn": "No se pudo activar el modo seguimiento. ¿Reintentar?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "76b9509"
+  },
+  "viewer.tail.couldNotTurnOff": "No se pudo desactivar el modo seguimiento. ¿Reintentar?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "22c0ac0"
+  },
+  "viewer.encoding.couldNotSwitch": "No se pudo cambiar la codificación. ¿Reintentar?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "da9ae6a"
+  },
   "viewer.copy.nothingSelected": "No hay nada seleccionado, así que no se copió nada. Selecciona algo de texto primero.",
   "@viewer.copy.nothingSelected": {
     "sourceHash": "6a8bd07"
