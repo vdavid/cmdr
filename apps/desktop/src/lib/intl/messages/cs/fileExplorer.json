@@ -2132,11 +2132,11 @@
   "@fileExplorer.quickFilter.clear": {
     "sourceHash": "ba59e2d"
   },
-  "fileExplorer.quickFilter.typingHint.title": "What just happened?",
+  "fileExplorer.quickFilter.typingHint.title": "Co se právě stalo?",
   "@fileExplorer.quickFilter.typingHint.title": {
     "sourceHash": "865b71e"
   },
-  "fileExplorer.quickFilter.typingHint.body": "You pressed <keyName>{key}</keyName>, and it ran its usual action instead of typing into the filter. To type it into the filter, press it within {seconds, plural, one {{secondsText} second} other {{secondsText} seconds}} of the previous key.",
+  "fileExplorer.quickFilter.typingHint.body": "Stiskli jste <keyName>{key}</keyName> a klávesa místo psaní do filtru provedla svou obvyklou akci. Pokud ji chcete napsat do filtru, stiskněte ji nejpozději {seconds, plural, one {{secondsText} sekundu} few {{secondsText} sekundy} many {{secondsText} sekundy} other {{secondsText} sekund}} po předchozí klávese.",
   "@fileExplorer.quickFilter.typingHint.body": {
     "sourceHash": "b91a5e4"
   },

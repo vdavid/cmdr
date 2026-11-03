@@ -1024,15 +1024,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Диалог об устаревшем индексе показан",
+  "settings.indexing.firstStaleDialogShown.label": "Скрывать объяснение об устаревшем индексе",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Внутренний параметр: был ли показан однократный диалог об устаревшем индексе диска.",
+  "settings.indexing.firstStaleDialogShown.description": "Когда индекс внешнего диска впервые может оказаться устаревшим, Cmdr объясняет, что это значит. Выключите параметр, чтобы увидеть объяснение еще раз. Оно показывается, только пока включен параметр «Уведомлять об устаревшем индексе внешнего диска».",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "неактуальный, старый индекс, внешний диск, окно, пояснение, подсказка, совет",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1089,15 +1089,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Предупреждение о глобальном сочетании принято",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Скрывать вопрос о сочетании клавиш для последней загрузки",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Внутренний параметр. Скрывает предупреждение при первом использовании.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Когда вы впервые нажимаете сочетание клавиш, которое из любого приложения позволяет перейти к последней загрузке, Cmdr спрашивает, оставить ли его включенным. Если изменить сочетание клавиш, этот параметр выключится, и Cmdr спросит и о новом сочетании. Выключите параметр, чтобы увидеть вопрос еще раз.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "загрузки, горячая клавиша, глобальное, предупреждение, оставить, спросить, уведомление",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1726,15 +1726,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Скрывать подсказку о вводе в быстрый фильтр",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "Пока включен быстрый фильтр, клавиши вроде Пробела, - и * вводят символы в него, только пока вы продолжаете печатать. После паузы они снова выполняют свое обычное действие, например Пробел выделяет файл. Когда это происходит впервые, Cmdr один раз это объясняет. Выключите параметр, чтобы снова увидеть объяснение.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "совет, уведомление, фильтрация, пробел, набор текста, звездочка, подстановочный знак",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1798,15 +1798,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Подсказка о выходе из полноэкранного режима по Escape показана",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Скрывать подсказку о выходе из полноэкранного режима по Escape",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Внутренний параметр: было ли показано однократное уведомление о выходе из полноэкранного режима по Escape. Скрыт в интерфейсе.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Когда Escape впервые выводит Cmdr из полноэкранного режима, Cmdr сообщает об этом и предлагает переключатель, который выключает такое поведение. Выключите параметр, чтобы увидеть подсказку еще раз.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "Esc, полный экран, на весь экран, выйти, выход, уведомление, совет",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1818,15 +1818,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Интервал ввода в быстрый фильтр",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Сколько миллисекунд после предыдущей клавиши Пробел, -, * и другие клавиши с действием еще вводят символы в быстрый фильтр. После более долгой паузы они снова выполняют свое обычное действие, например Пробел выделяет файл. Перемещение курсора сразу завершает ввод.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "задержка, пауза, таймаут, тайм-аут, пробел, звездочка, скорость набора, миллисекунды",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2210,15 +2210,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "Подсказка о текстовом редакторе показана",
+  "settings.behavior.textEditorHintSeen.label": "Скрывать подсказку о текстовом редакторе",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Была ли показана однократная подсказка о выборе текстового редактора.",
+  "settings.behavior.textEditorHintSeen.description": "Когда F4 впервые открывает файл в редакторе по умолчанию, а на Mac установлен другой редактор, Cmdr сообщает, что можно выбрать другой. Выключите параметр, чтобы увидеть подсказку еще раз.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "правка, редактировать, изменить, редактор, F4, приложение, уведомление",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2246,27 +2246,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Знакомство с папкой .git показано",
+  "settings.fileExplorer.git.portalIntroSeen.label": "Скрывать знакомство с папкой .git",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Было ли показано однократное знакомство с просмотром папки .git.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "Когда панель впервые открывает корневую папку репозитория git, Cmdr рассказывает о папке .git, где ветки, теги и старые коммиты можно просматривать как обычные папки. Выключите параметр, чтобы Cmdr еще раз показал это знакомство.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "репозиторий, ветка, коммит, тег, введение, обзор, уведомление",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Подсказка об открытии терминала показана",
+  "settings.behavior.openTerminalHereToastSeen.label": "Скрывать подсказку о команде «Открыть терминал здесь»",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Была ли показана однократная подсказка о выборе приложения терминала.",
+  "settings.behavior.openTerminalHereToastSeen.description": "Когда вы впервые открываете папку в терминале, Cmdr сообщает, какое приложение он использовал и где выбрать другое. Выключите параметр, чтобы увидеть подсказку еще раз.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "терминал, оболочка, консоль, командная строка, приложение, уведомление",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2286,27 +2286,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Подсказка о переходе двойным нажатием показана",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Скрывать подсказку о переходе на уровень выше двойным нажатием",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Была ли показана однократная подсказка о переходе на уровень выше двойным нажатием.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Когда вы впервые дважды нажимаете на пустое место в панели, Cmdr открывает папку на уровень выше и объясняет почему. Выключите параметр, чтобы увидеть подсказку еще раз.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "двойной щелчок, двойной клик, родительская папка, вверх, фон, уведомление, совет",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "Подсказка об откреплении из переключателя показана",
+  "settings.behavior.serversPinHintSeen.label": "Скрывать подсказку о длинной группе «Сеть»",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Была ли показана однократная подсказка об откреплении серверов.",
+  "settings.behavior.serversPinHintSeen.description": "Когда в переключателе томов закреплено пять или больше серверов, Cmdr показывает, как открепить часть из них, чтобы группа «Сеть» оставалась короткой. Выключите параметр, чтобы увидеть подсказку еще раз.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "серверы, закрепить, открепить, сеть, список дисков, уведомление, совет",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2342,27 +2342,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Первое уведомление о показе файла показано",
+  "settings.behavior.revealActivationNoticeSeen.label": "Скрывать уведомление о команде «Показать в Finder»",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Было ли показано уведомление о первом выполнении «Показать в Finder» в Cmdr.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Если Cmdr настроен перехватывать «Показать в Finder», первая такая команда приходит с примечанием, почему открылась панель, а не Finder. Выключите параметр, чтобы увидеть примечание еще раз.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "показать в папке, раскрыть, открыть, расположение, перехват, уведомление",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Подсказка об отладке по USB скрыта",
+  "settings.behavior.adbHintDismissed.label": "Скрывать подсказку об отладке по USB",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Была ли скрыта однократная строка с предложением отладки по USB.",
+  "settings.behavior.adbHintDismissed.description": "Если телефон подключен без отладки по USB, вверху его панели появляется строка с предложением включить отладку, чтобы Cmdr получил доступ ко всему телефону. Если закрыть строку кнопкой ×, этот параметр включится. Выключите параметр, чтобы снова увидеть строку.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "телефон, смартфон, мобильный, отладка, разработчик, параметры разработчика, совет",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3453,15 +3453,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Объяснение быстрого фильтра показано",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Скрывать объяснение быстрого фильтра",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Было ли показано уведомление, объясняющее первый быстрый фильтр.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Когда ваш ввод впервые фильтрует панель, Cmdr объясняет, что произошло и что Escape возвращает все файлы. Выключите параметр, чтобы увидеть объяснение еще раз.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "фильтрация, ввод, набор, буквы, сузить, введение, уведомление, совет",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

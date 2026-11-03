@@ -1882,7 +1882,7 @@
   "hint": {
     "chosen": "提示",
     "confidence": "high",
-    "forms": "an internal seen-flag → 已顯示「X」提示 (settings.behavior.*HintSeen.label)",
+    "forms": "a Hints and warnings switch (Suppress the X hint) → 不顯示…提示 (settings.behavior.*HintSeen.label)",
     "sources": "MS (hint → 提示), catalog settings.behavior.*Seen.label"
   },
   "history": {

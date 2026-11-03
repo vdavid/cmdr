@@ -123,6 +123,10 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "655a07d"
   },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "La primera vez que presionas el atajo que salta a tu última descarga desde cualquier app, Cmdr te pregunta si quieres mantenerlo activado. Al cambiar el atajo, esto se desactiva, así que también se pregunta por la combinación nueva. Desactiva esto para volver a ver la pregunta.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
+    "sourceHash": "378530d"
+  },
   "settings.search.autoApply.description": "Ejecuta las búsquedas por nombre de archivo y por regex automáticamente mientras escribes (1 segundo después de que dejes de escribir). Las búsquedas con IA siempre esperan a que presiones Intro, ya que cuestan dinero. Cuando está desactivado, presiona Intro o haz clic en el botón de ejecutar para buscar.",
   "@settings.search.autoApply.description": {
     "sourceHash": "edb367e"
@@ -219,17 +223,13 @@
   "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
     "sourceHash": "c8aa231"
   },
-  "settings.behavior.textEditorHintSeen.description": "Si ya se mostró el aviso único sobre elegir un editor de texto.",
+  "settings.behavior.textEditorHintSeen.description": "La primera vez que F4 abre un archivo en el editor predeterminado mientras hay otro editor instalado, Cmdr te comenta que puedes elegir otro. Desactiva esto para volver a ver el aviso.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "78a2c80"
+    "sourceHash": "045a97a"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Si ya se mostró el aviso único sobre elegir una app de terminal.",
+  "settings.behavior.openTerminalHereToastSeen.description": "La primera vez que abres una carpeta en un terminal, Cmdr te dice qué app usó y dónde elegir otra. Desactiva esto para volver a ver el aviso.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "0d9ebb1"
-  },
-  "settings.behavior.serversPinHintSeen.description": "Si ya se mostró el aviso único sobre desfijar servidores.",
-  "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "b43c20e"
+    "sourceHash": "9e1f1a8"
   },
   "settings.behavior.dockPinNudgeOfferedAt.description": "Cuándo se hizo la oferta única de agregar Cmdr al Dock.",
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
@@ -239,13 +239,9 @@
   "@settings.behavior.finderExtensionNudgeOfferedAt.description": {
     "sourceHash": "36b94a8"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Si ya se mostró el aviso sobre el primer “Mostrar en el Finder” que se abrió en Cmdr.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Si Cmdr está configurado para recoger “Mostrar en el Finder”, la primera petición que llega aquí viene con una nota que explica por qué se abrió un panel en vez del Finder. Desactiva esto para volver a ver la nota.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "38c4ea2"
-  },
-  "settings.behavior.adbHintDismissed.description": "Si ya se descartó el aviso único que propone activar la depuración por USB.",
-  "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "2738d0e"
+    "sourceHash": "803e737"
   },
   "settings.askCmdr.cloudOffHint": "Ask Cmdr usa tu servicio de IA en la nube. Permite la IA en la nube en la configuración de IA para empezar a chatear.",
   "@settings.askCmdr.cloudOffHint": {
@@ -407,9 +403,9 @@
   "@settings.managed.summary.reports": {
     "sourceHash": "44a9e49"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Si ya se mostró el aviso que explica el primer filtro rápido.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "La primera vez que lo que escribes filtra un panel, Cmdr te explica qué pasó y que la tecla Esc vuelve a mostrar todos los archivos. Desactiva esto para volver a ver la explicación.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "fa180c6"
+    "sourceHash": "96cc0af"
   },
   "settings.control.backToPresetsAriaLabel": "Volver a las preconfiguraciones",
   "@settings.control.backToPresetsAriaLabel": {

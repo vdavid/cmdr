@@ -1028,15 +1028,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Veraltet-Dialog gezeigt",
+  "settings.indexing.firstStaleDialogShown.label": "Erklärung zum veralteten Index unterdrücken",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Intern: ob der einmalige Veraltet-Laufwerk-Dialog gezeigt wurde.",
+  "settings.indexing.firstStaleDialogShown.description": "Wenn der Index eines externen Laufwerks zum ersten Mal veraltet sein könnte, erklärt Cmdr, was das bedeutet. Schalte das aus, um die Erklärung noch einmal zu sehen. Sie erscheint weiterhin nur, solange „Benachrichtigen, wenn ein externer Laufwerksindex veraltet“ eingeschaltet ist.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "nicht mehr aktuell, alt, Laufwerk, Festplatte, extern, Dialog, Hinweis, erklären, wieder anzeigen",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1093,15 +1093,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Warnhinweis zu „Zum neuesten Download springen“ (global) bestätigt",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Frage zum Kurzbefehl für den neuesten Download unterdrücken",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Intern. Unterdrückt den Warnhinweis beim ersten Auslösen.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Wenn du den Kurzbefehl, der von jeder App aus zu deinem neuesten Download springt, zum ersten Mal drückst, fragt Cmdr, ob der Kurzbefehl aktiviert bleiben soll. Wenn du den Kurzbefehl änderst, schaltet sich das hier aus, damit Cmdr auch bei einer neuen Kombination nachfragt. Schalte das aus, um die Frage noch einmal zu sehen.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "Download, Downloads, Tastenkombination, Tastaturkurzbefehl, global, Warnung, aktiviert lassen, Hinweis, neuester",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1732,15 +1732,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Hinweis zum Tippen im Schnellfilter unterdrücken",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "Solange ein Schnellfilter aktiv ist, tippen Tasten wie die Leertaste, - und * nur in den Filter, solange du weitertippst. Nach einer Pause erledigen sie wieder ihre übliche Aufgabe, zum Beispiel wählt die Leertaste eine Datei aus. Wenn das zum ersten Mal passiert, erklärt Cmdr es einmal. Schalte das aus, um die Erklärung wieder zu sehen.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "Tipp, Leerzeichen, Sternchen, Platzhalter, eintippen, Eingabe, Taste, Erklärung",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1804,15 +1804,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Hinweis zur esc-Taste im Vollbildmodus gezeigt",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Hinweis zur esc-Taste im Vollbildmodus unterdrücken",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Intern: erfasst, ob der einmalige Hinweis, dass die esc-Taste den Vollbildmodus beendet hat, schon gezeigt wurde. In der Oberfläche ausgeblendet.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Wenn die esc-Taste Cmdr zum ersten Mal aus dem Vollbildmodus holt, sagt Cmdr Bescheid und bietet den Schalter an, mit dem du dieses Verhalten ausschaltest. Schalte das hier aus, um den Hinweis noch einmal zu sehen.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "Escape, esc, Vollbild, beenden, verlassen, Fenster, Tipp, Mitteilung",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1824,15 +1824,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Zeitfenster zum Tippen im Schnellfilter",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Wie lange nach der vorherigen Taste die Leertaste, -, * und andere Tasten mit einer Aktion noch in den Schnellfilter tippen, in Millisekunden. Nach einer längeren Pause erledigen sie wieder ihre übliche Aufgabe, zum Beispiel wählt die Leertaste eine Datei aus. Wenn du den Cursor bewegst, endet das Tippen sofort.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "Filter, Verzögerung, Wartezeit, Zeitlimit, Leerzeichen, Sternchen, Platzhalter, Tempo, langsam",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2221,15 +2221,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "Hinweis zum Text-Editor gezeigt",
+  "settings.behavior.textEditorHintSeen.label": "Hinweis zum Text-Editor unterdrücken",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Ob der einmalige Hinweis zur Wahl eines Text-Editors gezeigt wurde.",
+  "settings.behavior.textEditorHintSeen.description": "Wenn F4 eine Datei zum ersten Mal im Standardeditor öffnet, während ein anderer Editor installiert ist, erwähnt Cmdr, dass du einen anderen auswählen kannst. Schalte das aus, um den Hinweis noch einmal zu sehen.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "bearbeiten, Texteditor, Textbearbeitung, App, Programm, Tipp, Mitteilung",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2257,27 +2257,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Einführung zum Git-Ordner gezeigt",
+  "settings.fileExplorer.git.portalIntroSeen.label": "Einführung zum git-Ordner unterdrücken",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Ob die einmalige Einführung zum Durchsehen des Ordners .git gezeigt wurde.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "Wenn ein Bereich zum ersten Mal den obersten Ordner eines git-Repos öffnet, stellt Cmdr den Ordner .git vor, in dem du Branches, Tags und alte Commits wie normale Ordner durchsehen kannst. Schalte das aus, um die Einführung noch einmal zu sehen.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "Repository, Zweig, Versionsverwaltung, Historie, Hinweis, Tipp, Vorstellung",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Hinweis zu „Terminal hier öffnen“ gezeigt",
+  "settings.behavior.openTerminalHereToastSeen.label": "Hinweis zu „Terminal hier öffnen“ unterdrücken",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Ob der einmalige Hinweis zur Wahl einer Terminal-App gezeigt wurde.",
+  "settings.behavior.openTerminalHereToastSeen.description": "Wenn du zum ersten Mal einen Ordner in einem Terminal öffnest, sagt Cmdr, welche App es benutzt hat und wo du eine andere auswählen kannst. Schalte das aus, um den Hinweis noch einmal zu sehen.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "Shell, Konsole, Befehlszeile, Kommandozeile, App, Terminal-App, Tipp, Mitteilung",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2297,27 +2297,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Hinweis zum Doppelklick in den übergeordneten Ordner gezeigt",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Hinweis zum Doppelklick in den übergeordneten Ordner unterdrücken",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Ob der einmalige Hinweis zum Doppelklick in den übergeordneten Ordner gezeigt wurde.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Wenn du zum ersten Mal auf eine leere Stelle in einem Bereich doppelklickst, wechselt Cmdr in den übergeordneten Ordner und sagt dir, warum. Schalte das aus, um den Hinweis noch einmal zu sehen.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "doppelklicken, nach oben, hoch, zurück, Hintergrund, Bereichshintergrund, Tipp, Mitteilung",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "Hinweis zu „Aus der Volume-Auswahl lösen“ gezeigt",
+  "settings.behavior.serversPinHintSeen.label": "Hinweis zur langen Gruppe „Netzwerk“ unterdrücken",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Ob der einmalige Hinweis zum Lösen von Servern gezeigt wurde.",
+  "settings.behavior.serversPinHintSeen.description": "Sobald fünf oder mehr Server in der Volume-Auswahl fixiert sind, zeigt Cmdr, wie du einige davon lösen kannst, damit die Gruppe „Netzwerk“ kurz bleibt. Schalte das aus, um den Hinweis noch einmal zu sehen.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "Server, fixieren, lösen, Netzwerk, Liste, lang, Laufwerke, Tipp, Mitteilung",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2353,27 +2353,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Hinweis zur ersten Anzeige gezeigt",
+  "settings.behavior.revealActivationNoticeSeen.label": "Hinweis zu „Im Finder anzeigen“ unterdrücken",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Ob der Hinweis zur ersten „Im Finder anzeigen“-Aktion gezeigt wurde, die in Cmdr gelandet ist.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Wenn Cmdr so eingestellt ist, dass es „Im Finder anzeigen“ übernimmt, erklärt ein Hinweis beim ersten Mal, warum sich ein Bereich statt des Finders geöffnet hat. Schalte das aus, um den Hinweis noch einmal zu sehen.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "zeigen, im Ordner anzeigen, öffnen, übernehmen, abfangen, Mitteilung, Tipp",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Hinweis zu USB-Debugging ausgeblendet",
+  "settings.behavior.adbHintDismissed.label": "Hinweis zu USB-Debugging unterdrücken",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Ob der einmalige Hinweis zu USB-Debugging ausgeblendet wurde.",
+  "settings.behavior.adbHintDismissed.description": "Ist ein Telefon ohne USB-Debugging angeschlossen, zeigt sein Bereich oben eine Zeile an, die vorschlägt, USB-Debugging einzuschalten, damit Cmdr das ganze Telefon erreicht. Schließt du die Zeile mit ihrem ×, schaltet sich das hier ein. Schalte das aus, um die Zeile wieder zu sehen.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "Telefon, Handy, Smartphone, Debugging, Entwickler, Entwickleroptionen, Tipp, Zeile",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3469,15 +3469,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Schnellfilter erklärt",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Erklärung zum Schnellfilter unterdrücken",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Ob der Hinweis, der den ersten Schnellfilter erklärt, schon gezeigt wurde.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Wenn dein Tippen zum ersten Mal einen Bereich filtert, erklärt Cmdr, was passiert ist und dass die esc-Taste wieder alle Dateien anzeigt. Schalte das aus, um die Erklärung noch einmal zu sehen.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "Filter, eintippen, Eingabe, Einführung, Hinweis, Tipp, Mitteilung",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

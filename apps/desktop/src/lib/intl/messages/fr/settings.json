@@ -1028,15 +1028,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Boîte de dialogue d’obsolescence affichée",
+  "settings.indexing.firstStaleDialogShown.label": "Masquer l’explication sur l’index obsolète",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Interne : si la boîte de dialogue unique d’obsolescence de disque a été affichée.",
+  "settings.indexing.firstStaleDialogShown.description": "La première fois que l’index d’un disque externe risque d’être obsolète, Cmdr explique ce que cela signifie. Désactivez cette option pour revoir l’explication. L’explication ne s’affiche que si l’option « Me prévenir si l’index d’un disque externe devient obsolète » est activée.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "index, obsolète, périmé, pas à jour, disque externe, explication, boîte de dialogue, avertissement, astuce",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1093,15 +1093,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Notification d’avertissement « aller au dernier téléchargement » global confirmée",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Masquer la question sur le raccourci du dernier téléchargement",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Interne. Supprime la notification d’avertissement au premier déclenchement.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "La première fois que vous appuyez sur le raccourci pour aller à votre dernier téléchargement depuis n’importe quelle app, Cmdr vous demande s’il faut le garder activé. Changer de raccourci désactive cette option, pour que la question se pose aussi pour la nouvelle combinaison. Désactivez cette option pour revoir la question.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "téléchargement, téléchargements, raccourci, raccourci clavier, global, question, garder, avertissement, notification",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1735,15 +1735,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Masquer l’astuce sur la saisie dans le filtre rapide",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "Quand un filtre rapide est actif, les touches comme Espace, - et * ne s’écrivent dans le filtre que tant que vous continuez à taper. Après une pause, elles reprennent leur rôle habituel, comme Espace qui sélectionne un fichier. La première fois que cela arrive, Cmdr l’explique une fois. Désactivez cette option pour revoir cette explication.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "astuce, conseil, notification, filtre, espace, barre d’espace, saisie, taper, joker, caractère générique, astérisque",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1807,15 +1807,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Astuce « Échap et plein écran » affichée",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Masquer l’astuce de la touche Échap en plein écran",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Interne : indique si la notification unique signalant qu’Échap a fait quitter le plein écran a déjà été affichée. Masqué dans l’interface.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "La première fois que la touche Échap fait sortir Cmdr du mode plein écran, Cmdr le signale et propose l’option qui désactive ce comportement. Désactivez cette option pour revoir l’astuce.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "échap, échappement, plein écran, quitter, sortir, astuce, notification",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1827,15 +1827,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Délai de saisie du filtre rapide",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Durée pendant laquelle, après la touche précédente, Espace, -, * et les autres touches associées à une action s’écrivent encore dans le filtre rapide, en millisecondes. Après une pause plus longue, elles reprennent leur rôle habituel, comme Espace qui sélectionne un fichier. Déplacer le curseur met fin à la saisie aussitôt.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filtre, saisie, taper, pause, délai, attente, temporisation, espace, joker, millisecondes",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2224,15 +2224,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "Astuce sur l’éditeur de texte affichée",
+  "settings.behavior.textEditorHintSeen.label": "Masquer l’astuce sur l’éditeur de texte",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Indique si l’astuce unique sur le choix d’un éditeur de texte a été affichée.",
+  "settings.behavior.textEditorHintSeen.description": "La première fois que F4 ouvre un fichier dans l’éditeur par défaut alors qu’un autre éditeur est installé, Cmdr signale que vous pouvez en choisir un autre. Désactivez cette option pour revoir l’astuce.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "modifier, éditer, éditeur, texte, app, astuce, notification",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2260,27 +2260,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Présentation du dossier .git affichée",
+  "settings.fileExplorer.git.portalIntroSeen.label": "Masquer la présentation du dossier git",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Indique si la présentation unique sur la façon de parcourir le dossier .git a été affichée.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "La première fois qu’un panneau ouvre le dossier racine d’un dépôt git, Cmdr présente le dossier .git, où vous pouvez parcourir branches, étiquettes et anciens commits comme des dossiers ordinaires. Désactivez cette option pour revoir la présentation.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "dépôt, repo, branche, commit, étiquette, présentation, introduction, astuce",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Astuce « Ouvrir un terminal ici » affichée",
+  "settings.behavior.openTerminalHereToastSeen.label": "Masquer l’astuce « Ouvrir un terminal ici »",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Indique si l’astuce unique sur le choix d’une app de terminal a été affichée.",
+  "settings.behavior.openTerminalHereToastSeen.description": "La première fois que vous ouvrez un dossier dans un terminal, Cmdr indique quelle app s’est ouverte et où en choisir une autre. Désactivez cette option pour revoir l’astuce.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, ligne de commande, invite de commandes, app, astuce",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2301,27 +2301,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Astuce du double-clic vers le dossier parent affichée",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Masquer l’astuce du double-clic pour remonter",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Si l’astuce unique du double-clic vers le dossier parent a été affichée.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "La première fois que vous double-cliquez sur l’espace vide d’un panneau, Cmdr remonte au dossier parent et explique pourquoi. Désactivez cette option pour revoir l’astuce.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-clic, double clic, remonter, dossier parent, arrière-plan, fond, vide, astuce, notification",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "Astuce « Désépingler du sélecteur » affichée",
+  "settings.behavior.serversPinHintSeen.label": "Masquer l’astuce du groupe Réseau qui s’allonge",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Indique si l’astuce unique sur la façon de désépingler un serveur a été affichée.",
+  "settings.behavior.serversPinHintSeen.description": "Dès que cinq serveurs ou plus sont épinglés au sélecteur de volume, Cmdr montre comment en désépingler quelques-uns pour que le groupe Réseau reste court. Désactivez cette option pour revoir l’astuce.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "serveur, serveurs, épingler, désépingler, réseau, sélecteur, liste, astuce",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2357,27 +2357,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Avis du premier « Afficher dans le Finder » affiché",
+  "settings.behavior.revealActivationNoticeSeen.label": "Masquer l’avis « Afficher dans le Finder »",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Indique si l’avis sur le premier « Afficher dans le Finder » ouvert dans Cmdr a été affiché.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Quand Cmdr est configuré pour récupérer « Afficher dans le Finder », la première demande qui arrive ici s’accompagne d’une note expliquant pourquoi un panneau s’est ouvert à la place du Finder. Désactivez cette option pour revoir la note.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "révéler, afficher dans le dossier, ouvrir, emplacement, avis, note, notification",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Astuce sur le débogage USB ignorée",
+  "settings.behavior.adbHintDismissed.label": "Masquer l’astuce sur le débogage USB",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Indique si la ligne unique proposant le débogage USB a été ignorée.",
+  "settings.behavior.adbHintDismissed.description": "Un téléphone connecté sans le débogage USB activé affiche une ligne en haut de son panneau qui vous suggère d’activer le débogage USB, pour que Cmdr accède à tout le téléphone. Fermer la ligne avec son × active cette option. Désactivez cette option pour revoir la ligne.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "téléphone, smartphone, mobile, débogage, développeur, options pour les développeurs, astuce",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3470,15 +3470,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Filtre rapide expliqué",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Masquer l’explication du filtre rapide",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Indique si la notification qui explique le premier filtre rapide a été affichée.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "La première fois que votre saisie filtre un panneau, Cmdr explique ce qui s’est passé et que la touche Échap fait réapparaître tous les fichiers. Désactivez cette option pour revoir l’explication.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filtre, filtrer, saisie, taper, explication, présentation, astuce, notification",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

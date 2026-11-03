@@ -3249,6 +3249,13 @@
       }
     ]
   },
+  "git-tag": {
+    "chosen": "značka",
+    "accept": ["značk", "značek", "označ"],
+    "forms": "f.: 1 značka, 2–4 značky, 5+ značek; branches, tags, and commits → větve, značky a commity",
+    "confidence": "high",
+    "sources": "MS terminology tag → značka (every sense); Pro Git cs chapter 2.6 Značky; the catalog already says značka for git tags (fileExplorer.git.size.tags, fileExplorer.git.tooltip.tags, fileExplorer.git.portalIntro.what); shares the word with the Finder tag ruling, which the git context keeps apart"
+  },
   "git-browser": {
     "chosen": "prohlížeč gitu",
     "accept": ["prohlížeč"],

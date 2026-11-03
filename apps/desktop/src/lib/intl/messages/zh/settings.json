@@ -1026,15 +1026,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "已显示过时对话框",
+  "settings.indexing.firstStaleDialogShown.label": "不显示索引过期说明",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "内部：是否已显示过一次性的过时驱动器对话框。",
+  "settings.indexing.firstStaleDialogShown.description": "外置驱动器的索引第一次可能过期时，Cmdr 会解释这意味着什么。关闭这一项，就能再看一次这个说明。这个说明仍然只在“当任一外置驱动器的索引过时时通知我”开启时显示。",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "索引、过期、过时、旧、外置、驱动器、硬盘、对话框、说明、解释",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1091,15 +1091,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "已确认全局前往最新下载的警告提示",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "不显示最新下载快捷键的询问",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "内部。抑制首次触发的警告提示。",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "你第一次在任意 App 中按下跳转到最新下载的快捷键时，Cmdr 会问你要不要保持开启。更改快捷键会关闭这一项，这样新的按键组合也会被问到。关闭这一项，就能再看一次这个询问。",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "下载、快捷键、热键、全局、警告、保持开启、提示、询问",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1728,15 +1728,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "不显示快速筛选输入提示",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "快速筛选开启时，空格键、- 和 * 这类按键只有在你连续输入时才会输入到筛选里。停顿一下之后，它们会恢复平常的作用，比如空格键会选择文件。第一次出现这种情况时，Cmdr 会解释一次。关闭这一项，就能再看到这个解释。",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "提示、小提示、筛选、过滤、空格、输入、打字、通配符、星号",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1800,15 +1800,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "已显示 Esc 键全屏幕提示",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "不显示按 Esc 键退出全屏幕的提示",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "内部：记录那条关于按 Esc 键退出全屏幕的一次性提示是否已显示。对界面隐藏。",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "第一次按 Esc 键让 Cmdr 退出全屏幕时，Cmdr 会告诉你，并给出关闭这项行为的开关。关闭这一项，就能再看一次这个提示。",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "全屏幕、全屏、退出、最大化、提示、通知",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1820,15 +1820,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "快速筛选输入间隔",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "按上一个键之后多长时间内，空格键、-、* 和其他带操作的按键仍会输入到快速筛选里，单位为毫秒。停顿更久之后，它们会恢复平常的作用，比如空格键会选择文件。移动光标会立即结束输入。",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "筛选、过滤、输入、打字、停顿、延迟、超时、空格、通配符、毫秒",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2212,15 +2212,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "已显示文本编辑器提示",
+  "settings.behavior.textEditorHintSeen.label": "不显示文本编辑器提示",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "是否已显示过关于选择文本编辑器的一次性提示。",
+  "settings.behavior.textEditorHintSeen.description": "第一次用 F4 在默认编辑器中打开文件、而你还安装了别的编辑器时，Cmdr 会提一句你可以换一个。关闭这一项，就能再看一次这个提示。",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "编辑、编辑器、文本、应用、提示",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2248,27 +2248,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "已显示 Git 文件夹说明",
+  "settings.fileExplorer.git.portalIntroSeen.label": "不显示 git 文件夹介绍",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "是否已显示过关于浏览 .git 文件夹的一次性说明。",
+  "settings.fileExplorer.git.portalIntroSeen.description": "窗格第一次打开 git 仓库的顶层文件夹时，Cmdr 会介绍 .git 文件夹，你可以在里面像普通文件夹一样浏览分支、标签和历史提交。关闭这一项，就能再看一次这个介绍。",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "仓库、代码库、分支、提交、标签、介绍、提示",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "已显示“在此处打开终端”提示",
+  "settings.behavior.openTerminalHereToastSeen.label": "不显示“在此处打开终端”提示",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "是否已显示过关于选择终端 App 的一次性提示。",
+  "settings.behavior.openTerminalHereToastSeen.description": "你第一次在终端中打开文件夹时，Cmdr 会告诉你用了哪个 App，以及在哪里换一个。关闭这一项，就能再看一次这个提示。",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "终端、命令行、控制台、shell、应用、提示",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2288,27 +2288,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "双击前往上层文件夹提示已显示",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "不显示双击前往上层文件夹的提示",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "是否已显示一次性的双击前往上层文件夹提示。",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "你第一次双击窗格里的空白处时，Cmdr 会前往上层文件夹，并告诉你原因。关闭这一项，就能再看一次这个提示。",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "双击、上层文件夹、上一级、向上、背景、空白处、提示",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "已显示“从宗卷选择器中取消固定”提示",
+  "settings.behavior.serversPinHintSeen.label": "不显示“网络”分组变长的提示",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "是否已显示过关于取消固定服务器的一次性提示。",
+  "settings.behavior.serversPinHintSeen.description": "宗卷选择器里固定了 5 台或更多服务器时，Cmdr 会显示一条提示，告诉你怎样取消固定一些服务器，让“网络”分组保持简短。关闭这一项，就能再看一次这个提示。",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "服务器、固定、取消固定、网络、宗卷选择器、列表、提示",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2344,27 +2344,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "已显示首次接手提示",
+  "settings.behavior.revealActivationNoticeSeen.label": "不显示“在 Finder 中显示”提示",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "是否已经显示过关于首次在 Cmdr 中打开“在 Finder 中显示”的提示。",
+  "settings.behavior.revealActivationNoticeSeen.description": "Cmdr 设置成接手“在 Finder 中显示”时，第一次转到这里的请求会附带一条留言，告诉你为什么打开的是窗格，而不是 Finder。关闭这一项，就能再看一次这条留言。",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "显示、打开、文件夹、位置、提示、通知、接手",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "已关闭 USB 调试提示",
+  "settings.behavior.adbHintDismissed.label": "不显示 USB 调试提示",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "是否已关闭那条建议开启 USB 调试的一次性提示。",
+  "settings.behavior.adbHintDismissed.description": "没开启 USB 调试的手机连接后，它的窗格顶部会显示一行提示，建议你开启 USB 调试，这样 Cmdr 就能访问整部手机。用这行提示上的 × 关闭它，会开启这一项。关闭这一项，就能再看到这行提示。",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "手机、移动设备、调试、开发者、开发者选项、提示",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3457,15 +3457,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "已显示快速筛选说明",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "不显示快速筛选说明",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "是否已经显示过解释首次快速筛选的提示。",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "你的输入第一次筛选窗格时，Cmdr 会解释发生了什么，并告诉你按 Esc 键就能让所有文件重新出现。关闭这一项，就能再看一次这个说明。",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "筛选、过滤、输入、打字、说明、介绍、提示",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

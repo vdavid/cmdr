@@ -1238,7 +1238,7 @@
   },
   "settings.indexing.firstStaleDialogShown.label": "Suppress the out-of-date index explainer",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time dialog explaining that an external drive’s index may be out of date (indexing.staleDialog.title) from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time dialog explaining that an external drive’s index may be out of date (indexing.staleDialog.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.indexing.firstStaleDialogShown.description": "The first time an external drive’s index may be out of date, Cmdr explains what that means. Turn this off to see the explanation once more. It still shows only while “Notify me if any external drive index goes stale” is on.",
   "@settings.indexing.firstStaleDialogShown.description": {
@@ -1309,7 +1309,7 @@
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Suppress the latest-download shortcut question",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time warning toast on the first press of the global shortcut that jumps to the latest download (downloads.warnToast.message), which asks whether to keep the shortcut on from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time warning toast on the first press of the global shortcut that jumps to the latest download (downloads.warnToast.message), which asks whether to keep the shortcut on. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "The first time you press the shortcut that jumps to your latest download from any app, Cmdr asks whether to keep it on. Changing the shortcut turns this off, so a new combo gets asked about too. Turn this off to see the question once more.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -2121,7 +2121,7 @@
   },
   "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Suppress the Escape full-screen hint",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast saying Escape took Cmdr out of full screen (main.escapeFullScreenHint.message). “Escape” is the keyboard key; use the locale’s key name. from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast saying Escape took Cmdr out of full screen (main.escapeFullScreenHint.message). “Escape” is the keyboard key; use the locale’s key name. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.advanced.exitFullScreenOnEscapeHintShown.description": "The first time Escape takes Cmdr out of full screen, Cmdr says so and offers the switch that turns this off. Turn this off to see the hint once more.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
@@ -2605,7 +2605,7 @@
   },
   "settings.behavior.textEditorHintSeen.label": "Suppress the text editor hint",
   "@settings.behavior.textEditorHintSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast after F4 (edit) mentioning that the user can pick a different text editor from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast after F4 (edit) mentioning that the user can pick a different text editor. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.behavior.textEditorHintSeen.description": "The first time F4 opens a file in the default editor while another editor is installed, Cmdr mentions that you can pick a different one. Turn this off to see the hint once more.",
   "@settings.behavior.textEditorHintSeen.description": {
@@ -2644,7 +2644,7 @@
   },
   "settings.fileExplorer.git.portalIntroSeen.label": "Suppress the git folder intro",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast introducing the browsable .git folder (fileExplorer.git.portalIntro.title). “git” is the version-control tool; keep it. from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast introducing the browsable .git folder (fileExplorer.git.portalIntro.title). “git” is the version-control tool; keep it. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.fileExplorer.git.portalIntroSeen.description": "The first time a pane opens the top folder of a git repository, Cmdr introduces the .git folder, where you can browse branches, tags, and old commits like regular folders. Turn this off to see the intro once more.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
@@ -2656,7 +2656,7 @@
   },
   "settings.behavior.openTerminalHereToastSeen.label": "Suppress the Open terminal here hint",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast after the first “Open terminal here” saying which app opened and where to pick another (commands.handler.openTerminalHere.hint). “Open terminal here” is a command name; translate it the same way as that command. from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast after the first “Open terminal here” saying which app opened and where to pick another (commands.handler.openTerminalHere.hint). “Open terminal here” is a command name; translate it the same way as that command. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.behavior.openTerminalHereToastSeen.description": "The first time you open a folder in a terminal, Cmdr says which app it used and where to pick a different one. Turn this off to see the hint once more.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
@@ -2687,7 +2687,7 @@
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Suppress the double-click-to-go-up hint",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast explaining that double-clicking the empty pane background went up to the parent folder (fileExplorer.doubleClickHint.title) from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast explaining that double-clicking the empty pane background went up to the parent folder (fileExplorer.doubleClickHint.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.description": "The first time you double-click the empty space in a pane, Cmdr goes up a folder and says why. Turn this off to see the hint once more.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
@@ -2699,7 +2699,7 @@
   },
   "settings.behavior.serversPinHintSeen.label": "Suppress the long Network group hint",
   "@settings.behavior.serversPinHintSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast shown once five or more servers are pinned to the volume switcher’s Network group (servers.pinHint.title) from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast shown once five or more servers are pinned to the volume switcher’s Network group (servers.pinHint.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.behavior.serversPinHintSeen.description": "Once five or more servers are pinned to the volume switcher, Cmdr shows how to unpin some to keep its Network group short. Turn this off to see the hint once more.",
   "@settings.behavior.serversPinHintSeen.description": {
@@ -2743,7 +2743,7 @@
   },
   "settings.behavior.revealActivationNoticeSeen.label": "Suppress the “Show in Finder” notice",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast shown the first time another app’s “Show in Finder” opens in Cmdr instead (main.revealActivation.title). “Finder” is the macOS app; use the OS’s localized name for “Show in Finder”. from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast shown the first time another app’s “Show in Finder” opens in Cmdr instead (main.revealActivation.title). “Finder” is the macOS app; use the OS’s localized name for “Show in Finder”. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.behavior.revealActivationNoticeSeen.description": "When Cmdr is set to catch “Show in Finder”, the first one that lands here comes with a note saying why a pane opened instead of Finder. Turn this off to see the note once more.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
@@ -2755,7 +2755,7 @@
   },
   "settings.behavior.adbHintDismissed.label": "Suppress the USB debugging hint",
   "@settings.behavior.adbHintDismissed.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the line at the top of an Android phone’s pane suggesting USB debugging (adb.hint.text). Unlike a toast, it stays until closed with its ×. from showing again. On means the user closed the line and it won’t show again; turning it off makes the line show again."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the line at the top of an Android phone’s pane suggesting USB debugging (adb.hint.text). Unlike a toast, it stays until closed with its ×. On means the user closed the line and it won’t show again; turning it off makes the line show again."
   },
   "settings.behavior.adbHintDismissed.description": "A phone connected without USB debugging shows a line at the top of its pane suggesting you turn it on, so Cmdr can reach the whole phone. Closing the line with its × turns this on. Turn this off to see the line again.",
   "@settings.behavior.adbHintDismissed.description": {
@@ -4148,7 +4148,7 @@
   },
   "settings.fileExplorer.quickFilterIntroSeen.label": "Suppress the quick filter explainer",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast explaining that typing in a pane filtered its list (fileExplorer.quickFilter.intro.title) from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast explaining that typing in a pane filtered its list (fileExplorer.quickFilter.intro.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
   "settings.fileExplorer.quickFilterIntroSeen.description": "The first time your typing filters a pane, Cmdr explains what happened and that Esc brings every file back. Turn this off to see the explanation once more.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {

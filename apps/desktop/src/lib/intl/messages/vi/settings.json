@@ -1024,15 +1024,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Đã hiển thị hộp thoại lỗi thời",
+  "settings.indexing.firstStaleDialogShown.label": "Ẩn phần giải thích chỉ mục lỗi thời",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Nội bộ: hộp thoại ổ đĩa lỗi thời một lần đã hiển thị hay chưa.",
+  "settings.indexing.firstStaleDialogShown.description": "Lần đầu chỉ mục của một ổ đĩa ngoài có thể đã lỗi thời, Cmdr sẽ giải thích điều đó nghĩa là gì. Tắt mục này để xem lại phần giải thích một lần nữa. Phần giải thích vẫn chỉ hiển thị khi “Báo cho tôi nếu chỉ mục của ổ đĩa ngoài nào đó bị lỗi thời” đang bật.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "chỉ mục, cũ, lỗi thời, ổ đĩa ngoài, ổ cứng ngoài, hộp thoại, giải thích, gợi ý",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1089,15 +1089,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Đã xác nhận thông báo cảnh báo đi-tới-bản-tải-về-mới-nhất toàn cục",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Ẩn câu hỏi về phím tắt bản tải về mới nhất",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Nội bộ. Ẩn thông báo cảnh báo lần kích hoạt đầu tiên.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Lần đầu bạn nhấn phím tắt đi tới bản tải về mới nhất từ bất kỳ ứng dụng nào, Cmdr sẽ hỏi bạn có muốn giữ phím tắt đó bật không. Khi bạn đổi phím tắt, mục này sẽ tự tắt để Cmdr hỏi lại về tổ hợp phím mới. Tắt mục này để xem lại câu hỏi một lần nữa.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "tải về, phím tắt, phím nóng, toàn cục, cảnh báo, giữ bật, thông báo nhỏ, câu hỏi",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1726,15 +1726,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Ẩn gợi ý gõ phím trong bộ lọc nhanh",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "Khi bộ lọc nhanh đang bật, các phím như phím dấu cách, - và * chỉ gõ vào bộ lọc khi bạn đang gõ liên tục. Sau một lúc dừng, chúng lại làm việc thường lệ, như phím dấu cách chọn một tệp. Lần đầu điều đó xảy ra, Cmdr sẽ giải thích một lần. Tắt mục này để xem lại phần giải thích đó.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "mẹo, gợi ý, thông báo nhỏ, lọc, dấu cách, gõ phím, ký tự đại diện, dấu sao",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1798,15 +1798,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Đã hiển thị gợi ý thoát toàn màn hình bằng Escape",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Ẩn gợi ý thoát toàn màn hình bằng phím Escape",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Nội bộ: theo dõi việc thông báo nhỏ một lần về phím Escape đưa cửa sổ ra khỏi chế độ toàn màn hình đã hiển thị hay chưa. Ẩn khỏi giao diện.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Lần đầu phím Escape đưa Cmdr ra khỏi chế độ toàn màn hình, Cmdr sẽ báo cho bạn biết và đưa ra công tắc để tắt hành vi này. Tắt mục này để xem lại gợi ý một lần nữa.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "esc, thoát, toàn màn hình, phóng to, gợi ý, thông báo nhỏ",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1818,15 +1818,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Khoảng thời gian gõ của bộ lọc nhanh",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Sau phím trước đó bao lâu thì phím dấu cách, -, * và các phím có tác vụ khác vẫn còn gõ vào bộ lọc nhanh, tính bằng mili giây. Sau một lúc dừng lâu hơn, chúng lại làm việc thường lệ, như phím dấu cách chọn một tệp. Di chuyển con trỏ sẽ kết thúc việc gõ ngay lập tức.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "lọc, gõ phím, tạm dừng, độ trễ, thời gian chờ, dấu cách, ký tự đại diện, mili giây",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2211,15 +2211,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "Đã hiển thị gợi ý về trình soạn thảo văn bản",
+  "settings.behavior.textEditorHintSeen.label": "Ẩn gợi ý về trình soạn thảo văn bản",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Gợi ý một lần về việc chọn trình soạn thảo văn bản đã hiển thị hay chưa.",
+  "settings.behavior.textEditorHintSeen.description": "Lần đầu F4 mở một tệp trong trình soạn thảo mặc định trong khi máy có cài trình soạn thảo khác, Cmdr sẽ nhắc rằng bạn có thể chọn một trình khác. Tắt mục này để xem lại gợi ý một lần nữa.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "sửa, chỉnh sửa, soạn thảo, văn bản, ứng dụng, gợi ý, thông báo nhỏ",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2247,27 +2247,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Đã hiển thị phần giới thiệu thư mục Git",
+  "settings.fileExplorer.git.portalIntroSeen.label": "Ẩn phần giới thiệu thư mục git",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Phần giới thiệu một lần về việc duyệt thư mục .git đã hiển thị hay chưa.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "Lần đầu một khung mở thư mục gốc của một kho git, Cmdr sẽ giới thiệu thư mục .git, nơi bạn có thể duyệt các nhánh, tag và commit cũ như thư mục thông thường. Tắt mục này để xem lại phần giới thiệu một lần nữa.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "kho, repo, kho mã, nhánh, commit, tag, giới thiệu, thông báo nhỏ",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Đã hiển thị gợi ý về “Mở terminal tại đây”",
+  "settings.behavior.openTerminalHereToastSeen.label": "Ẩn gợi ý về “Mở terminal tại đây”",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Gợi ý một lần về việc chọn ứng dụng terminal đã hiển thị hay chưa.",
+  "settings.behavior.openTerminalHereToastSeen.description": "Lần đầu bạn mở một thư mục trong terminal, Cmdr sẽ cho biết ứng dụng nào đã được dùng và nơi chọn ứng dụng khác. Tắt mục này để xem lại gợi ý một lần nữa.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, dòng lệnh, shell, console, bảng điều khiển, ứng dụng, gợi ý, thông báo nhỏ",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2287,27 +2287,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Đã hiển thị gợi ý bấm đúp để đi tới thư mục cha",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Ẩn gợi ý bấm đúp để lên thư mục cha",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Liệu gợi ý bấm đúp để đi tới thư mục cha (chỉ xuất hiện một lần) đã được hiển thị hay chưa.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Lần đầu bạn bấm đúp vào chỗ trống trong một khung, Cmdr sẽ lên một cấp thư mục và cho biết lý do. Tắt mục này để xem lại gợi ý một lần nữa.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "bấm đúp, nhấp đúp, thư mục cha, đi lên, nền, chỗ trống, gợi ý, mẹo",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "Đã hiển thị gợi ý về “Bỏ ghim khỏi bộ chọn ổ đĩa”",
+  "settings.behavior.serversPinHintSeen.label": "Ẩn gợi ý về nhóm Mạng đang dài dần",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Gợi ý một lần về việc bỏ ghim máy chủ đã hiển thị hay chưa.",
+  "settings.behavior.serversPinHintSeen.description": "Khi có từ năm máy chủ trở lên được ghim vào bộ chọn ổ đĩa, Cmdr sẽ hiển thị gợi ý cách bỏ ghim bớt để nhóm Mạng luôn ngắn gọn. Tắt mục này để xem lại gợi ý một lần nữa.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "máy chủ, ghim, bỏ ghim, mạng, bộ chọn ổ đĩa, danh sách, gợi ý, thông báo nhỏ",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2343,27 +2343,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Đã hiển thị thông báo lần đầu tiên",
+  "settings.behavior.revealActivationNoticeSeen.label": "Ẩn thông báo về “Hiển thị trong Finder”",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Thông báo về lần đầu “Hiển thị trong Finder” mở trong Cmdr đã hiển thị hay chưa.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Khi Cmdr được đặt để nhận lệnh “Hiển thị trong Finder”, lần đầu tiên lệnh đó đến đây sẽ kèm một ghi chú giải thích vì sao một khung mở ra thay vì Finder. Tắt mục này để xem lại ghi chú một lần nữa.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "hiển thị, mở, thư mục, vị trí, thông báo, thông báo nhỏ, nhận lệnh",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Đã bỏ qua gợi ý về gỡ lỗi qua USB",
+  "settings.behavior.adbHintDismissed.label": "Ẩn gợi ý về gỡ lỗi qua USB",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Dòng gợi ý một lần về việc bật gỡ lỗi qua USB đã bị bỏ qua hay chưa.",
+  "settings.behavior.adbHintDismissed.description": "Một điện thoại kết nối mà chưa bật gỡ lỗi qua USB sẽ hiển thị một dòng ở đầu khung của nó, gợi ý bạn bật lên để Cmdr truy cập được toàn bộ điện thoại. Đóng dòng đó bằng nút × sẽ bật mục này. Tắt mục này để xem lại dòng đó.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "điện thoại, di động, gỡ lỗi, nhà phát triển, tùy chọn cho nhà phát triển, gợi ý, mẹo",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3456,15 +3456,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Đã hiển thị giải thích bộ lọc nhanh",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Ẩn phần giải thích bộ lọc nhanh",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Thông báo nhỏ giải thích bộ lọc nhanh đầu tiên đã hiển thị hay chưa.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Lần đầu việc gõ phím của bạn lọc một khung, Cmdr sẽ giải thích chuyện gì đã xảy ra và cho biết phím Escape sẽ đưa mọi tệp trở lại. Tắt mục này để xem lại phần giải thích một lần nữa.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "lọc, bộ lọc, gõ phím, gõ, giải thích, giới thiệu, thông báo nhỏ, mẹo",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

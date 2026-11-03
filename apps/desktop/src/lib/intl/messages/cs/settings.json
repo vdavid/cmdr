@@ -1024,15 +1024,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Zobrazen dialog o zastaralém indexu",
+  "settings.indexing.firstStaleDialogShown.label": "Potlačit vysvětlení zastaralého indexu",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Interní: jestli se už zobrazilo jednorázové dialogové okno o zastaralém indexu disku.",
+  "settings.indexing.firstStaleDialogShown.description": "Když může být index externího disku poprvé zastaralý, Cmdr vysvětlí, co to znamená. Vypněte tuto volbu a vysvětlení se zobrazí ještě jednou. Zobrazuje se ale jen tehdy, když je zapnutá volba „Upozornit, když index některého externího disku zastará“.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "neaktuální, starý index, externí disk, dialogové okno, vysvětlivka, nápověda, tip",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1089,15 +1089,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Potvrzeno oznámení s varováním ke globální zkratce pro poslední stažený soubor",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Potlačit dotaz ke zkratce pro poslední stažený soubor",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Interní. Potlačí oznámení s varováním při prvním použití zkratky.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Když poprvé stisknete zkratku, kterou z jakékoli aplikace přejdete na poslední stažený soubor, Cmdr se zeptá, jestli ji chcete nechat zapnutou. Změna zkratky tuto volbu vypne, takže se Cmdr zeptá i na novou kombinaci kláves. Vypněte tuto volbu a dotaz se zobrazí ještě jednou.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "stahování, stažené soubory, klávesová zkratka, globální, varování, otázka, ponechat, oznámení",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1727,15 +1727,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Potlačit tip k psaní do rychlého filtru",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "Když je zapnutý rychlý filtr, klávesy jako mezerník, - a * do něj píšou, jen dokud píšete dál. Po pauze zase dělají svou obvyklou práci, třeba mezerník vybere soubor. Když se to stane poprvé, Cmdr to jednou vysvětlí. Vypněte tuto volbu a vysvětlení se zobrazí znovu.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "nápověda, oznámení, filtrování, mezerník, psaní, hvězdička, zástupný znak",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1799,15 +1799,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Zobrazen tip k ukončení celé obrazovky klávesou Esc",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Potlačit tip ke klávese Esc v režimu celé obrazovky",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Interní: sleduje, jestli se už zobrazilo jednorázové oznámení o ukončení režimu celé obrazovky klávesou Esc. V rozhraní je skryto.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Když Esc poprvé ukončí v Cmdru režim celé obrazovky, Cmdr vám to oznámí a nabídne přepínač, který toto chování vypne. Vypněte tuto volbu a tip se zobrazí ještě jednou.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, celá obrazovka, celoobrazovkový režim, ukončit, opustit, oznámení, nápověda",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1819,15 +1819,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Časové okno pro psaní do rychlého filtru",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Jak dlouho po předchozí klávese ještě mezerník, -, * a další klávesy s nějakou akcí píšou do rychlého filtru, v milisekundách. Po delší pauze zase dělají svou obvyklou práci, třeba mezerník vybere soubor. Přesunutí kurzoru psaní hned ukončí.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "prodleva, zpoždění, pauza, časový limit, mezerník, hvězdička, zástupný znak, rychlost psaní",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2211,15 +2211,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "Zobrazen tip k textovému editoru",
+  "settings.behavior.textEditorHintSeen.label": "Potlačit tip k textovému editoru",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Jestli se už zobrazil jednorázový tip k výběru textového editoru.",
+  "settings.behavior.textEditorHintSeen.description": "Když F4 poprvé otevře soubor ve výchozím editoru a přitom je nainstalovaný i jiný editor, Cmdr zmíní, že si můžete vybrat jiný. Vypněte tuto volbu a tip se zobrazí ještě jednou.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "upravit, úpravy, editor, F4, aplikace, oznámení, nápověda",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2247,27 +2247,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Úvod ke složce git zobrazen",
+  "settings.fileExplorer.git.portalIntroSeen.label": "Potlačit úvod ke složce git",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Jestli se už zobrazil jednorázový úvod k procházení složky .git.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "Když panel poprvé otevře kořenovou složku repozitáře gitu, Cmdr představí složku .git, ve které můžete procházet větve, značky a staré commity jako běžné složky. Vypněte tuto volbu a úvod se zobrazí ještě jednou.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "repozitář, repo, větev, commit, značka, představení, oznámení",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Zobrazen tip k příkazu Otevřít terminál zde",
+  "settings.behavior.openTerminalHereToastSeen.label": "Potlačit tip k příkazu Otevřít terminál zde",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Jestli se už zobrazil jednorázový tip k výběru terminálové aplikace.",
+  "settings.behavior.openTerminalHereToastSeen.description": "Když poprvé otevřete složku v terminálu, Cmdr řekne, kterou aplikaci použil a kde si můžete vybrat jinou. Vypněte tuto volbu a tip se zobrazí ještě jednou.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "terminál, shell, konzole, příkazový řádek, aplikace, oznámení, nápověda",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2287,27 +2287,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Zobrazen tip k přechodu o složku výš dvojitým kliknutím",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Potlačit tip k přechodu o složku výš dvojitým kliknutím",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Jestli se už zobrazil jednorázový tip k přechodu o složku výš dvojitým kliknutím.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Když poprvé dvakrát kliknete na prázdné místo v panelu, Cmdr přejde o složku výš a vysvětlí proč. Vypněte tuto volbu a tip se zobrazí ještě jednou.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "dvojklik, dvojité kliknutí, nadřazená složka, nahoru, pozadí, oznámení, nápověda",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "Zobrazen tip k odepnutí z přepínače svazků",
+  "settings.behavior.serversPinHintSeen.label": "Potlačit tip k dlouhé skupině Síť",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Jestli se už zobrazil jednorázový tip k odepínání serverů.",
+  "settings.behavior.serversPinHintSeen.description": "Jakmile je v přepínači svazků připnutých pět nebo více serverů, Cmdr ukáže, jak některé odepnout, aby skupina Síť zůstala krátká. Vypněte tuto volbu a tip se zobrazí ještě jednou.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "servery, připnout, odepnout, síť, seznam disků, oznámení, nápověda",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2343,27 +2343,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Zobrazeno oznámení o prvním „Zobrazit ve Finderu“",
+  "settings.behavior.revealActivationNoticeSeen.label": "Potlačit oznámení o „Zobrazit ve Finderu“",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Jestli se už zobrazilo oznámení o tom, že se první „Zobrazit ve Finderu“ otevřelo v Cmdru.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Když je Cmdr nastavený tak, aby přebíral „Zobrazit ve Finderu“, první takový požadavek přijde s poznámkou, proč se místo Finderu otevřel panel. Vypněte tuto volbu a poznámka se zobrazí ještě jednou.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "zobrazit ve složce, odhalit, najít soubor, otevřít, umístění, upozornění",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Zavřen tip k ladění přes USB",
+  "settings.behavior.adbHintDismissed.label": "Potlačit tip k ladění přes USB",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Jestli byl zavřen jednorázový řádek s nabídkou ladění přes USB.",
+  "settings.behavior.adbHintDismissed.description": "Když je telefon připojený bez ladění přes USB, nahoře v jeho panelu se objeví řádek s návrhem ladění zapnout, aby se Cmdr dostal k celému telefonu. Když řádek zavřete jeho ×, tato volba se zapne. Vypněte ji a řádek se zobrazí znovu.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "telefon, mobil, ladění, vývojář, možnosti pro vývojáře, nápověda, tip",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3456,15 +3456,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Rychlý filtr vysvětlen",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Potlačit vysvětlení rychlého filtru",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Jestli se už zobrazilo oznámení, které vysvětluje první rychlý filtr.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Když vaše psaní poprvé vyfiltruje panel, Cmdr vysvětlí, co se stalo, a že klávesa Esc vrátí všechny soubory zpět. Vypněte tuto volbu a vysvětlení se zobrazí ještě jednou.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filtrování, psaní, písmena, zúžit, vysvětlivka, úvod, oznámení, tip",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

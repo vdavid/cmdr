@@ -1647,10 +1647,7 @@
   "hint": {
     "chosen": "hint",
     "confidence": "high",
-    "exceptions": {
-      "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Internal flag, never shown; names the one-time notice (melding)."
-    },
-    "forms": "internal seen-flags: Hint voor … getoond / … gesloten",
+    "forms": "Hints and warnings switch label: De hint over … onderdrukken (an explainer is De uitleg over …, the Show in Finder notice De melding over …); its description: Zet dit uit om de hint nog een keer te zien",
     "sources": "MS terminology (hint → hint)"
   },
   "history": {

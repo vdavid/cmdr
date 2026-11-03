@@ -335,3 +335,5 @@ All (uk) unless noted.
   `ai.cloudConsent.askCmdr.protectedContents`'s "cloud and tool credentials" (tokens, key files). Widen it. (all)
 - `pnpm i18n:brief --lang pt` points at the European `_ignored/i18n/pt/` pile, while `docs/i18n/pt/style.md` requires
   `pt-BR`. Point it at `_ignored/i18n/pt-BR/`. (pt)
+- Concept `show`: "Cmdr shows how to unpin some" (`settings.behavior.serversPinHintSeen.description`) is the explain
+  sense, yet it matched Show; consider `notMatch` "shows how". (hu, vi, zh, zh-Hant)

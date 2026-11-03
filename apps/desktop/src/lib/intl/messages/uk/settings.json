@@ -1024,15 +1024,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Показано діалог про застарілий індекс",
+  "settings.indexing.firstStaleDialogShown.label": "Не показувати пояснення про застарілий індекс",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Внутрішнє: чи вже показано одноразове діалогове вікно про застарілий індекс диска.",
+  "settings.indexing.firstStaleDialogShown.description": "Коли індекс зовнішнього диска вперше може бути застарілим, Cmdr пояснює, що це означає. Вимкніть цей параметр, щоб побачити пояснення ще раз. Воно показується лише тоді, коли ввімкнено «Сповіщати, якщо індекс зовнішнього диска застарів».",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "неактуальний, старий індекс, зовнішній диск, вікно, пояснення, підказка, порада",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1089,15 +1089,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Сповіщення із застереженням про глобальне скорочення для викачаного закрито",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Не показувати запитання про скорочення для останнього викачаного файлу",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Внутрішнє: вимикає сповіщення із застереженням під час першого спрацювання.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Коли ви вперше натискаєте скорочення, що дає змогу з будь-якої програми перейти до останнього викачаного файлу, Cmdr питає, чи залишити його ввімкненим. Якщо змінити скорочення, цей параметр вимкнеться, тож Cmdr спитає й про нову комбінацію клавіш. Вимкніть цей параметр, щоб побачити запитання ще раз.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "завантаження, гаряча клавіша, глобальне, застереження, залишити, запитати, сповіщення",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1726,15 +1726,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Не показувати підказку про введення у швидкий фільтр",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "Коли швидкий фільтр увімкнено, клавіші на кшталт Пробілу, - і * вводять символи в нього, лише поки ви продовжуєте друкувати. Після паузи вони знову виконують свою звичайну дію, як-от Пробіл вибирає файл. Коли це стається вперше, Cmdr один раз це пояснює. Вимкніть цей параметр, щоб знову побачити пояснення.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "порада, сповіщення, фільтрування, пробіл, друк, набір, зірочка, шаблон",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1798,15 +1798,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Підказку про вихід з повноекранного режиму клавішею Escape показано",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Не показувати підказку про вихід з повноекранного режиму клавішею Escape",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Внутрішнє: позначає, чи вже показано одноразове сповіщення про те, що Escape виводить з повноекранного режиму. В інтерфейсі приховано.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Коли Escape уперше виводить Cmdr з повноекранного режиму, Cmdr повідомляє про це й пропонує перемикач, що вимикає таку поведінку. Вимкніть цей параметр, щоб побачити підказку ще раз.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "Esc, на весь екран, повний екран, вийти, вихід, сповіщення, порада",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1818,15 +1818,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Інтервал введення у швидкий фільтр",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Скільки мілісекунд після попередньої клавіші Пробіл, -, * та інші клавіші з дією ще вводять символи у швидкий фільтр. Після довшої паузи вони знову виконують свою звичайну дію, як-от Пробіл вибирає файл. Переміщення курсора одразу завершує введення.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "затримка, пауза, тайм-аут, пробіл, зірочка, швидкість друку, мілісекунди",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2210,15 +2210,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "Підказку про текстовий редактор показано",
+  "settings.behavior.textEditorHintSeen.label": "Не показувати підказку про текстовий редактор",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Чи вже показано одноразову підказку про вибір текстового редактора.",
+  "settings.behavior.textEditorHintSeen.description": "Коли F4 вперше відкриває файл у типовому редакторі, а на Mac інстальовано інший редактор, Cmdr згадує, що можна вибрати інший. Вимкніть цей параметр, щоб побачити підказку ще раз.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "редагувати, редагування, редактор, F4, програма, сповіщення",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2246,27 +2246,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Вступ до папки git показано",
+  "settings.fileExplorer.git.portalIntroSeen.label": "Не показувати вступ до папки git",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Чи вже показано одноразовий вступ про перегляд папки .git.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "Коли панель уперше відкриває кореневу папку репозиторію git, Cmdr знайомить вас із папкою .git, де гілки, теги й старі коміти можна переглядати як звичайні папки. Вимкніть цей параметр, щоб побачити вступ ще раз.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "репозиторій, репо, гілка, коміт, тег, знайомство, сповіщення",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Підказку «Відкрити термінал тут» показано",
+  "settings.behavior.openTerminalHereToastSeen.label": "Не показувати підказку про команду «Відкрити термінал тут»",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Чи вже показано одноразову підказку про вибір програми-термінала.",
+  "settings.behavior.openTerminalHereToastSeen.description": "Коли ви вперше відкриваєте папку в терміналі, Cmdr повідомляє, яку програму використав і де вибрати іншу. Вимкніть цей параметр, щоб побачити підказку ще раз.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "термінал, оболонка, консоль, командний рядок, програма, сповіщення",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2286,27 +2286,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Підказку про подвійне клацання для переходу в батьківську папку показано",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Не показувати підказку про перехід на рівень вище подвійним клацанням",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Чи вже показано одноразову підказку про подвійне клацання для переходу в батьківську папку.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Коли ви вперше двічі клацаєте порожнє місце на панелі, Cmdr переходить у батьківську папку й пояснює чому. Вимкніть цей параметр, щоб побачити підказку ще раз.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "подвійне клацання, дабл-клік, батьківська папка, вгору, тло, сповіщення, порада",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "Підказку «Відкріпити з перемикача» показано",
+  "settings.behavior.serversPinHintSeen.label": "Не показувати підказку про довгу групу «Мережа»",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Чи вже показано одноразову підказку про відкріплення серверів.",
+  "settings.behavior.serversPinHintSeen.description": "Коли в перемикачі томів закріплено пʼять або більше серверів, Cmdr показує, як відкріпити деякі з них, щоб група «Мережа» лишалася короткою. Вимкніть цей параметр, щоб побачити підказку ще раз.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "сервери, закріпити, відкріпити, мережа, список дисків, сповіщення, порада",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2342,27 +2342,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Сповіщення про перше «Показати у Finder» показано",
+  "settings.behavior.revealActivationNoticeSeen.label": "Не показувати сповіщення про «Показати у Finder»",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Чи вже показано сповіщення про те, що перше «Показати у Finder» відкрилося в Cmdr.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Коли Cmdr налаштовано перехоплювати «Показати у Finder», перша така команда приходить із приміткою, чому відкрилася панель, а не Finder. Вимкніть цей параметр, щоб побачити примітку ще раз.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "показати в папці, відкрити, розташування, перехоплення, сповіщення",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Підказку про «Налагодження USB» закрито",
+  "settings.behavior.adbHintDismissed.label": "Не показувати підказку про «Налагодження USB»",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Чи закрито одноразовий рядок із пропозицією увімкнути «Налагодження USB».",
+  "settings.behavior.adbHintDismissed.description": "Якщо телефон підʼєднано без «Налагодження USB», угорі його панелі показується рядок із пропозицією ввімкнути «Налагодження USB», щоб Cmdr мав доступ до всього телефону. Якщо закрити рядок кнопкою ×, цей параметр увімкнеться. Вимкніть його, щоб знову побачити рядок.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "телефон, смартфон, мобільний, налагодження, розробник, для розробників, порада",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3453,15 +3453,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Швидкий фільтр пояснено",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Не показувати пояснення швидкого фільтра",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Чи вже показано сповіщення, що пояснює перший швидкий фільтр.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Коли панель уперше фільтрується через те, що ви друкуєте, Cmdr пояснює, що сталося і що Esc повертає всі файли. Вимкніть цей параметр, щоб побачити пояснення ще раз.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "фільтрування, друк, набір, літери, звузити, знайомство, сповіщення, порада",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

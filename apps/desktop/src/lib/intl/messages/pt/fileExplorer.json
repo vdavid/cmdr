@@ -2138,11 +2138,11 @@
   "@fileExplorer.quickFilter.clear": {
     "sourceHash": "ba59e2d"
   },
-  "fileExplorer.quickFilter.typingHint.title": "What just happened?",
+  "fileExplorer.quickFilter.typingHint.title": "O que acabou de acontecer?",
   "@fileExplorer.quickFilter.typingHint.title": {
     "sourceHash": "865b71e"
   },
-  "fileExplorer.quickFilter.typingHint.body": "You pressed <keyName>{key}</keyName>, and it ran its usual action instead of typing into the filter. To type it into the filter, press it within {seconds, plural, one {{secondsText} second} other {{secondsText} seconds}} of the previous key.",
+  "fileExplorer.quickFilter.typingHint.body": "Você pressionou <keyName>{key}</keyName>, e a tecla executou a ação de sempre em vez de ser digitada no filtro. Para digitá-la no filtro, pressione-a em até {seconds, plural, one {{secondsText} segundo} many {{secondsText} segundos} other {{secondsText} segundos}} depois da tecla anterior.",
   "@fileExplorer.quickFilter.typingHint.body": {
     "sourceHash": "b91a5e4"
   },

@@ -2125,11 +2125,11 @@
   "@fileExplorer.quickFilter.clear": {
     "sourceHash": "ba59e2d"
   },
-  "fileExplorer.quickFilter.typingHint.title": "What just happened?",
+  "fileExplorer.quickFilter.typingHint.title": "刚刚发生了什么？",
   "@fileExplorer.quickFilter.typingHint.title": {
     "sourceHash": "865b71e"
   },
-  "fileExplorer.quickFilter.typingHint.body": "You pressed <keyName>{key}</keyName>, and it ran its usual action instead of typing into the filter. To type it into the filter, press it within {seconds, plural, one {{secondsText} second} other {{secondsText} seconds}} of the previous key.",
+  "fileExplorer.quickFilter.typingHint.body": "你按下了 <keyName>{key}</keyName>，它执行了平常的操作，没有输入到筛选里。想把它输入到筛选里，请在按上一个键之后的 {seconds, plural, other {{secondsText} 秒内}}按下它。",
   "@fileExplorer.quickFilter.typingHint.body": {
     "sourceHash": "b91a5e4"
   },

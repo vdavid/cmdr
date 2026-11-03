@@ -1026,15 +1026,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Elavulási párbeszéd megjelent",
+  "settings.indexing.firstStaleDialogShown.label": "Elavult indexről szóló magyarázat elnyomása",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Belső: hogy az egyszeri elavult-meghajtó párbeszéd megjelent-e már.",
+  "settings.indexing.firstStaleDialogShown.description": "Amikor először fordul elő, hogy egy külső meghajtó indexe elavulhatott, a Cmdr elmagyarázza, mit jelent ez. Kapcsold ezt ki, hogy még egyszer lásd a magyarázatot. A magyarázat így is csak akkor jelenik meg, ha be van kapcsolva az „Értesítsen, ha bármelyik külső meghajtó indexe elavul” beállítás.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "index, elavult, régi, meghajtó, külső, párbeszédablak, magyarázat, tipp, újra",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1091,15 +1091,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Globális „ugrás a legutóbbi letöltéshez” figyelmeztető buborék nyugtázva",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Legutóbbi letöltés billentyűparancsáról szóló kérdés elnyomása",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Belső. Elnyomja az első indításkori figyelmeztető buborékot.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Amikor először nyomod meg a billentyűparancsot, amellyel bármelyik appból a legutóbbi letöltésedhez ugorhatsz, a Cmdr megkérdezi, bekapcsolva hagyod-e. A billentyűparancs módosítása ezt kikapcsolja, így az új kombinációra is rákérdez. Kapcsold ezt ki, hogy még egyszer lásd a kérdést.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "letöltés, billentyűparancs, gyorsbillentyű, globális, kérdés, figyelmeztetés, buborék, legutóbbi",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1729,15 +1729,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Gyorsszűrős gépelési tipp elnyomása",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "Amíg aktív a gyorsszűrő, az olyan billentyűk, mint a Szóköz, a - és a *, csak addig írnak bele, amíg folyamatosan gépelsz. Egy kis szünet után újra a szokásos dolgukat végzik, például a Szóköz kijelöl egy fájlt. Amikor ez először történik meg, a Cmdr egyszer elmagyarázza. Kapcsold ezt ki, hogy újra lásd a magyarázatot.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tipp, súgó, buborék, szűrő, szóköz, gépelés, helyettesítő karakter, csillag",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1801,15 +1801,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Teljes képernyős Escape-értesítés megjelent",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Teljes képernyős Escape-értesítés elnyomása",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Belső: követi, hogy megjelent-e már az egyszeri értesítés arról, hogy az Escape billentyű kiléptette az ablakot a teljes képernyős módból. Rejtve a felülettől.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Amikor az Escape billentyű először kilépteti a Cmdrt a teljes képernyős módból, a Cmdr szól erről, és felajánlja a kapcsolót, amellyel kikapcsolhatod ezt a viselkedést. Kapcsold ezt ki, hogy még egyszer lásd az értesítést.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "esc, teljes képernyő, kilépés, maximalizálás, tipp, értesítés, buborék",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1821,15 +1821,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Gyorsszűrős gépelés időablaka",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Az előző billentyűtől számítva mennyi ideig írnak még a gyorsszűrőbe a Szóköz, a -, a * és a többi saját művelettel bíró billentyű, ezredmásodpercben. Hosszabb szünet után újra a szokásos dolgukat végzik, például a Szóköz kijelöl egy fájlt. A kurzor mozgatása azonnal lezárja a gépelést.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "szűrő, gépelés, szünet, késleltetés, időkorlát, szóköz, csillag, ezredmásodperc",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2213,15 +2213,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "A szövegszerkesztő tippje megjelent",
+  "settings.behavior.textEditorHintSeen.label": "Szövegszerkesztő-tipp elnyomása",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Hogy a szövegszerkesztő választásáról szóló egyszeri tipp megjelent-e már.",
+  "settings.behavior.textEditorHintSeen.description": "Amikor az F4 először nyit meg egy fájlt az alapértelmezett szerkesztőben, miközben másik szerkesztő is telepítve van, a Cmdr megemlíti, hogy választhatsz másikat. Kapcsold ezt ki, hogy még egyszer lásd a tippet.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "szerkesztés, szerkesztő, szöveg, alkalmazás, tipp, buborék",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2249,27 +2249,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "A .git mappa bemutatója megjelent",
+  "settings.fileExplorer.git.portalIntroSeen.label": "A .git mappa bemutatójának elnyomása",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Megjelent-e már az egyszeri bemutató a .git mappa böngészéséről.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "Amikor egy panel először nyitja meg egy git repó legfelső mappáját, a Cmdr bemutatja a .git mappát, ahol az ágakat, címkéket és régi commitokat sima mappákként böngészheted. Kapcsold ezt ki, hogy még egyszer lásd a bemutatót.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "repó, repozitórium, ág, commit, címke, bemutató, buborék",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "A „Terminál megnyitása itt” tippje megjelent",
+  "settings.behavior.openTerminalHereToastSeen.label": "A „Terminál megnyitása itt” tippjének elnyomása",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Hogy a terminálapp választásáról szóló egyszeri tipp megjelent-e már.",
+  "settings.behavior.openTerminalHereToastSeen.description": "Amikor először nyitsz meg egy mappát terminálban, a Cmdr megmondja, melyik appot használta, és hol választhatsz másikat. Kapcsold ezt ki, hogy még egyszer lásd a tippet.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "terminál, parancssor, parancsértelmező, shell, konzol, alkalmazás, tipp, buborék",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2289,27 +2289,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "A szülőmappába vivő dupla kattintás tippje megjelent",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "A szülőmappába vivő dupla kattintás tippjének elnyomása",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Hogy az egyszeri, szülőmappába vivő dupla kattintás tippje megjelent-e már.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Amikor először kattintasz duplán egy panel üres részére, a Cmdr egy mappával feljebb lép, és elmondja, miért. Kapcsold ezt ki, hogy még egyszer lásd a tippet.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "duplakattintás, duplán kattint, szülőmappa, feljebb, háttér, üres, tipp, buborék",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "A „Rögzítés feloldása a kötetválasztóban” tippje megjelent",
+  "settings.behavior.serversPinHintSeen.label": "A hosszú Hálózat csoport tippjének elnyomása",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Megjelent-e már az egyszeri tipp a szerverek rögzítésének feloldásáról.",
+  "settings.behavior.serversPinHintSeen.description": "Amikor már öt vagy több szerver van rögzítve a kötetválasztóban, a Cmdr megmutatja, hogyan oldhatod fel néhány rögzítését, hogy rövid maradjon a Hálózat csoport. Kapcsold ezt ki, hogy még egyszer lásd a tippet.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "szerver, rögzítés, feloldás, hálózat, kötetválasztó, lista, tipp, buborék",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2345,27 +2345,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Az első megjelenítésről szóló értesítés megjelent",
+  "settings.behavior.revealActivationNoticeSeen.label": "A „Megjelenítés a Finderben” értesítés elnyomása",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Megjelent-e már az értesítés az első „Megjelenítés a Finderben” parancsról, amelyik a Cmdrben nyílt meg.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Ha a Cmdr úgy van beállítva, hogy elkapja a „Megjelenítés a Finderben” parancsot, az első ilyen mellé egy rövid üzenet is érkezik, amely elmondja, miért egy panel nyílt meg a Finder helyett. Kapcsold ezt ki, hogy még egyszer lásd az üzenetet.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "megjelenítés, mutatás, megnyitás, mappa, hely, értesítés, buborék, elkapás",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Az USB-hibakeresés tippje elvetve",
+  "settings.behavior.adbHintDismissed.label": "Az USB-hibakeresés tippjének elnyomása",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Elvetették-e már az USB-hibakeresést felajánló egyszeri sort.",
+  "settings.behavior.adbHintDismissed.description": "Ha USB-hibakeresés nélkül csatlakoztatsz egy telefont, a panele tetején megjelenik egy sor, amely azt javasolja, hogy kapcsold be, mert így a Cmdr a teljes telefont eléri. Ha a sort a × gombjával bezárod, ez bekapcsolódik. Kapcsold ezt ki, hogy újra lásd a sort.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "telefon, mobil, hibakeresés, fejlesztői beállítások, fejlesztő, tipp, sor",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3458,15 +3458,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Gyorsszűrő-magyarázat megjelent",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Gyorsszűrő-magyarázat elnyomása",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Megjelent-e már az értesítés, amely az első gyorsszűrést elmagyarázza.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Amikor a gépelésed először szűr egy panelt, a Cmdr elmagyarázza, mi történt, és hogy az Escape billentyűvel újra látod az összes fájlt. Kapcsold ezt ki, hogy még egyszer lásd a magyarázatot.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "szűrő, szűrés, gépelés, magyarázat, bemutató, tipp, buborék",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

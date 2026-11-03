@@ -2144,11 +2144,11 @@
   "@fileExplorer.quickFilter.clear": {
     "sourceHash": "ba59e2d"
   },
-  "fileExplorer.quickFilter.typingHint.title": "What just happened?",
+  "fileExplorer.quickFilter.typingHint.title": "Wat is er net gebeurd?",
   "@fileExplorer.quickFilter.typingHint.title": {
     "sourceHash": "865b71e"
   },
-  "fileExplorer.quickFilter.typingHint.body": "You pressed <keyName>{key}</keyName>, and it ran its usual action instead of typing into the filter. To type it into the filter, press it within {seconds, plural, one {{secondsText} second} other {{secondsText} seconds}} of the previous key.",
+  "fileExplorer.quickFilter.typingHint.body": "Je drukte op <keyName>{key}</keyName> en die toets voerde zijn gewone actie uit in plaats van in het filter te typen. Om het teken in het filter te typen, druk je binnen {seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}} na de vorige toets op dezelfde toets.",
   "@fileExplorer.quickFilter.typingHint.body": {
     "sourceHash": "b91a5e4"
   },

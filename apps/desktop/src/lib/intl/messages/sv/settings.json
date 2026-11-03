@@ -1028,15 +1028,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Dialog om inaktuellt index visad",
+  "settings.indexing.firstStaleDialogShown.label": "Dölj förklaringen om inaktuellt index",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Internt: om engångsdialogen om inaktuell enhet har visats.",
+  "settings.indexing.firstStaleDialogShown.description": "Första gången indexet för en extern enhet kan vara inaktuellt förklarar Cmdr vad det betyder. Stäng av det här för att se förklaringen en gång till. Den visas fortfarande bara när ”Meddela mig om något externt enhetsindex blir inaktuellt” är aktiverat.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "föråldrad, gammal, enhet, extern, disk, dialog, tips, avisering, visa igen",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1093,15 +1093,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Varningsavisering för global gå-till-senaste-hämtning bekräftad",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Dölj frågan om genvägen till senaste hämtning",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Internt. Döljer varningsaviseringen vid första utlösningen.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Första gången du trycker på genvägen som hoppar till din senaste hämtning från vilken app som helst frågar Cmdr om du vill behålla genvägen på. Om du ändrar genvägen stängs det här av, så att Cmdr frågar om en ny kombination också. Stäng av det här för att se frågan en gång till.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "hämtade filer, nedladdning, kortkommando, snabbtangent, tangentkombination, global, varning, behåll, avisering",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1731,15 +1731,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Dölj tipset om att skriva i snabbfiltret",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "När ett snabbfilter är på skriver tangenter som Mellanslag, - och * bara i det så länge du fortsätter att skriva. Efter en paus gör de sitt vanliga jobb igen, som när Mellanslag markerar en fil. Första gången det händer förklarar Cmdr det en gång. Stäng av det här för att se förklaringen igen.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "avisering, mellanslagstangent, asterisk, stjärna, jokertecken, tangent, förklaring",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1803,15 +1803,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Tips om Escape och helskärmsläge visat",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Dölj tipset om Escape och helskärmsläge",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Internt: håller reda på om engångsaviseringen om att Escape lämnade helskärmsläget redan har visats. Dold i gränssnittet.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Första gången Escape tar Cmdr ur helskärmsläget säger Cmdr det och erbjuder reglaget som stänger av beteendet. Stäng av det här för att se tipset en gång till.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "esc, helskärm, fullskärm, lämna, avsluta, fönster, avisering",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1823,15 +1823,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Tidsfönster för att skriva i snabbfiltret",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Hur länge efter föregående tangent Mellanslag, -, * och andra tangenter med en åtgärd fortfarande skriver i snabbfiltret, i millisekunder. Efter en längre paus gör de sitt vanliga jobb igen, som när Mellanslag markerar en fil. Om du flyttar markören slutar skrivandet direkt.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, fördröjning, väntetid, tidsgräns, mellanslagstangent, asterisk, jokertecken, hastighet, långsam",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2220,15 +2220,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "Tips om textredigerare visat",
+  "settings.behavior.textEditorHintSeen.label": "Dölj tipset om textredigerare",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Om engångstipset om att välja en textredigerare har visats.",
+  "settings.behavior.textEditorHintSeen.description": "Första gången F4 öppnar en fil i standardredigeraren medan en annan redigerare är installerad nämner Cmdr att du kan välja en annan. Stäng av det här för att se tipset en gång till.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "redigera, redigerare, app, program, avisering",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2256,27 +2256,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Introduktion till git-mappen visad",
+  "settings.fileExplorer.git.portalIntroSeen.label": "Dölj introduktionen till git-mappen",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Om engångsintroduktionen till att bläddra i .git-mappen har visats.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "Första gången en panel öppnar rotmappen i ett git-repository presenterar Cmdr mappen .git, där du kan bläddra i grenar, taggar och gamla incheckningar som i vanliga mappar. Stäng av det här för att se introduktionen en gång till.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, gren, incheckning, tagg, versionshantering, historik, intro, tips, avisering",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Tips om ”Öppna terminal här” visat",
+  "settings.behavior.openTerminalHereToastSeen.label": "Dölj tipset om ”Öppna terminal här”",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Om engångstipset om att välja en terminalapp har visats.",
+  "settings.behavior.openTerminalHereToastSeen.description": "Första gången du öppnar en mapp i en terminal säger Cmdr vilken app som användes och var du väljer en annan. Stäng av det här för att se tipset en gång till.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "skal, konsol, kommandorad, app, terminalapp, avisering",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2296,27 +2296,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Tips om dubbelklick till överordnad mapp visat",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Dölj tipset om att dubbelklicka för att gå upp",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Om engångstipset om dubbelklick till överordnad mapp har visats.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Första gången du dubbelklickar på en tom yta i en panel går Cmdr upp till den överordnade mappen och säger varför. Stäng av det här för att se tipset en gång till.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "dubbelklick, överordnad mapp, föräldermapp, tillbaka, bakgrund, avisering",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "Tips om ”Lossa från volymväljaren” visat",
+  "settings.behavior.serversPinHintSeen.label": "Dölj tipset om att gruppen Nätverk blir lång",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Om engångstipset om att lossa servrar har visats.",
+  "settings.behavior.serversPinHintSeen.description": "När fem eller fler servrar är fästa i volymväljaren visar Cmdr hur du lossar några, så att gruppen Nätverk förblir kort. Stäng av det här för att se tipset en gång till.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "server, servrar, fäst, lossa, lista, lång, avisering",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2352,27 +2352,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Avisering om första visningen visad",
+  "settings.behavior.revealActivationNoticeSeen.label": "Dölj aviseringen om ”Visa i Finder”",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Om aviseringen om den första ”Visa i Finder” som öppnades i Cmdr har visats.",
+  "settings.behavior.revealActivationNoticeSeen.description": "När Cmdr är inställd på att fånga upp ”Visa i Finder” förklarar en avisering första gången varför en panel öppnades i stället för Finder. Stäng av det här för att se aviseringen en gång till.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "visa, visa i mapp, öppna, fånga upp, ta över, meddelande, tips",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Tips om USB-felsökning avfärdat",
+  "settings.behavior.adbHintDismissed.label": "Dölj tipset om USB-felsökning",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Om engångsraden som erbjuder USB-felsökning har avfärdats.",
+  "settings.behavior.adbHintDismissed.description": "En telefon som är ansluten utan USB-felsökning visar en rad överst i sin panel som föreslår att du slår på USB-felsökning, så att Cmdr kommer åt hela telefonen. Om du stänger raden med dess × aktiveras det här. Stäng av det här för att se raden igen.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "telefon, mobil, mobiltelefon, felsökning, utvecklare, utvecklaralternativ, rad",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3466,15 +3466,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Snabbfilter förklarat",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Dölj förklaringen om snabbfiltret",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Om aviseringen som förklarar det första snabbfiltret har visats.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Första gången det du skriver filtrerar en panel förklarar Cmdr vad som hände och att Escape visar alla filer igen. Stäng av det här för att se förklaringen en gång till.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filtrera, skriva, introduktion, intro, tips, avisering",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

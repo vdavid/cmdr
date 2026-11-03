@@ -431,6 +431,10 @@
   "@fileExplorer.folderSizes.unreadable": {
     "sourceHash": "82dc6a5"
   },
+  "fileExplorer.quickFilter.typingHint.body": "Presionaste la tecla <keyName>{key}</keyName> y ejecutó su acción habitual en vez de escribirse en el filtro. Para escribirla en el filtro, presiónala antes de que {seconds, plural, one {pase {secondsText} segundo} many {pasen {secondsText} segundos} other {pasen {secondsText} segundos}} desde la tecla anterior.",
+  "@fileExplorer.quickFilter.typingHint.body": {
+    "sourceHash": "fff2d82"
+  },
   "fileExplorer.quickFilter.intro.title": "Este panel se filtró al escribir",
   "@fileExplorer.quickFilter.intro.title": {
     "sourceHash": "da13d0e"

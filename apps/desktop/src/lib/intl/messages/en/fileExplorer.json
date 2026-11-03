@@ -3170,7 +3170,7 @@
   "@fileExplorer.quickFilter.typingHint.body": {
     "description": "Body of the same toast. A key like Space or * types into the quick filter only while the person keeps typing; after a pause it does its usual job again (Space selects, * inverts the selection). This says so, and how to type the character into the filter. The <keyName> tags show the key in a small code-style chip; keep them around the key.",
     "placeholders": {
-      "key": "the key the person pressed, as its keycap shows it (for example * or Space)",
+      "key": "the key the person pressed, shown the way Cmdr's shortcut lists show keys: a symbol as is (*), and a named key by its English name (Space), which isn't translated anywhere in Cmdr",
       "seconds": "the typing window in seconds, for the plural only (for example 1.5)",
       "secondsText": "the same number, already formatted for the language (for example 1.5 or 1,5)"
     }

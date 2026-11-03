@@ -2128,11 +2128,11 @@
   "@fileExplorer.quickFilter.clear": {
     "sourceHash": "ba59e2d"
   },
-  "fileExplorer.quickFilter.typingHint.title": "What just happened?",
+  "fileExplorer.quickFilter.typingHint.title": "Mi történt az imént?",
   "@fileExplorer.quickFilter.typingHint.title": {
     "sourceHash": "865b71e"
   },
-  "fileExplorer.quickFilter.typingHint.body": "You pressed <keyName>{key}</keyName>, and it ran its usual action instead of typing into the filter. To type it into the filter, press it within {seconds, plural, one {{secondsText} second} other {{secondsText} seconds}} of the previous key.",
+  "fileExplorer.quickFilter.typingHint.body": "Megnyomtad ezt a billentyűt: <keyName>{key}</keyName>, és a szűrőbe írás helyett a szokásos műveletét hajtotta végre. Ha a szűrőbe szeretnéd írni, az előző billentyű után {seconds, plural, one {{secondsText} másodpercen} other {{secondsText} másodpercen}} belül nyomd meg.",
   "@fileExplorer.quickFilter.typingHint.body": {
     "sourceHash": "b91a5e4"
   },

@@ -1027,15 +1027,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Diálogo de desatualização exibido",
+  "settings.indexing.firstStaleDialogShown.label": "Ocultar a explicação do índice desatualizado",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Interno: se o diálogo único de disco desatualizado já foi exibido.",
+  "settings.indexing.firstStaleDialogShown.description": "Na primeira vez que o índice de um disco externo pode estar desatualizado, o Cmdr explica o que isso significa. Desative isto para ver a explicação de novo. A explicação só aparece enquanto “Avisar se o índice de algum disco externo ficar desatualizado” estiver ativado.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "índice, desatualizado, antigo, disco externo, explicação, diálogo, aviso, dica",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1092,15 +1092,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Aviso do atalho global de ir para o download mais recente confirmado",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Ocultar a pergunta do atalho do último download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Interno. Suprime o aviso da primeira vez.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Na primeira vez que você pressiona o atalho que pula para o seu último download de qualquer app, o Cmdr pergunta se deve mantê-lo ativo. Mudar o atalho desativa isto, então a nova combinação também gera a pergunta. Desative isto para ver a pergunta de novo.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, downloads, atalho, tecla de atalho, global, pergunta, manter, aviso",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1730,15 +1730,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Ocultar a dica de digitação no filtro rápido",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "Com um filtro rápido ativo, teclas como Espaço, - e * só são digitadas nele enquanto você continua digitando. Depois de uma pausa, elas voltam a fazer o de sempre, como o Espaço, que seleciona um arquivo. Na primeira vez que isso acontece, o Cmdr explica uma vez. Desative isto para ver essa explicação de novo.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "dica, aviso, notificação, filtro, espaço, barra de espaço, digitação, digitar, curinga, asterisco",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1802,15 +1802,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Dica de Esc na tela cheia exibida",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Ocultar a dica de Esc na tela cheia",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Interno: acompanha se o aviso único sobre o Esc tirar a janela da tela cheia já apareceu. Oculto da interface.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Na primeira vez que a tecla Esc tira o Cmdr da tela cheia, o Cmdr avisa e oferece a opção para desativar esse comportamento. Desative isto para ver a dica de novo.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "esc, tela cheia, sair, dica, aviso, notificação",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1822,15 +1822,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Intervalo de digitação do filtro rápido",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Define por quanto tempo, depois da tecla anterior, Espaço, -, * e outras teclas com ação ainda são digitadas no filtro rápido, em milissegundos. Depois de uma pausa mais longa, elas voltam a fazer o de sempre, como o Espaço, que seleciona um arquivo. Mover o cursor encerra a digitação na hora.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filtro, digitação, digitar, pausa, atraso, espera, tempo limite, espaço, curinga, milissegundos",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2215,15 +2215,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "Dica do editor de texto exibida",
+  "settings.behavior.textEditorHintSeen.label": "Ocultar a dica do editor de texto",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Se a dica única sobre escolher um editor de texto já foi exibida.",
+  "settings.behavior.textEditorHintSeen.description": "Na primeira vez que o F4 abre um arquivo no editor padrão enquanto outro editor está instalado, o Cmdr comenta que você pode escolher outro. Desative isto para ver a dica de novo.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "editar, editor, texto, app, dica, aviso",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2251,27 +2251,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Introdução à pasta do Git exibida",
+  "settings.fileExplorer.git.portalIntroSeen.label": "Ocultar a apresentação da pasta git",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Se a introdução única sobre navegar pela pasta .git já foi exibida.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "Na primeira vez que um painel abre a pasta raiz de um repositório git, o Cmdr apresenta a pasta .git, onde você pode navegar pelos branches, tags e commits antigos como em pastas comuns. Desative isto para ver a apresentação de novo.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "repositório, repo, branch, commit, tag, apresentação, introdução, dica",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Dica de “Abrir terminal aqui” exibida",
+  "settings.behavior.openTerminalHereToastSeen.label": "Ocultar a dica de “Abrir terminal aqui”",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Se a dica única sobre escolher um app de terminal já foi exibida.",
+  "settings.behavior.openTerminalHereToastSeen.description": "Na primeira vez que você abre uma pasta em um terminal, o Cmdr diz qual app usou e onde escolher outro. Desative isto para ver a dica de novo.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, linha de comando, app, dica",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2291,27 +2291,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Dica de clique duplo para a pasta superior exibida",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Ocultar a dica do clique duplo para subir de pasta",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Se a dica única de clique duplo para a pasta superior já foi exibida.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Na primeira vez que você dá um clique duplo no espaço vazio de um painel, o Cmdr vai para a pasta superior e explica por quê. Desative isto para ver a dica de novo.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "clique duplo, duplo clique, subir, pasta superior, fundo, vazio, dica, aviso",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "Dica de “Desafixar do seletor” exibida",
+  "settings.behavior.serversPinHintSeen.label": "Ocultar a dica do grupo Rede grande",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Se a dica única sobre desafixar servidores já foi exibida.",
+  "settings.behavior.serversPinHintSeen.description": "Quando cinco ou mais servidores estão fixados no seletor de volumes, o Cmdr mostra como desafixar alguns para manter o grupo Rede curto. Desative isto para ver a dica de novo.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "servidor, servidores, fixar, desafixar, rede, seletor, lista, dica",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2347,27 +2347,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Aviso do primeiro “Mostrar no Finder” exibido",
+  "settings.behavior.revealActivationNoticeSeen.label": "Ocultar o aviso de “Mostrar no Finder”",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Se o aviso sobre o primeiro “Mostrar no Finder” aberto no Cmdr já foi exibido.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Quando o Cmdr está configurado para receber os pedidos de “Mostrar no Finder”, o primeiro que chega aqui vem com uma nota explicando por que um painel abriu em vez do Finder. Desative isto para ver a nota de novo.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "revelar, mostrar na pasta, abrir, localização, aviso, nota, notificação",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Dica de depuração USB dispensada",
+  "settings.behavior.adbHintDismissed.label": "Ocultar a dica de depuração USB",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Se a linha única que oferece a depuração USB já foi dispensada.",
+  "settings.behavior.adbHintDismissed.description": "Um celular conectado sem a depuração USB mostra uma linha no topo do painel sugerindo ativar a depuração USB, para o Cmdr acessar o celular inteiro. Fechar a linha pelo × ativa isto. Desative isto para ver a linha de novo.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "celular, telefone, dispositivo, depuração, desenvolvedor, opções do desenvolvedor, dica",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3460,15 +3460,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Filtro rápido explicado",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Ocultar a explicação do filtro rápido",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Se o aviso que explica o primeiro filtro rápido já foi exibido.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Na primeira vez que a sua digitação filtra um painel, o Cmdr explica o que aconteceu e que a tecla Esc traz todos os arquivos de volta. Desative isto para ver a explicação de novo.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filtro, filtrar, digitação, digitar, explicação, introdução, dica, aviso",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

@@ -1706,7 +1706,7 @@
   "hint": {
     "chosen": "提示",
     "confidence": "high",
-    "forms": "one-time hint 一次性…提示; internal flags 已显示…提示",
+    "forms": "one-time hint 一次性…提示; a Hints and warnings switch (Suppress the X hint) → 不显示…提示",
     "sources": "descriptive"
   },
   "history": {

@@ -3281,11 +3281,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "MS notification → «уведомление»; macOS live Notification → «Уведомление»",
-    "exceptions": {
-      "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Internal setting; the toast is a warning, so «предупреждение» names it.",
-      "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Internal setting; the toast is a warning, so «предупреждение» names it."
-    }
+    "sources": "MS notification → «уведомление»; macOS live Notification → «Уведомление»"
   },
   "offline": {
     "chosen": "офлайн",

@@ -2127,11 +2127,11 @@
   "@fileExplorer.quickFilter.clear": {
     "sourceHash": "ba59e2d"
   },
-  "fileExplorer.quickFilter.typingHint.title": "What just happened?",
+  "fileExplorer.quickFilter.typingHint.title": "Що це було?",
   "@fileExplorer.quickFilter.typingHint.title": {
     "sourceHash": "865b71e"
   },
-  "fileExplorer.quickFilter.typingHint.body": "You pressed <keyName>{key}</keyName>, and it ran its usual action instead of typing into the filter. To type it into the filter, press it within {seconds, plural, one {{secondsText} second} other {{secondsText} seconds}} of the previous key.",
+  "fileExplorer.quickFilter.typingHint.body": "Ви натиснули <keyName>{key}</keyName>, і клавіша виконала свою звичайну дію замість того, щоб увести символ у фільтр. Щоб увести його у фільтр, натисніть клавішу не пізніше ніж через {seconds, plural, one {{secondsText} секунду} few {{secondsText} секунди} many {{secondsText} секунд} other {{secondsText} секунди}} після попередньої.",
   "@fileExplorer.quickFilter.typingHint.body": {
     "sourceHash": "b91a5e4"
   },

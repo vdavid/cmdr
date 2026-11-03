@@ -2131,11 +2131,11 @@
   "@fileExplorer.quickFilter.clear": {
     "sourceHash": "ba59e2d"
   },
-  "fileExplorer.quickFilter.typingHint.title": "What just happened?",
+  "fileExplorer.quickFilter.typingHint.title": "Chuyện gì vừa xảy ra?",
   "@fileExplorer.quickFilter.typingHint.title": {
     "sourceHash": "865b71e"
   },
-  "fileExplorer.quickFilter.typingHint.body": "You pressed <keyName>{key}</keyName>, and it ran its usual action instead of typing into the filter. To type it into the filter, press it within {seconds, plural, one {{secondsText} second} other {{secondsText} seconds}} of the previous key.",
+  "fileExplorer.quickFilter.typingHint.body": "Bạn vừa nhấn <keyName>{key}</keyName>, và phím này đã làm thao tác thường lệ của nó thay vì gõ vào bộ lọc. Để gõ phím này vào bộ lọc, hãy nhấn nó trong vòng {seconds, plural, other {{secondsText} giây}} sau phím trước đó.",
   "@fileExplorer.quickFilter.typingHint.body": {
     "sourceHash": "b91a5e4"
   },

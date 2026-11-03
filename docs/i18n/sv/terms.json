@@ -1658,7 +1658,7 @@
   "hint": {
     "chosen": "tips",
     "confidence": "high",
-    "forms": "internal flags: Tips om … visat",
+    "forms": "Hints and warnings switch label: Dölj tipset om … (an explainer is Dölj förklaringen om …); its description: Stäng av det här för att se tipset en gång till",
     "sources": "catalog"
   },
   "history": {

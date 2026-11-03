@@ -2322,7 +2322,9 @@
       "update notes",
       "=note",
       "that notes",
-      "note about replacing"
+      "note about replacing",
+      "a note saying",
+      "see the note"
     ],
     "sense": "Free text the user writes (a note on an error report, the feedback message), or Ask Cmdr's saved notes."
   },
@@ -2520,7 +2522,7 @@
     "distinct": ["resume", "stop"],
     "en": "pause",
     "match": ["pause", "pauses", "paused", "pausing"],
-    "notMatch": ["paused access"],
+    "notMatch": ["paused access", "after a pause", "after a longer pause"],
     "sense": "Temporarily halting a running operation or indexing pass."
   },
   "percent": {
@@ -4011,7 +4013,7 @@
     "distinct": ["main-window", "pane", "dialog", "context-window"],
     "en": "window",
     "match": ["window", "windows"],
-    "notMatch": ["context window", "main window"],
+    "notMatch": ["context window", "main window", "typing window"],
     "sense": "An app window (a dialog window, the About window, the queue window, the window edge) and the Window menu."
   },
   "wizard": {

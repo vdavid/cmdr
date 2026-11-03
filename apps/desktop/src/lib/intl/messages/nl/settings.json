@@ -1029,15 +1029,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "Dialoog voor verouderde schijf getoond",
+  "settings.indexing.firstStaleDialogShown.label": "De uitleg over een verouderde index onderdrukken",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "Intern: of de eenmalige dialoog voor een verouderde schijf is getoond.",
+  "settings.indexing.firstStaleDialogShown.description": "De eerste keer dat de index van een externe schijf mogelijk verouderd is, legt Cmdr uit wat dat betekent. Zet dit uit om de uitleg nog een keer te zien. De uitleg verschijnt alleen zolang ‘Waarschuw me als de index van een externe schijf verouderd raakt’ is ingeschakeld.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "oud, niet actueel, niet bijgewerkt, schijf, externe schijf, venster, melding, hint, opnieuw tonen",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1094,15 +1094,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Globale waarschuwingsmelding ga-naar-laatste-download bevestigd",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "De vraag over de sneltoets voor de laatste download onderdrukken",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Intern. Onderdrukt de waarschuwingsmelding bij de eerste keer activeren.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "De eerste keer dat je op de sneltoets drukt die vanuit elke app naar je laatste download springt, vraagt Cmdr of de sneltoets aan moet blijven. Als je de sneltoets wijzigt, gaat dit uit, zodat Cmdr ook naar een nieuwe combinatie vraagt. Zet dit uit om de vraag nog een keer te zien.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, downloads, toetsencombinatie, globaal, waarschuwing, aan laten staan, melding, hint",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1732,15 +1732,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "De hint over typen in het snelfilter onderdrukken",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "Zolang een snelfilter aanstaat, typen toetsen zoals Spatie, - en * er alleen in zolang je blijft typen. Na een pauze doen ze weer hun gewone werk, zoals Spatie die een bestand selecteert. De eerste keer dat dat gebeurt, legt Cmdr het één keer uit. Zet dit uit om die uitleg weer te zien.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, melding, spatiebalk, sterretje, jokerteken, intypen, toets, uitleg",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1804,15 +1804,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Melding over Escape en schermvullende weergave getoond",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "De hint over Escape en schermvullende weergave onderdrukken",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Intern: houdt bij of de eenmalige melding over Escape die de schermvullende weergave verlaat al is getoond. Verborgen in de interface.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "De eerste keer dat Escape Cmdr uit de schermvullende weergave haalt, meldt Cmdr dat, samen met de schakelaar waarmee je dit uitzet. Zet dit uit om de hint nog een keer te zien.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "esc, schermvullend, volledig scherm, verlaten, uitschakelen, venster, melding, tip",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1824,15 +1824,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Tijdvenster voor typen in het snelfilter",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "Hoe lang na de vorige toets Spatie, -, * en andere toetsen met een actie nog in het snelfilter typen, in milliseconden. Na een langere pauze doen ze weer hun gewone werk, zoals Spatie die een bestand selecteert. Als je de cursor verplaatst, stopt het typen meteen.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, vertraging, wachttijd, time-out, spatiebalk, sterretje, jokerteken, snelheid, langzaam",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2221,15 +2221,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "Hint voor teksteditor getoond",
+  "settings.behavior.textEditorHintSeen.label": "De hint over de teksteditor onderdrukken",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "Of de eenmalige hint over het kiezen van een teksteditor is getoond.",
+  "settings.behavior.textEditorHintSeen.description": "De eerste keer dat F4 een bestand in de standaardeditor opent terwijl er een andere editor is geïnstalleerd, vertelt Cmdr dat je een andere kunt kiezen. Zet dit uit om de hint nog een keer te zien.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "bewerken, bewerk, editor, app, programma, melding, tip",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2257,27 +2257,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Uitleg over git-map getoond",
+  "settings.fileExplorer.git.portalIntroSeen.label": "De introductie van de git-map onderdrukken",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Of de eenmalige uitleg over het doorbladeren van de map .git is getoond.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "De eerste keer dat een paneel de hoofdmap van een git-repository opent, stelt Cmdr de map .git voor, waarin je branches, tags en oude commits als gewone mappen kunt doorbladeren. Zet dit uit om de introductie nog een keer te zien.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, tag, versiebeheer, geschiedenis, melding, tip",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Hint voor ‘Terminal hier openen’ getoond",
+  "settings.behavior.openTerminalHereToastSeen.label": "De hint over ‘Terminal hier openen’ onderdrukken",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Of de eenmalige hint over het kiezen van een terminal-app is getoond.",
+  "settings.behavior.openTerminalHereToastSeen.description": "De eerste keer dat je een map in een terminal opent, vertelt Cmdr welke app er is gebruikt en waar je een andere kunt kiezen. Zet dit uit om de hint nog een keer te zien.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "shell, console, opdrachtregel, app, terminal-app, melding, tip",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2297,27 +2297,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Hint voor dubbelklik naar bovenliggende map getoond",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "De hint over dubbelklikken om omhoog te gaan onderdrukken",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Of de eenmalige hint voor dubbelklik naar bovenliggende map is getoond.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "De eerste keer dat je op een lege plek in een paneel dubbelklikt, gaat Cmdr naar de bovenliggende map en legt uit waarom. Zet dit uit om de hint nog een keer te zien.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "dubbelklik, bovenliggende map, terug, achtergrond, paneelachtergrond, melding, tip",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "Hint voor ‘Maak los uit volumekiezer’ getoond",
+  "settings.behavior.serversPinHintSeen.label": "De hint over een lange groep Netwerk onderdrukken",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "Of de eenmalige hint over het losmaken van servers is getoond.",
+  "settings.behavior.serversPinHintSeen.description": "Zodra vijf of meer servers in de volumekiezer vastgezet zijn, laat Cmdr zien hoe je er een paar losmaakt om de groep Netwerk kort te houden. Zet dit uit om de hint nog een keer te zien.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "server, vastzetten, losmaken, vast, los, lijst, lang, melding, tip",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2353,27 +2353,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Melding bij eerste keer getoond",
+  "settings.behavior.revealActivationNoticeSeen.label": "De melding over ‘Toon in Finder’ onderdrukken",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Of de melding over de eerste ‘Toon in Finder’ die in Cmdr opende is getoond.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Als Cmdr is ingesteld om ‘Toon in Finder’ op te vangen, legt een melding de eerste keer uit waarom er een paneel openging in plaats van Finder. Zet dit uit om de melding nog een keer te zien.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "tonen, toon in map, openen, onderscheppen, overnemen, hint, tip",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "Hint voor USB-foutopsporing gesloten",
+  "settings.behavior.adbHintDismissed.label": "De hint over USB-foutopsporing onderdrukken",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "Of de eenmalige regel over USB-foutopsporing is gesloten.",
+  "settings.behavior.adbHintDismissed.description": "Een telefoon die zonder USB-foutopsporing is aangesloten, toont bovenaan zijn paneel een regel die voorstelt om USB-foutopsporing aan te zetten, zodat Cmdr de hele telefoon kan bereiken. Als je de regel met × sluit, gaat dit aan. Zet dit uit om de regel weer te zien.",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "telefoon, mobiel, smartphone, foutopsporing, debuggen, ontwikkelaar, ontwikkelaarsopties, tip",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3472,15 +3472,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Snelfilter uitgelegd",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "De uitleg over het snelfilter onderdrukken",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Of de melding die het eerste snelfilter uitlegt is getoond.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "De eerste keer dat je typt en daarmee een paneel filtert, legt Cmdr uit wat er gebeurde en dat Escape alle bestanden terugbrengt. Zet dit uit om de uitleg nog een keer te zien.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filteren, intypen, introductie, intro, melding, hint, tip",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

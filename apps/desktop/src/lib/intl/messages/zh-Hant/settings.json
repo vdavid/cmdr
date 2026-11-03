@@ -1026,15 +1026,15 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "dc3defb"
   },
-  "settings.indexing.firstStaleDialogShown.label": "已顯示過期對話框",
+  "settings.indexing.firstStaleDialogShown.label": "不顯示索引過時說明",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "sourceHash": "5734f1a"
+    "sourceHash": "5289aef"
   },
-  "settings.indexing.firstStaleDialogShown.description": "內部：是否已顯示過一次性的過期磁碟機對話框。",
+  "settings.indexing.firstStaleDialogShown.description": "外接磁碟機的索引第一次可能過時的時候，Cmdr 會說明這代表什麼。關閉這一項，就能再看一次這個說明。這個說明仍然只會在「任一外接磁碟機的索引過期時通知我」開啟時顯示。",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "sourceHash": "a879dbb"
+    "sourceHash": "649976c"
   },
-  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "settings.indexing.firstStaleDialogShown.keywords": "索引, 過期, 過時, 舊, 外接, 磁碟機, 硬碟, 對話框, 說明, 解釋",
   "@settings.indexing.firstStaleDialogShown.keywords": {
     "sourceHash": "06af8ea"
   },
@@ -1091,15 +1091,15 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "已確認全域「前往最新下載項目」的警告提示",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "不顯示最新下載項目快速鍵的詢問",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "f45f095"
+    "sourceHash": "395a691"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "內部。抑制首次觸發的警告提示。",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "你第一次在任何 App 中按下跳至最新下載項目的快速鍵時，Cmdr 會問你要不要繼續開著。更改快速鍵會關閉這一項，這樣新的按鍵組合也會被問到。關閉這一項，就能再看一次這個詢問。",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "sourceHash": "5f4247c"
+    "sourceHash": "93da205"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "下載, 快速鍵, 熱鍵, 全域, 警告, 繼續開著, 提示, 詢問",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
     "sourceHash": "e0bc8c5"
   },
@@ -1728,15 +1728,15 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "不顯示快速篩選輸入提示",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
     "sourceHash": "874f4ac"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "快速篩選開啟時，空白鍵、- 和 * 這類按鍵只有在你持續打字時才會輸入到篩選裡。停頓一下之後，它們會恢復平常的作用，例如空白鍵會選取檔案。第一次發生這種情況時，Cmdr 會說明一次。關閉這一項，就能再看到這個說明。",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
     "sourceHash": "497ddd9"
   },
-  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "提示, 小提示, 篩選, 過濾, 空白鍵, 輸入, 打字, 萬用字元, 星號",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
     "sourceHash": "65ea83e"
   },
@@ -1800,15 +1800,15 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "已顯示 Esc 鍵全螢幕提示",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "不顯示按 Esc 鍵離開全螢幕的提示",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "sourceHash": "583b08f"
+    "sourceHash": "e22e870"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "內部：記錄關於 Esc 鍵離開全螢幕的那則一次性提示是否已經顯示過。對介面隱藏。",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "第一次按 Esc 鍵讓 Cmdr 離開全螢幕時，Cmdr 會告訴你，並提供關閉這個行為的開關。關閉這一項，就能再看一次這個提示。",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "sourceHash": "76ba76c"
+    "sourceHash": "be9de24"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "全螢幕, 離開, 跳出, 最大化, 提示, 通知",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
     "sourceHash": "b1c163a"
   },
@@ -1820,15 +1820,15 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "settings.fileExplorer.quickFilter.typingWindow.label": "快速篩選輸入間隔",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
     "sourceHash": "b370484"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "settings.fileExplorer.quickFilter.typingWindow.description": "按下上一個鍵之後多久之內，空白鍵、-、* 和其他有動作的按鍵仍會輸入到快速篩選裡，單位為毫秒。停頓更久之後，它們會恢復平常的作用，例如空白鍵會選取檔案。移動游標會立即結束輸入。",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
     "sourceHash": "60af485"
   },
-  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "篩選, 過濾, 輸入, 打字, 停頓, 延遲, 逾時, 空白鍵, 萬用字元, 毫秒",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
     "sourceHash": "b02c87b"
   },
@@ -2212,15 +2212,15 @@
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
-  "settings.behavior.textEditorHintSeen.label": "已顯示文字編輯器提示",
+  "settings.behavior.textEditorHintSeen.label": "不顯示文字編輯器提示",
   "@settings.behavior.textEditorHintSeen.label": {
-    "sourceHash": "4d2a7fc"
+    "sourceHash": "28c8305"
   },
-  "settings.behavior.textEditorHintSeen.description": "是否已顯示過關於選擇文字編輯器的一次性提示。",
+  "settings.behavior.textEditorHintSeen.description": "第一次用 F4 在預設編輯器中開啟檔案，而你還安裝了其他編輯器時，Cmdr 會提一下你可以換一個。關閉這一項，就能再看一次這個提示。",
   "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "65440fb"
+    "sourceHash": "6e84497"
   },
-  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "settings.behavior.textEditorHintSeen.keywords": "編輯, 編輯器, 文字, 應用程式, 提示",
   "@settings.behavior.textEditorHintSeen.keywords": {
     "sourceHash": "4b1acc2"
   },
@@ -2248,27 +2248,27 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "已顯示 Git 資料夾介紹",
+  "settings.fileExplorer.git.portalIntroSeen.label": "不顯示 git 資料夾介紹",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "sourceHash": "8c1ae20"
+    "sourceHash": "c04ec04"
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "是否已顯示過瀏覽 .git 資料夾的一次性介紹。",
+  "settings.fileExplorer.git.portalIntroSeen.description": "窗格第一次開啟 git 存放庫的最上層資料夾時，Cmdr 會介紹 .git 資料夾，你可以在裡面像一般資料夾一樣瀏覽分支、標籤和歷史提交。關閉這一項，就能再看一次這個介紹。",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "sourceHash": "623d981"
+    "sourceHash": "cae21f7"
   },
-  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "存放庫, 儲存庫, 分支, 提交, 標籤, 介紹, 提示",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
     "sourceHash": "e50231b"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "已顯示「在此開啟終端機」提示",
+  "settings.behavior.openTerminalHereToastSeen.label": "不顯示「在此開啟終端機」提示",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "sourceHash": "22f31aa"
+    "sourceHash": "cd14dce"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "是否已顯示過關於選擇終端機 App 的一次性提示。",
+  "settings.behavior.openTerminalHereToastSeen.description": "你第一次在終端機中開啟資料夾時，Cmdr 會告訴你用了哪個 App，以及在哪裡換一個。關閉這一項，就能再看一次這個提示。",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "sourceHash": "f976886"
+    "sourceHash": "5f1d5d8"
   },
-  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "settings.behavior.openTerminalHereToastSeen.keywords": "終端機, 終端, 命令列, 主控台, 殼層, 提示",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
     "sourceHash": "a7e75dc"
   },
@@ -2288,27 +2288,27 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "已顯示按兩下前往上層資料夾的提示",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "不顯示按兩下前往上層資料夾的提示",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "sourceHash": "e830535"
+    "sourceHash": "0e1e9e9"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "是否已顯示過一次性的按兩下前往上層資料夾提示。",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "你第一次按兩下窗格裡的空白處時，Cmdr 會前往上層資料夾，並告訴你原因。關閉這一項，就能再看一次這個提示。",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "sourceHash": "56238d4"
+    "sourceHash": "936672b"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "按兩下, 雙擊, 上層資料夾, 上一層, 向上, 背景, 空白處, 提示",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
     "sourceHash": "98e1c97"
   },
-  "settings.behavior.serversPinHintSeen.label": "已顯示「從切換器取消釘選」提示",
+  "settings.behavior.serversPinHintSeen.label": "不顯示「網路」群組變長的提示",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8513a3c"
+    "sourceHash": "040f89e"
   },
-  "settings.behavior.serversPinHintSeen.description": "是否已顯示過關於取消釘選伺服器的一次性提示。",
+  "settings.behavior.serversPinHintSeen.description": "卷宗切換器裡釘選了 5 部或更多伺服器時，Cmdr 會顯示一則提示，告訴你怎麼取消釘選一些伺服器，讓「網路」群組保持簡短。關閉這一項，就能再看一次這個提示。",
   "@settings.behavior.serversPinHintSeen.description": {
-    "sourceHash": "fc0722f"
+    "sourceHash": "5527df2"
   },
-  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "settings.behavior.serversPinHintSeen.keywords": "伺服器, 釘選, 取消釘選, 網路, 切換器, 列表, 提示",
   "@settings.behavior.serversPinHintSeen.keywords": {
     "sourceHash": "64da081"
   },
@@ -2344,27 +2344,27 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "b6a8933"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "已顯示首次接手提示",
+  "settings.behavior.revealActivationNoticeSeen.label": "不顯示「在 Finder 中顯示」提示",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "sourceHash": "a62b8f1"
+    "sourceHash": "d234df3"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "是否已顯示過關於首次在 Cmdr 中開啟「在 Finder 中顯示」的提示。",
+  "settings.behavior.revealActivationNoticeSeen.description": "Cmdr 設定成接手「在 Finder 中顯示」時，第一個轉到這裡的要求會附上一則留言，告訴你為什麼開啟的是窗格，而不是 Finder。關閉這一項，就能再看一次這則留言。",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "009056a"
+    "sourceHash": "b9438eb"
   },
-  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "顯示, 開啟, 資料夾, 位置, 提示, 通知, 接手",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
     "sourceHash": "1e3e612"
   },
-  "settings.behavior.adbHintDismissed.label": "已關閉「USB 偵錯」提示",
+  "settings.behavior.adbHintDismissed.label": "不顯示「USB 偵錯」提示",
   "@settings.behavior.adbHintDismissed.label": {
-    "sourceHash": "ba3d7fc"
+    "sourceHash": "46ee148"
   },
-  "settings.behavior.adbHintDismissed.description": "是否已關閉那則建議開啟「USB 偵錯」的一次性提示。",
+  "settings.behavior.adbHintDismissed.description": "沒開啟「USB 偵錯」的手機連接後，它的窗格最上方會出現一行提示，建議你開啟「USB 偵錯」，讓 Cmdr 能存取整支手機。用這行提示上的 × 關掉它，會開啟這一項。關閉這一項，就能再看到這行提示。",
   "@settings.behavior.adbHintDismissed.description": {
-    "sourceHash": "37afcbc"
+    "sourceHash": "fd177b6"
   },
-  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "settings.behavior.adbHintDismissed.keywords": "手機, 行動裝置, 偵錯, 除錯, 開發人員, 開發人員選項, 提示",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
@@ -3457,15 +3457,15 @@
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "已顯示快速篩選說明",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "不顯示快速篩選說明",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "sourceHash": "5d124bb"
+    "sourceHash": "0f3c44b"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "是否已顯示過說明首次快速篩選的提示。",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "你第一次打字篩選窗格時，Cmdr 會說明發生了什麼事，並告訴你按 Esc 鍵就能讓所有檔案重新出現。關閉這一項，就能再看一次這個說明。",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "sourceHash": "855c661"
+    "sourceHash": "cf08219"
   },
-  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "篩選, 過濾, 輸入, 打字, 說明, 介紹, 提示",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },

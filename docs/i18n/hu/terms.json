@@ -1999,11 +1999,12 @@
   },
   "hint": {
     "chosen": "tipp",
-    "forms": "the internal flag → A <valami> tippje megjelent / elvetve",
+    "forms": "a Hints and warnings switch (Suppress the X hint) → A <valami> tippjének elnyomása",
     "confidence": "high",
     "sources": "descriptive; common Hungarian UI usage",
     "exceptions": {
-      "settings.advanced.exitFullScreenOnEscapeHintShown.label": "An internal flag named after the notification the user saw (Escape-értesítés)."
+      "settings.advanced.exitFullScreenOnEscapeHintShown.label": "The switch is named after the notification the user saw (Teljes képernyős Escape-értesítés).",
+      "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Its help text says értesítés to match its own label (Escape-értesítés)."
     }
   },
   "history": {
