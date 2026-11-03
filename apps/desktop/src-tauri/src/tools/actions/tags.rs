@@ -6,6 +6,9 @@
 //! patches the cached listing so the panes re-render the colored dots (reusing
 //! `Listings::apply_row_facts` (`RowFacts::Tags`), the enrich path).
 //!
+//! What it changed is journaled as one `tag` operation credited to the caller
+//! (`ctx.caller.initiator()`), so `operations_rollback` puts each file's prior tags back.
+//!
 //! macOS-only: Finder tags don't exist elsewhere, so off macOS it returns a clean
 //! not-supported error.
 
@@ -15,21 +18,22 @@ use serde_json::json;
 use tauri::{AppHandle, Runtime};
 
 use super::{ToolError, ToolResult};
+use crate::tools::policy::ToolCtx;
 
-pub async fn execute_tag<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_tag<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = (app, params);
+        let _ = (app, ctx, params);
         Err(ToolError::internal("Finder tags are only supported on macOS"))
     }
     #[cfg(target_os = "macos")]
     {
-        execute_tag_macos(app, params).await
+        execute_tag_macos(app, ctx, params).await
     }
 }
 
 #[cfg(target_os = "macos")]
-async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     let action = params
         .get("action")
         .and_then(|v| v.as_str())
@@ -62,7 +66,13 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
     let paths = super::resolve_pane_target_paths(&state, names.as_deref())?;
 
     let volume_id = state.volume_id.as_deref();
-    let outcome = apply_tag_action(volume_id, action, &paths, &colors).await?;
+    let mut written = crate::file_system::tags_io::TagWrites::default();
+    let applied = apply_tag_action(volume_id, action, &paths, &colors, &mut written).await;
+    // Journal what landed, even when a later file refused: those files changed.
+    let operation_id = written
+        .journal_off_thread(ctx.caller.initiator(), applied.is_ok())
+        .await;
+    let outcome = applied?;
     refresh_listing_tags(&state, outcome.updates);
 
     // Flush the pane's MCP state so the `[tags:…]` marker shows in cmdr://state
@@ -75,21 +85,31 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
     let _ = super::flush_pane_state(app, &pane).await;
 
     let changed = paths.len() - outcome.skipped.len();
-    tag_answer(action, &pane, changed, &skipped_note(&outcome.skipped))
+    tag_answer(
+        action,
+        &pane,
+        changed,
+        &skipped_note(&outcome.skipped),
+        operation_id.as_deref(),
+    )
 }
 
-/// What the call reports. ❌ Never an `OK` on nothing done: a model reads that word as done, and a
-/// tag has no undo to find out by. Every path skipped (a pane on a volume that stores no tags) is a
-/// refusal, which the rail shows as not having gone through.
+/// What the call reports. ❌ Never an `OK` on nothing done: a model reads that word as done. Every
+/// path skipped (a pane on a volume that stores no tags) is a refusal, which the rail shows as not
+/// having gone through. A journaled write names its operation, so the caller can undo it with
+/// `operations_rollback` without first listing the history.
 #[cfg(target_os = "macos")]
-fn tag_answer(action: &str, pane: &str, changed: usize, skipped_note: &str) -> ToolResult {
+fn tag_answer(action: &str, pane: &str, changed: usize, skipped_note: &str, operation_id: Option<&str>) -> ToolResult {
     if changed == 0 && !skipped_note.is_empty() {
         return Err(ToolError::internal(format!(
             "Nothing changed in the {pane} pane.{skipped_note}"
         )));
     }
+    let undo = operation_id
+        .map(|id| format!(" operationId: {id} (operations_rollback undoes it)."))
+        .unwrap_or_default();
     Ok(json!(format!(
-        "OK: {} tags on {} in the {pane} pane.{skipped_note}",
+        "OK: {} tags on {} in the {pane} pane.{skipped_note}{undo}",
         action_verb(action),
         crate::pluralize::pluralize(changed as u64, "item"),
     )))
@@ -173,19 +193,22 @@ fn color_index(name: &str) -> Option<u8> {
 /// can't be read or fully decoded is skipped and reported, never treated as
 /// untagged (that would drop its custom tags). `clear` reads nothing to keep: the
 /// caller asked for every tag gone, so it writes regardless.
+///
+/// Every file it changes lands in `written`, the record the caller journals for undo.
 #[cfg(target_os = "macos")]
 async fn apply_tag_action(
     volume_id: Option<&str>,
     action: &str,
     paths: &[String],
     colors: &[u8],
+    written: &mut crate::file_system::tags_io::TagWrites,
 ) -> Result<crate::file_system::tags::TagToggleOutcome, ToolError> {
     use crate::file_system::tags::{TagSkip, TagToggleOutcome};
     use crate::file_system::tags_io::{apply_merge, clear_tags, read_for_merge, toggle_color};
 
     match action {
         "clear" => {
-            let updates = clear_tags(volume_id, paths.to_vec())
+            let updates = clear_tags(volume_id, paths.to_vec(), written)
                 .await
                 .map_err(|e| ToolError::internal(format!("Couldn't clear tags: {e}")))?;
             Ok(TagToggleOutcome {
@@ -203,7 +226,7 @@ async fn apply_tag_action(
             let mut last = TagToggleOutcome::default();
             let mut skipped: Option<Vec<TagSkip>> = None;
             for &color in colors {
-                last = toggle_color(volume_id, paths.to_vec(), color)
+                last = toggle_color(volume_id, paths.to_vec(), color, written)
                     .await
                     .map_err(|e| ToolError::internal(format!("Couldn't toggle tag: {e}")))?;
                 skipped.get_or_insert(std::mem::take(&mut last.skipped));
@@ -213,7 +236,7 @@ async fn apply_tag_action(
         }
         "set" => {
             let (current, skipped) = read_for_merge(volume_id, paths.to_vec()).await;
-            let updates = apply_merge(current, |tags| desired_tags_for_set(tags, colors))
+            let updates = apply_merge(current, |tags| desired_tags_for_set(tags, colors), written)
                 .await
                 .map_err(|e| ToolError::internal(format!("Couldn't set tags: {e}")))?;
             Ok(TagToggleOutcome { updates, skipped })
@@ -345,7 +368,10 @@ mod tests {
         let paths = vec![bad.to_string_lossy().into_owned(), good.to_string_lossy().into_owned()];
 
         for action in ["set", "toggle"] {
-            let outcome = apply_tag_action(Some(DISK), action, &paths, &[6, 4]).await.unwrap();
+            let mut written = crate::file_system::tags_io::TagWrites::default();
+            let outcome = apply_tag_action(Some(DISK), action, &paths, &[6, 4], &mut written)
+                .await
+                .unwrap();
             assert_eq!(
                 xattr::get(&bad, TAGS_XATTR).unwrap().as_deref(),
                 Some(&b"garbage"[..]),
@@ -363,16 +389,25 @@ mod tests {
     /// Found in a live run: a pane inside a zip answered `OK: Set tags on 0 items`.
     #[test]
     fn nothing_tagged_is_never_an_ok() {
-        let error = tag_answer("set", "left", 0, " Skipped 1 item.").expect_err("nothing was tagged");
+        let error = tag_answer("set", "left", 0, " Skipped 1 item.", None).expect_err("nothing was tagged");
         assert_eq!(error.message, "Nothing changed in the left pane. Skipped 1 item.");
 
         assert_eq!(
-            tag_answer("set", "left", 1, " Skipped 1 item.").expect("one was tagged"),
+            tag_answer("set", "left", 1, " Skipped 1 item.", None).expect("one was tagged"),
             json!("OK: Set tags on 1 item in the left pane. Skipped 1 item.")
         );
         assert_eq!(
-            tag_answer("clear", "right", 2, "").expect("both were cleared"),
+            tag_answer("clear", "right", 2, "", None).expect("both were cleared"),
             json!("OK: Cleared tags on 2 items in the right pane.")
+        );
+    }
+
+    /// A journaled write names its operation, so the caller can roll it back directly.
+    #[test]
+    fn a_journaled_tag_write_names_the_operation_to_roll_back() {
+        assert_eq!(
+            tag_answer("set", "left", 1, "", Some("op-1")).expect("one was tagged"),
+            json!("OK: Set tags on 1 item in the left pane. operationId: op-1 (operations_rollback undoes it).")
         );
     }
 

@@ -486,6 +486,7 @@ fn record_row(
             outcome,
             overwrote,
             dest_identity,
+            tags: None,
         }],
     );
 }
@@ -744,6 +745,7 @@ pub(super) fn record_compress_archive(
             outcome: ItemOutcome::Done,
             overwrote: !net_new,
             dest_identity: None,
+            tags: None,
         }],
     );
 }

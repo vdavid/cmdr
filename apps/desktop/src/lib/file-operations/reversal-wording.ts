@@ -18,9 +18,9 @@ import type { MessageKey } from '#lib/intl/keys.gen.js'
 /**
  * What rolling back will DO to the user's files.
  *
- * The three `undo*` values mirror the backend's `inverse_kind`
+ * The four `undo*` values mirror the backend's `inverse_kind`
  * (`crates/cmdr-operation-log/src/rollback.rs`), the one place that decides whether an
- * inverse deletes, moves, or renames.
+ * inverse deletes, moves, renames, or restores tags.
  */
 export type RollbackConfirmVariant =
   /** A copy still running: stop it and delete what it has written. */
@@ -33,6 +33,8 @@ export type RollbackConfirmVariant =
   | 'undoByMovingBack'
   /** Undoing a finished rename: the names change back, nothing moves. */
   | 'undoByRenamingBack'
+  /** Undoing a finished Finder-tag change: each file's prior tags come back, nothing moves. */
+  | 'undoByRestoringTags'
 
 /**
  * Which reversal an operation of this kind earns, because what a rollback DOES depends
@@ -57,6 +59,8 @@ export function rollbackConfirmVariant(kind: OpKind): RollbackConfirmVariant {
       return 'undoByMovingBack'
     case 'rename':
       return 'undoByRenamingBack'
+    case 'tag':
+      return 'undoByRestoringTags'
   }
 }
 
@@ -70,8 +74,9 @@ export function rollbackConfirmVariant(kind: OpKind): RollbackConfirmVariant {
  * The two agree on which reversals remove files, pinned by the tests, because
  * that is a property of the operation and not of when the button was pressed.
  *
- * `rename` maps to the deleting arm it can never reach: a rename is one syscall,
- * so nothing of it is ever in flight to stop. The arm exists so a new `OpKind`
+ * `rename` and `tag` map to the deleting arm they can never reach: a rename is one
+ * syscall and a tag write one attribute per file, so nothing of either is ever in
+ * flight to stop. The arm exists so a new `OpKind`
  * is a compile error here rather than a blank body in front of a user.
  */
 export function inFlightRollbackVariant(kind: OpKind): RollbackConfirmVariant {
@@ -85,6 +90,7 @@ export function inFlightRollbackVariant(kind: OpKind): RollbackConfirmVariant {
     case 'archiveEdit':
     case 'delete':
     case 'rename':
+    case 'tag':
       return 'stopAndDelete'
   }
 }
@@ -195,6 +201,7 @@ export function inFlightRollbackTooltipKey(variant: RollbackConfirmVariant): Mes
     case 'stopAndDelete':
     case 'undoByDeleting':
     case 'undoByRenamingBack':
+    case 'undoByRestoringTags':
       return 'fileOperations.transferProgress.rollbackTooltip'
   }
 }
@@ -217,6 +224,8 @@ export function reversalLabelKey(variant: RollbackConfirmVariant): MessageKey {
       return 'queue.row.reversalDeleting'
     case 'undoByRenamingBack':
       return 'queue.row.reversalRenamingBack'
+    case 'undoByRestoringTags':
+      return 'queue.row.reversalRestoringTags'
     // Unreachable: the backend sets `reverses` only on an operation that IS the
     // reversal of a finished one, and the two in-flight variants describe one that
     // is still running. Mapped to the in-flight title so a new variant is a compile
@@ -242,6 +251,8 @@ export function reversalTitleKey(variant: RollbackConfirmVariant): MessageKey {
       return 'fileOperations.transferProgress.titleReversalDeleting'
     case 'undoByRenamingBack':
       return 'fileOperations.transferProgress.titleReversalRenamingBack'
+    case 'undoByRestoringTags':
+      return 'fileOperations.transferProgress.titleReversalRestoringTags'
     case 'stopAndDelete':
     case 'stopAndMoveBack':
       return 'fileOperations.transferProgress.titleRollingBack'

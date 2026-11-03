@@ -54,7 +54,8 @@ it is `../tools/DETAILS.md` § The rule, and `chat/runtime/capability_tests.rs` 
 
 - **On a turn the user started**, the agent works the app, opens the dialog or editor a person confirms, and asks a person
   before anything `Sensitive`. Only `tag`, a named `mkdir` or `mkfile` (`LightWrite`, the one written exception, accepted by
-  David, including that `tag` has no undo), and its own memory folder change anything with no person.
+  David; a `tag` write is journaled and `operations_rollback` undoes it), and its own memory folder change anything
+  with no person.
 - **On a turn Cmdr started** (a wake, a follow-up), it reads and proposes, and writes only its memory folder.
 - **Nothing answers for a person.** No agent path reaches `dialog_confirm`, `resolve_conflict`, `queue_move_locked`, a
   proposal's approval, or an Ask's yes, on any origin, and the agent never gets direct mode.

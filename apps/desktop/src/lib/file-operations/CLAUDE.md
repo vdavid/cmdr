@@ -30,7 +30,7 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
 - **Rollback asks first, Cancel doesn't.** Every surface raises `RollbackConfirmDialog` and calls nothing until the
   answer lands. ❌ Never a native `ask`, ❌ no file count in it. A tool's question ❌ never stacks.
 - **Its `variant` says what the reversal DOES, in the question AND on the running bar; wrong is a data-safety lie in
-  copy.** Running: `stopAndDelete` (copy), `stopAndMoveBack` (move). Finished: the three `undo*`, mirroring
+  copy.** Running: `stopAndDelete` (copy), `stopAndMoveBack` (move). Finished: the four `undo*`, mirroring
   `inverse_kind`. Both pickers: `reversal-wording.ts`, keyed on `OpKind` (`op-kind.ts` maps the wire spellings). ❌
   Never word a move's reversal as a delete, ❌ never infer one from `phase === 'rolling_back'` (a cancelled copy wears
   it too). DETAILS § Rollback.

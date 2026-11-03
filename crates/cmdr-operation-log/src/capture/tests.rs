@@ -209,6 +209,7 @@ fn leaf(seq: i64, name: &str, overwrote: bool) -> JournalItem {
         outcome: ItemOutcome::Done,
         overwrote,
         dest_identity: None,
+        tags: None,
     }
 }
 

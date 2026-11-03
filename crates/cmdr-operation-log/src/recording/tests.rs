@@ -95,6 +95,7 @@ fn record(journal: &OpJournal, name: &str) {
         outcome: ItemOutcome::Done,
         overwrote: false,
         dest_identity: None,
+        tags: None,
     }]);
 }
 

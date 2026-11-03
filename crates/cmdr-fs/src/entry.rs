@@ -456,6 +456,27 @@ mod is_package_tests {
     }
 }
 
+/// The extended attribute Finder keeps a file's tags in, a binary plist of
+/// `"Name\nN"` strings. The app's codec reads and writes it; the rollback of a tag
+/// write treats it as opaque bytes.
+pub const FINDER_TAGS_XATTR: &str = "com.apple.metadata:_kMDItemUserTags";
+
+/// One file's [`FINDER_TAGS_XATTR`] value around a tag write, as raw bytes: what
+/// the operation log journals so the write can be undone exactly.
+///
+/// `before` is the value the file carried (every tag, colorless ones too), or the
+/// empty-array plist when it carried none: a restore writes it back rather than
+/// removing the attribute, since a QNAP keeps an attribute it's told to delete.
+/// `after` is what the write left, so the undo can tell a file someone retagged
+/// since (it no longer reads `after`) and leave it alone.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TagsChange {
+    /// The value before the write.
+    pub before: Vec<u8>,
+    /// The value the write left.
+    pub after: Vec<u8>,
+}
+
 /// A Finder tag: a name plus a color index. Parsed from the per-file
 /// `com.apple.metadata:_kMDItemUserTags` xattr, where each entry is `"Name\nN"`.
 ///

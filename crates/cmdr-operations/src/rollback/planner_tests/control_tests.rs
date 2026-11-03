@@ -328,7 +328,7 @@ impl RollbackRunner for StopAfterOneDir {
                     Ok(volume.delete(path).await?)
                 }
                 InverseAct::RemoveFile { volume, path } => Ok(volume.delete(path).await?),
-                InverseAct::Restore { .. } => Err(VolumeError::NotSupported.into()),
+                InverseAct::Restore { .. } | InverseAct::WriteXattr { .. } => Err(VolumeError::NotSupported.into()),
             }
         })
     }

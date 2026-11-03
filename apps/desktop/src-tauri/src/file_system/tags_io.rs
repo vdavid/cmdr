@@ -8,6 +8,9 @@
 //!
 //! macOS only; `tags_io_off_macos.rs` stands in under this name elsewhere.
 
+pub use super::tags_journal::TagWrites;
+use cmdr_operation_log::types::Initiator;
+
 use super::tags::{
     TAGS_XATTR, TagReadError, TagSkip, TagToggleOutcome, emit_tag_analytics, encode_tags_plist, parse_tags_plist,
     parse_tags_plist_strict, system_color_name, toggled_tags,
@@ -47,7 +50,11 @@ static TAG_READS: BlockingBudget = BlockingBudget::new(4);
 ///
 /// With no pane to ask (`volume_id` is `None` or isn't a real volume: a search hit), the
 /// registered volume with the longest root over the path answers.
-async fn tag_store_for(volume_id: Option<&str>, row: &Path) -> Option<Arc<dyn Volume>> {
+///
+/// Answers the volume's registered id beside it, which a tag write journals so its undo
+/// finds the same volume (a passthrough resolve is the volume registered under
+/// `volume_id`).
+async fn tag_store_for(volume_id: Option<&str>, row: &Path) -> Option<TagStore> {
     let manager = super::volume::manager::get_volume_manager();
     let parent = row.parent().unwrap_or(row);
     if let Some(volume_id) = volume_id {
@@ -56,7 +63,7 @@ async fn tag_store_for(volume_id: Option<&str>, row: &Path) -> Option<Arc<dyn Vo
             return None;
         }
         if let Some(volume) = resolved.volume {
-            return volume.supports_xattrs().then_some(volume);
+            return volume.supports_xattrs().then(|| (volume_id.to_string(), volume));
         }
     }
     manager
@@ -64,12 +71,15 @@ async fn tag_store_for(volume_id: Option<&str>, row: &Path) -> Option<Arc<dyn Vo
         .into_iter()
         .filter(|(_, volume)| row.starts_with(volume.root()))
         .max_by_key(|(_, volume)| volume.root().components().count())
-        .map(|(_, volume)| volume)
-        .filter(|volume| volume.supports_xattrs())
+        .filter(|(_, volume)| volume.supports_xattrs())
 }
+
+/// A volume that stores tags, with the id it's registered under.
+type TagStore = (String, Arc<dyn Volume>);
 
 /// One volume's share of a batch of paths.
 struct VolumeGroup {
+    volume_id: String,
     volume: Arc<dyn Volume>,
     paths: Vec<String>,
 }
@@ -77,7 +87,7 @@ struct VolumeGroup {
 /// `paths` by the volume that stores their tags, and the ones nothing stores tags for.
 /// Each folder resolves once, so a 500-path chunk costs one route.
 async fn group_by_store(volume_id: Option<&str>, paths: Vec<String>) -> (Vec<VolumeGroup>, Vec<String>) {
-    let mut by_parent: HashMap<Option<PathBuf>, Option<Arc<dyn Volume>>> = HashMap::new();
+    let mut by_parent: HashMap<Option<PathBuf>, Option<TagStore>> = HashMap::new();
     let mut groups: Vec<VolumeGroup> = Vec::new();
     let mut nowhere = Vec::new();
     for path in paths {
@@ -93,9 +103,10 @@ async fn group_by_store(volume_id: Option<&str>, paths: Vec<String>) -> (Vec<Vol
         };
         match store {
             None => nowhere.push(path),
-            Some(volume) => match groups.iter_mut().find(|group| Arc::ptr_eq(&group.volume, &volume)) {
+            Some((volume_id, volume)) => match groups.iter_mut().find(|group| Arc::ptr_eq(&group.volume, &volume)) {
                 Some(group) => group.paths.push(path),
                 None => groups.push(VolumeGroup {
+                    volume_id,
                     volume,
                     paths: vec![path],
                 }),
@@ -260,9 +271,12 @@ impl std::fmt::Display for TagWriteError {
 
 /// One file's tags as read for a write that merges into them.
 pub(crate) struct CurrentTags {
+    volume_id: String,
     volume: Arc<dyn Volume>,
     pub(crate) path: String,
     pub(crate) tags: Vec<TagRef>,
+    /// The attribute as read, `None` for none: what a write journals as its before.
+    raw: Option<Vec<u8>>,
 }
 
 /// Reads every file a merging write will touch. A file whose tags can't be read or fully
@@ -285,16 +299,18 @@ pub(crate) async fn read_for_merge(volume_id: Option<&str>, paths: Vec<String>) 
             .read_xattr_many(&wire, TAGS_XATTR, XattrReadMode::Verified)
             .await;
         for (path, answer) in group.paths.iter().cloned().zip(answers) {
-            let tags = match answer {
-                Ok(Some(bytes)) => parse_tags_plist_strict(&bytes),
-                Ok(None) => Ok(Vec::new()),
-                Err(e) => Err(TagReadError::Unreadable(e)),
+            let (tags, raw) = match answer {
+                Ok(Some(bytes)) => (parse_tags_plist_strict(&bytes), Some(bytes)),
+                Ok(None) => (Ok(Vec::new()), None),
+                Err(e) => (Err(TagReadError::Unreadable(e)), None),
             };
             match tags {
                 Ok(tags) => current.push(CurrentTags {
+                    volume_id: group.volume_id.clone(),
                     volume: group.volume.clone(),
                     path,
                     tags,
+                    raw,
                 }),
                 Err(reason) => skipped.push(TagSkip { path, reason }),
             }
@@ -312,30 +328,62 @@ pub(crate) async fn read_for_merge(volume_id: Option<&str>, paths: Vec<String>) 
 /// holds `kHasCustomIcon` plus type/creator codes, and modern Finder reads tags straight
 /// from `_kMDItemUserTags`, so a custom folder icon survives a tag write. Each write is
 /// atomic per attribute, so there's no partial-write window for a single file.
-async fn write_tags(volume: &dyn Volume, path: &str, tags: &[TagRef]) -> Result<(), TagWriteError> {
+///
+/// Every write that lands goes into `written` with the value it replaced, so the caller
+/// can journal it for undo, including the files that landed before a later one failed.
+async fn write_tags(
+    file: TagTarget<'_>,
+    before: Option<&[u8]>,
+    tags: &[TagRef],
+    written: &mut TagWrites,
+) -> Result<(), TagWriteError> {
     let refused = |reason| TagWriteError::Refused {
-        path: path.to_string(),
+        path: file.path.to_string(),
         reason,
     };
-    let bytes = encode_tags_plist(tags).map_err(|e| refused(VolumeError::from_io_at(&e, path)))?;
-    volume
-        .write_xattr(Path::new(path), TAGS_XATTR, &bytes)
+    let bytes = encode_tags_plist(tags).map_err(|e| refused(VolumeError::from_io_at(&e, file.path)))?;
+    file.volume
+        .write_xattr(Path::new(file.path), TAGS_XATTR, &bytes)
         .await
-        .map_err(refused)
+        .map_err(refused)?;
+    written.record(file.volume_id, file.path, before, bytes);
+    Ok(())
+}
+
+/// The file a tag write goes to, and the volume (with its registered id) that stores it.
+#[derive(Clone, Copy)]
+struct TagTarget<'a> {
+    volume_id: &'a str,
+    volume: &'a dyn Volume,
+    path: &'a str,
 }
 
 /// Writes `desired(tags)` to each file, skipping every file already there so it doesn't
 /// churn the modification date on a server that bumps it (`streams_xattr` does), and
-/// answers each file's resulting set. On a failure, earlier files keep their new tags.
+/// answers each file's resulting set. On a failure, earlier files keep their new tags,
+/// and `written` holds them.
 pub(crate) async fn apply_merge(
     current: Vec<CurrentTags>,
     desired: impl Fn(&[TagRef]) -> Vec<TagRef>,
+    written: &mut TagWrites,
 ) -> Result<Vec<(String, Vec<TagRef>)>, TagWriteError> {
     let mut results = Vec::with_capacity(current.len());
-    for CurrentTags { volume, path, tags } in current {
+    for CurrentTags {
+        volume_id,
+        volume,
+        path,
+        tags,
+        raw,
+    } in current
+    {
         let new_tags = desired(&tags);
         if new_tags != tags {
-            write_tags(volume.as_ref(), &path, &new_tags).await?;
+            let target = TagTarget {
+                volume_id: &volume_id,
+                volume: volume.as_ref(),
+                path: &path,
+            };
+            write_tags(target, raw.as_deref(), &new_tags, written).await?;
         }
         results.push((path, new_tags));
     }
@@ -344,10 +392,12 @@ pub(crate) async fn apply_merge(
 
 /// Clears every tag on `paths`. Reads nothing to keep, since the caller asked for all of
 /// them gone: only "already none" skips the write, so a value that doesn't decode is
-/// overwritten and a file with no attribute stays without one.
+/// overwritten and a file with no attribute stays without one. `written` keeps each
+/// value it replaced, an undecodable one too, so an undo puts back exactly that.
 pub(crate) async fn clear_tags(
     volume_id: Option<&str>,
     paths: Vec<String>,
+    written: &mut TagWrites,
 ) -> Result<Vec<(String, Vec<TagRef>)>, TagWriteError> {
     let (groups, nowhere) = group_by_store(volume_id, paths).await;
     if let Some(path) = nowhere.into_iter().next() {
@@ -364,13 +414,23 @@ pub(crate) async fn clear_tags(
             .read_xattr_many(&wire, TAGS_XATTR, XattrReadMode::Verified)
             .await;
         for (path, answer) in group.paths.iter().zip(answers) {
-            let already_clear = match answer {
+            let already_clear = match &answer {
                 Ok(None) => true,
-                Ok(Some(bytes)) => parse_tags_plist_strict(&bytes).is_ok_and(|tags| tags.is_empty()),
+                Ok(Some(bytes)) => parse_tags_plist_strict(bytes).is_ok_and(|tags| tags.is_empty()),
                 Err(_) => false,
             };
             if !already_clear {
-                write_tags(group.volume.as_ref(), path, &[]).await?;
+                let target = TagTarget {
+                    volume_id: &group.volume_id,
+                    volume: group.volume.as_ref(),
+                    path,
+                };
+                // A read that failed knows no before, so the write isn't journaled with a
+                // made-up one: an undo would put back tags the file never had.
+                match &answer {
+                    Ok(before) => write_tags(target, before.as_deref(), &[], written).await?,
+                    Err(_) => write_tags(target, None, &[], &mut TagWrites::default()).await?,
+                }
             }
             cleared.push((path.clone(), Vec::new()));
         }
@@ -389,6 +449,7 @@ pub async fn toggle_color(
     volume_id: Option<&str>,
     paths: Vec<String>,
     color: u8,
+    written: &mut TagWrites,
 ) -> Result<TagToggleOutcome, TagWriteError> {
     let color_name = system_color_name(color).ok_or(TagWriteError::NotAColor(color))?;
     let path_count = paths.len();
@@ -398,10 +459,10 @@ pub async fn toggle_color(
             .iter()
             .all(|file| file.tags.iter().any(|tag| tag.color == color));
     let add = !all_have;
-    let written = apply_merge(current, |tags| toggled_tags(tags, color, color_name, add)).await;
-    emit_tag_analytics(add, color_name, path_count, written.is_ok() && skipped.is_empty());
+    let updates = apply_merge(current, |tags| toggled_tags(tags, color, color_name, add), written).await;
+    emit_tag_analytics(add, color_name, path_count, updates.is_ok() && skipped.is_empty());
     Ok(TagToggleOutcome {
-        updates: written?,
+        updates: updates?,
         skipped,
     })
 }
@@ -409,10 +470,13 @@ pub async fn toggle_color(
 /// Toggles `color` on the rows of `listing_id` and patches the listing. The keyboard
 /// command and the context-menu circles both land here. A write failure is logged, not
 /// surfaced: tags are low-stakes, each write is atomic, and the pane shows what's on disk
-/// at its next read.
+/// at its next read. What landed is journaled as the user's, so the history can undo it.
 async fn toggle_and_patch(app: tauri::AppHandle, listing_id: String, paths: Vec<String>, color: u8) {
     let volume_id = volume_of_listing(&listing_id);
-    match toggle_color(volume_id.as_deref(), paths, color).await {
+    let mut written = TagWrites::default();
+    let toggled = toggle_color(volume_id.as_deref(), paths, color, &mut written).await;
+    written.journal_off_thread(Initiator::User, toggled.is_ok()).await;
+    match toggled {
         Ok(outcome) => {
             super::tags::report_skips(&app, &outcome.skipped);
             if !outcome.updates.is_empty() {

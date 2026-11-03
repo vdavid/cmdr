@@ -16,7 +16,7 @@ use std::path::Path;
 /// The extended-attribute name Finder stores tags under. macOS-only: the only
 /// readers/writers are the macOS tag functions.
 #[cfg(target_os = "macos")]
-pub const TAGS_XATTR: &str = "com.apple.metadata:_kMDItemUserTags";
+pub const TAGS_XATTR: &str = cmdr_fs::entry::FINDER_TAGS_XATTR;
 
 /// Reads and parses a LOCAL path's Finder tags through `getxattr`, for a caller that
 /// already works in OS paths (a custom folder's icon). Returns an empty vec when the

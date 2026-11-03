@@ -23,6 +23,7 @@ export const rollbackConfirmFixtures: Record<string, RollbackConfirmFixture | un
   undoByDeleting: { variant: 'undoByDeleting' },
   undoByMovingBack: { variant: 'undoByMovingBack' },
   undoByRenamingBack: { variant: 'undoByRenamingBack' },
+  undoByRestoringTags: { variant: 'undoByRestoringTags' },
   startedByAskCmdr: { variant: 'undoByDeleting', startedBy: 'agent' },
   startedByAiClient: { variant: 'undoByMovingBack', startedBy: 'aiClient' },
 }

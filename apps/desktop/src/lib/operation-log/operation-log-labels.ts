@@ -41,6 +41,8 @@ function summaryKey(kind: OpKind, subkind: ArchiveSubkind | null): MessageKey {
       return 'operationLog.summary.createFolder'
     case 'createFile':
       return 'operationLog.summary.createFile'
+    case 'tag':
+      return 'operationLog.summary.tag'
     case 'archiveEdit':
       switch (subkind) {
         case 'compress':

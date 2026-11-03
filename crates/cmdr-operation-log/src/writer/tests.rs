@@ -37,6 +37,7 @@ fn file_item(seq: i64, src_dir: &str, name: &str, dst_dir: &str) -> JournalItem 
         outcome: ItemOutcome::Done,
         overwrote: false,
         dest_identity: None,
+        tags: None,
     }
 }
 
@@ -79,6 +80,7 @@ fn open_record_finalize_round_trips_one_operation() {
         outcome: ItemOutcome::Done,
         overwrote: false,
         dest_identity: None,
+        tags: None,
     };
     writer
         .record_items(
@@ -202,6 +204,7 @@ fn finalize_counts_split_by_row_role() {
         outcome: ItemOutcome::Done,
         overwrote: false,
         dest_identity: None,
+        tags: None,
     };
     let leaf = |seq: i64, name: &str| JournalItem {
         seq,
@@ -218,6 +221,7 @@ fn finalize_counts_split_by_row_role() {
         outcome: ItemOutcome::Done,
         overwrote: false,
         dest_identity: None,
+        tags: None,
     };
     writer
         .record_items("op-trash", vec![unit, leaf(1, "a.jpg"), leaf(2, "b.jpg")])
@@ -287,6 +291,7 @@ fn rollback_units_page_streams_reverse_and_excludes_search_leaves() {
         outcome: ItemOutcome::Done,
         overwrote: false,
         dest_identity: None,
+        tags: None,
     };
     let leaf = JournalItem {
         row_role: RowRole::SearchOnly,
@@ -534,6 +539,7 @@ fn a_recorded_dest_identity_round_trips_through_the_journal() {
     };
     let trashed = JournalItem {
         dest_identity: Some(landed),
+        tags: None,
         ..file_item(0, "/work", "a.pdf", "/.Trash")
     };
     writer

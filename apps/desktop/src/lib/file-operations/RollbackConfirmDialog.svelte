@@ -85,6 +85,12 @@
                     cancel: 'fileOperations.rollbackConfirm.leaveAsIs',
                     destructive: false,
                 }
+            case 'undoByRestoringTags':
+                return {
+                    body: 'fileOperations.rollbackConfirm.bodyUndoByRestoringTags',
+                    cancel: 'fileOperations.rollbackConfirm.leaveAsIs',
+                    destructive: false,
+                }
         }
     }
 

@@ -53,10 +53,21 @@ describe('operationSummary', () => {
   it('uses the singular plural branch and a thousands separator', () => {
     expect(operationSummary('copy', null, 1)).toBe('Copied 1 item')
     expect(operationSummary('delete', null, 1_234)).toBe('Deleted 1,234 items')
+    expect(operationSummary('tag', null, 1)).toBe('Changed the tags on 1 item')
   })
 
   it('covers every OpKind (no unmapped kind)', () => {
-    const kinds: OpKind[] = ['copy', 'move', 'delete', 'trash', 'rename', 'createFolder', 'createFile', 'archiveEdit']
+    const kinds: OpKind[] = [
+      'copy',
+      'move',
+      'delete',
+      'trash',
+      'rename',
+      'createFolder',
+      'createFile',
+      'archiveEdit',
+      'tag',
+    ]
     for (const kind of kinds) expect(operationSummary(kind, null, 2)).toBeTruthy()
     const subkinds: ArchiveSubkind[] = ['compress', 'edit', 'extract']
     for (const sub of subkinds) expect(operationSummary('archiveEdit', sub, 2)).toBeTruthy()

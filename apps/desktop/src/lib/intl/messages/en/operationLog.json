@@ -141,6 +141,13 @@
     "placeholders": { "count": {}, "countText": {} },
     "screenshot": "operation-log-more-pages.png"
   },
+  "operationLog.summary.tag": "{count, plural, one {Changed the tags on {countText} item} other {Changed the tags on {countText} items}}",
+  "@operationLog.summary.tag": {
+    "description": "One-line summary of a change to macOS Finder color tags (setting, toggling, or clearing tags on files), in the operation log's list. count is the number of items whose tags changed; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "placeholders": { "count": {}, "countText": {} },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
+  },
   "operationLog.summary.archiveEdit": "Edited an archive",
   "@operationLog.summary.archiveEdit": {
     "description": "One-line summary of editing the contents of an existing archive (adding to or changing files inside a zip).",

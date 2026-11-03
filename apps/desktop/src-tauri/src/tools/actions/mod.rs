@@ -229,7 +229,7 @@ pub(super) fn required_pane_param(params: &Value) -> Result<&str, ToolError> {
 
 /// Refuses a tool that acts on a pane's selection when that pane has none. Falling back to the
 /// cursor would aim at whatever the row happens to be: `select` left, `nav_to_path` right, and
-/// `tag clear` wipes the right pane's cursor item, with no undo.
+/// `tag clear` wipes the right pane's cursor item, a file nobody asked about.
 pub(super) fn refuse_without_selection(state: &PaneState, pane: &str, verb: &str) -> Result<(), ToolError> {
     if state.selected_indices.is_empty() {
         return Err(ToolError::invalid_params(format!(

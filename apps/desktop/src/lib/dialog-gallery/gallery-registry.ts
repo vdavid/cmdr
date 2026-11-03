@@ -199,6 +199,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'undoByDeleting', label: 'Undo a finished copy' },
       { id: 'undoByMovingBack', label: 'Undo a finished move' },
       { id: 'undoByRenamingBack', label: 'Undo a finished rename' },
+      { id: 'undoByRestoringTags', label: 'Undo a finished tag change' },
       {
         id: 'startedByAskCmdr',
         label: 'Asked by Ask Cmdr',

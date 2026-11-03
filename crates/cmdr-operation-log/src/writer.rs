@@ -41,6 +41,7 @@ use super::types::{
     ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, OperationId,
     RollbackState, RowRole, SearchCoverage, SearchCoverageReason, SkipReason,
 };
+use cmdr_fs::entry::TagsChange;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::NodeIdentity;
 
@@ -109,6 +110,8 @@ pub struct JournalItem {
     /// Only a trash records it: a restore then refuses a stranger that took the
     /// in-Trash name since.
     pub dest_identity: Option<NodeIdentity>,
+    /// The file's Finder-tags value before and after, for a tag write's row only.
+    pub tags: Option<TagsChange>,
 }
 
 /// The terminal update at finalize. The capture layer computes the
@@ -465,8 +468,8 @@ fn insert_one_item(conn: &Connection, op_id: &str, item: &JournalItem) -> Result
         "INSERT INTO operation_items
             (op_id, seq, entry_type, row_role, source_dir_id, source_name, source_name_folded,
              dest_dir_id, dest_name, dest_name_folded, size, mtime, outcome, overwrote,
-             dest_inode, dest_birth_ns)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+             dest_inode, dest_birth_ns, tags_before, tags_after)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
         rusqlite::params![
             op_id,
             item.seq,
@@ -484,6 +487,8 @@ fn insert_one_item(conn: &Connection, op_id: &str, item: &JournalItem) -> Result
             item.overwrote as i64,
             item.dest_identity.map(|id| id.inode as i64),
             item.dest_identity.map(|id| id.birth_nanos),
+            item.tags.as_ref().map(|tags| tags.before.as_slice()),
+            item.tags.as_ref().map(|tags| tags.after.as_slice()),
         ],
     )?;
     Ok(())

@@ -68,6 +68,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "operation_items.dest_inode + dest_birth_ns: which node an item landed as",
         up: migrate_v4_dest_identity,
     },
+    Migration {
+        version: 5,
+        description: "operation_items.tags_before + tags_after: a tag write's prior and written Finder-tags value",
+        up: migrate_v5_tags_change,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a
@@ -269,5 +274,19 @@ fn migrate_v4_dest_identity(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     tx.execute_batch(
         "ALTER TABLE operation_items ADD COLUMN dest_inode INTEGER;
          ALTER TABLE operation_items ADD COLUMN dest_birth_ns INTEGER;",
+    )
+}
+
+/// Version 5: record a tag write's Finder-tags value before and after, per file, as the
+/// raw xattr bytes (`cmdr_fs::entry::TagsChange`).
+///
+/// The undo writes `tags_before` back only while the file still reads `tags_after`, so a
+/// file retagged since keeps its new tags. Both set or both NULL; only a `tag` op's rows
+/// set them. Nullable, no default, and **no backfill**: no older row is a tag write. No
+/// index: read per item alongside the row, never filtered on.
+fn migrate_v5_tags_change(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch(
+        "ALTER TABLE operation_items ADD COLUMN tags_before BLOB;
+         ALTER TABLE operation_items ADD COLUMN tags_after BLOB;",
     )
 }

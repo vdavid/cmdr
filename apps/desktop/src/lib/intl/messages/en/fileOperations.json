@@ -921,6 +921,16 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
   },
 
+  "fileOperations.transferProgress.titleReversalRestoringTags": "{count, plural, =0 {Putting the old tags back} one {Putting the old tags back on {countText} file} other {Putting the old tags back on {countText} files}}…",
+  "@fileOperations.transferProgress.titleReversalRestoringTags": {
+    "description": "Progress-dialog title while UNDOING a finished change to macOS Finder color tags the user asked to roll back from their operation history: each file gets back the tags it had before, and nothing moves or is deleted. The bar under it fills forwards, like every other bar in the app. The =0 branch covers the first frames, before the count is known. Keep the trailing ellipsis. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByRestoringTags).",
+    "placeholders": {
+      "count": "how many files get their old tags back (drives the plural form); 0 means the count isn’t known yet",
+      "countText": "the same count, already formatted with the locale’s digit grouping (for example 1,240)"
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
+  },
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Putting the old names back} one {Putting the old name back} other {Putting {countText} old names back}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
     "description": "Progress-dialog title while UNDOING a finished rename the user asked to roll back from their operation history: the files get their old names back, and nothing moves or is deleted. The bar under it fills forwards, like every other bar in the app. The =0 branch covers the first frames, before the count is known. Keep the trailing ellipsis. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByRenamingBack).",
@@ -1843,6 +1853,10 @@
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
     "description": "Body of the Rollback confirmation when the user undoes a FINISHED rename, whether one file or a batch of hundreds. Nothing moves and nothing is deleted; only the names change back, so keep the tone calm. Second sentence: Cmdr leaves alone every file it can’t match against what it recorded, so the reversal can come out partial. Keep it parallel with the sibling copy and move wordings.",
     "screenshot": "rollback-confirmation-undoByRenamingBack.png"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTags": "This gives the files the tags they had before. Cmdr skips any file whose tags changed since, so a few may keep the tags they have now.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTags": {
+    "description": "Body of the Rollback confirmation when the user undoes a FINISHED change to macOS Finder color tags (setting, toggling, or clearing them on one file or many). Nothing moves and nothing is deleted; only the tags change back, so keep the tone calm. Second sentence: Cmdr leaves alone every file whose tags someone changed after the operation, so the reversal can come out partial. Keep it parallel with the sibling copy, move, and rename wordings."
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "Leave it as is",
   "@fileOperations.rollbackConfirm.leaveAsIs": {

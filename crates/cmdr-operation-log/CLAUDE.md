@@ -8,8 +8,8 @@ disposable cache. Tauri-free; the app hosts it in `apps/desktop/src-tauri/src/op
 
 `handle.rs` (`OperationLog`: journal slot, writer, the `recording.rs` gate; `OpJournal`), `store/` (the DB, the
 migration ladder), `writer.rs` (+ `writer/prune.rs`), `capture.rs`, `types.rs` (typed tokens), `query.rs`,
-`retention.rs`, `rollback.rs` (+ `order.rs`, `skips.rs`, `runner.rs`, `self_collision.rs`: the PLANNER; its executor is
-`crates/cmdr-operations/src/rollback.rs`).
+`retention.rs`, `rollback.rs` (+ `order.rs`, `skips.rs`, `runner.rs`, `self_collision.rs`, `tags.rs`: the PLANNER; its
+executor is `crates/cmdr-operations/src/rollback.rs`).
 
 ## Must-knows
 
@@ -27,9 +27,9 @@ The full text of each, with its why: DETAILS § "Must-knows, in full".
   `OperationEventSink`). Recording is decided ONCE per op, at open (❌ never mid-op).
 - **A multi-operation undo reverses NEWEST FIRST** (`undo_order`); callers pass ids in APPLY order.
 - **Rollback FAILS SAFE**: recheck each item against its snapshot AND its restore target (a copy: its original; a trash:
-  the node it landed as); drift, unverifiable, an occupied target, or a gone original ⇒ SKIP, never operate.
-  `verify_snapshot` + `SkipReason` + `SkipTally` are SHARED with the in-flight reversals: ❌ don't fork them.
-  `rolling_back` guards double-rollback and the retention race.
+  the node it landed as; a tag write: the exact bytes it left); drift, unverifiable, an occupied target, or a gone
+  original ⇒ SKIP, never operate. `verify_snapshot` + `SkipReason` + `SkipTally` are SHARED with the in-flight
+  reversals: ❌ don't fork them. `rolling_back` guards double-rollback and the retention race.
 - **The planner PLANS; an injected `RollbackRunner` acts.** Pause parks BEFORE the item is verified, and a reversal's
   "should I stop?" is `StopMeans`, ❌ NOT `is_cancelled`.
 - **Op ids are UUIDv7 (`new_operation_id`)**, ❌ never v4: only v7 sorts by time.

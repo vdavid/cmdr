@@ -19,6 +19,7 @@ mod migrations;
 
 use std::path::{Path, PathBuf};
 
+use cmdr_fs::entry::TagsChange;
 use cmdr_fs::volume::NodeIdentity;
 use rusqlite::{Connection, ErrorCode, OptionalExtension};
 use unicode_normalization::UnicodeNormalization;
@@ -198,6 +199,8 @@ pub struct OperationItemRow {
     /// Which node the item landed as at its dest, when that was recorded (a trash,
     /// from schema v4 on).
     pub dest_identity: Option<NodeIdentity>,
+    /// The Finder-tags value before and after, on a tag write's row (schema v5 on).
+    pub tags: Option<TagsChange>,
 }
 
 /// A handle to `operation-log.db`, owning a connection for direct reads and the
@@ -499,7 +502,8 @@ pub fn recent_operations(conn: &Connection, limit: u32) -> Result<Vec<OperationR
 }
 
 pub(super) const ITEM_COLUMNS: &str = "item_id, op_id, seq, entry_type, row_role, source_dir_id, source_name, dest_dir_id, \
-     dest_name, size, mtime, outcome, overwrote, rollback_skip_reason, dest_inode, dest_birth_ns";
+     dest_name, size, mtime, outcome, overwrote, rollback_skip_reason, dest_inode, dest_birth_ns, \
+     tags_before, tags_after";
 
 pub(super) fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, OperationLogStoreError> {
     Ok(OperationItemRow {
@@ -522,6 +526,10 @@ pub(super) fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, 
                 inode: inode as u64,
                 birth_nanos,
             }),
+            _ => None,
+        },
+        tags: match (row.get::<_, Option<Vec<u8>>>(16)?, row.get::<_, Option<Vec<u8>>>(17)?) {
+            (Some(before), Some(after)) => Some(TagsChange { before, after }),
             _ => None,
         },
     })
@@ -578,6 +586,9 @@ pub struct RollbackUnit {
     /// Which node the item landed as at `dest_path`, when that was recorded. A
     /// restore moves back only that node, never a stranger under its name.
     pub dest_identity: Option<NodeIdentity>,
+    /// A tag write's value before and after. The undo writes `before` back only
+    /// while the file still reads `after`.
+    pub tags: Option<TagsChange>,
 }
 
 impl RollbackUnit {
@@ -642,6 +653,7 @@ fn map_rollback_unit(conn: &Connection, item: &OperationItemRow) -> Result<Rollb
         outcome: item.outcome,
         rollback_skip_reason: item.rollback_skip_reason,
         dest_identity: item.dest_identity,
+        tags: item.tags.clone(),
     })
 }
 

@@ -573,7 +573,7 @@
     },
     {
       "name": "tag",
-      "description": "Set macOS Finder color tags on files by name (else selection, else cursor). set: make the colors exactly (keeps colorless tags). toggle: flip each color. clear: remove all. macOS only; tags show in cmdr://state as [tags:red,blue].",
+      "description": "Set macOS Finder color tags on files by name (else selection, else cursor). set: make the colors exactly (keeps colorless tags). toggle: flip each color. clear: remove all. macOS only; tags show in cmdr://state as [tags:red,blue]. The answer names the operationId; operations_rollback puts back every file's prior tags.",
       "inputSchema": {
         "type": "object",
         "properties": {

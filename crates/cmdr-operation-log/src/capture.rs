@@ -156,7 +156,8 @@ pub fn compute_eligibility(
         ),
         // Restore-from-trash / rename-back / remove-if-net-new: the precondition
         // is rechecked at rollback time, so these open rollbackable.
-        OpKind::Trash | OpKind::Rename | OpKind::CreateFolder | OpKind::CreateFile => {
+        // A tag write's undo rechecks that each file still carries what the write left.
+        OpKind::Trash | OpKind::Rename | OpKind::CreateFolder | OpKind::CreateFile | OpKind::Tag => {
             (RollbackState::Rollbackable, None)
         }
         OpKind::ArchiveEdit => match archive_subkind {

@@ -6,7 +6,7 @@
 //! scratch folder it removes. The check a person's Finder makes on what it wrote goes through
 //! a fresh mount, by hand: `docs/notes/smb-finder-tags-2026-10-31.md`.
 
-use super::tags_io::{clear_tags, toggle_color};
+use super::tags_io::{TagWrites, clear_tags, toggle_color};
 use cmdr_fs::entry::TagRef;
 use cmdr_fs::volume::Volume;
 use cmdr_fs::volume::host::VolumeHost;
@@ -81,7 +81,9 @@ async fn smb_integration_finder_tags_work_with_no_mount() {
     };
 
     // Toggling a color lands, and the sweep's read path shows it in the listing.
-    let outcome = toggle_color(Some(&id), vec![path_of("red.txt")], 6).await.unwrap();
+    let outcome = toggle_color(Some(&id), vec![path_of("red.txt")], 6, &mut TagWrites::default())
+        .await
+        .unwrap();
     assert_eq!(outcome.updates, vec![(path_of("red.txt"), vec![tag("Red", 6)])]);
     let answer =
         super::tags_io::enrich_listing(listing.id().to_string(), vec![path_of("red.txt"), path_of("plain.txt")]).await;
@@ -91,8 +93,12 @@ async fn smb_integration_finder_tags_work_with_no_mount() {
 
     // Toggling it off, and clearing, leave macOS's empty array where a tag was, and no
     // attribute where none was.
-    toggle_color(Some(&id), vec![path_of("red.txt")], 6).await.unwrap();
-    clear_tags(Some(&id), vec![path_of("plain.txt")]).await.unwrap();
+    toggle_color(Some(&id), vec![path_of("red.txt")], 6, &mut TagWrites::default())
+        .await
+        .unwrap();
+    clear_tags(Some(&id), vec![path_of("plain.txt")], &mut TagWrites::default())
+        .await
+        .unwrap();
     let paths = [folder.join("red.txt"), folder.join("plain.txt")];
     let raw = volume
         .read_xattr_many(&paths, TAGS, cmdr_fs::volume::XattrReadMode::Verified)
@@ -141,10 +147,10 @@ async fn nas_a_seeded_folder_sweeps_and_toggles_with_no_mount() {
     assert!(red > 50, "the seed's tagged rows show, got {red} of {}", shown.len());
 
     let path_of = |name: &str| folder.join(name).to_string_lossy().into_owned();
-    toggle_color(Some(&id), vec![path_of("file-00101.txt")], 4)
+    toggle_color(Some(&id), vec![path_of("file-00101.txt")], 4, &mut TagWrites::default())
         .await
         .unwrap();
-    toggle_color(Some(&id), vec![path_of("file-00120.txt")], 6)
+    toggle_color(Some(&id), vec![path_of("file-00120.txt")], 6, &mut TagWrites::default())
         .await
         .unwrap();
     let blue = listing_row(&volume, &folder, "file-00101.txt").await;

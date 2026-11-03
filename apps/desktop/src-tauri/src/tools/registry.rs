@@ -116,7 +116,8 @@ pub enum Access {
     /// a turn the user started. Hand-allowlisted (`EXPECTED_INITIATE_TOOL_NAMES`).
     Initiate,
     /// Writes with no confirmation, the ONE written exception to "nothing writes without a person":
-    /// `mkdir` and `mkfile` with a name, and `tag`, which has no undo. Only on a turn the user started.
+    /// `mkdir` and `mkfile` with a name, and `tag`, which `operations_rollback` undoes from the
+    /// operation log. Only on a turn the user started.
     /// Hand-allowlisted (`EXPECTED_LIGHT_WRITE_TOOL_NAMES`).
     LightWrite,
     /// Runs only after a person confirms an Ask, and on a turn the user started. Hand-allowlisted

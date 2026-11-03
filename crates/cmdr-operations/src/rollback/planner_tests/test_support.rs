@@ -257,6 +257,7 @@ pub(super) fn file_unit(seq: i64, src_vol: &str, src: &str, dst_vol: &str, dst: 
         outcome: ItemOutcome::Done,
         overwrote: false,
         dest_identity: None,
+        tags: None,
     }
 }
 
@@ -278,6 +279,7 @@ pub(super) fn dir_unit(seq: i64, vol: &str, path: &str) -> JournalItem {
         outcome: ItemOutcome::Done,
         overwrote: false,
         dest_identity: None,
+        tags: None,
     }
 }
 

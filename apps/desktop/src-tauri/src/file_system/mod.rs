@@ -32,6 +32,9 @@ pub mod tags_io;
 pub mod tags_io;
 #[cfg(all(test, target_os = "macos"))]
 mod tags_io_integration_test;
+/// A tag write's entry in the operation log, so the history can undo it.
+#[cfg(target_os = "macos")]
+pub mod tags_journal;
 #[cfg(target_os = "macos")]
 pub mod terminal;
 /// Ungated: `open_in_editor` answers with its wire types on every platform.

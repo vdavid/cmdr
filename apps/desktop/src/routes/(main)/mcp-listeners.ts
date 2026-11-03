@@ -164,16 +164,20 @@ export function parseConfirmDialogType(value: unknown): ConfirmDialogType | unde
     : undefined
 }
 
-const OP_KINDS: readonly OpKind[] = [
-  'copy',
-  'move',
-  'delete',
-  'trash',
-  'rename',
-  'createFolder',
-  'createFile',
-  'archiveEdit',
-]
+/** Every `OpKind`, as a `Record` so a new kind is a compile error here rather than a rollback
+ *  question dropped as malformed (a `tag` one once would have been). */
+const OP_KIND_SET: Record<OpKind, true> = {
+  copy: true,
+  move: true,
+  delete: true,
+  trash: true,
+  rename: true,
+  createFolder: true,
+  createFile: true,
+  archiveEdit: true,
+  tag: true,
+}
+const OP_KINDS = Object.keys(OP_KIND_SET) as OpKind[]
 
 /** The `mcp-rollback-dialog` payload, or `undefined` if it's malformed. */
 export function parseToolRollbackFacts(raw: Record<string, unknown>): ToolRollbackFacts | undefined {

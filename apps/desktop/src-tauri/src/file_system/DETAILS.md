@@ -34,7 +34,7 @@ restic backup's snapshots: the overlay row, the parked hub, and the write guards
 - `packages.rs`: asks macOS (`NSURLIsPackageKey`, on its own 8 MB-stack pool) which visible dotted folders are packages
   the list doesn't know, for `enrich_packages`; local volumes only. The rule: `crates/cmdr-fs/DETAILS.md` § "What
   counts as an extension".
-- `tags.rs`: Finder tags, the pure half. `tags_io.rs`: their I/O, through the volume. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in (wire
+- `tags.rs`: Finder tags, the pure half. `tags_io.rs`: their I/O, through the volume. `tags_journal.rs`: a tag write's operation-log entry, for undo. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in (wire
   types; the macOS half in `text_editor_macos.rs`, its tests in `text_editor_test.rs`).
 
 ## Local disk or not (`filesystem_kind.rs`)
@@ -536,6 +536,13 @@ destroy custom folder icons and break `custom_folder_icon`. Modern Finder reads 
 file is never half-written; a multi-file toggle that fails mid-loop leaves earlier files updated and propagates the
 error (the IPC command logs it rather than surfacing a hard failure — tags are low-stakes and the panes still reflect
 what's on disk).
+
+**Every tag write is undoable from the operation log.** The writers (`write_tags` under `apply_merge`, `clear_tags`,
+`toggle_color`) note each file they changed in a `TagWrites` (`tags_journal.rs`): the raw value it replaced and the one
+it wrote. The caller journals that as ONE `tag` operation once its action ends, with its initiator: the keyboard
+command and the menu circles as `user`, the MCP `tag` tool by caller. A failure partway still journals the files before
+it. Why bytes, why the empty array stands in for "no attribute", and the undo's recheck:
+`crates/cmdr-operation-log/DETAILS.md` § "A tag write restores the exact prior value".
 
 **Other clients' tags.** The share watcher opts into the metadata bits (`smb2::WatchOptions::metadata`), and a change on a row asks `ListingHost::row_xattrs_may_have_changed`, which `tags_io::refresh_rows` answers by reading those rows again for any pane showing their folder. Apart from `directory_changed` because a re-stat can't see a tag: no new size, and on a QNAP no new date either. A pane on an OS-mounted share hears no such thing: FSEvents on `smbfs` sees only this machine.
 

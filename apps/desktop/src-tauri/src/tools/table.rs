@@ -216,15 +216,16 @@ mcp_tools! {
     },
     "tag" => {
         id: Tag,
-        brief: "Set, toggle, or clear macOS Finder color tags on files. Tags have no undo.",
+        brief: "Set, toggle, or clear macOS Finder color tags on files. operations_rollback undoes it.",
         desc: "Set macOS Finder color tags on files by name (else selection, else cursor). set: \
                make the colors exactly (keeps colorless tags). toggle: flip each color. clear: \
-               remove all. macOS only; tags show in cmdr://state as [tags:red,blue].",
+               remove all. macOS only; tags show in cmdr://state as [tags:red,blue]. The answer \
+               names the operationId; operations_rollback puts back every file's prior tags.",
         schema: schemas::tag_schema(),
         subject: SubjectSpec::Pane,
         access: Access::LightWrite,
         load: Load::Deferred,
-        run: app_params tags::execute_tag
+        run: ctx_params tags::execute_tag
     },
 
     // ── View ────────────────────────────────────────────────────────────────

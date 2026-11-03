@@ -325,8 +325,8 @@ risk.
   - **Prompt injection is mitigated, not solved.** Injected text can make the agent read more than the user meant (and
     so send it to the provider), start or propose a harmful operation (which a person still has to confirm), or save a
     note that rides along on every later turn. On a turn the user started it can also tag files or create a named folder
-    with no question, the one written exception, and a tag has no undo. Medium likelihood, medium impact. A person's
-    confirmation is the hard boundary.
+    with no question, the one written exception; a tag write is journaled, so the operation log can roll it back. Medium
+    likelihood, medium impact. A person's confirmation is the hard boundary.
   - **What reaches the provider is governed by the provider's terms**, not Cmdr's. An organization can turn AI off,
     allow only on-device AI, or allow only listed cloud hosts through managed preferences, enforced in the backend at
     every request and redirect hop (`apps/desktop/src-tauri/src/managed_policy/DETAILS.md`).

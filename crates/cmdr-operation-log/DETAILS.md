@@ -165,10 +165,12 @@ non-obvious choices:
   `rolls_back_op_id`). The plain name `skip_reason` stays free for a future "why did the OPERATION skip this item". No
   index: read per row, never filtered on. The nullable `dest_inode` + `dest_birth_ns` pair (v4) is the
   `cmdr_fs::volume::NodeIdentity` the item landed as at its dest, both set or both NULL, the inode bit-cast to a signed
-  integer; only a trash writes it (§ "A trashed item must still be the one trashed"). Directories the op created are
-  **first-class `dir` rows** sequenced after their contents, so a `seq DESC` rollback removes files before the dirs that
-  held them. Names are indexed folded (search) and, unlike dirs, **not interned** — a b-tree handles the massive
-  duplication across a large op fine, and names must stay directly queryable.
+  integer; only a trash writes it (§ "A trashed item must still be the one trashed"). The nullable `tags_before` +
+  `tags_after` BLOB pair (v5) is a tag write's Finder-tags value around the write, both set or both NULL, only on a
+  `tag` op's rows (§ "A tag write restores the exact prior value"). Directories the op created are **first-class `dir`
+  rows** sequenced after their contents, so a `seq DESC` rollback removes files before the dirs that held them. Names
+  are indexed folded (search) and, unlike dirs, **not interned** — a b-tree handles the massive duplication across a
+  large op fine, and names must stay directly queryable.
 
 ## The writer (`writer.rs`)
 
@@ -245,7 +247,7 @@ it in the operation's scope (`OpScope`, `crates/cmdr-operations/src/scope.rs`) f
 ### The decisions the capture layer owns (the writer doesn't)
 
 - **Eligibility, `compute_eligibility`** — pure, tested in isolation: copy/move rollbackable iff nothing overwrote;
-  delete never (`permanent_delete`); trash/rename/create-folder/create-file open rollbackable (rechecked at rollback
+  delete never (`permanent_delete`); trash/rename/create-folder/create-file/tag open rollbackable (rechecked at rollback
   time, in the rollback engine); compress rollbackable iff net-new (`archive_overwrite` otherwise); zip-inner edit not
   yet (`zip_edit_unsupported`). `execution_status` is deliberately NOT an input — a failed/canceled op stays
   rollbackable for what it reached.
@@ -312,6 +314,8 @@ Each point is where the op already stats the item, so journaling is near-zero ma
   refuses, silently disabling undo; journal `None` and identity rests on size alone, so a same-size replacement file
   gets renamed back in place of the original. A remote fingerprint already holds seconds and passes through untouched; a
   backend that reports no mtime records `None` and falls back to the size-only check.
+- **tag** — not an engine op: the app's tag writers collect what they changed and journal it as one `tag` op through
+  `OperationLog::journal_open` once the action ends (§ "A tag write restores the exact prior value").
 - **compress** (`archive_edit`) — spawns directly (not through `start_write_operation`), so `copy_into.rs`'s deferred
   carries its OWN open/finalize bracket. The compress driver supplies the `archive_edit` subkind + a net-new flag
   (probed before the seed overwrites the target) via `ArchiveProvenance` — the journal can't derive them, both compress
@@ -683,6 +687,35 @@ matching folder, a pre-v4 row, a volume that can't say),
 `journal_capture_tests::trashed_item_records_the_node_it_landed_as_in_the_trash` (a real trash on macOS), and
 `store::tests::v4_migration_keeps_older_rows_with_no_recorded_identity`.
 
+### A tag write restores the exact prior value
+
+Finder color tags live in one xattr per file (`cmdr_fs::entry::FINDER_TAGS_XATTR`), and a `set`, `toggle`, or `clear`
+across a selection can wipe tags people organize with. So every tag write journals as a `tag` op, one `rollback_unit`
+row per file it changed, carrying the raw value before and after (`TagsChange`, columns `tags_before` + `tags_after`,
+schema v5). Who writes them: `apps/desktop/src-tauri/src/file_system/tags_journal.rs`, for the keyboard command, the
+context-menu circles (`user`), and the `tag` tool (`agent` or `ai_client`, by caller).
+
+- **Opaque bytes, never a decoded tag list.** The plist codec is the app's; the log and the engine only compare and
+  write bytes. That also makes the restore exact: every tag, colorless ones and their order included, and even a value
+  Cmdr can't decode (a `clear` overwrites one, and its undo puts it back).
+- **A file with no attribute records the empty-array plist as its before**, never "absent": the restore can't remove the
+  attribute, since a QNAP answers success to a remove and keeps it (`crates/cmdr-smb/DETAILS.md` § "Extended
+  attributes"). The empty array reads as no tags everywhere.
+- **The recheck is exact-bytes equality with `after`.** Anything else is `Drift` and the file keeps its tags: someone
+  retagged it since (Finder, another Mac on a share, a later Cmdr write), or another writer encoded the same tags
+  differently, which fails safe. A file reading `before` already is credited as reversed (`AlreadyGone`, the end state
+  holds: an earlier pass, a crash resume). A file gone is `Vanished`, under the same root-reach rule as a restore. One
+  read per file (`read_xattr_many`, `Verified`), then `InverseAct::WriteXattr`.
+- **The runner tells the panes**: a tag lands with no new size (and on a QNAP no new date), so `ReversalRunner` asks
+  `ListingHost::row_xattrs_may_have_changed` after each write, the same door the share watcher uses.
+- **One user action is one op.** A `toggle` of two colors makes a pass per color; the app merges them per file (first
+  before, last after) and drops a file that ended where it started. A write that failed partway still journals the files
+  before it, under a `failed` op.
+
+Pinned by `crates/cmdr-operations/src/rollback/planner_tests/tag_tests.rs` (restore, retagged since, gone, already back,
+redo, a row with no values) and `tags_journal_test.rs` beside the app's writer (exact bytes off a real disk, the
+initiator).
+
 ### Per-kind inverse table
 
 The op kind + item entry-type map to one of four inverse actions (`inverse_action`); `item_action` adds the
@@ -708,6 +741,9 @@ created-in-place override below and is the ONE per-item decision: the reversal a
   `transfer::volume::move_file_across_volumes` — the bytes land whole at the target (staged on a `.cmdr-tmp-*` and
   renamed into place) before the source side goes, so a stop mid-file leaves the source untouched and no partial behind.
   A cross-volume restore of a DIRECTORY row is refused: those are recorded per leaf, so one is a journal-shape bug.
+- **tag** → `RestoreTags` (write the file's prior Finder-tags value back, only while it still holds the value the write
+  left, § "A tag write restores the exact prior value"). Its inverse is a `tag` op too, rows swapped, so it undoes
+  again.
 - **delete** → refused op-level (a permanent delete can't be restored).
 
 The inverse op's own eligibility is computed like any op: a delete-the-copies undo is `not_rollbackable`, a move/rename

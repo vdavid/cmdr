@@ -16,7 +16,7 @@
 //! What it must always carry (the tests pin each one):
 //! - **what it can start, and what waits for a person**: the four ways a change goes, `awaitingPerson`
 //!   as "the dialog is open, nothing has happened yet" (the mirror of `readyForReview`), a decline
-//!   that sticks, `tag` having no undo, an unknown outcome that may still be running, what a turn Cmdr
+//!   that sticks, `tag` writing with no question and undoing through `operations_rollback`, an unknown outcome that may still be running, what a turn Cmdr
 //!   started can't do, and dialogs for now vs. plans for later. A model told it can't touch anything
 //!   refuses what it can do, and one told only that it can says "copied" over an open dialog,
 //! - **the tools past the core**, one generated line each (`{{more_tools}}`, from the table), and the
@@ -120,15 +120,19 @@ mod tests {
     }
 
     #[test]
-    fn prompt_says_a_no_sticks_and_a_tag_has_no_undo() {
+    fn prompt_says_a_no_sticks_and_a_tag_is_undone_by_rolling_back() {
         assert!(
             SYSTEM_PROMPT.contains("data.refusal: declined"),
             "a decline must read typed"
         );
         assert!(SYSTEM_PROMPT.contains("don't ask again this turn"), "and it sticks");
         assert!(
-            SYSTEM_PROMPT.contains("tag has no undo"),
-            "the one write nobody can take back"
+            SYSTEM_PROMPT.contains("tag changes files with no question"),
+            "the one write that asks nobody"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("operationId that operations_rollback undoes"),
+            "and how to take it back"
         );
     }
 

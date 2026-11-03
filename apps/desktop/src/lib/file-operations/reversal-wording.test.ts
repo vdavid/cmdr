@@ -36,6 +36,7 @@ const CONFIRM_BODY: Record<UndoVariant, MessageKey> = {
   undoByDeleting: 'fileOperations.rollbackConfirm.bodyUndoByDeleting',
   undoByMovingBack: 'fileOperations.rollbackConfirm.bodyUndoByMovingBack',
   undoByRenamingBack: 'fileOperations.rollbackConfirm.bodyUndoByRenamingBack',
+  undoByRestoringTags: 'fileOperations.rollbackConfirm.bodyUndoByRestoringTags',
 }
 
 describe('rollbackConfirmVariant', () => {
@@ -51,6 +52,7 @@ describe('rollbackConfirmVariant', () => {
       move: 'undoByMovingBack',
       trash: 'undoByMovingBack',
       rename: 'undoByRenamingBack',
+      tag: 'undoByRestoringTags',
     }
     for (const [kind, variant] of Object.entries(cases)) {
       expect(rollbackConfirmVariant(kind as OpKind)).toBe(variant)
@@ -76,7 +78,7 @@ describe('inFlightRollbackVariant', () => {
   })
 
   it('keeps the delete wording for a running copy, which really does delete what it wrote', () => {
-    for (const kind of ['copy', 'archiveEdit', 'createFolder', 'createFile', 'delete', 'rename'] as const) {
+    for (const kind of ['copy', 'archiveEdit', 'createFolder', 'createFile', 'delete', 'rename', 'tag'] as const) {
       expect(inFlightRollbackVariant(kind)).toBe('stopAndDelete')
     }
   })
@@ -85,12 +87,22 @@ describe('inFlightRollbackVariant', () => {
     // Two classifiers, one truth: whether the reversal removes files is a fact
     // about the OPERATION, not about when the user pressed the button.
     const DELETING = new Set<RollbackConfirmVariant>(['stopAndDelete', 'undoByDeleting'])
-    const kinds: OpKind[] = ['copy', 'move', 'delete', 'trash', 'rename', 'createFolder', 'createFile', 'archiveEdit']
+    const kinds: OpKind[] = [
+      'copy',
+      'move',
+      'delete',
+      'trash',
+      'rename',
+      'createFolder',
+      'createFile',
+      'archiveEdit',
+      'tag',
+    ]
     for (const kind of kinds) {
-      // `rename` is the one honest mismatch: nothing is renamed back mid-flight
-      // (a rename is one syscall), so the in-flight arm is the delete one it
-      // can never reach.
-      if (kind === 'rename') continue
+      // `rename` and `tag` are the honest mismatches: nothing of either is ever in
+      // flight (a rename is one syscall, a tag write one attribute per file), so the
+      // in-flight arm is the delete one they can never reach.
+      if (kind === 'rename' || kind === 'tag') continue
       expect(DELETING.has(inFlightRollbackVariant(kind))).toBe(DELETING.has(rollbackConfirmVariant(kind)))
     }
   })
@@ -123,6 +135,14 @@ describe('the reversal wording, one kind at a time', () => {
     expect(tString(reversalLabelKey(variant))).toBe('Putting the old names back')
     expect(tString(reversalTitleKey(variant), { count: 12, countText: formatInteger(12) })).toBe(
       'Putting 12 old names back…',
+    )
+  })
+
+  it('words undoing a tag change as putting the old tags back', () => {
+    const variant = rollbackConfirmVariant('tag')
+    expect(tString(reversalLabelKey(variant))).toBe('Putting the old tags back')
+    expect(tString(reversalTitleKey(variant), { count: 12, countText: formatInteger(12) })).toBe(
+      'Putting the old tags back on 12 files…',
     )
   })
 
@@ -167,6 +187,7 @@ describe('the running bar agrees with the question that raised it', () => {
     'createFolder',
     'createFile',
     'archiveEdit',
+    'tag',
   ]
 
   it.each(OPERATION_KINDS)('never promises a restore for %s and then deletes, or the reverse', (kind) => {
@@ -185,11 +206,11 @@ describe('the running bar agrees with the question that raised it', () => {
     expect(barDeletes).toBe(questionDeletes)
   })
 
-  it('gives each of the three reversals its own words, so two of them can’t read alike', () => {
-    const labels = (['undoByMovingBack', 'undoByDeleting', 'undoByRenamingBack'] as const).map((v) =>
-      tString(reversalLabelKey(v)),
+  it('gives each of the four reversals its own words, so two of them can’t read alike', () => {
+    const labels = (['undoByMovingBack', 'undoByDeleting', 'undoByRenamingBack', 'undoByRestoringTags'] as const).map(
+      (v) => tString(reversalLabelKey(v)),
     )
-    expect(new Set(labels).size).toBe(3)
+    expect(new Set(labels).size).toBe(4)
   })
 })
 

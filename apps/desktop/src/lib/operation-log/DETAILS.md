@@ -143,6 +143,7 @@ The arms:
 - copy / createFolder / createFile / archiveEdit → `undoByDeleting`
 - move / trash → `undoByMovingBack`
 - rename → `undoByRenamingBack`
+- tag → `undoByRestoringTags` (each file gets its prior Finder tags back; nothing moves or is deleted)
 - delete → `undoByDeleting`, unreachable (a permanent delete is gated as not-rollbackable, so no button appears on one).
   It's mapped anyway so a NEW `OpKind` surfaces as a compile error here rather than as a confidently wrong sentence in
   front of a user.

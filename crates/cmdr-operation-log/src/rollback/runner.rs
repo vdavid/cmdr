@@ -70,6 +70,21 @@ pub enum InverseAct<'a> {
         /// same-volume restore (a cross-volume target can never be self).
         force: bool,
     },
+    /// Replace extended attribute `name` on `path` with `value` (a tag write's undo,
+    /// verified to still carry what the write left). Never creates the file.
+    WriteXattr {
+        /// The id `volume` is registered under, so the panes showing the file can
+        /// read its tags again.
+        volume_id: &'a str,
+        /// The volume the file is on.
+        volume: &'a Arc<dyn Volume>,
+        /// The file.
+        path: &'a Path,
+        /// The attribute.
+        name: &'a str,
+        /// The value to put back.
+        value: &'a [u8],
+    },
 }
 
 /// Why a decided act didn't happen.

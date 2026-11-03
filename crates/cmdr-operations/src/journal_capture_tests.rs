@@ -628,6 +628,7 @@ fn bench_persist_throughput() {
             outcome: cmdr_operation_log::types::ItemOutcome::Done,
             overwrote: false,
             dest_identity: None,
+            tags: None,
         })
         .collect();
     let t = std::time::Instant::now();

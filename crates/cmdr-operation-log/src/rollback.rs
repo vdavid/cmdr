@@ -147,6 +147,8 @@ pub fn inverse_kind(kind: OpKind) -> OpKind {
         OpKind::Copy | OpKind::CreateFolder | OpKind::CreateFile | OpKind::ArchiveEdit => OpKind::Delete,
         OpKind::Move | OpKind::Trash => OpKind::Move,
         OpKind::Rename => OpKind::Rename,
+        // Writing the prior tags back is itself a tag write, so a tag undo undoes too.
+        OpKind::Tag => OpKind::Tag,
         // Delete is gated op-level (never rollbackable); its inverse is unreachable.
         OpKind::Delete => OpKind::Delete,
     }
@@ -169,6 +171,9 @@ enum InverseAction {
     /// Move the item back from where it ended up (dest) to its original (source):
     /// move, trash restore, rename-back.
     RestoreMove,
+    /// Write the file's prior Finder-tags value back, only while it still carries
+    /// the value the write left (a tag write).
+    RestoreTags,
 }
 
 /// Whether this row names a directory the operation CREATED rather than one it
@@ -205,6 +210,7 @@ fn inverse_action(kind: OpKind, entry_type: EntryType) -> Option<InverseAction> 
         OpKind::CreateFile | OpKind::ArchiveEdit => Some(InverseAction::RemoveFileIfUnchanged),
         OpKind::CreateFolder => Some(InverseAction::RemoveDirIfEmpty),
         OpKind::Move | OpKind::Trash | OpKind::Rename => Some(InverseAction::RestoreMove),
+        OpKind::Tag => Some(InverseAction::RestoreTags),
         // Delete is never rollbackable (gated before we reach items).
         OpKind::Delete => None,
     }
@@ -560,6 +566,7 @@ async fn reverse_item(
         InverseAction::RemoveCopyIfOriginalStays => remove_file_if_unchanged(volumes, runner, unit, true).await,
         InverseAction::RemoveDirIfEmpty => remove_dir_if_empty(volumes, runner, unit).await,
         InverseAction::RestoreMove => restore_move(volumes, runner, unit).await,
+        InverseAction::RestoreTags => restore_tags(volumes, runner, unit).await,
     }
 }
 
@@ -1005,6 +1012,7 @@ mod order;
 mod runner;
 mod self_collision;
 mod skips;
+mod tags;
 use bookkeeping::{InverseTotals, RunAcc, finalize_inverse, inverse_planned_item_count};
 pub use order::undo_order;
 use runner::ProgressStand;
@@ -1013,6 +1021,7 @@ use self_collision::is_self_collision;
 #[cfg(test)]
 use self_collision::{SelfCollision, SpellingTwin, classify_self_collision, listing_confirms_twin};
 pub use skips::{SkipBreakdown, SkipTally};
+use tags::restore_tags;
 
 // The end-to-end cells drive the write engine's real executor, so they live
 // beside it: `crates/cmdr-operations/src/rollback/planner_tests/`.

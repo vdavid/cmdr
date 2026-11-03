@@ -1,5 +1,5 @@
 use super::*;
-use crate::file_system::tags_io::{TagWriteError, apply_merge, clear_tags, read_for_merge, toggle_color};
+use crate::file_system::tags_io::{TagWriteError, TagWrites, apply_merge, clear_tags, read_for_merge, toggle_color};
 use crate::test_support::TestDir;
 use std::path::Path;
 
@@ -33,7 +33,7 @@ fn disk() -> Option<&'static str> {
 }
 
 async fn toggle(paths: &[String], color: u8) -> Result<TagToggleOutcome, TagWriteError> {
-    toggle_color(disk(), paths.to_vec(), color).await
+    toggle_color(disk(), paths.to_vec(), color, &mut TagWrites::default()).await
 }
 
 /// Puts `tags` straight on the file: a fixture, not the path under test.
@@ -51,7 +51,9 @@ async fn a_merge_writes_binary_plists_and_clearing_writes_the_empty_one() {
     let write = async |tags: Vec<TagRef>| {
         let (current, skipped) = read_for_merge(disk(), vec![path.clone()]).await;
         assert!(skipped.is_empty());
-        apply_merge(current, |_| tags.clone()).await.unwrap();
+        apply_merge(current, |_| tags.clone(), &mut TagWrites::default())
+            .await
+            .unwrap();
     };
 
     // Single color, and the raw xattr really is a binary plist.
@@ -108,9 +110,13 @@ async fn files_already_in_the_target_state_are_not_rewritten() {
     .unwrap();
 
     // Clearing what holds no tags writes nothing, and creates no attribute.
-    clear_tags(disk(), vec![path_str(&untagged), path_str(&cleared)])
-        .await
-        .unwrap();
+    clear_tags(
+        disk(),
+        vec![path_str(&untagged), path_str(&cleared)],
+        &mut TagWrites::default(),
+    )
+    .await
+    .unwrap();
     assert_eq!(xattr::get(&untagged, TAGS_XATTR).unwrap(), None, "no attribute appears");
     assert_eq!(
         xattr::get(&cleared, TAGS_XATTR).unwrap(),
@@ -139,7 +145,9 @@ async fn clearing_overwrites_a_value_it_cannot_decode() {
     let file = dir.join("f.txt");
     std::fs::write(&file, b"x").unwrap();
     xattr::set(&file, TAGS_XATTR, b"garbage").unwrap();
-    clear_tags(disk(), vec![path_str(&file)]).await.unwrap();
+    clear_tags(disk(), vec![path_str(&file)], &mut TagWrites::default())
+        .await
+        .unwrap();
     assert_eq!(
         xattr::get(&file, TAGS_XATTR).unwrap(),
         Some(encode_tags_plist(&[]).unwrap())

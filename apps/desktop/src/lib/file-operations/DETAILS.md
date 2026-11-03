@@ -523,10 +523,10 @@ the same on every surface.
   running move share the copy's arm: "this deletes every file the operation has written so far" over a red button, for a
   reversal that takes nothing away, pushes people onto Cancel — which is the choice that actually leaves their files
   split across two folders.
-- `undoByDeleting` / `undoByMovingBack` / `undoByRenamingBack`, for undoing a FINISHED operation from the history
-  dialog. Each names the inverse action, then admits the reversal may come out partial. They mirror the backend's
-  `inverse_kind`; the picker is `rollbackConfirmVariant` in `reversal-wording.ts`, and the reasoning behind the wording
-  is `#lib/operation-log/DETAILS.md` § "Decision: the confirmation is worded by the inverse".
+- `undoByDeleting` / `undoByMovingBack` / `undoByRenamingBack` / `undoByRestoringTags`, for undoing a FINISHED operation
+  from the history dialog. Each names the inverse action, then admits the reversal may come out partial. They mirror the
+  backend's `inverse_kind`; the picker is `rollbackConfirmVariant` in `reversal-wording.ts`, and the reasoning behind
+  the wording is `#lib/operation-log/DETAILS.md` § "Decision: the confirmation is worded by the inverse".
 
 **Two pickers, one vocabulary.** `inFlightRollbackVariant(kind)` answers for an operation still running and
 `rollbackConfirmVariant(kind)` for undoing a finished one; both live in `reversal-wording.ts` and the tests pin them to

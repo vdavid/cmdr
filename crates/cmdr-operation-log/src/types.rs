@@ -66,6 +66,9 @@ token_enum! {
         CreateFolder => "create_folder",
         CreateFile => "create_file",
         ArchiveEdit => "archive_edit",
+        /// Finder color tags changed on a set of files. Each row carries the file's
+        /// tag value before and after, so the undo writes the prior one back.
+        Tag => "tag",
     }
 }
 
@@ -327,7 +330,17 @@ mod tests {
 
         check!(
             OpKind,
-            [Copy, Move, Delete, Trash, Rename, CreateFolder, CreateFile, ArchiveEdit]
+            [
+                Copy,
+                Move,
+                Delete,
+                Trash,
+                Rename,
+                CreateFolder,
+                CreateFile,
+                ArchiveEdit,
+                Tag
+            ]
         );
         check!(ArchiveSubkind, [Compress, Edit, Extract]);
         check!(Initiator, [User, AiClient, Agent, AgentEdited]);

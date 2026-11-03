@@ -7,6 +7,8 @@
 
 use std::path::Path;
 
+use cmdr_fs::entry::TagsChange;
+
 use super::super::capture::compute_eligibility;
 use super::super::store::{OperationRow, RollbackUnit};
 use super::super::types::{EntryType, ExecutionStatus, ItemOutcome, OpKind, RowRole, SearchCoverage};
@@ -180,6 +182,11 @@ fn inverse_item_row(seq: i64, unit: &RollbackUnit, result: &ItemResult) -> Journ
         outcome,
         overwrote: false,
         dest_identity: None,
+        // A tag undo wrote `before` over `after`, so undoing IT swaps them back (redo).
+        tags: unit.tags.as_ref().map(|tags| TagsChange {
+            before: tags.after.clone(),
+            after: tags.before.clone(),
+        }),
     }
 }
 

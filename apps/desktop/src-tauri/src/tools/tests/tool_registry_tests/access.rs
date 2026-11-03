@@ -58,8 +58,9 @@ const EXPECTED_READ_CONTENTS_TOOL_NAMES: &[&str] = &["inspect_file", "image_fact
 /// starts the operation anyway would quietly break the rule.
 const EXPECTED_INITIATE_TOOL_NAMES: &[&str] = &["copy", "move", "compress", "delete", "rename", "operations_rollback"];
 
-/// The ONE written exception to "nothing writes without a person". David accepted it, including
-/// that `tag` has no undo, so a new name here is a new decision of his.
+/// The ONE written exception to "nothing writes without a person". David accepted it (`tag` is
+/// undone through `operations_rollback`, which a person confirms), so a new name here is a new
+/// decision of his.
 const EXPECTED_LIGHT_WRITE_TOOL_NAMES: &[&str] = &["tag", "mkdir", "mkfile"];
 
 /// Tools that run only after a person confirms an Ask.

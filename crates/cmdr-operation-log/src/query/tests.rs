@@ -113,6 +113,7 @@ fn leaf(seq: i64, dir: &str, name: &str, role: RowRole) -> JournalItem {
         outcome: ItemOutcome::Done,
         overwrote: false,
         dest_identity: None,
+        tags: None,
     }
 }
 

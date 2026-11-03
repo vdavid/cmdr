@@ -13882,7 +13882,20 @@ export type OcrHit = {
  *  identities but share `ArchiveEdit` here and are distinguished by
  *  [`ArchiveSubkind`].
  */
-export type OpKind = 'copy' | 'move' | 'delete' | 'trash' | 'rename' | 'createFolder' | 'createFile' | 'archiveEdit'
+export type OpKind =
+  | 'copy'
+  | 'move'
+  | 'delete'
+  | 'trash'
+  | 'rename'
+  | 'createFolder'
+  | 'createFile'
+  | 'archiveEdit'
+  /**
+   *  Finder color tags changed on a set of files. Each row carries the file's
+   *  tag value before and after, so the undo writes the prior one back.
+   */
+  | 'tag'
 
 /**
  *  Which of a group's ops the user kept, in whichever form is SMALL: a review that turned a few
