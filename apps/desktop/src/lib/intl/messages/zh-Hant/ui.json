@@ -39,6 +39,26 @@
   "@ui.copyBox.copy": {
     "sourceHash": "e21f935"
   },
+  "ui.findBar.previous": "上一個相符項目",
+  "@ui.findBar.previous": {
+    "sourceHash": "daa2f8c"
+  },
+  "ui.findBar.next": "下一個相符項目",
+  "@ui.findBar.next": {
+    "sourceHash": "825e5ab"
+  },
+  "ui.findBar.close": "關閉尋找",
+  "@ui.findBar.close": {
+    "sourceHash": "eb903c9"
+  },
+  "ui.findBar.matchPosition": "第 {currentText} 個，共 {totalText} 個",
+  "@ui.findBar.matchPosition": {
+    "sourceHash": "1f6ce86"
+  },
+  "ui.findBar.noMatches": "沒有相符項目",
+  "@ui.findBar.noMatches": {
+    "sourceHash": "2df01a0"
+  },
   "ui.copyBox.copied": "已複製",
   "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"

@@ -136,6 +136,18 @@
   "@commands.askCmdrNewChat.description": {
     "sourceHash": "957741b"
   },
+  "commands.askCmdrFind.label": "在對話中尋找",
+  "@commands.askCmdrFind.label": {
+    "sourceHash": "df9554c"
+  },
+  "commands.askCmdrFindNext.label": "對話中的下一個相符項目",
+  "@commands.askCmdrFindNext.label": {
+    "sourceHash": "1c2da9b"
+  },
+  "commands.askCmdrFindPrevious.label": "對話中的上一個相符項目",
+  "@commands.askCmdrFindPrevious.label": {
+    "sourceHash": "d28d025"
+  },
   "commands.feedbackSend.label": "傳送意見反應",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
