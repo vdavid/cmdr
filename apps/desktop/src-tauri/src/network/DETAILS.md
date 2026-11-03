@@ -30,6 +30,7 @@ of the app build.
   - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by four upgrade paths (startup, mount-time watcher, pane-open, manual "Connect directly"). Contains `shares_to_adopt` (the adopter pass's pick from the kernel mount table), `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by all three fire-and-forget auto-upgrade paths), `try_smb_upgrade`, the per-volume upgrade lock, and the bounded mount-identity read.
   - `smb_pane_upgrade.rs`: the pane-open upgrade. A pane landing on an OS-mounted share Cmdr hasn't upgraded tries the direct connection for that one share, behind a per-share cooldown (§ "A pane on an OS-mounted share tries the direct connection").
   - `smb_server_address.rs`: who a `statfs` server string is: what to dial (`resolve_server_address`, § "A server nothing has discovered is not dialed"), what to call it (`friendly_server_name`, `resolve_ip_to_hostname*`), and which saved credentials go with it (`get_keychain_password`, `system_keychain_aliases`). Shared by `smb_upgrade.rs` and `smb_connect_directly.rs`, so the auto and manual upgrade paths can't disagree about which server a mount is.
+  - `smb_share_label.rs`: what the UI calls a share ("private on Home NAS"), the one builder every surface calls (§ "Mount path disambiguation for same-name shares").
   - `smb_connect_failure.rs`: why an smb2 connect didn't get in, read by type. A `Refusal` (who the attempt went out as, and whether sign-in or the share said no, with the log advice for each) or an `UpgradeFailure` (read off a `FailedDial` plus `MountEvidence` by `of_dial`, § "This Mac refusing the route"); plus `UpgradeError` and `log_direct_connect_failure`. Shared by `share_access.rs` and both upgrade paths (§ "An auth rejection says what was actually rejected").
   - `smb_connect_directly.rs`: the manual "Connect directly" upgrade, with Cmdr's stored credentials, the sign-in sheet's, or Finder's saved password. Behind the three `upgrade_to_smb_volume*` commands, the MCP `upgrade_smb_to_direct` tool, and the indexer's `ensure_direct_smb`. Owns `UpgradeResult` (§ "Connect directly answers a gone volume").
   - `smb_direct_switch.rs`: the per-share "Use Cmdr's fast direct connection" switch, read and set by volume id for the volume switcher. Behind `get_smb_direct_connection_enabled` / `set_smb_direct_connection_enabled`. Owns `DirectConnectionSwitch` (§ "The per-share direct-connection switch").
@@ -284,7 +285,8 @@ The password is fed to `gio mount` through the child's **stdin** (`run_gio_mount
 `known_shares.rs` uses an in-memory `Mutex<KnownSharesStore>` as single source of truth. Disk is a snapshot of the
 in-memory state, so concurrent mutations are safe (the mutex serializes all in-memory updates).
 
-`manual_servers.rs` uses a file-based read-modify-write pattern (no in-memory cache). A global `STORE_LOCK` mutex
+`manual_servers.rs` uses a file-based read-modify-write pattern (no in-memory cache of the entries; only the typed
+names are mirrored, for share labels, `manual_servers_names.rs`). A global `STORE_LOCK` mutex
 protects the entire read-modify-write cycle to prevent TOCTOU races where two threads could read the same disk state
 and one write clobbers the other.
 
@@ -339,6 +341,13 @@ detects the collision before calling `NetFSMountURLSync`. `disambiguated_mount_p
 already taken by a different server (via `statfs`), and if so picks `/Volumes/{share}-1`, `-2`, etc. (Finder's
 convention) and passes it as an explicit mount point to `NetFSMountURLSync`. The volume switcher shows
 `{share} on {server}` for SMB mounts so the user knows which server each volume belongs to.
+
+That label has one builder, `smb_share_label.rs` (mounted rows, saved rows, favorites, a moved share, and Ask Cmdr's
+facts all call it). The server half is the Name typed in the Add server sheet when a person named the server ("private
+on Home NAS", #913), matched by `SmbServer::is` (same port, same machine), else the address with the port off 445. The
+names come from `manual_servers_names.rs`, an in-memory mirror of the app's store refreshed on every read and write of
+that file (never a test's temp path), since the mount-table volume list has no `AppHandle` to read the file with.
+Finder's Get Info still shows the address.
 
 "Different server" is an identity comparison (`server_identity::same_machine`), never a string compare: `statfs`
 may report the existing mount as `Naspolya._smb._tcp.local` while we mount by `192.168.1.111`, and a string mismatch

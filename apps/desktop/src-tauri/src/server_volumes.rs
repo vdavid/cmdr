@@ -329,7 +329,7 @@ fn fold_saved_smb_shares(
 /// What a saved SMB share is called while unmounted: the mount row's own spelling
 /// (`volumes/mounts.rs::network_name`), so a share reads the same greyed as it does mounted.
 fn saved_share_name(share: &crate::network::known_shares::KnownNetworkShare) -> String {
-    format!("{} on {}", share.share_name, share.server_name)
+    crate::network::smb_share_label::saved(share)
 }
 
 /// The switcher's name for a SAVED place nobody has connected (an SFTP, WebDAV, S3, or NFS
