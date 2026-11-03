@@ -314,6 +314,18 @@ pub fn records<'a>(buf: &'a [u8], count: usize, req: &Request) -> Records<'a> {
     }
 }
 
+/// The bytes of a `u64` buffer the kernel wrote records into, for [`records`]
+/// and [`decode_record`]. Callers hand the kernel `u64`s so the allocation is
+/// 8-aligned; the decoder reads bytes.
+#[must_use]
+pub fn words_as_bytes(words: &[u64]) -> &[u8] {
+    // SAFETY: `u8` has alignment 1 and no invalid bit patterns, `words` is fully
+    // initialized, and the byte slice covers exactly `words`' memory and borrows
+    // it, so nothing can write to it meanwhile. Miri runs this
+    // (`desktop-rust-miri`).
+    unsafe { std::slice::from_raw_parts(words.as_ptr().cast::<u8>(), size_of_val(words)) }
+}
+
 /// The iterator [`records`] returns.
 #[derive(Debug)]
 pub struct Records<'a> {

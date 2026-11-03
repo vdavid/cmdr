@@ -192,6 +192,46 @@ jobs:
           if-no-files-found: ignore
 
   # ===========================================
+  # Miri (undefined behavior in unsafe Rust)
+  # ===========================================
+  # The modules whose `unsafe` is pure Rust, interpreted by Miri on the pinned nightly
+  # (`checks/desktop-rust-miri.go` lists them). macOS because every target is the macOS build
+  # of its module. About a minute warm; the cold part is Miri building its own sysroot.
+  miri:
+    name: Miri
+    runs-on: macos-26
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
+      # Keyed per job like the others here; it holds `target/miri/`, Miri's own build.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Install nightly toolchain with Miri
+        run:
+          rustup toolchain install "$(./scripts/check/check --print-nightly)" --profile minimal --component
+          miri,rust-src
+
+      - name: Run Miri
+        run: ./scripts/check/check --check desktop-rust-miri --ci
+
+  # ===========================================
   # Pre-release gates
   # ===========================================
   # The checks `release.sh` runs before every tag (`IsPreRelease`: clippy with mimalloc on

@@ -538,7 +538,11 @@ The layout rules, each one a bug a hand-rolled parser had:
 
 `kernel_records_decode_to_what_lstat_reports` ties the rules to the real ABI (a temp dir on APFS, every field against
 `symlink_metadata`, plus one `getattrlist` by path); the hand-built cells cover the shapes a healthy APFS never
-produces. `ATTR_CMN_ERROR` is declared here because `libc` doesn't carry it.
+produces, and Miri runs them (`desktop-rust-miri`). `ATTR_CMN_ERROR` is declared here because `libc` doesn't carry it.
+
+`words_as_bytes` is the module's one `unsafe`: callers hand the kernel a `u64` buffer so the allocation is 8-aligned,
+and it views those words as the bytes the decoder reads. It lives here, ❌ never as a private copy in a caller, so
+Miri's test of it covers every caller.
 
 ## Retiring cached read connections, and deleting a database (`sqlite_util`)
 

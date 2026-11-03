@@ -2063,8 +2063,9 @@ Checks by app and tech:
   `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped because
   `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps (CI-only), fuzz
   (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a target loosens
-  its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding), jscpd (the clone
-  list, on a per-file-pair ratchet), log-error-macro, macos-availability (no call to a selector newer than the bundle's
+  its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding), miri (slow, macOS
+  only, CI every six days: the modules whose `unsafe` is pure Rust, under Miri; § "Miri"), jscpd (the clone list, on a
+  per-file-pair ratchet), log-error-macro, macos-availability (no call to a selector newer than the bundle's
   `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework in the BUILT binary's load
   commands newer than that same floor, which is the half no runtime gate can save; § "macOS framework floor"),
   sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide shared page cache
@@ -2359,8 +2360,8 @@ lacks it (reading `rustup toolchain list`, rather than classifying a cargo failu
 nightly toolchain" step asks the check tool for the version via `./scripts/check/check --print-nightly`, so the date
 exists in exactly one place. Renovate can't track it: dated Rust nightlies aren't a Renovate datasource (there's no
 registry of nightly dates to query, and the `rust`/`rust-version` datasources cover stable releases only), so the bump
-is a maintenance task instead, listed in `docs/maintenance.md`. The fuzz lane (`desktop-rust-fuzz.go`) builds on the
-same pin, so one bump moves both.
+is a maintenance task instead, listed in `docs/maintenance.md`. The fuzz lane (`desktop-rust-fuzz.go`) and the Miri lane
+(`desktop-rust-miri.go`) build on the same pin, so one bump moves all three.
 
 ### Bumping the pinned nightly
 
@@ -2368,9 +2369,31 @@ same pin, so one bump moves both.
    exists: `curl -sI https://static.rust-lang.org/dist/<YYYY-MM-DD>/channel-rust-nightly.toml` returns `200`.
 2. Edit `nightlyToolchain` in `checks/desktop-rust-cargo-udeps.go`. That's the only place the date appears.
 3. Run `pnpm check cargo-udeps` (it installs the toolchain if needed) and fix whatever new lints the newer nightly
-   surfaces, then `CMDR_FUZZ_SECONDS=10 pnpm check fuzz` to prove the fuzz targets still build on it. Nightly lints are
-   usually genuine (the `unused_imports` tightening flagged real redundant imports), so fix the code rather than
-   reaching for an `allow`.
+   surfaces, then `CMDR_FUZZ_SECONDS=10 pnpm check fuzz` to prove the fuzz targets still build on it, and
+   `pnpm check miri` (on a Mac; it adds the `miri` and `rust-src` components itself). Nightly lints are usually genuine
+   (the `unused_imports` tightening flagged real redundant imports), so fix the code rather than reaching for an
+   `allow`. A newer Miri can also find undefined behavior the old one missed: that's a real bug to fix, never a reason
+   to stay on the old nightly.
+
+### Miri
+
+`desktop-rust-miri` runs `cargo miri test` over `miriTargets`: a package and a module path each, with a `why`. Miri
+stops at undefined behavior, and its first run found some (`crates/cmdr-fs/DETAILS.md` § "Mapped-file faults").
+
+- **Scope is the modules whose `unsafe` is pure Rust.** Miri can't cross FFI, and most of Cmdr's `unsafe` is FFI
+  (AppKit, CoreFoundation, libc, Mach). The site-by-site classification is on GitHub issue #887. To add a module, add a
+  `miriTargets` entry; for pure-Rust `unsafe` whose only callers are FFI callbacks, write a test that hands it
+  Rust-built memory, as `mapped_file_faults/macos_test.rs` does with Mach-O headers.
+- **A test in a listed module that reaches FFI or the file system carries `#[cfg_attr(miri, ignore = "<why>")]`**, so
+  the rest of its module still runs. Miri's default isolation refuses file-system calls, and the lane keeps it on.
+- **`-Zmiri-strict-provenance`**: an integer-to-pointer cast is an error, since Miri can miss a pointer bug behind one.
+- **A target selecting no test fails the lane**, the same zero-is-red rule the disk-image lane follows, so a renamed
+  module can't pass on nothing.
+- **Plain `cargo miri test`, not nextest.** Every test process pays Miri's startup (about 8 s here), so nextest's
+  process-per-test turned a 15 s CPU run into 340 s and tripped the 8 s per-test cap (measured on an M1 Max,
+  2026-11-03). The lane parses libtest's `test <path> ... ok` lines instead.
+- **macOS only, `-p` per package.** Every target is the macOS build of its module. Miri builds into `target/miri/` on
+  its own toolchain, so a `-p` selection rebuilds nothing the stable lanes share.
 
 **Decision**: `cargo-deny` checks advisories over the macOS graph only; `osv-scanner` sweeps every lockfile. **Why**:
 Tauri's Linux GTK3 stack carries unmaintained-crate advisories no macOS build links, which once got the whole advisory

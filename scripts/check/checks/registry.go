@@ -123,6 +123,22 @@ var AllChecks = []CheckDefinition{
 		Inputs:      inputs(rustCompileInputs, []string{"fuzz/**"}),
 		Run:         RunFuzz,
 	},
+	// Miri over the modules whose `unsafe` is pure Rust (`miriTargets`), on the pinned
+	// nightly. About a minute warm, deterministic, and macOS-only, so it's slow-lane:
+	// `--include-slow` runs it locally, and its own macOS job in `slow-checks.yml` runs it
+	// every six days. It builds into `target/miri/`, so it holds no lock on the shared
+	// build directory.
+	{
+		ID:          "desktop-rust-miri",
+		CpuWeight:   2,
+		Nickname:    "miri",
+		DisplayName: "Miri (undefined behavior in unsafe Rust)",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		IsSlow:      true,
+		Inputs:      rustCompileInputs,
+		Run:         RunMiri,
+	},
 	{
 		ID:        "desktop-rust-module-cycles",
 		CpuWeight: 4,

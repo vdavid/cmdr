@@ -60,8 +60,7 @@ pub fn volume_attr_support(path: &Path) -> io::Result<VolumeAttrSupport> {
     if rc != 0 {
         return Err(io::Error::last_os_error());
     }
-    // SAFETY: viewing the 512 initialized bytes of `buf` as bytes.
-    let b = unsafe { std::slice::from_raw_parts(buf.as_ptr().cast::<u8>(), 512) };
+    let b = cmdr_fs::attr_buf::words_as_bytes(&buf);
     // A volume-attributes buffer, not a record `cmdr_fs::attr_buf` decodes: u32
     // length, then vol_capabilities_attr_t (capabilities[4] + valid[4], u32 each),
     // then vol_attributes_attr_t (validattr + nativeattr, attribute_set_t each).

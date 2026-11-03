@@ -360,6 +360,31 @@ fn a_record_decodes_from_a_buffer_longer_than_it() {
     assert_eq!(decoded.name, None, "an unrequested name is absent");
 }
 
+/// The callers' `u64` buffers decode byte for byte: what the kernel wrote into
+/// the words is exactly what the decoder reads. Miri runs this one.
+#[test]
+fn a_record_in_a_word_buffer_decodes_through_its_bytes() {
+    let request = Request::new(&[Attr::AddedTime]);
+    let bytes = rec(libc::ATTR_CMN_RETURNED_ATTRS | libc::ATTR_CMN_ADDEDTIME, 0, 0)
+        .ts(1_750_000_000, 0)
+        .build();
+    let mut words = vec![0u64; bytes.len().div_ceil(8) + 1];
+    for (word, chunk) in words.iter_mut().zip(bytes.chunks(8)) {
+        let mut padded = [0u8; 8];
+        padded[..chunk.len()].copy_from_slice(chunk);
+        *word = u64::from_ne_bytes(padded);
+    }
+
+    let viewed = words_as_bytes(&words);
+    assert_eq!(viewed.len(), words.len() * 8);
+    assert_eq!(&viewed[..bytes.len()], bytes.as_slice());
+    let decoded = decode_record(viewed, &request).expect("decodes");
+    assert_eq!(
+        decoded.added_time.and_then(Timespec::secs_since_epoch),
+        Some(1_750_000_000)
+    );
+}
+
 #[test]
 fn records_walks_back_to_back_records_and_stops_at_the_first_bad_one() {
     let file = |name: &str| {
@@ -532,6 +557,7 @@ fn the_index_request_decodes_what_its_own_parser_reads() {
 /// one proves the rules agree with the kernel, on whatever filesystem the temp
 /// dir is (APFS on every Mac this runs on).
 #[test]
+#[cfg_attr(miri, ignore = "calls `getattrlistbulk`, which Miri can't cross")]
 fn kernel_records_decode_to_what_lstat_reports() {
     use std::collections::HashMap;
     use std::ffi::CString;
@@ -564,8 +590,7 @@ fn kernel_records_decode_to_what_lstat_reports() {
         )
     };
     assert_eq!(n, 5, "one call returns all five entries");
-    // SAFETY: viewing the `u64` buffer's initialized bytes as bytes.
-    let bytes = unsafe { std::slice::from_raw_parts(buf.as_ptr().cast::<u8>(), buf_len) };
+    let bytes = words_as_bytes(&buf);
 
     let decoded: HashMap<Vec<u8>, Record<'_>> = records(bytes, 5, &LISTER)
         .map(|r| {
@@ -642,10 +667,10 @@ fn kernel_records_decode_to_what_lstat_reports() {
         )
     };
     assert_eq!(rc, 0);
-    // SAFETY: viewing the 64 initialized bytes of `one` as bytes.
-    let one = unsafe { std::slice::from_raw_parts(one.as_ptr().cast::<u8>(), 64) };
     assert_eq!(
-        decode_record(one, &added_only).expect("decodes").added_time,
+        decode_record(words_as_bytes(&one), &added_only)
+            .expect("decodes")
+            .added_time,
         decoded[b"small.txt".as_slice()].added_time
     );
 }

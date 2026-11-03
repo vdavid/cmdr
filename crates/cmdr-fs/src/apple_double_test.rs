@@ -48,6 +48,7 @@ fn a_name_without_the_prefix_is_never_a_sidecar() {
 
 /// The probe asks the volume only when a `._` name turns up, and once per device.
 #[test]
+#[cfg_attr(miri, ignore = "stats the sibling, which Miri's isolation refuses")]
 fn the_rule_probes_lazily_and_once_per_device() {
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -76,6 +77,7 @@ fn the_rule_probes_lazily_and_once_per_device() {
 /// `getattrlist`, 2026-10-12).
 #[cfg(target_os = "macos")]
 #[test]
+#[cfg_attr(miri, ignore = "calls `getattrlist`, which Miri can't cross")]
 fn the_boot_volume_keeps_no_sidecars() {
     assert_eq!(native_xattrs(Path::new("/")), Some(true));
     assert!(!volume_keeps_sidecars(Path::new("/")));
@@ -86,12 +88,14 @@ fn the_boot_volume_keeps_no_sidecars() {
 /// `getattrlist`, 2026-10-12).
 #[cfg(target_os = "macos")]
 #[test]
+#[cfg_attr(miri, ignore = "calls `getattrlist`, which Miri can't cross")]
 fn devfs_reports_no_native_xattrs() {
     assert_eq!(native_xattrs(Path::new("/dev")), Some(false));
     assert!(volume_keeps_sidecars(Path::new("/dev")));
 }
 
 #[test]
+#[cfg_attr(miri, ignore = "calls `getattrlist`, which Miri can't cross")]
 fn an_unreadable_path_keeps_no_sidecars() {
     assert!(!volume_keeps_sidecars(Path::new("/definitely/not/a/path/cmdr")));
 }

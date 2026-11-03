@@ -186,6 +186,7 @@ mod macos_process {
     use super::super::{macos, prepare};
 
     #[test]
+    #[cfg_attr(miri, ignore = "registers with dyld, which Miri can't cross")]
     fn this_binarys_code_and_libsystem_are_images_once_prepared() {
         prepare();
         let own_code = this_binarys_code_and_libsystem_are_images_once_prepared as *const () as u64;
@@ -199,6 +200,7 @@ mod macos_process {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore = "registers with dyld, which Miri can't cross")]
     fn a_read_only_mapping_of_a_plain_file_is_one_recover_would_take() {
         prepare();
         let mut file = tempfile::tempfile().expect("a temp file");
@@ -225,6 +227,7 @@ mod macos_process {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore = "registers with dyld, which Miri can't cross")]
     fn a_heap_address_is_not_one_recover_would_take() {
         prepare();
         let boxed = Box::new([0u8; 64]);

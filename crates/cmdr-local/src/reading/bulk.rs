@@ -168,7 +168,7 @@ fn list(
                 });
             }
         };
-        for record in attr_buf::records(as_bytes(&buf), count, &LISTING) {
+        for record in attr_buf::records(attr_buf::words_as_bytes(&buf), count, &LISTING) {
             let record = record.map_err(|bad| Failure::Restart(Restart::BadRecord(bad)))?;
             let entry = entry_from_record(&record, path, dot_hidden, added).map_err(Failure::Restart)?;
             if let Some(tally) = tally {
@@ -196,14 +196,6 @@ fn kernel_batch(dir: &File, buf: &mut [u64]) -> io::Result<usize> {
         )
     };
     usize::try_from(count).map_err(|_| io::Error::last_os_error())
-}
-
-/// The bytes of a `u64` buffer.
-fn as_bytes(buf: &[u64]) -> &[u8] {
-    // SAFETY: `u8` has alignment 1 and no invalid bit patterns, `buf` is fully
-    // initialized, and the byte slice covers exactly `buf`'s memory and borrows
-    // it, so nothing can write to it meanwhile.
-    unsafe { std::slice::from_raw_parts(buf.as_ptr().cast::<u8>(), size_of_val(buf)) }
 }
 
 /// The attributes an entry is built from, present only when every one the
@@ -388,7 +380,7 @@ pub(super) fn added_at_by_path(path: &Path) -> Option<u64> {
     if rc != 0 {
         return None;
     }
-    attr_buf::decode_record(as_bytes(&buf), &ADDED_TIME)
+    attr_buf::decode_record(attr_buf::words_as_bytes(&buf), &ADDED_TIME)
         .ok()?
         .added_time?
         .secs_since_epoch()

@@ -80,6 +80,14 @@ libFuzzer targets for the ADB, WebDAV, S3, NFS, archive, PDF, and image parsers 
 workspace, pinned nightly). `pnpm check fuzz` runs every target for `CMDR_FUZZ_SECONDS` (default 60); CI runs it in
 `slow-checks.yml`. Targets, adding one, and the reproduce-and-fix loop: `fuzz/DETAILS.md`.
 
+### Miri (undefined behavior in `unsafe` Rust)
+
+Miri interprets tests and stops at undefined behavior a native run executes silently: an out-of-bounds read, a reference
+outliving or overreaching what it borrows, a misaligned access, a data race. It can't cross FFI, and most of Cmdr's
+`unsafe` is FFI, so `pnpm check miri` runs only the modules whose `unsafe` is pure Rust, on the pinned nightly (macOS,
+slow lane, and its own job in `slow-checks.yml`). The scope, adding a module, and marking a test that reaches FFI:
+`scripts/check/checks/DETAILS.md` § "Miri".
+
 ### `cargo-mutants` (mutation testing)
 
 Not in Cargo.toml: install with `cargo install --locked cargo-mutants`. Use ad-hoc on hot-spot modules to find behavior

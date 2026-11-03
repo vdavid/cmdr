@@ -109,6 +109,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-cargo-machete":     "handed each member's directory (it walks dirs, not the cargo graph)",
 	"desktop-rust-cargo-udeps":       "`--workspace` via CargoSelectionArgs",
 	"desktop-rust-fuzz":              "`cargo fuzz` in `fuzz/`, a crate outside the workspace that takes four members by path (`cmdr-adb`, `cmdr-archive`, `cmdr-s3`, `cmdr-webdav`); a targeted smoke, not a sweep",
+	"desktop-rust-miri":              "`-p` per member named in `miriTargets` (today `cmdr-fs`), `--lib`, narrowed to the modules whose `unsafe` is pure Rust; a targeted lane on its own toolchain and target dir, not a sweep",
 	"desktop-rust-module-cycles":     "every first-party library member (`kind = app` with a `src/lib.rs`), one `--lib` graph each; a bin-only tool has no library graph and the vendored fork's module layout isn't ours to ratchet",
 	"desktop-rust-tests":             "`--workspace` via HostCargoLaneArgs",
 	"nextest-filter-coverage":        "`--workspace` via HostCargoLaneArgs, listing rather than running, so it sees exactly the tests `desktop-rust-tests` does",
