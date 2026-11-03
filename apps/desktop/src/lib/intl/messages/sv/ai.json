@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Sök med vanliga ord</b>: texten du skriver, eller det som ett anslutet AI-verktyg frågar efter när du har slagit på MCP-direktläge",
+  "ai.cloudConsent.search": "<b>Sök med vanliga ord</b>: texten du skriver",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>Markera med en beskrivning</b>: det du skriver, plus upp till 240 namn från den aktuella mappen",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "I en chatt som du har startat kan Ask Cmdr också sköta appen åt dig: gå till mappar, markera, sortera, öppna flikar och dialoger och ansluta till en plats du har sparat. Att kopiera, flytta, komprimera, radera, byta namn och ångra en åtgärd öppnar varje gång en dialog eller redigerare där du bekräftar, och ingenting händer förrän du gör det. Innan Ask Cmdr öppnar en fil, ändrar en inställning (utom hur Cmdr ser ut), avslutar, matar ut en enhet, tar bort en server eller ändrar indexeringen frågar Ask Cmdr dig först. Att skapa en namngiven mapp eller fil och att tagga filer sker direkt utan någon fråga, och taggar går inte att ångra. Namnbyten och upprensningar som Ask Cmdr förbereder som en plan väntar på ditt godkännande.",
+  "ai.cloudConsent.askCmdr.actions": "I en chatt som du har startat kan Ask Cmdr också sköta appen åt dig: gå till mappar, markera, sortera, öppna flikar och dialoger och ansluta till en plats du har sparat. Att kopiera, flytta, komprimera, radera, byta namn och ångra en åtgärd öppnar varje gång en dialog eller redigerare där du bekräftar, och ingenting händer förrän du gör det. Innan Ask Cmdr öppnar en fil, ändrar en inställning (utom hur Cmdr ser ut), avslutar, matar ut en enhet, tar bort en server eller ändrar indexeringen frågar Ask Cmdr dig först. Att skapa en namngiven mapp eller fil och att tagga filer sker direkt utan någon fråga, och du kan ångra en ändring av taggar. Namnbyten och upprensningar som Ask Cmdr förbereder som en plan väntar på ditt godkännande.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr skriver anteckningar om dig: hur du gillar att ha saker ordnade, vad du har tackat nej till förut, och allt du ber den komma ihåg. Anteckningarna följer med varje meddelande du skickar, så länge de finns, och de kan innehålla text som Cmdr känt igen inuti dina bilder. Du kan läsa dem, eller radera dem, när som helst i inställningarna för Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {

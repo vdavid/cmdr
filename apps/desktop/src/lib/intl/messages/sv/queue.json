@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {Kopierar} move {Flyttar} delete {Raderar} trash {Flyttar till papperskorgen} rename {Byter namn} create_folder {Skapar mapp} create_file {Skapar fil} archive_edit {Redigerar arkiv} compress {Komprimerar} other {Arbetar}}",
+  "queue.row.label": "{type, select, copy {Kopierar} move {Flyttar} delete {Raderar} trash {Flyttar till papperskorgen} rename {Byter namn} create_folder {Skapar mapp} create_file {Skapar fil} archive_edit {Redigerar arkiv} compress {Komprimerar} tag {Ändrar taggar} other {Arbetar}}",
   "@queue.row.label": {
-    "sourceHash": "3c8e776"
+    "sourceHash": "b051663"
   },
   "queue.row.reversalMovingBack": "Flyttar tillbaka filerna",
   "@queue.row.reversalMovingBack": {
@@ -30,6 +30,10 @@
   "queue.row.reversalRenamingBack": "De gamla namnen återställs",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalRestoringTags": "Återställer de gamla taggarna",
+  "@queue.row.reversalRestoringTags": {
+    "sourceHash": "1b063e8"
   },
   "queue.row.reversalInFolder": "i {folder}",
   "@queue.row.reversalInFolder": {
