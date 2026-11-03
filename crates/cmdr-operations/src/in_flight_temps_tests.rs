@@ -443,6 +443,12 @@ fn compaction_shrinks_the_log_without_forgetting_what_is_still_in_flight() {
 /// an empty log, and the next launch forgets every record, an aside holding the
 /// user's original included. With the rename, a kill at any point leaves either
 /// the whole old log or the whole new one, and appends after it reach the new.
+///
+/// The test holds the original log open rather than comparing inode numbers:
+/// the churn compacts several times, and a later compaction's scratch file can
+/// reuse the freed original inode (seen on Linux CI), so equal numbers proved
+/// nothing. A held file's inode can't be reused, so its link count says whether
+/// the path still names it.
 #[cfg(unix)]
 #[test]
 fn compaction_swaps_in_a_whole_new_log_rather_than_emptying_the_old_one() {
@@ -453,7 +459,7 @@ fn compaction_swaps_in_a_whole_new_log_rather_than_emptying_the_old_one() {
     std::fs::create_dir_all(&data_dir).unwrap();
     let log_path = data_dir.join(STORE_FILENAME);
     let ledger = Ledger::recording_in(&data_dir);
-    let original_log = std::fs::metadata(&log_path).unwrap().ino();
+    let original_log = std::fs::File::open(&log_path).unwrap();
 
     let state = state(&ledger);
     let home = || Some(RecordHome::volume_space("in-flight-temps-test-nas-swap"));
@@ -468,10 +474,19 @@ fn compaction_swaps_in_a_whole_new_log_rather_than_emptying_the_old_one() {
     track_temp(&state, home(), &after_compaction);
     ledger.flush_log();
 
-    assert_ne!(
-        std::fs::metadata(&log_path).unwrap().ino(),
-        original_log,
+    assert_eq!(
+        original_log.metadata().unwrap().nlink(),
+        0,
         "compaction must rename a new log into place, not empty and refill the old one"
+    );
+    let first_churned = "/small-file-0000.txt";
+    assert!(
+        std::io::read_to_string(&original_log).unwrap().contains(first_churned),
+        "the replaced log stays whole: it still holds the records written before the swap"
+    );
+    assert!(
+        !std::fs::read_to_string(&log_path).unwrap().contains(first_churned),
+        "the path now reads the compacted log, without the churn that already landed"
     );
     let replayed: Vec<PathBuf> = read_recorded(&log_path)
         .iter()
