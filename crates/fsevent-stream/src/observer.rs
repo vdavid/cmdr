@@ -36,13 +36,20 @@ pub fn create_oneshot_observer(
     interest: CFRunLoopActivity,
     tx: Sender<CFRunLoopActivity>,
 ) -> CFRunLoopObserver {
-    let ctx = Box::into_raw(Box::new(CFRunLoopObserverContext {
+    // On the stack: `CFRunLoopObserverCreate` copies the struct out, so a boxed one leaked.
+    let mut ctx = CFRunLoopObserverContext {
         version: 0,
         info: Box::into_raw(Box::new(ObserverContextInfo { interest, tx })).cast(),
         retain: None,
         release: Some(release_observer_ctx),
         copyDescription: None,
-    }));
+    };
+    // SAFETY: `ctx` is a valid, initialized `CFRunLoopObserverContext` for the duration of the
+    // call, and CF copies its fields rather than keeping the pointer. With `retain` NULL, the
+    // observer takes over the boxed `info` and calls `release_observer_ctx` on it exactly once,
+    // when the observer is deallocated. `CFRunLoopObserverCreate` returns a +1 reference (Create
+    // rule), which `wrap_under_create_rule` adopts, so dropping the wrapper is the matching
+    // `CFRelease` (it also asserts the ref isn't NULL, which only allocation failure produces).
     unsafe {
         CFRunLoopObserver::wrap_under_create_rule(CFRunLoopObserverCreate(
             kCFAllocatorDefault,
@@ -50,7 +57,30 @@ pub fn create_oneshot_observer(
             0,
             0,
             observer_callback,
-            ctx,
+            &mut ctx,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::mpsc::{channel, RecvTimeoutError};
+    use std::time::Duration;
+
+    use core_foundation::runloop::kCFRunLoopBeforeWaiting;
+
+    use super::create_oneshot_observer;
+
+    /// The observer owns its info: dropping the last reference releases it (and with it the
+    /// sender), so a receiver waiting on a dead observer sees a disconnect instead of hanging.
+    #[test]
+    fn dropping_the_observer_releases_its_context() {
+        let (tx, rx) = channel();
+        let observer = create_oneshot_observer(kCFRunLoopBeforeWaiting, tx);
+        drop(observer);
+        assert_eq!(
+            rx.recv_timeout(Duration::from_secs(5)),
+            Err(RecvTimeoutError::Disconnected)
+        );
     }
 }
