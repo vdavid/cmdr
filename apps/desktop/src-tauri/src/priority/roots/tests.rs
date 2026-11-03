@@ -376,12 +376,18 @@ fn a_protected_folder_is_taken_on_trust_while_the_fda_gate_is_pending() {
     );
     assert!(!protected.exists(), "the fixture must not actually exist");
 
-    let mut pending = inputs(&real_home);
+    // Only the favorite sits in the real home. Ranked over the real home, the granted
+    // pass also reads the real standard folders and stats every `~/Library/CloudStorage`
+    // domain, and a busy or
+    // disconnected File Provider (a phone's, say) held it past nextest's 8 s cap
+    // under a loaded full run (2026-11-03; 3.3 s even alone, a few ms on a temp home).
+    let (_dir, home) = home_with("roots_protected_on_trust", &[]);
+    let mut pending = inputs(&home);
     pending.favorites = vec![protected.clone()];
     pending.fda_pending = true;
     assert!(rank_roots(&pending, &all_local).contains(&protected));
 
-    let mut granted = inputs(&real_home);
+    let mut granted = inputs(&home);
     granted.favorites = vec![protected.clone()];
     assert!(
         !rank_roots(&granted, &all_local).contains(&protected),
