@@ -337,3 +337,8 @@ All (uk) unless noted.
   `pt-BR`. Point it at `_ignored/i18n/pt-BR/`. (pt)
 - Concept `show`: "Cmdr shows how to unpin some" (`settings.behavior.serversPinHintSeen.description`) is the explain
   sense, yet it matched Show; consider `notMatch` "shows how". (hu, vi, zh, zh-Hant)
+- Concept `upgrade` (a Cmdr license) matched "upgrade your plan" in `askCmdr.error.modelNotInPlan.*`, which upgrades a
+  plan with the AI provider; I added `notMatch` "upgrade your plan" and the new concept `ai-plan`. A future "upgrade"
+  about a provider plan needs the same exclusion, so consider widening `ai-plan` to own it. (all)
+- `askCmdr.error.modelNotInPlan.*` says "in Settings" while its sibling `askCmdr.error.requestTooLarge.*` says "in
+  settings"; pick one casing for the family. (all)

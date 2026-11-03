@@ -172,6 +172,12 @@
     "confidence": "high",
     "sources": "macOS 27.0 live loctable sweep (feature(s) → функция/функции 200+, возможности 9); MS (feature → функция; AI → ИИ)"
   },
+  "ai-plan": {
+    "chosen": "тариф",
+    "confidence": "high",
+    "forms": "upgrade your plan → перейти на более высокий тариф; your {provider} plan → ваш тариф у поставщика {provider}",
+    "sources": "MS data plan → тарифный план; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "поставщик",
     "accept": ["поставщик"],

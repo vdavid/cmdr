@@ -721,6 +721,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.modelNotInPlan.named": "A csomagod a szolgáltatónál ({provider}) nem tartalmazza ezt a modellt. Válassz másik modellt a beállításokban, vagy bővítsd a csomagodat.",
+  "@askCmdr.error.modelNotInPlan.named": {
+    "sourceHash": "4de572a"
+  },
+  "askCmdr.error.modelNotInPlan.unnamed": "A csomagod ennél az AI-szolgáltatónál nem tartalmazza ezt a modellt. Válassz másik modellt a beállításokban, vagy bővítsd a csomagodat.",
+  "@askCmdr.error.modelNotInPlan.unnamed": {
+    "sourceHash": "de08c60"
+  },
   "askCmdr.error.requestTooLarge.named": "{provider} ezt elutasította: a csomagod korlátja kisebb, mint a Cmdr egyetlen kérése, mert az mindig tartalmazza a Cmdr utasításait. Egy rövidebb üzenet nem segít. Válts nagyobb csomagra a szolgáltatónál ({provider}), vagy válassz másik szolgáltatót a beállításokban.",
   "@askCmdr.error.requestTooLarge.named": {
     "sourceHash": "f878555"

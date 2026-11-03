@@ -721,6 +721,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.modelNotInPlan.named": "Dein Tarif bei {provider} enthält dieses Modell nicht. Wähle in den Einstellungen ein anderes Modell oder wechsle zu einem höheren Tarif.",
+  "@askCmdr.error.modelNotInPlan.named": {
+    "sourceHash": "4de572a"
+  },
+  "askCmdr.error.modelNotInPlan.unnamed": "Dein Tarif bei diesem KI-Anbieter enthält dieses Modell nicht. Wähle in den Einstellungen ein anderes Modell oder wechsle zu einem höheren Tarif.",
+  "@askCmdr.error.modelNotInPlan.unnamed": {
+    "sourceHash": "de08c60"
+  },
   "askCmdr.error.requestTooLarge.named": "{provider} hat das abgelehnt: Das Limit deines Tarifs ist kleiner als eine einzige Anfrage von Cmdr, denn jede Anfrage enthält immer die Anweisungen von Cmdr. Eine kürzere Nachricht hilft nicht. Wechsle bei {provider} zu einem größeren Tarif oder wähle in den Einstellungen einen anderen Anbieter.",
   "@askCmdr.error.requestTooLarge.named": {
     "sourceHash": "f878555"

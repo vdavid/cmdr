@@ -139,6 +139,12 @@
     "forms": "AI features → AI 功能 (AI 功能已關閉); the AI as a subject → AI (the suggestedOps.* four, kept apart from Cmdr 知道的事實)",
     "sources": "catalog settings.ai.tooltipOff, suggestedOps.agentReason"
   },
+  "ai-plan": {
+    "chosen": "方案",
+    "confidence": "high",
+    "forms": "upgrade your plan → 升級你的方案",
+    "sources": "MS service plan → 服務方案, data plan → 行動數據方案; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "提供者",
     "confidence": "high",

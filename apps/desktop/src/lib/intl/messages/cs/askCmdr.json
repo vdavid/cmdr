@@ -721,6 +721,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.modelNotInPlan.named": "Váš tarif u poskytovatele {provider} tento model nezahrnuje. Vyberte v Nastavení jiný model, nebo přejděte na vyšší tarif.",
+  "@askCmdr.error.modelNotInPlan.named": {
+    "sourceHash": "4de572a"
+  },
+  "askCmdr.error.modelNotInPlan.unnamed": "Váš tarif u tohoto poskytovatele AI tento model nezahrnuje. Vyberte v Nastavení jiný model, nebo přejděte na vyšší tarif.",
+  "@askCmdr.error.modelNotInPlan.unnamed": {
+    "sourceHash": "de08c60"
+  },
   "askCmdr.error.requestTooLarge.named": "Poskytovatel {provider} tento požadavek odmítl: limit vašeho tarifu je menší než jediný požadavek z Cmdru, protože každý požadavek vždy obsahuje pokyny Cmdru. Kratší zpráva nepomůže. Zkuste u poskytovatele {provider} větší tarif nebo v Nastavení vyberte jiného poskytovatele.",
   "@askCmdr.error.requestTooLarge.named": {
     "sourceHash": "f878555"

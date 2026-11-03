@@ -95,6 +95,12 @@
     "forms": "AI features → các tính năng AI; the AI as a subject → AI (❌ not Cmdr); AI-powered → do AI hỗ trợ",
     "sources": "catalog (settings.askCmdr.interactiveModel.description); AI kept verbatim across vi tech UI"
   },
+  "ai-plan": {
+    "chosen": "gói",
+    "confidence": "high",
+    "forms": "upgrade your plan → nâng cấp gói của bạn",
+    "sources": "MS service plan → gói dịch vụ, data plan → gói dữ liệu; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "nhà cung cấp",
     "confidence": "high",

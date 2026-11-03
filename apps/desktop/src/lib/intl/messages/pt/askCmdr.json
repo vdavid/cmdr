@@ -721,6 +721,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.modelNotInPlan.named": "Seu plano em {provider} não inclui este modelo. Escolha outro modelo nos Ajustes ou faça upgrade do seu plano.",
+  "@askCmdr.error.modelNotInPlan.named": {
+    "sourceHash": "4de572a"
+  },
+  "askCmdr.error.modelNotInPlan.unnamed": "Seu plano com este provedor de IA não inclui este modelo. Escolha outro modelo nos Ajustes ou faça upgrade do seu plano.",
+  "@askCmdr.error.modelNotInPlan.unnamed": {
+    "sourceHash": "de08c60"
+  },
   "askCmdr.error.requestTooLarge.named": "O provedor {provider} recusou esta solicitação: o limite do seu plano é menor que uma única solicitação do Cmdr, porque toda solicitação sempre leva as instruções do Cmdr. Uma mensagem mais curta não vai ajudar. Tente um plano maior em {provider} ou escolha outro provedor nos Ajustes.",
   "@askCmdr.error.requestTooLarge.named": {
     "sourceHash": "f878555"

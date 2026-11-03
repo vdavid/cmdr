@@ -94,6 +94,12 @@
     "note": "Where the English says only what the AI does, write Cmdr (the product acts) or die KI (the outside model); never add Ask Cmdr out of habit.",
     "sources": "catalog (settings.ai.tooltipOff KI-Funktionen sind ausgeschaltet, settings.askCmdr.intro Chatte mit einer KI …)"
   },
+  "ai-plan": {
+    "chosen": "Tarif",
+    "confidence": "high",
+    "forms": "upgrade your plan → zu einem höheren Tarif wechseln; a bigger plan → ein größerer Tarif",
+    "sources": "MS data plan → Datentarif; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "Anbieter",
     "confidence": "high",

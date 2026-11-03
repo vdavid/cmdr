@@ -109,6 +109,12 @@
     "confidence": "high",
     "sources": "catalog (settings.ai.tooltipOff, ai.translateError.timeout.title)"
   },
+  "ai-plan": {
+    "chosen": "plan",
+    "confidence": "high",
+    "forms": "upgrade your plan → mejora tu plan",
+    "sources": "MS service plan → plan de servicio, data plan → plan de datos; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "proveedor",
     "forms": "AI provider → proveedor de IA",
