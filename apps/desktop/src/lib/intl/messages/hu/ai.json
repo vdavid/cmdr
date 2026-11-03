@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Keresés hétköznapi szavakkal</b>: a beírt szöveg, vagy amit egy csatlakoztatott AI-eszköz kér, ha bekapcsoltad az MCP közvetlen módját",
+  "ai.cloudConsent.search": "<b>Keresés hétköznapi szavakkal</b>: a beírt szöveg",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>Kijelölés leírás alapján</b>: amit beírsz, valamint legfeljebb 240 név a jelenlegi mappából",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "Egy általad indított csevegésben az Ask Cmdr az appot is kezelheti helyetted: navigálhat, kijelölhet, rendezhet, lapokat és párbeszédablakokat nyithat, és csatlakoztathat egy általad mentett helyet. A másolás, az áthelyezés, a tömörítés, a törlés, az átnevezés és egy művelet visszavonása mindig megnyit egy párbeszédablakot vagy szerkesztőt, ahol te erősíted meg, és addig semmi sem történik, amíg meg nem teszed. Egy fájl megnyitása, egy beállítás módosítása (kivéve a Cmdr megjelenését), a kilépés, egy meghajtó kiadása, egy szerver eltávolítása és az indexelés módosítása előtt először megkérdez. Egy megnevezett mappa vagy fájl létrehozása és a fájlok címkézése azonnal, kérdés nélkül megtörténik, és a címkézést nem lehet visszavonni. A tervként előkészített átnevezések és rendrakások a jóváhagyásodra várnak.",
+  "ai.cloudConsent.askCmdr.actions": "Egy általad indított csevegésben az Ask Cmdr az appot is kezelheti helyetted: navigálhat, kijelölhet, rendezhet, lapokat és párbeszédablakokat nyithat, és csatlakoztathat egy általad mentett helyet. A másolás, az áthelyezés, a tömörítés, a törlés, az átnevezés és egy művelet visszavonása mindig megnyit egy párbeszédablakot vagy szerkesztőt, ahol te erősíted meg, és addig semmi sem történik, amíg meg nem teszed. Egy fájl megnyitása, egy beállítás módosítása (kivéve a Cmdr megjelenését), a kilépés, egy meghajtó kiadása, egy szerver eltávolítása és az indexelés módosítása előtt először megkérdez. Egy megnevezett mappa vagy fájl létrehozása és a fájlok címkézése azonnal, kérdés nélkül megtörténik; a címkék módosítását vissza tudod vonni. A tervként előkészített átnevezések és rendrakások a jóváhagyásodra várnak.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "A Cmdr jegyzeteket ír magának rólad: hogyan szereted rendezni a dolgokat, mit utasítottál el korábban, és mindent, amit megkérsz, hogy jegyezzen meg. Ezek a jegyzetek minden elküldött üzenettel együtt mennek, amíg csak léteznek, és tartalmazhatnak olyan szöveget is, amelyet a Cmdr a fotóidban ismert fel. Bármikor elolvashatod vagy törölheted őket az Ask Cmdr beállításaiban.",
   "@ai.cloudConsent.askCmdr.memory": {

@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {Másolás} move {Áthelyezés} delete {Törlés} trash {Áthelyezés a Kukába} rename {Átnevezés} create_folder {Mappa létrehozása} create_file {Fájl létrehozása} archive_edit {Archívum szerkesztése} compress {Tömörítés} other {Folyamatban}}",
+  "queue.row.label": "{type, select, copy {Másolás} move {Áthelyezés} delete {Törlés} trash {Áthelyezés a Kukába} rename {Átnevezés} create_folder {Mappa létrehozása} create_file {Fájl létrehozása} archive_edit {Archívum szerkesztése} compress {Tömörítés} tag {Címkék módosítása} other {Folyamatban}}",
   "@queue.row.label": {
-    "sourceHash": "3c8e776"
+    "sourceHash": "b051663"
   },
   "queue.row.reversalMovingBack": "Fájlok visszavitele",
   "@queue.row.reversalMovingBack": {
@@ -30,6 +30,10 @@
   "queue.row.reversalRenamingBack": "A régi nevek visszaállítása",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalRestoringTags": "A régi címkék visszaállítása",
+  "@queue.row.reversalRestoringTags": {
+    "sourceHash": "1b063e8"
   },
   "queue.row.reversalInFolder": "itt: {folder}",
   "@queue.row.reversalInFolder": {

@@ -48,6 +48,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Elvetés",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "A nézeted ellenőrzése",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -884,6 +888,22 @@
   "askCmdr.sessions.archivedBadge": "Archivált",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Keresés törlése",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Illeszkedő csevegések",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} csevegés} other {{countText} csevegés}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144"
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Tevékenység itt: {folder}} one {Tevékenység itt: {folder} és még {otherCountText} mappa} other {Tevékenység itt: {folder} és még {otherCountText} mappa}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Kérdés a kijelölésről",
   "@askCmdr.composer.attach": {

@@ -91,6 +91,10 @@
   "@operationLog.summary.compress": {
     "sourceHash": "24d78df"
   },
+  "operationLog.summary.tag": "{count, plural, one {{countText} elem címkéinek módosítása} other {{countText} elem címkéinek módosítása}}",
+  "@operationLog.summary.tag": {
+    "sourceHash": "6409218"
+  },
   "operationLog.summary.archiveEdit": "Archívum szerkesztése",
   "@operationLog.summary.archiveEdit": {
     "sourceHash": "a1bbfcb"
