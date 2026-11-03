@@ -394,6 +394,9 @@ pub mod test_gate {
     /// Parks the encoding rebuild with its scan done, just before the
     /// drain-and-swap critical section.
     pub static REBUILD_PRE_DRAIN: TestGate = TestGate::new();
+    /// Parks a search worker with its backend open, before it scans a byte, so
+    /// a cancel is sure to land on a search that's still running.
+    pub static SEARCH_PRE_SCAN: TestGate = TestGate::new();
 
     /// Counts rebuild threads that reached their store, and that exited by any
     /// path. A superseded rebuild must raise only the second: the test waits
