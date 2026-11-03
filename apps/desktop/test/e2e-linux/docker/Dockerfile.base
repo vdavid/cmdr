@@ -118,9 +118,16 @@ RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 
 # pnpm through corepack, which fetches the version the repo's `packageManager` names at first use
 # and checks the npm registry's signature on it. Node 25+ no longer bundles corepack (the
-# `node:26` image has only npm), so it comes from npm at an exact version.
+# `node:26` image has only npm), so its registry tarball comes in pinned by hash (Scorecard's
+# Pinned-Dependencies flags an `npm install`). The package has no dependencies: `dist/` is bundled.
+# To bump: the new tarball's sha256, and check it against `npm view corepack@<v> dist.integrity`.
+ADD --checksum=sha256:9128cfe26aee0c99f4fc68c15c6b8b12309a68be0de2c012cdfea2a463cb722f \
+    https://registry.npmjs.org/corepack/-/corepack-0.36.0.tgz /tmp/corepack.tgz
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-RUN npm install --global corepack@0.36.0 \
+RUN mkdir /usr/local/lib/node_modules/corepack \
+    && tar -xzf /tmp/corepack.tgz --strip-components=1 -C /usr/local/lib/node_modules/corepack \
+    && rm /tmp/corepack.tgz \
+    && ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack \
     && corepack enable pnpm
 
 # Rust (needed to compile the Tauri binary with --features playwright-e2e). The bind-mounted
