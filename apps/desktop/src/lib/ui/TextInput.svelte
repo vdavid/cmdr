@@ -72,6 +72,21 @@
         value = event.currentTarget.value
         oninput?.(event)
     }
+
+    /**
+     * A search field types queries, not prose: WebKit's autofill, autocorrect, auto-capitals,
+     * spellcheck, and macOS's inline word prediction (the grey "Map" offered after "MCP") only
+     * get in the way. Defaults, so a caller can still set any of them back through `rest`.
+     */
+    const SEARCH_DEFAULTS = {
+        autocomplete: 'off',
+        autocorrect: 'off',
+        autocapitalize: 'off',
+        spellcheck: false,
+        // The string, so the attribute renders as `="false"` rather than dropping out.
+        writingsuggestions: 'false',
+    } as const satisfies HTMLInputAttributes
+    const searchDefaults = $derived(type === 'search' ? SEARCH_DEFAULTS : {})
 </script>
 
 <div
@@ -101,6 +116,7 @@
         aria-label={ariaLabel}
         aria-invalid={invalid ? 'true' : undefined}
         oninput={handleInput}
+        {...searchDefaults}
         {...rest}
     />
     {#if trailing}

@@ -120,6 +120,29 @@ describe('TextInput', () => {
     expect(input.getAttribute('spellcheck')).toBe('false')
   })
 
+  // A search field types queries: macOS's inline prediction once offered "Map" under "MCP" in
+  // the Ask Cmdr chats search.
+  it('turns off autofill, autocorrect, capitals, spellcheck, and word prediction on a search field', () => {
+    const target = mountTarget()
+    mount(TextInput, { target, props: { value: '', type: 'search', ariaLabel: 'Search' } })
+    const input = target.querySelector('input') as HTMLInputElement
+    expect(input.getAttribute('autocomplete')).toBe('off')
+    expect(input.getAttribute('autocorrect')).toBe('off')
+    expect(input.getAttribute('autocapitalize')).toBe('off')
+    expect(input.getAttribute('spellcheck')).toBe('false')
+    expect(input.getAttribute('writingsuggestions')).toBe('false')
+  })
+
+  it('lets a search field opt back in, and leaves other fields alone', () => {
+    const search = mountTarget()
+    mount(TextInput, { target: search, props: { value: '', type: 'search', spellcheck: true, ariaLabel: 'S' } })
+    expect(search.querySelector('input')?.getAttribute('spellcheck')).toBe('true')
+
+    const plain = mountTarget()
+    mount(TextInput, { target: plain, props: { value: '', ariaLabel: 'Plain' } })
+    expect(plain.querySelector('input')?.hasAttribute('autocorrect')).toBe(false)
+  })
+
   it('renders a leading icon only when asked for one', () => {
     const bare = mountTarget()
     mount(TextInput, { target: bare, props: { value: '', ariaLabel: 'Bare' } })
