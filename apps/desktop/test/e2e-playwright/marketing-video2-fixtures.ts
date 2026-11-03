@@ -201,6 +201,16 @@ export function cleanUpPricedS3(dataDir: string, account: PricedS3Account): numb
   return left
 }
 
+/**
+ * The favorites the `reach-network` clip opens its bucket and NFS folder from. ❗ Not the
+ * volumes' own names: a favorite answers to its name too, and MCP's `select_volume` then
+ * refused "family-photos" as ambiguous (2026-11-03). The orchestrator drops them before
+ * each run and the scene adds them again: a favorite re-added at a different path is a
+ * second one under the same name, and the menu opened the stale one.
+ */
+export const BUCKET_FAVORITE = 'Family photos'
+export const NFS_FAVORITE = 'Photos (NFS)'
+
 /** Where the `reach-devices` clip's restic repo goes, beside the sensor logs (`seedResticRepo`'s root). */
 export const RESTIC_CLIPS_PARENT = 'Archive'
 

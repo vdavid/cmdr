@@ -58,7 +58,9 @@ import type { ClipSlug, VideoSetId } from '../test/e2e-playwright/marketing-clip
 import { buildVideoManifest } from './marketing-video.ts'
 import { DEMO, DEMO_ROOT, MARKER, ensureDemoTree, removeDemoTree } from '../test/e2e-playwright/marketing-clips-demo.ts'
 import {
+  BUCKET_FAVORITE,
   NAS_HOST,
+  NFS_FAVORITE,
   PHONE,
   PRICED_S3,
   S3,
@@ -255,14 +257,17 @@ async function prepareReachClips(slugs: ClipSlug[]): Promise<{ env: Record<strin
     seedSmbShare()
     seedS3Bucket(join(DEMO_ROOT, DEMO.trip))
     const dataDir = captureInstance('clips').dataDir
-    for (const file of ['known-shares.json', 'manual-servers.json', 's3_known_places.json']) {
+    for (const file of ['known-shares.json', 'manual-servers.json', 's3_known_places.json', 'nfs_known_places.json']) {
       rmSync(join(dataDir, file), { force: true })
     }
     forgetLastFolders(join(dataDir, 'app-status.json'), ['smb-home-nas-', 's3-family-photos-'])
     // A favorite named like the bucket makes MCP's `select_volume` refuse the name as
     // ambiguous; the scene names its own "Family photos".
-    dropFavoritesNamed(join(dataDir, 'favorites.json'), [S3.bucket])
+    dropFavoritesNamed(join(dataDir, 'favorites.json'), [S3.bucket, BUCKET_FAVORITE, NFS_FAVORITE])
     cleanUp = await startNasHost()
+    // The NFS fixture's relocated portmapper (`crates/cmdr-nfs/DETAILS.md` § "The E2E
+    // portmapper override"); the E2E binary is the only build that reads it.
+    env.CMDR_NFS_PORTMAP_PORT = process.env.NFS_FIXTURE_PORTMAP_PORT ?? '15480'
   }
   if (slugs.includes('reach-devices')) {
     seedResticRepo(join(DEMO_ROOT, RESTIC_CLIPS_PARENT), [

@@ -53,9 +53,12 @@ Slugs come from `apps/desktop/test/e2e-playwright/marketing-clips-slugs.ts`; eac
 `marketing-clips-reach.ts`, on the `--video2` fixtures dressed as a home setup (`marketing-video2-fixtures.ts`). Each
 place opens in a new tab (⌘T) or is left with ⌘↑, and the tab closes again (⌘W), so both loop.
 
-- `reach-network` (~23 s): ⌘K, `smb://home-nas.local.:11481/private`, the name "Home NAS", the account, the password,
-  and the share browsed into a 5,000-photo folder; then the other pane's favorites (⌃D) on "Family photos", the
-  `family-photos` bucket, browsed into an album.
+- `reach-network` (~25 s): ⌘K, `smb://home-nas.local.:11481/private`, the name "Home NAS", the account, the password,
+  and the share browsed into a 5,000-photo folder; then ⌃D to "Photos (NFS)", the NFS fixture's `/insecure/photos`; then
+  the other pane's ⌃D on "Family photos", the `family-photos` bucket, browsed into an album. NFS reaches the fixture's
+  relocated portmapper through `CMDR_NFS_PORTMAP_PORT`, which the orchestrator sets and only the E2E build reads
+  (`crates/cmdr-nfs/DETAILS.md` § "The E2E portmapper override"). Its label reads the export's name, "insecure", and the
+  fixture's folder holds one small `beach.txt`: both are the shared fixture's, which the clip doesn't rewrite.
 - `reach-devices` (~20 s): Enter into a repo's `.git`, its commits as folders, ⌘↑ back; a restic `Backups` repo in
   `Archive/`, its password, its snapshots; then a new tab, ⌃D to a virtual "Pixel 8" over MTP, `DCIM/Camera`.
 - ❗ **Places open from the favorites (⌃D), ❌ never the volume switcher (⌥F1 / ⌥F2)**: the switcher lists every volume
@@ -70,14 +73,15 @@ place opens in a new tab (⌘T) or is left with ⌘↑, and the tab closes again
 What the orchestrator stages for them (`prepareReachClips` in `apps/desktop/scripts/marketing-clips.ts`):
 
 - **The NAS by name.** `home-nas.local` is a Bonjour host for 127.0.0.1, published for the run with `dns-sd -P` (no
-  root), so no frame shows a loopback address. The S3 endpoint rides the same name. The SMB fixture's port (11481) still
-  shows in the typed address: 445 on 127.0.0.1 needs root.
+  root), so no frame shows a loopback address. Only the SMB share's label shows a host, so the bucket and the NFS export
+  dial 127.0.0.1 directly: the Bonjour name once failed to resolve mid-take under load. The SMB fixture's port (11481)
+  still shows in the typed address: 445 on 127.0.0.1 needs root.
 - **A fresh add each take.** Before launch it deletes the clips instance's saved servers (`known-shares.json`,
-  `manual-servers.json`, `s3_known_places.json`), the folders the NAS share and the bucket last showed (`lastUsedPaths`
-  in `app-status.json`: a place reopens there), and a stale favorite named like the bucket. Each take forgets the NAS,
-  its password (`delete_smb_credentials` under the dialed `host:port`, which the saved row's forget misses), and
-  unmounts its share before and after (`forgetNas`: only a mount of the fixture, matched by host and port), and backs
-  out of the share and the bucket on camera before closing their tabs.
+  `manual-servers.json`, `s3_known_places.json`, `nfs_known_places.json`), the folders the NAS share and the bucket last
+  showed (`lastUsedPaths` in `app-status.json`: a place reopens there), and a stale favorite named like the bucket. Each
+  take forgets the NAS, its password (`delete_smb_credentials` under the dialed `host:port`, which the saved row's
+  forget misses), and unmounts its share before and after (`forgetNas`: only a mount of the fixture, matched by host and
+  port), and backs out of the share and the bucket on camera before closing their tabs.
 - **A locked backup each take.** The repo is `Archive/Backups` (`RESTIC_CLIPS_PARENT`): in the demo root, showing hidden
   files for `.git` would put the demo tree's marker in frame. Each take forgets its password before and after
   (`forget_saved_container_password`).

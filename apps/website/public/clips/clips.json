@@ -33,14 +33,14 @@
       "slug": "reach-devices",
       "width": 1500,
       "height": 960,
-      "duration": 20.067,
+      "duration": 20.267,
       "themes": ["dark", "light"]
     },
     {
       "slug": "reach-network",
       "width": 1500,
       "height": 960,
-      "duration": 20.733,
+      "duration": 24.933,
       "themes": ["dark", "light"]
     },
     {
@@ -61,7 +61,7 @@
       "slug": "viewer",
       "width": 1500,
       "height": 1062,
-      "duration": 19.933,
+      "duration": 19.9,
       "themes": ["dark", "light"]
     }
   ]

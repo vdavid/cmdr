@@ -28,18 +28,22 @@ import { DEMO, DEMO_ROOT } from './marketing-clips-demo.js'
 import { captionKey } from './marketing-clips-take.js'
 import type { ClipTheme } from './marketing-clips-take.js'
 import { keyboardCaptioned, pressCaptioned, runCaptioned, typeCaptioned } from './marketing-clips-keys.js'
-import { NAS_HOST, PHONE, RESTIC, RESTIC_CLIPS_PARENT, S3, SMB, seedPhone } from './marketing-video2-fixtures.js'
+import {
+  BUCKET_FAVORITE,
+  NAS_HOST,
+  NFS_FAVORITE,
+  PHONE,
+  RESTIC,
+  RESTIC_CLIPS_PARENT,
+  S3,
+  SMB,
+  seedPhone,
+} from './marketing-video2-fixtures.js'
 import { rowNamed, waitForRow, waitForRowCount } from './marketing-video-scenes.js'
 
 const SHEET = '[data-dialog-id="server-sign-in"]'
 const PASSWORD_DIALOG = '[data-dialog-id="archive-password"]'
 const MENU = '[data-menu]:not([data-menu-submenu])'
-
-/**
- * The bucket's favorite. ❗ Not the bucket's own name: a favorite answers to its name too,
- * and MCP's `select_volume` then refused "family-photos" as ambiguous (2026-11-03).
- */
-export const BUCKET_FAVORITE = 'Family photos'
 
 /** Typing pace in the sheets: quicker than the search box, since there's more to type. */
 const SHEET_CHAR_MS = 55
@@ -200,14 +204,68 @@ async function forgetNas(page: TauriPage): Promise<void> {
   }
 }
 
-/** Off camera: the `family-photos` bucket saved and connected, reached through the NAS's name. */
+/**
+ * The NAS's NFS export the clip browses: the Docker fixture's `/insecure` (the one an
+ * unprivileged client mounts), opened in its `photos` folder. The app reaches the
+ * fixture's portmapper through `CMDR_NFS_PORTMAP_PORT`, which the orchestrator sets
+ * (`crates/cmdr-nfs/DETAILS.md` § "The E2E portmapper override").
+ */
+const NFS = { export: '/insecure', folder: 'photos', uid: 1000, gid: 1000 } as const
+
+/**
+ * Off camera: the NAS's NFS export saved and connected, named "Home NAS" and dialed on
+ * 127.0.0.1 like the bucket (its label shows only the export), and its
+ * `photos` folder made a favorite. Idempotent: an existing place is left alone, and a
+ * re-added favorite moves rather than doubling.
+ */
+async function connectNfsAndFavorite(page: TauriPage): Promise<void> {
+  const saved = await page.evaluate<SavedServer[]>(`window.__TAURI_INTERNALS__.invoke('list_saved_servers')`)
+  if (!saved.some((s) => s.protocol === 'nfs' && s.address.includes(SMB.host))) {
+    const outcome = await page.evaluate<string>(
+      `window.__TAURI_INTERNALS__.invoke('connect_server', ${JSON.stringify({
+        target: {
+          protocol: 'nfs',
+          displayName: SMB.name,
+          host: SMB.host,
+          port: null,
+          export: NFS.export,
+          uid: NFS.uid,
+          gid: NFS.gid,
+          otherGids: [],
+          startFolder: null,
+          autoReconnect: false,
+        },
+        attemptId: `server-connect-clips-${String(Date.now())}`,
+        secret: null,
+      })}).then(function (r) { return JSON.stringify(r) }, function (e) { return 'refused: ' + JSON.stringify(e) })`,
+    )
+    if (outcome.startsWith('refused')) throw new Error(`the NFS export didn't connect: ${outcome}`)
+  }
+  // `nfsAppRoot`'s spelling: the host, 2049 for an address that named no port, the export as one segment.
+  const path = `nfs://${SMB.host}:2049/${NFS.export.slice(1)}/${NFS.folder}`
+  await expect
+    .poll(
+      () =>
+        page.evaluate<string>(
+          `window.__TAURI_INTERNALS__.invoke('add_favorite', ${JSON.stringify({ path, name: NFS_FAVORITE })}).then(function () { return 'ok' }, function (e) { return JSON.stringify(e) })`,
+        ),
+      { timeout: waitBudget(15000), message: `couldn't favorite ${path}` },
+    )
+    .toBe('ok')
+}
+
+/**
+ * Off camera: the `family-photos` bucket saved and connected. On 127.0.0.1, ❌ not
+ * `NAS_HOST`: nothing on screen names a bucket's host, and the Bonjour name failed to
+ * resolve mid-take under load (2026-11-03). Only the SMB share's label shows its host.
+ */
 async function connectBucket(page: TauriPage): Promise<void> {
   await page.evaluate(
     `window.__TAURI_INTERNALS__.invoke('connect_server', ${JSON.stringify({
       target: {
         protocol: 's3',
         displayName: S3.bucket,
-        provider: { kind: 'other', endpoint: `http://${NAS_HOST}:14480`, region: S3.region, pathStyle: true },
+        provider: { kind: 'other', endpoint: S3.endpoint, region: S3.region, pathStyle: true },
         accessKeyId: S3.accessKey,
         bucket: S3.bucket,
         autoReconnect: false,
@@ -233,6 +291,7 @@ export async function reachNetwork(page: TauriPage, theme: ClipTheme): Promise<v
   if (!saved.some((s) => s.protocol === 's3' && s.displayName === S3.bucket)) await connectBucket(page)
   await selectVolumeWhenListed(S3.bucket)
   await favoriteRightPane(page, BUCKET_FAVORITE, new RegExp(`s3://[^\\s"]*?/${S3.bucket}(?=/|\\s|"|$)`))
+  await connectNfsAndFavorite(page)
   await stageMain(page, theme, DEMO_ROOT, join(DEMO_ROOT, DEMO.photos))
   await dismissAllToasts(page)
   const take = await recordWindow(page, { slug: 'reach-network', theme, label: 'main' })
@@ -283,6 +342,14 @@ export async function reachNetwork(page: TauriPage, theme: ClipTheme): Promise<v
       await up(page, '2024')
       await up(page, 'Photos')
       await hold(400)
+
+      // The same NAS over NFS, from its favorite, in the same tab.
+      await chooseFavorite(page, NFS_FAVORITE)
+      await waitRow(page, '2024 summer')
+      await hold(700)
+      await enter(page, 'left', '2024 summer')
+      await waitRow(page, 'beach')
+      await hold(1300)
 
       // The bucket, in a new tab on the right.
       await keyboardCaptioned(page, 'Tab')
