@@ -324,14 +324,30 @@ function writeCrashReportToD1(db: D1Database, report: CrashReport, derived: Cras
     .catch(() => {}) // Don't let D1 failure block the response
 }
 
+/** A release version: `MAJOR.MINOR.PATCH`. Everything that names a published build or lands in a stats row uses it. */
 export const versionPattern = /^\d+\.\d+\.\d+$/
+
+/**
+ * Any version a Cmdr build can run as: a release, or a semver pre-release (`0.58.1-pipelinetest.2`, which
+ * `release.sh -test` builds and installs for real). No build metadata (Cargo never sets it for us), and capped
+ * at 64 chars so a hostile client can't bloat a log line.
+ */
+const buildVersionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/
+const maxBuildVersionLength = 64
 
 // Update check proxy: tracks version and arch for active user counting, then redirects to latest.json
 telemetry.get('/update-check/:version', async (c) => {
   const { version } = c.req.param()
 
-  if (!versionPattern.test(version)) {
+  if (version.length > maxBuildVersionLength || !buildVersionPattern.test(version)) {
     return c.json({ error: 'Invalid version' }, 400)
+  }
+
+  // A pre-release build still gets the manifest (it updates to the next release like anyone), but no row:
+  // today every pre-release is David's pipeline test, not an active install, and the dashboard's version
+  // comparators assume `MAJOR.MINOR.PATCH`.
+  if (!versionPattern.test(version)) {
+    return c.redirect('https://getcmdr.com/latest.json', 302)
   }
 
   const arch = c.req.query('arch') ?? 'unknown'

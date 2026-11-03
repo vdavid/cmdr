@@ -501,6 +501,34 @@ describe('GET /update-check/:version', () => {
     const res = await app.request('/update-check/abc', {}, bindings)
     expect(res.status).toBe(400)
   })
+
+  // Regression: `0.58.1-pipelinetest.2` and `.3` builds got a 400 on every check, which the app
+  // logged at error and auto-sent as an error report (cmdr-reports#97, #98).
+  it('redirects a pre-release build to latest.json, so it can update to the next release', async () => {
+    const bindings = createBindings()
+    const res = await app.request('/update-check/0.58.1-pipelinetest.2?arch=aarch64', {}, bindings)
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('https://getcmdr.com/latest.json')
+  })
+
+  it("doesn't count a pre-release build as an active install", async () => {
+    const { db, prepareMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/update-check/0.58.1-rc.1?arch=aarch64', {}, bindings)
+
+    expect(prepareMock).not.toHaveBeenCalled()
+  })
+
+  it.each(['1.2.3-', '1.2.3-a..b', '1.2.3+build.1', `1.2.3-${'a'.repeat(64)}`, '1.2.3-a/b'])(
+    'returns 400 for the malformed or oversized version %s',
+    async (version) => {
+      const bindings = createBindings()
+      const res = await app.request(`/update-check/${encodeURIComponent(version)}`, {}, bindings)
+      expect(res.status).toBe(400)
+    },
+  )
 })
 
 // The date-only salt these hashes used to carry is public and predictable, so the whole IPv4 space
