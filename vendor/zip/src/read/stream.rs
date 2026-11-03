@@ -2,7 +2,10 @@
 
 use crate::ZipReadOptions;
 use crate::extra_fields::ExtraFields;
-use crate::format::blocks::{FixedSizeBlock, Pod, ZipCentralEntryBlock, ZipLocalEntryBlock};
+use crate::format::blocks::{
+    FixedSizeBlock, Pod, Zip32CDEBlock, Zip32CentralDirectoryEnd, Zip64CDEBlock,
+    Zip64CDELocatorBlock, ZipCentralEntryBlock, ZipLocalEntryBlock,
+};
 use crate::format::magic::Magic;
 use crate::read::extract::{MAX_SYMLINK_TARGET_LEN, make_symlink_as_file};
 use crate::read::extract::{make_symlink, make_symlink_as_file_utf8};
@@ -17,7 +20,7 @@ use crate::read::stream::ReadFromStreamResult::{
 };
 use indexmap::IndexMap;
 use std::borrow::Cow;
-use std::io::{self, Read};
+use std::io::{self, Cursor, Read};
 use std::path::{Path, PathBuf};
 
 /// Stream decoder for zip.
@@ -41,9 +44,15 @@ impl<R> ZipStreamReader<R> {
     /// and Central Directory File Headers (CDFH).
     ///
     /// When enabled, any discrepancy (such as Zip Cloaking / Dual-Header Smuggling attacks
-    /// where an attacker provides different names or hidden files across headers) will cause
-    /// the extraction to abort with [`ZipError::InvalidArchive`], and any files written during
-    /// this pass will be rolled back.
+    /// where an attacker provides different names or hidden files across headers, or an extra
+    /// end-of-central-directory record that selects a different directory) will cause the
+    /// extraction to abort with [`ZipError::InvalidArchive`].
+    ///
+    /// The headers can only be compared once the central directory, at the end of the stream,
+    /// has been read. [`ZipStreamReader::extract`] therefore extracts into a temporary directory
+    /// inside the destination and moves the entries into place only if the check passes. A
+    /// [`ZipStreamVisitor`] passed to [`ZipStreamReader::visit`] sees every entry before the
+    /// check, so it must not act on them until `visit` returns `Ok`.
     #[must_use]
     pub const fn enforce_header_consistency(mut self, enforce: bool) -> Self {
         self.enforce_header_consistency = enforce;
@@ -65,6 +74,236 @@ fn parse_central_directory<R: Read>(reader: &mut R) -> ZipResult<ZipFileEntry<'s
         file_name_raw: Cow::Owned(file_name_raw),
         data: Cow::Owned(file),
     })
+}
+
+/// Check the records after the central directory before trusting the streamed entries.
+fn validate_stream_footer<R: Read>(
+    reader: &mut R,
+    mut signature: [u8; 4],
+    entry_count: usize,
+    central_start: u64,
+    central_size: u64,
+    footer_offset: u64,
+) -> ZipResult<()> {
+    let mut zip64_count = None;
+    if Magic::from_le_bytes(signature) == Magic::ZIP64_CENTRAL_DIRECTORY_END_SIGNATURE {
+        let record = Zip64CDEBlock::parse(&mut (&signature[..]).chain(&mut *reader))?;
+        // The record size excludes its signature and size field. The fixed fields after
+        // those two occupy 44 bytes; skip the optional extensible data without allocating.
+        if record.record_size < 44 {
+            return Err(invalid!("Invalid ZIP64 end record size"));
+        }
+        let extra_len = record.record_size - 44;
+        if io::copy(&mut (&mut *reader).take(extra_len), &mut io::sink())? != extra_len {
+            return Err(invalid!("Truncated ZIP64 end record"));
+        }
+        if record.disk_number != 0
+            || record.disk_with_central_directory != 0
+            || record.number_of_files_on_this_disk != record.number_of_files
+            || record.number_of_files != entry_count as u64
+            || record.central_directory_size != central_size
+            || record.central_directory_offset != central_start
+        {
+            return Err(invalid!("Inconsistent ZIP64 end record"));
+        }
+        zip64_count = Some(record.number_of_files);
+
+        reader.read_exact(&mut signature)?;
+        if Magic::from_le_bytes(signature) != Magic::ZIP64_CENTRAL_DIRECTORY_END_LOCATOR_SIGNATURE {
+            return Err(invalid!("Missing ZIP64 end record locator"));
+        }
+        let locator = Zip64CDELocatorBlock::parse(&mut (&signature[..]).chain(&mut *reader))?;
+        if locator.disk_with_central_directory != 0 || locator.number_of_disks != 1 {
+            return Err(invalid!("Multi-disk ZIP files are not supported"));
+        }
+        if locator.end_of_central_directory_offset != footer_offset {
+            return Err(invalid!("Inconsistent ZIP64 end record locator offset"));
+        }
+        reader.read_exact(&mut signature)?;
+    }
+
+    if Magic::from_le_bytes(signature) != Magic::CENTRAL_DIRECTORY_END_SIGNATURE {
+        return Err(invalid!("Missing end of central directory record"));
+    }
+    let end = Zip32CentralDirectoryEnd::parse(&mut (&signature[..]).chain(reader))?;
+    if end.disk_number != 0
+        || end.disk_with_central_directory != 0
+        || end.number_of_files_on_this_disk != end.number_of_files
+        || (end.number_of_files != u16::MAX && usize::from(end.number_of_files) != entry_count)
+        || (end.central_directory_size != u32::MAX
+            && u64::from(end.central_directory_size) != central_size)
+        || (end.central_directory_offset != u32::MAX
+            && u64::from(end.central_directory_offset) != central_start)
+        || (zip64_count.is_none()
+            && (end.number_of_files == u16::MAX
+                || end.central_directory_size == u32::MAX
+                || end.central_directory_offset == u32::MAX))
+    {
+        return Err(invalid!("Inconsistent end of central directory record"));
+    }
+    Ok(())
+}
+
+fn contains_unlisted_local_header_or_extra_eocd<R: Read>(
+    reader: &mut R,
+    scanned_start: u64,
+    central_start: u64,
+    central_size: u64,
+    entry_count: usize,
+) -> ZipResult<bool> {
+    const LOCAL_FILE_HEADER_SIGNATURE: [u8; 4] = Magic::LOCAL_FILE_HEADER_SIGNATURE.to_le_bytes();
+    const EOCD_SIGNATURE: [u8; 4] = Magic::CENTRAL_DIRECTORY_END_SIGNATURE.to_le_bytes();
+    const FIXED_HEADER_LEN: usize = 4 + std::mem::size_of::<ZipLocalEntryBlock>();
+    const EOCD_FIXED_LEN: usize = 4 + std::mem::size_of::<Zip32CDEBlock>();
+    const READ_BUFFER_LEN: usize = 8192;
+
+    let mut buffer = Vec::with_capacity(READ_BUFFER_LEN);
+    let mut buffer_start = scanned_start;
+    let mut search_from = 0;
+    let mut eof = false;
+
+    loop {
+        let search = &buffer[search_from..];
+        let local_candidate = search
+            .windows(LOCAL_FILE_HEADER_SIGNATURE.len())
+            .position(|window| window == LOCAL_FILE_HEADER_SIGNATURE)
+            .map(|offset| offset + search_from);
+        let eocd_candidate = search
+            .windows(EOCD_SIGNATURE.len())
+            .position(|window| window == EOCD_SIGNATURE)
+            .map(|offset| offset + search_from);
+
+        if let Some(offset) =
+            local_candidate.filter(|&local| eocd_candidate.is_none_or(|eocd| local <= eocd))
+        {
+            let fixed_end = offset + FIXED_HEADER_LEN;
+            while buffer.len() < fixed_end && !eof {
+                let mut chunk = [0; READ_BUFFER_LEN];
+                let read = reader.read(&mut chunk)?;
+                if read == 0 {
+                    eof = true;
+                } else {
+                    buffer.extend_from_slice(&chunk[..read]);
+                }
+            }
+            if buffer.len() < fixed_end {
+                search_from = offset + 1;
+                continue;
+            }
+
+            let block =
+                match ZipLocalEntryBlock::parse(&mut Cursor::new(&buffer[offset..fixed_end])) {
+                    Ok(block) => block,
+                    Err(_) => {
+                        search_from = offset + 1;
+                        continue;
+                    }
+                };
+            let header_end = fixed_end
+                + usize::from(block.file_name_length)
+                + usize::from(block.extra_field_length);
+            while buffer.len() < header_end && !eof {
+                let mut chunk = [0; READ_BUFFER_LEN];
+                let read = reader.read(&mut chunk)?;
+                if read == 0 {
+                    eof = true;
+                } else {
+                    buffer.extend_from_slice(&chunk[..read]);
+                }
+            }
+            if buffer.len() < header_end {
+                search_from = offset + 1;
+                continue;
+            }
+
+            return Ok(true);
+        }
+
+        if let Some(offset) = eocd_candidate {
+            let fixed_end = offset + EOCD_FIXED_LEN;
+            while buffer.len() < fixed_end && !eof {
+                let mut chunk = [0; READ_BUFFER_LEN];
+                let read = reader.read(&mut chunk)?;
+                if read == 0 {
+                    eof = true;
+                } else {
+                    buffer.extend_from_slice(&chunk[..read]);
+                }
+            }
+            if buffer.len() < fixed_end {
+                search_from = offset + 1;
+                continue;
+            }
+
+            let record = match Zip32CDEBlock::parse(&mut Cursor::new(&buffer[offset..fixed_end])) {
+                Ok(record) => record,
+                Err(_) => {
+                    search_from = offset + 1;
+                    continue;
+                }
+            };
+            let comment_end = fixed_end + usize::from(record.zip_file_comment_length);
+            while buffer.len() < comment_end && !eof {
+                let mut chunk = [0; READ_BUFFER_LEN];
+                let read = reader.read(&mut chunk)?;
+                if read == 0 {
+                    eof = true;
+                } else {
+                    buffer.extend_from_slice(&chunk[..read]);
+                }
+            }
+            if buffer.len() < comment_end {
+                search_from = offset + 1;
+                continue;
+            }
+
+            let candidate_offset = buffer_start + offset as u64;
+            let is_zip64 = record.number_of_files_on_this_disk == u16::MAX
+                || record.number_of_files == u16::MAX
+                || record.central_directory_size == u32::MAX
+                || record.central_directory_offset == u32::MAX;
+            let fields_are_plausible = record.disk_number == 0
+                && record.disk_with_central_directory == 0
+                && record.number_of_files_on_this_disk == record.number_of_files
+                && (is_zip64
+                    || (u64::from(record.number_of_files)
+                        <= u64::from(record.central_directory_size) / 46
+                        && u64::from(record.central_directory_offset)
+                            .checked_add(u64::from(record.central_directory_size))
+                            .is_some_and(|end| end <= candidate_offset)));
+            let candidate_central_start =
+                candidate_offset.checked_sub(u64::from(record.central_directory_size));
+            let archive_offset_is_valid = candidate_central_start
+                .is_some_and(|start| start >= u64::from(record.central_directory_offset));
+            let same_central_directory = candidate_central_start == Some(central_start)
+                && u64::from(record.central_directory_size) == central_size
+                && usize::from(record.number_of_files) == entry_count;
+            if fields_are_plausible
+                && (is_zip64 || (archive_offset_is_valid && !same_central_directory))
+            {
+                return Ok(true);
+            }
+            search_from = offset + 1;
+            continue;
+        }
+
+        if eof {
+            return Ok(false);
+        }
+        if buffer.len() > LOCAL_FILE_HEADER_SIGNATURE.len() - 1 {
+            let retain_from = buffer.len() - (LOCAL_FILE_HEADER_SIGNATURE.len() - 1);
+            buffer.drain(..retain_from);
+            buffer_start += retain_from as u64;
+            search_from = 0;
+        }
+        let mut chunk = [0; READ_BUFFER_LEN];
+        let read = reader.read(&mut chunk)?;
+        if read == 0 {
+            eof = true;
+        } else {
+            buffer.extend_from_slice(&chunk[..read]);
+        }
+    }
 }
 
 impl<R: Read> ZipStreamReader<R> {
@@ -124,11 +363,18 @@ impl<R: Read> ZipStreamReader<R> {
         };
 
         let mut central_entries = Vec::new();
+        let mut footer = None;
 
         if has_central_directory {
-            let signature = Magic::CENTRAL_DIRECTORY_HEADER_SIGNATURE.to_le_bytes();
-            let mut central_directory = (&signature[..]).chain(&mut reader);
-            while let Ok(metadata) = parse_central_directory(&mut central_directory) {
+            let central_start = reader.count - 4;
+            let mut signature = Magic::CENTRAL_DIRECTORY_HEADER_SIGNATURE.to_le_bytes();
+            loop {
+                let mut central_directory = (&signature[..]).chain(&mut reader);
+                let metadata = match parse_central_directory(&mut central_directory) {
+                    Ok(metadata) => metadata,
+                    Err(e) if self.enforce_header_consistency => return Err(e),
+                    Err(_) => break,
+                };
                 if self.enforce_header_consistency {
                     central_entries.push(CentralEntryMetadata {
                         metadata: metadata
@@ -139,7 +385,40 @@ impl<R: Read> ZipStreamReader<R> {
                     });
                 }
                 visitor.visit_additional_metadata(&metadata)?;
+                if let Err(e) = reader.read_exact(&mut signature) {
+                    if self.enforce_header_consistency {
+                        return Err(e.into());
+                    }
+                    break;
+                }
+                if Magic::from_le_bytes(signature) != Magic::CENTRAL_DIRECTORY_HEADER_SIGNATURE {
+                    break;
+                }
             }
+            if self.enforce_header_consistency {
+                // The ZIP central directory may end with one optional digital-signature
+                // record. It is part of the declared central-directory size. Skip its
+                // opaque bytes without trusting or allocating from them, then validate
+                // the footer at its actual position.
+                if Magic::from_le_bytes(signature) == Magic::CENTRAL_DIRECTORY_DIGITAL_SIGNATURE {
+                    let mut len = [0u8; 2];
+                    reader.read_exact(&mut len)?;
+                    let len = u64::from(u16::from_le_bytes(len));
+                    if io::copy(&mut (&mut reader).take(len), &mut io::sink())? != len {
+                        return Err(invalid!("Truncated central directory digital signature"));
+                    }
+                    reader.read_exact(&mut signature)?;
+                }
+                let central_size = reader.count - 4 - central_start;
+                footer = Some((signature, central_start, central_size, reader.count - 4));
+            }
+        } else if self.enforce_header_consistency {
+            footer = Some((
+                Magic::CENTRAL_DIRECTORY_END_SIGNATURE.to_le_bytes(),
+                reader.count - 4,
+                0,
+                reader.count - 4,
+            ));
         }
 
         if self.enforce_header_consistency {
@@ -155,7 +434,6 @@ impl<R: Read> ZipStreamReader<R> {
             // to align with the sequential physical stream order of the local headers.
             central_entries.sort_by_key(|e| e.header_start);
 
-            let base_offset = central_entries.first().map_or(0, |e| e.header_start);
             let mut seen_names = std::collections::HashSet::with_capacity(central_entries.len());
 
             for (i, (local, central)) in
@@ -169,17 +447,13 @@ impl<R: Read> ZipStreamReader<R> {
                 }
 
                 // Verify that the local header offset matches the physical stream offset exactly
-                let expected_offset =
-                    base_offset
-                        .checked_add(local.stream_offset)
-                        .ok_or(invalid!(
-                            "header inconsistency detected: local header offset overflow"
-                        ))?;
-                if central.header_start != expected_offset {
+                // The stream starts at its first local header. A common shift in all
+                // central offsets is still an inconsistency, even if their order matches.
+                if central.header_start != local.stream_offset {
                     return Err(invalid!(
                         "header inconsistency detected: local header offset mismatch for '{}' (expected {}, central claims {})",
                         String::from_utf8_lossy(&local.metadata.name),
-                        expected_offset,
+                        local.stream_offset,
                         central.header_start
                     ));
                 }
@@ -192,6 +466,28 @@ impl<R: Read> ZipStreamReader<R> {
                         String::from_utf8_lossy(&central.metadata.name)
                     ));
                 }
+            }
+            let (signature, central_start, central_size, footer_offset) =
+                footer.ok_or(invalid!("Missing end of central directory record"))?;
+            validate_stream_footer(
+                &mut reader,
+                signature,
+                central_entries.len(),
+                central_start,
+                central_size,
+                footer_offset,
+            )?;
+            let scan_start = reader.count;
+            if contains_unlisted_local_header_or_extra_eocd(
+                &mut reader,
+                scan_start,
+                central_start,
+                central_size,
+                central_entries.len(),
+            )? {
+                return Err(invalid!(
+                    "header inconsistency detected: extra local file header or ambiguous end of central directory"
+                ));
             }
         }
 
@@ -213,18 +509,14 @@ impl<R: Read> ZipStreamReader<R> {
         struct Extractor {
             outpath: PathBuf,
             resolved_paths: IndexMap<Box<[u8]>, PathBuf>,
-            #[cfg(unix)]
             file_permissions: std::collections::BTreeMap<PathBuf, u32>,
+            buf: Vec<u8>,
         }
         impl ZipStreamVisitor for Extractor {
             fn visit_file<R: Read>(&mut self, file: &mut ZipFile<'_, R>) -> ZipResult<()> {
                 let extract_options = crate::read::extract::ExtractOptions::default();
-                let mut outpath = self.outpath.clone();
-                file.safe_prepare_path(
-                    &self.outpath,
-                    &mut outpath,
-                    None::<&(_, fn(&Path) -> bool)>,
-                )?;
+                let outpath =
+                    file.safe_prepare_path(&self.outpath, None::<&(_, fn(&Path) -> bool)>)?;
                 self.resolved_paths
                     .insert(file.name_raw().into(), outpath.clone());
 
@@ -250,10 +542,10 @@ impl<R: Read> ZipStreamReader<R> {
                     file.read_to_end(&mut target)?;
                     match extract_options.symlink_action {
                         SymlinkExtractAction::ExtractAsFile => {
-                            make_symlink_as_file(&outpath, &target)?;
+                            make_symlink_as_file(&outpath, &target, file.unix_mode())?;
                         }
                         SymlinkExtractAction::ExtractAsFileUtf8 => {
-                            make_symlink_as_file_utf8(&outpath, &target)?;
+                            make_symlink_as_file_utf8(&outpath, &target, file.unix_mode())?;
                         }
                         _ => {
                             make_symlink(
@@ -270,20 +562,19 @@ impl<R: Read> ZipStreamReader<R> {
                 if file.is_dir() {
                     fs::create_dir_all(&outpath)?;
                 } else {
-                    let mut outfile = fs::File::create(&outpath)?;
-                    io::copy(file, &mut outfile)?;
+                    let mut outfile =
+                        crate::read::extract::create_outfile(&outpath, file.unix_mode())?;
+                    crate::read::extract::copy_into(file, &mut outfile, &mut self.buf)?;
                 }
 
                 Ok(())
             }
 
-            #[allow(unused)]
             fn visit_additional_metadata(&mut self, metadata: &ZipFileEntry<'_>) -> ZipResult<()> {
                 // The central directory is not checked against the local headers, so its
                 // names only select entries this pass already wrote: a name that wasn't
                 // written gets no mode, and the mode goes to the path `visit_file` checked,
                 // never to a path rebuilt from the central directory.
-                #[cfg(unix)]
                 if let (Some(outpath), Some(mode)) = (
                     self.resolved_paths.get(metadata.name_raw()),
                     metadata.unix_mode(),
@@ -293,32 +584,251 @@ impl<R: Read> ZipStreamReader<R> {
                 Ok(())
             }
         }
+        /// Moves the entries `visit` wrote under `staging` to the same place under `dest`,
+        /// resolving each path again as `visit_file` does.
+        fn move_staged_entries(
+            staging: &mut PathBuf,
+            dest: &Path,
+            extractor: &mut Extractor,
+        ) -> ZipResult<()> {
+            // An entry named like `staging` would be moved into it, so first rename `staging`
+            // to a name no entry has. Ask the filesystem, since it may ignore case.
+            let written_to = staging.clone();
+            let has_entry_named_like = |dir: &Path| {
+                dir.file_name()
+                    .is_some_and(|name| dir.join(name).symlink_metadata().is_ok())
+            };
+            while has_entry_named_like(staging) {
+                let renamed = staging_path(dest)?;
+                fs::rename(&*staging, &renamed)?;
+                *staging = renamed;
+            }
+
+            for staged in extractor.resolved_paths.values_mut() {
+                let relative = staged
+                    .strip_prefix(&written_to)
+                    .map_err(|_| invalid!("Entry was not extracted to the staging directory"))?;
+                let from = staging.join(relative);
+                let outpath = crate::path::resolve_enclosed(dest, dest, relative.iter(), true)?;
+                if outpath.starts_with(&*staging) {
+                    return Err(invalid!("Entry would be written to the staging directory"));
+                }
+                if fs::symlink_metadata(&from)?.is_dir() {
+                    fs::create_dir_all(&outpath)?;
+                } else if let Err(e) = fs::rename(&from, &outpath) {
+                    if e.kind() != io::ErrorKind::CrossesDevices {
+                        return Err(e.into());
+                    }
+                    fs::copy(&from, &outpath)?;
+                }
+                if let Some(mode) = extractor.file_permissions.remove(&*staged) {
+                    extractor.file_permissions.insert(outpath.clone(), mode);
+                }
+                *staged = outpath;
+            }
+            Ok(())
+        }
+
         use std::fs;
         fs::create_dir_all(&directory)?;
         let directory = directory.as_ref().canonicalize()?;
 
-        let mut extractor = Extractor {
-            outpath: directory,
-            resolved_paths: IndexMap::new(),
-            #[cfg(unix)]
-            file_permissions: Default::default(),
+        // The headers are only checked after the last entry, so write nothing to `directory`
+        // before that.
+        let staging = if self.enforce_header_consistency {
+            Some(create_staging_dir(&directory)?)
+        } else {
+            None
         };
-        self.visit(&mut extractor)?;
+
+        let mut extractor = Extractor {
+            outpath: staging.clone().unwrap_or_else(|| directory.clone()),
+            resolved_paths: IndexMap::new(),
+            file_permissions: Default::default(),
+            buf: vec![0u8; crate::read::extract::EXTRACT_BUFFER_SIZE],
+        };
+        let visited = self.visit(&mut extractor);
+        if let Some(mut staging) = staging {
+            let moved = visited.and_then(|()| {
+                let mut staged_paths = std::collections::HashSet::new();
+                let mut staged_files = std::collections::HashSet::new();
+                let mut output_paths = std::collections::HashSet::new();
+                for staged in extractor.resolved_paths.values() {
+                    let relative = staged.strip_prefix(&staging).map_err(|_| {
+                        invalid!("Entry was not extracted to the staging directory")
+                    })?;
+                    let output = crate::path::resolve_enclosed(
+                        &directory,
+                        &directory,
+                        relative.iter(),
+                        false,
+                    )?;
+                    if !staged_paths.insert(staged)
+                        || !output_paths.insert(output)
+                        || staged_file_identity(staged)?
+                            .is_some_and(|identity| !staged_files.insert(identity))
+                    {
+                        return Err(invalid!("Multiple entries resolve to the same output path"));
+                    }
+                }
+                move_staged_entries(&mut staging, &directory, &mut extractor)
+            });
+            let removed = fs::remove_dir_all(&staging);
+            moved?;
+            removed?;
+        } else {
+            visited?;
+        }
 
         // As `ZipArchive::extract`: children before parents, so a read-only directory does not
         // block setting its contents. Never through a symlink: `set_permissions` follows them.
-        #[cfg(unix)]
-        {
-            for (path, mode) in extractor.file_permissions.into_iter().rev() {
+        // Off Unix, only the read-only flag applies.
+        for (path, mode) in extractor.file_permissions.into_iter().rev() {
+            #[cfg(unix)]
+            {
                 use std::os::unix::fs::PermissionsExt;
                 crate::read::extract::set_permissions_no_follow_symlink(
                     &path,
                     std::fs::Permissions::from_mode(mode),
                 )?;
             }
+            #[cfg(not(unix))]
+            if mode & 0o222 == 0 {
+                let metadata = fs::symlink_metadata(&path)?;
+                if !metadata.is_symlink() {
+                    let mut permissions = metadata.permissions();
+                    permissions.set_readonly(true);
+                    fs::set_permissions(&path, permissions)?;
+                }
+            }
         }
         Ok(())
     }
+}
+
+/// Filesystem identity catches aliases on case-insensitive filesystems even when the
+/// archive names and their checked path strings differ.
+fn staged_file_identity(
+    #[cfg_attr(not(any(unix, windows)), allow(unused_variables))] path: &Path,
+) -> io::Result<Option<(u64, u64)>> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let metadata = std::fs::metadata(path)?;
+        Ok(Some((metadata.dev(), metadata.ino())))
+    }
+    #[cfg(windows)]
+    {
+        use std::fs::OpenOptions;
+        use std::io;
+        use std::os::windows::fs::OpenOptionsExt;
+        use std::os::windows::io::AsRawHandle;
+        use windows_sys::Win32::Storage::FileSystem::FILE_FLAG_BACKUP_SEMANTICS;
+        use windows_sys::Win32::Storage::FileSystem::{
+            BY_HANDLE_FILE_INFORMATION, GetFileInformationByHandle,
+        };
+
+        let file = OpenOptions::new()
+            .access_mode(0) // 0 means no read/write data access needed, just metadata
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+            .open(path)?;
+        let handle = file.as_raw_handle() as windows_sys::Win32::Foundation::HANDLE;
+        // Safety: We provide a valid file handle and a mutable pointer to a zeroed struct.
+        unsafe {
+            let mut info: BY_HANDLE_FILE_INFORMATION = std::mem::zeroed();
+            let result = GetFileInformationByHandle(handle, &mut info);
+
+            if result == 0 {
+                return Err(io::Error::last_os_error());
+            }
+
+            let volume_serial_number = u64::from(info.dwVolumeSerialNumber);
+            // Combine the high and low 32-bit fields into a single 64-bit file index
+            let file_index = (u64::from(info.nFileIndexHigh) << 32) | u64::from(info.nFileIndexLow);
+
+            Ok(Some((volume_serial_number, file_index)))
+        }
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        Ok(None)
+    }
+}
+
+/// A path in `dest` with a random name.
+fn staging_path(dest: &Path) -> io::Result<PathBuf> {
+    let n = getrandom::u64().map_err(io::Error::other)?;
+    Ok(dest.join(format!(".zip-extract-{n:016x}")))
+}
+
+/// Creates a new, empty directory with a random name in `dest`.
+fn create_staging_dir(dest: &Path) -> io::Result<PathBuf> {
+    loop {
+        let staging = staging_path(dest)?;
+        #[cfg(unix)]
+        let created = {
+            use std::os::unix::fs::DirBuilderExt;
+            let mut builder = std::fs::DirBuilder::new();
+            builder.mode(0o700);
+            builder.create(&staging)
+        };
+        #[cfg(windows)]
+        let created = create_private_staging_dir_windows(&staging);
+        #[cfg(not(any(unix, windows)))]
+        let created = std::fs::create_dir(&staging);
+        match created {
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+            result => return result.map(|()| staging),
+        }
+    }
+}
+
+#[cfg(windows)]
+fn create_private_staging_dir_windows(path: &Path) -> io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Foundation::LocalFree;
+    use windows_sys::Win32::Security::Authorization::{
+        ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
+    };
+    use windows_sys::Win32::Security::{PSECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES};
+    use windows_sys::Win32::Storage::FileSystem::CreateDirectoryW;
+
+    // Protect the new directory and its children from inheriting a shared parent's ACL.
+    // Owner Rights, SYSTEM and Administrators can access staged files. The ACL is set
+    // during creation so there is no period when another user can read staged data.
+    let sddl: Vec<u16> = "D:P(A;OICI;FA;;;OW)(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)"
+        .encode_utf16()
+        .chain(Some(0))
+        .collect();
+    let mut descriptor: PSECURITY_DESCRIPTOR = std::ptr::null_mut();
+    // SAFETY: The SDDL string is NUL-terminated and descriptor receives an owned allocation.
+    if unsafe {
+        ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            sddl.as_ptr(),
+            SDDL_REVISION_1,
+            &mut descriptor,
+            std::ptr::null_mut(),
+        )
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
+    }
+    let attributes = SECURITY_ATTRIBUTES {
+        nLength: std::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
+        lpSecurityDescriptor: descriptor,
+        bInheritHandle: 0,
+    };
+    let path: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+    // SAFETY: Both the path and security descriptor remain live for this call.
+    let created = unsafe { CreateDirectoryW(path.as_ptr(), &attributes) };
+    let result = if created == 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    };
+    // SAFETY: ConvertStringSecurityDescriptorToSecurityDescriptorW used LocalAlloc.
+    unsafe { LocalFree(descriptor) };
+    result
 }
 
 /// Visitor for `ZipStreamReader`
@@ -463,12 +973,164 @@ fn read_zipfile_from_stream_with_options_internal<'a, R: Read>(
 #[cfg(test)]
 mod tests {
     use crate::ZipWriter;
+    use crate::format::magic::Magic;
     use crate::read::ZipFile;
     use crate::read::ZipFileEntry;
     use crate::read::stream::{ZipStreamReader, ZipStreamVisitor};
     use crate::result::ZipResult;
     use std::collections::BTreeSet;
     use std::io::{Cursor, Read};
+
+    #[test]
+    fn unlisted_local_header_with_malformed_extra_field_is_detected() {
+        let mut bytes = Magic::LOCAL_FILE_HEADER_SIGNATURE.to_le_bytes().to_vec();
+        let mut fixed_header = [0; 26];
+        fixed_header[22..24].copy_from_slice(&1u16.to_le_bytes());
+        fixed_header[24..26].copy_from_slice(&4u16.to_le_bytes());
+        bytes.extend_from_slice(&fixed_header);
+        bytes.extend_from_slice(b"x");
+        bytes.extend_from_slice(&[1, 0, 5, 0]);
+
+        assert!(
+            super::contains_unlisted_local_header_or_extra_eocd(
+                &mut Cursor::new(bytes.clone()),
+                0,
+                0,
+                0,
+                0,
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    fn extra_eocd_with_different_central_directory_is_detected() {
+        let mut bytes = vec![0];
+        bytes.extend_from_slice(&Magic::CENTRAL_DIRECTORY_END_SIGNATURE.to_le_bytes());
+        bytes.extend_from_slice(&[0; 18]);
+
+        assert!(
+            super::contains_unlisted_local_header_or_extra_eocd(
+                &mut Cursor::new(bytes),
+                0,
+                0,
+                0,
+                0,
+            )
+            .unwrap()
+        );
+    }
+
+    #[cfg(all(unix, not(miri)))]
+    #[test]
+    fn staging_directory_is_private() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dest = tempfile::tempdir().unwrap();
+        let staging = super::create_staging_dir(dest.path()).unwrap();
+        let mode = std::fs::metadata(&staging).unwrap().permissions().mode();
+        assert_eq!(mode & 0o077, 0);
+    }
+
+    #[cfg(all(windows, not(miri)))]
+    #[test]
+    fn staging_directory_does_not_inherit_public_read_access() {
+        use std::ffi::c_void;
+        use std::os::windows::ffi::OsStrExt;
+        use std::process::Command;
+        use windows_sys::Win32::Foundation::LocalFree;
+        use windows_sys::Win32::Security::Authorization::{GetNamedSecurityInfoW, SE_FILE_OBJECT};
+        use windows_sys::Win32::Security::{
+            ACCESS_ALLOWED_ACE, ACL, ACL_SIZE_INFORMATION, AclSizeInformation, CreateWellKnownSid,
+            DACL_SECURITY_INFORMATION, EqualSid, GetAce, GetAclInformation, PSECURITY_DESCRIPTOR,
+            WinWorldSid,
+        };
+        use windows_sys::Win32::Storage::FileSystem::FILE_LIST_DIRECTORY;
+
+        let dest = tempfile::tempdir().unwrap();
+        // Make the destination readable to other users, as a shared folder might be.
+        let output = Command::new("icacls")
+            .arg(dest.path())
+            .args(["/grant", "*S-1-1-0:(OI)(CI)RX"])
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "icacls: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        let staging = super::create_staging_dir(dest.path()).unwrap();
+        std::fs::write(staging.join("owner-can-write.txt"), b"private").unwrap();
+        let path: Vec<u16> = staging.as_os_str().encode_wide().chain(Some(0)).collect();
+        let mut dacl: *mut ACL = std::ptr::null_mut();
+        let mut descriptor: PSECURITY_DESCRIPTOR = std::ptr::null_mut();
+        // SAFETY: Windows fills the DACL and descriptor for this NUL-terminated path.
+        let result = unsafe {
+            GetNamedSecurityInfoW(
+                path.as_ptr(),
+                SE_FILE_OBJECT,
+                DACL_SECURITY_INFORMATION,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &mut dacl,
+                std::ptr::null_mut(),
+                &mut descriptor,
+            )
+        };
+        assert_eq!(result, 0, "could not read staging ACL: {result}");
+        assert!(
+            !dacl.is_null(),
+            "staging directory has an unrestricted DACL"
+        );
+
+        let mut world_sid = [0u8; 68];
+        let mut sid_len = world_sid.len() as u32;
+        // SAFETY: The fixed buffer is large enough for a Windows SID.
+        assert_ne!(
+            unsafe {
+                CreateWellKnownSid(
+                    WinWorldSid,
+                    std::ptr::null_mut(),
+                    world_sid.as_mut_ptr().cast(),
+                    &mut sid_len,
+                )
+            },
+            0
+        );
+        let mut info = ACL_SIZE_INFORMATION::default();
+        // SAFETY: dacl belongs to the live security descriptor.
+        assert_ne!(
+            unsafe {
+                GetAclInformation(
+                    dacl,
+                    (&mut info as *mut ACL_SIZE_INFORMATION).cast(),
+                    std::mem::size_of::<ACL_SIZE_INFORMATION>() as u32,
+                    AclSizeInformation,
+                )
+            },
+            0
+        );
+
+        let mut world_can_list = false;
+        for index in 0..info.AceCount {
+            let mut ace: *mut c_void = std::ptr::null_mut();
+            // SAFETY: The index is within the ACL's reported ACE count.
+            assert_ne!(unsafe { GetAce(dacl, index, &mut ace) }, 0);
+            let allowed = ace.cast::<ACCESS_ALLOWED_ACE>();
+            // ACCESS_ALLOWED_ACE_TYPE is 0; other ACE types have different layouts.
+            if unsafe { (*allowed).Header.AceType } == 0 {
+                // SAFETY: An access-allowed ACE stores the SID at SidStart.
+                let sid = unsafe { std::ptr::addr_of!((*allowed).SidStart).cast_mut().cast() };
+                let is_world = unsafe { EqualSid(sid, world_sid.as_mut_ptr().cast()) } != 0;
+                let can_list = unsafe { (*allowed).Mask } & FILE_LIST_DIRECTORY != 0;
+                world_can_list |= is_world && can_list;
+            }
+        }
+        // SAFETY: GetNamedSecurityInfoW allocated the descriptor with LocalAlloc.
+        unsafe { LocalFree(descriptor) };
+        assert!(!world_can_list, "Everyone can list the staging directory");
+    }
 
     #[test]
     fn zip_read_streaming_visitor() {

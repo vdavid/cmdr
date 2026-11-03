@@ -65,7 +65,7 @@
       "groupName": "cloudflare apps non-major updates"
     },
     {
-      "description": "Linters and formatters land on their own: a version bump here rewrites or re-flags tracked files across every app, which is noise to review mixed in with real dependency changes.",
+      "description": "Linters and formatters land on their own: a version bump here rewrites or re-flags tracked files across every app, which is noise to review mixed in with real dependency changes. The group touches `apps/desktop/package.json`, so the desktop rule above would make it dashboard-only (a later rule overrides only the fields it sets), and it sat in Pending Approval from 2026-09-14 on. Linters never reach the third-party notices, so their PR can go green: approval off, automerge back on.",
       "matchPackageNames": [
         "oxfmt",
         "oxlint",
@@ -75,7 +75,9 @@
         "/^eslint-/",
         "/^@typescript-eslint//"
       ],
-      "groupName": "linters and formatters"
+      "groupName": "linters and formatters",
+      "dependencyDashboardApproval": false,
+      "automerge": true
     },
     {
       "description": "Docker images, pinned by digest for Scorecard's Pinned-Dependencies (`FROM image:tag@sha256:...`), so a tag that upstream re-points can't change what we build. Every digest refresh and non-major tag bump across all Dockerfiles and compose files lands as one weekly PR that automerges on green CI, overriding the per-app groups above (the desktop one would otherwise hold the test-fixture images for dashboard approval). Majors still go through the dashboard rule below. The top-level `dockerfile` / `docker-compose` blocks give these two managers their own `ignorePaths`, without `**/test/**`, since most images are test fixtures. The listmonk image's tag is an ARG, which Renovate can't read: `infra/listmonk/README.md` § Updates.",
@@ -119,7 +121,7 @@
       "groupName": null
     },
     {
-      "description": "First-party crates (David's own). Stricter pre-release gate than the 3-day window protects against; bypass so cmdr pulls fixes immediately.",
+      "description": "First-party crates (David's own). Stricter pre-release gate than the 3-day window protects against, so no age gate. In Cmdr they still wait for dashboard approval (the desktop rule's, since this rule doesn't override it): a bump renames the version in the committed third-party notices, which a bot PR can't regenerate. The weekly pass takes them.",
       "matchPackageNames": ["smb2", "mtp-rs"],
       "minimumReleaseAge": "0 days",
       "schedule": ["at any time"],
@@ -129,6 +131,12 @@
     {
       "description": "The specta trio stays on rc.24 / 0.0.11. rc.25 types every plain `f32`/`f64` as `number | null`. On return values that's defensible (serde_json renders NaN/Infinity as null), but it does the same to PARAMETERS, where it's wrong: `viewer_get_lines(target_value: f64)` and the four `media_index_*_threshold` commands take non-Option floats and serde rejects a JSON null for them. Adopting it trades a latent, never-observed hazard for a live one, plus ~25 sites of null-handling. Rationale: `apps/desktop/src-tauri/DETAILS.md` § Number types over IPC. Re-evaluate on the next rc; bump all three together or not at all.",
       "matchPackageNames": ["specta", "tauri-specta", "specta-typescript"],
+      "enabled": false
+    },
+    {
+      "description": "The CVE overrides in `pnpm-workspace.yaml` are each scoped to one major (`js-yaml@3: ^3.15.2`) so every parent keeps its own line; a major bump of a value (`^4`) would drag the old-major parents onto an API they don't speak, which is what the scoping exists to prevent. Patches and minors to them still flow. Drop an override by hand once `pnpm why` shows its parents past the fix (the file's own comment).",
+      "matchFileNames": ["pnpm-workspace.yaml"],
+      "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {

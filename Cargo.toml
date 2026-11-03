@@ -50,8 +50,8 @@ rustic_core = { path = "vendor/rustic_core" }
 # can't leave `settings.json`, `shortcuts.json`, or `license.json` truncated (#461), and it
 # refuses to save over a store file that didn't load (#506).
 tauri-plugin-store = { path = "vendor/tauri-plugin-store" }
-# A raw copy keeps an entry's name bytes and UTF-8 flag as stored, so editing a zip with
-# Shift-JIS, GBK, or CP866 names leaves every one of them readable (#514).
+# A raw copy keeps an encrypted entry's encrypted and data descriptor flags, so a
+# ZipCrypto entry kept through a zip edit still decrypts (#592).
 zip = { path = "vendor/zip" }
 
 # Optimized builds cross crate boundaries. Cargo's default (`lto = false`,

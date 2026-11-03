@@ -1,6 +1,6 @@
 //! Code related to reader
 
-use crate::compression::{CompressionMethod, Decompressor};
+use crate::compression::{CompressionMethod, InstantiationParameters, LazyDecompressor};
 use crate::crc32::Crc32Reader;
 use crate::result::{ZipError, ZipResult};
 use crate::types::ZipFileData;
@@ -21,6 +21,13 @@ pub(crate) struct SeekableTake<'a, R: ?Sized> {
 impl<'a, R: Seek + ?Sized> SeekableTake<'a, R> {
     pub fn new(inner: &'a mut R, length: u64) -> io::Result<Self> {
         let inner_starting_offset = inner.stream_position()?;
+        // Every inner offset `seek` computes lies in `inner_starting_offset..=end`.
+        if inner_starting_offset.checked_add(length).is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "end of seekable range overflows u64",
+            ));
+        }
         Ok(Self {
             inner,
             inner_starting_offset,
@@ -44,10 +51,10 @@ impl<R: Seek + ?Sized> Seek for SeekableTake<'_, R> {
             )),
             Some(offset) => {
                 let clamped_offset = std::cmp::min(self.length, offset);
-                let new_inner_offset = self
-                    .inner
+                // `new` checked that `inner_starting_offset + length` fits.
+                self.inner
                     .seek(SeekFrom::Start(self.inner_starting_offset + clamped_offset))?;
-                self.current_offset = new_inner_offset - self.inner_starting_offset;
+                self.current_offset = clamped_offset;
                 Ok(self.current_offset)
             }
         }
@@ -58,7 +65,7 @@ impl<R: Read + ?Sized> Read for SeekableTake<'_, R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let written = self
             .inner
-            .take(self.length - self.current_offset)
+            .take(self.length.saturating_sub(self.current_offset))
             .read(buf)?;
         self.current_offset += written as u64;
         Ok(written)
@@ -145,6 +152,16 @@ impl<'a, R: Read + ?Sized> CryptoReader<'a, R> {
             CryptoReader::Aes { reader: r, .. } => r.into_inner(),
         }
     }
+
+    /// Return the underlying reader.
+    pub fn inner(&self) -> &io::Take<&'a mut R> {
+        match self {
+            CryptoReader::Plaintext(r) => r,
+            CryptoReader::ZipCrypto(r) => r.inner(),
+            #[cfg(feature = "aes-crypto")]
+            CryptoReader::Aes { reader: r, .. } => r.inner(),
+        }
+    }
 }
 
 macro_rules! invalid_state {
@@ -158,11 +175,11 @@ pub(crate) enum ZipFileReader<'a, R: Read + ?Sized> {
     NoReader,
     Raw(io::Take<&'a mut R>),
     Stored(Box<Crc32Reader<CryptoReader<'a, R>>>),
-    Compressed(Box<Crc32Reader<Decompressor<io::BufReader<CryptoReader<'a, R>>>>>),
+    Compressed(Box<Crc32Reader<LazyDecompressor<io::BufReader<CryptoReader<'a, R>>>>>),
     /// A compressed AES entry. The decompressor may report EOF before all of the
     /// ciphertext has been read (a Deflate stream ends at its final block), so at
     /// EOF the rest of the ciphertext is authenticated via [`Self::finish_aes`].
-    CompressedAes(Box<Crc32Reader<Decompressor<io::BufReader<CryptoReader<'a, R>>>>>),
+    CompressedAes(Box<Crc32Reader<LazyDecompressor<io::BufReader<CryptoReader<'a, R>>>>>),
 }
 
 impl<R: Read + ?Sized> Read for ZipFileReader<'_, R> {
@@ -233,6 +250,25 @@ impl<'a, R: Read + ?Sized> ZipFileReader<'a, R> {
         }
     }
 
+    #[allow(unused)]
+    pub(crate) fn inner(&self) -> io::Result<&io::Take<&'a mut R>> {
+        match self {
+            ZipFileReader::NoReader => invalid_state!(),
+            ZipFileReader::Raw(r) => Ok(r),
+            ZipFileReader::Stored(r) => Ok(r.inner().inner()),
+            ZipFileReader::Compressed(r) | ZipFileReader::CompressedAes(r) => {
+                if let Some(buf) = r.inner().inner() {
+                    Ok(buf.get_ref().inner())
+                } else {
+                    Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Not initialized reader",
+                    ))
+                }
+            }
+        }
+    }
+
     /// The decompressor of an AES entry reported EOF: drain and authenticate
     /// the remaining ciphertext (GHSA-c9rm-qm35-rhqf). On failure the reader
     /// is left in the `NoReader` state, so later reads keep failing instead of
@@ -261,12 +297,6 @@ pub(crate) fn make_crypto_reader<'a, R: Read + ?Sized>(
     reader: io::Take<&'a mut R>,
     password: Option<&[u8]>,
 ) -> ZipResult<CryptoReader<'a, R>> {
-    #[allow(deprecated)]
-    {
-        if let CompressionMethod::Unsupported(id) = data.compression_method {
-            return Err(ZipError::CompressionMethodNotSupported(id));
-        }
-    }
     let reader = match (password, data.aes_settings()) {
         #[cfg(not(feature = "aes-crypto"))]
         (Some(_), Some(_)) => {
@@ -297,6 +327,7 @@ pub(crate) fn make_crypto_reader<'a, R: Read + ?Sized>(
 
 pub(crate) fn make_reader<R: Read + ?Sized>(
     compression_method: CompressionMethod,
+    #[cfg_attr(not(any(feature = "lzma", feature = "legacy-zip")), allow(unused))]
     uncompressed_size: u64,
     size_limit: Option<u64>,
     crc32: Option<u32>,
@@ -318,17 +349,19 @@ pub(crate) fn make_reader<R: Read + ?Sized>(
             Crc32Reader::new(reader, crc32, should_disable).with_size_limit(size_limit),
         )));
     }
-    #[cfg(not(feature = "legacy-zip"))]
-    let flags = 0;
     let is_aes = reader.is_aes();
     let reader = Box::new(
         Crc32Reader::new(
-            Decompressor::new(
+            LazyDecompressor::new(
                 io::BufReader::new(reader),
-                compression_method,
-                uncompressed_size,
-                flags,
-            )?,
+                InstantiationParameters {
+                    compression_method,
+                    #[cfg(any(feature = "lzma", feature = "legacy-zip"))]
+                    uncompressed_size,
+                    #[cfg(feature = "legacy-zip")]
+                    flags,
+                },
+            ),
             crc32,
             should_disable,
         )
@@ -343,12 +376,12 @@ pub(crate) fn make_reader<R: Read + ?Sized>(
 
 #[cfg(test)]
 mod tests {
+    use crate::compression::LazyDecompressor;
 
     #[test]
     fn test_size_reader_enum() {
         use super::Crc32Reader;
         use super::CryptoReader;
-        use super::Decompressor;
         use super::ZipFileReader;
         use std::io::BufReader;
         use std::io::Cursor;
@@ -364,7 +397,7 @@ mod tests {
         let raw_reader_size = size_of::<Take<&R>>();
         let stored_reader_size = size_of::<Crc32Reader<CryptoReader<'_, R>>>();
         let compressed_reader_size =
-            size_of::<Crc32Reader<Decompressor<BufReader<CryptoReader<'_, R>>>>>();
+            size_of::<Crc32Reader<LazyDecompressor<BufReader<CryptoReader<'_, R>>>>>();
         let box_size = size_of::<Box<R>>();
         // eprintln!("enum {enum_size}");
         // eprintln!("raw: {raw_reader_size}");

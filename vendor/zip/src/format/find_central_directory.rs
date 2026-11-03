@@ -18,15 +18,33 @@ const MAGIC_LENGTH: usize = mem::size_of::<Magic>();
 /// found positions so that repeated overlapping searches run in O(log n) instead of O(n).
 ///
 /// Invariant: `positions` is sorted and all positions are within `[0, scanned_up_to)`.
-/// There are no occurrences of the signature in `[0, scanned_up_to)` other than those in
-/// `positions`.
+/// Probe whether the magic occurs at `pos` by seeking and reading exactly `MAGIC_LENGTH` bytes.
+/// Does not perform full-file scanning.
+fn probe_magic_at<R: Read + Seek + ?Sized>(
+    reader: &mut R,
+    pos: u64,
+    magic: &[u8; MAGIC_LENGTH],
+) -> ZipResult<bool> {
+    reader.seek(SeekFrom::Start(pos))?;
+    let mut buf = [0u8; MAGIC_LENGTH];
+    match reader.read_exact(&mut buf) {
+        Ok(()) => Ok(buf == *magic),
+        Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => Ok(false),
+        Err(e) => Err(e.into()),
+    }
+}
+
+/// Tracks scanned ranges of the file for a particular magic signature, caching
+/// found positions so that repeated overlapping searches run in O(log n) instead of O(n).
+///
+/// Invariant: `positions` is sorted and contains all occurrences of `magic_bytes`
+/// within the union of intervals in `scanned_ranges`.
 #[derive(Debug)]
 pub(crate) struct MagicPositionCache {
     /// Byte positions where the magic was found, kept sorted.
     positions: Vec<u64>,
-    /// We have scanned `[0, scanned_up_to)` completely. Any position ≥ scanned_up_to
-    /// is unknown.
-    scanned_up_to: u64,
+    /// Disjoint, sorted ranges `[start, end)` that have been scanned.
+    scanned_ranges: Vec<(u64, u64)>,
     /// The magic bytes to search for.
     magic_bytes: [u8; MAGIC_LENGTH],
 }
@@ -35,46 +53,119 @@ impl MagicPositionCache {
     pub(crate) fn new(magic_bytes: [u8; MAGIC_LENGTH]) -> Self {
         Self {
             positions: Vec::new(),
-            scanned_up_to: 0,
+            scanned_ranges: Vec::new(),
             magic_bytes,
         }
     }
 
-    /// Ensure we have scanned `[0, up_to)` for the magic signature.
-    /// Any new occurrences found are added to `positions`.
-    fn ensure_scanned_up_to<R: Read + Seek + ?Sized>(
+    /// Ensure that `[start, end)` has been scanned for the magic signature.
+    /// Only scans sub-ranges that have not already been covered by prior scans,
+    /// avoiding full-file scans across multi-gigabyte payloads.
+    pub(crate) fn ensure_scanned_range<R: Read + Seek + ?Sized>(
         &mut self,
         reader: &mut R,
-        up_to: u64,
+        start: u64,
+        end: u64,
     ) -> ZipResult<()> {
-        if up_to <= self.scanned_up_to {
+        if start >= end {
             return Ok(());
         }
-        let mut finder =
-            MagicFinder::<Forward<'_>>::new(&self.magic_bytes, self.scanned_up_to, up_to);
-        while let Some(pos) = finder.next(reader)? {
-            self.positions.push(pos);
+
+        let mut uncovered = Vec::new();
+        let mut cur = start;
+        for &(r_start, r_end) in &self.scanned_ranges {
+            if cur >= end {
+                break;
+            }
+            if cur < r_start {
+                let scan_end = end.min(r_start);
+                uncovered.push((cur, scan_end));
+                cur = scan_end;
+            }
+            if cur < r_end {
+                cur = r_end;
+            }
         }
-        self.scanned_up_to = up_to;
+        if cur < end {
+            uncovered.push((cur, end));
+        }
+
+        for (u_start, u_end) in uncovered {
+            self.scan_uncovered(reader, u_start, u_end)?;
+        }
+
+        self.merge_scanned_range(start, end);
         Ok(())
     }
 
+    fn scan_uncovered<R: Read + Seek + ?Sized>(
+        &mut self,
+        reader: &mut R,
+        start: u64,
+        end: u64,
+    ) -> ZipResult<()> {
+        // Overlap backwards by MAGIC_LENGTH - 1 to catch any signature straddling the scan boundary
+        let magic_overlap = MAGIC_LENGTH.saturating_sub(1) as u64;
+        let scan_start = start.saturating_sub(magic_overlap);
+        let mut finder = MagicFinder::<Forward<'_>>::new(&self.magic_bytes, scan_start, end);
+        while let Some(pos) = finder.next(reader)? {
+            if let Err(idx) = self.positions.binary_search(&pos) {
+                self.positions.insert(idx, pos);
+            }
+        }
+        Ok(())
+    }
+
+    fn merge_scanned_range(&mut self, start: u64, end: u64) {
+        self.scanned_ranges.push((start, end));
+        self.scanned_ranges.sort_unstable_by_key(|&(s, _)| s);
+        let mut merged: Vec<(u64, u64)> = Vec::with_capacity(self.scanned_ranges.len());
+        for (s, e) in self.scanned_ranges.drain(..) {
+            if let Some(last) = merged.last_mut()
+                && s <= last.1
+            {
+                last.1 = last.1.max(e);
+                continue;
+            }
+            merged.push((s, e));
+        }
+        self.scanned_ranges = merged;
+    }
+
     /// Find the first occurrence of the magic at or after `start` and before `end`.
-    /// Ensures scanning covers `[0, end)` before answering.
+    /// Ensures scanning covers only `[start, end)` before answering.
     pub(crate) fn first_in_range<R: Read + Seek + ?Sized>(
         &mut self,
         reader: &mut R,
         start: u64,
         end: u64,
     ) -> ZipResult<Option<u64>> {
-        self.ensure_scanned_up_to(reader, end)?;
-        // Binary search for the first position >= start
+        self.ensure_scanned_range(reader, start, end)?;
         let idx = self.positions.partition_point(|&p| p < start);
         if idx < self.positions.len() && self.positions[idx] < end {
             Ok(Some(self.positions[idx]))
         } else {
             Ok(None)
         }
+    }
+
+    /// Whether the magic occurs at `pos`.
+    /// Performs an O(1) probe at `pos` without scanning the entire file.
+    pub(crate) fn contains<R: Read + Seek + ?Sized>(
+        &mut self,
+        reader: &mut R,
+        pos: u64,
+        _end: u64,
+    ) -> ZipResult<bool> {
+        if self.positions.binary_search(&pos).is_ok() {
+            return Ok(true);
+        }
+        let found = probe_magic_at(reader, pos, &self.magic_bytes)?;
+        if found {
+            let idx = self.positions.partition_point(|&p| p < pos);
+            self.positions.insert(idx, pos);
+        }
+        Ok(found)
     }
 }
 
@@ -141,6 +232,15 @@ pub(crate) fn find_central_directory_end<R: Read + Seek + ?Sized>(
         };
 
         let Some((locator64_offset, locator64)) = zip64_metadata else {
+            // Consistency check: multi-disk archives are not supported
+            if eocd.disk_number != 0
+                || eocd.disk_with_central_directory != 0
+                || eocd.number_of_files_on_this_disk != eocd.number_of_files
+            {
+                parsing_error = Some(invalid!("Multi-disk ZIP files are not supported"));
+                continue;
+            }
+
             // Branch out for zip32
             let cd_offset_from_eocd = u64::from(eocd.central_directory_offset);
 
@@ -175,25 +275,26 @@ pub(crate) fn find_central_directory_end<R: Read + Seek + ?Sized>(
             let cd_result = match archive_offset {
                 ArchiveOffset::Known(n) => {
                     let guess = cd_offset_from_eocd.saturating_add(n).min(eocd_offset);
-                    if guess + MAGIC_LENGTH as u64 <= eocd_offset {
-                        // Quick check at the guessed position
-                        reader.seek(SeekFrom::Start(guess))?;
-                        let mut buf = [0u8; MAGIC_LENGTH];
-                        match reader.read_exact(&mut buf) {
-                            Ok(()) if buf == CDFH_SIG_BYTES => Some(guess),
-                            _ => {
-                                // Known offset didn't work — this is an error
-                                // (don't fall back to scanning when offset is known)
-                                None
-                            }
-                        }
+                    if guess + MAGIC_LENGTH as u64 <= eocd_offset
+                        && probe_magic_at(reader, guess, &CDFH_SIG_BYTES)?
+                    {
+                        Some(guess)
                     } else {
                         None
                     }
                 }
                 _ => {
-                    // Use cache to find first CDFH in [cd_offset_from_eocd, eocd_offset)
-                    cdfh_cache.first_in_range(reader, cd_offset_from_eocd, eocd_offset)?
+                    // Prefer the CD start implied by the CD size, as other readers do.
+                    let abutting = eocd_offset
+                        .checked_sub(u64::from(eocd.central_directory_size))
+                        .filter(|&start| start >= cd_offset_from_eocd);
+                    match abutting {
+                        Some(start) if cdfh_cache.contains(reader, start, eocd_offset)? => {
+                            Some(start)
+                        }
+                        // Otherwise use cache to find first CDFH in [cd_offset_from_eocd, eocd_offset)
+                        _ => cdfh_cache.first_in_range(reader, cd_offset_from_eocd, eocd_offset)?,
+                    }
                 }
             };
 
@@ -238,6 +339,11 @@ pub(crate) fn find_central_directory_end<R: Read + Seek + ?Sized>(
                 return Err(invalid!("Invalid EOCD64: inconsistency with Locator data"));
             }
 
+            // Consistency check: multi-disk archives are not supported
+            if z64.disk_number != 0 || z64.number_of_files_on_this_disk != z64.number_of_files {
+                return Err(invalid!("Multi-disk ZIP files are not supported"));
+            }
+
             // Consistency check: the EOCD64 must have the expected length
             if z64.record_size + Zip64CentralDirectoryEnd::RECORD_OVERHEAD != expected_length {
                 return Err(invalid!("Invalid EOCD64: inconsistent length"));
@@ -251,22 +357,17 @@ pub(crate) fn find_central_directory_end<R: Read + Seek + ?Sized>(
         let search_start = locator64.end_of_central_directory_offset;
         let search_end = locator64_offset;
 
-        // Try optimistic guess first for known archive offset
-        let guess_result = match archive_offset {
-            ArchiveOffset::Known(n) => {
-                let guess = search_start.saturating_add(n).min(search_end);
-                if guess + MAGIC_LENGTH as u64 <= search_end {
-                    reader.seek(SeekFrom::Start(guess))?;
-                    let mut buf = [0u8; MAGIC_LENGTH];
-                    match reader.read_exact(&mut buf) {
-                        Ok(()) if buf == eocd64_cache.magic_bytes => Some(guess),
-                        _ => None, // Known offset didn't work — don't fall back
-                    }
-                } else {
-                    None
-                }
-            }
-            _ => None,
+        // Try optimistic guess first for known archive offset or un-prefixed archives
+        let guess = match archive_offset {
+            ArchiveOffset::Known(n) => search_start.saturating_add(n).min(search_end),
+            ArchiveOffset::Detect => search_start,
+        };
+        let guess_result = if guess + MAGIC_LENGTH as u64 <= search_end
+            && probe_magic_at(reader, guess, &eocd64_cache.magic_bytes)?
+        {
+            Some(guess)
+        } else {
+            None
         };
 
         // Collect candidate EOCD64 positions
@@ -280,58 +381,62 @@ pub(crate) fn find_central_directory_end<R: Read + Seek + ?Sized>(
             disk_with_central_directory: u32,
             locator64_offset: u64,
         ) -> ZipResult<Option<(DataAndPosition<Zip64CentralDirectoryEnd>, u64)>> {
-            let archive_offset = eocd64_offset - eocd_offset;
+            let Some(archive_offset) = eocd64_offset.checked_sub(eocd_offset) else {
+                return Ok(None);
+            };
             reader.seek(SeekFrom::Start(eocd64_offset))?;
 
-            match try_read_eocd64(
+            let eocd64 = try_read_eocd64(
                 reader,
                 disk_with_central_directory,
                 locator64_offset.saturating_sub(eocd64_offset),
-            ) {
-                Ok(eocd64) => {
-                    if eocd64_offset
-                        < eocd64
-                            .number_of_files
-                            .saturating_mul(
-                                (mem::size_of::<Magic>() + mem::size_of::<ZipCentralEntryBlock>())
-                                    as u64,
-                            )
-                            .saturating_add(eocd64.central_directory_offset)
-                    {
-                        return Ok(None);
-                    }
+            )?;
 
-                    Ok(Some(((eocd64, eocd64_offset).into(), archive_offset)))
-                }
-                Err(_e) => Ok(None),
+            if eocd64_offset
+                < eocd64
+                    .number_of_files
+                    .saturating_mul(
+                        (mem::size_of::<Magic>() + mem::size_of::<ZipCentralEntryBlock>()) as u64,
+                    )
+                    .saturating_add(eocd64.central_directory_offset)
+            {
+                return Ok(None);
             }
+
+            Ok(Some(((eocd64, eocd64_offset).into(), archive_offset)))
         }
 
         // Try the optimistic guess first
         if let Some(guess_pos) = guess_result {
-            if let Some((eocd64, archive_offset)) = try_candidate(
+            match try_candidate(
                 reader,
                 locator64.end_of_central_directory_offset,
                 guess_pos,
                 locator64.disk_with_central_directory,
                 locator64_offset,
-            )? {
-                return Ok(CentralDirectoryEndInfo {
-                    eocd: (eocd, guess_pos).into(),
-                    eocd64: Some(eocd64),
-                    archive_offset,
-                });
+            ) {
+                Ok(Some((eocd64, archive_offset))) => {
+                    return Ok(CentralDirectoryEndInfo {
+                        eocd: (eocd, eocd_offset).into(),
+                        eocd64: Some(eocd64),
+                        archive_offset,
+                    });
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    local_error = Some(e);
+                }
             }
             // Known offset didn't produce valid EOCD64, don't scan further
             if matches!(archive_offset, ArchiveOffset::Known(_)) {
-                parsing_error = Some(invalid!("Could not find EOCD64"));
+                parsing_error = local_error.or(Some(invalid!("Could not find EOCD64")));
                 continue;
             }
         }
 
         // Fall back to cache-based search for all EOCD64 positions in range
         if !matches!(archive_offset, ArchiveOffset::Known(_)) {
-            eocd64_cache.ensure_scanned_up_to(reader, search_end)?;
+            eocd64_cache.ensure_scanned_range(reader, search_start, search_end)?;
             let start_idx = eocd64_cache
                 .positions
                 .partition_point(|&p| p < search_start);
@@ -347,14 +452,16 @@ pub(crate) fn find_central_directory_end<R: Read + Seek + ?Sized>(
                 ) {
                     Ok(Some((eocd64, archive_offset))) => {
                         return Ok(CentralDirectoryEndInfo {
-                            eocd: (eocd, eocd64_offset).into(),
+                            eocd: (eocd, eocd_offset).into(),
                             eocd64: Some(eocd64),
                             archive_offset,
                         });
                     }
                     Ok(None) => {
-                        local_error =
-                            Some(invalid!("Invalid EOCD64: inconsistent number of files"));
+                        if local_error.is_none() {
+                            local_error =
+                                Some(invalid!("Invalid EOCD64: inconsistent number of files"));
+                        }
                     }
                     Err(e) => {
                         local_error = Some(e);

@@ -7,8 +7,10 @@ description: How to update project dependencies
 ## Who updates what
 
 Renovate (`renovate.json`) still owns these lanes and auto-merges them unattended. **Leave them alone**: website,
-Cloudflare apps (`api-server` + `analytics-dashboard`), linters and formatters, Docker images, security advisories, and
-David's own crates (`smb2`, `mtp-rs`).
+Cloudflare apps (`api-server` + `analytics-dashboard`), linters and formatters, Docker images, and security advisories.
+
+David's own crates (`smb2`, `mtp-rs`) skip the age gate, but a bump still names the new version in the third-party
+notices, so it waits in Pending Approval like the desktop lane does. Take it in the weekly pass, or tick its box.
 
 ❗ **Renovate rebases a PR only on a conflict, and touches it only in its schedule window** (`rebaseWhen: conflicted`,
 `updateNotScheduled: false`). The default rebases an automerge PR on every push to `main`, and a red one re-ran the full

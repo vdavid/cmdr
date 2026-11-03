@@ -19,7 +19,7 @@ use crate::format::{ZIP64_BYTES_THR, ZIP64_BYTES_THR_U32};
 use crate::path::{enclosed_name, file_name_sanitized};
 use crate::read::readers::{SeekableTake, ZipFileReader, make_crypto_reader, make_reader};
 use crate::read::{HeaderConsistencyMetadata, HeaderDataDescriptorMetadata};
-use crate::result::{ZipError, ZipResult};
+use crate::result::{ZipError, ZipResult, invalid};
 use crate::write::FileOptionExtension;
 use crate::write::FileOptions;
 use crate::{CompressionMethod, ExtraField, ZipReadOptions};
@@ -215,6 +215,7 @@ impl ZipFileData {
     ) -> ZipResult<Take<&'a mut R>> {
         // TODO: use .get_or_try_init() once stabilized to provide a closure returning a Result!
         let data_start = self.data_start(reader)?;
+        self.check_data_end(data_start)?;
         reader.seek(SeekFrom::Start(data_start))?;
 
         Ok(reader.take(self.compressed_size))
@@ -226,10 +227,18 @@ impl ZipFileData {
     ) -> ZipResult<SeekableTake<'a, R>> {
         // Parse local header
         let data_start = self.data_start(reader)?;
+        self.check_data_end(data_start)?;
         reader.seek(SeekFrom::Start(data_start))?;
 
         // Explicit Ok and ? are needed to convert io::Error to ZipError
         Ok(SeekableTake::new(reader, self.compressed_size)?)
+    }
+
+    /// Checks that `data_start + compressed_size` fits in u64 (ZIP64 sizes can be any u64).
+    fn check_data_end(&self, data_start: u64) -> ZipResult<u64> {
+        data_start
+            .checked_add(self.compressed_size)
+            .ok_or(invalid!("File data end offset overflows u64"))
     }
 
     pub(crate) fn consistency_metadata<'a>(
@@ -239,6 +248,13 @@ impl ZipFileData {
     ) -> HeaderConsistencyMetadata<&'a [u8]> {
         let is_using_data_descriptor = self.is_using_data_descriptor();
         let (upath, upath_crc32) = crate::read::get_upath(&self.extra_fields);
+        // Only the flag bits that change how the data is decoded.
+        let decoder_flags = if self.compression_method == CompressionMethod::IMPLODE {
+            self.flags.as_u16()
+                & (ZipFlags::CompressionSetting.as_u16() | ZipFlags::CompressionSetting2.as_u16())
+        } else {
+            0
+        };
         HeaderConsistencyMetadata {
             name,
             upath,
@@ -246,6 +262,7 @@ impl ZipFileData {
             compression_method: self.compression_method.serialize_to_u16(),
             is_encrypted: self.is_encrypted(),
             is_using_data_descriptor,
+            decoder_flags,
             last_modified_time: self.last_modified_time,
             data: HeaderDataDescriptorMetadata {
                 crc32: self.crc32,
@@ -317,6 +334,12 @@ impl ZipFileData {
     /// Check if the file is a directory based on the file name.
     pub(crate) fn is_dir(&self, file_name: &[u8]) -> bool {
         is_dir(file_name)
+    }
+
+    /// Check if the file is a symbolic link.
+    pub(crate) fn is_symlink(&self) -> bool {
+        self.unix_mode()
+            .is_some_and(|mode| mode & crate::format::ffi::S_IFLNK == crate::format::ffi::S_IFLNK)
     }
 
     pub(crate) fn file_name_sanitized(&self, file_name: &str) -> PathBuf {
@@ -513,8 +536,37 @@ impl ZipFileData {
         Ok(data)
     }
 
-    pub(crate) fn flags(&self) -> u16 {
-        get_flags(self.flags)
+    /// The general purpose flags to write for this entry under `file_name_raw`. The language
+    /// encoding bit is as stored, except that a non-ASCII comment, which is always written as
+    /// UTF-8, sets it when the name bytes are valid UTF-8 too. Such a comment can come from an
+    /// Info-ZIP Unicode Comment extra field on an unflagged entry; written unflagged, a reader
+    /// would decode it as CP437 and it would grow on every reopen.
+    pub(crate) fn flags(&self, file_name_raw: &[u8]) -> u16 {
+        let mut flags = self.flags;
+        if !self.file_comment.is_ascii() && core::str::from_utf8(file_name_raw).is_ok() {
+            flags.set(ZipFlags::LanguageEncoding, true);
+        }
+        get_flags(flags)
+    }
+
+    /// Drops any Info-ZIP Unicode Path extra field that a reader would apply to `file_name_raw`
+    /// (its CRC-32 matches) but that names something else. A copy under a new name keeps the
+    /// source's extra fields, and such a field would otherwise rename the copy on read-back
+    /// (APPNOTE 4.6.9), e.g. back to the source's name.
+    pub(crate) fn drop_unicode_path_renaming(&mut self, file_name_raw: &[u8]) {
+        const UNICODE_PATH: u16 = crate::format::extra_fields::ExtraFieldId::UnicodePath.as_u16();
+        let crc = crc32fast::hash(file_name_raw);
+        self.extra_fields.inner.retain(|field| match field {
+            ExtraField::UnicodePath(unicode) => {
+                unicode.crc32 != crc || *unicode.content == *file_name_raw
+            }
+            ExtraField::Custom(custom) if custom.header_id == UNICODE_PATH => {
+                custom.data.len() < 5
+                    || custom.data[1..5] != crc.to_le_bytes()
+                    || custom.data[5..] == *file_name_raw
+            }
+            _ => true,
+        });
     }
 
     /// Sets the language encoding flag for this entry written under a new name.

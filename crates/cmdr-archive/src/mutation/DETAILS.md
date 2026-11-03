@@ -127,7 +127,7 @@ sink, pause gate, cancel intent via the `MutationHooks` seam, and the remote pul
 - **Decision: refuse an archive with a duplicate entry name (`DuplicateEntryName`).** The `zip` crate keys entries by
   raw name in an `IndexMap` and folds a duplicate into one slot (the later one's data), and the rewrite copies through
   it, so the earlier copy would silently vanish. `plan.rs`'s `refuse_a_folded_duplicate` refuses, before any temp
-  exists, when the `zip` crate's own record count (`central_directory_len`, a vendored-patch addition) exceeds its entry
+  exists, when the `zip` crate's `has_duplicate_names()` says its central-directory record count exceeds its entry
   count. Gotcha: comparing against rc-zip's record count instead missed every fold in a zip rc-zip can't parse (the
   planner then has no names), so the count must come from the `zip` crate itself. rc-zip's names only say WHICH name;
   without them the refusal carries `name: None` and the FE words it without one. Preserving both would need the `zip`

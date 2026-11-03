@@ -28,6 +28,7 @@ pub use stream::{
 
 pub(crate) mod magic_finder;
 pub(crate) mod readers;
+pub(crate) mod zip_iterable;
 
 pub(crate) mod zipfile;
 pub use zipfile::{ZipFile, ZipFileEntry, ZipFileEntryWithDataDescriptor, ZipFileSeek};
@@ -42,6 +43,7 @@ pub use crate::aes::AesInfo;
 pub(crate) struct CentralDirectoryInfo {
     pub(crate) archive_offset: u64,
     pub(crate) directory_start: u64,
+    pub(crate) directory_size: u64,
     pub(crate) number_of_files: usize,
     pub(crate) disk_number: u32,
     pub(crate) disk_with_central_directory: u32,
@@ -51,28 +53,35 @@ impl<'a> TryFrom<&'a CentralDirectoryEndInfo> for CentralDirectoryInfo {
     type Error = ZipError;
 
     fn try_from(value: &'a CentralDirectoryEndInfo) -> Result<Self, Self::Error> {
-        let (relative_cd_offset, number_of_files, disk_number, disk_with_central_directory) =
-            match &value.eocd64 {
-                Some(DataAndPosition { data: eocd64, .. }) => {
-                    if eocd64.number_of_files_on_this_disk > eocd64.number_of_files {
-                        return Err(invalid!(
-                            "ZIP64 footer indicates more files on this disk than in the whole archive"
-                        ));
-                    }
-                    (
-                        eocd64.central_directory_offset,
-                        eocd64.number_of_files as usize,
-                        eocd64.disk_number,
-                        eocd64.disk_with_central_directory,
-                    )
+        let (
+            relative_cd_offset,
+            directory_size,
+            number_of_files,
+            disk_number,
+            disk_with_central_directory,
+        ) = match &value.eocd64 {
+            Some(DataAndPosition { data: eocd64, .. }) => {
+                if eocd64.number_of_files_on_this_disk > eocd64.number_of_files {
+                    return Err(invalid!(
+                        "ZIP64 footer indicates more files on this disk than in the whole archive"
+                    ));
                 }
-                _ => (
-                    u64::from(value.eocd.data.central_directory_offset),
-                    value.eocd.data.number_of_files_on_this_disk as usize,
-                    u32::from(value.eocd.data.disk_number),
-                    u32::from(value.eocd.data.disk_with_central_directory),
-                ),
-            };
+                (
+                    eocd64.central_directory_offset,
+                    eocd64.central_directory_size,
+                    eocd64.number_of_files as usize,
+                    eocd64.disk_number,
+                    eocd64.disk_with_central_directory,
+                )
+            }
+            _ => (
+                u64::from(value.eocd.data.central_directory_offset),
+                u64::from(value.eocd.data.central_directory_size),
+                value.eocd.data.number_of_files_on_this_disk as usize,
+                u32::from(value.eocd.data.disk_number),
+                u32::from(value.eocd.data.disk_with_central_directory),
+            ),
+        };
 
         let directory_start = relative_cd_offset
             .checked_add(value.archive_offset)
@@ -81,6 +90,7 @@ impl<'a> TryFrom<&'a CentralDirectoryEndInfo> for CentralDirectoryInfo {
         Ok(Self {
             archive_offset: value.archive_offset,
             directory_start,
+            directory_size,
             number_of_files,
             disk_number,
             disk_with_central_directory,
@@ -159,6 +169,9 @@ impl<R: Read + Seek> ZipArchive<R> {
 
 #[inline]
 fn read_variable_length_byte_field<R: Read>(reader: &mut R, len: usize) -> ZipResult<Vec<u8>> {
+    if len == 0 {
+        return Ok(Vec::new());
+    }
     let mut data = vec![0; len];
     if let Err(e) = reader.read_exact(&mut data) {
         if e.kind() == io::ErrorKind::UnexpectedEof {
@@ -203,11 +216,16 @@ fn central_header_to_zip_file_inner<R: Read>(
 
     let mut file_name_raw = read_variable_length_byte_field(reader, file_name_length as usize)?;
     let extra_fields_raw = read_variable_length_byte_field(reader, extra_field_length as usize)?;
-    let file_comment_raw = read_variable_length_byte_field(reader, file_comment_length as usize)?;
-    let file_comment: Box<str> = if is_utf8 {
-        String::from_utf8_lossy(&file_comment_raw).into()
+    let file_comment: Box<str> = if file_comment_length == 0 {
+        Box::default()
     } else {
-        file_comment_raw.from_cp437()?.into()
+        let file_comment_raw =
+            read_variable_length_byte_field(reader, file_comment_length as usize)?;
+        if is_utf8 {
+            String::from_utf8_lossy(&file_comment_raw).into()
+        } else {
+            file_comment_raw.from_cp437()?.into()
+        }
     };
 
     let (version_made_by, system) = System::extract_bytes(version_made_by);
@@ -388,6 +406,8 @@ pub(crate) struct HeaderConsistencyMetadata<T: AsRef<[u8]>, U: AsRef<[u8]> = T> 
     pub(crate) compression_method: u16,
     pub(crate) is_encrypted: bool,
     pub(crate) is_using_data_descriptor: bool,
+    /// Flag bits the decompressor reads (bits 1-2 for Implode), zero for other methods.
+    pub(crate) decoder_flags: u16,
     pub(crate) last_modified_time: Option<DateTime>,
     pub(crate) data: HeaderDataDescriptorMetadata,
     #[cfg(feature = "aes-crypto")]
@@ -403,6 +423,7 @@ impl HeaderConsistencyMetadata<&[u8]> {
             compression_method: self.compression_method,
             is_encrypted: self.is_encrypted,
             is_using_data_descriptor: self.is_using_data_descriptor,
+            decoder_flags: self.decoder_flags,
             last_modified_time: self.last_modified_time,
             data: self.data,
             #[cfg(feature = "aes-crypto")]
@@ -454,6 +475,13 @@ impl<T: AsRef<[u8]>, U: AsRef<[u8]>> HeaderConsistencyMetadata<T, U> {
         if self.is_using_data_descriptor != central.is_using_data_descriptor {
             return Err(invalid!(
                 "header inconsistency detected: data descriptor flag mismatch for '{}'",
+                String::from_utf8_lossy(self.name.as_ref())
+            ));
+        }
+
+        if self.decoder_flags != central.decoder_flags {
+            return Err(invalid!(
+                "header inconsistency detected: compression flags mismatch for '{}'",
                 String::from_utf8_lossy(self.name.as_ref())
             ));
         }

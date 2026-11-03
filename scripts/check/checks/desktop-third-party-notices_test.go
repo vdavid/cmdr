@@ -186,6 +186,28 @@ func TestCrateRelativeSourceFallsBackToTheFileName(t *testing.T) {
 	}
 }
 
+func TestFirstDifferenceNamesTheFileAndTheFirstDifferingLine(t *testing.T) {
+	got := firstDifference("NOTICES.md", []byte("a\nb\nc\nd\n"), []byte("a\nb\nX\nd\n"))
+	for _, want := range []string{"NOTICES.md", "line 3", "committed: c", "generated: X"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("firstDifference output lacks %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestFirstDifferenceReportsALengthOnlyDifference(t *testing.T) {
+	got := firstDifference("f", []byte("a\nb\n"), []byte("a\nb\nc\n"))
+	if !strings.Contains(got, "line 3") || !strings.Contains(got, "generated: c") {
+		t.Errorf("a trailing extra line should be reported at line 3:\n%s", got)
+	}
+}
+
+func TestFirstDifferenceIsEmptyForEqualFiles(t *testing.T) {
+	if got := firstDifference("f", []byte("a\n"), []byte("a\n")); got != "" {
+		t.Errorf("equal files should give no difference, got:\n%s", got)
+	}
+}
+
 func TestVerifyClarificationsAcceptsThePinnedFiles(t *testing.T) {
 	sources := map[string][]string{}
 	for _, clarification := range licenseClarifications {

@@ -1,6 +1,6 @@
-# genai 0.7.1, patched
+# genai 0.7.2, patched
 
-The crates.io release of `genai` 0.7.1 (upstream `jeremychone/rust-genai`, published 2026-10-23), swapped in through the
+The crates.io release of `genai` 0.7.2 (upstream `jeremychone/rust-genai`, published 2026-10-28), swapped in through the
 root `Cargo.toml`'s `[patch.crates-io]`. Everything here is the published package byte for byte, apart from the change
 below and the files left out:
 
@@ -17,7 +17,7 @@ below and the files left out:
 - `src/adapter/adapters/openai/streamer.rs`: a streamed chat-completions answer keeps OpenRouter's
   `delta.reasoning_details` blocks, under the `capture_reasoning_content` opt-in. This file is byte for byte the one on
   the upstream PR (jeremychone/rust-genai#360) branch `openai-stream-reasoning-details` of `vdavid/rust-genai` (commit
-  `9e8988a`; upstream's `main` has left the file untouched since 0.7.1, so it drops on as is). `merge_reasoning_details` follows OpenRouter's own AI SDK rule
+  `9e8988a`; 0.7.2 ships the file byte for byte as 0.7.1 did, so it drops on as is; checked 2026-11-03 by diffing the two `.crate` files). `merge_reasoning_details` follows OpenRouter's own AI SDK rule
   (OpenRouterTeam/ai-sdk-provider#583): a `reasoning.text` or `reasoning.summary` piece extends the last block of the
   same type unless that block is already signed (a signature closes its block), and any other piece
   (`reasoning.encrypted`) is a whole block. A content piece with a different `index` also starts a new block, which
@@ -55,5 +55,5 @@ upstream's `Cargo.lock` and `tests/data/openai_generated_*.json` from the crates
 ## Dropping it
 
 When upstream ships streaming `reasoning_details` capture, delete this folder, its `[patch.crates-io]` line, and its
-`exclude` entry, and keep Cmdr's fixture test. `desktop-rust-vendor-patch-applied` fails as soon as a bump past 0.7.1
+`exclude` entry, and keep Cmdr's fixture test. `desktop-rust-vendor-patch-applied` fails as soon as a bump past 0.7.2
 makes cargo resolve crates.io again.

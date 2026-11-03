@@ -15,8 +15,8 @@ publish = false
 cargo-fuzz = true
 
 # The root workspace's `[patch.crates-io]` doesn't reach a separate workspace, so
-# the patched crates under test link against repeats it here. `cmdr-archive` calls
-# the vendored `zip`'s `central_directory_len()`, which upstream doesn't have, and the
+# the patched crates under test link against repeats it here. `cmdr-archive` needs
+# the vendored `zip`'s encrypted-entry raw copy (`vendor/zip/CMDR-PATCH.md`), and the
 # vendored `rc-zip` keeps its `zstd` off the advisory-hit 0.13 line.
 [patch.crates-io]
 rc-zip = { path = "../vendor/rc-zip" }

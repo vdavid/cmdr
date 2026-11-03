@@ -190,13 +190,14 @@ to agree. "Zip cloaking" (GHSA-m665-v7pm-7grj) exploits a reader pair that disag
 extractor see different files. Cmdr has no such pair: rc-zip's `ArchiveFsm` lists from the central directory, and both
 entry readers (rc-zip's `EntryFsm` and the `zip` crate's `by_index_decrypt`) start from that central record. The local
 header supplies where the data begins (and, for rc-zip, the compression method), never the name (verified by reading
-`vendor/rc-zip/src/fsm/entry/mod.rs` and `vendor/zip/src/read/zip_archive.rs`, rc-zip 5.4.1 and zip 9.0.5, 2026-10-29).
-The sanitizer and every extract destination see the central name, so a cloaked zip extracts exactly what it lists. ❌
-Never read entries through `ZipStreamReader` or rc-zip's streaming reader (`ReadZipStreaming`): they trust local
-headers. A mutation rewrites each kept entry's local header from the central name, so an edit also removes the cloak
-(`mutator_archive_shape_test.rs`). We don't opt into the `zip` crate's strict `enforce_header_consistency`: it would
-refuse real zips over harmless drift (timestamps, zip64 sizes) to defend a differential we don't have. Tests: the
-`cloaked_*` cases in `archive_test.rs`, built with `test_fixtures::cloak_first_central_name`.
+`vendor/rc-zip/src/fsm/entry/mod.rs` and `vendor/zip/src/read/zip_archive.rs`, rc-zip 5.4.1 and zip 9.0.5, 2026-10-29;
+zip 9.2.0, 2026-11-03). The sanitizer and every extract destination see the central name, so a cloaked zip extracts
+exactly what it lists. ❌ Never read entries through `ZipStreamReader` or rc-zip's streaming reader
+(`ReadZipStreaming`): they trust local headers. A mutation rewrites each kept entry's local header from the central
+name, so an edit also removes the cloak (`mutator_archive_shape_test.rs`). We don't opt into the `zip` crate's strict
+`enforce_header_consistency`: it would refuse real zips over harmless drift (timestamps, zip64 sizes) to defend a
+differential we don't have. Tests: the `cloaked_*` cases in `archive_test.rs`, built with
+`test_fixtures::cloak_first_central_name`.
 
 ## Streaming reads, off the executor (`ArchiveEntryReader`)
 

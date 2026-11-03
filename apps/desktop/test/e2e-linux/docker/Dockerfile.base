@@ -107,19 +107,28 @@ RUN apt-get update && apt-get install -y \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js 22 LTS and Rust come from the official images, pinned by digest, so the toolchain is
-# exactly what Renovate last reviewed rather than whatever a `curl | sh` installer served today.
-# Node's binaries are built against an old glibc and run unchanged on Ubuntu.
-COPY --from=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa /usr/local/lib/node_modules /usr/local/lib/node_modules
+# Node.js 26 LTS (matching `.mise.toml`) and Rust come from the official images, pinned by
+# digest, so the toolchain is exactly what Renovate last reviewed rather than whatever a
+# `curl | sh` installer served today. Node's binaries are built against an old glibc and run
+# unchanged on Ubuntu.
+COPY --from=node:26-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39 /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:26-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39 /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack
+    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # pnpm through corepack, which fetches the version the repo's `packageManager` names at first use
-# and checks the npm registry's signature on it.
+# and checks the npm registry's signature on it. Node 25+ no longer bundles corepack (the
+# `node:26` image has only npm), so its registry tarball comes in pinned by hash (Scorecard's
+# Pinned-Dependencies flags an `npm install`). The package has no dependencies: `dist/` is bundled.
+# To bump: the new tarball's sha256, and check it against `npm view corepack@<v> dist.integrity`.
+ADD --checksum=sha256:9128cfe26aee0c99f4fc68c15c6b8b12309a68be0de2c012cdfea2a463cb722f \
+    https://registry.npmjs.org/corepack/-/corepack-0.36.0.tgz /tmp/corepack.tgz
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-RUN corepack enable pnpm
+RUN mkdir /usr/local/lib/node_modules/corepack \
+    && tar -xzf /tmp/corepack.tgz --strip-components=1 -C /usr/local/lib/node_modules/corepack \
+    && rm /tmp/corepack.tgz \
+    && ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack \
+    && corepack enable pnpm
 
 # Rust (needed to compile the Tauri binary with --features playwright-e2e). The bind-mounted
 # registry cache in `e2e-linux.sh` lives under /root/.cargo, so the toolchain moves there too.

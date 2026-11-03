@@ -5,6 +5,107 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [9.2.0](https://github.com/zip-rs/zip2/compare/v9.1.3...v9.2.0) - 2026-10-31
+
+### <!-- 0 -->🚀 Features
+
+- *(write)* add parallel compression and batch appending for ZipWriter with Rayon ([#1225](https://github.com/zip-rs/zip2/pull/1225))
+- add index_for_name_raw ([#1210](https://github.com/zip-rs/zip2/pull/1210))
+- *(extract)* multi-threaded parallel extraction engine and safe extent pre-allocation ([#1207](https://github.com/zip-rs/zip2/pull/1207))
+- *(read)* add index-free iterable ZIP reader ([#1218](https://github.com/zip-rs/zip2/pull/1218))
+
+### <!-- 1 -->🐛 Bug Fixes
+
+- by_name().get_metadata() and by_index().get_metadata() now succeed even when compression method is unsupported ([#1228](https://github.com/zip-rs/zip2/pull/1228))
+- *(read)* keep ZipIterable::len at the central directory entry count ([#1221](https://github.com/zip-rs/zip2/pull/1221))
+- *(fuzz)* count reopens in copy bases when tracking comment shrink ([#1222](https://github.com/zip-rs/zip2/pull/1222))
+
+### <!-- 4 -->⚡ Performance
+
+- *(read)* eliminate redundant pre-scan I/O and atomic contention in par_extract ([#1227](https://github.com/zip-rs/zip2/pull/1227))
+- *(read)* eliminate redundant clone and heap allocations in safe_prepare_path ([#1224](https://github.com/zip-rs/zip2/pull/1224))
+
+## [9.1.3](https://github.com/zip-rs/zip2/compare/v9.1.2...v9.1.3) - 2026-10-27
+
+### <!-- 0 -->🚀 Features
+
+- *(extra_fields)* support 0xd935 Android ZIP alignment extra field ([#928](https://github.com/zip-rs/zip2/pull/928)) ([#1198](https://github.com/zip-rs/zip2/pull/1198))
+
+### <!-- 1 -->🐛 Bug Fixes
+
+- *(format)* record correct 32-bit EOCD offset in ZIP64 archives ([#1205](https://github.com/zip-rs/zip2/pull/1205))
+- *(aes)* wipe AES round keys when the cipher is dropped ([#1204](https://github.com/zip-rs/zip2/pull/1204))
+- *(fuzz)* treat a comment change in a merged sub-writer as non-streamable ([#1188](https://github.com/zip-rs/zip2/pull/1188))
+- *(aes)* zeroize AesCtrZipKeyStream buffer and counter on drop ([#1196](https://github.com/zip-rs/zip2/pull/1196))
+- *(extract)* prevent symlink-follow truncation via FILE_FLAG_OPEN_REPARSE_POINT ([#1195](https://github.com/zip-rs/zip2/pull/1195))
+- *(write)* drop a stale Unicode Path extra field when copying an entry ([#1187](https://github.com/zip-rs/zip2/pull/1187))
+- *(write)* don't leave a stale tail that completes a fake EOCD in the comment ([#1186](https://github.com/zip-rs/zip2/pull/1186))
+- *(write)* reject deflate levels below 10 when only zopfli is enabled ([#1182](https://github.com/zip-rs/zip2/pull/1182))
+
+### <!-- 4 -->⚡ Performance
+
+- *(read)* accelerate extraction with 64 KiB reusable buffer ([#1206](https://github.com/zip-rs/zip2/pull/1206))
+- *(aes)* encrypt AES-CTR counter blocks in batches ([#1203](https://github.com/zip-rs/zip2/pull/1203))
+- *(read)* eliminate double allocation by populating IndexMap directly ([#1200](https://github.com/zip-rs/zip2/pull/1200))
+- *(read)* preallocate files vector in read_central_header ([#1199](https://github.com/zip-rs/zip2/pull/1199))
+
+## [9.1.2](https://github.com/zip-rs/zip2/compare/v9.1.1...v9.1.2) - 2026-10-26
+
+### <!-- 1 -->🐛 Bug Fixes
+
+- preserve the file kind (normal/directory/symlink) in raw_copy_file_touch ([#1179](https://github.com/zip-rs/zip2/pull/1179))
+- *(write)* reject a Unicode Path extra field that would rename the entry ([#1177](https://github.com/zip-rs/zip2/pull/1177))
+- *(extract)* prevent following symbolic links during file creation ([#1116](https://github.com/zip-rs/zip2/pull/1116))
+
+## [9.1.1](https://github.com/zip-rs/zip2/compare/v9.1.0...v9.1.1) - 2026-10-25
+
+### <!-- 1 -->🐛 Bug Fixes
+
+- store the raw count instead of a bool ([#1174](https://github.com/zip-rs/zip2/pull/1174))
+- preserve extra fields in raw_copy_file_touch ([#1172](https://github.com/zip-rs/zip2/pull/1172))
+- *(write)* flag a non-ASCII file comment as UTF-8 when writing it ([#1160](https://github.com/zip-rs/zip2/pull/1160))
+- *(write)* reject duplicate names in merge_archive, blank stale footers, and add opt-in extra-field validation ([#1159](https://github.com/zip-rs/zip2/pull/1159))
+
+## [9.1.0](https://github.com/zip-rs/zip2/compare/v9.0.5...v9.1.0) - 2026-10-24
+
+### <!-- 0 -->🚀 Features
+
+- *(read)* enforce header consistency on extract_with_options and expose duplicate name detection ([#1109](https://github.com/zip-rs/zip2/pull/1109))
+- Add borrowing `inner` method to reader wrappers ([#1050](https://github.com/zip-rs/zip2/pull/1050))
+- add with_size_limit to ExtractOptions to limit total declared uncompressed size ([#1019](https://github.com/zip-rs/zip2/pull/1019))
+- add file_names_raw iterator ([#1082](https://github.com/zip-rs/zip2/pull/1082))
+
+### <!-- 1 -->🐛 Bug Fixes
+
+- raw_copy_file keeps an entry's name bytes and UTF-8 flag as stored ([#1124](https://github.com/zip-rs/zip2/pull/1124))
+- *(write)* prevent seek panic on streaming writer with comment ([#1151](https://github.com/zip-rs/zip2/pull/1151))
+- Accept bounded central directory digital signature record when enforcing header consistency in ZipStreamReader ([#1134](https://github.com/zip-rs/zip2/pull/1134))
+- apply unix permissions at creation ([#1104](https://github.com/zip-rs/zip2/pull/1104))
+- raw_copy_file should work with any extra fields ([#1120](https://github.com/zip-rs/zip2/pull/1120))
+- *(read)* avoid full-file forward scans and redundant allocations in central directory ([#1142](https://github.com/zip-rs/zip2/pull/1142))
+- don't enable typed-path's default std feature ([#1112](https://github.com/zip-rs/zip2/pull/1112))
+- ZIP64 size fields were being deep-copied incorrectly (via Copilot gpt-6-luna) ([#1107](https://github.com/zip-rs/zip2/pull/1107))
+- resolve decoded CP437 member names ([#1080](https://github.com/zip-rs/zip2/pull/1080)) ([#1085](https://github.com/zip-rs/zip2/pull/1085))
+- Debug assertion doesn't account for length of archive comment ([#1097](https://github.com/zip-rs/zip2/pull/1097))
+
+### <!-- 2 -->🚜 Refactor
+
+- Lazy instantiation for all decompressors ([#1046](https://github.com/zip-rs/zip2/pull/1046)) ([#1047](https://github.com/zip-rs/zip2/pull/1047))
+
+### <!-- 4 -->⚡ Performance
+
+- *(write)* reuse the DEFLATE compressor across entries ([#1119](https://github.com/zip-rs/zip2/pull/1119))
+
+### <!-- 7 -->⚙️ Miscellaneous Tasks
+
+- Fix reference to nonexistent variable on #[cfg(not(any(unix, windows)))] ([#1138](https://github.com/zip-rs/zip2/pull/1138))
+- target lzma-rust2 v0.23 ([#1096](https://github.com/zip-rs/zip2/pull/1096))
+
+### Bench
+
+- add Criterion benchmarks ([#754](https://github.com/zip-rs/zip2/pull/754))
+- add deflate_many_small_files bench for #633 ([#964](https://github.com/zip-rs/zip2/pull/964))
+
 ## [9.0.5](https://github.com/zip-rs/zip2/compare/v9.0.4...v9.0.5) - 2026-10-17
 
 ### <!-- 1 -->🐛 Bug Fixes

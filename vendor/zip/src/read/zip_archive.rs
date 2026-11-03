@@ -2,12 +2,14 @@
 
 use crate::compression::CompressionMethod;
 use crate::format::MagicPositionCache;
-use crate::format::blocks::{FixedSizeBlock, Zip32CentralDirectoryEnd, ZipCentralEntryBlock};
+use crate::format::blocks::{
+    FixedSizeBlock, Zip32CentralDirectoryEnd, ZipCentralEntryBlock, ZipLocalEntryBlock,
+};
 use crate::format::find_central_directory_end;
 use crate::format::magic::Magic;
 use crate::read::config::Config;
 use crate::read::extract::RootDirFilter;
-use crate::read::magic_finder::MagicFinder;
+use crate::read::magic_finder::{Forward, MagicFinder};
 use crate::read::readers::{ZipFileReader, ZipFileSeekReader};
 use crate::read::zipfile::{ZipFileEntry, ZipFileEntryWithDataDescriptor};
 use crate::read::{
@@ -29,7 +31,8 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct ZipArchiveMetadata {
     pub(crate) files: IndexMap<Box<[u8]>, ZipFileData>,
-    pub(crate) has_duplicate_names: bool,
+    /// The raw file count (before inserting in the IndexMap) - used to detect duplicates
+    pub(crate) raw_file_count: usize,
     pub(crate) offset: u64,
     pub(crate) dir_start: u64,
     // This isn't yet used anywhere, but it is here for use cases in the future.
@@ -37,9 +40,6 @@ pub struct ZipArchiveMetadata {
     pub(crate) config: Config,
     pub(crate) comment: Box<[u8]>,
     pub(crate) zip64_extensible_data_sector: Option<Box<[u8]>>,
-    /// How many records the central directory held, before same-named ones
-    /// folded into one entry of `files`.
-    pub(crate) central_directory_len: usize,
 }
 
 impl ZipArchiveMetadata {
@@ -63,11 +63,18 @@ impl ZipArchiveMetadata {
             data: Cow::Borrowed(data),
         })
     }
+
+    /// Whether the central directory contains duplicate file names.
+    #[must_use]
+    pub fn has_duplicate_names(&self) -> bool {
+        self.raw_file_count > self.files.len()
+    }
 }
 
 #[derive(Debug)]
 pub(crate) struct SharedBuilder {
-    pub(crate) files: Vec<(Box<[u8]>, ZipFileData)>,
+    pub(crate) files: IndexMap<Box<[u8]>, ZipFileData>,
+    pub(crate) raw_file_count: usize,
     pub(super) offset: u64,
     pub(super) dir_start: u64,
     // This isn't yet used anywhere, but it is here for use cases in the future.
@@ -81,22 +88,14 @@ impl SharedBuilder {
         comment: Box<[u8]>,
         zip64_extensible_data_sector: Option<Box<[u8]>>,
     ) -> ZipArchiveMetadata {
-        let raw_file_count = self.files.len();
-        let mut index_map = IndexMap::with_capacity(raw_file_count);
-        self.files.into_iter().for_each(|(file_name_raw, file)| {
-            index_map.insert(file_name_raw, file);
-        });
-        let has_duplicate_names = index_map.len() != raw_file_count;
-        let central_directory_len = raw_file_count;
         ZipArchiveMetadata {
-            files: index_map,
-            has_duplicate_names,
+            files: self.files,
+            raw_file_count: self.raw_file_count,
             offset: self.offset,
             dir_start: self.dir_start,
             config: self.config,
             comment,
             zip64_extensible_data_sector,
-            central_directory_len,
         }
     }
 }
@@ -140,10 +139,10 @@ impl<R> ZipArchive<R> {
             Some((_, file)) => file.header_start,
             None => central_start,
         };
-        let central_directory_len = files.len();
+        let raw_file_count = files.len();
         let shared = Arc::new(ZipArchiveMetadata {
             files,
-            has_duplicate_names: false,
+            raw_file_count,
             offset: initial_offset,
             dir_start: central_start,
             config: Config {
@@ -151,7 +150,6 @@ impl<R> ZipArchive<R> {
             },
             comment,
             zip64_extensible_data_sector,
-            central_directory_len,
         });
         Self { reader, shared }
     }
@@ -172,11 +170,31 @@ impl<R> ZipArchive<R> {
 
 use crate::result::invalid;
 
-#[derive(Debug)]
-struct CentralDirectoryChain {
-    entries: Vec<(u64, ZipCentralEntryBlock)>,
-    next_offset: u64,
-    terminal_error: Option<ZipError>,
+/// The next `valid` headers decode, then the one after them fails with `error`.
+#[derive(Debug, Clone)]
+struct FailedRun {
+    valid: usize,
+    error: ZipError,
+}
+
+/// Headers walked by rejected EOCD candidates, keyed by position and shared by all of them.
+#[derive(Debug, Default)]
+struct CentralDirectoryChains {
+    runs: std::collections::HashMap<u64, FailedRun>,
+}
+
+impl CentralDirectoryChains {
+    /// Marks the headers in `chain` as followed by `tail` and returns its error.
+    fn fail(&mut self, chain: &[u64], tail: FailedRun) -> ZipError {
+        for (i, &central_header_start) in chain.iter().enumerate() {
+            let run = FailedRun {
+                valid: chain.len() - i + tail.valid,
+                error: tail.error.clone(),
+            };
+            self.runs.insert(central_header_start, run);
+        }
+        tail.error
+    }
 }
 
 impl<R: Read + Seek> ZipArchive<R> {
@@ -186,7 +204,7 @@ impl<R: Read + Seek> ZipArchive<R> {
         // End of the probed region, initially set to the end of the file
         let file_len = reader.seek(SeekFrom::End(0))?;
         let mut last_err = None;
-        let mut cd_chains = std::collections::HashMap::<u64, CentralDirectoryChain>::new();
+        let mut cd_chains = CentralDirectoryChains::default();
 
         const EOCD_SIG_BYTES: [u8; mem::size_of::<Magic>()] =
             Magic::CENTRAL_DIRECTORY_END_SIGNATURE.to_le_bytes();
@@ -235,26 +253,59 @@ impl<R: Read + Seek> ZipArchive<R> {
                     );
                 }
                 Err(e) => {
+                    // Other readers use a record whose CD ends at it, so don't fall back past it.
+                    if cde.central_directory_abuts_end() {
+                        return Err(e);
+                    }
                     last_err = Some(e);
                 }
             }
-            // Something went wrong while decoding the cde, try to find a new one
+            // The record is likely a stray signature (e.g. in a comment or trailing garbage),
+            // try to find an earlier one
             continue;
         }
+    }
+
+    /// Decodes the header at `central_header_start`, where `reader` must be positioned. The
+    /// returned entry's local header offset isn't shifted by the archive offset yet.
+    fn read_one_central_header(
+        reader: &mut R,
+        central_header_start: u64,
+    ) -> ZipResult<(Box<[u8]>, ZipFileData, u64)> {
+        let block = ZipCentralEntryBlock::parse(reader)?;
+        let next = central_header_start
+            + (size_of::<Magic>() + size_of::<ZipCentralEntryBlock>()) as u64
+            + u64::from(block.file_name_length)
+            + u64::from(block.extra_field_length)
+            + u64::from(block.file_comment_length);
+        let (file, file_name_raw) =
+            central_header_to_zip_file_inner(reader, 0, central_header_start, block)?;
+        // Check against this header's position so the result is the same for every candidate.
+        if file
+            .header_start
+            .checked_add(central_header_start)
+            .is_none()
+        {
+            return Err(invalid!("Archive header is too large"));
+        }
+        Ok((file_name_raw.into_boxed_slice(), file, next))
     }
 
     fn read_central_header(
         dir_info: &CentralDirectoryInfo,
         config: Config,
         reader: &mut R,
-        cd_chains: &mut std::collections::HashMap<u64, CentralDirectoryChain>,
+        cd_chains: &mut CentralDirectoryChains,
     ) -> Result<SharedBuilder, ZipError> {
         // If the parsed number of files is greater than the offset then
         // something fishy is going on and we shouldn't trust number_of_files.
-        let file_capacity = if dir_info.number_of_files > dir_info.directory_start as usize {
+        // Furthermore, each CDFH requires at least 46 bytes (4 bytes magic + 42 bytes ZipCentralEntryBlock).
+        let max_files = usize::try_from(dir_info.directory_size / 46).unwrap_or(usize::MAX);
+        let dir_start_bound = usize::try_from(dir_info.directory_start).unwrap_or(usize::MAX);
+        let file_capacity = if dir_info.number_of_files > dir_start_bound {
             0
         } else {
-            dir_info.number_of_files
+            dir_info.number_of_files.min(max_files)
         };
 
         if dir_info.disk_number != dir_info.disk_with_central_directory {
@@ -267,64 +318,45 @@ impl<R: Read + Seek> ZipArchive<R> {
             return Err(ZipError::UnsupportedArchive("Oversized central directory"));
         }
 
-        let chain = cd_chains
-            .entry(dir_info.directory_start)
-            .or_insert_with(|| CentralDirectoryChain {
-                entries: Vec::new(),
-                next_offset: dir_info.directory_start,
-                terminal_error: None,
-            });
-
-        if chain.entries.len() < dir_info.number_of_files {
-            if let Some(ref err) = chain.terminal_error {
-                return Err(err.clone());
+        // Decode independently of the candidate so later candidates can reuse `cd_chains`.
+        let mut files = IndexMap::with_capacity(file_capacity);
+        let mut chain = Vec::with_capacity(file_capacity);
+        let mut central_header_start = dir_info.directory_start;
+        reader.seek(SeekFrom::Start(central_header_start))?;
+        while chain.len() < dir_info.number_of_files {
+            // An earlier candidate dropped these headers; decode them again for this last one.
+            if let Some(run) = cd_chains.runs.get(&central_header_start)
+                && chain.len() + run.valid < dir_info.number_of_files
+            {
+                let run = run.clone();
+                return Err(cd_chains.fail(&chain, run));
             }
-
-            reader.seek(SeekFrom::Start(chain.next_offset))?;
-            while chain.entries.len() < dir_info.number_of_files {
-                let central_header_start = reader.stream_position()?;
-                // Parse central header
-                let block = match ZipCentralEntryBlock::parse(reader) {
-                    Ok(b) => b,
-                    Err(e) => {
-                        chain.terminal_error = Some(e.clone());
-                        chain.next_offset = central_header_start;
-                        return Err(e);
-                    }
-                };
-                chain.next_offset = reader.seek(SeekFrom::Current(
-                    i64::from(block.file_name_length)
-                        + i64::from(block.extra_field_length)
-                        + i64::from(block.file_comment_length),
-                ))?;
-
-                chain.entries.push((central_header_start, block));
+            match Self::read_one_central_header(reader, central_header_start) {
+                Ok((file_name_raw, file, next)) => {
+                    chain.push(central_header_start);
+                    files.insert(file_name_raw, file);
+                    central_header_start = next;
+                }
+                Err(e) => {
+                    let failed_here = FailedRun { valid: 0, error: e };
+                    cd_chains
+                        .runs
+                        .insert(central_header_start, failed_here.clone());
+                    return Err(cd_chains.fail(&chain, failed_here));
+                }
             }
         }
 
-        let mut files = Vec::with_capacity(chain.entries.len().min(dir_info.number_of_files));
-        for (central_header_start, block) in chain.entries.drain(..dir_info.number_of_files) {
-            let variable_fields_start = central_header_start
-                + (size_of::<Magic>() + size_of::<ZipCentralEntryBlock>()) as u64;
-            reader.seek(SeekFrom::Start(variable_fields_start))?;
-            let (mut file, file_name_raw) =
-                match central_header_to_zip_file_inner(reader, 0, central_header_start, block) {
-                    Ok(f) => f,
-                    Err(e) => {
-                        chain.terminal_error = Some(e.clone());
-                        chain.next_offset = central_header_start;
-                        return Err(e);
-                    }
-                };
+        for file in files.values_mut() {
             file.header_start = file
                 .header_start
                 .checked_add(dir_info.archive_offset)
                 .ok_or_else(|| invalid!("Archive header is too large"))?;
-            files.push((file_name_raw.into_boxed_slice(), file));
         }
 
         Ok(SharedBuilder {
             files,
+            raw_file_count: chain.len(),
             offset: dir_info.archive_offset,
             dir_start: dir_info.directory_start,
             config,
@@ -443,14 +475,6 @@ impl<R: Read + Seek> ZipArchive<R> {
         self.shared.len()
     }
 
-    /// Number of records in the central directory. More than [`Self::len`] when
-    /// two records share a name: the archive keeps one entry per name (the later
-    /// record's), so the earlier one is unreachable, and a copy of the archive
-    /// through this reader drops it.
-    pub fn central_directory_len(&self) -> usize {
-        self.shared.central_directory_len
-    }
-
     /// Get the starting offset of the zip central directory.
     pub fn central_directory_start(&self) -> u64 {
         self.shared.dir_start
@@ -459,6 +483,12 @@ impl<R: Read + Seek> ZipArchive<R> {
     /// Whether this zip archive contains no files
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// Whether this zip archive contains duplicate file names in its central directory.
+    #[must_use]
+    pub fn has_duplicate_names(&self) -> bool {
+        self.shared.has_duplicate_names()
     }
 
     /// Get the offset from the beginning of the underlying reader that this zip begins at, in bytes.
@@ -485,6 +515,14 @@ impl<R: Read + Seek> ZipArchive<R> {
             .files
             .iter()
             .map(|(file_name_raw, data)| data.name(file_name_raw))
+    }
+
+    /// Returns an iterator over all the raw file and directory names in this archive.
+    pub fn file_names_raw(&self) -> impl Iterator<Item = &[u8]> {
+        self.shared
+            .files
+            .iter()
+            .map(|(file_name_raw, _data)| file_name_raw.as_ref())
     }
 
     /// Returns Ok(true) if any compressed data in this archive belongs to more than one file. This
@@ -515,6 +553,11 @@ impl<R: Read + Seek> ZipArchive<R> {
     }
 
     fn has_overlap(&mut self, include_header: bool) -> ZipResult<bool> {
+        let ranges = self.entry_byte_ranges(include_header)?;
+        Ok(Self::ranges_overlap(&ranges, self.shared.dir_start))
+    }
+
+    fn entry_byte_ranges(&mut self, include_header: bool) -> ZipResult<Vec<Range<u64>>> {
         let mut ranges = Vec::<Range<u64>>::with_capacity(self.shared.files.len());
         for file in self.shared.files.values() {
             if !include_header && file.compressed_size == 0 {
@@ -535,8 +578,71 @@ impl<R: Read + Seek> ZipArchive<R> {
             ranges.push(start..end);
         }
         ranges.sort_unstable_by_key(|r| (r.start, r.end));
-        let overlaps_central_directory = ranges.iter().any(|r| r.end > self.shared.dir_start);
-        Ok(overlaps_central_directory || ranges.windows(2).any(|w| w[0].end > w[1].start))
+        Ok(ranges)
+    }
+
+    fn ranges_overlap(ranges: &[Range<u64>], dir_start: u64) -> bool {
+        ranges.iter().any(|r| r.end > dir_start) || ranges.windows(2).any(|w| w[0].end > w[1].start)
+    }
+
+    fn unoccupied_ranges(ranges: &[Range<u64>], end: u64) -> Vec<Range<u64>> {
+        let mut unoccupied = Vec::new();
+        let mut cursor = 0;
+        for range in ranges {
+            let gap_end = range.start.min(end);
+            if cursor < gap_end {
+                unoccupied.push(cursor..gap_end);
+            }
+            cursor = cursor.max(range.end.min(end));
+            if cursor == end {
+                break;
+            }
+        }
+        if cursor < end {
+            unoccupied.push(cursor..end);
+        }
+        unoccupied
+    }
+
+    fn scan_for_unlisted_local_headers(&mut self, gaps: &[Range<u64>]) -> ZipResult<bool> {
+        const LOCAL_FILE_HEADER_SIGNATURE: [u8; size_of::<Magic>()] =
+            Magic::LOCAL_FILE_HEADER_SIGNATURE.to_le_bytes();
+
+        for gap in gaps {
+            let mut finder =
+                MagicFinder::<Forward<'_>>::new(&LOCAL_FILE_HEADER_SIGNATURE, gap.start, gap.end);
+            while let Some(offset) = finder.next(&mut self.reader)? {
+                if Self::is_valid_local_header_at(&mut self.reader, offset, gap.end)? {
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
+    }
+
+    fn is_valid_local_header_at<T: Read + Seek + ?Sized>(
+        reader: &mut T,
+        offset: u64,
+        range_end: u64,
+    ) -> ZipResult<bool> {
+        let fixed_header_end =
+            offset.checked_add((size_of::<Magic>() + size_of::<ZipLocalEntryBlock>()) as u64);
+        if fixed_header_end.is_none_or(|end| end > range_end) {
+            return Ok(false);
+        }
+        reader.seek(SeekFrom::Start(offset))?;
+        let block = match ZipLocalEntryBlock::parse(reader) {
+            Ok(block) => block,
+            Err(ZipError::Io(error)) if error.kind() != std::io::ErrorKind::UnexpectedEof => {
+                return Err(ZipError::Io(error));
+            }
+            Err(_) => return Ok(false),
+        };
+        let variable_fields_len =
+            u64::from(block.file_name_length) + u64::from(block.extra_field_length);
+        Ok(!fixed_header_end
+            .and_then(|end| end.checked_add(variable_fields_len))
+            .is_none_or(|end| end > range_end))
     }
 
     /// Search for a file entry by name, decrypt with given password
@@ -557,14 +663,45 @@ impl<R: Read + Seek> ZipArchive<R> {
     }
 
     /// Search for a file entry by name
+    /// First try to get the index by the name as a binary representation of the name. If not found,
+    /// try to find the name with the decoded version of the name. This is a fallback for name
+    /// encoded with CP437.
     pub fn by_name(&mut self, name: &str) -> ZipResult<ZipFile<'_, R>> {
         self.by_name_with_optional_password(name, None)
     }
 
+    /// Search for a file entry by its raw name bytes, without decoding the name.
+    /// The running time of this operation doesn't scale with the number of files in the archive,
+    /// only with the length of the name being looked up (since it is hashed).
+    pub fn by_name_raw(&mut self, name: &[u8]) -> ZipResult<ZipFile<'_, R>> {
+        let index = self
+            .index_for_name_raw(name)
+            .ok_or(ZipError::FileNotFound)?;
+        self.by_index_raw(index)
+    }
+
     /// Get the index of a file entry by name, if it's present.
+    /// First try to get the index by the name as a binary representation of the name. If not found,
+    /// try to find the name with the decoded version of the name. This is a fallback for name
+    /// encoded with CP437.
+    /// If you don't need to use the fallback, consider using [`Self::index_for_name_raw`] which doesn't
+    /// have the fallback.
     #[inline]
     pub fn index_for_name(&self, name: &str) -> Option<usize> {
-        self.shared.files.get_index_of(name.as_bytes())
+        self.shared.files.get_index_of(name.as_bytes()).or_else(|| {
+            self.shared
+                .files
+                .iter()
+                .position(|(raw, data)| data.name(raw).is_ok_and(|decoded| decoded == name))
+        })
+    }
+
+    /// Get the index of a file entry by the raw name, if it's present. The running time of this
+    /// operation doesn't scale with the number of files in the archive, only with the length of the
+    /// name being looked up (since it is hashed).
+    #[inline]
+    pub fn index_for_name_raw(&self, name: &[u8]) -> Option<usize> {
+        self.shared.files.get_index_of(name)
     }
 
     /// Get data and the data descriptor of the file
@@ -673,7 +810,7 @@ impl<R: Read + Seek> ZipArchive<R> {
         name: &str,
         password: Option<&[u8]>,
     ) -> ZipResult<ZipFile<'a, R>> {
-        let Some(index) = self.shared.files.get_index_of(name.as_bytes()) else {
+        let Some(index) = self.index_for_name(name) else {
             return Err(ZipError::FileNotFound);
         };
         self.by_index_with_options(index, ZipReadOptions::new().password(password))
@@ -731,7 +868,7 @@ impl<R: Read + Seek> ZipArchive<R> {
         name: &str,
         options: ZipReadOptions<'_>,
     ) -> ZipResult<ZipFile<'a, R>> {
-        let Some(index) = self.shared.files.get_index_of(name.as_bytes()) else {
+        let Some(index) = self.index_for_name(name) else {
             return Err(ZipError::FileNotFound);
         };
         self.by_index_with_options(index, options)
@@ -749,7 +886,7 @@ impl<R: Read + Seek> ZipArchive<R> {
             .get_index(file_number)
             .ok_or(ZipError::FileNotFound)?;
         if options.enforce_header_consistency {
-            if self.shared.has_duplicate_names {
+            if self.shared.has_duplicate_names() {
                 return Err(invalid!(
                     "header inconsistency detected: duplicate file names in central directory"
                 ));
@@ -765,9 +902,10 @@ impl<R: Read + Seek> ZipArchive<R> {
         })
     }
 
-    /// Validates that all local file headers in the archive match their corresponding central directory headers.
+    /// Validates that local file headers match their corresponding central directory headers and
+    /// that no local file headers are missing from the central directory.
     pub fn validate_header_consistency(&mut self) -> ZipResult<()> {
-        if self.shared.has_duplicate_names {
+        if self.shared.has_duplicate_names() {
             return Err(invalid!(
                 "header inconsistency detected: duplicate file names in central directory"
             ));
@@ -775,9 +913,16 @@ impl<R: Read + Seek> ZipArchive<R> {
         for (file_name_raw, data) in &self.shared.files {
             data.validate_header_consistency(&mut self.reader, file_name_raw)?;
         }
-        if self.has_overlapping_entries()? {
+        let ranges = self.entry_byte_ranges(true)?;
+        if Self::ranges_overlap(&ranges, self.shared.dir_start) {
             return Err(invalid!(
                 "header inconsistency detected: archive contains overlapping entries"
+            ));
+        }
+        let gaps = Self::unoccupied_ranges(&ranges, self.shared.dir_start);
+        if self.scan_for_unlisted_local_headers(&gaps)? {
+            return Err(invalid!(
+                "header inconsistency detected: local file header missing from central directory"
             ));
         }
         Ok(())
@@ -873,6 +1018,26 @@ mod tests {
     use crate::read::ArchiveOffset;
     use crate::read::magic_finder::{Backwards, MagicFinder};
     use std::io::{Cursor, Write};
+
+    #[test]
+    fn unlisted_local_header_with_malformed_extra_field_is_detected() {
+        let mut bytes = Magic::LOCAL_FILE_HEADER_SIGNATURE.to_le_bytes().to_vec();
+        let mut fixed_header = [0; 26];
+        fixed_header[22..24].copy_from_slice(&1u16.to_le_bytes());
+        fixed_header[24..26].copy_from_slice(&4u16.to_le_bytes());
+        bytes.extend_from_slice(&fixed_header);
+        bytes.extend_from_slice(b"x");
+        bytes.extend_from_slice(&[1, 0, 5, 0]);
+
+        assert!(
+            super::ZipArchive::<Cursor<Vec<u8>>>::is_valid_local_header_at(
+                &mut Cursor::new(bytes.clone()),
+                0,
+                bytes.len() as u64,
+            )
+            .unwrap()
+        );
+    }
 
     #[test]
     fn invalid_offset() {
@@ -1114,34 +1279,59 @@ mod tests {
         assert_eq!(file.read(&mut decompressed).unwrap(), 12);
     }
 
-    /// Only on little endian because we cannot use fs with miri CI
-    #[cfg(all(target_endian = "little", not(miri)))]
+    /// Cannot use fs with miri CI
+    #[cfg(not(miri))]
     #[test]
-    fn test_central_directory_not_at_end() {
+    fn test_central_directory_before_file_data() {
         use super::ZipArchive;
+        use crate::CompressionMethod;
+        use crate::read::{ArchiveOffset, Config};
+        use crate::write::{SimpleFileOptions, ZipWriter};
         use std::io::Cursor;
-        use std::io::Read;
+        use std::io::{Read, Write};
 
-        let mut reader =
-            ZipArchive::new(Cursor::new(include_bytes!("../../tests/data/omni.ja"))).unwrap();
-        let mut file = reader.by_name("chrome.manifest").unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap(); // ensures valid UTF-8
-        assert!(!contents.is_empty(), "chrome.manifest should not be empty");
-        drop(file);
-        for i in 0..reader.len() {
-            let mut file = reader.by_index(i).unwrap();
-            // Attempt to read a small portion or all of each file to ensure it's accessible
-            let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer).unwrap();
-            let file_name = file.name().unwrap();
-            assert_eq!(
-                buffer.len(),
-                file.size() as usize,
-                "File size mismatch for {}",
-                file_name
-            );
-        }
+        let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+        writer
+            .start_file(
+                "payload.txt",
+                SimpleFileOptions::default().compression_method(CompressionMethod::Stored),
+            )
+            .unwrap();
+        writer.write_all(b"optimized layout").unwrap();
+        let normal = writer.finish().unwrap().into_inner();
+
+        // Move the central directory before the local header and its data.
+        // The EOCD remains at the end, as in Firefox's optimized ZIP layout.
+        let end_start = normal.len() - 22;
+        let central_start =
+            u32::from_le_bytes(normal[end_start + 16..end_start + 20].try_into().unwrap()) as usize;
+        let mut central = normal[central_start..end_start].to_vec();
+        let local = &normal[..central_start];
+        let mut end = normal[end_start..].to_vec();
+        assert_eq!(&central[..4], b"PK\x01\x02");
+        assert_eq!(&local[..4], b"PK\x03\x04");
+        let central_len = u32::try_from(central.len()).unwrap();
+        central[42..46].copy_from_slice(&central_len.to_le_bytes());
+        end[16..20].copy_from_slice(&0u32.to_le_bytes());
+        let optimized = [central.as_slice(), local, end.as_slice()].concat();
+        assert_eq!(&optimized[..4], b"PK\x01\x02");
+        assert_eq!(&optimized[central.len()..central.len() + 4], b"PK\x03\x04");
+
+        let mut archive = ZipArchive::with_config(
+            Config {
+                archive_offset: ArchiveOffset::Known(0),
+            },
+            Cursor::new(optimized),
+        )
+        .unwrap();
+        assert_eq!(archive.len(), 1);
+        let mut payload = String::new();
+        archive
+            .by_name("payload.txt")
+            .unwrap()
+            .read_to_string(&mut payload)
+            .unwrap();
+        assert_eq!(payload, "optimized layout");
     }
 
     #[test]
