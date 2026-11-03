@@ -45,39 +45,33 @@ const reach = [
 
 <div class="showcase-tour">
     <!-- (a) Trust: the one thing no other file manager does goes first. -->
-    <ShowcaseSection id="trust" eyebrow="File operations" title="File operations you can trust" layout="stacked">
+    <ShowcaseSection id="trust" eyebrow="File operations" title="File ops you can trust" layout="stacked">
         <p>
-            Accurate progress, honest ETAs, and pause, resume, or cancel at any moment. Every operation lands in a log,
-            and you can roll it back, even days later.
+            Accurate progress display, ETAs, pause/resume/cancel.<br />Cmdr logs every operation,
+            so you can roll them back, even days later.
         </p>
         <p class="text-base text-text-tertiary">
-            Rollback covers anything that didn’t permanently delete data. <a href="/data-safety"
-                >How Cmdr keeps your files safe</a
-            >
+            See <a href="/data-safety">How Cmdr keeps your files safe</a> for details.
         </p>
         <div slot="media" class="grid gap-10 md:grid-cols-2 md:gap-8">
             <ProductClip
                 slug="copy-rollback"
                 label="Copying a folder in Cmdr: the copy pauses, resumes, finishes, and then gets rolled back from the operation log."
-                caption="Copy, pause, resume, then roll the whole thing back."
+                caption="Copy, pause, resume, then roll it back"
             />
             <ProductClip
                 slug="ops-queue"
                 label="Several file operations queued in Cmdr, one sent to the background, and a waiting one dragged to reorder the queue."
-                caption="Queue operations, send them to the background, and reorder what’s waiting."
+                caption="Queue operations, background them, pause/resume, reorder the queue"
             />
         </div>
     </ShowcaseSection>
 
     <!-- (b) Multi-rename -->
-    <ShowcaseSection id="multi-rename" eyebrow="Multi-rename" title="Rename hundreds of files in one go">
+    <ShowcaseSection id="multi-rename" eyebrow="Multi-rename" title="Bulk rename files">
+        <p>Use a pattern, counters, search & replace, with a live preview. Changed your mind? You can undo it.</p>
         <p>
-            Patterns, counters, and search and replace, with a live preview of every new name before anything changes.
-            Changed your mind? Undo.
-        </p>
-        <p>
-            Rather say it in words? Ask for “add the date and make it lowercase” and review what the optional AI
-            suggests.
+            If you like AI, you can also ask the (<em>optional!</em>) agent to “add an ISO date and lowercase all file names”.
         </p>
         <p class="text-base">
             <a href="/features#multi-rename">Multi-rename</a>
