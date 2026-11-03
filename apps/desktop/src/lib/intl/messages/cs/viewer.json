@@ -402,6 +402,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Tento soubor už tu není. Jestli se vrátí, zkuste to znovu.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "Soubor se nepodařilo opět přečíst. Zkontrolujte, že ho pořád můžete otevřít, a zkuste to znovu.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Zkusit znovu",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "Disk odpovídá pomalu. Zkusíte to za chvíli znovu?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "Režim sledování se nepodařilo zapnout. Zkusíte to znovu?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "Režim sledování se nepodařilo vypnout. Zkusíte to znovu?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "Kódování se nepodařilo přepnout. Zkusíte to znovu?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "{size} ve schránce",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

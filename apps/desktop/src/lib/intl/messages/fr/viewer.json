@@ -402,6 +402,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Ce fichier n’est plus là. S’il réapparaît, réessayez.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "Impossible de relire le fichier. Vérifiez que vous pouvez toujours l’ouvrir, puis réessayez.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Réessayer",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "Le disque met du temps à répondre. Réessayer dans un instant ?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "Activation du mode suivi impossible. Réessayer ?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "Désactivation du mode suivi impossible. Réessayer ?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "Changement d’encodage impossible. Réessayer ?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "{size} dans votre presse-papiers",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

@@ -49,6 +49,12 @@ rsvg-convert -w 180 -h 180 "$src" -o apps/website/public/apple-touch-icon.png
 echo "==> Desktop webview favicon"
 cp apps/desktop/src-tauri/icons/128x128.png apps/desktop/static/favicon.png
 
+echo "==> Finder extension's menu item icon (16 pt, @1x and @2x)"
+# Rendered from the SVG at size, not scaled down from a bigger PNG, so the small
+# sizes stay sharp. `build.sh assemble` copies them into the extension's Resources.
+rsvg-convert -w 16 -h 16 "$src" -o apps/desktop/finder-extension/MenuIcon.png
+rsvg-convert -w 32 -h 32 "$src" -o apps/desktop/finder-extension/MenuIcon@2x.png
+
 echo "==> 1024 master for Icon Composer"
 mkdir -p "$(dirname "$master")"
 rsvg-convert -w 1024 -h 1024 "$src" -o "$master"

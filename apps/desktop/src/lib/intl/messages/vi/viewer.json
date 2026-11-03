@@ -400,6 +400,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Tệp này không còn ở đó nữa. Nếu tệp xuất hiện lại, hãy thử lại.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "Không thể đọc lại tệp. Hãy kiểm tra xem bạn có còn mở được tệp không, rồi thử lại.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Thử lại",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "Ổ đĩa đang mất một lúc để phản hồi. Thử lại sau giây lát?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "Không thể bật chế độ theo dõi. Thử lại?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "Không thể tắt chế độ theo dõi. Thử lại?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "Không thể đổi mã hóa ký tự. Thử lại?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "{size} trên bảng nhớ tạm của bạn",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

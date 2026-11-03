@@ -404,6 +404,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Den här filen finns inte kvar längre. Försök igen om den kommer tillbaka.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "Det gick inte att läsa in filen på nytt. Kontrollera att du fortfarande kan öppna den och försök sedan igen.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Försök igen",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "Disken tar ett tag på sig att svara. Försök igen om en stund?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "Det gick inte att slå på Tail-läget. Försök igen?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "Det gick inte att stänga av Tail-läget. Försök igen?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "Det gick inte att byta teckenkodning. Försök igen?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "{size} i urklipp",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

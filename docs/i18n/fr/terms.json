@@ -1104,10 +1104,10 @@
     "sources": "MS terminology FRA (dialog box → boîte de dialogue); catalog (boîte de dialogue, nine uses)"
   },
   "disable": {
-    "accept": ["désactive", "désactivé"],
+    "accept": ["désactive", "désactivé", "Désactivation"],
     "chosen": "désactiver",
     "confidence": "high",
-    "forms": "X is off → X est désactivé or X est désactivée, agreeing with the feature; the badge Off with drive indexing → Désactivé avec l’indexation",
+    "forms": "X is off → X est désactivé or X est désactivée, agreeing with the feature; Couldn’t turn off X → Désactivation de X impossible; the badge Off with drive indexing → Désactivé avec l’indexation",
     "sources": "macOS; catalog"
   },
   "disconnect": {
@@ -1233,10 +1233,10 @@
     "sources": "catalog"
   },
   "enable": {
-    "accept": ["active", "activé"],
+    "accept": ["active", "activé", "Activation"],
     "chosen": "Activer",
     "confidence": "high",
-    "forms": "turn it on in Settings → Activez-la dans les Réglages; button Activer Ask Cmdr",
+    "forms": "turn it on in Settings → Activez-la dans les Réglages; Couldn’t turn on X → Activation de X impossible; button Activer Ask Cmdr",
     "sources": "macOS; catalog"
   },
   "encoding": {

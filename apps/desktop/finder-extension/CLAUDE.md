@@ -8,6 +8,7 @@ extension that calls the macOS service the app already declares (`src-tauri/Info
 - `OpenInCmdr.swift`: the menu item. `Info.plist`, `Entitlements.plist`: the bundle's own, sandboxed.
 - `build.sh`: `compile` in the pipeline's `compile` job, `assemble` (join, stamp, sign) in its `sign` job.
 - `lproj/`: the item's translations, generated from the catalogs by `pnpm intl:native-strings`. ❌ Never hand-edit.
+- `MenuIcon.png`, `MenuIcon@2x.png`: the item's icon, rendered from the logo by `pnpm icons`. ❌ Never hand-edit.
 
 ## Must-knows
 

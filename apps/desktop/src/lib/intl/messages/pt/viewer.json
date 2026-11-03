@@ -400,6 +400,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Este arquivo não está mais lá. Se ele voltar, tente de novo.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "Não foi possível ler o arquivo outra vez. Confira se você ainda consegue abri-lo e tente de novo.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Tentar novamente",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "O disco está demorando para responder. Tentar de novo daqui a pouco?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "Não foi possível ativar o modo de acompanhamento. Tentar de novo?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "Não foi possível desativar o modo de acompanhamento. Tentar de novo?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "Não foi possível trocar a codificação. Tentar de novo?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "{size} na sua área de transferência",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

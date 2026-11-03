@@ -403,6 +403,34 @@
   "@viewer.reloadToast.dismissTooltip": {
     "sourceHash": "7f829ed"
   },
+  "viewer.reloadToast.gone": "Diese Datei ist nicht mehr da. Wenn sie wieder auftaucht, versuche es erneut.",
+  "@viewer.reloadToast.gone": {
+    "sourceHash": "9c3ea8b"
+  },
+  "viewer.reloadToast.couldNotReload": "Die Datei ließ sich nicht noch einmal lesen. Prüfe, ob du sie noch öffnen kannst, und versuche es dann erneut.",
+  "@viewer.reloadToast.couldNotReload": {
+    "sourceHash": "b9a3ad7"
+  },
+  "viewer.reloadToast.retry": "Erneut versuchen",
+  "@viewer.reloadToast.retry": {
+    "sourceHash": "d8b8392"
+  },
+  "viewer.sessionOp.slow": "Das Laufwerk lässt sich mit der Antwort Zeit. Gleich noch einmal versuchen?",
+  "@viewer.sessionOp.slow": {
+    "sourceHash": "777af55"
+  },
+  "viewer.tail.couldNotTurnOn": "Der Folgemodus ließ sich nicht einschalten. Erneut versuchen?",
+  "@viewer.tail.couldNotTurnOn": {
+    "sourceHash": "b5f4176"
+  },
+  "viewer.tail.couldNotTurnOff": "Der Folgemodus ließ sich nicht ausschalten. Erneut versuchen?",
+  "@viewer.tail.couldNotTurnOff": {
+    "sourceHash": "f0cf63d"
+  },
+  "viewer.encoding.couldNotSwitch": "Die Codierung ließ sich nicht wechseln. Erneut versuchen?",
+  "@viewer.encoding.couldNotSwitch": {
+    "sourceHash": "83b3071"
+  },
   "viewer.copy.onClipboard": "{size} in deiner Zwischenablage",
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"

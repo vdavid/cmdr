@@ -73,6 +73,8 @@ jobs:
       api-server: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.api-server || 'false' }}
       dashboard: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.dashboard || 'false' }}
       scripts: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.scripts || 'false' }}
+      finder-extension:
+        ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.finder-extension || 'false' }}
       website-changed: ${{ steps.filter.outputs.website }}
       playwright-image: ${{ steps.playwright-image.outputs.image }}
     steps:
@@ -215,6 +217,8 @@ jobs:
           filters: |
             rust:
               - 'apps/desktop/src-tauri/**'
+              # Compiled in the macOS lane (`finder-extension-compile`).
+              - 'apps/desktop/finder-extension/**'
               - 'apps/desktop/test/nfs-servers/**'
               - 'apps/desktop/test/s3-servers/**'
               - 'apps/desktop/test/sftp-servers/**'
@@ -230,6 +234,14 @@ jobs:
               - 'rust-toolchain.toml'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+              - '!**/CLAUDE.md'
+              - '!**/DETAILS.md'
+            # Gates the macOS lane's Finder extension compile, about a minute on a cold runner,
+            # so it runs only when something it builds or runs changed (and on `run_all`).
+            finder-extension:
+              - 'apps/desktop/finder-extension/**'
+              - 'scripts/check/checks/desktop-finder-extension-compile.go'
+              - '.github/workflows/macos-lane.yml'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
             svelte:
@@ -628,6 +640,8 @@ jobs:
       group: macos-lane-${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main' || github.run_id }}
       cancel-in-progress: false
     uses: ./.github/workflows/macos-lane.yml
+    with:
+      compile-finder-extension: ${{ inputs.run_all || needs.changes.outputs.finder-extension == 'true' }}
 
   # ===========================================
   # Desktop app - Svelte frontend

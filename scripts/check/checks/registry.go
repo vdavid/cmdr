@@ -566,6 +566,19 @@ var AllChecks = []CheckDefinition{
 		Run: RunDesktopNativeStringsFresh,
 	},
 	{
+		ID:          "desktop-finder-extension-compile",
+		Nickname:    "finder-extension-compile",
+		DisplayName: "finder-extension-compile",
+		App:         AppDesktop,
+		// Filed under Rust like `native-strings-fresh`: it's native macOS code
+		// that ships inside the Rust app's bundle, and `pnpm check rust` should
+		// reach it.
+		Tech:      "🦀 Rust",
+		DependsOn: nil,
+		Inputs:    inputs([]string{"apps/desktop/finder-extension/**"}),
+		Run:       RunDesktopFinderExtensionCompile,
+	},
+	{
 		ID:          "desktop-message-key-naming",
 		Nickname:    "message-key-naming",
 		DisplayName: "message-key-naming",

@@ -41,6 +41,7 @@ assemble)
   chmod 755 "$appex/Contents/MacOS/CmdrFinderExtension"
   mkdir -p "$appex/Contents/Resources"
   cp -R "$here"/lproj/*.lproj "$appex/Contents/Resources/"
+  cp "$here/MenuIcon.png" "$here/MenuIcon@2x.png" "$appex/Contents/Resources/"
   plist="$appex/Contents/Info.plist"
   cp "$here/Info.plist" "$plist"
   /usr/libexec/PlistBuddy \

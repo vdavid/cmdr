@@ -7,6 +7,11 @@ name: macOS lane
 # out: `docs/tooling/ci.md` § macOS lane.
 on:
   workflow_call:
+    inputs:
+      compile-finder-extension:
+        description: 'Compile the Finder extension (its files changed, or a run_all)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -50,6 +55,13 @@ jobs:
       - name: Build check tool
         run: go build -o check .
         working-directory: ./scripts/check
+
+      # Nothing else compiles the extension before a release build. About a minute on a cold
+      # runner (`swiftc` loading the macOS frameworks), so only when its files changed or on a
+      # `run_all`, which the release gate always is. First, so a broken slice fails fast.
+      - name: Compile the Finder extension
+        if: inputs.compile-finder-extension
+        run: ./scripts/check/check --check desktop-finder-extension-compile --ci
 
       - name: Run clippy
         run: ./scripts/check/check --check desktop-rust-clippy --ci

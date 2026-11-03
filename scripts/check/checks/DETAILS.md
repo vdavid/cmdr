@@ -2165,18 +2165,19 @@ notices file.
 Checks by app and tech:
 
 - **Desktop / Rust**: tools-module-boundary (`mcp` imports no `agent`, `tools` imports no `mcp`, and `tools` imports
-  only the `agent` modules on its list), rustfmt, clippy, clippy-mimalloc (pre-release lane, macOS only, CI every six
-  days; clippy with `cmdr/mimalloc` in a private target dir, so the global-allocator path macOS doesn't ship can't rot),
-  rustdoc (`cargo doc --all-features --document-private-items` over every first-party member, with every doc lint in
-  `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped because
-  `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps (CI-only), fuzz
-  (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a target loosens
-  its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding, and takes inputs past
-  its seeds' size only through `fuzzTargetMaxLen`), kani (CI-only and slow: every `#[kani::proof]`, one `cargo kani` per
-  crate on the pinned Kani; `docs/tooling/testing.md` § "Kani proofs"), miri (slow, macOS only, CI every six days: the
-  modules whose `unsafe` is pure Rust, under Miri; § "Miri"), mutant-records and property-mutants (every property has a
-  recorded one-line change that makes it fail: the fast half checks the records still apply, the slow CI-only half
-  applies each in a mirror and runs its catcher; § "Property mutants"), shuttle (slow: the `shuttle_*`
+  only the `agent` modules on its list), rustfmt, clippy, finder-extension-compile (macOS only: both slices of the Swift
+  Finder extension through `build.sh compile`, in the macOS lane), clippy-mimalloc (pre-release lane, macOS only, CI
+  every six days; clippy with `cmdr/mimalloc` in a private target dir, so the global-allocator path macOS doesn't ship
+  can't rot), rustdoc (`cargo doc --all-features --document-private-items` over every first-party member, with every doc
+  lint in `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped
+  because `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps
+  (CI-only), fuzz (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a
+  target loosens its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding, and
+  takes inputs past its seeds' size only through `fuzzTargetMaxLen`), kani (CI-only and slow: every `#[kani::proof]`,
+  one `cargo kani` per crate on the pinned Kani; `docs/tooling/testing.md` § "Kani proofs"), miri (slow, macOS only, CI
+  every six days: the modules whose `unsafe` is pure Rust, under Miri; § "Miri"), mutant-records and property-mutants
+  (every property has a recorded one-line change that makes it fail: the fast half checks the records still apply, the
+  slow CI-only half applies each in a mirror and runs its catcher; § "Property mutants"), shuttle (slow: the `shuttle_*`
   thread-interleaving tests, each crate with its `shuttle` feature in a private target dir; § "Interleaving tests
   (Shuttle)"), jscpd (the clone list, on a per-file-pair ratchet), log-error-macro, macos-availability (no call to a
   selector newer than the bundle's `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework
