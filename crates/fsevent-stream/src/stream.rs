@@ -360,7 +360,10 @@ macro_rules! define_callback {
                 }
             }
 
-            drop(catch_unwind(move || {
+            // A panic must not unwind into FSEvents' C frames. Catching it drops the whole
+            // batch, so it raises the overflow flag like any other lost event (a missing
+            // extended-data key, for example, panics in `CFDictionary::get`).
+            let outcome = catch_unwind(move || {
                 callback_impl(
                     stream_ref,
                     info,
@@ -369,7 +372,12 @@ macro_rules! define_callback {
                     event_flags,
                     event_ids,
                 );
-            }));
+            });
+            if outcome.is_err() {
+                error!("FSEvents callback panicked (batch dropped, overflow flagged)");
+                let info = info as *const StreamContextInfo;
+                unsafe { &(*info).overflow }.store(true, Ordering::Relaxed);
+            }
         }
     };
 }
@@ -503,5 +511,37 @@ mod callback_tests {
         assert_eq!(event.path, PathBuf::from("/tmp/new-file"));
         assert_eq!(event.id, 42);
         assert!(!overflow.load(Ordering::Relaxed));
+    }
+
+    /// Regression: a panic inside the callback (here `CFDictionary::get` on an extended-data
+    /// dictionary with no `path` key) used to drop the batch without raising the overflow flag,
+    /// so the consumer never learned to rescan.
+    #[test]
+    fn panic_while_building_a_batch_flags_overflow() {
+        use core_foundation::base::{CFType, TCFType};
+
+        let (tx, mut rx) = tokio::sync::mpsc::channel(4);
+        let overflow = Arc::new(AtomicBool::new(false));
+        let mut context = StreamContextInfo {
+            event_handler: tx,
+            overflow: overflow.clone(),
+        };
+
+        let no_keys = CFDictionary::<CFString, CFType>::from_CFType_pairs(&[]);
+        let paths = CFArray::from_CFTypes(&[no_keys]);
+        let flags = [StreamFlags::ITEM_CREATED.bits()];
+        let ids = [7];
+
+        cf_ext_callback(
+            std::ptr::null_mut(),
+            std::ptr::addr_of_mut!(context).cast(),
+            1,
+            paths.as_concrete_TypeRef() as *mut c_void,
+            flags.as_ptr(),
+            ids.as_ptr(),
+        );
+
+        assert!(rx.try_recv().is_err(), "the batch was dropped");
+        assert!(overflow.load(Ordering::Relaxed), "and the drop was flagged");
     }
 }
