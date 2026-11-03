@@ -475,7 +475,8 @@ can't show.
 - `fixture-dropdown`: the in-prose download dropdown, opened, clipped to itself.
 - `home-fold`: `/` at viewport size (nav, hero, split button, theme toggle).
 - `pricing-tiers`: the `[data-visual="pricing-tiers"]` grid.
-- `footer`: the `<footer>`, which is shared sitewide, so one shot covers every page.
+- `footer`: the `<footer>` on `/visual-fixture`. It's shared sitewide, so one shot covers every page; shot on `/`, it
+  churned with every landing edit (its top lands on a fractional pixel below the copy).
 
 **Two rules keep the set from regrowing.**
 
