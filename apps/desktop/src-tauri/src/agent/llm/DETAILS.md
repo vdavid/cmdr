@@ -264,8 +264,7 @@ Caveats for the picker:
 ## Error mapping
 
 Provider transport errors are classified by HTTP status once, upstream, in `crate::ai` (`ai_error_for_status`:
-401/403 → auth, 413 → request too large, 429 → rate-limited). `RequestTooLarge` is the plan-too-small case (§ Tests),
-which the rail words with the provider's name and the wake loop treats as settled, like a spent quota. `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
+401/403 → auth, 413 → request too large, 429 → rate-limited, or `ModelNotInPlan` when its request-limit header is zero). `RequestTooLarge` is the plan-too-small case and `ModelNotInPlan` the plan-without-this-model case (§ Tests); the rail words both with the provider's name and the wake loop treats both as settled, like a spent quota. `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
 (`impl From<AiError>`), so there is no message-string matching anywhere. `AiError::Managed` stays typed as
 `AgentLlmError::Managed(refusal)` (the runtime's `ManagedByOrganization`), never a `Provider` string
 (`../../ai/DETAILS.md` § Managed policy). `AgentLlmError::NoKey` /
@@ -301,7 +300,7 @@ skip `tool_details` and guess. What they do: `../../tools/DETAILS.md` § Lazy lo
   `ministral-14b-latest` is the preset's default: `mistral-small-latest` stays unproven, since our key's free workspace gets
   `x-ratelimit-limit-req-minute: 0` on it (and on `mistral-medium-*`, `magistral-small-*`, `devstral-small-*`), so even
   a five-token request 429s, while the Ministral models and `open-mistral-nemo` answer (probed five times,
-  04:04–04:25 UTC, 2026-11-03). Proving `mistral-small-latest` needs a key on a paid plan.
+  04:04–04:25 UTC, 2026-11-03). Proving `mistral-small-latest` needs a key on a paid plan. That zero-limit 429 is its own typed kind (`AiError::ModelNotInPlan` → `AgentErrorKind::ModelNotInPlan`, wire `modelNotInPlan`), so the rail says the plan lacks the model instead of "busy or out of quota".
 - **Groq's free tier**: refuses every turn, because its 8,000-tokens-a-minute cap is below the fixed prefix (HTTP 413,
   "Request too large … Limit 8000, Requested 9,077", 2026-11-03). That 413 is its own typed kind
   (`AiError::RequestTooLarge` → `AgentErrorKind::RequestTooLarge`), and the rail names the provider and says the

@@ -481,6 +481,10 @@ fn ai_error_maps_to_typed_agent_error() {
         AgentLlmError::from(AiError::RequestTooLarge("TPM limit 8000".into())),
         AgentLlmError::RequestTooLarge("TPM limit 8000".into())
     );
+    assert_eq!(
+        AgentLlmError::from(AiError::ModelNotInPlan("rate limit exceeded".into())),
+        AgentLlmError::ModelNotInPlan("rate limit exceeded".into())
+    );
     assert!(matches!(
         AgentLlmError::from(AiError::EmptyResponse),
         AgentLlmError::Provider(_)

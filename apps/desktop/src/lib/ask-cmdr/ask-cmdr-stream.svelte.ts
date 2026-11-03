@@ -811,7 +811,7 @@ function applyFailed(
     errorKind: kind,
     detail: detail ?? undefined,
     managed: managed ?? undefined,
-    provider: kind === 'requestTooLarge' ? namedCloudProvider() : undefined,
+    provider: kind === 'requestTooLarge' || kind === 'modelNotInPlan' ? namedCloudProvider() : undefined,
   })
 }
 

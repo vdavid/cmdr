@@ -5963,6 +5963,11 @@ export type AgentErrorKindView =
   | 'authFailed'
   | 'rateLimited'
   /**
+   *  The account's plan doesn't include the chosen model. The rail names the provider and
+   *  points at Settings, so it doesn't read as the provider being busy.
+   */
+  | 'modelNotInPlan'
+  /**
    *  The provider's plan won't take a request as big as one Ask Cmdr prompt. The rail names
    *  the provider, so this doesn't read as Cmdr's own problem.
    */

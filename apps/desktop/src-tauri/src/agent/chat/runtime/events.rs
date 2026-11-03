@@ -162,6 +162,9 @@ pub enum AgentErrorKind {
     AuthFailed,
     /// The provider is rate-limiting or out of quota.
     RateLimited,
+    /// The account's plan doesn't include the model (a 429 with a zero request limit), so every
+    /// send gets the same answer until the model or plan changes.
+    ModelNotInPlan,
     /// The provider won't take a request this big: the account's plan caps a request below
     /// one prompt (Groq's free tier), so every send gets the same answer.
     RequestTooLarge,
@@ -193,6 +196,7 @@ impl AgentErrorKind {
             AgentErrorKind::Timeout => "timeout",
             AgentErrorKind::AuthFailed => "auth_failed",
             AgentErrorKind::RateLimited => "rate_limited",
+            AgentErrorKind::ModelNotInPlan => "model_not_in_plan",
             AgentErrorKind::RequestTooLarge => "request_too_large",
             AgentErrorKind::BudgetExhausted => "budget_exhausted",
             AgentErrorKind::RepeatedToolCall => "repeated_tool_call",
@@ -222,6 +226,7 @@ impl From<crate::agent::llm::types::AgentLlmError> for AgentErrorKind {
             AgentLlmError::Timeout => AgentErrorKind::Timeout,
             AgentLlmError::AuthFailed(_) => AgentErrorKind::AuthFailed,
             AgentLlmError::RateLimited(_) => AgentErrorKind::RateLimited,
+            AgentLlmError::ModelNotInPlan(_) => AgentErrorKind::ModelNotInPlan,
             AgentLlmError::RequestTooLarge(_) => AgentErrorKind::RequestTooLarge,
             AgentLlmError::BudgetExhausted => AgentErrorKind::BudgetExhausted,
             AgentLlmError::Provider(_) => AgentErrorKind::Provider,

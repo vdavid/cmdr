@@ -1185,6 +1185,21 @@
     "description": "Shown when the provider is rate-limiting or the account is out of quota. Friendly; avoids the words error and failed. The apostrophe is U+2019.",
     "screenshot": "ask-cmdr-errors.png"
   },
+  "askCmdr.error.modelNotInPlan.named": "Your {provider} plan doesn’t include this model. Pick another model in Settings, or upgrade your plan.",
+  "@askCmdr.error.modelNotInPlan.named": {
+    "description": "Shown in the Ask Cmdr chat when the AI provider refused the request because the person's plan doesn't include the chosen model at all (for example, a free Mistral plan and a model only paid plans get). Every message gets the same answer, so waiting won't help; it says what does. Different from askCmdr.error.rateLimited, which is about the provider being busy. The provider's own explanation shows on a line under this one. Friendly and actionable; avoids the words error and failed. The apostrophe is U+2019. Sentence case.",
+    "placeholders": {
+      "provider": "The AI provider's brand name, never translated (for example Mistral AI)."
+    },
+    "screenshot": "ask-cmdr-chat.png",
+    "screenshotNote": "A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line."
+  },
+  "askCmdr.error.modelNotInPlan.unnamed": "Your plan with this AI provider doesn’t include this model. Pick another model in Settings, or upgrade your plan.",
+  "@askCmdr.error.modelNotInPlan.unnamed": {
+    "description": "The same message as askCmdr.error.modelNotInPlan.named, for a provider Cmdr has no name for (a custom endpoint). Shown in the Ask Cmdr chat when the person's plan doesn't include the chosen model at all, so every message gets the same answer and waiting won't help. Friendly and actionable; avoids the words error and failed. The apostrophe is U+2019. Sentence case.",
+    "screenshot": "ask-cmdr-chat.png",
+    "screenshotNote": "A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line."
+  },
   "askCmdr.error.requestTooLarge.named": "{provider} turned this down: your plan’s limit is smaller than one request from Cmdr, which always carries its instructions. A shorter message won’t help. Try a bigger plan with {provider}, or pick another provider in settings.",
   "@askCmdr.error.requestTooLarge.named": {
     "description": "Shown in the Ask Cmdr chat when the AI provider refused the request as too large for the person's plan. This happens on plans with a small per-minute limit (Groq's free tier, for example): every request Cmdr sends includes its own instructions to the model, which alone are over that limit, so every message is refused no matter how short. Makes clear the limit is the provider's, not Cmdr's, and says what helps. The provider's own explanation shows on a line under this one. Friendly and actionable; avoids the words error and failed. The apostrophes are U+2019. Sentence case.",

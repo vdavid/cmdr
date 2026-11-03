@@ -459,6 +459,7 @@ const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
   timeout: 'askCmdr.error.timeout',
   authFailed: 'askCmdr.error.authFailed',
   rateLimited: 'askCmdr.error.rateLimited',
+  modelNotInPlan: 'askCmdr.error.modelNotInPlan.unnamed',
   requestTooLarge: 'askCmdr.error.requestTooLarge.unnamed',
   budgetExhausted: 'askCmdr.error.budgetExhausted',
   repeatedToolCall: 'askCmdr.error.repeatedToolCall',
@@ -471,11 +472,13 @@ const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
  * organization's refusal names the rule that refused (`managed`, from the backend) through the
  * shared copy map, so "only on-device AI" never reads as "doesn't allow this AI service". A plan too
  * small for one request names the provider (`provider`, the preset's brand name, when it has one),
- * so it reads as that provider's limit, not as Cmdr's problem.
+ * so it reads as that provider's limit, not as Cmdr's problem. A plan that lacks the model names the
+ * provider the same way, so it doesn't read as the provider being busy.
  */
 export function errorMessage(kind: AskCmdrErrorKind, managed?: ManagedAiRefusal | null, provider?: string): string {
   if (kind === 'managedByOrganization' && managed) return managedAiRefusalMessage(managed)
   if (kind === 'requestTooLarge' && provider) return tString('askCmdr.error.requestTooLarge.named', { provider })
+  if (kind === 'modelNotInPlan' && provider) return tString('askCmdr.error.modelNotInPlan.named', { provider })
   return tString(ERROR_KEYS[kind])
 }
 

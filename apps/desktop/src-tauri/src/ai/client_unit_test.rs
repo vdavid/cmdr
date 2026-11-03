@@ -211,6 +211,68 @@ fn ai_error_for_status_classifies_by_code() {
     assert!(matches!(ai_error_for_status(404, "x".into()), AiError::NotFound(_)));
 }
 
+/// A 429 whose request limit is ZERO isn't the provider being busy: the account's plan doesn't
+/// include the model at all, so every call gets it and waiting changes nothing. Mistral's free
+/// workspaces answer `mistral-small-latest` this way (`x-ratelimit-limit-req-minute: 0`).
+/// Classified from the header, never from the body's wording.
+#[test]
+fn a_429_with_a_zero_request_limit_means_the_plan_excludes_the_model() {
+    fn headers(pairs: &[(&'static str, &'static str)]) -> reqwest::header::HeaderMap {
+        let mut map = reqwest::header::HeaderMap::new();
+        for (name, value) in pairs {
+            map.insert(*name, reqwest::header::HeaderValue::from_static(value));
+        }
+        map
+    }
+    fn stream_429(pairs: &[(&'static str, &'static str)]) -> genai::Error {
+        genai::Error::WebStream {
+            model_iden: ModelIden::new(AdapterKind::OpenAI, "mistral-small-latest"),
+            cause: String::from("HTTP error"),
+            error: Box::new(genai::Error::HttpError {
+                status: reqwest::StatusCode::TOO_MANY_REQUESTS,
+                canonical_reason: "Too Many Requests".to_string(),
+                body: r#"{"message":"Requests rate limit exceeded"}"#.to_string(),
+                headers: Box::new(headers(pairs)),
+            }),
+        }
+    }
+    fn one_shot_429(pairs: &[(&'static str, &'static str)]) -> genai::Error {
+        genai::Error::WebModelCall {
+            model_iden: ModelIden::new(AdapterKind::OpenAI, "mistral-small-latest"),
+            webc_error: genai::webc::Error::ResponseFailedStatus {
+                status: reqwest::StatusCode::TOO_MANY_REQUESTS,
+                body: "rate limited".to_string(),
+                headers: Box::new(headers(pairs)),
+            },
+        }
+    }
+
+    // Mistral's own header, on both shapes genai uses.
+    let zero = [("x-ratelimit-limit-req-minute", "0")];
+    assert!(matches!(map_genai_error(stream_429(&zero)), AiError::ModelNotInPlan(_)));
+    assert!(matches!(
+        map_genai_error(one_shot_429(&zero)),
+        AiError::ModelNotInPlan(_)
+    ));
+    // The OpenAI-style name other providers send means the same at zero.
+    assert!(matches!(
+        map_genai_error(one_shot_429(&[("x-ratelimit-limit-requests", "0")])),
+        AiError::ModelNotInPlan(_)
+    ));
+
+    // A real limit, or no header at all, is an ordinary rate limit or spent quota.
+    assert!(matches!(
+        map_genai_error(stream_429(&[("x-ratelimit-limit-req-minute", "60")])),
+        AiError::RateLimited(_)
+    ));
+    assert!(matches!(map_genai_error(stream_429(&[])), AiError::RateLimited(_)));
+    // A zero REMAINING count is a limit used up, not a limit of zero.
+    assert!(matches!(
+        map_genai_error(stream_429(&[("x-ratelimit-remaining-req-minute", "0")])),
+        AiError::RateLimited(_)
+    ));
+}
+
 /// A streaming failure reaches us wrapped twice (`WebStream` holding a boxed `HttpError`),
 /// and until that shape was unwrapped every one of them fell to the catch-all: a rejected
 /// key showed as a generic server error on the very path the agent and folder suggestions
