@@ -477,10 +477,11 @@ The E2E `openSettingsWindowViaProd` helper emits the same `open-settings` event 
 - **Landing spot**: `contentScrollTopFor` parks the target `CONTENT_FADE_BAND_PX` below the scroller's top, the same
   constant that sizes the top fade. A higher target sits under the fade, nearly invisible. It reads live rects because
   `offsetTop` counts from the nearest positioned ancestor (`.settings-window` here, past the wrapper's padding).
-- **The flash**: `flashElements` sets `.settings-flash` (`app-utilities.css`), a `::after` overlay, since a background
-  on the target would sit hidden behind a card's own fill. Two `--color-accent-subtle` pulses, or one fade under
-  `prefers-reduced-motion`. Shortcut rows apply the same class through state: `sections/DETAILS.md` § "Deep-link arrival
-  into a shortcut row".
+- **The flash**: `flashElements` sets `.settings-flash` (`app-utilities.css`): one soft accent glow (a blurred
+  `box-shadow`, no hard ring) on a `::after` overlay, on then off in 1.1 s (or appearing at once and fading under
+  `prefers-reduced-motion`). A glow, not a fill, so the content reads as it was (David's call, 2026-11-03: a double
+  background pulse felt loud, a held glow slow, a solid ring harsh). Shortcut rows apply the same class through state:
+  `sections/DETAILS.md` § "Deep-link arrival into a shortcut row".
 - **Screenshots**: the i18n capture run visits every section through this deep link, so it hides the flash
   (`hideSettingsFlash`) to keep translators' reference shots plain.
 

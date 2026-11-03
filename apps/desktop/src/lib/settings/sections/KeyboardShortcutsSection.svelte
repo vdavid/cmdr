@@ -75,8 +75,8 @@
     // view; we read it here to apply the `settings-flash` class, then clear it once the
     // animation has played out. State-driven (not a direct DOM class) because the
     // rows re-key on `shortcutChangeCounter` — an imperative class would vanish on
-    // the next re-render. ~1.6 s matches the CSS animation duration.
-    const FLASH_DURATION_MS = 1600
+    // the next re-render. Matches the `.settings-flash` animation (1.1 s in `app-utilities.css`).
+    const FLASH_DURATION_MS = 1100
     const highlightedCommandId = $derived(getPendingShortcutHighlight())
     $effect(() => {
         if (highlightedCommandId === null) return
@@ -555,9 +555,10 @@
     }
 
     /* The shared arrival flash (`app-utilities.css`), held inside the row: `.commands-list` is a
-       scroller, so the usual overhang would flick a scrollbar on for the length of the flash. */
+       scroller, so the usual overhang would flick a scrollbar on for the length of the flash, and
+       its edges would clip a ring drawn at the row's own edge. */
     .command-row:global(.settings-flash)::after {
-        inset: 0;
+        inset: var(--spacing-xxs);
     }
 
     .command-info {

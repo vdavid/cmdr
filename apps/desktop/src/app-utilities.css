@@ -86,20 +86,19 @@ html.show-borders .borderless-control {
 /* =============================================================================
    Settings arrival flash: "this is what you came for"
 
-   An overlay, so it reads over a card's own fill, where a background on the target
-   would sit hidden behind it. The small overhang gives the tint room around text
+   One quick accent glow around the target: on, then off. An outline
+   leaves the content as it was. It's drawn on an overlay so it sits above whatever
+   the target holds, and the small overhang leaves room between the glow and text
    that runs to the target's edge. `lib/settings/settings-navigation.ts` sets the class.
    ============================================================================= */
 
 @keyframes settings-flash {
   0%,
-  42%,
   100% {
     opacity: 0;
   }
 
-  20%,
-  65% {
+  30% {
     opacity: 1;
   }
 }
@@ -123,16 +122,17 @@ html.show-borders .borderless-control {
   position: absolute;
   inset: calc(var(--spacing-xs) * -1);
   border-radius: var(--radius-md);
-  background: var(--color-accent-subtle);
+  /* A soft halo, with no hard edge. */
+  box-shadow: 0 0 var(--spacing-md) var(--spacing-xxs) color-mix(in oklch, var(--color-accent), transparent 20%);
   opacity: 0;
   pointer-events: none;
-  animation: settings-flash 1.5s ease-in-out;
+  animation: settings-flash 1.1s ease-in-out;
 }
 
-/* Reduced motion: no pulsing, one highlight that fades out. */
+/* Reduced motion: no rise, the glow is there at once and fades out. */
 @media (prefers-reduced-motion: reduce) {
   .settings-flash::after {
-    animation: settings-flash-static 1.5s ease-out;
+    animation: settings-flash-static 1.1s ease-out;
   }
 }
 
