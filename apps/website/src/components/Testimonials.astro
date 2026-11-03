@@ -1,18 +1,22 @@
 ---
 /**
  * Real users' words, verbatim. Every quote, its consent, and its chosen attribution live in David's
- * vault (`projects/Cmdr/Cmdr testimonials.md`): never edit a quote's wording here, and trim only
- * with an ellipsis. A quote whose consent is still open stays behind a dev-only callout.
+ * vault (`projects/Cmdr/Cmdr testimonials.md`): only approved quotes go here, never edit a quote's
+ * wording, and trim only with an ellipsis. An avatar is a local copy of a picture the person offered
+ * (never hotlinked); without one, the card shows their initials.
  */
-import DevTodo from './DevTodo.astro'
+import { Image } from 'astro:assets'
+import type { ImageMetadata } from 'astro'
+import svenKopetzkiAvatar from '../assets/testimonials/sven-kopetzki.jpg'
 
 interface Testimonial {
-    /** Verbatim, or the exact wording the person approved. Rendered as HTML so the smart-quotes pass curls it. */
+    /** The exact wording the person approved. Rendered as HTML so the smart-quotes pass curls it. */
     quote: string
     /** The name they chose to appear under. */
     name: string
     /** A second line under the name: where they're from, or what they do. */
     detail?: string
+    avatar?: ImageMetadata
 }
 
 const testimonials: Testimonial[] = [
@@ -20,14 +24,11 @@ const testimonials: Testimonial[] = [
         quote: "Believe me, I've tried every Total Commander alternative on macOS, and none of them clicked. Cmdr won me over because Cmd + arrow keys opens the current folder in the other pane. That's my entry test, and lots of apps already fail it. Not Cmdr! :-)",
         name: 'Sven Kopetzki',
         detail: 'Germany',
+        avatar: svenKopetzkiAvatar,
     },
     {
         quote: "I've been waiting for this file commander my whole life, even though I'm not young anymore. This program is already running circles around the competition currently available.",
         name: 'Robert Benedict',
-    },
-    {
-        quote: "Oh what a wonderful program you are developing here! … I'm currently cleaning up my old macbook, moving stuff to a new one, use clumsy errorprone Finder in combo with rsync terminal. Cmdr is the lifesaver now!",
-        name: 'Jojo',
     },
 ]
 
@@ -40,18 +41,14 @@ function initials(name: string): string {
 }
 ---
 
-<section class="relative px-6 py-32">
-    <div class="mx-auto max-w-6xl">
+<section class="relative px-6 py-32" aria-labelledby="testimonials-heading">
+    <div class="mx-auto max-w-4xl">
         <div class="mb-16 text-center">
-            <h2 class="mb-4 text-3xl font-bold md:text-4xl lg:text-5xl">From early users</h2>
+            <h2 id="testimonials-heading" class="mb-4 text-3xl font-bold md:text-4xl lg:text-5xl">Testimonials</h2>
+            <p class="text-lg text-text-secondary">These are real words from real people, no marketing crap.</p>
         </div>
 
-        <DevTodo>
-            Jojo hasn't answered the testimonial ask (sent 2026-09-15), so their quote and the name "Jojo" (a guess from
-            their email address) need a yes before this ships. The trim is theirs word for word, cut with an ellipsis.
-        </DevTodo>
-
-        <div class="grid gap-6 md:grid-cols-3">
+        <div class="grid gap-6 md:grid-cols-2">
             {
                 testimonials.map((t) => (
                     <figure class="m-0 flex flex-col rounded-2xl border border-border bg-surface p-8 transition-all duration-300 hover:border-accent/30">
@@ -61,9 +58,21 @@ function initials(name: string): string {
                         <blockquote class="mb-8 flex-1 text-lg/relaxed text-text-secondary italic" set:html={t.quote} />
                         <figcaption class="flex items-center gap-3">
                             <div class="rounded-full bg-linear-to-br from-accent to-accent/40 p-0.5" aria-hidden="true">
-                                <span class="grid size-11 place-items-center rounded-full bg-surface-elevated text-sm font-semibold text-text-primary">
-                                    {initials(t.name)}
-                                </span>
+                                {t.avatar ? (
+                                    <Image
+                                        src={t.avatar}
+                                        alt=""
+                                        width={44}
+                                        height={44}
+                                        densities={[1, 2, 3]}
+                                        format="webp"
+                                        class="size-11 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <span class="grid size-11 place-items-center rounded-full bg-surface-elevated text-sm font-semibold text-text-primary">
+                                        {initials(t.name)}
+                                    </span>
+                                )}
                             </div>
                             <div>
                                 <p class="font-semibold text-text-primary">{t.name}</p>
