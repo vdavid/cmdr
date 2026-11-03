@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {正在拷贝} move {正在移动} delete {正在删除} trash {正在移到废纸篓} rename {正在重命名} create_folder {正在创建文件夹} create_file {正在创建文件} archive_edit {正在编辑压缩文件} compress {正在压缩} other {正在处理}}",
+  "queue.row.label": "{type, select, copy {正在拷贝} move {正在移动} delete {正在删除} trash {正在移到废纸篓} rename {正在重命名} create_folder {正在创建文件夹} create_file {正在创建文件} archive_edit {正在编辑压缩文件} compress {正在压缩} tag {正在更改标签} other {正在处理}}",
   "@queue.row.label": {
-    "sourceHash": "3c8e776"
+    "sourceHash": "b051663"
   },
   "queue.row.reversalMovingBack": "正在把文件放回原处",
   "@queue.row.reversalMovingBack": {
@@ -30,6 +30,10 @@
   "queue.row.reversalRenamingBack": "正在恢复原来的名称",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalRestoringTags": "正在恢复原来的标签",
+  "@queue.row.reversalRestoringTags": {
+    "sourceHash": "1b063e8"
   },
   "queue.row.reversalInFolder": "位于 {folder}",
   "@queue.row.reversalInFolder": {

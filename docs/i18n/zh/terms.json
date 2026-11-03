@@ -3585,6 +3585,7 @@
     "chosen": "撤销",
     "confidence": "high",
     "exceptions": {
+      "ai.cloudConsent.askCmdr.actions": "Both undos here (undoing an operation, undoing a tag change) run through the operation log's rollback dialog, so both say 回滚.",
       "askCmdr.renameUndo.notRecorded": "Undoing an Ask Cmdr rename run puts the old names back, which this catalog says as 恢复…原来的名称 (style.md digest)."
     },
     "forms": "the toast button 撤销; undoing one file 撤销…的改动",

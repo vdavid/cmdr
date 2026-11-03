@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>用自然语言搜索</b>：你输入的文字，或者在你开启 MCP 直接模式后，已连接的 AI 工具请求的内容",
+  "ai.cloudConsent.search": "<b>用自然语言搜索</b>：你输入的文字",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>按描述选择</b>：你输入的内容，外加当前文件夹中最多 240 个名称",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "在你开启的聊天里，Ask Cmdr 还可以替你操作 App：前往文件夹、选择、排序、打开标签页和对话框，以及连接你保存的位置。拷贝、移动、压缩、删除、重命名和回滚一项操作，都会打开对话框或编辑器让你确认，你确认之前什么都不会发生。打开文件、更改设置（Cmdr 的外观除外）、退出、推出驱动器、移除服务器和更改索引，都会先问你。创建指定名称的文件夹或文件，以及给文件加标签，会立即执行，不会问你，而且标签无法撤销。它以计划形式准备的重命名和整理，要等你批准。",
+  "ai.cloudConsent.askCmdr.actions": "在你开启的聊天里，Ask Cmdr 还可以替你操作 App：前往文件夹、选择、排序、打开标签页和对话框，以及连接你保存的位置。拷贝、移动、压缩、删除、重命名和回滚一项操作，都会打开对话框或编辑器让你确认，你确认之前什么都不会发生。打开文件、更改设置（Cmdr 的外观除外）、退出、推出驱动器、移除服务器和更改索引，都会先问你。创建指定名称的文件夹或文件，以及给文件加标签，会立即执行，不会问你，不过标签的改动可以回滚。它以计划形式准备的重命名和整理，要等你批准。",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr 会给自己记下关于你的笔记：你喜欢怎样整理东西、你以前拒绝过什么，以及任何你让它记住的事。只要这些笔记还在，它们就会随你发出的每条消息一起发送，其中可能包含 Cmdr 在你照片里识别出的文字。你随时可以在 Ask Cmdr 设置中查看或清空它们。",
   "@ai.cloudConsent.askCmdr.memory": {
