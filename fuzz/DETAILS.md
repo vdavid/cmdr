@@ -118,8 +118,10 @@ mirror of the tree and runs the input through the target once. Format, lanes, an
 
 ## Deliberately not fuzzed here
 
-- **SMB**: the protocol layer is the `smb2` crate, which has its own 14 targets and a weekly fuzz workflow.
-- **MTP**: `mtp-rs` parses PTP; it has proptest but no fuzz targets yet. Belongs in that repo.
+- **SMB**: the protocol layer is the `smb2` crate, which has its own 18 targets and a weekly fuzz workflow.
+- **MTP**: `mtp-rs` parses PTP and fuzzes every device-facing parser in its own `crates/mtp-rs/fuzz/` (10 targets,
+  weekly workflow). Both repos keep their targets single-threaded and input-only so they qualify for OSS Verify's
+  proofs.
 - **SFTP**: `russh` / `russh-sftp` parse the wire; Cmdr's SFTP code maps typed results. `known_hosts.rs` reads the
   user's own file, not an attacker's.
 - **Git**: `gix` parses repos and fuzzes upstream.
