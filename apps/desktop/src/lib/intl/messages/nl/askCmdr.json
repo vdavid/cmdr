@@ -49,6 +49,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Sluit",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "Controleert wat je bekijkt",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -888,6 +892,23 @@
   "askCmdr.sessions.archivedBadge": "Gearchiveerd",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Zoekopdracht wissen",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Gevonden chats",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} chat} other {{countText} chats}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144",
+    "sameAsSourceJustification": "Dutch uses chat / chats as its own word, ruled in docs/i18n/nl/terms.json (chat, accept chats) and shipped in askCmdr.sessions.title (Chats); only the formatted count sits beside it."
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Activiteit in {folder}} one {Activiteit in {folder} en {otherCountText} andere map} other {Activiteit in {folder} en {otherCountText} andere mappen}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Vraag over de selectie",
   "@askCmdr.composer.attach": {

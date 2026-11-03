@@ -525,6 +525,10 @@
   "@fileOperations.transferProgress.titleReversalDeleting": {
     "sourceHash": "587f4a3"
   },
+  "fileOperations.transferProgress.titleReversalRestoringTags": "{count, plural, =0 {Bezig met oude tags terugzetten} one {Bezig met oude tags terugzetten op {countText} bestand} other {Bezig met oude tags terugzetten op {countText} bestanden}}…",
+  "@fileOperations.transferProgress.titleReversalRestoringTags": {
+    "sourceHash": "71e6947"
+  },
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Bezig met oude namen terugzetten} one {Bezig met de oude naam terugzetten} other {Bezig met {countText} oude namen terugzetten}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
     "sourceHash": "2ad8510"
@@ -1021,6 +1025,10 @@
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Dit geeft de bestanden hun oude namen terug. Cmdr slaat alles over waar het niet zeker van is, dus sommige houden misschien hun huidige naam.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
     "sourceHash": "37932e7"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTags": "Dit geeft de bestanden de tags terug die ze eerder hadden. Cmdr slaat elk bestand over waarvan de tags sindsdien zijn gewijzigd, dus sommige houden misschien hun huidige tags.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTags": {
+    "sourceHash": "9dc7b0d"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "Laat het zo",
   "@fileOperations.rollbackConfirm.leaveAsIs": {

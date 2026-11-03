@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Zoeken in gewone taal</b>: de tekst die je typt, of waar een verbonden AI-tool om vraagt zodra je de directe modus van MCP hebt aangezet",
+  "ai.cloudConsent.search": "<b>Zoeken in gewone taal</b>: de tekst die je typt",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>Selecteren op beschrijving</b>: wat je typt, plus tot 240 namen uit de huidige map",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In een chat die jij begon, kan Ask Cmdr de app ook voor je bedienen: navigeren, selecteren, sorteren, tabbladen en dialoogvensters openen, en verbinding maken met een opgeslagen locatie. Kopiëren, verplaatsen, comprimeren, verwijderen, de naam wijzigen en een bewerking ongedaan maken openen elk een dialoogvenster of editor die jij bevestigt, en er gebeurt niets tot je dat doet. Een bestand openen, een instelling wijzigen (behalve hoe Cmdr eruitziet), stoppen, een schijf uitwerpen, een server verwijderen en het indexeren wijzigen: daarvoor vraagt het je eerst. Een map of bestand met een naam aanmaken en bestanden taggen gebeurt meteen, zonder vraag, en tags kun je niet ongedaan maken. Naamwijzigingen en opruimacties die het als plan voorbereidt, wachten op je goedkeuring.",
+  "ai.cloudConsent.askCmdr.actions": "In een chat die jij begon, kan Ask Cmdr de app ook voor je bedienen: navigeren, selecteren, sorteren, tabbladen en dialoogvensters openen, en verbinding maken met een opgeslagen locatie. Kopiëren, verplaatsen, comprimeren, verwijderen, de naam wijzigen en een bewerking ongedaan maken openen elk een dialoogvenster of editor die jij bevestigt, en er gebeurt niets tot je dat doet. Een bestand openen, een instelling wijzigen (behalve hoe Cmdr eruitziet), stoppen, een schijf uitwerpen, een server verwijderen en het indexeren wijzigen: daarvoor vraagt het je eerst. Een map of bestand met een naam aanmaken en bestanden taggen gebeurt meteen, zonder vraag, en een tagwijziging kun je ongedaan maken. Naamwijzigingen en opruimacties die het als plan voorbereidt, wachten op je goedkeuring.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr schrijft notities over je: hoe je dingen graag ordent, wat je eerder hebt afgewezen, alles wat je het vraagt te onthouden. Die notities gaan mee met elk bericht dat je stuurt, zolang ze bestaan, en ze kunnen tekst bevatten die Cmdr in je foto''s heeft herkend. Je kunt ze op elk moment lezen of wissen in de Ask Cmdr-instellingen.",
   "@ai.cloudConsent.askCmdr.memory": {
