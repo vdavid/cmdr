@@ -236,5 +236,3 @@ export function createRailFind(deps: RailFindDeps) {
     destroy,
   }
 }
-
-export type RailFind = ReturnType<typeof createRailFind>

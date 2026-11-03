@@ -146,11 +146,6 @@ function highlightApi(): { registry: HighlightRegistry; Highlight: HighlightCons
   return { registry, Highlight }
 }
 
-/** Whether the CSS Custom Highlight API can paint matches here. */
-export function canPaintFindHighlights(): boolean {
-  return highlightApi() !== null
-}
-
 function regionOf(range: Range): Element | null {
   const node = range.startContainer
   const el = node instanceof Element ? node : node.parentElement

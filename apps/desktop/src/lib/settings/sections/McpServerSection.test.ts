@@ -214,7 +214,7 @@ describe('McpServerSection', () => {
 
   it('has no direct mode switch, since direct mode comes from the environment only', async () => {
     const { target, component } = await render()
-    expect(getSettingDefinition('developer.mcpDirectMode' as never)).toBeUndefined()
+    expect(getSettingDefinition('developer.mcpDirectMode')).toBeUndefined()
     expect(target.textContent).not.toMatch(/direct mode/i)
     void unmount(component)
   })

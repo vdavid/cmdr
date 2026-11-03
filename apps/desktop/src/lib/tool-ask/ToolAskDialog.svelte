@@ -44,7 +44,7 @@
                 {#each sentence.values as row (row.caption)}
                     <dt>{row.caption}</dt>
                     <dd>
-                        {#if row.name !== null}<span class="value-name">{row.name}</span>{/if}
+                        {#if row.name !== null}<span>{row.name}</span>{/if}
                         {#if row.code !== null}<code class="value-code">{row.code}</code>{/if}
                     </dd>
                 {/each}

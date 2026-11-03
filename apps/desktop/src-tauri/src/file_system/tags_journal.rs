@@ -1,6 +1,6 @@
 //! A tag write's entry in the operation log, so the history can undo it.
 //!
-//! The writers in `tags_io` collect every file they changed into [`TagWrites`] (the
+//! The writers in `tags_io` collect every file they changed into [`TagWrites`](crate::file_system::tags_journal::TagWrites) (the
 //! raw `_kMDItemUserTags` value before and after), and the caller journals the batch
 //! as ONE `tag` operation once it's done, with whoever started it. The undo itself is
 //! the operation log's (`crates/cmdr-operation-log/DETAILS.md` § "A tag write restores
