@@ -208,6 +208,53 @@ pub(crate) fn smb_host_group(id: &str, manual: Vec<manual_servers::ManualServerE
     .find(|group| group.server.id == id)
 }
 
+/// Every Keychain entry a saved SMB server's or share's secret can sit in: the names
+/// (`keychain::forget_server_credentials`'s `servers`) and the shares whose own
+/// entries go too.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(crate) struct SmbSecretScope {
+    pub names: Vec<String>,
+    pub shares: Vec<String>,
+}
+
+/// The secret scope of the saved SMB `id`, which is either a host's listing id (its
+/// every share) or a saved share's place id (that share, plus the host-level password
+/// it signs in with). `None` when neither is saved.
+///
+/// ❗ The ONE source of "where a server's password can be" for both the host's and the
+/// share's Forget (#915): every name a sign-in can file it under
+/// ([`SmbHostGroup::credential_names`]), ❌ never the share row's server name alone, which
+/// missed the entry a mount or "Connect directly" filed under the dialed address.
+pub(crate) fn smb_secret_scope(
+    id: &str,
+    manual: Vec<manual_servers::ManualServerEntry>,
+    hosts: &[NetworkHost],
+) -> Option<SmbSecretScope> {
+    let groups = smb_host_groups(manual, crate::network::known_shares::get_all_known_shares(), hosts);
+    if let Some(group) = groups.iter().find(|group| group.server.id == id) {
+        return Some(SmbSecretScope {
+            names: group.credential_names(hosts),
+            shares: group.share_names(),
+        });
+    }
+    groups.iter().find_map(|group| {
+        let row = group
+            .rows
+            .iter()
+            .find(|row| row.is_share() && crate::network::known_shares::place_id(row) == id)?;
+        let mut names = group.credential_names(hosts);
+        // The name the row itself was filed under, whatever port it spells: a share's
+        // own entry has been keyed by it since before rows carried an address.
+        if !names.contains(&row.server_name) {
+            names.push(row.server_name.clone());
+        }
+        Some(SmbSecretScope {
+            names,
+            shares: vec![row.share_name.clone()],
+        })
+    })
+}
+
 /// The SMB hosts with the rows each one speaks for.
 ///
 /// One group per HOST: a host the user typed by hand is the same host its share

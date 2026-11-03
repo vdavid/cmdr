@@ -361,9 +361,15 @@ pub async fn forget_server(id: String) -> bool {
 /// [`forget_server_secret`] report whether there was one.
 #[tauri::command]
 #[specta::specta]
-pub async fn has_server_secret(id: String) -> bool {
-    let Some(saved) = saved_by_id(&id) else {
-        return false;
+pub async fn has_server_secret(id: String, app: tauri::AppHandle) -> bool {
+    has_server_secret_among(&id, manual_servers::all(&app)).await
+}
+
+/// [`has_server_secret`] over the manual SMB entries `manual`, so a test needs no app.
+pub(crate) async fn has_server_secret_among(id: &str, manual: Vec<manual_servers::ManualServerEntry>) -> bool {
+    let Some(saved) = saved_by_id(id) else {
+        // An SMB host's listing id names no place, but its shares' passwords.
+        return smb_secret(id, manual, crate::network::keychain::has_server_credentials).await;
     };
     match saved {
         SavedEntry::Sftp(entry) => super::sftp::has_sftp_credentials(entry.host, entry.port, entry.username).await,
@@ -371,12 +377,7 @@ pub async fn has_server_secret(id: String) -> bool {
         SavedEntry::S3(entry) => super::s3::has_s3_credentials(entry.provider, entry.access_key_id).await,
         // `AUTH_SYS` has no secret to remember.
         SavedEntry::Nfs(_) => false,
-        SavedEntry::Smb(row) => {
-            cmdr_fs::deadline::blocking_with_timeout(std::time::Duration::from_secs(15), false, move || {
-                crate::network::keychain::has_share_credentials(&row.server_name, &row.share_name)
-            })
-            .await
-        }
+        SavedEntry::Smb(_) => smb_secret(id, manual, crate::network::keychain::has_server_credentials).await,
     }
 }
 
@@ -387,9 +388,15 @@ pub async fn has_server_secret(id: String) -> bool {
 /// server" are two requests, and the sheet offers them separately.
 #[tauri::command]
 #[specta::specta]
-pub async fn forget_server_secret(id: String) -> bool {
-    let Some(saved) = saved_by_id(&id) else {
-        return false;
+pub async fn forget_server_secret(id: String, app: tauri::AppHandle) -> bool {
+    forget_server_secret_among(&id, manual_servers::all(&app)).await
+}
+
+/// [`forget_server_secret`] over the manual SMB entries `manual`, so a test needs no app.
+pub(crate) async fn forget_server_secret_among(id: &str, manual: Vec<manual_servers::ManualServerEntry>) -> bool {
+    let Some(saved) = saved_by_id(id) else {
+        // An SMB host's listing id: every password of the host and its shares.
+        return smb_secret(id, manual, forget_smb_entries).await;
     };
     match saved {
         SavedEntry::Sftp(entry) => super::sftp::delete_sftp_credentials(entry.host, entry.port, entry.username)
@@ -406,14 +413,30 @@ pub async fn forget_server_secret(id: String) -> bool {
         // Nothing stored, so nothing to remove.
         SavedEntry::Nfs(_) => false,
         // SMB keeps one password per HOST, plus a share's own beside another
-        // account's: both go.
-        SavedEntry::Smb(row) => {
-            cmdr_fs::deadline::blocking_with_timeout(std::time::Duration::from_secs(15), false, move || {
-                crate::network::keychain::forget_share_credentials(&row.server_name, &row.share_name)
-            })
-            .await
-        }
+        // account's: both go, under every name the host's password can be filed by.
+        SavedEntry::Smb(_) => smb_secret(id, manual, forget_smb_entries).await,
     }
+}
+
+/// Runs `act` over the SMB secret scope of `id` (a host's listing id or a share's
+/// place id, `smb_hosts::smb_secret_scope`) on a blocking task. Nothing saved, or a
+/// store that didn't answer in time, is `false`.
+async fn smb_secret(
+    id: &str,
+    manual: Vec<manual_servers::ManualServerEntry>,
+    act: fn(&[String], &[String]) -> bool,
+) -> bool {
+    let id = id.to_string();
+    cmdr_fs::deadline::blocking_with_timeout(std::time::Duration::from_secs(15), false, move || {
+        let hosts = crate::network::fresh_discovered_hosts();
+        smb_hosts::smb_secret_scope(&id, manual, &hosts).is_some_and(|scope| act(&scope.names, &scope.shares))
+    })
+    .await
+}
+
+/// Forgets the SMB entries under `names` and `shares`, answering whether one was there.
+fn forget_smb_entries(names: &[String], shares: &[String]) -> bool {
+    crate::network::keychain::forget_server_credentials(names, shares).is_ok_and(|gone| gone > 0)
 }
 
 /// Saves an edited server, or adds one without connecting.
@@ -608,11 +631,11 @@ pub fn forget_saved_smb_host_password(
     id: String,
     app: tauri::AppHandle,
 ) -> Result<bool, crate::network::keychain::KeychainError> {
-    let Some(group) = smb_hosts::smb_host_group(&id, manual_servers::all(&app)) else {
+    let hosts = crate::network::fresh_discovered_hosts();
+    let Some(scope) = smb_hosts::smb_secret_scope(&id, manual_servers::all(&app), &hosts) else {
         return Ok(false);
     };
-    let names = group.credential_names(&crate::network::fresh_discovered_hosts());
-    let gone = crate::network::keychain::forget_server_credentials(&names, &group.share_names())?;
+    let gone = crate::network::keychain::forget_server_credentials(&scope.names, &scope.shares)?;
     Ok(gone > 0)
 }
 
