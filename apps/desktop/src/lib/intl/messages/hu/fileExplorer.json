@@ -304,6 +304,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "A Cmdr ezt a fájlt még nem tudja másik appban megnyitni, mert nem szokásos fájl a Macen. Megtekintéshez nyomd meg ezt a billentyűt: {viewKey}.",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "„{fileName}” nem nyílt meg. A macOS nem találta meg a fájlt, vagy nem talált appot a megnyitásához.",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "{fileName} megnyitása…",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -979,6 +987,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "„{fileName}” kicsomagolása az archívumból nem sikerült, így nem nyitható meg ezzel: {appName}. Lehet, hogy az archívum sérült, vagy olyan formátumú, amelyet a Cmdr nem tud elolvasni.",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} nem tudja megnyitni ezt a fájlt, mert nem szokásos fájl a Macen. A Cmdrben ezzel a billentyűvel tekintheted meg: {viewKey}.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "„{fileName}” beolvasása nem sikerült, így nem nyitható meg ezzel: {appName}. Ellenőrizd, hogy a fájlt tároló meghajtó még csatlakozik, aztán próbáld újra.",
   "@fileExplorer.openWith.copyRefused.unreadable": {

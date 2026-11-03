@@ -404,6 +404,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "No hay nada seleccionado, así que no se ha copiado nada. Selecciona algo de texto primero.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "No se ha podido acceder al portapapeles. ¿Reintentar?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

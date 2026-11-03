@@ -403,6 +403,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Нічого не вибрано, тож нічого не скопійовано. Спершу виберіть текст.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Буфер обміну недоступний. Спробувати ще раз?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

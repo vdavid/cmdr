@@ -303,6 +303,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr 暂时还不能用其他 App 打开这个文件，因为它不是你 Mac 上的普通文件。请按 {viewKey} 查看。",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "没能打开“{fileName}”。macOS 找不到这个文件，或者找不到能打开它的 App。",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "正在打开 {fileName}…",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -978,6 +986,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "没能把“{fileName}”从压缩文件里取出来，所以无法用 {appName} 打开。这个压缩文件可能已损坏，或者采用了 Cmdr 无法读取的格式。",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} 无法打开这个文件，因为它不是你 Mac 上的普通文件。请按 {viewKey} 在 Cmdr 中查看。",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "无法读取“{fileName}”，所以没法用 {appName} 打开。请确认它所在的驱动器仍连接着，然后再试一次。",
   "@fileExplorer.openWith.copyRefused.unreadable": {

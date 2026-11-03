@@ -406,6 +406,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Nic není vybráno, takže se nic nezkopírovalo. Nejdřív vyberte nějaký text.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Schránka je nedostupná. Zkusíte to znovu?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

@@ -404,6 +404,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Nincs semmi kijelölve, ezért nem másolódott semmi. Előbb jelölj ki egy kis szöveget.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Nem sikerült elérni a vágólapot. Megpróbálod újra?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

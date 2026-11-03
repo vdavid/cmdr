@@ -3,6 +3,18 @@
   "@fileExplorer.archiveEnterMenu.open": {
     "sourceHash": "f429111"
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr aún no puede abrir este archivo en otra app, porque no es un archivo normal de tu Mac. Presiona {viewKey} para verlo.",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "e50fe4b"
+  },
+  "fileExplorer.open.didNotOpen": "{fileName} no se abrió. macOS no encontró el archivo o una app que lo abra.",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "81d1927"
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} no puede abrir este archivo, porque no es un archivo normal de tu Mac. Presiona {viewKey} para verlo en Cmdr.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "3df1dad"
+  },
   "fileExplorer.extensionChange.descriptionAdd": "{kind, select, folder {¿Seguro que quieres agregar la extensión “.{newExt}”? Puede que macOS muestre esta carpeta como un solo elemento.} other {¿Seguro que quieres agregar la extensión “.{newExt}”? La próxima vez tu archivo podría abrirse en una app distinta.}}",
   "@fileExplorer.extensionChange.descriptionAdd": {
     "sourceHash": "6c6f402"

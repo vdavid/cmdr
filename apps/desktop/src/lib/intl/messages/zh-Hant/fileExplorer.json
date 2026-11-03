@@ -303,6 +303,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr 還不能用其他 App 開啟這個檔案，因為它不是你 Mac 上的一般檔案。請按 {viewKey} 檢視。",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "無法開啟「{fileName}」。macOS 找不到這個檔案，或找不到能開啟它的 App。",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "正在開啟「{fileName}」⋯",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -978,6 +986,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "無法把「{fileName}」從封存檔裡取出來，所以沒辦法用 {appName} 開啟。這個封存檔可能已損壞，或用了 Cmdr 讀不了的格式。",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} 無法開啟這個檔案，因為它不是你 Mac 上的一般檔案。請按 {viewKey} 在 Cmdr 中檢視。",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "無法讀取「{fileName}」，所以沒辦法用 {appName} 開啟。請確認它所在的磁碟機仍然連接著，然後再試一次。",
   "@fileExplorer.openWith.copyRefused.unreadable": {

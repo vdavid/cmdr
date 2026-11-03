@@ -304,6 +304,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr поки що не може відкрити цей файл в іншій програмі, бо це не звичайний файл на вашому Mac. Натисніть {viewKey}, щоб переглянути його.",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "Файл {fileName} не відкрився. macOS не знайшла цей файл або програму, яка його відкриває.",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "Відкриття «{fileName}»…",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -979,6 +987,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "Не вдалося дістати файл {fileName} з архіву, щоб відкрити його в програмі {appName}. Можливо, архів пошкоджено або він має формат, який Cmdr не може прочитати.",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "Програма {appName} не може відкрити цей файл, бо це не звичайний файл на вашому Mac. Натисніть {viewKey}, щоб переглянути його в Cmdr.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Не вдалося прочитати файл {fileName}, щоб відкрити його в програмі {appName}. Перевірте, чи його диск досі підʼєднано, а тоді спробуйте ще раз.",
   "@fileExplorer.openWith.copyRefused.unreadable": {

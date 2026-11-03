@@ -403,6 +403,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "沒有選取任何內容，所以沒有複製任何東西。請先選取一些文字。",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "無法存取剪貼板。要再試一次嗎？",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

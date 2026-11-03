@@ -304,6 +304,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr chưa thể mở tệp này bằng ứng dụng khác, vì đây không phải là tệp thông thường trên máy Mac của bạn. Nhấn {viewKey} để xem tệp.",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "Không mở được “{fileName}”. macOS không tìm thấy tệp này hoặc ứng dụng nào mở được tệp.",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "Đang mở “{fileName}”…",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -981,6 +989,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "Không thể lấy “{fileName}” ra khỏi tệp nén để mở bằng {appName}. Có thể tệp nén bị hỏng hoặc dùng định dạng mà Cmdr không đọc được.",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} không thể mở tệp này, vì đây không phải là tệp thông thường trên máy Mac của bạn. Nhấn {viewKey} để xem tệp trong Cmdr.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Không thể đọc “{fileName}” để mở bằng {appName}. Hãy kiểm tra xem ổ đĩa chứa tệp có còn kết nối không, rồi thử lại.",
   "@fileExplorer.openWith.copyRefused.unreadable": {

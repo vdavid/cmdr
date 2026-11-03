@@ -7,6 +7,9 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 
 ## Open
 
+- `fileExplorer.open.didNotOpen`: "macOS couldn’t find the file, or an app that opens it" reads as either one missing,
+  but a negated "X or Y" in most languages reads as neither; locales wrote "didn’t find X or Y" and avoided "neither".
+  Consider "couldn’t find the file, or no app opens it". (all)
 - `mtp.readiness.connecting`: "Unlock your phone" matches the `unlock` concept (password-protected archives), while
   `unlock-device` stays out of the batch. Add it to `unlock`'s `notMatch`. `mtp-browse.png` doesn't show the row. (all)
 - `fileExplorer.pane.ejectAllFailedToast`, `.ejectAllHeldToast`: the descriptions call `{message}` one sentence, but the

@@ -404,6 +404,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Chưa chọn gì nên không có gì được sao chép. Hãy chọn một đoạn văn bản trước.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Không thể truy cập bảng nhớ tạm. Thử lại?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

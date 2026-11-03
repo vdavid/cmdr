@@ -405,6 +405,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Ничего не выделено, поэтому ничего не скопировано. Сначала выделите текст.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Не удалось получить доступ к буферу обмена. Попробуйте еще раз.",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

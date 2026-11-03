@@ -304,6 +304,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "O Cmdr ainda não consegue abrir este arquivo em outro app, porque ele não é um arquivo comum do seu Mac. Pressione {viewKey} para visualizá-lo.",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "O arquivo {fileName} não abriu. O macOS não encontrou o arquivo ou um app que o abra.",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "Abrindo {fileName}…",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -981,6 +989,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "Não foi possível tirar {fileName} do arquivo compactado para abrir em {appName}. O arquivo compactado pode estar danificado ou usar um formato que o Cmdr não consegue ler.",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} não consegue abrir este arquivo, porque ele não é um arquivo comum do seu Mac. Pressione {viewKey} para visualizá-lo no Cmdr.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Não foi possível ler {fileName} para abrir em {appName}. Verifique se o disco ainda está conectado e tente de novo.",
   "@fileExplorer.openWith.copyRefused.unreadable": {

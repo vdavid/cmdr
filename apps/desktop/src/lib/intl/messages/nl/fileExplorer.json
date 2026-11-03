@@ -305,6 +305,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je Mac is. Druk op {viewKey} om het te tonen.",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "{fileName} ging niet open. macOS kon het bestand of een app die het opent niet vinden.",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "{fileName} openen…",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -983,6 +991,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "Kon {fileName} niet uit het archief halen om in {appName} te openen. Het archief is mogelijk beschadigd, of het gebruikt een structuur die Cmdr niet kan lezen.",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je Mac is. Druk op {viewKey} om het in Cmdr te tonen.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Kon {fileName} niet lezen om in {appName} te openen. Controleer of de schijf nog is aangesloten en probeer het dan opnieuw.",
   "@fileExplorer.openWith.copyRefused.unreadable": {

@@ -304,6 +304,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr zatím nedokáže tento soubor otevřít v jiné aplikaci, protože to není běžný soubor na vašem Macu. Zobrazíte ho klávesou {viewKey}.",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "Soubor {fileName} se neotevřel. macOS nenašel tento soubor ani aplikaci, která by ho otevřela.",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "Otevírá se {fileName}…",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -979,6 +987,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "Soubor {fileName} se nepodařilo dostat z archivu a otevřít v aplikaci {appName}. Archiv může být poškozený nebo používat formát, který Cmdr neumí přečíst.",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "Aplikace {appName} tento soubor otevřít nedokáže, protože to není běžný soubor na vašem Macu. Zobrazíte ho v Cmdru klávesou {viewKey}.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Soubor {fileName} se nepodařilo přečíst a otevřít v aplikaci {appName}. Zkontrolujte, že je jeho disk pořád připojený, a zkuste to znovu.",
   "@fileExplorer.openWith.copyRefused.unreadable": {

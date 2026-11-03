@@ -408,6 +408,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Inget är markerat, så inget kopierades. Markera lite text först.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Det gick inte att nå urklipp. Försök igen?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

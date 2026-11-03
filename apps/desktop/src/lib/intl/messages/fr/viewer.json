@@ -406,6 +406,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Aucune sélection, donc rien n’a été copié. Sélectionnez d’abord du texte.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Accès au presse-papiers impossible. Réessayer ?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

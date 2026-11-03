@@ -39,6 +39,10 @@
   "@viewer.reloadToast.rotated": {
     "sourceHash": "97ad053"
   },
+  "viewer.copy.nothingSelected": "No hay nada seleccionado, así que no se copió nada. Selecciona algo de texto primero.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "6a8bd07"
+  },
   "viewer.copy.clipboardUnreachable": "No se pudo acceder al portapapeles. ¿Reintentar?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "d7e6f82"

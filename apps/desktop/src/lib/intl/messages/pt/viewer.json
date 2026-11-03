@@ -404,6 +404,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Nada selecionado, então nada foi copiado. Selecione algum texto primeiro.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Não foi possível acessar a área de transferência. Tentar de novo?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

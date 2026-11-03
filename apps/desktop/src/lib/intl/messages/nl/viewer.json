@@ -407,6 +407,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Er is niets geselecteerd, dus er is niets gekopieerd. Selecteer eerst wat tekst.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Het klembord was niet bereikbaar. Opnieuw proberen?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"

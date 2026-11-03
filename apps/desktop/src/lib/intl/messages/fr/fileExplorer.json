@@ -304,6 +304,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr ne peut pas encore ouvrir ce fichier dans une autre app, car ce n’est pas un fichier ordinaire de votre Mac. Appuyez sur {viewKey} pour le visualiser.",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "Le fichier « {fileName} » ne s’est pas ouvert. macOS n’a pas trouvé le fichier ou une app capable de l’ouvrir.",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "{fileName} s’ouvre…",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -980,6 +988,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "Impossible d’extraire « {fileName} » de son archive pour l’ouvrir dans {appName}. L’archive est peut-être endommagée ou utilise un format que Cmdr ne sait pas lire.",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} ne peut pas ouvrir ce fichier, car ce n’est pas un fichier ordinaire de votre Mac. Appuyez sur {viewKey} pour le visualiser dans Cmdr.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Impossible de lire « {fileName} » pour l’ouvrir dans {appName}. Vérifiez que le disque est toujours connecté, puis réessayez.",
   "@fileExplorer.openWith.copyRefused.unreadable": {

@@ -304,6 +304,14 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем Mac. Нажмите {viewKey} для просмотра.",
+  "@fileExplorer.open.notOnThisMac": {
+    "sourceHash": "66fcc50"
+  },
+  "fileExplorer.open.didNotOpen": "Файл {fileName} не открылся. macOS не нашла этот файл или приложение, которое его открывает.",
+  "@fileExplorer.open.didNotOpen": {
+    "sourceHash": "c8362d8"
+  },
   "fileExplorer.openingToast.noApp": "Открытие «{fileName}»…",
   "@fileExplorer.openingToast.noApp": {
     "sourceHash": "45d83ec"
@@ -979,6 +987,10 @@
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "Не удалось извлечь файл {fileName} из архива для открытия в {appName}. Возможно, архив поврежден или его формат не поддерживается Cmdr.",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} не может открыть этот файл: это не обычный файл на вашем Mac. Нажмите {viewKey}, чтобы просмотреть его в Cmdr.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "sourceHash": "4e5520c"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Не удалось прочитать файл {fileName} для открытия в {appName}. Проверьте подключение диска и попробуйте еще раз.",
   "@fileExplorer.openWith.copyRefused.unreadable": {

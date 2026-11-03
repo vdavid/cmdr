@@ -407,6 +407,10 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
+  "viewer.copy.nothingSelected": "Nichts ausgewählt, also wurde nichts kopiert. Wähle zuerst Text aus.",
+  "@viewer.copy.nothingSelected": {
+    "sourceHash": "f48a1d7"
+  },
   "viewer.copy.clipboardUnreachable": "Die Zwischenablage war nicht erreichbar. Erneut versuchen?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "3c8ddb8"
