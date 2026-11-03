@@ -15,6 +15,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, tick, createRawSnippet, type ComponentProps } from 'svelte'
 import Button from './Button.svelte'
 import Checkbox from './Checkbox.svelte'
+import CloseButton from './CloseButton.svelte'
 import LinkButton from './LinkButton.svelte'
 import RadioGroup, { type RadioItem } from './RadioGroup.svelte'
 import Switch from './Switch.svelte'
@@ -116,6 +117,24 @@ describe('Button a11y', () => {
  * by the design-time checker (tier 1). Focus traps / keyboard integration
  * across a full page live in the E2E tier.
  */
+describe('CloseButton a11y', () => {
+  it('a bare × has no a11y violations and is named by its aria-label', async () => {
+    const target = container()
+    mount(CloseButton, { target, props: { ariaLabel: 'Dismiss', onclick: () => {} } })
+    await tick()
+    expect(target.querySelector('button')?.getAttribute('aria-label')).toBe('Dismiss')
+    await expectNoA11yViolations(target)
+  })
+
+  it('with a decoration under the × has no a11y violations', async () => {
+    const target = container()
+    const ring = createRawSnippet(() => ({ render: () => '<svg aria-hidden="true" viewBox="0 0 22 22"></svg>' }))
+    mount(CloseButton, { target, props: { ariaLabel: 'Dismiss notification', onclick: () => {}, children: ring } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
 describe('LinkButton a11y', () => {
   it('default has no a11y violations', async () => {
     const target = container()

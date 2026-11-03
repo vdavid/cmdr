@@ -19,6 +19,9 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
   to `openSystemSettingsUrl` for the `x-apple.systempreferences:` scheme Tauri's opener swallows. It does NOT allowlist
   URLs, so it belongs on trusted markdown only
 - **`Button.svelte`**: Styled button with variant and size props
+- **`CloseButton.svelte`**: The round × (toasts, inline notices). Required `ariaLabel`; an optional `children` snippet
+  draws under the × (the toast's countdown ring). It never positions itself: the caller pins it via `class` plus a
+  `:global(...)` rule, and the class doubles as a selector contract (`.toast-close` for `toast-focus.ts` and E2E).
 - **`Select.svelte`**: Presentational Ark `Select`: items-driven single-pick, the house dropdown (native-`<select>`
   replacement)
 - **`TextInput.svelte`** / **`TextArea.svelte`**: The house text fields (single-line / multi-line); chrome in `app.css`

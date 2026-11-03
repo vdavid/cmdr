@@ -348,6 +348,7 @@ export type MessageKey =
   | 'askCmdr.sessions.unarchive'
   | 'askCmdr.sessions.wakeThread'
   | 'askCmdr.softCap.action'
+  | 'askCmdr.softCap.dismiss'
   | 'askCmdr.softCap.message'
   | 'askCmdr.spendPause.estimateNote'
   | 'askCmdr.spendPause.keepGoing'

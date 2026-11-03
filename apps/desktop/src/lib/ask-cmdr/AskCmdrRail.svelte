@@ -7,6 +7,7 @@
 <script lang="ts">
     import { onDestroy, tick, untrack } from 'svelte'
     import Icon from '#lib/ui/Icon.svelte'
+    import CloseButton from '#lib/ui/CloseButton.svelte'
     import StatusBadge from '#lib/ui/StatusBadge.svelte'
     import { getBadgeStatus } from '#lib/feature-status.js'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -22,8 +23,9 @@
         closeRail,
         ensureThreadLoaded,
         hasOlderMessages,
-        isOverSoftCap,
+        dismissLongChatNudge,
         keepGoingPastSpend,
+        longChatNudge,
         loadOlderMessages,
         markRailFocused,
         newChatShortcutText,
@@ -228,8 +230,13 @@
                         onStop={stopStreaming}
                     />
                 {/if}
-                {#if isOverSoftCap()}
+                {#if longChatNudge() !== null}
                     <div class="soft-cap">
+                        <CloseButton
+                            class="soft-cap-dismiss"
+                            onclick={dismissLongChatNudge}
+                            ariaLabel={tString('askCmdr.softCap.dismiss')}
+                        />
                         <span>{tString('askCmdr.softCap.message')}</span>
                         <button type="button" class="soft-cap-action" onclick={openNewChat}>
                             {tString('askCmdr.softCap.action')}
@@ -381,6 +388,7 @@
     }
 
     .soft-cap {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
@@ -391,6 +399,17 @@
         color: var(--color-text-secondary);
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-md);
+    }
+
+    /* The message keeps clear of the corner ×, which reads first in focus order. */
+    .soft-cap > span {
+        padding-right: var(--spacing-lg);
+    }
+
+    .soft-cap :global(.soft-cap-dismiss) {
+        position: absolute;
+        top: calc(var(--spacing-sm) - 3px);
+        right: calc(var(--spacing-sm) - 3px);
     }
 
     .soft-cap-action {

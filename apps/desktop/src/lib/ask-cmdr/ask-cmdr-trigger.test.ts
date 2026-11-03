@@ -60,7 +60,8 @@ import {
   askCmdrState,
   hasOlderMessages,
   hydrateRail,
-  isOverSoftCap,
+  dismissLongChatNudge,
+  longChatNudge,
   loadOlderMessages,
   MESSAGE_PAGE,
   closeRail,
@@ -77,7 +78,6 @@ import {
   setRailWidth,
   stopStreaming,
   switchToThread,
-  THREAD_SOFT_CAP_MESSAGES,
   type RailMessage,
   type RailToolCall,
 } from './ask-cmdr-trigger.svelte'
@@ -759,37 +759,60 @@ describe('setRailWidth', () => {
   })
 })
 
-describe('isOverSoftCap', () => {
-  it('trips only once the thread crosses the soft cap', () => {
-    for (let i = 0; i <= THREAD_SOFT_CAP_MESSAGES; i++) {
-      askCmdrState.messages.push({ kind: 'user', id: null, text: `m${String(i)}`, attachments: [] })
-    }
-    expect(askCmdrState.messages.length).toBe(THREAD_SOFT_CAP_MESSAGES + 1)
-    expect(isOverSoftCap()).toBe(true)
+describe('longChatNudge', () => {
+  function measured(estimatedTokens: number, elidedResults = 0): void {
+    askCmdrState.contextUsage = { estimatedTokens, budgetTokens: 100_000, elidedResults }
+  }
+
+  /** Regression: the nudge used to count items, so a chat at 3% of its budget already got it. */
+  it('ignores how many items the thread holds', () => {
+    for (let i = 0; i < 60; i++) askCmdrState.messages.push({ kind: 'user', id: null, text: 'm', attachments: [] })
+    measured(3_000)
+    expect(longChatNudge()).toBeNull()
   })
 
-  /** A turn is one bubble, but each of its rounds counts, as each assistant row did when it was
-   *  its own bubble: a long tool-heavy thread still gets the nudge on time. */
-  it("counts a bubble's rounds, not the bubble", () => {
-    const rounds = Array.from({ length: THREAD_SOFT_CAP_MESSAGES }, (_, i) => ({
-      messageId: i + 2,
-      text: 'x',
-      calls: [],
-    }))
-    askCmdrState.messages = [
-      { kind: 'user', id: 1, text: 'hi', attachments: [] },
-      {
-        kind: 'assistant',
-        id: null,
-        turnId: 1,
-        rounds,
-        thinking: false,
-        stalled: false,
-        streaming: false,
-        stats: null,
-      },
-    ]
-    expect(isOverSoftCap()).toBe(true)
+  it('shows at 70% of the budget, or once the thread was trimmed', () => {
+    measured(70_000)
+    expect(longChatNudge()).toBe('soft')
+    measured(10_000)
+    expect(longChatNudge()).toBeNull()
+    askCmdrState.messages.push({ kind: 'contextTrimmed', count: 2 })
+    expect(longChatNudge()).toBe('soft')
+  })
+
+  it('stays dismissed until 90%, then comes back once', () => {
+    askCmdrState.conversationId = 4
+    measured(75_000)
+    dismissLongChatNudge()
+    expect(longChatNudge()).toBeNull()
+    measured(90_000)
+    expect(longChatNudge()).toBe('urgent')
+    dismissLongChatNudge()
+    measured(99_000)
+    expect(longChatNudge()).toBeNull()
+  })
+
+  it('remembers a dismissal per thread across switches', async () => {
+    getMock.mockImplementation((...args: unknown[]) =>
+      Promise.resolve({
+        conversation: conversationRow(args[0] as number),
+        totalMessages: 0,
+        turnInFlightSinceSeq: null,
+        turnInFlightRun: null,
+        spendPausedMicros: null,
+        messages: [],
+        lastContextUsage: { estimatedTokens: 80_000, budgetTokens: 100_000 },
+      }),
+    )
+    await switchToThread(5)
+    expect(longChatNudge()).toBe('soft')
+    dismissLongChatNudge()
+    await switchToThread(6)
+    expect(longChatNudge()).toBe('soft')
+    await switchToThread(5)
+    expect(longChatNudge()).toBeNull()
+    newChat()
+    expect(askCmdrState.longChatDismissedAt).toBeNull()
   })
 })
 

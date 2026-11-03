@@ -129,17 +129,6 @@ function joinRounds(older: Round[], newer: Round[]): Round[] {
   return [...older.slice(0, -1), joined, ...newer.slice(1)]
 }
 
-/**
- * How many items the "start a fresh one?" nudge counts. Each round counts, as each assistant row
- * did when it was its own bubble, so folding a turn into one bubble didn't make the nudge fire far
- * later. Every other item counts one.
- */
-export function softCapCount(messages: RailMessage[]): number {
-  let count = 0
-  for (const item of messages) count += item.kind === 'assistant' ? item.rounds.length : 1
-  return count
-}
-
 /** Everything about the thread's tail the rail's auto-scroll follows: a new item, and the last
  * bubble growing a round, a line, prose, or its stats. */
 export function contentSignature(messages: RailMessage[]): string {

@@ -24,7 +24,14 @@ import { discardRenameReview } from './ask-cmdr-rename-review.svelte'
 import { mergeAtSeam } from './ask-cmdr-rounds'
 import { refreshSlotStatus } from './ask-cmdr-slot-status.svelte'
 import { carryGroupStateAcrossSeam, forgetToolDetails } from './ask-cmdr-tool-groups.svelte'
-import { askCmdrState, hasOlderMessages, MESSAGE_PAGE, RAIL_MAX_WIDTH, RAIL_MIN_WIDTH } from './ask-cmdr-state.svelte'
+import {
+  askCmdrState,
+  hasOlderMessages,
+  MESSAGE_PAGE,
+  RAIL_MAX_WIDTH,
+  RAIL_MIN_WIDTH,
+  restoreLongChatDismissal,
+} from './ask-cmdr-state.svelte'
 import { followJoinedBubble, leaveChat, resumeThread, stopStreaming } from './ask-cmdr-stream.svelte'
 import { settleDecisionsHeardWhileLoading } from './ask-cmdr-decisions'
 import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
@@ -46,12 +53,12 @@ export type {
 } from './ask-cmdr-state.svelte'
 export {
   askCmdrState,
+  dismissLongChatNudge,
   hasOlderMessages,
-  isOverSoftCap,
+  longChatNudge,
   MESSAGE_PAGE,
   RAIL_MAX_WIDTH,
   RAIL_MIN_WIDTH,
-  THREAD_SOFT_CAP_MESSAGES,
 } from './ask-cmdr-state.svelte'
 export { keepGoingPastSpend, sendMessage, stopStreaming } from './ask-cmdr-stream.svelte'
 export {
@@ -184,6 +191,7 @@ export function newChat(): void {
   forgetToolDetails()
   // A fresh chat has measured nothing, so the gauge must not carry the previous thread's fill.
   askCmdrState.contextUsage = null
+  restoreLongChatDismissal(null)
   askCmdrState.deniedNames = []
   discardRenameReview()
   abandonThreadLoad()
@@ -266,6 +274,7 @@ async function loadConversation(id: number): Promise<boolean> {
     if (load !== latestThreadLoad) return false
     if (askCmdrState.conversationId !== id) forgetToolDetails()
     askCmdrState.conversationId = id
+    restoreLongChatDismissal(id)
     askCmdrState.freshChat = false
     askCmdrState.messageTotal = detail.totalMessages
     askCmdrState.historyCount = detail.messages.length

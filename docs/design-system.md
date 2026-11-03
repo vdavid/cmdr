@@ -557,6 +557,11 @@ border-radius: var(--radius-full); /* every size is a capsule */
 
 **All buttons:** `cursor: default`. No `outline: none` on focus; rely on focus-visible ring.
 
+**Close button** (`CloseButton.svelte`): the round × that toasts and inline notices close with. A 22px circle with a
+24px hit box (`.hit-target`), a 10px `x` glyph in `--color-text-tertiary`, and on hover `--color-tint-hover` behind
+`--color-text-primary`. It never positions itself: the caller pins it (top-right, 3px inside the surface's padding)
+through `class` and a `:global(...)` rule. Always pass `ariaLabel`; the × alone names nothing.
+
 ### Buttons (website)
 
 **CTA:** `bg-accent text-background rounded-xl px-8 py-4 font-semibold text-lg` Hover:

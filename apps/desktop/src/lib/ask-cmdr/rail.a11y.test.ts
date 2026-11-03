@@ -41,7 +41,7 @@ const { triggerState, flags, costMock, consentState, railSettings, dismissSessio
       messages: [] as unknown[],
       attachments: [] as unknown[],
     },
-    flags: { overSoftCap: false },
+    flags: { longChat: false },
     costMock: vi.fn<(id: number) => Promise<unknown>>(),
     dismissSessions: vi.fn(),
   }
@@ -52,7 +52,8 @@ const { triggerState, flags, costMock, consentState, railSettings, dismissSessio
 // changes nothing for the others.
 vi.mock('./ask-cmdr-trigger.svelte', () => ({
   askCmdrState: triggerState,
-  isOverSoftCap: () => flags.overSoftCap,
+  longChatNudge: () => (flags.longChat ? 'soft' : null),
+  dismissLongChatNudge: vi.fn(),
   hasOlderMessages: () => false,
   loadOlderMessages: vi.fn(),
   closeRail: vi.fn(),
@@ -143,7 +144,7 @@ beforeEach(() => {
   triggerState.conversationId = null
   triggerState.messages = []
   triggerState.attachments = []
-  flags.overSoftCap = false
+  flags.longChat = false
 })
 
 // Only the two blocks that format numbers pinned a locale; the rest ran on the
@@ -510,9 +511,9 @@ describe('AskCmdrRail a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it('the over-soft-cap nudge has no a11y violations', async () => {
+  it('the getting-long nudge and its dismiss button have no a11y violations', async () => {
     triggerState.messages = [{ kind: 'user', id: 1, text: 'hi', attachments: [] }] satisfies RailMessage[]
-    flags.overSoftCap = true
+    flags.longChat = true
     const target = mountRail()
     await tick()
     await expectNoA11yViolations(target)

@@ -130,10 +130,6 @@ pub fn wrap_up_note(reason: WrapUp) -> String {
 /// history; it must never reach the turn in flight.
 pub const MIN_ELISION_TURNS_BACK: usize = 1;
 
-/// Past this many messages a thread shows the honest "this chat is getting long -
-/// start a fresh one?" nudge, no hard cut. Initial value; tune with use.
-pub const THREAD_SOFT_CAP_MESSAGES: usize = 40;
-
 /// The most denied names one envelope spells out. A few examples show the user the pattern
 /// they rejected; fifty rows would spend their window on our bookkeeping (intention 8). Past
 /// this the segment says how many more there were, so the cut is visible (invariant 9).

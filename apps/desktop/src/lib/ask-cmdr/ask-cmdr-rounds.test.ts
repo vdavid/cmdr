@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { AssistantItem, RailMessage, RailToolCall, Round } from './ask-cmdr-messages'
-import { contentSignature, displaySegments, mergeAtSeam, settleRounds, softCapCount } from './ask-cmdr-rounds'
+import { contentSignature, displaySegments, mergeAtSeam, settleRounds } from './ask-cmdr-rounds'
 
 function call(callId: string, overrides: Partial<RailToolCall> = {}): RailToolCall {
   return {
@@ -125,19 +125,6 @@ describe('mergeAtSeam', () => {
     const older: RailMessage[] = [bubble({ id: 2, turnId: 1, rounds: [round(2, 'One.')] })]
     const newer: RailMessage[] = [bubble({ id: 4, turnId: 3, rounds: [round(4, 'Two.')] })]
     expect(mergeAtSeam(older, newer)).toEqual([...older, ...newer])
-  })
-})
-
-describe('softCapCount', () => {
-  /** The nudge kept its meaning when a turn became one bubble: each round still counts, as each
-   *  assistant row did when it was its own bubble. */
-  it('counts user items, rounds, and every other item', () => {
-    const messages: RailMessage[] = [
-      { kind: 'user', id: 1, text: 'hi', attachments: [] },
-      bubble({ rounds: [round(2, 'a', [call('c1')]), round(4, '', [call('c1')]), round(6, 'b')] }),
-      { kind: 'modelChange', model: 'm' },
-    ]
-    expect(softCapCount(messages)).toBe(5)
   })
 })
 

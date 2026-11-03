@@ -13,9 +13,11 @@
  * its objects, so field mutation is reactive).
  */
 
+import { SvelteMap } from 'svelte/reactivity'
 import type { ContextUsage } from './ask-cmdr-context-usage'
 import type { AssistantItem, RailMessage } from './ask-cmdr-messages'
-import { settleRounds, softCapCount } from './ask-cmdr-rounds'
+import { longChatLevel, longChatNudgeShows, type LongChatLevel } from './ask-cmdr-long-chat'
+import { settleRounds } from './ask-cmdr-rounds'
 import type {
   AttachmentRef,
   RenameEvidence,
@@ -23,12 +25,8 @@ import type {
   RenameStartError,
 } from '#lib/tauri-commands/index.js'
 
-/** Past this many thread messages the rail nudges "start a fresh one?" (mirrors the Rust
- * `THREAD_SOFT_CAP_MESSAGES`; no hard cut). */
-export const THREAD_SOFT_CAP_MESSAGES = 40
-
-/** How many messages a thread page holds. Threads are small (soft cap ~40), so the first
- * page is usually the whole thread; paging is the insurance for a long one. Loading is
+/** How many messages a thread page holds. Most threads are small, so the first page is
+ * usually the whole thread; paging is the insurance for a long one. Loading is
  * tail-first (newest page), with "load earlier" prepending older pages. */
 export const MESSAGE_PAGE = 50
 export interface BulkRenameReviewRow {
@@ -123,6 +121,9 @@ interface AskCmdrState {
   /** How full the model's view got on the thread's last measured call, for the footer gauge.
    * `null` means no call has been measured, and the gauge shows the slot's baseline instead. */
   contextUsage: ContextUsage | null
+  /** The level the user dismissed this thread's "getting long" nudge at, or `null` while they
+   * haven't (`longChatNudge`). Restored per thread from {@link dismissedLongChatByThread}. */
+  longChatDismissedAt: LongChatLevel | null
   /** Bumped on each `costMetered` event (one per completed model call), so the footer re-reads
    * the meter mid-turn. A counter, never a total: the meter stays the one source of the cost. */
   costRevision: number
@@ -157,16 +158,51 @@ export const askCmdrState = $state<AskCmdrState>({
   attachments: [],
   renameReview: null,
   contextUsage: null,
+  longChatDismissedAt: null,
   costRevision: 0,
   spendPausedMicros: null,
   deniedNames: [],
   composerFocusRequest: 0,
 })
 
-/** True once the thread grows past the soft cap (drives the "start a fresh one?" nudge). Each
- * round counts, as each assistant row did when it was its own bubble (`softCapCount`). */
-export function isOverSoftCap(): boolean {
-  return softCapCount(askCmdrState.messages) > THREAD_SOFT_CAP_MESSAGES
+/**
+ * Each thread's nudge dismissal, kept for the app's lifetime so switching threads and back doesn't
+ * bring a dismissed nudge back. In memory on purpose: after a restart a chat still past 70% may
+ * show it once more, which is a fair reminder rather than nagging, and it spares a stored column.
+ */
+const dismissedLongChatByThread = new SvelteMap<number, LongChatLevel>()
+
+/** The level the "this chat is getting long" nudge shows at, or `null` while it's hidden: the
+ * gauge's fill or a trim this thread saw (`ask-cmdr-long-chat.ts`), minus what the user dismissed. */
+export function longChatNudge(): LongChatLevel | null {
+  const trimmed =
+    (askCmdrState.contextUsage?.elidedResults ?? 0) > 0 ||
+    askCmdrState.messages.some((item) => item.kind === 'contextTrimmed')
+  const level = longChatLevel(askCmdrState.contextUsage, trimmed)
+  return longChatNudgeShows(level, askCmdrState.longChatDismissedAt) ? level : null
+}
+
+/** Hide the nudge for this thread until it's more pressing (`longChatNudgeShows`). */
+export function dismissLongChatNudge(): void {
+  const level = longChatNudge()
+  if (level === null) return
+  askCmdrState.longChatDismissedAt = level
+  rememberLongChatDismissal()
+}
+
+/** File the open chat's dismissal under its thread id. Also called when a fresh chat learns its
+ * id, so a nudge dismissed before the send's answer stays dismissed. */
+export function rememberLongChatDismissal(): void {
+  const { conversationId, longChatDismissedAt } = askCmdrState
+  if (conversationId !== null && longChatDismissedAt !== null) {
+    dismissedLongChatByThread.set(conversationId, longChatDismissedAt)
+  }
+}
+
+/** Take the dismissal of the thread the rail now shows (`null`: a fresh chat). */
+export function restoreLongChatDismissal(conversationId: number | null): void {
+  askCmdrState.longChatDismissedAt =
+    conversationId === null ? null : (dismissedLongChatByThread.get(conversationId) ?? null)
 }
 
 /** True when older history pages exist beyond what's loaded (drives "load earlier"). */

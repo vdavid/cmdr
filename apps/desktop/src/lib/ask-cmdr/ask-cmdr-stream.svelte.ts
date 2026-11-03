@@ -40,7 +40,13 @@ import {
   stageRenameProposal,
 } from './ask-cmdr-rename-review.svelte'
 import { noteProposalDecided } from './ask-cmdr-decisions'
-import { askCmdrState, insertAboveBubble, settleAssistant, streamingAssistant } from './ask-cmdr-state.svelte'
+import {
+  askCmdrState,
+  insertAboveBubble,
+  rememberLongChatDismissal,
+  settleAssistant,
+  streamingAssistant,
+} from './ask-cmdr-state.svelte'
 import { holdTurnGroupsOpen, settleTurnGroups } from './ask-cmdr-tool-groups.svelte'
 import {
   cancelAskCmdr,
@@ -287,6 +293,7 @@ function claimThread(
 ): void {
   if (activeSend === send) {
     askCmdrState.conversationId = conversationId
+    rememberLongChatDismissal()
     if (askCmdrState.streaming) liveRun = run
   }
   for (const pending of pendingStops) if (pending.send === send) pending.run = run
@@ -852,6 +859,7 @@ function applyDiscarded(): void {
   askCmdrState.messageTotal = 0
   askCmdrState.historyCount = 0
   askCmdrState.contextUsage = null
+  askCmdrState.longChatDismissedAt = null
   askCmdrState.streaming = false
   askCmdrState.spendPausedMicros = null
   clearProgressWatchdog()

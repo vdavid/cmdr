@@ -273,7 +273,6 @@ turn runs on an approval today; the `Outcomes` follow-up a rejection opens runs 
   feedback, and names the loop guard and a stall without apology. ❌ No token total gates a turn: the token figures
   are display; only the context window bounds one call (`tokens_summed_across_rounds_never_end_a_turn`).
 - `MIN_ELISION_TURNS_BACK = 1` — the floor above; the current turn's results never elide.
-- `THREAD_SOFT_CAP_MESSAGES = 40` — past this the UI nudges "start a fresh one?".
 
 In `budget.rs` (how many tokens a prompt and a tool result may spend):
 

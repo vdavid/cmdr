@@ -514,10 +514,14 @@ registry lives below `commands/` rather than inside the chat command.
   (`ask-cmdr-rounds.ts`), which merges the older page's last bubble with the newer list's first bubble exactly when
   their `turnId`s match (rounds concatenated, the newer half's id and flags, the stats that exist), keeping any event
   the newer page hoisted above it.
-- **The "start a fresh one?" nudge counts user items + ROUNDS + every other item** (`softCapCount`) against
-  `THREAD_SOFT_CAP_MESSAGES` (40, mirroring the Rust constant). Each round counts, as each assistant row did when it was
-  its own bubble, so folding a turn into one bubble didn't make the nudge fire far later. A `TurnFinished` row draws no
-  item, so it doesn't count.
+- **The "this chat is getting long" nudge follows the gauge, not the item count** (`longChatNudge` over
+  `ask-cmdr-long-chat.ts`): it shows at 70% of the budget (`contextUsage`) or once this thread was trimmed (a
+  `contextTrimmed` line, or a measured call with `elidedResults > 0`), whichever comes first. Why: a count of 40 items
+  fired at 3% context on a chat of short questions, and missed a few huge tool results that filled the budget. Its round
+  × (`CloseButton`) hides it at the level it showed; a `soft` dismissal comes back once at 90% (`urgent`), an `urgent`
+  one stays gone. Dismissals live in memory per thread (`dismissedLongChatByThread`): switching threads keeps them, an
+  app restart may show a still-long chat's nudge once more (a fair reminder, and no stored column). A fresh chat files
+  its dismissal under its id when the send's answer names it (`claimThread`).
 - **Only the latest thread load may touch the rail** (`latestThreadLoad` in `ask-cmdr-trigger.svelte.ts`). Every read is
   its own command, so the first one asked can be the last one answered: picking thread A and then B must leave B on
   screen whichever answers second, and a late answer must not repaint a chat the user cleared with "new chat". An
@@ -937,12 +941,12 @@ the end-to-end half of live-equals-reload. The fake picks each round from the pr
 (`FakeAgentLlm::by_prompt`), so a retry or a second thread can't desync it. `app_state` and `list_volumes` read the E2E
 machine's real state, so the spec asserts their shape, never their values, and never token counts (the fake reports
 none). `i18n-capture-ask-cmdr.ts` photographs the same turn (`ask-cmdr-tools`) with its groups open and one line
-expanded. `ask-cmdr-trigger.test.ts` covers the full event model (tool lines, soft cap, message paging, attachments)
-with mocked events, `ask-cmdr-stop-and-reload.test.ts` a Stop and a reload mid-turn, and `ask-cmdr-turn-parity.test.ts`
-the round reducer and live-equals-reload; `ask-cmdr-sessions.test.ts` covers list paging/search/rename/archive. The E2E
-spec also drives the sessions path end-to-end (create two threads, search finds the right one via real FTS over the
-persisted messages, switch works) — it seeds a per-run nonce into the message text so search never matches a thread left
-by an earlier run.
+expanded. `ask-cmdr-trigger.test.ts` covers the full event model (tool lines, the getting-long nudge, message paging,
+attachments) with mocked events, `ask-cmdr-stop-and-reload.test.ts` a Stop and a reload mid-turn, and
+`ask-cmdr-turn-parity.test.ts` the round reducer and live-equals-reload; `ask-cmdr-sessions.test.ts` covers list
+paging/search/rename/archive. The E2E spec also drives the sessions path end-to-end (create two threads, search finds
+the right one via real FTS over the persisted messages, switch works) — it seeds a per-run nonce into the message text
+so search never matches a thread left by an earlier run.
 
 A message `[tool:copy] {"pane":"left"}` calls that one tool through the real gate, then signs off
 (`rail_fake_tool_trigger`), which is how `ask-cmdr-capability.spec.ts` acts as the agent against the real webview. The

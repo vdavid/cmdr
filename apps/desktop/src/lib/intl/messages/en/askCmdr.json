@@ -49,11 +49,15 @@
   },
   "askCmdr.softCap.message": "This chat is getting long. A fresh one keeps replies fast and focused.",
   "@askCmdr.softCap.message": {
-    "description": "A gentle nudge shown once an Ask Cmdr conversation grows past its soft length cap. Friendly, not a hard limit."
+    "description": "A gentle nudge shown once an Ask Cmdr conversation fills most of what the AI model can keep in view (about 70%), or once older parts had to be set aside. Friendly, not a hard limit."
   },
   "askCmdr.softCap.action": "Start a fresh chat",
   "@askCmdr.softCap.action": {
     "description": "Button that starts a new Ask Cmdr conversation, shown alongside the getting-long nudge. Sentence case."
+  },
+  "askCmdr.softCap.dismiss": "Dismiss",
+  "@askCmdr.softCap.dismiss": {
+    "description": "Accessible label (read by screen readers, shown nowhere) for the round × button that hides the 'This chat is getting long' nudge for this chat. A verb; sentence case."
   },
   "askCmdr.tool.appState.doing": "Checking what you’re looking at",
   "@askCmdr.tool.appState.doing": {

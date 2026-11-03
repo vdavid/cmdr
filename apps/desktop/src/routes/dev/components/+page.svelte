@@ -1,6 +1,7 @@
 <script lang="ts">
     import CatalogPage from '../CatalogPage.svelte'
     import Buttons from './sections/Buttons.svelte'
+    import CloseButtonSection from './sections/CloseButtonSection.svelte'
     import Links from './sections/Links.svelte'
     import Groups from './sections/Groups.svelte'
     import ToggleGroupSection from './sections/ToggleGroupSection.svelte'
@@ -93,6 +94,7 @@
         {/snippet}
 
         <Buttons />
+        <CloseButtonSection />
         <Links />
         <Groups />
         <ToggleGroupSection />

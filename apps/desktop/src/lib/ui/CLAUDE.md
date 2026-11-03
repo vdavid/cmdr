@@ -11,8 +11,8 @@ Reusable components (Ark UI backs the complex ones).
 - The house menu: `Menu.svelte` + `createMenu` (`menu-controller.svelte.ts`), over `menu-navigation.ts` /
   `menu-reorder.ts`. ❗ A `.svelte.ts` may never case-collide with a component. DETAILS § Menu.
 - The primitives (`Icon`, `Spinner`, `Button`, `ColumnList`, form controls, `Select`, `Combobox`, text fields,
-  `ShortcutChip`, `InfoTip`, `StatusGlyph` (❌ never focusable), `toast/`) are catalogued in DETAILS § Key files.
-  `ToggleGroup` is segmented, ≠ `RadioGroup`; Tooltip is the sibling `../tooltip/tooltip.ts`.
+  `ShortcutChip`, `InfoTip`, `CloseButton`, `StatusGlyph` (❌ never focusable), `toast/`) are catalogued in DETAILS §
+  Key files. `ToggleGroup` is segmented, ≠ `RadioGroup`; Tooltip is the sibling `../tooltip/tooltip.ts`.
 
 ## Must-knows
 

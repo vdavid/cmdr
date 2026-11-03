@@ -7,8 +7,7 @@
     import ToastActions from './ToastActions.svelte'
     import ReportOffer from '#lib/error-reporter/ReportOffer.svelte'
     import type { ReportIncident } from '#lib/error-reporter/report-incident.js'
-    import { tooltip } from '#lib/tooltip/tooltip.js'
-    import Icon from '#lib/ui/Icon.svelte'
+    import CloseButton from '#lib/ui/CloseButton.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { captureFocusOrigin, restoreFocus, type FocusOrigin } from '#lib/ui/focus-restore.js'
     import { toastSpeech, type ToastSpeech } from './toast-speech'
@@ -315,13 +314,13 @@
     <ToastLevelIcon {level} />
     <!-- Before the content though pinned to the corner: focus order follows reading order, and it
          reads on the first line, above any action row (`toast-focus.ts` walks in DOM order). -->
-    <button
-        class="toast-close hit-target"
+    <CloseButton
+        class="toast-close"
         onclick={() => {
             onUserDismiss(id)
         }}
-        use:tooltip={closeTooltip}
-        aria-label={tString('ui.toast.dismissAria')}
+        tooltipText={closeTooltip}
+        ariaLabel={tString('ui.toast.dismissAria')}
     >
         {#if dismissal === 'transient'}
             {#key ringRun}
@@ -342,8 +341,7 @@
                 </svg>
             {/key}
         {/if}
-        <Icon name="x" size={10} />
-    </button>
+    </CloseButton>
     <div class="toast-main">
         <div class="toast-content" bind:this={contentElement}>
             <!-- The corner, floated so the body's first line wraps around the age label and the
@@ -488,29 +486,10 @@
     }
 
     /* Pinned the same distance from the top and right edges, centered on the first text line. */
-    .toast-close {
+    .toast :global(.toast-close) {
         position: absolute;
         top: calc(var(--spacing-toast) - 3px);
         right: calc(var(--spacing-toast) - 3px);
-        background: none;
-        border: none;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        width: 22px;
-        height: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-full);
-        line-height: var(--font-line-height-flat);
-        transition:
-            background var(--transition-fast),
-            color var(--transition-fast);
-    }
-
-    .toast-close:hover {
-        background: var(--color-tint-hover);
-        color: var(--color-text-primary);
     }
 
     /* The countdown ring hugs the X button's round edge, starting at 12 o'clock. The circle's inline
