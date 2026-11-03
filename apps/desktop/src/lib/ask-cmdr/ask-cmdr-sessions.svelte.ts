@@ -78,9 +78,22 @@ export function openSessions(): void {
  * the panel reopens on the recent threads rather than old hits. The panel's focused control
  * leaves the page with it, so focus goes to the prompt box, never `<body>`. */
 export function closeSessions(): void {
+  dismissSessions()
+  requestComposerFocus()
+}
+
+/** Close the panel the way {@link closeSessions} does, minus the focus: the rail itself is going
+ * away (`AskCmdrRail` calls this as it unmounts), and closing the rail puts focus on the pane. */
+export function dismissSessions(): void {
   sessionsState.open = false
   clearSearch()
-  requestComposerFocus()
+}
+
+/** Escape in the panel steps back one layer, like the app's other search fields: a search
+ * clears first, and an Escape with nothing typed closes the panel. */
+export function escapeSessions(): void {
+  if (sessionsState.query.length > 0) clearSearch()
+  else closeSessions()
 }
 
 // ── Listing + paging ─────────────────────────────────────────────────────────

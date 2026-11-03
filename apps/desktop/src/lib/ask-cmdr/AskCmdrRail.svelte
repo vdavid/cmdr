@@ -5,7 +5,7 @@
   right pane instead of compressing the panes below their min-width.
 -->
 <script lang="ts">
-    import { tick, untrack } from 'svelte'
+    import { onDestroy, tick, untrack } from 'svelte'
     import Icon from '#lib/ui/Icon.svelte'
     import StatusBadge from '#lib/ui/StatusBadge.svelte'
     import { getBadgeStatus } from '#lib/feature-status.js'
@@ -38,7 +38,7 @@
     import { contentSignature } from './ask-cmdr-rounds'
     import { cloudConsentState } from '#lib/ai/cloud-consent.svelte.js'
     import { getSetting, onSpecificSettingChange, type AiProvider } from '#lib/settings/index.js'
-    import { openSessions, sessionsState } from './ask-cmdr-sessions.svelte'
+    import { dismissSessions, openSessions, sessionsState } from './ask-cmdr-sessions.svelte'
     import type { SelectionAttachmentsRead } from '#lib/file-explorer/pane/selection-attachments-read.js'
     import type { RevealPath } from './ask-cmdr-tool-line'
 
@@ -87,6 +87,11 @@
         })
     })
     const gap = $derived(providerGap(slotStatusState.status))
+
+    // The threads panel lives inside the rail, so it closes with it, search and all, and the rail
+    // reopens on the chat. Every close path (⌘⌥A, the close button, the error boundary) unmounts
+    // the rail, and the sessions slice can't hear `closeRail` (it calls the trigger, never back).
+    onDestroy(dismissSessions)
 
     let listElement = $state<HTMLDivElement | null>(null)
     // Whether the user was near the bottom before the last content change. Streaming

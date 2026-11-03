@@ -16,6 +16,7 @@
         chooseThread,
         clearSearch,
         closeSessions,
+        escapeSessions,
         isSearching,
         loadMoreSessions,
         renameConversation,
@@ -78,10 +79,21 @@
         }
     }
 
+    // Escape anywhere in the panel steps back (`escapeSessions`). The rename field's own Escape
+    // cancels the rename and claims the key, so that press stays a cancel.
+    function onPanelKeydown(event: KeyboardEvent): void {
+        if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing) return
+        event.preventDefault()
+        escapeSessions()
+    }
+
     const newChatShortcut = $derived(newChatShortcutText())
 </script>
 
-<div class="sessions" bind:this={sessionsElement}>
+<!-- The keydown only catches Escape bubbling up from the panel's own focusable controls, so the
+     container needs no role of its own. -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="sessions" bind:this={sessionsElement} onkeydown={onPanelKeydown}>
     <header class="sessions-header">
         <button type="button" class="icon-button" onclick={closeSessions} aria-label={tString('askCmdr.sessions.back')}>
             <Icon name="arrow-left" size={16} aria-hidden="true" />

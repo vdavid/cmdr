@@ -491,6 +491,12 @@ registry lives below `commands/` rather than inside the chat command.
   search (`closeSessions` → `clearSearch`): a kept query would reopen the panel on old hits, and `noteThreadStarted`
   skips while one is active, so a new thread wouldn't show either. Each hit's `snippet` is backend FTS text rendered as
   plain `{text}` (never `{@html}`).
+- **Leaving the panel**: Escape anywhere in it steps back one layer (`escapeSessions`), the house pattern the shortcuts
+  filter and the viewer's search bar follow: a typed search clears first, and Escape in an empty box closes the panel.
+  The rename field's own Escape claims the key, so that press only cancels the rename. Closing the whole rail closes the
+  panel too: `AskCmdrRail` calls `dismissSessions` (`closeSessions` minus the composer focus, since the pane takes it)
+  as it unmounts, which every close path does (⌘⌥A, the close button, the error boundary). It's the rail's teardown and
+  not `closeRail` because the trigger can't import the sessions slice.
 - **A thread the agent opened wears a `bot` glyph**, the same one the status corner shows while a wake thinks, in the
   list AND in search results (`ConversationSearchHit.origin` exists for that second half: a hit that lost the mark reads
   as a thread the user started and forgot). ❌ The test is `origin === 'notification'`, never "origin is not null": the

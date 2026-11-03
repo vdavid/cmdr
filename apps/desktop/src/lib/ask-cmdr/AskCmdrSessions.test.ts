@@ -12,6 +12,7 @@ const spies = vi.hoisted(() => ({
   chooseThread: vi.fn(),
   clearSearch: vi.fn(),
   closeSessions: vi.fn(),
+  escapeSessions: vi.fn(),
   loadMoreSessions: vi.fn(),
   renameConversation: vi.fn(() => Promise.resolve()),
   setArchived: vi.fn(),
@@ -171,6 +172,38 @@ describe('AskCmdrSessions interactions', () => {
     const target = mountPanel()
     await tick()
     expect(target.querySelector('.started-by-agent')).toBeNull()
+  })
+
+  it('Escape in the search box steps back through the panel', async () => {
+    const target = mountPanel()
+    await tick()
+    const input = target.querySelector<HTMLInputElement>('input[type="search"]')
+    if (!input) throw new Error('expected a search input')
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    input.dispatchEvent(escape)
+    expect(spies.escapeSessions).toHaveBeenCalledOnce()
+    // Claimed, so the window's own Escape (leaving full screen) doesn't also fire.
+    expect(escape.defaultPrevented).toBe(true)
+  })
+
+  it('Escape on a row steps back too', async () => {
+    const target = mountPanel()
+    await tick()
+    target
+      .querySelector<HTMLButtonElement>('.row')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    expect(spies.escapeSessions).toHaveBeenCalledOnce()
+  })
+
+  it('Escape in the rename field only cancels the rename', async () => {
+    const target = mountPanel()
+    await tick()
+    target.querySelector<HTMLButtonElement>('[aria-label="Rename"]')?.click()
+    await tick()
+    target
+      .querySelector<HTMLInputElement>('input[type="text"]')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    expect(spies.escapeSessions).not.toHaveBeenCalled()
   })
 
   it('the back button closes the panel', async () => {

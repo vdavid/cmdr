@@ -15,6 +15,7 @@ const renameMock = vi.fn<(id: number, title: string) => Promise<void>>()
 const archiveMock = vi.fn<(id: number, archived: boolean) => Promise<void>>()
 const switchMock = vi.fn<(id: number) => Promise<void>>()
 const newChatMock = vi.fn()
+const composerFocusMock = vi.fn()
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   listAskCmdrConversations: (l: number, o: number, a: boolean) => listMock({ limit: l, offset: o, includeArchived: a }),
@@ -31,7 +32,9 @@ vi.mock('./ask-cmdr-trigger.svelte', () => ({
   openNewChat: () => {
     newChatMock()
   },
-  requestComposerFocus: vi.fn(),
+  requestComposerFocus: () => {
+    composerFocusMock()
+  },
 }))
 
 import {
@@ -39,6 +42,8 @@ import {
   chooseThread,
   clearSearch,
   closeSessions,
+  dismissSessions,
+  escapeSessions,
   loadMoreSessions,
   loadSessions,
   openSessions,
@@ -67,6 +72,7 @@ beforeEach(() => {
   renameMock.mockReset()
   archiveMock.mockReset()
   switchMock.mockReset()
+  composerFocusMock.mockReset()
   renameMock.mockResolvedValue()
   archiveMock.mockResolvedValue()
   Object.assign(sessionsState, {
@@ -230,6 +236,48 @@ describe('sessions search', () => {
 
     expect(sessionsState.hits).toEqual([])
     expect(sessionsState.searching).toBe(false)
+  })
+})
+
+describe('leaving the panel', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('Escape with a search clears it and keeps the panel open on the list', async () => {
+    searchMock.mockResolvedValueOnce([hit(1)])
+    sessionsState.open = true
+    setSearchQuery('budget')
+    await vi.runAllTimersAsync()
+
+    escapeSessions()
+
+    expect(sessionsState.open).toBe(true)
+    expect(sessionsState.query).toBe('')
+    expect(sessionsState.hits).toEqual([])
+  })
+
+  it('Escape in an empty box closes the panel and hands focus to the prompt box', () => {
+    sessionsState.open = true
+    escapeSessions()
+    expect(sessionsState.open).toBe(false)
+    expect(composerFocusMock).toHaveBeenCalledOnce()
+  })
+
+  it('the rail closing leaves the panel closed with no search, and moves no focus', async () => {
+    sessionsState.open = true
+    setSearchQuery('budget')
+
+    dismissSessions()
+    await vi.runAllTimersAsync()
+
+    expect(sessionsState.open).toBe(false)
+    expect(sessionsState.query).toBe('')
+    expect(searchMock).not.toHaveBeenCalled()
+    expect(composerFocusMock).not.toHaveBeenCalled()
   })
 })
 

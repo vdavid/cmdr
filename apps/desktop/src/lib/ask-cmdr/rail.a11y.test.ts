@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { flushSync, mount, tick } from 'svelte'
+import { flushSync, mount, tick, unmount } from 'svelte'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
 import type { AttachmentRef, ConversationCost } from '#lib/tauri-commands/index.js'
@@ -26,7 +26,7 @@ import type { ContextUsage } from './ask-cmdr-context-usage'
 
 // `vi.hoisted` so the shared mutable state exists before the hoisted `vi.mock`
 // factories run.
-const { triggerState, flags, costMock, consentState, railSettings } = vi.hoisted(() => {
+const { triggerState, flags, costMock, consentState, railSettings, dismissSessions } = vi.hoisted(() => {
   // Plain mutable objects, so the gate blocks can move them before mounting. Annotations, not
   // `as`: the lint auto-fix strips an assertion it thinks is unnecessary.
   const consentState: { accepted: boolean | null; acceptedAt: number | null } = { accepted: true, acceptedAt: null }
@@ -43,6 +43,7 @@ const { triggerState, flags, costMock, consentState, railSettings } = vi.hoisted
     },
     flags: { overSoftCap: false },
     costMock: vi.fn<(id: number) => Promise<unknown>>(),
+    dismissSessions: vi.fn(),
   }
 })
 
@@ -87,6 +88,7 @@ vi.mock('#lib/settings/index.js', async (importOriginal) => ({
 vi.mock('./ask-cmdr-sessions.svelte', () => ({
   sessionsState: { open: false },
   openSessions: vi.fn(),
+  dismissSessions,
 }))
 
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
@@ -464,6 +466,22 @@ describe('AskCmdrRail a11y', () => {
     await tick()
     expect(gateKind(target)).toBeNull()
     expect(target.querySelector('.composer')).not.toBeNull()
+    target.remove()
+  })
+
+  // Every way the rail closes (⌘⌥A, its close button, its error boundary) unmounts it, so the
+  // threads panel and its search go with it and the next open starts on the chat.
+  it('closing the rail closes the threads panel and drops its search', async () => {
+    dismissSessions.mockClear()
+    const target = container()
+    const rail = mount(AskCmdrRail, {
+      target,
+      props: { readSelection: noSelection, revealPath: () => Promise.resolve() },
+    })
+    await tick()
+    expect(dismissSessions).not.toHaveBeenCalled()
+    await unmount(rail)
+    expect(dismissSessions).toHaveBeenCalledOnce()
     target.remove()
   })
 
