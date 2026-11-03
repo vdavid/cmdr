@@ -60,9 +60,13 @@ export function keyLabel(combo: string): string {
 export const COMMAND_CAPTIONS = {
   'file.copy': 'F5',
   'file.move': 'F6',
+  'favorites.open': '⌃D',
   'file.multiRename': '⌃M',
   'search.open': '⌘F',
   'selection.selectAll': '⌘A',
+  'servers.connect': '⌘K',
+  'tab.close': '⌘W',
+  'tab.new': '⌘T',
 } as const
 
 export type CaptionedCommand = keyof typeof COMMAND_CAPTIONS
@@ -71,6 +75,15 @@ export type CaptionedCommand = keyof typeof COMMAND_CAPTIONS
 export async function pressCaptioned(page: TauriPage, combo: string, code?: string): Promise<void> {
   captionKey(keyLabel(combo))
   await pressKey(page, combo, code)
+}
+
+/**
+ * Presses `key` through Playwright's keyboard (the path the pane's own keys answer:
+ * Enter, Tab) and captions it.
+ */
+export async function keyboardCaptioned(page: TauriPage, key: string): Promise<void> {
+  captionKey(keyLabel(key))
+  await page.keyboard.press(key)
 }
 
 /** Dispatches `id` the way its shortcut would, and captions the shortcut. */

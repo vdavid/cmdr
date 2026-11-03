@@ -58,13 +58,17 @@ import type { ClipSlug, VideoSetId } from '../test/e2e-playwright/marketing-clip
 import { buildVideoManifest } from './marketing-video.ts'
 import { DEMO, DEMO_ROOT, MARKER, ensureDemoTree, removeDemoTree } from '../test/e2e-playwright/marketing-clips-demo.ts'
 import {
+  NAS_HOST,
   PHONE,
   PRICED_S3,
+  S3,
+  RESTIC_CLIPS_PARENT,
   cleanUpPricedS3,
   seedPricedS3,
   seedResticRepo,
   seedS3Bucket,
   seedSmbShare,
+  startNasHost,
 } from '../test/e2e-playwright/marketing-video2-fixtures.ts'
 
 const LOG = '[marketing-clips]'
@@ -171,6 +175,7 @@ const BEAT_REMARKS: Record<VideoSetId, Record<string, string>> = {
  * MTP phone, which only exists when the app LAUNCHES with `CMDR_VIRTUAL_MTP`.
  */
 async function prepareSet(options: Options): Promise<{ env: Record<string, string>; cleanUp: () => void }> {
+  if (options.video === null) return prepareReachClips(selectedSlugs(options))
   if (options.video !== 'video2') return { env: {}, cleanUp: () => {} }
   console.log(`${LOG} filling the NAS share, the S3 bucket, and the restic repo…`)
   seedSmbShare()
@@ -203,6 +208,70 @@ async function prepareSet(options: Options): Promise<{ env: Record<string, strin
       else console.error(`${LOG} R2 cleanup: ${String(left)} objects still under ${PRICED_S3.prefix}/; delete them.`)
     },
   }
+}
+
+/**
+ * Forgets the folder a pane last showed on each volume whose id starts with one of
+ * `prefixes` (`lastUsedPaths` in the app's `app-status.json`): a place reopens there, so a
+ * take that ended inside the NAS share or the bucket started the next one in the wrong
+ * folder (2026-11-03).
+ */
+function forgetLastFolders(appStatusPath: string, prefixes: string[]): void {
+  if (!existsSync(appStatusPath)) return
+  const status = JSON.parse(readFileSync(appStatusPath, 'utf8')) as { lastUsedPaths?: Record<string, string> }
+  if (status.lastUsedPaths === undefined) return
+  for (const id of Object.keys(status.lastUsedPaths)) {
+    if (prefixes.some((p) => id.startsWith(p))) Reflect.deleteProperty(status.lastUsedPaths, id)
+  }
+  writeFileSync(appStatusPath, `${JSON.stringify(status, null, 2)}\n`)
+}
+
+/** Removes the favorites named one of `names` from the app's `favorites.json`. */
+function dropFavoritesNamed(favoritesPath: string, names: string[]): void {
+  if (!existsSync(favoritesPath)) return
+  const file = JSON.parse(readFileSync(favoritesPath, 'utf8')) as { favorites?: { name?: string }[] }
+  if (file.favorites === undefined) return
+  file.favorites = file.favorites.filter((f) => f.name === undefined || !names.includes(f.name))
+  writeFileSync(favoritesPath, `${JSON.stringify(file, null, 2)}\n`)
+}
+
+/**
+ * What the two reach clips need before the launch (`marketing-clips-reach.ts`), on the same
+ * dressed fixtures as `--video2`. ❗ The SMB and S3 Docker fixtures must be up
+ * (`docs/guides/product-clips.md`).
+ *
+ * - `reach-network`: the NAS share and the `family-photos` bucket refilled, the saved
+ *   servers an earlier run left forgotten (the scene adds the NAS itself, and a second
+ *   `family-photos` row would be a second switcher row), and `NAS_HOST` published so the
+ *   NAS is reached by name.
+ * - `reach-devices`: a restic repo in `Archive/`, and the virtual phone, which only exists
+ *   when the app LAUNCHES with `CMDR_VIRTUAL_MTP`.
+ */
+async function prepareReachClips(slugs: ClipSlug[]): Promise<{ env: Record<string, string>; cleanUp: () => void }> {
+  const env: Record<string, string> = {}
+  let cleanUp = (): void => {}
+  if (slugs.includes('reach-network')) {
+    console.log(`${LOG} filling the NAS share and the S3 bucket, publishing ${NAS_HOST}…`)
+    seedSmbShare()
+    seedS3Bucket(join(DEMO_ROOT, DEMO.trip))
+    const dataDir = captureInstance('clips').dataDir
+    for (const file of ['known-shares.json', 'manual-servers.json', 's3_known_places.json']) {
+      rmSync(join(dataDir, file), { force: true })
+    }
+    forgetLastFolders(join(dataDir, 'app-status.json'), ['smb-home-nas-', 's3-family-photos-'])
+    // A favorite named like the bucket makes MCP's `select_volume` refuse the name as
+    // ambiguous; the scene names its own "Family photos".
+    dropFavoritesNamed(join(dataDir, 'favorites.json'), [S3.bucket])
+    cleanUp = await startNasHost()
+  }
+  if (slugs.includes('reach-devices')) {
+    seedResticRepo(join(DEMO_ROOT, RESTIC_CLIPS_PARENT), [
+      join(DEMO_ROOT, DEMO.documents),
+      join(DEMO_ROOT, DEMO.cameraRoll),
+    ])
+    Object.assign(env, { CMDR_VIRTUAL_MTP: PHONE.backingDir, CMDR_VIRTUAL_MTP_MODEL: PHONE.model })
+  }
+  return { env, cleanUp }
 }
 
 /**

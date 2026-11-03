@@ -10,7 +10,7 @@
  * back, which is how the E2E suites get them again.
  */
 
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -24,6 +24,39 @@ export const SMB = {
   /** What the Servers list and the volume picker call it. */
   name: 'Home NAS',
 } as const
+
+/**
+ * The NAS's name on the network in the `reach-network` clip, so no frame shows a loopback
+ * address: a Bonjour host `startNasHost` points at 127.0.0.1.
+ */
+export const NAS_HOST = 'home-nas.local'
+
+/**
+ * Publishes `NAS_HOST` as a Bonjour host for 127.0.0.1 (`dns-sd -P`, no root needed; the
+ * resolver answers it for every app on this Mac) for as long as the returned stop isn't
+ * called. ❗ On a made-up service type nothing browses, ❌ never `_smb._tcp`: as an SMB
+ * service it joined the Servers view's "found nearby" group, beside its 127.0.0.1 address
+ * and the real servers on David's network (2026-11-03). Resolves once the name resolves.
+ */
+export async function startNasHost(): Promise<() => void> {
+  const proc = spawn(
+    'dns-sd',
+    ['-P', 'Cmdr clips', '_cmdr-clips._tcp', 'local', String(SMB.port), NAS_HOST, '127.0.0.1'],
+    {
+      stdio: 'ignore',
+    },
+  )
+  const stop = (): void => {
+    proc.kill()
+  }
+  for (let i = 0; i < 50; i++) {
+    const res = spawnSync('dscacheutil', ['-q', 'host', '-a', 'name', NAS_HOST], { encoding: 'utf8' })
+    if (res.stdout.includes('127.0.0.1')) return stop
+    await new Promise((resolve) => setTimeout(resolve, 200))
+  }
+  stop()
+  throw new Error(`${NAS_HOST} never resolved through the Bonjour proxy (dns-sd -P)`)
+}
 
 /** The VersityGW S3 fixture, `test/s3-servers/`. */
 export const S3 = {
@@ -167,6 +200,9 @@ export function cleanUpPricedS3(dataDir: string, account: PricedS3Account): numb
   }
   return left
 }
+
+/** Where the `reach-devices` clip's restic repo goes, beside the sensor logs (`seedResticRepo`'s root). */
+export const RESTIC_CLIPS_PARENT = 'Archive'
 
 /** The restic repo's folder name in the demo tree, and its password. */
 export const RESTIC = { folder: 'Backups', password: 'harbour-lights-42' } as const

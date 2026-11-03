@@ -4,8 +4,30 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { commands } from '../../src/lib/commands/command-registry'
+import { readFileSync, readdirSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { COMMAND_CAPTIONS, keyLabel } from './marketing-clips-keys.js'
+
+/**
+ * Every command's first default shortcut, read from the registry's source files as text:
+ * importing the registry would pull the app's Svelte and i18n modules into this suite's
+ * tsconfig, which can't resolve them.
+ */
+function defaultShortcuts(): Map<string, string> {
+  const dir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'lib', 'commands', 'sources')
+  const found = new Map<string, string>()
+  for (const file of readdirSync(dir).filter((f) => f.endsWith('.ts'))) {
+    const text = readFileSync(join(dir, file), 'utf8')
+    // One chunk per entry, so an entry without shortcuts can't borrow the next one's.
+    for (const entry of text.split(/\n\s*id: /).slice(1)) {
+      const id = /^'([^']+)'/.exec(entry)?.[1]
+      const first = /shortcuts: \[\s*'([^']*)'/.exec(entry)?.[1]
+      if (id !== undefined && first !== undefined && !found.has(id)) found.set(id, first)
+    }
+  }
+  return found
+}
 
 describe('keyLabel', () => {
   it('prints modifiers as glyphs in Apple order, whatever order they came in', () => {
@@ -32,9 +54,7 @@ describe('keyLabel', () => {
 
 describe('COMMAND_CAPTIONS', () => {
   it("captions each command with the app's default shortcut for it", () => {
-    for (const [id, caption] of Object.entries(COMMAND_CAPTIONS)) {
-      const command = commands.find((c) => c.id === id)
-      expect(command?.shortcuts[0], id).toBe(caption)
-    }
+    const shortcuts = defaultShortcuts()
+    for (const [id, caption] of Object.entries(COMMAND_CAPTIONS)) expect(shortcuts.get(id), id).toBe(caption)
   })
 })

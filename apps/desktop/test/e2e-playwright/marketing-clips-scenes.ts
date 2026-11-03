@@ -87,7 +87,7 @@ const CLIP_SETTINGS = { width: 800, height: 540 }
  * The still beat after a clip's start marker and before its first action, so a viewer
  * sees where the clip begins before anything moves (and the loop's seam reads as a pause).
  */
-const LEAD_IN_MS = 800
+export const LEAD_IN_MS = 800
 
 const PROGRESS_DIALOG = '[data-dialog-id="transfer-progress"]'
 const MULTI_RENAME = '[data-dialog-id="multi-rename"]'
@@ -194,14 +194,14 @@ export async function stageMain(
   await setSetting(page, 'listing.showHiddenFiles', false)
   // The `undo` video beat turns this on; left on, every later copy's dialog waits for a Close.
   await setSetting(page, 'fileOperations.keepProgressOpenWhenDone', false)
-  await cancelSignInSheet(page)
+  await closeLeftoverDialogs(page)
   await resetTabs('left')
   await resetTabs('right')
   await setViewMode('left', 'full')
   await setViewMode('right', 'full')
   await mcpCall('nav_to_path', { pane: 'left', path: left })
   await mcpCall('nav_to_path', { pane: 'right', path: right })
-  await cancelSignInSheet(page)
+  await closeLeftoverDialogs(page)
   const leftFocused = await page.evaluate<boolean>(
     `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') ?? false`,
   )
@@ -212,17 +212,26 @@ export async function stageMain(
   await dismissAllToasts(page)
 }
 
-const SIGN_IN_SHEET = '[data-dialog-id="server-sign-in"]'
-
 /**
- * Cancels a server sign-in sheet if one is up. The app reopens its panes where they were,
- * and a pane left on the `--video2` run's NAS share asks to sign in again when the SMB
- * Docker fixture is down; the sheet then blocks every later step (2026-10-26).
+ * The dialogs a take can find left up, and the button that closes each without changing
+ * anything: a server sign-in sheet (a pane reopened on the `--video2` run's NAS share asks
+ * to sign in again when the SMB fixture is down, 2026-10-26), a backup's password ask (a
+ * take that failed mid-unlock), and "What's new" (a security advisory newer than the
+ * instance's last run, 2026-11-03).
  */
-async function cancelSignInSheet(page: TauriPage): Promise<void> {
-  if (!(await page.isVisible(SIGN_IN_SHEET))) return
-  await clickButtonByText(page, `${SIGN_IN_SHEET} button`, 'Cancel')
-  await expect.poll(async () => !(await page.isVisible(SIGN_IN_SHEET)), { timeout: waitBudget(5000) }).toBeTruthy()
+const LEFTOVER_DIALOGS = [
+  { dialog: '[data-dialog-id="server-sign-in"]', button: 'Cancel' },
+  { dialog: '[data-dialog-id="archive-password"]', button: 'Cancel' },
+  { dialog: '[data-dialog-id="whats-new"]', button: 'Close' },
+] as const
+
+/** Closes whichever `LEFTOVER_DIALOGS` are up; each one blocks every later step. */
+async function closeLeftoverDialogs(page: TauriPage): Promise<void> {
+  for (const { dialog, button } of LEFTOVER_DIALOGS) {
+    if (!(await page.isVisible(dialog))) continue
+    await clickButtonByText(page, `${dialog} button`, button)
+    await expect.poll(async () => !(await page.isVisible(dialog)), { timeout: waitBudget(5000) }).toBeTruthy()
+  }
 }
 
 /**

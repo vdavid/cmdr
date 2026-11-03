@@ -18,7 +18,9 @@ pnpm marketing:clips --video                # the demo video's long-form beats i
 - ❗ **Leave the machine alone while it records.** Each take brings Cmdr to the front: ScreenCaptureKit records a
   covered window fine, but WKWebView starves `requestAnimationFrame` in an occluded one, so a clip recorded behind
   another app shows frozen progress bars.
-- A full run is roughly 14 takes of ~10–15 s each plus staging, a few minutes in all, unless the drive index has to
+- ❗ **The reach clips need the Docker fixtures up**: `apps/desktop/test/smb-servers/start.sh minimal` and
+  `apps/desktop/test/s3-servers/start.sh minimal` (§ "The reach clips").
+- A full run is roughly 18 takes of ~10–30 s each plus staging, a few minutes in all, unless the drive index has to
   reconcile first (about five minutes, once; `docs/guides/screenshots.md` § "When it waits").
 - A failed take fails only itself (Playwright retries it once). The run still encodes every take that recorded, then
   exits non-zero naming the skipped ones.
@@ -43,7 +45,44 @@ Slugs come from `apps/desktop/test/e2e-playwright/marketing-clips-slugs.ts`; eac
 - `viewer` (~20 s): a photo of a real painting, then the same file as Binary (2) and Hex (3); then a Markdown README as
   Text (1), then formatted (0). Two viewer windows stacked on one frame, the README's behind: a window reaches another
   file only through a Markdown link, and a linked file opens formatted, never as text.
+- `reach-network` and `reach-devices`: § "The reach clips".
 - `settings`: a pan through seven Settings sections, one per group.
+
+## The reach clips
+
+`marketing-clips-reach.ts`, on the `--video2` fixtures dressed as a home setup (`marketing-video2-fixtures.ts`). Each
+place opens in a new tab (⌘T) or is left with ⌘↑, and the tab closes again (⌘W), so both loop.
+
+- `reach-network` (~23 s): ⌘K, `smb://home-nas.local.:11481/private`, the name "Home NAS", the account, the password,
+  and the share browsed into a 5,000-photo folder; then the other pane's favorites (⌃D) on "Family photos", the
+  `family-photos` bucket, browsed into an album.
+- `reach-devices` (~20 s): Enter into a repo's `.git`, its commits as folders, ⌘↑ back; a restic `Backups` repo in
+  `Archive/`, its password, its snapshots; then a new tab, ⌃D to a virtual "Pixel 8" over MTP, `DCIM/Camera`.
+- ❗ **Places open from the favorites (⌃D), ❌ never the volume switcher (⌥F1 / ⌥F2)**: the switcher lists every volume
+  the Mac has, which put David's own NAS (by its Tailscale address) and cloud drives in frame (2026-11-03). Each scene
+  adds its favorite off camera (`favoriteRightPane`), named apart from the volume: a favorite named like a volume makes
+  MCP's `select_volume` refuse the name as ambiguous.
+- ❗ **No Servers view on camera**: its "found nearby" group lists the real servers on David's network.
+- **The trailing dot in the address** works around an app bug: `build_smb_addr` strips a final `.local` for the UNC path
+  and then dials the stripped name, which resolves to nothing. It also shows in the share's label ("private on
+  home-nas.local.:11481"), which ignores the name typed in the sheet.
+
+What the orchestrator stages for them (`prepareReachClips` in `apps/desktop/scripts/marketing-clips.ts`):
+
+- **The NAS by name.** `home-nas.local` is a Bonjour host for 127.0.0.1, published for the run with `dns-sd -P` (no
+  root), so no frame shows a loopback address. The S3 endpoint rides the same name. The SMB fixture's port (11481) still
+  shows in the typed address: 445 on 127.0.0.1 needs root.
+- **A fresh add each take.** Before launch it deletes the clips instance's saved servers (`known-shares.json`,
+  `manual-servers.json`, `s3_known_places.json`), the folders the NAS share and the bucket last showed (`lastUsedPaths`
+  in `app-status.json`: a place reopens there), and a stale favorite named like the bucket. Each take forgets the NAS,
+  its password (`delete_smb_credentials` under the dialed `host:port`, which the saved row's forget misses), and
+  unmounts its share before and after (`forgetNas`: only a mount of the fixture, matched by host and port), and backs
+  out of the share and the bucket on camera before closing their tabs.
+- **A locked backup each take.** The repo is `Archive/Backups` (`RESTIC_CLIPS_PARENT`): in the demo root, showing hidden
+  files for `.git` would put the demo tree's marker in frame. Each take forgets its password before and after
+  (`forget_saved_container_password`).
+- **The phone** exists only when the app launches with `CMDR_VIRTUAL_MTP`; the scene fills its `DCIM/Camera` after
+  launch (`seedPhone`), since the app reseeds the backing dir at startup.
 
 ## The image the viewer shows
 

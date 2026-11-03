@@ -128,13 +128,19 @@ function seedSettingsIfNew(instance: CaptureInstance, logPrefix: string): void {
  * names its own; `askCmdr.proactive` is off for both, because an accepted consent plus
  * the `CMDR_E2E_ASK_CMDR_FAKE` provider would otherwise let a wake start a thread of its
  * own mid-run, or put its spinner in the status corner of a master.
+ *
+ * `whatsNew.lastSeenVersion` is this build's version for both: the "What's new" popup
+ * shows a security advisory fixed since the last version seen even with
+ * `whatsNew.showOnUpdate` off, and a build newer than the instance's last run opened on
+ * it, blocking every take (2026-11-03).
  */
 function pinRunSettings(instance: CaptureInstance, runSettings: Record<string, unknown>): void {
   const settingsPath = join(instance.dataDir, 'settings.json')
   const settings = existsSync(settingsPath)
     ? (JSON.parse(readFileSync(settingsPath, 'utf8')) as Record<string, unknown>)
     : {}
-  Object.assign(settings, { 'askCmdr.proactive': false }, runSettings)
+  const appVersion = (JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8')) as { version: string }).version
+  Object.assign(settings, { 'askCmdr.proactive': false, 'whatsNew.lastSeenVersion': appVersion }, runSettings)
   writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`)
 }
 

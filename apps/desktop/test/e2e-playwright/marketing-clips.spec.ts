@@ -25,6 +25,7 @@ import {
   settingsPan,
   viewer,
 } from './marketing-clips-scenes.js'
+import { reachDevices, reachNetwork } from './marketing-clips-reach.js'
 import { CLIP_SLUGS, VIDEO2_BEATS, VIDEO_BEATS, VIDEO_SETS, VIDEO_TITLE_PREFIX } from './marketing-clips-slugs.js'
 import type { ClipSlug, Video2Beat, VideoBeat } from './marketing-clips-slugs.js'
 import { ai, care, hero, reach, rename, speed, trust } from './marketing-video-scenes.js'
@@ -54,6 +55,8 @@ const SCENES: Record<ClipSlug, (page: TauriPage, theme: ClipTheme) => Promise<vo
   search,
   'language-switch': languageSwitch,
   viewer,
+  'reach-network': reachNetwork,
+  'reach-devices': reachDevices,
   settings: settingsPan,
 }
 

@@ -17,6 +17,8 @@ export const CLIP_SLUGS = [
   'multi-rename',
   'search',
   'viewer',
+  'reach-network',
+  'reach-devices',
   'settings',
   'language-switch',
 ] as const
