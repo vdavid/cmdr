@@ -1,9 +1,10 @@
-//! `hdiutil create`, which attaches the image it's building and can lose it to whoever
-//! opens that device first.
+//! A blank image's create, which attaches the image it's building and can lose it to
+//! whoever opens that device first.
 //!
-//! The create attaches its new image, runs `newfs` on it, and detaches it. A process
-//! with the transient `/dev/rdiskN` open at that detach makes the tool answer "Resource
-//! busy", and the image STAYS attached, unmounted, under the path we asked for. So a bare
+//! Both `hdiutil create` and `diskutil image create blank` attach their new image, format
+//! it, and detach it. A process with the transient `/dev/rdiskN` open in that window makes
+//! the tool fail (`HarnessError::says_device_held` has each tool's words), and the image
+//! STAYS attached, unmounted, under the path we asked for. So a bare
 //! retry can't work: the leftover and its file have to go first, and the leftover's
 //! detach going through is also the signal that the holder let go.
 
@@ -89,15 +90,15 @@ fn retrying_busy_create(
         if let Err(settle_error) = &settled {
             log::warn!(
                 target: "testing::disk_images",
-                "couldn't clear what a failed `hdiutil create` left: {settle_error}"
+                "couldn't clear what a failed create left: {settle_error}"
             );
         }
-        if !(settled.is_ok() && error.says_resource_busy() && attempt < MAX_CREATE_ATTEMPTS) {
+        if !(settled.is_ok() && error.says_device_held() && attempt < MAX_CREATE_ATTEMPTS) {
             return Err(error);
         }
         log::info!(
             target: "testing::disk_images",
-            "`hdiutil create` answered busy on attempt {attempt} and its leftover is gone, so it's trying again"
+            "the create answered busy on attempt {attempt} and its leftover is gone, so it's trying again"
         );
         attempt += 1;
     }
@@ -165,7 +166,7 @@ mod tests {
         let answers = (0..MAX_CREATE_ATTEMPTS + 2).map(|_| busy()).collect();
         let (result, creates, settles) = drive(answers, || Ok(()));
         assert!(
-            result.as_ref().is_err_and(HarnessError::says_resource_busy),
+            result.as_ref().is_err_and(HarnessError::says_device_held),
             "got {result:?}"
         );
         assert_eq!((creates, settles), (MAX_CREATE_ATTEMPTS, MAX_CREATE_ATTEMPTS));
@@ -176,7 +177,7 @@ mod tests {
     fn any_other_failure_stands_at_once_and_still_clears_what_it_left() {
         let (result, creates, settles) = drive(vec![no_space()], || Ok(()));
         assert!(
-            result.as_ref().is_err_and(|error| !error.says_resource_busy()),
+            result.as_ref().is_err_and(|error| !error.says_device_held()),
             "got {result:?}"
         );
         assert_eq!((creates, settles), (1, 1));
@@ -192,7 +193,7 @@ mod tests {
             })
         });
         assert!(
-            result.as_ref().is_err_and(HarnessError::says_resource_busy),
+            result.as_ref().is_err_and(HarnessError::says_device_held),
             "got {result:?}"
         );
         assert_eq!((creates, settles), (1, 1));
@@ -200,17 +201,30 @@ mod tests {
 
     #[test]
     fn only_the_tools_busy_line_reads_as_busy() {
-        assert!(busy().says_resource_busy());
-        assert!(!no_space().says_resource_busy());
+        assert!(busy().says_device_held());
+        let diskutil_held = HarnessError::Failed {
+            call: "diskutil image create blank".to_string(),
+            code: Some(1),
+            stderr: "Error: Failed to create disk image: Newly created/modified partition disk not found : disk4"
+                .to_string(),
+        };
+        assert!(diskutil_held.says_device_held());
+        let diskutil_other = HarnessError::Failed {
+            call: "diskutil image create blank".to_string(),
+            code: Some(1),
+            stderr: "Error: Failed to create disk image: No space left on device".to_string(),
+        };
+        assert!(!diskutil_other.says_device_held());
+        assert!(!no_space().says_device_held());
         let about_something_else = HarnessError::Failed {
             call: "hdiutil detach".to_string(),
             code: Some(16),
             stderr: "hdiutil: couldn't eject \"disk5\" - Resource busy".to_string(),
         };
-        assert!(!about_something_else.says_resource_busy());
+        assert!(!about_something_else.says_device_held());
         let timed_out = HarnessError::TimedOut {
             call: "hdiutil create failed - Resource busy".to_string(),
         };
-        assert!(!timed_out.says_resource_busy());
+        assert!(!timed_out.says_device_held());
     }
 }

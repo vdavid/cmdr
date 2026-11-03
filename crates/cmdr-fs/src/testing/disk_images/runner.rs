@@ -18,7 +18,7 @@ pub(super) const TOOL_DEADLINE: Duration = Duration::from_secs(30);
 /// How often [`run_program`] asks whether the tool exited.
 const POLL_INTERVAL: Duration = Duration::from_millis(20);
 
-/// A filesystem `hdiutil create` formats an image with.
+/// A filesystem a blank image is formatted with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreateFs {
     /// APFS.
@@ -32,7 +32,7 @@ pub enum CreateFs {
     LegacyExFat,
 }
 
-/// The partition scheme `hdiutil create` lays out.
+/// The partition scheme a blank image is laid out with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreateLayout {
     /// One partition on a GUID partition table.
@@ -45,14 +45,16 @@ pub enum CreateLayout {
 /// here can't run.
 #[derive(Debug, Clone, Copy)]
 pub(super) enum Call<'a> {
-    /// `hdiutil create`, into a file the harness just made room for.
+    /// A blank image, into a file the harness just made room for: `diskutil image create
+    /// blank` for APFS on GPT, `hdiutil create` for every other shape, since `diskutil`'s
+    /// `--fs` offers no HFS+ and it has no layout choice (verified on macOS 27.0.1,
+    /// `diskutil image create blank --help` and a `--fs HFS+` probe, 2026-11-03).
     Create {
         image: &'a Path,
         size: &'a str,
         fs: CreateFs,
         layout: CreateLayout,
         volume_name: &'a str,
-        sparse: bool,
     },
     /// `hdiutil attach -plist -nobrowse`.
     Attach { image: &'a Path },
@@ -123,8 +125,24 @@ impl Call<'_> {
                 fs,
                 layout,
                 volume_name,
-                sparse,
             } => {
+                if (fs, layout) == (CreateFs::Apfs, CreateLayout::Gpt) {
+                    // A RAW image, sparse on the APFS host anyway: a 1.1 GB image takes about
+                    // 2 MB of disk. `m` counts 10^6 bytes here, where `hdiutil` counts MiB.
+                    let mut args = owned(&[
+                        "image",
+                        "create",
+                        "blank",
+                        "--fs",
+                        "APFS",
+                        "--size",
+                        size,
+                        "--volumeName",
+                        volume_name,
+                    ]);
+                    args.push(image.to_string_lossy().into_owned());
+                    return ("diskutil", args);
+                }
                 let fs = match fs {
                     CreateFs::Apfs => "APFS",
                     CreateFs::HfsPlus => "HFS+",
@@ -146,9 +164,6 @@ impl Call<'_> {
                     "-layout",
                     layout,
                 ]);
-                if sparse {
-                    args.extend(owned(&["-type", "SPARSE"]));
-                }
                 args.push(image.to_string_lossy().into_owned());
                 ("hdiutil", args)
             }
@@ -281,7 +296,7 @@ fn run_program(program: &str, args: &[String], deadline: Duration) -> Result<Fin
     let mut stderr = tempfile::tempfile().map_err(RunError::CouldNotStart)?;
     let mut child = Command::new(program)
         .args(args)
-        // The tools' messages stay English, which `HarnessError::says_resource_busy` reads.
+        // The tools' messages stay English, which `HarnessError::says_device_held` reads.
         .env("LC_ALL", "C")
         .stdin(Stdio::null())
         .stdout(Stdio::from(stdout.try_clone().map_err(RunError::CouldNotStart)?))
@@ -366,7 +381,7 @@ mod tests {
         assert_eq!(finished.stderr, b"err\n");
     }
 
-    /// `says_resource_busy` reads English, so a localized Mac must still get English.
+    /// `says_device_held` reads English, so a localized Mac must still get English.
     #[test]
     fn a_tool_runs_in_the_c_locale() {
         let finished = run_program(

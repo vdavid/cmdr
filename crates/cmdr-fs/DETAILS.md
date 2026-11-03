@@ -1284,16 +1284,18 @@ would drift apart.
   tests take turns, and one can't unmount under another. A second `acquire` on a thread that already holds one panics
   rather than waiting on itself forever.
 - **The runner (`runner.rs`).** The closed `Call` enum IS the verb list: `hdiutil create`, `attach -plist -nobrowse`,
-  `info -plist`, `detach` and `detach -force`; `diskutil info -plist`, `apfs addVolume … -nomount`,
-  `partitionDisk … JHFS+ … R`, `mount -mountOptions nobrowse` (optionally `-mountPoint <dir>`, a mount inside a test's
-  own folder), `image attach --mountOptions nobrowse` (the DiskImages2 path Finder takes, for `attach_stored_here`: an
-  image on another image's volume, served by a `diskimagesiod` under its own uid), `unmount`, `unmountDisk`,
-  `renameVolume`, and `eject`; plus `/sbin/umount`. `unmount` and `unmountDisk` are what a DiskArbitration approval test
-  drives, since both go through DA. `/sbin/umount` is the opposite case and the one verb that isn't a disk tool: it goes
-  straight to the kernel, so DA asks nobody and a session hears about it only afterwards, which is how a vanished drive
-  is driven without pulling a real cable. It's ownership-checked like every other change. A verb gets added with its
-  first caller. Every call is SIGKILLed past 30 s and reaped. Output goes to anonymous temp files rather than pipes, so
-  a large plist can't stall the tool and a helper holding a pipe can't block a read past the kill.
+  `info -plist`, `detach` and `detach -force`; `diskutil image create blank --fs APFS` (every APFS image; HFS+ and the
+  legacy FAT shapes stay on `hdiutil create`, see "Off the deprecated `hdiutil` verbs" below), `info -plist`,
+  `apfs addVolume … -nomount`, `partitionDisk … JHFS+ … R`, `mount -mountOptions nobrowse` (optionally
+  `-mountPoint <dir>`, a mount inside a test's own folder), `image attach --mountOptions nobrowse` (the DiskImages2 path
+  Finder takes, for `attach_stored_here`: an image on another image's volume, served by a `diskimagesiod` under its own
+  uid), `unmount`, `unmountDisk`, `renameVolume`, and `eject`; plus `/sbin/umount`. `unmount` and `unmountDisk` are what
+  a DiskArbitration approval test drives, since both go through DA. `/sbin/umount` is the opposite case and the one verb
+  that isn't a disk tool: it goes straight to the kernel, so DA asks nobody and a session hears about it only
+  afterwards, which is how a vanished drive is driven without pulling a real cable. It's ownership-checked like every
+  other change. A verb gets added with its first caller. Every call is SIGKILLed past 30 s and reaped. Output goes to
+  anonymous temp files rather than pipes, so a large plist can't stall the tool and a helper holding a pipe can't block
+  a read past the kill.
 - **Ownership before every change (`facts.rs`).** A call that changes a disk runs only after `diskutil info -plist`
   walks its target to the physical whole disk (a partition's `ParentWholeDisk`; for an APFS volume or container, through
   `APFSPhysicalStores` to the store's parent) and `hdiutil info -plist` lists BOTH the node and that whole disk under
@@ -1307,24 +1309,29 @@ would drift apart.
   harness compares against the path it attached with. Canonicalizing another image's path would stat a file that can sit
   behind TCC or on a hung share.
 - **Specs** (verified on macOS 26.6.2, a hand probe plus the `real_images` tests, 2026-09-14). `Apfs` (64 MB) and `Hfs`
-  (256 MB) are one GPT volume. `ApfsTwoVolumes` is a 1.1 GB SPARSE image plus `addVolume -nomount` and a nobrowse mount:
-  `addVolume` answers -69493 on a small container. `HfsTwoPartitions` is `partitionDisk` into 60 MB plus the rest, which
-  mounts both browsable, so each is unmounted and remounted nobrowse. A volume `addVolume` or `partitionDisk` made is
-  found by its unique name among the nodes `hdiutil info` lists under the image (it lists them at once), ❌ never parsed
-  from the tool's text. Names are `CMDR<pid><n>`.
+  (256 MB) are one GPT volume. `ApfsTwoVolumes` is a 1.1 GB image plus `addVolume -nomount` and a nobrowse mount:
+  `addVolume` answers -69493 on a small container. Every image is a plain `image.dmg`: `diskutil` makes RAW, which the
+  APFS host stores sparse anyway (a 1.1 GB image takes about 2 MB), and its `m` counts 10^6 bytes where `hdiutil`'s
+  counts MiB (verified on macOS 27.0.1, `ls -l` and `du` of a probe image, 2026-11-03). `HfsTwoPartitions` is
+  `partitionDisk` into 60 MB plus the rest, which mounts both browsable, so each is unmounted and remounted nobrowse. A
+  volume `addVolume` or `partitionDisk` made is found by its unique name among the nodes `hdiutil info` lists under the
+  image (it lists them at once), ❌ never parsed from the tool's text. Names are `CMDR<pid><n>`.
 - **A busy create (`create.rs`).** `hdiutil create` attaches the image it's building, runs `newfs_hfs` on it, and
   detaches it, all inside about a second. Any process with the transient `/dev/rdiskN` open at that detach makes the
   tool answer `hdiutil: create failed - Resource busy`, exit 1, and ❗ the image STAYS attached and unmounted under the
   path asked for (verified on macOS 27.0.1, a read-only hold on the node, 4 of 4 creates, 2026-10-31; a plain `open` of
-  the backing file changes nothing, and a `flock` on it answers "Resource temporarily unavailable" instead). So a bare
-  retry can't work: `create_image` clears the leftover with a plain detach, polled up to 10 s since the detach going
-  through is the signal that the holder let go, deletes the file, and tries again, four attempts in all. Every failed
-  create clears its leftover, retried or not. The exit code can't tell busy from anything else, so `says_resource_busy`
-  reads the line, under the `LC_ALL=C` the runner sets, snapshotted by a `real_images` cell. The machine-wide lock
-  already serializes creates, so the holder isn't another image of ours; a same-uid sample during healthy creates saw
-  only `newfs_hfs`, and naming a root daemon takes `fs_usage`, so who holds it in the wild is unproven (others blame
-  `XProtectBehaviorService`, GitHub `actions/runner-images#7522`). It came once in a `disk-images` lane (#832), and 80
-  plain creates under load 55–64 didn't reproduce it, so the pins drive it with their own holder.
+  the backing file changes nothing, and a `flock` on it answers "Resource temporarily unavailable" instead).
+  `diskutil image create blank` fails the same way under the same hold, in other words ("Newly created/modified
+  partition disk not found : diskN", 8 of 8 APFS creates, none without the hold, 2026-11-03), so `says_device_held`
+  reads both lines and a `real_images` pin per tool snapshots them. So a bare retry can't work: `create_image` clears
+  the leftover with a plain detach, polled up to 10 s since the detach going through is the signal that the holder let
+  go, deletes the file, and tries again, four attempts in all. Every failed create clears its leftover, retried or not.
+  The exit code can't tell busy from anything else, so `says_device_held` reads the line, under the `LC_ALL=C` the
+  runner sets, snapshotted by a `real_images` cell. The machine-wide lock already serializes creates, so the holder
+  isn't another image of ours; a same-uid sample during healthy creates saw only `newfs_hfs`, and naming a root daemon
+  takes `fs_usage`, so who holds it in the wild is unproven (others blame `XProtectBehaviorService`, GitHub
+  `actions/runner-images#7522`). It came once in a `disk-images` lane (#832), and 80 plain creates under load 55–64
+  didn't reproduce it, so the pins drive it with their own holder.
 - **Teardown.** `DiskImage`'s `Drop` resolves the whole disk fresh, detaches, falls back to a guarded `-force`, waits
   until `hdiutil info` stops listing the image, and then its `TestDir` deletes the file. The wait is load-bearing: a
   detach can exit 0 while `hdiutil info` still lists the image, which flaked a test asserting "detached" right after the
@@ -1334,12 +1341,11 @@ would drift apart.
 - **Leftovers are reclaimed at `acquire`**, because no `Drop` runs when the test process is SIGKILLed — which is what
   nextest does to a test past its cap, and what left six images attached on 2026-09-16. `reclaim_orphans` detaches only
   what `facts::orphan_verdict` proves is ours on EVERY count: the backing file under this process's temp dir, in a
-  `cmdr_disk_image_*` directory, named `image.dmg` / `image.sparseimage`, with every mounted volume carrying the
-  `CMDR<digits>` shape — then through the normal ownership check, and ❌ never `-force`. Anything failing a check is
-  left alone, and logged when it looked like ours. ❗ Safe only at `acquire`: the machine-wide `flock` is held, and the
-  kernel releases a dead process's `flock`, so no live session can own a matching attachment. The attach itself is
-  covered separately: a failed or killed `hdiutil attach` re-checks and detaches what it left, since the guard that
-  would own it doesn't exist yet.
+  `cmdr_disk_image_*` directory, named `image.dmg`, with every mounted volume carrying the `CMDR<digits>` shape — then
+  through the normal ownership check, and ❌ never `-force`. Anything failing a check is left alone, and logged when it
+  looked like ours. ❗ Safe only at `acquire`: the machine-wide `flock` is held, and the kernel releases a dead
+  process's `flock`, so no live session can own a matching attachment. The attach itself is covered separately: a failed
+  or killed `hdiutil attach` re-checks and detaches what it left, since the guard that would own it doesn't exist yet.
 - **`FileHolder`** holds a file open from a child `/bin/sleep`, so its volume refuses to unmount. The child descends
   from the test process, so anything classifying holders by ancestry reads it as the test's own: identify it by `pid()`.
 - **`serving_pid()`** is the `hdid` process behind an attached image, which holds that image's backing FILE open for as
@@ -1347,6 +1353,15 @@ would drift apart.
 - **Tests.** The pure decisions and the runner are default-suite unit tests. `real_images` attaches each spec for real,
   `#[ignore]`d in the `disk-image` nextest group, and runs with every real-image pin built on the harness in the opt-in
   `pnpm check disk-images` lane (`scripts/check/checks/DETAILS.md` § "The disk-image lane").
+- **Off the deprecated `hdiutil` verbs** (#849). macOS 27 warns on `hdiutil create`, `attach`, and `detach` (stderr
+  only; the harness reads stdout's plist). Each move was proven with the full `pnpm check disk-images` lane on an idle
+  Mac (macOS 27.0.1, 2026-11-03).
+  - **`create`: moved for APFS, kept for the rest.** `diskutil image create blank` offers `--fs` APFS, ExFAT, MS-DOS, or
+    None, and no layout, so HFS+ (`Hfs`, `HfsTwoPartitions`, `attach_stored_here`) and the MBR FAT fixture have no
+    `diskutil` spelling (verified on macOS 27.0.1, `--help` and a rejected `--fs HFS+`, 2026-11-03). Making HFS+ from
+    `--fs None` plus `eraseDisk` would add a browsable mount and two more verbs to every HFS+ image, for a warning.
+  - **`info` stays**: `diskutil image info` takes one image, and nothing lists every attached one, which the ownership
+    guard needs.
 
 ## Mapped-file faults: a dead page reads as zeros
 

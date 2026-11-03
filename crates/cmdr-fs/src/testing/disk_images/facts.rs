@@ -257,8 +257,8 @@ pub(super) fn check_force_detach(
 /// The directory-name prefix `TestDir::new("disk_image")` gives every harness image.
 const IMAGE_DIR_PREFIX: &str = "cmdr_disk_image_";
 
-/// The two file names `DiskImage::create_and_attach` gives a backing file.
-const IMAGE_FILE_NAMES: [&str; 2] = ["image.dmg", "image.sparseimage"];
+/// The file name `DiskImage::create_and_attach` gives a backing file.
+const IMAGE_FILE_NAME: &str = "image.dmg";
 
 /// Why an attached image isn't provably this harness's, so it's left alone.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -303,7 +303,7 @@ pub(super) fn orphan_verdict<'a>(image: &'a AttachedImage, temp_dir: &Path) -> R
         .image_path
         .file_name()
         .and_then(|name| name.to_str())
-        .is_some_and(|name| IMAGE_FILE_NAMES.contains(&name));
+        .is_some_and(|name| name == IMAGE_FILE_NAME);
     if !file_is_ours {
         return Err(NotAnOrphan::FileNotOurs);
     }
@@ -348,7 +348,7 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    const OURS: &str = "/var/folders/xy/T/cmdr_disk_image_a/image.sparseimage";
+    const OURS: &str = "/var/folders/xy/T/cmdr_disk_image_a/image.dmg";
 
     /// Trimmed from a real `hdiutil info -plist` (macOS 26.6.2, 2026-09-14): a
     /// Finder-opened DMG, then a two-volume APFS sparse image of ours.
@@ -363,7 +363,7 @@ mod tests {
       </array>
     </dict>
     <dict>
-      <key>image-path</key><string>/var/folders/xy/T/cmdr_disk_image_a/image.sparseimage</string>
+      <key>image-path</key><string>/var/folders/xy/T/cmdr_disk_image_a/image.dmg</string>
       <key>system-entities</key><array>
         <dict><key>dev-entry</key><string>/dev/disk5</string></dict>
         <dict><key>dev-entry</key><string>/dev/disk5s1</string></dict>
@@ -694,7 +694,7 @@ mod tests {
     fn an_unmounted_leftover_of_ours_is_still_reclaimed() {
         // A run that died between attach and mount leaves no volume to check.
         let ours = image_named(
-            "/var/folders/xy/T/cmdr_disk_image_a/image.sparseimage",
+            "/var/folders/xy/T/cmdr_disk_image_a/image.dmg",
             &[("/dev/disk5", None), ("/dev/disk5s1", None)],
         );
         assert_eq!(orphan_verdict(&ours, Path::new(TEMP_DIR)), Ok("/dev/disk5"));

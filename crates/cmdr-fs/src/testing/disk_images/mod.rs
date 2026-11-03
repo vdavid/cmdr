@@ -331,7 +331,7 @@ fn host_node(path: &Path) -> Option<String> {
 pub enum ImageSpec {
     /// One APFS volume.
     Apfs,
-    /// Two APFS volumes in one container. A 1.1 GB sparse image: `addVolume` answers
+    /// Two APFS volumes in one container. A 1.1 GB image: `addVolume` answers
     /// -69493 on a small container (APFS scales its volume cap with the container).
     ApfsTwoVolumes,
     /// One HFS+ volume, roomy enough for a tree of tens of thousands of files.
@@ -375,16 +375,15 @@ impl DiskImage {
         match spec {
             ImageSpec::Apfs => {
                 let name = session.unique_volume_name();
-                Self::create_and_attach(session, CreateFs::Apfs, CreateLayout::Gpt, "64m", false, &name)
+                Self::create_and_attach(session, CreateFs::Apfs, CreateLayout::Gpt, "64m", &name)
             }
             ImageSpec::Hfs => {
                 let name = session.unique_volume_name();
-                Self::create_and_attach(session, CreateFs::HfsPlus, CreateLayout::Gpt, "256m", false, &name)
+                Self::create_and_attach(session, CreateFs::HfsPlus, CreateLayout::Gpt, "256m", &name)
             }
             ImageSpec::ApfsTwoVolumes => {
                 let first = session.unique_volume_name();
-                let mut image =
-                    Self::create_and_attach(session, CreateFs::Apfs, CreateLayout::Gpt, "1100m", true, &first)?;
+                let mut image = Self::create_and_attach(session, CreateFs::Apfs, CreateLayout::Gpt, "1100m", &first)?;
                 let first_node = image.volume(0)?.node.clone();
                 let container = session
                     .disk_facts(&first_node)
@@ -405,14 +404,8 @@ impl DiskImage {
             }
             ImageSpec::HfsTwoPartitions => {
                 let placeholder = session.unique_volume_name();
-                let mut image = Self::create_and_attach(
-                    session,
-                    CreateFs::HfsPlus,
-                    CreateLayout::Gpt,
-                    "256m",
-                    false,
-                    &placeholder,
-                )?;
+                let mut image =
+                    Self::create_and_attach(session, CreateFs::HfsPlus, CreateLayout::Gpt, "256m", &placeholder)?;
                 let whole = image.whole()?;
                 let (first, second) = (session.unique_volume_name(), session.unique_volume_name());
                 image.run(Call::PartitionTwoJhfs {
@@ -447,7 +440,7 @@ impl DiskImage {
             matches!(fs, CreateFs::LegacyFat32 | CreateFs::LegacyExFat),
             "attach_legacy_fat_fixture is for the FAT fixture only; use DiskImage::attach"
         );
-        Self::create_and_attach(session, fs, CreateLayout::Mbr, "64m", false, volume_name)
+        Self::create_and_attach(session, fs, CreateLayout::Mbr, "64m", volume_name)
     }
 
     fn create_and_attach(
@@ -455,11 +448,10 @@ impl DiskImage {
         fs: CreateFs,
         layout: CreateLayout,
         size: &str,
-        sparse: bool,
         volume_name: &str,
     ) -> Result<Self, HarnessError> {
         let dir = TestDir::new("disk_image");
-        let image_path = dir.join(if sparse { "image.sparseimage" } else { "image.dmg" });
+        let image_path = dir.join("image.dmg");
         session.create_image(
             &image_path,
             Call::Create {
@@ -468,7 +460,6 @@ impl DiskImage {
                 fs,
                 layout,
                 volume_name,
-                sparse,
             },
         )?;
         if let Err(error) = session.run(&image_path, Call::Attach { image: &image_path }) {
@@ -510,7 +501,6 @@ impl DiskImage {
                 fs: CreateFs::HfsPlus,
                 layout: CreateLayout::Gpt,
                 volume_name: &volume_name,
-                sparse: false,
             },
         )?;
         session.run(&image_path, Call::AttachThroughDaemon { image: &image_path })?;
@@ -744,8 +734,8 @@ impl DiskImage {
     ///
     /// ❗ A detach answering success doesn't mean the image is gone from `hdiutil info`
     /// yet: the image's teardown can trail the tool's exit under load, which is how a
-    /// test asserting "detached" right after the drop flaked (#830, on the sparse
-    /// two-volume image). Waiting here makes "dropped" mean "detached" for every
+    /// test asserting "detached" right after the drop flaked (#830, on the two-volume
+    /// image, then a sparse one). Waiting here makes "dropped" mean "detached" for every
     /// caller, and the next image's attach starts on a settled `hdiutil`.
     fn detach_for_good(&self) -> Result<(), HarnessError> {
         let whole = match self.whole() {

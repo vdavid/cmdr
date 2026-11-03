@@ -65,16 +65,20 @@ impl HarnessError {
         }
     }
 
-    /// Whether `hdiutil create` answered that something holds the image it's building.
+    /// Whether a create answered the way it does when something holds the image's
+    /// transient device while it's being built.
     ///
-    /// The tool offers only text here: the same exit code 1 covers every create failure
-    /// (verified on macOS 27.0.1, a read-only hold on the transient `/dev/rdiskN`,
-    /// 2026-10-31). The runner pins `LC_ALL=C`, and `real_images` snapshots the line.
-    pub(super) fn says_resource_busy(&self) -> bool {
+    /// The tools offer only text here: the same exit code 1 covers every create failure.
+    /// `hdiutil create` says "Resource busy" (verified on macOS 27.0.1, a read-only hold
+    /// on the transient `/dev/rdiskN`, 4 of 4 creates, 2026-10-31); `diskutil image
+    /// create blank` says it couldn't find the partition it just made, naming the whole
+    /// disk (same hold, 8 of 8 APFS creates, 2026-11-03; none without it). The runner pins
+    /// `LC_ALL=C`, and `real_images` snapshots both lines.
+    pub(super) fn says_device_held(&self) -> bool {
+        const HDIUTIL: &str = "hdiutil: create failed - Resource busy";
+        const DISKUTIL: &str = "Error: Failed to create disk image: Newly created/modified partition disk not found : ";
         match self {
-            Self::Failed { stderr, .. } => stderr
-                .lines()
-                .any(|line| line == "hdiutil: create failed - Resource busy"),
+            Self::Failed { stderr, .. } => stderr.lines().any(|line| line == HDIUTIL || line.starts_with(DISKUTIL)),
             _ => false,
         }
     }

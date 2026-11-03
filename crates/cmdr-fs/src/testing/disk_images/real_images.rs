@@ -249,12 +249,10 @@ impl Drop for DeviceHolder {
     }
 }
 
-/// The snapshot `HarnessError::says_resource_busy` relies on: the tool's real words, and
-/// the attachment a busy create leaves under the path it was given. Rounds, since the
+/// The snapshot `HarnessError::says_device_held` relies on: the tool's real words, and
+/// the attachment a held create leaves under the path it was given. Rounds, since the
 /// holder can lose the race on a loaded Mac, and a create it missed simply works.
-#[test]
-#[ignore = "attaches a real HFS+ disk image via hdiutil; run with --run-ignored"]
-fn a_held_device_makes_hdiutil_create_answer_busy_and_leave_its_image_attached() {
+fn a_held_device_makes_the_create_fail_and_leave_its_image_attached(fs: CreateFs) {
     let session = DiskImageSession::acquire();
     for _ in 0..5 {
         let dir = TestDir::new("disk_image");
@@ -266,21 +264,20 @@ fn a_held_device_makes_hdiutil_create_answer_busy_and_leave_its_image_attached()
             Call::Create {
                 image: &image_path,
                 size: "64m",
-                fs: CreateFs::HfsPlus,
+                fs,
                 layout: CreateLayout::Gpt,
                 volume_name: &name,
-                sparse: false,
             },
         );
         let Err(error) = answer else {
             continue;
         };
-        assert!(error.says_resource_busy(), "got {error}");
+        assert!(error.says_device_held(), "got {error}");
         let listed = |session: &DiskImageSession| {
             let attached = session.attached_images().expect("hdiutil info");
             attached.images.iter().any(|image| image.image_path == image_path)
         };
-        assert!(listed(&session), "a busy create leaves its image attached");
+        assert!(listed(&session), "a held create leaves its image attached");
 
         drop(holder);
         session.settle_failed_create(&image_path).expect("the leftover goes");
@@ -291,15 +288,37 @@ fn a_held_device_makes_hdiutil_create_answer_busy_and_leave_its_image_attached()
     panic!("the holder never got in during five creates, so this pinned nothing");
 }
 
-/// The whole fix: the first create loses to a holder, and the image still attaches.
 #[test]
-#[ignore = "attaches a real HFS+ disk image via hdiutil; run with --run-ignored"]
-fn an_image_attaches_even_when_something_holds_its_device_during_the_create() {
+#[ignore = "creates a real HFS+ disk image via hdiutil; run with --run-ignored"]
+fn a_held_device_makes_hdiutil_create_answer_busy_and_leave_its_image_attached() {
+    a_held_device_makes_the_create_fail_and_leave_its_image_attached(CreateFs::HfsPlus);
+}
+
+#[test]
+#[ignore = "creates a real APFS disk image via diskutil; run with --run-ignored"]
+fn a_held_device_makes_diskutil_image_create_fail_and_leave_its_image_attached() {
+    a_held_device_makes_the_create_fail_and_leave_its_image_attached(CreateFs::Apfs);
+}
+
+/// The whole fix: the first create loses to a holder, and the image still attaches.
+fn an_image_attaches_even_when_something_holds_its_device_during_the_create(spec: ImageSpec) {
     let session = DiskImageSession::acquire();
     let holder = DeviceHolder::start(&session);
-    let image = DiskImage::attach(&session, ImageSpec::Hfs).expect("attach the image");
+    let image = DiskImage::attach(&session, spec).expect("attach the image");
     assert!(image.is_attached().expect("hdiutil info"));
     drop(holder);
+}
+
+#[test]
+#[ignore = "attaches a real HFS+ disk image via hdiutil; run with --run-ignored"]
+fn an_hfs_image_attaches_even_when_something_holds_its_device_during_the_create() {
+    an_image_attaches_even_when_something_holds_its_device_during_the_create(ImageSpec::Hfs);
+}
+
+#[test]
+#[ignore = "attaches a real APFS disk image via hdiutil; run with --run-ignored"]
+fn an_apfs_image_attaches_even_when_something_holds_its_device_during_the_create() {
+    an_image_attaches_even_when_something_holds_its_device_during_the_create(ImageSpec::Apfs);
 }
 
 #[test]
