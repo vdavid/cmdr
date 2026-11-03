@@ -169,8 +169,12 @@ Listings are one `PROPFIND Depth: 1` with a body naming
 `resourcetype, getcontentlength, getlastmodified, creationdate, getetag, quota-available-bytes, quota-used-bytes`.
 `propfind.rs` reads the `DAV:` namespace under any prefix, takes properties only from 2xx `propstat`s, percent-decodes
 `href`s, and reduces absolute-URL hrefs to their path. The self entry is dropped by comparing decoded, slash-normalized
-paths, never by position. With redirects off, a PROPFIND on a slash-less collection that answers 3xx (nginx and some NAS
-firmware) is retried once WITH the slash.
+paths, never by position (`mapping::self_entry_index`). When no href matches, a reverse proxy has rewritten the links (a
+Nextcloud served under a path prefix it doesn't know about answers without the prefix), so the self entry is the one
+that carries the collection's name and that every other entry sits directly inside; a lone entry counts, so a rewritten
+empty folder doesn't list itself. Two such candidates, or none, drop nothing. Unit-tested only: no fixture puts a
+rewriting proxy in front of a server (vdavid/cmdr#176). With redirects off, a PROPFIND on a slash-less collection that
+answers 3xx (nginx and some NAS firmware) is retried once WITH the slash.
 
 ## New names go out composed
 
