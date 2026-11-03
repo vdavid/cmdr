@@ -87,7 +87,7 @@ impl Ledger {
                 // `truncate` isn't legal alongside `append`; retire the replayed
                 // records with an explicit `ftruncate` instead.
                 let _ = log.set_len(0);
-                match LogWriter::spawn(log) {
+                match LogWriter::spawn(log, path.clone()) {
                     Ok(writer) => {
                         let mut store = self.store();
                         store.log = Some(writer);

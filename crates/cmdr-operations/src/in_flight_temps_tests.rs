@@ -438,6 +438,61 @@ fn compaction_shrinks_the_log_without_forgetting_what_is_still_in_flight() {
     );
 }
 
+/// Compaction swaps a whole new log in through a rename, ❌ never a truncate and
+/// a rewrite of the same file: a process killed between those two calls leaves
+/// an empty log, and the next launch forgets every record, an aside holding the
+/// user's original included. With the rename, a kill at any point leaves either
+/// the whole old log or the whole new one, and appends after it reach the new.
+#[cfg(unix)]
+#[test]
+fn compaction_swaps_in_a_whole_new_log_rather_than_emptying_the_old_one() {
+    use std::os::unix::fs::MetadataExt;
+
+    let dir = TestDir::new("in_flight_temps_compaction_swap");
+    let data_dir = dir.join("data");
+    std::fs::create_dir_all(&data_dir).unwrap();
+    let log_path = data_dir.join(STORE_FILENAME);
+    let ledger = Ledger::recording_in(&data_dir);
+    let original_log = std::fs::metadata(&log_path).unwrap().ino();
+
+    let state = state(&ledger);
+    let home = || Some(RecordHome::volume_space("in-flight-temps-test-nas-swap"));
+    let long_lived = PathBuf::from("/a-big-download.iso.cmdr-tmp-0000");
+    track_temp(&state, home(), &long_lived);
+    for i in 0..400 {
+        let churn = PathBuf::from(format!("/small-file-{i:04}.txt.cmdr-tmp-{i:04}"));
+        track_temp(&state, home(), &churn);
+        retire_temp(&state, home(), &churn);
+    }
+    let after_compaction = PathBuf::from("/after.bin.cmdr-tmp-9999");
+    track_temp(&state, home(), &after_compaction);
+    ledger.flush_log();
+
+    assert_ne!(
+        std::fs::metadata(&log_path).unwrap().ino(),
+        original_log,
+        "compaction must rename a new log into place, not empty and refill the old one"
+    );
+    let replayed: Vec<PathBuf> = read_recorded(&log_path)
+        .iter()
+        .map(|record| record.path().to_path_buf())
+        .collect();
+    assert_eq!(
+        replayed,
+        vec![long_lived, after_compaction],
+        "the swapped-in log holds what's in flight, and appends after the swap reach it"
+    );
+    let names: Vec<String> = std::fs::read_dir(&data_dir)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(
+        names,
+        vec![STORE_FILENAME.to_string()],
+        "no compaction scratch file stays behind"
+    );
+}
+
 /// Compaction rewrites the log from what the ledger believes exists, and a
 /// deferred orphan is part of that. If it dropped out here, a busy session
 /// would quietly forget the NAS partial it was holding for the next launch.

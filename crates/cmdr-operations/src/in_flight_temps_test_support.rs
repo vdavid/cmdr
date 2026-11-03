@@ -26,15 +26,16 @@ impl Ledger {
     /// next run.
     pub(crate) fn recording_in(data_dir: &Path) -> Self {
         let ledger = Self::new();
+        let path = data_dir.join(STORE_FILENAME);
         let log = File::options()
             .create(true)
             .append(true)
-            .open(data_dir.join(STORE_FILENAME))
+            .open(&path)
             .expect("open a test in-flight temp ledger");
         log.set_len(0).expect("start the test ledger empty");
         let mut store = ledger.store();
         store.keeps_a_log = true;
-        store.log = Some(LogWriter::spawn(log).expect("start the test ledger's writer"));
+        store.log = Some(LogWriter::spawn(log, path).expect("start the test ledger's writer"));
         drop(store);
         ledger
     }
@@ -48,7 +49,7 @@ impl Ledger {
         let log = File::open(&path).expect("open it read-only");
         let mut store = ledger.store();
         store.keeps_a_log = true;
-        store.log = Some(LogWriter::spawn(log).expect("start the test ledger's writer"));
+        store.log = Some(LogWriter::spawn(log, path).expect("start the test ledger's writer"));
         drop(store);
         ledger
     }

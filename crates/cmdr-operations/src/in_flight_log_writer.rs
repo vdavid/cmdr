@@ -39,6 +39,7 @@
 use super::super::sync_primitives::{mpsc, thread};
 use std::fs::File;
 use std::io::Write;
+use std::path::{Path, PathBuf};
 
 /// What the writer thread is asked to do, in order.
 enum Op {
@@ -48,7 +49,7 @@ enum Op {
         line: Vec<u8>,
         written: Option<Box<dyn FnOnce(bool) + Send>>,
     },
-    /// Truncate the log and write these lines instead: compaction.
+    /// Replace the log with these lines: compaction.
     Rewrite(Vec<u8>),
     /// Run `then` once everything queued before it has reached the kernel.
     Barrier(Box<dyn FnOnce() + Send>),
@@ -67,12 +68,13 @@ pub(super) struct LogWriter {
 }
 
 impl LogWriter {
-    /// Starts the writer thread for `log`, which must be open in append mode.
-    pub(super) fn spawn(log: File) -> std::io::Result<Self> {
+    /// Starts the writer thread for `log`, which must be open in append mode
+    /// at `path`.
+    pub(super) fn spawn(log: File, path: PathBuf) -> std::io::Result<Self> {
         let (queue, ops) = mpsc::channel();
         let thread = thread::Builder::new()
             .name("cmdr-temp-ledger".to_string())
-            .spawn(move || write_all_queued(log, &ops))?;
+            .spawn(move || write_all_queued(log, &path, &ops))?;
         Ok(Self {
             queue: Some(queue),
             thread: Some(thread),
@@ -135,7 +137,7 @@ impl Drop for LogWriter {
 }
 
 /// The writer thread's body: every op, in order, until the queue closes.
-fn write_all_queued(mut log: File, ops: &mpsc::Receiver<Op>) {
+fn write_all_queued(mut log: File, path: &Path, ops: &mpsc::Receiver<Op>) {
     for op in ops {
         match op {
             Op::Append { line, written } => {
@@ -150,14 +152,35 @@ fn write_all_queued(mut log: File, ops: &mpsc::Receiver<Op>) {
                     written(reached);
                 }
             }
-            // The handle is in append mode, so after the truncate the writes go
-            // to the new end without a seek.
-            Op::Rewrite(contents) => {
-                if let Err(e) = log.set_len(0).and_then(|()| log.write_all(&contents)) {
-                    log::debug!(target: "copy", "couldn't compact the in-flight temp ledger: {e}");
+            Op::Rewrite(contents) => match swap_in(path, &contents) {
+                Ok(compacted) => log = compacted,
+                Err(e) => {
+                    log::debug!(target: "copy", "couldn't compact the in-flight temp ledger, keeping it whole: {e}")
                 }
-            }
+            },
             Op::Barrier(then) => then(),
         }
     }
+}
+
+/// Writes `contents` beside the log at `path` and renames it over the log,
+/// answering the new log's handle, positioned at its end for the appends after.
+///
+/// ❗ A rename, ❌ never a truncate and a rewrite of the open log: a process
+/// killed between those two calls leaves an empty log, and the next launch
+/// forgets every record, an aside holding the user's original included. Here a
+/// kill at any point leaves the whole old log or the whole new one; a scratch
+/// file a kill strands is overwritten by the next compaction. On any failure the
+/// old log stays as it is, uncompacted and still right, and keeps taking appends.
+fn swap_in(path: &Path, contents: &[u8]) -> std::io::Result<File> {
+    let mut scratch_name = path.as_os_str().to_owned();
+    scratch_name.push(".compacting");
+    let scratch = PathBuf::from(scratch_name);
+    let swapped = File::create(&scratch)
+        .and_then(|mut fresh| fresh.write_all(contents).map(|()| fresh))
+        .and_then(|fresh| std::fs::rename(&scratch, path).map(|()| fresh));
+    if swapped.is_err() {
+        let _ = std::fs::remove_file(&scratch);
+    }
+    swapped
 }

@@ -93,7 +93,9 @@
 //!   entry and leave nothing to sweep.
 //! - **Compaction is cheap and unconditional**: past [`COMPACT_ABOVE_BYTES`] the
 //!   log is rewritten down to just what's recorded (a handful of paths), so
-//!   nothing accumulates across a long copy or a long session.
+//!   nothing accumulates across a long copy or a long session. The new log is
+//!   written beside the old and renamed over it, so a kill mid-compaction never
+//!   leaves an empty one (`in_flight_log_writer.rs::swap_in`).
 //!
 //! The format is one line per record: an op byte, then the record as a JSON
 //! value (so a newline in a filename can't forge a record). `A` and `a` add and
@@ -263,7 +265,7 @@ struct Store {
     /// only be confirmed by a ledger that keeps one; one that never set out to
     /// (a test's engine) has nothing to confirm against ([`OnDisk::NotKept`]).
     keeps_a_log: bool,
-    /// Bytes queued since the last truncation, tracked here so the compaction
+    /// Bytes queued since the log last started over, tracked here so the compaction
     /// check costs no syscall.
     logged_bytes: u64,
     /// Every record the log currently claims exists: this session's in-flight
@@ -720,8 +722,8 @@ fn encode_line(op: u8, record: &Record) -> Option<Vec<u8>> {
 /// ❌ Don't gate this on "nothing is in flight": the concurrent cross-volume
 /// driver keeps a window open for the whole transfer, so an idle-only rule would
 /// let a 100k-file copy append megabytes before it ever got a chance to run.
-/// Rewriting the recorded set (a handful of paths) costs one truncate and one
-/// write every ~50 files, queued behind the appends before it like any other
+/// Rewriting the recorded set (a handful of paths) costs one write and one
+/// rename every ~50 files, queued behind the appends before it like any other
 /// line.
 fn compact_if_large(store: &mut Store) {
     if store.logged_bytes < COMPACT_ABOVE_BYTES {
