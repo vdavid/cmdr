@@ -1,5 +1,3 @@
-#![allow(clippy::borrow_interior_mutable_const, clippy::cast_possible_wrap)]
-
 use std::ffi::c_void;
 use std::fs;
 use std::fs::File;
@@ -8,7 +6,7 @@ use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::channel;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::thread;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -17,7 +15,6 @@ use std::time::{Duration, Instant};
 use async_std1 as async_std;
 use futures_util::future::FutureExt;
 use futures_util::stream::StreamExt;
-use once_cell::sync::Lazy;
 use tempfile::tempdir;
 #[cfg(feature = "tokio")]
 use tokio1 as tokio;
@@ -34,10 +31,11 @@ use crate::stream::{
 };
 
 #[cfg(feature = "tokio")]
-static TEST_PARALLEL_LOCK: Lazy<tokio::sync::Mutex<()>> = Lazy::new(|| tokio::sync::Mutex::new(()));
+static TEST_PARALLEL_LOCK: LazyLock<tokio::sync::Mutex<()>> =
+    LazyLock::new(|| tokio::sync::Mutex::new(()));
 #[cfg(feature = "async-std")]
-static TEST_PARALLEL_LOCK: Lazy<async_std::sync::Mutex<()>> =
-    Lazy::new(|| async_std::sync::Mutex::new(()));
+static TEST_PARALLEL_LOCK: LazyLock<async_std::sync::Mutex<()>> =
+    LazyLock::new(|| async_std::sync::Mutex::new(()));
 
 #[test]
 fn must_steam_context_info_send_and_sync() {

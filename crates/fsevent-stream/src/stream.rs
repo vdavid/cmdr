@@ -1,10 +1,4 @@
 //! Stream-based `FSEvents` interface.
-#![allow(
-    clippy::non_send_fields_in_send_ty,
-    clippy::cast_possible_wrap,
-    clippy::borrow_interior_mutable_const,
-    clippy::module_name_repetitions
-)]
 
 use std::ffi::{c_void, CStr, OsStr};
 use std::fmt::{Display, Formatter};
@@ -38,11 +32,10 @@ use tokio1 as tokio;
 use tokio_stream::wrappers::ReceiverStream;
 
 use crate::ffi::{
-    kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagUseCFTypes,
-    kFSEventStreamCreateFlagUseExtendedData, kFSEventStreamEventExtendedDataPathKey,
-    kFSEventStreamEventExtendedFileIDKey, CFRunLoopExt, FSEventStreamCreateFlags,
-    FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream, SysFSEventStreamContext,
-    SysFSEventStreamRef,
+    extended_data_path_key, extended_file_id_key, kFSEventStreamCreateFlagFileEvents,
+    kFSEventStreamCreateFlagUseCFTypes, kFSEventStreamCreateFlagUseExtendedData, CFRunLoopExt,
+    FSEventStreamCreateFlags, FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream,
+    SysFSEventStreamContext, SysFSEventStreamRef,
 };
 pub use crate::flags::StreamFlags;
 use crate::impl_release_callback;
@@ -263,7 +256,7 @@ pub fn create_event_stream<P: AsRef<Path>>(
 
     let thread_handle = thread::spawn(move || {
         #[cfg(test)]
-        TEST_RUNNING_RUNLOOP_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        TEST_RUNNING_RUNLOOP_COUNT.fetch_add(1, Ordering::SeqCst);
 
         let current_runloop = CFRunLoop::get_current();
 
@@ -288,14 +281,13 @@ pub fn create_event_stream<P: AsRef<Path>>(
         stream.invalidate();
 
         #[cfg(test)]
-        TEST_RUNNING_RUNLOOP_COUNT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+        TEST_RUNNING_RUNLOOP_COUNT.fetch_sub(1, Ordering::SeqCst);
     });
 
     let Some(SendableCFRunLoop(runloop)) = runloop_rx.recv().expect("receive runloop from worker")
     else {
         thread_handle.join().expect("thread to shut down");
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
+        return Err(io::Error::other(
             "FSEventStreamStart couldn't start the stream",
         ));
     };
@@ -443,7 +435,7 @@ unsafe fn flags_and_id(
 
 /// The `path` string of an extended-data event dictionary.
 fn extended_data_path(dict: &CFDictionary<CFString>) -> PathBuf {
-    let value = *dict.get(&*kFSEventStreamEventExtendedDataPathKey);
+    let value = *dict.get(extended_data_path_key());
     // SAFETY: FSEvents documents the `path` value as a `CFStringRef`, borrowed from the
     // dictionary (Get rule): `from_void` wraps it without a retain, and the wrapper doesn't
     // outlive `dict`.
@@ -461,7 +453,7 @@ define_callback!(cf_ext_with_id_callback, (num, paths, flags, ids){
         let dict = unsafe { paths.get_unchecked(idx as CFIndex) };
         // SAFETY: `idx < num`, the length of both arrays.
         let (flags, id) = unsafe { flags_and_id(flags, ids, idx) };
-        let file_id = *dict.get(&*kFSEventStreamEventExtendedFileIDKey);
+        let file_id = *dict.get(extended_file_id_key());
         // SAFETY: FSEvents documents the `fileID` value as a `CFNumberRef`, borrowed from
         // `dict` (Get rule) for no longer than this closure.
         let inode = unsafe { CFNumber::from_void(file_id) }

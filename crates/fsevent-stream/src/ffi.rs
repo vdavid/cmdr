@@ -3,10 +3,8 @@
 //! Some of the bindings are lightly wrapped to adapt to Rust's ownership model and provide a more ergonomic experience.
 
 #![allow(
-    non_snake_case,
     non_upper_case_globals,
-    clippy::unreadable_literal,
-    clippy::declare_interior_mutable_const
+    reason = "the constants keep Apple's `kFSEvent…` names, so they match the SDK header and docs"
 )]
 
 use std::ffi::c_void;
@@ -25,7 +23,6 @@ use core_foundation::date::CFTimeInterval;
 use core_foundation::runloop::{CFRunLoop, CFRunLoopIsWaiting, CFRunLoopMode, CFRunLoopRef};
 use core_foundation::string::{CFString, CFStringRef};
 use core_foundation::url::{kCFURLPOSIXPathStyle, CFURL};
-use once_cell::unsync::Lazy;
 
 fn str_path_to_cfstring_ref(source: &Path) -> io::Result<CFString> {
     CFURL::from_path(source, source.is_dir())
@@ -122,10 +119,19 @@ pub const kFSEventStreamEventFlagItemIsHardlink: FSEventStreamEventFlags = 0x001
 pub const kFSEventStreamEventFlagItemIsLastHardlink: FSEventStreamEventFlags = 0x00200000;
 pub const kFSEventStreamEventFlagItemCloned: FSEventStreamEventFlags = 0x00400000;
 
-pub const kFSEventStreamEventExtendedDataPathKey: Lazy<CFString> =
-    Lazy::new(|| CFString::new("path"));
-pub const kFSEventStreamEventExtendedFileIDKey: Lazy<CFString> =
-    Lazy::new(|| CFString::new("fileID"));
+/// The extended-data dictionary key for an event's path (a `CFStringRef`).
+///
+/// The SDK defines it as `CFSTR("path")`, a macro rather than a linkable symbol, so this builds
+/// the same constant string without copying.
+pub fn extended_data_path_key() -> CFString {
+    CFString::from_static_string("path")
+}
+
+/// The extended-data dictionary key for an event's file ID (a `CFNumberRef`), `CFSTR("fileID")`
+/// in the SDK.
+pub fn extended_file_id_key() -> CFString {
+    CFString::from_static_string("fileID")
+}
 
 #[repr(C)]
 pub struct SysFSEventStreamContext {
@@ -248,10 +254,7 @@ impl SysFSEventStream {
             // Don't release `context.info` here: FSEvents already did before returning NULL
             // (verified on macOS 27.0.1, a probe test with a logging release callback,
             // 2026-11-03), so releasing it again would double free.
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "FSEventStreamCreate returned no stream",
-            ));
+            return Err(io::Error::other("FSEventStreamCreate returned no stream"));
         }
         Ok(Self(stream))
     }

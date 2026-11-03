@@ -1,5 +1,3 @@
-#![allow(clippy::module_name_repetitions)]
-
 use std::ffi::c_void;
 use std::panic::catch_unwind;
 use std::sync::mpsc::Sender;

@@ -100,6 +100,18 @@
 //!
 //! This project is licensed under MIT License.
 
+// The lint set this crate is held to lives in the workspace root's `[workspace.lints]`, opted
+// into by `Cargo.toml`'s `lints.workspace = true`. `unused_crate_dependencies` can't go with them:
+// it's judged per compilation unit, so it belongs on the lib alone.
+#![warn(unused_crate_dependencies)]
+
+// Both runtimes are dev-dependencies so either feature's tests build, but each test build uses
+// only the runtime its feature picks.
+#[cfg(all(test, not(feature = "async-std")))]
+use async_std1 as _;
+#[cfg(all(test, not(feature = "tokio")))]
+use tokio1 as _;
+
 pub mod stream;
 #[macro_use]
 pub mod ffi;
