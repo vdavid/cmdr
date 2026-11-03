@@ -12,7 +12,7 @@ use super::stamping::{source_times, stamped};
 use super::state::RanOn;
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::metadata::{ClassOutcome, MetadataClasses};
+use cmdr_fs::metadata::{ClassOutcome, MetadataClasses, Xattr};
 use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::volume::{MutationEvent, StreamLength, StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode};
 use log::debug;
@@ -80,6 +80,15 @@ pub(super) fn one_frame_write_limit(dest_is_scratch: bool, max_write: u64, quick
 /// its streams to the same promise before this sees them
 /// (`crates/cmdr-operations/src/transfer/volume/source_reads.rs`); this is the
 /// backend's own guard for every other caller.
+/// What [`SmbVolume::close_writer`] learned closing a streamed write.
+struct ClosedWriter {
+    xattrs_kept: ClassOutcome,
+    /// The server refused the dates.
+    times_refused: bool,
+    /// The bytes the server acknowledged once `finish()` drained the window.
+    confirmed: u64,
+}
+
 fn source_broke_its_length(smb_path: &str, got: u64, declared: u64) -> VolumeError {
     VolumeError::IoError {
         message: ErrorDetail::path_then(
@@ -195,6 +204,65 @@ impl SmbVolume {
                 .await
                 .unwrap_or(Err(e)),
             opened => opened,
+        }
+    }
+
+    /// Closes a streamed-into `writer`: the copied xattrs, then its dates, then
+    /// `finish()`. Beside the open writer (a stream opens past its no-sharing
+    /// handle) and before its dates, which then outlast the stream writes' own
+    /// bump on `streams_xattr` (`DETAILS.md` § "Xattrs on copies"). On any
+    /// failure it closes the handle first (`abort()`, or `finish()` already
+    /// consumed it) and then runs `delete_partial`, so a half-written file never
+    /// keeps the user's name.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one write's context, used by its two streaming paths"
+    )]
+    async fn close_writer<F: Future<Output = ()>>(
+        &self,
+        mut writer: smb2::client::stream::FileWriter,
+        (tree, side_conn): (&smb2::client::Tree, &mut smb2::client::Connection),
+        smb_path: &str,
+        ran_on: RanOn,
+        xattrs: &[Xattr],
+        times: Option<smb2::FileTimes>,
+        delete_partial: &impl Fn() -> F,
+    ) -> Result<ClosedWriter, VolumeError> {
+        let xattrs_kept = match self
+            .put_copied_xattrs(tree, side_conn, smb_path, ran_on, xattrs, false)
+            .await
+        {
+            Ok(kept) => kept,
+            Err(ve) => {
+                let _ = writer.abort().await;
+                delete_partial().await;
+                return Err(ve);
+            }
+        };
+        let mut times_refused = false;
+        if let Some(times) = times {
+            match self.stamp_writer(&mut writer, times, smb_path, ran_on).await {
+                Ok(took) => times_refused = !took,
+                Err(ve) => {
+                    // The connection died under the stamp: the same cleanup as
+                    // a failed chunk.
+                    let _ = writer.abort().await;
+                    delete_partial().await;
+                    return Err(ve);
+                }
+            }
+        }
+        let finish_result = writer.finish().await;
+        match self.handle_smb_result("write_from_stream(finish)", smb_path, ran_on, finish_result) {
+            Ok(confirmed) => Ok(ClosedWriter {
+                xattrs_kept,
+                times_refused,
+                confirmed,
+            }),
+            Err(ve) => {
+                delete_partial().await;
+                Err(ve)
+            }
         }
     }
 
@@ -469,36 +537,19 @@ impl SmbVolume {
                     }
                     // The source signalled end-of-stream by returning None
                     // above (we exited the drain loop). No further chunks.
-                    match self
-                        .put_copied_xattrs(&tree, &mut side_conn, &smb_path, ran_on, &carried.xattrs, false)
-                        .await
-                    {
-                        Ok(kept) => xattrs_kept = kept,
-                        Err(ve) => {
-                            let _ = writer.abort().await;
-                            delete_partial().await;
-                            return Err(ve);
-                        }
-                    }
-                    if let Some(times) = times {
-                        match self.stamp_writer(&mut writer, times, &smb_path, ran_on).await {
-                            Ok(took) => times_refused = !took,
-                            Err(ve) => {
-                                let _ = writer.abort().await;
-                                delete_partial().await;
-                                return Err(ve);
-                            }
-                        }
-                    }
-                    // `finish()` consumes the writer, so on failure the
-                    // handle is already gone (best-effort delete only).
-                    let finish_result = writer.finish().await;
-                    if let Err(ve) =
-                        self.handle_smb_result("write_from_stream(finish)", &smb_path, ran_on, finish_result)
-                    {
-                        delete_partial().await;
-                        return Err(ve);
-                    }
+                    let closed = self
+                        .close_writer(
+                            writer,
+                            (&tree, &mut side_conn),
+                            &smb_path,
+                            ran_on,
+                            &carried.xattrs,
+                            times,
+                            &delete_partial,
+                        )
+                        .await?;
+                    xattrs_kept = closed.xattrs_kept;
+                    times_refused = closed.times_refused;
                     break 'write buffer.len() as u64;
                 }
 
@@ -576,44 +627,20 @@ impl SmbVolume {
                     }
                 }
 
-                // Beside the open writer (a stream opens past its no-sharing
-                // handle) and before its dates, which then outlast the stream
-                // writes' own bump on `streams_xattr`. `DETAILS.md` § "Xattrs
-                // on copies".
-                match self
-                    .put_copied_xattrs(&tree, &mut side_conn, &smb_path, ran_on, &carried.xattrs, false)
-                    .await
-                {
-                    Ok(kept) => xattrs_kept = kept,
-                    Err(ve) => {
-                        let _ = writer.abort().await;
-                        delete_partial().await;
-                        return Err(ve);
-                    }
-                }
-                if let Some(times) = times {
-                    match self.stamp_writer(&mut writer, times, &smb_path, ran_on).await {
-                        Ok(took) => times_refused = !took,
-                        Err(ve) => {
-                            // The connection died under the stamp: the same
-                            // cleanup as a failed chunk.
-                            let _ = writer.abort().await;
-                            delete_partial().await;
-                            return Err(ve);
-                        }
-                    }
-                }
-                // `finish()` consumes the writer; on failure the handle is
-                // already gone, so we can only best-effort delete the partial.
-                let finish_result = writer.finish().await;
-                let confirmed =
-                    match self.handle_smb_result("write_from_stream(finish)", &smb_path, ran_on, finish_result) {
-                        Ok(confirmed) => confirmed,
-                        Err(ve) => {
-                            delete_partial().await;
-                            return Err(ve);
-                        }
-                    };
+                let closed = self
+                    .close_writer(
+                        writer,
+                        (&tree, &mut side_conn),
+                        &smb_path,
+                        ran_on,
+                        &carried.xattrs,
+                        times,
+                        &delete_partial,
+                    )
+                    .await?;
+                xattrs_kept = closed.xattrs_kept;
+                times_refused = closed.times_refused;
+                let confirmed = closed.confirmed;
 
                 // `finish()` drains the whole window, so the last chunks are confirmed
                 // only now. Without this call the file's progress would stop up to a
