@@ -1,10 +1,12 @@
 #![allow(clippy::borrow_interior_mutable_const, clippy::cast_possible_wrap)]
 
+use std::ffi::c_void;
 use std::fs;
 use std::fs::File;
+use std::io;
 use std::os::unix::fs::MetadataExt;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::thread;
@@ -24,7 +26,8 @@ use crate::ffi::{
     kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagNoDefer,
     kFSEventStreamCreateFlagNone, kFSEventStreamCreateFlagUseCFTypes,
     kFSEventStreamCreateFlagUseExtendedData, kFSEventStreamEventIdSinceNow,
-    FSEventStreamCreateFlags,
+    FSEventStreamCreateFlags, FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream,
+    SysFSEventStreamContext, SysFSEventStreamRef,
 };
 use crate::stream::{
     create_event_stream, Event, StreamContextInfo, StreamFlags, TEST_RUNNING_RUNLOOP_COUNT,
@@ -287,5 +290,91 @@ async fn must_receive_fs_events_impl(
             .map(ToString::to_string)
             .collect::<Vec<_>>()
             .join(", ")
+    );
+}
+
+/// A context whose drop is counted, so a test can see `SysFSEventStream::new` release it exactly
+/// once on every path (never leaked, never double freed).
+struct CountedContext(Arc<AtomicUsize>);
+
+impl Drop for CountedContext {
+    fn drop(&mut self) {
+        self.0.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+crate::impl_release_callback!(release_counted_context, CountedContext);
+
+extern "C" fn ignore_events(
+    _stream_ref: SysFSEventStreamRef,
+    _info: *mut c_void,
+    _num_events: usize,
+    _event_paths: *mut c_void,
+    _event_flags: *const FSEventStreamEventFlags,
+    _event_ids: *const FSEventStreamEventId,
+) {
+}
+
+fn create_counted<P: AsRef<Path>>(
+    paths: impl IntoIterator<Item = P>,
+) -> (io::Result<SysFSEventStream>, Arc<AtomicUsize>) {
+    let drops = Arc::new(AtomicUsize::new(0));
+    let context =
+        SysFSEventStreamContext::new(CountedContext(Arc::clone(&drops)), release_counted_context);
+    let stream = SysFSEventStream::new(
+        ignore_events,
+        &context,
+        paths,
+        kFSEventStreamEventIdSinceNow,
+        Duration::ZERO,
+        kFSEventStreamCreateFlagNone,
+    );
+    (stream, drops)
+}
+
+#[test]
+fn stream_releases_its_context_once_when_dropped() {
+    let (stream, drops) = create_counted(["."]);
+    let stream = stream.expect("to be created");
+    assert_eq!(
+        drops.load(Ordering::SeqCst),
+        0,
+        "the live stream still owns it"
+    );
+    drop(stream);
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+}
+
+/// Regression: `FSEventStreamCreate` returns NULL for an empty path list, and we used to wrap
+/// that NULL and go on to schedule, start, and release it.
+#[test]
+fn empty_path_list_is_an_error_and_releases_the_context_once() {
+    let (stream, drops) = create_counted(Vec::<&Path>::new());
+    assert_eq!(
+        stream.err().map(|err| err.kind()),
+        Some(io::ErrorKind::InvalidInput)
+    );
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+}
+
+/// Regression: a path `CFURL` rejects used to return early and leak the boxed context.
+#[test]
+fn invalid_path_is_an_error_and_releases_the_context_once() {
+    let (stream, drops) = create_counted([""]);
+    assert!(stream.is_err());
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn create_event_stream_rejects_an_empty_path_list() {
+    let created = create_event_stream(
+        Vec::<&Path>::new(),
+        kFSEventStreamEventIdSinceNow,
+        Duration::ZERO,
+        kFSEventStreamCreateFlagNone,
+    );
+    assert_eq!(
+        created.err().map(|err| err.kind()),
+        Some(io::ErrorKind::InvalidInput)
     );
 }

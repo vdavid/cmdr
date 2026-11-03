@@ -189,7 +189,8 @@ unsafe impl Send for SendableCFRunLoop {}
 /// Create a new [`EventStream`](EventStream) and [`EventStreamHandler`](EventStreamHandler) pair.
 ///
 /// # Errors
-/// Return error when there's any invalid path in `paths_to_watch`.
+/// Return error when `paths_to_watch` is empty or holds an invalid path, or when `FSEvents`
+/// refuses to create the stream.
 ///
 /// # Panics
 /// Panic when the given flags combination is illegal.

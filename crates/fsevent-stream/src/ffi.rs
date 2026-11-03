@@ -173,8 +173,13 @@ impl SysFSEventStreamContext {
 impl SysFSEventStream {
     /// Create a new [`SysFSEventStream`](SysFSEventStream).
     ///
+    /// Takes ownership of `context.info` whatever the outcome: on success the stream calls
+    /// `context.release` when it's deallocated, and on failure it has been called by the time this
+    /// returns. So a context must go to exactly one `new` call.
+    ///
     /// # Errors
-    /// Return error when there's any invalid path in `paths_to_watch`.
+    /// Return error when `paths_to_watch` is empty or holds an invalid path, or when `FSEvents`
+    /// refuses to create the stream.
     pub fn new<P: AsRef<Path>>(
         callback: FSEventStreamCallback,
         context: &SysFSEventStreamContext,
@@ -183,12 +188,38 @@ impl SysFSEventStream {
         latency: Duration,
         flags: FSEventStreamCreateFlags,
     ) -> io::Result<Self> {
-        let cf_paths: Vec<_> = paths_to_watch
+        let cf_paths = paths_to_watch
             .into_iter()
             .map(|item| str_path_to_cfstring_ref(item.as_ref()))
-            .collect::<Result<_, _>>()?;
+            .collect::<io::Result<Vec<_>>>()
+            .and_then(|cf_paths| {
+                // `FSEventStreamCreate` returns NULL for an empty list; reject it here so the
+                // error says why.
+                if cf_paths.is_empty() {
+                    Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "no paths to watch",
+                    ))
+                } else {
+                    Ok(cf_paths)
+                }
+            });
+        let cf_paths = match cf_paths {
+            Ok(cf_paths) => cf_paths,
+            Err(err) => {
+                // FSEvents never saw the context, so its info is still ours to release.
+                if let Some(release) = context.release {
+                    release(context.info);
+                }
+                return Err(err);
+            }
+        };
         let cf_path_array = CFArray::from_CFTypes(&cf_paths);
-        Ok(Self(unsafe {
+        // SAFETY: `context` points to a live, fully initialized `FSEventStreamContext` (version 0)
+        // for the duration of the call, and FSEvents copies it rather than keeping the pointer.
+        // `cf_path_array` is a valid `CFArray` of `CFString`s that FSEvents retains as needed.
+        // `callback` is an `extern "C" fn` with the `FSEventStreamCallback` signature.
+        let stream = unsafe {
             FSEventStreamCreate(
                 kCFAllocatorDefault,
                 callback,
@@ -198,7 +229,17 @@ impl SysFSEventStream {
                 latency.as_secs_f64() as CFTimeInterval,
                 flags,
             )
-        }))
+        };
+        if stream.is_null() {
+            // Don't release `context.info` here: FSEvents already did before returning NULL
+            // (verified on macOS 27.0.1, a probe test with a logging release callback,
+            // 2026-11-03), so releasing it again would double free.
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "FSEventStreamCreate returned no stream",
+            ));
+        }
+        Ok(Self(stream))
     }
     pub fn show(&mut self) {
         unsafe { FSEventStreamShow(self.0) }
