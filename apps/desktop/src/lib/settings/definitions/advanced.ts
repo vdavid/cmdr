@@ -168,6 +168,20 @@ export const advancedSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    // The once-ever toast when a key ran its command instead of typing into the quick
+    // filter (`file-explorer/pane/quick-filter-typing-hint.ts`). On once it's been shown;
+    // turning it off brings the toast back once.
+    id: 'fileExplorer.quickFilterTypingHintSeen',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.fileExplorer.quickFilterTypingHintSeen.label',
+    descriptionKey: 'settings.fileExplorer.quickFilterTypingHintSeen.description',
+    keywordsKey: 'settings.fileExplorer.quickFilterTypingHintSeen.keywords',
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
     id: 'suggestedOps.suppressApprovalNotice',
     section: ['Advanced'],
     cardKey: 'settings.advanced.card.hintsAndWarnings',
@@ -252,6 +266,25 @@ export const advancedSettings: SettingDefinitionSource[] = [
     constraints: {
       min: 300,
       max: 3000,
+      step: 100,
+    },
+  },
+  {
+    // How long after a pattern edit Space, `-`, `*`, and other bound keys still type into
+    // the quick filter (`file-explorer/pane/quick-filter-typing.ts`). Longer than the jump
+    // delay: a wildcard typed after a short pause should still reach the pattern.
+    id: 'fileExplorer.quickFilter.typingWindow',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.input',
+    labelKey: 'settings.fileExplorer.quickFilter.typingWindow.label',
+    descriptionKey: 'settings.fileExplorer.quickFilter.typingWindow.description',
+    keywordsKey: 'settings.fileExplorer.quickFilter.typingWindow.keywords',
+    type: 'number',
+    default: 1500,
+    component: 'number-input',
+    constraints: {
+      min: 300,
+      max: 5000,
       step: 100,
     },
   },

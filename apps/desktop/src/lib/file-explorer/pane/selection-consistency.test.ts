@@ -134,6 +134,7 @@ vi.mock('#lib/icon-cache.js', async () => {
 vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
   getSpaceCalculatesFolderSize: vi.fn(() => false),
   getTypeToJumpMode: vi.fn().mockReturnValue('jump'),
+  getQuickFilterTypingWindow: vi.fn().mockReturnValue(1500),
   getRowHeight: vi.fn().mockReturnValue(24),
   formatDateTime: vi.fn().mockReturnValue('2025-01-01 00:00'),
   formattedDate: vi.fn().mockReturnValue({

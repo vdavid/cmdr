@@ -366,6 +366,12 @@ export interface FilePaneAPI {
   backspaceQuickFilter(): void
   /** Quick filter: clear the pattern and show every row again. */
   clearQuickFilter(): void
+  /** Quick filter: whether the person is still typing into it (`quick-filter-typing.ts`). */
+  isFilterTypingLive(): boolean
+  /** Quick filter: the cursor moved, so the next bound key runs its command. */
+  endFilterTyping(): void
+  /** Quick filter: a key that could have typed `char` ran its command (the once-ever hint). */
+  noteFilterKeyRanCommand(char: string): void
 
   /** Debug only: inject a FriendlyError into this pane's error state. */
   injectError(friendly: FriendlyError): void

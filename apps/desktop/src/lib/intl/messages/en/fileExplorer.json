@@ -3162,6 +3162,19 @@
     "description": "Accessible name and tooltip-less label of the small × on the \"Filter: …\" badge in a pane's corner. Clicking it shows every file again (same as Esc).",
     "screenshot": "quick-filter-intro.png"
   },
+  "fileExplorer.quickFilter.typingHint.title": "What just happened?",
+  "@fileExplorer.quickFilter.typingHint.title": {
+    "description": "Title of an info toast, shown once. The person had a quick filter on (typing narrows the file list) and pressed a key like Space or *, and instead of typing that character into the filter, the key did its usual job (Space selects a file). The toast explains why."
+  },
+  "fileExplorer.quickFilter.typingHint.body": "You pressed <keyName>{key}</keyName>, and it ran its usual action instead of typing into the filter. To type it into the filter, press it within {seconds, plural, one {{secondsText} second} other {{secondsText} seconds}} of the previous key.",
+  "@fileExplorer.quickFilter.typingHint.body": {
+    "description": "Body of the same toast. A key like Space or * types into the quick filter only while the person keeps typing; after a pause it does its usual job again (Space selects, * inverts the selection). This says so, and how to type the character into the filter. The <keyName> tags show the key in a small code-style chip; keep them around the key.",
+    "placeholders": {
+      "key": "the key the person pressed, as its keycap shows it (for example * or Space)",
+      "seconds": "the typing window in seconds, for the plural only (for example 1.5)",
+      "secondsText": "the same number, already formatted for the language (for example 1.5 or 1,5)"
+    }
+  },
   "fileExplorer.quickFilter.intro.title": "Typing filtered this pane",
   "@fileExplorer.quickFilter.intro.title": {
     "description": "Title of an info toast. Shown once, the first time typing in a pane filters it (Filter is the default typing mode). The pane now hides the files whose names don't contain the typed letters.",

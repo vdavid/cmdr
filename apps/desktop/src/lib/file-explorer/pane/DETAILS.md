@@ -351,11 +351,21 @@ responses. Backend match runs in `crates/cmdr-listing/src/fuzzy_jump.rs`; the ne
 
 **Quick filter (Filter typing mode, the default).** `fileExplorer.typeToJump.mode` picks what typing does: `filter`
 (Total Commander's quick filter) or `jump`, and the network views always jump (`typingFilters`). `routeTypingKey`
-(`type-to-jump-keys.ts`) is the one intercept for both, and in Filter mode `routeFilterKey` sends letters and digits
-(any printable once a pattern is on) to `quick-filter-controller.svelte.ts`; Backspace edits and Esc clears while a
-pattern is on; arrows and Enter fall through, so you navigate the filtered list. The filtering is the backend's
-(`crates/cmdr-listing/ DETAILS.md` § Quick filter), and everything the pane reads (count, rows, selection, diffs) is the
-filtered row space.
+(`type-to-jump-keys.ts`) is the one intercept for both, and in Filter mode `routeFilterKey` sends letters and digits to
+`quick-filter-controller.svelte.ts`; Backspace edits and Esc clears while a pattern is on; arrows and Enter fall
+through, so you navigate the filtered list. The filtering is the backend's (`crates/cmdr-listing/ DETAILS.md` § Quick
+filter), and everything the pane reads (count, rows, selection, diffs) is the filtered row space.
+
+- **Other printable keys follow the typing burst** (`quick-filter-typing.ts`). While a pattern is on, Space, `-`, `*`,
+  and the rest type into it during the burst (each pattern edit renews it, up to
+  `fileExplorer.quickFilter.typingWindow`, 1500 ms) or when no command is bound to them, read live so a rebind counts.
+  After a pause a bound one runs its command, so Space selects what the filter left. A cursor move ends the burst at
+  once: a navigation key with any modifiers, or a row click (`pane-pointer.ts`'s `setCursorIndex`). **Why**: Space has
+  to select once the person is done typing, and a wildcard typed after a short pause should still reach the pattern,
+  hence a window longer than the jump delay. Mirrors Jump mode's reset timeout, so one rule covers both.
+- **The first key that runs its command instead raises a once-ever toast** (`quick-filter-typing-hint.ts`): what
+  happened and how to type it. It hides after 10 seconds, and `fileExplorer.quickFilterTypingHintSeen` in Settings >
+  Advanced > Hints and warnings brings it back.
 
 - **One call in flight, latest pattern wins**: keystrokes that land mid-call only move `pattern`, and the loop sends
   whatever stands when the call returns. Successful bursts stay batched; refused growth is replayed one character at a

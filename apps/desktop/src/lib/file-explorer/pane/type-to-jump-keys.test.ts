@@ -16,8 +16,11 @@ beforeEach(() => {
 })
 
 /** The target with its spies as plain `vi.fn()` properties (not `TypingKeyTarget` methods), so asserting on one isn't an unbound method. */
-function pane(mode: 'jump' | 'filter', active = false, renaming = false) {
+function pane(mode: 'jump' | 'filter', active = false, renaming = false, typingLive = false) {
   const target = {
+    isFilterTypingLive: () => typingLive,
+    endFilterTyping: vi.fn(),
+    noteFilterKeyRanCommand: vi.fn(),
     isRenaming: () => renaming,
     isJumpActive: () => active,
     handleJumpKeystroke: vi.fn(),
@@ -122,13 +125,63 @@ describe('routeTypingKey with ⇧Space', () => {
     expect(p.appendQuickFilter).toHaveBeenCalledWith(' ')
   })
 
-  it('still types plain Space and shifted punctuation even when they are bound', () => {
+  it('still types plain Space and shifted punctuation mid-burst, even when they are bound', () => {
     vi.mocked(isBoundByAnyCommand).mockReturnValue(true)
-    const p = pane('filter', true)
+    const p = pane('filter', true, false, true)
     expect(routeTypingKey(p, key(' '))).toBe(true)
     expect(p.appendQuickFilter).toHaveBeenCalledWith(' ')
     expect(routeTypingKey(p, key('_', { shiftKey: true }))).toBe(true)
     expect(p.appendQuickFilter).toHaveBeenCalledWith('_')
+  })
+})
+
+describe('routeTypingKey and the filter typing burst', () => {
+  it('types a bound key into the filter while the person is still typing', () => {
+    vi.mocked(isBoundByAnyCommand).mockReturnValue(true)
+    const p = pane('filter', true, false, true)
+    for (const k of [' ', '-', '*']) expect(routeTypingKey(p, key(k))).toBe(true)
+    expect(p.appendQuickFilter.mock.calls).toEqual([[' '], ['-'], ['*']])
+    expect(p.noteFilterKeyRanCommand).not.toHaveBeenCalled()
+  })
+
+  it('hands a bound key to its command after a pause, and says so once it does', () => {
+    vi.mocked(isBoundByAnyCommand).mockReturnValue(true)
+    const p = pane('filter', true)
+    expect(routeTypingKey(p, key(' '))).toBe(false)
+    expect(p.appendQuickFilter).not.toHaveBeenCalled()
+    expect(p.noteFilterKeyRanCommand).toHaveBeenCalledWith(' ')
+  })
+
+  it('keeps typing an unbound key after a pause, since no command would take it', () => {
+    const p = pane('filter', true)
+    expect(routeTypingKey(p, key('!', { shiftKey: true }))).toBe(true)
+    expect(p.appendQuickFilter).toHaveBeenCalledWith('!')
+    expect(p.noteFilterKeyRanCommand).not.toHaveBeenCalled()
+  })
+
+  it('always types letters and digits, pause or not', () => {
+    vi.mocked(isBoundByAnyCommand).mockReturnValue(true)
+    const p = pane('filter', true)
+    expect(routeTypingKey(p, key('a'))).toBe(true)
+    expect(routeTypingKey(p, key('7'))).toBe(true)
+    expect(p.appendQuickFilter.mock.calls).toEqual([['a'], ['7']])
+  })
+
+  it('ends the burst at once on a cursor move, modifiers or not, and lets the key through', () => {
+    for (const k of ['ArrowDown', 'ArrowUp', 'Home', 'End', 'PageDown', 'Enter', 'Tab']) {
+      const p = pane('filter', true, false, true)
+      expect(routeTypingKey(p, key(k))).toBe(false)
+      expect(p.endFilterTyping).toHaveBeenCalledOnce()
+    }
+    const shifted = pane('filter', true, false, true)
+    routeTypingKey(shifted, key('ArrowDown', { shiftKey: true }))
+    expect(shifted.endFilterTyping).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the burst through Backspace, which edits the pattern', () => {
+    const p = pane('filter', true, false, true)
+    expect(routeTypingKey(p, key('Backspace'))).toBe(true)
+    expect(p.endFilterTyping).not.toHaveBeenCalled()
   })
 })
 

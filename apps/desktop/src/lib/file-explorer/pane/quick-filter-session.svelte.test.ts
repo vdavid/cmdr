@@ -50,9 +50,22 @@ function setup({ canFilter = true, canMatch = true, pattern = '', buffer = '' } 
   }
   const announce = vi.fn()
   const onPlainFilterStarted = vi.fn()
-  const deps: QuickFilterSessionDeps = { filter, jump, announce, onPlainFilterStarted }
-  return { session: createQuickFilterSession(deps), filter, jump, announce, onPlainFilterStarted }
+  const typing = { touch: vi.fn(), end: vi.fn() }
+  const deps: QuickFilterSessionDeps = { filter, jump, announce, onPlainFilterStarted, typing }
+  return { session: createQuickFilterSession(deps), filter, jump, announce, onPlainFilterStarted, typing }
 }
+
+describe('the typing burst', () => {
+  it('renews on every pattern edit and ends when the session closes', () => {
+    const { session, typing } = setup()
+    session.append('a')
+    session.backspace()
+    expect(typing.touch).toHaveBeenCalledTimes(2)
+    expect(typing.end).not.toHaveBeenCalled()
+    session.clear()
+    expect(typing.end).toHaveBeenCalledOnce()
+  })
+})
 
 describe('⌃S', () => {
   it('opens an empty Filter badge when there is no pattern', () => {

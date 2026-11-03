@@ -50,6 +50,7 @@ let networkEnabled = $state<boolean>(true)
 let nearbyServersGroup = $state<NearbyServersGroupChoice>('auto')
 let switcherFavoritesExpanded = $state<boolean>(false)
 let typeToJumpResetDelay = $state<number>(1000)
+let quickFilterTypingWindow = $state<number>(1500)
 let spaceCalculatesFolderSize = $state<boolean>(true)
 let typeToJumpMode = $state<TypeToJumpMode>('jump')
 let driveIndexingEnabled = $state<boolean>(true)
@@ -114,6 +115,7 @@ async function runInit(options?: { restrictedWindow?: boolean }): Promise<void> 
     nearbyServersGroup = nearbyServersGroupChoiceOf(getSetting('network.nearbyServersGroup'))
     switcherFavoritesExpanded = getSetting('behavior.switcherFavoritesExpanded')
     typeToJumpResetDelay = getSetting('fileExplorer.typeToJump.resetDelay')
+    quickFilterTypingWindow = getSetting('fileExplorer.quickFilter.typingWindow')
     spaceCalculatesFolderSize = getSetting('listing.spaceCalculatesFolderSize')
     typeToJumpMode = getSetting('fileExplorer.typeToJump.mode')
     driveIndexingEnabled = getSetting('indexing.enabled')
@@ -215,6 +217,9 @@ function applySettingChange(id: string, value: unknown): void {
       break
     case 'fileExplorer.typeToJump.resetDelay':
       typeToJumpResetDelay = value as number
+      break
+    case 'fileExplorer.quickFilter.typingWindow':
+      quickFilterTypingWindow = value as number
       break
     case 'listing.spaceCalculatesFolderSize':
       spaceCalculatesFolderSize = value as boolean
@@ -415,6 +420,14 @@ function nearbyServersGroupChoiceOf(value: unknown): NearbyServersGroupChoice {
  */
 export function getTypeToJumpResetDelay(): number {
   return typeToJumpResetDelay
+}
+
+/**
+ * How long after a pattern edit a bound key still types into the quick filter
+ * (`fileExplorer.quickFilter.typingWindow`), read per keystroke like the jump delay.
+ */
+export function getQuickFilterTypingWindow(): number {
+  return quickFilterTypingWindow
 }
 
 /** Whether Space on a folder also calculates its size (`listing.spaceCalculatesFolderSize`). */

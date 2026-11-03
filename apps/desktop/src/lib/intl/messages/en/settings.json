@@ -2029,6 +2029,18 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "description": "Search keywords for the “Suppress the Space-key Quick Look hint” setting (settings.fileExplorer.suppressQuickLookHint.label) in Settings > Advanced. What it does: hides the reminder that Space selects in Cmdr and ⇧Space opens Quick Look (the macOS preview). Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
+    "description": "Advanced-section label for a toggle. On means a one-time tip won't show (again). The tip explains why a key like Space or * did its usual job instead of typing into the quick filter (the feature where typing narrows the file list)."
+  },
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
+    "description": "Help text for the toggle above. \"quick filter\" = the feature where typing narrows the file list. Space, -, and * are keyboard keys; keep the symbols, use the language's name for Space. \"Cmdr\" is the product name; keep it."
+  },
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
+    "description": "Search keywords for the “Suppress the quick filter typing hint” setting (settings.fileExplorer.quickFilterTypingHintSeen.label) in Settings > Advanced. What it does: hides, or brings back, the one-time tip about keys like Space typing into the quick filter. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
   "settings.suggestedOps.suppressApprovalNotice.label": "Suppress the approval note in AI suggestions",
   "@settings.suggestedOps.suppressApprovalNotice.label": {
     "description": "Advanced-section label for the toggle that hides the note at the top of the AI suggestions dialog (suggestedOps.description). \"AI suggestions\" is that dialog's title (suggestedOps.title); keep the two matching.",
@@ -2116,6 +2128,18 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "description": "Help text for the type-to-jump-reset-delay setting (advanced). \"type-to-jump\" is the feature name; \"buffer\" = the accumulated typed characters.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "@settings.fileExplorer.quickFilter.typingWindow.label": {
+    "description": "Advanced-section label for a number in milliseconds. \"quick filter\" = the feature where typing narrows the file list. \"typing window\" = how long a pause between keys still counts as typing."
+  },
+  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "@settings.fileExplorer.quickFilter.typingWindow.description": {
+    "description": "Help text for the setting above. Space, -, and * are keyboard keys; keep the symbols, use the language's name for Space. \"milliseconds\": the unit of the number the person enters."
+  },
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
+    "description": "Search keywords for the “Quick filter typing window” setting (settings.fileExplorer.quickFilter.typingWindow.label) in Settings > Advanced. What it does: sets how long after the previous key Space or * still types into the quick filter instead of doing its usual job. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.fileExplorer.typeToJump.resetDelay.keywords": "type, jump, reset, delay, fuzzy, search, navigation, keystroke, buffer",
   "@settings.fileExplorer.typeToJump.resetDelay.keywords": {

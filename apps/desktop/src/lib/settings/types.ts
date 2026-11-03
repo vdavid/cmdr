@@ -437,6 +437,8 @@ export interface SettingsValues {
   'fileExplorer.typeToJump.mode': TypeToJumpMode
   'fileExplorer.quickFilterIntroSeen': boolean
   'fileExplorer.typeToJump.resetDelay': number
+  'fileExplorer.quickFilter.typingWindow': number
+  'fileExplorer.quickFilterTypingHintSeen': boolean
 
   // Quick Look
   'fileExplorer.suppressQuickLookHint': boolean

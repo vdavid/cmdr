@@ -25,6 +25,8 @@
     import { createListingUpdateQueue } from './listing-update-queue'
     import { maybeShowQuickFilterIntro } from './quick-filter-intro'
     import { createQuickFilterSession } from './quick-filter-session.svelte'
+    import { createQuickFilterTyping } from './quick-filter-typing'
+    import { maybeShowQuickFilterTypingHint } from './quick-filter-typing-hint'
     import type { ViewMode } from '#lib/app-status-store.js'
     import type { CommandId } from '#lib/commands/index.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
@@ -110,6 +112,7 @@
         getSpaceCalculatesFolderSize,
         getTypeToJumpMode,
         getTypeToJumpResetDelay,
+        getQuickFilterTypingWindow,
     } from '#lib/settings/reactive-settings.svelte.js'
     import { createRowOverlays } from './row-overlays.svelte'
     import { createSelectionInfoFeed } from './selection-info-feed.svelte'
@@ -344,11 +347,14 @@
         },
     })
 
+    // Whether the person is still typing, so Space types a space or selects (`quick-filter-typing.ts`).
+    const filterTyping = createQuickFilterTyping({ getWindowMs: getQuickFilterTypingWindow })
     const quickFilterSession = createQuickFilterSession({
         filter: quickFilter,
         jump,
         announce: (message) => { announcer?.announce(message) },
         onPlainFilterStarted: maybeShowQuickFilterIntro,
+        typing: filterTyping,
     })
 
     const rename = createRenameState(() => { renameFlow.cancelRename() })
@@ -986,6 +992,15 @@
     export function clearQuickFilter(): void {
         quickFilterSession.clear()
     }
+    export function isFilterTypingLive(): boolean {
+        return filterTyping.isLive()
+    }
+    export function endFilterTyping(): void {
+        filterTyping.end()
+    }
+    export function noteFilterKeyRanCommand(char: string): void {
+        maybeShowQuickFilterTypingHint(char, getQuickFilterTypingWindow())
+    }
     export function cycleQuickFilter(): void {
         if (!rename.active) quickFilterSession.cycle()
     }
@@ -1608,8 +1623,10 @@
     // that goes up a folder. All in `pane-pointer.ts`.
     const pointer = createPanePointer({
         getCursorIndex: () => cursorIndex,
+        // A row click moves the cursor, which ends the filter's typing burst like an arrow does.
         setCursorIndex: (index) => {
             cursorIndex = index
+            filterTyping.end()
         },
         getHasParent: () => hasParent,
         getListingId: () => listingId,

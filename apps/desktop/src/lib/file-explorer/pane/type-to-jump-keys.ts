@@ -66,6 +66,11 @@ export function isTypeToJumpResetKey(e: KeyboardEvent): boolean {
   }
 }
 
+/** A key that moves the cursor or focus, which ends the filter's typing burst: the reset keys bar the two that edit. */
+function isCursorMoveKey(e: KeyboardEvent): boolean {
+  return isTypeToJumpResetKey(e) && e.key !== 'Backspace' && e.key !== 'Escape'
+}
+
 /** The slice of a pane the typing intercept drives. `FilePaneAPI` satisfies it. */
 export interface TypingKeyTarget {
   isRenaming(): boolean
@@ -80,6 +85,12 @@ export interface TypingKeyTarget {
   /** Drops the last character of the pattern (clearing it when that was the last one). */
   backspaceQuickFilter(): void
   clearQuickFilter(): void
+  /** Whether the person is still typing into the filter (`quick-filter-typing.ts`). */
+  isFilterTypingLive(): boolean
+  /** The cursor moved, so a key pressed next is a command again. */
+  endFilterTyping(): void
+  /** A key that could have typed `char` into the filter ran its command instead. */
+  noteFilterKeyRanCommand(char: string): void
 }
 
 /**
@@ -100,10 +111,14 @@ export function typingFilters(mode: 'filter' | 'jump', isNetworkView: boolean): 
  * reset keys clear it and fall through.
  *
  * Filter mode (Total Commander's quick filter): letters/digits start the
- * pattern and, once it's active, any printable extends it. Backspace edits it
- * and Esc clears it, both consumed while a pattern is active, so Backspace only
- * goes to the parent folder once the filter is empty. Arrows, Enter, and the rest
- * fall through and leave the filter alone: you navigate within the filtered list.
+ * pattern and always extend it. Once it's active, any other printable extends it
+ * too while the person is still typing (the burst, `quick-filter-typing.ts`) or
+ * when no command is bound to it. Outside the burst a bound one (Space, `-`, `*`)
+ * runs its command, so Space selects what the filter left. Backspace edits the
+ * pattern and Esc clears it, both consumed while a pattern is active, so Backspace
+ * only goes to the parent folder once the filter is empty. Arrows, Enter, and the
+ * rest fall through and leave the filter alone (you navigate within the filtered
+ * list), and as cursor moves they end the burst at once.
  *
  * A ⌃S session (`quick-filter-session.svelte.ts`) takes this same Filter route on both of its
  * kinds, even with an empty pattern: `isQuickFilterMode` and `isQuickFilterActive` say yes, and
@@ -127,10 +142,21 @@ export function routeTypingKey(pane: TypingKeyTarget, e: KeyboardEvent): boolean
 /** `routeTypingKey` in Filter mode: what extends, edits, or clears the pattern. */
 function routeFilterKey(pane: TypingKeyTarget, e: KeyboardEvent): boolean {
   const active = pane.isQuickFilterActive()
-  if (isTypeToJumpChar(e) || (active && isPrintableJumpContinuation(e))) {
+  if (isTypeToJumpChar(e)) {
     pane.appendQuickFilter(e.key)
     return true
   }
+  if (active && isPrintableJumpContinuation(e)) {
+    // Read live, so a rebound key follows its new command (or none) at once.
+    if (pane.isFilterTypingLive() || !isBoundByAnyCommand(resolveKeyCombo(e))) {
+      pane.appendQuickFilter(e.key)
+      return true
+    }
+    pane.noteFilterKeyRanCommand(e.key)
+    return false
+  }
+  // A cursor move, with or without modifiers (⇧↓ extends the selection as it goes).
+  if (isCursorMoveKey(e)) pane.endFilterTyping()
   if (!active || e.metaKey || e.ctrlKey || e.altKey) return false
   if (e.key === 'Backspace') {
     pane.backspaceQuickFilter()

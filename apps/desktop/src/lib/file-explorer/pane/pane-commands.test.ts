@@ -114,6 +114,9 @@ function buildPaneRef(
     appendQuickFilter: vi.fn(),
     backspaceQuickFilter: vi.fn(),
     clearQuickFilter: vi.fn(),
+    isFilterTypingLive: vi.fn(() => false),
+    endFilterTyping: vi.fn(),
+    noteFilterKeyRanCommand: vi.fn(),
     // Delegate spies
     toggleVolumeChooser: vi.fn(),
     openVolumeChooser: vi.fn(),

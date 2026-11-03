@@ -28,6 +28,7 @@
 import { tString } from '#lib/intl/messages.svelte.js'
 import type { QuickFilterController } from './quick-filter-controller.svelte'
 import type { TypeToJumpController } from './type-to-jump-controller.svelte'
+import type { QuickFilterTyping } from './quick-filter-typing'
 
 export type QuickFilterSessionKind = 'filter' | 'jump'
 
@@ -44,6 +45,8 @@ export interface QuickFilterSessionDeps {
   announce: (message: string) => void
   /** Plain typing just started a filter (never one ⌃S opened, which the person asked for). */
   onPlainFilterStarted: () => void
+  /** The typing burst: every pattern edit renews it, and closing the session ends it. */
+  typing: Pick<QuickFilterTyping, 'touch' | 'end'>
 }
 
 export interface QuickFilterSession {
@@ -104,6 +107,7 @@ export function createQuickFilterSession(deps: QuickFilterSessionDeps): QuickFil
   function end(): void {
     if (kind === 'jump') jump.release()
     kind = null
+    deps.typing.end()
   }
 
   return {
@@ -116,6 +120,7 @@ export function createQuickFilterSession(deps: QuickFilterSessionDeps): QuickFil
       else toFilter()
     },
     append: (char) => {
+      deps.typing.touch()
       if (kind === 'jump') {
         jump.handleJumpKeystroke(char)
         return
@@ -125,6 +130,7 @@ export function createQuickFilterSession(deps: QuickFilterSessionDeps): QuickFil
       if (kind === null && starting && filter.isActive()) deps.onPlainFilterStarted()
     },
     backspace: () => {
+      deps.typing.touch()
       const pattern = kind === 'jump' ? jump.buffer : filter.pattern
       if (pattern === '') end()
       else if (kind === 'jump') jump.backspaceHeld()
