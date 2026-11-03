@@ -63,7 +63,7 @@ describe('AskCmdrToolLine', () => {
     const { target } = render(call({ kind: 'folder', path: { text: '/Users/me/Downloads', linkable: true } }))
     const label = target.querySelector('.label')
     const bareText = [...(label?.childNodes ?? [])].filter(
-      (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '',
+      (node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? '').trim() !== '',
     )
     expect(bareText).toEqual([])
     expect([...(label?.querySelectorAll('.words') ?? [])].map((el) => el.textContent)).toEqual(['Listed '])
