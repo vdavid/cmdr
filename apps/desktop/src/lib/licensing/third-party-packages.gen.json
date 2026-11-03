@@ -1079,7 +1079,7 @@
     },
     {
       "name": "encoding_rs",
-      "version": "0.8.42",
+      "version": "0.8.44",
       "license": "(Apache-2.0 OR MIT) AND BSD-3-Clause",
       "url": "https://github.com/hsivonen/encoding_rs"
     },
@@ -1241,6 +1241,12 @@
     },
     {
       "name": "foldhash",
+      "version": "0.1.5",
+      "license": "Zlib",
+      "url": "https://github.com/orlp/foldhash"
+    },
+    {
+      "name": "foldhash",
       "version": "0.2.0",
       "license": "Zlib",
       "url": "https://github.com/orlp/foldhash"
@@ -1274,12 +1280,6 @@
       "version": "1.3.0",
       "license": "MIT",
       "url": "https://github.com/webdesus/fs_extra"
-    },
-    {
-      "name": "fsevent-sys",
-      "version": "4.1.0",
-      "license": "MIT",
-      "url": "https://github.com/octplane/fsevent-rust/tree/master/fsevent-sys"
     },
     {
       "name": "futures",
@@ -1343,7 +1343,7 @@
     },
     {
       "name": "genai",
-      "version": "0.7.1",
+      "version": "0.7.2",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/jeremychone/rust-genai"
     },
@@ -1746,6 +1746,12 @@
     {
       "name": "hashbrown",
       "version": "0.14.5",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/rust-lang/hashbrown"
+    },
+    {
+      "name": "hashbrown",
+      "version": "0.15.5",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/rust-lang/hashbrown"
     },
@@ -2183,7 +2189,7 @@
     },
     {
       "name": "lofty",
-      "version": "0.25.4",
+      "version": "0.25.5",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/Serial-ATA/lofty-rs"
     },
@@ -2195,7 +2201,7 @@
     },
     {
       "name": "log",
-      "version": "0.4.34",
+      "version": "0.4.35",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/rust-lang/log"
     },
@@ -2369,7 +2375,7 @@
     },
     {
       "name": "mtp-rs",
-      "version": "0.37.0",
+      "version": "0.37.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/vdavid/mtp-rs"
     },
@@ -2417,7 +2423,7 @@
     },
     {
       "name": "notify",
-      "version": "8.2.0",
+      "version": "8.2.1",
       "license": "CC0-1.0",
       "url": "https://github.com/notify-rs/notify.git"
     },
@@ -2489,7 +2495,7 @@
     },
     {
       "name": "numkong",
-      "version": "7.7.1",
+      "version": "7.8.6",
       "license": "Apache-2.0",
       "url": "https://github.com/ashvardanian/NumKong"
     },
@@ -2579,6 +2585,12 @@
     },
     {
       "name": "objc2-core-ml",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "url": "https://github.com/madsmtm/objc2"
+    },
+    {
+      "name": "objc2-core-services",
       "version": "0.3.2",
       "license": "Zlib OR Apache-2.0 OR MIT",
       "url": "https://github.com/madsmtm/objc2"
@@ -2693,7 +2705,7 @@
     },
     {
       "name": "ogg_pager",
-      "version": "0.7.2",
+      "version": "0.8.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/Serial-ATA/lofty-rs"
     },
@@ -3065,7 +3077,7 @@
     },
     {
       "name": "proc-macro-crate",
-      "version": "3.5.0",
+      "version": "1.3.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/bkchr/proc-macro-crate"
     },
@@ -3245,7 +3257,7 @@
     },
     {
       "name": "rfd",
-      "version": "0.16.0",
+      "version": "0.17.2",
       "license": "MIT",
       "url": "https://github.com/PolyMeilex/rfd"
     },
@@ -3275,7 +3287,7 @@
     },
     {
       "name": "rusqlite",
-      "version": "0.41.0",
+      "version": "0.41.1",
       "license": "MIT",
       "url": "https://github.com/rusqlite/rusqlite"
     },
@@ -3323,7 +3335,7 @@
     },
     {
       "name": "rustix",
-      "version": "1.1.4",
+      "version": "1.1.6",
       "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
       "url": "https://github.com/bytecodealliance/rustix"
     },
@@ -3557,7 +3569,7 @@
     },
     {
       "name": "sevenz-rust2",
-      "version": "0.24.1",
+      "version": "0.24.2",
       "license": "Apache-2.0",
       "url": "https://github.com/hasenbanck/sevenz-rust"
     },
@@ -3863,7 +3875,7 @@
     },
     {
       "name": "sysinfo",
-      "version": "0.39.6",
+      "version": "0.40.1",
       "license": "MIT",
       "url": "https://github.com/GuillaumeGomez/sysinfo"
     },
@@ -3929,7 +3941,7 @@
     },
     {
       "name": "tauri-plugin-dialog",
-      "version": "2.8.3",
+      "version": "2.8.4",
       "license": "Apache-2.0 OR MIT",
       "url": "https://github.com/tauri-apps/plugins-workspace"
     },
@@ -3953,7 +3965,7 @@
     },
     {
       "name": "tauri-plugin-notification",
-      "version": "2.7.0",
+      "version": "2.8.0",
       "license": "Apache-2.0 OR MIT",
       "url": "https://github.com/tauri-apps/plugins-workspace"
     },
@@ -4157,13 +4169,19 @@
     },
     {
       "name": "toml_datetime",
+      "version": "0.6.3",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/toml-rs/toml"
+    },
+    {
+      "name": "toml_datetime",
       "version": "1.1.1+spec-1.1.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/toml-rs/toml"
     },
     {
       "name": "toml_edit",
-      "version": "0.25.12+spec-1.1.0",
+      "version": "0.19.15",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/toml-rs/toml"
     },
@@ -4253,7 +4271,7 @@
     },
     {
       "name": "twox-hash",
-      "version": "2.1.2",
+      "version": "2.1.5",
       "license": "MIT",
       "url": "https://github.com/shepmaster/twox-hash"
     },
@@ -4385,7 +4403,7 @@
     },
     {
       "name": "usearch",
-      "version": "2.26.5",
+      "version": "2.26.6",
       "license": "Apache-2.0",
       "url": "https://github.com/unum-cloud/USearch"
     },
@@ -4523,7 +4541,7 @@
     },
     {
       "name": "xattr",
-      "version": "1.6.1",
+      "version": "1.7.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/Stebalien/xattr"
     },
@@ -4771,7 +4789,7 @@
     },
     {
       "name": "@tauri-apps/plugin-dialog",
-      "version": "2.8.3",
+      "version": "2.8.4",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/tauri-apps/plugins-workspace#readme"
     },
@@ -4801,7 +4819,7 @@
     },
     {
       "name": "@tauri-apps/plugin-updater",
-      "version": "2.14.0",
+      "version": "2.14.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/tauri-apps/plugins-workspace#readme"
     },
@@ -5365,7 +5383,7 @@
     },
     {
       "name": "svelte",
-      "version": "5.57.2",
+      "version": "5.57.3",
       "license": "MIT",
       "url": "https://svelte.dev"
     },
