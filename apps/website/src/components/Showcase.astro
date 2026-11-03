@@ -52,7 +52,7 @@ const reach = [
 
 <div class="showcase-tour">
     <!-- (a) Trust: the one thing no other file manager does goes first. -->
-    <ShowcaseSection id="trust" eyebrow="File operations" title="File ops you can trust" layout="stacked">
+    <ShowcaseSection id="trust" eyebrow="File operations" title="Rock solid file ops" layout="stacked">
         <p>
             Accurate progress display, ETAs, pause/resume/cancel.<br />Cmdr logs every operation,
             so you can roll them back, even days later.
@@ -61,26 +61,30 @@ const reach = [
             See <a href="/data-safety">How Cmdr keeps your files safe</a> for details.
         </p>
         <div slot="media" class="space-y-16 md:space-y-20">
-            <ShowcaseClipRow title="Pause, resume, roll back">
+            <ShowcaseClipRow title="File operations you can trust">
                 <p>
-                    Copy a big folder, pause it, and pick it up again. Changed your mind after it finished? Roll it
-                    back from the operation log, and every file goes back.
-                </p>
+                    When moving big folders around, it's essential to understand the progress of your transfer, and it
+                    feels very nice to be able to pause/resume it. You can also cancel (interrupt) or even roll back
+                    the entire action before it's done.</p>
+                <p>Later, you can see your past actions in an operations log, and roll back any action, even days later.</p>
                 <ProductClip
                     slot="clip"
                     slug="copy-rollback"
                     label="Copying a folder in Cmdr: the copy pauses, resumes, finishes, and then gets rolled back from the operation log."
+                    caption="Copy, pause, resume, then roll back the action"
                 />
             </ShowcaseClipRow>
-            <ShowcaseClipRow title="A queue for your file ops" flip>
+            <ShowcaseClipRow title="Queue them up" flip>
                 <p>
-                    Start five copies, send them to the background, and keep working. Cmdr runs them one after the
-                    other, and you can pause, resume, or reorder what's waiting.
+                    When you have many files/folders to move around, you can start one operation, send it to the
+                    background, and keep browsing your files. Then start another transfer, and another, etc. Cmdr keeps
+                    track of your queued transfers, and runs them one after the other. You can pause/resume, and reorder queue items.
                 </p>
                 <ProductClip
                     slot="clip"
                     slug="ops-queue"
                     label="Five folder copies queued in Cmdr's Operations window, running in the background one after the other until all are done."
+                    caption="See five backgrounded operations complete"
                 />
             </ShowcaseClipRow>
         </div>
@@ -105,6 +109,7 @@ const reach = [
                     slot="clip"
                     slug="reach-network"
                     label="Adding an SMB server, an NFS share, and an S3 bucket in Cmdr, then browsing each one in a pane."
+                    caption="Adding an SMB server, then browsing an NFS share and an S3 bucket"
                 />
             </ShowcaseClipRow>
             <ShowcaseClipRow title="Git repos, backups, and phones" flip>
@@ -116,6 +121,7 @@ const reach = [
                     slot="clip"
                     slug="reach-devices"
                     label="Browsing a git repo's history, a restic backup's snapshots, and an Android phone over MTP, each as folders in Cmdr."
+                    caption="Browsing Git history, restic snapshots, and an Android phone"
                 />
             </ShowcaseClipRow>
         </div>
@@ -174,7 +180,7 @@ const reach = [
     </ShowcaseSection>
 
     <!-- (e) AI, opt-in -->
-    <ShowcaseSection id="optional-ai" eyebrow="AI" title="Optional AI features">
+    <ShowcaseSection id="optional-ai" eyebrow="Optional!" title="AI features">
         <p>
             Set up an LLM in Cmdr to search in plain language. Type “my tax report from last year”, and
             the agent turns it into filters.
@@ -190,7 +196,7 @@ const reach = [
             <li class="flex gap-3">
                 <Icon name="sparkles" size={22} class="mt-0.5 shrink-0" />
                 <span
-                ><strong class="font-semibold text-text-primary">But it's quite cool!</strong> Smart disk cleanup, natural language search even in your photo content, ask stuff about your files. It's AI features that are <em>actually useful</em>.</span
+                ><strong class="font-semibold text-text-primary">But it's quite cool!</strong> "Help me clean up my Downloads folder" is a classic. But also "find my mule's medical papers" or even "find photos of penguins looking into the camera", or "summarize this PDF for me". It's AI features that are <em>actually useful</em>.</span
                 >
             </li>
             <li class="flex gap-3">
@@ -215,7 +221,7 @@ const reach = [
     </ShowcaseSection>
 
     <!-- (f) Craft -->
-    <ShowcaseSection id="follows-your-preferences" eyebrow="Details" title="Follows your preferences" flip>
+    <ShowcaseSection id="follows-your-preferences" eyebrow="Nice and polished" title="Follows your preferences" flip>
         <p>Cmdr respects your Mac’s look (color, theme, etc.) and accessibility (motion, zoom, contrast, etc.) settings.</p>
         <p>It lets you use VoiceOver, works with keyboard only, mouse only, and has WCAG AA+ contrast levels everywhere.</p>
         <p>Translated to 14 languages. Switch between them without restarting.</p>
