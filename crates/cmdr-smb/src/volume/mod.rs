@@ -115,7 +115,7 @@ const BACKEND: BackendName = "smb";
 #[derive(Clone)]
 pub struct SmbConnectionParams {
     /// Resolved server address (IP or hostname, ready to pass to
-    /// [`build_smb_addr`](crate::build_smb_addr)).
+    /// [`smb_addr`](crate::smb_addr)).
     ///
     /// NFC-normalized: see [`SmbConnectionParams::new`].
     pub server: String,

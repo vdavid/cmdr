@@ -176,7 +176,7 @@ cleartext password into `ps`-readable argv). See the "smbutil / smbclient fallba
 ### Always use IP when available
 
 Always pass the resolved IP from mDNS discovery when one is available; fall back to the hostname otherwise. The
-`.local` strip that fallback needs is `cmdr_smb::build_smb_addr`'s, and the reason for it lives with that code.
+`.local` resolution that fallback needs is `cmdr_smb::smb_addr`'s, and the reason for it lives with that code.
 
 ### Guest-first auth flow
 
@@ -1400,7 +1400,7 @@ credential's shape (`user_empty`, `user_domain=none|backslash|at`, `password_emp
 - **Every SMB secret Forget reads one scope** (`saved_servers::smb_hosts::smb_secret_scope`, #915): a host's listing id or a share's place id, resolved to every name the host's password can sit under (`SmbHostGroup::credential_names`: the dialed address, the discovery name, each row's server name and mount address, a discovered twin) plus the shares whose own entries go. `forget_server_secret`, `has_server_secret`, and `forget_saved_smb_host_password` all use it. Keyed by the share row's server name alone, the share's Forget missed the entries a mount or "Connect directly" filed under the dialed IP or the resolved hostname, and an SMB host's listing id answered a silent `false`.
 - **Linux `gio mount` requires GVFS**: The `gvfs-smb` package must be installed. Standard on Ubuntu/Fedora GNOME desktops. KDE desktops may need it explicitly.
 - **macOS smbutil and NetFSMountURLSync fail with loopback IP + non-standard port**: `//127.0.0.1:10480` gives "Broken pipe", but `//localhost:10480` works. `build_smbutil_url` and `NetworkMountView.svelte` both fall back to hostname when IP is `127.0.0.1` or `::1`. This matters for E2E testing against Docker containers on localhost.
-- **Mount URL must include port when non-standard**: `mount_share_sync` builds `smb://server:port/share` for non-445 ports. The port is passed as a separate parameter through `mount_share` → `mount_share_sync`, not embedded in the server string (embedding it would cause `cmdr_smb::build_smb_addr` to double the port: `localhost:10480:10480`). `SmbMountInfo.port` extracts the port from `statfs` mount source for upgrade paths.
+- **Mount URL must include port when non-standard**: `mount_share_sync` builds `smb://server:port/share` for non-445 ports. The port is passed as a separate parameter through `mount_share` → `mount_share_sync`, not embedded in the server string (embedding it would cause `cmdr_smb::smb_addr` to double the port: `localhost:10480:10480`). `SmbMountInfo.port` extracts the port from `statfs` mount source for upgrade paths.
 - **Manual hosts always set `hostname`**: The share listing pipeline guards on `host.hostname` being truthy. `create_network_host` always sets `hostname` (to the address, even for IPs) so manual hosts flow through the pipeline correctly.
 - **SMB upgrade waits briefly for mDNS to warm**: the browse runs only while something needs it (§ "Discovery runs only
   while something needs it"), so every upgrade meets a cold cache: `statfs` gives an IP (or an mDNS service name) and

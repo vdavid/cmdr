@@ -20,12 +20,17 @@ The test for the second one is a single question: **can the protocol and its own
 
 Here, because the answer is yes:
 
-- `build_smb_addr` — an `smb2` address string. Strips a `.local` suffix, because `smb2` puts the addr's host component
-  into UNC paths (`\\server\IPC$`) and some servers reject `.local` there. An IPv6 literal goes in bare (`fe80::1:445`)
-  and still dials: an address that doesn't parse as a socket address reaches the resolver split on its LAST colon. Bare,
-  bracketed, and expanded spellings all opened a share (verified on smb2 0.21.0 / tokio 1.53.1, `try_open_share` against
-  the `guest` fixture through a `[::1]` forwarder, 2026-09-10), so brackets would change nothing. In every spelling smb2
-  takes the UNC server name as what comes before the FIRST colon, and Samba ignores it.
+- `smb_addr` — an `smb2` address string. `smb2` uses ONE string for the TCP dial and the UNC server name
+  (`\\server\IPC$`), and some servers reject `.local` there, so an mDNS `.local` name is resolved (the system resolver
+  answers it through mDNS, bounded at 5 s) and dialed by its IPv4 address. ❗ Never by the stripped name when the name
+  resolves (#912): `nas` alone isn't an mDNS name, so a typed `nas.local` with no discovered IP never connected. Only
+  IPv6 dials as typed (a link-local scope can't ride an addr string); nothing resolved falls back to the stripped name
+  for unicast DNS. Every dial goes through it (listings, `try_open_share`, `probe_server_guid`, `build_session`, the
+  watcher), so a reconnect re-resolves. An IPv6 literal goes in bare (`fe80::1:445`) and still dials: an address that
+  doesn't parse as a socket address reaches the resolver split on its LAST colon. Bare, bracketed, and expanded
+  spellings all opened a share (verified on smb2 0.21.0 / tokio 1.53.1, `try_open_share` against the `guest` fixture
+  through a `[::1]` forwarder, 2026-09-10), so brackets would change nothing. In every spelling smb2 takes the UNC
+  server name as what comes before the FIRST colon, and Samba ignores it.
 - `is_auth_error` / `classify_error` / `classify_authenticated_error` — reading an `smb2::Error`. Every retry, fallback,
   and sign-in path branches on the first one, and it's the reason the `UpgradeFailure` log can name a rejected password
   even though its own enum has no auth variant. A named login answered with a guest session (`GuestSessionRefused`, smb2
@@ -99,7 +104,7 @@ to be argued for, and each raise since carries its argument below.
 of its methods are counted here. Everything that IS counted exists because something outside has to build a share or ask
 after one, and a new item should name which of three audiences it serves:
 
-- **The protocol layer**, for `network/`'s discovery, share-listing, and mount passes: `build_smb_addr`, the two
+- **The protocol layer**, for `network/`'s discovery, share-listing, and mount passes: `smb_addr`, the two
   `try_list_shares_*` calls, `try_open_share`, `probe_server_guid` (the server GUID a NEGOTIATE answers; a live
   session's comes off `SmbVolume::diagnostics`), the three `classify_*` / `is_auth_error` readers, `convert_shares`, and
   the four vocabulary types that cross IPC.
