@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {Copie} move {Déplacement} delete {Suppression} trash {Placement dans la corbeille} rename {Renommage} create_folder {Création du dossier} create_file {Création du fichier} archive_edit {Modification de l’archive} compress {Compression} other {En cours}}",
+  "queue.row.label": "{type, select, copy {Copie} move {Déplacement} delete {Suppression} trash {Placement dans la corbeille} rename {Renommage} create_folder {Création du dossier} create_file {Création du fichier} archive_edit {Modification de l’archive} compress {Compression} tag {Modification des tags} other {En cours}}",
   "@queue.row.label": {
-    "sourceHash": "3c8e776"
+    "sourceHash": "b051663"
   },
   "queue.row.reversalMovingBack": "Remise en place des fichiers",
   "@queue.row.reversalMovingBack": {
@@ -30,6 +30,10 @@
   "queue.row.reversalRenamingBack": "Restauration des anciens noms",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalRestoringTags": "Restauration des anciens tags",
+  "@queue.row.reversalRestoringTags": {
+    "sourceHash": "1b063e8"
   },
   "queue.row.reversalInFolder": "dans {folder}",
   "@queue.row.reversalInFolder": {

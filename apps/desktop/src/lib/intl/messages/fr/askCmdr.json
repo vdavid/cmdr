@@ -48,6 +48,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Ignorer",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "Vérification de ce que vous regardez",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -886,6 +890,22 @@
   "askCmdr.sessions.archivedBadge": "Archivée",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Effacer la recherche",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Conversations correspondantes",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} conversation} many {{countText} conversations} other {{countText} conversations}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144"
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Activité dans {folder}} one {Activité dans {folder} et {otherCountText} autre dossier} many {Activité dans {folder} et {otherCountText} autres dossiers} other {Activité dans {folder} et {otherCountText} autres dossiers}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Interroger la sélection",
   "@askCmdr.composer.attach": {

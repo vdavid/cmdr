@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Recherche en langage courant</b> : le texte que vous tapez, ou ce que demande un outil d’IA connecté une fois que vous avez activé le mode direct MCP",
+  "ai.cloudConsent.search": "<b>Recherche en langage courant</b> : le texte que vous tapez",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>Sélection par description</b> : ce que vous tapez, plus jusqu’à 240 noms du dossier actuel",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "Dans une conversation que vous avez lancée, Ask Cmdr peut aussi piloter l’app pour vous : naviguer, sélectionner, trier, ouvrir des onglets et des boîtes de dialogue, et se connecter à un emplacement enregistré. Copier, déplacer, compresser, supprimer, renommer et revenir en arrière sur une opération ouvrent chacun une boîte de dialogue ou un éditeur à confirmer, et rien ne se passe tant que vous n’avez pas confirmé. Avant d’ouvrir un fichier, de modifier un réglage (sauf l’apparence de Cmdr), de quitter, d’éjecter un disque, de retirer un serveur ou de modifier l’indexation, Cmdr vous pose la question. Créer un dossier ou un fichier nommé et ajouter des tags à des fichiers se font immédiatement, sans question, et il est impossible d’annuler une modification de tags. Les renommages et les rangements que Cmdr prépare sous forme de plan attendent votre approbation.",
+  "ai.cloudConsent.askCmdr.actions": "Dans une conversation que vous avez lancée, Ask Cmdr peut aussi piloter l’app pour vous : naviguer, sélectionner, trier, ouvrir des onglets et des boîtes de dialogue, et se connecter à un emplacement enregistré. Copier, déplacer, compresser, supprimer, renommer et revenir en arrière sur une opération ouvrent chacun une boîte de dialogue ou un éditeur à confirmer, et rien ne se passe tant que vous n’avez pas confirmé. Avant d’ouvrir un fichier, de modifier un réglage (sauf l’apparence de Cmdr), de quitter, d’éjecter un disque, de retirer un serveur ou de modifier l’indexation, Cmdr vous pose la question. Créer un dossier ou un fichier nommé et ajouter des tags à des fichiers se font immédiatement, sans question ; vous pouvez annuler une modification de tags. Les renommages et les rangements que Cmdr prépare sous forme de plan attendent votre approbation.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr se rédige des notes sur vous : comment vous aimez ranger les choses, ce que vous avez refusé avant, tout ce que vous lui demandez de retenir. Ces notes accompagnent chaque message que vous envoyez, tant qu’elles existent, et elles peuvent contenir du texte que Cmdr a reconnu dans vos photos. Vous pouvez les lire, ou les effacer, à tout moment dans les réglages d’Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {

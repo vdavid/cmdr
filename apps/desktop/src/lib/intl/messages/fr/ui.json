@@ -153,6 +153,18 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
+  "ui.toolAsk.setSetting.oldValue": "Ancienne valeur :",
+  "@ui.toolAsk.setSetting.oldValue": {
+    "sourceHash": "b692194"
+  },
+  "ui.toolAsk.setSetting.newValue": "Nouvelle valeur :",
+  "@ui.toolAsk.setSetting.newValue": {
+    "sourceHash": "dca4696"
+  },
+  "ui.toolAsk.setSetting.systemDefault": "Par défaut du système",
+  "@ui.toolAsk.setSetting.systemDefault": {
+    "sourceHash": "b045921"
+  },
   "ui.toolAsk.setSetting.emptyValue": "rien",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"
