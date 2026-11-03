@@ -8,7 +8,9 @@ import AppKit
 import FinderSync
 import os
 
-private let log = Logger(subsystem: "com.veszelovszki.cmdr.finder-extension", category: "menu")
+// `OSLog` with `os_log`, ❌ not `Logger`: `Logger` needs macOS 11, and the x86_64 slice targets 10.15
+// (`build.sh`), so it fails to compile there.
+private let log = OSLog(subsystem: "com.veszelovszki.cmdr.finder-extension", category: "menu")
 
 /// The service's default `NSMenuItem` title in `src-tauri/Info.plist`. `NSPerformService` finds a
 /// service by this text whatever the language, and it's the key of the translations in `lproj/`.
@@ -50,7 +52,7 @@ final class OpenInCmdr: FIFinderSync {
         // This process outlives the call, and the pasteboard's data is ours until the service has
         // read it, which is why it isn't released here. One unique pasteboard per click is small.
         if !NSPerformService(serviceName, pasteboard) {
-            log.error("macOS didn't run the Open in Cmdr service. Has it been switched off in System Settings?")
+            os_log("macOS didn't run the Open in Cmdr service. Has it been switched off in System Settings?", log: log, type: .error)
         }
     }
 }
