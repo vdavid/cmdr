@@ -127,8 +127,8 @@
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "921b5f6"
   },
-  "ai.cloudConsent.askCmdr.actions": "En un chat que hayas empezado tú, Ask Cmdr también puede manejar la app por ti: navegar, seleccionar, ordenar, abrir pestañas y diálogos, y conectar una ubicación que hayas guardado. Copiar, mover, comprimir, eliminar, renombrar y deshacer una operación abren cada uno un diálogo o un editor para que confirmes, y no pasa nada hasta que lo hagas. Antes de abrir un archivo, cambiar una opción (que no sea el aspecto de Cmdr), salir, expulsar una unidad, quitar un servidor o cambiar la indexación, te pregunta. Al instante y sin preguntarte nada, etiqueta archivos y crea carpetas o archivos con nombre, y las etiquetas no se pueden deshacer. Los cambios de nombre y las limpiezas que prepara como plan esperan tu aprobación.",
+  "ai.cloudConsent.askCmdr.actions": "En un chat que hayas empezado tú, Ask Cmdr también puede manejar la app por ti: navegar, seleccionar, ordenar, abrir pestañas y diálogos, y conectar una ubicación que hayas guardado. Copiar, mover, comprimir, eliminar, renombrar y deshacer una operación abren cada uno un diálogo o un editor para que confirmes, y no pasa nada hasta que lo hagas. Antes de abrir un archivo, cambiar una opción (que no sea el aspecto de Cmdr), salir, expulsar una unidad, quitar un servidor o cambiar la indexación, te pregunta. Al instante y sin preguntarte nada, etiqueta archivos y crea carpetas o archivos con nombre; un cambio de etiquetas se puede deshacer. Los cambios de nombre y las limpiezas que prepara como plan esperan tu aprobación.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "6d90410"
+    "sourceHash": "66cd58c"
   }
 }

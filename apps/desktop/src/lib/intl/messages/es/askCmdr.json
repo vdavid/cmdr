@@ -48,6 +48,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Descartar",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "Comprobando lo que estás viendo",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -886,6 +890,23 @@
   "askCmdr.sessions.archivedBadge": "Archivado",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Borrar la búsqueda",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Chats coincidentes",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} chat} many {{countText} chats} other {{countText} chats}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144",
+    "sameAsSourceJustification": "chat / chats es el préstamo que el termbase fija para el español (RAE); las ramas one / many / other son las del español."
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Actividad en {folder}} one {Actividad en {folder} y {otherCountText} carpeta más} many {Actividad en {folder} y {otherCountText} carpetas más} other {Actividad en {folder} y {otherCountText} carpetas más}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Preguntar sobre la selección",
   "@askCmdr.composer.attach": {

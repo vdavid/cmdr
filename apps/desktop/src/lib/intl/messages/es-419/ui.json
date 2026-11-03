@@ -38,5 +38,9 @@
   "ui.toolAsk.setSetting.title": "¿Cambiar esta opción?",
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "48ab07b"
+  },
+  "ui.toolAsk.setSetting.systemDefault": "Predeterminado del sistema",
+  "@ui.toolAsk.setSetting.systemDefault": {
+    "sourceHash": "c8aa231"
   }
 }

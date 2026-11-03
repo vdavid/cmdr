@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Búsqueda con tus propias palabras</b>: el texto que escribes o, una vez que actives el modo directo de MCP, lo que pida una herramienta de IA conectada",
+  "ai.cloudConsent.search": "<b>Búsqueda con tus propias palabras</b>: el texto que escribes",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>Selección por descripción</b>: lo que escribes, más hasta 240 nombres de la carpeta actual",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "En un chat que hayas empezado tú, Ask Cmdr también puede manejar la app por ti: navegar, seleccionar, ordenar, abrir pestañas y diálogos, y conectar una ubicación que hayas guardado. Copiar, mover, comprimir, eliminar, renombrar y deshacer una operación abren cada uno un diálogo o un editor para que confirmes, y no pasa nada hasta que lo hagas. Antes de abrir un archivo, cambiar un ajuste (que no sea el aspecto de Cmdr), salir, expulsar una unidad, quitar un servidor o cambiar la indexación, te pregunta. Al instante y sin preguntarte nada, etiqueta archivos y crea carpetas o archivos con nombre, y las etiquetas no se pueden deshacer. Los cambios de nombre y las limpiezas que prepara como plan esperan tu aprobación.",
+  "ai.cloudConsent.askCmdr.actions": "En un chat que hayas empezado tú, Ask Cmdr también puede manejar la app por ti: navegar, seleccionar, ordenar, abrir pestañas y diálogos, y conectar una ubicación que hayas guardado. Copiar, mover, comprimir, eliminar, renombrar y deshacer una operación abren cada uno un diálogo o un editor para que confirmes, y no pasa nada hasta que lo hagas. Antes de abrir un archivo, cambiar un ajuste (que no sea el aspecto de Cmdr), salir, expulsar una unidad, quitar un servidor o cambiar la indexación, te pregunta. Al instante y sin preguntarte nada, etiqueta archivos y crea carpetas o archivos con nombre; un cambio de etiquetas se puede deshacer. Los cambios de nombre y las limpiezas que prepara como plan esperan tu aprobación.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr se escribe notas sobre ti: cómo te gusta tener las cosas organizadas, qué has rechazado antes, todo lo que le pidas que recuerde. Esas notas viajan con cada mensaje que envías, mientras existan, y pueden incluir texto que Cmdr ha reconocido dentro de tus fotos. Puedes leerlas, o borrarlas, cuando quieras en los ajustes de Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {

@@ -151,6 +151,18 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
+  "ui.toolAsk.setSetting.oldValue": "Valor anterior:",
+  "@ui.toolAsk.setSetting.oldValue": {
+    "sourceHash": "b692194"
+  },
+  "ui.toolAsk.setSetting.newValue": "Valor nuevo:",
+  "@ui.toolAsk.setSetting.newValue": {
+    "sourceHash": "dca4696"
+  },
+  "ui.toolAsk.setSetting.systemDefault": "Por omisión del sistema",
+  "@ui.toolAsk.setSetting.systemDefault": {
+    "sourceHash": "b045921"
+  },
   "ui.toolAsk.setSetting.emptyValue": "nada",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"

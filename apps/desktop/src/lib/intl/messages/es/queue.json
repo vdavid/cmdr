@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {Copiando} move {Moviendo} delete {Eliminando} trash {Moviendo a la papelera} rename {Renombrando} create_folder {Creando carpeta} create_file {Creando archivo} archive_edit {Editando archivo comprimido} compress {Comprimiendo} other {Trabajando}}",
+  "queue.row.label": "{type, select, copy {Copiando} move {Moviendo} delete {Eliminando} trash {Moviendo a la papelera} rename {Renombrando} create_folder {Creando carpeta} create_file {Creando archivo} archive_edit {Editando archivo comprimido} compress {Comprimiendo} tag {Cambiando etiquetas} other {Trabajando}}",
   "@queue.row.label": {
-    "sourceHash": "3c8e776"
+    "sourceHash": "b051663"
   },
   "queue.row.reversalMovingBack": "Devolviendo los archivos",
   "@queue.row.reversalMovingBack": {
@@ -30,6 +30,10 @@
   "queue.row.reversalRenamingBack": "Restaurando los nombres anteriores",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalRestoringTags": "Restaurando las etiquetas anteriores",
+  "@queue.row.reversalRestoringTags": {
+    "sourceHash": "1b063e8"
   },
   "queue.row.reversalInFolder": "en “{folder}”",
   "@queue.row.reversalInFolder": {

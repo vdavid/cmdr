@@ -91,6 +91,10 @@
   "@operationLog.summary.compress": {
     "sourceHash": "24d78df"
   },
+  "operationLog.summary.tag": "{count, plural, one {Se cambiaron las etiquetas de {countText} elemento} many {Se cambiaron las etiquetas de {countText} elementos} other {Se cambiaron las etiquetas de {countText} elementos}}",
+  "@operationLog.summary.tag": {
+    "sourceHash": "6409218"
+  },
   "operationLog.summary.archiveEdit": "Se editó un archivo comprimido",
   "@operationLog.summary.archiveEdit": {
     "sourceHash": "a1bbfcb"
