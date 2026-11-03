@@ -27,7 +27,7 @@ fn fake_backend() -> Arc<dyn VisionBackend> {
 fn seed_importance(data_dir: &std::path::Path, volume_id: &str, rows: &[(&str, f64)]) {
     let path = importance_db_path(data_dir, volume_id);
     ImportanceStore::open(&path).expect("open importance store");
-    let writer = ImportanceWriter::spawn(&path).expect("importance writer");
+    let writer = ImportanceWriter::spawn(&path, None).expect("importance writer");
     let rows = rows
         .iter()
         .map(|(p, s)| WeightRow {

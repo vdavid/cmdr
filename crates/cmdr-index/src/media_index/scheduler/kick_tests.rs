@@ -172,7 +172,7 @@ pub(super) fn build_index(path: &std::path::Path, files: &[(&str, &str)]) {
 pub(super) fn seed_importance_full_pass(data_dir: &std::path::Path, rows: &[(&str, f64)]) {
     let path = importance_db_path(data_dir, ROOT);
     ImportanceStore::open(&path).expect("open importance store");
-    let writer = ImportanceWriter::spawn(&path).expect("importance writer");
+    let writer = ImportanceWriter::spawn(&path, None).expect("importance writer");
     let rows = rows
         .iter()
         .map(|(p, s)| WeightRow {
@@ -192,7 +192,7 @@ pub(super) fn seed_importance_full_pass(data_dir: &std::path::Path, rows: &[(&st
 fn seed_importance_incremental_only(data_dir: &std::path::Path, rows: &[(&str, f64)]) {
     let path = importance_db_path(data_dir, ROOT);
     ImportanceStore::open(&path).expect("open importance store");
-    let writer = ImportanceWriter::spawn(&path).expect("importance writer");
+    let writer = ImportanceWriter::spawn(&path, None).expect("importance writer");
     let rows = rows
         .iter()
         .map(|(p, s)| WeightRow {

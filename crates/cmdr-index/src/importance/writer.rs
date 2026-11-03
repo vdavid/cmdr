@@ -1,4 +1,5 @@
-//! `ImportanceWriter`: the single writer thread for one volume's `importance.db`.
+//! `ImportanceWriter`: the single writer thread for one volume's weights
+//! (`importance-{id}.db`) and visits (`visits-{id}.db`, attached to its connection).
 //!
 //! Mirrors the index's `IndexWriter` discipline: exactly ONE writer thread owns
 //! the single write connection per DB (the index's one-writer-per-DB invariant),
@@ -117,7 +118,7 @@ enum WriteMessage {
         rescored_subtrees: Vec<String>,
         reply: mpsc::Sender<IncrementalWrite>,
     },
-    /// Drop all weight and visit rows (a consumer forgot the volume).
+    /// Drop all weight rows, and visit rows when attached (a consumer forgot the volume).
     PurgeVolume,
     /// Record a navigation visit: bump the path's count and set its last-visit
     /// timestamp to `at_secs` (Unix seconds).
@@ -146,21 +147,27 @@ pub struct ImportanceWriter {
 }
 
 impl ImportanceWriter {
-    /// Spawn the writer thread with its own write connection to `db_path`.
+    /// Spawn the writer thread with its own write connection to the weights at
+    /// `db_path`, the visits file at `visits_db` attached (created if missing).
     ///
-    /// The DB file and schema must already exist (open the [`ImportanceStore`]
-    /// first, or let `open_write_connection` create them — it creates tables but
-    /// not the schema-version stamp; `ImportanceStore::open` owns that). In
-    /// practice the scheduler opens the store, then spawns the writer.
+    /// `visits_db` is `None` only for a writer staging weights (a test, a dev
+    /// tool): a [`record_visit`](Self::record_visit) then only logs a failure.
+    ///
+    /// Open the [`ImportanceStore`] first: it owns the schema-version stamp
+    /// `open_write_connection` doesn't write. The registry does both.
     ///
     /// [`ImportanceStore`]: super::store::ImportanceStore
-    pub fn spawn(db_path: &Path) -> Result<Self, ImportanceStoreError> {
+    pub fn spawn(db_path: &Path, visits_db: Option<&Path>) -> Result<Self, ImportanceStoreError> {
         let conn = open_write_connection(db_path)?;
+        if let Some(visits_db) = visits_db {
+            super::store::visits::attach(&conn, visits_db)?;
+        }
+        let has_visits = visits_db.is_some();
         let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(CHANNEL_CAPACITY);
 
         let handle = thread::Builder::new()
             .name("importance-writer".into())
-            .spawn(move || writer_loop(conn, receiver))
+            .spawn(move || writer_loop(conn, has_visits, receiver))
             .map_err(ImportanceStoreError::Io)?;
 
         Ok(Self {
@@ -170,7 +177,7 @@ impl ImportanceWriter {
         })
     }
 
-    /// The DB file this writer serves.
+    /// The weights file this writer serves.
     pub fn db_path(&self) -> &Path {
         &self.db_path
     }
@@ -336,7 +343,7 @@ impl ImportanceWriter {
 
 /// The writer thread's main loop: own the write connection, apply each message
 /// under a transaction, exit on `Shutdown` or when the channel closes.
-fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
+fn writer_loop(mut conn: Connection, has_visits: bool, receiver: mpsc::Receiver<WriteMessage>) {
     while let Ok(msg) = receiver.recv() {
         match msg {
             WriteMessage::WriteWeights {
@@ -374,12 +381,12 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
                 let _ = reply.send(write);
             }
             WriteMessage::PurgeVolume => {
-                if let Err(e) = apply_purge(&conn) {
+                if let Err(e) = apply_purge(&conn, has_visits) {
                     log::warn!(target: "importance", "purge_volume failed: {e}");
                 }
             }
             WriteMessage::RecordVisit { path, at_secs } => {
-                if let Err(e) = apply_visit(&conn, &path, at_secs) {
+                if let Err(e) = super::store::visits::bump(&conn, &path, at_secs) {
                     log::warn!(target: "importance", "record_visit failed: {e}");
                 }
             }
@@ -738,19 +745,12 @@ fn insert_rows<'a>(
     Ok(())
 }
 
-/// Drop every weight and visit row. Schema stays.
-fn apply_purge(conn: &Connection) -> Result<(), ImportanceStoreError> {
-    conn.execute_batch("DELETE FROM weights; DELETE FROM visits;")?;
-    Ok(())
-}
-
-/// Bump a path's visit count by one and set its last-visit timestamp.
-fn apply_visit(conn: &Connection, path: &str, at_secs: u64) -> Result<(), ImportanceStoreError> {
-    conn.execute(
-        "INSERT INTO visits (path_folded, path, visit_count, last_visit_secs) VALUES (?1, ?2, 1, ?3)
-         ON CONFLICT(path_folded) DO UPDATE SET visit_count = visit_count + 1, last_visit_secs = ?3",
-        rusqlite::params![normalize_for_comparison(path), path, at_secs as i64],
-    )?;
+/// Drop every weight row, and every visit row when attached. Schema stays.
+fn apply_purge(conn: &Connection, has_visits: bool) -> Result<(), ImportanceStoreError> {
+    conn.execute_batch("DELETE FROM weights;")?;
+    if has_visits {
+        conn.execute_batch("DELETE FROM visits;")?;
+    }
     Ok(())
 }
 

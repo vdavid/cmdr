@@ -1,11 +1,13 @@
 //! A volume's state on disk: every file the index keeps for one volume, and the
 //! one way any of them is removed.
 //!
-//! Three stores each keep a file set per volume, all named after the volume id:
-//! the drive index (`index-{id}.db`, in the drive-index dir, which the app keeps
-//! out of backups), folder importance (`importance-{id}.db`), and the media index
-//! (`media-{id}.db` plus the vector index it carries beside it), both in the data
-//! dir. [`StoreDirs`] says which folder each store is in. Each store opens and migrates its own database;
+//! Four stores each keep a file set per volume, all named after the volume id. Two
+//! are rebuildable caches in the drive-index dir, which the app keeps out of
+//! backups: the drive index (`index-{id}.db`) and importance's folder weights
+//! (`importance-{id}.db`). Two hold what a scan can't bring back and stay in the
+//! data dir: importance's navigation visits (`visits-{id}.db`) and the media index
+//! (`media-{id}.db` plus the vector index it carries beside it). [`StoreDirs`] says
+//! which folder each store is in. Each store opens and migrates its own database;
 //! what they share is here, because it's what goes wrong when it's spread out:
 //! the NAMES, and the decision of which stores go when a volume's files are
 //! removed. Removal used to live in each caller, and each one unlinked
@@ -28,13 +30,16 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::sqlite_util;
 
-/// One of the per-volume stores in the data dir.
+/// One of the per-volume stores.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum VolumeStore {
     /// The drive index: `index-{id}.db`.
     Index,
-    /// Folder importance: `importance-{id}.db`.
+    /// Folder importance's weights: `importance-{id}.db`. Rebuildable by a rescore.
     Importance,
+    /// Folder importance's navigation visits: `visits-{id}.db`. NOT rebuildable:
+    /// it records where the user actually went.
+    Visits,
     /// The media index: `media-{id}.db`, and one vector index per ANN space.
     Media,
 }
@@ -63,14 +68,15 @@ pub(crate) fn ann_file(media_db: &Path, space: &str, extension: &str) -> PathBuf
     media_db.with_file_name(format!("{stem}.{space}.{extension}"))
 }
 
-/// The folders the per-volume stores live in: the drive index in its own,
-/// importance and media in the data dir. One folder for both is fine (tests, and
-/// a host that keeps everything together).
+/// The folders the per-volume stores live in: the rebuildable caches (the drive
+/// index and importance's weights) in the drive-index dir, and what a scan can't
+/// bring back (visits and media) in the data dir. One folder for both is fine
+/// (tests, and a host that keeps everything together).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct StoreDirs {
-    /// Importance and media.
+    /// Importance's visits and the media index: backed up.
     pub(crate) data: PathBuf,
-    /// The drive index.
+    /// The drive index and importance's weights: kept out of backups.
     pub(crate) drive_index: PathBuf,
 }
 
@@ -93,8 +99,21 @@ impl StoreDirs {
         Self { data, drive_index }
     }
 
+    /// The folders for the host whose data dir is `data_dir`: the configured ones
+    /// when the host configured that data dir, else every store in `data_dir` (a
+    /// test or a tool handing over a folder of its own).
+    ///
+    /// The data dir is what names an index instance across the crate's API (a
+    /// host passes the one it configured), so this is how a store that isn't in
+    /// the data dir is found from it without deriving one folder from another.
+    pub(crate) fn for_data_dir(data_dir: &Path) -> Self {
+        match Self::configured() {
+            Ok(dirs) if dirs.data == data_dir => dirs,
+            _ => Self::single(data_dir),
+        }
+    }
+
     /// Every store in `dir`.
-    #[cfg(test)]
     pub(crate) fn single(dir: &Path) -> Self {
         Self {
             data: dir.to_path_buf(),
@@ -105,14 +124,19 @@ impl StoreDirs {
     /// The folder `store` keeps its files in.
     pub(crate) fn of(&self, store: VolumeStore) -> &Path {
         match store {
-            VolumeStore::Index => &self.drive_index,
-            VolumeStore::Importance | VolumeStore::Media => &self.data,
+            VolumeStore::Index | VolumeStore::Importance => &self.drive_index,
+            VolumeStore::Visits | VolumeStore::Media => &self.data,
         }
     }
 
     /// `store`'s database for `volume_id`.
     pub(crate) fn db_path(&self, store: VolumeStore, volume_id: &str) -> PathBuf {
         store.db_path(self.of(store), volume_id)
+    }
+
+    /// Whether the data dir and the drive-index dir are one folder.
+    pub(crate) fn is_single(&self) -> bool {
+        self.data == self.drive_index
     }
 
     /// Each distinct folder once, so a scan over both never reads one twice.
@@ -127,13 +151,19 @@ impl StoreDirs {
 
 impl VolumeStore {
     /// Every store, in the order a removal works through them.
-    pub(crate) const ALL: [VolumeStore; 3] = [VolumeStore::Index, VolumeStore::Importance, VolumeStore::Media];
+    pub(crate) const ALL: [VolumeStore; 4] = [
+        VolumeStore::Index,
+        VolumeStore::Importance,
+        VolumeStore::Visits,
+        VolumeStore::Media,
+    ];
 
     /// What this store's file names start with, before the volume id.
     fn prefix(self) -> &'static str {
         match self {
             VolumeStore::Index => "index-",
             VolumeStore::Importance => "importance-",
+            VolumeStore::Visits => "visits-",
             VolumeStore::Media => "media-",
         }
     }
@@ -155,7 +185,7 @@ impl VolumeStore {
     /// What the store keeps beside its database that SQLite doesn't own.
     fn derived_files(self, db_path: &Path) -> Vec<PathBuf> {
         match self {
-            VolumeStore::Index | VolumeStore::Importance => Vec::new(),
+            VolumeStore::Index | VolumeStore::Importance | VolumeStore::Visits => Vec::new(),
             VolumeStore::Media => ANN_SPACES
                 .iter()
                 .flat_map(|space| ANN_EXTENSIONS.map(|extension| ann_file(db_path, space, extension)))
@@ -179,7 +209,8 @@ pub(crate) enum Removal {
     /// the retention cap evicted it as abandoned.
     Forgotten,
     /// The volume stays and its index database is being thrown away to be built
-    /// again: it failed, or its rows predate this build's exclusion policy.
+    /// again: it failed, or its rows predate this build's exclusion policy. The
+    /// weights scored from it go too; the visits stay.
     IndexRebuild,
     /// Nothing can ever open these files again: they are keyed by a volume ID from
     /// a retired scheme.
@@ -195,12 +226,14 @@ impl Removal {
     pub(crate) fn takes(self, store: VolumeStore) -> bool {
         match (self, store) {
             (Removal::Forgotten | Removal::IndexRebuild | Removal::Unreachable, VolumeStore::Index) => true,
-            // Importance scores the folders of an index that's going, so it goes
-            // with a forgotten volume. A rebuild keeps it: the volume is staying,
-            // the next completed scan rescores it in full, and the visit history
-            // in it isn't something a scan can bring back.
-            (Removal::Forgotten | Removal::Unreachable, VolumeStore::Importance) => true,
-            (Removal::IndexRebuild, VolumeStore::Importance) => false,
+            // The weights score the folders of the index that's going, so they go
+            // with it every time: a rebuild's next completed scan rescores in full.
+            (Removal::Forgotten | Removal::IndexRebuild | Removal::Unreachable, VolumeStore::Importance) => true,
+            // The visits are the user's navigation history, which no scan can bring
+            // back: a forgotten volume takes them, a rebuild keeps them (the volume
+            // is staying, and its next scores still want them).
+            (Removal::Forgotten | Removal::Unreachable, VolumeStore::Visits) => true,
+            (Removal::IndexRebuild, VolumeStore::Visits) => false,
             // ⚠️ Forgetting a volume's INDEX deliberately keeps its media index.
             // Those rows are hours of OCR and embedding work, the media subsystem
             // deletes rows on exactly four named paths and never on a volume's
@@ -452,8 +485,11 @@ mod tests {
     fn each_removal_takes_the_stores_it_names_and_no_others() {
         let dir = tempfile::tempdir().expect("temp dir");
         let cases = [
-            (Removal::Forgotten, vec![VolumeStore::Index, VolumeStore::Importance]),
-            (Removal::IndexRebuild, vec![VolumeStore::Index]),
+            (
+                Removal::Forgotten,
+                vec![VolumeStore::Index, VolumeStore::Importance, VolumeStore::Visits],
+            ),
+            (Removal::IndexRebuild, vec![VolumeStore::Index, VolumeStore::Importance]),
             (Removal::Unreachable, VolumeStore::ALL.to_vec()),
         ];
         let dirs = StoreDirs::single(dir.path());
@@ -492,15 +528,15 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp dir");
         let dirs = StoreDirs::single(dir.path());
         write_every_file(&dirs, VOLUME_ID);
-        let importance_db = VolumeStore::Importance.db_path(dir.path(), VOLUME_ID);
+        let visits_db = VolumeStore::Visits.db_path(dir.path(), VOLUME_ID);
 
         // What the holder saw when it was called: whether the database was still
         // on disk. Keyed on this test's own data dir, since the registry is
         // process-wide.
         let seen: std::sync::Arc<Mutex<Vec<bool>>> = std::sync::Arc::default();
-        let (seen_by_holder, own_dir, held_db) = (seen.clone(), dir.path().to_path_buf(), importance_db.clone());
+        let (seen_by_holder, own_dir, held_db) = (seen.clone(), dir.path().to_path_buf(), visits_db.clone());
         register_holder(
-            VolumeStore::Importance,
+            VolumeStore::Visits,
             Box::new(move |data_dir, volume_id| {
                 if data_dir == own_dir && volume_id == VOLUME_ID {
                     seen_by_holder.lock_ignore_poison().push(held_db.exists());
@@ -520,7 +556,7 @@ mod tests {
             [true],
             "asked once, while the database was still there"
         );
-        assert!(!importance_db.exists());
+        assert!(!visits_db.exists());
     }
 
     #[test]
@@ -530,7 +566,9 @@ mod tests {
             "index-root.db",
             "index-root.db-wal",
             "importance-root.db",
+            "visits-root.db",
             "importance-smb-index-already-gone.db",
+            "visits-smb-visits-only.db",
             "media-smb-media-only.db",
             "operation-log.db",
         ] {
@@ -540,14 +578,25 @@ mod tests {
         let dirs = StoreDirs::single(dir.path());
         let mut forgettable = volume_ids_on_disk(&dirs, Removal::Forgotten);
         forgettable.sort();
-        assert_eq!(forgettable, ["root", "smb-index-already-gone"]);
+        assert_eq!(forgettable, ["root", "smb-index-already-gone", "smb-visits-only"]);
+
+        let mut rebuildable = volume_ids_on_disk(&dirs, Removal::IndexRebuild);
+        rebuildable.sort();
+        assert_eq!(
+            rebuildable,
+            ["root", "smb-index-already-gone"],
+            "a rebuild never reads visits"
+        );
 
         let mut unreachable = volume_ids_on_disk(&dirs, Removal::Unreachable);
         unreachable.sort();
-        assert_eq!(unreachable, ["root", "smb-index-already-gone", "smb-media-only"]);
+        assert_eq!(
+            unreachable,
+            ["root", "smb-index-already-gone", "smb-media-only", "smb-visits-only"]
+        );
 
-        assert_eq!(bytes_on_disk(&dirs, "root", Removal::Forgotten), 30);
-        assert_eq!(bytes_on_disk(&dirs, "root", Removal::IndexRebuild), 20);
+        assert_eq!(bytes_on_disk(&dirs, "root", Removal::Forgotten), 40);
+        assert_eq!(bytes_on_disk(&dirs, "root", Removal::IndexRebuild), 30);
     }
 
     /// With the drive index in a folder of its own, each store is found, measured,
@@ -563,18 +612,26 @@ mod tests {
         std::fs::create_dir_all(&dirs.data).expect("data");
         std::fs::create_dir_all(&dirs.drive_index).expect("cache");
         let written = write_every_file(&dirs, VOLUME_ID);
-        std::fs::write(dirs.drive_index.join("importance-stray.db"), [0u8; 4]).expect("stray");
+        std::fs::write(dirs.drive_index.join("visits-stray.db"), [0u8; 4]).expect("stray");
         std::fs::write(dirs.data.join("index-left-behind.db"), [0u8; 4]).expect("stray");
+        std::fs::write(dirs.data.join("importance-left-behind.db"), [0u8; 4]).expect("stray");
 
         assert_eq!(volume_ids_on_disk(&dirs, Removal::Unreachable), [VOLUME_ID]);
         assert_eq!(
             bytes_on_disk(&dirs, VOLUME_ID, Removal::Unreachable),
             16 * written.len() as u64
         );
-        assert!(
-            dirs.db_path(VolumeStore::Index, VOLUME_ID)
-                .starts_with(&dirs.drive_index)
-        );
+        // The rebuildable caches stay out of backups; what a scan can't bring back
+        // stays in them.
+        for store in [VolumeStore::Index, VolumeStore::Importance] {
+            assert!(
+                dirs.db_path(store, VOLUME_ID).starts_with(&dirs.drive_index),
+                "{store:?}"
+            );
+        }
+        for store in [VolumeStore::Visits, VolumeStore::Media] {
+            assert!(dirs.db_path(store, VOLUME_ID).starts_with(&dirs.data), "{store:?}");
+        }
 
         remove(&dirs, VOLUME_ID, Removal::Unreachable).expect("remove");
         for (_, file) in &written {

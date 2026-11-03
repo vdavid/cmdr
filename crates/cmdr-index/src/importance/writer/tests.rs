@@ -17,7 +17,7 @@ fn wal_len(db_path: &Path) -> u64 {
 fn writer(dir: &Path) -> (ImportanceWriter, PathBuf) {
     let db_path = importance_db_path(dir, "root");
     ImportanceStore::open(&db_path).expect("open store");
-    let w = ImportanceWriter::spawn(&db_path).expect("spawn writer");
+    let w = ImportanceWriter::spawn(&db_path, None).expect("spawn writer");
     (w, db_path)
 }
 

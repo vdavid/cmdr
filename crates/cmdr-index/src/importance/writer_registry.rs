@@ -3,7 +3,7 @@
 //! The subsystem's "ONE writer thread per DB" invariant (mirroring the index's
 //! `IndexWriter`) must hold in spirit, not just be papered over by WAL
 //! busy-timeouts: both the recompute scheduler and the `record_visit` command
-//! write to a volume's `importance.db`, and if each spawned its own short-lived
+//! write to a volume's importance stores, and if each spawned its own short-lived
 //! writer thread they'd be two writers on one file. This registry hands both a
 //! SHARED, long-lived writer per volume, created on first use and living until
 //! the volume's importance database is removed.
@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Mutex;
 
-use super::store::{ImportanceStoreError, importance_db_path};
+use super::store::{ImportanceStoreError, importance_db_path, visits_db_path};
 use super::writer::ImportanceWriter;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
@@ -40,9 +40,9 @@ impl WriterRegistry {
         Self::default()
     }
 
-    /// Get (or lazily create) the shared writer for `volume_id`, whose
-    /// `importance.db` lives under `data_dir`. Returns a cloned handle sharing the
-    /// one writer thread.
+    /// Get (or lazily create) the shared writer for `volume_id`, for the host
+    /// whose data dir is `data_dir`: its weights wherever `StoreDirs` keeps them,
+    /// its visits attached. Returns a cloned handle sharing the one writer thread.
     ///
     /// The DB file and schema are opened first ([`super::store::ImportanceStore`]
     /// owns the schema-version stamp) so the writer's own connection finds the
@@ -60,7 +60,7 @@ impl WriterRegistry {
         // last handle drops); no second live writer persists on the DB.
         let db_path = importance_db_path(data_dir, volume_id);
         super::store::ImportanceStore::open(&db_path)?; // create file + schema.
-        let built = ImportanceWriter::spawn(&db_path)?;
+        let built = ImportanceWriter::spawn(&db_path, Some(&visits_db_path(data_dir, volume_id)))?;
 
         let mut map = self.writers.lock_ignore_poison();
         let entry = map.entry(volume_id.to_string()).or_insert(built);

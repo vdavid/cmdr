@@ -403,7 +403,7 @@ fn a_share_opened_as_another_account_keeps_its_own_rows() {
 /// and is still scoring.
 fn write_empty_db(dir: &Path, volume_id: &str) {
     use cmdr_index::importance::testing::{ImportanceWriter, importance_db_path};
-    let writer = ImportanceWriter::spawn(&importance_db_path(dir, volume_id)).expect("spawn writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(dir, volume_id), None).expect("spawn writer");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
 }

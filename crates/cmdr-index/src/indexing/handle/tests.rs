@@ -40,6 +40,57 @@ fn a_second_build_reports_already_built_rather_than_a_second_index() {
     }
 }
 
+/// Building the index splits an older build's combined importance store before
+/// anything can open it: the visits land in their own file in the data dir, and
+/// the old file leaves the data dir (and with it, the backups).
+#[test]
+fn building_splits_an_older_builds_importance_store() {
+    let _serialized = crate::indexing::handle::test_lock();
+    let _released = Index::release_build_claim_for_test();
+    let root = tempfile::tempdir().expect("temp dir");
+    let (data, cache) = (root.path().join("data"), root.path().join("cache"));
+    std::fs::create_dir_all(&data).expect("data");
+    // Restores the config `build()` installs for good (see the test above).
+    let _config = crate::indexing::host::config::install_data_dir_for_test(&data);
+    let old = data.join("importance-root.db");
+    {
+        let conn = cmdr_fs::sqlite_util::open(&old).expect("open");
+        conn.execute_batch(
+            "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             INSERT INTO meta VALUES ('schema_version', '3');
+             CREATE TABLE weights (path_folded TEXT PRIMARY KEY, path TEXT NOT NULL, score REAL NOT NULL,
+                 signals TEXT NOT NULL, as_of_generation INTEGER NOT NULL);
+             CREATE TABLE visits (path_folded TEXT PRIMARY KEY, path TEXT NOT NULL,
+                 visit_count INTEGER NOT NULL DEFAULT 0, last_visit_secs INTEGER NOT NULL DEFAULT 0);
+             INSERT INTO visits VALUES ('/users/me', '/Users/me', 4, 40);",
+        )
+        .expect("an older build's combined store");
+    }
+
+    Index::builder()
+        .config(crate::host::config::IndexConfig {
+            data_dir: data.clone(),
+            drive_index_dir: cache.clone(),
+            ..crate::host::config::IndexConfig::default()
+        })
+        .build()
+        .expect("build");
+
+    assert!(!old.exists(), "the combined store left the data dir");
+    let visits: (String, i64) = cmdr_fs::sqlite_util::open(&data.join("visits-root.db"))
+        .expect("visits")
+        .query_row("SELECT path, visit_count FROM visits", [], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .expect("the visit came over");
+    assert_eq!(visits, ("/Users/me".to_string(), 4));
+    assert_eq!(
+        crate::importance::store::importance_db_path(&data, "root"),
+        cache.join("importance-root.db"),
+        "the weights now live beside the drive index"
+    );
+}
+
 /// Three files and a subdirectory on a volume that exists only in memory.
 fn in_memory_share(root: &str) -> Arc<dyn Volume> {
     let entries = vec![

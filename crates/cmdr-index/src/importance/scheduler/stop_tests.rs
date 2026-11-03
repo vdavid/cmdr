@@ -210,7 +210,7 @@ fn scoring_stops_at_its_next_look_and_returns_no_rows() {
 fn a_stopped_full_pass_leaves_the_last_finished_pass_in_place() {
     let dir = tempfile::tempdir().expect("temp");
     let home = "/Users/test";
-    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID)).expect("writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID), None).expect("writer");
 
     // A finished pass over one set of folders.
     let before_paths = user_folders(home, "Documents", 40);
@@ -277,7 +277,7 @@ fn a_stopped_full_pass_leaves_the_last_finished_pass_in_place() {
 fn a_stopped_first_pass_is_still_owed() {
     let dir = tempfile::tempdir().expect("temp");
     let home = "/Users/test";
-    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID)).expect("writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID), None).expect("writer");
     let paths = user_folders(home, "Documents", 10);
     let path_refs: Vec<&str> = paths.iter().map(String::as_str).collect();
 

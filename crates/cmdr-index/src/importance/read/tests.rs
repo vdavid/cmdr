@@ -24,7 +24,7 @@ fn signals_json(path_class: PathClass, mtime: Option<u64>) -> String {
 fn populated_index(rows: &[(&str, f64, PathClass)]) -> (ImportanceIndex, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = importance_db_path(dir.path(), "root");
-    let writer = ImportanceWriter::spawn(&db_path).expect("spawn writer");
+    let writer = ImportanceWriter::spawn(&db_path, None).expect("spawn writer");
     let weight_rows: Vec<WeightRow> = rows
         .iter()
         .map(|(path, score, class)| WeightRow {
@@ -173,7 +173,7 @@ fn explain_round_trips_the_stored_signals_and_sums_to_score() {
 
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = importance_db_path(dir.path(), "root");
-    let writer = ImportanceWriter::spawn(&db_path).expect("spawn");
+    let writer = ImportanceWriter::spawn(&db_path, None).expect("spawn");
     writer
         .write_weights(
             1,
@@ -362,7 +362,7 @@ fn a_stored_weight_carries_the_raw_signal_vector() {
 fn as_of_generation_reflects_the_latest_full_pass() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = importance_db_path(dir.path(), "root");
-    let writer = ImportanceWriter::spawn(&db_path).expect("spawn");
+    let writer = ImportanceWriter::spawn(&db_path, None).expect("spawn");
     // Full pass 1 writes /old at gen 1.
     writer
         .write_weights(

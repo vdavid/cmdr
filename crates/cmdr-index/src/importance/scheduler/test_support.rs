@@ -25,7 +25,7 @@ pub(super) static NEVER_STOPPED: std::sync::LazyLock<CancellationToken> =
 /// Full-pass a hand-built walk, returning the writer + store path for a follow-up
 /// incremental. Shared by the two transition tests.
 pub(super) fn full_pass_walk(dir: &std::path::Path, home: &str, folders: &mut WalkedFolders) -> ImportanceWriter {
-    let writer = ImportanceWriter::spawn(&importance_db_path(dir, ROOT_VOLUME_ID)).expect("writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(dir, ROOT_VOLUME_ID), None).expect("writer");
     recompute_folders(
         &RecomputeInputs {
             writer: &writer,

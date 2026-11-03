@@ -23,7 +23,7 @@ fn write_into(data_dir: &Path, volume_id: &str, generation: u64, rows: &[(&str, 
     let mut signals = FolderSignals::neutral();
     signals.path_class = PathClass::UserContent;
     let signals_json = serde_json::to_string(&signals).expect("serialize signals");
-    let writer = ImportanceWriter::spawn(&importance_db_path(data_dir, volume_id)).expect("spawn writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(data_dir, volume_id), None).expect("spawn writer");
     writer
         .write_weights(
             generation,

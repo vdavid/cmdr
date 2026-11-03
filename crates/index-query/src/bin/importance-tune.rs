@@ -10,8 +10,8 @@
 //! Usage:
 //!   cargo run -p index-query --bin importance-tune -- <importance.db> <top_n>
 //!
-//! Find the DB in the app data dir as `importance-root.db` (the drive
-//! index lives in the cache dir instead). `top_n` defaults to 30.
+//! Find the DB in the cache dir beside the drive index, as
+//! `drive-index/importance-root.db` (the visits live apart, in the data dir). `top_n` defaults to 30.
 
 use cmdr_index::importance::{ImportanceIndex, SignalSet};
 

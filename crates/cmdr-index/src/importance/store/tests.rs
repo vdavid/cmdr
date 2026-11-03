@@ -1,5 +1,6 @@
-//! `importance.db` store tests: smoke round-trip first, then the disposable-cache
-//! discipline and the as-of-generation staleness predicate.
+//! Importance store tests: smoke round-trip first, then the disposable-cache
+//! discipline, the as-of-generation staleness predicate, and the visits file
+//! beside it. The older build's split is in `legacy_split_tests.rs`.
 
 use super::*;
 use crate::importance::writer::{ImportanceWriter, SUBTREE_READ_SQL, WeightRow};
@@ -36,7 +37,7 @@ fn explain_plan(conn: &Connection, sql: &str) -> String {
 fn subtree_read_is_index_served() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");
-    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    let writer = ImportanceWriter::spawn(&path, None).expect("spawn");
 
     // Populate a realistically-shaped tree so the planner sees a genuine b-tree.
     let mut rows = Vec::new();
@@ -82,7 +83,7 @@ fn smoke_round_trips_one_weight() {
     assert_eq!(store.recompute_generation().expect("gen"), 0);
 
     // Write one weight at generation 1 through the writer thread.
-    let writer = ImportanceWriter::spawn(&path).expect("spawn writer");
+    let writer = ImportanceWriter::spawn(&path, None).expect("spawn writer");
     writer
         .write_weights(
             1,
@@ -117,7 +118,7 @@ fn schema_mismatch_recreates_the_db() {
 
     // Create a DB and write a weight.
     {
-        let writer = ImportanceWriter::spawn(&path).expect("spawn");
+        let writer = ImportanceWriter::spawn(&path, None).expect("spawn");
         writer
             .write_weights(
                 1,
@@ -164,7 +165,7 @@ fn schema_mismatch_recreates_the_db() {
 fn weight_lookup_is_platform_case_insensitive() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");
-    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    let writer = ImportanceWriter::spawn(&path, None).expect("spawn");
     writer
         .write_weights(
             1,
@@ -196,7 +197,7 @@ fn weight_lookup_is_platform_case_insensitive() {
 fn incremental_write_resolves_a_case_and_nfd_variant() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");
-    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    let writer = ImportanceWriter::spawn(&path, None).expect("spawn");
 
     // Full pass at generation 1 (an unrelated row, so the store isn't empty).
     writer
@@ -249,7 +250,7 @@ fn incremental_write_resolves_a_case_and_nfd_variant() {
 fn a_full_pass_replaces_the_table_and_restamps_the_generation() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");
-    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    let writer = ImportanceWriter::spawn(&path, None).expect("spawn");
 
     // Pass 1 writes /old and /keep at generation 1.
     writer
@@ -319,7 +320,7 @@ fn a_full_pass_replaces_the_table_and_restamps_the_generation() {
 fn writing_the_same_path_upserts() {
     let (store, _dir) = fresh_store();
     let path = store.db_path().to_path_buf();
-    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    let writer = ImportanceWriter::spawn(&path, None).expect("spawn");
 
     writer
         .write_weights(
@@ -356,9 +357,10 @@ fn writing_the_same_path_upserts() {
 /// file stays; only the data goes). Used when a consumer forgets a volume.
 #[test]
 fn purge_clears_weights_and_visits() {
-    let (store, _dir) = fresh_store();
+    let (store, dir) = fresh_store();
     let path = store.db_path().to_path_buf();
-    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    let visits_db = visits_db_path(dir.path(), "root");
+    let writer = ImportanceWriter::spawn(&path, Some(&visits_db)).expect("spawn");
     writer
         .write_weights(
             1,
@@ -377,7 +379,11 @@ fn purge_clears_weights_and_visits() {
 
     let store2 = ImportanceStore::open(&path).expect("open");
     assert_eq!(store2.weight_for("/p").expect("read"), None, "weights gone after purge");
-    assert_eq!(store2.visit_for("/p").expect("read"), None, "visits gone after purge");
+    assert_eq!(
+        visits::visit_for(&visits_db, "/p").expect("read"),
+        None,
+        "visits gone after purge"
+    );
     writer.shutdown();
 }
 
@@ -386,20 +392,78 @@ fn purge_clears_weights_and_visits() {
 /// the privacy-sane shape.
 #[test]
 fn record_visit_accumulates_count_and_recency() {
-    let (store, _dir) = fresh_store();
+    let (store, dir) = fresh_store();
     let path = store.db_path().to_path_buf();
-    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    let visits_db = visits_db_path(dir.path(), "root");
+    let writer = ImportanceWriter::spawn(&path, Some(&visits_db)).expect("spawn");
 
     writer.record_visit("/Users/me/docs", 1000).expect("visit 1");
     writer.flush_blocking().expect("flush");
     writer.record_visit("/Users/me/docs", 2000).expect("visit 2");
     writer.flush_blocking().expect("flush");
 
-    let store2 = ImportanceStore::open(&path).expect("open");
-    let (count, last) = store2.visit_for("/Users/me/docs").expect("read").expect("present");
+    let (count, last) = visits::visit_for(&visits_db, "/Users/me/docs")
+        .expect("read")
+        .expect("present");
     assert_eq!(count, 2, "two visits ⇒ count 2");
     assert_eq!(last, 2000, "last-visit timestamp advances to the newer visit");
+    assert!(
+        !holds_visits(&path),
+        "the visits land in their own file, never in the weights"
+    );
     writer.shutdown();
+}
+
+/// A writer staging weights only (a test, a dev tool) has nowhere to put a visit:
+/// the write fails and logs, and the weights file never grows a `visits` table.
+#[test]
+fn a_weights_only_writer_records_no_visit() {
+    let (store, dir) = fresh_store();
+    let path = store.db_path().to_path_buf();
+    let writer = ImportanceWriter::spawn(&path, None).expect("spawn");
+    writer.record_visit("/Users/me/docs", 1000).expect("queued");
+    writer.flush_blocking().expect("flush");
+    assert!(!holds_visits(&path));
+    assert!(!visits_db_path(dir.path(), "root").exists());
+    writer.shutdown();
+}
+
+/// A schema bump recreates the weights, and an older build's combined file that
+/// still holds visits is the one file it must never recreate: the split hasn't
+/// moved them yet. The open refuses, and the file stays whole for the next split.
+#[test]
+fn a_weights_open_never_recreates_a_file_still_holding_visits() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+    {
+        let conn = cmdr_fs::sqlite_util::open(&path).expect("open");
+        conn.execute_batch(
+            "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             INSERT INTO meta VALUES ('schema_version', '3');
+             CREATE TABLE visits (path_folded TEXT PRIMARY KEY, path TEXT NOT NULL,
+                 visit_count INTEGER NOT NULL DEFAULT 0, last_visit_secs INTEGER NOT NULL DEFAULT 0);
+             INSERT INTO visits VALUES ('/users/me', '/Users/me', 7, 70);",
+        )
+        .expect("an older build's combined store");
+    }
+
+    assert!(matches!(
+        ImportanceStore::open(&path),
+        Err(ImportanceStoreError::HoldsVisits)
+    ));
+    assert!(matches!(
+        needs_full_pass(dir.path(), "root", None),
+        Err(ImportanceStoreError::HoldsVisits)
+    ));
+    assert!(holds_visits(&path), "the visits are still there");
+
+    // An EMPTY visits table has nothing to lose, so that file recreates as usual.
+    cmdr_fs::sqlite_util::open(&path)
+        .expect("open")
+        .execute_batch("DELETE FROM visits;")
+        .expect("empty it");
+    let store = ImportanceStore::open(&path).expect("recreated");
+    assert_eq!(store.recompute_generation().expect("generation"), 0);
 }
 
 /// The prod schema-3 upgrade ordering trap. A prod user's `importance.db`
@@ -481,7 +545,7 @@ fn needs_full_pass_is_false_for_an_already_scored_store() {
 
 /// Run one full pass over a store, the way the scheduler's recompute does.
 fn write_one_full_pass(path: &Path) {
-    let writer = ImportanceWriter::spawn(path).expect("spawn");
+    let writer = ImportanceWriter::spawn(path, None).expect("spawn");
     writer
         .write_weights(
             1,
@@ -574,15 +638,14 @@ fn an_unstamped_store_needs_a_full_pass() {
     );
 }
 
-/// The rescore is forced by a STAMP rather than a [`SCHEMA_VERSION`] bump, and this
-/// is why: a bump deletes the DB file, and `visits` is the one table here that isn't
-/// regenerable. A superseded policy must re-arm the weights while the user's
-/// navigation history survives.
+/// A superseded policy re-arms the weights while the user's navigation history
+/// survives.
 #[test]
 fn re_arming_the_scoring_policy_keeps_the_visit_history() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");
-    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    let visits_db = visits_db_path(dir.path(), "root");
+    let writer = ImportanceWriter::spawn(&path, Some(&visits_db)).expect("spawn");
     writer.record_visit("/Users/me/projects/thing", 1_000).expect("visit");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
@@ -601,9 +664,8 @@ fn re_arming_the_scoring_policy_keeps_the_visit_history() {
         "a pass is due"
     );
 
-    let store = ImportanceStore::open(&path).expect("reopen");
     assert_eq!(
-        store.visit_for("/Users/me/projects/thing").expect("visit"),
+        visits::visit_for(&visits_db, "/Users/me/projects/thing").expect("visit"),
         Some((1, 1_000)),
         "the probe re-arms the weights without touching the visit history"
     );
@@ -629,7 +691,7 @@ fn read_connections_get_a_smaller_page_cache_than_write_connections() {
 
 /// One full pass over a store, stamped as scored against the index scan `scan`.
 fn write_a_pass_against(path: &Path, scan: Option<&str>) {
-    let writer = ImportanceWriter::spawn(path).expect("spawn");
+    let writer = ImportanceWriter::spawn(path, None).expect("spawn");
     let rows = vec![WeightRow {
         path: "/p".to_string(),
         score: 0.5,

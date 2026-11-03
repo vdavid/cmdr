@@ -120,7 +120,7 @@ fn wire_volume_does_not_kick_a_pass_for_an_already_scored_volume() {
     install_index_for(dir.path(), SCORED_VOLUME_ID);
 
     // Seed a completed full pass: generation 1, stamped with this build's policy.
-    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), SCORED_VOLUME_ID)).expect("writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), SCORED_VOLUME_ID), None).expect("writer");
     writer
         .write_weights(
             1,
@@ -175,6 +175,7 @@ fn a_forgotten_volumes_writer_lets_go_of_its_database() {
     let scheduler = Arc::new(ImportanceScheduler::new(dir.path().to_path_buf()));
     wiring::hold_the_importance_store(&scheduler);
     let importance_db = importance_db_path(dir.path(), VOLUME_ID);
+    let visits_db = crate::importance::store::visits_db_path(dir.path(), VOLUME_ID);
     let visits = |db: &std::path::Path| -> i64 {
         open_read_connection(db)
             .and_then(|conn| Ok(conn.query_row("SELECT COUNT(*) FROM visits", [], |row| row.get(0))?))
@@ -184,10 +185,13 @@ fn a_forgotten_volumes_writer_lets_go_of_its_database() {
     let first = scheduler.writer_for(VOLUME_ID).expect("writer");
     first.record_visit("/share/photos", 1).expect("visit");
     first.flush_blocking().expect("flush");
-    let files = cmdr_fs::sqlite_util::database_files(&importance_db);
+    let files: Vec<_> = [&importance_db, &visits_db]
+        .into_iter()
+        .flat_map(|db| cmdr_fs::sqlite_util::database_files(db))
+        .collect();
     assert!(
         files.iter().all(|file| file.exists()),
-        "test setup: a live writer keeps the database, its WAL, and its SHM on disk"
+        "test setup: a live writer keeps both databases, their WALs, and their SHMs on disk"
     );
 
     volume_files::remove(&StoreDirs::single(dir.path()), VOLUME_ID, Removal::Forgotten).expect("forget");
@@ -205,9 +209,60 @@ fn a_forgotten_volumes_writer_lets_go_of_its_database() {
     second.record_visit("/share/music", 3).expect("visit");
     second.flush_blocking().expect("flush");
     assert_eq!(
-        visits(&importance_db),
+        visits(&visits_db),
         1,
         "the new database holds the new visit and nothing of the forgotten one"
+    );
+}
+
+/// A rebuild throws the volume's weights away with its index, and keeps its
+/// visits: the writer lets go of both files (it holds them on one connection), and
+/// the next one finds the old visits where they were.
+#[test]
+fn a_rebuild_drops_the_weights_and_keeps_the_visits() {
+    use crate::volume_files::{self, Removal, StoreDirs};
+    const VOLUME_ID: &str = "smb-wiring-rebuilt";
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let scheduler = Arc::new(ImportanceScheduler::new(dir.path().to_path_buf()));
+    wiring::hold_the_importance_store(&scheduler);
+    let importance_db = importance_db_path(dir.path(), VOLUME_ID);
+    let visits_db = crate::importance::store::visits_db_path(dir.path(), VOLUME_ID);
+
+    let first = scheduler.writer_for(VOLUME_ID).expect("writer");
+    first.record_visit("/share/photos", 1).expect("visit");
+    first
+        .write_weights(
+            1,
+            vec![WeightRow {
+                path: "/share/photos".to_string(),
+                score: 0.5,
+                signals_json: "{}".to_string(),
+            }],
+        )
+        .expect("weights");
+    first.flush_blocking().expect("flush");
+
+    volume_files::remove(&StoreDirs::single(dir.path()), VOLUME_ID, Removal::IndexRebuild).expect("rebuild");
+
+    assert!(!importance_db.exists(), "the weights go with the index");
+    assert!(
+        first.record_visit("/share/photos", 2).is_err(),
+        "the old writer let go of both files"
+    );
+    let second = scheduler.writer_for(VOLUME_ID).expect("a fresh writer");
+    second.record_visit("/share/photos", 3).expect("visit");
+    second.flush_blocking().expect("flush");
+    assert_eq!(
+        crate::importance::store::visits::visit_for(&visits_db, "/share/photos").expect("read"),
+        Some((2, 3)),
+        "the visit from before the rebuild still counts"
+    );
+    let weights = ImportanceStore::open(&importance_db).expect("weights");
+    assert_eq!(
+        weights.recompute_generation().expect("generation"),
+        0,
+        "rescored from scratch"
     );
 }
 
