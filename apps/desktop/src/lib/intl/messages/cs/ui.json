@@ -152,6 +152,18 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
+  "ui.toolAsk.setSetting.oldValue": "Původní hodnota:",
+  "@ui.toolAsk.setSetting.oldValue": {
+    "sourceHash": "b692194"
+  },
+  "ui.toolAsk.setSetting.newValue": "Nová hodnota:",
+  "@ui.toolAsk.setSetting.newValue": {
+    "sourceHash": "dca4696"
+  },
+  "ui.toolAsk.setSetting.systemDefault": "Podle systému",
+  "@ui.toolAsk.setSetting.systemDefault": {
+    "sourceHash": "b045921"
+  },
   "ui.toolAsk.setSetting.emptyValue": "nic",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"

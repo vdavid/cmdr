@@ -381,7 +381,8 @@
       "settings.appearance.language.description": "System default rendered Podle systému: gender-free across jazyk/formát and matches the theme option Podle systému",
       "settings.appearance.dateTimeFormat.opt.system": "System default rendered Podle systému: gender-free across jazyk/formát and matches the theme option Podle systému",
       "settings.behavior.textEditorApp.systemDefault": "System default rendered Podle systému like settings.appearance.language.opt.systemWithLanguage: same English, same translation",
-      "settings.behavior.textEditorApp.systemDefaultUnnamed": "System default rendered Podle systému like settings.appearance.language.opt.system: same English, same translation"
+      "settings.behavior.textEditorApp.systemDefaultUnnamed": "System default rendered Podle systému like settings.appearance.language.opt.system: same English, same translation",
+      "ui.toolAsk.setSetting.systemDefault": "Names the text editor setting's system value, so it repeats that option's label settings.behavior.textEditorApp.systemDefaultUnnamed: same English, same translation"
     }
   },
   "delete": {

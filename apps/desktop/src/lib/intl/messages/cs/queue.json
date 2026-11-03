@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {Kopírování} move {Přesouvání} delete {Mazání} trash {Přesouvání do koše} rename {Přejmenovávání} create_folder {Vytváření složky} create_file {Vytváření souboru} archive_edit {Úprava archivu} compress {Komprimování} other {Probíhá operace}}",
+  "queue.row.label": "{type, select, copy {Kopírování} move {Přesouvání} delete {Mazání} trash {Přesouvání do koše} rename {Přejmenovávání} create_folder {Vytváření složky} create_file {Vytváření souboru} archive_edit {Úprava archivu} compress {Komprimování} tag {Změna značek} other {Probíhá operace}}",
   "@queue.row.label": {
-    "sourceHash": "3c8e776"
+    "sourceHash": "b051663"
   },
   "queue.row.reversalMovingBack": "Vracení souborů zpět",
   "@queue.row.reversalMovingBack": {
@@ -30,6 +30,10 @@
   "queue.row.reversalRenamingBack": "Vracení původních názvů",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalRestoringTags": "Vracení původních značek",
+  "@queue.row.reversalRestoringTags": {
+    "sourceHash": "1b063e8"
   },
   "queue.row.reversalInFolder": "ve složce {folder}",
   "@queue.row.reversalInFolder": {

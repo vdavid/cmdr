@@ -48,6 +48,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Zavřít",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "Kontroluje se, na co se díváte",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -884,6 +888,22 @@
   "askCmdr.sessions.archivedBadge": "Archivováno",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Vymazat hledání",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Odpovídající chaty",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} chat} few {{countText} chaty} many {{countText} chatu} other {{countText} chatů}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144"
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Aktivita ve složce {folder}} one {Aktivita: {folder} a {otherCountText} další složka} few {Aktivita: {folder} a {otherCountText} další složky} many {Aktivita: {folder} a {otherCountText} další složky} other {Aktivita: {folder} a {otherCountText} dalších složek}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Zeptat se na výběr",
   "@askCmdr.composer.attach": {

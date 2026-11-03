@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Hledání běžnými slovy</b>: text, který napíšete, nebo to, o co požádá připojený nástroj AI poté, co zapnete přímý režim MCP",
+  "ai.cloudConsent.search": "<b>Hledání běžnými slovy</b>: text, který napíšete",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>Výběr podle popisu</b>: co napíšete, plus až 240 názvů z aktuální složky",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "V chatu, který jste zahájili, může Ask Cmdr aplikaci také ovládat za vás: přejít do složky, vybírat, řadit, otevírat záložky a dialogová okna a připojit místo, které jste si uložili. Při kopírování, přesunu, komprimování, mazání, přejmenování a odvolání operace se pokaždé otevře dialogové okno nebo editor, kde to potvrdíte, a dokud to neuděláte, nic se nestane. Před otevřením souboru, změnou nastavení (kromě vzhledu Cmdru), ukončením, vysunutím disku, odstraněním serveru a změnou indexování se vás nejdřív zeptá. Vytvoření pojmenované složky nebo souboru a označení souborů značkami proběhnou hned a bez ptaní a značky nelze odvolat. Přejmenování a úklid, které připraví jako plán, čekají na vaše schválení.",
+  "ai.cloudConsent.askCmdr.actions": "V chatu, který jste zahájili, může Ask Cmdr aplikaci také ovládat za vás: přejít do složky, vybírat, řadit, otevírat záložky a dialogová okna a připojit místo, které jste si uložili. Při kopírování, přesunu, komprimování, mazání, přejmenování a odvolání operace se pokaždé otevře dialogové okno nebo editor, kde to potvrdíte, a dokud to neuděláte, nic se nestane. Před otevřením souboru, změnou nastavení (kromě vzhledu Cmdru), ukončením, vysunutím disku, odstraněním serveru a změnou indexování se vás nejdřív zeptá. Vytvoření pojmenované složky nebo souboru a označení souborů značkami proběhnou hned a bez ptaní; změnu značek můžete odvolat. Přejmenování a úklid, které připraví jako plán, čekají na vaše schválení.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr si o vás zapisuje poznámky: jak chcete mít věci uspořádané, co jste už dřív odmítli, a cokoli, co si má na vaši žádost zapamatovat. Tyto poznámky se odesílají s každou zprávou, kterou pošlete, dokud existují, a můžou obsahovat text, který Cmdr rozpoznal ve vašich fotkách. Kdykoli si je můžete přečíst nebo vymazat v nastavení Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {

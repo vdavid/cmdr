@@ -525,6 +525,10 @@
   "@fileOperations.transferProgress.titleReversalDeleting": {
     "sourceHash": "587f4a3"
   },
+  "fileOperations.transferProgress.titleReversalRestoringTags": "{count, plural, =0 {Vracení původních značek} one {Vracení původních značek u {countText} souboru} few {Vracení původních značek u {countText} souborů} many {Vracení původních značek u {countText} souboru} other {Vracení původních značek u {countText} souborů}}…",
+  "@fileOperations.transferProgress.titleReversalRestoringTags": {
+    "sourceHash": "71e6947"
+  },
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Vracení původních názvů} one {Vracení původního názvu} few {Vracení {countText} původních názvů} many {Vracení {countText} původního názvu} other {Vracení {countText} původních názvů}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
     "sourceHash": "2ad8510"
@@ -1020,6 +1024,10 @@
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Tímto se souborům vrátí jejich původní názvy. Cmdr přeskočí vše, čím si není jistý, takže pár souborů si může ponechat současné názvy.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
     "sourceHash": "37932e7"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTags": "Tímto se souborům vrátí značky, které měly dřív. Cmdr přeskočí každý soubor, jehož značky se od té doby změnily, takže pár souborů si může ponechat současné značky.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTags": {
+    "sourceHash": "9dc7b0d"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "Nechat beze změny",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
