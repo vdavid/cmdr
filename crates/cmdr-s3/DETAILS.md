@@ -660,8 +660,10 @@ abort it on the spot; what an abort can't reach (a crash, a dropped future, a se
   `UploadGuard` so no sweep races them. Each round asks through the volume's client of THAT moment (`OnLiveVolume`): a
   retired volume or a session that's down ends them, and a quit drops the task. Every end but a confirmed one leaves the
   record for the next connect's sweep (the guard's `Drop`). Why: a server slow to list held every cancelled upload up to
-  four rounds before the cancel answered (`abort_confirm_test.rs`). The sweep keeps its rounds inline: it's background
-  work already.
+  four rounds before the cancel answered (`abort_confirm_test.rs`, which holds the listing until the write answers and
+  carries no wall-clock deadline: a 5 s one timed out under a loaded `pnpm check` though the write never waits, verified
+  2026-11-03 on an M1 Max by starving it to one tokio worker beside 400 spinning threads, where it answered in 2–4 s
+  with the listing held for 20 s, #896). The sweep keeps its rounds inline: it's background work already.
 - **The sweep** (`S3VolumeInner::sweep_unfinished_uploads`) runs in the background at every connect and after a
   reconnect, and aborts the account's open records that no task in this process is running. A record the server confirms
   gone (aborted now or already) is forgotten; any other answer keeps it for the next connect. ❌ It never aborts an
