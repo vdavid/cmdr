@@ -793,6 +793,12 @@ emits). Tests that inject synthetic watcher events must call `wait_for_watcher_s
 since the watcher isn't live the instant open returns. Pinned by `tail_mode_on_extends_backend_when_watcher_reports_grew`
 and `test_append_during_upgrade_not_dropped`.
 
+**`set_tail_mode` stores the flag and returns; ❌ never stat inline.** The catch-up for growth while tail was off
+(`catch_up_on_tail_enable`) runs on a detached thread and drives `handle_watcher_event(Grew)`, so the FE hears `grew`
+and refetches like any append. Gotcha/Why: the stat ran inline under the command's 2 s timeout, so on a stalled network
+mount the FE's switch flipped back off while the flag here stayed on (#153). Pinned by
+`set_tail_mode_returns_while_the_catch_up_check_is_still_waiting_on_the_file` (`test_gate::TAIL_CATCH_UP`).
+
 **Tail-extend race against an encoding rebuild.** `apply_tail_extend` snapshots the active backend `Arc`, drops the
 SESSIONS lock, runs `extend_to_boxed` (multi-second on a multi-MB append), then re-acquires the lock. If an encoding
 rebuild installed a fresh backend during the unlocked window, storing the stale extend would clobber it. The fix:

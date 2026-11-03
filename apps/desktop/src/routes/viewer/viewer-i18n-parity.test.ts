@@ -197,7 +197,6 @@ describe('viewer reload toast + copy/save toasts (en)', () => {
     expect(tString('viewer.copy.clipboardUnreachable')).toBe('Couldn’t reach the clipboard. Try again?')
     expect(tString('viewer.copy.readTooLong')).toBe('The read took too long. Try a smaller selection?')
     expect(tString('viewer.copy.copyFailed')).toBe('Couldn’t copy the selection. Try again?')
-    expect(tString('viewer.copy.readFailed')).toBe('Couldn’t read the selection. Try again?')
   })
 
   it('matches the save-as strings', () => {

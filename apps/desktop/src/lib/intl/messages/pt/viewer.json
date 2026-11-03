@@ -420,10 +420,6 @@
   "@viewer.copy.copyFailed": {
     "sourceHash": "b08416d"
   },
-  "viewer.copy.readFailed": "Não foi possível ler a seleção. Tentar de novo?",
-  "@viewer.copy.readFailed": {
-    "sourceHash": "24ea14a"
-  },
   "viewer.saveAs.title": "Salvar seleção",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"

@@ -55,10 +55,6 @@
   "@viewer.copy.copyFailed": {
     "sourceHash": "343c970"
   },
-  "viewer.copy.readFailed": "No se pudo leer la selección. ¿Reintentar?",
-  "@viewer.copy.readFailed": {
-    "sourceHash": "94c6ce5"
-  },
   "viewer.saveAs.panelFailed": "No se pudo abrir el panel de guardado. ¿Reintentar?",
   "@viewer.saveAs.panelFailed": {
     "sourceHash": "2c56d19"

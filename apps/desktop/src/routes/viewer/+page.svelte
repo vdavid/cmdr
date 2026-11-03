@@ -47,6 +47,9 @@
     import { createViewerKeyboard, isSearchInputFocused } from './viewer-keyboard'
     import { editSurfaceFor, runViewerContextMenuAction, runViewerEditAction } from './viewer-menu-actions'
     import { createViewerTail } from './viewer-tail.svelte'
+    import { logSessionOpFailure, sessionOpFailureKey, type SessionOp } from './viewer-session-op-failure'
+    import type { ViewerError } from '#lib/tauri-commands/index.js'
+    import { addToast } from '#lib/ui/toast/toast-store.svelte.js'
     import {
         createViewerSelection,
         describeSelectionForAt,
@@ -163,43 +166,54 @@
         },
     })
 
+    /**
+     * The backend's view of the file moved (a tail extend, or a reload from the toast). Refetch
+     * the visible window so the new bytes show immediately, and restart the indexing poll so
+     * the status bar's `totalLines` / `totalBytes` follow (the backend advanced them, but the
+     * FE state is updated by the poll). The poll self-terminates once it sees
+     * `is_indexing: false` again, so this is cheap.
+     */
+    function refetchAfterBackendChange(): void {
+        scroll.clearCache()
+        scroll.fetchVisibleNow()
+        indexingPoll.start()
+    }
+
     const viewerTail = createViewerTail({
         getSessionId: () => sessionId,
         getTailMode: () => tailMode,
-        onAppendDetected: () => {
-            // Tail mode is on: the backend already extended its index in
-            // response to the watcher event. Refetch the visible window so the
-            // user sees the new bytes immediately, and restart the indexing
-            // poll so the status bar's `totalLines` / `totalBytes` reflect the
-            // new content (the BE advanced `total_bytes` inside
-            // `apply_tail_extend`, but the FE state is updated by the poll).
-            // The poll self-terminates once it sees `is_indexing: false` again,
-            // so this is cheap.
-            scroll.clearCache()
-            scroll.fetchVisibleNow()
-            indexingPoll.start()
-        },
+        onAppendDetected: refetchAfterBackendChange,
+        onReloaded: refetchAfterBackendChange,
     })
+
+    /** Says a session op didn't take, logged at the level its kind earns. One toast id per op, so repeats replace. */
+    function reportSessionOpFailure(op: SessionOp, error: ViewerError | null): void {
+        logSessionOpFailure(log, op, error)
+        addToast(tString(sessionOpFailureKey(op, error)), { id: `viewer-session-op-${op}`, level: 'warn' })
+    }
 
     /**
      * Set the tail-mode flag and push the new value down to the backend. Tail
      * mode is per-session only: it starts off on every viewer open unless the
      * opener asked for `tail=1`, and isn't persisted across sessions. Calling
-     * without a sessionId (during startup) is a no-op.
+     * without a sessionId (during startup) is a no-op. The backend stores the
+     * flag and returns (its catch-up check runs in the background), so a
+     * refusal here means the flag didn't change: the switch goes back and says so.
      */
     async function setTailMode(next: boolean): Promise<void> {
         if (!sessionId) return
         tailMode = next
+        const op: SessionOp = next ? 'tailOn' : 'tailOff'
         try {
             const res = await viewerSetTailMode(sessionId, next)
             if (res.status === 'error') {
-                log.warn('viewer_set_tail_mode failed: {error}', { error: res.error })
                 tailMode = !next
-                return
+                reportSessionOpFailure(op, res.error)
             }
         } catch (e) {
-            log.warn('viewer_set_tail_mode threw: {error}', { error: e })
+            log.error('viewer_set_tail_mode threw: {error}', { error: e })
             tailMode = !next
+            reportSessionOpFailure(op, null)
         }
     }
 
@@ -288,8 +302,8 @@
         try {
             const res = await viewerSetEncoding(sessionId, encoding)
             if (res.status === 'error') {
-                log.error('set_encoding failed: {message}', { message: res.error })
                 currentEncoding = prev
+                reportSessionOpFailure('encoding', res.error)
                 return
             }
             scroll.clearCache()
@@ -303,6 +317,7 @@
         } catch (e) {
             log.error('set_encoding threw: {error}', { error: e })
             currentEncoding = prev
+            reportSessionOpFailure('encoding', null)
         }
     }
 

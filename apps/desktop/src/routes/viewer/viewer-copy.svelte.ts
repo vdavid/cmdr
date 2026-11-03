@@ -252,14 +252,18 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
     addToast(tString('viewer.copy.nothingSelected'), { level: 'info', id: 'viewer-copy-nothing-selected' })
   }
 
-  /** The toast for a confirmed read that didn't finish. `cancelled` is the user's Escape: no toast. */
-  function reportReadFailure(failure: RangeFailure): void {
+  /**
+   * The one report for a copy read that didn't finish, whichever band ran it (silent, confirmed, or
+   * unknown size). `cancelled` is the user's Escape: no toast. `band` only names the branch in the log.
+   */
+  function reportRangeFailure(failure: RangeFailure, band: 'silent' | 'confirm' | 'unknownSize'): void {
     if (failure.reason === 'cancelled') return
-    log.warn('Confirmed copy read failed: reason={reason}, error={error}', {
+    log.warn('Copy read failed: band={band}, reason={reason}, error={error}', {
+      band,
       reason: failure.reason,
       error: failure.error ? JSON.stringify(failure.error) : 'none',
     })
-    addToast(tString(failure.reason === 'timedOut' ? 'viewer.copy.readTooLong' : 'viewer.copy.readFailed'), {
+    addToast(tString(failure.reason === 'timedOut' ? 'viewer.copy.readTooLong' : 'viewer.copy.copyFailed'), {
       level: 'warn',
     })
   }
@@ -278,16 +282,7 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
         await handleSilentCopy(outcome.text)
         return
       case 'silent-error':
-        if (outcome.reason === 'cancelled') return // user pressed Escape, intentional
-        log.warn('Silent-band copy read failed: reason={reason}, error={error}', {
-          reason: outcome.reason,
-          error: outcome.error ? JSON.stringify(outcome.error) : 'none',
-        })
-        if (outcome.reason === 'timedOut') {
-          addToast(tString('viewer.copy.readTooLong'), { level: 'warn' })
-        } else {
-          addToast(tString('viewer.copy.copyFailed'), { level: 'warn' })
-        }
+        reportRangeFailure({ ok: false, reason: outcome.reason, error: outcome.error }, 'silent')
         return
       case 'confirm':
         confirmBytes = outcome.bytes
@@ -295,7 +290,7 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
           confirmBytes = null
           const res = await outcome.proceed()
           if (res.ok) await handleSilentCopy(res.text)
-          else reportReadFailure(res)
+          else reportRangeFailure(res, 'confirm')
         }
         return
       case 'unknown-size':
@@ -306,7 +301,7 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
           confirmBytes = null
           const res = await outcome.proceed()
           if (res.ok) await handleSilentCopy(res.text)
-          else reportReadFailure(res)
+          else reportRangeFailure(res, 'unknownSize')
         }
         return
       case 'refuse':

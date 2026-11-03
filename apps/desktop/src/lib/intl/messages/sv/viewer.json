@@ -424,10 +424,6 @@
   "@viewer.copy.copyFailed": {
     "sourceHash": "b08416d"
   },
-  "viewer.copy.readFailed": "Det gick inte att läsa markeringen. Försök igen?",
-  "@viewer.copy.readFailed": {
-    "sourceHash": "24ea14a"
-  },
   "viewer.saveAs.title": "Spara markering",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"

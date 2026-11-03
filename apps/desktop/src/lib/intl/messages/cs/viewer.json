@@ -422,10 +422,6 @@
   "@viewer.copy.copyFailed": {
     "sourceHash": "b08416d"
   },
-  "viewer.copy.readFailed": "Výběr se nepodařilo přečíst. Zkusíte to znovu?",
-  "@viewer.copy.readFailed": {
-    "sourceHash": "24ea14a"
-  },
   "viewer.saveAs.title": "Uložit výběr",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"
