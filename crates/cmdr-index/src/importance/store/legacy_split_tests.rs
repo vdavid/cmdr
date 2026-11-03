@@ -579,6 +579,49 @@ fn the_copy_and_the_token_are_written_durably() {
     }
 }
 
+/// The clock moved back after a split, so an older build's fresh visits carry
+/// timestamps from before it. A row that beats what the ledger saw for its path is
+/// still new history and adds, rather than being taken for a restored copy.
+#[test]
+fn a_clock_set_back_after_a_split_still_adds_a_downgrades_visits() {
+    let d = Dirs::apart();
+    write_legacy(&d.old(), &TWO_VISITS);
+    split_legacy_stores(&d.dirs);
+
+    write_legacy(
+        &d.old(),
+        &[("/Users/me/projects", 13, 500), ("/Users/me/Music", 1, 500)],
+    );
+    split_legacy_stores(&d.dirs);
+
+    assert_eq!(
+        all_visits(&d.visits()),
+        rows(&[
+            ("/Users/me/projects", 25, 1_000),
+            ("/Users/me/Downloads", 3, 900),
+            ("/Users/me/Music", 1, 500),
+        ])
+    );
+}
+
+/// A panic in the split or in its report still ends the background run: nothing
+/// waits out the cap behind it.
+#[test]
+fn a_panicking_background_split_still_lets_waiters_go() {
+    let d = Dirs::apart();
+    write_legacy(&d.old(), &TWO_VISITS);
+
+    split_in_background(d.dirs.clone(), |_| panic!("the report panics"));
+    let started = std::time::Instant::now();
+    wait_for_background_split();
+
+    assert!(
+        started.elapsed() < std::time::Duration::from_secs(5),
+        "{:?}",
+        started.elapsed()
+    );
+}
+
 /// The split runs off the caller's thread; whatever needs the visits waits for it.
 #[test]
 fn a_background_split_is_waited_for() {

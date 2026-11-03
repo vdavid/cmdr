@@ -202,12 +202,13 @@ then ONE `rename` of the database file. A crash at any point leaves either nothi
 
 `IndexBuilder::build` starts it right after the drive-index move, every launch, on a blocking thread (`build` runs on
 the host's setup thread, which a slow disk must never hold up). Everything that opens the visits or the weights (the
-writer registry, the launch probe, a pass's visit read) waits for it first through `wait_for_background_split`, and the
-instance lock keeps other processes out. For each `importance-{id}.db` in the data dir that still has a `visits` table,
-it moves the visits into `visits-{id}.db` and deletes the old file. Unlike the move it runs when both folders are one
-too (the visits must leave the combined file either way), and in that layout a weights-only file at the same path is
-this build's own store and is left alone. The module docs carry the per-volume cases. The shape that makes it
-crash-safe:
+writer registry, the launch probe, a pass's visit read), and every `volume_files::remove` (a forget at launch could
+otherwise delete files the split then recreates), waits for it first. The wait is `volume_files::wait_for_store_work`,
+marked by a drop guard so a panicking split can't leave waiters hanging, and the instance lock keeps other processes
+out. For each `importance-{id}.db` in the data dir that still has a `visits` table, it moves the visits into
+`visits-{id}.db` and deletes the old file. Unlike the move it runs when both folders are one too (the visits must leave
+the combined file either way), and in that layout a weights-only file at the same path is this build's own store and is
+left alone. The module docs carry the per-volume cases. The shape that makes it crash-safe:
 
 1. Stamp a random token into the OLD file's `meta` (kept if it has one).
 2. In ONE transaction on the NEW file, merge the old rows in, record the token in `split_from`, and record in the

@@ -25,11 +25,14 @@
 //! - **A token already in the ledger** (a re-run, an older build that kept writing
 //!   into a file whose delete failed, a restored copy taken after the stamp): adds
 //!   only what the row has beyond what that token contributed.
-//! - **A new token, a row last visited AFTER the latest split**: visits recorded
-//!   since, by an older build that started a fresh combined file. Added.
-//! - **A new token, a row last visited at or before the latest split**: history
-//!   the visits file already holds (Time Machine restored a copy of the old store
-//!   from before its split). Merged by `max`, so it adds nothing it already has.
+//! - **A new token, a row last visited at or before the latest split AND no more
+//!   visited than an earlier file's ledger says it was**: history the visits file
+//!   already holds (Time Machine restored a copy of the old store from before its
+//!   split). Merged by `max`, so it adds nothing it already has.
+//! - **Any other row of a new token**: visits recorded since, by an older build
+//!   that started a fresh combined file. Added. The ledger test is what keeps a
+//!   clock set back after a split from dropping those: wall clock alone isn't
+//!   trusted.
 //!
 //! The other cases, per volume:
 //!
@@ -46,15 +49,12 @@
 
 use std::io::ErrorKind;
 use std::path::Path;
-use std::sync::{Condvar, Mutex};
-use std::time::Duration;
 
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior};
 
 use super::ImportanceStoreError;
 use crate::indexing::store::normalize_for_comparison;
 use crate::volume_files::{StoreDirs, VolumeStore};
-use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::sqlite_util;
 
 /// The old file's `meta` key for the token step 1 stamps.
@@ -75,43 +75,27 @@ pub(crate) struct LegacySplit {
 
 // ── The background run ───────────────────────────────────────────────────────
 
-/// Whether a background split is running. Whatever needs the visits waits on it
-/// ([`wait_for_background_split`]).
-static RUNNING: Mutex<bool> = Mutex::new(false);
-static FINISHED: Condvar = Condvar::new();
-
-/// How long a caller waits for a background split before going ahead: far more
-/// than a split takes (it copies about 100 KB per volume), and short enough that a
-/// stuck disk can't hold a writer forever.
-const WAIT_CAP: Duration = Duration::from_secs(30);
-
 /// Run [`split_legacy_stores`] on a blocking thread, handing the report to
-/// `report`. Marked running before it returns, so a caller that comes after can't
-/// slip in ahead of it.
+/// `report`. Marked as store work before it returns, so a caller that comes after
+/// can't slip in ahead of it; the mark is a drop guard, so a panic in the split or
+/// in `report` still clears it.
 ///
 /// ⚠️ Safe only because the host holds the data dir's instance lock: no other
 /// process has these files. In this one, everything that opens the visits or the
-/// weights waits for the split first.
+/// weights, and every removal, waits for the split first.
 pub(crate) fn split_in_background(dirs: StoreDirs, report: impl FnOnce(LegacySplit) + Send + 'static) {
-    *RUNNING.lock_ignore_poison() = true;
+    let work = crate::volume_files::begin_store_work();
     crate::indexing::host::runtime::spawn_blocking(move || {
+        let _work = work;
         report(split_legacy_stores(&dirs));
-        *RUNNING.lock_ignore_poison() = false;
-        FINISHED.notify_all();
     });
 }
 
-/// Block until a background split has finished (at most [`WAIT_CAP`]). Instant
-/// when none is running. Called from blocking threads only: the writer registry,
-/// the launch probe, and the pass's visit read.
+/// Block until a background split has finished (`volume_files::wait_for_store_work`).
+/// Called from blocking threads only: the writer registry, the launch probe, and
+/// the pass's visit read.
 pub(crate) fn wait_for_background_split() {
-    let running = RUNNING.lock_ignore_poison();
-    let (_running, timeout) = FINISHED
-        .wait_timeout_while(running, WAIT_CAP, |running| *running)
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if timeout.timed_out() {
-        log::warn!(target: "importance", "the older importance stores' split is still running after {WAIT_CAP:?}; going ahead");
-    }
+    crate::volume_files::wait_for_store_work();
 }
 
 // ── The split ────────────────────────────────────────────────────────────────
@@ -286,6 +270,10 @@ fn merge_rows(
     {
         let mut contributed =
             tx.prepare_cached("SELECT visit_count FROM split_rows WHERE token = ?1 AND path_folded = ?2")?;
+        // The most any EARLIER file contributed for a path: what a restored copy of
+        // one could at most carry again.
+        let mut covered =
+            tx.prepare_cached("SELECT max(visit_count) FROM split_rows WHERE path_folded = ?1 AND token != ?2")?;
         let mut add = tx.prepare_cached(
             "INSERT INTO visits (path_folded, path, visit_count, last_visit_secs) VALUES (?1, ?2, ?3, ?4)
              ON CONFLICT(path_folded) DO UPDATE SET
@@ -316,7 +304,11 @@ fn merge_rows(
                 } else {
                     0
                 }
-            } else if latest_split.is_some_and(|at| *last <= at) {
+            } else if latest_split.is_some_and(|at| *last <= at)
+                && covered
+                    .query_row(rusqlite::params![folded, token], |row| row.get::<_, Option<i64>>(0))?
+                    .is_some_and(|seen| seen >= *count)
+            {
                 keep_the_larger.execute(rusqlite::params![folded, path, count, last])?
             } else {
                 add.execute(rusqlite::params![folded, path, count, last])?
