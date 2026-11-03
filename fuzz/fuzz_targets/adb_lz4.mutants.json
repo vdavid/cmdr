@@ -8,6 +8,24 @@
       "replace": "let end = self.decoded_len;",
       "input": "fuzz/seeds/adb_lz4/big-blocks.bin",
       "expect": "chunk.len() <= MAX_DATA_CHUNK"
+    },
+    {
+      "property": "fuzz:adb_lz4",
+      "why": "a linked frame is read as independent blocks, so a block reaching back into the one before is refused",
+      "file": "crates/cmdr-adb/src/lz4.rs",
+      "find": "linked: flg & FLG_INDEPENDENT_BLOCKS == 0,",
+      "replace": "linked: flg & FLG_INDEPENDENT_BLOCKS != 0,",
+      "input": "fuzz/large-seeds/adb_lz4/linked-blocks-plaintext.bin.gz",
+      "expect": "the reader refused a frame the writer wrote"
+    },
+    {
+      "property": "fuzz:adb_lz4",
+      "why": "a new packet keeps the last consumed byte of the one before, so the frame shifts by one",
+      "file": "crates/cmdr-adb/src/lz4.rs",
+      "find": "self.input.drain(..self.consumed);",
+      "replace": "self.input.drain(..self.consumed.saturating_sub(1));",
+      "input": "fuzz/large-seeds/adb_lz4/linked-blocks-plaintext.bin.gz",
+      "expect": "the reader refused a frame the writer wrote"
     }
   ]
 }

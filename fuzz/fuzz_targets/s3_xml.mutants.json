@@ -1,0 +1,40 @@
+{
+  "mutants": [
+    {
+      "property": "fuzz:s3_xml",
+      "why": "a key's `&` goes out unescaped, so a `DeleteObjects` names some other key",
+      "file": "crates/cmdr-s3/src/xml/build.rs",
+      "find": "'&' => out.push_str(\"&amp;\"),",
+      "replace": "'&' => out.push('&'),",
+      "input": "fuzz/seeds/s3_xml/round-trip.bin",
+      "expect": "a deleted key read back as another key"
+    },
+    {
+      "property": "fuzz:s3_xml",
+      "why": "a URL-encoded listing's `+` stays a plus, so a key with a space lists under another name",
+      "file": "crates/cmdr-s3/src/xml/parse.rs",
+      "find": "Self::UrlEncoded => percent_decode_str(&raw.replace('+', \" \"))",
+      "replace": "Self::UrlEncoded => percent_decode_str(raw)",
+      "input": "fuzz/seeds/s3_xml/round-trip.bin",
+      "expect": "a listed key read back as another key"
+    },
+    {
+      "property": "fuzz:s3_xml",
+      "why": "a key is trimmed, so one starting or ending with a space names another object",
+      "file": "crates/cmdr-s3/src/xml/mod.rs",
+      "find": "self.child(name).map(|c| c.text.as_str())",
+      "replace": "self.child(name).map(|c| c.text.trim())",
+      "input": "fuzz/seeds/s3_xml/round-trip.bin",
+      "expect": "a deleted key read back as another key"
+    },
+    {
+      "property": "fuzz:s3_xml",
+      "why": "a size is read as 32 bits, so a listing holding an object past 4 GiB is refused",
+      "file": "crates/cmdr-s3/src/xml/parse.rs",
+      "find": ".and_then(|size| size.parse().ok())",
+      "replace": ".and_then(|size| size.parse::<u32>().ok().map(u64::from))",
+      "input": "fuzz/seeds/s3_xml/round-trip.bin",
+      "expect": "a well-formed listing parses"
+    }
+  ]
+}

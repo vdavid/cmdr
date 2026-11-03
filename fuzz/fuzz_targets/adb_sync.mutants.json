@@ -1,0 +1,22 @@
+{
+  "mutants": [
+    {
+      "property": "fuzz:adb_sync",
+      "why": "a listed name holding a `/` is handed on, so the volume joins it into a path naming some other file",
+      "file": "crates/cmdr-adb/src/sync.rs",
+      "find": "if name.is_empty() || name == \".\" || name == \"..\" || name.contains('/') {",
+      "replace": "if name.is_empty() || name == \".\" || name == \"..\" {",
+      "input": "fuzz/seeds/adb_sync/slash-name.bin",
+      "expect": "isn't one path segment"
+    },
+    {
+      "property": "fuzz:adb_sync",
+      "why": "the sync payload cap is loose, so a pull hands on (and allocates) more than one `DATA` chunk",
+      "file": "crates/cmdr-adb/src/sync.rs",
+      "find": "if len > MAX_DATA_CHUNK {",
+      "replace": "if len > 2 * MAX_DATA_CHUNK {",
+      "input": "fuzz/seeds/adb_sync/oversize-data.bin",
+      "expect": "a pull handed on a chunk past MAX_DATA_CHUNK"
+    }
+  ]
+}

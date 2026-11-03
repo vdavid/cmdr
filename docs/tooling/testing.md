@@ -77,8 +77,8 @@ sort), `search/query.rs` (glob_to_regex + scope parsing), `indexing/store/tests/
 ### `cargo-fuzz` (fuzzing the parsers that read untrusted bytes)
 
 libFuzzer targets for the ADB, WebDAV, S3, NFS, archive, PDF, and image parsers live in `fuzz/` (repo root, outside the
-workspace, pinned nightly). `pnpm check fuzz` runs every target for `CMDR_FUZZ_SECONDS` (default 60); CI runs it in
-`slow-checks.yml`. Targets, adding one, and the reproduce-and-fix loop: `fuzz/DETAILS.md`.
+workspace, pinned nightly). `pnpm check fuzz` runs every target for `CMDR_FUZZ_SECONDS` (default 60); CI runs it for 20
+minutes per target in `slow-checks.yml`. Targets, adding one, and the reproduce-and-fix loop: `fuzz/DETAILS.md`.
 
 ### Miri (undefined behavior in `unsafe` Rust)
 

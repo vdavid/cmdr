@@ -2,14 +2,14 @@
 
 libFuzzer targets (cargo-fuzz) for the code that parses bytes someone else chose: a phone over ADB, a WebDAV, S3, or NFS
 server, an archive, a PDF, or an image a user opens. Run them with `pnpm check fuzz` (`CMDR_FUZZ_SECONDS`, default 60
-per target); CI runs the same lane in `slow-checks.yml`.
+per target); CI runs the same lane for 20 minutes per target in `slow-checks.yml`.
 
 ## Module map
 
 - `fuzz_targets/`: one file per target, each a thin call into a `fuzzing` module or a public API.
 - `seeds/<target>/`: the committed seed corpus. `corpus/` (grown), `artifacts/` (findings), `target/`: gitignored.
-- `fuzz_targets/<target>.mutants.json`: the target's failing mutants; `mutant-inputs/<target>/`: catching inputs too big
-  for the corpus, gzipped.
+- `large-seeds/<target>/*.gz`: seeds too big to commit raw, which the lane unpacks into the run.
+- `fuzz_targets/<target>.mutants.json`: the target's failing mutants.
 - The seams live in the crates: `cmdr_adb::fuzzing`, `cmdr_webdav::fuzzing`, `cmdr_s3::fuzzing`, `cmdr_nfs::fuzzing`,
   each behind that crate's `fuzzing` feature (on in its dev builds, so clippy lints it).
 
@@ -23,9 +23,14 @@ per target); CI runs the same lane in `slow-checks.yml`.
 - **`pdf` and `image_headers` MIRROR app code** (`tools/read/inspect/pdf.rs`, `exif.rs`, `file_viewer/media.rs`):
   instrumenting the Tauri app isn't worth it. Change those calls, change the target.
 - **In `pdf`, a panic is not a finding**: the app contains them. Aborts, OOMs, and hangs are.
-- **Every assertion needs a failing mutant on record** (`<target>.mutants.json`), or the target a reasoned entry in
-  `property-mutants-allowlist.json` while it only checks for crashes. `pnpm check mutant-records` holds the line; format
-  and how-to: `scripts/check/checks/DETAILS.md` § "Property mutants".
+- **Every assertion needs a failing mutant on record** (`<target>.mutants.json`) whose input sits in the target's corpus
+  (`seeds/` or `large-seeds/`), or the target a reasoned entry in `property-mutants-allowlist.json` while it only checks
+  for crashes. `pnpm check mutant-records` holds the line; format and how-to: `scripts/check/checks/DETAILS.md` §
+  "Property mutants".
+- **Properties are panics that survive release settings** (`assert!`, never `debug_assert!`), and live in the crate's
+  `fuzzing` seam, beside the code they guard. A round trip writes its input the way the other side would.
+- **A target that needs big inputs gets a `-max_len` in `fuzzTargetMaxLen`** (`desktop-rust-fuzz.go`) plus large seeds
+  shaped to reach that code; otherwise libFuzzer caps inputs at its largest seed.
 - **A finding in OUR code gets a red regression test in the crate, then the fix.** One in a third-party crate gets
   reported upstream, plus a guard in our wrapper when we can bound it.
 - **Not under `cargo deny`**: `libfuzzer-sys` is NCSA-licensed and never ships, so it stays out of the root graph.

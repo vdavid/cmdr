@@ -1,0 +1,58 @@
+{
+  "mutants": [
+    {
+      "property": "fuzz:webdav_propfind",
+      "why": "an href isn't percent-decoded, so `a%20b` lists as a different file than `a b`",
+      "file": "crates/cmdr-webdav/src/propfind.rs",
+      "find": "percent_decode_str(&path).decode_utf8_lossy().into_owned()",
+      "replace": "{ let _ = percent_decode_str; path }",
+      "input": "fuzz/seeds/webdav_propfind/round-trip.bin",
+      "expect": "the href read back as another path"
+    },
+    {
+      "property": "fuzz:webdav_propfind",
+      "why": "a predefined entity loses its text, so a name holding `&` lists without it",
+      "file": "crates/cmdr-webdav/src/propfind.rs",
+      "find": "text.push_str(resolved);",
+      "replace": "text.push_str(resolved.trim_start_matches('&'));",
+      "input": "fuzz/seeds/webdav_propfind/round-trip.bin",
+      "expect": "the href read back as another path"
+    },
+    {
+      "property": "fuzz:webdav_propfind",
+      "why": "a 4xx `propstat` counts as a success, so a property the server says it lacks reads as a value",
+      "file": "crates/cmdr-webdav/src/propfind.rs",
+      "find": "(200..300).contains(&code)",
+      "replace": "(200..500).contains(&code)",
+      "input": "fuzz/seeds/webdav_propfind/round-trip.bin",
+      "expect": "the size read back wrong"
+    },
+    {
+      "property": "fuzz:webdav_propfind",
+      "why": "a size is read as 32 bits, so a file past 4 GiB lists with no size",
+      "file": "crates/cmdr-webdav/src/propfind.rs",
+      "find": "\"getcontentlength\" => pending.size = value.parse().ok(),",
+      "replace": "\"getcontentlength\" => pending.size = value.parse::<u32>().ok().map(u64::from),",
+      "input": "fuzz/seeds/webdav_propfind/round-trip.bin",
+      "expect": "the size read back wrong"
+    },
+    {
+      "property": "fuzz:webdav_propfind",
+      "why": "February is counted in the wrong year, so a creation date in it lands a year off",
+      "file": "crates/cmdr-webdav/src/propfind.rs",
+      "find": "let y = if m <= 2 { y - 1 } else { y };",
+      "replace": "let y = if m < 2 { y - 1 } else { y };",
+      "input": "fuzz/seeds/webdav_propfind/round-trip.bin",
+      "expect": "creationdate read back as another time"
+    },
+    {
+      "property": "fuzz:webdav_propfind",
+      "why": "a `creationdate` zone offset is applied the wrong way round",
+      "file": "crates/cmdr-webdav/src/propfind.rs",
+      "find": "if *sign == b'-' { -total } else { total }",
+      "replace": "if *sign == b'+' { -total } else { total }",
+      "input": "fuzz/seeds/webdav_propfind/round-trip.bin",
+      "expect": "creationdate read back as another time"
+    }
+  ]
+}

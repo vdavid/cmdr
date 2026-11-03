@@ -1,0 +1,22 @@
+{
+  "mutants": [
+    {
+      "property": "fuzz:adb_shell",
+      "why": "the stdout bound is checked per frame, so several frames under it add up past it",
+      "file": "crates/cmdr-adb/src/shell.rs",
+      "find": "&& len > limit.saturating_sub(outcome.stdout.len())",
+      "replace": "&& len > limit",
+      "input": "fuzz/seeds/adb_shell/two-stdout-frames.bin",
+      "expect": "a bounded read returned stdout past its bound"
+    },
+    {
+      "property": "fuzz:adb_shell",
+      "why": "`df -k`'s columns are read in the wrong order, so the free space shown is the used space",
+      "file": "crates/cmdr-adb/src/shell.rs",
+      "find": "let [total, _used, available, ..] = numbers[..] else {",
+      "replace": "let [total, available, _used, ..] = numbers[..] else {",
+      "input": "fuzz/seeds/adb_shell/df.bin",
+      "expect": "df -k read back figures it wasn't given"
+    }
+  ]
+}

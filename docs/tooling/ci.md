@@ -19,9 +19,10 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | `gradle-wrapper.yml`    | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard |
 | `macos-lane.yml`        | Called by `ci.yml`                      | The macOS lane's steps. § macOS lane                                                                |
 
-`slow-checks.yml` also runs the fuzz smoke job (120 s per target, findings uploaded as `fuzz-artifacts`;
-`fuzz/CLAUDE.md`). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch: the release's CI gate matches
-it by name to prove a run was full, so renaming it breaks releases (`docs/guides/releasing.md` § The CI gate).
+`slow-checks.yml` also runs the long fuzz job (20 minutes per target, findings uploaded as `fuzz-artifacts`;
+`fuzz/DETAILS.md` § "Running and reproducing"). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch:
+the release's CI gate matches it by name to prove a run was full, so renaming it breaks releases
+(`docs/guides/releasing.md` § The CI gate).
 
 The website deploy is a job inside `ci.yml` (gated on the website checks passing), NOT a standalone workflow. There used
 to be a standalone `deploy-website.yml` on the same path filters; it deployed a second time per push and didn't wait for

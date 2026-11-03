@@ -58,6 +58,9 @@ func fuzzTargetNames(rootDir string) ([]string, error) {
 }
 
 // checkFuzzMutantRecord: a fuzz record names the input that reaches the
+// property, and that input is part of the target's corpus (a seed, or a
+// gzipped large seed the fuzz lane unpacks), so the mutant run doubles as the
+// coverage witness: every fuzzing run starts from an input that reaches the
 // property.
 func checkFuzzMutantRecord(rootDir string, r mutantRecord) []string {
 	if r.Input == "" {
@@ -69,6 +72,13 @@ func checkFuzzMutantRecord(rootDir string, r mutantRecord) []string {
 	info, err := os.Stat(filepath.Join(rootDir, filepath.FromSlash(r.Input)))
 	if err != nil || !info.Mode().IsRegular() {
 		return []string{fmt.Sprintf("`input` %s isn't a file", r.Input)}
+	}
+	_, target := r.kindAndName()
+	inSeeds := strings.HasPrefix(r.Input, "fuzz/seeds/"+target+"/")
+	inLargeSeeds := strings.HasPrefix(r.Input, "fuzz/large-seeds/"+target+"/") && strings.HasSuffix(r.Input, ".gz")
+	if !inSeeds && !inLargeSeeds {
+		return []string{fmt.Sprintf("`input` %s isn't in the target's corpus; put it in `fuzz/seeds/%s/`, "+
+			"or gzipped in `fuzz/large-seeds/%s/`", r.Input, target, target)}
 	}
 	return nil
 }
@@ -109,8 +119,8 @@ func runFuzzMutantCatcher(tree string, r mutantRecord) (mutantRun, error) {
 }
 
 // materializeFuzzInput returns a path libFuzzer can read: the input itself, or
-// a decompressed copy of a `.gz` one, which is how an input too big to commit
-// raw (a READ past 1 MiB, say) stays small in git.
+// a decompressed copy of a `.gz` one, which is how a large seed (a READ past
+// 1 MiB, say) stays small in git.
 func materializeFuzzInput(path string) (string, func(), error) {
 	if !strings.HasSuffix(path, ".gz") {
 		return path, func() {}, nil

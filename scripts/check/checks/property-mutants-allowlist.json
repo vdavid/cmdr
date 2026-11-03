@@ -1,23 +1,11 @@
 {
   "$comment": "Properties allowed to go without a failing mutant on record, each with a mandatory reason. `desktop-rust-property-mutant-records` drops an entry on a local run once its property gains a record (or is gone), so this list only shrinks. A new entry needs David's OK. See `scripts/check/checks/DETAILS.md` § Property mutants.",
   "unrecorded": {
-    "fuzz:adb_shell": {
-      "reason": "Crash-only: the seam asserts nothing, so only a panic, OOM, or hang counts. #882 adds a property."
-    },
-    "fuzz:adb_sync": {
-      "reason": "Crash-only: the seam asserts nothing, so only a panic, OOM, or hang counts. #882 adds a property."
-    },
     "fuzz:image_headers": {
-      "reason": "Crash-only: the target asserts nothing, so only a panic, OOM, or hang counts. #882 adds a property."
+      "reason": "Third-party decoders only (`image`, `kamadak-exif`) with no Cmdr line between them for a mutant to change, so a panic, OOM, or hang is the finding."
     },
     "fuzz:pdf": {
-      "reason": "Crash-only by design: the app contains `pdf-extract`'s panics, so only an abort, OOM, or hang counts. #882 decides whether it gets a property."
-    },
-    "fuzz:s3_xml": {
-      "reason": "Crash-only: the seam asserts nothing, so only a panic, OOM, or hang counts. #882 adds a property."
-    },
-    "fuzz:webdav_propfind": {
-      "reason": "Crash-only: the seam asserts nothing, so only a panic, OOM, or hang counts. #882 adds a property."
+      "reason": "Third-party only (`pdf-extract`), whose panics the app contains, so only an abort, OOM, or hang counts; the one Cmdr line on the path, `parent_chain_ends`, is a copy inside the target."
     }
   }
 }

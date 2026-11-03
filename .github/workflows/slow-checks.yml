@@ -125,14 +125,17 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
   # ===========================================
-  # Fuzz smoke (the parsers that read attacker-chosen bytes)
+  # Fuzz (the parsers that read attacker-chosen bytes)
   # ===========================================
-  # Every target in `fuzz/` for two minutes on the pinned nightly, over its committed
-  # seeds plus the corpus the previous run grew (cached). A finding fails the job and
-  # uploads the crashing input; `fuzz/DETAILS.md` has the reproduce-and-fix loop.
+  # The long run: every target in `fuzz/` for 20 minutes on the pinned nightly, over its
+  # committed seeds, its unpacked large seeds, and the corpus the previous run grew
+  # (cached; a target's corpus past 32 MiB is minimized after its run, so the cache stays
+  # small). Ten targets come to about 200 minutes plus the build. A finding fails the job
+  # and uploads the crashing input; `fuzz/DETAILS.md` has the reproduce-and-fix loop.
   fuzz:
-    name: Fuzz smoke
+    name: Fuzz
     runs-on: ubuntu-latest
+    timeout-minutes: 300
 
     steps:
       - name: Checkout code
@@ -178,10 +181,10 @@ jobs:
       - name: Install nightly toolchain (for cargo-fuzz)
         run: rustup toolchain install "$(./scripts/check/check --print-nightly)" --profile minimal
 
-      - name: Run fuzz smoke
+      - name: Run the long fuzz
         run: ./scripts/check/check --check desktop-rust-fuzz --ci
         env:
-          CMDR_FUZZ_SECONDS: '120'
+          CMDR_FUZZ_SECONDS: '1200'
 
       - name: Upload fuzz findings
         if: failure()
@@ -257,7 +260,7 @@ jobs:
       - name: Keep only the pinned Rust toolchain
         uses: ./.github/actions/pinned-rust-toolchain
 
-      # Same reason as the fuzz smoke: `cmdr-fs` links `libacl` on Linux.
+      # Same reason as the fuzz job: `cmdr-fs` links `libacl` on Linux.
       - name: Install native build dependencies
         run: |
           sudo apt-get update

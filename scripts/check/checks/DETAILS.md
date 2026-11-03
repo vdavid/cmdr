@@ -1010,7 +1010,7 @@ to list its properties, check its own record fields, install its tools, and buil
       "file": "crates/cmdr-nfs/src/proto/nfs3/types.rs",
       "find": "let data = dec.opaque(asked as usize)?;",
       "replace": "let data = dec.opaque(2 * asked as usize)?;",
-      "input": "fuzz/mutant-inputs/nfs_reply/read-past-max-payload.bin.gz",
+      "input": "fuzz/large-seeds/nfs_reply/read-past-max-payload.bin.gz",
       "expect": "READ answered past what was asked"
     }
   ]
@@ -1021,9 +1021,10 @@ to list its properties, check its own record fields, install its tools, and buil
 - `file`, `find`, `replace`: the mutant. `find` is one line's worth of text occurring exactly once in `file`. Aim it at
   the code the property guards, ❌ never at the property itself: deleting an assertion proves only that it can be
   deleted.
-- `input` (fuzz only): the input that reaches the property. Prefer a seed in `fuzz/seeds/<target>/`, so every fuzz run
-  replays it. One too big for the corpus (it would raise libFuzzer's inferred `-max_len` for the whole target) goes
-  gzipped in `fuzz/mutant-inputs/<target>/`; the check decompresses a `.gz` first.
+- `input` (fuzz only): the input that reaches the property, and it must be in the target's corpus: a seed in
+  `fuzz/seeds/<target>/`, or one too big to commit raw, gzipped in `fuzz/large-seeds/<target>/` (the check decompresses
+  it first). So every fuzz run starts from it, and the mutant run is the corpus's coverage witness (`fuzz/DETAILS.md` §
+  "Mutant records").
 - `expect`: text the failure prints, normally the assertion's message (one without a message prints its expression).
   It's what proves THIS property caught the mutant, not some other panic on the way.
 - Paths are repo-relative and can't leave the repo; an unknown field fails, so a typo can't go unread.
@@ -2144,19 +2145,20 @@ Checks by app and tech:
   `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped because
   `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps (CI-only), fuzz
   (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a target loosens
-  its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding), miri (slow, macOS
-  only, CI every six days: the modules whose `unsafe` is pure Rust, under Miri; § "Miri"), mutant-records and
-  property-mutants (every property has a recorded one-line change that makes it fail: the fast half checks the records
-  still apply, the slow CI-only half applies each in a mirror and runs its catcher; § "Property mutants"), jscpd (the
-  clone list, on a per-file-pair ratchet), log-error-macro, macos-availability (no call to a selector newer than the
-  bundle's `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework in the BUILT binary's
-  load commands newer than that same floor, which is the half no runtime gate can save; § "macOS framework floor"),
-  sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide shared page cache
-  is always installed before SQLite initializes), error-string-match, lock-poison (two lanes: an error-level one for an
-  acquisition that records no poison-handling choice, and a warn-only one for a failure that's silently discarded, on a
-  per-file ratchet), log-private-values (an unmarked path, name, or identity in a log macro, strict with no allowlist,
-  and a marked value made into a `String`; § "The log-private-values check"), test-sleep (flags a fixed `thread::sleep`
-  / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
+  its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding, and takes inputs past
+  its seeds' size only through `fuzzTargetMaxLen`), miri (slow, macOS only, CI every six days: the modules whose
+  `unsafe` is pure Rust, under Miri; § "Miri"), mutant-records and property-mutants (every property has a recorded
+  one-line change that makes it fail: the fast half checks the records still apply, the slow CI-only half applies each
+  in a mirror and runs its catcher; § "Property mutants"), jscpd (the clone list, on a per-file-pair ratchet),
+  log-error-macro, macos-availability (no call to a selector newer than the bundle's `minimumSystemVersion`; § "macOS
+  availability"), macos-framework-floor (no framework in the BUILT binary's load commands newer than that same floor,
+  which is the half no runtime gate can save; § "macOS framework floor"), sqlite-open-direct (every SQLite connection
+  opens through `crate::sqlite_util`, so the process-wide shared page cache is always installed before SQLite
+  initializes), error-string-match, lock-poison (two lanes: an error-level one for an acquisition that records no
+  poison-handling choice, and a warn-only one for a failure that's silently discarded, on a per-file ratchet),
+  log-private-values (an unmarked path, name, or identity in a log macro, strict with no allowlist, and a marked value
+  made into a `String`; § "The log-private-values check"), test-sleep (flags a fixed `thread::sleep` /
+  `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
   sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
   `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
   fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing

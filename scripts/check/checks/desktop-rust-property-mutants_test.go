@@ -346,3 +346,26 @@ func TestFuzzMutantRecord_NeedsAnInputFile(t *testing.T) {
 		t.Errorf("got %q", p)
 	}
 }
+
+// The catching input has to sit in the target's corpus, so the mutant run also
+// proves a fuzzing run starts from an input that reaches the property.
+func TestFuzzMutantRecord_InputLivesInTheTargetsCorpus(t *testing.T) {
+	root := t.TempDir()
+	writeTestFile(t, root, "fuzz/seeds/t/a.txt", "a")
+	writeTestFile(t, root, "fuzz/seeds/other/b.txt", "b")
+	writeTestFile(t, root, "fuzz/large-seeds/t/c.bin.gz", "c")
+	writeTestFile(t, root, "fuzz/elsewhere/d.txt", "d")
+	record := mutantRecord{Property: "fuzz:t"}
+	for _, input := range []string{"fuzz/seeds/other/b.txt", "fuzz/elsewhere/d.txt"} {
+		record.Input = input
+		if p := checkFuzzMutantRecord(root, record); len(p) != 1 || !strings.Contains(p[0], "isn't in the target's corpus") {
+			t.Errorf("%s: got %q", input, p)
+		}
+	}
+	for _, input := range []string{"fuzz/seeds/t/a.txt", "fuzz/large-seeds/t/c.bin.gz"} {
+		record.Input = input
+		if p := checkFuzzMutantRecord(root, record); len(p) != 0 {
+			t.Errorf("%s: got %q", input, p)
+		}
+	}
+}
