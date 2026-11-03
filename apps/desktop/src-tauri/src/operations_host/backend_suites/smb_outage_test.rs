@@ -635,6 +635,31 @@ impl Drop for FlakyShare {
     }
 }
 
+/// How many up halves one setup step may need before the share's cycle, not
+/// load, reads as the cause.
+const SETUP_TRIES: usize = 4;
+
+/// Runs one setup step on the flaky share, again in the next up half each time
+/// it fails. ❌ Not "the whole setup fits in one up half": 24 creates on a
+/// loaded stack outlast its 5 s, and the cell failed seeding before the copy it
+/// tests had started (2026-11-03). So every step is safe to run twice.
+async fn in_an_up_half<T, E: std::fmt::Debug, Fut: Future<Output = Result<T, E>>>(
+    share: &FlakyShare,
+    what: &str,
+    mut step: impl FnMut() -> Fut,
+) -> T {
+    let mut last = None;
+    for _ in 0..SETUP_TRIES {
+        let downs = share.downs();
+        match step().await {
+            Ok(done) => return done,
+            Err(e) => last = Some(e),
+        }
+        share.fresh_window_after(downs, what).await;
+    }
+    panic!("{what}: failed in {SETUP_TRIES} up halves of the flaky share, last with {last:?}");
+}
+
 /// Files in the soak's folder: enough that the copy is still going after
 /// every one of [`SOAK_PAUSES`].
 const SOAK_FILES: usize = 48;
@@ -695,30 +720,48 @@ async fn smb_integration_an_overwrite_copy_rides_out_a_share_that_keeps_going_aw
     let base = test_dir_name();
     let batch = PathBuf::from(&base).join("batch");
 
-    // Seed, connect the copy's volume, and start, all at the top of an up
-    // half: the pre-flight scan doesn't wait out a drop.
+    // Seed, connect the copy's volume, and start in an up half, each step again
+    // in the next one if the share goes away under it: the pre-flight scan
+    // doesn't wait out a drop.
     share
         .fresh_window_after(share.downs(), "an up half of the flaky share to seed in")
         .await;
     let direct = share.volume();
     ensure_clean(direct, &base).await;
-    direct
-        .create_directory(Path::new(&base))
-        .await
-        .expect("the scratch dir");
-    direct.create_directory(&batch).await.expect("the seeded folder");
+    for (dir, what) in [
+        (Path::new(&base), "the scratch dir"),
+        (batch.as_path(), "the seeded folder"),
+    ] {
+        in_an_up_half(&share, what, move || async move {
+            match direct.create_directory(dir).await {
+                // A create whose answer the drop cut can have landed.
+                Err(VolumeError::AlreadyExists(_)) => Ok(()),
+                other => other,
+            }
+        })
+        .await;
+    }
     for index in (0..SOAK_FILES).filter(|index| seeded(*index)) {
-        direct
-            .create_file(&batch.join(format!("f-{index:02}.bin")), &original(index))
-            .await
-            .expect("an original on the share, inside an up half");
+        let (path, bytes) = (&batch.join(format!("f-{index:02}.bin")), &original(index));
+        in_an_up_half(&share, "an original on the share", move || async move {
+            match direct.create_file(path, bytes).await {
+                // A create the drop cut can have landed, or landed short.
+                Err(VolumeError::AlreadyExists(_)) => {
+                    direct.delete(path).await?;
+                    direct.create_file(path, bytes).await
+                }
+                other => other,
+            }
+        })
+        .await;
     }
     // The app's own wiring, so the copy runs at the app's SMB concurrency (a
     // window of ten): the deadlock this cell found needed a wide window.
     let through: Arc<dyn Volume> = Arc::new(
-        connect_flaky(crate::volume_host::host())
-            .await
-            .expect("the copy's own connection, inside an up half"),
+        in_an_up_half(&share, "the copy's own connection", || async {
+            connect_flaky(crate::volume_host::host()).await.ok_or("no connection")
+        })
+        .await,
     );
     let generation_at_start = through.connection_generation().expect("SMB answers a generation");
 
