@@ -268,6 +268,19 @@ var licenseClarifications = []crateClarification{
 			{"LICENSE", "MIT"},
 		},
 	},
+	{
+		crate:   "rfd",
+		license: "MIT",
+		// Ships its own MIT (`LICENSE`, Bartłomiej Maryńczak) AND, since 0.17, a
+		// second MIT for the vendored XDG portal window-identifier module (Bilal
+		// Elmoussaoui), nested deep in `src/`. Unpinned, the Mac generated one
+		// and the Linux runner the other (2026-11-03). The module compiles into
+		// the Linux build, so both holders are credited.
+		files: []clarifiedFile{
+			{"LICENSE", "MIT"},
+			{"src/backend/xdg_desktop_portal/window_identifier/LICENSE", "MIT"},
+		},
+	},
 }
 
 // clarificationChecksums maps a clarified file to the sha256 cargo-about wants
@@ -278,6 +291,8 @@ var clarificationChecksums = map[string]string{
 	"libmimalloc-sys/LICENSE.txt":               "a08554fab028af3af047e8588d32d019662c1b1bf07959a195a2f75fe340726b",
 	"libmimalloc-sys/c_src/mimalloc/v2/LICENSE": "82ade5d7d9b029044b5fbbc326207fc47c2d44ee4dd71e8a559c36d728217de9",
 	"miniz_oxide/LICENSE":                       "4108245a1f2df9d4e94df8abed5b4ba0759bb2f9b40a6b939f1be141077ae50b",
+	"rfd/LICENSE":                               "65fc947f4bac882a2cd104ef73c246b1b037059df9f2b3a58b7f77f0b9e56071",
+	"rfd/src/backend/xdg_desktop_portal/window_identifier/LICENSE": "ae26bc7b1bc91fb8648f6a298decbb1a77090a56c9d04e2c23b8365e5f54acb5",
 }
 
 // verifyClarifications fails when a pinned crate's text didn't actually come
