@@ -115,7 +115,7 @@ test.describe('Homepage', () => {
 
   test('key captions follow the playback position, and an invalid keys entry is dropped', async ({ page }) => {
     // `/clip-fixture` renders one clip with `src/fixtures/clip-keys.json`: F5 at 1 s, ⏎ at 1.3 s,
-    // ⌘Z at 5 s, plus two invalid entries. Reduced motion stops autoplay and the fade, so each
+    // ⌘Z at 5 s, a long typed string at 8 s, plus two invalid entries. Reduced motion stops autoplay and the fade, so each
     // seek gives a still, exact state.
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/clip-fixture')
@@ -147,6 +147,28 @@ test.describe('Homepage', () => {
     await seek(1.1)
     await expect(captions.locator('.clip-key')).toHaveText(['F5'])
   })
+
+  test('a long typed-string caption stays inside a phone-width clip', async ({ page }) => {
+    // A typed string is one cap (docs/guides/product-clips.md § Key captions); the fixture's at 8 s is long.
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/clip-fixture')
+    const clip = page.locator('[data-product-clip]')
+    await clip.getByRole('slider', { name: 'Clip position' }).focus()
+    await page.keyboard.press('Home')
+    await expect(clip).toHaveAttribute('data-ready', '')
+    await clip.locator('video').evaluate((v: HTMLVideoElement) => {
+      v.currentTime = 8.2
+    })
+    const cap = clip.locator('.clip-key')
+    await expect(cap).toHaveCount(1)
+    const clipBox = await clip.boundingBox()
+    const capBox = await cap.boundingBox()
+    if (!clipBox || !capBox) throw new Error('The clip or its caption has no box')
+    expect(capBox.x).toBeGreaterThanOrEqual(clipBox.x)
+    expect(capBox.x + capBox.width).toBeLessThanOrEqual(clipBox.x + clipBox.width)
+  })
+
   test('testimonials name real users', async ({ page }) => {
     await page.goto('/')
     const section = page.getByRole('region', { name: 'Testimonials' })

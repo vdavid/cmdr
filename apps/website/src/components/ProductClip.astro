@@ -326,6 +326,7 @@ const hasKeys = keysLight.length > 0 || keysDark.length > 0
         display: flex;
         justify-content: center;
         gap: 0.5cqi;
+        padding: 0 6%;
         pointer-events: none;
     }
 
@@ -346,6 +347,10 @@ const hasKeys = keysLight.length > 0 || keysDark.length > 0
         font-size: clamp(11px, 2.6cqi, 22px);
         font-weight: 600;
         line-height: 1.3;
+        /* A typed string is one cap (`invoice`), so a long one shrinks and truncates within the row. */
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
         white-space: nowrap;
         color: var(--color-text-primary);
     }
