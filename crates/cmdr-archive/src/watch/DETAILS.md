@@ -95,17 +95,22 @@ correct-by-construction rather than a gap to close:
   next read, so a stale render can never outlive a navigation.
 
 **Interaction with mutation.** A zip edit's FINAL atomic rename over `foo.zip` is a change event this watch sees, but it
-is NOT what refreshes the pane: FSEvents delivered it seconds late or not at all (a single rewrite never reached the
-seam within 8 s after a 3 s arming wait, while the round-based seam tests needed about 15 rewrites; macOS 27.0, a
-scratch test beside `host_seam_test.rs` under a busy machine, 2026-10-14), and the FE's post-op `refresh_listing` skips
-an archive listing. So the edit driver re-reads the open listings itself once the edit commits, before its terminal
-event, and drops the parsed index first (`archive_edit::engine::show_the_edit`, pinned by
-`driver_tests::an_open_listing_inside_the_zip`). Its watch-side refresh, if it comes, is a harmless no-op diff. A
-concurrent browse in the other pane reading the archive mid-edit sees either the old-complete or the new-complete file,
-never a torn read, because the rename is atomic on one filesystem: the reader's `LocalFileSource` opens whichever inode
-the rename has published. The read isn't serialized on the edit's lane, but it doesn't need to be — atomicity, not lane
-serialization, is what prevents the torn read. The `(path, size, mtime)` key plus this watch's `cache.clear()` guarantee
-the post-rename read re-parses the new file.
+is NOT what refreshes the pane: FSEvents delivery isn't guaranteed (once, a single rewrite never reached the seam within
+8 s after a 3 s arming wait; macOS 27.0, a scratch test beside `host_seam_test.rs` under a busy machine, 2026-10-14),
+and the FE's post-op `refresh_listing` skips an archive listing. So the edit driver re-reads the open listings itself
+once the edit commits, before its terminal event, and drops the parsed index first
+(`archive_edit::engine::show_the_edit`, pinned by `driver_tests::an_open_listing_inside_the_zip`). Its watch-side
+refresh, if it comes, is a harmless no-op diff. A concurrent browse in the other pane reading the archive mid-edit sees
+either the old-complete or the new-complete file, never a torn read, because the rename is atomic on one filesystem: the
+reader's `LocalFileSource` opens whichever inode the rename has published. The read isn't serialized on the edit's lane,
+but it doesn't need to be — atomicity, not lane serialization, is what prevents the torn read. The `(path, size, mtime)`
+key plus this watch's `cache.clear()` guarantee the post-rename read re-parses the new file.
+
+**Normal latency is one debounce.** With the watch armed and settled, ONE rewrite reaches the seam in 240–880 ms (20 of
+20 tries, 2026-11-03, macOS 27.0, load average about 37, scratch cell timing a single rewrite): the 200 ms debounce plus
+its tick. There's no size or mtime filter, and `notify`'s FSEvents stream runs with zero latency and `NoDefer`. So the
+"about 15 rewrites" once seen in the seam tests (vdavid/cmdr#432) was a starved `fseventsd` on that day, not a delay
+built into the watch.
 
 ## Testing, split at the seam
 
@@ -134,6 +139,8 @@ test's own after eviction). It drives refreshes directly and its watch is script
 The FSEvents-driven tests are **self-healing** under a saturated suite, not retry-dependent: each redoes the zip rewrite
 on a 750 ms cadence until the watch delivers, inside one 15 s budget. This defeats both the just-registered arming
 window (a mutation landing before macOS finishes arming FSEvents is dropped outright, not delayed) and a lone
-coalesced/dropped event when every core is busy — both unrecoverable by waiting. It mirrors
+coalesced/dropped event when every core is busy — both unrecoverable by waiting. Each cell also waits 1 s between
+writing the fixture and arming: a stream armed right after the write usually replays it as a change, which reached the
+seam before any rewrite and let both cells pass vacuously (`start_watch_for_real` has the numbers). It mirrors
 `downloads::watcher::observe_mutation`; the shared `real-notify` nextest group (serialized, `retries = 0`) lives in
 `.config/nextest.toml`.

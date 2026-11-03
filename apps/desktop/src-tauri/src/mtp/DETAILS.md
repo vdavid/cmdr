@@ -97,8 +97,9 @@ cause. `auto_connect.rs` holds the fix, pure and injectable so it tests without 
   because dropping an mtp-rs future mid-transaction wedges the phone (`crates/cmdr-mtp/CLAUDE.md`). The cost: an attempt
   that succeeds after the user switched MTP off lands on a device the disable path couldn't see, so the watcher checks
   the flag again on success and disconnects it.
-- `connect()` is idempotent, so a manual connect from the frontend that wins the race just makes the loop's next attempt
-  report `Connected`. ptpcamerad suppression needs nothing new: it stays on while any device is known, and the loop only
+- `connect()` is idempotent and single-flight per device (`crates/cmdr-mtp/src/connection/connect_gate.rs`), so a
+  manual connect from the frontend never races the loop: one that lands during the loop's sleep makes its next attempt
+  report `Connected`, and one that lands during an attempt waits for it and gets its session. ptpcamerad suppression needs nothing new: it stays on while any device is known, and the loop only
   runs while its device is.
 - **The waiting row.** Until now a phone in that loop had no row, and one open can run 30 s. Once an auto-connect has
   run for `WAITING_ROW_DELAY` (3 s, so a healthy 0.2 s open never flashes a row), `waiting_entry` lists the device under

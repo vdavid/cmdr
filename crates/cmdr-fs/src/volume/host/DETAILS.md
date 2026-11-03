@@ -296,10 +296,10 @@ to hand the seam a struct and hope its serialization is PII-free.
 - **Anything computable from a `&str`.** Volume id vocabulary (`smb_volume_id`, `mtp_ids`), archive detection
   (`archive_format::has_supported_archive_extension`), firmlink normalization. If you can compute the answer without
   asking anyone, it's vocabulary — move it down, don't make it a method.
-- **Protocol helpers that happen to live in the app.** `build_smb_addr` and `is_auth_error` read like host reaches and
-  aren't: they're pure functions over SMB's own types, and they now live in `crates/cmdr-smb/` with the share-listing
-  vocabulary. Discovery, upgrade, mounts, the keychain, and the UI wiring stayed in `network/`. The boundary test and
-  the full split: `crates/cmdr-smb/DETAILS.md`.
+- **Protocol helpers that happen to live in the app.** `smb_addr` and `is_auth_error` read like host reaches and aren't:
+  they answer from SMB's own types (and, for `smb_addr`, the system resolver), and they now live in `crates/cmdr-smb/`
+  with the share-listing vocabulary. Discovery, upgrade, mounts, the keychain, and the UI wiring stayed in `network/`.
+  The boundary test and the full split: `crates/cmdr-smb/DETAILS.md`.
 - **User-facing prose.** A backend emits typed values; the host renders every word. Diagnostic strings for `log::` are
   fine and stay English.
 

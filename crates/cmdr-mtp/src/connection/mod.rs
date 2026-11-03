@@ -14,6 +14,7 @@
 
 mod bulk_ops;
 mod cache;
+mod connect_gate;
 mod dates;
 mod directory_ops;
 pub(crate) mod errors;
@@ -248,6 +249,8 @@ pub struct MtpConnectionManager {
     /// Devices whose session-reset recovery is already in flight, so N
     /// operations failing against the same dead session schedule ONE recovery.
     recovering: std::sync::Mutex<std::collections::HashSet<String>>,
+    /// One `connect()` per device at a time, whoever calls it. See `connect_gate.rs`.
+    connect_gates: connect_gate::ConnectGates,
     /// Whether MTP support is on, as the user's setting last left it.
     ///
     /// The one bit of product policy this layer holds, and it holds it because
@@ -311,6 +314,7 @@ impl MtpConnectionManager {
             events,
             registrar,
             recovering: std::sync::Mutex::new(std::collections::HashSet::new()),
+            connect_gates: connect_gate::ConnectGates::default(),
             enabled: std::sync::atomic::AtomicBool::new(true),
             self_ref: self_ref.clone(),
             #[cfg(any(test, feature = "testing"))]
@@ -425,6 +429,11 @@ impl MtpConnectionManager {
         watch: DeviceWatch,
     ) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
         let events = &self.events;
+        // ❗ One open per device at a time: the auto-connect retry loop, the user's
+        // connect, and the session-reset reopen all land here on their own schedule,
+        // and the check below alone is a check-then-act. A caller that waited comes
+        // through to the session the first one opened.
+        let _slot = self.connect_gates.claim(device_id).await;
         // Check if already connected - if so, return existing connection info (idempotent)
         {
             let devices = self.devices.lock().await;

@@ -88,7 +88,8 @@ only the low nine bits anyway.
   read on the wire: `open_read_stream_at_offset` reads and discards up to the offset (§ "Known gaps").
 - `SEND` + len + `path,mode` → then repeated `DATA` + len + bytes, then `DONE` + mtime(u32) → `OKAY` + 0 or `FAIL` +
   len + message. `SND2` (feature `sendrecv_v2`) sends `SND2` + len + path then `SND2` + mode(u32) + flags(u32), then the
-  same data stream. `SEND` truncates on open, which is why every write here stages (§ "The `Volume` answers").
+  same data stream. `SEND` truncates on open, which is why only a name the caller owns is written in place (§ "The
+  `Volume` answers").
 
 **Compression** (`lz4.rs`, on when the device advertises `sendrecv_v2_lz4`). `sendrecv_v2` alone doesn't promise it:
 each algorithm is its own feature, and a device that doesn't know a flag answers `FAIL` + `unknown flags`, so the flag
@@ -213,12 +214,14 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   on the host can open a device path.
 - **`create_directory_errors_on_existing_dir` → false.** `mkdir -p` is the verb, and it is idempotent by design.
 - **Streams**: `open_read_stream` is one `RECV` socket per file, chunk by chunk; `read_range` is one bounded device-side
-  `dd` window rather than an archive-sized prefix transfer; `write_from_stream` is one `SEND` socket per file into a
-  staging sibling (`<dir>/<name>.cmdr-tmp-<uuid>` from `cmdr_fs::staging::temp_sibling_name`: the house marker, so a
-  leftover is filtered from every pane, with the name shortened when the whole wouldn't fit the house 143-byte cap),
-  then `mv -f` via the shell. Both `Known` and `Unknown` lengths stream through the same path and report bytes actually
-  sent with the caller's explicit expected length. Any failure removes the staging name. ❌ Never collect a whole file
-  into a `Vec<u8>`.
+  `dd` window rather than an archive-sized prefix transfer; `write_from_stream` is one `SEND` socket per file. Under
+  `CreateOrReplace` it goes straight to `dest`, a name the caller owns (the transfer engine's own `.cmdr-tmp-*`, which
+  it lands itself), and any failure removes what's there. Under `CreateNew` it goes into a staging sibling
+  (`<dir>/<name>.cmdr-tmp-<uuid>` from `cmdr_fs::staging::temp_sibling_name`: the house marker, so a leftover is
+  filtered from every pane, with the name shortened when the whole wouldn't fit the house 143-byte cap), then `mv -f`
+  via the shell, and any failure removes the staging name. Both `Known` and `Unknown` lengths stream through the same
+  path and report bytes actually sent with the caller's explicit expected length. ❌ Never collect a whole file into a
+  `Vec<u8>`.
 - **Two accepted TOCTOU windows**: `create_file` and a `force = false` rename each `stat` the destination first and
   refuse on a hit. Neither can be atomic on this protocol: `SEND` truncates unconditionally and `mv -n` exits 0 whether
   it moved or not (verified on Android 14 `toybox 0.8.9`, 2026-09-01). The window is one round trip on a device only
@@ -353,9 +356,10 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
   `/storage/self/primary` → `/storage/emulated/0` chain the index cells walk (a phone's own, verified on Pixel 9 Pro XL,
   Android 17, `adb shell readlink /sdcard /storage/self/primary`, 2026-09-11), plus `host:track-devices` with
   `push_devices` for scripted hotplug, `drop_connections` / `stop` for faults, `hold_answers` / `release_answers` to
-  hold a dial provably in flight, and `requests` (every service request, in order) for counting dials or proving none
-  happened. `volume/testing.rs` holds the volume-level fixtures on top of it. No `adb` binary, no device, no Docker:
-  every cell runs in the unit lane.
+  hold a dial provably in flight, `set_device_round_trip` to model the USB hop before every device service, and
+  `requests` (every service request, in order) for counting dials or round trips, or proving none happened.
+  `volume/testing.rs` holds the volume-level fixtures on top of it. No `adb` binary, no device, no Docker: every cell
+  runs in the unit lane.
 - **App-side** (`apps/desktop/src-tauri/src/adb/`): anything driving `cmdr-operations`, the volume registry,
   `volume_listing::complete`, or the listing cache. The transfer engine's cells sit beside the SFTP suite, in
   `apps/desktop/src-tauri/src/operations_host/backend_suites/adb_transfer_test.rs`; the list of what exists is
@@ -380,18 +384,29 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
   no gain elsewhere (`docs/notes/adb-sendrecv-compression-2026-10-30.md`). LZ4 has no opt-out and no per-file choice;
   the numbers show it neutral on already-compressed data, from one idle phone on AC power, so a phone on battery is the
   open question.
-- **Bulk writes run at `adb push` speed; small files pay about 260 ms EACH.** `SEND` frames at the protocol's 64 KiB
+- **Bulk writes run at `adb push` speed; small files pay in round trips.** `SEND` frames at the protocol's 64 KiB
   maximum with no per-chunk round trip, so one large file lands as fast as the CLI does (about 28 MB/s through Cmdr
   against 31 to 35 MB/s for `adb push`, same cable, same minute). A copy of many small files is another story: 200 files
-  of 20 KB took 52 s where `adb push` of the folder took under 10 s for those plus 300 MB. The cost is round trips, not
-  bytes: each file is staged TWICE and moved twice. The transfer engine streams into its own `<name>.cmdr-tmp-<uuid>`;
-  `write_from_stream` stages that AGAIN as `<name>.cmdr-tmp-<uuid>.cmdr-tmp-<uuid>` (shortened to fit), stats the
-  target, and `mv -f`s it onto the engine's temp (about 135 ms); then the engine's landing rename stats and `mv`s once
-  more (about 125 ms). A device shell round trip is about 60 ms, and every stat opens its own sync socket. (Measured on
-  a Pixel 9 Pro XL over USB, dev build, 2026-09-30.) The inner stage is redundant when the caller is already writing to
-  a staging name, which would save one `mv` and one stat per file. It stays for now because telling "the caller staged
-  this" from the NAME is the inference `cmdr_fs::staging` warns against; the clean fix is for the caller to say so (a
-  write mode, or a capability the engine reads), which touches the `Volume` trait.
+  of 20 KB took 52 s (about 260 ms each) where `adb push` of the folder took under 10 s for those plus 300 MB. A device
+  shell round trip is about 60 ms, and every stat opens its own sync socket. (Measured on a Pixel 9 Pro XL over USB, dev
+  build, 2026-09-30, BEFORE the fix below.)
+  - **What a file costs now: seven device round trips**, down from nine. The engine's probe of the name, the `SEND` onto
+    its temp, the patch's stat of that temp, the landing rename's stat of the free name, its `mv`, the rename patch's
+    stat, and the engine's read-back. The two gone (#339): `write_from_stream` used to stage the engine's temp AGAIN (a
+    `<name>.cmdr-tmp-<uuid>.cmdr-tmp-<uuid>` `mv -f`ed onto it), and `rename` stat'ed its source before every `mv`. The
+    caller says the name is its own with `WriteMode::CreateOrReplace` (the house meaning: SFTP, SMB, WebDAV, and local
+    disk all write that mode in place), so nothing is inferred from the name; a missing source is asked about only once
+    `mv` fails, or before an empty folder gives way to it. Pinned by
+    `apps/desktop/src-tauri/src/operations_host/backend_suites/adb_small_files_test.rs` (one `mv` per file, a round-trip
+    budget).
+  - **Measured on the fake, not a phone**: 20 files of 20 KB, the fake waiting 30 ms before every device service
+    (`FakeAdbServer::set_device_round_trip`, a model of the USB hop), three runs each: 304, 311, and 364 ms per file
+    (9.30 round trips) before, 240, 256, and 260 ms (7.30) after. With no modeled wait both are a few ms per file.
+    (`CMDR_ADB_BENCH=1 cargo nextest run -p cmdr --no-capture adb_small_files_test::bench`, M-series Mac, 2026-11-03.)
+    On the Pixel, one shell `mv` (about 60 ms) and one sync stat less per file; the inner stage alone measured about 135
+    ms there, so expect a saving of that order. ❗ Unverified on a device.
+  - **What's left**: the two patch stats (a phone has no watcher, so the patch is what keeps a pane honest, and the
+    index reads it too) and the engine's own probe and read-back. Batching them is engine-side work.
 - **Wireless debugging** (`adb pair`) is out of scope: the server owns pairing, and a paired device appears in
   `track-devices` like any other.
 

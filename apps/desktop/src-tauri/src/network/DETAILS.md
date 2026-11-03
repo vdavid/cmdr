@@ -30,6 +30,7 @@ of the app build.
   - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by four upgrade paths (startup, mount-time watcher, pane-open, manual "Connect directly"). Contains `shares_to_adopt` (the adopter pass's pick from the kernel mount table), `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by all three fire-and-forget auto-upgrade paths), `try_smb_upgrade`, the per-volume upgrade lock, and the bounded mount-identity read.
   - `smb_pane_upgrade.rs`: the pane-open upgrade. A pane landing on an OS-mounted share Cmdr hasn't upgraded tries the direct connection for that one share, behind a per-share cooldown (§ "A pane on an OS-mounted share tries the direct connection").
   - `smb_server_address.rs`: who a `statfs` server string is: what to dial (`resolve_server_address`, § "A server nothing has discovered is not dialed"), what to call it (`friendly_server_name`, `resolve_ip_to_hostname*`), and which saved credentials go with it (`get_keychain_password`, `system_keychain_aliases`). Shared by `smb_upgrade.rs` and `smb_connect_directly.rs`, so the auto and manual upgrade paths can't disagree about which server a mount is.
+  - `smb_share_label.rs`: what the UI calls a share ("private on Home NAS"), the one builder every surface calls (§ "Mount path disambiguation for same-name shares").
   - `smb_connect_failure.rs`: why an smb2 connect didn't get in, read by type. A `Refusal` (who the attempt went out as, and whether sign-in or the share said no, with the log advice for each) or an `UpgradeFailure` (read off a `FailedDial` plus `MountEvidence` by `of_dial`, § "This Mac refusing the route"); plus `UpgradeError` and `log_direct_connect_failure`. Shared by `share_access.rs` and both upgrade paths (§ "An auth rejection says what was actually rejected").
   - `smb_connect_directly.rs`: the manual "Connect directly" upgrade, with Cmdr's stored credentials, the sign-in sheet's, or Finder's saved password. Behind the three `upgrade_to_smb_volume*` commands, the MCP `upgrade_smb_to_direct` tool, and the indexer's `ensure_direct_smb`. Owns `UpgradeResult` (§ "Connect directly answers a gone volume").
   - `smb_direct_switch.rs`: the per-share "Use Cmdr's fast direct connection" switch, read and set by volume id for the volume switcher. Behind `get_smb_direct_connection_enabled` / `set_smb_direct_connection_enabled`. Owns `DirectConnectionSwitch` (§ "The per-share direct-connection switch").
@@ -175,7 +176,7 @@ cleartext password into `ps`-readable argv). See the "smbutil / smbclient fallba
 ### Always use IP when available
 
 Always pass the resolved IP from mDNS discovery when one is available; fall back to the hostname otherwise. The
-`.local` strip that fallback needs is `cmdr_smb::build_smb_addr`'s, and the reason for it lives with that code.
+`.local` resolution that fallback needs is `cmdr_smb::smb_addr`'s, and the reason for it lives with that code.
 
 ### Guest-first auth flow
 
@@ -284,7 +285,8 @@ The password is fed to `gio mount` through the child's **stdin** (`run_gio_mount
 `known_shares.rs` uses an in-memory `Mutex<KnownSharesStore>` as single source of truth. Disk is a snapshot of the
 in-memory state, so concurrent mutations are safe (the mutex serializes all in-memory updates).
 
-`manual_servers.rs` uses a file-based read-modify-write pattern (no in-memory cache). A global `STORE_LOCK` mutex
+`manual_servers.rs` uses a file-based read-modify-write pattern (no in-memory cache of the entries; only the typed
+names are mirrored, for share labels, `manual_servers_names.rs`). A global `STORE_LOCK` mutex
 protects the entire read-modify-write cycle to prevent TOCTOU races where two threads could read the same disk state
 and one write clobbers the other.
 
@@ -339,6 +341,13 @@ detects the collision before calling `NetFSMountURLSync`. `disambiguated_mount_p
 already taken by a different server (via `statfs`), and if so picks `/Volumes/{share}-1`, `-2`, etc. (Finder's
 convention) and passes it as an explicit mount point to `NetFSMountURLSync`. The volume switcher shows
 `{share} on {server}` for SMB mounts so the user knows which server each volume belongs to.
+
+That label has one builder, `smb_share_label.rs` (mounted rows, saved rows, favorites, a moved share, and Ask Cmdr's
+facts all call it). The server half is the Name typed in the Add server sheet when a person named the server ("private
+on Home NAS", #913), matched by `SmbServer::is` (same port, same machine), else the address with the port off 445. The
+names come from `manual_servers_names.rs`, an in-memory mirror of the app's store refreshed on every read and write of
+that file (never a test's temp path), since the mount-table volume list has no `AppHandle` to read the file with.
+Finder's Get Info still shows the address.
 
 "Different server" is an identity comparison (`server_identity::same_machine`), never a string compare: `statfs`
 may report the existing mount as `Naspolya._smb._tcp.local` while we mount by `192.168.1.111`, and a string mismatch
@@ -1387,9 +1396,11 @@ credential's shape (`user_empty`, `user_domain=none|backslash|at`, `password_emp
 - **`mdns-sd` 0.21.5 is the floor**: older releases retry a failed IPv4 multicast join every 5 s, forever, on Macs whose VM or container runtime (OrbStack, Docker, UTM) brings `bridge1NN` interfaces up and down. The join comes back `AddrInUse`, the interface never got recorded, and every IP check retried it: 9,322 retries and 29 MB of logs from one `bridge102` in a 39-hour run. 0.21.5 treats `AddrInUse` as already joined and keeps a shared membership when one interface goes away (keepsimple1/mdns-sd#513). Windows reports a repeated join as `WSAEINVAL`, which 0.21.5 still retries (verified on 0.21.5, OrbStack network churn A/B and upstream CI, 2026-10-01).
 - **Account name is keyed by server identity, not the raw string**: `make_account_name` runs the server through `server_identity::credential_key` (lowercase + strip the mDNS service suffix / `.local` down to the bare instance name), so `Naspolya`, `naspolya.local`, and `Naspolya._smb._tcp.local` all key the same entry. Without this the frontend saved under the mDNS instance name while the OS-mount upgrade path looked up by the `statfs` service name, so a just-saved password was never found on the next connect (the picker kept showing the `os_mount` dot and re-prompted). IP literals have no bare form and pass through unchanged.
 - **A port off 445 is part of the key** (`smb://localhost:11482`): `credential_key` keeps it in whichever form it arrives (the sheet's discovery name `nas.local:11482`, or `server_identity::smb_server(host, port)` from the upgrade), and drops 445, so a standard NAS keys exactly as before. `smb_server_address::get_keychain_password` takes the mount's port and tries the port-keyed names first, then (off 445) the port-less ones a password saved earlier sits under. Without the port on the upgrade side, a password the sheet saved for `localhost:11482` was never found and the direct session went out as a guest while the macOS mount was signed in. ❗ The system-keychain (Finder) read in `smb_connect_directly` is still matched by server name only.
+- **A trailing dot goes from the host half, before the port** (#915): the Add server sheet keeps a typed `nas.local.:11481` as the discovery name, and `credential_key` used to trim the dot only off the whole string, so the sheet's sign-in filed `smb://nas.local.:11481` while the upgrade and "Connect directly" filed `smb://nas:11481`. Now both key `nas:11481`. A forget also deletes the old spelling (`keychain::legacy_account_name`), so a password saved before the fix can't outlive its server.
+- **Every SMB secret Forget reads one scope** (`saved_servers::smb_hosts::smb_secret_scope`, #915): a host's listing id or a share's place id, resolved to every name the host's password can sit under (`SmbHostGroup::credential_names`: the dialed address, the discovery name, each row's server name and mount address, a discovered twin) plus the shares whose own entries go. `forget_server_secret`, `has_server_secret`, and `forget_saved_smb_host_password` all use it. Keyed by the share row's server name alone, the share's Forget missed the entries a mount or "Connect directly" filed under the dialed IP or the resolved hostname, and an SMB host's listing id answered a silent `false`.
 - **Linux `gio mount` requires GVFS**: The `gvfs-smb` package must be installed. Standard on Ubuntu/Fedora GNOME desktops. KDE desktops may need it explicitly.
 - **macOS smbutil and NetFSMountURLSync fail with loopback IP + non-standard port**: `//127.0.0.1:10480` gives "Broken pipe", but `//localhost:10480` works. `build_smbutil_url` and `NetworkMountView.svelte` both fall back to hostname when IP is `127.0.0.1` or `::1`. This matters for E2E testing against Docker containers on localhost.
-- **Mount URL must include port when non-standard**: `mount_share_sync` builds `smb://server:port/share` for non-445 ports. The port is passed as a separate parameter through `mount_share` → `mount_share_sync`, not embedded in the server string (embedding it would cause `cmdr_smb::build_smb_addr` to double the port: `localhost:10480:10480`). `SmbMountInfo.port` extracts the port from `statfs` mount source for upgrade paths.
+- **Mount URL must include port when non-standard**: `mount_share_sync` builds `smb://server:port/share` for non-445 ports. The port is passed as a separate parameter through `mount_share` → `mount_share_sync`, not embedded in the server string (embedding it would cause `cmdr_smb::smb_addr` to double the port: `localhost:10480:10480`). `SmbMountInfo.port` extracts the port from `statfs` mount source for upgrade paths.
 - **Manual hosts always set `hostname`**: The share listing pipeline guards on `host.hostname` being truthy. `create_network_host` always sets `hostname` (to the address, even for IPs) so manual hosts flow through the pipeline correctly.
 - **SMB upgrade waits briefly for mDNS to warm**: the browse runs only while something needs it (§ "Discovery runs only
   while something needs it"), so every upgrade meets a cold cache: `statfs` gives an IP (or an mDNS service name) and

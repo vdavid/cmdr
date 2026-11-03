@@ -420,10 +420,6 @@
   "@viewer.copy.copyFailed": {
     "sourceHash": "b08416d"
   },
-  "viewer.copy.readFailed": "Nem sikerült beolvasni a kijelölést. Megpróbálod újra?",
-  "@viewer.copy.readFailed": {
-    "sourceHash": "24ea14a"
-  },
   "viewer.saveAs.title": "Kijelölés mentése",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"

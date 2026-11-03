@@ -209,6 +209,15 @@ combo gets one row (`INSERT OR IGNORE` with a UNIQUE constraint handles dedup fo
 peppered `hashCallerIp` as `/download`. The cron handler aggregates raw rows into `daily_active_users` daily and prunes
 the raw rows at seven days.
 
+- **A semver pre-release (`0.58.1-pipelinetest.2`) gets the 302 but no row.** Gotcha/Why: the route once took
+  `versionPattern` (release only), so an installed pipeline-test build got a 400 on every check, which the app rightly
+  logs at error (a 4xx means Cmdr and its server disagree) and auto-sent (cmdr-reports#97, #98). The manifest serves it
+  like any build, so it updates to the next release. No row because every pre-release today is David's pipeline test
+  (`docs/guides/releasing.md` § Testing the pipeline), and the dashboard's version comparators split on `.` and assume
+  `MAJOR.MINOR.PATCH`. If Cmdr ever ships public release candidates, count them here and teach the dashboard semver.
+- **`/heartbeat` stays release-only** (`versionPattern`): a pre-release beat is a 400 the app drops without a log line
+  (`BeatOutcome::Refused`), which keeps test builds out of the stats the same way.
+
 ## Error reports
 
 **R2 key shape:** `error-reports/{prod|dev}/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`. The env segment (`prod` for release

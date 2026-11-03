@@ -82,7 +82,16 @@ impl WatchedArchive {
     /// Starts the content watch on a REAL OS stream: the two rewrite cells below are
     /// this watch's only proof that FSEvents delivers, so they opt out of the test
     /// build's scripted arm.
-    fn start_watch_for_real(&self) {
+    ///
+    /// It lets the fixture's own write settle first. A stream armed right after the
+    /// zip was written usually replays that write as a change, which reached the
+    /// seam before any rewrite did and let both cells pass without proving anything
+    /// (10 of 14 arms without the settle, 0 of 8 with it; macOS 27.0, load average
+    /// about 37, a scratch cell timing one rewrite, 2026-11-03).
+    async fn start_watch_for_real(&self) {
+        const FIXTURE_SETTLE: Duration = Duration::from_secs(1);
+        // allowed-test-sleep: ages the fixture write past FSEvents' replay window; there's no condition to wait on
+        tokio::time::sleep(FIXTURE_SETTLE).await;
         crate::watch::watch_for_real(&self.zip_path);
         self.volume
             .start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
@@ -135,7 +144,7 @@ async fn a_rewrite_asks_the_host_to_refresh_the_archive_listings() {
         "a volume with no watch must not claim its listings are watched"
     );
 
-    fixture.start_watch_for_real();
+    fixture.start_watch_for_real().await;
     assert_eq!(
         fixture.volume.listing_watch_coverage(&fixture.zip_path),
         WatchCoverage::EveryWriter,
@@ -164,7 +173,7 @@ async fn a_rewrite_asks_the_host_to_refresh_the_archive_listings() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_temp_rename_swap_still_asks_for_a_refresh() {
     let fixture = WatchedArchive::new(&[stored("a.txt", b"a".to_vec())]);
-    fixture.start_watch_for_real();
+    fixture.start_watch_for_real().await;
 
     fixture
         .drive_until_refreshed("a temp+rename inode swap", || {

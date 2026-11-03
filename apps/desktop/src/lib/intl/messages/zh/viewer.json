@@ -419,10 +419,6 @@
   "@viewer.copy.copyFailed": {
     "sourceHash": "b08416d"
   },
-  "viewer.copy.readFailed": "无法读取所选内容。要重试吗？",
-  "@viewer.copy.readFailed": {
-    "sourceHash": "24ea14a"
-  },
   "viewer.saveAs.title": "保存所选内容",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"

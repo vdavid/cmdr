@@ -51,7 +51,7 @@ log = "0.4"
 # background work spawns onto, and `macros` for `select!`. Deliberately NOT
 # `rt-multi-thread`: the runtime is the app's, handed down through
 # `VolumeHost::runtime`, and a backend that could build its own would.
-tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+tokio = { version = "1", features = ["macros", "net", "rt", "sync", "time"] }
 # `CancellationToken`, on the cancelable listing path. Default features off, the
 # same shape `cmdr-fs` pins, so no second copy enters the graph.
 tokio-util = { version = "0.7.18", default-features = false }

@@ -46,7 +46,8 @@ PLACE for S3 and NFS, a `*_volume_wiring.rs` that dials and registers), and thei
 - **❌ A `network` type must not be constructible from a backend type**: a `From` impl welds a module cycle.
 - **Forgetting a server's SMB password takes only its own entries** (`keychain::forget_server_credentials`): every name
   on ITS port, plus a port-less entry only when a lookup noted finding its password there
-  (`note_found_under_portless`). ❌ Never delete a port-less key blind: it's also the 445 server's key.
+  (`note_found_under_portless`). ❌ Never delete a port-less key blind: it's also the 445 server's key. Every SMB
+  secret Forget resolves its names through `smb_hosts::smb_secret_scope`, ❌ never a row's server name alone (#915).
 - **Saved-server lists: `server_list_file::{read, save}`, `lenient_entries` fields**, ❌ never `unwrap_or_default`.
 - **Only a person's yes adds an SMB link consent** (`smb_link_consents.rs`): ❌ no agent tool may reach `allow`.
 - **Only Cmdr's own mounts (and a favorite on an unsaved share) save an SMB share** (`smb_saved_shares.rs`), keyed by

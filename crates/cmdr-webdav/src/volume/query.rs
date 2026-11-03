@@ -7,7 +7,7 @@ use cmdr_fs::volume::{ListingProgress, SpaceInfo, VolumeError};
 use tokio_util::sync::CancellationToken;
 
 use super::WebdavVolume;
-use super::mapping::{href_name, propfind_to_file_entry};
+use super::mapping::{href_name, propfind_to_file_entry, self_entry_index};
 use super::paths::child_of;
 use crate::errors::{Attempted, map_status, map_transport_error};
 use crate::propfind::PropfindEntry;
@@ -44,8 +44,9 @@ impl WebdavVolume {
 
     /// One `Depth: 1` PROPFIND, with the collection's own entry left out.
     ///
-    /// ❗ The self entry is found by comparing decoded paths with the trailing
-    /// slash normalized away, ❌ never by position: RFC 4918 promises no order.
+    /// ❗ The self entry is found by `self_entry_index` (decoded paths, then the
+    /// shape a link-rewriting proxy keeps), ❌ never by position: RFC 4918
+    /// promises no order.
     pub(super) async fn list_directory_impl(
         &self,
         path: &Path,
@@ -63,11 +64,12 @@ impl WebdavVolume {
             client.base_path().trim_end_matches('/'),
             remote.trim_end_matches('/')
         );
+        let hrefs: Vec<&str> = props.iter().map(|prop| prop.href.as_str()).collect();
+        let own_index = self_entry_index(&own, &hrefs);
         let mut entries = Vec::with_capacity(props.len());
         let mut tally = ListingProgress::default();
-        for prop in &props {
-            let href = prop.href.trim_end_matches('/');
-            if href == own || href.is_empty() {
+        for (index, prop) in props.iter().enumerate() {
+            if Some(index) == own_index || prop.href.trim_end_matches('/').is_empty() {
                 continue;
             }
             let name = href_name(&prop.href);

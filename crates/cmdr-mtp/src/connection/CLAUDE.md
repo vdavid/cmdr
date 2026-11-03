@@ -7,7 +7,7 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
 
 - Session: `mod.rs` (the manager, connect/disconnect, `map_device_error`), `errors.rs`, `scheduler.rs`
   (`DevicePriorityGate`), `cache.rs` (path ↔ handle + 5 s-TTL listing caches, `EventDebouncer`), `events.rs`
-  (`MtpDeviceEvents`), `volume_registrar.rs`, `session_reset.rs`.
+  (`MtpDeviceEvents`), `volume_registrar.rs`, `session_reset.rs`, `connect_gate.rs` (single-flight `connect()`).
 - Ops: `directory_ops.rs` (listings), `twins.rs` (same-named rows), `resolve.rs` (path → handle), `bulk_ops.rs` (copy
   pre-scan), `handle_resolver.rs` (handle → path), `event_loop.rs` (per-device poll, feeding pane AND index),
   `file_ops.rs` (reads, uploads), `mutation_ops.rs` (delete, create, rename, move).
@@ -52,4 +52,4 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
 - **Test-gated behavior takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off in a consumer's
   test build.
 
-Locks, caches, recovery, and the event-to-index wiring: `DETAILS.md`. Read it before any non-trivial work here.
+Locks, caches, recovery, event wiring: `DETAILS.md`; read it before non-trivial work.

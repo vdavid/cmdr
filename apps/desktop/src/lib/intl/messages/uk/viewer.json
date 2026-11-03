@@ -419,10 +419,6 @@
   "@viewer.copy.copyFailed": {
     "sourceHash": "b08416d"
   },
-  "viewer.copy.readFailed": "Не вдалося прочитати вибране. Спробувати ще раз?",
-  "@viewer.copy.readFailed": {
-    "sourceHash": "24ea14a"
-  },
   "viewer.saveAs.title": "Зберегти вибране",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"

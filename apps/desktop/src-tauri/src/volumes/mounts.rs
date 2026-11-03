@@ -314,12 +314,12 @@ fn network_name(mount: &MountEntry) -> String {
 
 /// What an SMB share's row is called: "share on server". Also what the path resolver names it
 /// (`resolve_path_volume_fast`), so a favorite stores the same words the switcher shows.
+///
+/// The server is its typed name when a person named it, else its address with the port off
+/// 445, as the saved row names it: two servers on one machine would otherwise read identically
+/// (`network::smb_share_label`).
 pub(super) fn smb_share_name(info: &SmbMountInfo) -> String {
-    // With the port off 445, as the saved row names it: two servers on one
-    // machine would otherwise read identically.
-    let server = crate::network::smb_server_address::friendly_server_name(&info.server);
-    let display = crate::network::server_identity::smb_server(&server, info.port);
-    format!("{} on {}", info.share, display)
+    crate::network::smb_share_label::mounted(&info.share, &info.server, info.port)
 }
 
 /// Classify one mount-table entry into a switcher [`LocationInfo`], or `None` if

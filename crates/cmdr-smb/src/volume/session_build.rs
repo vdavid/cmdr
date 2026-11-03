@@ -34,10 +34,10 @@ pub(super) async fn build_session(
     params: &SmbConnectionParams,
     replaces: Option<SessionId>,
 ) -> Result<(SmbClient, Tree), smb2::Error> {
-    use crate::build_smb_addr;
+    use crate::smb_addr;
 
     let config = ClientConfig {
-        addr: build_smb_addr(&params.server, params.port),
+        addr: smb_addr(&params.server, params.port).await,
         timeout: Duration::from_secs(10),
         username: params.username.clone(),
         password: params.password.clone(),

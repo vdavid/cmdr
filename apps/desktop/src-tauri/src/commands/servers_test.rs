@@ -536,7 +536,7 @@ async fn connecting_a_webdav_target_with_a_non_http_url_answers_invalid_url_with
 /// rather than offering to revoke a credential that was never stored.
 #[tokio::test]
 async fn an_unsaved_id_has_no_remembered_secret() {
-    assert!(!has_server_secret("sftp-nothing-was-ever-saved-here".to_string()).await);
+    assert!(!has_server_secret_among("sftp-nothing-was-ever-saved-here", Vec::new()).await);
 }
 
 /// ❗ **A share's own Keychain entry is a remembered secret too** (#530): the
@@ -551,13 +551,122 @@ async fn an_smb_shares_own_entry_is_remembered_and_forgotten_with_the_servers() 
     known_shares::remember_share(row.clone());
     crate::network::keychain::save_credentials(server, Some("Ledger"), "grace", "grace-pw").expect("saved");
 
-    assert!(has_server_secret("smb-ledger-530".to_string()).await);
-    assert!(forget_server_secret("smb-ledger-530".to_string()).await);
+    assert!(has_server_secret_among("smb-ledger-530", Vec::new()).await);
+    assert!(forget_server_secret_among("smb-ledger-530", Vec::new()).await);
 
     assert!(matches!(
         crate::network::keychain::get_credentials(server, Some("Ledger")),
         Err(crate::network::keychain::KeychainError::NotFound(_))
     ));
-    assert!(!has_server_secret("smb-ledger-530".to_string()).await);
+    assert!(!has_server_secret_among("smb-ledger-530", Vec::new()).await);
+    known_shares::forget_rows(&[row]);
+}
+
+/// A server added from the sheet the way #915 found it: typed `host.local.:port`,
+/// signed in at its share list (filed under the discovery name), mounted by IP, and
+/// "Connect directly" filing the share's own entry under the resolved hostname and
+/// under the dialed IP, plus an entry under the key a trailing dot used to make.
+/// Answers the manual entry, the share row, and every key a sign-in wrote.
+fn signed_in_manual_server(
+    address: &str,
+    ip: &str,
+    volume_id: &str,
+) -> (
+    manual_servers::ManualServerEntry,
+    known_shares::KnownNetworkShare,
+    Vec<(String, Option<String>)>,
+) {
+    use crate::network::keychain::save_credentials;
+    use crate::network::server_identity::smb_server;
+
+    let port = 11481;
+    let entry = manual_servers::ManualServerEntry {
+        id: manual_servers::generate_server_id(address, port),
+        display_name: "Home NAS".to_string(),
+        address: address.to_string(),
+        port,
+        added_at: "2026-11-03T00:00:00Z".to_string(),
+        username: Some("ada".to_string()),
+        awaiting_first_connect: false,
+    };
+    let discovery_name = manual_servers::discovery_name(address, port);
+    let mut row = share_row(&discovery_name, "private", Some("ada"), Some(volume_id));
+    row.address = Some(ip.to_string());
+    row.port = Some(port);
+    known_shares::remember_share(row.clone());
+
+    // The share list's sign-in (`PlacesBrowser` → `save_smb_credentials`), under the
+    // host's discovery name.
+    save_credentials(&discovery_name, None, "ada", "pw").expect("saved");
+    let resolved = smb_server(address.trim_end_matches('.'), port);
+    save_credentials(&resolved, Some("private"), "ada", "pw").expect("saved");
+    let dialed = smb_server(ip, port);
+    save_credentials(&dialed, Some("private"), "ada", "pw").expect("saved");
+    // What a save under the sheet's spelling made before the key dropped the dot.
+    let legacy = format!("smb://{}", discovery_name.to_lowercase());
+    crate::secrets::store().set(&legacy, b"ada\0old").expect("planted");
+
+    let keys = vec![
+        (discovery_name, None),
+        (resolved, Some("private".to_string())),
+        (dialed, Some("private".to_string())),
+    ];
+    (entry, row, keys)
+}
+
+/// Asserts nothing answers under `keys` any more, in the store or the cache.
+fn assert_all_forgotten(keys: &[(String, Option<String>)], legacy_host: &str) {
+    use crate::network::keychain::{KeychainError, get_credentials, has_cached_credentials};
+
+    for (server, share) in keys {
+        assert!(
+            matches!(
+                get_credentials(server, share.as_deref()),
+                Err(KeychainError::NotFound(_))
+            ),
+            "❗ {server} / {share:?} outlived the forget"
+        );
+        assert!(!has_cached_credentials(server), "the cache lets go of {server} too");
+    }
+    assert!(
+        crate::secrets::store()
+            .get(&format!("smb://{}", legacy_host.to_lowercase()))
+            .is_err(),
+        "the pre-fix spelling's entry goes too"
+    );
+}
+
+/// ❗ **Forgetting a saved share's password takes every entry its sign-in filed**
+/// (#915), ❌ not only the one under the share row's server name: the forget left
+/// the host-level password behind, and the next add signed in silently.
+#[tokio::test]
+async fn forgetting_a_shares_password_takes_what_every_sign_in_filed() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let (entry, row, keys) = signed_in_manual_server("home-nas-915a.local.", "192.0.2.111", "smb-915-a-private");
+    let manual = vec![entry];
+
+    assert!(has_server_secret_among("smb-915-a-private", manual.clone()).await);
+    assert!(forget_server_secret_among("smb-915-a-private", manual.clone()).await);
+
+    assert_all_forgotten(&keys, "home-nas-915a.local.:11481");
+    assert!(!has_server_secret_among("smb-915-a-private", manual).await);
+    known_shares::forget_rows(&[row]);
+}
+
+/// The same through the HOST's id, the one `list_saved_servers` hands out for an SMB
+/// server: the protocol-agnostic secret commands answer for it too, rather than a
+/// silent `false` that a caller reads as "nothing was saved".
+#[tokio::test]
+async fn forgetting_a_hosts_password_by_its_listing_id_takes_every_entry() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let (entry, row, keys) = signed_in_manual_server("home-nas-915b.local.", "192.0.2.112", "smb-915-b-private");
+    let host_id = entry.id.clone();
+    let manual = vec![entry];
+
+    assert!(has_server_secret_among(&host_id, manual.clone()).await);
+    assert!(forget_server_secret_among(&host_id, manual.clone()).await);
+
+    assert_all_forgotten(&keys, "home-nas-915b.local.:11481");
+    assert!(!has_server_secret_among(&host_id, manual).await);
     known_shares::forget_rows(&[row]);
 }
