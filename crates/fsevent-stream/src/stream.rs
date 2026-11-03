@@ -64,9 +64,12 @@ pub struct EventStreamHandler {
     runloop: Option<(CFRunLoop, thread::JoinHandle<()>)>,
 }
 
-// Safety:
-// - According to the Apple documentation, it's safe to move `CFRef`s across threads.
-//   https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
+// SAFETY: The only non-`Send` field is the `CFRunLoop`, a retained CF reference. Retain and
+// release are thread-safe for every CF object, and the run-loop calls `abort` makes from the
+// handler's thread (`CFRunLoopAddObserver`, `CFRunLoopRemoveObserver`, `CFRunLoopIsWaiting`,
+// `CFRunLoopStop`) are documented as callable from any thread ("Core Foundation run loop
+// functions are generally thread-safe", Threading Programming Guide § Run Loops, and the Thread
+// Safety Summary).
 unsafe impl Send for EventStreamHandler {}
 
 impl EventStreamHandler {
@@ -78,6 +81,8 @@ impl EventStreamHandler {
         if let Some((runloop, thread_handle)) = self.runloop.take() {
             let (tx, rx) = channel();
             let observer = create_oneshot_observer(kCFRunLoopBeforeWaiting, tx);
+            // SAFETY: `kCFRunLoopDefaultMode` is an immutable `CFStringRef` constant exported by
+            // CoreFoundation, initialized before any Rust code runs; reading it is a plain load.
             runloop.add_observer(&observer, unsafe { kCFRunLoopDefaultMode });
 
             if !runloop.is_waiting() {
@@ -85,6 +90,7 @@ impl EventStreamHandler {
                 rx.recv().expect("channel to receive BeforeWaiting signal");
             }
 
+            // SAFETY: As above, a read of CoreFoundation's immutable mode constant.
             runloop.remove_observer(&observer, unsafe { kCFRunLoopDefaultMode });
             runloop.stop();
 
@@ -176,14 +182,13 @@ pub(crate) struct StreamContextInfo {
 
 impl_release_callback!(release_context, StreamContextInfo);
 
-/// A CFRunLoop that can be sent across threads.
-///
-/// SAFETY: CFRunLoop is a Core Foundation type. Apple documents that CF objects can be
-/// retained/released and used across threads. CFRunLoopStop (the only cross-thread operation
-/// we perform) is explicitly documented as thread-safe.
-/// https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
+/// A CFRunLoop that can be sent across threads, from the worker that owns it to the handler.
 struct SendableCFRunLoop(CFRunLoop);
 
+// SAFETY: A `CFRunLoop` is a retained CF reference, and CF retain/release is thread-safe. The
+// receiving thread only uses it through `EventStreamHandler::abort`, whose run-loop calls are
+// documented as callable from any thread (see the `Send` impl on `EventStreamHandler`).
+// https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
 unsafe impl Send for SendableCFRunLoop {}
 
 /// Create a new [`EventStream`](EventStream) and [`EventStreamHandler`](EventStreamHandler) pair.
@@ -262,7 +267,10 @@ pub fn create_event_stream<P: AsRef<Path>>(
 
         let current_runloop = CFRunLoop::get_current();
 
-        // Safety: kCFRunLoopDefaultMode is a valid static CFStringRef from CoreFoundation.
+        // SAFETY: `kCFRunLoopDefaultMode` is CoreFoundation's immutable, always-valid mode
+        // `CFStringRef`, which is `schedule`'s whole contract. Scheduling on THIS thread's run
+        // loop is what pins every callback (and so every access to the stream context) to this
+        // thread, and the stream is stopped and invalidated here before it's released.
         unsafe { stream.schedule(&current_runloop, kCFRunLoopDefaultMode) };
         if stream.start() {
             // `abort` ends `CFRunLoopRun` with `CFRunLoopStop`.
@@ -310,6 +318,24 @@ enum CallbackError {
     ToI64,
 }
 
+/// Defines an `FSEventStreamCallback` around `$body`, which turns one batch into events.
+///
+/// The FSEvents callback contract every `SAFETY:` comment in these callbacks leans on
+/// (`FSEventStreamCallback` docs and `FSEvents/FSEvents.h`):
+///
+/// - FSEvents calls back only on the run loop the stream is scheduled on (our worker thread in
+///   `create_event_stream`), one call at a time, and never after `FSEventStreamInvalidate`.
+/// - `info` is the context's `info` pointer: our boxed `StreamContextInfo`. It's freed only by
+///   `release_context`, which FSEvents calls when the stream is deallocated, after the worker
+///   has stopped and invalidated it, so it outlives every callback. We only ever take `&` to it.
+/// - `event_flags` and `event_ids` point to `num_events` elements each, valid for the call.
+/// - `event_paths` holds `num_events` entries, owned by FSEvents (Get rule) and released after
+///   the callback returns. Its shape is fixed by the create flags, which pick the callback: a
+///   `CFArrayRef` of `CFStringRef` with `UseCFTypes`, a `CFArrayRef` of `CFDictionaryRef` (a
+///   `CFStringRef` under `path`, a `CFNumberRef` under `fileID`) with `UseExtendedData`, and a C
+///   array of NUL-terminated C strings without `UseCFTypes`.
+/// - Nothing borrowed from these outlives the call: `$body`'s iterator is collected into owned
+///   `Event`s before the callback returns.
 macro_rules! define_callback {
     ($name: ident, ($num: ident, $paths: ident, $flags: ident, $ids: ident)$body: block) => {
         extern "C" fn $name(
@@ -339,9 +365,14 @@ macro_rules! define_callback {
 
                 trace!("Received {} event(s)", num_events);
 
-                let info = info as *const StreamContextInfo;
-                let event_handler = unsafe { &(*info).event_handler };
-                let overflow = unsafe { &(*info).overflow };
+                // SAFETY: `info` is our live `StreamContextInfo` for the whole callback (see the
+                // macro docs), and shared references are all anyone takes to it. Its fields are
+                // `Sync` (an mpsc `Sender` and an `AtomicBool`).
+                let context = unsafe { &*(info as *const StreamContextInfo) };
+                let StreamContextInfo {
+                    event_handler,
+                    overflow,
+                } = context;
 
                 // An event we can't build is an event the consumer never sees, so raise the
                 // overflow flag: that's the consumer's "history is incomplete, rescan" signal.
@@ -385,98 +416,125 @@ macro_rules! define_callback {
             });
             if outcome.is_err() {
                 error!("FSEvents callback panicked (batch dropped, overflow flagged)");
-                let info = info as *const StreamContextInfo;
-                unsafe { &(*info).overflow }.store(true, Ordering::Relaxed);
+                // SAFETY: The panic unwound out of `callback_impl`, but `info` is still our live
+                // `StreamContextInfo` (FSEvents frees it only after invalidation, see the macro
+                // docs), and we only take a shared reference to an atomic.
+                let context = unsafe { &*(info as *const StreamContextInfo) };
+                context.overflow.store(true, Ordering::Relaxed);
             }
         }
     };
 }
 
+/// Reads event `idx`'s flags and id.
+///
+/// # Safety
+/// `flags` and `ids` must point to arrays of more than `idx` elements, as FSEvents' callback
+/// arguments do for every `idx < num_events`.
+unsafe fn flags_and_id(
+    flags: *const FSEventStreamEventFlags,
+    ids: *const FSEventStreamEventId,
+    idx: usize,
+) -> (FSEventStreamEventFlags, FSEventStreamEventId) {
+    // SAFETY: In bounds by this function's contract, and both arrays are plain integers that
+    // FSEvents initialized.
+    unsafe { (*flags.add(idx), *ids.add(idx)) }
+}
+
+/// The `path` string of an extended-data event dictionary.
+fn extended_data_path(dict: &CFDictionary<CFString>) -> PathBuf {
+    let value = *dict.get(&*kFSEventStreamEventExtendedDataPathKey);
+    // SAFETY: FSEvents documents the `path` value as a `CFStringRef`, borrowed from the
+    // dictionary (Get rule): `from_void` wraps it without a retain, and the wrapper doesn't
+    // outlive `dict`.
+    let path = unsafe { CFString::from_void(value) };
+    PathBuf::from(path.to_string())
+}
+
 define_callback!(cf_ext_with_id_callback, (num, paths, flags, ids){
+    // SAFETY: With `UseExtendedData`, `paths` is a `CFArrayRef` of `CFDictionaryRef` that
+    // FSEvents keeps alive for the callback (see the macro docs); `from_void` borrows it
+    // without a retain, and the iterator holding it is collected before the callback returns.
     let paths = unsafe { CFArray::<CFDictionary<CFString>>::from_void(paths) };
     (0..num).map(move |idx| {
-        Ok((
-            unsafe { paths.get_unchecked(idx as CFIndex) },
-            unsafe { *flags.add(idx) },
-            unsafe { *ids.add(idx) },
-        ))
-        .and_then(|(dict, flags, id)| {
-            Ok(Event {
-                path: PathBuf::from(
-                    (*unsafe {
-                        CFString::from_void(*dict.get(&*kFSEventStreamEventExtendedDataPathKey),)
-                    })
-                        .to_string(),
-                ),
-                inode: Some(
-                    unsafe {CFNumber::from_void(*dict.get(&*kFSEventStreamEventExtendedFileIDKey))}
-                        .to_i64()
-                        .ok_or(CallbackError::ToI64)?,
-                ),
-                flags: StreamFlags::from_bits_retain(flags),
-                raw_flags: flags,
-                id,
-            })
+        // SAFETY: `idx < num`, the length of `paths`, `flags`, and `ids` alike.
+        let dict = unsafe { paths.get_unchecked(idx as CFIndex) };
+        // SAFETY: `idx < num`, the length of both arrays.
+        let (flags, id) = unsafe { flags_and_id(flags, ids, idx) };
+        let file_id = *dict.get(&*kFSEventStreamEventExtendedFileIDKey);
+        // SAFETY: FSEvents documents the `fileID` value as a `CFNumberRef`, borrowed from
+        // `dict` (Get rule) for no longer than this closure.
+        let inode = unsafe { CFNumber::from_void(file_id) }
+            .to_i64()
+            .ok_or(CallbackError::ToI64)?;
+        Ok(Event {
+            path: extended_data_path(&dict),
+            inode: Some(inode),
+            flags: StreamFlags::from_bits_retain(flags),
+            raw_flags: flags,
+            id,
         })
     })
 });
 
 define_callback!(cf_ext_callback, (num, paths, flags, ids){
+    // SAFETY: As in `cf_ext_with_id_callback`: with `UseExtendedData`, `paths` is a borrowed
+    // `CFArrayRef` of `CFDictionaryRef`, alive for the callback.
     let paths = unsafe { CFArray::<CFDictionary<CFString>>::from_void(paths) };
     (0..num).map(move |idx| {
-        Ok((
-            unsafe { paths.get_unchecked(idx as CFIndex) },
-            unsafe { *flags.add(idx) },
-            unsafe { *ids.add(idx) },
-        )).map(|(dict, flags, id)| Event {
-                path: PathBuf::from(
-                    (*unsafe {
-                        CFString::from_void(*dict.get(&*kFSEventStreamEventExtendedDataPathKey),)
-                    })
-                        .to_string(),
-                ),
-                inode: None,
-                flags: StreamFlags::from_bits_retain(flags),
-                raw_flags: flags,
-                id,
-            })
+        // SAFETY: `idx < num`, the length of `paths`, `flags`, and `ids` alike.
+        let dict = unsafe { paths.get_unchecked(idx as CFIndex) };
+        // SAFETY: `idx < num`, the length of both arrays.
+        let (flags, id) = unsafe { flags_and_id(flags, ids, idx) };
+        Ok(Event {
+            path: extended_data_path(&dict),
+            inode: None,
+            flags: StreamFlags::from_bits_retain(flags),
+            raw_flags: flags,
+            id,
+        })
     })
 });
 
 define_callback!(cf_callback, (num, paths, flags, ids){
+    // SAFETY: With `UseCFTypes` (and no extended data), `paths` is a `CFArrayRef` of
+    // `CFStringRef` that FSEvents keeps alive for the callback; `from_void` borrows it without
+    // a retain, and the iterator holding it is collected before the callback returns.
     let paths = unsafe { CFArray::<CFString>::from_void(paths) };
     (0..num).map(move |idx| {
-        Ok((
-            unsafe { paths.get_unchecked(idx as CFIndex) },
-            unsafe { *flags.add(idx) },
-            unsafe { *ids.add(idx) },
-        )).map(|(path, flags, id)| Event {
-                    path: PathBuf::from((*path).to_string()),
-                    inode: None,
-                    flags: StreamFlags::from_bits_retain(flags),
-                    raw_flags: flags,
-                    id,
-                })
+        // SAFETY: `idx < num`, the length of `paths`, `flags`, and `ids` alike.
+        let path = unsafe { paths.get_unchecked(idx as CFIndex) };
+        // SAFETY: `idx < num`, the length of both arrays.
+        let (flags, id) = unsafe { flags_and_id(flags, ids, idx) };
+        Ok(Event {
+            path: PathBuf::from(path.to_string()),
+            inode: None,
+            flags: StreamFlags::from_bits_retain(flags),
+            raw_flags: flags,
+            id,
+        })
     })
 });
 
 define_callback!(normal_callback, (num, paths, flags, ids){
+    // Without `UseCFTypes`, `paths` is a C array of `num` C strings, freed by FSEvents after
+    // the callback returns.
     let paths = paths as *const *const c_char;
     (0..num).map(move |idx| {
-        Ok((
-            unsafe { *paths.add(idx) },
-            unsafe { *flags.add(idx) },
-            unsafe { *ids.add(idx) },
-        )).map(|(path, flags, id)| Event {
-                path: PathBuf::from(
-                    OsStr::from_bytes(unsafe { CStr::from_ptr(path) }.to_bytes())
-                        .to_os_string(),
-                ),
-                inode: None,
-                flags: StreamFlags::from_bits_retain(flags),
-                raw_flags: flags,
-                id,
-            })
+        // SAFETY: `idx < num`, the length of the `paths` array FSEvents passed.
+        let path = unsafe { *paths.add(idx) };
+        // SAFETY: `idx < num`, the length of both arrays.
+        let (flags, id) = unsafe { flags_and_id(flags, ids, idx) };
+        // SAFETY: Each entry is a non-NULL, NUL-terminated C string that FSEvents keeps alive
+        // until the callback returns; the bytes are copied into an owned `PathBuf` right here.
+        let path = unsafe { CStr::from_ptr(path) };
+        Ok(Event {
+            path: PathBuf::from(OsStr::from_bytes(path.to_bytes())),
+            inode: None,
+            flags: StreamFlags::from_bits_retain(flags),
+            raw_flags: flags,
+            id,
+        })
     })
 });
 

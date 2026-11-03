@@ -25,6 +25,10 @@ extern "C" fn observer_callback(
     info: *mut c_void,
 ) {
     drop(catch_unwind(move || {
+        // SAFETY: `info` is the boxed `ObserverContextInfo` from `create_oneshot_observer`. The
+        // observer owns it and releases it only when the observer is deallocated, which can't
+        // happen while CF is calling out to it, and nothing takes more than `&` to it.
+        // `Sender::send` is safe from the run-loop thread (`Sender` is `Send + Sync`).
         let ctx: &ObserverContextInfo = unsafe { &*(info.cast()) };
         if ctx.interest.contains(activity) {
             let _ = ctx.tx.send(activity);

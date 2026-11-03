@@ -232,6 +232,8 @@ async fn must_receive_fs_events_impl(
             // Now we delete this file.
             fs::remove_file(&path).expect("to be removed");
             // Ensure the filesystem is up to date.
+            // SAFETY: (test) `sync(2)` takes no arguments, touches no Rust-owned memory, and
+            // can't fail.
             unsafe { libc::sync() };
             sleep(Duration::from_millis(300));
         }
