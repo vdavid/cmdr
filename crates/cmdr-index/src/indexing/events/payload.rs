@@ -104,7 +104,7 @@ pub enum RescanReason {
     /// The FSEvents journal can't serve the stored position: its history was
     /// purged, or it runs behind the stored event id.
     JournalGap,
-    /// Replaying would process more paths than a full reconcile walks.
+    /// Replaying would cost more than the full reconcile that replaces it.
     ReplayOverflow,
     /// DriveWatcher failed to start for replay.
     WatcherStartFailed,

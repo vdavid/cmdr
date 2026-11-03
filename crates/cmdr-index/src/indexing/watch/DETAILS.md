@@ -55,7 +55,9 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
   the boot disk until quit. Why replay claims ground it never walks: `../lifecycle/DETAILS.md` § "The two single-flight
   questions a scan has to ask".
 - **event_loop/replay_cost.rs** — the pure cost pieces replay runs on: `ReplayWindow` (dedup by distinct paths,
-  `REPLAY_DEDUP_WINDOW_PATHS`) and `ReplayBudget` (`REPLAY_PATH_BUDGET_FLOOR`). Why: § "Replay cost, not event count".
+  `REPLAY_DEDUP_WINDOW_PATHS`) and `ReplayBudget` (`REPLAY_EVENT_COST`, `REPLAY_PATH_COST`, `REPLAY_BUDGET_FLOOR`). Why:
+  § "Replay cost, not event count". `event_loop/replay_cost_bench.rs` is the `#[ignore]`d harness that measured those
+  weights on a real journal and boot disk.
 - **event_loop/verification.rs** — `run_background_verification` + `verify_affected_dirs` (below).
 - **event_loop/verify_guard.rs** — the two pure cost-bounding decisions for verification (`VerifyVerdict`,
   `HUGE_DIR_CHILDREN`). Structural role below; the cost-bounding RATIONALE is canonical in `../reconcile/DETAILS.md` §
@@ -274,19 +276,29 @@ future id would deliver nothing and miss every change. Everything else is the re
 - **Purged history** (`history_was_purged`, checked on the FIRST delivered event): on an intact journal the first event
   sits right after the stored id however busy the machine was, so a first event 10 M+ ids later means macOS dropped the
   history in between. Falls back with `JournalGap`.
-- **Cost** (`ReplayBudget`, `replay_cost.rs`): the paths the replay actually PROCESSES (each a stat, a path resolve, and
-  an upsert), checked before each window drains, against the index's entry count (floor `REPLAY_PATH_BUDGET_FLOOR`). A
-  full reconcile visits every entry once, so a replay that would process more paths than the index holds costs more than
-  the walk. This also catches the Full Disk Access toggle that suddenly reveals millions of hidden paths. Falls back
-  with `ReplayOverflow`.
+- **Cost** (`ReplayBudget`, `replay_cost.rs`): what the replay has cost, in units of one entry a full reconcile walks,
+  against the index's entry count (floor `REPLAY_BUDGET_FLOOR`). It charges every DELIVERED event (`REPLAY_EVENT_COST` =
+  5, checked as each arrives) and every path it PROCESSES (`REPLAY_PATH_COST` = 2, each a stat, a path resolve, and an
+  upsert, checked before each window drains). A full reconcile visits every entry once, so past that the walk is
+  cheaper. This also catches the Full Disk Access toggle that suddenly reveals millions of hidden paths. Falls back with
+  `ReplayOverflow`.
 - **Memory**: the ingestion RAM guard (§ "Unbounded ingestion buffer").
 
 **Why not the id gap at launch, which is what it used to be (#751).** FSEvents ids are machine-wide and count every
 write, not time. Measured 2026-10-26 on David's Mac: 14,029,000 ids in about 90 minutes, mostly two ~10-minute `cargo`
 builds, against an index fully reconciled 90 minutes earlier. A 10 M launch gate walked the whole drive for that (5–15
-minutes at background priority, hourglasses everywhere) when the index was nearly current. A raw processed-event cap
-(the old 10 M `REPLAY_EVENT_COUNT_LIMIT`) had the same flaw one step later, so it went too: raw events now cost a hash
-merge each, and the budget counts what actually costs.
+minutes at background priority, hourglasses everywhere) when the index was nearly current. A flat 10 M raw-event cap
+(the old `REPLAY_EVENT_COUNT_LIMIT`) had the same flaw one step later, so it went too.
+
+**Why delivered events are charged at all, and why they weigh most (#807).** Measured on a real journal against a full
+reconcile of `/` (macOS 27.0.1, M3 Max, idle, `replay_cost_bench.rs`, 2026-11-03;
+`docs/notes/performance/replay-budget-2026-11-03.md`): fseventsd delivers a replay at only ~8,000–13,000 events a second
+on one busy core, so an event costs ~80–120 µs of wall and ~90 µs of fseventsd CPU however it dedups, against ~25 µs of
+wall and ~12 µs of CPU per walked entry. Processing a path costs ~21 µs of wall and ~32 µs of CPU. The weights sit
+between wall and CPU parity, so at the limit a replay takes ~0.65× the walk's wall clock and ~1.5× its CPU; a typical
+path (~1.2 events) costs ~8 units, so a replay may process about an eighth of the index. The old 1:1 paths-only budget
+let a replay run ~4× the walk's wall clock and ~12× its CPU, and charged nothing for repeats that dedup away. #751's
+case still replays: 14 M ids are ~0.4–0.5 M events (~30–36 ids per delivered event), ~40–60 s.
 
 **Why the dedup window is bounded by distinct paths.** A build rewrites the same `target/` files over and over, and the
 old 1,000-event batches processed every repeat that fell in a different batch. Processing re-stats each path, so a path
@@ -297,10 +309,9 @@ connection can't see the replay's own uncommitted rows anyway (one transaction f
 changes no parent-resolution order. `UpdateLastEventId` goes out after each drain, so the stored id never passes an
 event still in the window.
 
-**Not measured yet**: the issue asked for a timed 10–50 M-event replay against the full reconcile it replaces. The
-budget's 1:1 ratio (paths processed vs. entries walked) is the reasoned default until that measurement lands in
-`docs/notes/`; a replayed path likely costs a few times a walked entry, so the ratio may want lowering, ❌ never raising
-past 1:1 without numbers.
+**Measured at 1–3 M events, not 10–50 M**: reading this Mac's whole journal (plausibly 40–60 M events) didn't finish in
+20 minutes, and the per-event rate held steady across the runs, so the weights extrapolate. ❌ Don't lower the weights
+without a new measurement in that note's shape.
 
 Out of scope, deliberately: writing a newer event id into a stale index to skip work. That claims changes the index
 never saw and leaves sizes stale for good.

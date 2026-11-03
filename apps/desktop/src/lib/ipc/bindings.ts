@@ -15628,7 +15628,7 @@ export type RescanReason =
    *  purged, or it runs behind the stored event id.
    */
   | 'journal_gap'
-  // Replaying would process more paths than a full reconcile walks.
+  // Replaying would cost more than the full reconcile that replaces it.
   | 'replay_overflow'
   // DriveWatcher failed to start for replay.
   | 'watcher_start_failed'

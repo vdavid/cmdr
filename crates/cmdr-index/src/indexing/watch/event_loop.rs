@@ -29,6 +29,8 @@ mod live;
 mod rename_detect;
 mod replay;
 mod replay_cost;
+#[cfg(all(test, target_os = "macos"))]
+mod replay_cost_bench;
 mod storm;
 mod verification;
 mod verify_guard;

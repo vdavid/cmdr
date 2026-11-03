@@ -138,6 +138,15 @@ test-group = 'disk-image'
 slow-timeout = { period = "90s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# The replay-budget measurement harness (`watch/event_loop/replay_cost_bench.rs`,
+# macOS-only, `#[ignore]`d and env-gated: without `CMDR_REPLAY_BENCH_DB` it returns at
+# once). With it set, one arm replays the whole FSEvents journal or walks all of `/`
+# against an 8 M-entry index copy: minutes by design (the walk took 191–499 s in the app).
+# allowed-unmatched-nextest-filter: macos-only, FSEvents journal replay has no Linux counterpart
+filter = 'test(replay_cost_bench::)'
+slow-timeout = { period = "1200s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # The index's vanish pin on a real HFS+ image (`indexing::tests::vanish_tests`,
 # macOS-only, `#[ignore]`d): a real `IndexManager` walks a tree on the image, the
 # walker's test-only park point holds it between directories, and the test

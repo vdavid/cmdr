@@ -56,7 +56,8 @@ const REPLAY_PRESSURE_CHECK_EVERY: u64 = 1_000;
 /// it through `process_fs_event_into` each time it fills, collecting affected
 /// parent paths in a `HashSet`. No per-event UI notification.
 /// `UpdateLastEventId` goes out after each drain. A [`ReplayBudget`] caps the
-/// paths processed; past it, a full reconcile is cheaper and the loop falls back.
+/// events delivered and paths processed; past it, a full reconcile is cheaper and
+/// the loop falls back.
 ///
 /// **Phase 2 (after HistoryDone):** Send final `UpdateLastEventId`, flush
 /// the writer (wait for all prior messages to commit), then emit a single
@@ -87,7 +88,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     } = config;
 
     log::info!(
-        "Replay: started (since_event_id={since_event_id}, estimated_total={estimated_total:?}, path budget={})",
+        "Replay: started (since_event_id={since_event_id}, estimated_total={estimated_total:?}, budget={} walked entries)",
         budget.limit()
     );
     log::info!(target: "stall_probe::reconciler", "replay_event_loop_started since_event_id={since_event_id}");
@@ -215,6 +216,14 @@ pub(in crate::indexing) async fn run_replay_event_loop(
             event_count += 1;
 
             break; // Exit Phase 1, enter Phase 2
+        }
+
+        // Every delivered event costs fseventsd's time whether or not it dedups
+        // away, and delivery is most of a replay's cost (`replay_cost.rs`).
+        budget.note_event();
+        if budget.exhausted() {
+            fall_back_over_budget(events.as_ref(), &volume_id, &budget, event_count, &mut fallback_tx);
+            return Ok(());
         }
 
         // Handle MustScanSubDirs: queue for after replay (don't start during replay)
@@ -451,7 +460,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     // anchor stays on the live drain, which dedups, ancestor-collapses, and
     // per-subtree-throttles them at background QoS, so a churn-heavy gap catches up
     // subtree by subtree. The genuine full-scan fallbacks (journal purge, the
-    // path budget, the RAM guard, watcher overflow) remain.
+    // cost budget, the RAM guard, watcher overflow) remain.
     for path in pending_rescans {
         reconciler.route_must_scan_sub_dirs(std::path::PathBuf::from(path), &writer);
     }
@@ -624,7 +633,7 @@ fn send_replay_deletes(deletes_to_send: Vec<WriteMessage>, work: &VolumeWork, wr
     deletes::batch_sent(work.volume_id());
 }
 
-/// Give up on a replay whose next window would go past its path budget: a full
+/// Give up on a replay whose next event or window would go past its cost budget: a full
 /// reconcile brings the index current for less. Nothing is lost by stopping
 /// here, because the walk that follows reads the disk whole.
 fn fall_back_over_budget(
@@ -639,11 +648,11 @@ fn fall_back_over_budget(
         volume_id,
         RescanReason::ReplayOverflow,
         format!(
-            "Replay would process more than {} after {} paths and {}; the index holds about that many, \
-             so a full reconcile is cheaper.",
-            pluralize(budget.limit(), "path"),
-            budget.spent(),
+            "Replay would cost more than walking the index's {} after {} (spent {} walked entries' worth); \
+             a full reconcile is cheaper.",
+            pluralize(budget.limit(), "entry"),
             pluralize(event_count, "event"),
+            budget.spent(),
         ),
     );
     if let Some(tx) = fallback_tx.take() {
@@ -670,7 +679,7 @@ fn defer_replay_rescan(pending_rescans: &mut HashSet<String>, path: String) {
     clippy::too_many_arguments,
     reason = "the replay drain's state plus the work its delete gate reads; a struct would add indirection without clarity"
 )]
-fn flush_replay_batch(
+pub(super) fn flush_replay_batch(
     pending: &mut HashMap<String, watcher::FsChangeEvent>,
     space: &IndexPathSpace,
     conn: &Connection,

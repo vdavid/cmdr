@@ -257,6 +257,9 @@ Newest first.
 - `malloc-large-cache-2026-11-03.md`: the `MallocLargeCache=0` experiment behind #864, search and listing throughput,
   burst and settle footprints, a restic visit both ways, the knob's tight-loop cost, and why `LSEnvironment` over a self
   re-exec. Raw numbers: `malloc-large-cache-2026-11-03-memory.csv` and `malloc-large-cache-2026-11-03-timings.csv`.
+- `replay-budget-2026-11-03.md`: a cold-start journal replay against the full reconcile it falls back to, on a real
+  journal and boot disk: fseventsd delivery is the bottleneck (~80–120 µs and ~90 µs of its CPU per event), and the
+  per-event and per-path weights `ReplayBudget` charges now.
 - `allocator-slack-release-2026-09-27.md`: neither `mi_collect(true)` nor malloc pressure relief returns the post-burst
   slack; where mimalloc keeps it (idle threads' empty pages, sparse pages, unpurged slices), park-time collects, four
   rounds of mimalloc against the system allocator's settle (median 403 against 241 MiB at +15 min), and the check round

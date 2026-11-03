@@ -426,7 +426,7 @@ impl IndexManager {
         let journal_runs_behind = journal_replayable && launch_route::journal_runs_behind(last_event_id, current_id);
 
         // One `COUNT(*)` for both questions: whether there are rows, and the
-        // replay's path budget.
+        // replay's cost budget.
         let entry_count = IndexStore::get_entry_count(read_conn).ok();
         let has_rows = entry_count.is_some_and(|count| count > 1);
         let route = launch_route::launch_route(&launch_route::IndexOnDisk {
