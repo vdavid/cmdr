@@ -215,6 +215,8 @@ jobs:
           filters: |
             rust:
               - 'apps/desktop/src-tauri/**'
+              # Compiled in the macOS lane (`finder-extension-compile`).
+              - 'apps/desktop/finder-extension/**'
               - 'apps/desktop/test/nfs-servers/**'
               - 'apps/desktop/test/s3-servers/**'
               - 'apps/desktop/test/sftp-servers/**'

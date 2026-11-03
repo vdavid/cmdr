@@ -225,6 +225,11 @@ SDK; free for a public repo) and asks the three questions Linux can't answer for
 
 Its steps live in the reusable `macos-lane.yml`, called by `ci.yml`'s `desktop-rust-macos`.
 
+First, before clippy, it runs `desktop-finder-extension-compile`: both slices of the Swift Finder extension,
+cross-compiled by `swiftc` on the one runner in seconds. Nothing else compiles it before a release build, which is where
+`Logger` (macOS 11) broke the 10.15 x86_64 slice (`v0.58.1-pipelinetest.1`, 2026-11-03). The `rust` filter carries
+`apps/desktop/finder-extension/**` for it, so a Swift-only change starts the lane too.
+
 Gotcha for any second gate on a commit (a dispatched run, a merge queue): GitHub's ruleset reads only the newest run of
 a workflow on a commit. A `ci.yml` dispatch's green `CI OK` was shadowed by that commit's PR run, which started three
 seconds later and reported no `CI OK`, and the push was refused with "Required status check "CI OK" is expected"

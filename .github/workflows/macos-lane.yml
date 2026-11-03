@@ -51,6 +51,11 @@ jobs:
         run: go build -o check .
         working-directory: ./scripts/check
 
+      # Seconds, and first among the checks so a broken slice fails fast. Nothing else compiles
+      # the extension before a release build.
+      - name: Compile the Finder extension
+        run: ./scripts/check/check --check desktop-finder-extension-compile --ci
+
       - name: Run clippy
         run: ./scripts/check/check --check desktop-rust-clippy --ci
 
