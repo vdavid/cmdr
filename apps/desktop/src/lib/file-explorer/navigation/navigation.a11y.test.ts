@@ -160,6 +160,7 @@ describe('DriveIndexBadge a11y', () => {
       coalescedSignalsSinceSweep: 0,
       unreadableLocations: 0,
       unreadableRetried: false,
+      unreadableSettled: true,
       nextSweepDueAt: null,
       liveWatch: true,
     }

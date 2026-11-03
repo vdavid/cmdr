@@ -81,6 +81,7 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
     coalescedSignalsSinceSweep: 0,
     unreadableLocations: 0,
     unreadableRetried: false,
+    unreadableSettled: true,
     nextSweepDueAt: null,
     liveWatch: true,
     ...overrides,
@@ -554,6 +555,7 @@ describe('DriveIndexBadge "done, with holes" footnote', () => {
           nextSweepDueAt: nowSeconds + 6 * 3600,
           unreadableLocations: 4,
           unreadableRetried: true,
+          unreadableSettled: true,
         }),
       ).target,
     )

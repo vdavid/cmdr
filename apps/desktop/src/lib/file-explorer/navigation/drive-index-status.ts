@@ -245,6 +245,10 @@ export interface DriveIndexUnreadableNote {
  * Only for a finished index: a drive still being covered hasn't reached that
  * ground YET, which is a different sentence and the checklist is already saying
  * it.
+ *
+ * While a walk fills holes in (`unreadableSettled: false`), the count is the last
+ * settled one and keeps showing: a search walks often, and a note that blinked
+ * out for each walk would read as the problem coming and going.
  */
 export function driveIndexUnreadableNote(status: VolumeIndexStatus): DriveIndexUnreadableNote | null {
   const count = status.unreadableLocations

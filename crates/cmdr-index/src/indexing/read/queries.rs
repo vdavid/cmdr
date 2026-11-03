@@ -7,13 +7,18 @@
 //! path-based forms resolve the owning volume via `routing::volume_id_for_local_path`
 //! and map the read path into the volume's index space via `routing::index_read_path`.
 
+use std::collections::HashMap;
 use std::sync::atomic::Ordering;
+use std::sync::{LazyLock, Mutex};
+
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::coverage::{self, CoverageDimension};
 use super::enrichment::get_read_pool_for;
 use super::pending_sizes::{PendingView, get_pending_sizes_for};
 use crate::indexing::events::{DEBUG_STATS, IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
 use crate::indexing::host;
+use crate::indexing::lifecycle::cover::ground_being_walked;
 use crate::indexing::lifecycle::manager::IndexManager;
 use crate::indexing::lifecycle::state::{
     INDEX_REGISTRY, IndexPhase, get_freshness, index_failure, is_active, volume_kind,
@@ -57,9 +62,10 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
     // with holes". Gated on completion for two reasons that happen to agree: it
     // is the only state where the question means anything, and it is the only
     // state where the answer is cheap (below).
-    let unreadable = scan_completed_at
-        .map(|_| unreadable_ground(volume_id, volume_path.as_deref()))
-        .unwrap_or_default();
+    let (unreadable, unreadable_settled) = match scan_completed_at {
+        Some(completed_at) => settled_unreadable_ground(volume_id, volume_path.as_deref(), completed_at),
+        None => (UnreadableGround::default(), true),
+    };
 
     // The shallow-anchor sweep bookkeeping (how many "macOS lost track of changes"
     // signals we coalesced since the last sweep, and when the next one is due).
@@ -90,12 +96,13 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
         next_sweep_due_at,
         unreadable_locations: unreadable.locations,
         unreadable_retried: unreadable.retried,
+        unreadable_settled,
         live_watch: volume_kind(volume_id).is_none_or(IndexVolumeKind::has_live_watch),
     }
 }
 
 /// Ground a completed index holds no rows for, summarized for a badge.
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 struct UnreadableGround {
     /// How many PLACES that is, folders grouped by parent.
     locations: u32,
@@ -106,16 +113,26 @@ struct UnreadableGround {
     retried: bool,
 }
 
-/// Ask a COMPLETED volume what it couldn't read.
+/// The last [`unreadable_ground`] answer each completed volume settled on, with
+/// the `scan_completed_at` it was read under, so a new index on the same volume
+/// id never inherits an old one's count. A leaf lock: nothing is called under it.
+static SETTLED_UNREADABLE: LazyLock<Mutex<HashMap<String, (u64, UnreadableGround)>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// [`unreadable_ground`] for a completed volume, and whether the answer is
+/// current (`false`: a walk holds ground, so this is the last settled answer).
 ///
-/// ⚠️ **The completion gate is what makes this affordable**, not just meaningful.
-/// The coverage descent stops at the first fully covered subtree, so on a
-/// complete index with no holes it answers at the volume root and returns
-/// immediately; with holes it walks only the ancestor chains leading to them (76
-/// cut points on a real machine). On an INCOMPLETE index the frontier is most of
-/// the drive, and this would be a full descent on a call the badge makes on every
-/// scan and freshness event. ❌ Don't lift the gate.
-fn unreadable_ground(volume_id: &str, volume_path: Option<&str>) -> UnreadableGround {
+/// ⚠️ **The walk gate is the second half of what makes the descent affordable.**
+/// A walk leaves every directory it has listed so far listed but not yet covered
+/// until it rolls its sizes up, so a descent mid-walk reads all of that ground,
+/// in one read transaction, on every status read: `cmdr://state` blocked for
+/// over 90 s on one during a walk of a share (#870). ❌ Don't descend while a walk
+/// holds ground.
+fn settled_unreadable_ground(
+    volume_id: &str,
+    volume_path: Option<&str>,
+    completed_at: u64,
+) -> (UnreadableGround, bool) {
     let root = if volume_id == ROOT_VOLUME_ID {
         "/"
     } else {
@@ -124,9 +141,42 @@ fn unreadable_ground(volume_id: &str, volume_path: Option<&str>) -> UnreadableGr
             // A mount-rooted volume that never recorded where it was mounted has
             // no scope to ask about; saying nothing beats guessing `/`, which
             // would answer for the boot disk instead.
-            None => return UnreadableGround::default(),
+            None => return (UnreadableGround::default(), true),
         }
     };
+    let walked = || !ground_being_walked(volume_id, &[root.to_string()]).is_empty();
+    if walked() {
+        let last = SETTLED_UNREADABLE
+            .lock_ignore_poison()
+            .get(volume_id)
+            .filter(|(read_under, _)| *read_under == completed_at)
+            .map(|(_, ground)| *ground)
+            .unwrap_or_default();
+        return (last, false);
+    }
+    let ground = unreadable_ground(volume_id, root);
+    // A walk that started during the descent may have shown it half-listed
+    // ground, so only an answer nobody walked under becomes the snapshot.
+    if walked() {
+        return (ground, false);
+    }
+    SETTLED_UNREADABLE
+        .lock_ignore_poison()
+        .insert(volume_id.to_string(), (completed_at, ground));
+    (ground, true)
+}
+
+/// Ask a COMPLETED volume what it couldn't read, descending from its `root`.
+///
+/// ⚠️ **The completion gate is what makes this affordable**, not just meaningful.
+/// The coverage descent stops at the first fully covered subtree, so on a
+/// complete index with no holes it answers at the volume root and returns
+/// immediately; with holes it walks only the ancestor chains leading to them (76
+/// cut points on a real machine). On an INCOMPLETE index the frontier is most of
+/// the drive, and this would be a full descent on a call the badge makes on every
+/// scan and freshness event. ❌ Don't lift the gate, and ❌ don't call this while
+/// a walk holds ground ([`settled_unreadable_ground`] says why).
+fn unreadable_ground(volume_id: &str, root: &str) -> UnreadableGround {
     let Ok(map) = coverage::coverage_on_volume(volume_id, root, CoverageDimension::Listing) else {
         return UnreadableGround::default();
     };

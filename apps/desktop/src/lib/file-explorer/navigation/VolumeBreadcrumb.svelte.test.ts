@@ -1287,6 +1287,7 @@ describe('VolumeBreadcrumb row controls do not activate their row', () => {
       coalescedSignalsSinceSweep: 0,
       unreadableLocations: 0,
       unreadableRetried: false,
+      unreadableSettled: true,
       nextSweepDueAt: null,
       liveWatch: true,
     }

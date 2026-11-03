@@ -72,6 +72,7 @@ function status(volumeId: string, freshness: VolumeIndexStatus['freshness']): Vo
     coalescedSignalsSinceSweep: 0,
     unreadableLocations: 0,
     unreadableRetried: false,
+    unreadableSettled: true,
     nextSweepDueAt: null,
     liveWatch: true,
   }

@@ -251,6 +251,12 @@ pub struct VolumeIndexStatus {
     /// declines to read. The badge says so, which is what keeps the line a
     /// footnote instead of a fault the reader has to act on.
     pub unreadable_retried: bool,
+    /// Whether the two fields above describe the ground as it is now. `false`
+    /// while a walk holds ground on this volume: the count is then the last one
+    /// taken while nothing was walking (or `0` before the first), because the walk
+    /// is filling holes in as it goes and counting them mid-walk means descending
+    /// everything it has listed so far, on every status read.
+    pub unreadable_settled: bool,
     /// Unix seconds when the next full sweep becomes due for this volume (the last
     /// sweep plus the volume's window). Lets the tooltip say "next full check in N
     /// hours" without duplicating the policy constant in the frontend. `None` until

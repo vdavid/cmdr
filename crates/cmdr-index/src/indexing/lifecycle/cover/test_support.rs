@@ -156,8 +156,24 @@ impl Share {
 
     /// A read connection to this share's own index database.
     fn read_connection(&self) -> rusqlite::Connection {
-        let db_path = self._data.path().join(format!("index-{}.db", self.volume_id));
-        IndexStore::open_read_connection(&db_path).expect("read connection")
+        IndexStore::open_read_connection(&self.db_path()).expect("read connection")
+    }
+
+    fn db_path(&self) -> PathBuf {
+        self._data.path().join(format!("index-{}.db", self.volume_id))
+    }
+
+    /// Record a finished full walk of this share, the state a share's index is in
+    /// once its first index completed and later walks only fill holes in.
+    pub(super) fn mark_completed(&self) {
+        let conn = IndexStore::open_write_connection(&self.db_path()).expect("write connection");
+        IndexStore::update_meta(&conn, "scan_completed_at", "1700000000").expect("stamp scan_completed_at");
+        IndexStore::update_meta(&conn, "volume_path", &self.root).expect("stamp volume_path");
+    }
+
+    /// The share's badge status, as the app reads it.
+    pub(super) fn status(&self) -> crate::indexing::events::VolumeIndexStatus {
+        self.index.volume_status(self.volume_id)
     }
 
     /// Start a walk over one scope, with the token that stops it.

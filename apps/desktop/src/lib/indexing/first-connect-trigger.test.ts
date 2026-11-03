@@ -47,6 +47,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
           coalescedSignalsSinceSweep: 0,
           unreadableLocations: 0,
           unreadableRetried: false,
+          unreadableSettled: true,
           nextSweepDueAt: null,
           liveWatch: true,
         },
@@ -106,6 +107,7 @@ describe('maybePromptFirstConnect gating', () => {
       coalescedSignalsSinceSweep: 0,
       unreadableLocations: 0,
       unreadableRetried: false,
+      unreadableSettled: true,
       nextSweepDueAt: null,
       liveWatch: true,
     }
@@ -128,6 +130,7 @@ describe('maybePromptFirstConnect gating', () => {
       coalescedSignalsSinceSweep: 0,
       unreadableLocations: 0,
       unreadableRetried: false,
+      unreadableSettled: true,
       nextSweepDueAt: null,
       liveWatch: true,
     }

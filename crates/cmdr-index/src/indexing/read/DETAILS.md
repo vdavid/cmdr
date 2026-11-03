@@ -116,7 +116,8 @@ mutate registry state.
   volume from a listing path (the always-visible active-drive badge); the id form is keyed by `volume.id` (the per-drive
   dropdown rows). Both return the same shape. `next_sweep_due_at` is computed here so the sweep-window length stays in
   the policy module (owned by `../reconcile/DETAILS.md`), not duplicated in the frontend. It also carries
-  `unreadable_locations` + `unreadable_retried`, so a finished index can admit it has holes (below).
+  `unreadable_locations` + `unreadable_retried` + `unreadable_settled`, so a finished index can admit it has holes
+  (below).
 
 ### A stopped volume's database answers reads
 
@@ -148,6 +149,16 @@ walks only the ancestor chains leading to them (76 cut points on a real machine)
 most of the drive and this would be a full descent — on a call the badge makes on every scan and freshness event. ❌
 Don't lift the gate. A mount-rooted volume with no recorded `volume_path` reports nothing rather than falling back to
 `/`, which would answer for the boot disk instead.
+
+⚠️ **The walk gate is the other half** (`settled_unreadable_ground`). A cover walk on a COMPLETED index leaves every
+directory it has listed so far at `listed_epoch > 0, min_subtree_epoch == 0` until its sizes roll up, so a descent
+mid-walk reads all of that ground in one read transaction, on every status read. That's what blocked `cmdr://state` for
+over 90 s during a walk of a share (#870). So while a walk holds ground on the volume (`cover::ground_being_walked` over
+the volume root), the read answers from the last settled count and sets `unreadable_settled: false`; the snapshot is
+keyed by `scan_completed_at`, so a rebuilt index never inherits it. The badge keeps showing that count meanwhile: a
+search walks often, and a note that blinked out per walk would read as the problem coming and going. ❌ Don't key the
+snapshot by `CoverageToken` instead: it moves on inserts and epoch bumps only, so a walk that re-lists existing rows
+leaves it unchanged while the holes move.
 
 **Every per-path read is keyed by a volume the CALLER names** (`list_dir_children_on_volume`, `get_dir_stats_on_volume`,
 `get_dir_stats_batch_on_volume`, and the `Index::list_children` / `dir_stats` / `dir_stats_batch` methods over them). A

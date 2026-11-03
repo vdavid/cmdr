@@ -36,6 +36,8 @@ volume-keyed handle tables.
   `listed == 0 && unreadable_cause` skip (into `permission_denied`, `declined`, or `abandoned`, ❌ never merged — and
   `abandoned` is a HOLE nothing else in the answer hints at, so a caller reporting completeness must read it), else
   frontier. Rests on the `EXCLUSION_POLICY_KEY` stamp: stale or absent ⇒ nothing is trusted.
+- **❌ No status-read coverage descent while a walk holds ground** (it reads the whole walk, 90 s+, #870): answer from
+  the last settled count.
 - **Enrichment logs once per changed result, via `EnrichResultMemo`.** ❌ No per-pass line: an idle pane triggers this
   ~2/s.
 - ⚠️ **An UNLISTED directory's rows aren't its contents**, so `list_dir_children_on_volume` answers `None` there.
