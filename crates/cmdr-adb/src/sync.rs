@@ -249,14 +249,15 @@ impl SyncSession {
     }
 
     /// Lists `path`, handing each entry to `on_entry` as it arrives. `LIS2`
-    /// where the device has it, else `LIST`. `.` and `..` are skipped.
+    /// where the device has it, else `LIST`. `.`, `..`, and any name that isn't
+    /// one path segment are skipped.
     ///
     /// ❗ A missing, an unreadable, and an empty directory all list as EMPTY on
     /// both verbs (the device answers `DONE` straight away). A stat separates
     /// "missing", but it succeeds on a folder the device won't open, so telling
     /// "unreadable" from "empty" takes the shell's `test -r` / `test -x` (the
     /// volume's `refuse_if_unreadable`). A real `adbd` sends no `.`/`..`; the
-    /// skip stays for one that does.
+    /// skip is for a device that does, or that names an entry `a/b`.
     pub async fn list(&mut self, path: &str, on_entry: &mut (dyn FnMut(SyncDirEntry) + Send)) -> Result<(), AdbError> {
         if self.features.ls_v2 {
             self.send_payload(b"LIS2", path.as_bytes()).await?;
@@ -417,9 +418,12 @@ impl SyncSession {
     }
 }
 
+/// Hands one listed entry on, unless its name isn't a single path segment: a
+/// device naming one `..`, empty, or with a `/` in it would have the volume join
+/// it into a path naming some other file, so it's dropped, ❌ never listed.
 fn push_entry(on_entry: &mut (dyn FnMut(SyncDirEntry) + Send), name: Vec<u8>, stat: SyncStat) {
     let name = String::from_utf8_lossy(&name).into_owned();
-    if name == "." || name == ".." {
+    if name.is_empty() || name == "." || name == ".." || name.contains('/') {
         return;
     }
     on_entry(SyncDirEntry { name, stat });

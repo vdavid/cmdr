@@ -185,6 +185,31 @@ async fn a_name_longer_than_the_protocol_allows_is_refused_before_allocating() {
     assert!(matches!(err, AdbError::Protocol(_)), "got {err:?}");
 }
 
+// Regression: `push_entry` dropped only `.` and `..`, so a device could list an
+// empty name or one holding a `/`, which the volume would join into a path naming
+// a different file (found by the `adb_sync` fuzz target's listing property).
+#[tokio::test]
+async fn a_listed_name_that_isnt_one_path_segment_is_dropped() {
+    let mut device = Vec::new();
+    for name in [&b""[..], b".", b"..", b"a/b", b"../up", b"kept"] {
+        device.extend(b"DNT2");
+        device.extend(stat_v2_body(0o100644));
+        device.extend(u32::try_from(name.len()).unwrap().to_le_bytes());
+        device.extend(name);
+    }
+    device.extend(b"DONE");
+    device.extend([0u8; 72]);
+    let mut session = SyncSession::from_connection(AdbConnection::scripted(&device), DeviceFeatures::all());
+
+    let names: Vec<String> = collect(&mut session, "/sdcard")
+        .await
+        .into_iter()
+        .map(|e| e.name)
+        .collect();
+
+    assert_eq!(names, ["kept"]);
+}
+
 #[tokio::test]
 async fn a_data_chunk_longer_than_the_protocol_allows_is_refused() {
     let mut device = b"DATA".to_vec();

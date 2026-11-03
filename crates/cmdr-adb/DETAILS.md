@@ -120,6 +120,10 @@ own buffer) are `AdbError::Protocol`, and so is an LZ4 block past its frame's ma
 `DNT2` or stderr frame allocated 4 GiB; the `adb_sync` and `adb_shell` fuzz targets (`fuzz/DETAILS.md`) found both
 within a few hundred runs, and `sync_test.rs` / `shell_test.rs` pin them. `adb_lz4` holds the frame reader to the same.
 
+**A listed name is one path segment or it's dropped.** The device names each `DENT`/`DNT2` entry, and the volume joins
+the name onto the listed folder, so an empty name, `.`, `..`, or one holding a `/` would list a path naming some other
+file. `push_entry` drops them, as `cmdr-nfs` does; `adb_sync` asserts it.
+
 **Shell** (`shell.rs`): `shell,v2,raw:<cmd>` (feature `shell_v2`) frames stdout, stderr, and the exit code as packets
 `[id: u8][len: u32 LE][payload]` with ids `0` stdin, `1` stdout, `2` stderr, `3` exit (payload one byte). A device
 without `shell_v2` (pre-Android 7, 2016) is refused with `AdbConnectError::DeviceTooOld` rather than guessed at: the
