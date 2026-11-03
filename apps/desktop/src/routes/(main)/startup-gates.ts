@@ -37,10 +37,7 @@ import { nudgeCouldFire, type NudgeContext } from '#lib/nudges/nudge-ledger.js'
 import { readNudgeLedger } from '#lib/nudges/nudge-store.js'
 import { shouldShowRevealNudge } from '#lib/reveal/should-show-reveal-nudge.js'
 import { offerRevealHandler } from '#lib/reveal/reveal-nudge.js'
-import {
-  FINDER_EXTENSION_OFFER_LIVE,
-  shouldShowFinderExtensionNudge,
-} from '#lib/reveal/should-show-finder-extension-nudge.js'
+import { shouldShowFinderExtensionNudge } from '#lib/reveal/should-show-finder-extension-nudge.js'
 import { offerFinderExtension } from '#lib/reveal/finder-extension-nudge.js'
 
 // Same category as the rest of the app shell's logging: these gates read as
@@ -251,12 +248,13 @@ function nudgeContext(ctx: StartupGatesContext): NudgeContext {
  * after its own IPC round trips, so two started together would both read an
  * unstamped ledger and both speak on the same launch — exactly what the cooldown
  * exists to prevent. The reveal handler goes first because it's the more
- * valuable offer; the Dock then waits out the cooldown.
+ * valuable offer; the Dock then waits out the cooldown, and the Finder extension,
+ * the only offer with an ongoing cost, comes last.
  */
 export async function maybeOfferNudges(ctx: StartupGatesContext): Promise<void> {
   await maybeOfferRevealHandler(ctx)
   await maybeOfferDockPin(ctx)
-  if (FINDER_EXTENSION_OFFER_LIVE) await maybeOfferFinderExtension(ctx)
+  await maybeOfferFinderExtension(ctx)
 }
 
 /**

@@ -45,8 +45,7 @@ from the floor. `should-show-dock-nudge.test.ts` pins this.
 
 - Reveal handler: **2** launch days. The more valuable offer of the two, so it gets the earlier slot.
 - Dock pin: **4** launch days.
-- Finder extension: **7** launch days, last because it's the only offer with an ongoing cost. Off behind
-  `FINDER_EXTENSION_OFFER_LIVE` until a release has proven the real right-click in Finder.
+- Finder extension: **7** launch days, last because it's the only offer with an ongoing cost.
 
 Both are "at least N", ❌ never "the Nth day is today": the launch-day ledger only started counting when it shipped, so
 someone who has been here for months would otherwise never qualify.

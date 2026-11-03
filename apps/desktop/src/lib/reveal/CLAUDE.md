@@ -13,8 +13,7 @@ time a reveal actually lands, and the once-ever offer of the Finder extension. E
   exits and the refusal copy, separate so the toast body can reach it without an import cycle.
 - **`reveal-activation-notice.ts`** + **`RevealActivationToastContent.svelte`**: the first-landing notice.
 - **`should-show-finder-extension-nudge.ts`**, **`finder-extension-nudge.ts`**, **`finder-extension-nudge-answer.ts`**:
-  the extension's offer, shaped like the reveal one. ❗ Off behind `FINDER_EXTENSION_OFFER_LIVE` until a release has
-  proven the real right-click in Finder.
+  the extension's offer, shaped like the reveal one.
 - **`reveal-tabs-dropped-notice.ts`**: says so when a pane's tab limit turned away some of what was asked for.
 - **`reveal-settings-link.ts`**: the card's anchor id and the one deep link to it.
 

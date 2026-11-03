@@ -19,14 +19,6 @@ import { nudgeCouldFire, type NudgeContext } from '#lib/nudges/nudge-ledger.js'
  */
 export const FINDER_EXTENSION_NUDGE_AFTER_DAYS = 7
 
-/**
- * The switch for the whole offer. Off until a release has proven the real
- * right-click in Finder: this asks once per install, so an offer for a menu item
- * that doesn't work can't be taken back. Tracked in
- * [#853](https://github.com/vdavid/cmdr/issues/853).
- */
-export const FINDER_EXTENSION_OFFER_LIVE: boolean = false
-
 /** Everything the decision needs, including the two answers only the backend has. */
 export interface FinderExtensionNudgeInputs extends NudgeContext {
   /** Distinct local calendar days in the launch-day ledger. */

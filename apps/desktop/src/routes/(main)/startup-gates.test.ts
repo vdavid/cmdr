@@ -597,11 +597,19 @@ describe('maybeOfferRevealHandler', () => {
 })
 
 describe('the Finder extension offer', () => {
-  it('stays off in `maybeOfferNudges` until a release has proven the right-click', async () => {
+  it('is reached by `maybeOfferNudges` once the two earlier offers are out of their cooldown', async () => {
     settings('allow', true)
+    const twentyDaysAgo = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
+    stored.revealNudgeOfferedAt = twentyDaysAgo
+    stored.dockPinNudgeOfferedAt = twentyDaysAgo
+    mocks.getLaunchDayCount.mockResolvedValue(7)
+    mocks.getFinderExtensionStatus.mockResolvedValue({ enabled: false, blockedBy: null })
+
     await maybeOfferNudges(ctx)
-    expect(mocks.getFinderExtensionStatus).not.toHaveBeenCalled()
-    expect(mocks.offerFinderExtension).not.toHaveBeenCalled()
+
+    expect(mocks.offerRevealHandler).not.toHaveBeenCalled()
+    expect(mocks.offerDockPin).not.toHaveBeenCalled()
+    expect(mocks.offerFinderExtension).toHaveBeenCalledOnce()
   })
 
   it('raises when due, once its gate calls it directly', async () => {
