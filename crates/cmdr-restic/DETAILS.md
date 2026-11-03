@@ -198,8 +198,8 @@ never does.
   never one in use: an `Arc` held outside the slot (an open read stream, a listing in flight), a transfer's hold, or
   used within the last 2 s (`lease_grace`, the gap between a scan's listings). With every one in use the cap is
   overshot. Eviction drops the index only: the password, the opened repo, and the snapshot list stay, so coming back
-  reloads silently. A cap by count, not bytes: estimate an index at ~5x its `index/` folder, steady (§ "Why one index
-  and eight opened repos").
+  reloads silently. A cap by count, not bytes: estimate an index at ~1x its `index/` folder in footprint, ~1.7x in live
+  heap (§ "Why one index and eight opened repos").
 - **Idle drop after five minutes** unused (`index_idle_drop`), unless a read stream or a transfer still holds it.
   Getting it back is an unlock plus a load, which the progress phase covers.
 - **An index is freed on the blocking pool**, ❌ never under the slot's lock or on an async worker: the last `Arc` of a
@@ -213,10 +213,13 @@ never does.
 Decision/Why, from steady RSS (the process once the load's transient buffers are gone, which is what an index costs for
 as long as it stays loaded; `docs/notes/restic/open-cost.md` § "Streaming the index load"):
 
-- **A loaded index is ~5x its `index/` folder, steady**: 0.58–0.62 GB for 119 MB of index files. Peak and steady match
-  within a few MB, because the peak is rustic's own, at the end of the build; the streamed feed adds nothing above it.
-  David's 6 TB NAS repo (likely 250–350 MB of index files) would hold ~1.3–1.8 GB, and a coverage reload doubles that
-  for the swap. Two at once is past what a file manager should hold, so the cap stays one.
+- **A loaded index costs ~1x its `index/` folder in footprint, ~1.7x in live heap**: 171 MiB and 277 MiB for 162.5 MB of
+  index files, with `MallocLargeCache=0` as the app ships (verified on macOS 27.0.1, `open_cost` `load` and `lifecycle`,
+  2026-11-03, `../../docs/notes/performance/malloc-large-cache-2026-11-03.md`). A binary without it read 337–370 MiB
+  that night and 614–634 MiB on 2026-10-26: the rest is libmalloc's large-block cache, and the ~5x in
+  `../../docs/notes/restic/open-cost.md` is that reading. David's 6 TB NAS repo (likely 250–350 MB of index files) would
+  hold ~0.3–0.6 GB, and a coverage reload doubles that for the swap. Two at once is past what a file manager should
+  hold, so the cap stays one.
 - **An opened repo is a few MB** (the whole process is 43–45 MB after an unlock, runtime and all), so eight cost nothing
   worth capping lower, and they're what make coming back to a repo skip scrypt.
 

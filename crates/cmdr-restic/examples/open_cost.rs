@@ -14,7 +14,10 @@
 //!   (`to_indexed_ids` + a three-level tree walk), `full` (`to_indexed` + a
 //!   100 MiB file read), `cache` (`ids` with rustic's cache in `PROBE_CACHE_DIR`),
 //!   `load` (the crate's own index load, through `ResticRepos` and a
-//!   `ResticVolume`, the way a pane entering `latest` runs it).
+//!   `ResticVolume`, the way a pane entering `latest` runs it), `lifecycle` (`load`
+//!   plus a browse three levels down, then the view closes and the footprint is
+//!   sampled every 30 s past the five-minute idle drop; run it with and without
+//!   `MallocLargeCache=0`, `docs/notes/performance/malloc-large-cache-2026-11-03.md`).
 //!
 //! `PROBE_HELD_READERS=1` reads packs through held-open readers, as the crate's
 //! adapter does, instead of one `read_range` each. In `full`, the file read
@@ -416,13 +419,17 @@ fn read_file<S: IndexedFull + Sync>(repo: &Repository<S>, node: &Node, total: us
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let [via, phase, repo_path] = args.as_slice() else {
-        panic!("usage: open_cost <mount|smb> <snapshots|ids|full|cache|load> <repo path>");
+        panic!("usage: open_cost <mount|smb> <snapshots|ids|full|cache|load|lifecycle> <repo path>");
     };
     let rt = Runtime::new().expect("runtime");
     let host = VolumeHost::builder().runtime(rt.handle().clone()).build();
     let (parent, root) = build_parent(via, &rt, host.clone(), repo_path);
     if phase == "load" {
         crate_load(&rt, host, parent, root);
+        return;
+    }
+    if phase == "lifecycle" {
+        lifecycle(&rt, host, parent, root);
         return;
     }
     let backend = Arc::new(CountingBackend {
@@ -557,6 +564,100 @@ fn crate_load(rt: &Runtime, host: VolumeHost, parent: Arc<dyn Volume>, root: Pat
     report_rss();
     drop(volume);
     drop(hub);
+}
+
+/// How long `lifecycle` keeps sampling after the view closes: past the hub's
+/// five-minute idle drop, plus time for the footprint to follow it down.
+const LIFECYCLE_SAMPLES: u32 = 14;
+
+/// A repo's whole visit, as the app runs it: unlock, enter `latest` (the index
+/// load), browse three levels, close the view, then sit idle past the drop. The
+/// hub stays alive throughout, as the app parks it for good.
+fn lifecycle(rt: &Runtime, host: VolumeHost, parent: Arc<dyn Volume>, root: PathBuf) {
+    print_footprint("baseline");
+    let hub = Arc::new(ResticRepos::new(host));
+    let volume = ResticVolume::new(Arc::clone(&hub), "probe", parent, root.clone());
+    let password = secret_env("RESTIC_PASSWORD");
+    let start = Instant::now();
+    assert!(
+        rt.block_on(cmdr_restic::test_fixtures::unlock(&volume, password.as_str())),
+        "the password unlocks the repo"
+    );
+    drop(password);
+    println!("unlock: {}", secs(start));
+    print_footprint("after unlock");
+
+    let latest = root.join(VIRTUAL_ENTRY_NAME).join("latest");
+    let start = Instant::now();
+    let entries = rt.block_on(volume.list_directory(&latest, None)).expect("lists latest");
+    println!("index load + list latest: {} entries in {}", entries.len(), secs(start));
+    print_footprint("after the index load");
+    print_malloc_large();
+
+    let start = Instant::now();
+    let mut frontier = vec![latest];
+    let mut listed = 0;
+    for _ in 0..3 {
+        let mut next = Vec::new();
+        for dir in frontier {
+            listed += 1;
+            let entries = rt.block_on(volume.list_directory(&dir, None)).expect("lists a folder");
+            next.extend(
+                entries
+                    .iter()
+                    .filter(|e| e.is_directory)
+                    .take(8)
+                    .map(|e| dir.join(&e.name)),
+            );
+        }
+        frontier = next;
+    }
+    println!("browse three levels: {listed} listings in {}", secs(start));
+    print_footprint("after browsing");
+
+    drop(volume);
+    let closed = Instant::now();
+    for _ in 0..LIFECYCLE_SAMPLES {
+        std::thread::sleep(Duration::from_secs(30));
+        print_footprint(&format!("+{} s", closed.elapsed().as_secs()));
+    }
+    print_malloc_large();
+    drop(hub);
+}
+
+/// Footprint, peak, and the default zone's live bytes, on one greppable line.
+fn print_footprint(label: &str) {
+    #[cfg(target_os = "macos")]
+    if let Some(vm) = cmdr_fs::process_memory::query_task_vm_info() {
+        use cmdr_fs::process_memory::{RustHeap, query_rust_heap};
+        let mib = |bytes: u64| bytes >> 20;
+        let live = match query_rust_heap() {
+            RustHeap::System { in_use, .. } => mib(in_use),
+            RustHeap::Mimalloc { committed, .. } => mib(committed),
+        };
+        println!(
+            "FOOTPRINT {label}: {} MiB, heap live {live} MiB",
+            mib(vm.phys_footprint)
+        );
+    }
+    #[cfg(not(target_os = "macos"))]
+    println!("FOOTPRINT {label}: not measured off macOS");
+}
+
+/// `vmmap`'s `Malloc Large` rows: the cached blocks are the `(empty)` one.
+fn print_malloc_large() {
+    let output = std::process::Command::new("vmmap")
+        .args(["-summary", &std::process::id().to_string()])
+        .output();
+    let Ok(output) = output else {
+        println!("vmmap didn't run");
+        return;
+    };
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        if line.starts_with("Malloc Large") {
+            println!("VMMAP {line}");
+        }
+    }
 }
 
 /// Queues a tiny job on rayon's global pool every 10 ms and books how long each

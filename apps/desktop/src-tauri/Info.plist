@@ -9,6 +9,15 @@
     <key>CFBundleIconName</key>
     <string>Sequoia</string>
 
+    <!-- Turns off libmalloc's cache of freed large blocks, which otherwise parks hundreds of MB
+         after a search or a restic open with no way to ask for it back. Undocumented, so it has
+         a per-macOS-release re-check: `docs/notes/performance/malloc-large-cache-2026-11-03.md`. -->
+    <key>LSEnvironment</key>
+    <dict>
+        <key>MallocLargeCache</key>
+        <string>0</string>
+    </dict>
+
     <!-- "Open in Cmdr" in Finder's right-click menu, for files and folders. `NSMessage` plus
          `:userData:error:` is the method on `reveal/service.rs`'s provider. The empty
          `NSRequiredContext` is what lets macOS show it without the person enabling it first. -->

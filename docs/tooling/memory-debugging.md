@@ -209,6 +209,9 @@ includes the Rust heap, so it names Rust call sites directly. In a mimalloc buil
 - **Every A/B must be a fresh launch.** Startup bursts run until the backend settles; once settled the process is
   effectively immune, so toggling a lever mid-run measures nothing. (A 60 s hard-churn test on a settled instance
   produced zero growth.)
+- **Set `MallocLargeCache=0` on any release binary you launch directly**, or you're measuring a cache users don't run
+  with. Shipped apps get it from `LSEnvironment`, which only LaunchServices applies. No `Malloc Large (empty)` row in
+  `vmmap` is how you see it's on: `docs/notes/performance/malloc-large-cache-2026-11-03.md`.
 - Restart between conditions and compare peak `phys_footprint`, not a single sample.
 - Run-to-run noise is real; trust large deltas and shape (climb-then-settle vs flat), not 10 % differences.
 
@@ -227,6 +230,7 @@ Every resource-use investigation, the current measured baseline, and the ranked 
 
 Read `crates/cmdr-fs/DETAILS.md` § "Which global allocator" (the current split and its evidence),
 `docs/notes/performance/allocator-slack-release-2026-09-27.md` (the post-burst settle that decided it),
+`docs/notes/performance/malloc-large-cache-2026-11-03.md` (the libmalloc knob macOS ships with),
 `docs/notes/performance/mimalloc-purge-experiment-2026-09-22.md` (what's tunable in mimalloc **v3**, which option names
 are real, and how to get options into a Finder-launched app), and
 `docs/notes/performance/allocator-comparison-2026-09-23.md` (v3 against v2 and the system allocator). Purge tuning

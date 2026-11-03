@@ -89,6 +89,17 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
 - **Pin GitHub Actions to commit SHAs**: Re-pin Actions to fresh commit SHAs when their tagged versions move.
   Supply-chain safety. Frequency: every 6 months alongside the Actions version bump.
 
+### Per macOS release
+
+- **`MallocLargeCache=0` still works**: The app ships with this undocumented libmalloc knob
+  (`docs/notes/performance/malloc-large-cache-2026-11-03.md`). On the new macOS, in the installed app, run a search for
+  `*.pdf` and open a 100,000-entry folder, then
+  `vmmap -summary "$(pgrep -f '^/Applications/Cmdr.app/Contents/MacOS/Cmdr$')" | grep '^Malloc Large'`. One row is
+  right; a `Malloc Large (empty)` row with hundreds of MB means libmalloc stopped honoring it. Confirm with
+  `open_cost mount lifecycle <repo>` run with and without the variable (`crates/cmdr-restic/examples/open_cost.rs`), and
+  note the macOS version in the note's anchor. Frequency: every macOS major release, and any minor that touches
+  libmalloc.
+
 ### Test-suite health
 
 - **Quarterly: mutation-testing sweep on hot-spot modules**. Run `cargo mutants` on each module listed in

@@ -1102,6 +1102,12 @@ speed to leave it, but the search loop no longer allocates per row, so that pena
 settle (382 MiB, mostly swapped malloc-zone memory). Idle footprint drops ~95 MiB
 (`../../docs/notes/performance/allocator-comparison-2026-09-23.md`).
 
+**macOS runs with libmalloc's large-block cache off** (`MallocLargeCache=0`, from `LSEnvironment` in the app's
+`Info.plist`): the burst peak drops ~400 MiB, a restic index load holds half the footprint, and search and listing
+throughput hold (`../../docs/notes/performance/malloc-large-cache-2026-11-03.md`). It's undocumented, so it has a
+re-check per macOS release (`../../docs/maintenance.md` § "Per macOS release"), and a binary launched directly doesn't
+get it.
+
 **Why Linux keeps mimalloc**: glibc malloc is unmeasured under Cmdr's load, and its per-thread arenas behave very
 differently from macOS malloc under thread churn, so the macOS numbers say nothing about it. Measure it before flipping
 Linux; a feature to force the system allocator there is a one-line addition to `build.rs`.

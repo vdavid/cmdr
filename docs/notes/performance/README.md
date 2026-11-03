@@ -51,6 +51,10 @@ the switch" there):
   cut both.
 - Live bytes return to their pre-burst level (~100 MiB) within 30 s of the search arena's drop. On mimalloc what stayed
   was ~240 MiB of slack, mostly from listing the two big folders (`search-arena-reload-2026-09-27.md`).
+- **Since 2026-11-03 the shipped app runs with libmalloc's large-block cache off** (`MallocLargeCache=0`), which
+  readings above predate. On a quiet machine: burst peak ~730 MiB against ~1.1 GiB, +1 min 133 [131–145] against 164
+  [135–452], +15 min 137 [133–154] against 145 [137–191], and search and listing throughput unchanged
+  (`malloc-large-cache-2026-11-03.md`).
 
 **Idle CPU** (verified on release builds, per-thread `proc_pidinfo` deltas, 2026-09-27):
 
@@ -84,6 +88,9 @@ Rules canonical elsewhere are one line here plus the pointer; the rest are canon
   up to 0.48.0) `IOAccelerator` is the Rust heap (tag 100) and `Malloc *` is NOT. On Linux, which always runs mimalloc,
   the heap is `[anon:mimalloc]` in `/proc/<pid>/maps` (`docs/tooling/memory-debugging.md` § "First: which allocator
   holds the Rust heap"). `memory_diagnostics` names it in `rustHeap.allocator`; say which build a reading came from.
+- **A release binary launched directly lacks `MallocLargeCache=0`**: shipped apps get it from `LSEnvironment`, so set it
+  in the harness to measure what users run (`docs/tooling/memory-debugging.md` § "Rules for A/B experiments"). A
+  `Malloc Large (empty)` row in `vmmap` means it's off, or stopped working.
 - **`IOSurface` (tag 88) in the main process isn't its cost**: it's WebKit's layer backing, owned and paid for by
   WebContent, and outside the main footprint (`docs/tooling/memory-debugging.md` § "The second trap").
 - **The same tag is spelled three ways**: `vmmap` says `Malloc Small`, older notes say `MALLOC_SMALL`, and
@@ -117,6 +124,9 @@ Rules canonical elsewhere are one line here plus the pointer; the rest are canon
 
 ## What's fixed, and where it's documented
 
+- **libmalloc's large-block cache**: `MallocLargeCache=0` from `LSEnvironment` takes ~400 MiB off the burst peak and
+  halves a restic index load's footprint, with search and listing throughput unchanged. Undocumented, so
+  `docs/maintenance.md` § "Per macOS release" re-checks it: `malloc-large-cache-2026-11-03.md`.
 - **Post-burst slack on macOS**: the system allocator replaced mimalloc as macOS's global allocator (Linux keeps
   mimalloc), taking the settled post-burst footprint from a median 403 to 241 MiB:
   `allocator-slack-release-2026-09-27.md`, `crates/cmdr-fs/DETAILS.md` § "Which global allocator".
@@ -244,6 +254,9 @@ Items that don't move the targets, each tracked in its own issue:
 
 Newest first.
 
+- `malloc-large-cache-2026-11-03.md`: the `MallocLargeCache=0` experiment behind #864, search and listing throughput,
+  burst and settle footprints, a restic visit both ways, the knob's tight-loop cost, and why `LSEnvironment` over a self
+  re-exec. Raw numbers: `malloc-large-cache-2026-11-03-memory.csv` and `malloc-large-cache-2026-11-03-timings.csv`.
 - `allocator-slack-release-2026-09-27.md`: neither `mi_collect(true)` nor malloc pressure relief returns the post-burst
   slack; where mimalloc keeps it (idle threads' empty pages, sparse pages, unpurged slices), park-time collects, four
   rounds of mimalloc against the system allocator's settle (median 403 against 241 MiB at +15 min), and the check round
