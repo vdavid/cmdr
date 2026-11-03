@@ -108,7 +108,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-cargo-deny":        "reads the whole `cargo metadata` graph from the workspace root",
 	"desktop-rust-cargo-machete":     "handed each member's directory (it walks dirs, not the cargo graph)",
 	"desktop-rust-cargo-udeps":       "`--workspace` via CargoSelectionArgs",
-	"desktop-rust-fuzz":              "`cargo fuzz` in `fuzz/`, a crate outside the workspace that takes five members by path (`cmdr-adb`, `cmdr-archive`, `cmdr-nfs`, `cmdr-s3`, `cmdr-webdav`); a targeted smoke, not a sweep",
+	"desktop-rust-fuzz":              "`cargo fuzz` in `fuzz/`, a crate outside the workspace that takes five members by path (`cmdr-adb`, `cmdr-archive`, `cmdr-nfs`, `cmdr-s3`, `cmdr-webdav`); targeted, not a sweep",
 	"desktop-rust-miri":              "`-p` per member named in `miriTargets` (today `cmdr-fs`), `--lib`, narrowed to the modules whose `unsafe` is pure Rust; a targeted lane on its own toolchain and target dir, not a sweep",
 	"desktop-rust-property-mutants":  "the property kinds' own builds (today `cargo fuzz` in a mirror of `fuzz/`), each reaching only the members its records mutate; targeted, not a sweep",
 	"desktop-rust-module-cycles":     "every first-party library member (`kind = app` with a `src/lib.rs`), one `--lib` graph each; a bin-only tool has no library graph and the vendored fork's module layout isn't ours to ratchet",

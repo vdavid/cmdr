@@ -105,8 +105,9 @@ var AllChecks = []CheckDefinition{
 		Inputs:      rustCompileInputs,
 		Run:         RunCargoUdeps,
 	},
-	// The fuzz smoke: every target in `fuzz/` for `CMDR_FUZZ_SECONDS` (default 60)
-	// on the pinned nightly. Minutes of CPU per run that can only go red on what
+	// The fuzz run: every target in `fuzz/` for `CMDR_FUZZ_SECONDS` on the pinned
+	// nightly, a 60-second smoke per target by default and the 20-minute long run in
+	// its CI job. Minutes to hours of CPU per run that can only go red on what
 	// random inputs happen to hit, so it gates nothing locally: CIOnly keeps it out
 	// of every local lane, IsSlow out of CI's default one, and its own job in
 	// `slow-checks.yml` is where it runs. `pnpm check fuzz` runs it on demand. It
@@ -115,7 +116,7 @@ var AllChecks = []CheckDefinition{
 		ID:          "desktop-rust-fuzz",
 		CpuWeight:   4,
 		Nickname:    "fuzz",
-		DisplayName: "fuzz smoke",
+		DisplayName: "fuzz",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
 		CIOnly:      true,
@@ -157,7 +158,7 @@ var AllChecks = []CheckDefinition{
 	// The half that runs them: each mutant applied in a mirror of the tree, then
 	// its catcher. A build per mutant on the fuzz lane's instrumented nightly, so
 	// minutes per run; slow, CI-only, and its own job in `slow-checks.yml`, like
-	// the fuzz smoke. Builds into its mirror, so no lock on the shared `target/`.
+	// the fuzz run. Builds into its mirror, so no lock on the shared `target/`.
 	{
 		ID:          "desktop-rust-property-mutants",
 		CpuWeight:   4,

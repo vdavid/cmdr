@@ -1063,7 +1063,7 @@ verdict.
 **Cost and lane** (measured on the M1 Max with nine records, `pnpm check`, 2026-11-03): the fast half takes
 milliseconds; the slow half took 10m56s with a cold mirror and 4m15s warm, about 25 s per mutant, nearly all of it
 rebuilding the mutated crate under the sanitizer. So the fast half runs in `--fast`, and the slow half runs where the
-fuzz smoke does: CI-only and slow, its own job in `slow-checks.yml` every six days. That job builds cold, deliberately
+fuzz run does: CI-only and slow, its own job in `slow-checks.yml` every six days. That job builds cold, deliberately
 uncached: the Rust caches already press GitHub's 10 GB ceiling. Each record adds roughly a rebuild of its crate.
 
 ## Allowlist shrink-wrap
