@@ -7,10 +7,14 @@
 //! only, ❌ never an identity (`server_identity`).
 
 use crate::network::known_shares::KnownNetworkShare;
-use crate::network::server_identity::{SmbServer, smb_server};
+use crate::network::server_identity::SmbServer;
 
 /// A mounted share's label, read off its mount: `server` and `port` as `statfs` gave them.
+/// macOS only, like its caller (`volumes::mounts`); Linux mounts don't name shares this way.
+#[cfg(target_os = "macos")]
 pub(crate) fn mounted(share: &str, server: &str, port: u16) -> String {
+    use crate::network::server_identity::smb_server;
+
     let typed = crate::network::manual_servers::typed_name(&[SmbServer::new(server, port)]);
     let name =
         typed.unwrap_or_else(|| smb_server(&crate::network::smb_server_address::friendly_server_name(server), port));
