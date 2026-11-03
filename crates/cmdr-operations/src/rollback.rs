@@ -60,9 +60,7 @@ fn write_op_type(kind: OpKind) -> WriteOperationType {
     match kind {
         OpKind::Move => WriteOperationType::Move,
         OpKind::Rename => WriteOperationType::Rename,
-        // A tag undo changes each file in place and deletes nothing, which is a
-        // rename's shape, never a delete's. The row's words come from `reverses`.
-        OpKind::Tag => WriteOperationType::Rename,
+        OpKind::Tag => WriteOperationType::Tag,
         // Copy/create/compress undo is a delete; the fallthrough can't be reached
         // for a real inverse kind.
         _ => WriteOperationType::Delete,

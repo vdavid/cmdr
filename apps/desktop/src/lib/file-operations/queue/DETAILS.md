@@ -109,7 +109,8 @@ Three typed set tests sit beside the factory, all module exports, all sets rathe
   nothing left to say, a failed one has the only thing the user still wants.
 - `isInstantOperation(type)` — `rename` / `create_folder` / `create_file`, the metadata ops that emit no
   `write-progress` at all. This window still lists them (it promises completeness); ambient surfaces like the corner
-  chip skip them, since there's never a bar to draw and they're gone before the eye lands on them.
+  chip skip them, since there's never a bar to draw and they're gone before the eye lands on them. `tag` is NOT one: it
+  only queues as a tag change's reversal, which reports progress per file and can run long on a share.
 
 ## `queue-backlog.ts` — the word on the progress dialog's button
 

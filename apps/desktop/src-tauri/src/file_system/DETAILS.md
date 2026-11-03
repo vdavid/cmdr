@@ -541,7 +541,7 @@ what's on disk).
 `toggle_color`) note each file they changed in a `TagWrites` (`tags_journal.rs`): the raw value it replaced and the one
 it wrote. The caller journals that as ONE `tag` operation once its action ends, with its initiator: the keyboard
 command and the menu circles as `user`, the MCP `tag` tool by caller. A failure partway still journals the files before
-it. Why bytes, why the empty array stands in for "no attribute", and the undo's recheck:
+it. ❌ No writer writes a file whose current value it couldn't read: that file is a typed `TagSkip` in the outcome (`TagReadError::Unreadable`), because a write with no before can't be undone. Why bytes, why the empty array stands in for "no attribute", and the undo's recheck:
 `crates/cmdr-operation-log/DETAILS.md` § "A tag write restores the exact prior value".
 
 **Other clients' tags.** The share watcher opts into the metadata bits (`smb2::WatchOptions::metadata`), and a change on a row asks `ListingHost::row_xattrs_may_have_changed`, which `tags_io::refresh_rows` answers by reading those rows again for any pane showing their folder. Apart from `directory_changed` because a re-stat can't see a tag: no new size, and on a QNAP no new date either. A pane on an OS-mounted share hears no such thing: FSEvents on `smbfs` sees only this machine.
@@ -550,7 +550,7 @@ it. Why bytes, why the empty array stands in for "no attribute", and the undo's 
 
 The MCP `tag` tool wraps `tags::toggle_color` / `set_tags` (and `system_color_name` for canonical names), resolving
 target paths off the pane state and refreshing via `Listings::apply_row_facts` (`RowFacts::Tags`). `set` and `toggle` merge, so they skip
-unreadable files and name them in the tool result; `clear` writes regardless (removing every tag is what was asked). `cmdr://state` file entries also surface a
+unreadable files and name them in the tool result; `clear` keeps nothing, so it overwrites a value it can't decode, but it skips a file it can't READ the same way, since a write with no known before couldn't be undone. `cmdr://state` file entries also surface a
 `[tags:…]` marker mirrored from `PaneFileEntry.tags`. See `tools/resources/DETAILS.md`.
 
 ## Threading

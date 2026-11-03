@@ -166,6 +166,8 @@ pub(crate) fn blocks_quit(snapshot: &OperationSnapshot) -> bool {
         // Instant metadata ops (`manager::run_instant`) finish faster than a
         // human could read a dialog about them.
         WriteOperationType::Rename | WriteOperationType::CreateFolder | WriteOperationType::CreateFile => false,
+        // A tag reversal rewrites one small attribute per file and moves no bytes.
+        WriteOperationType::Tag => false,
     };
     still_going && moves_bytes
 }

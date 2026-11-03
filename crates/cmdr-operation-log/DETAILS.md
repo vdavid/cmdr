@@ -707,10 +707,12 @@ context-menu circles (`user`), and the `tag` tool (`agent` or `ai_client`, by ca
   holds: an earlier pass, a crash resume). A file gone is `Vanished`, under the same root-reach rule as a restore. One
   read per file (`read_xattr_many`, `Verified`), then `InverseAct::WriteXattr`.
 - **The runner tells the panes**: a tag lands with no new size (and on a QNAP no new date), so `ReversalRunner` asks
-  `ListingHost::row_xattrs_may_have_changed` after each write, the same door the share watcher uses.
+  `ListingHost::row_xattrs_may_have_changed` after each write, the same door the share watcher uses. The reversal runs
+  as its own `WriteOperationType::Tag`, so the queue, the quit prompt, and the corner chip name it as a tag change.
 - **One user action is one op.** A `toggle` of two colors makes a pass per color; the app merges them per file (first
-  before, last after) and drops a file that ended where it started. A write that failed partway still journals the files
-  before it, under a `failed` op.
+  before, last after) and drops a file that ended where it started. A file whose value can't be read isn't written at
+  all (the app's typed skip), so there's never a change with no before. A write that failed partway still journals the
+  files before it, under a `failed` op.
 
 Pinned by `crates/cmdr-operations/src/rollback/planner_tests/tag_tests.rs` (restore, retagged since, gone, already back,
 redo, a row with no values) and `tags_journal_test.rs` beside the app's writer (exact bytes off a real disk, the

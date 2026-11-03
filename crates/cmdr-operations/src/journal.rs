@@ -62,6 +62,7 @@ pub(super) fn op_kind_of(t: WriteOperationType) -> OpKind {
         WriteOperationType::CreateFolder => OpKind::CreateFolder,
         WriteOperationType::CreateFile => OpKind::CreateFile,
         WriteOperationType::ArchiveEdit | WriteOperationType::Compress => OpKind::ArchiveEdit,
+        WriteOperationType::Tag => OpKind::Tag,
     }
 }
 

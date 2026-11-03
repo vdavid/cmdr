@@ -61,7 +61,7 @@ impl RecoveredOriginal {
 /// result-returning metadata ops that flow through `manager::run_instant`
 /// (registered + busy-marked, but NOT lane-queued), not the streaming
 /// `spawn_managed` path the transfers/deletes use. They cross the wire as
-/// `rename` / `create_folder` / `create_file` (snake_case).
+/// `rename` / `create_folder` / `create_file` (snake_case). `Tag` queues only as an undo.
 ///
 /// `ArchiveEdit` is the zip-mutation op (add / delete / rename / mkdir / mkfile
 /// inside a `.zip`, and copy/move INTO one), while `Compress` identifies a fresh
@@ -84,6 +84,7 @@ pub enum WriteOperationType {
     CreateFile,
     ArchiveEdit,
     Compress,
+    Tag,
 }
 
 /// Whether cancelling an operation can also UNDO what it wrote, and when it

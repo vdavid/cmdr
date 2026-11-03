@@ -20,6 +20,9 @@ export function operationTypeIcon(operationType: WriteOperationType): IconName {
       return 'folder-plus'
     case 'create_file':
       return 'file-plus'
+    // Putting a Finder-tag change's prior tags back (the change itself never queues).
+    case 'tag':
+      return 'tag'
     case 'delete':
     case 'trash':
       return 'trash-2'

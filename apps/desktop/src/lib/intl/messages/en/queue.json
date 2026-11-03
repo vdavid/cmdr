@@ -23,11 +23,11 @@
     "screenshot": "queue-empty.png"
   },
 
-  "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} other {Working}}",
+  "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}",
   "@queue.row.label": {
-    "description": "Names what an operation row is doing, shown next to a direction arrow and the source-to-destination summary. Reads as a present-continuous action. The rename, create_folder, and create_file arms are near-instant metadata ops that usually flash by too fast to read. The archive_edit arm covers changing a zip (adding, removing, or renaming entries inside it), while compress creates a fresh zip from selected files; \"archive\" means a zip file.",
+    "description": "Names what an operation row is doing, shown next to a direction arrow and the source-to-destination summary. Reads as a present-continuous action. The rename, create_folder, and create_file arms are near-instant metadata ops that usually flash by too fast to read. The archive_edit arm covers changing a zip (adding, removing, or renaming entries inside it), while compress creates a fresh zip from selected files; \"archive\" means a zip file. The tag arm is putting macOS Finder color tags back on files, as an undo.",
     "placeholders": {
-      "type": "the kind of operation: copy, move, delete, trash, rename, create_folder, create_file, archive_edit, or compress"
+      "type": "the kind of operation: copy, move, delete, trash, rename, create_folder, create_file, archive_edit, compress, or tag"
     },
     "screenshot": "quit-confirmation-one-copy.png"
   },

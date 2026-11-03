@@ -288,6 +288,7 @@ fn operation_type_token(kind: WriteOperationType) -> &'static str {
         WriteOperationType::CreateFile => "create_file",
         WriteOperationType::ArchiveEdit => "archive_edit",
         WriteOperationType::Compress => "compress",
+        WriteOperationType::Tag => "tag",
     }
 }
 

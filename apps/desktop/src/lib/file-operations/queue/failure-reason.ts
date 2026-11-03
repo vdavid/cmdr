@@ -39,6 +39,7 @@ const REASON_OPERATION_TYPE: Record<OperationSnapshot['operationType'], Transfer
   rename: 'copy',
   create_folder: 'copy',
   create_file: 'copy',
+  tag: 'copy',
 }
 
 /**

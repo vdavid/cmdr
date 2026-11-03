@@ -111,6 +111,7 @@ pub enum SlowOperation {
     CreateFile,
     ArchiveEdit,
     Compress,
+    Tag,
 }
 
 /// Which side a stalled transfer is waiting on, from the backend's own classification.

@@ -390,22 +390,26 @@ pub(crate) async fn apply_merge(
     Ok(results)
 }
 
-/// Clears every tag on `paths`. Reads nothing to keep, since the caller asked for all of
-/// them gone: only "already none" skips the write, so a value that doesn't decode is
-/// overwritten and a file with no attribute stays without one. `written` keeps each
-/// value it replaced, an undecodable one too, so an undo puts back exactly that.
+/// Clears every tag on `paths`. Keeps nothing, since the caller asked for all of them gone:
+/// only "already none" skips the write, so a value that doesn't decode is overwritten and a
+/// file with no attribute stays without one. `written` keeps each value it replaced, an
+/// undecodable one too, so an undo puts back exactly that.
+///
+/// A file whose tags can't be READ is skipped and reported, never cleared: with no before
+/// to journal, the clear couldn't be undone. So is one nothing stores tags for.
 pub(crate) async fn clear_tags(
     volume_id: Option<&str>,
     paths: Vec<String>,
     written: &mut TagWrites,
-) -> Result<Vec<(String, Vec<TagRef>)>, TagWriteError> {
+) -> Result<TagToggleOutcome, TagWriteError> {
     let (groups, nowhere) = group_by_store(volume_id, paths).await;
-    if let Some(path) = nowhere.into_iter().next() {
-        return Err(TagWriteError::Refused {
+    let mut skipped: Vec<TagSkip> = nowhere
+        .into_iter()
+        .map(|path| TagSkip {
             path,
-            reason: VolumeError::NotSupported,
-        });
-    }
+            reason: TagReadError::Unreadable(VolumeError::NotSupported),
+        })
+        .collect();
     let mut cleared = Vec::new();
     for group in &groups {
         let wire: Vec<PathBuf> = group.paths.iter().map(PathBuf::from).collect();
@@ -414,10 +418,19 @@ pub(crate) async fn clear_tags(
             .read_xattr_many(&wire, TAGS_XATTR, XattrReadMode::Verified)
             .await;
         for (path, answer) in group.paths.iter().zip(answers) {
-            let already_clear = match &answer {
-                Ok(None) => true,
-                Ok(Some(bytes)) => parse_tags_plist_strict(bytes).is_ok_and(|tags| tags.is_empty()),
-                Err(_) => false,
+            let before = match answer {
+                Ok(before) => before,
+                Err(e) => {
+                    skipped.push(TagSkip {
+                        path: path.clone(),
+                        reason: TagReadError::Unreadable(e),
+                    });
+                    continue;
+                }
+            };
+            let already_clear = match &before {
+                None => true,
+                Some(bytes) => parse_tags_plist_strict(bytes).is_ok_and(|tags| tags.is_empty()),
             };
             if !already_clear {
                 let target = TagTarget {
@@ -425,17 +438,15 @@ pub(crate) async fn clear_tags(
                     volume: group.volume.as_ref(),
                     path,
                 };
-                // A read that failed knows no before, so the write isn't journaled with a
-                // made-up one: an undo would put back tags the file never had.
-                match &answer {
-                    Ok(before) => write_tags(target, before.as_deref(), &[], written).await?,
-                    Err(_) => write_tags(target, None, &[], &mut TagWrites::default()).await?,
-                }
+                write_tags(target, before.as_deref(), &[], written).await?;
             }
             cleared.push((path.clone(), Vec::new()));
         }
     }
-    Ok(cleared)
+    Ok(TagToggleOutcome {
+        updates: cleared,
+        skipped,
+    })
 }
 
 /// Toggles one system color across a selection, preserving every OTHER tag on every file,

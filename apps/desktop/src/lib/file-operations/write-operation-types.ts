@@ -25,7 +25,8 @@ import type {
 
 /** Type of write operation. Mirrors the `WriteOperationType` enum in `bindings.ts`
  *  (the managed instant ops `rename` / `create_folder` / `create_file`, plus
- *  `archive_edit` — the zip mutation op — included). */
+ *  `archive_edit` — the zip mutation op — included). `tag` reaches the queue only as
+ *  the reversal of a Finder-tag change; the change itself is instant. */
 export type WriteOperationType =
   | 'copy'
   | 'move'
@@ -36,6 +37,7 @@ export type WriteOperationType =
   | 'create_file'
   | 'archive_edit'
   | 'compress'
+  | 'tag'
 
 /** Transfer-style operations that share the progress UI. `archive_edit` (a zip
  *  temp+rename rewrite) reports progress like a transfer, so it rides this set.

@@ -73,5 +73,7 @@ pub(super) fn completion_category(operation_type: WriteOperationType) -> Option<
         // would let a future progressed op type silently skip analytics instead of
         // failing to compile here.
         WriteOperationType::Rename | WriteOperationType::CreateFolder | WriteOperationType::CreateFile => None,
+        // Only a tag write's reversal runs managed; the write reports its own facts.
+        WriteOperationType::Tag => None,
     }
 }

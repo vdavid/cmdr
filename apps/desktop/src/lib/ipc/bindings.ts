@@ -18319,6 +18319,7 @@ export type SlowOperation =
   | 'create_file'
   | 'archive_edit'
   | 'compress'
+  | 'tag'
 
 // Which side a stalled transfer is waiting on, from the backend's own classification.
 export type SlowWaitingOn = 'destination' | 'source' | 'unknown'
@@ -22315,7 +22316,8 @@ export type WriteOperationStartResult = {
  *  result-returning metadata ops that flow through `manager::run_instant`
  *  (registered + busy-marked, but NOT lane-queued), not the streaming
  *  `spawn_managed` path the transfers/deletes use. They cross the wire as
- *  `rename` / `create_folder` / `create_file` (snake_case).
+ *  `rename` / `create_folder` / `create_file` (snake_case). `Tag` queues only as
+ *  a Finder-tag change's reversal; the change itself is instant (`OpKind::Tag`).
  *
  *  `ArchiveEdit` is the zip-mutation op (add / delete / rename / mkdir / mkfile
  *  inside a `.zip`, and copy/move INTO one), while `Compress` identifies a fresh
@@ -22333,6 +22335,7 @@ export type WriteOperationType =
   | 'create_file'
   | 'archive_edit'
   | 'compress'
+  | 'tag'
 
 /**
  *  Progress event payload for write operations.

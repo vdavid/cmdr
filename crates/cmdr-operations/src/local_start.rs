@@ -612,9 +612,10 @@ fn local_rollback_support(operation_type: WriteOperationType) -> RollbackSupport
     match operation_type {
         WriteOperationType::Copy | WriteOperationType::Move => RollbackSupport::Supported,
         WriteOperationType::Delete | WriteOperationType::Trash => RollbackSupport::NothingToPutBack,
-        WriteOperationType::Rename | WriteOperationType::CreateFolder | WriteOperationType::CreateFile => {
-            RollbackSupport::InstantChange
-        }
+        WriteOperationType::Rename
+        | WriteOperationType::CreateFolder
+        | WriteOperationType::CreateFile
+        | WriteOperationType::Tag => RollbackSupport::InstantChange,
         WriteOperationType::ArchiveEdit | WriteOperationType::Compress => RollbackSupport::ArchiveRewrite,
     }
 }

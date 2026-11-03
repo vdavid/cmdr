@@ -104,3 +104,31 @@ async fn a_tag_write_journals_each_files_exact_prior_value() {
         "a clear keeps even a value it can't decode"
     );
 }
+
+/// A file whose tags can't be read is skipped with a typed reason and never written, so a
+/// clear can't change anything it couldn't put back.
+#[tokio::test]
+async fn a_clear_skips_a_file_it_cannot_read_and_journals_nothing_for_it() {
+    use crate::file_system::tags::TagReadError;
+    use cmdr_fs::volume::VolumeError;
+
+    const DISK: &str = "tags-journal-unreadable-disk";
+    let disk = cmdr_local::LocalPosixVolume::local_folder("Disk", "/", cmdr_fs::volume::host::VolumeHost::detached());
+    crate::file_system::volume::manager::get_volume_manager().register(DISK, std::sync::Arc::new(disk));
+    let dir = crate::test_support::TestDir::new(&format!("tags_journal_unreadable_{}", std::process::id()));
+    let gone = dir.join("gone.txt").to_string_lossy().into_owned();
+
+    let mut writes = TagWrites::default();
+    let outcome = clear_tags(Some(DISK), vec![gone.clone()], &mut writes)
+        .await
+        .expect("a skip, not a refusal");
+
+    assert!(outcome.updates.is_empty(), "nothing cleared");
+    assert_eq!(outcome.skipped.len(), 1);
+    assert_eq!(outcome.skipped[0].path, gone);
+    assert!(matches!(
+        outcome.skipped[0].reason,
+        TagReadError::Unreadable(VolumeError::NotFound(_))
+    ));
+    assert!(writes.rows().is_empty(), "nothing to journal");
+}

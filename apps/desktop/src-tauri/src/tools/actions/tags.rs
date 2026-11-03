@@ -191,8 +191,9 @@ fn color_index(name: &str) -> Option<u8> {
 ///
 /// `set` and `toggle` both MERGE with what's on disk, so a file whose existing tags
 /// can't be read or fully decoded is skipped and reported, never treated as
-/// untagged (that would drop its custom tags). `clear` reads nothing to keep: the
-/// caller asked for every tag gone, so it writes regardless.
+/// untagged (that would drop its custom tags). `clear` keeps nothing, so a value it
+/// can't decode is cleared all the same, but a file it can't READ is skipped too: with
+/// no before to journal, the clear couldn't be undone.
 ///
 /// Every file it changes lands in `written`, the record the caller journals for undo.
 #[cfg(target_os = "macos")]
@@ -207,15 +208,9 @@ async fn apply_tag_action(
     use crate::file_system::tags_io::{apply_merge, clear_tags, read_for_merge, toggle_color};
 
     match action {
-        "clear" => {
-            let updates = clear_tags(volume_id, paths.to_vec(), written)
-                .await
-                .map_err(|e| ToolError::internal(format!("Couldn't clear tags: {e}")))?;
-            Ok(TagToggleOutcome {
-                updates,
-                skipped: Vec::new(),
-            })
-        }
+        "clear" => clear_tags(volume_id, paths.to_vec(), written)
+            .await
+            .map_err(|e| ToolError::internal(format!("Couldn't clear tags: {e}"))),
         "toggle" => {
             // Toggle each requested color across all paths. Each `toggle_color`
             // reads current on-disk state, so the last color's result reflects

@@ -35,6 +35,7 @@ const SHOWABLE_TYPES: Record<OperationSnapshot['operationType'], TransferOperati
   rename: null,
   create_folder: null,
   create_file: null,
+  tag: null,
 }
 
 /** The dialog chrome for `operationId`, or `null` when this window's snapshot
