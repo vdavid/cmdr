@@ -48,6 +48,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Dispensar",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "Conferindo o que você está vendo",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -886,6 +890,23 @@
   "askCmdr.sessions.archivedBadge": "Arquivado",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Limpar busca",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Chats encontrados",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} chat} many {{countText} chats} other {{countText} chats}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144",
+    "sameAsSourceJustification": "pt-BR uses o chat / os chats as its own word, ruled confirmed in docs/i18n/pt/terms.json and shipped in askCmdr.sessions.title (Chats); only the formatted count sits beside it."
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Atividade em {folder}} one {Atividade em {folder} e em mais {otherCountText} pasta} many {Atividade em {folder} e em mais {otherCountText} pastas} other {Atividade em {folder} e em mais {otherCountText} pastas}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Perguntar sobre a seleção",
   "@askCmdr.composer.attach": {

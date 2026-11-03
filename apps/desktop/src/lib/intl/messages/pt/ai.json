@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Busca em linguagem natural</b>: o texto que você digita ou o que uma ferramenta de IA conectada pedir depois que você ativar o modo direto do MCP",
+  "ai.cloudConsent.search": "<b>Busca em linguagem natural</b>: o texto que você digita",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>Seleção por descrição</b>: o que você digita, mais até 240 nomes da pasta atual",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "Em um chat que você iniciou, o Ask Cmdr também pode operar o app por você: navegar, selecionar, ordenar, abrir abas e caixas de diálogo e conectar um local que você salvou. Copiar, mover, comprimir, apagar, renomear e desfazer uma operação abrem, cada um, uma caixa de diálogo ou um editor para você confirmar, e nada acontece até você confirmar. Abrir um arquivo, mudar um ajuste (exceto a aparência do Cmdr), encerrar, ejetar um disco, remover um servidor e mudar a indexação perguntam a você antes. Criar uma pasta ou um arquivo já com nome e colocar etiquetas em arquivos acontecem na hora, sem nenhuma pergunta, e não há como desfazer as etiquetas. Renomeações e faxinas que ele prepara como plano esperam a sua aprovação.",
+  "ai.cloudConsent.askCmdr.actions": "Em um chat que você iniciou, o Ask Cmdr também pode operar o app por você: navegar, selecionar, ordenar, abrir abas e caixas de diálogo e conectar um local que você salvou. Copiar, mover, comprimir, apagar, renomear e desfazer uma operação abrem, cada um, uma caixa de diálogo ou um editor para você confirmar, e nada acontece até você confirmar. Abrir um arquivo, mudar um ajuste (exceto a aparência do Cmdr), encerrar, ejetar um disco, remover um servidor e mudar a indexação perguntam a você antes. Criar uma pasta ou um arquivo já com nome e colocar etiquetas em arquivos acontecem na hora, sem nenhuma pergunta, e você pode desfazer uma mudança de etiquetas. Renomeações e faxinas que ele prepara como plano esperam a sua aprovação.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "O Cmdr escreve anotações sobre você: como você gosta de organizar as coisas, o que você recusou antes, tudo o que você pedir para ele lembrar. Essas anotações vão junto com cada mensagem que você envia, enquanto existirem, e podem incluir texto que o Cmdr reconheceu dentro das suas fotos. Você pode lê-las, ou apagá-las, quando quiser nos ajustes do Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {
