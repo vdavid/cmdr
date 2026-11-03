@@ -54,9 +54,11 @@ const SIGNIFICANT_FLOOR: u64 = 512 * 1024;
 /// the map stays bounded by the count of *actively*-churning keys.
 const COLD_EVICTION_WINDOWS: u32 = 5;
 
-/// Hard backstop on the map size. Reaching it is pathological (this many distinct
-/// files churning at once); we flush every pending payload and reset rather than
-/// grow unbounded or silently drop. Logged, never silent.
+/// Hard backstop on the map size: we flush every pending payload and reset rather
+/// than grow unbounded or silently drop. Logged at info, never silent. Not a fault:
+/// one `cargo` build touches more distinct files under `target/` than this within
+/// the cold-eviction span (four times in one dev morning, 2026-11-03), and the
+/// flush loses nothing, so it's a routine event, not a warning.
 const HARD_CAP: usize = 100_000;
 
 /// Whether a size change from `last_applied` to `new` is big enough to bypass the
@@ -226,7 +228,7 @@ impl<P> Throttle<P> {
         // index, so we never do that silently.
         if self.entries.len() > HARD_CAP {
             if !self.hard_cap_warned {
-                log::warn!(
+                log::info!(
                     target: "indexing::throttle",
                     // allowed-pluralize-noun: HARD_CAP is the const 100_000, never 1.
                     "Live-write throttle map exceeded {HARD_CAP} keys; flushing all pending and resetting baselines"

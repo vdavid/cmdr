@@ -106,17 +106,35 @@ const ROOT_RECORDED_RESOLUTION: &str =
 /// user-impacting, which is exactly the rule's definition of a warning. At error
 /// level one machine's remount loop uploaded 98 bundles in a week and drowned the
 /// channel it was supposed to alert. The rarer clone deserves louder, but nothing
-/// here can tell the two apart, so this stays a warning that names both.
+/// here can tell the two apart, so this stays a warning that names both. The one
+/// exception is [`identity_conflict_level`]'s nested case, which can only be a
+/// double mount.
 fn report_identity_conflict(id: &str, existing: &Arc<dyn Volume>, incoming: &Arc<dyn Volume>, resolution: &str) {
     if !is_identity_conflict(existing.root(), incoming.root()) {
         return;
     }
-    log::warn!(
+    log::log!(
         target: "cmdr_lib::file_system::volume",
+        identity_conflict_level(existing.root(), incoming.root()),
         "Two different mount roots ({} and {}) claim volume ID {id}; {resolution}, so the two share per-volume state. Expected only for a cloned volume or a doubly-mounted filesystem.",
         LogPrivate::dir_path(existing.root()),
         LogPrivate::dir_path(incoming.root()),
     );
+}
+
+/// How loud an identity conflict between two different roots is.
+///
+/// A root mounted INSIDE the other one's tree is the same filesystem mounted a
+/// second time, never a cloned disk: macOS does exactly this with
+/// `/System/Volumes/Update` and its `mnt1` snapshot mount during an OS update
+/// (seen 10 times in a week of dev logs, 2026-11-03). That's routine, so it logs at
+/// info. Two sibling roots stay a warning, since one of them could be a clone.
+fn identity_conflict_level(existing_root: &Path, incoming_root: &Path) -> log::Level {
+    if existing_root.starts_with(incoming_root) || incoming_root.starts_with(existing_root) {
+        log::Level::Info
+    } else {
+        log::Level::Warn
+    }
 }
 
 /// Whether re-registering `id` means two DIFFERENT mounts, rather than the same

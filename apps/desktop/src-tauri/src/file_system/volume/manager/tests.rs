@@ -130,6 +130,25 @@ fn re_registering_the_same_mount_is_not_an_identity_conflict() {
 }
 
 #[test]
+fn a_root_nested_in_the_other_is_a_quiet_double_mount() {
+    // macOS's update volume and its snapshot mount: one filesystem, mounted twice.
+    let update = Path::new("/System/Volumes/Update");
+    let snapshot = Path::new("/System/Volumes/Update/mnt1");
+    assert_eq!(identity_conflict_level(update, snapshot), log::Level::Info);
+    assert_eq!(identity_conflict_level(snapshot, update), log::Level::Info);
+}
+
+#[test]
+fn sibling_roots_under_one_id_stay_a_warning() {
+    // Could be a clone, so a human should see it. `/Volumes/naspi-1` shares a
+    // string prefix with `/Volumes/naspi` but isn't inside it.
+    assert_eq!(
+        identity_conflict_level(Path::new("/Volumes/naspi"), Path::new("/Volumes/naspi-1")),
+        log::Level::Warn
+    );
+}
+
+#[test]
 fn one_id_over_two_roots_is_an_identity_conflict() {
     // Two different disks under one ID would cross-wire their index, saved
     // paths, and operation routing. IDs are built so this can't happen from a
