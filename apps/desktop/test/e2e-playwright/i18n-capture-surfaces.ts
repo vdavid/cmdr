@@ -34,7 +34,7 @@ import {
 } from './helpers.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { initMcpClient, mcpCall, mcpNavToPath, mcpAwaitPath } from '../e2e-shared/mcp-client.js'
-import { advancedSettings } from '../../src/lib/settings/definitions/advanced.js'
+import { CLOSED_TAB_HISTORY_DEFAULT, CLOSED_TAB_HISTORY_SIZE } from './closed-tab-history.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import {
   type SurfaceEntry,
@@ -336,17 +336,6 @@ async function removeFavoritesAddedSince(main: TauriPage, before: string[]): Pro
   }
 }
 
-/**
- * Captures the SNAPSHOT-RESOLVED toast surfaces (command-handler confirmations
- * and the transfer-completion toast). Each follows the `captureToastSurface`
- * rhythm: enable the sink, fire the trigger, catch the toast. Triggers are the
- * same registry commands / file ops the production UI uses.
- *
- * Toasts that need backend events we can't fire from the frontend (the real
- * download-complete toast, MTP-connected, low-disk) are NOT here: they're
- * documented skips deferred to the mock-staged surfaces.
- */
-const CLOSED_TAB_HISTORY_SIZE = 'fileExplorer.tabs.closedTabHistorySize'
 const PANES = ['left', 'right'] as const
 
 /** Leaves each pane with its active tab and its pinned ones. A single-tab pane says so, harmlessly. */
@@ -371,17 +360,21 @@ async function emptyClosedTabHistory(main: TauriPage): Promise<void> {
   for (const pane of PANES) {
     await mcpCall('tab', { pane, action: 'reopen' })
   }
-  await mcpCall('set_setting', { id: CLOSED_TAB_HISTORY_SIZE, value: closedTabHistoryDefault() })
+  await mcpCall('set_setting', { id: CLOSED_TAB_HISTORY_SIZE, value: CLOSED_TAB_HISTORY_DEFAULT })
   // A pane whose history was already empty answered its reopen with this very toast.
   await dismissAllToasts(main)
 }
 
-function closedTabHistoryDefault(): number {
-  const definition = advancedSettings.find((setting) => setting.id === CLOSED_TAB_HISTORY_SIZE)
-  if (typeof definition?.default !== 'number') throw new Error(`${CLOSED_TAB_HISTORY_SIZE} has no numeric default`)
-  return definition.default
-}
-
+/**
+ * Captures the SNAPSHOT-RESOLVED toast surfaces (command-handler confirmations
+ * and the transfer-completion toast). Each follows the `captureToastSurface`
+ * rhythm: enable the sink, fire the trigger, catch the toast. Triggers are the
+ * same registry commands / file ops the production UI uses.
+ *
+ * Toasts that need backend events we can't fire from the frontend (the real
+ * download-complete toast, MTP-connected, low-disk) are NOT here: they're
+ * documented skips deferred to the mock-staged surfaces.
+ */
 export async function captureFrontendToasts(
   main: TauriPage,
   report: Record<string, SurfaceEntry>,
