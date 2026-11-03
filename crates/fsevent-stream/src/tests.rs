@@ -6,18 +6,14 @@ use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::channel;
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 use std::thread;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-#[cfg(feature = "async-std")]
-use async_std1 as async_std;
 use futures_util::future::FutureExt;
 use futures_util::stream::StreamExt;
 use tempfile::tempdir;
-#[cfg(feature = "tokio")]
-use tokio1 as tokio;
 
 use crate::ffi::{
     kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagNoDefer,
@@ -30,12 +26,7 @@ use crate::stream::{
     create_event_stream, Event, StreamContextInfo, StreamFlags, TEST_RUNNING_RUNLOOP_COUNT,
 };
 
-#[cfg(feature = "tokio")]
-static TEST_PARALLEL_LOCK: LazyLock<tokio::sync::Mutex<()>> =
-    LazyLock::new(|| tokio::sync::Mutex::new(()));
-#[cfg(feature = "async-std")]
-static TEST_PARALLEL_LOCK: LazyLock<async_std::sync::Mutex<()>> =
-    LazyLock::new(|| async_std::sync::Mutex::new(()));
+static TEST_PARALLEL_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 #[test]
 fn must_steam_context_info_send_and_sync() {
@@ -43,18 +34,7 @@ fn must_steam_context_info_send_and_sync() {
     check_send::<StreamContextInfo>();
 }
 
-#[cfg(feature = "tokio")]
 #[tokio::test]
-async fn must_abort_stream_tokio() {
-    must_abort_stream().await;
-}
-
-#[cfg(feature = "async-std")]
-#[async_std::test]
-async fn must_abort_stream_async_std() {
-    must_abort_stream().await;
-}
-
 async fn must_abort_stream() {
     // Acquire the lock so that no other runloop can be created during this test.
     let _guard = TEST_PARALLEL_LOCK.lock().await;
@@ -94,18 +74,7 @@ async fn must_abort_stream() {
     assert_eq!(TEST_RUNNING_RUNLOOP_COUNT.load(Ordering::SeqCst), 0);
 }
 
-#[cfg(feature = "tokio")]
 #[tokio::test]
-async fn must_receive_fs_events_tokio() {
-    must_receive_fs_events().await;
-}
-
-#[cfg(feature = "async-std")]
-#[async_std::test]
-async fn must_receive_fs_events_async_std() {
-    must_receive_fs_events().await;
-}
-
 async fn must_receive_fs_events() {
     // Acquire the lock so that runloop created in this test won't affect others.
     let _guard = TEST_PARALLEL_LOCK.lock().await;
@@ -260,12 +229,7 @@ async fn must_receive_fs_events_impl(
         }
     };
     let remaining = deadline.saturating_duration_since(Instant::now());
-    #[cfg(feature = "tokio")]
     let delivered = tokio::time::timeout(remaining, collect)
-        .await
-        .unwrap_or(false);
-    #[cfg(feature = "async-std")]
-    let delivered = async_std::future::timeout(remaining, collect)
         .await
         .unwrap_or(false);
 

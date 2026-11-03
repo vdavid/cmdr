@@ -18,18 +18,7 @@
 //! };
 //! use cmdr_fsevent_stream::stream::create_event_stream;
 //! use futures_util::StreamExt;
-//! # #[cfg(feature = "tokio")]
-//! # use tokio1 as tokio;
-//! # #[cfg(feature = "async-std")]
-//! # use async_std1 as async_std;
 //! #
-//! # #[cfg(feature = "async-std")]
-//! # #[async_std::main]
-//! # async fn main() {
-//! #     run().await;
-//! # }
-//! #
-//! # #[cfg(feature = "tokio")]
 //! # #[tokio::main]
 //! # async fn main() {
 //! #     run().await;
@@ -55,25 +44,15 @@
 //!
 //! let mut stream = stream.into_flatten();
 //! while let Some(event) = stream.next().await {
-//!     println!(
-//!         "[{}] path: {:?}({}), flags: {} ({:x})",
-//!         event.id,
-//!         event.path,
-//!         event.inode.unwrap_or(-1),
-//!         event.flags,
-//!         event.raw_flags
-//!     );
+//!     log::info!("{event}");
 //! }
 //! # }
 //! ```
 //!
-//! ## Runtime Support
+//! ## Runtime
 //!
-//! Both [`tokio`](https://github.com/tokio-rs/tokio) and [`async-std`](https://github.com/async-rs/async-std) are supported
-//! via feature flags.
-//!
-//! `tokio` support is enabled by default. To enable `async-std` support, disable default features and enable `async-std`
-//! feature.
+//! [`tokio`](https://github.com/tokio-rs/tokio): the event channel is a bounded
+//! `tokio::sync::mpsc` channel. Upstream also offered `async-std`; this fork dropped it.
 //!
 //! ## Changes from upstream
 //!
@@ -106,14 +85,6 @@
 // into by `Cargo.toml`'s `lints.workspace = true`. `unused_crate_dependencies` can't go with them:
 // it's judged per compilation unit, so it belongs on the lib alone.
 #![warn(unused_crate_dependencies)]
-
-// Both runtimes are dev-dependencies so either feature's tests build, but each test build uses
-// only the runtime its feature picks.
-#[cfg(all(test, not(feature = "async-std")))]
-use async_std1 as _;
-#[cfg(all(test, not(feature = "tokio")))]
-use tokio1 as _;
-
 pub mod stream;
 #[macro_use]
 pub mod ffi;

@@ -15,8 +15,6 @@ use std::task::{Context, Poll};
 use std::thread;
 use std::time::Duration;
 
-#[cfg(feature = "async-std")]
-use async_std1 as async_std;
 use core_foundation::array::CFArray;
 use core_foundation::base::{CFIndex, FromVoid};
 use core_foundation::dictionary::CFDictionary;
@@ -26,9 +24,6 @@ use core_foundation::string::CFString;
 use futures_core::Stream;
 use futures_util::stream::{iter, StreamExt};
 use log::{error, trace};
-#[cfg(feature = "tokio")]
-use tokio1 as tokio;
-#[cfg(feature = "tokio")]
 use tokio_stream::wrappers::ReceiverStream;
 
 use crate::ffi::{
@@ -124,10 +119,7 @@ impl Display for Event {
 ///
 /// Call [`create_event_stream`](create_event_stream) to create it.
 pub struct EventStream {
-    #[cfg(feature = "tokio")]
     stream: ReceiverStream<Vec<Event>>,
-    #[cfg(feature = "async-std")]
-    stream: async_std::channel::Receiver<Vec<Event>>,
     /// Set to `true` when events are dropped (the internal channel is full, or an event couldn't be
     /// built), so the consumer knows to rescan.
     overflow: Arc<AtomicBool>,
@@ -165,10 +157,7 @@ impl Stream for EventStream {
 }
 
 pub(crate) struct StreamContextInfo {
-    #[cfg(feature = "tokio")]
     event_handler: tokio::sync::mpsc::Sender<Vec<Event>>,
-    #[cfg(feature = "async-std")]
-    event_handler: async_std::channel::Sender<Vec<Event>>,
     /// Shared flag set to `true` when events are dropped: `try_send` failed, or an event couldn't be built.
     overflow: Arc<AtomicBool>,
 }
@@ -210,10 +199,7 @@ pub fn create_event_stream<P: AsRef<Path>>(
     /// At ~300 bytes per batch slot, 32K ≈ 10 MB worst case.
     const CHANNEL_CAPACITY: usize = 32_768;
 
-    #[cfg(feature = "tokio")]
     let (event_tx, event_rx) = tokio::sync::mpsc::channel(CHANNEL_CAPACITY);
-    #[cfg(feature = "async-std")]
-    let (event_tx, event_rx) = async_std::channel::bounded(CHANNEL_CAPACITY);
 
     let overflow = Arc::new(AtomicBool::new(false));
 
@@ -292,10 +278,7 @@ pub fn create_event_stream<P: AsRef<Path>>(
         ));
     };
 
-    #[cfg(feature = "tokio")]
     let stream = ReceiverStream::new(event_rx);
-    #[cfg(feature = "async-std")]
-    let stream = event_rx;
     Ok((
         EventStream { stream, overflow },
         EventStreamHandler {
@@ -530,7 +513,7 @@ define_callback!(normal_callback, (num, paths, flags, ids){
     })
 });
 
-#[cfg(all(test, feature = "tokio"))]
+#[cfg(test)]
 mod callback_tests {
     use std::ffi::CString;
 
