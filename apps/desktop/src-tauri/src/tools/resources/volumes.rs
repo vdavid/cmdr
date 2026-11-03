@@ -22,7 +22,6 @@ use crate::index_host::index;
 use crate::search::format_size;
 #[cfg(target_os = "macos")]
 use cmdr_fs::deadline::{BlockingBudget, Deadline, timeout_detached_within};
-#[cfg(target_os = "macos")]
 use std::time::Duration;
 
 /// A volume's transport kind, the coarse routing hint an agent reads first.
