@@ -10,7 +10,10 @@
  *
  * It runs at `astro:build:done` over the emitted HTML files (not the hast
  * tree) on purpose: that's the one layer that sees BOTH markdown output and
- * .astro template text plus `{interpolation}`. It only ever rewrites text
+ * .astro template text plus `{interpolation}`. The dev server has no emitted
+ * files, so there the same `transformHtml` runs on each HTML response instead
+ * (`smart-quotes-dev-middleware.ts`), and a page reads the same in `pnpm dev`
+ * as in production. It only ever rewrites text
  * nodes: tag names, attributes, and the interiors of skip-tags are copied
  * through verbatim. The tag scanner is deliberately hand-rolled (rather than
  * a full parse/reserialize) so it can't introduce non-visual HTML drift.
@@ -123,7 +126,7 @@ function findSkipTagEnd(html: string, from: number, name: string): number {
  * tags. Everything between `<` and `>` (tag names, attributes) and every skip-tag interior is copied
  * through untouched.
  */
-function transformHtml(html: string): string {
+export function transformHtml(html: string): string {
   let result = ''
   let i = 0
 
@@ -185,6 +188,11 @@ export function smartQuotesIntegration(): AstroIntegration {
   return {
     name: 'smart-quotes',
     hooks: {
+      'astro:config:setup': ({ command, addMiddleware }) => {
+        // Dev only: a build already curls the emitted files below, and doing both is wasted work.
+        if (command !== 'dev') return
+        addMiddleware({ entrypoint: new URL('./smart-quotes-dev-middleware.ts', import.meta.url), order: 'post' })
+      },
       'astro:build:done': async ({ dir }) => {
         const distPath = dir.pathname
         const htmlFiles = await findHtmlFiles(distPath)
