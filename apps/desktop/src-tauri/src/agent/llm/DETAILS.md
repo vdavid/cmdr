@@ -297,11 +297,11 @@ skip `tool_details` and guess. What they do: `../../tools/DETAILS.md` § Lazy lo
   120 s stall limit (`chat::context::STREAM_STALL_TIMEOUT`) while Google is overloaded.
 - **Mistral**: the host takes the prefix, the tool-search pair, and a stored `use_tool` back (verified on
   `ministral-14b-latest`, `MISTRAL_MODEL=ministral-14b-latest smoke_mistral_deferred_tool`, 2026-11-03). Like Ministral
-  3B locally, it skips `tool_details`, guesses `sortBy`, and gets it right on the gate's second try. The preset's
-  default, `mistral-small-latest`, stays unproven: our key's free workspace gets
+  3B locally, it skips `tool_details`, guesses `sortBy`, and gets it right on the gate's second try. That's why
+  `ministral-14b-latest` is the preset's default: `mistral-small-latest` stays unproven, since our key's free workspace gets
   `x-ratelimit-limit-req-minute: 0` on it (and on `mistral-medium-*`, `magistral-small-*`, `devstral-small-*`), so even
   a five-token request 429s, while the Ministral models and `open-mistral-nemo` answer (probed five times,
-  04:04–04:25 UTC, 2026-11-03). Proving the default needs a key on a paid plan.
+  04:04–04:25 UTC, 2026-11-03). Proving `mistral-small-latest` needs a key on a paid plan.
 - **Groq's free tier**: refuses every turn, because its 8,000-tokens-a-minute cap is below the fixed prefix (HTTP 413,
   "Request too large … Limit 8000, Requested 9,077", 2026-11-03). That 413 is its own typed kind
   (`AiError::RequestTooLarge` → `AgentErrorKind::RequestTooLarge`), and the rail names the provider and says the
