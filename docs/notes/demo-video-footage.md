@@ -143,6 +143,18 @@ around a usable span, named moments in `notes`. The editor-facing caveats are in
   (seen in one recorded frame; fast-changing UI, so worth a look by hand before calling it a bug).
 - **Stopping the app with SIGTERM leaves its `llama-server` running**; the next launch stops it
   (`kill_stale_llama_servers`).
+- **`forget_server_secret` on a manually added SMB server leaves its password behind** (the website's `reach-network`
+  clip, 2026-11-03, E2E build of 0.58.0, clips instance with `CMDR_SECRET_STORE=file`). The server was added from the
+  sheet as `smb://home-nas.local.:11481/private` and signed in with "Remember in Keychain" on; the log shows
+  `Saving credentials: server="home-nas.local.:11481", share=None`. The next take called `forget_server_secret` and then
+  `forget_server` for every saved row whose name or address matched (`list_saved_servers`), and still logged no
+  `Deleting credentials` for SMB: the following add found it
+  (`Found Keychain credentials via server="home-nas.local.:11481" (server-level)`, `Returning cached credentials`), so
+  the sheet never asked for the password. Reading the code: `forget_server_secret`'s SMB arm calls
+  `keychain::forget_share_credentials(&row.server_name, &row.share_name)`, keyed by the row's server NAME, while the
+  sign-in filed the entry under the dialed `host:port`. The clip works around it with `delete_smb_credentials` on that
+  exact key (`forgetNas` in `apps/desktop/test/e2e-playwright/marketing-clips-reach.ts`), which also clears the
+  in-memory cache.
 
 ### Re-recording
 
