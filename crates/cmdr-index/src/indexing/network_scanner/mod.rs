@@ -70,7 +70,7 @@ use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{ScanListingClock, Volume};
 
 use super::scanner::ScanSummary;
-use super::writer::IndexWriter;
+use super::writer::{IndexWriter, WriterTransaction};
 
 /// Batch size for `InsertEntriesV2` sends — matches the local guarded walker's default.
 const BATCH_SIZE: usize = 2000;
@@ -96,28 +96,31 @@ fn flush_batch(batch: &mut Vec<crate::indexing::store::EntryRow>, writer: &Index
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
 }
 
-/// Open a walk's explicit insert transaction (see [`SCAN_COMMIT_INTERVAL`]).
-fn begin_scan_tx(writer: &IndexWriter, tx_open: &mut bool) -> Result<(), VolumeScanError> {
+/// Open a walk's explicit insert transaction (see [`SCAN_COMMIT_INTERVAL`]). The
+/// guard commits on drop, so an exit nobody wrote a commit for (a `?`, a dropped
+/// future) still never leaves the writer mid-transaction.
+fn begin_scan_tx(writer: &IndexWriter) -> Result<WriterTransaction, VolumeScanError> {
     writer
-        .send(crate::indexing::writer::WriteMessage::BeginTransaction)
-        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-    *tx_open = true;
-    Ok(())
+        .begin_transaction()
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
 }
 
-/// Commit a walk's open insert transaction if one is open (idempotent). Called at
-/// each commit interval AND before EVERY exit (clean finish, cancel, root-fatal,
-/// empty-root, disconnect, consecutive-failure) so the writer connection never
-/// returns mid-transaction, and so the marks + aggregate that follow run in
-/// autocommit.
-fn commit_scan_tx(writer: &IndexWriter, tx_open: &mut bool) -> Result<(), VolumeScanError> {
-    if *tx_open {
-        writer
-            .send(crate::indexing::writer::WriteMessage::CommitTransaction)
-            .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-        *tx_open = false;
-    }
-    Ok(())
+/// Commit the walk's insert transaction now (idempotent). Called before every exit
+/// that sends anything after it (clean finish, cancel, root-fatal, empty-root,
+/// disconnect, consecutive-failure), so the marks + aggregate that follow run in
+/// autocommit rather than waiting for the guard's drop.
+fn commit_scan_tx(transaction: &mut WriterTransaction) -> Result<(), VolumeScanError> {
+    transaction
+        .finish()
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
+}
+
+/// Commit what the walk has inserted so far and continue in a fresh transaction,
+/// once per [`SCAN_COMMIT_INTERVAL`].
+fn restart_scan_tx(transaction: &mut WriterTransaction) -> Result<(), VolumeScanError> {
+    transaction
+        .commit_and_continue()
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
 }
 
 /// Per-directory listing timeout. Network/USB `list_directory` blocks 30–120 s

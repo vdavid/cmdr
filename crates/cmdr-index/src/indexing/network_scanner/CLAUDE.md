@@ -37,8 +37,8 @@ the per-volume paced listing budget, `system_dirs.rs` the non-recursed NAS dirs 
 - **Adding a name REBUILDS every network index**, and a false positive costs a user their indexed folder. ❌ No name
   without a vendor citation, ❌ stamp only right after a `TruncateData`, ❌ never migrate.
 - **The fresh and cover walks batch inserts into periodic explicit transactions** (`SCAN_COMMIT_INTERVAL`), which is
-  what keeps the writer off the critical path under the SMB pool's ~4× throughput. `commit_scan_tx` closes it before
-  EVERY exit; reconcile brackets via `BulkReconcileGuard`.
+  what keeps the writer off the critical path under the SMB pool's ~4× throughput. `commit_scan_tx` commits before every
+  exit that sends marks; reconcile brackets via `BulkReconcileGuard`.
 - **A backend may fan `list_directory_for_scan` across an internal pool** (SMB's extra TCP sessions, via
   `begin`/`end_scan_session`); the in-flight budget still caps it, so pacing survives.
 

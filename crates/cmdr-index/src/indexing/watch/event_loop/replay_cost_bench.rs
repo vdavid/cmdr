@@ -39,7 +39,7 @@ mod bench {
     use crate::indexing::hold::{HoldKind, VolumeWork};
     use crate::indexing::reconcile::local_reconcile::start_local_reconcile;
     use crate::indexing::store::IndexStore;
-    use crate::indexing::writer::{IndexWriter, WriteMessage};
+    use crate::indexing::writer::IndexWriter;
 
     /// Whole-process CPU (user + system) and peak RSS so far.
     fn cpu_and_rss() -> (Duration, u64) {
@@ -185,7 +185,7 @@ mod bench {
 
         let (cpu2, _) = cpu_and_rss();
         let t2 = Instant::now();
-        writer.send(WriteMessage::BeginTransaction).expect("begin");
+        let transaction = writer.begin_transaction().expect("begin");
         let mut drain = |window: &mut ReplayWindow| {
             let td = Instant::now();
             let n = flush_replay_batch(
@@ -217,7 +217,7 @@ mod bench {
             }
         }));
         drain(&mut window);
-        writer.send(WriteMessage::CommitTransaction).expect("commit");
+        transaction.commit().expect("commit");
         let tc = Instant::now();
         writer.flush_blocking().expect("flush");
         let commit = tc.elapsed();

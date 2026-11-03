@@ -129,9 +129,16 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     // Wrap all replay writes in a single SQLite transaction.
     // Without this, each write is auto-committed (separate fsync), making
     // 50K+ writes take minutes. With a transaction, it takes seconds.
-    if let Err(e) = writer.send(WriteMessage::BeginTransaction) {
-        log::warn!("Replay: BeginTransaction send failed: {e}");
-    }
+    // The guard commits on every exit, the early fallbacks below included: a
+    // replay that returned past a hand-sent commit once left the writer inside
+    // this transaction for the rest of the process, invisible to every reader.
+    let transaction = match writer.begin_transaction() {
+        Ok(transaction) => Some(transaction),
+        Err(e) => {
+            log::warn!("Replay: BeginTransaction send failed: {e}");
+            None
+        }
+    };
 
     // ── Phase 1: Replay (before HistoryDone) ─────────────────────────
 
@@ -338,7 +345,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     }
 
     // Commit the replay transaction (all writes become visible in one fsync)
-    if let Err(e) = writer.send(WriteMessage::CommitTransaction) {
+    if let Some(transaction) = transaction
+        && let Err(e) = transaction.commit()
+    {
         log::warn!("Replay: CommitTransaction send failed: {e}");
     }
 

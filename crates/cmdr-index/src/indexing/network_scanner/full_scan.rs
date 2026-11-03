@@ -26,7 +26,7 @@ use super::scan_pace::ScanPacer;
 use super::walk_descends;
 use super::{
     BATCH_SIZE, CONSECUTIVE_FAILURE_ABORT, SCAN_COMMIT_INTERVAL, VolumeScanError, begin_scan_tx, commit_scan_tx,
-    flush_batch, is_typed_disconnect, list_one_directory, log_scan_progress, summary,
+    flush_batch, is_typed_disconnect, list_one_directory, log_scan_progress, restart_scan_tx, summary,
 };
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner::{ScanProgress, ScanSummary};
@@ -135,10 +135,9 @@ pub async fn scan_volume_via_trait(
 
     // Wrap the insert stream in ONE explicit transaction, committed on an interval,
     // so the writer fsyncs per interval instead of per batch (`SCAN_COMMIT_INTERVAL`).
-    // `commit_scan_tx` closes it before EVERY exit below, so the connection never
-    // returns mid-transaction.
-    let mut tx_open = false;
-    begin_scan_tx(&writer, &mut tx_open)?;
+    // `commit_scan_tx` closes it before every exit below that sends more, so the
+    // marks and aggregate run in autocommit; the guard's drop covers any other.
+    let mut transaction = begin_scan_tx(&writer)?;
     let mut last_commit = Instant::now();
 
     loop {
@@ -146,7 +145,7 @@ pub async fn scan_volume_via_trait(
             // In-flight listings are dropped here; the smb2/MTP backends tolerate a
             // dropped request waiter. Flush what we batched and report the cancel.
             flush_batch(&mut batch, &writer)?;
-            commit_scan_tx(&writer, &mut tx_open)?;
+            commit_scan_tx(&mut transaction)?;
             return Err(VolumeScanError::Cancelled(summary(
                 total_entries,
                 total_dirs,
@@ -158,9 +157,8 @@ pub async fn scan_volume_via_trait(
         // Commit the insert transaction on the interval and reopen, so accumulated
         // inserts (and the partial `dir_stats` written inside it) become durable and
         // reader-visible without an fsync per batch.
-        if tx_open && last_commit.elapsed() >= SCAN_COMMIT_INTERVAL {
-            commit_scan_tx(&writer, &mut tx_open)?;
-            begin_scan_tx(&writer, &mut tx_open)?;
+        if transaction.is_open() && last_commit.elapsed() >= SCAN_COMMIT_INTERVAL {
+            restart_scan_tx(&mut transaction)?;
             last_commit = Instant::now();
         }
 
@@ -213,7 +211,7 @@ pub async fn scan_volume_via_trait(
                     cmdr_fs::pluralize::pluralize((queue.len() + inflight.len()) as u64, "dir"),
                     e = LogError(&e),
                 );
-                commit_scan_tx(&writer, &mut tx_open)?;
+                commit_scan_tx(&mut transaction)?;
                 finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
                 return Err(VolumeScanError::Volume(e));
             }
@@ -221,7 +219,7 @@ pub async fn scan_volume_via_trait(
                 // Failing to list the root itself with a non-disconnect error is
                 // fatal — there's nothing to index. Surface it so the caller
                 // discards and resets to gray (no honest partial to keep).
-                commit_scan_tx(&writer, &mut tx_open)?;
+                commit_scan_tx(&mut transaction)?;
                 return Err(VolumeScanError::Volume(e.clone()));
             }
             Err(err) => {
@@ -249,7 +247,7 @@ pub async fn scan_volume_via_trait(
                         cmdr_fs::pluralize::pluralize(total_dirs, "dir"),
                         cmdr_fs::pluralize::pluralize((queue.len() + inflight.len()) as u64, "dir"),
                     );
-                    commit_scan_tx(&writer, &mut tx_open)?;
+                    commit_scan_tx(&mut transaction)?;
                     finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
                     return Err(VolumeScanError::ConsecutiveFailures {
                         count: consecutive_failures,
@@ -356,7 +354,7 @@ pub async fn scan_volume_via_trait(
         );
         // Close the (empty) transaction before bailing BEFORE finish, so the
         // connection doesn't return mid-transaction over an untouched DB.
-        commit_scan_tx(&writer, &mut tx_open)?;
+        commit_scan_tx(&mut transaction)?;
         return Err(VolumeScanError::EmptyRoot);
     }
 
@@ -365,7 +363,7 @@ pub async fn scan_volume_via_trait(
     // trim the WAL. Committing FIRST keeps the marks/aggregate in autocommit and the
     // ordering invariant (marks precede the final aggregate) in ONE place, so a
     // clean scan and an aborted partial roll up identically.
-    commit_scan_tx(&writer, &mut tx_open)?;
+    commit_scan_tx(&mut transaction)?;
     finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
     writer
         .send(WriteMessage::WalCheckpoint)

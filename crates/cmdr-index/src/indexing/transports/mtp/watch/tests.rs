@@ -142,9 +142,9 @@ fn with_held_batch(send: impl FnOnce(&IndexWriter)) -> (rusqlite::Connection, te
     let (conn, dir) = seed_index();
     let writer = IndexWriter::spawn(&dir.path().join("mtp-watch-test.db"), crate::NoopEventSink::shared())
         .expect("spawn writer");
-    writer.send(WriteMessage::BeginTransaction).expect("begin");
+    let transaction = writer.begin_transaction().expect("begin");
     send(&writer);
-    writer.send(WriteMessage::CommitTransaction).expect("commit");
+    transaction.commit().expect("commit");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
     (conn, dir)

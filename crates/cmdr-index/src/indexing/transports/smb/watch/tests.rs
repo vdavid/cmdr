@@ -390,7 +390,7 @@ fn a_rename_right_behind_its_create_moves_the_row_the_create_made() {
     let (conn, dir) = seed_index();
     let writer = IndexWriter::spawn(&dir.path().join("smb-watch-test.db"), crate::NoopEventSink::shared())
         .expect("spawn writer");
-    writer.send(WriteMessage::BeginTransaction).expect("begin");
+    let transaction = writer.begin_transaction().expect("begin");
     for change in [
         DirectoryChange::Added(file_entry(
             "up.bin.cmdr-tmp-1",
@@ -404,7 +404,7 @@ fn a_rename_right_behind_its_create_moves_the_row_the_create_made() {
     ] {
         send_change(&writer, "/sub".to_string(), change);
     }
-    writer.send(WriteMessage::CommitTransaction).expect("commit");
+    transaction.commit().expect("commit");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
 

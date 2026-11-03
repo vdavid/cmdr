@@ -40,7 +40,7 @@ use super::scan_pace::ScanPacer;
 use super::walk_descends;
 use super::{
     BATCH_SIZE, CONSECUTIVE_FAILURE_ABORT, SCAN_COMMIT_INTERVAL, VolumeScanError, begin_scan_tx, commit_scan_tx,
-    flush_batch, is_typed_disconnect, list_one_directory, log_scan_progress, summary,
+    flush_batch, is_typed_disconnect, list_one_directory, log_scan_progress, restart_scan_tx, summary,
 };
 use crate::indexing::IndexPathSpace;
 use crate::indexing::reconcile::reconciler;
@@ -119,8 +119,7 @@ pub(crate) async fn cover_volume_subtree(
     let mut inflight = FuturesUnordered::new();
     let mut last_progress_log = Instant::now();
 
-    let mut tx_open = false;
-    begin_scan_tx(writer, &mut tx_open)?;
+    let mut transaction = begin_scan_tx(writer)?;
     let mut last_commit = Instant::now();
 
     loop {
@@ -128,7 +127,7 @@ pub(crate) async fn cover_volume_subtree(
             // ❌ NOT the full scan's discard. Everything this walk listed stays
             // marked, so the frontier is genuinely smaller than it was — that is
             // the convergence property the whole coverage concept rests on.
-            commit_scan_tx(writer, &mut tx_open)?;
+            commit_scan_tx(&mut transaction)?;
             writes.finish(root_id)?;
             return Err(VolumeScanError::Cancelled(summary(
                 total_entries,
@@ -138,9 +137,8 @@ pub(crate) async fn cover_volume_subtree(
             )));
         }
 
-        if tx_open && last_commit.elapsed() >= SCAN_COMMIT_INTERVAL {
-            commit_scan_tx(writer, &mut tx_open)?;
-            begin_scan_tx(writer, &mut tx_open)?;
+        if transaction.is_open() && last_commit.elapsed() >= SCAN_COMMIT_INTERVAL {
+            restart_scan_tx(&mut transaction)?;
             last_commit = Instant::now();
         }
 
@@ -185,7 +183,7 @@ pub(crate) async fn cover_volume_subtree(
                     e = LogError(&e)
                 );
                 writes.share_went_away();
-                commit_scan_tx(writer, &mut tx_open)?;
+                commit_scan_tx(&mut transaction)?;
                 writes.finish(root_id)?;
                 return Err(VolumeScanError::Volume(e));
             }
@@ -197,7 +195,7 @@ pub(crate) async fn cover_volume_subtree(
                 // the backend's typed ones, because falling through to the skip
                 // branch below would drain the queue and report a clean walk over
                 // ground nothing ever read.
-                commit_scan_tx(writer, &mut tx_open)?;
+                commit_scan_tx(&mut transaction)?;
                 writes.finish(root_id)?;
                 return Err(err);
             }
@@ -226,7 +224,7 @@ pub(crate) async fn cover_volume_subtree(
                          (looks like a disconnect); stopping and keeping what the walk covered"
                     );
                     writes.share_went_away();
-                    commit_scan_tx(writer, &mut tx_open)?;
+                    commit_scan_tx(&mut transaction)?;
                     writes.finish(root_id)?;
                     return Err(VolumeScanError::ConsecutiveFailures {
                         count: consecutive_failures,
@@ -349,7 +347,7 @@ pub(crate) async fn cover_volume_subtree(
         }
     }
 
-    commit_scan_tx(writer, &mut tx_open)?;
+    commit_scan_tx(&mut transaction)?;
     writes.finish(root_id)?;
 
     log::debug!(

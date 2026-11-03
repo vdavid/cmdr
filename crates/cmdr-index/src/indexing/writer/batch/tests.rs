@@ -74,8 +74,8 @@ fn every_message() -> Vec<WriteMessage> {
         WriteMessage::Flush(tokio::sync::oneshot::channel().0.into()),
         WriteMessage::TruncateData,
         WriteMessage::SetDeltaPropagation(false),
-        WriteMessage::BeginTransaction,
-        WriteMessage::CommitTransaction,
+        WriteMessage::BeginTransaction(crate::indexing::writer::TransactionToken(())),
+        WriteMessage::CommitTransaction(crate::indexing::writer::TransactionToken(())),
         WriteMessage::BackfillMissingDirStats,
         WriteMessage::ArmLedgerHealLatch,
         WriteMessage::MarkLedgerUnpaid,
@@ -97,8 +97,8 @@ fn every_message() -> Vec<WriteMessage> {
 fn every_durability_barrier_forces_the_batch_shut() {
     let barriers = [
         WriteMessage::Flush(tokio::sync::oneshot::channel().0.into()),
-        WriteMessage::BeginTransaction,
-        WriteMessage::CommitTransaction,
+        WriteMessage::BeginTransaction(crate::indexing::writer::TransactionToken(())),
+        WriteMessage::CommitTransaction(crate::indexing::writer::TransactionToken(())),
         WriteMessage::TruncateData,
         WriteMessage::IncrementalVacuum,
         WriteMessage::WalCheckpoint,
@@ -430,9 +430,13 @@ fn a_flush_reply_means_the_batched_rows_are_already_committed() {
 fn an_explicit_transaction_is_neither_nested_nor_swallowed() {
     let (db_path, _dir) = setup_db();
     let mut messages: Vec<WriteMessage> = (0..10).map(|i| upsert(&format!("implicit{i}.txt"))).collect();
-    messages.push(WriteMessage::BeginTransaction);
+    messages.push(WriteMessage::BeginTransaction(
+        crate::indexing::writer::TransactionToken(()),
+    ));
     messages.extend((0..10).map(|i| upsert(&format!("explicit{i}.txt"))));
-    messages.push(WriteMessage::CommitTransaction);
+    messages.push(WriteMessage::CommitTransaction(
+        crate::indexing::writer::TransactionToken(()),
+    ));
 
     let commits = run_prefilled_loop(&db_path, messages);
 

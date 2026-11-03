@@ -483,7 +483,7 @@ mod tests {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).unwrap();
 
-        writer.send(WriteMessage::BeginTransaction).unwrap();
+        let transaction = writer.begin_transaction().expect("begin");
         let entries: Vec<EntryRow> = (0..2000)
             .map(|i| EntryRow {
                 id: 300 + i,
@@ -516,7 +516,7 @@ mod tests {
             "test setup: expected a grown WAL, got {wal_size_before}"
         ); // allowed-pluralize-noun: assertion-failure-only message guarded by `> 0`
 
-        writer.send(WriteMessage::CommitTransaction).unwrap();
+        transaction.commit().expect("commit");
         writer.flush_blocking().unwrap();
 
         let wal_size_after = std::fs::metadata(&wal_path).map(|m| m.len()).unwrap_or(0);

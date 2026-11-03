@@ -120,16 +120,17 @@ scan-connection pool"; evidence: `~/projects-git/vdavid/smb2/docs/benchmark-find
 
 At ~4× listing throughput the single writer's per-second insert rate rises the same, so the FRESH scan
 (`scan_volume_via_trait`) now wraps its `InsertEntriesV2` stream in ONE explicit transaction committed on an interval
-(`SCAN_COMMIT_INTERVAL`, 2 s) via `begin_scan_tx` / `commit_scan_tx`. `insert_entries_v2_batch` already savepoints each
-batch, so in autocommit every batch was an fsync; the outer transaction amortizes fsync to once per interval.
-`commit_scan_tx` (idempotent) closes the transaction before EVERY exit — clean finish, cancel, root-fatal, empty-root,
-disconnect, consecutive-failure — so the connection never returns mid-transaction and `finish_partial_scan`'s marks +
-`ComputeAllAggregates` run in autocommit exactly as before (marks still precede the aggregate). **Crash-safety:** an
-uncommitted transaction rolls back on process death → the partial is lost → next launch heals to a rescan (identical to
-today's `scan_completed_at`-absent behavior); marks/aggregate are still sent AFTER the inserts commit, so a crash never
-leaves ancestors claiming exact sizes over an unstamped descendant. Reconcile is untouched — it already brackets its
-bulk writes via `BulkReconcileGuard`. The remaining lever is fewer round trips per huge directory (a larger
-`QueryDirectory` buffer in smb2), NOT more in-flight listings.
+(`SCAN_COMMIT_INTERVAL`, 2 s) via `begin_scan_tx` / `restart_scan_tx` / `commit_scan_tx`, over the writer's
+`WriterTransaction` guard (`../writer/DETAILS.md` § "Explicit transactions"). `insert_entries_v2_batch` already
+savepoints each batch, so in autocommit every batch was an fsync; the outer transaction amortizes fsync to once per
+interval. `commit_scan_tx` (idempotent) commits before every exit that sends more — clean finish, cancel, root-fatal,
+empty-root, disconnect, consecutive-failure — and the guard's drop covers any other, so the connection never returns
+mid-transaction and `finish_partial_scan`'s marks + `ComputeAllAggregates` run in autocommit exactly as before (marks
+still precede the aggregate). **Crash-safety:** an uncommitted transaction rolls back on process death → the partial is
+lost → next launch heals to a rescan (identical to today's `scan_completed_at`-absent behavior); marks/aggregate are
+still sent AFTER the inserts commit, so a crash never leaves ancestors claiming exact sizes over an unstamped
+descendant. Reconcile is untouched — it already brackets its bulk writes via `BulkReconcileGuard`. The remaining lever
+is fewer round trips per huge directory (a larger `QueryDirectory` buffer in smb2), NOT more in-flight listings.
 
 ## Yielding to navigation and transfers (`scan_pace.rs`)
 

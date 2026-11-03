@@ -37,13 +37,14 @@ search-generation bump. Other areas point here.
 - **❌ No test may assert on process-global state (`WRITER_GENERATION`, the root tracker) across a before/after
   window**: every `IndexWriter::spawn()` is a ROOT writer that bumps and clears it, so a global read flakes under
   `cargo test`. Use `global_generation_bumps` or a `TestInstanceGuard`.
+- **Explicit transactions come only from `begin_transaction()`**, a guard that commits on drop (`transaction.rs`).
 - **Live mutations batch, they don't autocommit** (`batch.rs`): queued work coalesces into one `BEGIN IMMEDIATE`, closed
   on an empty queue. Every new `WriteMessage` needs a `BatchRole`; a reply, emit, or pragma must be `Barrier`.
 - **`flush_blocking` ≠ settled**: it replies from inside the handler, before the end-of-iteration hourglass clear and
   `settle_the_ledger`. A test reading `dir_stats` back needs `tests::settle_the_writer`; ❌ never move the reply.
 - **The subtree handler QUEUES its ancestor roll-up** (`pending_rollups.rs`), drained at the caught-up point, because
-  repairing per message made a wide directory `O(width²)`. Safe because a repair recomputes from committed children, so
-  it can't double-count and can't be reordered wrong. A quit drains it; a crash mid-burst is a rescan we accept.
+  repairing per message made a wide directory `O(width²)`. Safe: a repair recomputes from committed children. A quit
+  drains it; a crash mid-burst is a rescan we accept.
 
-Everything above in depth, plus the caught-up point, the heal, test isolation, and maintenance: `DETAILS.md`. Read it
-before any non-trivial work here: editing, planning, reorganizing, or advising.
+Everything above in depth, plus the caught-up point, the heal, and maintenance: `DETAILS.md`. Read it before any
+non-trivial work here.

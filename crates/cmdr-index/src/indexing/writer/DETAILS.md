@@ -58,12 +58,12 @@ decision rather than a default.
   `UpdateMeta`, `DeleteMeta`, `BumpCurrentEpoch`. These are the messages paying one COMMIT each today.
 - **`Barrier`** (commit BEFORE handling): `Flush` (the reply is a durability barrier for both reconcilers and both
   scan-start funnels), `EmitDirUpdated` (the UI refetches on it, so it must name committed rows), `GetEntryCount` (it
-  replies with a value), `BeginTransaction` / `CommitTransaction` (SQLite has no nested transactions), `TruncateData` /
-  `IncrementalVacuum` / `WalCheckpoint` (a checkpoint fails `SQLITE_LOCKED` inside a transaction and
-  `incremental_vacuum` frees nothing), `Shutdown` (else a clean quit rolls the last batch back), the four bulk
-  recomputes (`ComputeAllAggregates`, `ComputePartialAggregates`, `ComputeSubtreeAggregates`, `BackfillMissingDirStats`)
-  plus `PayLedgerIfUnpaid` — already amortized, and each emits progress or `DirsUpdated` events whose job is to make
-  COMMITTED sizes visible — and `MarkLedgerUnpaid`.
+  replies with a value), `BeginTransaction` / `CommitTransaction` (SQLite has no nested transactions; § "Explicit
+  transactions"), `TruncateData` / `IncrementalVacuum` / `WalCheckpoint` (a checkpoint fails `SQLITE_LOCKED` inside a
+  transaction and `incremental_vacuum` frees nothing), `Shutdown` (else a clean quit rolls the last batch back), the
+  four bulk recomputes (`ComputeAllAggregates`, `ComputePartialAggregates`, `ComputeSubtreeAggregates`,
+  `BackfillMissingDirStats`) plus `PayLedgerIfUnpaid` — already amortized, and each emits progress or `DirsUpdated`
+  events whose job is to make COMMITTED sizes visible — and `MarkLedgerUnpaid`.
 - **`Neutral`** (joins an open batch, never opens one): `InsertEntriesV2`, `SetDeltaPropagation`, `ArmLedgerHealLatch`.
 
 **Decision: `MarkLedgerUnpaid` is a barrier, not a mutation.** It records the ledger debt DURABLY before the first
@@ -92,6 +92,34 @@ blocking wait, and the disconnect path commits rather than losing a clean quit's
 microseconds), and a hard crash loses at most one batch of recent live index work. Both are fine by design — the index
 is a disposable cache the reconciler resyncs (`../CLAUDE.md` § "Rebuild, don't migrate"), and search already tolerates
 far more (it serves a warm arena with a 30 s refresh floor).
+
+## Explicit transactions (`transaction.rs`)
+
+A bulk run (the journal replay, the network fresh and cover walks) wraps its writes in one explicit `BEGIN IMMEDIATE` so
+it pays one fsync instead of thousands. It opens one with `IndexWriter::begin_transaction()`, which returns a
+`WriterTransaction` guard: `commit()` ends it, `finish()` commits early while keeping the guard (a walk must commit
+before its marks and aggregate, which run in autocommit), `commit_and_continue()` steps a long walk's rows into view,
+and DROP commits whatever is still open, so an early return, a `?`, or a dropped future can't leave it open.
+
+**Decision: the raw messages carry a `TransactionToken` only `writer` can mint.** `BeginTransaction(TransactionToken)`
+and `CommitTransaction(TransactionToken)` exist for the guard to send; nothing outside this module can construct the
+token, so a hand-sent BEGIN with no matching COMMIT is unrepresentable rather than a rule to remember. **Why:** the
+replay used to send both by hand, and its five early fallback returns (journal gap, over budget three ways, ingestion
+backlog) all skipped the COMMIT. On 2026-11-03 an over-budget replay left the root writer inside its transaction for
+days: the fallback rescan and the live loop wrote into a transaction no reader could see (`reconcile_subtree`'s "root
+still not in DB after upsert" fired about 1,000 times a minute), sizes and search froze at the last commit, the WAL grew
+with every checkpoint deferred, and the stored replay position never advanced, so each launch replayed the same span,
+overflowed again, and leaked again. Regression: `../watch/event_loop/tests/replay.rs`.
+
+**Decision: drop COMMITS, it doesn't roll back.** Every write a bulk run sends is a fact read off the disk, so keeping
+what landed is right even when the run gives up early, and whatever runs next (a fallback rescan, the live loop) builds
+on it.
+
+**`LongTransactionWatch`: the writer's own backstop.** After each message and each idle wakeup the loop asks the
+CONNECTION whether a transaction is open that isn't its implicit batch (`!is_autocommit() && !batch.is_open()`). Past
+five minutes (a network walk commits every 2 s; a healthy replay ends in seconds to a minute or two) it warns, naming
+the volume, the age, and the messages held, then repeats every 15 minutes while it stays open. The guard covers every
+sender; this catches what a guard can't, like a bulk run that hangs while holding one.
 
 ## The caught-up point and the idle epoch
 

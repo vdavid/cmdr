@@ -41,6 +41,9 @@ mod maintenance;
 mod pending_rollups;
 mod probe_stats;
 mod repair;
+mod transaction;
+use transaction::LongTransactionWatch;
+pub(crate) use transaction::{TransactionToken, WriterTransaction};
 pub(crate) mod wait_probe;
 
 #[cfg(test)]
@@ -439,9 +442,12 @@ pub enum WriteMessage {
     /// Begin an explicit SQLite transaction.
     /// All subsequent writes are batched until `CommitTransaction`.
     /// Dramatically reduces fsync overhead for bulk operations (replay).
-    BeginTransaction,
-    /// Commit the current explicit transaction.
-    CommitTransaction,
+    /// Sent only by [`IndexWriter::begin_transaction`]'s guard, which the token
+    /// enforces: a hand-sent `BEGIN` an early return forgets to close left the
+    /// writer inside one for the rest of the process (`transaction.rs`).
+    BeginTransaction(TransactionToken),
+    /// Commit the current explicit transaction. Sent only by the guard.
+    CommitTransaction(TransactionToken),
     /// Backfill dir_stats for directories that have entries but no stats row.
     /// Happens after reconciler replay or cold-start replay to catch dirs
     /// created by events that ran after the last full aggregation.
@@ -520,8 +526,8 @@ impl WriteMessage {
             WriteMessage::Flush(_) => "Flush",
             WriteMessage::TruncateData => "TruncateData",
             WriteMessage::SetDeltaPropagation(_) => "SetDeltaPropagation",
-            WriteMessage::BeginTransaction => "BeginTransaction",
-            WriteMessage::CommitTransaction => "CommitTransaction",
+            WriteMessage::BeginTransaction(_) => "BeginTransaction",
+            WriteMessage::CommitTransaction(_) => "CommitTransaction",
             WriteMessage::BackfillMissingDirStats => "BackfillMissingDirStats",
             WriteMessage::ArmLedgerHealLatch => "ArmLedgerHealLatch",
             WriteMessage::MarkLedgerUnpaid => "MarkLedgerUnpaid",
@@ -1237,6 +1243,9 @@ fn writer_loop(
     // Coalesces mutations that are ALREADY QUEUED into one transaction, so the live
     // path stops paying a COMMIT + WAL frame write per message. See `batch.rs`.
     let mut batch = ImplicitBatch::new();
+    // Says so when an explicit transaction stays open past anything legitimate.
+    // See `transaction.rs`.
+    let mut long_transaction = LongTransactionWatch::new();
 
     // Phase 1 instrumentation: time split between recv() (idle waiting),
     // processing (handlers), and commit (txn commits, tracked via wrapper).
@@ -1271,6 +1280,7 @@ fn writer_loop(
                     Err(mpsc::RecvTimeoutError::Timeout) => {
                         // No message in this window. Emit heartbeat and loop.
                         probe.maybe_emit_heartbeat(queue_depth.load(Ordering::Relaxed));
+                        long_transaction.observe(&volume_id, explicit_transaction_open(&conn, &batch), false);
                         continue;
                     }
                     Err(mpsc::RecvTimeoutError::Disconnected) => None,
@@ -1390,6 +1400,7 @@ fn writer_loop(
         }
         stats.maybe_log_summary();
         probe.maybe_emit_heartbeat(queue_depth.load(Ordering::Relaxed));
+        long_transaction.observe(&volume_id, explicit_transaction_open(&conn, &batch), true);
 
         // ONE `queue_depth` sample decides the batch close, both caught-up hooks below,
         // and the `idle_epoch` tick that closes the iteration, so a tick proves BOTH
@@ -1456,6 +1467,12 @@ fn writer_loop(
         "Writer: channel closed, thread exiting after processing {} messages",
         stats.current.total,
     );
+}
+
+/// Whether a sender's explicit transaction is open on the connection: a
+/// transaction is open, and it isn't the loop's own implicit batch.
+fn explicit_transaction_open(conn: &rusqlite::Connection, batch: &ImplicitBatch) -> bool {
+    !conn.is_autocommit() && !batch.is_open(conn)
 }
 
 /// Process a single message. Returns `true` if the thread should exit.
@@ -1726,13 +1743,13 @@ fn process_message(
             log::debug!("Writer: SetDeltaPropagation({enabled})");
             *propagate_deltas = enabled;
         }
-        WriteMessage::BeginTransaction => {
+        WriteMessage::BeginTransaction(_) => {
             log::debug!("Writer: BEGIN IMMEDIATE transaction");
             if let Err(e) = conn.execute_batch("BEGIN IMMEDIATE") {
                 log::warn!("Index writer: BEGIN TRANSACTION failed: {e}");
             }
         }
-        WriteMessage::CommitTransaction => {
+        WriteMessage::CommitTransaction(_) => {
             let t = Instant::now();
             if let Err(e) = conn.execute_batch("COMMIT") {
                 log::warn!("Index writer: COMMIT failed: {e}");

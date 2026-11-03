@@ -6,6 +6,7 @@
 //!   replay-dedup tests (the event-buffer behavior).
 //! - `rename`: inode rename pre-pass, removal-storm coalescing, and the
 //!   `process_live_batch` end-to-end rename, plus their shared fixtures.
+//! - `replay`: the cold-start replay's exits leave the writer committing.
 //! - `split_parent`: the `split_parent_and_name` pure-helper tests.
 //!
 //! Production items resolve through `use super::*` (this module's `super` is
@@ -26,6 +27,7 @@ mod holds;
 mod ingestion;
 mod merge;
 mod rename;
+mod replay;
 mod split_parent;
 
 /// Shared across the `merge` and `rename` clusters.

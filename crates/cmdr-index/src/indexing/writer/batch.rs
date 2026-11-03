@@ -91,8 +91,8 @@ pub(super) fn role(msg: &WriteMessage) -> BatchRole {
         // everything before it is already durable (or that no transaction is open).
         WriteMessage::Flush(_)
         | WriteMessage::EmitDirUpdated(_)
-        | WriteMessage::BeginTransaction
-        | WriteMessage::CommitTransaction
+        | WriteMessage::BeginTransaction(_)
+        | WriteMessage::CommitTransaction(_)
         | WriteMessage::Shutdown => BatchRole::Barrier,
         #[cfg(test)]
         WriteMessage::GetEntryCount(_) => BatchRole::Barrier,
