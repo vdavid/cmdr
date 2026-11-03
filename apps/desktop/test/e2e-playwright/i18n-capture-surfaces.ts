@@ -26,13 +26,15 @@ import {
   openSettingsWindowViaProd,
   closeScopedWindow,
   dispatchMenuCommand,
+  dismissAllToasts,
   getFixtureRoot,
   navigateToRoute,
   TRANSFER_DIALOG,
   pointerClick,
 } from './helpers.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { initMcpClient, mcpNavToPath, mcpAwaitPath } from '../e2e-shared/mcp-client.js'
+import { initMcpClient, mcpCall, mcpNavToPath, mcpAwaitPath } from '../e2e-shared/mcp-client.js'
+import { advancedSettings } from '../../src/lib/settings/definitions/advanced.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import {
   type SurfaceEntry,
@@ -344,6 +346,42 @@ async function removeFavoritesAddedSince(main: TauriPage, before: string[]): Pro
  * download-complete toast, MTP-connected, low-disk) are NOT here: they're
  * documented skips deferred to the mock-staged surfaces.
  */
+const CLOSED_TAB_HISTORY_SIZE = 'fileExplorer.tabs.closedTabHistorySize'
+const PANES = ['left', 'right'] as const
+
+/** Leaves each pane with its active tab and its pinned ones. A single-tab pane says so, harmlessly. */
+async function closeOtherTabs(): Promise<void> {
+  for (const pane of PANES) {
+    await mcpCall('tab', { pane, action: 'close_others' }).catch(() => {})
+  }
+}
+
+/**
+ * Empties both panes' closed-tab history, so `tab.reopen` takes its "nothing to reopen" branch.
+ * Regression: earlier specs on the shard close tabs, and with any left the command quietly
+ * reopened one, no toast came, and the surface failed now and then.
+ *
+ * The history keeps at least one entry (the cap's minimum is 1), so: trim it to one by
+ * lowering the cap, reopen that one, then put the cap back. Closing the other tabs first
+ * keeps the reopen clear of the per-pane tab limit, whose refusal is a different toast.
+ */
+async function emptyClosedTabHistory(main: TauriPage): Promise<void> {
+  await closeOtherTabs()
+  await mcpCall('set_setting', { id: CLOSED_TAB_HISTORY_SIZE, value: 1 })
+  for (const pane of PANES) {
+    await mcpCall('tab', { pane, action: 'reopen' })
+  }
+  await mcpCall('set_setting', { id: CLOSED_TAB_HISTORY_SIZE, value: closedTabHistoryDefault() })
+  // A pane whose history was already empty answered its reopen with this very toast.
+  await dismissAllToasts(main)
+}
+
+function closedTabHistoryDefault(): number {
+  const definition = advancedSettings.find((setting) => setting.id === CLOSED_TAB_HISTORY_SIZE)
+  if (typeof definition?.default !== 'number') throw new Error(`${CLOSED_TAB_HISTORY_SIZE} has no numeric default`)
+  return definition.default
+}
+
 export async function captureFrontendToasts(
   main: TauriPage,
   report: Record<string, SurfaceEntry>,
@@ -362,11 +400,16 @@ export async function captureFrontendToasts(
   await removeFavoritesAddedSince(main, favoritesBefore)
 
   // Reopen-closed-tab with empty history (`tab.reopen` → "no recently closed
-  // tabs" warning). At app start nothing has been closed, so the empty branch
-  // fires. The success path emits no toast, so this is the reachable tab toast.
-  await captureToastSurface('toast-tab', report, failed, main, async () => {
-    await dispatchMenuCommand(main, 'tab.reopen')
-  })
+  // tabs" warning). The success path emits no toast, so this is the reachable tab
+  // toast, and it needs the history emptied first.
+  await emptyClosedTabHistory(main)
+  try {
+    await captureToastSurface('toast-tab', report, failed, main, async () => {
+      await dispatchMenuCommand(main, 'tab.reopen')
+    })
+  } finally {
+    await closeOtherTabs()
+  }
 
   // Zoom in (`view.zoom.in` → "Zoom increased to N%" + reset-hint). Resolves
   // `commands.handler.zoomIncreased` plus a `zoomResetHint*` key. Reset the text
