@@ -184,7 +184,7 @@ runs below, 2026-10-27):
   top-level `{type: "reasoning", encrypted_content}` input item ahead of the `function_call`. Requests run `store:
   false`, so the encrypted copy is the only one (`include: ["reasoning.encrypted_content"]`). genai captures it as
   a `ThoughtSignature` and sends it back as that input item.
-- **OpenAI chat-completions** (`o3`, `gpt-4.1`, Azure OpenAI): stateless. OpenAI keeps the reasoning server-side and
+- **OpenAI chat-completions** (`gpt-4.1`, o-series on Azure OpenAI): stateless. OpenAI keeps the reasoning server-side and
   returns none, so nothing round-trips and nothing has to.
 - **Gemini** (native API): the `thoughtSignature` on each `functionCall` part, back on that same part (Gemini 3
   validates the first call's signature in the current turn), and one on a text part back on that text. genai 0.7 keeps

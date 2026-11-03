@@ -187,6 +187,8 @@ const REASONING_FAMILIES: &[ReasoningFamily] = &[
         levels: LOW_MEDIUM_HIGH,
         recommended: Some(EffortLevel::Medium),
     },
+    // The o-series arms outlive OpenAI's own API (`o3`, the last, retires 2026-12-11): Azure
+    // OpenAI, OpenRouter (`openai/o3`), and proxies keep serving these ids.
     ReasoningFamily {
         prefix: "o1",
         reasons: true,

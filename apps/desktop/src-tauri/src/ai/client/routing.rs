@@ -122,6 +122,12 @@ pub(super) fn adjust_for_model(options: &ChatOptions, target: &ServiceTarget) ->
 /// catches the *remaining* OpenAI chat-completions models that reject custom
 /// `temperature`: `o1*`, `o3*`, `o4*`, `chatgpt-*` (plus `gpt-5*` as defense in depth
 /// in case `genai` ever changes its routing).
+///
+/// Keep the o-series arms even after OpenAI's own API drops them (`o3`, the last one, retires
+/// 2026-12-11): Azure OpenAI deployments, OpenRouter, and OpenAI-compatible proxies keep
+/// serving o-series ids long after, and a bare `o3*` id on any of them would get
+/// `temperature` and a 400 without these arms. No live smoke covers them; the
+/// offline `o3_chat_reasoning_model_omits_temperature` mock does.
 pub(super) fn is_openai_chat_reasoning_model(model_name: &str) -> bool {
     model_name.starts_with("o1")
         || model_name.starts_with("o3")

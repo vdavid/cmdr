@@ -139,7 +139,8 @@ fn smoke_provider_models_route_to_their_intended_adapters() {
     for model in [
         sp::OPENAI.model,
         sp::OPENAI_RESPONSES_MODEL,
-        sp::OPENAI_CHAT_REASONING_MODEL,
+        // No live lane since `o3` retires, but Azure OpenAI, OpenRouter, and proxies keep o-series ids.
+        "o3",
     ] {
         assert_eq!(
             remote_model_iden(model, None),
@@ -158,10 +159,10 @@ fn smoke_provider_models_route_to_their_intended_adapters() {
     }
 }
 
-/// Only `gpt-5*` reaches the Responses API in `genai 0.6.5`, and only `o1`/`o3`/`o4`/
-/// `chatgpt-` reach the chat-completions reasoning branch. The two OpenAI smoke models
-/// exist to cover one branch each, so a careless swap that collapses them onto the same
-/// adapter should fail here rather than quietly halve the coverage.
+/// Only `gpt-5*` reaches the Responses API in `genai 0.6.5`. The two OpenAI smoke models
+/// exist to cover one branch each (Responses, and plain chat-completions where `temperature`
+/// survives), so a careless swap that collapses them onto the same adapter should fail here
+/// rather than quietly halve the coverage.
 #[test]
 fn the_two_openai_smoke_models_cover_different_branches() {
     use crate::ai::smoke_providers as sp;
@@ -169,10 +170,6 @@ fn the_two_openai_smoke_models_cover_different_branches() {
     assert!(
         sp::OPENAI_RESPONSES_MODEL.starts_with("gpt-5"),
         "the Responses-API smoke model needs the `gpt-5` prefix genai routes on"
-    );
-    assert!(
-        is_openai_chat_reasoning_model(sp::OPENAI_CHAT_REASONING_MODEL),
-        "the chat-completions reasoning smoke model must match the heuristic it guards"
     );
     assert!(
         !is_openai_chat_reasoning_model(sp::OPENAI.model),

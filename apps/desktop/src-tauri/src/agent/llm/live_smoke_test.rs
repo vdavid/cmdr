@@ -341,15 +341,6 @@ async fn smoke_openai_responses_tool_loop() {
 }
 
 #[tokio::test]
-#[ignore = "real API call: set OPENAI_API_KEY to run"]
-async fn smoke_openai_chat_reasoning_tool_loop() {
-    // `o3` stays on chat-completions, where OpenAI keeps reasoning server-side: nothing
-    // comes back to replay, and nothing has to.
-    let backend = remote("OPENAI_API_KEY", "https://api.openai.com/v1/", "o3");
-    assert_tool_loop("o3", backend, ReasoningEffort::Medium, false).await;
-}
-
-#[tokio::test]
 #[ignore = "real API call: set GEMINI_API_KEY to run"]
 async fn smoke_gemini_tool_loop() {
     let backend = remote(
