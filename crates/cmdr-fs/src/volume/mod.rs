@@ -2298,6 +2298,7 @@ mod ids;
 mod in_memory;
 pub mod listing_progress;
 pub mod liveness;
+mod locked_container;
 pub mod mkdir_all;
 pub mod mtp_ids;
 mod node_identity;
@@ -2361,9 +2362,10 @@ pub use supported_dates::SupportedDates;
 // The app-path schemes live beside the translation they feed; re-exported here
 // so callers keep `volume::sftp_app_root` and friends.
 pub use in_memory::InMemoryVolume;
+pub use locked_container::LockedContainer;
 pub use mkdir_all::{LeadsTo, MadeDirectories, MakesDirectories};
 pub use node_identity::NodeIdentity;
-pub use password_locked::{LockedContainer, PasswordForgotten, PasswordLocked, UnlockOutcome};
+pub use password_locked::{PasswordForgotten, PasswordLocked, UnlockOutcome};
 pub use patching::{PatchSource, patch_created, patch_deleted, patch_mutation, patch_renamed};
 pub use read_stream::{SequentialExtract, VolumeRandomReader, VolumeReadStream};
 pub use remote_paths::{

@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 use crate::error_detail::ErrorDetail;
 use crate::log_error::{ErrorLogText, ErrorText, write_plain};
 use crate::log_private::LogPrivate;
-use crate::volume::LockedContainer;
 use crate::volume::git_error::FriendlyGitError;
+use crate::volume::locked_container::LockedContainer;
 
 /// A sign-in on another server, through a link, that nobody has allowed.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
