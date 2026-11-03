@@ -520,11 +520,14 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
             path: context_path.to_string(),
             message,
         },
-        // Extracting from a password-protected archive: a typed signal the FE
-        // prompts on (then retries via `unlock_container`), never a generic
-        // read error.
-        VolumeError::NeedsPassword { wrong_attempt } => WriteOperationError::ArchiveNeedsPassword {
+        // Reading from a locked archive or repo: a typed signal the FE prompts on
+        // (then retries via `unlock_container`), never a generic read error.
+        VolumeError::NeedsPassword {
+            container,
+            wrong_attempt,
+        } => WriteOperationError::ArchiveNeedsPassword {
             path: context_path.to_string(),
+            container,
             wrong_attempt,
         },
         VolumeError::FriendlyGit(git_err) => WriteOperationError::IoError {

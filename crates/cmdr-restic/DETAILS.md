@@ -23,8 +23,9 @@ and what moved is in § "rustic_core 0.13.0 facts". The guardrails the whole fea
 - **`max_concurrent_ops` stays at the trait's default of 1.** Concurrent `read_file_at` on one indexed repo is sound
   (`Send + Sync`, § "Opening a repo"); the limit is the parent's throughput, which the stream's read-ahead already uses
   (§ "Reads"). Raise it only with a measurement showing a parallel copy beats that.
-- **The password ask stays `VolumeError::NeedsPassword { wrong_attempt }`, with no container field.** **Why:** the
-  frontend tells a repo from an archive by the path it already classifies, so no archive mapping site changes
+- **The password ask is `VolumeError::NeedsPassword { container: ResticRepo, wrong_attempt }`.** **Why:** the frontend
+  words the prompt and picks its unlock flow from the typed `container`, ❌ never the path: a header-encrypted 7z backed
+  up in a snapshot sits under `Browse snapshots`, yet the archive is what's locked
   (`apps/desktop/src/lib/file-operations/transfer/DETAILS.md` § "The unlock prompt").
 - **A repo's unlock verifies before the dialog closes** (an archive's is stored unchecked): the open is the check, so a
   wrong password re-arms the dialog in place.

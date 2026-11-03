@@ -7,7 +7,7 @@
 
 use crate::backend::{VolumeBackend, pack_gone_in, volume_error_in};
 use cmdr_fs::volume::host::VolumeHost;
-use cmdr_fs::volume::{Volume, VolumeError};
+use cmdr_fs::volume::{LockedContainer, Volume, VolumeError};
 use rustic_core::repofile::SnapshotFile;
 use rustic_core::{
     Credentials, FileType, IndexedFullStatus, OpenStatus, ReadBackend, Repository, RepositoryBackends,
@@ -74,7 +74,10 @@ impl ResticError {
     /// The [`VolumeError`] a volume answers for this, about `path`.
     pub(crate) fn into_volume_error(self, path: &Path) -> VolumeError {
         match self {
-            Self::WrongPassword => VolumeError::NeedsPassword { wrong_attempt: true },
+            Self::WrongPassword => VolumeError::NeedsPassword {
+                container: LockedContainer::ResticRepo,
+                wrong_attempt: true,
+            },
             Self::NotARepository => VolumeError::NotFound(path.display().to_string()),
             Self::Volume(err) | Self::PackGone(err) => err,
             Self::Unreadable { detail } => VolumeError::IoError {

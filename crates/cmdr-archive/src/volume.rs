@@ -52,8 +52,8 @@ use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses};
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::{
-    BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, PasswordLocked, ScanBoundary,
-    SequentialExtract, SpaceInfo, UnlockOutcome, Volume, VolumeError, VolumeReadStream, WatchCoverage,
+    BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, LockedContainer, PasswordLocked,
+    ScanBoundary, SequentialExtract, SpaceInfo, UnlockOutcome, Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
 use streams::{ArchiveSequentialExtract, ArchiveVolumeReadStream, VolumeByteSource};
 
@@ -838,8 +838,14 @@ fn to_volume_error(err: ArchiveError) -> VolumeError {
         // Password-protected: a typed signal the frontend prompts on (distinct
         // from the rejection family below so it never reads as "damaged"). No
         // password tried yet vs. a rejected one:
-        ArchiveError::Encrypted => VolumeError::NeedsPassword { wrong_attempt: false },
-        ArchiveError::WrongPassword => VolumeError::NeedsPassword { wrong_attempt: true },
+        ArchiveError::Encrypted => VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: false,
+        },
+        ArchiveError::WrongPassword => VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: true,
+        },
         // The rejection family — "this backend can't or won't serve this
         // archive": not-a-zip, an unsupported codec, or a synthesized tree past
         // the node-count DoS cap. All collapse to `NotSupported`.

@@ -3426,6 +3426,12 @@
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
+  "errors.volume.backupNeedsPassword": "This backup is password-protected.",
+  "@errors.volume.backupNeedsPassword": {
+    "description": "Shown when reading from an encrypted restic backup needs a password Cmdr doesn't have yet. \"Backup\" means a restic backup repository (a folder of snapshots), not a single file. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
   "errors.volume.passwordRejected": "That password didn’t work.",
   "@errors.volume.passwordRejected": {
     "description": "Shown when the password supplied for an encrypted archive was rejected. Word it as the password being wrong, not as the person being wrong. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",

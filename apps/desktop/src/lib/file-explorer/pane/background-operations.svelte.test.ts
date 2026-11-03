@@ -97,6 +97,7 @@ function makeBackground() {
 const needsPassword: WriteOperationError = {
   type: 'archive_needs_password',
   path: '/Users/me/secret.zip',
+  container: 'archive',
   wrongAttempt: false,
 }
 

@@ -11604,16 +11604,19 @@ export type ListingErrorReason =
    */
   | { reason: 'archiveUnreadable' }
   /**
-   *  Browsing a HEADER-encrypted archive (a `-mhe=on` 7z) failed because its
-   *  metadata is itself encrypted, so even listing needs the password. The FE
-   *  renders the password prompt (not an error pane); `wrong_attempt` swaps the
-   *  copy to "that password didn't work" after a rejected try. Distinct from
-   *  `ArchiveUnreadable` (which is unrecoverable) — this one is retried by
-   *  supplying the password and re-navigating. (Content-encrypted archives list
-   *  fine and prompt only on extract, via the transfer path.)
+   *  Listing needs a password: a HEADER-encrypted archive (a `-mhe=on` 7z)
+   *  whose metadata is itself encrypted, or a locked restic repo. The FE
+   *  renders the password prompt over a fallback pane worded by `container`;
+   *  `wrong_attempt` swaps the copy to "that password didn't work" after a
+   *  rejected try. Distinct from `ArchiveUnreadable` (which is unrecoverable):
+   *  this one is retried by supplying the password and re-navigating.
+   *  (Content-encrypted archives list fine and prompt only on extract, via the
+   *  transfer path.)
    */
   | {
       reason: 'archiveNeedsPassword'
+      // Which kind of container is locked, which picks the prompt's words.
+      container: LockedContainer
       // `true` once a supplied password has been rejected.
       wrongAttempt: boolean
     }
@@ -12012,9 +12015,10 @@ export type LocationInfo = {
 }
 
 /**
- *  What kind of container the prompt is for. Supplied by the frontend, which
- *  classifies a pane's kind from its path, and rendered in `cmdr://state` so an
- *  agent knows what it is answering.
+ *  Which kind of container is locked. Rides on `VolumeError::NeedsPassword` so
+ *  the frontend words the prompt and picks its unlock flow from what actually
+ *  asked, ❌ never from the path: a header-encrypted 7z backed up in a restic
+ *  snapshot sits under `Browse snapshots`, yet the archive is what's locked.
  */
 export type LockedContainer =
   // An encrypted archive: the password is stored and checked on the next read.
@@ -20027,7 +20031,7 @@ export type UnlockError =
 export type UnlockOutcome =
   /**
    *  Kept without checking it (an archive): the next read decrypts, or fails
-   *  with `VolumeError::NeedsPassword { wrong_attempt: true }`.
+   *  with `VolumeError::NeedsPassword { wrong_attempt: true, .. }`.
    */
   | 'stored'
   // Checked and kept: the container opened with it.
@@ -21045,17 +21049,22 @@ export type VolumeError =
       }
     }
   /**
-   *  A password-protected archive needs a password to browse (header-encrypted
-   *  7z) or extract (any encrypted entry). `wrong_attempt` is `false` when no
-   *  password has been tried and `true` when the supplied one was rejected, so
-   *  the frontend can prompt afresh vs. say "that password didn't work". The
-   *  archive backend raises this; the frontend supplies a per-archive password
-   *  via `unlock_container` and retries. Carries no path — the failing path
-   *  is the one the caller was reading.
+   *  A password-locked container needs its password: an archive to browse
+   *  (header-encrypted 7z) or extract (any encrypted entry), a restic repo to
+   *  open. `container` says which one asked, so the frontend words the prompt
+   *  and picks its unlock flow from it (a 7z inside a restic snapshot is an
+   *  archive, though its path runs through the repo). `wrong_attempt` is
+   *  `false` when no password has been tried and `true` when the supplied one
+   *  was rejected, so the frontend can prompt afresh vs. say "that password
+   *  didn't work". The frontend supplies the password via `unlock_container`
+   *  and retries. Carries no path: the failing path is the one the caller was
+   *  reading.
    */
   | {
       type: 'needsPassword'
       data: {
+        // Which kind of container is locked.
+        container: LockedContainer
         /**
          *  `false` when no password has been tried yet, `true` when the supplied
          *  one was rejected.
@@ -22135,13 +22144,15 @@ export type WriteOperationError =
       totalCount: number
     }
   /**
-   *  Extracting from a password-protected archive needs a password. Raised when
-   *  a copy/move source is inside an encrypted archive: `wrong_attempt` is
-   *  `true` when the stored password was rejected (so the FE re-prompts rather
-   *  than prompting fresh). The FE sets a per-archive password via
-   *  `unlock_container` and retries the operation.
+   *  Reading a copy/move source needs a password: the source is inside an
+   *  encrypted archive or a locked restic repo. `container` says which one
+   *  asked, so the FE words the prompt and picks its unlock flow from it (a 7z
+   *  inside a restic snapshot is an archive, though its path runs through the
+   *  repo). `wrong_attempt` is `true` when the stored password was rejected (so
+   *  the FE re-prompts rather than prompting fresh). The FE supplies the
+   *  password via `unlock_container` and retries the operation.
    */
-  | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
+  | { type: 'archive_needs_password'; path: string; container: LockedContainer; wrongAttempt: boolean }
   /**
    *  A cross-volume Overwrite wrote the new file completely, then couldn't give
    *  it the destination's name, and the destination it was replacing is

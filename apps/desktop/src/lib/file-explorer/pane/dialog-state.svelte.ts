@@ -46,7 +46,7 @@ import { pathCrossesArchiveBoundary } from './archive-paths'
 import { transferOpLabel } from './transfer-op-label'
 import { createTransferPaneEffects } from './transfer-pane-effects'
 import { createAdoptedOperation } from './adopted-operation.svelte'
-import { createUnlockFlow, describeContainer } from './unlock-flow.svelte'
+import { createUnlockFlow, containerName } from './unlock-flow.svelte'
 import { createBackgroundOperations, type ArchiveNeedsPasswordError } from './background-operations.svelte'
 import { createWhenDialogsClear } from './when-dialogs-clear.svelte'
 import { createProgrammaticConfirm } from './programmatic-confirm'
@@ -71,6 +71,7 @@ import type {
   TransferConfirmPayload,
   TransferErrorPropsData,
   TransferProgressPropsData,
+  BrowseUnlockRequest,
 } from './dialog-props'
 import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
 import { isAnySoftDialogOpen } from '#lib/ui/open-dialogs.svelte.js'
@@ -448,6 +449,7 @@ export function createDialogState(deps: DialogStateDeps) {
         operationType: props.operationType,
         parentVolumeId: props.sourceVolumeId,
         path: error.path,
+        container: error.container,
         wrongAttempt: error.wrongAttempt,
         operationId,
       })
@@ -458,7 +460,7 @@ export function createDialogState(deps: DialogStateDeps) {
       })
       addToast(
         tString('fileOperations.backgroundStart.needsPasswordToast', {
-          archiveName: describeContainer(error.path).name,
+          archiveName: containerName(error.container, error.path),
         }),
         { level: 'info', timeoutMs: 10000 },
       )
@@ -692,9 +694,9 @@ export function createDialogState(deps: DialogStateDeps) {
       else showDeleteDialog = true
     },
 
-    /** Raises the browse-time archive-password prompt (a listing of a
-     *  header-encrypted archive). No transfer operation is involved. */
-    showUnlockForBrowse(info: { volumeId: string; path: string; wrongAttempt: boolean; retry: () => void }) {
+    /** Raises the browse-time password prompt (a listing of a header-encrypted
+     *  archive or a locked repo). No transfer operation is involved. */
+    showUnlockForBrowse(info: BrowseUnlockRequest) {
       unlockFlow.promptForBrowse(info)
     },
 
@@ -927,6 +929,7 @@ export function createDialogState(deps: DialogStateDeps) {
           operationType: op,
           parentVolumeId: transferProgressProps.sourceVolumeId,
           path: error.path,
+          container: error.container,
           wrongAttempt: error.wrongAttempt,
           operationId: failedOperationId,
         })

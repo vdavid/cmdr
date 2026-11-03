@@ -184,16 +184,11 @@
         /** Called when MTP connection fails fatally (device disconnected, timeout) - parent should fall back to previous volume */
         onMtpFatalError?: (error: string) => void
         /**
-         * A header-encrypted archive needs a password even to browse it: bubble the
+         * A locked container needs its password even to browse it: bubble the
          * browse-time prompt request to the parent (which owns the dialog state).
-         * `retry` re-lists the same directory after the password is stored.
+         * `retry` re-lists the same directory after the password is in.
          */
-        onNeedsPassword?: (info: {
-            volumeId: string
-            path: string
-            wrongAttempt: boolean
-            retry: () => void
-        }) => void
+        onNeedsPassword?: (info: BrowseUnlockRequest) => void
         /** Volume resolution timed out for this tab: show banner instead of file list */
         unreachable?: UnreachableState | null
         /** Called when user clicks "Retry" on the unreachable banner */
@@ -487,7 +482,7 @@
 
     import type { ListViewAPI, VolumeBreadcrumbAPI, NetworkMountViewAPI, NetworkCursorEntry } from './types'
     import type { StartRenameOptions } from './types'
-    import type { CreatePress } from './dialog-props'
+    import type { BrowseUnlockRequest, CreatePress } from './dialog-props'
     import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
 
     // Component refs for keyboard navigation

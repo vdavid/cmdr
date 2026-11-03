@@ -5,7 +5,7 @@
 //! volume answers through `Volume::as_password_locked` (❌ never a downcast list
 //! of concrete backends). The typed [`UnlockOutcome`] says what happened: an
 //! archive only STORES the password (a wrong one surfaces on the retry as the
-//! typed `NeedsPassword { wrong_attempt: true }`), while a repo checks it before
+//! typed `NeedsPassword { wrong_attempt: true, .. }`), while a repo checks it before
 //! answering `Unlocked` or `WrongPassword`.
 //!
 //! A repo check runs a key derivation and opens the repo, which takes seconds on

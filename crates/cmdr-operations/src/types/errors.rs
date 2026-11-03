@@ -570,13 +570,16 @@ pub enum WriteOperationError {
         /// Total number of offending files (may exceed `files.len()`).
         total_count: usize,
     },
-    /// Extracting from a password-protected archive needs a password. Raised when
-    /// a copy/move source is inside an encrypted archive: `wrong_attempt` is
-    /// `true` when the stored password was rejected (so the FE re-prompts rather
-    /// than prompting fresh). The FE sets a per-archive password via
-    /// `unlock_container` and retries the operation.
+    /// Reading a copy/move source needs a password: the source is inside an
+    /// encrypted archive or a locked restic repo. `container` says which one
+    /// asked, so the FE words the prompt and picks its unlock flow from it (a 7z
+    /// inside a restic snapshot is an archive, though its path runs through the
+    /// repo). `wrong_attempt` is `true` when the stored password was rejected (so
+    /// the FE re-prompts rather than prompting fresh). The FE supplies the
+    /// password via `unlock_container` and retries the operation.
     ArchiveNeedsPassword {
         path: String,
+        container: cmdr_fs::volume::LockedContainer,
         wrong_attempt: bool,
     },
     /// A cross-volume Overwrite wrote the new file completely, then couldn't give

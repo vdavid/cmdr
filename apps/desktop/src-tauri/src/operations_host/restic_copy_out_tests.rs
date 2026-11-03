@@ -12,7 +12,7 @@ use std::time::{Duration, UNIX_EPOCH};
 use crate::file_system::restic::test_repo::{NoBytes, SourceFile, backed_up_drive};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::test_support::{isolate_secrets, wait_until_async};
-use cmdr_fs::volume::{RoutedKind, Volume};
+use cmdr_fs::volume::{LockedContainer, RoutedKind, Volume};
 use cmdr_local::LocalPosixVolume;
 use cmdr_operation_log::types::Initiator;
 use cmdr_operations::testing::{CollectorEventSink, copy_volumes_with_progress, new_operation_state};
@@ -247,7 +247,7 @@ async fn a_copy_out_with_no_password_asks_for_one_and_goes_through_after_the_unl
     assert!(
         matches!(
             &asked,
-            Err(failure) if matches!(failure.error, WriteOperationError::ArchiveNeedsPassword { wrong_attempt: false, .. })
+            Err(failure) if matches!(failure.error, WriteOperationError::ArchiveNeedsPassword { container: LockedContainer::ResticRepo, wrong_attempt: false, .. })
         ),
         "{asked:?}"
     );

@@ -20,7 +20,7 @@ import type { FriendlyErrorMessage } from './friendly-error-message'
 import { esc, expandSystemStrings } from './compose'
 import { getMessage } from '#lib/intl/messages.svelte.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
-import { isVirtualResticPath } from '#lib/file-explorer/restic/path-detection.js'
+import type { LockedContainer } from '#lib/ipc/bindings.js'
 
 /**
  * Substitutes `{path}` / `{osMessage}` param tokens in a catalog value with the
@@ -126,16 +126,10 @@ export type ListingErrorReason =
   | { reason: 'isADirectory'; path: string }
   // ── archive (browsing a `.zip` that can't be read) ──
   | { reason: 'archiveUnreadable' }
-  // ── archive (a header-encrypted archive needs its password even to list it) ──
-  | { reason: 'archiveNeedsPassword'; wrongAttempt: boolean }
+  // ── a locked container (a header-encrypted archive, a restic repo) needs its password even to list it ──
+  | { reason: 'archiveNeedsPassword'; container: LockedContainer; wrongAttempt: boolean }
   // ── empty-root hint ──
   | { reason: 'emptyRootICloud' }
-
-/** Where the listing failed, for the one reason whose words depend on it. */
-export interface ListingErrorPlace {
-  /** The path the pane tried to list. */
-  path: string
-}
 
 /**
  * Maps a classified listing reason to its user-facing message. The literal copy
@@ -145,11 +139,10 @@ export interface ListingErrorPlace {
  * variant shape is the source of truth for which params exist, so the params are
  * read straight off `r` rather than re-enumerated per reason.
  */
-export function getListingErrorMessage(r: ListingErrorReason, where?: ListingErrorPlace): FriendlyErrorMessage {
-  // The backend asks for a password the same way for an archive and a restic
-  // repo (`NeedsPassword`, ❌ no container field), so the failed path picks the
-  // words, with the same lexical test the pane's capabilities use.
-  if (r.reason === 'archiveNeedsPassword' && where && isVirtualResticPath(where.path)) {
+export function getListingErrorMessage(r: ListingErrorReason): FriendlyErrorMessage {
+  // One reason asks for every password; its typed `container` says what's
+  // locked, ❌ never the path (a 7z backed up in a snapshot is an archive).
+  if (r.reason === 'archiveNeedsPassword' && r.container === 'resticRepo') {
     return compose('resticRepoNeedsPassword')
   }
   const params: Record<string, string> = {}

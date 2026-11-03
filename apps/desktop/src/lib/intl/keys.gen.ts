@@ -1507,6 +1507,7 @@ export type MessageKey =
   | 'errors.shareList.timeout'
   | 'errors.volume.alreadyExists'
   | 'errors.volume.ambiguousName'
+  | 'errors.volume.backupNeedsPassword'
   | 'errors.volume.cancelled'
   | 'errors.volume.coldStorage'
   | 'errors.volume.connectionTimeout'

@@ -451,6 +451,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     error: {
       type: 'archive_needs_password',
       path: '/Users/david/Downloads/tax-returns-2019-2025.zip',
+      container: 'archive',
       wrongAttempt: false,
     },
   },

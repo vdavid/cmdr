@@ -351,14 +351,16 @@ destinations".
 
 Copying or moving a source out of an encrypted archive (legacy PKWARE ZipCrypto zip today) or a restic backup repo needs
 a password before the read can decrypt. The backend raises a typed `WriteOperationError` of type
-`archive_needs_password` carrying the source `path` and a `wrongAttempt` flag; the frontend turns that into a
-prompt-and-retry loop instead of the generic error dialog. A listing that needs the password (a header-encrypted
-archive, a repo's snapshots) raises the same `UnlockDialog` in browse mode, from the listing loader's `onNeedsPassword`.
+`archive_needs_password` carrying the source `path`, the `container` that asked, and a `wrongAttempt` flag; the frontend
+turns that into a prompt-and-retry loop instead of the generic error dialog. A listing that needs the password (a
+header-encrypted archive, a repo's snapshots) raises the same `UnlockDialog` in browse mode, from the listing loader's
+`onNeedsPassword`.
 
-The two containers answer differently, and the PATH says which one this is (`describeContainer` in
-`pane/unlock-flow.svelte.ts`: under a `Browse snapshots` component is a repo, via
-`apps/desktop/src/lib/file-explorer/restic/path-detection.ts`; anything else an archive). The backend's `NeedsPassword`
-deliberately carries no container field, so every archive mapping site stays untouched.
+The two containers answer differently, and the backend's typed `VolumeError::NeedsPassword { container }` says which one
+this is (`LockedContainer`, raised by `cmdr-archive` and `cmdr-restic`, carried on both `ListingErrorReason` and
+`WriteOperationError`). ❌ Never classify by path: a header-encrypted 7z backed up in a restic snapshot sits under
+`Browse snapshots`, yet the archive is what's locked, and a path test once worded its prompt as a backup's and sent its
+password to the repo check. Only the display name reads the path (`containerName` in `pane/unlock-flow.svelte.ts`).
 
 - **A repo verifies before the dialog closes.** Submit calls `unlockContainer` with the "Remember in Keychain" choice
   (on by default) and a fresh `unlockId`; the dialog stays up with the field and Unlock disabled and a spinner (its
@@ -377,8 +379,8 @@ deliberately carries no container field, so every archive mapping site stays unt
   `forgetContainerPassword`, in that order: a check finishing between a forget and a later cancel would keep the
   password behind the forget. A check whose id the flow no longer holds (cancelled, answered over MCP, swept) is ignored
   when it answers. The backend half: `src-tauri/src/commands/DETAILS.md` § "The one deliberate drop".
-- **The fallback pane behind the prompt names a backup**: `renderListingError(error, { path })` picks
-  `errors.listing.resticRepoNeedsPassword` for a repo path, since it's visible for the whole check.
+- **The fallback pane behind the prompt names a backup**: `renderListingError(error)` picks
+  `errors.listing.resticRepoNeedsPassword` for a `resticRepo` container, since it's visible for the whole check.
 
 - **Interception is a branch in `handleTransferError`** (`pane/dialog-state.svelte.ts`), NOT in the transfer dialogs.
   When `error.type === 'archive_needs_password'`, it shows `UnlockDialog` and returns before the generic-error path. It

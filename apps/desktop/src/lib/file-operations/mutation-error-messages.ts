@@ -79,7 +79,10 @@ const VOLUME_MESSAGE: { [K in VolumeError['type']]: (error: Extract<VolumeError,
   staleDestinationHandle: () => raw('errors.volume.staleDestinationHandle'),
   signatureInvalid: () => raw('errors.volume.signatureInvalid'),
   ioError: () => raw('errors.volume.ioError'),
-  needsPassword: (e) => raw(e.data.wrongAttempt ? 'errors.volume.passwordRejected' : 'errors.volume.needsPassword'),
+  needsPassword: (e) => {
+    if (e.data.wrongAttempt) return raw('errors.volume.passwordRejected')
+    return raw(e.data.container === 'resticRepo' ? 'errors.volume.backupNeedsPassword' : 'errors.volume.needsPassword')
+  },
   // Git already has its own typed kinds and its own translated factory, so a
   // git-shaped failure keeps speaking git rather than being flattened into a
   // generic "the volume refused".

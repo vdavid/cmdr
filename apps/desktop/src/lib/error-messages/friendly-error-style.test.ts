@@ -127,7 +127,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'ioSerious', path: PATH, osMessage: 'something went wrong' },
   { reason: 'isADirectory', path: PATH },
   { reason: 'archiveUnreadable' },
-  { reason: 'archiveNeedsPassword', wrongAttempt: false },
+  { reason: 'archiveNeedsPassword', container: 'archive', wrongAttempt: false },
   { reason: 'emptyRootICloud' },
 ]
 
@@ -177,10 +177,9 @@ describe('friendly-error copy obeys the writing rules', () => {
   }
 
   it('the locked restic repo wording is clean', () => {
-    const where = { path: '/Volumes/naspi/m3-restic/Browse snapshots/latest' }
     assertClean(
       'listing:resticRepoNeedsPassword',
-      getListingErrorMessage({ reason: 'archiveNeedsPassword', wrongAttempt: false }, where),
+      getListingErrorMessage({ reason: 'archiveNeedsPassword', container: 'resticRepo', wrongAttempt: false }),
     )
   })
 

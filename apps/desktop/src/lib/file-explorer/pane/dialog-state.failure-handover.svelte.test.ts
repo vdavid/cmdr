@@ -97,6 +97,7 @@ const ioError: WriteOperationError = { type: 'io_error', path: '/Users/me/photos
 const needsPassword: WriteOperationError = {
   type: 'archive_needs_password',
   path: '/Users/me/secret.zip/a.raw',
+  container: 'archive',
   wrongAttempt: false,
 }
 

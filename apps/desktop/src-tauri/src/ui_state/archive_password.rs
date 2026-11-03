@@ -1,9 +1,10 @@
 //! What the password prompt is asking, mirrored for MCP. One prompt serves
 //! every locked container (an encrypted archive, a restic repo).
 //!
-//! The prompt lives in the frontend (`unlock-flow.svelte.ts`), which
-//! is the only place that knows WHICH container raised it, in which of the two
-//! flows, and whether a stored password was just rejected. `SoftDialogTracker`
+//! The prompt lives in the frontend (`unlock-flow.svelte.ts`), which is the
+//! only place that knows a prompt is up, in which of the two flows, and whether
+//! a stored password was just rejected (the container kind comes from the typed
+//! `NeedsPassword` that raised it). `SoftDialogTracker`
 //! carries the id and nothing else, so without this mirror an agent reads a bare
 //! `- type: archive-password` in `cmdr://state` and can neither name the archive
 //! nor answer it — the same shape of blind spot a conflict wedge lived in for
@@ -20,28 +21,10 @@ use std::sync::RwLock;
 use std::sync::atomic::{AtomicU64, Ordering};
 use tauri::{AppHandle, Manager};
 
-/// What kind of container the prompt is for. Supplied by the frontend, which
-/// classifies a pane's kind from its path, and rendered in `cmdr://state` so an
-/// agent knows what it is answering.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum LockedContainer {
-    /// An encrypted archive: the password is stored and checked on the next read.
-    Archive,
-    /// A restic backup repo: the password is checked before the unlock answers.
-    ResticRepo,
-}
-
-impl LockedContainer {
-    /// The kind's own wire name, from its serde representation, so the token an
-    /// agent reads can't drift from the one the frontend sends over IPC.
-    pub fn token(self) -> &'static str {
-        match self {
-            LockedContainer::Archive => "archive",
-            LockedContainer::ResticRepo => "resticRepo",
-        }
-    }
-}
+/// What kind of container the prompt is for, as the `NeedsPassword` that
+/// raised it said. Rendered in `cmdr://state` so an agent knows what it is
+/// answering.
+pub use crate::file_system::volume::LockedContainer;
 
 /// Which flow raised the prompt. The two are genuinely different situations for
 /// a caller: unlocking a browse completes it (a listing is a read), while

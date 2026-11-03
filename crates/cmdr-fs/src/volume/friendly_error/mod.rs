@@ -30,6 +30,7 @@ mod volume_error;
 
 use serde::{Deserialize, Serialize};
 
+use crate::volume::LockedContainer;
 use crate::volume::git_error::FriendlyGitErrorKind;
 
 // Public API re-exports: keep the `volume::friendly_error::*` import surface
@@ -360,14 +361,17 @@ pub enum ListingErrorReason {
     /// classified at the listing seam from the path + error kind, not from a
     /// dedicated `VolumeError`.
     ArchiveUnreadable,
-    /// Browsing a HEADER-encrypted archive (a `-mhe=on` 7z) failed because its
-    /// metadata is itself encrypted, so even listing needs the password. The FE
-    /// renders the password prompt (not an error pane); `wrong_attempt` swaps the
-    /// copy to "that password didn't work" after a rejected try. Distinct from
-    /// `ArchiveUnreadable` (which is unrecoverable) — this one is retried by
-    /// supplying the password and re-navigating. (Content-encrypted archives list
-    /// fine and prompt only on extract, via the transfer path.)
+    /// Listing needs a password: a HEADER-encrypted archive (a `-mhe=on` 7z)
+    /// whose metadata is itself encrypted, or a locked restic repo. The FE
+    /// renders the password prompt over a fallback pane worded by `container`;
+    /// `wrong_attempt` swaps the copy to "that password didn't work" after a
+    /// rejected try. Distinct from `ArchiveUnreadable` (which is unrecoverable):
+    /// this one is retried by supplying the password and re-navigating.
+    /// (Content-encrypted archives list fine and prompt only on extract, via the
+    /// transfer path.)
     ArchiveNeedsPassword {
+        /// Which kind of container is locked, which picks the prompt's words.
+        container: LockedContainer,
         /// `true` once a supplied password has been rejected.
         wrong_attempt: bool,
     },

@@ -92,6 +92,7 @@
         ConfirmOrigin,
         TransferCompletePayload,
         CompletionView,
+        BrowseUnlockRequest,
     } from './dialog-props'
     import { explorerState } from './explorer-state.svelte'
     import type { PaneAccess } from './pane-access'
@@ -1524,12 +1525,7 @@
                         edgeFlow.handleCancelLoading(paneId, cancelled)
                     }}
                     onMtpFatalError={(msg: string) => edgeFlow.handleMtpFatalError(paneId, msg)}
-                    onNeedsPassword={(info: {
-                        volumeId: string
-                        path: string
-                        wrongAttempt: boolean
-                        retry: () => void
-                    }) => { dialogs.showUnlockForBrowse(info); }}
+                    onNeedsPassword={(info: BrowseUnlockRequest) => { dialogs.showUnlockForBrowse(info); }}
                     onConfirmRenameAsMove={(request: RenameAsMoveRequest) => { fileOps.confirmRenameAsMove(paneId, request); }}
                     unreachable={getActiveTab(tabMgr).unreachable}
                     onRetryUnreachable={() => edgeFlow.handleRetryUnreachable(paneId)}

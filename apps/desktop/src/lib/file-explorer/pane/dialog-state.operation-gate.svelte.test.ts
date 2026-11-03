@@ -149,6 +149,7 @@ describe('a second operation while the progress dialog is up', () => {
       {
         type: 'archive_needs_password',
         path: '/Users/me/secret.zip/inner/report.pdf',
+        container: 'archive',
         wrongAttempt: false,
       },
       null,

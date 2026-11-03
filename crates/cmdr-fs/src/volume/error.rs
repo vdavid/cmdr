@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use crate::error_detail::ErrorDetail;
 use crate::log_error::{ErrorLogText, ErrorText, write_plain};
 use crate::log_private::LogPrivate;
+use crate::volume::LockedContainer;
 use crate::volume::git_error::FriendlyGitError;
 
 /// A sign-in on another server, through a link, that nobody has allowed.
@@ -232,14 +233,19 @@ pub enum VolumeError {
         /// The errno behind it, when there was one.
         raw_os_error: Option<i32>,
     },
-    /// A password-protected archive needs a password to browse (header-encrypted
-    /// 7z) or extract (any encrypted entry). `wrong_attempt` is `false` when no
-    /// password has been tried and `true` when the supplied one was rejected, so
-    /// the frontend can prompt afresh vs. say "that password didn't work". The
-    /// archive backend raises this; the frontend supplies a per-archive password
-    /// via `unlock_container` and retries. Carries no path — the failing path
-    /// is the one the caller was reading.
+    /// A password-locked container needs its password: an archive to browse
+    /// (header-encrypted 7z) or extract (any encrypted entry), a restic repo to
+    /// open. `container` says which one asked, so the frontend words the prompt
+    /// and picks its unlock flow from it (a 7z inside a restic snapshot is an
+    /// archive, though its path runs through the repo). `wrong_attempt` is
+    /// `false` when no password has been tried and `true` when the supplied one
+    /// was rejected, so the frontend can prompt afresh vs. say "that password
+    /// didn't work". The frontend supplies the password via `unlock_container`
+    /// and retries. Carries no path: the failing path is the one the caller was
+    /// reading.
     NeedsPassword {
+        /// Which kind of container is locked.
+        container: LockedContainer,
         /// `false` when no password has been tried yet, `true` when the supplied
         /// one was rejected.
         wrong_attempt: bool,
@@ -307,8 +313,22 @@ impl ErrorLogText for VolumeError {
             Self::InvalidName(msg) => return detail_line(out, "Name not usable at the destination: ", msg),
             Self::SignatureInvalid(msg) => return detail_line(out, "Reply refused, its signature didn't hold: ", msg),
             Self::IoError { message, .. } => return detail_line(out, "I/O error: ", message),
-            Self::NeedsPassword { wrong_attempt: true } => return out.write_str("Archive password is incorrect"),
-            Self::NeedsPassword { wrong_attempt: false } => return out.write_str("Archive is password-protected"),
+            Self::NeedsPassword {
+                container,
+                wrong_attempt,
+            } => {
+                let noun = match container {
+                    LockedContainer::Archive => "Archive",
+                    LockedContainer::ResticRepo => "Backup repo",
+                };
+                let state = if *wrong_attempt {
+                    " password is incorrect"
+                } else {
+                    " is password-protected"
+                };
+                out.write_str(noun)?;
+                return out.write_str(state);
+            }
             Self::FriendlyGit(err) => {
                 out.write_str("git: ")?;
                 return out.error(err);

@@ -258,8 +258,8 @@ see below.)
   checks a single byte at open, so ~1/256 of wrong passwords slip through and surface LATE as an end-of-stream CRC
   mismatch: `io::ErrorKind::InvalidData`, which `pump_decrypt` maps to `WrongPassword` by the io KIND (not the message);
   the same late path also catches an AES HMAC failure. No password on an encrypted entry ⇒ `Encrypted` (the
-  needs-password signal). The `ArchiveError → VolumeError` mapping (both to typed `NeedsPassword { wrong_attempt }`)
-  lives in `../../DETAILS.md`.
+  needs-password signal). The `ArchiveError → VolumeError` mapping (both to typed
+  `NeedsPassword { container: Archive, wrong_attempt }`) lives in `../../DETAILS.md`.
 
 ## Filename encoding
 

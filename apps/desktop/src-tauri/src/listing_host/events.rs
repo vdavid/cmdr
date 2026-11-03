@@ -346,11 +346,15 @@ impl<W: ListingWire, E: ListingEndEffects> TauriListingEvents<W, E> {
         // so the pane doesn't show a generic listing error. A valid archive
         // with a missing inner path stays `NotFound` (not an integrity fault),
         // and the archive case skips provider enrichment (no cloud suggestion).
-        let listing_error = if let VolumeError::NeedsPassword { wrong_attempt } = e {
-            // A HEADER-encrypted archive needs its password to even list; the
-            // FE renders a password prompt, not an error pane. Skip provider
-            // enrichment (no cloud suggestion on a password prompt).
-            archive_needs_password_listing_error(wrong_attempt)
+        let listing_error = if let VolumeError::NeedsPassword {
+            container,
+            wrong_attempt,
+        } = e
+        {
+            // A HEADER-encrypted archive or a locked repo needs its password to
+            // even list; the FE renders a password prompt, not an error pane.
+            // Skip provider enrichment (no cloud suggestion on a password prompt).
+            archive_needs_password_listing_error(container, wrong_attempt)
         } else if matches!(e, VolumeError::NotSupported | VolumeError::IoError { .. })
             && cmdr_archive::path_targets_archive_file(path)
         {

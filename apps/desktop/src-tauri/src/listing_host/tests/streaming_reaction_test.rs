@@ -24,7 +24,7 @@ use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::testing::unique_test_id;
 use cmdr_fs::volume::friendly_error::{ListingError, ListingErrorReason, Provider};
-use cmdr_fs::volume::{InMemoryVolume, ListingPhase, ListingProgress, Volume, VolumeError};
+use cmdr_fs::volume::{InMemoryVolume, ListingPhase, ListingProgress, LockedContainer, Volume, VolumeError};
 use cmdr_listing::host::{ListingEnd, ListingEvents, ListingOverlay};
 use cmdr_listing::testing::{SpelledVolume, StreamingListingState, TestEngine, TestListingGuard, request};
 use cmdr_listing::{DirectoryDiffBatch, ListingId, StalledOn};
@@ -488,7 +488,13 @@ async fn a_permission_denied_listing_records_the_denial() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_listing_that_needs_a_password_asks_for_it() {
     let path = cloud_path("locked.zip");
-    let volume = refused_with("reaction-password", VolumeError::NeedsPassword { wrong_attempt: false });
+    let volume = refused_with(
+        "reaction-password",
+        VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: false,
+        },
+    );
 
     let ended = run_listing(&volume, &path, as_is).await;
 
@@ -497,7 +503,10 @@ async fn a_listing_that_needs_a_password_asks_for_it() {
         matches!(
             ended.errors.as_slice(),
             [Some(ListingError {
-                reason: ListingErrorReason::ArchiveNeedsPassword { wrong_attempt: false },
+                reason: ListingErrorReason::ArchiveNeedsPassword {
+                    container: LockedContainer::Archive,
+                    wrong_attempt: false,
+                },
                 provider: None,
                 ..
             })]

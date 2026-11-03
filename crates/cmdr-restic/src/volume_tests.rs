@@ -10,7 +10,7 @@ use crate::test_fixtures::{self, FixtureRepo};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::testing::TestDir;
 use cmdr_fs::volume::host::VolumeHost;
-use cmdr_fs::volume::{BackendKind, InMemoryVolume, Volume, VolumeError, conformance};
+use cmdr_fs::volume::{BackendKind, InMemoryVolume, LockedContainer, Volume, VolumeError, conformance};
 use std::fs::File;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -154,7 +154,13 @@ async fn without_a_password_the_view_asks_for_one() {
 
     let listing = volume.list_directory(&view(), None).await;
     assert!(
-        matches!(listing, Err(VolumeError::NeedsPassword { wrong_attempt: false })),
+        matches!(
+            listing,
+            Err(VolumeError::NeedsPassword {
+                container: LockedContainer::ResticRepo,
+                wrong_attempt: false,
+            })
+        ),
         "got {listing:?}"
     );
 }
@@ -171,7 +177,13 @@ async fn a_wrong_password_unlocks_nothing_and_keeps_nothing() {
     assert!(!test_fixtures::unlock(&volume, "incorrect horse").await);
     let listing = volume.list_directory(&view(), None).await;
     assert!(
-        matches!(listing, Err(VolumeError::NeedsPassword { wrong_attempt: false })),
+        matches!(
+            listing,
+            Err(VolumeError::NeedsPassword {
+                container: LockedContainer::ResticRepo,
+                wrong_attempt: false,
+            })
+        ),
         "a refused password isn't kept: got {listing:?}"
     );
     assert!(test_fixtures::unlock(&volume, PASSWORD).await);

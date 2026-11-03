@@ -12,7 +12,7 @@ use crate::repo::{IndexedRepo, ResticError, ResticRepo};
 use crate::snapshots::{Snapshot, SnapshotList, snapshot_list_of};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::host::VolumeHost;
-use cmdr_fs::volume::{ListingProgress, Volume, VolumeError};
+use cmdr_fs::volume::{ListingProgress, LockedContainer, Volume, VolumeError};
 use index_slot::{IndexSlot, Installed, free_off_the_runtime};
 use rustic_core::repofile::SnapshotFile;
 use std::collections::{HashMap, HashSet};
@@ -281,7 +281,10 @@ impl ResticRepos {
             .map_err(|err| Self::refused(slot, err))?;
         if slot.forgets() != forgets {
             // The person forgot the password while this opened: keep nothing.
-            return Err(VolumeError::NeedsPassword { wrong_attempt: false });
+            return Err(VolumeError::NeedsPassword {
+                container: LockedContainer::ResticRepo,
+                wrong_attempt: false,
+            });
         }
         let repo = Arc::new(repo);
         *opened = Some(Bound::new(parent, Arc::clone(&repo), forgets));
@@ -396,7 +399,10 @@ impl ResticRepos {
         lock(&slot.latest).rebind(&list, self.tuning.latest_quiet, held);
         let mut known = lock(&slot.snapshots);
         if slot.forgets() != forgets {
-            return Err(VolumeError::NeedsPassword { wrong_attempt: false });
+            return Err(VolumeError::NeedsPassword {
+                container: LockedContainer::ResticRepo,
+                wrong_attempt: false,
+            });
         }
         *known = Some(Snapshots {
             files,

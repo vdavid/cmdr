@@ -14,6 +14,7 @@
 
 use super::*;
 use crate::types::PermissionRefusal;
+use cmdr_fs::volume::LockedContainer;
 
 #[test]
 fn test_map_volume_error_not_found() {
@@ -350,26 +351,33 @@ fn test_map_volume_error_invalid_name() {
 
 #[test]
 fn test_map_volume_error_needs_password() {
-    // Extracting from a password-protected archive must become the typed
-    // `ArchiveNeedsPassword` (carrying the wrong-attempt flag) so the FE prompts
-    // and retries via `unlock_container`, never a generic read error.
+    // Reading from a locked archive or repo must become the typed
+    // `ArchiveNeedsPassword` (carrying which container asked and the
+    // wrong-attempt flag) so the FE prompts and retries via `unlock_container`,
+    // never a generic read error.
     let fresh = map_volume_error(
         "/ctx",
         PathRole::Source,
-        VolumeError::NeedsPassword { wrong_attempt: false },
+        VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: false,
+        },
     );
     assert!(matches!(
         fresh,
-        WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt: false } if path == "/ctx"
+        WriteOperationError::ArchiveNeedsPassword { path, container: LockedContainer::Archive, wrong_attempt: false } if path == "/ctx"
     ));
     let retried = map_volume_error(
         "/ctx",
         PathRole::Source,
-        VolumeError::NeedsPassword { wrong_attempt: true },
+        VolumeError::NeedsPassword {
+            container: LockedContainer::ResticRepo,
+            wrong_attempt: true,
+        },
     );
     assert!(matches!(
         retried,
-        WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt: true } if path == "/ctx"
+        WriteOperationError::ArchiveNeedsPassword { path, container: LockedContainer::ResticRepo, wrong_attempt: true } if path == "/ctx"
     ));
 }
 

@@ -224,6 +224,7 @@ mod tests {
         for wrong_attempt in [false, true] {
             let err = WriteOperationError::ArchiveNeedsPassword {
                 path: "/secret.zip".to_string(),
+                container: cmdr_fs::volume::LockedContainer::Archive,
                 wrong_attempt,
             };
             assert!(

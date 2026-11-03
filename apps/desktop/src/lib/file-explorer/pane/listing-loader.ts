@@ -29,6 +29,7 @@
 import { tick } from 'svelte'
 import type { ConnectionState, FriendlyError } from '../types'
 import type { ListingPhase, StalledOn } from '#lib/ipc/bindings.js'
+import type { BrowseUnlockRequest } from './dialog-props'
 import type { CancelLoadingPayload, ListingLoad, LoadDirectoryArgs, SwapState, VolumeChangePayload } from './types'
 import {
   type Location,
@@ -186,13 +187,13 @@ export interface ListingLoaderDeps {
   onMtpFatalError?: (error: string) => void
   onCancelLoading?: (cancelled: CancelLoadingPayload) => void
   /**
-   * A header-encrypted archive (a `-mhe=on` 7z) needs its password even to LIST
-   * it: the whole metadata is encrypted. Fired instead of leaving only the
-   * fallback error pane, so the parent can raise the browse-time password prompt.
-   * `retry` re-lists the SAME directory (after the password is stored the re-list
-   * succeeds); `wrongAttempt` swaps the prompt copy after a rejected password.
+   * A locked container (a header-encrypted `-mhe=on` 7z, a restic repo) needs
+   * its password even to LIST it. Fired on top of the fallback error pane, so the
+   * parent can raise the browse-time password prompt. `retry` re-lists the SAME
+   * directory (after the password is in the re-list succeeds); `wrongAttempt`
+   * swaps the prompt copy after a rejected password.
    */
-  onNeedsPassword?: (info: { volumeId: string; path: string; wrongAttempt: boolean; retry: () => void }) => void
+  onNeedsPassword?: (info: BrowseUnlockRequest) => void
 }
 
 export interface ListingLoader {
@@ -526,7 +527,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
             // would skip over it. `pushPath` deduplicates same-path retries. The
             // error screen is what the pane shows now, so a later cancel returns here.
             const showListingError = () => {
-              const rendered = payload.error ? renderListingError(payload.error, { path: loadPath }) : undefined
+              const rendered = payload.error ? renderListingError(payload.error) : undefined
               resetLoadingState(payload.message, false, rendered)
               lastShown = { volumeId, path: loadPath }
               deps.onPathChange?.(loadPath)
@@ -534,7 +535,8 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
               deps.syncMcp()
             }
 
-            // A header-encrypted archive needs its password even to LIST it.
+            // A locked container (a header-encrypted archive, a restic repo) needs
+            // its password even to LIST it.
             // Raise the browse-time password prompt ON TOP of the fallback
             // error pane: on submit `retry` re-lists this same path (which now
             // succeeds); on cancel the prompt closes and the "This archive
@@ -552,6 +554,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
               deps.onNeedsPassword?.({
                 volumeId: deps.getVolumeId(),
                 path: loadPath,
+                container: reason.container,
                 wrongAttempt: reason.wrongAttempt,
                 retry: () => {
                   void loadDirectory({ path: loadPath })

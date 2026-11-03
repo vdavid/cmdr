@@ -1,7 +1,7 @@
 //! `VolumeError::transport_fault`: the link failing is a fault, a refusal or a
 //! person's decision never is.
 
-use super::{TransportFault, VolumeError, is_transport_errno};
+use super::{LockedContainer, TransportFault, VolumeError, is_transport_errno};
 
 fn io(code: i32) -> VolumeError {
     VolumeError::IoError {
@@ -139,7 +139,10 @@ fn refusals_and_data_facts_are_not_transport_faults() {
         VolumeError::SignatureInvalid("refused".into()),
         VolumeError::ColdStorage("/x".into()),
         VolumeError::SourceChanged("/x".into()),
-        VolumeError::NeedsPassword { wrong_attempt: true },
+        VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: true,
+        },
         // No errno: nothing to classify on, so it's a report, not a blip.
         VolumeError::IoError {
             message: "something".into(),

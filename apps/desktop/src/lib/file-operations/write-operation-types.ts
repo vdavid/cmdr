@@ -12,6 +12,7 @@ import type {
   ArchiveNameRefusal,
   FilesystemKind,
   ItemKinds,
+  LockedContainer,
   MountedVolumeAction,
   NamedLeavesRefusal,
   StagedLeftovers,
@@ -320,7 +321,8 @@ export type WriteOperationError =
   // `crates/cmdr-operations/src/delete/cloud_trash.rs`.
   | { type: 'trash_refused'; itemCount: number; reason: TrashRefusalKind; message: string; onlineOnly?: boolean }
   | { type: 'io_error'; path: string; message: string }
-  // Extracting from a password-protected archive. `wrongAttempt` is true when the
-  // stored password was rejected. The FE should intercept this before the generic
-  // error dialog and prompt for a password (then retry via `setArchivePassword`).
-  | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
+  // Reading a source inside a locked archive or restic repo; `container` says
+  // which one asked. `wrongAttempt` is true when the stored password was
+  // rejected. The FE intercepts this before the generic error dialog and prompts
+  // for a password (then retries via `unlockContainer`).
+  | { type: 'archive_needs_password'; path: string; container: LockedContainer; wrongAttempt: boolean }

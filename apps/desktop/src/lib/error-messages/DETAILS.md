@@ -24,9 +24,9 @@ not by our golden fixture. The two paths share the `FriendlyErrorMessage` shape 
 2. `ErrorPane` calls `renderListingError(error)` (`listing-error.ts`): it picks the base message from the listing
    factory (`getListingErrorMessage`), or the git factory (`getGitErrorMessage`) for the `git` reason, then, when a
    `provider` is present, replaces the base suggestion with `getProviderSuggestion(provider, category)`. This reproduces
-   the old Rust `enrich_with_provider` override exactly. The listing loader also passes the failed path (`where`), which
-   only `archiveNeedsPassword` reads: the backend says "needs a password" the same way for an archive and a restic repo,
-   so a path in a repo's snapshot view (`isVirtualResticPath`) gets `errors.listing.resticRepoNeedsPassword.*`.
+   the old Rust `enrich_with_provider` override exactly. `archiveNeedsPassword` carries the typed `container` that
+   asked, and `resticRepo` gets `errors.listing.resticRepoNeedsPassword.*`. ❌ Never pick by path: a header-encrypted 7z
+   inside a snapshot sits under `Browse snapshots`, yet it's the archive that's locked.
 3. The factory pulls each string from the `errors.*` message catalog via `getMessage()` (a RAW catalog lookup, never ICU
    `t()`; see the catalog boundary below), substitutes its escaped runtime params (`{path}` / `{osMessage}` tokens), and
    substitutes localized macOS pane labels via `expandSystemStrings(...)`.

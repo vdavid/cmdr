@@ -5,7 +5,7 @@
 use super::{Bound, KEYCHAIN_SERVICE, RepoSlot, ResticRepos, lock};
 use crate::repo::{ResticError, ResticRepo};
 use cmdr_fs::volume::secret_store::{self, SignIn};
-use cmdr_fs::volume::{Volume, VolumeError};
+use cmdr_fs::volume::{LockedContainer, Volume, VolumeError};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use zeroize::Zeroizing;
@@ -126,7 +126,10 @@ impl ResticRepos {
             return Ok(password);
         }
         if slot.store_missed.load(Ordering::Relaxed) {
-            return Err(VolumeError::NeedsPassword { wrong_attempt: false });
+            return Err(VolumeError::NeedsPassword {
+                container: LockedContainer::ResticRepo,
+                wrong_attempt: false,
+            });
         }
         let scope = slot.key.store_scope();
         match secret_store::stored_secret(&self.host, KEYCHAIN_SERVICE, &scope).await {
@@ -135,14 +138,20 @@ impl ResticRepos {
                 let mut kept = lock(&slot.password);
                 // Read before a forget that deleted it since: it's gone.
                 if slot.forgets() != forgets {
-                    return Err(VolumeError::NeedsPassword { wrong_attempt: false });
+                    return Err(VolumeError::NeedsPassword {
+                        container: LockedContainer::ResticRepo,
+                        wrong_attempt: false,
+                    });
                 }
                 *kept = Some(password.clone());
                 Ok(password)
             }
             None => {
                 slot.store_missed.store(true, Ordering::Relaxed);
-                Err(VolumeError::NeedsPassword { wrong_attempt: false })
+                Err(VolumeError::NeedsPassword {
+                    container: LockedContainer::ResticRepo,
+                    wrong_attempt: false,
+                })
             }
         }
     }

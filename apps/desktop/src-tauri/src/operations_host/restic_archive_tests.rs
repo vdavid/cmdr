@@ -13,8 +13,8 @@ use std::time::Duration;
 use crate::file_system::restic::test_repo::{BackedUpDrive, SourceFile, backed_up_drive};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::test_support::isolate_secrets;
-use cmdr_archive::test_fixtures::{build_zip, deflated, dir, stored};
-use cmdr_fs::volume::{RoutedKind, Volume, VolumeError};
+use cmdr_archive::test_fixtures::{build_encrypted_7z, build_zip, deflated, dir, stored};
+use cmdr_fs::volume::{LockedContainer, RoutedKind, Volume, VolumeError};
 use cmdr_listing::host::ListingVolumes;
 use cmdr_local::LocalPosixVolume;
 use cmdr_operation_log::types::Initiator;
@@ -135,6 +135,41 @@ async fn a_pane_enters_the_zip_and_lists_its_insides() {
         .await
         .expect("a folder inside lists");
     assert_eq!(docs.iter().map(|e| e.name.as_str()).collect::<Vec<_>>(), ["notes.txt"]);
+}
+
+/// A header-encrypted 7z in an unlocked repo asks for the ARCHIVE's password:
+/// its path runs through `Browse snapshots`, so only the typed `container` can
+/// tell the prompt it's an archive and not the backup that's locked.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_locked_7z_in_a_snapshot_asks_for_the_archive_password() {
+    let _secrets = isolate_secrets();
+    static LOCKED: LazyLock<Vec<u8>> =
+        LazyLock::new(|| build_encrypted_7z(&[("secret.txt", b"backed-up secret")], "hunter2", true));
+    let sevenz = SourceFile {
+        path: "locked.7z",
+        bytes: LOCKED.as_slice(),
+        mode: 0o644,
+        modified: 1_600_000_000,
+    };
+    let drive = backed_up_drive("restic-archive-locked-7z", &[sevenz], &[]).await;
+    drive.unlock().await;
+    let sevenz = drive.backed_up.join("locked.7z");
+
+    let entered = crate::listing_host::volumes::AppVolumes
+        .resolve(&drive.volume_id, &sevenz)
+        .await;
+    assert_eq!(entered.routed, Some(RoutedKind::ArchiveInSnapshot));
+    let listed = entered.volume.expect("the archive").list_directory(&sevenz, None).await;
+    assert!(
+        matches!(
+            listed,
+            Err(VolumeError::NeedsPassword {
+                container: LockedContainer::Archive,
+                wrong_attempt: false
+            })
+        ),
+        "{listed:?}"
+    );
 }
 
 /// Copying the zip ITSELF out restores the file the backup holds, byte for byte:

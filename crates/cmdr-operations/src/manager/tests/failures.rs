@@ -149,6 +149,7 @@ fn cancels_and_password_prompts_are_not_retained_as_failures() {
         WriteOperationType::Copy,
         &WriteOperationError::ArchiveNeedsPassword {
             path: "/Users/me/locked.zip".to_string(),
+            container: cmdr_fs::volume::LockedContainer::Archive,
             wrong_attempt: false,
         },
     );

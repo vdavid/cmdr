@@ -1,7 +1,7 @@
 use super::*;
 use crate::log_private::{CLOSER, LogKind, RESERVED};
-use crate::volume::VolumeError;
 use crate::volume::git_error::{FriendlyGitError, FriendlyGitErrorKind};
+use crate::volume::{LockedContainer, VolumeError};
 
 /// One of each `VolumeError` shape: path-carrying, message-carrying, and empty.
 fn errors(path: &str) -> Vec<VolumeError> {
@@ -36,7 +36,14 @@ fn errors(path: &str) -> Vec<VolumeError> {
             raw_os_error: Some(5),
         },
         VolumeError::NotSupported,
-        VolumeError::NeedsPassword { wrong_attempt: true },
+        VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: true,
+        },
+        VolumeError::NeedsPassword {
+            container: LockedContainer::ResticRepo,
+            wrong_attempt: false,
+        },
     ]
 }
 

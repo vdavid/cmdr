@@ -12,8 +12,8 @@ use std::path::Path;
 
 use super::volume_error::git_category;
 use super::*;
-use crate::volume::VolumeError;
 use crate::volume::git_error::{FriendlyGitError, FriendlyGitErrorKind};
+use crate::volume::{LockedContainer, VolumeError};
 
 // ── Errno category + reason tests ───────────────────────────────────
 //
@@ -355,17 +355,58 @@ fn volume_error_variants_map_correctly() {
             // (its metadata is encrypted); the listing arm surfaces the dedicated
             // needs-password reason the FE renders as a prompt, NeedsAction so
             // it's recoverable by supplying the password.
-            VolumeError::NeedsPassword { wrong_attempt: false },
+            VolumeError::NeedsPassword {
+                container: LockedContainer::Archive,
+                wrong_attempt: false,
+            },
             ErrorCategory::NeedsAction,
             false,
-            |r| matches!(r, ListingErrorReason::ArchiveNeedsPassword { wrong_attempt: false }),
+            |r| {
+                matches!(
+                    r,
+                    ListingErrorReason::ArchiveNeedsPassword {
+                        container: LockedContainer::Archive,
+                        wrong_attempt: false
+                    }
+                )
+            },
         ),
         (
             // The retry case carries `wrong_attempt: true` through to the FE copy.
-            VolumeError::NeedsPassword { wrong_attempt: true },
+            VolumeError::NeedsPassword {
+                container: LockedContainer::Archive,
+                wrong_attempt: true,
+            },
             ErrorCategory::NeedsAction,
             false,
-            |r| matches!(r, ListingErrorReason::ArchiveNeedsPassword { wrong_attempt: true }),
+            |r| {
+                matches!(
+                    r,
+                    ListingErrorReason::ArchiveNeedsPassword {
+                        container: LockedContainer::Archive,
+                        wrong_attempt: true
+                    }
+                )
+            },
+        ),
+        (
+            // A locked restic repo carries its kind through, so the FE words a
+            // backup, wherever the path runs.
+            VolumeError::NeedsPassword {
+                container: LockedContainer::ResticRepo,
+                wrong_attempt: false,
+            },
+            ErrorCategory::NeedsAction,
+            false,
+            |r| {
+                matches!(
+                    r,
+                    ListingErrorReason::ArchiveNeedsPassword {
+                        container: LockedContainer::ResticRepo,
+                        wrong_attempt: false
+                    }
+                )
+            },
         ),
     ];
 

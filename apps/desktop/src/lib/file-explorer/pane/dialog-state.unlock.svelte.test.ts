@@ -114,6 +114,7 @@ function copyProps(): TransferProgressPropsData {
 const needsPassword = (wrongAttempt: boolean): WriteOperationError => ({
   type: 'archive_needs_password',
   path: '/Users/me/secret.zip/inner/report.pdf',
+  container: 'archive',
   wrongAttempt,
 })
 
@@ -217,6 +218,7 @@ describe('archive-password browse path', () => {
   const browseInfo = (wrongAttempt: boolean, retry = vi.fn()) => ({
     volumeId: 'root',
     path: '/Users/me/locked.7z',
+    container: 'archive' as const,
     wrongAttempt,
     retry,
   })
@@ -304,6 +306,7 @@ describe('archive-password mirror for cmdr://state', () => {
     dialogs.showUnlockForBrowse({
       volumeId: 'root',
       path: '/Users/me/locked.7z',
+      container: 'archive',
       wrongAttempt: false,
       retry: vi.fn(),
     })
@@ -366,6 +369,7 @@ describe('archive-password supplied over MCP', () => {
     dialogs.showUnlockForBrowse({
       volumeId: 'root',
       path: '/Users/me/locked.7z',
+      container: 'archive',
       wrongAttempt: false,
       retry,
     })
@@ -415,6 +419,7 @@ describe('restic repo browse unlock', () => {
   const repoBrowse = (retry = vi.fn()) => ({
     volumeId: 'naspi',
     path: `${REPO_VIEW}/latest`,
+    container: 'resticRepo' as const,
     wrongAttempt: false,
     retry,
   })
@@ -575,6 +580,7 @@ describe('restic repo transfer unlock', () => {
   const repoNeedsPassword: WriteOperationError = {
     type: 'archive_needs_password',
     path: `${REPO_VIEW}/latest/Users/me/report.pdf`,
+    container: 'resticRepo',
     wrongAttempt: false,
   }
 
@@ -624,5 +630,53 @@ describe('restic repo transfer unlock', () => {
     expect(dialogs.showTransferProgressDialog).toBe(false)
     expect(dialogs.transferProgressProps).toBeNull()
     expect(unlockContainer).not.toHaveBeenCalled()
+  })
+})
+
+// A header-encrypted 7z backed up in a restic snapshot: its path runs through
+// `Browse snapshots`, but the archive is what's locked (the repo is already
+// open, or the listing wouldn't have reached the 7z). The error's typed
+// `container` decides, never the path.
+describe('an archive inside a restic snapshot', () => {
+  const LOCKED_7Z = `${REPO_VIEW}/latest/Users/me/locked.7z`
+
+  it('browse: asks for the archive’s password and stores it unchecked', async () => {
+    const { dialogs } = makeState()
+    const retry = vi.fn()
+    dialogs.showUnlockForBrowse({
+      volumeId: 'naspi',
+      path: LOCKED_7Z,
+      container: 'archive',
+      wrongAttempt: false,
+      retry,
+    })
+
+    expect(dialogs.unlockProps).toMatchObject({ container: 'archive', name: 'locked.7z', mode: 'browse' })
+    expect(notifyArchivePasswordPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({ container: 'archive', archiveName: 'locked.7z' }),
+    )
+
+    dialogs.handleUnlockSubmit({ password: 'hunter2', remember: false })
+    expect(unlockContainer).not.toHaveBeenCalled()
+    expect(setArchivePassword).toHaveBeenCalledWith('naspi', LOCKED_7Z, 'hunter2')
+    await vi.waitFor(() => {
+      expect(retry).toHaveBeenCalled()
+    })
+  })
+
+  it('transfer: a copy out of the 7z asks for the archive’s password', () => {
+    const { dialogs } = makeState()
+    dialogs.startTransferProgress({
+      ...copyProps(),
+      sourcePaths: [`${LOCKED_7Z}/report.pdf`],
+      sourceFolderPath: LOCKED_7Z,
+      sourceVolumeId: 'naspi',
+    })
+    dialogs.handleTransferError(
+      { type: 'archive_needs_password', path: `${LOCKED_7Z}/report.pdf`, container: 'archive', wrongAttempt: false },
+      null,
+    )
+
+    expect(dialogs.unlockProps).toMatchObject({ container: 'archive', name: 'locked.7z', mode: 'transfer' })
   })
 })

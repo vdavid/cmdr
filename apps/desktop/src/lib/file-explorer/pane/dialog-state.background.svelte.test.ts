@@ -141,6 +141,7 @@ function deleteDialogProps(): DeleteDialogPropsData {
 const needsPassword: WriteOperationError = {
   type: 'archive_needs_password',
   path: '/Users/me/secret.zip',
+  container: 'archive',
   wrongAttempt: false,
 }
 
@@ -523,6 +524,7 @@ describe('an archive password, for a job with no dialog', () => {
     dialogs.showUnlockForBrowse({
       volumeId: 'root',
       path: '/Users/me/other.zip',
+      container: 'archive',
       wrongAttempt: false,
       retry,
     })

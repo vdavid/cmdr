@@ -19,6 +19,7 @@ import type {
   TrashRefusedItems,
   OpKind,
   SpaceShortfall,
+  LockedContainer,
 } from '#lib/ipc/bindings.js'
 import type { SoftDialogId } from '#lib/ui/dialog-registry.js'
 import type { CloudOnlineOnlyExtent, DeleteSourceItem } from '#lib/file-operations/delete/delete-dialog-utils.js'
@@ -308,17 +309,31 @@ export interface TransferErrorPropsData {
 }
 
 /**
- * What a password prompt unlocks. Mirrors the backend's prompt-mirror
- * `container` (`ArchivePasswordPrompt` in `#lib/ipc/bindings`).
+ * What a password prompt unlocks: the `container` the backend's
+ * `NeedsPassword` named (`LockedContainer` in `#lib/ipc/bindings`).
  * - `'archive'`: an encrypted archive. The password is stored unchecked and
  *   proves itself on the retry.
  * - `'resticRepo'`: a restic backup repo. The password is checked before the
  *   prompt closes, and may be remembered in the Keychain.
  */
-export type UnlockContainer = 'archive' | 'resticRepo'
+export type UnlockContainer = LockedContainer
+
+/** A listing that needs a password before it can list, bubbled from a pane to
+ *  the browse-time prompt. */
+export interface BrowseUnlockRequest {
+  volumeId: string
+  /** The path that failed to list. */
+  path: string
+  /** What's locked, from the listing error's typed reason. */
+  container: UnlockContainer
+  /** True when a stored password was just rejected. */
+  wrongAttempt: boolean
+  /** Re-lists the same directory once the password is in. */
+  retry: () => void
+}
 
 export interface UnlockPromptPropsData {
-  /** What's locked; derived from the path (`unlock-flow.svelte.ts`). */
+  /** What's locked, as the backend's `NeedsPassword` said. */
   container: UnlockContainer
   /** Display name: the archive file ("photos.zip") or the repo folder ("m3-restic"). */
   name: string

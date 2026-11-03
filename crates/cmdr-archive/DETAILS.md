@@ -146,11 +146,11 @@ pinned for this phase. Raise it later if a real workload wants parallel extract.
 
 **Why**: `to_volume_error` maps the path-shaped errors to their `VolumeError` twins (`NotFound → NotFound`,
 `IsADirectory → IsADirectory`) so path-aware callers keep working, the I/O family (`Corrupt` / `Io → IoError`), the
-encryption pair (`Encrypted → NeedsPassword { wrong_attempt: false }`,
-`WrongPassword → NeedsPassword { wrong_attempt: true }` — the typed signal the frontend prompts on, see below), and the
-rejection family (`NotAnArchive` / `Unsupported` / the `TooLarge` DoS cap `→ NotSupported`). This is a **mid-browse
-backstop** (the archive was swapped or corrupted after navigation). The user-facing "damaged archive" copy is NOT
-produced here: the listing seam (`crates/cmdr-listing/src/streaming.rs`) turns a failed `.zip` browse into
+encryption pair (`Encrypted → NeedsPassword { container: Archive, wrong_attempt: false }`,
+`WrongPassword → NeedsPassword { container: Archive, wrong_attempt: true }` — the typed signal the frontend prompts on,
+see below), and the rejection family (`NotAnArchive` / `Unsupported` / the `TooLarge` DoS cap `→ NotSupported`). This is
+a **mid-browse backstop** (the archive was swapped or corrupted after navigation). The user-facing "damaged archive"
+copy is NOT produced here: the listing seam (`crates/cmdr-listing/src/streaming.rs`) turns a failed `.zip` browse into
 `ListingErrorReason::ArchiveUnreadable` from the PATH + this collapsed error kind (an integrity collapse —
 `NotSupported`/`IoError` — on a path that `archive::boundary::path_targets_archive_file` says targets a real archive
 file). A valid archive with a missing inner path stays `NotFound` (not an integrity fault). This mapping stays
@@ -238,15 +238,17 @@ password to read its metadata; zip and content-encrypted 7z ignore it at parse).
 `Volume` trait's read methods are NOT widened with a password param — the password stays internal to the backend.
 
 **Typed signal to the frontend — two paths.** `Encrypted` / `WrongPassword` map to
-`VolumeError::NeedsPassword { wrong_attempt }` (above). This surfaces on:
+`VolumeError::NeedsPassword { container: Archive, wrong_attempt }` (above). The `container` is what lets the frontend
+word the prompt for an archive even when the archive sits inside a restic snapshot, whose path runs through the repo.
+This surfaces on:
 
 - The EXTRACT path (a copy whose source is inside the archive) for any encrypted archive — riding
-  `WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt }` (mapped in
+  `WriteOperationError::ArchiveNeedsPassword { path, container, wrong_attempt }` (mapped in
   `crates/cmdr-operations/src/transfer/volume/copy.rs`'s `map_volume_error`), so the frontend dispatches its password
   dialog and, after `unlock_container`, retries the copy.
 - The BROWSE/listing path for a HEADER-encrypted 7z (even listing fails) —
   `crates/cmdr-fs/src/volume/friendly_error/volume_error.rs` maps `NeedsPassword` to
-  `ListingErrorReason::ArchiveNeedsPassword { wrong_attempt }` (NOT the unreadable-archive reason), and
+  `ListingErrorReason::ArchiveNeedsPassword { container, wrong_attempt }` (NOT the unreadable-archive reason), and
   `crates/cmdr-listing/src/streaming.rs` surfaces it without provider enrichment. The frontend's listing-loader
   intercepts that reason and raises the SAME `UnlockDialog` at browse time; on unlock it re-lists the directory.
 

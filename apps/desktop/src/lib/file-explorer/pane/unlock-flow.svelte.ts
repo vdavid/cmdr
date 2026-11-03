@@ -9,8 +9,9 @@
  *   metadata, a restic repo's snapshots). No operation is involved; an unlock
  *   re-lists via `retry`.
  *
- * Two kinds of container answer differently, and the path says which one this
- * is (`describeContainer`):
+ * Two kinds of container answer differently, and the backend's typed
+ * `NeedsPassword { container }` says which one this is, ❌ never the path (a
+ * header-encrypted 7z backed up in a restic snapshot is an archive):
  * - An archive STORES the password unchecked; the prompt closes at once and the
  *   retry proves it (a wrong one comes back as a fresh prompt).
  * - A restic repo CHECKS it, which takes a second or more (a key derivation and
@@ -47,7 +48,7 @@ import { archiveNameFromPath } from './archive-paths'
 import { resticRepoRoot } from '../restic/path-detection'
 import { transferOpLabel } from './transfer-op-label'
 import type { TransferOperationType } from '../types'
-import type { UnlockContainer, UnlockPromptPropsData } from './dialog-props'
+import type { BrowseUnlockRequest, UnlockContainer, UnlockPromptPropsData } from './dialog-props'
 
 const log = getAppLogger('fileExplorer')
 
@@ -65,24 +66,25 @@ export interface UnlockFlowDeps {
   onRefocus: () => void
 }
 
-/** What `path` leads into, and the name a person knows it by. Lexical, no I/O. */
-export function describeContainer(path: string): { container: UnlockContainer; name: string } {
-  const repoRoot = resticRepoRoot(path)
-  if (repoRoot !== null) {
-    return { container: 'resticRepo', name: repoRoot.split('/').filter(Boolean).at(-1) ?? repoRoot }
-  }
-  return { container: 'archive', name: archiveNameFromPath(path) }
+/** The name a person knows the locked `container` at `path` by: the repo
+ *  folder ("m3-restic") or the archive file ("photos.zip"). Lexical, no I/O. */
+export function containerName(container: UnlockContainer, path: string): string {
+  const repoRoot = container === 'resticRepo' ? resticRepoRoot(path) : null
+  if (repoRoot !== null) return repoRoot.split('/').filter(Boolean).at(-1) ?? repoRoot
+  return archiveNameFromPath(path)
 }
 
 /** A fresh prompt's props for a locked `path`. */
 function promptFor(info: {
   path: string
   parentVolumeId: string
+  container: UnlockContainer
   wrongAttempt: boolean
   mode: UnlockPromptPropsData['mode']
   retry?: () => void
 }): UnlockPromptPropsData {
-  return { ...describeContainer(info.path), ...info, checking: false, unreachable: false, rejections: 0 }
+  const name = containerName(info.container, info.path)
+  return { ...info, name, checking: false, unreachable: false, rejections: 0 }
 }
 
 export function createUnlockFlow(deps: UnlockFlowDeps) {
@@ -219,6 +221,8 @@ export function createUnlockFlow(deps: UnlockFlowDeps) {
       operationType: TransferOperationType
       parentVolumeId: string
       path: string
+      /** What's locked, as the operation's `archive_needs_password` said. */
+      container: UnlockContainer
       wrongAttempt: boolean
       /** The operation that hit the prompt. Already settled by the backend (a
        *  password failure settles it), so it's a correlation handle for whoever
@@ -235,6 +239,7 @@ export function createUnlockFlow(deps: UnlockFlowDeps) {
         promptFor({
           path: info.path,
           parentVolumeId: info.parentVolumeId,
+          container: info.container,
           wrongAttempt: info.wrongAttempt,
           mode: 'transfer',
         }),
@@ -245,7 +250,7 @@ export function createUnlockFlow(deps: UnlockFlowDeps) {
     /** Raises the browse-time prompt: a listing failed because it needs the
      *  password (a header-encrypted archive, a repo's snapshots). No operation
      *  is involved; on unlock `retry` re-lists the same directory. */
-    promptForBrowse(info: { volumeId: string; path: string; wrongAttempt: boolean; retry: () => void }): void {
+    promptForBrowse(info: BrowseUnlockRequest): void {
       log.info('Directory listing needs a password ({state}): {path}', {
         state: info.wrongAttempt ? 'rejected' : 'first prompt',
         path: info.path,
@@ -254,6 +259,7 @@ export function createUnlockFlow(deps: UnlockFlowDeps) {
         promptFor({
           path: info.path,
           parentVolumeId: info.volumeId,
+          container: info.container,
           wrongAttempt: info.wrongAttempt,
           mode: 'browse',
           retry: info.retry,

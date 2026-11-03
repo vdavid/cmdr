@@ -46,8 +46,9 @@ const VOLUME_CASES: VolumeError[] = [
   { type: 'staleDestinationHandle', data: '/DCIM/Camera' },
   { type: 'signatureInvalid', data: 'the server READ response (message 7) has a signature that doesn’t match' },
   { type: 'ioError', data: { message: 'input/output error', rawOsError: 5 } },
-  { type: 'needsPassword', data: { wrongAttempt: false } },
-  { type: 'needsPassword', data: { wrongAttempt: true } },
+  { type: 'needsPassword', data: { container: 'archive', wrongAttempt: false } },
+  { type: 'needsPassword', data: { container: 'archive', wrongAttempt: true } },
+  { type: 'needsPassword', data: { container: 'resticRepo', wrongAttempt: false } },
   { type: 'friendlyGit', data: { kind: 'notARepo', path: '/repo', raw: null } },
 ]
 
@@ -92,7 +93,9 @@ function assertErrorCopyRules(message: string, label: string): void {
 describe('renderVolumeError', () => {
   for (const error of VOLUME_CASES) {
     const label =
-      error.type === 'needsPassword' ? `needsPassword(wrong=${String(error.data.wrongAttempt)})` : error.type
+      error.type === 'needsPassword'
+        ? `needsPassword(${error.data.container}, wrong=${String(error.data.wrongAttempt)})`
+        : error.type
     it(`words ${label}`, () => {
       assertErrorCopyRules(renderVolumeError(error), `volume ${label}`)
     })
@@ -102,6 +105,14 @@ describe('renderVolumeError', () => {
     expect(renderVolumeError({ type: 'notFound', data: '/Volumes/share/holiday.raw' })).toContain(
       '/Volumes/share/holiday.raw',
     )
+  })
+
+  it('names the locked container the backend said, a backup or an archive', () => {
+    const backup = renderVolumeError({ type: 'needsPassword', data: { container: 'resticRepo', wrongAttempt: false } })
+    expect(backup).toContain('backup')
+    expect(backup).not.toContain('archive')
+    const archive = renderVolumeError({ type: 'needsPassword', data: { container: 'archive', wrongAttempt: false } })
+    expect(archive).toContain('archive')
   })
 
   it('keeps a git failure speaking git rather than flattening it', () => {

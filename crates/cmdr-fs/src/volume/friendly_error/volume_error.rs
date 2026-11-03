@@ -12,6 +12,7 @@ use std::path::Path;
 
 use super::errno::listing_error_from_errno;
 use super::{ErrorCategory, ListingError, ListingErrorReason, kinds};
+use crate::volume::LockedContainer;
 use crate::volume::git_error::FriendlyGitErrorKind;
 use crate::volume::{RemoteRefuser, VolumeError};
 
@@ -66,16 +67,19 @@ pub fn archive_unreadable_listing_error() -> ListingError {
     }
 }
 
-/// The "this archive needs a password to browse" listing error, produced when a
-/// HEADER-encrypted archive's metadata can't be read without the password
-/// (`VolumeError::NeedsPassword` on the LISTING path). The FE renders the password
-/// prompt rather than an error pane; `wrong_attempt` picks the retry copy. Not
-/// `Serious`/no-retry like `archive_unreadable` — supplying the password and
-/// re-navigating recovers it.
-pub fn archive_needs_password_listing_error(wrong_attempt: bool) -> ListingError {
+/// The "this needs a password to browse" listing error, produced when a locked
+/// container (a HEADER-encrypted archive's metadata, a restic repo) can't be
+/// read without the password (`VolumeError::NeedsPassword` on the LISTING path).
+/// The FE renders the password prompt over a fallback pane worded by
+/// `container`; `wrong_attempt` picks the retry copy. Not `Serious`/no-retry like
+/// `archive_unreadable`: supplying the password and re-navigating recovers it.
+pub fn archive_needs_password_listing_error(container: LockedContainer, wrong_attempt: bool) -> ListingError {
     ListingError {
         category: ErrorCategory::NeedsAction,
-        reason: ListingErrorReason::ArchiveNeedsPassword { wrong_attempt },
+        reason: ListingErrorReason::ArchiveNeedsPassword {
+            container,
+            wrong_attempt,
+        },
         provider: None,
         action_kind: None,
         retry_hint: false,
@@ -189,11 +193,15 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
             raw_os_error: None,
             message,
         } => kinds::io_serious(&path_display, &message.to_string(), raw),
-        // A HEADER-encrypted archive (a `-mhe=on` 7z) reaches the LISTING path with
-        // `NeedsPassword`: its metadata is encrypted, so even browsing needs the
-        // password. Surface the dedicated reason the FE renders as a password prompt
-        // (content-encrypted archives list fine and prompt only on extract, via the
-        // write-op path's `WriteOperationError::ArchiveNeedsPassword`).
-        VolumeError::NeedsPassword { wrong_attempt } => archive_needs_password_listing_error(*wrong_attempt),
+        // A HEADER-encrypted archive (a `-mhe=on` 7z) or a locked restic repo
+        // reaches the LISTING path with `NeedsPassword`, so even browsing needs
+        // the password. Surface the dedicated reason the FE renders as a password
+        // prompt, carrying which container asked (content-encrypted archives list
+        // fine and prompt only on extract, via the write-op path's
+        // `WriteOperationError::ArchiveNeedsPassword`).
+        VolumeError::NeedsPassword {
+            container,
+            wrong_attempt,
+        } => archive_needs_password_listing_error(*container, *wrong_attempt),
     }
 }

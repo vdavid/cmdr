@@ -17,7 +17,9 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::testing::TestDir;
 use cmdr_fs::volume::InMemoryVolume;
 use cmdr_fs::volume::WriteMode;
-use cmdr_fs::volume::{ListingProgress, StreamLength, UnlockOutcome, Volume, VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{
+    ListingProgress, LockedContainer, StreamLength, UnlockOutcome, Volume, VolumeError, VolumeReadStream,
+};
 
 /// A zip written into a scratch dir, cleaned up on drop. Hands out
 /// `ArchiveVolume`s backed by a configurable parent (default: a plain
@@ -490,7 +492,10 @@ async fn browsing_works_but_extracting_an_encrypted_entry_needs_a_password() {
     // "damaged"), so the frontend prompts.
     assert!(matches!(
         volume.open_read_stream(Path::new("secret.txt")).await,
-        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+        Err(VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: false,
+        })
     ));
 }
 
@@ -505,7 +510,10 @@ async fn set_password_lets_the_volume_extract_an_encrypted_entry() {
     // No password yet: typed needs-password.
     assert!(matches!(
         volume.open_read_stream(Path::new("secret.txt")).await,
-        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+        Err(VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: false,
+        })
     ));
 
     // After storing the password, the same read decrypts.
@@ -533,7 +541,13 @@ async fn a_wrong_password_surfaces_as_needs_password_wrong_attempt() {
     let mut stream = volume.open_read_stream(Path::new("secret.txt")).await.unwrap();
     let err = drain(stream.as_mut()).await.unwrap_err();
     assert!(
-        matches!(err, VolumeError::NeedsPassword { wrong_attempt: true }),
+        matches!(
+            err,
+            VolumeError::NeedsPassword {
+                container: LockedContainer::Archive,
+                wrong_attempt: true,
+            }
+        ),
         "got {err:?}"
     );
 }
@@ -552,7 +566,10 @@ async fn header_encrypted_7z_browse_prompts_then_lists_and_extracts() {
     // signal — the browse-time prompt (a zip would have listed fine here).
     assert!(matches!(
         volume.list_directory(Path::new(""), None).await,
-        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+        Err(VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: false,
+        })
     ));
 
     // After storing the password, browsing AND extraction work.
@@ -576,7 +593,10 @@ async fn header_encrypted_7z_wrong_password_browse_is_wrong_attempt() {
     // Browsing with the wrong password re-prompts with the wrong-attempt copy.
     assert!(matches!(
         volume.list_directory(Path::new(""), None).await,
-        Err(VolumeError::NeedsPassword { wrong_attempt: true })
+        Err(VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: true,
+        })
     ));
 }
 
@@ -596,7 +616,10 @@ async fn a_freshly_minted_volume_forgets_the_password_lru_eviction_semantic() {
     let reminted = archive.volume();
     assert!(matches!(
         reminted.open_read_stream(Path::new("secret.txt")).await,
-        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+        Err(VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: false,
+        })
     ));
 }
 
@@ -625,7 +648,10 @@ async fn the_unlock_seam_stores_the_password_unchecked() {
     locked.forget_password();
     assert!(matches!(
         volume.open_read_stream(Path::new("secret.txt")).await,
-        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+        Err(VolumeError::NeedsPassword {
+            container: LockedContainer::Archive,
+            wrong_attempt: false,
+        })
     ));
 }
 

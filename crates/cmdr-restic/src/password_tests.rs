@@ -4,6 +4,7 @@
 //! `lifecycle_tests.rs`, sharing its rig.
 
 use super::*;
+use cmdr_fs::volume::LockedContainer;
 
 // ── Passwords and the credential store ─────────────────────────────────────
 
@@ -63,7 +64,13 @@ async fn a_store_miss_is_asked_once() {
     for _ in 0..3 {
         let listing = rig.volume.list_directory(&view(ROOT), None).await;
         assert!(
-            matches!(listing, Err(VolumeError::NeedsPassword { wrong_attempt: false })),
+            matches!(
+                listing,
+                Err(VolumeError::NeedsPassword {
+                    container: LockedContainer::ResticRepo,
+                    wrong_attempt: false,
+                })
+            ),
             "got {listing:?}"
         );
     }
@@ -78,7 +85,13 @@ async fn a_stored_password_that_stopped_working_asks_as_a_wrong_attempt() {
 
     let listing = rig.volume.list_directory(&view(ROOT), None).await;
     assert!(
-        matches!(listing, Err(VolumeError::NeedsPassword { wrong_attempt: true })),
+        matches!(
+            listing,
+            Err(VolumeError::NeedsPassword {
+                container: LockedContainer::ResticRepo,
+                wrong_attempt: true,
+            })
+        ),
         "got {listing:?}"
     );
 }
@@ -187,7 +200,13 @@ async fn forgetting_the_saved_password_locks_the_repo_until_the_next_unlock() {
     for path in [view(ROOT), inside.clone()] {
         let listing = rig.volume.list_directory(&path, None).await;
         assert!(
-            matches!(listing, Err(VolumeError::NeedsPassword { wrong_attempt: false })),
+            matches!(
+                listing,
+                Err(VolumeError::NeedsPassword {
+                    container: LockedContainer::ResticRepo,
+                    wrong_attempt: false,
+                })
+            ),
             "{} asks again: {listing:?}",
             path.display()
         );
@@ -218,7 +237,10 @@ async fn a_store_that_refuses_to_forget_still_locks_the_repo() {
     assert_eq!(locked.forget_saved_password().await, PasswordForgotten::StoreKeptIt);
     assert!(matches!(
         rig.volume.list_directory(&view(ROOT), None).await,
-        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+        Err(VolumeError::NeedsPassword {
+            container: LockedContainer::ResticRepo,
+            wrong_attempt: false,
+        })
     ));
 }
 
@@ -292,7 +314,13 @@ async fn a_forget_answers_at_once_and_an_open_in_flight_keeps_nothing() {
     let _ = listing.await.expect("task");
     let after = rig.volume.list_directory(&view(ROOT), None).await;
     assert!(
-        matches!(after, Err(VolumeError::NeedsPassword { wrong_attempt: false })),
+        matches!(
+            after,
+            Err(VolumeError::NeedsPassword {
+                container: LockedContainer::ResticRepo,
+                wrong_attempt: false,
+            })
+        ),
         "the open that started before the forget kept nothing: {after:?}"
     );
 }
@@ -357,6 +385,9 @@ async fn an_unlock_in_flight_during_a_forget_keeps_and_files_nothing() {
     );
     assert!(matches!(
         rig.volume.list_directory(&view(ROOT), None).await,
-        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+        Err(VolumeError::NeedsPassword {
+            container: LockedContainer::ResticRepo,
+            wrong_attempt: false,
+        })
     ));
 }
