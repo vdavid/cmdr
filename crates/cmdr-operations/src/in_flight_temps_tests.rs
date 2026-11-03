@@ -872,12 +872,12 @@ fn an_aside_is_on_disk_before_track_returns_while_a_temp_only_queues() {
     );
 
     let aside = dir.join("holiday.raw.cmdr-temp-6161");
-    let (tracked, returned) = std::sync::mpsc::channel();
+    let (tracked, returned) = mpsc::channel();
     let tracker = {
         let state = Arc::clone(&state);
         let aside = aside.clone();
         let destination = dir.join("holiday.raw");
-        std::thread::spawn(move || {
+        thread::spawn(move || {
             let record = track(
                 &state,
                 ItemKind::FileAside {

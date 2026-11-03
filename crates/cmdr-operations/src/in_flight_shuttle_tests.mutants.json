@@ -1,0 +1,36 @@
+{
+  "mutants": [
+    {
+      "property": "shuttle:shuttle_racing_copies_and_a_quit_flush_leave_a_log_that_replays_to_the_ledger",
+      "why": "the quit's flush stops waiting for the ledger's writer, so the last partials' records die with the process",
+      "file": "crates/cmdr-operations/src/in_flight_temps.rs",
+      "find": "if queued && reached.recv_timeout(FLUSH_WAIT).is_err() {",
+      "replace": "if queued && reached.try_recv().is_err() {",
+      "expect": "a flush covers every record made before it"
+    },
+    {
+      "property": "shuttle:shuttle_racing_copies_and_a_quit_flush_leave_a_log_that_replays_to_the_ledger",
+      "why": "track returns before an aside's record is written, so a crash after the rename strands the user's original under a scratch name",
+      "file": "crates/cmdr-operations/src/in_flight_temps.rs",
+      "find": "        let _ = reached.recv();",
+      "replace": "        let _ = reached.try_recv();",
+      "expect": "an aside's record is on disk when track returns"
+    },
+    {
+      "property": "shuttle:shuttle_each_waiting_record_is_claimed_by_exactly_one_arrival",
+      "why": "an arrival picks its records and takes them under two locks, so two racing arrivals settle the same leftovers twice",
+      "file": "crates/cmdr-operations/src/in_flight_temps.rs",
+      "find": "self.store().pending.extract_if(.., waits_on_it).collect()",
+      "replace": "let picked: Vec<Record> = self.store().pending.iter().filter(|record| waits_on_it(record)).cloned().collect(); self.store().pending.retain(|record| !picked.contains(record)); picked",
+      "expect": "a record was claimed by two arrivals"
+    },
+    {
+      "property": "shuttle:shuttle_a_launch_sweep_racing_a_new_copy_removes_only_what_the_last_run_left",
+      "why": "the launch sweep settles everything the ledger holds rather than what it replayed, so it deletes a partial this run's copy is still writing",
+      "file": "crates/cmdr-operations/src/in_flight_sweep.rs",
+      "find": "    for record in &without_superseded_temps(ledger, locals.to_vec()) {",
+      "replace": "    let held: Vec<Record> = ledger.store().recorded.iter().chain(locals).cloned().collect(); for record in &without_superseded_temps(ledger, held) {",
+      "expect": "the sweep removed a partial this run's copy is still writing"
+    }
+  ]
+}

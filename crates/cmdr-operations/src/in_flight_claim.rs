@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use super::super::host::{EngineHost, OperationErrorReport};
 use super::log_writer::LogWriter;
+use super::primitives::thread;
 use super::{Ledger, Record, RecordedTemp, STORE_FILENAME, SweepHandle, TrackedItem, append, sweep};
 use cmdr_fs::log_private::LogPrivate;
 
@@ -123,7 +124,7 @@ impl Ledger {
 
         let ledger = self.clone();
         let host = Arc::clone(host);
-        match std::thread::Builder::new()
+        match thread::Builder::new()
             .name("cmdr-temp-sweep".to_string())
             .spawn(move || sweep::persisted_orphans(&ledger, &host, &locals))
         {

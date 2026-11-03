@@ -28,6 +28,13 @@ testing = [
   "cmdr-operation-log/testing",
 ]
 
+# "Run the interleaving tests." Swaps the in-flight ledger's locks, channels, and
+# threads for Shuttle's (`src/in_flight_sync.rs`), so `shuttle_*` tests can explore
+# its schedules. ❌ Only the `desktop-rust-shuttle` lane turns it on, and only to run
+# those tests: under it, every other test that touches the ledger panics, since
+# Shuttle's primitives work only inside a Shuttle run.
+shuttle = ["dep:shuttle"]
+
 [dependencies]
 # Zip edits and fresh compression: the mutator, the archive volume a fresh zip is
 # parsed through before it publishes, and the archive formats.
@@ -65,6 +72,10 @@ specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
 # own), `sync` and `time` for its channels and deadlines, `macros` for `select!`,
 # `fs` and `io-util` for a remote zip edit's local working copy.
 tokio = { version = "1", features = ["rt", "sync", "time", "macros", "fs", "io-util"] }
+# The interleaving tests only (`shuttle`): Shuttle's sync primitives and threads,
+# which `in_flight_sync.rs` swaps in for std's so its scheduler can choose who runs
+# next at every lock and send. Off in every shipped build and every other test run.
+shuttle = { version = "0.9.9", optional = true }
 # `CancellationToken`, one per operation, which every backend call hears.
 tokio-util = { version = "0.7.18", features = ["rt"] }
 # Operation and preview ids.

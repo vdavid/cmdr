@@ -88,12 +88,21 @@ outliving or overreaching what it borrows, a misaligned access, a data race. It 
 slow lane, and its own job in `slow-checks.yml`). The scope, adding a module, and marking a test that reaches FFI:
 `scripts/check/checks/DETAILS.md` § "Miri".
 
+### Shuttle (thread interleavings)
+
+`#[test] fn shuttle_*` cells run a crate's real concurrent code under Shuttle's PCT scheduler, which picks who runs next
+at every lock and send, so a race the machine rarely produces shows up within a few hundred schedules and replays from
+the schedule it prints. The crate's `shuttle` feature swaps its primitives for Shuttle's; `pnpm check shuttle` (slow, CI
+every six days) builds and runs them in a target dir of their own. Today: the in-flight ledger
+(`crates/cmdr-operations/src/in_flight_shuttle_tests.rs`). How it's wired and adding a crate:
+`scripts/check/checks/DETAILS.md` § "Interleaving tests (Shuttle)".
+
 ### Property mutants (every property can fail)
 
-Each property (a fuzz target's assertion today) carries a recorded one-line change that must turn it red, in a
-`*.mutants.json` beside it. `pnpm check mutant-records` (in `--fast`) checks every record still applies;
-`pnpm check property-mutants` (minutes, CI every six days) applies each in a mirror of the tree and runs its catcher.
-Unlike `cargo-mutants`, which samples mutants for coverage triage, these are hand-picked and permanent: one per
+Each property (a fuzz target's assertion, or a Shuttle interleaving test) carries a recorded one-line change that must
+turn it red, in a `*.mutants.json` beside it. `pnpm check mutant-records` (in `--fast`) checks every record still
+applies; `pnpm check property-mutants` (minutes, CI every six days) applies each in a mirror of the tree and runs its
+catcher. Unlike `cargo-mutants`, which samples mutants for coverage triage, these are hand-picked and permanent: one per
 assertion, kept true as the code moves. Format and how-to: `scripts/check/checks/DETAILS.md` § "Property mutants".
 
 ### `cargo-mutants` (mutation testing)

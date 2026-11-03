@@ -114,13 +114,14 @@
 
 use std::collections::BTreeSet;
 use std::path::Path;
-use std::sync::{Arc, Mutex, MutexGuard, Once};
+use std::sync::Arc;
 
 use super::host::EngineHost;
 use super::state::WriteOperationState;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use log_writer::LogWriter;
+use primitives::{Mutex, MutexGuard, Once, mpsc, thread};
 
 /// The persisted log's file name inside the app data dir.
 const STORE_FILENAME: &str = "in-flight-temps.log";
@@ -224,7 +225,7 @@ impl Ledger {
     }
 
     fn store(&self) -> MutexGuard<'_, Store> {
-        self.0.store.lock_ignore_poison()
+        primitives::lock_ignore_poison(&self.0.store)
     }
 
     /// Asks the registry to tell this ledger when a volume arrives, once.
@@ -418,7 +419,7 @@ pub(super) fn track(state: &WriteOperationState, kind: ItemKind, absolute: &Path
     if matches!(kind, ItemKind::Temp) {
         return record(state, home, kind, absolute);
     }
-    let (done, reached) = std::sync::mpsc::sync_channel(1);
+    let (done, reached) = mpsc::sync_channel(1);
     let (tracked, answered) = record_confirmed(state, home, kind, absolute, move |written| {
         let _ = done.send(written);
     });
@@ -598,7 +599,7 @@ pub(super) fn keep_temp_for_arrival(state: &WriteOperationState, home: Option<Re
         reason = "the launch path drops the handle; only a caller that can wait joins it"
     )
 )]
-pub struct SweepHandle(Option<std::thread::JoinHandle<SweepTally>>);
+pub struct SweepHandle(Option<thread::JoinHandle<SweepTally>>);
 
 #[cfg_attr(
     not(test),
@@ -627,7 +628,7 @@ impl Ledger {
     /// Waits, at most [`FLUSH_WAIT`], for everything queued so far to reach the
     /// log file. The wait happens with the store released.
     fn flush_log(&self) {
-        let (done, reached) = std::sync::mpsc::sync_channel(1);
+        let (done, reached) = mpsc::sync_channel(1);
         let queued = self.store().log.as_ref().is_some_and(|log| {
             log.barrier(move || {
                 // A waiter that gave up has nothing left to tell.
@@ -670,18 +671,14 @@ impl Ledger {
     ///
     /// They stay in [`Store::recorded`] until a sweep retires them: a claim that
     /// fails has to leave the log still claiming the thing exists.
+    ///
+    /// ❗ One lock for the pick and the take: two arrivals of one volume (the
+    /// launch sweep finding it registered, its listener firing) race here, and
+    /// a pick that let go before taking hands both the same records. Pinned by
+    /// `in_flight_shuttle_tests.rs`.
     fn claim_pending(&self, volume_id: &str) -> Vec<Record> {
-        let mut store = self.store();
-        let claimed: Vec<Record> = store
-            .pending
-            .iter()
-            .filter(|record| record.volume_id() == Some(volume_id))
-            .cloned()
-            .collect();
-        for record in &claimed {
-            store.pending.remove(record);
-        }
-        claimed
+        let waits_on_it = |record: &Record| record.volume_id() == Some(volume_id);
+        self.store().pending.extract_if(.., waits_on_it).collect()
     }
 }
 
@@ -743,6 +740,9 @@ fn compact_if_large(store: &mut Store) {
     log.rewrite(contents);
 }
 
+#[path = "in_flight_sync.rs"]
+mod primitives;
+
 #[path = "in_flight_log_writer.rs"]
 mod log_writer;
 
@@ -777,3 +777,7 @@ mod tests;
 #[cfg(test)]
 #[path = "in_flight_temps_claim_tests.rs"]
 mod claim_tests;
+
+#[cfg(all(test, feature = "shuttle"))]
+#[path = "in_flight_shuttle_tests.rs"]
+mod shuttle_tests;

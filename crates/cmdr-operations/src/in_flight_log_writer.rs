@@ -36,10 +36,9 @@
 //! The quit teardown waits for the queue to drain ([`LogWriter::barrier`]), so
 //! an ordinary quit loses nothing.
 
+use super::primitives::{mpsc, thread};
 use std::fs::File;
 use std::io::Write;
-use std::sync::mpsc;
-use std::thread::JoinHandle;
 
 /// What the writer thread is asked to do, in order.
 enum Op {
@@ -64,14 +63,14 @@ enum Op {
 pub(super) struct LogWriter {
     /// `Some` until `Drop`, which takes it to close the queue before joining.
     queue: Option<mpsc::Sender<Op>>,
-    thread: Option<JoinHandle<()>>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl LogWriter {
     /// Starts the writer thread for `log`, which must be open in append mode.
     pub(super) fn spawn(log: File) -> std::io::Result<Self> {
         let (queue, ops) = mpsc::channel();
-        let thread = std::thread::Builder::new()
+        let thread = thread::Builder::new()
             .name("cmdr-temp-ledger".to_string())
             .spawn(move || write_all_queued(log, &ops))?;
         Ok(Self {

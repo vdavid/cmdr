@@ -277,6 +277,43 @@ jobs:
         run: ./scripts/check/check --check desktop-rust-property-mutants --ci
 
   # ===========================================
+  # Thread interleavings (Shuttle)
+  # ===========================================
+  # The `shuttle_*` tests, built with each crate's `shuttle` feature in a target dir of
+  # their own. Seconds to run, minutes to build cold, hence here rather than per push.
+  # `scripts/check/checks/DETAILS.md` § Interleaving tests (Shuttle).
+  shuttle:
+    name: Thread interleavings (Shuttle)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
+      # `cmdr-fs` links `libacl` on Linux.
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libacl1-dev
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Run the interleaving tests
+        run: ./scripts/check/check --check desktop-rust-shuttle --ci
+
+  # ===========================================
   # Pre-release gates
   # ===========================================
   # The checks `release.sh` runs before every tag (`IsPreRelease`: clippy with mimalloc on

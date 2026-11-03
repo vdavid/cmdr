@@ -171,6 +171,21 @@ var AllChecks = []CheckDefinition{
 		Inputs:      wholeRepoInputs,
 		Run:         RunPropertyMutants,
 	},
+	// Thread interleavings explored with Shuttle (`desktop-rust-shuttle.go`). The
+	// tests run in about two seconds; the build of its own (one crate with its
+	// `shuttle` feature, in a private target dir) is what costs, ~2 min warm-ish,
+	// so it runs in `slow-checks.yml` and when named.
+	{
+		ID:          "desktop-rust-shuttle",
+		CpuWeight:   4,
+		Nickname:    "shuttle",
+		DisplayName: "thread interleavings (Shuttle)",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		IsSlow:      true,
+		Inputs:      rustCompileInputs,
+		Run:         RunShuttle,
+	},
 	{
 		ID:        "desktop-rust-module-cycles",
 		CpuWeight: 4,
