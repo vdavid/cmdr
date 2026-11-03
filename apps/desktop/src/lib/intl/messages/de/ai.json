@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Suche in eigenen Worten</b>: der Text, den du eingibst, oder das, wonach ein verbundenes KI-Werkzeug fragt, sobald du den MCP-Direktmodus eingeschaltet hast",
+  "ai.cloudConsent.search": "<b>Suche in eigenen Worten</b>: der Text, den du eingibst",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>Auswahl per Beschreibung</b>: was du eingibst, plus bis zu 240 Namen aus dem aktuellen Ordner",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In einem Chat, den du begonnen hast, kann Ask Cmdr auch die App für dich bedienen: navigieren, auswählen, sortieren, Tabs und Dialoge öffnen und sich mit einem gespeicherten Ort verbinden. Zum Kopieren, Bewegen, Komprimieren, Löschen, Umbenennen und zum Rückgängigmachen eines Vorgangs öffnet es jeweils einen Dialog oder Editor, den du bestätigst, und es passiert nichts, bevor du das tust. Bevor Ask Cmdr eine Datei öffnet, eine Einstellung ändert (außer dem Aussehen von Cmdr), sich beendet, ein Laufwerk auswirft, einen Server entfernt oder die Indizierung ändert, fragt es dich. Das Erstellen eines benannten Ordners oder einer benannten Datei und das Vergeben von Tags passieren sofort und ohne Nachfrage, und Tags lassen sich nicht widerrufen. Umbenennungen und Aufräumaktionen, die es als Plan vorbereitet, warten auf deine Zustimmung.",
+  "ai.cloudConsent.askCmdr.actions": "In einem Chat, den du begonnen hast, kann Ask Cmdr auch die App für dich bedienen: navigieren, auswählen, sortieren, Tabs und Dialoge öffnen und sich mit einem gespeicherten Ort verbinden. Zum Kopieren, Bewegen, Komprimieren, Löschen, Umbenennen und zum Rückgängigmachen eines Vorgangs öffnet es jeweils einen Dialog oder Editor, den du bestätigst, und es passiert nichts, bevor du das tust. Bevor Ask Cmdr eine Datei öffnet, eine Einstellung ändert (außer dem Aussehen von Cmdr), sich beendet, ein Laufwerk auswirft, einen Server entfernt oder die Indizierung ändert, fragt es dich. Das Erstellen eines benannten Ordners oder einer benannten Datei und das Vergeben von Tags passieren sofort und ohne Nachfrage; eine Änderung der Tags kannst du widerrufen. Umbenennungen und Aufräumaktionen, die es als Plan vorbereitet, warten auf deine Zustimmung.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr schreibt sich Notizen über dich: wie du Dinge gern sortierst, was du früher abgelehnt hast, alles, worum du es bittest. Diese Notizen gehen mit jeder Nachricht mit, die du sendest, solange es sie gibt, und sie können Text enthalten, den Cmdr in deinen Fotos erkannt hat. Du kannst sie jederzeit in den Ask-Cmdr-Einstellungen lesen oder löschen.",
   "@ai.cloudConsent.askCmdr.memory": {

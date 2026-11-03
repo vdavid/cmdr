@@ -48,6 +48,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Ausblenden",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "Deine aktuelle Ansicht wird geprüft",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -886,6 +890,22 @@
   "askCmdr.sessions.archivedBadge": "Archiviert",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Suche löschen",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Passende Chats",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} Chat} other {{countText} Chats}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144"
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Aktivität in {folder}} one {Aktivität in {folder} und {otherCountText} weiteren Ordner} other {Aktivität in {folder} und {otherCountText} weiteren Ordnern}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Nach Auswahl fragen",
   "@askCmdr.composer.attach": {

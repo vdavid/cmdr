@@ -152,6 +152,18 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
+  "ui.toolAsk.setSetting.oldValue": "Alter Wert:",
+  "@ui.toolAsk.setSetting.oldValue": {
+    "sourceHash": "b692194"
+  },
+  "ui.toolAsk.setSetting.newValue": "Neuer Wert:",
+  "@ui.toolAsk.setSetting.newValue": {
+    "sourceHash": "dca4696"
+  },
+  "ui.toolAsk.setSetting.systemDefault": "Systemstandard",
+  "@ui.toolAsk.setSetting.systemDefault": {
+    "sourceHash": "b045921"
+  },
   "ui.toolAsk.setSetting.emptyValue": "nichts",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"
