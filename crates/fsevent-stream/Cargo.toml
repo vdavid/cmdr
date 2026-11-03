@@ -3,12 +3,13 @@ name = "cmdr-fsevent-stream"
 version = "0.3.0"
 authors = ["LightQuantum <self@lightquantum.me>", "David Veszelovszki <david@veszelovszki.com>"]
 edition = "2021"
-description = "Stream-based FSEvent API bindings. Fork of fsevent-stream, maintained for Cmdr."
+description = "Stream-based macOS FSEvents bindings for Cmdr, forked from `fsevent-stream` and maintained in the Cmdr monorepo."
 license = "MIT"
 keywords = ["filesystem", "events", "watch", "notify", "macos"]
-repository = "https://github.com/vdavid/cmdr-fsevent-stream"
-readme = "README.md"
-exclude = [".github/**/*", ".gitignore", ".mergify.yml", "Justfile"]
+repository = "https://github.com/vdavid/cmdr"
+homepage = "https://github.com/vdavid/cmdr/tree/main/crates/fsevent-stream"
+# No `publish = false`: cargo-about's `[private] ignore` would then drop the crate,
+# and with it the upstream MIT credit `THIRD-PARTY-NOTICES.md` must keep.
 
 # This crate compiles on Apple targets only: `ffi.rs` declares
 # `#[link(name = "CoreServices", kind = "framework")]`, which is an E0455 compile
@@ -25,10 +26,10 @@ exclude = [".github/**/*", ".gitignore", ".mergify.yml", "Justfile"]
 development = ["async-std1"]
 
 [package.metadata.cmdr]
-# A third-party crate we forked and carry. The house Rust rules (poison handling,
-# no fixed sleeps in tests, no substring error matching, …) aren't ours to impose
-# on upstream's code, and every scanner hit here would be noise on a file whose
-# value is that it still matches upstream. The check runner reads this key.
+# Our code now (upstream is dead), held to the workspace lints. `vendored` still
+# keeps the house source scanners (poison handling, no fixed sleeps in tests, …)
+# off it until it's brought up to them; then this becomes the default `app`.
+# The check runner reads this key.
 kind = "vendored"
 platforms = ["macos"]
 

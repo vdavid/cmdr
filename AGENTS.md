@@ -119,7 +119,7 @@ Writing them:
   `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-local` (the local disk), `cmdr-media-meta`
   (EXIF, video dates, and media tags), `cmdr-operation-log` (the mutation journal and rollback planner),
   `cmdr-operations` (the write engine), `cmdr-update-trust` (the updater's trust check) carry no `tauri`, enforced by
-  `index-crate-isolation`; plus two dev CLIs and a vendored `fsevent-stream` fork. Map: `docs/architecture.md`.
+  `index-crate-isolation`; plus two dev CLIs and `fsevent-stream` (our FSEvents fork). Map: `docs/architecture.md`.
 - `brand/`: brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/business/README.md` (pricing, licensing, product facts), `docs/specs/DETAILS.md` (big design docs; open work is

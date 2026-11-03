@@ -1,7 +1,3 @@
-//! [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/PhotonQuantum/fsevent-stream/Test?style=flat-square)](https://github.com/PhotonQuantum/fsevent-stream/actions/workflows/test.yml)
-//! [![crates.io](https://img.shields.io/crates/v/fsevent-stream?style=flat-square)](https://crates.io/crates/fsevent-stream)
-//! [![Documentation](https://img.shields.io/docsrs/fsevent-stream?style=flat-square)](https://docs.rs/fsevent-stream)
-//!
 //! Stream-based [`FSEvents`](https://developer.apple.com/documentation/coreservices/file_system_events) API bindings.
 //!
 //! ## Features
@@ -81,13 +77,19 @@
 //!
 //! ## Changes from upstream
 //!
-//! This is Cmdr's fork of `fsevent-stream`. Behavior that differs from upstream:
+//! This is Cmdr's fork of [`fsevent-stream`](https://github.com/PhotonQuantum/fsevent-stream),
+//! maintained in the Cmdr monorepo since upstream went quiet. Behavior that differs from upstream:
 //!
 //! - **Overflow flag**: `EventStream` carries a shared flag that turns `true` whenever events are
-//!   dropped (the channel is full, or an event couldn't be built), so the consumer can rescan.
+//!   dropped (the channel is full, an event couldn't be built, or the callback panicked), so the
+//!   consumer can rescan.
 //! - **Unknown flag bits are kept**: `Event::flags` is parsed with `from_bits_retain`, so an event
 //!   carrying a bit newer than this crate keeps its known bits. Upstream's `from_bits` dropped the
 //!   whole event, silently.
+//! - **Creation fails loudly**: an empty path list, a NULL stream, or a stream FSEvents won't start
+//!   is an `Err`, where upstream went on with a NULL stream or left `abort` waiting forever.
+//! - **No leaks**: the stream context is released on every error path, and the run-loop observer's
+//!   context no longer leaks on each `abort`.
 //!
 //! ## Acknowledgement
 //!
