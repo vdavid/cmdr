@@ -19,14 +19,12 @@
 //! The `playwright-e2e` build asks the same volume question, then records the path
 //! in `crate::open_mock` instead of launching, so a suite run piles up no windows.
 
-use std::time::Duration;
-
 /// How long `open` gets to say whether LaunchServices took the file. A normal open
 /// answers in well under a second; a wedged mount can hold LaunchServices' read of
 /// the file far longer, and then no answer is coming.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 #[cfg(not(feature = "playwright-e2e"))]
-const OPEN_TIMEOUT: Duration = Duration::from_secs(15);
+const OPEN_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
 
 /// Why a file didn't go to its default app. The frontend words every variant.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
@@ -93,7 +91,8 @@ fn paths_reach_other_apps(id: &str) -> bool {
 /// [`paths_reach_other_apps`] for the volume a listing reads through, the question
 /// an "Open with" click asks (`menu/open_with.rs::launch_with`): the menu knows the
 /// pane's listing, not its volume. An empty id or a listing that's gone answers
-/// `true`, leaving the launch to go ahead as it always did.
+/// `true`, leaving the launch to go ahead as it always did. macOS-only, like "Open with".
+#[cfg(target_os = "macos")]
 pub(crate) fn listing_paths_reach_other_apps(listing_id: &str) -> bool {
     if listing_id.is_empty() {
         return true;
