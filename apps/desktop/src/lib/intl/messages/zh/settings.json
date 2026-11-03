@@ -1728,6 +1728,18 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
+    "sourceHash": "874f4ac"
+  },
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
+    "sourceHash": "497ddd9"
+  },
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
+    "sourceHash": "65ea83e"
+  },
   "settings.suggestedOps.suppressApprovalNotice.label": "隐藏“AI 建议”里的批准提示",
   "@settings.suggestedOps.suppressApprovalNotice.label": {
     "sourceHash": "33f9993"
@@ -1807,6 +1819,18 @@
   "settings.fileExplorer.typeToJump.resetDelay.description": "最后一次按键后，输入跳转缓冲区还会保留多久。数值越低，多次搜索之间重置越快；数值越高，对慢速打字者越宽容。",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
+  },
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "@settings.fileExplorer.quickFilter.typingWindow.label": {
+    "sourceHash": "b370484"
+  },
+  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "@settings.fileExplorer.quickFilter.typingWindow.description": {
+    "sourceHash": "60af485"
+  },
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
+    "sourceHash": "b02c87b"
   },
   "settings.fileExplorer.typeToJump.resetDelay.keywords": "输入、跳转、重置、延迟、模糊、搜索、导航、按键、击键、缓冲",
   "@settings.fileExplorer.typeToJump.resetDelay.keywords": {

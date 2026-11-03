@@ -2128,6 +2128,14 @@
   "@fileExplorer.quickFilter.clear": {
     "sourceHash": "ba59e2d"
   },
+  "fileExplorer.quickFilter.typingHint.title": "What just happened?",
+  "@fileExplorer.quickFilter.typingHint.title": {
+    "sourceHash": "865b71e"
+  },
+  "fileExplorer.quickFilter.typingHint.body": "You pressed <keyName>{key}</keyName>, and it ran its usual action instead of typing into the filter. To type it into the filter, press it within {seconds, plural, one {{secondsText} second} other {{secondsText} seconds}} of the previous key.",
+  "@fileExplorer.quickFilter.typingHint.body": {
+    "sourceHash": "b91a5e4"
+  },
   "fileExplorer.quickFilter.intro.title": "Gépeléssel szűrted ezt a panelt",
   "@fileExplorer.quickFilter.intro.title": {
     "sourceHash": "eef3e92"

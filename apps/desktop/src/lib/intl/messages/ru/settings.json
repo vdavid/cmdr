@@ -1726,6 +1726,18 @@
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
   },
+  "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
+  "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
+    "sourceHash": "874f4ac"
+  },
+  "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
+  "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
+    "sourceHash": "497ddd9"
+  },
+  "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
+  "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
+    "sourceHash": "65ea83e"
+  },
   "settings.suggestedOps.suppressApprovalNotice.label": "Скрывать примечание об одобрении в окне «Предложения ИИ»",
   "@settings.suggestedOps.suppressApprovalNotice.label": {
     "sourceHash": "33f9993"
@@ -1805,6 +1817,18 @@
   "settings.fileExplorer.typeToJump.resetDelay.description": "Как долго сохраняется буфер перехода по вводу после последней клавиши. Меньшие значения быстрее сбрасывают поиск; большие удобнее для медленного набора.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
+  },
+  "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
+  "@settings.fileExplorer.quickFilter.typingWindow.label": {
+    "sourceHash": "b370484"
+  },
+  "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
+  "@settings.fileExplorer.quickFilter.typingWindow.description": {
+    "sourceHash": "60af485"
+  },
+  "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
+  "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
+    "sourceHash": "b02c87b"
   },
   "settings.fileExplorer.typeToJump.resetDelay.keywords": "ввод, набор, переход, быстрый поиск, сброс, задержка, нечеткий поиск, поиск, навигация, нажатие клавиш, буфер",
   "@settings.fileExplorer.typeToJump.resetDelay.keywords": {
