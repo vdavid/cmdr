@@ -30,7 +30,7 @@ exif = { package = "kamadak-exif", version = "0.6.1" }
 # Media tags (ID3, MP4 `ilst`, Vorbis comments, APE, RIFF/AIFF chunks), pure Rust,
 # MIT OR Apache-2.0. Default features; `flate2` (compressed ID3 frames) is already in
 # the graph.
-lofty = "0.25.4"
+lofty = "0.25.5"
 log = "0.4"
 # `MediaField` crosses IPC inside the app's statuses. Pinned to the EXACT version
 # `cmdr-fs` and the app use: two `specta` crates in one graph would make these

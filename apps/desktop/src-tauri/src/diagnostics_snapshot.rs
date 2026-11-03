@@ -127,7 +127,9 @@ fn process_rss_bytes() -> u64 {
         Ok(pid) => pid,
         Err(_) => return 0,
     };
-    let mut sys = System::new();
+    let Ok(mut sys) = System::new() else {
+        return 0;
+    };
     sys.refresh_processes_specifics(
         ProcessesToUpdate::Some(&[pid]),
         true,

@@ -35,10 +35,7 @@ pub fn get_system_memory_info_inner() -> SystemMemoryInfo {
     #[cfg(not(target_os = "macos"))]
     {
         // Fallback for non-macOS: use sysinfo (best effort)
-        let mut sys = sysinfo::System::new();
-        sys.refresh_memory();
-        let total = sys.total_memory();
-        let used = sys.used_memory();
+        let (total, used) = sysinfo_memory();
         let free = total.saturating_sub(used);
         SystemMemoryInfo {
             total_bytes: total,
@@ -49,16 +46,26 @@ pub fn get_system_memory_info_inner() -> SystemMemoryInfo {
     }
 }
 
+/// Total and used bytes from `sysinfo`, or zeros when it can't read the system (logged).
+fn sysinfo_memory() -> (u64, u64) {
+    match sysinfo::System::new() {
+        Ok(mut sys) => {
+            sys.refresh_memory();
+            (sys.total_memory(), sys.used_memory())
+        }
+        Err(e) => {
+            log::warn!("sysinfo couldn't read the system's memory: {e}");
+            (0, 0)
+        }
+    }
+}
+
 /// Reads macOS vm_statistics64 via `host_statistics64` for accurate memory breakdown.
 #[cfg(target_os = "macos")]
 fn macos_memory_info() -> SystemMemoryInfo {
     use std::mem;
 
-    let total_bytes = {
-        let mut sys = sysinfo::System::new();
-        sys.refresh_memory();
-        sys.total_memory()
-    };
+    let (total_bytes, _) = sysinfo_memory();
 
     let page_size: u64;
     let (wired_pages, compressor_pages, internal_pages, purgeable_pages);
@@ -85,9 +92,7 @@ fn macos_memory_info() -> SystemMemoryInfo {
 
         if ret != libc::KERN_SUCCESS {
             log::warn!("host_statistics64 returned {ret}, falling back to sysinfo");
-            let mut sys = sysinfo::System::new();
-            sys.refresh_memory();
-            let used = sys.used_memory();
+            let (_, used) = sysinfo_memory();
             return SystemMemoryInfo {
                 total_bytes,
                 wired_bytes: 0,

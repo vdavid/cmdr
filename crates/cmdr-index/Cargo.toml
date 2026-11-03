@@ -71,8 +71,8 @@ half = "2"
 # ANN vector search for CLIP text→image at scale: HNSW with f16 storage + cosine
 # metric, mmap `view` reads (at-rest RSS stays small, pages evictable). Chosen by
 # the measured spike (`docs/notes/ann-vector-search-spike-2026-07-24.md`). Pinned
-# `=2.26.0`: it vendors SimSIMD, so a surprise bump is a surprise binary size.
-usearch = "=2.26.5"
+# exact: it vendors SimSIMD, so a surprise bump is a surprise binary size.
+usearch = "=2.26.6"
 # CLIP byte-pair text tokenizer (ctx 77) for the semantic-search query path. Not
 # macOS-gated: the query path tokenizes everywhere, only inference is Core ML.
 instant-clip-tokenizer = "0.1.0"

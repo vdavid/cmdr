@@ -63,7 +63,7 @@ lzma-rust2 = "0.23.0"
 # (via `lzma-rust2`); `bzip2`/`deflate`/`ppmd` add the other common 7z codecs.
 # `aes256` decrypts a password-protected 7z. `compress` (the encoders) stays off
 # except under the `testing` feature, which fixtures need.
-sevenz-rust2 = { version = "0.24.1", default-features = false, features = [
+sevenz-rust2 = { version = "0.24.2", default-features = false, features = [
   "aes256",
   "bzip2",
   "deflate",

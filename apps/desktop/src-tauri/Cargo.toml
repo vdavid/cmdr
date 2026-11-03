@@ -137,7 +137,7 @@ tauri-plugin-opener = "2"
 tauri-plugin-mcp-bridge = "0.13"
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2.6"
-tauri-plugin-notification = "2.3.3"
+tauri-plugin-notification = "2.8.0"
 # Global system-wide keyboard shortcut (default ⌃⌥⌘J for "reveal latest download"). On
 # macOS, the plugin uses Carbon's `RegisterEventHotKey` so it needs no extra TCC grant
 # (Accessibility/Input Monitoring not required). Pinned at 2.4.1.
@@ -227,7 +227,7 @@ memchr = "2"
 # File-viewer encoding decoder (UTF-16, Windows-1252, ISO-8859-1, Mac Roman, US-ASCII).
 # Pinned 2026-05-28 against crates.io v0.8.35 (released 2024-10-24, well past 14-day gate).
 # Apache-2.0 OR MIT.
-encoding_rs = "0.8.35"
+encoding_rs = "0.8.44"
 # Lock-free atomic Arc swap used by the file viewer to replace the active backend
 # (ByteSeek/LineIndex) without taking a write lock on the read path. Already pulled
 # in transitively; declaring it makes the dependency explicit.
@@ -238,7 +238,7 @@ walkdir = "2"
 rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
 # Extended attributes: Finder tags, per-path icons, and Google Drive's item ids.
 xattr = "1"
-sysinfo = { version = "0.39.0", default-features = false, features = ["system"] }
+sysinfo = { version = "0.40.1", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # Playwright E2E testing plugin: socket bridge for direct webview injection (optional, feature-gated, dev-only).
 # Provides multi-window command targeting and label-aware macOS native screenshots (so E2E can capture
