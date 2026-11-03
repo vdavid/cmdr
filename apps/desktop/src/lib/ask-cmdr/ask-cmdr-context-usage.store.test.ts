@@ -83,7 +83,7 @@ describe('the context gauge state', () => {
 
   it('restores a reopened thread last measured figures instead of showing an empty gauge', async () => {
     getConversationMock.mockResolvedValue({
-      conversation: { id: 7, title: 't', createdAt: 0, updatedAt: 0, archived: false, origin: null },
+      conversation: { id: 7, title: 't', createdAt: 0, updatedAt: 0, archived: false, origin: null, wakePlace: null },
       messages: [],
       totalMessages: 0,
       lastContextUsage: { estimatedTokens: 44_000, budgetTokens: 60_000 },
@@ -114,7 +114,7 @@ describe('the context gauge state', () => {
 
   it('has no measured figure for a thread that never finished a call, so the gauge shows the baseline', async () => {
     getConversationMock.mockResolvedValue({
-      conversation: { id: 8, title: 't', createdAt: 0, updatedAt: 0, archived: false, origin: null },
+      conversation: { id: 8, title: 't', createdAt: 0, updatedAt: 0, archived: false, origin: null, wakePlace: null },
       messages: [],
       totalMessages: 0,
       lastContextUsage: null,

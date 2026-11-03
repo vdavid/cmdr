@@ -1,5 +1,5 @@
-//! The read/write query layer over `main.db`: conversations, messages, the FTS5
-//! cross-thread search (with its input sanitizer), and the cost meter.
+//! The read/write query layer over `main.db`: conversations, messages, and the cost meter.
+//! Cross-thread search is `search.rs`.
 //!
 //! Functions take a [`Connection`]; the caller owns its lifetime
 //! (the chat runtime holds a write connection; reads can use a short-lived read-only
@@ -8,18 +8,11 @@
 //!
 //! ## Wire vs. backend types
 //!
-//! [`ConversationRow`], [`ConversationSearchHit`], [`CostSummary`], and [`CostDay`] are
+//! [`ConversationRow`], [`CostSummary`], and [`CostDay`] are
 //! wire types (camelCase + `specta::Type`) the IPC layer returns directly.
 //! [`StoredMessage`] is deliberately NOT a wire type: it carries the fully parsed
 //! [`AgentPart`]s, including the opaque provider reasoning blob, which must never cross to
 //! the frontend. The IPC layer builds a display-only `MessageView` from it.
-//!
-//! ## FTS5 search is sanitized, never raw
-//!
-//! Raw user input fed into `... MATCH ?` throws an fts5 syntax error on ordinary filename
-//! fragments (`report(v2)`, `foo:bar`, a bareword `AND`/`OR`/`NOT`, an unbalanced `"`),
-//! and parameter binding does not help — the string is parsed as FTS5 query syntax.
-//! [`sanitize_fts_query`] turns any user text into a safe prefix-matching query.
 
 use rusqlite::Connection;
 
@@ -27,6 +20,7 @@ use super::super::types::ConversationOrigin;
 use super::AgentStoreError;
 use super::events::{ConversationEvent, EVENT_ROLE_TOKEN};
 use super::rows::insert_message_row;
+use super::wake_place::{WakePlace, wake_place};
 use crate::agent::llm::types::{AgentPart, AgentRole, ProviderTag};
 
 /// A conversation header row. Wire type (the thread list).
@@ -40,6 +34,9 @@ pub struct ConversationRow {
     pub archived: bool,
     /// `None` = user-started (the v1 case). A non-null token is a programmatic origin.
     pub origin: Option<ConversationOrigin>,
+    /// Where a wake thread's activity happened, while its title is still the wake's own; the
+    /// list builds the row's display title from it (`wake_place.rs`). `None` for every other row.
+    pub wake_place: Option<WakePlace>,
 }
 
 /// What one stored message row holds: a transcript message (an LLM-facing role plus its
@@ -71,23 +68,6 @@ pub struct ConversationDetail {
     pub conversation: ConversationRow,
     pub messages: Vec<StoredMessage>,
     pub total_messages: u32,
-}
-
-/// A conversation whose messages matched a cross-thread search, newest-activity first.
-/// Wire type (the search results list): the `snippet` is a plain-text excerpt from
-/// the newest matching message, rendered ESCAPED on the frontend (never `{@html}`).
-#[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ConversationSearchHit {
-    pub conversation_id: i64,
-    pub title: String,
-    pub updated_at: i64,
-    /// An FTS5 excerpt around the match, or the message start if the term is early.
-    /// Plain text with `…` ellipses; no markup (rendered as escaped text).
-    pub snippet: String,
-    /// `None` = user-started; a token says the agent opened it. Carried so a hit wears the same
-    /// glyph the thread list gives it, rather than reading as a thread the user began and forgot.
-    pub origin: Option<ConversationOrigin>,
 }
 
 /// One metering event to fold into the cost meter (per completed `respond` call).
@@ -153,7 +133,7 @@ pub fn create_conversation(
 
 /// Decode the nullable `conversations.origin` column. NULL is the user-started case; an unknown
 /// token is a typed decode error, or a row from a newer schema reads as a thread the user began.
-fn origin_of(token: Option<String>) -> Result<Option<ConversationOrigin>, AgentStoreError> {
+pub(super) fn origin_of(token: Option<String>) -> Result<Option<ConversationOrigin>, AgentStoreError> {
     token
         .map(|token| {
             ConversationOrigin::from_token(&token).ok_or(AgentStoreError::Decode {
@@ -173,6 +153,7 @@ fn map_conversation_row(row: &rusqlite::Row<'_>) -> Result<ConversationRow, Agen
         updated_at: row.get(3)?,
         archived: row.get::<_, i64>(4)? != 0,
         origin,
+        wake_place: None,
     })
 }
 
@@ -209,6 +190,9 @@ pub fn list_conversations(
     let mut out = Vec::new();
     while let Some(row) = rows.next()? {
         out.push(map_conversation_row(row)?);
+    }
+    for row in &mut out {
+        row.wake_place = wake_place(conn, row.id, row.origin, &row.title)?;
     }
     Ok(out)
 }
@@ -306,6 +290,10 @@ pub fn get_conversation(
             Some(row) => map_conversation_row(row)?,
             None => return Ok(None),
         }
+    };
+    let conversation = ConversationRow {
+        wake_place: wake_place(conn, conversation.id, conversation.origin, &conversation.title)?,
+        ..conversation
     };
     let total_messages: u32 = conn.query_row(
         "SELECT COUNT(*) FROM messages WHERE conversation_id = ?1",
@@ -507,79 +495,6 @@ pub fn set_conversation_context_usage(
         rusqlite::params![conversation_id, prompt_tokens as i64, prompt_budget as i64],
     )?;
     Ok(())
-}
-
-// ── Cross-thread FTS5 search ─────────────────────────────────────────────────
-
-/// Turn arbitrary user input into a safe, prefix-matching FTS5 query, or `None` when the
-/// input carries no searchable term (empty, whitespace, or pure punctuation) — the caller
-/// then returns no hits rather than running a match.
-///
-/// Each whitespace-separated token becomes an FTS5 **string literal** with embedded double
-/// quotes doubled (the FTS5 escape), then a trailing `*` for prefix search. Wrapping in a
-/// string literal neutralizes every FTS5 metacharacter: a bareword `AND`/`OR`/`NOT`
-/// becomes a literal term, `foo:bar`'s column-filter `:` and `report(v2)`'s parentheses
-/// are just token separators inside the literal, and an unbalanced `"` can't break out.
-/// Tokens with no alphanumeric content are dropped so they never produce an empty phrase.
-pub fn sanitize_fts_query(input: &str) -> Option<String> {
-    let mut terms = Vec::new();
-    for raw in input.split_whitespace() {
-        if !raw.chars().any(char::is_alphanumeric) {
-            continue;
-        }
-        let escaped = raw.replace('"', "\"\"");
-        terms.push(format!("\"{escaped}\"*"));
-    }
-    (!terms.is_empty()).then(|| terms.join(" "))
-}
-
-/// Conversations whose messages match `query`, newest-activity first (by the most recent matching
-/// message), paged. Distinct conversations even when several of a thread's messages match. An
-/// empty or punctuation-only query returns no hits.
-pub fn search_conversations(
-    conn: &Connection,
-    query: &str,
-    limit: u32,
-    offset: u32,
-) -> Result<Vec<ConversationSearchHit>, AgentStoreError> {
-    let Some(match_query) = sanitize_fts_query(query) else {
-        return Ok(Vec::new());
-    };
-    // Per conversation: the max matching message id (the newest match, ids being
-    // insert-monotonic) drives a deterministic snippet, and MAX(created_at) orders threads by
-    // most recent match. The `hit` subquery yields a snippet per matching rowid; joining it on
-    // that max id picks one excerpt per thread, over column 0 with no highlight markers.
-    let mut stmt = conn.prepare_cached(
-        "SELECT c.id, c.title, c.updated_at, hit.snippet, c.origin
-         FROM conversations c
-         JOIN (
-             SELECT m.conversation_id AS cid,
-                    MAX(m.created_at)  AS latest,
-                    MAX(m.id)          AS max_id
-             FROM messages m
-             WHERE m.id IN (SELECT rowid FROM messages_fts WHERE messages_fts MATCH ?1)
-             GROUP BY m.conversation_id
-         ) grouped ON grouped.cid = c.id
-         JOIN (
-             SELECT messages_fts.rowid AS rid,
-                    snippet(messages_fts, 0, '', '', '…', 10) AS snippet
-             FROM messages_fts WHERE messages_fts MATCH ?1
-         ) hit ON hit.rid = grouped.max_id
-         ORDER BY grouped.latest DESC, c.id DESC
-         LIMIT ?2 OFFSET ?3",
-    )?;
-    let mut rows = stmt.query(rusqlite::params![match_query, limit, offset])?;
-    let mut out = Vec::new();
-    while let Some(row) = rows.next()? {
-        out.push(ConversationSearchHit {
-            conversation_id: row.get(0)?,
-            title: row.get(1)?,
-            updated_at: row.get(2)?,
-            snippet: row.get(3)?,
-            origin: origin_of(row.get(4)?)?,
-        });
-    }
-    Ok(out)
 }
 
 // ── Cost meter ───────────────────────────────────────────────────────────────

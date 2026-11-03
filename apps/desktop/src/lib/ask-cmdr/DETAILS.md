@@ -489,8 +489,25 @@ registry lives below `commands/` rather than inside the chat command.
   overwrite a newer one. A non-empty query replaces the list with FTS hits (`searchAskCmdrConversations`); clearing it
   restores the list and bumps `searchSeq`, so an answer still in flight lands nowhere. Closing the panel clears the
   search (`closeSessions` → `clearSearch`): a kept query would reopen the panel on old hits, and `noteThreadStarted`
-  skips while one is active, so a new thread wouldn't show either. Each hit's `snippet` is backend FTS text rendered as
-  plain `{text}` (never `{@html}`).
+  skips while one is active, so a new thread wouldn't show either. The backend ranks and excerpts
+  (`apps/desktop/src-tauri/src/agent/store/search.rs`: title match, then `bm25`, then recency); the frontend only
+  renders.
+- **A search result is three lines** (`AskCmdrSearchHit.svelte`): the title plus its age (`formatTimeAgo`, from
+  `#lib/intl/relative-time-format.ts`, the calendar date in a tooltip), then two lines of the best-matching message with
+  the matched words in `<mark>`, then the archived badge when it applies. The excerpt arrives pre-split as
+  `SnippetPart`s and renders as plain text runs, ❌ never `{@html}`: it's thread text (user, model, file paths).
+- **The results are a combobox over a listbox**, the command palette's shape: focus stays in the field, its
+  `aria-activedescendant` names the cursor option, ↑/↓ wrap (`list-cursor.ts`, `textField` so Home/End stay caret keys),
+  PageUp/PageDown page, Enter opens, and a fresh result set puts the cursor on the best match, so typing then Enter
+  opens it. The pointer moves the same cursor. The cursor option carries `tabindex="0"` (axe's
+  `scrollable-region-focusable`, as the palette) and answers the same keys when Tab lands on it. A `LiveAnnouncer` says
+  the match count once a search settles.
+- **A wake thread's display title** (`threadDisplayTitle`, `ask-cmdr-thread-title.ts`): a wake stores its thread under
+  the busiest folder's basename (`veszelovszki`, `tmp`), which said nothing. While that stored title is still the wake's
+  own, the row (list and search) gets `wakePlace` from the backend
+  (`apps/desktop/src-tauri/src/agent/store/wake_place.rs`) and reads "Activity in ~/tmp and 2 other folders". Renaming
+  starts from the display title and an unchanged commit renames nothing, so Enter can't freeze the English sentence into
+  `main.db`; a real rename drops `wakePlace` locally, as the backend does on the next read.
 - **Leaving the panel**: Escape anywhere in it steps back one layer (`escapeSessions`), the house pattern the shortcuts
   filter and the viewer's search bar follow: a typed search clears first, and Escape in an empty box closes the panel.
   The rename field's own Escape claims the key, so that press only cancels the rename. Closing the whole rail closes the

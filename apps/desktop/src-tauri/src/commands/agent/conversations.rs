@@ -116,8 +116,8 @@ pub async fn ask_cmdr_list_conversations(
     .await
 }
 
-/// Conversations whose messages match `query` (FTS5, sanitized), newest-match first,
-/// paged. Each hit carries a plain-text snippet around the match. Empty when the store
+/// Conversations matching `query` (title or FTS5 message text, sanitized), best first, paged
+/// (`agent/store/search.rs`). Each hit carries its excerpt as plain-text runs, matches flagged. Empty when the store
 /// never opened or the query has no searchable term.
 #[tauri::command]
 #[specta::specta]

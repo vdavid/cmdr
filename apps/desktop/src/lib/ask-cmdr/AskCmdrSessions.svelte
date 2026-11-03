@@ -3,14 +3,25 @@
   first), search across them, and rename/archive/switch. Modeled on the operation-log
   dialog's list + paging (offset = list length). All chat titles and search snippets are
   filesystem-adjacent / model-adjacent text, so they render as plain {text}, never {@html}.
+
+  Search results are a combobox over a listbox, the command palette's shape: focus stays in
+  the search field, ↑/↓ move the cursor (`aria-activedescendant`), Enter opens the cursor's
+  thread, and Escape clears, then closes (`escapeSessions`). Ranking and excerpts are the
+  backend's (`agent/store/search.rs`).
 -->
 <script lang="ts">
     import { tick } from 'svelte'
     import Icon from '#lib/ui/Icon.svelte'
     import TextInput from '#lib/ui/TextInput.svelte'
     import Spinner from '#lib/ui/Spinner.svelte'
+    import LiveAnnouncer from '#lib/ui/LiveAnnouncer.svelte'
+    import { listCursorMoveOf, nextListCursor } from '#lib/ui/list-cursor.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import { formatInteger } from '#lib/intl/number-format.js'
+    import { dependOn } from '#lib/utils/reactivity.js'
+    import AskCmdrSearchHit from './AskCmdrSearchHit.svelte'
+    import { threadDisplayTitle } from './ask-cmdr-thread-title'
     import { newChatShortcutText } from './ask-cmdr-trigger.svelte'
     import {
         chooseThread,
@@ -36,11 +47,14 @@
 
     let editingId = $state<number | null>(null)
     let editTitle = $state('')
+    /** What the rename field opened with: committing it unchanged renames nothing. */
+    let editStartTitle = ''
     let editInput = $state<HTMLInputElement | undefined>()
 
     async function startRename(id: number, title: string): Promise<void> {
         editingId = id
         editTitle = title
+        editStartTitle = title
         await tick()
         editInput?.select()
     }
@@ -49,8 +63,81 @@
         const id = editingId
         if (id === null) return
         editingId = null
+        // A wake thread opens the field on its display title ("Activity in ~/tmp"); Enter on it
+        // untouched would freeze that sentence into the store in today's language.
+        if (editTitle.trim() === editStartTitle.trim()) return
         await renameConversation(id, editTitle)
     }
+
+    // ── Search results: the cursor and its keys ──────────────────────────────────
+
+    const idBase = $props.id()
+    const resultsId = `${idBase}-results`
+    const optionId = (index: number): string => `${idBase}-hit-${String(index)}`
+
+    let cursorIndex = $state(0)
+    /** One "now" per result set, so every row's age is measured against the same clock. */
+    let nowSecs = $state(Math.floor(Date.now() / 1000))
+    let resultsElement = $state<HTMLUListElement | undefined>()
+
+    // A new result set puts the cursor on its best match, so Enter in the field opens it.
+    $effect(() => {
+        dependOn(sessionsState.hits)
+        cursorIndex = 0
+        nowSecs = Math.floor(Date.now() / 1000)
+    })
+
+    const showingHits = $derived(isSearching() && sessionsState.hits.length > 0)
+    const activeDescendant = $derived(showingHits ? optionId(cursorIndex) : undefined)
+
+    async function moveCursorTo(index: number, focusOption: boolean): Promise<void> {
+        cursorIndex = index
+        await tick()
+        const option = document.getElementById(optionId(index))
+        option?.scrollIntoView({ block: 'nearest' })
+        if (focusOption) option?.focus({ preventScroll: true })
+    }
+
+    /** ↑/↓ (wrapping), PageUp/PageDown, and Enter, from the field or from a focused result. */
+    function onResultsKeydown(event: KeyboardEvent, fromOption: boolean): void {
+        if (!showingHits || event.isComposing) return
+        const count = sessionsState.hits.length
+        if (event.key === 'Enter' && !event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
+            const hit = sessionsState.hits.at(cursorIndex)
+            if (!hit) return
+            event.preventDefault()
+            void chooseThread(hit.conversationId)
+            return
+        }
+        const move = listCursorMoveOf(event, { textField: !fromOption })
+        if (!move) return
+        const next = nextListCursor(move, { count, from: cursorIndex, visibleRows: visibleResultRows(), wrap: true })
+        if (next < 0) return
+        event.preventDefault()
+        void moveCursorTo(next, fromOption)
+    }
+
+    /** How many result rows fit on screen, for PageUp/PageDown. */
+    function visibleResultRows(): number {
+        const list = resultsElement
+        const first = list?.querySelector<HTMLElement>('[role="option"]')
+        const scroller = list?.parentElement
+        if (!first || !scroller || first.offsetHeight === 0) return 1
+        return Math.max(1, Math.floor(scroller.clientHeight / first.offsetHeight))
+    }
+
+    // How many chats matched, said once a search settles: the count is otherwise visible only.
+    let announcer = $state<{ announce: (message: string) => void } | undefined>()
+    $effect(() => {
+        dependOn(sessionsState.hits)
+        if (sessionsState.searching || !isSearching()) return
+        const count = sessionsState.hits.length
+        announcer?.announce(
+            count === 0
+                ? tString('askCmdr.sessions.noResults')
+                : tString('askCmdr.sessions.resultCount', { count, countText: formatInteger(count) }),
+        )
+    })
 
     function cancelRename(): void {
         editingId = null
@@ -110,6 +197,8 @@
         </button>
     </header>
 
+    <LiveAnnouncer bind:this={announcer} />
+
     <div class="search-row">
         <TextInput
             type="search"
@@ -118,17 +207,26 @@
             value={sessionsState.query}
             placeholder={tString('askCmdr.sessions.searchPlaceholder')}
             ariaLabel={tString('askCmdr.sessions.searchLabel')}
+            role="combobox"
+            aria-controls={resultsId}
+            aria-expanded={showingHits}
+            aria-autocomplete="list"
+            aria-activedescendant={activeDescendant}
             oninput={(e: Event) => {
                 if (e.currentTarget instanceof HTMLInputElement) setSearchQuery(e.currentTarget.value)
+            }}
+            onkeydown={(e: KeyboardEvent) => {
+                onResultsKeydown(e, false)
             }}
         >
             {#snippet trailing()}
                 {#if sessionsState.query.length > 0}
                     <button
                         type="button"
-                        class="icon-button small"
+                        class="icon-button clear"
                         onclick={clearSearch}
-                        aria-label={tString('askCmdr.close')}
+                        aria-label={tString('askCmdr.sessions.clearSearch')}
+                        use:tooltip={tString('askCmdr.sessions.clearSearch')}
                     >
                         <Icon name="x" size={14} aria-hidden="true" />
                     </button>
@@ -155,33 +253,33 @@
             {:else if sessionsState.hits.length === 0}
                 <p class="notice">{tString('askCmdr.sessions.noResults')}</p>
             {:else}
-                <ul class="list">
-                    {#each sessionsState.hits as hit (hit.conversationId)}
-                        <li>
-                            <button type="button" class="row" onclick={() => void chooseThread(hit.conversationId)}>
-                                <span class="row-heading">
-                                    {#if startedByTheAgent(hit.origin)}
-                                        <span
-                                            class="started-by-agent"
-                                            use:tooltip={tString('askCmdr.sessions.wakeThread')}
-                                        >
-                                            <Icon
-                                                name="bot"
-                                                size={12}
-                                                aria-label={tString('askCmdr.sessions.wakeThread')}
-                                            />
-                                        </span>
-                                    {/if}
-                                    <span class="row-title" use:tooltip={{ text: hit.title, overflowOnly: true }}
-                                        >{hit.title}</span
-                                    >
-                                </span>
-                                {#if hit.snippet}
-                                    <span class="row-snippet" use:tooltip={{ text: hit.snippet, overflowOnly: true }}
-                                        >{hit.snippet}</span
-                                    >
-                                {/if}
-                            </button>
+                <!-- Keys live on the search field (↑ / ↓ / Enter over `aria-activedescendant`); a
+                     result focused by Tab answers the same keys. -->
+                <ul
+                    class="list"
+                    id={resultsId}
+                    bind:this={resultsElement}
+                    role="listbox"
+                    aria-label={tString('askCmdr.sessions.resultsLabel')}
+                >
+                    {#each sessionsState.hits as hit, index (hit.conversationId)}
+                        <li
+                            id={optionId(index)}
+                            class="row hit"
+                            class:is-under-cursor={index === cursorIndex}
+                            role="option"
+                            aria-selected={index === cursorIndex}
+                            tabindex={index === cursorIndex ? 0 : -1}
+                            data-conversation-hit={hit.conversationId}
+                            onclick={() => void chooseThread(hit.conversationId)}
+                            onmouseenter={() => {
+                                cursorIndex = index
+                            }}
+                            onkeydown={(e: KeyboardEvent) => {
+                                onResultsKeydown(e, true)
+                            }}
+                        >
+                            <AskCmdrSearchHit {hit} {nowSecs} />
                         </li>
                     {/each}
                 </ul>
@@ -197,6 +295,7 @@
         {:else}
             <ul class="list">
                 {#each sessionsState.conversations as conversation (conversation.id)}
+                    {@const title = threadDisplayTitle(conversation)}
                     <li class="conversation">
                         {#if editingId === conversation.id}
                             <TextInput
@@ -231,10 +330,8 @@
                                             />
                                         </span>
                                     {/if}
-                                    <span
-                                        class="row-title"
-                                        use:tooltip={{ text: conversation.title, overflowOnly: true }}
-                                        >{conversation.title}</span
+                                    <span class="row-title" use:tooltip={{ text: title, overflowOnly: true }}
+                                        >{title}</span
                                     >
                                 </span>
                                 {#if conversation.archived}
@@ -246,7 +343,7 @@
                                     type="button"
                                     class="icon-button small"
                                     data-row-action="rename"
-                                    onclick={() => void startRename(conversation.id, conversation.title)}
+                                    onclick={() => void startRename(conversation.id, title)}
                                     aria-label={tString('askCmdr.sessions.rename')}
                                 >
                                     <Icon name="pencil" size={13} aria-hidden="true" />
@@ -330,16 +427,16 @@
         color: var(--color-text-primary);
     }
 
+    /* Only spacing: the field's frame, border, and focus ring are `TextInput`'s (`app.css` §
+       "Text fields"). A border here once drew a second box around the field's own. */
     .search-row {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
         margin: var(--spacing-sm);
-        padding: var(--spacing-xs) var(--spacing-sm);
-        color: var(--color-text-secondary);
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
+    }
+
+    /* The clear button sizes to the text line, like every trailing field control. */
+    .icon-button.clear {
+        width: 20px;
+        height: 20px;
     }
 
     .archived-toggle {
@@ -432,12 +529,20 @@
         white-space: nowrap;
     }
 
-    .row-snippet {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-secondary);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    /* A search result: two or three lines (title and age, the excerpt, a badge), the palette's
+       accent tint under the cursor, which the pointer moves too. */
+    .hit {
+        gap: var(--spacing-xxs);
+        padding: var(--spacing-sm);
+    }
+
+    .hit.is-under-cursor {
+        background: var(--color-accent-subtle);
+    }
+
+    .hit:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
     }
 
     .archived-badge {

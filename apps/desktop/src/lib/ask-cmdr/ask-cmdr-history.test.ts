@@ -11,7 +11,7 @@ import type { AssistantItem } from './ask-cmdr-messages'
 
 function detail(messages: MessageView[]): ConversationDetailView {
   return {
-    conversation: { id: 1, title: 't', createdAt: 0, updatedAt: 0, archived: false, origin: null },
+    conversation: { id: 1, title: 't', createdAt: 0, updatedAt: 0, archived: false, origin: null, wakePlace: null },
     messages,
     totalMessages: messages.length,
     lastContextUsage: null,

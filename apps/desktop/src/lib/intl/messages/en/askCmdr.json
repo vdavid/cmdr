@@ -1418,6 +1418,39 @@
     "description": "Small badge marking an archived chat in the list. Sentence case.",
     "screenshot": "ask-cmdr-sessions-archived.png"
   },
+  "askCmdr.sessions.clearSearch": "Clear search",
+  "@askCmdr.sessions.clearSearch": {
+    "description": "Accessible label and tooltip for the small × button at the end of the chats search box, which empties the box and brings back the full list of chats. Sentence case.",
+    "screenshot": "ask-cmdr-sessions.png",
+    "screenshotNote": "The Ask Cmdr chats panel, pictured here. Your string belongs to another state of it: nothing to list, an archived chat, or a row being renamed."
+  },
+  "askCmdr.sessions.resultsLabel": "Matching chats",
+  "@askCmdr.sessions.resultsLabel": {
+    "description": "Accessible name a screen reader gives the list of chats that match what the user typed in the chats search box. Not shown on screen. Sentence case.",
+    "screenshot": "ask-cmdr-sessions.png",
+    "screenshotNote": "The Ask Cmdr chats panel, pictured here. Your string belongs to another state of it: nothing to list, an archived chat, or a row being renamed."
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} chat} other {{countText} chats}}",
+  "@askCmdr.sessions.resultCount": {
+    "description": "Spoken by the screen reader once the user pauses typing in the chats search box: how many chats match. Not shown on screen. {countText} is the number already formatted for the language; {count} is the same number as a raw integer, used only to pick the plural form.",
+    "placeholders": {
+      "countText": "the number of matching chats, formatted (for example 1,234)",
+      "count": "the same number as a raw integer, only for choosing the plural form"
+    },
+    "screenshot": "ask-cmdr-sessions.png",
+    "screenshotNote": "The Ask Cmdr chats panel, pictured here. Your string belongs to another state of it: nothing to list, an archived chat, or a row being renamed."
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Activity in {folder}} one {Activity in {folder} and {otherCountText} other folder} other {Activity in {folder} and {otherCountText} other folders}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "description": "Title of a chat in the chats list that the app opened by itself after noticing file changes, until the user renames it. It names the folder where the changes happened and how many other folders also had changes. Keep it short: it's a one-line title in a narrow panel. Sentence case, no full stop.",
+    "placeholders": {
+      "folder": "a folder path, like ~/Downloads or /private/tmp. Keep it verbatim.",
+      "otherCountText": "how many other folders had changes, formatted for the language",
+      "otherCount": "the same number as a raw integer, only for choosing the plural form; 0 means only the one folder"
+    },
+    "screenshot": "ask-cmdr-sessions.png",
+    "screenshotNote": "The Ask Cmdr chats panel, pictured here. Your string belongs to another state of it: nothing to list, an archived chat, or a row being renamed."
+  },
   "askCmdr.composer.attach": "Ask about selection",
   "@askCmdr.composer.attach": {
     "description": "Button in the composer that attaches the file or folder selected in the active pane, so the user can ask about it. Sentence case.",

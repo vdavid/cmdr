@@ -93,6 +93,27 @@ a row's opener. `row_and_rest_of_turn` reads one assistant row plus the rest of 
 for the expanded line, and it is the ownership check: a `message_id` of another thread reads as `None`. They return
 rows; what the rows mean is `agent::chat::message_view`'s.
 
+## Search: matching, ranking, excerpts
+
+`search.rs`'s `search_conversations` serves the threads panel. **Decision**: a thread matches on its message text (FTS5)
+OR on its title (every query word a word prefix, the FTS rule applied in Rust), and ranks title match first, then the
+best `bm25` among its messages, then `updated_at`, then id. **Why**: the title is the line the user wrote to find the
+thread again, and a renamed title is in no index; `bm25` puts a thread ABOUT the term above a newer one mentioning it in
+passing, which pure recency (the earlier order) got backwards. The ordering is a pure `rank` over one `Candidate` per
+thread, so it's unit-tested without SQL tricks; it reads every thread header plus one best row per matching thread,
+which stays sub-millisecond at hundreds of threads (and runs on a blocking thread via `with_read_connection`).
+
+**Excerpts are typed runs, never markup.** `snippet()` marks matches with two private-use characters that
+`parse_snippet` splits into `SnippetPart { text, matched }`, so the frontend renders plain text with no `{@html}` (thread
+text is untrusted). Snippets are fetched for the returned page only, one `rowid`-pinned FTS read per hit, from the
+thread's best-scoring message.
+
+**A wake thread's display title** comes from `wake_place.rs`: a wake titles its thread with the busiest folder's
+basename (`WakeDigest::title_for`), and while the stored title still equals that, list and search rows carry a
+`WakePlace` (the first folder, `~`-relative, plus how many others the digest covers) that the frontend words as
+"Activity in ~/tmp and 2 other folders". A renamed thread no longer matches, so it shows the user's title. It reads the
+thread's first user message (the digest) per wake row, a page at most.
+
 ## FTS5 comes from `bundled`, not a feature
 
 rusqlite 0.39 has no `fts5` feature; the FTS5 module is compiled into the `bundled` SQLite amalgamation by default. So

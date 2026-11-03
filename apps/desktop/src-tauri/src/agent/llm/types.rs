@@ -313,6 +313,30 @@ pub struct WakeDigestRollup {
 }
 
 impl WakeDigest {
+    /// The path a wake thread is named after: the first folder the digest names, else the first
+    /// rollup's ancestor. `None` for an empty digest.
+    pub fn place(&self) -> Option<&str> {
+        self.folders
+            .first()
+            .map(|folder| folder.folder.as_str())
+            .or_else(|| self.rollups.first().map(|rollup| rollup.ancestor.as_str()))
+    }
+
+    /// The thread title a wake gives the place at `path`: its last component. Data, not voice:
+    /// a backend English sentence would be untranslated copy frozen into `main.db`.
+    pub fn title_for(path: &str) -> &str {
+        let trimmed = path.trim_end_matches('/');
+        match trimmed.rfind('/') {
+            Some(cut) => &trimmed[cut + 1..],
+            None => trimmed,
+        }
+    }
+
+    /// Every folder the digest covers, the rolled-up ones included.
+    pub fn folder_count(&self) -> u64 {
+        self.folders.len() as u64 + self.rollups.iter().map(|rollup| u64::from(rollup.folders)).sum::<u64>()
+    }
+
     /// The digest as the MODEL reads it. An empty digest renders an empty string, never a
     /// header saying there is nothing to report: that would spend budget to say nothing.
     ///

@@ -70,7 +70,15 @@ function fire(conversationId: number, event: AskCmdrStreamEvent): void {
 }
 
 function row(id: number): ConversationRow {
-  return { id, title: `Chat ${String(id)}`, createdAt: 0, updatedAt: id, archived: false, origin: null }
+  return {
+    id,
+    title: `Chat ${String(id)}`,
+    createdAt: 0,
+    updatedAt: id,
+    archived: false,
+    origin: null,
+    wakePlace: null,
+  }
 }
 
 function assistantAt(index: number): Extract<RailMessage, { kind: 'assistant' }> {

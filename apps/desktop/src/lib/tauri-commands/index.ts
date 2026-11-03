@@ -554,6 +554,8 @@ export type {
   RenameProposalRow,
   WakeDigestFolderView,
   WakeDigestRollupView,
+  WakePlace,
+  SnippetPart,
   ProposalDecision,
 } from './ask-cmdr'
 

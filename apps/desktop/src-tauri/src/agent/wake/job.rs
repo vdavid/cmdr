@@ -367,21 +367,14 @@ fn strongest_tier(rows: &[ScoredBundle]) -> WakeTier {
 ///
 /// A backend-generated English title would be untranslated copy shipped into the database,
 /// and this thread sits in a list beside ones the user named themselves. A folder name is
-/// data, not voice.
+/// data, not voice. The list shows it as "Activity in ~/tmp" while it stays this title
+/// (`store/wake_place.rs` recognizes it through the same `WakeDigest::title_for`).
 pub fn thread_title(digest: &Digest) -> String {
     digest
         .lines
         .first()
-        .map(|line| line.folder.clone())
-        .or_else(|| digest.rollups.first().map(|rollup| rollup.ancestor.clone()))
-        .map(|path| basename(&path).to_string())
+        .map(|line| line.folder.as_str())
+        .or_else(|| digest.rollups.first().map(|rollup| rollup.ancestor.as_str()))
+        .map(|path| WakeDigest::title_for(path).to_string())
         .unwrap_or_default()
-}
-
-fn basename(path: &str) -> &str {
-    let trimmed = path.trim_end_matches('/');
-    match trimmed.rfind('/') {
-        Some(cut) => &trimmed[cut + 1..],
-        None => trimmed,
-    }
 }

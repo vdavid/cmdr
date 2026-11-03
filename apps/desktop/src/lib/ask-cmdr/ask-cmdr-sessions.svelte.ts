@@ -1,6 +1,7 @@
 /**
  * Ask Cmdr sessions state: the thread list (recent first, archived filter), cross-thread
- * FTS5 search, new/rename/archive, and switch-thread. A separate `$state` slice from the
+ * search (ranked by the backend: title match, then FTS5 relevance, then recency),
+ * new/rename/archive, and switch-thread. A separate `$state` slice from the
  * live-chat trigger (`ask-cmdr-trigger.svelte.ts`), which it calls into to switch threads.
  *
  * Paging mirrors the operation-log dialog: the offset is `conversations.length` (one
@@ -239,10 +240,18 @@ export async function renameConversation(id: number, title: string): Promise<voi
     log.warn('renaming the thread failed: {error}', { error: e })
     return
   }
+  // A renamed wake thread shows the user's name now, not "Activity in …" (the backend drops the
+  // place once the title stops being the wake's own; this mirrors it without a reload).
   const row = sessionsState.conversations.find((c) => c.id === id)
-  if (row) row.title = trimmed
+  if (row) {
+    row.title = trimmed
+    row.wakePlace = null
+  }
   const hit = sessionsState.hits.find((h) => h.conversationId === id)
-  if (hit) hit.title = trimmed
+  if (hit) {
+    hit.title = trimmed
+    hit.wakePlace = null
+  }
 }
 
 /** Archive or unarchive a thread. The archived view shows ALL threads (active + archived,

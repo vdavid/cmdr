@@ -8,8 +8,8 @@ proposal spine. Depth: `DETAILS.md`.
 
 - `migrations.rs` — the forward-migration ladder + the v1 DDL. Mirrors `crates/cmdr-operation-log/src/store/migrations.rs`.
 - `connection.rs` — WAL/auto-vacuum pragmas; write connections run the ladder, no custom collation.
-- `query.rs` — conversations, messages, the FTS5 search + its input sanitizer, the cost meter. `AgentStore` (in
-  `mod.rs`) owns the schema lifecycle; `agent::start` opens the DB and registers `AgentDb` in state.
+- `query.rs` — conversations, messages, the cost meter; `search.rs` — thread search + the FTS sanitizer;
+  `wake_place.rs` — a wake row's title. `AgentStore` (`mod.rs`) owns the schema lifecycle.
 - `events.rs` — `ConversationEvent`, the timeline half of `messages`; `rows.rs` — the shared insert; `turns.rs` —
   turn-scoped reads.
 - `consent.rs` — `meta` consent records: "Allow cloud AI" (`ai/cloud_consent.rs`'s) and Ask Cmdr's read-only legacy one.

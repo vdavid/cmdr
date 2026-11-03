@@ -14,7 +14,7 @@ Two locale sources: the UI LANGUAGE for catalog text and numbers, the OS REGION 
 - `number-format.ts`: the memoized `getNumberFormatter`, `formatInteger`, `formatCompactCount`, `formatMoney`,
   `getGroupSeparator`. `list-format.ts`: joins (and, or, unit); `createListFormat`, the sole `Intl.ListFormat` door
   (Catalina lacks it). `sentence-join.ts`: `joinSentences()` (❌ never `.join(' ')`: no space in Chinese).
-  `duration-format.ts`: narrow durations, no `Intl.DurationFormat`.
+  `duration-format.ts`: narrow durations, no `Intl.DurationFormat`. `relative-time-format.ts`: "2 days ago".
 - `locale-inheritance.ts`: which catalog a locale may inherit from (same language AND same script), shared with the i18n
   checks and Rust.
 - `messages.svelte.ts`: the runtime: `t()` (catalog + ICU), `getMessage()` (raw), `setLocale()`, `availableLocales()`,

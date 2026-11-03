@@ -83,7 +83,15 @@ function view(
 
 function thread(messages: MessageView[]): ConversationDetailView {
   return {
-    conversation: { id: THREAD, title: 't', createdAt: 0, updatedAt: 0, archived: false, origin: null },
+    conversation: {
+      id: THREAD,
+      title: 't',
+      createdAt: 0,
+      updatedAt: 0,
+      archived: false,
+      origin: null,
+      wakePlace: null,
+    },
     messages,
     totalMessages: messages.length,
     lastContextUsage: null,

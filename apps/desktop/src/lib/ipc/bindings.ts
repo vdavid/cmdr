@@ -3830,8 +3830,8 @@ export const commands = {
       __TAURI_INVOKE('ask_cmdr_list_conversations', { limit, offset, includeArchived }),
     ),
   /**
-   *  Conversations whose messages match `query` (FTS5, sanitized), newest-match first,
-   *  paged. Each hit carries a plain-text snippet around the match. Empty when the store
+   *  Conversations matching `query` (title or FTS5 message text, sanitized), best first, paged
+   *  (`agent/store/search.rs`). Each hit carries its excerpt as plain-text runs, matches flagged. Empty when the store
    *  never opened or the query has no searchable term.
    */
   askCmdrSearchConversations: (query: string, limit: number, offset: number) =>
@@ -7799,27 +7799,35 @@ export type ConversationRow = {
   archived: boolean
   // `None` = user-started (the v1 case). A non-null token is a programmatic origin.
   origin: ConversationOrigin | null
+  /**
+   *  Where a wake thread's activity happened, while its title is still the wake's own; the
+   *  list builds the row's display title from it (`wake_place.rs`). `None` for every other row.
+   */
+  wakePlace: WakePlace | null
 }
 
-/**
- *  A conversation whose messages matched a cross-thread search, newest-activity first.
- *  Wire type (the search results list): the `snippet` is a plain-text excerpt from
- *  the newest matching message, rendered ESCAPED on the frontend (never `{@html}`).
- */
+// A conversation that matched a cross-thread search. Wire type (the threads panel's results).
 export type ConversationSearchHit = {
   conversationId: number
   title: string
+  // The thread's last activity (unix secs), which the row shows as its age.
   updatedAt: number
+  archived: boolean
   /**
-   *  An FTS5 excerpt around the match, or the message start if the term is early.
-   *  Plain text with `…` ellipses; no markup (rendered as escaped text).
+   *  An excerpt of the best-matching message, matched terms flagged. Empty when only the
+   *  title matched.
    */
-  snippet: string
+  snippet: SnippetPart[]
   /**
    *  `None` = user-started; a token says the agent opened it. Carried so a hit wears the same
    *  glyph the thread list gives it, rather than reading as a thread the user began and forgot.
    */
   origin: ConversationOrigin | null
+  /**
+   *  Where a wake thread's activity happened, while its title is still the folder name the
+   *  wake gave it. The frontend builds the display title from this.
+   */
+  wakePlace: WakePlace | null
 }
 
 /**
@@ -18429,6 +18437,12 @@ export type SmbVolumeRef = {
   disconnected: boolean
 }
 
+// One run of a search excerpt. Plain text; `matched` runs are what the query hit.
+export type SnippetPart = {
+  text: string
+  matched: boolean
+}
+
 // Column to sort files by.
 export type SortColumn =
   // By name, in the reading language's collation.
@@ -21419,6 +21433,14 @@ export type WakePhase =
    *  to stop it.
    */
   | { phase: 'thinking'; conversationId: number }
+
+// The place a wake thread's digest opens with. Wire type.
+export type WakePlace = {
+  // The first folder the digest names, `~`-relative when under the home folder.
+  folder: string
+  // How many more folders the digest covers, rolled-up ones included.
+  otherFolders: number
+}
 
 /**
  *  The wire form of [`WakeReadiness`]. A separate type because the pure core's enum carries no

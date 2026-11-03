@@ -27,11 +27,23 @@ import AskCmdrSessions from './AskCmdrSessions.svelte'
 import { sessionsState } from './ask-cmdr-sessions.svelte'
 
 function row(id: number, archived = false): ConversationRow {
-  return { id, title: `Chat ${String(id)}`, createdAt: 0, updatedAt: id, archived, origin: null }
+  return { id, title: `Chat ${String(id)}`, createdAt: 0, updatedAt: id, archived, origin: null, wakePlace: null }
 }
 
 function hit(id: number): ConversationSearchHit {
-  return { conversationId: id, title: `Chat ${String(id)}`, updatedAt: id, snippet: 'a matching snippet', origin: null }
+  return {
+    conversationId: id,
+    title: `Chat ${String(id)}`,
+    updatedAt: id,
+    archived: false,
+    snippet: [
+      { text: 'a ', matched: false },
+      { text: 'matching', matched: true },
+      { text: ' snippet', matched: false },
+    ],
+    origin: null,
+    wakePlace: null,
+  }
 }
 
 function mountPanel(): HTMLElement {
@@ -89,5 +101,23 @@ describe('AskCmdrSessions a11y', () => {
     const searching = mountPanel()
     await tick()
     await expectNoA11yViolations(searching)
+  })
+
+  /** The combobox's active option, a wake thread's display title, a title-only hit (no
+   *  excerpt), and an archived badge, all inside `option`s. */
+  it('every result shape, with the cursor moved, has no a11y violations', async () => {
+    Element.prototype.scrollIntoView = vi.fn() // jsdom has none
+    sessionsState.query = 'budget'
+    sessionsState.hits = [
+      { ...hit(1), origin: 'notification', wakePlace: { folder: '~/tmp', otherFolders: 3 } },
+      { ...hit(2), snippet: [], archived: true },
+    ]
+    const target = mountPanel()
+    await tick()
+    target
+      .querySelector('input[type="search"]')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    await tick()
+    await expectNoA11yViolations(target)
   })
 })

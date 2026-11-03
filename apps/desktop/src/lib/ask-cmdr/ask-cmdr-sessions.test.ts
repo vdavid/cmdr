@@ -55,11 +55,19 @@ import {
 } from './ask-cmdr-sessions.svelte'
 
 function row(id: number, archived = false): ConversationRow {
-  return { id, title: `Chat ${String(id)}`, createdAt: 0, updatedAt: id, archived, origin: null }
+  return { id, title: `Chat ${String(id)}`, createdAt: 0, updatedAt: id, archived, origin: null, wakePlace: null }
 }
 
 function hit(id: number): ConversationSearchHit {
-  return { conversationId: id, title: `Chat ${String(id)}`, updatedAt: id, snippet: 's', origin: null }
+  return {
+    conversationId: id,
+    title: `Chat ${String(id)}`,
+    updatedAt: id,
+    archived: false,
+    snippet: [{ text: 's', matched: false }],
+    origin: null,
+    wakePlace: null,
+  }
 }
 
 function fullPage(): ConversationRow[] {

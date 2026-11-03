@@ -16,14 +16,14 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 3811 / 5502 keys have a screenshot (69%):** 2076 direct (38%) and 1735 representative (32%). 1499 remain
+**Total: 3812 / 5502 keys have a screenshot (69%):** 2076 direct (38%) and 1736 representative (32%). 1498 remain
 uncoupled, and 192 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
 | adb             |      3 |              0 |        19 |      0 |    22 |   14% |
 | ai              |      1 |            143 |         0 |      0 |   144 |  100% |
-| askCmdr         |    187 |            292 |        42 |      0 |   521 |   92% |
+| askCmdr         |    187 |            296 |        42 |      0 |   525 |   92% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
 | commands        |    230 |              5 |        87 |      0 |   322 |   73% |
 | common          |      9 |              1 |         9 |      0 |    19 |   53% |
@@ -33,7 +33,7 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | errors          |    157 |            478 |         0 |      0 |   635 |  100% |
 | feedback        |      8 |              6 |         2 |      0 |    16 |   88% |
 | fileExplorer    |    162 |             79 |       307 |      0 |   548 |   44% |
-| fileOperations  |    141 |             88 |       112 |      0 |   341 |   67% |
+| fileOperations  |    141 |             87 |       111 |      0 |   339 |   67% |
 | goToPath        |      5 |              6 |         2 |      0 |    13 |   85% |
 | indexing        |     34 |             18 |        18 |      0 |    70 |   74% |
 | licensing       |     49 |             35 |        25 |      0 |   109 |   77% |
@@ -44,9 +44,9 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | multiRename     |     90 |              0 |       140 |      0 |   230 |   39% |
 | notifications   |      0 |              0 |         1 |      0 |     1 |    0% |
 | onboarding      |     96 |             43 |        25 |      0 |   164 |   85% |
-| operationLog    |     26 |             31 |         0 |      0 |    57 |  100% |
+| operationLog    |     26 |             30 |         0 |      0 |    56 |  100% |
 | queryUi         |     41 |            126 |         0 |      0 |   167 |  100% |
-| queue           |     24 |             20 |         5 |      0 |    49 |   90% |
+| queue           |     24 |             19 |         5 |      0 |    48 |   90% |
 | search          |      9 |             48 |         0 |      0 |    57 |  100% |
 | securityNotices |      0 |              0 |        16 |      0 |    16 |    0% |
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |

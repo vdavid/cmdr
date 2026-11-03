@@ -6,7 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
-import type { ConversationRow } from '#lib/tauri-commands/index.js'
+import type { ConversationRow, ConversationSearchHit } from '#lib/tauri-commands/index.js'
 
 const spies = vi.hoisted(() => ({
   chooseThread: vi.fn(),
@@ -43,7 +43,24 @@ vi.mock('./ask-cmdr-sessions.svelte', () => ({
 import AskCmdrSessions from './AskCmdrSessions.svelte'
 
 function row(id: number, archived = false): ConversationRow {
-  return { id, title: `Chat ${String(id)}`, createdAt: 0, updatedAt: id, archived, origin: null }
+  return { id, title: `Chat ${String(id)}`, createdAt: 0, updatedAt: id, archived, origin: null, wakePlace: null }
+}
+
+function hit(id: number, overrides: Partial<ConversationSearchHit> = {}): ConversationSearchHit {
+  return {
+    conversationId: id,
+    title: `Chat ${String(id)}`,
+    updatedAt: 1_800_000_000,
+    archived: false,
+    snippet: [
+      { text: 'about ', matched: false },
+      { text: 'kumquat', matched: true },
+      { text: ' trees', matched: false },
+    ],
+    origin: null,
+    wakePlace: null,
+    ...overrides,
+  }
 }
 
 function mountPanel(): HTMLElement {
@@ -154,10 +171,7 @@ describe('AskCmdrSessions interactions', () => {
    *  started and forgot, which is exactly the confusion the glyph exists to prevent. */
   it('marks an agent-opened thread in search results too', async () => {
     sessionsState.state.query = 'kumquat'
-    sessionsState.state.hits = [
-      { conversationId: 1, title: 'Mine', updatedAt: 0, snippet: 'kumquat', origin: null },
-      { conversationId: 2, title: 'Theirs', updatedAt: 0, snippet: 'kumquat', origin: 'notification' },
-    ]
+    sessionsState.state.hits = [hit(1, { title: 'Mine' }), hit(2, { title: 'Theirs', origin: 'notification' })]
     const target = mountPanel()
     await tick()
     const rows = target.querySelectorAll('.row')
@@ -211,5 +225,143 @@ describe('AskCmdrSessions interactions', () => {
     await tick()
     target.querySelector<HTMLButtonElement>('[aria-label="Back to chat"]')?.click()
     expect(spies.closeSessions).toHaveBeenCalled()
+  })
+
+  it('a wake thread the user never renamed is titled by where its activity was', async () => {
+    sessionsState.state.conversations = [
+      { ...row(1), title: 'tmp', origin: 'notification', wakePlace: { folder: '~/tmp', otherFolders: 2 } },
+    ]
+    const target = mountPanel()
+    await tick()
+    expect(target.querySelector('.row-title')?.textContent).toBe('Activity in ~/tmp and 2 other folders')
+  })
+
+  it('renaming a thread opened on its display title, unchanged, renames nothing', async () => {
+    sessionsState.state.conversations = [
+      { ...row(1), title: 'tmp', origin: 'notification', wakePlace: { folder: '~/tmp', otherFolders: 0 } },
+    ]
+    const target = mountPanel()
+    await tick()
+    target.querySelector<HTMLButtonElement>('[aria-label="Rename"]')?.click()
+    await tick()
+    const field = target.querySelector<HTMLInputElement>('input[type="text"]')
+    expect(field?.value).toBe('Activity in ~/tmp')
+    field?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    await tick()
+    expect(spies.renameConversation).not.toHaveBeenCalled()
+  })
+})
+
+describe('AskCmdrSessions search results', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn()
+    sessionsState.state.query = 'kumquat'
+    sessionsState.state.hits = [hit(1), hit(2), hit(3)]
+  })
+
+  function searchField(target: HTMLElement): HTMLInputElement {
+    const input = target.querySelector<HTMLInputElement>('input[type="search"]')
+    if (!input) throw new Error('expected a search input')
+    return input
+  }
+
+  function press(el: Element, key: string): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+    el.dispatchEvent(event)
+    return event
+  }
+
+  function cursorRow(target: HTMLElement): string | null {
+    return target.querySelector('[role="option"][aria-selected="true"]')?.getAttribute('data-conversation-hit') ?? null
+  }
+
+  it('shows each hit’s title, age, and excerpt with the match marked as plain text', async () => {
+    sessionsState.state.hits = [
+      hit(1, {
+        snippet: [
+          { text: '<img src=x onerror=alert(1)> ', matched: false },
+          { text: 'kumquat', matched: true },
+        ],
+      }),
+    ]
+    const target = mountPanel()
+    await tick()
+    const option = target.querySelector('[role="option"]')
+    expect(option?.querySelector('.row-title')?.textContent).toBe('Chat 1')
+    expect(option?.querySelector('.hit-age')?.textContent).toMatch(/ago|yesterday|last|now/)
+    expect(option?.querySelector('mark')?.textContent).toBe('kumquat')
+    expect(option?.querySelector('img')).toBeNull()
+    expect(option?.querySelector('.hit-snippet')?.textContent).toBe('<img src=x onerror=alert(1)> kumquat')
+  })
+
+  it('is a combobox over a listbox, the cursor on the best match', async () => {
+    const target = mountPanel()
+    await tick()
+    const input = searchField(target)
+    const listbox = target.querySelector('[role="listbox"]')
+    expect(input.getAttribute('role')).toBe('combobox')
+    expect(input.getAttribute('aria-controls')).toBe(listbox?.id)
+    expect(input.getAttribute('aria-expanded')).toBe('true')
+    expect(cursorRow(target)).toBe('1')
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      target.querySelector('[role="option"][aria-selected="true"]')?.id,
+    )
+  })
+
+  it('↑/↓ in the field move the cursor, wrapping at the ends, and keep focus in the field', async () => {
+    const target = mountPanel()
+    await tick()
+    const input = searchField(target)
+    input.focus()
+    expect(press(input, 'ArrowDown').defaultPrevented).toBe(true)
+    await tick()
+    expect(cursorRow(target)).toBe('2')
+    press(input, 'ArrowDown')
+    press(input, 'ArrowDown')
+    await tick()
+    expect(cursorRow(target)).toBe('1')
+    press(input, 'ArrowUp')
+    await tick()
+    expect(cursorRow(target)).toBe('3')
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('Enter in the field opens the cursor’s thread', async () => {
+    const target = mountPanel()
+    await tick()
+    const input = searchField(target)
+    press(input, 'ArrowDown')
+    await tick()
+    expect(press(input, 'Enter').defaultPrevented).toBe(true)
+    expect(spies.chooseThread).toHaveBeenCalledWith(2)
+  })
+
+  it('Home and End stay the field’s caret keys', async () => {
+    const target = mountPanel()
+    await tick()
+    expect(press(searchField(target), 'End').defaultPrevented).toBe(false)
+  })
+
+  it('a focused result answers the same keys, and a click opens it', async () => {
+    const target = mountPanel()
+    await tick()
+    const first = target.querySelector<HTMLElement>('[role="option"]')
+    if (!first) throw new Error('expected an option')
+    press(first, 'ArrowDown')
+    await tick()
+    await tick()
+    expect(cursorRow(target)).toBe('2')
+    expect(document.activeElement?.getAttribute('data-conversation-hit')).toBe('2')
+    press(document.activeElement as Element, 'Enter')
+    expect(spies.chooseThread).toHaveBeenCalledWith(2)
+    target.querySelectorAll<HTMLElement>('[role="option"]').item(2).click()
+    expect(spies.chooseThread).toHaveBeenCalledWith(3)
+  })
+
+  it('the clear button says what it does', async () => {
+    const target = mountPanel()
+    await tick()
+    target.querySelector<HTMLButtonElement>('[aria-label="Clear search"]')?.click()
+    expect(spies.clearSearch).toHaveBeenCalledOnce()
   })
 })

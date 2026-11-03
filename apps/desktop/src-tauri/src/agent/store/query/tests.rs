@@ -1,12 +1,12 @@
 //! Query-layer round-trips: conversation CRUD, message append + seq, the FTS5 trigger
-//! sync (insert/update/delete), cross-thread search + ranking, the input sanitizer, and
+//! sync (insert/update/delete; ranking and the sanitizer are `search/tests.rs`), and
 //! the cost meter's accumulating upsert + per-day rollup.
 
 use rusqlite::Connection;
 
 use super::*;
 use crate::agent::llm::types::{AgentPart, AgentRole, AgentToolCall, ProviderTag, ReasoningState, ToolId};
-use crate::agent::store::{append_event, append_raw_event_row};
+use crate::agent::store::{append_event, append_raw_event_row, search_conversations};
 use crate::agent::types::ConversationOrigin;
 
 /// An in-memory `main.db` at the current schema. FTS5 works in-memory, so this exercises
@@ -356,141 +356,6 @@ fn fts_delete_trigger_deindexes_removed_messages() {
     );
     // And the user-facing search agrees.
     assert!(search_ids(&conn, "kumquat").is_empty());
-}
-
-// ── Search ranking ────────────────────────────────────────────────────────────
-
-#[test]
-fn search_returns_matching_threads_recent_first() {
-    let conn = migrated_conn();
-    let a = create_conversation(&conn, "A", 1, None).expect("create a");
-    let b = create_conversation(&conn, "B", 1, None).expect("create b");
-    append_user_text(&conn, a, "shared invoice topic", 100);
-    append_user_text(&conn, b, "shared invoice topic", 200);
-    // `b`'s matching message is newer, so `b` ranks first.
-    assert_eq!(search_ids(&conn, "invoice"), vec![b, a]);
-
-    // A newer matching message in `a` flips the order.
-    append_user_text(&conn, a, "another invoice mention", 300);
-    assert_eq!(
-        search_ids(&conn, "invoice"),
-        vec![a, b],
-        "ranks by most-recent matching message"
-    );
-}
-
-#[test]
-fn search_returns_each_matching_thread_once() {
-    let conn = migrated_conn();
-    let id = create_conversation(&conn, "T", 1, None).expect("create");
-    append_user_text(&conn, id, "receipt one", 10);
-    append_user_text(&conn, id, "receipt two", 20);
-    assert_eq!(
-        search_ids(&conn, "receipt"),
-        vec![id],
-        "a thread with two hits appears once"
-    );
-}
-
-/// A search result has to wear the same mark the thread list gives it. Without the origin on
-/// the hit, a thread the agent opened for itself looks in search exactly like one the user
-/// started and forgot — which is the single thing the glyph exists to tell them apart.
-#[test]
-fn search_hit_says_who_started_the_thread() {
-    let conn = migrated_conn();
-    let mine = create_conversation(&conn, "Mine", 1, None).expect("create mine");
-    let theirs =
-        create_conversation(&conn, "Theirs", 1, Some(ConversationOrigin::Notification)).expect("create theirs");
-    append_user_text(&conn, mine, "kumquat harvest", 100);
-    append_user_text(&conn, theirs, "kumquat harvest", 200);
-
-    let hits = search_conversations(&conn, "kumquat", 50, 0).expect("search");
-    let origins: Vec<_> = hits.iter().map(|hit| (hit.conversation_id, hit.origin)).collect();
-    assert_eq!(
-        origins,
-        vec![(theirs, Some(ConversationOrigin::Notification)), (mine, None)]
-    );
-}
-
-#[test]
-fn search_hit_carries_a_snippet_of_the_match() {
-    let conn = migrated_conn();
-    let id = create_conversation(&conn, "T", 1, None).expect("create");
-    append_user_text(&conn, id, "the quarterly budget spreadsheet lives here", 10);
-    let hits = search_conversations(&conn, "budget", 50, 0).expect("search");
-    assert_eq!(hits.len(), 1);
-    assert!(
-        hits[0].snippet.contains("budget"),
-        "the hit's snippet shows the matched term: {:?}",
-        hits[0].snippet
-    );
-}
-
-// ── The FTS5 sanitizer ─────────────────────────────────────────────────────────
-
-#[test]
-fn sanitizer_returns_none_for_empty_or_punctuation_only() {
-    assert_eq!(sanitize_fts_query(""), None);
-    assert_eq!(sanitize_fts_query("   \t "), None);
-    assert_eq!(
-        sanitize_fts_query("()  \"  :"),
-        None,
-        "pure punctuation carries no term"
-    );
-}
-
-#[test]
-fn sanitizer_wraps_tokens_as_prefix_string_literals() {
-    assert_eq!(sanitize_fts_query("report"), Some("\"report\"*".to_string()));
-    assert_eq!(
-        sanitize_fts_query("budget report"),
-        Some("\"budget\"* \"report\"*".to_string()),
-        "each token becomes its own prefix literal (implicit AND)"
-    );
-}
-
-/// Every awkward input a filename fragment can carry produces a valid, NON-throwing query.
-/// Raw, each of these would throw an fts5 syntax error (parentheses, a `:` column filter,
-/// a bareword boolean, an unbalanced quote, pure punctuation) — the whole point of the
-/// sanitizer.
-#[test]
-fn sanitizer_makes_awkward_input_non_throwing() {
-    let conn = migrated_conn();
-    let id = create_conversation(&conn, "T", 1, None).expect("create");
-    append_user_text(&conn, id, "the report(v2) about foo:bar and cats and dogs", 10);
-
-    for query in [
-        "report(v2)",
-        "foo:bar",
-        "cats OR NOT dogs", // bareword booleans become literal terms, never operators
-        "foo\"bar",         // an unbalanced embedded quote
-        "(((",              // pure punctuation ⇒ no term ⇒ no match, still Ok
-    ] {
-        assert!(
-            search_conversations(&conn, query, 50, 0).is_ok(),
-            "query {query:?} must not throw an fts5 syntax error"
-        );
-    }
-    // `id` exists so the seeded row participates; unused binding guard.
-    let _ = id;
-}
-
-/// The meaningful awkward fragments still find the seeded thread: a prefix, a
-/// parenthesized token, a colon-joined pair, a bareword that happens to be in the text,
-/// and an embedded-quote fragment all match.
-#[test]
-fn sanitizer_keeps_awkward_fragments_matching() {
-    let conn = migrated_conn();
-    let id = create_conversation(&conn, "T", 1, None).expect("create");
-    append_user_text(&conn, id, "the report(v2) about foo:bar and cats and dogs", 10);
-
-    for query in ["report(v2)", "foo:bar", "AND", "rep", "foo\"bar", "cats"] {
-        assert_eq!(
-            search_ids(&conn, query),
-            vec![id],
-            "query {query:?} must match the seeded message"
-        );
-    }
 }
 
 // ── Cost meter ─────────────────────────────────────────────────────────────────

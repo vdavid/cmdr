@@ -22,7 +22,9 @@ mod migrations;
 pub mod proposals;
 mod query;
 mod rows;
+mod search;
 mod turns;
+mod wake_place;
 
 use std::path::{Path, PathBuf};
 
@@ -39,15 +41,16 @@ pub use events::{ConversationEvent, TurnLimit, TurnLimitKind, TurnStats, append_
 pub use inbox::{StoredInboxRow, clear_inbox, load_inbox, load_inbox_row, replace_inbox, upsert_inbox_row};
 pub use migrations::{MIGRATIONS, Migration, run_migrations};
 pub use query::{
-    ConversationCost, ConversationDetail, ConversationRow, ConversationSearchHit, CostDay, CostRecord, CostSummary,
-    StoredContent, StoredMessage, append_message, archive_conversation, conversation_context_usage, conversation_cost,
+    ConversationCost, ConversationDetail, ConversationRow, CostDay, CostRecord, CostSummary, StoredContent,
+    StoredMessage, append_message, archive_conversation, conversation_context_usage, conversation_cost,
     conversation_last_chat_memory, conversation_last_model, cost_summary, create_conversation, delete_conversation,
     discard_conversation_keeping_cost, get_conversation, last_seq, list_conversations, list_messages,
-    proactive_tokens_for_day, quiet_wakes_conversation, record_cost, rename_conversation, sanitize_fts_query,
-    search_conversations, set_conversation_context_usage, set_conversation_last_chat_memory,
-    set_conversation_last_model,
+    proactive_tokens_for_day, quiet_wakes_conversation, record_cost, rename_conversation,
+    set_conversation_context_usage, set_conversation_last_chat_memory, set_conversation_last_model,
 };
+pub use search::{ConversationSearchHit, SnippetPart, sanitize_fts_query, search_conversations};
 pub use turns::{TurnContext, row_and_rest_of_turn, turn_context, turn_opener_at};
+pub use wake_place::WakePlace;
 
 /// The durable store's file name in the app data dir. Peer to `operation-log.db`.
 pub const MAIN_DB_FILE: &str = "main.db";
