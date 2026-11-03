@@ -12,7 +12,7 @@
 //! front and, on drop, removes only the top-level Trash entry with that identity
 //! and the source's name as a prefix. It never touches anything outside the Trash.
 //!
-//! Where an item landed comes first from [`note_trashed`], which a test build's
+//! Where an item landed comes first from `note_trashed`, which a test build's
 //! `move_to_trash_sync` calls with `trashItemAtURL`'s resulting URL. Listing the
 //! Trash is only the fallback: TCC refuses `readdir` of `~/.Trash` to a process
 //! without Full Disk Access (a test run started from an agent or an IDE), while a
@@ -30,7 +30,10 @@ static TRASHED: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
 /// Records where a trash landed, so a guard finds it without listing the Trash.
 #[cfg(target_os = "macos")]
 pub(crate) fn note_trashed(in_trash: &Path) {
-    crate::sync_primitives::lock_ignore_poison(&TRASHED).push(in_trash.to_path_buf());
+    TRASHED
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .push(in_trash.to_path_buf());
 }
 
 /// One source the test may trash: where its Trash is, and how to know it there.
@@ -92,7 +95,7 @@ impl Tracked {
 
 /// Takes `item`'s noted landing out of [`TRASHED`], if a trash noted one.
 fn claim_noted(item: &Tracked) -> Option<PathBuf> {
-    let mut noted = crate::sync_primitives::lock_ignore_poison(&TRASHED);
+    let mut noted = TRASHED.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let at = noted.iter().position(|path| item.is(path))?;
     Some(noted.swap_remove(at))
 }
