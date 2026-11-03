@@ -616,6 +616,48 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
+  "viewer.reloadToast.gone": "This file isn’t there anymore. If it comes back, try again.",
+  "@viewer.reloadToast.gone": {
+    "description": "Replaces the text of the file-changed toast after the person pressed Reload and the file turned out to be deleted or moved away. A \"Try again\" button sits beside it, for when the file reappears (for example, a log that gets recreated).",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
+  "viewer.reloadToast.couldNotReload": "Couldn’t read the file again. Check that you can still open it, then try again.",
+  "@viewer.reloadToast.couldNotReload": {
+    "description": "Replaces the text of the file-changed toast after the person pressed Reload and the system refused to read the file (for example, its read permission was taken away). A \"Try again\" button sits beside it.",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
+  "viewer.reloadToast.retry": "Try again",
+  "@viewer.reloadToast.retry": {
+    "description": "Button on the file-changed toast after a reload didn’t go through; pressing it reloads the file once more. Keep it short.",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
+  "viewer.sessionOp.slow": "The disk is taking a while to answer. Try again in a moment?",
+  "@viewer.sessionOp.slow": {
+    "description": "Shown in the file viewer when reloading the file, turning tail mode on or off, or switching the text encoding took too long, usually because the file is on a slow or stalled network drive. Nothing changed; the person can retry.",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
+  "viewer.tail.couldNotTurnOn": "Couldn’t turn on tail mode. Try again?",
+  "@viewer.tail.couldNotTurnOn": {
+    "description": "Warning toast in the file viewer when turning on tail mode (keep showing new lines as the file grows, like the Unix `tail -f` command) didn’t take, so the Tail toggle went back off. Use the same word for \"tail mode\" as the Tail toggle.",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
+  "viewer.tail.couldNotTurnOff": "Couldn’t turn off tail mode. Try again?",
+  "@viewer.tail.couldNotTurnOff": {
+    "description": "Warning toast in the file viewer when turning off tail mode (keep showing new lines as the file grows, like the Unix `tail -f` command) didn’t take, so the Tail toggle went back on. Use the same word for \"tail mode\" as the Tail toggle.",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
+  "viewer.encoding.couldNotSwitch": "Couldn’t switch the encoding. Try again?",
+  "@viewer.encoding.couldNotSwitch": {
+    "description": "Warning toast in the file viewer when switching the text encoding (how the file’s bytes turn into characters, picked from the toolbar’s encoding menu) didn’t take, so the menu went back to the previous encoding.",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
   "viewer.copy.onClipboard": "{size} on your clipboard",
   "@viewer.copy.onClipboard": {
     "description": "Toast confirming a selection was copied, naming the size, e.g. \"24 MB on your clipboard\".",
@@ -646,12 +688,6 @@
   "viewer.copy.copyFailed": "Couldn’t copy the selection. Try again?",
   "@viewer.copy.copyFailed": {
     "description": "Warning toast when copying the selection failed for a non-timeout reason. Conversational, suggests retrying.",
-    "screenshot": "viewer-search.png",
-    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
-  },
-  "viewer.copy.readFailed": "Couldn’t read the selection. Try again?",
-  "@viewer.copy.readFailed": {
-    "description": "Warning toast when reading the selection (after the user confirmed a large copy) failed. Conversational, suggests retrying.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },

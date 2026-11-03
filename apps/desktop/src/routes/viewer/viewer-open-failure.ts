@@ -49,10 +49,11 @@ function openFailureCopy(e: unknown): OpenFailure {
  * `cancelled` means the window closed mid-pull or the read was stopped on purpose; `io` is
  * what the OS or the source refused (permission denied, a disk read error, a phone or a
  * repository that dropped mid-read). The error side can't reach an open at all: no live
- * session, a line past the end, a save-only refusal.
+ * session, a line past the end, a save-only refusal. The session ops (reload, tail mode,
+ * encoding) log by the same rule: `viewer-session-op-failure.ts`.
  */
 // eslint-disable-next-line complexity -- one exhaustive switch, a case per variant, which is its point
-function logLevelFor(ve: ViewerError): 'warn' | 'error' {
+export function logLevelFor(ve: ViewerError): 'warn' | 'error' {
   switch (ve.kind) {
     case 'timedOut':
     case 'stoppedResponding':

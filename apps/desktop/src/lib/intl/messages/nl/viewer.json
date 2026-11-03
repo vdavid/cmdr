@@ -423,10 +423,6 @@
   "@viewer.copy.copyFailed": {
     "sourceHash": "b08416d"
   },
-  "viewer.copy.readFailed": "De selectie kon niet worden gelezen. Opnieuw proberen?",
-  "@viewer.copy.readFailed": {
-    "sourceHash": "24ea14a"
-  },
   "viewer.saveAs.title": "Bewaar selectie",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"

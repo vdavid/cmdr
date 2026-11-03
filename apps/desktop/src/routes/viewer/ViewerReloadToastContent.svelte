@@ -3,6 +3,8 @@
     import { dismissToast } from '#lib/ui/toast/toast-store.svelte.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import type { MessageKey } from '#lib/intl/keys.gen.js'
+    import { logSessionOpFailure, sessionOpFailureKey } from './viewer-session-op-failure'
 
     interface Props {
         toastId: string
@@ -10,26 +12,48 @@
         sessionId: string
         /** `grew`: bytes were appended. `rotated`: the file was replaced. */
         kind: 'grew' | 'rotated'
+        /** Why the last reload didn't go through, or `null` before one didn't. Swaps the text and the button. */
+        failureKey: MessageKey | null
+        /** Runs after a reload went through, so the page drops its stale rows and refetches. */
+        onReloaded: () => void
+        /**
+         * Runs when a reload didn't go through. The owner re-raises this toast with `failureKey`, so it stays up,
+         * turns into a warning, and the screen reader hears the new text (a re-raise is spoken; an in-place edit isn't).
+         */
+        onReloadRefused: (failureKey: MessageKey) => void
     }
 
-    const { toastId, sessionId, kind }: Props = $props()
+    const { toastId, sessionId, kind, failureKey, onReloaded, onReloadRefused }: Props = $props()
 
     const log = getAppLogger('viewer-tail')
 
+    let reloading = false
+
     const message = $derived(
-        kind === 'rotated' ? tString('viewer.reloadToast.rotated') : tString('viewer.reloadToast.grew'),
+        failureKey !== null
+            ? tString(failureKey)
+            : kind === 'rotated'
+              ? tString('viewer.reloadToast.rotated')
+              : tString('viewer.reloadToast.grew'),
     )
 
     async function reload(): Promise<void> {
+        if (reloading) return
+        reloading = true
         try {
             const res = await viewerReload(sessionId)
-            if (res.status === 'error') {
-                log.warn('viewer_reload failed: {error}', { error: res.error })
+            if (res.status === 'ok') {
+                onReloaded()
+                dismissToast(toastId)
+                return
             }
+            logSessionOpFailure(log, 'reload', res.error)
+            onReloadRefused(sessionOpFailureKey('reload', res.error))
         } catch (e) {
-            log.warn('viewer_reload threw: {error}', { error: e })
+            log.error('viewer_reload threw: {error}', { error: e })
+            onReloadRefused(sessionOpFailureKey('reload', null))
         } finally {
-            dismissToast(toastId)
+            reloading = false
         }
     }
 </script>
@@ -44,7 +68,7 @@
                 void reload()
             }}
         >
-            {tString('viewer.reloadToast.reload')}
+            {failureKey !== null ? tString('viewer.reloadToast.retry') : tString('viewer.reloadToast.reload')}
         </button>
     </div>
 </div>

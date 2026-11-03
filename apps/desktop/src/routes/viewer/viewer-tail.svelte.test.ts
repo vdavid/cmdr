@@ -40,9 +40,28 @@ describe('createViewerTail', () => {
       getSessionId: () => 'sess-1',
       getTailMode: () => opts.tailMode,
       onAppendDetected,
+      onReloaded: vi.fn(),
     })
     return { onAppendDetected, tail }
   }
+
+  it('a reload that did not go through re-raises the same toast as a warning carrying why', () => {
+    const { tail } = makeTail({ tailMode: false })
+    tail.testOnlyDispatch({ kind: 'grew', newSize: 100 })
+    const [raised] = getToasts()
+    expect(raised.level).toBe('info')
+    expect(raised.props?.failureKey).toBeNull()
+
+    const refuse = raised.props?.onReloadRefused as (key: string) => void
+    refuse('viewer.reloadToast.gone')
+
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(1)
+    expect(toasts[0].id).toBe('viewer-file-changed-sess-1-grew')
+    expect(toasts[0].level).toBe('warn')
+    expect(toasts[0].dismissal).toBe('persistent')
+    expect(toasts[0].props?.failureKey).toBe('viewer.reloadToast.gone')
+  })
 
   it('grew event with tail off pushes a persistent reload toast', () => {
     const { tail, onAppendDetected } = makeTail({ tailMode: false })
@@ -94,6 +113,7 @@ describe('createViewerTail', () => {
       getSessionId: () => '',
       getTailMode: () => true,
       onAppendDetected,
+      onReloaded: vi.fn(),
     })
     tail.testOnlyDispatch({ kind: 'grew', newSize: 100 })
     expect(onAppendDetected).not.toHaveBeenCalled()

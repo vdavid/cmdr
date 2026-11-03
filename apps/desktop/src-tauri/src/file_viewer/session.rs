@@ -1403,6 +1403,11 @@ pub fn close_session(session_id: &str) -> Result<(), ViewerError> {
 /// trigger an `extend_to` on the active backend so the open viewport
 /// auto-follows newly appended bytes. When disabled, the FE still receives
 /// `viewer:file-changed:<sid>` events and renders its persistent reload toast.
+///
+/// Only stores the flag; the catch-up check on enable runs on a thread of its own
+/// (`catch_up_on_tail_enable`), because its stat is what a stalled network mount
+/// blocks on, and a command that outlives its timeout leaves the frontend's switch
+/// off while the flag here is on.
 pub fn set_tail_mode(session_id: &str, enabled: bool) -> Result<(), ViewerError> {
     let sessions = SESSIONS.lock_ignore_poison();
     let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
@@ -1411,20 +1416,34 @@ pub fn set_tail_mode(session_id: &str, enabled: bool) -> Result<(), ViewerError>
     session.tail_mode.store(enabled, Ordering::Relaxed);
     debug!("set_tail_mode: session={}, enabled={}", session_id, enabled);
 
-    // If tail is being turned on and the file already grew on disk while tail
-    // was off, jump the backend to the on-disk EOF so the user doesn't have to
-    // wait for the next change to see the catch-up.
     if enabled {
         let origin = session.origin.clone();
-        let backend_arc = session.load_backend();
-        drop(sessions);
-        if let Ok(on_disk) = origin.current_size()
-            && on_disk > backend_arc.total_bytes()
-        {
-            apply_tail_extend(session_id, on_disk);
-        }
+        let session_id = session_id.to_string();
+        thread::spawn(move || catch_up_on_tail_enable(&session_id, &origin));
     }
     Ok(())
+}
+
+/// If the file grew while tail mode was off, drive the same path a watcher `Grew`
+/// would: the backend extends (or queues mid-upgrade) and the frontend hears `grew`,
+/// which refetches the viewport, so the catch-up shows without waiting for the next
+/// append. A stat that fails or never returns changes nothing.
+fn catch_up_on_tail_enable(session_id: &str, origin: &SourceOrigin) {
+    #[cfg(test)]
+    test_gate::TAIL_CATCH_UP.wait_if_armed();
+    let Ok(on_disk) = origin.current_size() else {
+        return;
+    };
+    let covered = {
+        let sessions = SESSIONS.lock_ignore_poison();
+        let Some(session) = sessions.get(session_id) else {
+            return; // closed while the stat ran
+        };
+        session.backend.load_full().total_bytes()
+    };
+    if on_disk > covered {
+        handle_watcher_event(session_id, WatcherEvent::Grew(on_disk));
+    }
 }
 
 /// Reopen the active backend from scratch with the session's current encoding.

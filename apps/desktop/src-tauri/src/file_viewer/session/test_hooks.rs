@@ -385,6 +385,9 @@ pub mod test_gate {
     /// Parks the ByteSeek → LineIndex upgrade with its scan done, just before
     /// the drain-and-swap critical section.
     pub static UPGRADE_PRE_DRAIN: TestGate = TestGate::new();
+    /// Parks tail mode's catch-up check on enable, just before it asks the file its
+    /// size: that stat is what a stalled network mount blocks on.
+    pub static TAIL_CATCH_UP: TestGate = TestGate::new();
     /// Parks the encoding rebuild before it starts scanning, so another
     /// `set_encoding` can supersede it.
     pub static REBUILD_PRE_SCAN: TestGate = TestGate::new();

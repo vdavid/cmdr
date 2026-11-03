@@ -883,6 +883,23 @@ fn reload_replaces_backend_against_current_disk_contents() {
     session::close_session(&sid).unwrap();
 }
 
+/// The reload toast words a deleted file apart from a slow disk or a refused read,
+/// so the kind must survive to the frontend (#153).
+#[test]
+fn reload_of_a_deleted_file_answers_not_found() {
+    let dir = create_test_dir("reload_deleted");
+    let file = write_test_file(&dir, "log.txt", "first\n");
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    fs::remove_file(&file).unwrap();
+
+    let err = session::reload(&sid).unwrap_err();
+    assert!(matches!(err, ViewerError::NotFound { .. }), "got {err:?}");
+
+    session::close_session(&sid).unwrap();
+}
+
 #[test]
 fn set_tail_mode_enabling_catches_up_existing_growth() {
     let dir = create_test_dir("tail_catchup");
@@ -906,13 +923,50 @@ fn set_tail_mode_enabling_catches_up_existing_growth() {
 
     session::set_tail_mode(&sid, true).unwrap();
 
-    // The backend's total_bytes should snap to the on-disk size (ByteSeek
-    // extend_to just updates the size field). On LineIndex it may have been
-    // re-indexed via the same path.
-    let backend_bytes = session::get_session_status(&sid).unwrap();
-    let _ = backend_bytes; // we re-read via get_lines below
-    // get_lines after the snap should not blow up; that's the smoke check.
-    let _chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.99), 2, &AtomicBool::new(false)).unwrap();
+    // The catch-up runs in the background; the backend's total_bytes snaps to
+    // the on-disk size once it lands (ByteSeek's extend_to updates the size
+    // field; LineIndex re-indexes through the same path).
+    wait_until(
+        Duration::from_secs(3),
+        "the tail catch-up to reach the on-disk size",
+        || {
+            session::get_lines(&sid, super::SeekTarget::Fraction(0.99), 2, &AtomicBool::new(false))
+                .expect("get lines")
+                .total_bytes
+                >= on_disk
+        },
+    );
+
+    session::close_session(&sid).unwrap();
+}
+
+// Regression (#153): the catch-up stat ran inline, so on a stalled network mount the
+// command hit its 2 s timeout, the switch flipped back off, and the backend stayed in
+// tail mode. The flag must land and the call return whatever the stat does.
+#[test]
+fn set_tail_mode_returns_while_the_catch_up_check_is_still_waiting_on_the_file() {
+    let dir = create_test_dir("tail_catchup_stalled");
+    let file = write_test_file(&dir, "log.txt", "hello\n");
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    session::test_gate::TAIL_CATCH_UP.arm();
+    let (done_tx, done_rx) = std::sync::mpsc::channel();
+    let sid_for_call = sid.clone();
+    thread::spawn(move || {
+        let _ = done_tx.send(session::set_tail_mode(&sid_for_call, true));
+    });
+
+    session::test_gate::TAIL_CATCH_UP.wait_until_reached(Duration::from_secs(3));
+    let returned = done_rx.recv_timeout(Duration::from_secs(2));
+    // Let the parked catch-up finish before asserting, so a failure doesn't strand it.
+    session::test_gate::TAIL_CATCH_UP.release();
+
+    assert!(
+        matches!(returned, Ok(Ok(()))),
+        "set_tail_mode should return while the stat is parked, got {returned:?}"
+    );
+    assert!(session::test_only_tail_mode(&sid));
 
     session::close_session(&sid).unwrap();
 }

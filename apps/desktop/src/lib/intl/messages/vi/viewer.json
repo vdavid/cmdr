@@ -420,10 +420,6 @@
   "@viewer.copy.copyFailed": {
     "sourceHash": "b08416d"
   },
-  "viewer.copy.readFailed": "Không thể đọc vùng chọn. Thử lại?",
-  "@viewer.copy.readFailed": {
-    "sourceHash": "24ea14a"
-  },
   "viewer.saveAs.title": "Lưu vùng chọn",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"

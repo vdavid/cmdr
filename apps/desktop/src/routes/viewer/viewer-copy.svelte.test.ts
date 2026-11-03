@@ -140,9 +140,45 @@ describe('a read whose size wasn’t known up front', () => {
     orchestrator.proceedConfirm()
 
     await vi.waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith(tString('viewer.copy.readFailed'), { level: 'warn' })
+      expect(addToast).toHaveBeenCalledWith(tString('viewer.copy.copyFailed'), { level: 'warn' })
     })
     expect(writeText).not.toHaveBeenCalled()
+  })
+})
+
+// #153: the three copy bands share one failure report, so they can't drift apart again.
+describe('a copy read that didn’t finish, in every band', () => {
+  const timedOut = { ok: false as const, reason: 'timedOut' as const }
+
+  it('words a timeout the same whether the read was silent, confirmed, or of unknown size', async () => {
+    const silent = wire({ kind: 'silent-error', bytes: 10, reason: 'timedOut' })
+    await silent.handleCopy()
+
+    const confirmed = wire({ kind: 'confirm', bytes: 20_000_000, proceed: () => Promise.resolve(timedOut) })
+    await confirmed.handleCopy()
+    confirmed.proceedConfirm()
+
+    const unknown = wire({ kind: 'unknown-size', bytes: null, proceed: () => Promise.resolve(timedOut) })
+    await unknown.handleCopy()
+    unknown.proceedConfirm()
+
+    await vi.waitFor(() => {
+      expect(addToast).toHaveBeenCalledTimes(3)
+    })
+    for (const call of vi.mocked(addToast).mock.calls) {
+      expect(call).toEqual([tString('viewer.copy.readTooLong'), { level: 'warn' }])
+    }
+  })
+
+  it('stays quiet in every band when the person pressed Escape', async () => {
+    const cancelled = { ok: false as const, reason: 'cancelled' as const }
+    await wire({ kind: 'silent-error', bytes: 10, reason: 'cancelled' }).handleCopy()
+    const unknown = wire({ kind: 'unknown-size', bytes: null, proceed: () => Promise.resolve(cancelled) })
+    await unknown.handleCopy()
+    unknown.proceedConfirm()
+    await Promise.resolve()
+
+    expect(addToast).not.toHaveBeenCalled()
   })
 })
 

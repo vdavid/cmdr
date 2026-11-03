@@ -25,6 +25,8 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 - **`viewer-indexing-poll.ts`**: `viewer_get_status` poll during line-index build.
 - **`viewer-open-failure.ts`**: `handleOpenFailure`, the copy, Retry flag, and log level for an open that didn't
   succeed, shared by the three open sites. See § "A read that didn't come back".
+- **`viewer-session-op-failure.ts`**: the copy and log level for a reload, tail toggle, or encoding switch that didn't
+  take (§ "Tail mode").
 - **`viewer-keyboard.ts`**: pure key helpers + `createViewerKeyboard`, the keydown router (modifiers, Escape ladder, ⌘A,
   bare-key dispatch, and the twelve selection-extension chords). Word wrap, tail, the 0–3 mode keys
   (`viewer-view-mode.ts`), and the image's zoom keys (`MediaImageView.svelte`) are shortcuts-registry commands (scope
@@ -732,6 +734,18 @@ cursor jumped.
 Toast deduplication: ids include the kind (`viewer-file-changed-<sid>-grew`, `…-rotated`). Rapid same-kind events
 coalesce into one toast. A rotated event explicitly dismisses any open grew toast: the older "reload to catch up"
 message is no longer accurate.
+
+**When a reload or toggle doesn't take (#153).** `viewer_reload`, `viewer_set_tail_mode`, and `viewer_set_encoding`
+answer a typed `ViewerError` (the 2 s timeout is `timedOut`); `viewer-session-op-failure.ts` picks the copy by kind (a
+slow disk, a deleted file, anything else) and logs at `logLevelFor`'s level, so a stalled mount files no error report.
+
+- A reload that went through runs `onReloaded`, the same `refetchAfterBackendChange` a tail append runs: without it the
+  page kept its stale rows until a scroll.
+- A reload that didn't re-raises the SAME toast id as a `warn` with `failureKey` (text swapped, button "Try again"). A
+  re-raise, never an in-place text edit: the toast stack speaks only on (re-)raise and allows no live region inside.
+- A tail or encoding toggle that didn't take puts the control back and says so in a `warn` toast (one id per op).
+- Turning tail ON can't strand the switch: the backend stores the flag and returns; its catch-up check for growth while
+  tail was off runs on a thread and arrives as an ordinary `grew` event.
 
 **Follow.** With tail mode on, a viewport parked at the end stays at the end as the file grows, the way `tail -f` reads:
 `viewer-scroll.svelte.ts` keeps a `followsEnd` flag that only the user's own scroll events set (scrolling up releases
