@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 import RawByteView from './RawByteView.svelte'
+import { QUIET_FOCUS_ATTRIBUTE } from './quiet-focus'
 import { viewerGetBytes } from '#lib/tauri-commands/index.js'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
@@ -31,6 +32,31 @@ describe('RawByteView', () => {
     expect(viewerGetBytes).toHaveBeenCalledWith('raw-test', 0, 16)
 
     await unmount(instance)
+  })
+
+  // The view focuses itself so the scroll keys work, often right after the `2` / `3` that
+  // switched to it, which WebKit would ring as keyboard focus (#761). Tab focus still rings.
+  it('takes focus on mount without the focus ring', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const instance = mount(RawByteView, {
+      target,
+      props: {
+        sessionId: 'raw-focus',
+        fileName: 'sample.bin',
+        totalBytes: 4,
+        mode: 'hex',
+        initialOffset: 0,
+        onOffsetChange: () => {},
+      },
+    })
+    await tick()
+    const view = target.querySelector<HTMLElement>('.raw-byte-view')
+    expect(document.activeElement).toBe(view)
+    expect(view?.hasAttribute(QUIET_FOCUS_ATTRIBUTE)).toBe(true)
+
+    await unmount(instance)
+    target.remove()
   })
 
   it('keeps the previous rows on screen while the next chunk is still loading', async () => {

@@ -70,6 +70,7 @@
     import ViewerRow from './ViewerRow.svelte'
     import RawByteView from './RawByteView.svelte'
     import { modeForKey, type ViewerDisplayMode } from './viewer-view-mode'
+    import { focusQuietly } from './quiet-focus'
     import { initializeShortcuts } from '#lib/shortcuts/index.js'
     import { availableMediaKind } from './media-view'
     import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
@@ -691,7 +692,7 @@
             viewMode = next
             if (next === 'text') {
                 await tick()
-                scroll.contentRef?.focus()
+                if (scroll.contentRef) focusQuietly(scroll.contentRef)
             }
         }
     }
@@ -1046,7 +1047,7 @@
         // eslint-disable-next-line svelte/no-navigation-without-resolve -- same-route query update built from the current URL; resolve() takes a route id, not a URL object
         await goto(url, { state: {}, shallow: true, replace: true })
         await tick()
-        if (viewMode === 'text') scroll.contentRef?.focus()
+        if (viewMode === 'text' && scroll.contentRef) focusQuietly(scroll.contentRef)
     }
 
     onMount(async () => {
@@ -1465,6 +1466,13 @@
         user-select: none;
         -webkit-user-select: none;
         cursor: text;
+        outline: none;
+    }
+
+    /* The view focuses itself after a mode switch or a link follow, quietly (`quiet-focus.ts`). */
+    .file-content:focus-visible:not([data-quiet-focus]) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
     }
 
     .scroll-spacer {

@@ -179,11 +179,9 @@ like an image's. `MediaMarkdownView` asks `viewerRenderMarkdown(sessionId)` for 
 The placeholder is a `span[data-md-placeholder]` after the hidden `img`, naming it by its `alt`. Styles reach the
 injected HTML through `:global`, and the renderer's own classes (alerts, footnotes) are matched as `[class~='…']`, which
 keeps them out of `css-unused`'s sight (no markup carries them). The document scrolls natively in a focused container
-(arrows, Space, Page keys); the view focuses it itself after each render, quietly (`focusQuietly`: the `quiet-focus`
-class until blur, plus `focusVisible: false`), because WebKit matches `:focus-visible` on a programmatic focus that
-follows a key press and the `0` switch painted a window-sized ring (#761). Tab focus still shows the ring; it's
-`user-select: text`, and Edit > Copy / Select all act on the browser selection (`selectAll()` on the component). Here
-the menu IS the ⌘C path: the page's keydown leaves the chord alone in media mode, so the Edit menu's key equivalent
+(arrows, Space, Page keys); the view focuses it itself after each render, quietly (§ Gotchas, "Self-focus is quiet").
+It's `user-select: text`, and Edit > Copy / Select all act on the browser selection (`selectAll()` on the component).
+Here the menu IS the ⌘C path: the page's keydown leaves the chord alone in media mode, so the Edit menu's key equivalent
 takes it and emits `ViewerEditAction`. A copy confirms itself with the same "on clipboard" toast a text-view copy shows
 (`copyFlow.copyText`). A link click never navigates the webview: § "Links and history".
 
@@ -868,6 +866,12 @@ so the page shows how far it got. Backend half: `apps/desktop/src-tauri/src/file
 
 - `$state(false)` in `.svelte.ts` triggers `@typescript-eslint/no-unnecessary-condition` because the linter doesn't know
   the value is mutated via Svelte reactivity. Use an inline eslint-disable comment with a reason.
+- **Self-focus is quiet.** The text, Binary/Hex, and formatted Markdown views focus their own scroll region so the
+  scroll keys work, through `focusQuietly` (`quiet-focus.ts`). WebKit matches `:focus-visible` on a programmatic focus
+  that follows a key press, so the `0`–`3` mode switch painted a window-sized accent ring (#761). The helper marks the
+  element `data-quiet-focus` until its next blur and passes `focusVisible: false`; each view's ring rule reads
+  `:focus-visible:not([data-quiet-focus])`, so Tab focus still rings. The image stage only takes Tab or click focus. E2E
+  key presses are synthetic and never trip the heuristic, so Vitest pins this, not Playwright.
 - **`user-select: none` on `.file-content` is deliberate.** The viewer owns its own selection model (above); the
   browser's native selection would render a competing-and-broken one on top of ours that loses its anchor as soon as the
   line scrolls out. `.status-bar` opts back in with `user-select: text` so users can still copy the file name or line
