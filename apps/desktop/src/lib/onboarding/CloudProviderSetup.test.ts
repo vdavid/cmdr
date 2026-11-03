@@ -186,12 +186,14 @@ describe('CloudProviderSetup', () => {
   it('checks the connection on open when a key is already stored', async () => {
     getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'abc123' })
     mountSetup('openai')
-    // The on-open path asks the model cache first, and its key is a Web Crypto digest, so
-    // the check lands a macrotask later than the mount.
-    await advanceTimers(1)
-    expect(checkAiConnection).toHaveBeenCalledWith({
-      baseUrl: expect.stringContaining('openai.com') as string,
-      providerId: 'openai',
+    // The on-open path asks the model cache first, and its key is a Web Crypto digest: real
+    // async work no fake clock drives, which lands later under a loaded full run. So wait for
+    // the call rather than budgeting a fixed number of ticks for it.
+    await vi.waitFor(() => {
+      expect(checkAiConnection).toHaveBeenCalledWith({
+        baseUrl: expect.stringContaining('openai.com') as string,
+        providerId: 'openai',
+      })
     })
   })
 
