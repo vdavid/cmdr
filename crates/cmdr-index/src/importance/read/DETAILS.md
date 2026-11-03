@@ -156,6 +156,6 @@ signals and re-scores.
 cargo run -p index-query --bin importance-tune -- <path-to-importance-root.db> [top_n]
 ```
 
-Find the DB in the app data dir as `importance-root.db`; `top_n` defaults to 30. The printout lists each folder's score,
-then per-signal `weight`, `raw`, and `contribution` (skipping signals redistributed to zero), so a mis-ranked folder's
-cause is visible. Measuring ranking QUALITY (rather than eyeballing it) is `../evals/DETAILS.md`.
+Find the DB in the cache dir as `drive-index/importance-root.db`; `top_n` defaults to 30. The printout lists each
+folder's score, then per-signal `weight`, `raw`, and `contribution` (skipping signals redistributed to zero), so a
+mis-ranked folder's cause is visible. Measuring ranking QUALITY (rather than eyeballing it) is `../evals/DETAILS.md`.

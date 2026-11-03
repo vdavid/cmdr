@@ -15,7 +15,7 @@ dispositions in `../indexing/handle/DETAILS.md` § "The other two subsystems".
 Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth).
 
 - **`scorer/CLAUDE.md`** — the pure formula: `score` / `explain`, `FolderSignals`, the tunable `Weights`.
-  **`store/CLAUDE.md`** — per-volume `importance.db`: the schema, the folded PK, what earns a row.
+  **`store/CLAUDE.md`** — per-volume weights and visits files: schema, folded PK, the older build's split.
 - **`scheduler/CLAUDE.md`** — bus-driven full and incremental recompute, the O(dirs) full walk and the O(touched) scoped
   one, the kind policy. **`read/CLAUDE.md`** — `ImportanceIndex`, the ONLY consumer entry, plus the recompute
   subscription.
@@ -41,9 +41,9 @@ Top-level leaves this file owns: `classify.rs` (the shared categorical classifie
 - **A classifier change is INERT until `store::SCORING_POLICY_KEY` re-arms stores** (a full pass runs once, an
   incremental only touches changed folders). It hashes the lists plus `SCORING_RULES_VERSION`; bump the latter by hand
   for a rule no list can see.
-- **`importance-{volume_id}.db` is a disposable cache**: a `SCHEMA_VERSION` mismatch delete-and-recreates it (no
-  migrations), and a forgotten volume takes it along, writer retired first. ONE `ImportanceWriter` per volume through
-  `writer_registry`, for visits AND recomputes. ❌ Never a second writer thread on one DB.
+- **Two files per volume.** `importance-{id}.db` (weights, cache dir) is a disposable cache. `visits-{id}.db` (data dir)
+  is user data: ❌ never recreated; a rebuild keeps it. ONE `ImportanceWriter` per volume through `writer_registry`,
+  visits ATTACHed, retired before either file goes. ❌ Never a second writer thread.
 - **Volume kind ⇒ policy, TYPED** (`scheduler::ScoringPolicy::for_kind`): Local and SMB scored, **MTP excluded** at
   every entry point. ❌ NEVER a filesystem syscall against an SMB or MTP mount — read the local index DB only.
 - **A pass stops with its volume** (its `CancellationToken`'s child, plus a `stop_all_indexing` hook).

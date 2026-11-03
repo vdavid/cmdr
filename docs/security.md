@@ -170,9 +170,10 @@ admin re-mint endpoint rather than lengthening the TTL.
 The folder-importance subsystem records a lightweight navigation-visit signal to learn which folders the user works in
 (feeding the importance scorer). Privacy posture:
 
-- **Local-only, never transmitted.** Visits live in the per-volume `importance.db` on the user's disk (a disposable
-  cache, purged with the index). Nothing about visits is sent anywhere — not to the maintainer, not to PostHog
-  analytics, not in error reports. It's not telemetry.
+- **Local-only, never transmitted.** Visits live in a per-volume `visits-{id}.db` in the app data dir on the user's
+  disk, apart from the rebuildable importance weights, and go when the user forgets the volume or clears the index. The
+  user's own backups (Time Machine) include that file; nothing else copies it. Nothing about visits is sent anywhere —
+  not to the maintainer, not to PostHog analytics, not in error reports. It's not telemetry.
 - **Counts and timestamps only, no content.** Each row is `(folder path, visit count, last-visit seconds)`. No file
   contents, no file names beyond the folder path itself, no per-file data.
 - **Background-scored volumes only.** The local disk and SMB shares record visits (the volumes importance scores);

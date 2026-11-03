@@ -38,10 +38,10 @@ with no host at all.
   each path and name marked with `cmdr_fs::log_private::LogPrivate`. `DETAILS.md` names the two exceptions.
 - **We never build a runtime.** The host injects a `tokio::runtime::Handle`; a second pool would compete for cores and
   split the thread-QoS story that lets indexing run in-process.
-- **Rebuild, don't migrate.** All three databases are disposable caches; a format or scope change rescans. ❌ No
-  machinery to preserve them without David's say-so.
-- **Only the drive index lives in the cache dir**, out of backups. ❌ Never derive a store's folder from another store's
-  path; ask `StoreDirs`. `DETAILS.md` § "Where the stores live".
+- **Rebuild, don't migrate.** Caches rescan on a format or scope change; ❌ no machinery to preserve them without
+  David's say-so. Except importance's visits: user data.
+- **The drive index and importance's weights live in the cache dir**; visits and media in the data dir. ❌ Never derive
+  a store's folder from another's path; ask `StoreDirs`. `DETAILS.md` § "Where the stores live".
 
 Why the crate exists, what each subsystem owes the others, the two gated surfaces, and the traps that have already
 fired: `DETAILS.md`. Read it before moving anything across the boundary in either direction.
