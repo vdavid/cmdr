@@ -126,9 +126,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.search": "<b>Search in plain words</b>: the text you type, or what a connected AI tool asks for once you’ve turned on MCP direct mode",
+  "ai.cloudConsent.search": "<b>Search in plain words</b>: the text you type",
   "@ai.cloudConsent.search": {
-    "description": "List item in the Allow cloud AI fold for natural-language search: the Search dialog sends the typed query, and an outside AI tool connected over MCP can send one too, only with the developer setting \"MCP direct mode\" on. The bold part (inside <b></b>, keep the tags) names the feature. MCP stays as it is. Sentence case, no period. The apostrophe is U+2019.",
+    "description": "List item in the Allow cloud AI fold for natural-language search: the Search dialog sends the typed query. The bold part (inside <b></b>, keep the tags) names the feature. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -222,9 +222,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away, with no question; you can undo a tag change. Renames and cleanups it prepares as a plan wait for your approval.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list, saying what the assistant can DO, so what its answers can make happen. Keep every group and what each one waits for: free app actions; dialogs the user confirms; questions asked first; the two things that run with no question, and that tags can't be undone; plans that wait for approval. Must NOT promise that nothing changes without the user. \"Ask Cmdr\" is the assistant's product name.",
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list, saying what the assistant can DO, so what its answers can make happen. Keep every group and what each one waits for: free app actions; dialogs the user confirms; questions asked first; the two things that run with no question, and that a tag change can be undone; plans that wait for approval. Must NOT promise that nothing changes without the user. \"Ask Cmdr\" is the assistant's product name.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

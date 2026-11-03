@@ -101,14 +101,16 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             They're off until you turn them on, and you choose the provider.
         </li>
         <li>
-            Cmdr's own AI can only <strong>propose</strong> file operations, never carry them out. Every suggestion opens
-            a review screen listing exactly what would happen, and nothing runs until you approve it. That isn't a setting
-            you can switch off.
+            Cmdr's own AI <strong>proposes</strong> file operations, and you decide. Every suggestion opens a review
+            screen or a dialog showing exactly what would happen, and nothing runs until you approve it. Two small things
+            happen right away instead: creating a new, empty folder or file, and changing Finder tags. You can undo a tag
+            change. The review step isn't a setting you can switch off.
         </li>
         <li>
             Cmdr can also act as an MCP server so an outside AI client drives it. That server is off by default. If you
-            turn it on and hand a client the access token, that client can run file operations without the review
-            screen. That's a meaningful risk, and it's yours to take.
+            turn it on and hand a client the access token, that client can do at most what Cmdr's own AI can, under the
+            same rules, and it can't confirm anything for you. What a client you connect does with what it sees in Cmdr
+            is up to that client, so connecting one is your call.
         </li>
         <li>
             If you review an AI suggestion and approve it, that's your call, and a court will take it into account when
