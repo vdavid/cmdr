@@ -1036,6 +1036,10 @@
   "@settings.indexing.firstStaleDialogShown.description": {
     "sourceHash": "a879dbb"
   },
+  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "@settings.indexing.firstStaleDialogShown.keywords": {
+    "sourceHash": "06af8ea"
+  },
   "settings.behavior.fileSystemWatching.downloadsNotifications.label": "Avisera om hämtningar",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.label": {
     "sourceHash": "55efff7"
@@ -1096,6 +1100,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Internt. Döljer varningsaviseringen vid första utlösningen.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
     "sourceHash": "5f4247c"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
+    "sourceHash": "e0bc8c5"
   },
   "settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": "Hämtningsavisering hopfälld",
   "@settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": {
@@ -1791,6 +1799,10 @@
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
     "sourceHash": "76ba76c"
   },
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
+    "sourceHash": "b1c163a"
+  },
   "settings.fileExplorer.typeToJump.resetDelay.label": "Återställningsfördröjning för skriv-för-att-hoppa",
   "@settings.fileExplorer.typeToJump.resetDelay.label": {
     "sourceHash": "16ac047"
@@ -2192,6 +2204,10 @@
   "@settings.behavior.textEditorHintSeen.description": {
     "sourceHash": "65440fb"
   },
+  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "@settings.behavior.textEditorHintSeen.keywords": {
+    "sourceHash": "4b1acc2"
+  },
   "settings.behavior.openTerminalHereApp.label": "”Öppna terminal här” använder",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"
@@ -2224,6 +2240,10 @@
   "@settings.fileExplorer.git.portalIntroSeen.description": {
     "sourceHash": "623d981"
   },
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "@settings.fileExplorer.git.portalIntroSeen.keywords": {
+    "sourceHash": "e50231b"
+  },
   "settings.behavior.openTerminalHereToastSeen.label": "Tips om ”Öppna terminal här” visat",
   "@settings.behavior.openTerminalHereToastSeen.label": {
     "sourceHash": "22f31aa"
@@ -2231,6 +2251,10 @@
   "settings.behavior.openTerminalHereToastSeen.description": "Om engångstipset om att välja en terminalapp har visats.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
     "sourceHash": "f976886"
+  },
+  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "@settings.behavior.openTerminalHereToastSeen.keywords": {
+    "sourceHash": "a7e75dc"
   },
   "settings.section.archives": "Arkiv",
   "@settings.section.archives": {
@@ -2256,6 +2280,10 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
+    "sourceHash": "98e1c97"
+  },
   "settings.behavior.serversPinHintSeen.label": "Tips om ”Lossa från volymväljaren” visat",
   "@settings.behavior.serversPinHintSeen.label": {
     "sourceHash": "8513a3c"
@@ -2263,6 +2291,10 @@
   "settings.behavior.serversPinHintSeen.description": "Om engångstipset om att lossa servrar har visats.",
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
+  },
+  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "@settings.behavior.serversPinHintSeen.keywords": {
+    "sourceHash": "64da081"
   },
   "settings.behavior.switcherFavoritesExpanded.label": "Favoriterna öppna i volymväljaren",
   "@settings.behavior.switcherFavoritesExpanded.label": {
@@ -2304,6 +2336,10 @@
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "009056a"
   },
+  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "@settings.behavior.revealActivationNoticeSeen.keywords": {
+    "sourceHash": "1e3e612"
+  },
   "settings.behavior.adbHintDismissed.label": "Tips om USB-felsökning avfärdat",
   "@settings.behavior.adbHintDismissed.label": {
     "sourceHash": "ba3d7fc"
@@ -2311,6 +2347,10 @@
   "settings.behavior.adbHintDismissed.description": "Om engångsraden som erbjuder USB-felsökning har avfärdats.",
   "@settings.behavior.adbHintDismissed.description": {
     "sourceHash": "37afcbc"
+  },
+  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "@settings.behavior.adbHintDismissed.keywords": {
+    "sourceHash": "c520d8c"
   },
   "settings.section.notifications": "Aviseringar",
   "@settings.section.notifications": {
@@ -3409,6 +3449,10 @@
   "settings.fileExplorer.quickFilterIntroSeen.description": "Om aviseringen som förklarar det första snabbfiltret har visats.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
     "sourceHash": "855c661"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
+    "sourceHash": "c02e93d"
   },
   "settings.dataWipe.card": "Dina data på den här Macen",
   "@settings.dataWipe.card": {

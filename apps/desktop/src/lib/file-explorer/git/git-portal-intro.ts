@@ -18,7 +18,7 @@ import { addToast } from '#lib/ui/toast/index.js'
 import { isE2eRun } from '#lib/app-mode.js'
 import GitPortalIntroToastContent from './GitPortalIntroToastContent.svelte'
 
-/** Hidden: nothing renders a row for it. */
+/** Auto-rendered in Settings > Advanced's "Hints and warnings" card; off shows the intro once more. */
 export const GIT_PORTAL_INTRO_SEEN_KEY = 'fileExplorer.git.portalIntroSeen'
 
 const TOAST_ID = 'git-portal-intro'

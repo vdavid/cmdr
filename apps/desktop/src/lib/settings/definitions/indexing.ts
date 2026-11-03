@@ -72,17 +72,6 @@ export const indexingSettings: SettingDefinitionSource[] = [
     component: 'text-input',
     hidden: true,
   },
-  {
-    // Internal (FE-owned): whether the one-time stale dialog has fired once.
-    id: 'indexing.firstStaleDialogShown',
-    section: ['Indexing', 'Drive indexing'],
-    labelKey: 'settings.indexing.firstStaleDialogShown.label',
-    descriptionKey: 'settings.indexing.firstStaleDialogShown.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
-  },
 
   // ========================================================================
   // Indexing › Image indexing

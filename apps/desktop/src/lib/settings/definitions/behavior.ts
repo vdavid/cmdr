@@ -35,33 +35,6 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
-    // Internal (FE-owned): whether the one-time "what just happened?" toast has
-    // fired. Set to true the first time a background double-click navigates up.
-    // No UI row; hidden from search and the section tree.
-    id: 'behavior.doubleClickOnPaneNotificationSeen',
-    section: ['Behavior', 'Navigation & file ops'],
-    labelKey: 'settings.behavior.doubleClickOnPaneNotificationSeen.label',
-    descriptionKey: 'settings.behavior.doubleClickOnPaneNotificationSeen.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
-  },
-  {
-    // Internal (FE-owned): whether the one-time "your Network group is getting
-    // long" toast has fired. Set the first time five server places are pinned.
-    // No UI row; hidden from search and the section tree, the way
-    // `behavior.doubleClickOnPaneNotificationSeen` is.
-    id: 'behavior.serversPinHintSeen',
-    section: ['Behavior', 'Navigation & file ops'],
-    labelKey: 'settings.behavior.serversPinHintSeen.label',
-    descriptionKey: 'settings.behavior.serversPinHintSeen.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
-  },
-  {
     // Internal (FE-owned): whether the volume switcher's favorites section was
     // last left open. Driven entirely by the section's own row; ONE value for
     // both panes, so the two switchers never disagree about it.
@@ -79,7 +52,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     // made, as an ISO 8601 instant. Stamped when the toast is RAISED, so a crash
     // mid-toast can't make it reappear forever. A date rather than a flag because
     // it also feeds the shared nudge cooldown (`#lib/nudges/CLAUDE.md`). No UI
-    // row; hidden the way the seen-flags above it are.
+    // row: a cooldown stamp, unlike the once-ever hint flags in Advanced.
     id: 'behavior.dockPinNudgeOfferedAt',
     section: ['Behavior', 'Navigation & file ops'],
     labelKey: 'settings.behavior.dockPinNudgeOfferedAt.label',
@@ -112,32 +85,6 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     type: 'string',
     default: '',
     component: 'text-input',
-    hidden: true,
-  },
-  {
-    // Internal (FE-owned): whether the once-ever notice that fires the FIRST time
-    // a reveal actually lands in Cmdr has been shown. ❌ Not a nudge: it answers
-    // something the user set up themselves, so it takes no part in the cooldown.
-    id: 'behavior.revealActivationNoticeSeen',
-    section: ['Behavior', 'Navigation & file ops'],
-    labelKey: 'settings.behavior.revealActivationNoticeSeen.label',
-    descriptionKey: 'settings.behavior.revealActivationNoticeSeen.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
-  },
-  {
-    // Internal (FE-owned): whether the "turn on USB debugging" line in an MTP
-    // pane's header has been dismissed. Set once, by the line's own × button.
-    // No UI row; hidden the way the two seen-flags above it are.
-    id: 'behavior.adbHintDismissed',
-    section: ['Behavior', 'Navigation & file ops'],
-    labelKey: 'settings.behavior.adbHintDismissed.label',
-    descriptionKey: 'settings.behavior.adbHintDismissed.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
     hidden: true,
   },
   {
@@ -267,21 +214,6 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     // Linux keeps `xdg-open` and renders no Text editor card.
     macOSOnly: true,
   },
-  {
-    // Internal (FE-owned): whether the one-time "want a different editor next
-    // time?" toast has fired after F4. No UI row; hidden from the section tree,
-    // the way `behavior.openTerminalHereToastSeen` is. Hidden settings still
-    // enter search, hence `macOSOnly` too.
-    id: 'behavior.textEditorHintSeen',
-    section: ['Behavior', 'Navigation & file ops'],
-    labelKey: 'settings.behavior.textEditorHintSeen.label',
-    descriptionKey: 'settings.behavior.textEditorHintSeen.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
-    macOSOnly: true,
-  },
 
   // ------------------------------------------------------------------------
   // Terminal, rendered as its own card inside Navigation & file ops.
@@ -311,19 +243,6 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     component: 'select',
     // The whole feature is macOS-only, and so is the Terminal card.
     macOSOnly: true,
-  },
-  {
-    // Internal (FE-owned): whether the one-time "which app opened, and how to
-    // change it" toast has fired. No UI row; hidden from search and the section
-    // tree, the way `behavior.doubleClickOnPaneNotificationSeen` is.
-    id: 'behavior.openTerminalHereToastSeen',
-    section: ['Behavior', 'Navigation & file ops'],
-    labelKey: 'settings.behavior.openTerminalHereToastSeen.label',
-    descriptionKey: 'settings.behavior.openTerminalHereToastSeen.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
   },
 
   // ------------------------------------------------------------------------
@@ -548,18 +467,6 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     type: 'string',
     default: '\u{2303}\u{2325}\u{2318}J', // ⌃⌥⌘J
     component: 'text-input',
-    hidden: true,
-  },
-  {
-    // Internal: hidden from the Settings UI. Drives the first-trigger warn-toast
-    // suppression. Reset on `binding` change via `setGlobalGoToLatestBinding`.
-    id: 'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged',
-    section: ['Behavior', 'Notifications'],
-    labelKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label',
-    descriptionKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
     hidden: true,
   },
   {

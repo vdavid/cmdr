@@ -217,7 +217,7 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
    * Double-clicking the empty file-list background navigates up one folder
    * (Directory Opus-style), gated by `behavior.doubleClickPaneNavigatesToParent`.
    * On the very first trigger we raise a one-time INFO toast explaining it, and
-   * flip the hidden `behavior.doubleClickOnPaneNotificationSeen` so it shows once.
+   * flip `behavior.doubleClickOnPaneNotificationSeen` so it shows once.
    */
   function handlePaneBackgroundDblClick(event: MouseEvent): void {
     if (!getSetting('behavior.doubleClickPaneNavigatesToParent')) return

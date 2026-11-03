@@ -207,6 +207,168 @@ export const advancedSettings: SettingDefinitionSource[] = [
     default: true,
     component: 'switch',
   },
+
+  // ------------------------------------------------------------------------
+  // Once-ever hints. Each flag is FE-owned and spent by the code that raises
+  // its hint, the moment the hint goes UP (so a crash mid-toast costs one
+  // reading, never a repeat forever). On means "already shown, don't show it
+  // again"; turning a row off makes the hint show once more the next time its
+  // moment comes. The ids keep their feature prefixes: they are stored keys.
+  // ------------------------------------------------------------------------
+  {
+    // The "What just happened?" toast the first quick filter raises
+    // (`file-explorer/pane/quick-filter-intro.ts`). ❌ Not a nudge: it explains
+    // what the user just did, so it takes no part in the nudge cooldown.
+    id: 'fileExplorer.quickFilterIntroSeen',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.fileExplorer.quickFilterIntroSeen.label',
+    descriptionKey: 'settings.fileExplorer.quickFilterIntroSeen.description',
+    keywordsKey: 'settings.fileExplorer.quickFilterIntroSeen.keywords',
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    // The toast after a background double-click first navigates up
+    // (`file-explorer/pane/pane-pointer.ts`).
+    id: 'behavior.doubleClickOnPaneNotificationSeen',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.behavior.doubleClickOnPaneNotificationSeen.label',
+    descriptionKey: 'settings.behavior.doubleClickOnPaneNotificationSeen.description',
+    keywordsKey: 'settings.behavior.doubleClickOnPaneNotificationSeen.keywords',
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    // The toast the first time Escape leaves full screen (`routes/(main)/escape-key.ts`).
+    id: 'advanced.exitFullScreenOnEscapeHintShown',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.advanced.exitFullScreenOnEscapeHintShown.label',
+    descriptionKey: 'settings.advanced.exitFullScreenOnEscapeHintShown.description',
+    keywordsKey: 'settings.advanced.exitFullScreenOnEscapeHintShown.keywords',
+    terms: ['esc'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    // The "your Network group is getting long" toast, raised once five server
+    // places are pinned (`stores/volume-store.svelte.ts`).
+    id: 'behavior.serversPinHintSeen',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.behavior.serversPinHintSeen.label',
+    descriptionKey: 'settings.behavior.serversPinHintSeen.description',
+    keywordsKey: 'settings.behavior.serversPinHintSeen.keywords',
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    // The line offering USB debugging at the top of an MTP phone pane, spent by
+    // its own × (`adb/AdbHint.svelte`).
+    id: 'behavior.adbHintDismissed',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.behavior.adbHintDismissed.label',
+    descriptionKey: 'settings.behavior.adbHintDismissed.description',
+    keywordsKey: 'settings.behavior.adbHintDismissed.keywords',
+    terms: ['usb', 'adb', 'android'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    // The intro toast the first time a pane lands on a repo root
+    // (`file-explorer/git/git-portal-intro.ts`).
+    id: 'fileExplorer.git.portalIntroSeen',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.fileExplorer.git.portalIntroSeen.label',
+    descriptionKey: 'settings.fileExplorer.git.portalIntroSeen.description',
+    keywordsKey: 'settings.fileExplorer.git.portalIntroSeen.keywords',
+    terms: ['git'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    // The explainer dialog the first time an external drive's index goes stale
+    // (`indexing/StaleDriveDialog.svelte`), still gated on `indexing.staleNotify`.
+    id: 'indexing.firstStaleDialogShown',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.indexing.firstStaleDialogShown.label',
+    descriptionKey: 'settings.indexing.firstStaleDialogShown.description',
+    keywordsKey: 'settings.indexing.firstStaleDialogShown.keywords',
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    // The warning toast on the first press of the global go-to-latest-download
+    // hotkey (`downloads/global-shortcut-bridge.svelte.ts`). Rebinding the hotkey
+    // also turns it off (`setGlobalGoToLatestBinding`), so a new combo gets its
+    // own warning.
+    id: 'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label',
+    descriptionKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description',
+    keywordsKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords',
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    // The toast after F4 pointing at the text editor setting
+    // (`text-editor/editor-hint.ts`). Linux never raises it.
+    id: 'behavior.textEditorHintSeen',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.behavior.textEditorHintSeen.label',
+    descriptionKey: 'settings.behavior.textEditorHintSeen.description',
+    keywordsKey: 'settings.behavior.textEditorHintSeen.keywords',
+    terms: ['f4'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    macOSOnly: true,
+  },
+  {
+    // The toast after the first "Open terminal here", naming the app that
+    // opened (`open-terminal/first-use-pick.ts`). The feature is macOS-only.
+    id: 'behavior.openTerminalHereToastSeen',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.behavior.openTerminalHereToastSeen.label',
+    descriptionKey: 'settings.behavior.openTerminalHereToastSeen.description',
+    keywordsKey: 'settings.behavior.openTerminalHereToastSeen.keywords',
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    macOSOnly: true,
+  },
+  {
+    // The notice the first time a "Show in Finder" from another app lands in
+    // Cmdr (`reveal/reveal-activation-notice.ts`). ❌ Not a nudge: it answers
+    // something the user set up, so it takes no part in the cooldown.
+    id: 'behavior.revealActivationNoticeSeen',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.behavior.revealActivationNoticeSeen.label',
+    descriptionKey: 'settings.behavior.revealActivationNoticeSeen.description',
+    keywordsKey: 'settings.behavior.revealActivationNoticeSeen.keywords',
+    terms: ['finder'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    macOSOnly: true,
+  },
   {
     id: 'fileExplorer.tabs.closedTabHistorySize',
     section: ['Advanced'],
@@ -446,25 +608,13 @@ export const advancedSettings: SettingDefinitionSource[] = [
   },
   {
     // One-shot for the best-effort notice a Mac below `SUPPORTED_MACOS_MAJOR`
-    // gets (`#lib/utils/webkit-compat.ts`). Hidden for the same reason the
-    // onboarding flags are: it records what the user has already been told, so
-    // re-telling them is the bug, and a Settings row would only invite that.
+    // gets (`#lib/utils/webkit-compat.ts`). Hidden, unlike the once-ever hints in
+    // the "Hints and warnings" card: on a supported Mac (nearly everyone) it never
+    // fires, so a row there would be a switch that does nothing.
     id: 'advanced.oldMacosNoticeShown',
     section: ['Advanced'],
     labelKey: 'settings.advanced.oldMacosNoticeShown.label',
     descriptionKey: 'settings.advanced.oldMacosNoticeShown.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
-  },
-  {
-    // Hidden like `advanced.oldMacosNoticeShown`: it records that the user was told
-    // once, and the toast itself links to the real switch.
-    id: 'advanced.exitFullScreenOnEscapeHintShown',
-    section: ['Advanced'],
-    labelKey: 'settings.advanced.exitFullScreenOnEscapeHintShown.label',
-    descriptionKey: 'settings.advanced.exitFullScreenOnEscapeHintShown.description',
     type: 'boolean',
     default: false,
     component: 'switch',

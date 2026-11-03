@@ -55,6 +55,6 @@ error CLASSIFICATION; `apps/desktop/src-tauri/src/file_system/git/CLAUDE.md` for
   dir). `FullList.svelte` shows an "Opens <path>" tooltip.
 
 Settings keys (all `fileExplorer.git.*`): `showRepoChip` (default `true`), `showStatusColumn` (default `false`),
-`showVirtualGitPortal` (default `true`), hidden `portalIntroSeen`.
+`showVirtualGitPortal` (default `true`), `portalIntroSeen` (Advanced).
 
 Full details (chip lifecycle, status-column lifecycle, decision rationale): `DETAILS.md`.

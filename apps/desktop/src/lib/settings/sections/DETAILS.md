@@ -31,9 +31,9 @@ sections compose).
   described below, then Show in Finder (`RevealHandlerCard`) and Operation log (the retention limits
   `operationLog.maxAge` / `operationLog.maxSize`, plus the `settings.operationLog.intro` blurb). The conflict/progress
   settings live ONLY in Advanced (`maxConflictsToShow`, `progressUpdateInterval` → `section: ['Advanced']`), never
-  mirrored here. The hidden `behavior.doubleClickOnPaneNotificationSeen`, `behavior.textEditorHintSeen`, and
-  `behavior.openTerminalHereToastSeen` flags (one-time-hint trackers) are registered but render no row. Each card frame
-  gated via `anyVisible(shouldShow, ...)` (the card-group pattern).
+  mirrored here. The one-time-hint flags for this page's features (`behavior.doubleClickOnPaneNotificationSeen`,
+  `behavior.textEditorHintSeen`, `behavior.openTerminalHereToastSeen`, and the rest) live in Advanced's "Hints and
+  warnings" card, not here. Each card frame gated via `anyVisible(shouldShow, ...)` (the card-group pattern).
 - **`AppChoiceSelect.svelte`** + **`app-choice-options.ts`**: the shell behind both rows that pick an app off this Mac.
   **`TextEditorSelect.svelte`** + **`text-editor-options.ts`**: the "Edit files in" control.
   **`TerminalAppSelect.svelte`** + **`terminal-app-options.ts`**: the "Open terminal here uses" control. See § "Rows
@@ -634,9 +634,9 @@ Text editor); `text-editor-options.ts` only presents that answer.
   path. ❌ Browsing never rewrites a stored value; the canonical form is asked for once, at pick time.
 - **A missing editor shows as the system default**, which is what F4 opens before it resets the setting.
 - **Deep-linking here**: `openSettingsToTextEditor()` in `apps/desktop/src/lib/text-editor/text-editor-setting.ts`, the
-  target of every text editor toast. The hidden `behavior.textEditorHintSeen` flag beside the row belongs to the
-  one-time hint, whose rules live in `apps/desktop/src/lib/text-editor/DETAILS.md` § The hint. This row only reads and
-  writes the choice.
+  target of every text editor toast. The `behavior.textEditorHintSeen` flag (a row in Advanced's "Hints and warnings"
+  card) belongs to the one-time hint, whose rules live in `apps/desktop/src/lib/text-editor/DETAILS.md` § The hint. This
+  row only reads and writes the choice.
 - **Decided edge**: TextEdit picked through "Choose an app…" canonicalizes to `com.apple.TextEdit`, which isn't
   `system`, so the row shows "System default (TextEdit)" AND a second "TextEdit" row. The pin survives a later change of
   the system default.
@@ -654,11 +654,11 @@ row passes no `resolvePick`.
 
 **Deep-linking here** uses the standard row anchor:
 `openSettingsWindow(surface, ['Behavior', 'Navigation & file ops'], settingAnchorId('behavior.openTerminalHereApp'))`.
-Both "Open terminal here" toasts arrive that way, and the hidden `behavior.openTerminalHereToastSeen` flag beside the
-row is theirs. The first-use picker that can WRITE this setting on the user's behalf (when exactly one terminal is
-running and the stored choice is still Terminal.app), the rule that it never overrides an explicit non-Terminal choice,
-and the toasts themselves all live in `apps/desktop/src/lib/open-terminal/DETAILS.md`. This row only reads and writes
-the value.
+Both "Open terminal here" toasts arrive that way, and the `behavior.openTerminalHereToastSeen` flag (a row in Advanced's
+"Hints and warnings" card) is theirs. The first-use picker that can WRITE this setting on the user's behalf (when
+exactly one terminal is running and the stored choice is still Terminal.app), the rule that it never overrides an
+explicit non-Terminal choice, and the toasts themselves all live in `apps/desktop/src/lib/open-terminal/DETAILS.md`.
+This row only reads and writes the value.
 
 ### Global go-to-latest hotkey: on/off in the Downloads card, combo edited in Keyboard shortcuts
 

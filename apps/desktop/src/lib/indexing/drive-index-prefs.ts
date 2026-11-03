@@ -1,7 +1,7 @@
 // FE-owned drive-indexing preferences that the backend doesn't read: the
 // per-drive "don't ask again" silences (D6) and the one-time stale-dialog
-// one-shot (D2). Persisted as hidden settings (like `network.firstTriggerDone`),
-// so they survive restarts and sync across windows. Pure-ish wrappers over the
+// one-shot (D2). Persisted as settings (the one-shot is a row in Advanced's
+// "Hints and warnings" card), so they survive restarts and sync across windows. Pure-ish wrappers over the
 // settings store keep the JSON-array plumbing in one place.
 
 import { getSetting, setSetting } from '#lib/settings/index.js'
@@ -83,8 +83,8 @@ export function markFirstStaleDialogShown(): void {
 /**
  * Clear the one-shot so the dialog can fire again.
  *
- * DEV-ONLY, and the app itself never calls it: nothing in the product clears
- * this flag, because the explainer is once per machine by design. The dialog
+ * DEV-ONLY, and the app itself never calls it: in the product, only the flag's
+ * row in Settings > Advanced clears it (through the store, not here). The dialog
  * gallery's `drive-index-stale` row calls it before every trigger, since the
  * dialog stamps the flag the moment it shows and would otherwise be a
  * single-use preview.

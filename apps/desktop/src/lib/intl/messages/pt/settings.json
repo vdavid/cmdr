@@ -1035,6 +1035,10 @@
   "@settings.indexing.firstStaleDialogShown.description": {
     "sourceHash": "a879dbb"
   },
+  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "@settings.indexing.firstStaleDialogShown.keywords": {
+    "sourceHash": "06af8ea"
+  },
   "settings.behavior.fileSystemWatching.downloadsNotifications.label": "Avisar sobre downloads",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.label": {
     "sourceHash": "55efff7"
@@ -1095,6 +1099,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Interno. Suprime o aviso da primeira vez.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
     "sourceHash": "5f4247c"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
+    "sourceHash": "e0bc8c5"
   },
   "settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": "Aviso de downloads recolhido",
   "@settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": {
@@ -1790,6 +1798,10 @@
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
     "sourceHash": "76ba76c"
   },
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
+    "sourceHash": "b1c163a"
+  },
   "settings.fileExplorer.typeToJump.resetDelay.label": "Atraso de reinício do digitar-para-pular",
   "@settings.fileExplorer.typeToJump.resetDelay.label": {
     "sourceHash": "16ac047"
@@ -2187,6 +2199,10 @@
   "@settings.behavior.textEditorHintSeen.description": {
     "sourceHash": "65440fb"
   },
+  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "@settings.behavior.textEditorHintSeen.keywords": {
+    "sourceHash": "4b1acc2"
+  },
   "settings.behavior.openTerminalHereApp.label": "“Abrir terminal aqui” usa",
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"
@@ -2219,6 +2235,10 @@
   "@settings.fileExplorer.git.portalIntroSeen.description": {
     "sourceHash": "623d981"
   },
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "@settings.fileExplorer.git.portalIntroSeen.keywords": {
+    "sourceHash": "e50231b"
+  },
   "settings.behavior.openTerminalHereToastSeen.label": "Dica de “Abrir terminal aqui” exibida",
   "@settings.behavior.openTerminalHereToastSeen.label": {
     "sourceHash": "22f31aa"
@@ -2226,6 +2246,10 @@
   "settings.behavior.openTerminalHereToastSeen.description": "Se a dica única sobre escolher um app de terminal já foi exibida.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
     "sourceHash": "f976886"
+  },
+  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "@settings.behavior.openTerminalHereToastSeen.keywords": {
+    "sourceHash": "a7e75dc"
   },
   "settings.section.archives": "Arquivos compactados",
   "@settings.section.archives": {
@@ -2251,6 +2275,10 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
+    "sourceHash": "98e1c97"
+  },
   "settings.behavior.serversPinHintSeen.label": "Dica de “Desafixar do seletor” exibida",
   "@settings.behavior.serversPinHintSeen.label": {
     "sourceHash": "8513a3c"
@@ -2258,6 +2286,10 @@
   "settings.behavior.serversPinHintSeen.description": "Se a dica única sobre desafixar servidores já foi exibida.",
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
+  },
+  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "@settings.behavior.serversPinHintSeen.keywords": {
+    "sourceHash": "64da081"
   },
   "settings.behavior.switcherFavoritesExpanded.label": "Favoritos abertos no seletor de volumes",
   "@settings.behavior.switcherFavoritesExpanded.label": {
@@ -2299,6 +2331,10 @@
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "009056a"
   },
+  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "@settings.behavior.revealActivationNoticeSeen.keywords": {
+    "sourceHash": "1e3e612"
+  },
   "settings.behavior.adbHintDismissed.label": "Dica de depuração USB dispensada",
   "@settings.behavior.adbHintDismissed.label": {
     "sourceHash": "ba3d7fc"
@@ -2306,6 +2342,10 @@
   "settings.behavior.adbHintDismissed.description": "Se a linha única que oferece a depuração USB já foi dispensada.",
   "@settings.behavior.adbHintDismissed.description": {
     "sourceHash": "37afcbc"
+  },
+  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "@settings.behavior.adbHintDismissed.keywords": {
+    "sourceHash": "c520d8c"
   },
   "settings.section.notifications": "Notificações",
   "@settings.section.notifications": {
@@ -3403,6 +3443,10 @@
   "settings.fileExplorer.quickFilterIntroSeen.description": "Se o aviso que explica o primeiro filtro rápido já foi exibido.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
     "sourceHash": "855c661"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
+    "sourceHash": "c02e93d"
   },
   "settings.dataWipe.card": "Seus dados neste Mac",
   "@settings.dataWipe.card": {

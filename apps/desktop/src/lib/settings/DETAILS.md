@@ -672,8 +672,9 @@ element and widen that signature — deliberately not done for an unused capabil
   `macOSOnly: true` keeps it out of the index everywhere else (`searchable-rows.ts`, pinned by its test).
 - **Settings take the same flag.** `SettingDefinition.macOSOnly` drops a setting from the index off macOS
   (`buildSearchIndex` in `settings-search.ts`, pinned by `settings-search.test.ts`), for a setting whose section renders
-  it on macOS only. It decides nothing about rendering: the section gates its own markup on `isMacOS()`. Hidden settings
-  still enter search, so a macOS-only feature's hidden flags take it too (`behavior.textEditorHintSeen`).
+  it on macOS only. It decides nothing about rendering: a hand-rendering section gates its own markup on `isMacOS()`,
+  and `AdvancedSection` drops `macOSOnly` rows off macOS itself (`behavior.textEditorHintSeen` and the other macOS-only
+  hint flags). Hidden settings still enter search, so a macOS-only feature's hidden flags take it too.
 
 ## OS-backed rows (a control whose value lives outside Cmdr)
 
@@ -734,6 +735,17 @@ is a second source of truth that drifts on refactors). Full architectural enforc
 agents workflow. The hybrid approach gives: search that works perfectly (registry IS the search index), full UX freedom
 per section, single source of truth for metadata, and CI catches missing UI or orphaned registry entries automatically.
 UI components use Ark UI (see `../ui/CLAUDE.md`).
+
+### Why once-ever hint flags are visible rows
+
+A boolean that records "this one-time hint, toast, or notice was shown or dismissed" (`*Seen`, `*Shown`, `*Dismissed`,
+`…acknowledged`) lives in Advanced's "Hints and warnings" card (`section: ['Advanced']` +
+`cardKey: 'settings.advanced.card.hintsAndWarnings'`), never `hidden`. On means "already shown, don't show it again",
+matching the suppress switches beside it, so turning a row off brings its hint back once. The code that raises the hint
+spends the flag as the hint goes up and reads it fresh each time, so no wiring beyond the registry entry is needed. A
+hint only macOS raises carries `macOSOnly`, which `AdvancedSection` honors. Still `hidden`: cooldown stamps
+(`*OfferedAt`, `#lib/nudges/`), consent and onboarding state, version markers, UI state (expanded/collapsed), and
+`advanced.oldMacosNoticeShown` (fires only below the supported macOS, so the row would do nothing for nearly everyone).
 
 ### Why separate shortcuts from settings?
 

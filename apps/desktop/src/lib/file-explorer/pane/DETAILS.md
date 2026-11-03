@@ -173,9 +173,9 @@ come for free):
 - **Double-click the empty pane background → parent folder** (Directory Opus-style), gated by
   `behavior.doubleClickPaneNavigatesToParent` (default on). The `ondblclick` lives on the `.file-pane` root (which
   already carries `role="region"`, so no new a11y exposure); `isFileListBackgroundClick` filters to genuine list
-  background. The first time it fires it raises a one-time INFO toast (`DoubleClickPaneHintToastContent`) and flips the
-  hidden `behavior.doubleClickOnPaneNotificationSeen` so the hint shows once. "Never do this again" turns the gesture
-  off from the toast.
+  background. The first time it fires it raises a one-time INFO toast (`DoubleClickPaneHintToastContent`) and flips
+  `behavior.doubleClickOnPaneNotificationSeen` (a row in Advanced's "Hints and warnings" card) so the hint shows once.
+  "Never do this again" turns the gesture off from the toast.
 - **Right-click the function key bar → "Hide function key bar".** The bar builds its own one-item native menu
   (`show_function_key_bar_context_menu`), and the click comes back as the payload-less `FunctionKeyBarHideRequested`
   event, wired in `routes/(main)/listener-setup.ts` to `function-key-bar-hide.ts`: it turns off

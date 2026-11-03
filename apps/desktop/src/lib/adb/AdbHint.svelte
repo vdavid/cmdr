@@ -18,7 +18,7 @@
      * finds the feature at all (`DETAILS.md` § "The line offering USB
      * debugging").
      *
-     * ❗ **It goes away for good on the ×** (`behavior.adbHintDismissed`), and it
+     * ❗ **It goes away on the ×** (`behavior.adbHintDismissed`, which only its Settings row clears), and it
      * never appears when the same phone ALREADY has an ADB row: the decision is
      * `should-show-adb-hint.ts`, where it can be read at a glance.
      *

@@ -229,17 +229,4 @@ export const fileSystemsSettings: SettingDefinitionSource[] = [
     default: true,
     component: 'switch',
   },
-  {
-    // Internal (FE-owned): whether the once-ever `.git` portal intro toast has
-    // fired (`file-explorer/git/git-portal-intro.ts`). No UI row; hidden from
-    // search and the section tree, the way `behavior.openTerminalHereToastSeen` is.
-    id: 'fileExplorer.git.portalIntroSeen',
-    section: ['File systems', 'Git'],
-    labelKey: 'settings.fileExplorer.git.portalIntroSeen.label',
-    descriptionKey: 'settings.fileExplorer.git.portalIntroSeen.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
-  },
 ]

@@ -555,19 +555,6 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     },
   },
   {
-    // Internal (FE-owned): whether the once-ever "What just happened?" toast the
-    // first quick filter raises has been shown. ❌ Not a nudge: it explains what
-    // the user just did, so it takes no part in the nudge cooldown.
-    id: 'fileExplorer.quickFilterIntroSeen',
-    section: ['Appearance', 'Listing'],
-    labelKey: 'settings.fileExplorer.quickFilterIntroSeen.label',
-    descriptionKey: 'settings.fileExplorer.quickFilterIntroSeen.description',
-    type: 'boolean',
-    default: false,
-    component: 'switch',
-    hidden: true,
-  },
-  {
     id: 'listing.briefColumnWidthMode',
     mcpAskFree: true,
     section: ['Appearance', 'Listing'],

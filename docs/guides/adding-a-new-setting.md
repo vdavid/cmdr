@@ -21,7 +21,9 @@ Add an entry to `settings-registry.ts`. Name the id after the UI vocabulary (`wh
 - `type` + `default` + `component` (`switch`, `number`, `select`, `slider`, `radio`, `toggle-group`, `checkbox`,
   `color`, `text-input`)
 - `hidden: true` for internal state with no UI (for example a "last seen version" stamp). Hidden settings live in the
-  same store and sync across windows but never render, so **skip step 2 for them**.
+  same store and sync across windows but never render, so **skip step 2 for them**. A once-ever hint's "already shown"
+  flag is NOT hidden: it's a row in Advanced's "Hints and warnings" card (`lib/settings/DETAILS.md` § Why once-ever hint
+  flags are visible rows).
 - `macOSOnly: true` when the row renders only on macOS (the section gates its markup on `isMacOS()`). The setting then
   joins the search index only on macOS, so a Linux search can't land on a card that isn't there. A `hidden` setting
   still enters search, so a macOS-only feature's hidden flags take it too. See `lib/settings/DETAILS.md` § Searchable

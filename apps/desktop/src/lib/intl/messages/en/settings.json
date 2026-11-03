@@ -1236,13 +1236,17 @@
   "@settings.indexing.silencedDrives.description": {
     "description": "Internal description for a hidden, non-user-facing setting that stores silenced drive prompts."
   },
-  "settings.indexing.firstStaleDialogShown.label": "Stale dialog shown",
+  "settings.indexing.firstStaleDialogShown.label": "Suppress the out-of-date index explainer",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "description": "Internal label for a hidden setting (never shown in the UI) tracking whether the one-time stale-drive dialog has been shown. Not user-facing."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time dialog explaining that an external drive’s index may be out of date (indexing.staleDialog.title) from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.indexing.firstStaleDialogShown.description": "Internal: whether the one-time stale-drive dialog has been shown.",
+  "settings.indexing.firstStaleDialogShown.description": "The first time an external drive’s index may be out of date, Cmdr explains what that means. Turn this off to see the explanation once more. It still shows only while “Notify me if any external drive index goes stale” is on.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "description": "Internal description for a hidden, non-user-facing setting tracking whether the one-time stale dialog has fired."
+    "description": "Help text for the “Suppress the out-of-date index explainer” switch (settings.indexing.firstStaleDialogShown.label). The quoted text must match settings.indexing.staleNotify.label; translate it the same way."
+  },
+  "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
+  "@settings.indexing.firstStaleDialogShown.keywords": {
+    "description": "Search keywords for the “Suppress the out-of-date index explainer” setting (settings.indexing.firstStaleDialogShown.label) in Settings > Advanced. What it does: turned off, brings back the one-time dialog explaining that an external drive’s index may be out of date. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.label": "Notify on downloads",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.label": {
@@ -1303,13 +1307,17 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "description": "Search keywords for the “Global go-to-latest-download binding” setting (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label) in Settings > Behavior > Notifications. What it does: the key combination for the jump-to-latest-download shortcut. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Global go-to-latest-download warn-toast acknowledged",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Suppress the latest-download shortcut question",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "description": "Internal, hidden-from-UI label for a flag tracking whether the first-trigger warning toast was dismissed. Surfaces only in settings search; rarely or never seen by users. \"toast\" = a small transient notification."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time warning toast on the first press of the global shortcut that jumps to the latest download (downloads.warnToast.message), which asks whether to keep the shortcut on from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Internal. Suppresses the first-trigger warning toast.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "The first time you press the shortcut that jumps to your latest download from any app, Cmdr asks whether to keep it on. Changing the shortcut turns this off, so a new combo gets asked about too. Turn this off to see the question once more.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "description": "Internal help text for the acknowledged flag (not user-facing). \"toast\" = a small transient notification."
+    "description": "Help text for the “Suppress the latest-download shortcut question” switch (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label). “Shortcut” is a keyboard shortcut; “combo” is the key combination."
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
+    "description": "Search keywords for the “Suppress the latest-download shortcut question” setting (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label) in Settings > Advanced. What it does: turned off, brings back the one-time question on the first press of the global latest-download shortcut. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": "Downloads toast collapsed",
   "@settings.behavior.fileSystemWatching.downloadsToastCollapsed.label": {
@@ -2111,13 +2119,17 @@
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "description": "Search keywords for the “Exit full screen on Escape” setting (settings.advanced.exitFullScreenOnEscape.label) in Settings > Advanced. What it does: makes the Escape key take the window out of full screen. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Escape full-screen hint shown",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Suppress the Escape full-screen hint",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "description": "Internal, hidden-from-UI label for a flag tracking whether the one-time \"Escape took you out of full screen\" toast has already been shown. Not user-facing."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast saying Escape took Cmdr out of full screen (main.escapeFullScreenHint.message). “Escape” is the keyboard key; use the locale’s key name. from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "Internal: tracks whether the one-time toast about Escape leaving full screen has been shown. Hidden from the UI.",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.description": "The first time Escape takes Cmdr out of full screen, Cmdr says so and offers the switch that turns this off. Turn this off to see the hint once more.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "description": "Internal help text for the Escape full-screen hint flag (not user-facing)."
+    "description": "Help text for the “Suppress the Escape full-screen hint” switch (settings.advanced.exitFullScreenOnEscapeHintShown.label). “Escape” is the keyboard key; use the locale’s key name. The first “turns this off” refers to the Exit full screen on Escape switch (settings.advanced.exitFullScreenOnEscape.label)."
+  },
+  "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
+  "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
+    "description": "Search keywords for the “Suppress the Escape full-screen hint” setting (settings.advanced.exitFullScreenOnEscapeHintShown.label) in Settings > Advanced. What it does: turned off, brings back the one-time toast saying Escape left full screen. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.fileExplorer.typeToJump.resetDelay.label": "Type-to-jump reset delay",
   "@settings.fileExplorer.typeToJump.resetDelay.label": {
@@ -2591,13 +2603,17 @@
   "@settings.behavior.textEditorApp.keywords": {
     "description": "Search keywords for the “Edit files in” setting (settings.behavior.textEditorApp.label) in Settings > Behavior > Navigation & file ops. What it does: picks the app Cmdr opens files in when you edit them. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.behavior.textEditorHintSeen.label": "Text editor hint shown",
+  "settings.behavior.textEditorHintSeen.label": "Suppress the text editor hint",
   "@settings.behavior.textEditorHintSeen.label": {
-    "description": "Internal, never shown in the UI: tracks whether the one-time hint about picking a text editor has appeared after F4 (edit)."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast after F4 (edit) mentioning that the user can pick a different text editor from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.behavior.textEditorHintSeen.description": "Whether the one-time hint about picking a text editor has been shown.",
+  "settings.behavior.textEditorHintSeen.description": "The first time F4 opens a file in the default editor while another editor is installed, Cmdr mentions that you can pick a different one. Turn this off to see the hint once more.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "description": "Internal, never shown in the UI. Pairs with the text editor hint label."
+    "description": "Help text for the “Suppress the text editor hint” switch (settings.behavior.textEditorHintSeen.label). “F4” is a keyboard key; keep it."
+  },
+  "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
+  "@settings.behavior.textEditorHintSeen.keywords": {
+    "description": "Search keywords for the “Suppress the text editor hint” setting (settings.behavior.textEditorHintSeen.label) in Settings > Advanced. What it does: turned off, brings back the one-time toast after F4 about picking a different text editor. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.behavior.openTerminalHereApp.label": "Open terminal here uses",
   "@settings.behavior.openTerminalHereApp.label": {
@@ -2626,21 +2642,29 @@
   "@settings.behavior.openTerminalHereApp.keywords": {
     "description": "Search keywords for the “Open terminal here uses” setting (settings.behavior.openTerminalHereApp.label) in Settings > Behavior > Navigation & file ops. What it does: picks the terminal app the “Open terminal here” command uses. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.fileExplorer.git.portalIntroSeen.label": "Git folder intro shown",
+  "settings.fileExplorer.git.portalIntroSeen.label": "Suppress the git folder intro",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "description": "Internal, never shown in the UI: tracks whether the one-time notification introducing the browsable .git folder has appeared."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast introducing the browsable .git folder (fileExplorer.git.portalIntro.title). “git” is the version-control tool; keep it. from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.fileExplorer.git.portalIntroSeen.description": "Whether the one-time intro to browsing the .git folder has been shown.",
+  "settings.fileExplorer.git.portalIntroSeen.description": "The first time a pane opens the top folder of a git repository, Cmdr introduces the .git folder, where you can browse branches, tags, and old commits like regular folders. Turn this off to see the intro once more.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "description": "Internal, never shown in the UI. Pairs with the git folder intro label."
+    "description": "Help text for the “Suppress the git folder intro” switch (settings.fileExplorer.git.portalIntroSeen.label). “git” and “.git” stay as they are."
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Open-terminal-here hint shown",
+  "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
+  "@settings.fileExplorer.git.portalIntroSeen.keywords": {
+    "description": "Search keywords for the “Suppress the git folder intro” setting (settings.fileExplorer.git.portalIntroSeen.label) in Settings > Advanced. What it does: turned off, brings back the one-time toast introducing the browsable .git folder. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Suppress the Open terminal here hint",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "description": "Internal, never shown in the UI: tracks whether the one-time \"Open terminal here\" hint notification has appeared."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast after the first “Open terminal here” saying which app opened and where to pick another (commands.handler.openTerminalHere.hint). “Open terminal here” is a command name; translate it the same way as that command. from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Whether the one-time hint about picking a terminal app has been shown.",
+  "settings.behavior.openTerminalHereToastSeen.description": "The first time you open a folder in a terminal, Cmdr says which app it used and where to pick a different one. Turn this off to see the hint once more.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "description": "Internal, never shown in the UI. Pairs with the open-terminal-here hint label."
+    "description": "Help text for the “Suppress the Open terminal here hint” switch (settings.behavior.openTerminalHereToastSeen.label)."
+  },
+  "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
+  "@settings.behavior.openTerminalHereToastSeen.keywords": {
+    "description": "Search keywords for the “Suppress the Open terminal here hint” setting (settings.behavior.openTerminalHereToastSeen.label) in Settings > Advanced. What it does: turned off, brings back the one-time toast after the first “Open terminal here” about picking a terminal app. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.section.archives": "Archives",
   "@settings.section.archives": {
@@ -2661,21 +2685,29 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "description": "Search keywords for the “Double-click the pane background to go up a folder” setting (settings.behavior.doubleClickPaneNavigatesToParent.label) in Settings > Behavior > Navigation & file ops. What it does: makes a double-click on the empty area around the files go up to the parent folder. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Double-click-to-parent hint shown",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Suppress the double-click-to-go-up hint",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "description": "Internal, never shown in the UI: tracks whether the one-time double-click-to-parent hint notification has appeared."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast explaining that double-clicking the empty pane background went up to the parent folder (fileExplorer.doubleClickHint.title) from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Whether the one-time double-click-to-parent hint has been shown.",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "The first time you double-click the empty space in a pane, Cmdr goes up a folder and says why. Turn this off to see the hint once more.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "description": "Internal, never shown in the UI. Pairs with the double-click-to-parent hint label."
+    "description": "Help text for the “Suppress the double-click-to-go-up hint” switch (settings.behavior.doubleClickOnPaneNotificationSeen.label)."
   },
-  "settings.behavior.serversPinHintSeen.label": "Unpin-from-switcher hint shown",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
+    "description": "Search keywords for the “Suppress the double-click-to-go-up hint” setting (settings.behavior.doubleClickOnPaneNotificationSeen.label) in Settings > Advanced. What it does: turned off, brings back the one-time toast explaining that a double-click on the empty pane background goes up a folder. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
+  "settings.behavior.serversPinHintSeen.label": "Suppress the long Network group hint",
   "@settings.behavior.serversPinHintSeen.label": {
-    "description": "Internal, never shown in the settings UI, but findable in settings search: tracks whether the one-time hint about unpinning servers from the volume switcher (shown when its Network group gets long) has appeared. \"Unpin from switcher\" is the context-menu item menu.network.unpin."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast shown once five or more servers are pinned to the volume switcher’s Network group (servers.pinHint.title) from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.behavior.serversPinHintSeen.description": "Whether the one-time hint about unpinning servers has been shown.",
+  "settings.behavior.serversPinHintSeen.description": "Once five or more servers are pinned to the volume switcher, Cmdr shows how to unpin some to keep its Network group short. Turn this off to see the hint once more.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "description": "Internal, never shown in the UI. Pairs with the long-Network-group hint label."
+    "description": "Help text for the “Suppress the long Network group hint” switch (settings.behavior.serversPinHintSeen.label). “Network group” is the Network section of the volume switcher (the drive list)."
+  },
+  "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
+  "@settings.behavior.serversPinHintSeen.keywords": {
+    "description": "Search keywords for the “Suppress the long Network group hint” setting (settings.behavior.serversPinHintSeen.label) in Settings > Advanced. What it does: turned off, brings back the one-time toast about unpinning servers from the volume switcher. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.behavior.switcherFavoritesExpanded.label": "Favorites open in the volume switcher",
   "@settings.behavior.switcherFavoritesExpanded.label": {
@@ -2709,21 +2741,29 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "description": "Internal, never shown in the UI. Pairs with the Show in Finder offer label."
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "First reveal notice shown",
+  "settings.behavior.revealActivationNoticeSeen.label": "Suppress the “Show in Finder” notice",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "description": "Internal, never shown in the UI: tracks whether the one-time notice about the first \"Show in Finder\" landing in Cmdr has been shown."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast shown the first time another app’s “Show in Finder” opens in Cmdr instead (main.revealActivation.title). “Finder” is the macOS app; use the OS’s localized name for “Show in Finder”. from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Whether the notice about the first “Show in Finder” landing in Cmdr has been shown.",
+  "settings.behavior.revealActivationNoticeSeen.description": "When Cmdr is set to catch “Show in Finder”, the first one that lands here comes with a note saying why a pane opened instead of Finder. Turn this off to see the note once more.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "description": "Internal, never shown in the UI. Pairs with the first reveal notice label."
+    "description": "Help text for the “Suppress the “Show in Finder” notice” switch (settings.behavior.revealActivationNoticeSeen.label). Use the OS’s localized name for “Show in Finder”, matching main.revealActivation.title."
   },
-  "settings.behavior.adbHintDismissed.label": "USB debugging hint dismissed",
+  "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
+  "@settings.behavior.revealActivationNoticeSeen.keywords": {
+    "description": "Search keywords for the “Suppress the “Show in Finder” notice” setting (settings.behavior.revealActivationNoticeSeen.label) in Settings > Advanced. What it does: turned off, brings back the one-time note shown the first time another app’s “Show in Finder” lands in Cmdr. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
+  "settings.behavior.adbHintDismissed.label": "Suppress the USB debugging hint",
   "@settings.behavior.adbHintDismissed.label": {
-    "description": "Internal, never shown in the UI: tracks whether the user has dismissed the line offering USB debugging at the top of an Android phone pane."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the line at the top of an Android phone’s pane suggesting USB debugging (adb.hint.text). Unlike a toast, it stays until closed with its ×. from showing again. On means the user closed the line and it won’t show again; turning it off makes the line show again."
   },
-  "settings.behavior.adbHintDismissed.description": "Whether the one-time line offering USB debugging has been dismissed.",
+  "settings.behavior.adbHintDismissed.description": "A phone connected without USB debugging shows a line at the top of its pane suggesting you turn it on, so Cmdr can reach the whole phone. Closing the line with its × turns this on. Turn this off to see the line again.",
   "@settings.behavior.adbHintDismissed.description": {
-    "description": "Internal, never shown in the UI. Pairs with the USB-debugging-hint label."
+    "description": "Help text for the “Suppress the USB debugging hint” switch (settings.behavior.adbHintDismissed.label). “USB debugging” is Android’s developer option; use the name Android uses in the locale."
+  },
+  "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
+  "@settings.behavior.adbHintDismissed.keywords": {
+    "description": "Search keywords for the “Suppress the USB debugging hint” setting (settings.behavior.adbHintDismissed.label) in Settings > Advanced. What it does: turned off, brings back the line suggesting USB debugging at the top of an Android phone’s pane. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.section.notifications": "Notifications",
   "@settings.section.notifications": {
@@ -3633,7 +3673,7 @@
   },
   "settings.advanced.card.hintsAndWarnings": "Hints and warnings",
   "@settings.advanced.card.hintsAndWarnings": {
-    "description": "Heading of the hints-and-warnings card (suppress binary-view warning, suppress Quick Look hint) in Settings > Advanced. \"Quick Look\" is the macOS preview feature; keep its name."
+    "description": "Heading of the hints-and-warnings card in Settings > Advanced: one switch per warning, tip, or one-time hint Cmdr shows (the binary-view warning, the Quick Look hint, the once-ever explainers), each saying whether it shows."
   },
   "settings.advanced.card.input": "Input",
   "@settings.advanced.card.input": {
@@ -4106,13 +4146,17 @@
   "@settings.adb.pickerTitle": {
     "description": "Title of the macOS file picker opened by that button. \"adb\" is a command name; keep it lowercase and as-is. VERB phrase, imperative."
   },
-  "settings.fileExplorer.quickFilterIntroSeen.label": "Quick filter explained",
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Suppress the quick filter explainer",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "description": "Internal setting, never shown in the Settings UI: its name in diagnostics only."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that stops the one-time toast explaining that typing in a pane filtered its list (fileExplorer.quickFilter.intro.title) from showing again. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
-  "settings.fileExplorer.quickFilterIntroSeen.description": "Whether the toast that explains the first quick filter has been shown.",
+  "settings.fileExplorer.quickFilterIntroSeen.description": "The first time your typing filters a pane, Cmdr explains what happened and that Esc brings every file back. Turn this off to see the explanation once more.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "description": "Internal setting, never shown in the Settings UI: its description in diagnostics only."
+    "description": "Help text for the “Suppress the quick filter explainer” switch (settings.fileExplorer.quickFilterIntroSeen.label). “Esc” is the Escape key; use the locale’s key name."
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
+  "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
+    "description": "Search keywords for the “Suppress the quick filter explainer” setting (settings.fileExplorer.quickFilterIntroSeen.label) in Settings > Advanced. What it does: turned off, brings back the one-time toast explaining that typing filtered the pane. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.dataWipe.card": "Your data on this Mac",
   "@settings.dataWipe.card": {

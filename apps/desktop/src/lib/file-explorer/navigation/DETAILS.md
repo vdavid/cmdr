@@ -1006,8 +1006,9 @@ how the two drift.
 Pins are the user's own cap on how long the Network group gets, so the app says once, at five, that the cap is theirs to
 move: a persistent INFO toast (`ServersPinHintToastContent.svelte`) naming the row's Unpin item and the palette's "Pin /
 unpin server", and promising the server stays in the Servers list. "Got it" dismisses it; `behavior.serversPinHintSeen`
-(hidden, FE-owned) is what makes it once-ever. It speaks about SERVERS only: favorites live in their own menu (⌃D) and
-are removed from there, so the switcher's unpin has nothing to say about them.
+(FE-owned; a row in Advanced's "Hints and warnings" card turns it back off) is what makes it once-ever. It speaks about
+SERVERS only: favorites live in their own menu (⌃D) and are removed from there, so the switcher's unpin has nothing to
+say about them.
 
 - **The decision is pure** (`should-show-pin-hint.ts`: at least five pins, and the seen flag). ❗ "At least five", ❌
   not "the fifth just landed": nothing records last launch's count, and a person whose list was already long is exactly

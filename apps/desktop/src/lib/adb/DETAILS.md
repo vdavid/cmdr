@@ -105,8 +105,8 @@ learns it exists.
 `should-show-adb-hint.ts` is the whole decision, pure and four-armed:
 
 - Only on an MTP pane.
-- Silent once `behavior.adbHintDismissed` is set (a hidden FE-owned setting, the shape `behavior.serversPinHintSeen`
-  takes).
+- Silent once `behavior.adbHintDismissed` is set (FE-owned, the shape `behavior.serversPinHintSeen` takes). The × sets
+  it; its row in Advanced's "Hints and warnings" card clears it, and the line comes back on the next pane mount.
 - ❗ Silent when the same phone already has an ADB row (two `mobile_device` rows under one name). USB debugging is
   already on; telling someone to turn on what they turned on is what makes a hint a nag.
 - ❗ Silent when `fileOperations.adbEnabled` is off, because turning USB debugging on would then produce no row at all
