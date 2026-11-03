@@ -3,10 +3,13 @@
 use crate::result::{ZipResult, invalid};
 use crate::{ZipArchive, result::ZipError};
 use std::ffi::OsStr;
-use std::io::{self, Read, Seek};
+use std::io::{Read, Seek, Write};
 use std::path::Path;
 
 use indexmap::IndexMap;
+
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 
 /// Upper bound on the uncompressed size of a symlink entry.
 ///
@@ -15,6 +18,36 @@ use indexmap::IndexMap;
 /// uncompressed size stored in the central directory is attacker-controlled,
 /// so entries above this bound are rejected rather than pre-allocated.
 pub(crate) const MAX_SYMLINK_TARGET_LEN: u64 = 4096;
+
+/// Buffer capacity for file extraction streams, reducing syscall overhead
+/// and optimizing page cache utilization during archive extraction.
+pub(crate) const EXTRACT_BUFFER_SIZE: usize = 256 * 1024;
+
+/// Maximum extent pre-allocation ceiling (64 MiB).
+///
+/// Pre-allocating disk space via `File::set_len` before streaming uncompressed bytes
+/// reduces filesystem fragmentation and optimizes NTFS/ext4 block allocation.
+/// Capped at 64 MiB to prevent denial-of-service / zero-fill amplification attacks
+/// where an archive header claims an exorbitantly large uncompressed size.
+pub(crate) const MAX_PREALLOCATE_LEN: u64 = 64 * 1024 * 1024;
+
+/// Copies decompressed data from `reader` into `writer` using `buf` as a reusable transfer buffer.
+pub(crate) fn copy_into<R: Read + ?Sized, W: Write + ?Sized>(
+    reader: &mut R,
+    writer: &mut W,
+    buf: &mut [u8],
+) -> std::io::Result<u64> {
+    let mut written = 0u64;
+    loop {
+        let n = reader.read(buf)?;
+        if n == 0 {
+            break;
+        }
+        writer.write_all(&buf[..n])?;
+        written = written.saturating_add(n as u64);
+    }
+    Ok(written)
+}
 
 /// Symlink extract action
 #[derive(Debug, Default, Copy, Clone)]
@@ -34,6 +67,12 @@ pub enum SymlinkExtractAction {
     #[cfg(any(unix, windows))]
     ExtractInFolder,
     /// Extract symlinks with no restrictions.
+    ///
+    /// On Windows, creating a symlink requires that we know whether the target is a file or directory.
+    /// To determine that, this option will open the file metadata of the target path, which will
+    /// cause NTLMv2 authentication to be sent if the target is on an SMB network share. This may be a security risk,
+    /// because it allows relay attacks and offline cracking. WebDAV is also vulnerable, but only when a file
+    /// host in the Intranet Zone is already compromised.
     #[cfg(any(unix, windows))]
     ExtractNoRestrictions,
 }
@@ -43,6 +82,8 @@ pub enum SymlinkExtractAction {
 #[non_exhaustive]
 pub struct ExtractOptions {
     pub(crate) symlink_action: SymlinkExtractAction,
+    pub(crate) size_limit: Option<u64>,
+    pub(crate) enforce_header_consistency: bool,
 }
 
 impl ExtractOptions {
@@ -51,6 +92,24 @@ impl ExtractOptions {
     pub fn symlink_action(self, symlink_action: SymlinkExtractAction) -> Self {
         Self {
             symlink_action,
+            ..self
+        }
+    }
+
+    /// Set the maximum declared uncompressed size accepted for extraction.
+    #[must_use]
+    pub fn with_size_limit(self, size_limit: u64) -> Self {
+        Self {
+            size_limit: Some(size_limit),
+            ..self
+        }
+    }
+
+    /// Enforce consistency between local file headers and central directory headers during extraction.
+    #[must_use]
+    pub fn enforce_header_consistency(self, enforce: bool) -> Self {
+        Self {
+            enforce_header_consistency: enforce,
             ..self
         }
     }
@@ -187,7 +246,7 @@ pub(crate) fn make_symlink<T>(
                     crate::path::resolve_enclosed(
                         base,
                         start,
-                        rest.components().map(|c| c.as_os_str().to_os_string()),
+                        rest.components().map(|c| c.as_os_str()),
                         false,
                     )?;
                 }
@@ -197,7 +256,7 @@ pub(crate) fn make_symlink<T>(
         crate::path::resolve_enclosed(
             base,
             start,
-            rest.components().map(|c| c.as_os_str().to_os_string()),
+            rest.components().map(|c| c.as_os_str()),
             false, // only checking here, so nothing is created
         )?;
     }
@@ -215,23 +274,74 @@ pub(crate) fn make_symlink<T>(
     #[cfg_attr(not(any(windows, unix)), allow(unused))] existing_files: &IndexMap<Box<[u8]>, T>,
     _symlink_action: SymlinkExtractAction,
 ) -> ZipResult<()> {
-    make_symlink_as_file_utf8(outpath, target)?;
+    make_symlink_as_file_utf8(outpath, target, None)?;
     Ok(())
 }
 
-pub(crate) fn make_symlink_as_file_utf8(outpath: &Path, target: &[u8]) -> ZipResult<()> {
+pub(crate) fn make_symlink_as_file_utf8(
+    outpath: &Path,
+    target: &[u8],
+    unix_mode: Option<u32>,
+) -> ZipResult<()> {
     let Ok(_) = std::str::from_utf8(target) else {
         return Err(invalid!("Invalid UTF-8 as symlink target"));
     };
-    make_symlink_as_file(outpath, target)?;
+    make_symlink_as_file(outpath, target, unix_mode)?;
     Ok(())
 }
 
-pub(crate) fn make_symlink_as_file(outpath: &Path, target: &[u8]) -> std::io::Result<()> {
-    use std::fs::File;
+/// Create an output file for extraction securely.
+///
+/// If `outpath` already exists as a symbolic link, it is removed before creating the regular
+/// file so that extraction will not follow the link and overwrite a target file outside the
+/// destination directory. After creation, the file is verified to ensure it was not swapped
+/// for a symbolic link.
+#[cfg_attr(not(unix), allow(unused_variables))]
+pub(crate) fn create_outfile(
+    outpath: &Path,
+    unix_mode: Option<u32>,
+) -> std::io::Result<std::fs::File> {
+    if let Ok(meta) = std::fs::symlink_metadata(outpath)
+        && meta.file_type().is_symlink()
+    {
+        std::fs::remove_file(outpath)?;
+    }
+    let mut options = std::fs::OpenOptions::new();
+    options.create(true).write(true).truncate(true); // Default for `fs::File::create`
+    #[cfg(unix)]
+    if let Some(mode) = unix_mode {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(mode);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        options.custom_flags(
+            windows_sys::Win32::Storage::FileSystem::FILE_FLAG_OPEN_REPARSE_POINT
+                | windows_sys::Win32::Storage::FileSystem::FILE_FLAG_SEQUENTIAL_SCAN,
+        );
+    }
+    let file = options.open(outpath)?;
+
+    if file.metadata()?.file_type().is_symlink()
+        || std::fs::symlink_metadata(outpath).is_ok_and(|meta| meta.file_type().is_symlink())
+    {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            "Extracted file cannot be written through a symbolic link",
+        ));
+    }
+    Ok(file)
+}
+
+pub(crate) fn make_symlink_as_file(
+    outpath: &Path,
+    target: &[u8],
+    unix_mode: Option<u32>,
+) -> std::io::Result<()> {
     use std::io::Write;
-    let output = File::create(outpath);
-    output?.write_all(target)?;
+    let mut output = create_outfile(outpath, unix_mode)?;
+    output.write_all(target)?;
     Ok(())
 }
 
@@ -327,6 +437,11 @@ impl<R: Read + Seek> ZipArchive<R> {
     /// not all of their contents extracted will be readable, writable or usable as process working
     /// directories by any non-root user except you.
     ///
+    /// Extraction is also not atomic in term of permissions. Permissions are applied after the
+    /// extraction (because some folder have stricter permissions when we cannot access it). That
+    /// means, for a moment, a file could be created with default permissions (and then changed
+    /// to the correct one). On Unix this only applies to directories and symlinks.
+    ///
     /// On Unix and Windows, symbolic links are extracted correctly. On other platforms such as
     /// WebAssembly, symbolic links aren't supported, so they're extracted as normal files
     /// containing the target path in UTF-8.
@@ -420,6 +535,20 @@ impl<R: Read + Seek> ZipArchive<R> {
     ) -> ZipResult<()> {
         use std::fs;
 
+        if extract_options.enforce_header_consistency {
+            self.validate_header_consistency()?;
+        }
+
+        if let Some(limit) = extract_options.size_limit {
+            match self.decompressed_size() {
+                Some(size) if size > u128::from(limit) => {
+                    return Err(ZipError::DecompressedSizeLimitExceeded { size, limit });
+                }
+                None => return Err(ZipError::DecompressedSizeUnknown),
+                Some(_) => {}
+            }
+        }
+
         fs::create_dir_all(&directory)?;
         let directory = directory.as_ref().canonicalize()?;
 
@@ -448,16 +577,15 @@ impl<R: Read + Seek> ZipArchive<R> {
             .transpose()?;
 
         let mut files_by_unix_mode = UnixFileModes::default();
+        let mut extract_buf = vec![0u8; EXTRACT_BUFFER_SIZE];
+        let mut created_dirs = std::collections::HashSet::new();
 
         for i in 0..self.len() {
-            let mut file = self.by_index(i)?;
+            let read_options = crate::read::ZipReadOptions::new()
+                .enforce_header_consistency(extract_options.enforce_header_consistency);
+            let mut file = self.by_index_with_options(i, read_options)?;
 
-            let mut outpath = directory.clone();
-            /* TODO: the control flow of this method call and subsequent expectations about the
-             *       values in this loop is extremely difficult to follow. It also appears to
-             *       perform a nested loop upon extracting every single file entry? Why does it
-             *       accept two arguments that point to the same directory path, one mutable? */
-            file.safe_prepare_path(directory.as_ref(), &mut outpath, root_dir.as_ref())?;
+            let outpath = file.safe_prepare_path(directory.as_ref(), root_dir.as_ref())?;
 
             if file.is_symlink() {
                 // `file.size()` is the uncompressed size declared in the central
@@ -476,16 +604,17 @@ impl<R: Read + Seek> ZipArchive<R> {
                 }
                 let mut target = Vec::with_capacity(declared_len as usize);
                 file.read_to_end(&mut target)?;
+                let unix_mode = file.unix_mode();
                 drop(file);
                 match extract_options.symlink_action {
                     SymlinkExtractAction::NoExtract => {
                         // do nothing
                     }
                     SymlinkExtractAction::ExtractAsFile => {
-                        make_symlink_as_file(&outpath, &target)?;
+                        make_symlink_as_file(&outpath, &target, unix_mode)?;
                     }
                     SymlinkExtractAction::ExtractAsFileUtf8 => {
-                        make_symlink_as_file_utf8(&outpath, &target)?;
+                        make_symlink_as_file_utf8(&outpath, &target, unix_mode)?;
                     }
                     #[cfg(any(unix, windows))]
                     SymlinkExtractAction::ExtractRecursiveInFolder => {
@@ -516,14 +645,40 @@ impl<R: Read + Seek> ZipArchive<R> {
                     }
                 }
             } else if file.is_dir() {
-                make_writable_dir_all(&outpath)?;
+                if created_dirs.insert(outpath.clone()) {
+                    make_writable_dir_all(&outpath)?;
+                }
                 // Check for real permissions, which we'll set in a second pass.
                 if let Some(mode) = file.unix_mode() {
                     files_by_unix_mode.add_mode(outpath, mode);
                 }
             } else {
-                let mut outfile = fs::File::create(&outpath)?;
-                io::copy(&mut file, &mut outfile)?;
+                let mut outfile = create_outfile(&outpath, file.unix_mode())?;
+                let uncompressed_len = file.size();
+                let mut preallocated_len = 0u64;
+                if uncompressed_len > 0 && !file.flags().is_using_data_descriptor() {
+                    let alloc_len = uncompressed_len.min(MAX_PREALLOCATE_LEN);
+                    if outfile.set_len(alloc_len).is_ok() {
+                        preallocated_len = alloc_len;
+                    }
+                }
+                let copy_res = copy_into(&mut file, &mut outfile, &mut extract_buf);
+                if preallocated_len > 0 {
+                    let actual_len = match &copy_res {
+                        Ok(extracted) => *extracted,
+                        Err(_) => outfile.stream_position().unwrap_or(0),
+                    };
+                    if actual_len < preallocated_len {
+                        let _ = outfile.set_len(actual_len);
+                    }
+                }
+                copy_res?;
+                #[cfg(unix)]
+                if let Some(mode) = file.unix_mode() {
+                    // OpenOptions::mode only applies when the file is created. Record modes
+                    // for the final pass too, so overwriting an existing path updates them.
+                    files_by_unix_mode.add_mode(outpath, mode);
+                }
                 // Set original timestamp.
                 #[cfg(feature = "chrono")]
                 if let Some(last_modified) = file.last_modified()
@@ -536,11 +691,6 @@ impl<R: Read + Seek> ZipArchive<R> {
                     let mut permissions = outfile.metadata()?.permissions();
                     permissions.set_readonly(true);
                     outfile.set_permissions(permissions)?;
-                }
-                #[cfg(unix)]
-                if let Some(mode) = file.unix_mode() {
-                    use std::os::unix::fs::PermissionsExt;
-                    outfile.set_permissions(fs::Permissions::from_mode(mode))?;
                 }
             }
         }
@@ -561,6 +711,368 @@ impl<R: Read + Seek> ZipArchive<R> {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<R: Read + Seek + Send> ZipArchive<R> {
+    /// Extracts archive contents in parallel across available CPU cores using a reader factory.
+    ///
+    /// The `reader_factory` closure is called to produce an independent reader instance
+    /// for each worker thread, ensuring independent file offsets and preventing concurrent seek collisions.
+    ///
+    /// # Common `reader_factory` Implementations
+    ///
+    /// Parallel extraction requires that each worker thread possesses an independent seek
+    /// position into the archive stream. Common implementations include:
+    ///
+    /// - **In-memory slice (`Cursor<&[u8]>`)**:
+    ///   Allows all worker threads to safely share an immutable buffer in memory without reallocation:
+    ///   ```no_run
+    ///   # use zip::ZipArchive;
+    ///   # use std::io::Cursor;
+    ///   # fn example(slice: &[u8]) -> zip::result::ZipResult<()> {
+    ///   # let mut archive = ZipArchive::new(Cursor::new(slice))?;
+    ///   archive.par_extract_with_reader_factory("destination", || Ok(Cursor::new(&slice)))?;
+    ///   # Ok(())
+    ///   # }
+    ///   ```
+    ///
+    /// - **Cloned file descriptor (`File::try_clone`)**:
+    ///   Duplicates the file handle so that each worker thread maintains an independent file pointer:
+    ///   ```no_run
+    ///   # use zip::ZipArchive;
+    ///   # use std::fs::File;
+    ///   # fn example(file: &File) -> zip::result::ZipResult<()> {
+    ///   # let mut archive = ZipArchive::new(file.try_clone().unwrap())?;
+    ///   archive.par_extract_with_reader_factory("destination", || file.try_clone())?;
+    ///   # Ok(())
+    ///   # }
+    ///   ```
+    ///
+    /// - **Positional / Random-access cursor (`positioned_io::Cursor`)**:
+    ///   Enables positional reads without duplicating kernel file handles:
+    ///   ```ignore
+    ///   archive.par_extract_with_reader_factory("destination", || {
+    ///       Ok(positioned_io::Cursor::new(random_access_file))
+    ///   })?;
+    ///   ```
+    pub fn par_extract_with_reader_factory<P, F>(
+        &mut self,
+        directory: P,
+        reader_factory: F,
+    ) -> ZipResult<()>
+    where
+        P: AsRef<Path>,
+        F: Fn() -> std::io::Result<R> + Sync + Send,
+    {
+        self.par_extract_with_reader_factory_and_options(
+            directory,
+            reader_factory,
+            ExtractOptions::default(),
+            None::<fn(&Path) -> bool>,
+        )
+    }
+
+    /// Extracts archive contents in parallel using a reader factory, custom [`ExtractOptions`],
+    /// and an optional [`RootDirFilter`].
+    ///
+    /// See [`ZipArchive::par_extract_with_reader_factory`] for common `reader_factory` implementations.
+    pub fn par_extract_with_reader_factory_and_options<P, F, Filter>(
+        &mut self,
+        directory: P,
+        reader_factory: F,
+        extract_options: ExtractOptions,
+        root_dir_filter: Option<Filter>,
+    ) -> ZipResult<()>
+    where
+        P: AsRef<Path>,
+        F: Fn() -> std::io::Result<R> + Sync + Send,
+        Filter: RootDirFilter,
+    {
+        self.par_extract_internal(
+            directory.as_ref(),
+            &reader_factory,
+            extract_options,
+            root_dir_filter,
+        )
+    }
+
+    fn par_extract_internal<F, Filter>(
+        &mut self,
+        directory: &Path,
+        reader_factory: &F,
+        extract_options: ExtractOptions,
+        root_dir_filter: Option<Filter>,
+    ) -> ZipResult<()>
+    where
+        F: Fn() -> std::io::Result<R> + Sync + Send,
+        Filter: RootDirFilter,
+    {
+        if let Some(limit) = extract_options.size_limit {
+            match self.decompressed_size() {
+                Some(size) if size > u128::from(limit) => {
+                    return Err(ZipError::DecompressedSizeLimitExceeded { size, limit });
+                }
+                None => return Err(ZipError::DecompressedSizeUnknown),
+                Some(_) => {}
+            }
+        }
+
+        std::fs::create_dir_all(directory)?;
+        let directory = directory.canonicalize()?;
+
+        let root_dir = root_dir_filter
+            .and_then(|filter| {
+                self.root_dir(&filter)
+                    .transpose()
+                    .map(|root_dir| root_dir.map(|root_dir| (root_dir, filter)))
+            })
+            .transpose()?;
+
+        let root_dir = root_dir
+            .as_ref()
+            .map(|(root_dir, filter)| {
+                crate::path::simplified_components(root_dir)
+                    .ok_or_else(|| {
+                        debug_assert!(false, "Invalid root dir path");
+                        invalid!("Invalid root dir path")
+                    })
+                    .map(|root_dir| (root_dir, filter))
+            })
+            .transpose()?;
+
+        let mut files_by_unix_mode = UnixFileModes::default();
+        let mut created_dirs = std::collections::HashSet::new();
+        let mut regular_files: indexmap::IndexMap<std::path::PathBuf, usize> =
+            indexmap::IndexMap::new();
+
+        for i in 0..self.len() {
+            let (file_name_raw, data) = self
+                .shared
+                .files
+                .get_index(i)
+                .ok_or(ZipError::FileNotFound)?;
+
+            let outpath = crate::read::zipfile::safe_prepare_path_from_metadata(
+                file_name_raw,
+                data,
+                directory.as_ref(),
+                root_dir.as_ref(),
+            )?;
+
+            if data.is_symlink() {
+                let read_options = crate::read::ZipReadOptions::new()
+                    .enforce_header_consistency(extract_options.enforce_header_consistency);
+                let mut file = self.by_index_with_options(i, read_options)?;
+                let declared_len = file.size();
+                if declared_len > MAX_SYMLINK_TARGET_LEN {
+                    return Err(invalid!(
+                        "symlink target declares {} bytes, more than the {} byte limit",
+                        declared_len,
+                        MAX_SYMLINK_TARGET_LEN
+                    ));
+                }
+                let mut target = Vec::with_capacity(declared_len as usize);
+                file.read_to_end(&mut target)?;
+                let unix_mode = file.unix_mode();
+                drop(file);
+                match extract_options.symlink_action {
+                    SymlinkExtractAction::NoExtract => {}
+                    SymlinkExtractAction::ExtractAsFile => {
+                        make_symlink_as_file(&outpath, &target, unix_mode)?;
+                    }
+                    SymlinkExtractAction::ExtractAsFileUtf8 => {
+                        make_symlink_as_file_utf8(&outpath, &target, unix_mode)?;
+                    }
+                    #[cfg(any(unix, windows))]
+                    SymlinkExtractAction::ExtractRecursiveInFolder
+                    | SymlinkExtractAction::ExtractInFolder => {
+                        make_symlink(
+                            directory.as_ref(),
+                            &outpath,
+                            &target,
+                            &self.shared.files,
+                            extract_options.symlink_action,
+                        )?;
+                    }
+                    #[cfg(any(unix, windows))]
+                    SymlinkExtractAction::ExtractNoRestrictions => {
+                        let Ok(target_str) = std::str::from_utf8(&target) else {
+                            return Err(invalid!("Invalid UTF-8 as symlink target"));
+                        };
+                        make_symlink_impl(&outpath, target_str, &self.shared.files)?;
+                    }
+                }
+            } else if data.is_dir(file_name_raw) {
+                if created_dirs.insert(outpath.clone()) {
+                    make_writable_dir_all(&outpath)?;
+                }
+                if let Some(mode) = data.unix_mode() {
+                    files_by_unix_mode.add_mode(outpath, mode);
+                }
+            } else {
+                regular_files.insert(outpath, i);
+            }
+        }
+
+        let metadata = self.metadata();
+        let enforce_header = extract_options.enforce_header_consistency;
+
+        let regular_files_vec: Vec<(std::path::PathBuf, usize)> =
+            regular_files.into_iter().collect();
+
+        let regular_file_results: ZipResult<Vec<(std::path::PathBuf, Option<u32>)>> =
+            regular_files_vec
+                .into_par_iter()
+                .map_init(
+                    || -> std::io::Result<(ZipArchive<R>, Vec<u8>)> {
+                        let reader = reader_factory()?;
+                        let archive = unsafe {
+                            ZipArchive::unsafe_new_with_metadata(reader, metadata.clone())
+                        };
+                        let buf = vec![0u8; EXTRACT_BUFFER_SIZE];
+                        Ok((archive, buf))
+                    },
+                    |state, (outpath, idx)| -> ZipResult<(std::path::PathBuf, Option<u32>)> {
+                        let (archive, buf) = match state {
+                            Ok(s) => s,
+                            Err(e) => {
+                                return Err(ZipError::Io(std::io::Error::new(
+                                    e.kind(),
+                                    e.to_string(),
+                                )));
+                            }
+                        };
+
+                        let read_options = crate::read::ZipReadOptions::new()
+                            .enforce_header_consistency(enforce_header);
+                        let mut file = archive.by_index_with_options(idx, read_options)?;
+
+                        let mut outfile = create_outfile(&outpath, file.unix_mode())?;
+                        let uncompressed_len = file.size();
+                        let mut preallocated_len = 0u64;
+
+                        if uncompressed_len > 0 && !file.flags().is_using_data_descriptor() {
+                            let alloc_len = uncompressed_len.min(MAX_PREALLOCATE_LEN);
+                            if outfile.set_len(alloc_len).is_ok() {
+                                preallocated_len = alloc_len;
+                            }
+                        }
+
+                        let copy_res = copy_into(&mut file, &mut outfile, buf);
+                        if preallocated_len > 0 {
+                            let actual_len = match &copy_res {
+                                Ok(extracted) => *extracted,
+                                Err(_) => outfile.stream_position().unwrap_or(0),
+                            };
+                            if actual_len < preallocated_len {
+                                let _ = outfile.set_len(actual_len);
+                            }
+                        }
+                        copy_res?;
+
+                        #[cfg(feature = "chrono")]
+                        if let Some(last_modified) = file.last_modified()
+                            && let Some(t) = last_modified.datetime_to_systemtime()
+                        {
+                            let _ = outfile.set_modified(t);
+                        }
+                        #[cfg(not(unix))]
+                        if file.is_read_only() {
+                            let mut permissions = outfile.metadata()?.permissions();
+                            permissions.set_readonly(true);
+                            outfile.set_permissions(permissions)?;
+                        }
+
+                        Ok((outpath, file.unix_mode()))
+                    },
+                )
+                .collect();
+
+        #[cfg_attr(not(unix), allow(unused_variables))]
+        let extracted_files = regular_file_results?;
+
+        #[cfg(unix)]
+        for (path, mode) in extracted_files {
+            if let Some(m) = mode {
+                files_by_unix_mode.add_mode(path, m);
+            }
+        }
+
+        #[cfg(unix)]
+        for (path, perms) in files_by_unix_mode.all_perms_with_children_first() {
+            set_permissions_no_follow_symlink(&path, perms)?;
+        }
+        #[cfg(not(unix))]
+        for path in files_by_unix_mode.all_read_only_with_children_first() {
+            let metadata = std::fs::symlink_metadata(&path)?;
+            if metadata.is_dir() {
+                let mut permissions = metadata.permissions();
+                permissions.set_readonly(true);
+                std::fs::set_permissions(path, permissions)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl ZipArchive<std::fs::File> {
+    /// Extracts a filesystem-backed archive in parallel across available CPU cores.
+    ///
+    /// Requires the path to the original archive file (`archive_path`) so that each
+    /// worker thread can open its own independent kernel file handle via `File::open`.
+    pub fn par_extract_from_path<P: AsRef<Path>, Q: AsRef<Path>>(
+        &mut self,
+        archive_path: P,
+        destination: Q,
+    ) -> ZipResult<()> {
+        let path_buf = archive_path.as_ref().to_path_buf();
+        self.par_extract_with_reader_factory(destination, move || std::fs::File::open(&path_buf))
+    }
+
+    /// Extracts a filesystem-backed archive in parallel with custom [`ExtractOptions`].
+    pub fn par_extract_from_path_with_options<P: AsRef<Path>, Q: AsRef<Path>>(
+        &mut self,
+        archive_path: P,
+        destination: Q,
+        options: ExtractOptions,
+    ) -> ZipResult<()> {
+        let path_buf = archive_path.as_ref().to_path_buf();
+        self.par_extract_with_reader_factory_and_options(
+            destination,
+            move || std::fs::File::open(&path_buf),
+            options,
+            None::<fn(&Path) -> bool>,
+        )
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<T: AsRef<[u8]> + Sync + Send + Clone> ZipArchive<std::io::Cursor<T>> {
+    /// Extracts an in-memory archive in parallel across available CPU cores.
+    pub fn par_extract<P: AsRef<Path>>(&mut self, directory: P) -> ZipResult<()> {
+        let cursor_data = self.reader.get_ref().clone();
+        self.par_extract_with_reader_factory(directory, move || {
+            Ok(std::io::Cursor::new(cursor_data.clone()))
+        })
+    }
+
+    /// Extracts an in-memory archive in parallel with custom [`ExtractOptions`].
+    pub fn par_extract_with_options<P: AsRef<Path>>(
+        &mut self,
+        directory: P,
+        options: ExtractOptions,
+    ) -> ZipResult<()> {
+        let cursor_data = self.reader.get_ref().clone();
+        self.par_extract_with_reader_factory_and_options(
+            directory,
+            move || Ok(std::io::Cursor::new(cursor_data.clone())),
+            options,
+            None::<fn(&Path) -> bool>,
+        )
     }
 }
 

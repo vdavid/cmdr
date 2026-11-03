@@ -258,12 +258,12 @@ fn shown_tree_paths(archive_path: &Path) -> Result<Vec<(u64, Option<String>)>, M
 /// Refuses an archive in which two entries share a name. The `zip` crate keeps
 /// one entry per raw name (the later one's data, in the earlier one's slot),
 /// and the rewrite copies through it, so the other copy would silently vanish.
-/// The `zip` crate's own record count (`central_directory_len`, the vendored
-/// patch) beating its entry count is exactly that fold, so the refusal holds
-/// even when the reader can't parse the archive. `shown`, the reader's names,
+/// The `zip` crate's own check (`has_duplicate_names`: its central-directory
+/// record count beating its entry count) is exactly that fold, so the refusal
+/// holds even when the reader can't parse the archive. `shown`, the reader's names,
 /// only says which name, and is empty in that case.
 pub(super) fn refuse_a_folded_duplicate(src: &ZipArchive<File>, shown: &[(u64, String)]) -> Result<(), MutationError> {
-    if src.central_directory_len() <= src.len() {
+    if !src.has_duplicate_names() {
         return Ok(());
     }
     let mut seen = HashSet::new();

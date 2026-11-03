@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.88"
 name = "zip"
-version = "9.0.5"
+version = "9.2.0"
 authors = [
     "Mathijs van de Nes <git@mathijs.vd-nes.nl>",
     "Marli Frost <marli@frost.red>",
@@ -135,11 +135,13 @@ deflate-zopfli = [
     "dep:zopfli",
     "_deflate-any",
 ]
+getrandom = []
 jiff-02 = ["dep:jiff"]
 legacy-zip = ["bitstream-io"]
 lzma = ["dep:lzma-rust2"]
 nt-time = ["dep:nt-time"]
 ppmd = ["dep:ppmd-rust"]
+rayon = ["dep:rayon"]
 time = ["dep:time"]
 unreserved = []
 xz = ["dep:lzma-rust2"]
@@ -151,6 +153,7 @@ path = "src/lib.rs"
 
 [dependencies.aes]
 version = "0.9"
+features = ["zeroize"]
 optional = true
 
 [dependencies.arbitrary]
@@ -202,7 +205,7 @@ version = "^0.2.4"
 optional = true
 
 [dependencies.lzma-rust2]
-version = "^0.22.0"
+version = "^0.23.0"
 features = [
     "std",
     "encoder",
@@ -228,15 +231,20 @@ optional = true
 version = "1.5"
 optional = true
 
+[dependencies.rayon]
+version = "1.11"
+optional = true
+
 [dependencies.sha1]
 version = "0.11"
 optional = true
 
 [dependencies.typed-path]
-version = "0.12"
+version = "0.13"
+default-features = false
 
 [dependencies.zeroize]
-version = "1.8"
+version = "1.9"
 optional = true
 
 [dependencies.zopfli]
@@ -244,12 +252,9 @@ version = "^0.8.3"
 optional = true
 
 [dependencies.zstd]
-version = "^0.14.0"
+version = "^0.14.2"
 optional = true
 default-features = false
-
-[dev-dependencies.bencher]
-version = "0.1"
 
 [dev-dependencies.clap]
 version = "^4.4.18"
@@ -274,14 +279,13 @@ features = ["fs"]
 default-features = false
 
 [target."cfg(not(miri))".dev-dependencies.count_instructions]
-version = "0.2"
+version = "0.2.1"
 
 [target."cfg(not(miri))".dev-dependencies.tempfile]
 version = "3.15"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.getrandom]
 version = "0.4"
-optional = true
 default-features = false
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.time]
@@ -290,13 +294,16 @@ features = ["std"]
 optional = true
 default-features = false
 
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies.criterion]
+version = "0.8"
+features = ["html_reports"]
+
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies.rand]
 version = "0.10.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.getrandom]
 version = "0.4"
 features = ["wasm_js"]
-optional = true
 default-features = false
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.time]
@@ -308,6 +315,11 @@ features = [
 optional = true
 default-features = false
 
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies.criterion]
+version = "0.8"
+features = ["html_reports"]
+default-features = false
+
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies.getrandom]
 version = "0.4"
 features = ["wasm_js"]
@@ -315,3 +327,12 @@ default-features = false
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies.wasm-bindgen-test]
 version = "^0.3.56"
+
+[target."cfg(windows)".dependencies.windows-sys]
+version = "0.61.2"
+features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_Storage_FileSystem",
+]

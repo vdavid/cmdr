@@ -1,6 +1,6 @@
 [package]
 name = "zip"
-version = "9.0.5"
+version = "9.2.0"
 authors = [
     "Mathijs van de Nes <git@mathijs.vd-nes.nl>",
     "Marli Frost <marli@frost.red>",
@@ -24,7 +24,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 arbitrary = { version = "1.4", features = ["derive"], optional = true }
-aes = { version = "0.9", optional = true }
+aes = { version = "0.9", optional = true, features = ["zeroize"] }
 bzip2 = { version = "0.6", default-features = false, optional = true }
 chrono = { version = "^0.4.27", optional = true, default-features = false, features = ["std"] }
 constant_time_eq = { version = "^0.6.1", optional = true }
@@ -38,49 +38,56 @@ nt-time = { version = "0.13", default-features = false, optional = true }
 ppmd-rust = { version = "1.5", optional = true }
 pbkdf2 = { version = "0.13", optional = true }
 sha1 = { version = "0.11", optional = true }
-zeroize = { version = "1.8", optional = true }
-zstd = { version = "^0.14.0", optional = true, default-features = false }
+zeroize = { version = "1.9", optional = true }
+zstd = { version = "^0.14.2", optional = true, default-features = false }
 zopfli = { version = "^0.8.3", optional = true }
 deflate64 = { version = "^0.1.10", optional = true }
-lzma-rust2 = { version = "^0.22.0", optional = true, default-features = false, features = ["std", "encoder", "optimization", "xz"] }
+lzma-rust2 = { version = "^0.23.0", optional = true, default-features = false, features = ["std", "encoder", "optimization", "xz"] }
 bitstream-io = { version = "4.9", optional = true }
-typed-path = "0.12"
+# Only the path parsing is used, which doesn't need std.
+typed-path = { version = "0.13", default-features = false }
+rayon = { version = "1.11", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem"] }
 
 [target.'cfg(any(target_os = "macos", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd", target_os = "dragonfly"))'.dependencies]
 nix = { version = "^0.31.3", features = ["fs"], default-features = false }
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-getrandom = { version = "0.4", default-features = false, optional = true }
+getrandom = { version = "0.4", default-features = false }
 time = { version = "^0.3.47", default-features = false, optional = true, features = ["std"] }
 
 # wasm32
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.4", default-features = false, features = ["wasm_js"], optional = true }
+getrandom = { version = "0.4", default-features = false, features = ["wasm_js"] }
 time = { version = "^0.3.47", default-features = false, optional = true, features = [
     "std",
     "wasm-bindgen"
 ] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+criterion = { version = "0.8", default-features = false, features = ["html_reports"] }
 wasm-bindgen-test = "^0.3.56"
 getrandom = { version = "0.4", default-features = false, features = ["wasm_js"]}
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+criterion = { version = "0.8", features = ["html_reports"] }
 rand = "0.10.3"
 
 [target.'cfg(not(miri))'.dev-dependencies]
 tempfile = "3.15"
-count_instructions = "0.2"
+count_instructions = "0.2.1"
 
 [dev-dependencies]
-bencher = "0.1"
 walkdir = "2.5"
 time = { version = "^0.3.47", features = ["formatting", "macros"] }
 clap = { version = "^4.4.18", features = ["derive"] }
 rayon = "1.11"
 
 [features]
+rayon = ["dep:rayon"]
 _arbitrary = ["dep:arbitrary"]
 aes-crypto = ["dep:aes", "dep:constant_time_eq", "getrandom/std", "dep:hmac", "dep:pbkdf2", "dep:sha1", "dep:zeroize"]
 chrono = ["dep:chrono"]
@@ -92,6 +99,9 @@ deflate-flate2 = ["_deflate-any", "dep:flate2"]
 deflate-flate2-zlib-rs = ["deflate-flate2", "flate2/zlib-rs"]
 # Pull in zopfli (write-only DEFLATE, slower than flate2 with better compression ratios)
 deflate-zopfli = ["dep:zopfli", "_deflate-any"]
+# Deprecated: This is a formerly-optional dependency that pre-dates the "dep:" syntax for optional dependencies that aren't features.
+# It will be removed in 10.0.0.
+getrandom = []
 jiff-02 = ["dep:jiff"]
 nt-time = ["dep:nt-time"]
 lzma = ["dep:lzma-rust2"]
@@ -143,17 +153,29 @@ deflate-flate2-zlib-ng = ["deflate-flate2", "flate2/zlib-ng"]
 deflate-flate2-zlib-ng-compat = ["deflate-flate2", "flate2/zlib-ng-compat"]
 
 [[bench]]
-name = "read_entry"
+name = "deflate_alloc"
+harness = false
+required-features = ["_deflate-any"]
+
+[[bench]]
+name = "file_io"
 harness = false
 
 [[bench]]
-name = "read_metadata"
+name = "memory"
 harness = false
 
 [[bench]]
-name = "read_many_entries"
+name = "zip_file_list"
 harness = false
 
 [[bench]]
-name = "merge_archive"
+name = "aes"
 harness = false
+required-features = ["aes-crypto"]
+
+[[bench]]
+name = "extract"
+harness = false
+required-features = ["rayon"]
+

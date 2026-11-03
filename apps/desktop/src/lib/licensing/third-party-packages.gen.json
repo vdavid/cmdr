@@ -4265,7 +4265,7 @@
     },
     {
       "name": "typed-path",
-      "version": "0.12.3",
+      "version": "0.13.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/chipsenkbeil/typed-path"
     },
@@ -4589,7 +4589,7 @@
     },
     {
       "name": "zip",
-      "version": "9.0.5",
+      "version": "9.2.0",
       "license": "MIT",
       "url": "https://github.com/zip-rs/zip2"
     },

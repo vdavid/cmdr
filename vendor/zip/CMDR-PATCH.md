@@ -1,74 +1,58 @@
-# zip 9.0.5, patched
+# zip 9.2.0, patched
 
-The crates.io release of `zip` 9.0.5 (upstream `zip-rs/zip2` at tag `v9.0.5`), swapped in through the root
+The crates.io release of `zip` 9.2.0 (upstream `zip-rs/zip2` at tag `v9.2.0`), swapped in through the root
 `Cargo.toml`'s `[patch.crates-io]`. Everything here is the published package byte for byte, apart from the change below
 and the files left out:
 
 - `Cargo.lock`: a path dependency resolves through the workspace lockfile, so it was never read, and `osv` would scan
   its stale pins as if they shipped.
-- `.cargo-ok`, `.devcontainer/`, `.pre-commit-config.yaml`, `.whitesource`: registry and upstream dev tooling, nothing
-  the build reads.
+- `.cargo-ok`, `.config/` (upstream's `nextest.toml`), `.devcontainer/`, `.pre-commit-config.yaml`, `.whitesource`:
+  registry and upstream dev tooling, nothing the build reads.
 
-9.0.5 carries upstream's fix for zip cloaking (GHSA-m665-v7pm-7grj, commit `8068ab48`: opt-in
-`ZipReadOptions::enforce_header_consistency` and `ZipArchive::validate_header_consistency`). Cmdr doesn't opt in, because
-it never reads by local-header name: `crates/cmdr-archive/src/read/DETAILS.md` § "Zip cloaking".
+Upstream covers what earlier versions of this patch carried (verified by diffing the 9.0.5 and 9.2.0 packages,
+2026-11-03): a raw copy keeps an entry's name bytes and language encoding flag as stored (9.1.0, `zip-rs/zip2` #1124,
+Cmdr's #514; tests `crates/cmdr-archive/src/mutation/mutator_raw_names_test.rs`), and `ZipArchive::has_duplicate_names()`
+is public (9.1.0, #1109), which `refuse_a_folded_duplicate` in `crates/cmdr-archive/src/mutation/plan.rs` calls.
+
+Upstream's fix for zip cloaking (GHSA-m665-v7pm-7grj: opt-in `ZipReadOptions::enforce_header_consistency` and
+`ZipArchive::validate_header_consistency`) is opt-in. Cmdr doesn't opt in, because it never reads by local-header name:
+`crates/cmdr-archive/src/read/DETAILS.md` § "Zip cloaking".
 
 `tauri-plugin-updater` 2.14.1 depends on `zip` ^9 too, so this vendored copy is the only `zip` in the graph.
 
 ## The change
 
-- `src/write.rs`: `raw_copy_file` and `raw_copy_file_touch` write the entry's `name_raw()` under its own language
-  encoding flag (general purpose bit 11). `raw_copy_file` went through `name()` before, which reads a name lacking the
-  flag as CP437, and the writer then stored that reading as UTF-8 and flagged it. `raw_copy_file_rename` still takes the
-  new name as UTF-8 and derives the flag from it. Its options-building half moved into `raw_copy_options`, shared by both.
-  `deep_copy_file` and `shallow_copy_file` set the flag for their destination name.
-- `src/format/functions.rs` and `src/types.rs`: the writer takes bit 11 from the entry's stored flags (`get_flags`)
-  rather than re-deriving it from the name bytes at write time; every path that gives an entry a name sets it
-  (`needs_language_encoding`, `ZipFileData::set_language_encoding_for`). `ZipRawValues` carries a raw copy's own flag
-  into `start_entry`. `src/format/flags.rs`: `ZipFileFlags::set`.
-- `src/write.rs` and `src/types.rs`, encrypted entries (#592): a raw copy of an encrypted entry keeps its encrypted
-  flag (bit 0) and its data descriptor flag (bit 3), carried by `ZipRawValues::encrypted_with_descriptor`, and
-  `raw_copy_file_rename_internal` writes a data descriptor after the copied bytes when bit 3 is set (`finish_file`
-  skips it for raw entries, as `add_prepared_file` already works around). Upstream dropped both flags, because
-  `ZipFile::options()` carries no ZipCrypto state, so a kept ZipCrypto entry read back as ciphertext. Bit 3 matters on
-  its own: it picks ZipCrypto's password check byte (the DOS time's high byte under it, which is how Info-ZIP's
-  `zip -e` writes, else the CRC's). An AES entry gets its extra field (`0x9901`) once: upstream's `raw_copy_options`
-  skips the stored one by 9.0.5, as `options()` already carries it. Known limit:
-  `raw_copy_file_touch` on a bit-3 ZipCrypto entry changes the time its check byte encrypts, which no copy can fix
-  without the password; Cmdr never touches. Tests: `raw_copy_file_keeps_a_zipcrypto_entry_decryptable` and
-  `raw_copy_file_writes_an_aes_entrys_extra_field_once` here, and Cmdr's
-  `crates/cmdr-archive/src/mutation/mutator_encrypted_test.rs`.
-- `src/read/zip_archive.rs`: `ZipArchive::central_directory_len()`, the number of central-directory records counted
-  before same-named ones fold into one `IndexMap` entry (`ZipArchiveMetadata::central_directory_len`). More than `len()`
-  means a duplicate name whose earlier record no index reaches, which a rewrite through this reader would drop, so Cmdr
-  refuses such an edit (`crates/cmdr-archive/src/mutation/plan.rs`, `refuse_a_folded_duplicate`) without needing its
-  own reader to parse the archive. Upstream `zip-rs/zip2` #841 (open) asks to expose the fold. Upstream 9.0.5
-  tracks it privately (`ZipArchiveMetadata::has_duplicate_names`, from the same `raw_file_count` this reads), and open
-  PR #1109 makes that public as
-  `ZipArchive::has_duplicate_names()`, which would replace this (checked 2026-10-20). Tested from Cmdr
-  (`mutator_archive_shape_test::a_duplicate_name_is_refused_even_without_the_readers_names`): upstream's writer
-  refuses a duplicate name, so a fixture needs a hand-built zip.
-- Unit tests at the end of `src/write.rs`'s `tests` module, the same ones as upstream.
-- Known limit: a raw copy re-encodes a non-ASCII entry COMMENT as UTF-8 (the reader keeps no raw comment bytes), so a
-  CP437 comment under a clear flag reads back garbled. Entry comments are rare; names were the data loss.
+Encrypted entries (#592), in `src/write.rs` and `src/types.rs`:
+
+- A raw copy of an encrypted entry keeps its encrypted flag (bit 0) and its data descriptor flag (bit 3), carried by
+  `ZipRawValues::encrypted_with_descriptor` into `start_entry`, which applies them after its own data descriptor
+  default.
+- `raw_copy_file_rename_internal` writes a data descriptor after the copied bytes when bit 3 is set (`finish_file` skips
+  it for raw entries, as `add_prepared_file` already works around).
+- Upstream drops both flags, because `ZipFile::options()` carries no ZipCrypto state, so a kept ZipCrypto entry reads
+  back as ciphertext (verified by reading `raw_copy_file_rename_internal` and `start_entry` in the 9.2.0 package,
+  2026-11-03). Bit 3 matters on its own: it picks ZipCrypto's password check byte (the DOS time's high byte under it,
+  which is how Info-ZIP's `zip -e` writes, else the CRC's).
+- An AES entry gets its extra field (`0x9901`) once: upstream's `raw_copy_options` skips the stored one, as `options()`
+  already carries it.
+- Known limit: `raw_copy_file_touch` on a bit-3 ZipCrypto entry changes the time its check byte encrypts, which no copy
+  can fix without the password; Cmdr never touches.
+- Tests: `raw_copy_file_keeps_a_zipcrypto_entry_decryptable` and `raw_copy_file_writes_an_aes_entrys_extra_field_once`
+  at the end of `src/write.rs`'s `tests` module, and Cmdr's `crates/cmdr-archive/src/mutation/mutator_encrypted_test.rs`.
+  The package leaves out upstream's `tests/data/` fixtures, so the vendored crate's own tests don't build here: clone
+  `zip-rs/zip2` at the tag (its `src/` equals the package's), copy this `src/` over it, and run `cargo test --tests`
+  (passed on 9.2.0 at `4100a7d1`, 196 lib tests plus the integration suites, 2026-11-03).
+
+Known limit, upstream too: a raw copy re-encodes a non-ASCII entry COMMENT as UTF-8 (the reader keeps no raw comment
+bytes), so a CP437 comment under a clear flag reads back garbled. Entry comments are rare; names were the data loss.
 
 ## Why
 
-Zips from Japanese, Chinese, or Russian Windows tools store Shift-JIS, GBK, or CP866 names without the UTF-8 flag. Any
-Cmdr edit of such a zip rewrote every kept entry through `raw_copy_file_rename(file, name())`, turning every non-ASCII
-name in the archive into flagged mojibake, some split into fake folders by a `0x5C` byte (#514, verified on 9.0.1 and
-upstream `master` at `f8a0fdb6`, 2026-10-20). Re-deriving the flag from the bytes isn't enough on its own: a Shift-JIS
-or GBK name can be valid UTF-8 by accident, and old Info-ZIP writes UTF-8 without the flag. Cmdr's tests for the
-property: `crates/cmdr-archive/src/mutation/mutator_raw_names_test.rs`.
-
-The names change is drafted for upstream on a `preserve-raw-names-in-raw-copy` branch off `master`. The
-encrypted-entry change isn't drafted yet; upstream `master` drops both flags the same way (verified by reading
-`raw_copy_file_rename_internal` at `15639ba6`, 2026-10-20). Cmdr's tests for it:
-`crates/cmdr-archive/src/mutation/mutator_encrypted_test.rs`.
+Cmdr's zip edit rewrites every kept entry through a raw copy. Without this change, keeping a ZipCrypto entry through any
+edit (deleting or renaming a sibling) left it undecryptable. The change isn't drafted for upstream yet.
 
 ## Dropping it
 
-When upstream ships a raw copy that keeps the stored name and an encrypted entry's flags, plus
-a public way to see the fold (`has_duplicate_names()`, which `refuse_a_folded_duplicate` then switches to), delete this folder, its `[patch.crates-io]` line, and its
-`exclude` entry, and keep the tests. `desktop-rust-vendor-patch-applied` fails as soon as a bump past 9.0.5 makes cargo
-resolve crates.io again.
+When upstream ships a raw copy that keeps an encrypted entry's flags (and its data descriptor), delete this folder, its
+`[patch.crates-io]` lines (root `Cargo.toml` and `fuzz/Cargo.toml`), and its `exclude` entry, and keep the tests.
+`desktop-rust-vendor-patch-applied` fails as soon as a bump past 9.2.0 makes cargo resolve crates.io again.
