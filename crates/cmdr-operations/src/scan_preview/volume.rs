@@ -5,7 +5,6 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use super::super::Operations;
@@ -89,13 +88,12 @@ pub(crate) async fn run_volume_scan_preview(
 
     let progress_state = Arc::new(std::sync::Mutex::new(Instant::now()));
     let pause_for_cb = Arc::clone(&pause);
-    let state_for_cb = Arc::clone(&state);
     let events_for_cb = Arc::clone(&events);
     let watchdog_for_cb = Arc::clone(&watchdog);
     let preview_id_for_cb = preview_id.clone();
     let engine_for_cb = engine.clone();
     let on_progress = move |p: cmdr_fs::volume::ListingProgress| {
-        if state_for_cb.cancelled.load(Ordering::Relaxed) {
+        if pause_for_cb.told_to_stop() {
             return;
         }
         // Fed BEFORE the 200 ms emit throttle: the watchdog asks whether the
@@ -138,16 +136,17 @@ pub(crate) async fn run_volume_scan_preview(
         );
     };
 
-    // Cancellation predicate, captured by reference inside the async helpers.
-    let state_for_cancel = Arc::clone(&state);
-    let is_cancelled = move || state_for_cancel.cancelled.load(Ordering::Relaxed);
+    // Cancellation predicate, captured by reference inside the async helpers:
+    // the owner's cancel as well as the preview's own flag (see `told_to_stop`).
+    let pause_for_cancel = Arc::clone(&pause);
+    let is_cancelled = move || pause_for_cancel.told_to_stop();
 
     // A transfer's walk also records every entry for the operation's live tree.
     let recorder = (purpose == ScanPreviewPurpose::Transfer)
         .then(|| Arc::new(TreeRecorder::new(&sources, TreeOrder::active(host))));
 
     let result: Result<BatchScanResult, WriteOperationError> = async {
-        if state.cancelled.load(Ordering::Relaxed) {
+        if pause.told_to_stop() {
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".into(),
             });
@@ -190,11 +189,11 @@ pub(crate) async fn run_volume_scan_preview(
         Err(_) => (0, 0, 0, 0),
     };
 
-    // The cancel flag decides, not the result: a cancelled batch scan comes back
-    // as `VolumeError::Cancelled` stringified into "Scan failed: …", so reading
-    // the error would reach a waiting operation as a failure. Mirrors the local
-    // walk's arms exactly.
-    let cancelled = state.cancelled.load(Ordering::Relaxed);
+    // The cancel signal decides, not the result: a cancelled batch scan comes
+    // back as `VolumeError::Cancelled` stringified into "Scan failed: …", so
+    // reading the error would reach a waiting operation as a failure. Mirrors
+    // the local walk's arms exactly, including asking the owner too.
+    let cancelled = pause.told_to_stop();
     // See the local walk's matching guard: whoever claims the outcome first owns
     // publishing it, so a walk that comes back after the watchdog gave up stays
     // quiet instead of contradicting it.

@@ -286,10 +286,16 @@ impl ScanPause {
     /// stop directly. ❌ Dropping either leaves the thread on a gate nobody will
     /// open.
     ///
+    /// So a preview worker asks this, ❌ never its own flag alone, both per entry
+    /// and when it decides how it settled. The flag rises only once the
+    /// operation's task reaches `abandon_claim`, after the cancel has already
+    /// woken the walk; a walk reading only the flag finishes the tree in that
+    /// gap and publishes a result for an operation that's over (#869).
+    ///
     /// An UNRESOLVED owner means the claim hasn't landed yet, so only the
     /// preview's own flag can speak — which is right: an operation that doesn't
     /// exist yet has nothing to cancel.
-    fn told_to_stop(&self) -> bool {
+    pub(super) fn told_to_stop(&self) -> bool {
         if let Some(owner) = self.owner.get()
             && owner.intent().is_cancelled()
         {

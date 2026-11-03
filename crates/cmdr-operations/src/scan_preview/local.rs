@@ -155,7 +155,8 @@ pub(crate) fn run_scan_preview(
         let ctx = WalkContext {
             sidecars: &sidecars,
             progress_interval: state.progress_interval,
-            is_cancelled: &|| state.cancelled.load(Ordering::Relaxed),
+            // The owner's cancel as well as the preview's own flag; see `told_to_stop`.
+            is_cancelled: &|| pause.told_to_stop(),
             park_while_paused: &|| pause.park_while_paused(),
             // Typed and naming the entry, because a confirmed transfer waiting on
             // this preview reports exactly this as its own failure.
@@ -236,11 +237,12 @@ pub(crate) fn run_scan_preview(
     drop(estimate_tx);
     let estimate = estimate_worker.and_then(|handle| handle.join().ok());
 
-    // The cancel flag, not the shape of `result`, decides whether this was a
+    // The cancel signal, not the shape of `result`, decides whether this was a
     // cancel: a cancelled walk unwinds through `on_cancelled` into the Err arm,
     // so reading the error would reach a waiting operation as a failure whose
-    // message merely says "cancelled".
-    let cancelled = state.cancelled.load(Ordering::Relaxed);
+    // message merely says "cancelled". The same signal the walk stopped on, so a
+    // walk its owner cancelled never settles as complete.
+    let cancelled = pause.told_to_stop();
     // The watchdog may have already given this preview an outcome and told the
     // dialog about it. Publishing a second one would resurrect a spinner the
     // user has already been told is over, or overwrite a timeout with a result

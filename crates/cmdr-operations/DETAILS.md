@@ -1910,6 +1910,13 @@ sets BEFORE it wakes the gate) and the preview's own `cancelled` flag (which `ab
 leaves the thread on a gate nobody will open — the async volume walk parks on `wait_while_paused_until`, the local one
 on the sync twin `wait_while_paused_sync_until`, and neither re-checks on a timer.
 
+**The walk stops on the same answer the park exits on.** Both preview workers (`scan_preview/local.rs`,
+`scan_preview/volume.rs`) ask `ScanPause::told_to_stop` per entry AND when deciding whether they settled as cancelled,
+❌ never the preview's flag alone. The flag rises only when the operation's task reaches `abandon_claim`, after the
+cancel has already woken the walk, so a walk reading only the flag could finish the tree in that gap and publish a
+complete result for an operation that's over (#869;
+`scan_pause_tests::a_woken_walk_stops_on_its_owners_cancel_before_the_claim_is_abandoned` holds the gap open).
+
 **The watchdog has to know.** A paused scan counts nothing, which is precisely what `ScanWatchdog`'s 60 s inactivity
 bound fires on, so holding Pause would have ended the scan with "stopped responding" — the user's own click reported
 back as a dead share. `note_parked` suspends the budget; `note_resumed` restarts the clock from now, so the pause is

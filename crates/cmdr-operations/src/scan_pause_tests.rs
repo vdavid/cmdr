@@ -343,6 +343,44 @@ async fn a_cancel_reaches_a_scan_parked_on_the_pause_gate() {
     engine.stores().previews().release_preview(&scan.preview_id);
 }
 
+/// The gap the test above only hits by chance (#869): a cancel wakes the parked
+/// walk at once, but the preview's own flag goes up later, when the operation's
+/// task reaches `abandon_claim`. A walk that asks only that flag finishes the
+/// tree in between and publishes a complete result for an operation that's
+/// over. Holding the gap open, with the intent stopped and the flag still down,
+/// makes that ordering certain: the walk has to stop on the intent alone.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_woken_walk_stops_on_its_owners_cancel_before_the_claim_is_abandoned() {
+    let engine = TestOperations::new();
+    let scan = start_copy_with_a_real_scan(&engine, "scanpause-intent-only").await;
+    wait_until_parked(&scan.sink).await;
+
+    let owner = engine
+        .registry()
+        .get(&scan.operation_id)
+        .expect("the operation is live");
+    owner.intent().set_for_test(super::state::OperationIntent::Stopped);
+    owner.pause_gate.wake();
+
+    scan.walk.join().expect("the woken walk comes back");
+    assert!(
+        !scan.sink.is_complete(),
+        "a walk whose owner is cancelled publishes no result, even before the owner abandons its claim"
+    );
+    assert_eq!(
+        scan.sink.cancelled.lock_ignore_poison().len(),
+        1,
+        "the walk settles as cancelled"
+    );
+
+    wait_until_async(WAIT, "the operation to settle", || {
+        engine.manager().lifecycle_status(&scan.operation_id).is_none()
+    })
+    .await;
+    engine.stores().previews().release_preview(&scan.preview_id);
+    drop(scan.op_events);
+}
+
 /// An operation event sink that pauses the operation the first time it reports
 /// scanning progress, and counts how far the scan got.
 ///
