@@ -40,6 +40,11 @@ Paths: a non-root volume's index stores them relative to its mount root, so the 
 (the one place that answers "where is this volume mounted", so nothing forks it). Resolution sorts by path, so the same
 selector over the same index freezes the same op sequence twice running.
 
+A volume with no live index can still be answered by a sleeping share member's index on disk:
+`SelectorIndex::resolve_stored` reads it through `Index::list_children` (read-only, app paths in, listed folders only),
+and `resolve_over_share` re-addresses each match onto the root's volume. Only `NotIndexed` falls back. The contract:
+`../../tools/suggestions/DETAILS.md` § Where a proposal may point.
+
 **Not available through the index today: "last opened".** The plan's flagship example ("installers you've already
 opened") wants it, and the drive index carries size, modification time, and inode but no access time. The visit counts
 in `importance.db` are per-FOLDER, not per-file. So a selector can express "old `.dmg` files in Downloads" but not yet

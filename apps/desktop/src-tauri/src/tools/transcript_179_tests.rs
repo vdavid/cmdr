@@ -33,7 +33,7 @@ pub(super) const LAN: &str = "smb-192-168-1-111-445-naspi-david";
 /// The NAS's server GUID, as both share rows record it.
 const NASPOLYA: &str = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 /// When the Tailscale share's on-disk index last finished a walk.
-const TAILSCALE_AS_OF: u64 = 1_761_000_000;
+pub(super) const TAILSCALE_AS_OF: u64 = 1_761_000_000;
 const NOW: u64 = 1_761_500_000;
 pub(super) const INVOICES: &str = "papers/Rymdskottkärra AB/invoices paid";
 
@@ -95,7 +95,7 @@ pub(super) fn conversation_179_with(lan_root: &str, lan_state: ConnectionState) 
 
 /// The Tailscale share's drive index as prod holds it: rooted at `/Volumes/naspi`,
 /// its last walk having listed `invoices paid` and its two children.
-fn tailscale_index_on_disk(data: &Path) {
+pub(super) fn tailscale_index_on_disk(data: &Path) {
     use cmdr_index::store::{IndexStore, ROOT_ID};
 
     let db_path = data.join(format!("index-{TAILSCALE}.db"));

@@ -84,7 +84,18 @@ while it was still talking (`place.rs`, over the location resolver: `../DETAILS.
   files there.
 - **One `via` per group**: a group whose places would re-address onto two members, or re-address one place while
   another names a member of that share directly, refuses as `mixedReaddress`. Simpler and safer than a `via` per field.
-- **A selector re-addressed** resolves against the sibling's index; `notIndexed` there is the selector's own refusal.
+- **A selector re-addressed** resolves against the sibling's index. When the volume a selector's root is placed on has
+  no live index (re-addressed or named directly), it resolves over the index a sleeping member of its share left on disk
+  instead: `list_dir`'s offline tier, freshest first, the volume asked winning a tie (`place_selector_root`, then
+  `suggested_ops::selector::resolve_over_share`). Each match is re-addressed onto the placed volume with the same
+  `rebase` `VolumeFacts::readers` uses, so the stored group runs on the live share, and the report's group carries
+  `offlineIndex: { volumeId, asOf? }` so the model can say how old the match is. ❌ Only `notIndexed` falls back: a live
+  index that lacks the root answers for itself, or a stale copy would shadow a live index mid-walk. With no member's
+  index on disk holding the root, `notIndexed` is the selector's own refusal.
+- **The offline read stays read-only**: `DriveIndex::resolve_stored` descends through `Index::list_children`, the
+  `IndexReader::Stored` opener (`SQLITE_OPEN_READ_ONLY`, nothing registered or rebuilt), and only into folders a walk
+  listed. ⚠️ It opens the database once per folder; a one-open subtree read would need an `Index` method past the
+  handle's ceiling. `conversation_179_resolves_a_selector_over_the_tailscale_index_on_disk` pins both halves.
 - **`WritableDestination` applies to the placed path**, where the group will really write.
 - **Amendments place again**: an amend is a fresh proposal of the group.
 - The review's `DestinationState::NotConnected` stays: a volume can leave after the proposal.

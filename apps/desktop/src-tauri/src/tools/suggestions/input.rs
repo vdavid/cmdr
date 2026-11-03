@@ -25,7 +25,7 @@ use super::place::GroupPlacer;
 pub(super) use super::problem::GroupProblem;
 use super::problem::PlaceField;
 use crate::agent::store::proposals::{GroupIntent, NewOp, NewRename, TransferOp, WritableDestination};
-use crate::agent::suggested_ops::OpSelector;
+use crate::agent::suggested_ops::{OpSelector, SleepingIndex};
 use crate::agent::types::ProposalVerb;
 use crate::file_system::volume::Volume;
 use crate::location::Location;
@@ -234,11 +234,13 @@ pub(super) enum SourceShape {
 pub(super) enum PlannedSources {
     /// Sources named one by one. Their creation snapshot starts empty and is filled by one
     /// bounded stat each before the write (`snapshot.rs`).
-    Paths {
-        ops: Vec<NewOp>,
-        naming: ExplicitNaming,
+    Paths { ops: Vec<NewOp>, naming: ExplicitNaming },
+    /// Sources a pattern describes, with the indexes on disk that may answer for it
+    /// (`place.rs`).
+    Selector {
+        selector: OpSelector,
+        sleeping: Vec<SleepingIndex>,
     },
-    Selector(OpSelector),
 }
 
 impl SourceShape {
@@ -495,10 +497,10 @@ fn plan_group(group: GroupInput, now: i64, facts: &VolumeFacts) -> Result<Planne
                 group.overwrites_existing,
                 |destination| placer.place(PlaceField::Destination, destination),
             )?;
-            let selector = plan_selector(selector, now, |root| placer.place(PlaceField::SelectorRoot, root))?;
+            let (selector, sleeping) = plan_selector(selector, now, |root| placer.place_selector_root(root))?;
             PlannedOps::Sources {
                 shape,
-                sources: PlannedSources::Selector(selector),
+                sources: PlannedSources::Selector { selector, sleeping },
             }
         }
         // The source count above admits exactly one, so this arm is unreachable; it answers
@@ -674,8 +676,8 @@ fn absolute_path(path: String) -> Result<String, GroupProblem> {
 fn plan_selector(
     input: SelectorInput,
     now: i64,
-    place: impl FnOnce(LocationInput) -> Result<Location, GroupProblem>,
-) -> Result<OpSelector, GroupProblem> {
+    place: impl FnOnce(LocationInput) -> Result<(Location, Vec<SleepingIndex>), GroupProblem>,
+) -> Result<(OpSelector, Vec<SleepingIndex>), GroupProblem> {
     if let (Some(min), Some(max)) = (input.min_size_bytes, input.max_size_bytes)
         && min > max
     {
@@ -691,15 +693,17 @@ fn plan_selector(
     {
         return Err(GroupProblem::ImpossibleWindow);
     }
-    Ok(OpSelector {
-        // Placed last, once the window is known to be satisfiable.
-        root: place(input.root)?,
+    // Placed last, once the window is known to be satisfiable.
+    let (root, sleeping) = place(input.root)?;
+    let selector = OpSelector {
+        root,
         name_glob: input.name_glob,
         min_size: input.min_size_bytes,
         max_size: input.max_size_bytes,
         modified_before,
         modified_after,
-    })
+    };
+    Ok((selector, sleeping))
 }
 
 /// The unix second `days` whole days before `now`, floored at the epoch so an absurd day

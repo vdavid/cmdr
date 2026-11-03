@@ -144,6 +144,7 @@ pub(super) fn apply_server(
         group_id: planned.group_id,
         group,
         via: None,
+        offline: None,
     };
     let report = write_group(conn, sweep_id, entry, now).map_err(ServerRefusal::Apply)?;
     Ok(ProposeReport {

@@ -77,7 +77,7 @@ pub(super) async fn freeze_named_sources(
             }
             // A selector's ops carry the index row they matched; resolution fills them.
             PlannedOps::Sources {
-                sources: PlannedSources::Selector(_),
+                sources: PlannedSources::Selector { .. },
                 ..
             } => {}
         }

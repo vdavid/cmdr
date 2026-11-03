@@ -46,6 +46,10 @@ struct FakeIndex {
     files: Vec<IndexedFile>,
     refusal: Option<SelectorRefusal>,
     calls: std::cell::Cell<usize>,
+    /// What each volume's index on disk holds, by volume id.
+    stored: Vec<(String, Vec<IndexedFile>)>,
+    /// Every root a stored index was asked about, in order.
+    stored_asks: std::cell::RefCell<Vec<crate::location::Location>>,
 }
 
 impl FakeIndex {
@@ -54,15 +58,22 @@ impl FakeIndex {
             files,
             refusal: None,
             calls: std::cell::Cell::new(0),
+            stored: Vec::new(),
+            stored_asks: std::cell::RefCell::new(Vec::new()),
         }
     }
 
     fn refusing(refusal: SelectorRefusal) -> Self {
         FakeIndex {
-            files: Vec::new(),
             refusal: Some(refusal),
-            calls: std::cell::Cell::new(0),
+            ..FakeIndex::with(Vec::new())
         }
+    }
+
+    /// `volume_id`'s index on disk holds `files`, under any root.
+    fn storing(mut self, volume_id: &str, files: Vec<IndexedFile>) -> Self {
+        self.stored.push((volume_id.to_string(), files));
+        self
     }
 }
 
@@ -73,6 +84,17 @@ impl SelectorIndex for FakeIndex {
             Some(refusal) => Err(refusal.clone()),
             None => Ok(self.files.clone()),
         }
+    }
+
+    fn resolve_stored(&self, selector: &OpSelector) -> Result<Vec<IndexedFile>, SelectorRefusal> {
+        self.stored_asks.borrow_mut().push(selector.root.clone());
+        self.stored
+            .iter()
+            .find(|(volume_id, _)| *volume_id == selector.root.volume_id)
+            .map(|(_, files)| files.clone())
+            .ok_or_else(|| SelectorRefusal::RootNotFound {
+                path: selector.root.path.clone(),
+            })
     }
 }
 

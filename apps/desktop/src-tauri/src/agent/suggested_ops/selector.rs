@@ -9,6 +9,11 @@
 //! Resolution reads the **drive index**, ❌ never a live filesystem walk (the no-live-FS rule
 //! in `tools/CLAUDE.md`): a tool handler that walked the filesystem would block on a
 //! dead mount and would read ground the user never consented to index.
+//!
+//! A root whose volume has no live index can still resolve over the index a sleeping member
+//! of its share left on disk ([`SleepingIndex`]), read-only, with every match re-addressed
+//! onto the root's own volume. Why and when: `tools/suggestions/DETAILS.md` § Where a
+//! proposal may point.
 
 use serde::{Deserialize, Serialize};
 
@@ -125,8 +130,81 @@ pub enum SelectorRefusal {
 /// Where a selector resolves. A trait so the resolution logic is testable against a fixed set
 /// of files, and so nothing here can reach for the filesystem by accident.
 pub trait SelectorIndex {
-    /// Every file under the selector's root that satisfies it, in a stable order.
+    /// Every file under the selector's root that satisfies it, in a stable order, from the
+    /// root volume's LIVE index.
     fn resolve(&self, selector: &OpSelector) -> Result<Vec<IndexedFile>, SelectorRefusal>;
+
+    /// The same, from the index a volume with no live instance left on disk, opened
+    /// read-only. Only folders a walk listed are descended, so an answer never passes a
+    /// partial folder off as whole.
+    fn resolve_stored(&self, selector: &OpSelector) -> Result<Vec<IndexedFile>, SelectorRefusal>;
+}
+
+/// The index a sleeping member of a selector root's share left on disk: what answers when the
+/// root's own volume has no live index. Proven the same share and account
+/// (`location::same_share`), so its rows describe the same files the root's volume serves.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SleepingIndex {
+    /// The selector's root, rebased onto the sleeping member.
+    pub root: Location,
+    /// The sleeping member's root: every path its index answers starts with it.
+    pub from_root: String,
+    /// The root of the volume the selector's root sits on, where every match is re-addressed.
+    pub onto_root: String,
+    /// When that index's last walk finished (unix seconds), `None` when it never did.
+    pub as_of: Option<u64>,
+}
+
+/// What a selector resolved to, and which index answered when it wasn't the root's own.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Resolved {
+    /// The matches, every path on the root's own volume.
+    pub files: Vec<IndexedFile>,
+    /// The sleeping member whose index on disk answered, `None` when the live index did.
+    pub offline: Option<SleepingIndex>,
+}
+
+/// Resolve `selector` against its volume's live index, or, when that volume has none, against
+/// the first of `sleeping` that holds the root (freshest first, as the caller orders them),
+/// re-addressing each match onto the root's volume exactly as `VolumeFacts::readers` re-roots
+/// a place: [`rebase`](cmdr_fs::volume::app_paths::rebase) from one member's root to the
+/// other's.
+///
+/// Only `NotIndexed` falls back. A live index that lacks the root, or can't be read, is that
+/// index's own answer: a stale copy must never shadow a live index mid-walk.
+pub fn resolve_over_share(
+    index: &dyn SelectorIndex,
+    selector: &OpSelector,
+    sleeping: &[SleepingIndex],
+) -> Result<Resolved, SelectorRefusal> {
+    let refusal = match index.resolve(selector) {
+        Ok(files) => return Ok(Resolved { files, offline: None }),
+        Err(refusal @ SelectorRefusal::NotIndexed { .. }) => refusal,
+        Err(refusal) => return Err(refusal),
+    };
+    for sleeper in sleeping {
+        let on_sleeper = OpSelector {
+            root: sleeper.root.clone(),
+            ..selector.clone()
+        };
+        // A sleeper that can't answer (no row for the root, a database gone since the facts
+        // were read) hands over to the next; with none left, "no index" is the honest answer.
+        let Ok(files) = index.resolve_stored(&on_sleeper) else {
+            continue;
+        };
+        let files = files
+            .into_iter()
+            .filter_map(|file| {
+                let path = cmdr_fs::volume::app_paths::rebase(&file.path, &sleeper.from_root, &sleeper.onto_root)?;
+                Some(IndexedFile { path, ..file })
+            })
+            .collect();
+        return Ok(Resolved {
+            files,
+            offline: Some(sleeper.clone()),
+        });
+    }
+    Err(refusal)
 }
 
 /// The production resolver: the app's live drive index.
@@ -158,6 +236,54 @@ impl SelectorIndex for DriveIndex {
 
         pool.with_conn(|conn| walk(conn, selector, &compiled, &read_root, mount_root.as_deref()))
             .map_err(|detail| SelectorRefusal::IndexUnavailable { detail })?
+    }
+
+    /// Descends through `Index::list_children`, the read-only opener `list_dir` answers an
+    /// `offlineIndex` listing with: app paths in, rows out, and `None` for a folder no walk
+    /// listed. ⚠️ It opens the database once per folder, which a fallback for a sleeping
+    /// share can afford; a one-open subtree read would need a new `Index` method, past the
+    /// handle's ceiling (`index-crate-isolation`).
+    fn resolve_stored(&self, selector: &OpSelector) -> Result<Vec<IndexedFile>, SelectorRefusal> {
+        let volume_id = selector.root.volume_id.as_str();
+        let compiled = selector.compile()?;
+        let list = |path: &str| {
+            crate::index_host::index()
+                .list_children(volume_id, path)
+                .map_err(|e| SelectorRefusal::IndexUnavailable { detail: e.to_string() })
+        };
+        let root = selector.root.path.trim_end_matches('/');
+        let root = if root.is_empty() { "/" } else { root };
+        let mut found = Vec::new();
+        let mut stack = vec![root.to_string()];
+        while let Some(dir) = stack.pop() {
+            let Some(children) = list(&dir)? else {
+                if dir == root {
+                    return Err(SelectorRefusal::RootNotFound {
+                        path: selector.root.path.clone(),
+                    });
+                }
+                // Rows under a folder no walk listed are a lower bound, not its contents.
+                continue;
+            };
+            for row in children {
+                if row.is_symlink {
+                    continue;
+                }
+                let path = format!("{}/{}", dir.trim_end_matches('/'), row.name);
+                if row.is_directory {
+                    stack.push(path);
+                } else if selector.matches(&compiled, &row.name, row.logical_size, row.modified_at) {
+                    found.push(IndexedFile {
+                        path,
+                        size: row.logical_size,
+                        modified_at: row.modified_at.map(|t| t as i64),
+                        inode: row.inode,
+                    });
+                }
+            }
+        }
+        found.sort_by(|a, b| a.path.cmp(&b.path));
+        Ok(found)
     }
 }
 

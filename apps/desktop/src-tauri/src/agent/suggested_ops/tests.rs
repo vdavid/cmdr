@@ -45,6 +45,12 @@ impl SelectorIndex for FakeIndex {
             None => Ok(self.files.borrow().clone()),
         }
     }
+
+    fn resolve_stored(&self, selector: &OpSelector) -> Result<Vec<IndexedFile>, SelectorRefusal> {
+        Err(SelectorRefusal::NotIndexed {
+            volume_id: selector.root.volume_id.clone(),
+        })
+    }
 }
 
 fn file(path: &str) -> IndexedFile {
@@ -86,7 +92,7 @@ fn a_selector_freezes_at_creation_and_is_never_resolved_again() {
     let index = FakeIndex::holding(&["/Users/someone/Downloads/one.dmg", "/Users/someone/Downloads/two.dmg"]);
     let selector = downloads_dmgs();
 
-    let ops = resolve_selector_ops(&index, &selector).expect("resolve");
+    let ops = resolve_selector_ops(&index, &selector, &[]).expect("resolve").ops;
     let group = selector_group(
         &selector,
         GroupIntent::Trash { sources: ops },
@@ -140,7 +146,7 @@ fn a_trashable_group(conn: &Connection) -> i64 {
 fn a_trashable_group_from(conn: &Connection, conversation_id: Option<i64>) -> i64 {
     let index = FakeIndex::holding(&["/Users/someone/Downloads/one.dmg"]);
     let selector = downloads_dmgs();
-    let ops = resolve_selector_ops(&index, &selector).expect("resolve");
+    let ops = resolve_selector_ops(&index, &selector, &[]).expect("resolve").ops;
     let group = selector_group(&selector, GroupIntent::Trash { sources: ops }, None).expect("build group");
     let sweep = NewSweep {
         conversation_id,
@@ -500,7 +506,9 @@ fn a_second_rejection_of_the_same_group_teaches_nothing_more() {
 #[test]
 fn resolved_ops_carry_the_creation_snapshot() {
     let index = FakeIndex::holding(&["/Users/someone/Downloads/one.dmg"]);
-    let ops = resolve_selector_ops(&index, &downloads_dmgs()).expect("resolve");
+    let ops = resolve_selector_ops(&index, &downloads_dmgs(), &[])
+        .expect("resolve")
+        .ops;
 
     let snapshot = ops[0].snapshot.expect("a resolved op carries what the index knew");
     assert_eq!(snapshot.size, Some(1_234));
@@ -515,7 +523,7 @@ fn the_group_carries_the_pattern_as_text_and_the_selector_as_json() {
     let conn = migrated_conn();
     let index = FakeIndex::holding(&["/Users/someone/Downloads/one.dmg"]);
     let selector = downloads_dmgs();
-    let ops = resolve_selector_ops(&index, &selector).expect("resolve");
+    let ops = resolve_selector_ops(&index, &selector, &[]).expect("resolve").ops;
     let group = selector_group(&selector, GroupIntent::Trash { sources: ops }, None).expect("group");
 
     let proposed = propose(&conn, &NewSweep::default(), &[group], 100).expect("propose");
@@ -538,7 +546,7 @@ fn an_unindexed_volume_refuses_rather_than_resolving_to_nothing() {
         volume_id: "smb-nas".to_string(),
     });
 
-    let refusal = resolve_selector_ops(&index, &downloads_dmgs()).expect_err("must refuse");
+    let refusal = resolve_selector_ops(&index, &downloads_dmgs(), &[]).expect_err("must refuse");
     assert!(matches!(refusal, SelectorRefusal::NotIndexed { .. }), "{refusal:?}");
 }
 

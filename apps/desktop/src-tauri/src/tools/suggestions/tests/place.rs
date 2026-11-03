@@ -5,9 +5,10 @@ use cmdr_fs::volume::ConnectionState;
 use rusqlite::Connection;
 use serde_json::{Value, json};
 
-use super::{FakeIndex, NOW, apply_over, local_facts, migrated_conn, volume};
+use super::{FakeIndex, NOW, apply_over, indexed, local_facts, migrated_conn, volume};
 use crate::agent::store::proposals::{get_group, page_ops};
-use crate::agent::suggested_ops::SelectorRefusal;
+use crate::agent::suggested_ops::{DriveIndex, SelectorRefusal};
+use crate::location::Location;
 use crate::location::miss::{LocationMissResult, MissToken};
 use crate::location::resolve::{VolumeFact, VolumeFacts};
 use crate::location::same_share::Via;
@@ -17,7 +18,9 @@ use crate::tools::resources::volumes::VolumeKind;
 use crate::tools::suggestions::input::{GroupProblem, PlanRefusal, PlannedOps, PlannedSources, plan_sweep};
 use crate::tools::suggestions::problem::PlaceField;
 use crate::tools::suggestions::propose::{ApplyRefusal, plan_refusal_content};
-use crate::tools::transcript_179_tests::{INVOICES, LAN, TAILSCALE, conversation_179, conversation_179_with};
+use crate::tools::transcript_179_tests::{
+    INVOICES, LAN, TAILSCALE, TAILSCALE_AS_OF, conversation_179, conversation_179_with, tailscale_index_on_disk,
+};
 
 const BOX: &str = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 const OTHER_BOX: &str = "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0";
@@ -341,8 +344,9 @@ fn a_group_never_re_addresses_onto_two_members() {
     assert_eq!(wire["refusal"], json!("mixedReaddress"));
 }
 
-/// A selector re-addressed onto a sibling reads THAT sibling's index; with none there, the
-/// selector's own refusal stands (the model then lists paths it read live).
+/// A selector re-addressed onto a sibling reads THAT sibling's index; with none there and no
+/// index on disk either, the selector's own refusal stands (the model then lists paths it read
+/// live).
 #[test]
 fn a_selector_root_re_addresses_and_reads_the_siblings_index() {
     let conn = migrated_conn();
@@ -357,7 +361,7 @@ fn a_selector_root_re_addresses_and_reads_the_siblings_index() {
     let planned = plan_sweep(&call, NOW, &facts).expect("placed");
     assert_eq!(planned.groups[0].via.as_ref().map(|v| v.volume_id.as_str()), Some("ts"));
     let PlannedOps::Sources {
-        sources: PlannedSources::Selector(selector),
+        sources: PlannedSources::Selector { selector, .. },
         ..
     } = &planned.groups[0].ops
     else {
@@ -375,6 +379,126 @@ fn a_selector_root_re_addresses_and_reads_the_siblings_index() {
             refusal: SelectorRefusal::NotIndexed { ref volume_id }
         } if volume_id == "lan"
     ));
+}
+
+/// [`nas`] with the sleeping `ts` share's last walk left on disk, finished at `as_of`.
+fn nas_with_ts_index_on_disk(as_of: u64) -> VolumeFacts {
+    let mut facts = nas(GuidProof::Authenticated, "david");
+    for v in facts.volumes.iter_mut().filter(|v| v.id == "ts") {
+        v.index.stored = true;
+        v.index.stored_as_of = Some(as_of);
+    }
+    facts
+}
+
+fn dmgs_under(volume_id: &str, path: &str) -> Value {
+    json!({ "groups": [{
+        "verb": "trash",
+        "selector": { "root": { "volumeId": volume_id, "path": path }, "nameGlob": "*.dmg" },
+    }] })
+}
+
+/// With no index on the live sibling, the selector resolves over the index the sleeping
+/// member left on disk, read at the member's own path, and every match is re-addressed onto
+/// the sibling the group is stored on, the way any re-addressed place is. The report names
+/// the index that answered and how old it is.
+#[test]
+fn a_selector_resolves_over_a_sleeping_members_index_when_the_sibling_has_none() {
+    let conn = migrated_conn();
+    let index = FakeIndex::refusing(SelectorRefusal::NotIndexed {
+        volume_id: "lan".to_string(),
+    })
+    .storing(
+        "ts",
+        vec![
+            indexed("/Volumes/naspi/Downloads/a.dmg"),
+            indexed("/Volumes/naspi/Downloads/old/b.dmg"),
+        ],
+    );
+
+    let report = apply_over(
+        &conn,
+        &index,
+        &dmgs_under("ts", "/Volumes/naspi/Downloads"),
+        &nas_with_ts_index_on_disk(1_761_000_000),
+    )
+    .expect("staged");
+
+    assert_eq!(
+        *index.stored_asks.borrow(),
+        [Location {
+            volume_id: "ts".to_string(),
+            path: "/Volumes/naspi/Downloads".to_string(),
+        }],
+        "the sleeping member's index is asked at the member's own path"
+    );
+    let group = get_group(&conn, report.groups[0].group_id)
+        .expect("read")
+        .expect("exists");
+    assert_eq!(group.source_volume_id, "lan", "the group runs on the live sibling");
+    let ops = page_ops(&conn, report.groups[0].group_id, 10, 0).expect("ops");
+    assert_eq!(
+        ops.iter().map(|op| op.source_path.as_str()).collect::<Vec<_>>(),
+        [
+            "/Volumes/naspi-1/Downloads/a.dmg",
+            "/Volumes/naspi-1/Downloads/old/b.dmg"
+        ]
+    );
+    let wire = serde_json::to_value(&report).expect("wire");
+    assert_eq!(wire["groups"][0]["via"], json!({ "volumeId": "ts" }));
+    assert_eq!(
+        wire["groups"][0]["offlineIndex"],
+        json!({ "volumeId": "ts", "asOf": crate::search::format_timestamp(1_761_000_000) })
+    );
+}
+
+/// Named on the live share directly, the same holds: no `via` (nothing was re-addressed),
+/// and the sleeping member still answers for the live share's missing index.
+#[test]
+fn a_selector_on_an_unindexed_live_share_resolves_over_its_sleeping_twin() {
+    let conn = migrated_conn();
+    let index = FakeIndex::refusing(SelectorRefusal::NotIndexed {
+        volume_id: "lan".to_string(),
+    })
+    .storing("ts", vec![indexed("/Volumes/naspi/Downloads/a.dmg")]);
+
+    let report = apply_over(
+        &conn,
+        &index,
+        &dmgs_under("lan", "/Volumes/naspi-1/Downloads"),
+        &nas_with_ts_index_on_disk(1_761_000_000),
+    )
+    .expect("staged");
+
+    assert_eq!(report.groups[0].via, None);
+    let ops = page_ops(&conn, report.groups[0].group_id, 10, 0).expect("ops");
+    assert_eq!(ops[0].source_path, "/Volumes/naspi-1/Downloads/a.dmg");
+    assert_eq!(
+        report.groups[0].offline_index.as_ref().map(|o| o.volume_id.as_str()),
+        Some("ts")
+    );
+}
+
+/// A live index answers for itself: a stale copy on disk never shadows it, so the sleeping
+/// member isn't even asked, and the report claims no offline answer.
+#[test]
+fn a_live_index_is_never_shadowed_by_a_sleeping_one() {
+    let conn = migrated_conn();
+    let index = FakeIndex::with(vec![indexed("/Volumes/naspi-1/Downloads/live.dmg")])
+        .storing("ts", vec![indexed("/Volumes/naspi/Downloads/stale.dmg")]);
+
+    let report = apply_over(
+        &conn,
+        &index,
+        &dmgs_under("ts", "/Volumes/naspi/Downloads"),
+        &nas_with_ts_index_on_disk(1_761_000_000),
+    )
+    .expect("staged");
+
+    assert!(index.stored_asks.borrow().is_empty());
+    assert_eq!(report.groups[0].offline_index, None);
+    let ops = page_ops(&conn, report.groups[0].group_id, 10, 0).expect("ops");
+    assert_eq!(ops[0].source_path, "/Volumes/naspi-1/Downloads/live.dmg");
 }
 
 /// An amendment is a fresh proposal of the group, so it resolves again.
@@ -445,4 +569,52 @@ fn conversation_179_files_onto_the_live_lan_share_or_refuses_whole() {
     let nearby = miss.nearby.as_deref().expect("nearby");
     assert_eq!(nearby[0].candidate.volume_id, LAN);
     assert_eq!(nearby[0].candidate.path, format!("/Volumes/naspi-1/{INVOICES}"));
+}
+
+/// Conversation 179's other half, end to end over the real index: the LAN share is live with
+/// no index, so a selector over `invoices paid` reads the Tailscale share's index on disk,
+/// read-only (the database is byte-for-byte what it was), and the PDFs it matched are stored
+/// on the LAN share, where they'll run.
+#[test]
+fn conversation_179_resolves_a_selector_over_the_tailscale_index_on_disk() {
+    let _serialized = cmdr_index::testing::host::test_lock();
+    let data = crate::test_support::TestDir::new("conversation-179-selector");
+    let (_index, _installed) = cmdr_index::Index::builder().data_dir(&*data).install_for_test();
+    tailscale_index_on_disk(&data);
+    let db = data.join(format!("index-{TAILSCALE}.db"));
+    let before = std::fs::read(&db).expect("the index on disk");
+    let call = json!({ "groups": [{
+        "verb": "trash",
+        "selector": { "root": { "volumeId": TAILSCALE, "path": format!("/Volumes/naspi/{INVOICES}") }, "nameGlob": "*.pdf" },
+    }] });
+
+    let conn = migrated_conn();
+    let report = apply_over(&conn, &DriveIndex, &call, &conversation_179()).expect("staged");
+
+    let ops = page_ops(&conn, report.groups[0].group_id, 10, 0).expect("ops");
+    assert_eq!(
+        ops.iter().map(|op| op.source_path.as_str()).collect::<Vec<_>>(),
+        [format!("/Volumes/naspi-1/{INVOICES}/hetzner-2026-09.pdf")]
+    );
+    assert_eq!(ops[0].snapshot_size, Some(4), "the index's own facts ride along");
+    let wire = serde_json::to_value(&report).expect("wire");
+    assert_eq!(
+        wire["groups"][0]["offlineIndex"],
+        json!({ "volumeId": TAILSCALE, "asOf": crate::search::format_timestamp(TAILSCALE_AS_OF) })
+    );
+    // A read-only open of a WAL database still makes SQLite's `-wal` / `-shm` sidecars, so
+    // read-only means: the database unchanged, nothing in its log, and no other index made.
+    assert_eq!(std::fs::read(&db).expect("the index on disk"), before, "read-only");
+    let wal = data.join(format!("index-{TAILSCALE}.db-wal"));
+    assert_eq!(
+        std::fs::metadata(&wal).map(|m| m.len()).unwrap_or(0),
+        0,
+        "nothing was written"
+    );
+    let databases: Vec<_> = std::fs::read_dir(&*data)
+        .expect("data dir")
+        .map(|e| e.expect("entry").file_name().to_string_lossy().into_owned())
+        .filter(|name| name.ends_with(".db"))
+        .collect();
+    assert_eq!(databases, [format!("index-{TAILSCALE}.db")], "no index was stood up");
 }

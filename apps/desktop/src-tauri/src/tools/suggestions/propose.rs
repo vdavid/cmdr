@@ -33,10 +33,11 @@ use super::problem::PlaceField;
 use crate::agent::AgentDb;
 use crate::agent::store::AgentStoreError;
 use crate::agent::store::proposals::{
-    GroupIntent, NewGroup, NewOp, NewSweep, ReproposeOutcome, create_sweep, get_group, get_sweep,
+    GroupIntent, NewGroup, NewSweep, ReproposeOutcome, create_sweep, get_group, get_sweep,
 };
 use crate::agent::suggested_ops::{
-    DriveIndex, OpSelector, SelectorIndex, SelectorRefusal, resolve_selector_ops, selector_group,
+    DriveIndex, OpSelector, SelectorIndex, SelectorOps, SelectorRefusal, SleepingIndex, resolve_selector_ops,
+    selector_group,
 };
 use crate::agent::types::{ProposalStatus, ProposalVerb};
 use crate::location::miss::LocationMissResult;
@@ -218,6 +219,29 @@ pub(super) struct GroupReport {
     /// The volume the model named, when the group was stored on a live sibling of it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub via: Option<Via>,
+    /// The index on disk a selector matched in, when the root's own volume had no live one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub offline_index: Option<OfflineIndex>,
+}
+
+/// A sleeping share member whose index on disk answered a selector: the rows are as of its
+/// last walk, which the model should say. `list_dir`'s `offlineIndex` vocabulary.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct OfflineIndex {
+    pub volume_id: String,
+    /// When that index's last walk finished, spoken. Absent when it never finished.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub as_of: Option<String>,
+}
+
+impl From<SleepingIndex> for OfflineIndex {
+    fn from(sleeper: SleepingIndex) -> Self {
+        Self {
+            volume_id: sleeper.root.volume_id,
+            as_of: sleeper.as_of.map(crate::search::format_timestamp),
+        }
+    }
 }
 
 /// A staged sweep, as the model reads it back.
@@ -494,6 +518,7 @@ pub(super) struct ResolvedGroup {
     pub group_id: Option<i64>,
     pub group: NewGroup,
     pub via: Option<Via>,
+    pub offline: Option<OfflineIndex>,
 }
 
 /// Resolve, check, then write. The order is the contract: a selector is resolved and an
@@ -594,6 +619,7 @@ fn resolve_group(
     group_index: usize,
     planned: PlannedGroup,
 ) -> Result<ResolvedGroup, ApplyRefusal> {
+    let mut offline = None;
     let group: NewGroup = match planned.ops {
         PlannedOps::Rename {
             parent,
@@ -603,12 +629,13 @@ fn resolve_group(
         PlannedOps::Named { shape, ops, naming } => new_group(shape.into_intent(ops), naming, planned.rationale),
         PlannedOps::Sources { shape, sources } => match sources {
             PlannedSources::Paths { ops, naming } => new_group(shape.into_intent(ops), naming, planned.rationale),
-            PlannedSources::Selector(selector) => {
-                let ops = resolve_selector(index, group_index, &selector)?;
+            PlannedSources::Selector { selector, sleeping } => {
+                let resolved = resolve_selector(index, group_index, &selector, &sleeping)?;
+                offline = resolved.offline.map(OfflineIndex::from);
                 // `selector_group` is the one place that decides how a pattern names its
                 // group and which volume it binds, so a selector group is built there
                 // rather than assembled twice.
-                selector_group(&selector, shape.into_intent(ops), planned.rationale)
+                selector_group(&selector, shape.into_intent(resolved.ops), planned.rationale)
                     .map_err(|e| ApplyRefusal::Internal(e.to_string()))?
             }
         },
@@ -617,6 +644,7 @@ fn resolve_group(
         group_id: planned.group_id,
         group,
         via: planned.via,
+        offline,
     })
 }
 
@@ -626,18 +654,19 @@ fn resolve_selector(
     index: &dyn SelectorIndex,
     group_index: usize,
     selector: &OpSelector,
-) -> Result<Vec<NewOp>, ApplyRefusal> {
-    let ops = resolve_selector_ops(index, selector).map_err(|refusal| ApplyRefusal::Selector {
+    sleeping: &[SleepingIndex],
+) -> Result<SelectorOps, ApplyRefusal> {
+    let resolved = resolve_selector_ops(index, selector, sleeping).map_err(|refusal| ApplyRefusal::Selector {
         group: group_index,
         refusal,
     })?;
-    if ops.is_empty() {
+    if resolved.ops.is_empty() {
         return Err(ApplyRefusal::SelectorMatchedNothing {
             group: group_index,
             pattern: selector.pattern_text(),
         });
     }
-    Ok(ops)
+    Ok(resolved)
 }
 
 /// The store's group shape for a group the model listed by hand: it carries no selector,
@@ -665,6 +694,7 @@ pub(super) fn write_group(
     let op_count = entry.group.intent.op_count();
     let display_name = entry.group.display_name.clone();
     let via = entry.via;
+    let offline = entry.offline;
     let (group_id, outcome) = match entry.group_id {
         Some(group_id) => {
             let outcome = crate::agent::suggested_ops::repropose(conn, group_id, &entry.group, now)
@@ -688,6 +718,7 @@ pub(super) fn write_group(
         op_count: op_count_of(&outcome, op_count),
         // A group the user already answered kept its old rows, wherever those point.
         via: via.filter(|_| outcome != GroupOutcome::AlreadyAnswered),
+        offline_index: offline.filter(|_| outcome != GroupOutcome::AlreadyAnswered),
         outcome,
     })
 }

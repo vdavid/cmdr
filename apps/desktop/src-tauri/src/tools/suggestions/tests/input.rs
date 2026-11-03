@@ -233,7 +233,7 @@ fn an_age_predicate_arrives_in_days_and_leaves_in_seconds() {
     // what keeps the model out of epoch arithmetic it does unreliably.
     let planned = plan_sweep(&selector_call(), NOW, &local_facts()).expect("valid");
     let PlannedOps::Sources {
-        sources: PlannedSources::Selector(selector),
+        sources: PlannedSources::Selector { selector, .. },
         shape,
     } = &planned.groups[0].ops
     else {
@@ -300,7 +300,7 @@ fn a_window_nothing_can_satisfy_is_refused_rather_than_proposed() {
     )
     .expect("7 to 30 days old is a real window");
     let PlannedOps::Sources {
-        sources: PlannedSources::Selector(selector),
+        sources: PlannedSources::Selector { selector, .. },
         ..
     } = &planned.groups[0].ops
     else {

@@ -33,7 +33,7 @@ pub mod server;
 mod tests;
 
 pub use changed::{SuggestionChange, SuggestionsChanged, init_suggestions_event_emitter};
-pub use selector::{DriveIndex, IndexedFile, OpSelector, SelectorIndex, SelectorRefusal};
+pub use selector::{DriveIndex, IndexedFile, OpSelector, SelectorIndex, SelectorRefusal, SleepingIndex};
 
 use rusqlite::Connection;
 
@@ -184,12 +184,19 @@ pub fn reject(
 /// Resolve a selector into the ops a group will freeze, and the text that names the pattern.
 ///
 /// This is where "every installer in Downloads you've already opened" becomes a concrete list.
-/// It happens ONCE, before the group is written, against the drive index. ❌ Nothing
-/// re-resolves a selector afterwards: the group's rows are what the user reviews and what the
-/// executor runs, and re-resolving would break the equality between the two.
-pub fn resolve_selector_ops(index: &dyn SelectorIndex, selector: &OpSelector) -> Result<Vec<NewOp>, SelectorRefusal> {
-    let files = index.resolve(selector)?;
-    Ok(files
+/// It happens ONCE, before the group is written, against the drive index (or, when the root's
+/// volume has none, the index a member of its share left on disk: `sleeping`, freshest first,
+/// [`selector::resolve_over_share`]). ❌ Nothing re-resolves a selector afterwards: the group's
+/// rows are what the user reviews and what the executor runs, and re-resolving would break the
+/// equality between the two.
+pub fn resolve_selector_ops(
+    index: &dyn SelectorIndex,
+    selector: &OpSelector,
+    sleeping: &[SleepingIndex],
+) -> Result<SelectorOps, SelectorRefusal> {
+    let resolved = selector::resolve_over_share(index, selector, sleeping)?;
+    let ops = resolved
+        .files
         .into_iter()
         .map(|file| NewOp {
             source_path: file.path,
@@ -199,7 +206,19 @@ pub fn resolve_selector_ops(index: &dyn SelectorIndex, selector: &OpSelector) ->
                 inode: file.inode,
             }),
         })
-        .collect())
+        .collect();
+    Ok(SelectorOps {
+        ops,
+        offline: resolved.offline,
+    })
+}
+
+/// A selector's frozen ops, and the sleeping member whose index on disk answered for them when
+/// the root's own volume had no live index.
+#[derive(Debug)]
+pub struct SelectorOps {
+    pub ops: Vec<NewOp>,
+    pub offline: Option<SleepingIndex>,
 }
 
 /// Wrap an intent built from a resolved selector into a group, carrying the pattern as the

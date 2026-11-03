@@ -30,7 +30,9 @@ does. Depth: `DETAILS.md`.
   with one `via`. ❌ Never store the id asked when a sibling took it. `DETAILS.md` § Where a proposal may point.
 - **A selector is resolved once, here, at creation.** Nothing re-resolves it later; the frozen rows are what the user
   reviews and what runs. An empty match is a refusal carrying the pattern, and it stays distinct from
-  `SelectorRefusal::NotIndexed` ("I can't see that drive" is not "nothing matched").
+  `SelectorRefusal::NotIndexed` ("I can't see that drive" is not "nothing matched"). A root whose volume has no live
+  index reads a sleeping share member's index on disk, read-only, re-addressed (`DETAILS.md` § Where a proposal may
+  point).
 - **There is no last-opened predicate, and adding one needs an access-time source first.** The drive index has size,
   mtime, and inode; `importance.db`'s visits are per-FOLDER. A predicate that silently matched nothing would be worse
   than its absence. The prompt tells the model to say when a file last CHANGED instead.

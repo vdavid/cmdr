@@ -11,12 +11,16 @@
 //! A group re-addresses at most one asked volume onto one member, reported as one `via`. A
 //! group that would re-address onto two members, or re-address one place and name another
 //! member of the same share directly, refuses as `mixedReaddress`: one `via` can't describe it.
+//! A selector's root also carries the indexes sleeping members of its share left on disk, so
+//! it can resolve over one when the placed volume has no live index.
+//!
 //! The rules and the why: `DETAILS.md` § Where a proposal may point.
 
 use super::problem::{GroupProblem, PlaceField};
+use crate::agent::suggested_ops::SleepingIndex;
 use crate::location::Location;
 use crate::location::miss::{LocationMissResult, volume_not_connected};
-use crate::location::resolve::{LocationInput, VolumeFacts, resolve};
+use crate::location::resolve::{LocationInput, ResolvedLocation, VolumeFacts, resolve};
 use crate::location::same_share::Via;
 
 /// Places one group's locations, remembering what it re-addressed so [`GroupPlacer::finish`]
@@ -41,6 +45,47 @@ impl<'a> GroupPlacer<'a> {
     /// Place one location: on its own volume when that's live, else on the first live
     /// redirectable sibling, else the typed miss.
     pub(super) fn place(&mut self, field: PlaceField, input: LocationInput) -> Result<Location, GroupProblem> {
+        self.place_resolved(field, input).map(|(_, placed)| placed.location)
+    }
+
+    /// Place a selector's root as [`Self::place`] does, plus the indexes sleeping members of
+    /// its share left on disk, freshest first (stable, so the volume asked wins a tie): what
+    /// answers when the placed volume has no live index. `list_dir`'s offline tier, in its
+    /// order (`read/listing/readers.rs`).
+    pub(super) fn place_selector_root(
+        &mut self,
+        input: LocationInput,
+    ) -> Result<(Location, Vec<SleepingIndex>), GroupProblem> {
+        let (asked, placed) = self.place_resolved(PlaceField::SelectorRoot, input)?;
+        let mut sleeping: Vec<ResolvedLocation> = self
+            .facts
+            .readers(&asked)
+            .into_iter()
+            .filter(|reader| !reader.live && reader.index.stored)
+            .collect();
+        sleeping.sort_by_key(|reader| std::cmp::Reverse(reader.index.stored_as_of));
+        let sleeping = sleeping
+            .into_iter()
+            .map(|reader| SleepingIndex {
+                root: Location {
+                    volume_id: reader.index.volume_id,
+                    path: reader.location.path,
+                },
+                from_root: reader.root,
+                onto_root: placed.root.clone(),
+                as_of: reader.index.stored_as_of,
+            })
+            .collect();
+        Ok((placed.location, sleeping))
+    }
+
+    /// The location as resolved on the volume asked, and where it was placed: the same
+    /// place when that volume is live, its first live redirectable sibling otherwise.
+    fn place_resolved(
+        &mut self,
+        field: PlaceField,
+        input: LocationInput,
+    ) -> Result<(ResolvedLocation, ResolvedLocation), GroupProblem> {
         let input = LocationInput {
             volume_id: input.volume_id.filter(|id| !id.is_empty()),
             path: input.path,
@@ -48,7 +93,7 @@ impl<'a> GroupPlacer<'a> {
         let resolved = resolve(self.facts, &input).map_err(|miss| missed(field, miss.into()))?;
         if resolved.live {
             self.direct.push(resolved.location.volume_id.clone());
-            return Ok(resolved.location);
+            return Ok((resolved.clone(), resolved));
         }
         let member = self
             .facts
@@ -59,8 +104,8 @@ impl<'a> GroupPlacer<'a> {
         match member {
             Some(member) => {
                 self.readdressed
-                    .push((resolved.location.volume_id, member.location.volume_id.clone()));
-                Ok(member.location)
+                    .push((resolved.location.volume_id.clone(), member.location.volume_id.clone()));
+                Ok((resolved, member))
             }
             None => Err(missed(field, volume_not_connected(self.facts, &resolved))),
         }
