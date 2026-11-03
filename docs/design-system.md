@@ -851,10 +851,12 @@ with 8px margin.
 - Overflow-only: `use:tooltip={{ text: fullPath, overflowOnly: true }}`
 
 **Shortened text always has one.** Anything that ellipsizes (CSS `text-overflow`, the `useShortenMiddle` action, or a JS
-`slice(…) + '…'`) carries `use:tooltip` with the full string, `overflowOnly: true` so a row that fits stays quiet. Where
-the visible text is abbreviated rather than cut (a home directory shown as `~`), drop `overflowOnly`: it's incomplete at
-any width. ❌ Never a native `title` for this: its delay and chrome are the OS's, so one surface would hover unlike
-every other. `useShortenMiddle` routes through this action for the same reason.
+`slice(…) + '…'`) carries `use:tooltip` with the full string, `overflowOnly: true` so a row that fits stays quiet.
+"Overflowing" counts a piece inside the element that clips its own text, so a label laid out as a row of pieces (an Ask
+Cmdr tool line's words around a path) still gets one. Where the visible text is abbreviated rather than cut (a home
+directory shown as `~`), drop `overflowOnly`: it's incomplete at any width. ❌ Never a native `title` for this: its
+delay and chrome are the OS's, so one surface would hover unlike every other. `useShortenMiddle` routes through this
+action for the same reason.
 
 **Accessibility:** Shows on focus (keyboard navigation), hides on blur/Escape. Trigger element gets `aria-describedby`
 pointing to the tooltip's unique `id`. Tooltip has `role="tooltip"`.

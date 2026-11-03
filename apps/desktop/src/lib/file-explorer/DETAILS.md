@@ -354,8 +354,12 @@ file name. One message per reason (`fileExplorer.openWith.copyRefused.*`), chose
 `reason.kind`, ❌ never by the backend's message. `tooLarge` alone also reads the typed `source`: a file in a repo's
 history gets `tooLargeInRepoHistory`, since "from inside the archive" would be wrong there. When the launch goes ahead,
 `open-with-copy-launched` (first copy's name, copy count, app) becomes an info toast,
-`fileExplorer.openWith.readOnlyCopy`: the app got a read-only copy, and what it saves there stays there. Backend side:
-`src-tauri/src/file_viewer/DETAILS.md` § "Open with on a routed file".
+`fileExplorer.openWith.readOnlyCopy`: the app got a read-only copy, and what it saves there stays there. A third event,
+`open-with-not-on-this-mac` (the app's name), means no app launched: the row's volume hands out paths no other app can
+open (a phone, a server, a direct SMB share whose macOS mount went away). It becomes an info toast,
+`fileExplorer.openWith.notOnThisMac`, that points at the viewer's shortcut instead. Rust decides it in `launch_with`,
+because only the volume knows when a share's mount is gone. Backend side: `src-tauri/src/file_viewer/DETAILS.md` § "Open
+with on a routed file".
 
 ## TCC-restricted treatment
 

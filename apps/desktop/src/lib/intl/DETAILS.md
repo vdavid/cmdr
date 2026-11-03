@@ -33,7 +33,9 @@ resolves user-facing text from JSON catalogs under `messages/<locale>/`, reading
 This is the **error-pipeline boundary**: error literals migrate INTO the catalog as `errors.*` keys (plain strings,
 possibly markdown), but they keep rendering through the existing snarkdown + `{@html}` + param-escaper pipeline via
 `getMessage()`, NOT `t()`/`<Trans>`. `<Trans>` is only for the handful of UI sentences with inline INTERACTIVE
-components (a `<LinkButton>` mid-sentence). Don't conflate the two.
+components (a `<LinkButton>` mid-sentence). Don't conflate the two. A caller that has to style the plain text between
+the tags passes a `text` snippet, which renders each run of it (the Ask Cmdr tool line, whose words shorten with an
+ellipsis beside a path); without one, those runs are bare text nodes.
 
 **Why a tag and its snippet must be renamed together.** The renderer is `{#if childSnippet}…{/if}` with no else, so a
 tag the call site doesn't supply a snippet for renders NOTHING: its inner text vanishes from the UI, at runtime, with no

@@ -881,6 +881,10 @@ yellow tooltip branches on `liveWatch`: a phone over ADB, which nothing watches,
   - **Only for a settled drive** (`fresh` / `stale`). Ground a walker hasn't REACHED yet isn't ground it couldn't read,
     and the checklist is already saying what's happening. The crate enforces the same gate on the way in, where it also
     keeps the query cheap (`read/queries.rs`).
+  - **Mid-walk, the last settled count.** While a walk fills holes in, `VolumeIndexStatus.unreadableSettled` is `false`
+    and the count is the one taken before the walk started. The badge keeps showing it: a search walks often, and a note
+    that blinked out for each walk would read as the problem coming and going. Why the crate skips the count then:
+    `crates/cmdr-index/src/indexing/read/DETAILS.md`.
 - **Coalesced "macOS lost track of changes" signals ride in the TOOLTIP, never in the dot's color**
   (`driveIndexCoalescedNote`, pure + unit-tested). When `VolumeIndexStatus.coalescedSignalsSinceSweep > 0`, a second
   paragraph joins the state line (the tooltip is `white-space: pre-line`, so a `\n` renders) saying how many times macOS

@@ -16,29 +16,31 @@ commands, and notable non-obvious placements.
   measurement), `setListingIncludeHidden` (the pane's hidden-files setting, which picks its `directory-diff` rows).
 - **`file-viewer.ts`**: viewer session only: open, seek, search (with `useRegex` / `caseSensitive` modes), close, word
   wrap menu, `viewerSetSearchInputFocused` (the search box's claim on the viewer bar's Edit > Cut / Paste), encoding
-  pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`), `viewerReload`, and
-  `showViewerContextMenu` (the native right-click menu).
-- **`file-actions.ts`**: open file/URL, Finder reveal, Quick Look, Get Info, context menu (file / breadcrumb /
-  volume-selector-row / parent-row), clipboard, the text editor pair, cloud actions (`cloudMakeAvailableOffline` /
-  `cloudRemoveDownload`, iCloud Drive only), `googleDriveLinks` (a Drive item's `viewUrl` plus its `geminiUrl`, or
-  `null` when the path isn't one we can identify, backing the three Drive context-menu actions from one resolution), and
-  the "Open terminal here" trio. That trio: `listTerminalApps` (which terminal apps are installed, for the settings row
-  and the first-use picker), `openTerminalHere` (answers with an OUTCOME, and throws `OpenTerminalFailure` only when the
-  launch couldn't be attempted), and `terminalAppDisplayName` (a table lookup, for naming an app that has just been
-  uninstalled). All three take the stored choice as an argument, since the frontend owns the settings store. The text
-  editor pair takes it too: `openInEditor(path, appChoice, askAboutOtherEditors)` answers an `EditorOpenReport` (the
-  outcome, the app that got the file, and whether other editors exist when asked) and throws `OpenInEditorFailure` only
-  when the launch couldn't be attempted; `listTextEditors(appChoice)` (macOS) lists what LaunchServices calls a text
-  editor, with `chosenId` as the form to store for a stored or freshly picked choice. `showFileContextMenu` closes with
-  two fact objects: `PaneContextMenuFacts` (what the SURFACE contributes) then `ContextMenuTarget`, the TEXT the menu's
-  header line shows about the right-clicked rows (`countText`, `sizeText`). Both are rendered on this side because both
-  need locale-aware number formatting, which Rust's `menu_t` deliberately lacks; build them with
-  `#lib/file-explorer/selection/context-menu-target`, ❌ never by hand. Rust still derives the target COUNT from `paths`
-  and uses it to pick the header's shape. Omit `sizeText` for "no honest size"; ❌ never a zero. Full rationale:
-  `#lib/file-explorer/selection/DETAILS.md` § Context-menu header. It also sends a `shortcuts` map the caller never
-  passes: the private `boundShortcuts()` reads every bound combo out of the registry per popup, so the native menu
-  labels its items from what the user has actually bound rather than from literals that go stale on a rebind.
-  `PaneContextMenuFacts.canShowInFolder` is the explicit search-results-only menu fact; it is not inferred from
+  pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`), `viewerReload`,
+  `viewerForwardEditActionToPage` (hands Edit > Copy or Select all to the native responder chain while a PDF is showing,
+  since only that chain reaches the embed's selection), and `showViewerContextMenu` (the native right-click menu).
+- **`file-actions.ts`**: open file/URL (`openFile(path, volumeId)` throws an `OpenPathFailure`, read back with
+  `asOpenPathError`, when the row's volume or the OS opener refuses), Finder reveal, Quick Look, Get Info, context menu
+  (file / breadcrumb / volume-selector-row / parent-row), clipboard, the text editor pair, cloud actions
+  (`cloudMakeAvailableOffline` / `cloudRemoveDownload`, iCloud Drive only), `googleDriveLinks` (a Drive item's `viewUrl`
+  plus its `geminiUrl`, or `null` when the path isn't one we can identify, backing the three Drive context-menu actions
+  from one resolution), and the "Open terminal here" trio. That trio: `listTerminalApps` (which terminal apps are
+  installed, for the settings row and the first-use picker), `openTerminalHere` (answers with an OUTCOME, and throws
+  `OpenTerminalFailure` only when the launch couldn't be attempted), and `terminalAppDisplayName` (a table lookup, for
+  naming an app that has just been uninstalled). All three take the stored choice as an argument, since the frontend
+  owns the settings store. The text editor pair takes it too: `openInEditor(path, appChoice, askAboutOtherEditors)`
+  answers an `EditorOpenReport` (the outcome, the app that got the file, and whether other editors exist when asked) and
+  throws `OpenInEditorFailure` only when the launch couldn't be attempted; `listTextEditors(appChoice)` (macOS) lists
+  what LaunchServices calls a text editor, with `chosenId` as the form to store for a stored or freshly picked choice.
+  `showFileContextMenu` closes with two fact objects: `PaneContextMenuFacts` (what the SURFACE contributes) then
+  `ContextMenuTarget`, the TEXT the menu's header line shows about the right-clicked rows (`countText`, `sizeText`).
+  Both are rendered on this side because both need locale-aware number formatting, which Rust's `menu_t` deliberately
+  lacks; build them with `#lib/file-explorer/selection/context-menu-target`, ❌ never by hand. Rust still derives the
+  target COUNT from `paths` and uses it to pick the header's shape. Omit `sizeText` for "no honest size"; ❌ never a
+  zero. Full rationale: `#lib/file-explorer/selection/DETAILS.md` § Context-menu header. It also sends a `shortcuts` map
+  the caller never passes: the private `boundShortcuts()` reads every bound combo out of the registry per popup, so the
+  native menu labels its items from what the user has actually bound rather than from literals that go stale on a
+  rebind. `PaneContextMenuFacts.canShowInFolder` is the explicit search-results-only menu fact; it is not inferred from
   `restrictDestinationActions`, because one says which action to add and the other says which destination actions to
   remove. The matching typed event carries the popup's primary `path` back to the main window.
   `showBreadcrumbContextMenu` rides the same map (its only argument is the eject target now), and both send the
@@ -145,8 +147,8 @@ commands, and notable non-obvious placements.
   over the direct (non-`execute-command`) native-menu events. The two media-index ones carry the right-clicked folder
   plus its target state; `listener-setup.ts` routes each into the ONE FE helper that also backs the Settings list.
   `onOpenWithCopyRefused` carries an "Open with" launch that couldn’t copy its file out of an archive or a repo’s
-  history, and `onOpenWithCopyLaunched` one that launched on read-only copies, both for
-  `../file-explorer/open-with-copy-bridge.ts`.
+  history, `onOpenWithCopyLaunched` one that launched on read-only copies, and `onOpenWithNotOnThisMac` one whose volume
+  hands out paths no other app can open, all three for `../file-explorer/open-with-copy-bridge.ts`.
 - **`directory-watcher.ts`**: `onDirectoryDiff` / `onDirectoryDeleted` over the file-watcher events (`onDirectoryDiff`
   casts the generated payload to the FE `DirectoryDiff` whose `entry` is the FE `FileEntry`).
 - **`native-drag.ts`**: `onDragImageSize` / `onDragModifiers` (macOS drag overlay) + `onDragOutSessionStarted` /
