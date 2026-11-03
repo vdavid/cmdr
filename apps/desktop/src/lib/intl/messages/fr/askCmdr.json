@@ -823,6 +823,22 @@
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"
   },
+  "askCmdr.find.region": "Rechercher dans la conversation",
+  "@askCmdr.find.region": {
+    "sourceHash": "df9554c"
+  },
+  "askCmdr.find.ariaLabel": "Rechercher dans cette conversation",
+  "@askCmdr.find.ariaLabel": {
+    "sourceHash": "49be9b7"
+  },
+  "askCmdr.find.placeholder": "Rechercher dans la conversation…",
+  "@askCmdr.find.placeholder": {
+    "sourceHash": "b26600e"
+  },
+  "askCmdr.find.loadedOnly": "Recherche dans les messages chargés",
+  "@askCmdr.find.loadedOnly": {
+    "sourceHash": "8b4e09d"
+  },
   "askCmdr.threads.open": "Conversations",
   "@askCmdr.threads.open": {
     "sourceHash": "ef5b404"

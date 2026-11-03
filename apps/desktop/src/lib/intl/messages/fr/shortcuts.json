@@ -39,6 +39,11 @@
   "@shortcuts.scope.multiRename": {
     "sourceHash": "5ceb1a2"
   },
+  "shortcuts.scope.askCmdr": "Ask Cmdr",
+  "@shortcuts.scope.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Nom du produit ; reste identique dans toutes les langues (do-not-translate), ici comme titre du groupe de raccourcis du panneau Ask Cmdr."
+  },
   "shortcuts.scope.favoritesMenu": "Menu des favoris",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
