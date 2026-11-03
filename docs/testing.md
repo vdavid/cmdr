@@ -119,6 +119,9 @@ vitest's 5 s timeout under load (`shortcuts-store.test.ts`).
 - **Pure function with a few specific inputs**: Plain example tests in `mod tests`
 - **Behavior coverage of an existing tested function**: `cargo mutants` survivor triage: every survived mutant is a
   behavior-level gap
+- **A property that must be able to fail** (a fuzz target's assertion; Kani proofs and Shuttle tests as they land): a
+  failing mutant on record beside it (`*.mutants.json`), enforced by `mutant-records` and `property-mutants`. See
+  `scripts/check/checks/DETAILS.md` § "Property mutants". Example tests stay with `cargo mutants` triage
 - **State machine transition**: Rust unit test, **drive via the public interface**, not by setting the atomic directly
 - **A scratch directory in a Rust test**: `crate::test_support::TestDir` (`cmdr_fs::testing::TestDir` from another
   crate), see § "Scratch directories (Rust)". **Never** `std::env::temp_dir().join("cmdr_something")`
@@ -675,7 +678,8 @@ passed it cleanly. The fix was a fixture with a real multi-level tree asserting 
 not just that the row count held.
 
 **How to spot the next one:** if flipping the production logic to a `return;`/no-op would still pass the test, the test
-proves nothing. Pair every "writes nothing" assertion with a "visited everything" one.
+proves nothing. Pair every "writes nothing" assertion with a "visited everything" one. For properties (fuzz targets and
+the like) this is enforced: each carries a recorded mutant that must turn it red (§ "Decision table").
 
 ### ❌ A component that measures itself, rendering nothing
 

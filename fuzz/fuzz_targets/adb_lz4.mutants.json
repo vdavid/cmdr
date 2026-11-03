@@ -1,0 +1,13 @@
+{
+  "mutants": [
+    {
+      "property": "fuzz:adb_lz4",
+      "why": "a decoded block leaves in one piece, so a compression bomb reaches the consumer whole",
+      "file": "crates/cmdr-adb/src/lz4.rs",
+      "find": "let end = self.decoded_len.min(self.handed_out + MAX_DATA_CHUNK);",
+      "replace": "let end = self.decoded_len;",
+      "input": "fuzz/seeds/adb_lz4/big-blocks.bin",
+      "expect": "chunk.len() <= MAX_DATA_CHUNK"
+    }
+  ]
+}

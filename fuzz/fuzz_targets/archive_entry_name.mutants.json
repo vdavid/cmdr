@@ -1,0 +1,49 @@
+{
+  "mutants": [
+    {
+      "property": "fuzz:archive_entry_name",
+      "why": "a `..` component passes the sanitizer instead of quarantining the entry",
+      "file": "crates/cmdr-archive/src/read/name.rs",
+      "find": "\"..\" => return SanitizedName::Quarantined(QuarantineReason::ParentTraversal),",
+      "replace": "\"..\" => components.push(component),",
+      "input": "fuzz/seeds/archive_entry_name/2.txt",
+      "expect": "escapes its root"
+    },
+    {
+      "property": "fuzz:archive_entry_name",
+      "why": "Windows `\\` separators are kept rather than normalized to `/`",
+      "file": "crates/cmdr-archive/src/read/name.rs",
+      "find": "let normalized = raw.replace('\\\\', \"/\");",
+      "replace": "let normalized = raw.to_string();",
+      "input": "fuzz/seeds/archive_entry_name/4.txt",
+      "expect": "kept a backslash"
+    },
+    {
+      "property": "fuzz:archive_entry_name",
+      "why": "a `.` component is kept rather than dropped",
+      "file": "crates/cmdr-archive/src/read/name.rs",
+      "find": "\"\" | \".\" => {}",
+      "replace": "\"\" => {}",
+      "input": "fuzz/seeds/archive_entry_name/5.txt",
+      "expect": "was accepted with a \".\" component"
+    },
+    {
+      "property": "fuzz:archive_entry_name",
+      "why": "a name that normalizes to nothing is accepted as the empty path",
+      "file": "crates/cmdr-archive/src/read/name.rs",
+      "find": "if components.is_empty() {",
+      "replace": "if components.is_empty() && raw.is_empty() {",
+      "input": "fuzz/seeds/archive_entry_name/6.txt",
+      "expect": "was accepted as an empty path"
+    },
+    {
+      "property": "fuzz:archive_entry_name",
+      "why": "a per-component rewrite makes sanitizing a sanitized name change it again",
+      "file": "crates/cmdr-archive/src/read/name.rs",
+      "find": "other => components.push(other),",
+      "replace": "other => components.push(other.strip_prefix('.').unwrap_or(other)),",
+      "input": "fuzz/seeds/archive_entry_name/7.txt",
+      "expect": "not idempotent"
+    }
+  ]
+}

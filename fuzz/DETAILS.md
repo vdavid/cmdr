@@ -45,8 +45,24 @@
   `cargo +<nightly> fuzz run -O -a <target> artifacts/<target>/<file>`; minimize with `fuzz tmin`.
 - Then: a regression test in the owning crate, red first, then the fix. Copy the input into `seeds/<target>/` once it
   passes, so every run replays it.
-- New target: a `fuzzing` seam if the parser is private, a file in `fuzz_targets/`, a `[[bin]]` in `Cargo.toml`, and a
-  seed dir. The lane discovers targets through `cargo fuzz list`.
+- New target: a `fuzzing` seam if the parser is private, a file in `fuzz_targets/`, a `[[bin]]` in `Cargo.toml`, a seed
+  dir, and a mutant record per assertion. The lane discovers targets through `cargo fuzz list`.
+
+## Mutant records
+
+Each assertion has a one-line change to the code it guards that makes it fail, recorded in
+`fuzz_targets/<target>.mutants.json` with the input that catches it; `desktop-rust-property-mutants` applies each in a
+mirror of the tree and runs the input through the target once. Format, lanes, and how to add one live in
+`scripts/check/checks/DETAILS.md` § "Property mutants". Here:
+
+- **Recorded**: `archive_entry_name` (all five assertions), `archive_index` (both), `nfs_reply`, `adb_lz4`. The six
+  crash-only targets sit in `scripts/check/checks/property-mutants-allowlist.json` until they assert something.
+- **Catching inputs are seeds where they fit**, so every fuzz run replays them. The `nfs_reply` one is a READ of 1 MiB
+  plus one byte: as a seed it would raise the target's inferred `-max_len` to over a megabyte, so it lives gzipped in
+  `mutant-inputs/`.
+- **In `archive_entry_name`, the root-escape check runs before the per-component one**: the component check also fails
+  on every `..` and leading `/`, so run second, the escape check could never fire and no mutant could reach it. The
+  component check owns the `.` and empty components `Path` normalizes away.
 
 ## Findings
 

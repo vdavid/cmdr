@@ -232,6 +232,48 @@ jobs:
         run: ./scripts/check/check --check desktop-rust-miri --ci
 
   # ===========================================
+  # Property mutants (each property fails under its recorded mutant)
+  # ===========================================
+  # Applies every `*.mutants.json` record in a mirror of the tree and runs its catcher, so
+  # a property that can't fail turns this job red. A build per mutant on the fuzz nightly.
+  # No build cache on purpose: the repo's Rust caches already press GitHub's 10 GB ceiling,
+  # and a cold run every six days costs less than evicting a per-push one.
+  # `scripts/check/checks/DETAILS.md` § Property mutants.
+  property-mutants:
+    name: Property mutants
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
+      # Same reason as the fuzz smoke: `cmdr-fs` links `libacl` on Linux.
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libacl1-dev
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Install nightly toolchain (for cargo-fuzz)
+        run: rustup toolchain install "$(./scripts/check/check --print-nightly)" --profile minimal
+
+      - name: Run property mutants
+        run: ./scripts/check/check --check desktop-rust-property-mutants --ci
+
+  # ===========================================
   # Pre-release gates
   # ===========================================
   # The checks `release.sh` runs before every tag (`IsPreRelease`: clippy with mimalloc on

@@ -139,6 +139,37 @@ var AllChecks = []CheckDefinition{
 		Inputs:      rustCompileInputs,
 		Run:         RunMiri,
 	},
+	// Every property (a fuzz target today) has a recorded one-line change that
+	// makes it fail, so a property that can't fail doesn't pass for one that
+	// holds. This half reads records only, in milliseconds: a property with no
+	// record, or a record a refactor stranded, fails at the commit that did it.
+	{
+		ID:          "desktop-rust-property-mutant-records",
+		Nickname:    "mutant-records",
+		DisplayName: "property mutant records",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		IsFast:      true,
+		// Records live anywhere, beside their properties, and name any file.
+		Inputs: inputs(wholeRepoInputs, runnerDataInputs("property-mutants-allowlist.json")),
+		Run:    RunPropertyMutantRecords,
+	},
+	// The half that runs them: each mutant applied in a mirror of the tree, then
+	// its catcher. A build per mutant on the fuzz lane's instrumented nightly, so
+	// minutes per run; slow, CI-only, and its own job in `slow-checks.yml`, like
+	// the fuzz smoke. Builds into its mirror, so no lock on the shared `target/`.
+	{
+		ID:          "desktop-rust-property-mutants",
+		CpuWeight:   4,
+		Nickname:    "property-mutants",
+		DisplayName: "property mutants",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		CIOnly:      true,
+		IsSlow:      true,
+		Inputs:      wholeRepoInputs,
+		Run:         RunPropertyMutants,
+	},
 	{
 		ID:        "desktop-rust-module-cycles",
 		CpuWeight: 4,

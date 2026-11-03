@@ -17,7 +17,7 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
   analyzers); `inputs.go` holds the shared `Inputs` path sets.
 - **An allowlist is a sibling JSON named `<check>-allowlist.json`**, and it's NEVER hand-edited: the owning check
   shrink-wraps it on local runs, so you run the check and commit its rewrite (§ "Allowlist consent"). The shared
-  staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist shrink-wrap". Fifteen
+  staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist shrink-wrap". Sixteen
   exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two with no § of their
   own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather than auto-removing it).
   `macos-availability-selectors.json` is a sibling JSON that isn't an allowlist: it's the SDK's own answer, cached so
@@ -42,7 +42,8 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
   shared "what does git know about, and how do you read one" vocabulary (`repoFiles`, `gitTrackedFiles`,
   `readTrackedFile`) that every whole-tree scanner enumerates and reads through. `corpus.go` is the run's one read of
   the tree and `literal-gate.go` the cheap pre-check in front of a per-line regex, both shared by the source scanners (§
-  "The shared source corpus"). None appears in `AllChecks`.
+  "The shared source corpus"). `property-mutants.go` is the record format and loader both property-mutant checks share,
+  and `property-mutants-<kind>.go` one property family each (§ "Property mutants"). None appears in `AllChecks`.
 - **`changelog-commit-links.go` resolves every commit hash in `CHANGELOG.md` through ONE `git cat-file --batch-check`
   process**, not a process per reference. The recognition rule is § "CHANGELOG commit refs" below.
 
@@ -983,6 +984,86 @@ commands"; this is how the scan reads it.
   wrapper, if one exists, is checked.
 - **Verified** against the tree before the audit's deletion (`128e9f10b^`, 2026-10-03): it named every command and
   wrapper the audit deleted or kept (46 and 34), nothing else, and it passes after it.
+
+## Property mutants
+
+`desktop-rust-property-mutant-records` (`IsFast`) and `desktop-rust-property-mutants` (slow, CI-only) hold every
+property to one rule: a recorded one-line change makes it fail. Agents write both the code and the tests here and nobody
+reviews them, so a property that can't fail looks exactly like one that holds. The rule is Theorem's enrollment rule
+([steps 3.3 and 3.4](https://github.com/theorem-labs/oss-verify/blob/main/.claude/skills/add-project/SKILL.md)): an
+input that reaches the check, plus a recorded change that breaks it. Ordinary example tests are out of scope;
+`cargo mutants` triage serves those (`docs/testing.md`).
+
+**A property** is a fuzz target today (`fuzz:<target>`, read from `fuzz/Cargo.toml`'s `[[bin]]` tables). A new family
+(Kani proofs, Shuttle tests) is a `propertyKind` in its own `property-mutants-<kind>.go`, listed in `propertyKinds`: how
+to list its properties, check its own record fields, install its tools, and build and run one catcher in a tree.
+`property-mutants-fuzz.go` is the model.
+
+**A record** sits beside its property in a `*.mutants.json` (fuzz: `fuzz/fuzz_targets/<target>.mutants.json`):
+
+```json
+{
+  "mutants": [
+    {
+      "property": "fuzz:nfs_reply",
+      "why": "READ's data cap is off, so a server answering past what the client asked for is believed",
+      "file": "crates/cmdr-nfs/src/proto/nfs3/types.rs",
+      "find": "let data = dec.opaque(asked as usize)?;",
+      "replace": "let data = dec.opaque(2 * asked as usize)?;",
+      "input": "fuzz/mutant-inputs/nfs_reply/read-past-max-payload.bin.gz",
+      "expect": "READ answered past what was asked"
+    }
+  ]
+}
+```
+
+- `property`: `<kind>:<name>`. `why`: the bug the mutant stands for, one line.
+- `file`, `find`, `replace`: the mutant. `find` is one line's worth of text occurring exactly once in `file`. Aim it at
+  the code the property guards, ❌ never at the property itself: deleting an assertion proves only that it can be
+  deleted.
+- `input` (fuzz only): the input that reaches the property. Prefer a seed in `fuzz/seeds/<target>/`, so every fuzz run
+  replays it. One too big for the corpus (it would raise libFuzzer's inferred `-max_len` for the whole target) goes
+  gzipped in `fuzz/mutant-inputs/<target>/`; the check decompresses a `.gz` first.
+- `expect`: text the failure prints, normally the assertion's message (one without a message prints its expression).
+  It's what proves THIS property caught the mutant, not some other panic on the way.
+- Paths are repo-relative and can't leave the repo; an unknown field fails, so a typo can't go unread.
+
+**Adding a record**:
+
+1. Pick a one-line change a plausible bug would make in the guarded code. Aim for one record per assertion.
+2. Find or write an input that passes today and trips the assertion under the change.
+3. Write the record, then run `pnpm check mutant-records` (milliseconds) and `pnpm check property-mutants` (minutes).
+   The slow one's report says which half failed: a red baseline, a mutant that doesn't build, one that survived, or one
+   caught by something other than `expect`.
+4. A property that had an allowlist entry loses it on the next local `mutant-records` run; commit the rewrite.
+
+**The fast half** reads records only. It fails when a property has neither a record nor an entry in
+`property-mutants-allowlist.json` (mandatory `reason`; shrink-wrapped on local runs once its property gains a record or
+disappears, report-only in CI; a new entry needs David's OK, § "Allowlist consent"), and when a record no longer
+applies: its property is gone, its `find` is missing or ambiguous, or its input vanished. So a refactor that moves the
+guarded code fails at the commit that moved it, not days later in the slow lane.
+
+**The slow half** works in a mirror at `target/property-mutants/tree` (every file `git ls-files -co --exclude-standard`
+lists; no `.git`), ❌ never in the checkout: a mutant an interrupted run left behind must never reach a commit, and a
+lane running beside it must never compile one. Each record's catcher runs on the clean mirror, which must pass (a red
+baseline proves nothing), then with the mutant, which must build and then fail printing `expect`. A green mutant run is
+reported as SURVIVED: the property is vacuous for that bug. `TestPropertyMutants_AVacuousPropertyIsCaught` pins that
+verdict.
+
+- **The sync keeps cargo warm and honest.** It rewrites only files whose bytes differ, so an untouched file keeps its
+  mtime; a restored mutant is written afresh, so its mtime beats any build of the mutant and cargo never reuses a mutant
+  binary. A file the last sync listed (`target/property-mutants/tree-files.txt`) and the tree lost is deleted; build
+  output is never listed, so it stays.
+- **The fuzz kind builds in the mirror's own `fuzz/target/`**, ❌ never the fuzz lane's: two lanes uplifting the same
+  bin names into one directory could each run the other's binary.
+- **A mutant builds under its crate's own lints**, and some crates deny `unused` (`cmdr-nfs`), so a mutant that strands
+  a binding doesn't build. Keep every binding used (`2 * asked` above, not `usize::MAX`).
+
+**Cost and lane** (measured on the M1 Max with nine records, `pnpm check`, 2026-11-03): the fast half takes
+milliseconds; the slow half took 10m56s with a cold mirror and 4m15s warm, about 25 s per mutant, nearly all of it
+rebuilding the mutated crate under the sanitizer. So the fast half runs in `--fast`, and the slow half runs where the
+fuzz smoke does: CI-only and slow, its own job in `slow-checks.yml` every six days. That job builds cold, deliberately
+uncached: the Rust caches already press GitHub's 10 GB ceiling. Each record adds roughly a rebuild of its crate.
 
 ## Allowlist shrink-wrap
 
@@ -2064,10 +2145,12 @@ Checks by app and tech:
   `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps (CI-only), fuzz
   (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a target loosens
   its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding), miri (slow, macOS
-  only, CI every six days: the modules whose `unsafe` is pure Rust, under Miri; § "Miri"), jscpd (the clone list, on a
-  per-file-pair ratchet), log-error-macro, macos-availability (no call to a selector newer than the bundle's
-  `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework in the BUILT binary's load
-  commands newer than that same floor, which is the half no runtime gate can save; § "macOS framework floor"),
+  only, CI every six days: the modules whose `unsafe` is pure Rust, under Miri; § "Miri"), mutant-records and
+  property-mutants (every property has a recorded one-line change that makes it fail: the fast half checks the records
+  still apply, the slow CI-only half applies each in a mirror and runs its catcher; § "Property mutants"), jscpd (the
+  clone list, on a per-file-pair ratchet), log-error-macro, macos-availability (no call to a selector newer than the
+  bundle's `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework in the BUILT binary's
+  load commands newer than that same floor, which is the half no runtime gate can save; § "macOS framework floor"),
   sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide shared page cache
   is always installed before SQLite initializes), error-string-match, lock-poison (two lanes: an error-level one for an
   acquisition that records no poison-handling choice, and a warn-only one for a failure that's silently discarded, on a

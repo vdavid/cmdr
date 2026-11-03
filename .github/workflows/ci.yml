@@ -1626,6 +1626,12 @@ jobs:
       - name: Check for unused message keys
         run: ./scripts/check/check --check desktop-message-keys-unused --ci
 
+      # Here rather than in the Rust job: a record names any file, and its fuzz target, record,
+      # and input under `fuzz/` sit outside the `rust` filter, so a gated job would skip the
+      # edit that strands a record. The slow half that runs the mutants is in `slow-checks.yml`.
+      - name: Check every property has a mutant record that still applies
+        run: ./scripts/check/check --check desktop-rust-property-mutant-records --ci
+
       - name: Check PostHog events match their catalog
         run: ./scripts/check/check --check analytics-event-catalog --ci
 

@@ -1,0 +1,13 @@
+{
+  "mutants": [
+    {
+      "property": "fuzz:nfs_reply",
+      "why": "READ's data cap is off, so a server answering past what the client asked for is believed",
+      "file": "crates/cmdr-nfs/src/proto/nfs3/types.rs",
+      "find": "let data = dec.opaque(asked as usize)?;",
+      "replace": "let data = dec.opaque(2 * asked as usize)?;",
+      "input": "fuzz/mutant-inputs/nfs_reply/read-past-max-payload.bin.gz",
+      "expect": "READ answered past what was asked"
+    }
+  ]
+}

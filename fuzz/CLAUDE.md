@@ -8,6 +8,8 @@ per target); CI runs the same lane in `slow-checks.yml`.
 
 - `fuzz_targets/`: one file per target, each a thin call into a `fuzzing` module or a public API.
 - `seeds/<target>/`: the committed seed corpus. `corpus/` (grown), `artifacts/` (findings), `target/`: gitignored.
+- `fuzz_targets/<target>.mutants.json`: the target's failing mutants; `mutant-inputs/<target>/`: catching inputs too big
+  for the corpus, gzipped.
 - The seams live in the crates: `cmdr_adb::fuzzing`, `cmdr_webdav::fuzzing`, `cmdr_s3::fuzzing`, `cmdr_nfs::fuzzing`,
   each behind that crate's `fuzzing` feature (on in its dev builds, so clippy lints it).
 
@@ -21,6 +23,9 @@ per target); CI runs the same lane in `slow-checks.yml`.
 - **`pdf` and `image_headers` MIRROR app code** (`tools/read/inspect/pdf.rs`, `exif.rs`, `file_viewer/media.rs`):
   instrumenting the Tauri app isn't worth it. Change those calls, change the target.
 - **In `pdf`, a panic is not a finding**: the app contains them. Aborts, OOMs, and hangs are.
+- **Every assertion needs a failing mutant on record** (`<target>.mutants.json`), or the target a reasoned entry in
+  `property-mutants-allowlist.json` while it only checks for crashes. `pnpm check mutant-records` holds the line; format
+  and how-to: `scripts/check/checks/DETAILS.md` § "Property mutants".
 - **A finding in OUR code gets a red regression test in the crate, then the fix.** One in a third-party crate gets
   reported upstream, plus a guard in our wrapper when we can bound it.
 - **Not under `cargo deny`**: `libfuzzer-sys` is NCSA-licensed and never ships, so it stays out of the root graph.

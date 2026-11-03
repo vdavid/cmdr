@@ -1,0 +1,22 @@
+{
+  "mutants": [
+    {
+      "property": "fuzz:archive_index",
+      "why": "the index builder skips the sanitizer, so a traversal name becomes a browsable node",
+      "file": "crates/cmdr-archive/src/read/index.rs",
+      "find": "match sanitize_entry_name(&raw.name) {",
+      "replace": "match SanitizedName::Accepted(raw.name.clone()) {",
+      "input": "fuzz/seeds/archive_index/traversal.tar.bin",
+      "expect": "the tree lists an unsafe path"
+    },
+    {
+      "property": "fuzz:archive_index",
+      "why": "a node is named after its first component, so its name and its path disagree",
+      "file": "crates/cmdr-archive/src/read/index.rs",
+      "find": "path.rsplit('/').next().unwrap_or(path)",
+      "replace": "path.split('/').next().unwrap_or(path)",
+      "input": "fuzz/seeds/archive_index/nested.tar.bin",
+      "expect": "a node's path disagrees with where the tree lists it"
+    }
+  ]
+}
