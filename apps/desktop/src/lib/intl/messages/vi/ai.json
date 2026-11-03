@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Tìm kiếm bằng ngôn ngữ tự nhiên</b>: nội dung bạn nhập, hoặc những gì một công cụ AI đã kết nối yêu cầu, sau khi bạn bật chế độ trực tiếp MCP",
+  "ai.cloudConsent.search": "<b>Tìm kiếm bằng ngôn ngữ tự nhiên</b>: nội dung bạn nhập",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>Chọn theo mô tả</b>: nội dung bạn nhập, cùng tối đa 240 tên từ thư mục hiện tại",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "Trong cuộc trò chuyện do bạn bắt đầu, Ask Cmdr còn có thể thao tác ứng dụng thay bạn: đi tới các thư mục, chọn, sắp xếp, mở tab hay hộp thoại và kết nối tới một vị trí bạn đã lưu. Sao chép, di chuyển, nén, xóa, đổi tên và hoàn tác một thao tác đều mở một hộp thoại hoặc ô đổi tên để bạn xác nhận, và không có gì xảy ra cho đến khi bạn xác nhận. Mở tệp, thay đổi cài đặt (trừ giao diện của Cmdr), thoát, tháo ổ đĩa, gỡ bỏ máy chủ và thay đổi việc lập chỉ mục đều hỏi bạn trước. Tạo một thư mục hoặc tệp có tên và gắn thẻ cho tệp diễn ra ngay lập tức mà không hỏi gì, và thẻ thì không thể hoàn tác. Các lần đổi tên và dọn dẹp mà Ask Cmdr chuẩn bị thành một kế hoạch sẽ chờ bạn phê duyệt.",
+  "ai.cloudConsent.askCmdr.actions": "Trong cuộc trò chuyện do bạn bắt đầu, Ask Cmdr còn có thể thao tác ứng dụng thay bạn: đi tới các thư mục, chọn, sắp xếp, mở tab hay hộp thoại và kết nối tới một vị trí bạn đã lưu. Sao chép, di chuyển, nén, xóa, đổi tên và hoàn tác một thao tác đều mở một hộp thoại hoặc ô đổi tên để bạn xác nhận, và không có gì xảy ra cho đến khi bạn xác nhận. Mở tệp, thay đổi cài đặt (trừ giao diện của Cmdr), thoát, tháo ổ đĩa, gỡ bỏ máy chủ và thay đổi việc lập chỉ mục đều hỏi bạn trước. Tạo một thư mục hoặc tệp có tên và gắn thẻ cho tệp diễn ra ngay lập tức mà không hỏi gì, nhưng bạn có thể hoàn tác một lần thay đổi thẻ. Các lần đổi tên và dọn dẹp mà Ask Cmdr chuẩn bị thành một kế hoạch sẽ chờ bạn phê duyệt.",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr tự viết ghi chú về bạn: bạn thích sắp xếp mọi thứ ra sao, trước đây bạn đã từ chối điều gì, và bất cứ điều gì bạn nhờ nó nhớ. Những ghi chú đó đi kèm mọi tin nhắn bạn gửi, chừng nào chúng còn tồn tại, và có thể chứa văn bản mà Cmdr nhận dạng được bên trong ảnh của bạn. Bạn có thể đọc hoặc xóa chúng bất cứ lúc nào trong cài đặt Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {

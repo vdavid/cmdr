@@ -48,6 +48,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Bỏ qua",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "Đang kiểm tra những gì bạn đang xem",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -884,6 +888,22 @@
   "askCmdr.sessions.archivedBadge": "Đã lưu trữ",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Xóa tìm kiếm",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Trò chuyện phù hợp",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, other {{countText} cuộc trò chuyện}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144"
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Hoạt động trong {folder}} other {Hoạt động trong {folder} và {otherCountText} thư mục khác}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Hỏi về mục đã chọn",
   "@askCmdr.composer.attach": {

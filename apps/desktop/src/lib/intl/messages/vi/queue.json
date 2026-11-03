@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} trash {Đang chuyển vào thùng rác} rename {Đang đổi tên} create_folder {Đang tạo thư mục} create_file {Đang tạo tệp} archive_edit {Đang chỉnh sửa tệp nén} compress {Đang nén} other {Đang xử lý}}",
+  "queue.row.label": "{type, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} trash {Đang chuyển vào thùng rác} rename {Đang đổi tên} create_folder {Đang tạo thư mục} create_file {Đang tạo tệp} archive_edit {Đang chỉnh sửa tệp nén} compress {Đang nén} tag {Đang thay đổi thẻ} other {Đang xử lý}}",
   "@queue.row.label": {
-    "sourceHash": "3c8e776"
+    "sourceHash": "b051663"
   },
   "queue.row.reversalMovingBack": "Đang đưa các tệp về chỗ cũ",
   "@queue.row.reversalMovingBack": {
@@ -30,6 +30,10 @@
   "queue.row.reversalRenamingBack": "Đang đặt lại tên cũ",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalRestoringTags": "Đang đặt lại thẻ cũ",
+  "@queue.row.reversalRestoringTags": {
+    "sourceHash": "1b063e8"
   },
   "queue.row.reversalInFolder": "trong {folder}",
   "@queue.row.reversalInFolder": {
