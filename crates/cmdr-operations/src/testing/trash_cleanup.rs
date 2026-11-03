@@ -11,9 +11,27 @@
 //! timestamp when the name is taken). So it records each source's identity up
 //! front and, on drop, removes only the top-level Trash entry with that identity
 //! and the source's name as a prefix. It never touches anything outside the Trash.
+//!
+//! Where an item landed comes first from [`note_trashed`], which a test build's
+//! `move_to_trash_sync` calls with `trashItemAtURL`'s resulting URL. Listing the
+//! Trash is only the fallback: TCC refuses `readdir` of `~/.Trash` to a process
+//! without Full Disk Access (a test run started from an agent or an IDE), while a
+//! `stat` and an unlink by path still work, so a guard that only listed left
+//! everything behind there (verified on macOS 27, `ls ~/.Trash` answers
+//! "Operation not permitted" while `stat` of a fixture in it answers, 2026-11-03).
 
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+
+/// Every in-Trash path this process's trashes reported, until a guard claims it.
+static TRASHED: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
+
+/// Records where a trash landed, so a guard finds it without listing the Trash.
+#[cfg(target_os = "macos")]
+pub(crate) fn note_trashed(in_trash: &Path) {
+    crate::sync_primitives::lock_ignore_poison(&TRASHED).push(in_trash.to_path_buf());
+}
 
 /// One source the test may trash: where its Trash is, and how to know it there.
 struct Tracked {
@@ -52,26 +70,46 @@ fn track(source: &Path) -> Option<Tracked> {
 impl Drop for TrashCleanup {
     fn drop(&mut self) {
         for item in &self.tracked {
-            let Ok(entries) = std::fs::read_dir(&item.trash_dir) else {
-                continue;
-            };
-            let landed = entries.flatten().find(|entry| {
-                entry.file_name().to_string_lossy().starts_with(&item.name)
-                    && entry
-                        .metadata()
-                        .is_ok_and(|meta| meta.dev() == item.dev && meta.ino() == item.ino)
-            });
-            let Some(entry) = landed else { continue };
-            let path = entry.path();
-            // `DirEntry::metadata` doesn't follow a link, so a trashed symlink is
-            // removed as the link itself.
-            let _ = if entry.file_type().is_ok_and(|kind| kind.is_dir()) {
-                std::fs::remove_dir_all(&path)
-            } else {
-                std::fs::remove_file(&path)
-            };
+            if let Some(path) = claim_noted(item).or_else(|| find_by_listing(item)) {
+                remove(&path);
+            }
         }
     }
+}
+
+impl Tracked {
+    /// Whether `path` is this item in its Trash: a top-level entry there, named
+    /// after the source, and the node the source was (`symlink_metadata`, so a
+    /// trashed symlink is judged as the link itself).
+    fn is(&self, path: &Path) -> bool {
+        path.parent() == Some(self.trash_dir.as_path())
+            && path
+                .file_name()
+                .is_some_and(|name| name.to_string_lossy().starts_with(&self.name))
+            && std::fs::symlink_metadata(path).is_ok_and(|meta| meta.dev() == self.dev && meta.ino() == self.ino)
+    }
+}
+
+/// Takes `item`'s noted landing out of [`TRASHED`], if a trash noted one.
+fn claim_noted(item: &Tracked) -> Option<PathBuf> {
+    let mut noted = crate::sync_primitives::lock_ignore_poison(&TRASHED);
+    let at = noted.iter().position(|path| item.is(path))?;
+    Some(noted.swap_remove(at))
+}
+
+/// Finds `item` by listing its Trash, for a trash that noted nothing.
+fn find_by_listing(item: &Tracked) -> Option<PathBuf> {
+    let entries = std::fs::read_dir(&item.trash_dir).ok()?;
+    entries.flatten().map(|entry| entry.path()).find(|path| item.is(path))
+}
+
+fn remove(path: &Path) {
+    let is_dir = std::fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_dir());
+    let _ = if is_dir {
+        std::fs::remove_dir_all(path)
+    } else {
+        std::fs::remove_file(path)
+    };
 }
 
 #[cfg(all(test, target_os = "macos"))]

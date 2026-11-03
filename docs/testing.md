@@ -748,7 +748,8 @@ decides"), and a test whose subject isn't the Trash trashes a path that doesn't 
 **The Trash variant: a real trash lands in the developer's own `~/.Trash`.** `trashItemAtURL` can't be pointed
 elsewhere, so every test that needs a real success held its fixtures there for good: 393 of them in three days of runs
 (2026-10-23). A Rust test that really trashes holds `cmdr_operations::testing::TrashCleanup::of(&sources)`, taken before
-the trash; on drop, a panic included, it removes each item by the node it was. The one E2E spec that trashes
+the trash; on drop, a panic included, it removes each item by the node it was, at the path the trash reported (TCC
+refuses a listing of `~/.Trash` to a run without Full Disk Access, an agent's included). The one E2E spec that trashes
 (`mcp-agent-tools.spec.ts`) does the same by inode in a `finally`.
 
 ### ❌ Remove-then-recreate to get "a different file"
