@@ -821,6 +821,22 @@
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"
   },
+  "askCmdr.find.region": "Buscar en el chat",
+  "@askCmdr.find.region": {
+    "sourceHash": "df9554c"
+  },
+  "askCmdr.find.ariaLabel": "Buscar en este chat",
+  "@askCmdr.find.ariaLabel": {
+    "sourceHash": "49be9b7"
+  },
+  "askCmdr.find.placeholder": "Buscar en el chat…",
+  "@askCmdr.find.placeholder": {
+    "sourceHash": "b26600e"
+  },
+  "askCmdr.find.loadedOnly": "Buscando en los mensajes cargados",
+  "@askCmdr.find.loadedOnly": {
+    "sourceHash": "8b4e09d"
+  },
   "askCmdr.threads.open": "Chats",
   "@askCmdr.threads.open": {
     "sourceHash": "ef5b404",

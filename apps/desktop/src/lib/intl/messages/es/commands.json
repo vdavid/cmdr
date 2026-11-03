@@ -136,6 +136,18 @@
   "@commands.askCmdrNewChat.description": {
     "sourceHash": "957741b"
   },
+  "commands.askCmdrFind.label": "Buscar en el chat",
+  "@commands.askCmdrFind.label": {
+    "sourceHash": "df9554c"
+  },
+  "commands.askCmdrFindNext.label": "Coincidencia siguiente en el chat",
+  "@commands.askCmdrFindNext.label": {
+    "sourceHash": "1c2da9b"
+  },
+  "commands.askCmdrFindPrevious.label": "Coincidencia anterior en el chat",
+  "@commands.askCmdrFindPrevious.label": {
+    "sourceHash": "d28d025"
+  },
   "commands.feedbackSend.label": "Enviar comentarios",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
