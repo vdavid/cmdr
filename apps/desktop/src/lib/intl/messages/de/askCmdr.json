@@ -717,6 +717,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.requestTooLarge.named": "{provider} hat das abgelehnt: Das Limit deines Tarifs ist kleiner als eine einzige Anfrage von Cmdr, denn jede Anfrage enthält immer die Anweisungen von Cmdr. Eine kürzere Nachricht hilft nicht. Wechsle bei {provider} zu einem größeren Tarif oder wähle in den Einstellungen einen anderen Anbieter.",
+  "@askCmdr.error.requestTooLarge.named": {
+    "sourceHash": "f878555"
+  },
+  "askCmdr.error.requestTooLarge.unnamed": "Dein KI-Anbieter hat das abgelehnt: Das Limit deines Tarifs ist kleiner als eine einzige Anfrage von Cmdr, denn jede Anfrage enthält immer die Anweisungen von Cmdr. Eine kürzere Nachricht hilft nicht. Wechsle zu einem größeren Tarif oder wähle in den Einstellungen einen anderen Anbieter.",
+  "@askCmdr.error.requestTooLarge.unnamed": {
+    "sourceHash": "b81536f"
+  },
   "askCmdr.error.budgetExhausted": "Diese Antwort hat ihr Limit erreicht, bevor sie fertig war. Frag etwas Genaueres.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"

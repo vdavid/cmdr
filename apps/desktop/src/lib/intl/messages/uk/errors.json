@@ -2249,6 +2249,10 @@
   "@errors.volume.needsPassword": {
     "sourceHash": "8d9f648"
   },
+  "errors.volume.backupNeedsPassword": "Цю резервну копію захищено паролем.",
+  "@errors.volume.backupNeedsPassword": {
+    "sourceHash": "d29bcbb"
+  },
   "errors.volume.passwordRejected": "Цей пароль не підійшов.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"

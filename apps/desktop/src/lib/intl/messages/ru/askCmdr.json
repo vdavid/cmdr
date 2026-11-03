@@ -717,6 +717,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.requestTooLarge.named": "Поставщик {provider} отклонил запрос: лимит вашего тарифа меньше одного запроса Cmdr, ведь каждый запрос всегда содержит инструкции Cmdr. Более короткое сообщение не поможет. Перейдите на тариф побольше у поставщика {provider} или выберите другого поставщика в настройках.",
+  "@askCmdr.error.requestTooLarge.named": {
+    "sourceHash": "f878555"
+  },
+  "askCmdr.error.requestTooLarge.unnamed": "Ваш поставщик ИИ отклонил запрос: лимит вашего тарифа меньше одного запроса Cmdr, ведь каждый запрос всегда содержит инструкции Cmdr. Более короткое сообщение не поможет. Перейдите на тариф побольше или выберите другого поставщика в настройках.",
+  "@askCmdr.error.requestTooLarge.unnamed": {
+    "sourceHash": "b81536f"
+  },
   "askCmdr.error.budgetExhausted": "Этот ответ уперся в лимит, не дойдя до конца. Попробуйте спросить что-то более конкретное.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"

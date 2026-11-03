@@ -2248,6 +2248,10 @@
   "@errors.volume.needsPassword": {
     "sourceHash": "8d9f648"
   },
+  "errors.volume.backupNeedsPassword": "这个备份受密码保护。",
+  "@errors.volume.backupNeedsPassword": {
+    "sourceHash": "d29bcbb"
+  },
   "errors.volume.passwordRejected": "这个密码不起作用。",
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"

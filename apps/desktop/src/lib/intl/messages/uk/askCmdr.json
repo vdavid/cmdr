@@ -717,6 +717,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.requestTooLarge.named": "Постачальник {provider} відхилив запит: ліміт вашого тарифу менший, ніж один запит від Cmdr, адже кожен запит завжди містить інструкції Cmdr. Коротше повідомлення не допоможе. Перейдіть на більший тариф у постачальника {provider} або виберіть іншого постачальника в Параметрах.",
+  "@askCmdr.error.requestTooLarge.named": {
+    "sourceHash": "f878555"
+  },
+  "askCmdr.error.requestTooLarge.unnamed": "Ваш постачальник ШІ відхилив запит: ліміт вашого тарифу менший, ніж один запит від Cmdr, адже кожен запит завжди містить інструкції Cmdr. Коротше повідомлення не допоможе. Перейдіть на більший тариф або виберіть іншого постачальника в Параметрах.",
+  "@askCmdr.error.requestTooLarge.unnamed": {
+    "sourceHash": "b81536f"
+  },
   "askCmdr.error.budgetExhausted": "Ця відповідь досягла ліміту, перш ніж встигла завершитися. Спробуйте запитати конкретніше.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"

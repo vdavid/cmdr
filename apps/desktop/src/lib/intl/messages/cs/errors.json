@@ -2249,6 +2249,10 @@
   "@errors.volume.needsPassword": {
     "sourceHash": "8d9f648"
   },
+  "errors.volume.backupNeedsPassword": "Tato záloha je chráněná heslem.",
+  "@errors.volume.backupNeedsPassword": {
+    "sourceHash": "d29bcbb"
+  },
   "errors.volume.passwordRejected": "Toto heslo nefungovalo.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"

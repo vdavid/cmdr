@@ -763,6 +763,10 @@
   "@errors.volume.ioError": {
     "sourceHash": "ee97e89"
   },
+  "errors.volume.backupNeedsPassword": "Este respaldo está protegido con contraseña.",
+  "@errors.volume.backupNeedsPassword": {
+    "sourceHash": "d691512"
+  },
   "errors.volume.passwordRejected": "Esa contraseña no funcionó.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "5d54870"

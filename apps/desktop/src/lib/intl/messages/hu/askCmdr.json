@@ -717,6 +717,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.requestTooLarge.named": "{provider} ezt elutasította: a csomagod korlátja kisebb, mint a Cmdr egyetlen kérése, mert az mindig tartalmazza a Cmdr utasításait. Egy rövidebb üzenet nem segít. Válts nagyobb csomagra a szolgáltatónál ({provider}), vagy válassz másik szolgáltatót a beállításokban.",
+  "@askCmdr.error.requestTooLarge.named": {
+    "sourceHash": "f878555"
+  },
+  "askCmdr.error.requestTooLarge.unnamed": "Az AI-szolgáltatód ezt elutasította: a csomagod korlátja kisebb, mint a Cmdr egyetlen kérése, mert az mindig tartalmazza a Cmdr utasításait. Egy rövidebb üzenet nem segít. Válts nagyobb csomagra, vagy válassz másik szolgáltatót a beállításokban.",
+  "@askCmdr.error.requestTooLarge.unnamed": {
+    "sourceHash": "b81536f"
+  },
   "askCmdr.error.budgetExhausted": "Ez elérte a korlátját, mielőtt befejezhette volna. Próbálj valami konkrétabbat kérdezni.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"

@@ -719,6 +719,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.requestTooLarge.named": "{provider} a refusé cette requête : la limite de votre forfait est inférieure à une seule requête de Cmdr, car chacune contient toujours les instructions de Cmdr. Un message plus court n’y changera rien. Passez à un forfait supérieur chez {provider} ou choisissez un autre fournisseur dans les Réglages.",
+  "@askCmdr.error.requestTooLarge.named": {
+    "sourceHash": "f878555"
+  },
+  "askCmdr.error.requestTooLarge.unnamed": "Votre fournisseur d’IA a refusé cette requête : la limite de votre forfait est inférieure à une seule requête de Cmdr, car chacune contient toujours les instructions de Cmdr. Un message plus court n’y changera rien. Passez à un forfait supérieur ou choisissez un autre fournisseur dans les Réglages.",
+  "@askCmdr.error.requestTooLarge.unnamed": {
+    "sourceHash": "b81536f"
+  },
   "askCmdr.error.budgetExhausted": "Celle-ci a atteint sa limite avant de terminer. Essayez de poser une question plus précise.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"

@@ -716,6 +716,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.requestTooLarge.named": "{provider} 拒绝了这个请求：你的套餐上限比 Cmdr 的一个请求还小，因为每个请求都会带上 Cmdr 的指令。把消息写短也没用。可以在 {provider} 换一个更大的套餐，或者在“设置”中换一个提供方。",
+  "@askCmdr.error.requestTooLarge.named": {
+    "sourceHash": "f878555"
+  },
+  "askCmdr.error.requestTooLarge.unnamed": "你的 AI 提供方拒绝了这个请求：你的套餐上限比 Cmdr 的一个请求还小，因为每个请求都会带上 Cmdr 的指令。把消息写短也没用。可以换一个更大的套餐，或者在“设置”中换一个提供方。",
+  "@askCmdr.error.requestTooLarge.unnamed": {
+    "sourceHash": "b81536f"
+  },
   "askCmdr.error.budgetExhausted": "这次回答在完成前达到了限制，试着问一些更具体的问题吧。",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"

@@ -239,6 +239,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "f376ed1"
   },
+  "askCmdr.error.requestTooLarge.named": "{provider} rechazó esto: el límite de tu plan es menor que una sola solicitud de Cmdr, porque cada solicitud siempre lleva las instrucciones de Cmdr. Un mensaje más corto no servirá. Prueba un plan mayor con {provider} o elige otro proveedor en Configuración.",
+  "@askCmdr.error.requestTooLarge.named": {
+    "sourceHash": "840faa2"
+  },
+  "askCmdr.error.requestTooLarge.unnamed": "Tu proveedor de IA rechazó esto: el límite de tu plan es menor que una sola solicitud de Cmdr, porque cada solicitud siempre lleva las instrucciones de Cmdr. Un mensaje más corto no servirá. Prueba un plan mayor o elige otro proveedor en Configuración.",
+  "@askCmdr.error.requestTooLarge.unnamed": {
+    "sourceHash": "5f41c18"
+  },
   "askCmdr.error.budgetExhausted": "Esta respuesta llegó a su límite antes de terminar. Intenta preguntar algo más concreto.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "93788fe"

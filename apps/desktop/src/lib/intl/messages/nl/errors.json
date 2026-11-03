@@ -2249,6 +2249,10 @@
   "@errors.volume.needsPassword": {
     "sourceHash": "8d9f648"
   },
+  "errors.volume.backupNeedsPassword": "Deze back-up is beveiligd met een wachtwoord.",
+  "@errors.volume.backupNeedsPassword": {
+    "sourceHash": "d29bcbb"
+  },
   "errors.volume.passwordRejected": "Dat wachtwoord werkte niet.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"

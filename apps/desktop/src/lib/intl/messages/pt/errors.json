@@ -2249,6 +2249,10 @@
   "@errors.volume.needsPassword": {
     "sourceHash": "8d9f648"
   },
+  "errors.volume.backupNeedsPassword": "Este backup está protegido por senha.",
+  "@errors.volume.backupNeedsPassword": {
+    "sourceHash": "d29bcbb"
+  },
   "errors.volume.passwordRejected": "Essa senha não funcionou.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"

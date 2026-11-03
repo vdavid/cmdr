@@ -717,6 +717,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.requestTooLarge.named": "{provider} đã từ chối yêu cầu này: giới hạn của gói bạn đang dùng nhỏ hơn một yêu cầu duy nhất từ Cmdr, vì mỗi yêu cầu luôn kèm theo hướng dẫn của Cmdr. Tin nhắn ngắn hơn cũng không giúp được. Hãy thử gói lớn hơn của {provider} hoặc chọn nhà cung cấp khác trong Cài đặt.",
+  "@askCmdr.error.requestTooLarge.named": {
+    "sourceHash": "f878555"
+  },
+  "askCmdr.error.requestTooLarge.unnamed": "Nhà cung cấp AI của bạn đã từ chối yêu cầu này: giới hạn của gói bạn đang dùng nhỏ hơn một yêu cầu duy nhất từ Cmdr, vì mỗi yêu cầu luôn kèm theo hướng dẫn của Cmdr. Tin nhắn ngắn hơn cũng không giúp được. Hãy thử gói lớn hơn hoặc chọn nhà cung cấp khác trong Cài đặt.",
+  "@askCmdr.error.requestTooLarge.unnamed": {
+    "sourceHash": "b81536f"
+  },
   "askCmdr.error.budgetExhausted": "Câu hỏi này đã đạt giới hạn trước khi hoàn tất. Hãy thử hỏi điều gì đó cụ thể hơn.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"

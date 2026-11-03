@@ -2249,6 +2249,10 @@
   "@errors.volume.needsPassword": {
     "sourceHash": "8d9f648"
   },
+  "errors.volume.backupNeedsPassword": "Ez a biztonsági mentés jelszóval védett.",
+  "@errors.volume.backupNeedsPassword": {
+    "sourceHash": "d29bcbb"
+  },
   "errors.volume.passwordRejected": "Ez a jelszó nem jó.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
