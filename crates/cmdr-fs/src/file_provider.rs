@@ -343,7 +343,14 @@ impl FileProviderDomains {
 /// when it exists. `None` when a location exists but couldn't be listed, which is
 /// "can't vouch for the marker" rather than "no domains".
 fn candidate_domain_locations() -> Option<Vec<PathBuf>> {
-    let home = dirs::home_dir()?;
+    candidate_domain_locations_in(&dirs::home_dir()?)
+}
+
+/// [`candidate_domain_locations`] under any home, so a test reads a temp tree.
+/// ❌ A test reading the REAL `~/Library/CloudStorage` can block on
+/// `fileproviderd`: it timed out at 8 s four times between 2026-09-09 and
+/// 2026-11-03 on David's Mac, always passing alone.
+fn candidate_domain_locations_in(home: &Path) -> Option<Vec<PathBuf>> {
     let mut candidates = Vec::new();
     for relative in CANDIDATE_DOMAIN_LOCATIONS {
         let location = home.join(relative);
@@ -713,15 +720,36 @@ mod tests {
         );
     }
 
-    /// The production candidate list names real locations and doesn't panic on a
-    /// machine that has none of them.
+    /// The candidate list names both locations and every folder in them (files
+    /// aren't domains), reads a home that has none of them as no candidates, and
+    /// says "can't tell" for a location it can't list.
     #[test]
-    fn the_production_candidate_list_reads_this_machine() {
-        let candidates = candidate_domain_locations();
-        if let Some(candidates) = candidates {
-            for candidate in candidates {
-                assert!(candidate.is_absolute(), "{} is absolute", candidate.display());
-            }
+    fn the_candidate_list_names_each_location_and_the_folders_in_it() {
+        let home = tempfile::tempdir().expect("temp home");
+        let library = home.path().join("Library");
+        assert_eq!(
+            candidate_domain_locations_in(home.path()),
+            Some(Vec::new()),
+            "no locations, no candidates"
+        );
+
+        let cloud = library.join("CloudStorage");
+        std::fs::create_dir_all(cloud.join("Dropbox")).expect("a provider folder");
+        std::fs::write(cloud.join(".DS_Store"), b"").expect("a file");
+        let icloud = library.join("Mobile Documents");
+        std::fs::create_dir_all(&icloud).expect("iCloud Drive's root");
+        let mut found = candidate_domain_locations_in(home.path()).expect("both locations list");
+        found.sort();
+        assert_eq!(found, vec![cloud.clone(), cloud.join("Dropbox"), icloud]);
+
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&cloud, std::fs::Permissions::from_mode(0o000)).expect("chmod");
+        // Root lists it anyway (the Linux lane's container), so there's no refusal to see.
+        let refused = std::fs::read_dir(&cloud).is_err();
+        let unlisted = candidate_domain_locations_in(home.path());
+        std::fs::set_permissions(&cloud, std::fs::Permissions::from_mode(0o755)).expect("chmod back");
+        if refused {
+            assert_eq!(unlisted, None, "a location that won't list can't vouch for the marker");
         }
     }
 }
