@@ -821,6 +821,22 @@
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"
   },
+  "askCmdr.find.region": "Keresés a csevegésben",
+  "@askCmdr.find.region": {
+    "sourceHash": "df9554c"
+  },
+  "askCmdr.find.ariaLabel": "Keresés ebben a csevegésben",
+  "@askCmdr.find.ariaLabel": {
+    "sourceHash": "49be9b7"
+  },
+  "askCmdr.find.placeholder": "Keresés a csevegésben…",
+  "@askCmdr.find.placeholder": {
+    "sourceHash": "b26600e"
+  },
+  "askCmdr.find.loadedOnly": "Keresés a betöltött üzenetekben",
+  "@askCmdr.find.loadedOnly": {
+    "sourceHash": "8b4e09d"
+  },
   "askCmdr.threads.open": "Csevegések",
   "@askCmdr.threads.open": {
     "sourceHash": "ef5b404"

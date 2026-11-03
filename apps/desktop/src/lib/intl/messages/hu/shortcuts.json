@@ -40,6 +40,11 @@
   "@shortcuts.scope.multiRename": {
     "sourceHash": "5ceb1a2"
   },
+  "shortcuts.scope.askCmdr": "Ask Cmdr",
+  "@shortcuts.scope.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Terméknév; minden nyelven változatlan marad (do-not-translate), itt az Ask Cmdr panel billentyűparancs-csoportjának címe."
+  },
   "shortcuts.scope.favoritesMenu": "Kedvencek menü",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
