@@ -1,52 +1,51 @@
 ---
 /**
- * The landing page's clip-led tour: trust first (nothing else does rollback), then reach, multi-rename,
- * the viewer, optional AI, and the craft. The reach section's copy is a draft for David's review.
- * Every `/features#…` link targets a card id that `src/pages/features.astro` renders.
- */
-import DevTodo from './DevTodo.astro'
+  * The landing page's clip-led tour: trust first (nothing else does rollback), then reach, multi-rename,
+  * the viewer, optional AI, and the craft. Every `/features#…` link targets a card id that
+  * `src/pages/features.astro` renders.
+  */
 import ProductClip from './ProductClip.astro'
 import ShowcaseSection from './ShowcaseSection.astro'
 import Icon from './icons/Icon.astro'
 import type { IconName } from './icons/icon-map'
 
 const reach = [
-    {
-        href: '/features#android-devices',
-        icon: 'smartphone',
-        title: 'Phones',
-        text: 'Android over MTP and ADB, up to 4x faster than Android File Transfer.',
-    },
-    {
-        href: '/features#network-drives',
-        icon: 'server',
-        title: 'Network drives',
-        text: 'Its own SMB client, 4–200x faster than the macOS one, and NFS with no system mount.',
-    },
-    {
-        href: '/features#connect',
-        icon: 'globe',
-        title: 'Servers and cloud',
-        text: 'SFTP, WebDAV, and S3-compatible buckets, like any local folder.',
-    },
-    {
-        href: '/features#git-browser',
-        icon: 'git-branch',
-        title: 'Git',
-        text: 'Browse history, branches, and stashes as folders.',
-    },
-    {
-        href: '/features#restic-backups',
-        icon: 'database',
-        title: 'Backups',
-        text: 'Open a restic backup and copy files out of any snapshot.',
-    },
-    {
-        href: '/features#archives',
-        icon: 'file-archive',
-        title: 'Archives',
-        text: 'Open zip, tar, and 7z files like folders.',
-    },
+  {
+    href: '/features#android-devices',
+    icon: 'smartphone',
+    title: 'Phones and cameras',
+    text: 'Android over MTP and ADB, up to 4x faster than Android File Transfer. Kindles and cameras, too.',
+  },
+  {
+    href: '/features#network-drives',
+    icon: 'server',
+    title: 'Network drives',
+    text: 'Cmdr has its own SMB client, 4–200x faster than what macOS uses, and NFS needs no system mount.',
+  },
+  {
+    href: '/features#connect',
+    icon: 'globe',
+    title: 'Servers and cloud',
+    text: 'SFTP, WebDAV, and S3-compatible buckets, with cost estimates for various S3-compatible providers.',
+  },
+  {
+    href: '/features#git-browser',
+    icon: 'git-branch',
+    title: 'Git',
+    text: 'Browse history, branches, and stashes as folders. Copy out files from your branch from last year.',
+  },
+  {
+    href: '/features#restic-backups',
+    icon: 'database',
+    title: 'Backups',
+    text: 'Open a restic backup and copy files out of your snapshot.',
+  },
+  {
+    href: '/features#archives',
+    icon: 'file-archive',
+    title: 'Archives',
+    text: 'Open zip, tar, and 7z files like folders. Copy/edit files in your existing zips.',
+  },
 ] satisfies { href: string; icon: IconName; title: string; text: string }[]
 ---
 
@@ -62,50 +61,46 @@ const reach = [
         </p>
         <div slot="media" class="grid gap-10 md:grid-cols-2 md:gap-8">
             <ProductClip
-                slug="copy-rollback"
-                label="Copying a folder in Cmdr: the copy pauses, resumes, finishes, and then gets rolled back from the operation log."
-                caption="Copy, pause, resume, then roll it back"
+                    slug="copy-rollback"
+                    label="Copying a folder in Cmdr: the copy pauses, resumes, finishes, and then gets rolled back from the operation log."
+                    caption="Copy, pause, resume, then roll back the action"
             />
             <ProductClip
-                slug="ops-queue"
-                label="Several file operations queued in Cmdr, one sent to the background, and a waiting one dragged to reorder the queue."
-                caption="Queue operations, background them, pause/resume, reorder the queue"
+                    slug="ops-queue"
+                    label="Five folder copies queued in Cmdr's Operations window, running in the background one after the other until all are done."
+                    caption="See five backgrounded operations complete"
             />
         </div>
     </ShowcaseSection>
 
     <!-- (b) Reach: second, because it's what people switching from Finder feel first. -->
-    <ShowcaseSection id="reach" eyebrow="Connections" title="Reaches well beyond your disk" layout="stacked">
-        <DevTodo>
-            Draft copy for this section, the two clip captions, and the six cards: please review. The
-            <code>reach-network</code> and <code>reach-devices</code> clips show placeholders until they're recorded.
-        </DevTodo>
+    <ShowcaseSection id="reach" eyebrow="Connections" title="Handles all sorts of volumes" layout="stacked">
         <p>
-            NAS shares, servers, cloud buckets, backups, repos, and phones open right in the pane, and you browse and copy
-            them like any folder on your Mac.
+            NAS (SMB), phones and cameras, SFTP/NFS servers, S3 buckets, WebDAV, restic backups, git repos, and archives
+            work just like any folder on your Mac.
         </p>
         <p class="text-base text-text-tertiary">
-            See <a href="/features#connect">every connection</a> and how far along each one is.
+            See <a href="/features#connect">the whole list</a> and their details.
         </p>
         <div slot="media" class="grid gap-10 md:grid-cols-2 md:gap-8">
             <ProductClip
-                slug="reach-network"
-                label="Adding an SMB server, an NFS share, and an S3 bucket in Cmdr, then browsing each one in a pane."
-                caption="Add an SMB server, an NFS share, and an S3 bucket"
+                    slug="reach-network"
+                    label="Adding an SMB server, an NFS share, and an S3 bucket in Cmdr, then browsing each one in a pane."
+                    caption="Adding an SMB server, then browsing an NFS share and an S3 bucket"
             />
             <ProductClip
-                slug="reach-devices"
-                label="Browsing a git repo's history, a restic backup's snapshots, and an Android phone over MTP, each as folders in Cmdr."
-                caption="Git history, restic snapshots, and an Android phone, as folders"
+                    slug="reach-devices"
+                    label="Browsing a git repo's history, a restic backup's snapshots, and an Android phone over MTP, each as folders in Cmdr."
+                    caption="Browsing Git history, restic snapshots, and an Android phone"
             />
         </div>
         <ul slot="after" class="mx-auto mt-14 grid max-w-6xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {
-                reach.map((item) => (
+          {
+            reach.map((item) => (
                     <li>
                         <a
-                            href={item.href}
-                            class="group flex h-full flex-col gap-2 rounded-xl border border-border bg-surface p-4 no-underline transition-colors duration-300 hover:border-accent/40 hover:bg-surface-elevated"
+                                href={item.href}
+                                class="group flex h-full flex-col gap-2 rounded-xl border border-border bg-surface p-4 no-underline transition-colors duration-300 hover:border-accent/40 hover:bg-surface-elevated"
                         >
                             <span class="flex items-center gap-2">
                                 <Icon name={item.icon} size={20} />
@@ -114,8 +109,8 @@ const reach = [
                             <span class="text-sm/relaxed text-text-secondary">{item.text}</span>
                         </a>
                     </li>
-                ))
-            }
+            ))
+          }
         </ul>
     </ShowcaseSection>
 
@@ -131,45 +126,53 @@ const reach = [
             <a href="/features#ai-rename">Natural-language rename</a>
         </p>
         <ProductClip
-            slot="media"
-            slug="multi-rename"
-            label="Cmdr's multi-rename window: a pattern with a counter renames a batch of photos, with the new names previewed live."
+                slot="media"
+                slug="multi-rename"
+                label="Cmdr's multi-rename window: a pattern with a counter renames a batch of photos, with the new names previewed live."
+                caption="Multi-file rename demo (with AI disabled)"
         />
     </ShowcaseSection>
 
     <!-- (d) Viewer -->
-    <ShowcaseSection id="opens-everything" eyebrow="Viewer" title="Opens everything, fast" flip>
+    <ShowcaseSection id="opens-everything" eyebrow="Viewer" title="Opens all file types, fast" flip>
         <p>
-            The built-in viewer opens a 10 GB file in about a second, and searches it. Text, images, binary, and hex,
-            all driven from the keyboard.
+            The built-in viewer opens text files, images, PDFs, and more, in media, text, binary, and hex views, and
+            lets you search them, too.<br />It opens a 10 GB file in a second.
         </p>
         <p class="text-base"><a href="/features#file-viewer">The file viewer</a></p>
         <ProductClip
-            slot="media"
-            slug="viewer"
-            label="Cmdr's viewer opening a 10 GB log file instantly, searching it, then switching to hex view."
+                slot="media"
+                slug="viewer"
+                label="Cmdr's viewer opening an image file and a Markdown file in different views."
+                caption="See how Cmdr opens an image file, then a Markdown file"
         />
     </ShowcaseSection>
 
     <!-- (e) AI, opt-in -->
-    <ShowcaseSection id="optional-ai" eyebrow="AI" title="AI, only if you want it">
+    <ShowcaseSection id="optional-ai" eyebrow="AI" title="Optional AI features">
         <p>
-            Describe what you’re looking for, like “my tax report from last year”, and Cmdr turns it into filters and
-            shows hits in a second.
+            Set up an LLM in Cmdr to search in plain language. Type “my tax report from last year”, and
+            the agent turns it into filters.
         </p>
         <ul class="space-y-3 text-base">
             <li class="flex gap-3">
                 <Icon name="toggle-left" size={22} class="mt-0.5 shrink-0" />
                 <span
-                    ><strong class="font-semibold text-text-primary">Off by default.</strong> With AI off, Cmdr is a complete
-                    two-pane file manager.</span
+                ><strong class="font-semibold text-text-primary">Off by default.</strong> A lot of people just
+                    want a nice two-pane file manager. With AI off (default), Cmdr is only that, no AI fluff.</span
+                >
+            </li>
+            <li class="flex gap-3">
+                <Icon name="sparkles" size={22} class="mt-0.5 shrink-0" />
+                <span
+                ><strong class="font-semibold text-text-primary">But it's quite cool!</strong> Smart disk cleanup, natural language search even in your photo content, ask stuff about your files. It's AI features that are <em>actually useful</em>.</span
                 >
             </li>
             <li class="flex gap-3">
                 <Icon name="laptop-minimal-check" size={22} class="mt-0.5 shrink-0" />
-                <span
-                    ><strong class="font-semibold text-text-primary">Can stay 100% on your Mac.</strong> The built-in model
-                    runs locally. Or bring your own OpenAI, Claude, or Gemini key.</span
+                <span><strong class="font-semibold text-text-primary">Can stay 100% on your Mac.</strong> A small
+                    local model downloads and starts within Cmdr <em>if you want</em>. Or bring your own OpenAI, Claude, or
+                    Gemini key: Claude Opus is certainly a few leagues smarter than the 3B-param model Cmdr runs locally.</span
                 >
             </li>
         </ul>
@@ -179,24 +182,24 @@ const reach = [
             <a href="/features#local-ai">The private model</a>
         </p>
         <ProductClip
-            slot="media"
-            slug="search"
-            label="Searching in Cmdr by typing a plain-language request, which turns into filters and a list of matching files."
+                slot="media"
+                slug="search"
+                label="Searching in Cmdr by typing a plain-language request, which turns into filters and a list of matching files."
+                caption="Searching in Cmdr with AI off, then on"
         />
     </ShowcaseSection>
 
     <!-- (f) Craft -->
-    <ShowcaseSection id="made-with-care" eyebrow="Details" title="Made with care" flip>
-        <p>
-            Cmdr follows your Mac’s look and accessibility settings, and speaks 15 languages. Switch between them
-            whenever you like, no restart needed.
-        </p>
+    <ShowcaseSection id="follows-your-preferences" eyebrow="Details" title="Follows your preferences" flip>
+        <p>Cmdr respects your Mac’s look (color, theme, etc.) and accessibility (motion, zoom, contrast, etc.) settings.</p>
+        <p>It lets you use VoiceOver, works with keyboard only, mouse only, and has WCAG AA+ contrast levels everywhere.</p>
+        <p>Translated to 14 languages. Switch between them without restarting.</p>
         <p class="text-base"><a href="/trust/accessibility-guide">Accessibility guide</a></p>
         <ProductClip
-            slot="media"
-            slug="language-switch"
-            label="Switching Cmdr's language in Settings: the whole interface changes language on the spot."
-            caption="Works with VoiceOver · WCAG 2.2 AA contrast · Real dark and light modes"
+                slot="media"
+                slug="language-switch"
+                label="Switching Cmdr's language in Settings: the whole interface changes language on the spot."
+                caption="Switching languages on the fly"
         />
     </ShowcaseSection>
 </div>
