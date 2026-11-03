@@ -51,6 +51,7 @@
     const ok = $derived(tool.outcome === null || outcomeOk(tool.outcome))
     const label = $derived(toolLineLabel(tool))
     const labelText = $derived(lineLabelText(label))
+    const withPlaces = $derived(label.place !== null || label.places.length > 0)
     const outcome = $derived(toolOutcomeText(tool))
     const repeat = $derived(showsRepeatTag(tool))
 
@@ -89,6 +90,9 @@
     {/each}
 {/snippet}
 
+<!-- A run of the label's words beside its paths: an element, so a tight row can cut it with an ellipsis. -->
+{#snippet words(text: string)}<span class="words">{text}</span>{/snippet}
+
 <div class="tool-line">
     <span class="glyph">
         {#if tool.running}
@@ -99,23 +103,28 @@
             <Icon name="circle-x" size={13} aria-hidden="true" />
         {/if}
     </span>
-    <span
-        class="label"
-        class:with-places={label.place !== null || label.places.length > 0}
-        use:tooltip={{ text: labelText, overflowOnly: true }}
-    >
-        <Trans key={label.key} params={label.params} snippets={{ place: placeTag, places: placesTag }} />
+    <span class="body">
+        <span class="label" class:with-places={withPlaces} use:tooltip={{ text: labelText, overflowOnly: true }}>
+            <Trans
+                key={label.key}
+                params={label.params}
+                snippets={{ place: placeTag, places: placesTag }}
+                text={withPlaces ? words : undefined}
+            />
+        </span>
+        {#if repeat}
+            <span class="repeat" id={repeatId}>{tString('askCmdr.tool.repeat')}</span>
+        {/if}
+        {#if outcome !== null}
+            <!-- A dot on screen, a comma for a screen reader: "Listed Desktop · showed 5 of 6" reads as
+                 two parts of one line, never as one run-on sentence. -->
+            <span class="result">
+                <span class="dot" aria-hidden="true">·</span>
+                <span class="sr-only">{tString('askCmdr.tool.outcomeSeparator')}</span>
+                <span class="outcome" use:tooltip={{ text: outcome, overflowOnly: true }}>{outcome}</span>
+            </span>
+        {/if}
     </span>
-    {#if repeat}
-        <span class="repeat" id={repeatId}>{tString('askCmdr.tool.repeat')}</span>
-    {/if}
-    {#if outcome !== null}
-        <!-- A dot on screen, a comma for a screen reader: "Listed Desktop · showed 5 of 6" reads as
-             two parts of one line, never as one run-on sentence. -->
-        <span class="dot" aria-hidden="true">·</span>
-        <span class="sr-only">{tString('askCmdr.tool.outcomeSeparator')}</span>
-        <span class="outcome" use:tooltip={{ text: outcome, overflowOnly: true }}>{outcome}</span>
-    {/if}
     <button
         type="button"
         class="expand"
@@ -151,7 +160,19 @@
         color: var(--color-text-tertiary);
     }
 
-    /* The label gives way first: a long path ellipsizes before what came back does. */
+    /* Label and outcome share the row while they fit. When they don't, the outcome wraps under the
+       label rather than squeezing it, so the place a label names stays in view. */
+    .body {
+        display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        align-items: center;
+        min-width: 0;
+        column-gap: var(--spacing-xs);
+        /* Inside the row's 28px on one line; sets a wrapped line apart from its neighbors. */
+        padding-block: var(--spacing-xs);
+    }
+
     .label {
         flex: 0 1 auto;
         min-width: 0;
@@ -161,13 +182,21 @@
     }
 
     /* A path link is a `<button>`, an atomic inline box: the label's ellipsis can't cut inside it,
-       so it swallowed the whole path and every word after it ("Looked inside …"). With a path in
-       it, the label lays its pieces out in a row instead, and only the path gives way: "Looked
-       inside Från Säbys kö… and 1 more". `pre` keeps the spaces at the pieces' edges, which a
+       so it would swallow the whole path and every word after it ("Looked inside …"). With a path
+       in it, the label lays its pieces out in a row instead. The words give way first, each with
+       its own ellipsis like a plain label's, and the path keeps its width up to most of the row:
+       "Tried to save a no… ../outside.md". `pre` keeps the spaces at the pieces' edges, which a
        flex row would otherwise drop. */
     .label.with-places {
         display: flex;
         white-space: pre;
+    }
+
+    .with-places .words {
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .place {
@@ -175,7 +204,8 @@
     }
 
     .with-places .place {
-        min-width: 0;
+        flex: none;
+        max-width: 70%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -197,14 +227,20 @@
         white-space: nowrap;
     }
 
+    .result {
+        display: flex;
+        flex: 0 1 auto;
+        min-width: 0;
+        gap: var(--spacing-xs);
+    }
+
     .dot {
         flex: none;
         color: var(--color-text-tertiary);
     }
 
     .outcome {
-        flex: none;
-        max-width: 60%;
+        min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

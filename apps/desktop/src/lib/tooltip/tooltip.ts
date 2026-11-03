@@ -488,8 +488,14 @@ function startShowTimer(triggerEl: HTMLElement, getParam: () => TooltipParam, de
   }, delayMs)
 }
 
+/**
+ * Whether any of `el`'s text is cut: by its own box, or by a piece inside it that clips itself. A
+ * label laid out as a row of pieces (an Ask Cmdr tool line's words around a path) never overflows
+ * its own box, because each piece cuts its own text.
+ */
 function isOverflowing(el: HTMLElement): boolean {
-  return el.scrollWidth > el.clientWidth
+  if (el.scrollWidth > el.clientWidth) return true
+  return [...el.querySelectorAll<HTMLElement>('*')].some((piece) => piece.scrollWidth > piece.clientWidth)
 }
 
 function shouldShow(el: HTMLElement, param: TooltipParam): boolean {

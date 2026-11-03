@@ -94,6 +94,36 @@ describe('tooltip', () => {
     expect((tip as HTMLElement).style.top).not.toBe('0px')
   })
 
+  describe('overflowOnly', () => {
+    /** Gives an element the box sizes happy-dom can't lay out. */
+    function sized(el: HTMLElement, { scroll, client }: { scroll: number; client: number }): HTMLElement {
+      Object.defineProperty(el, 'scrollWidth', { configurable: true, value: scroll })
+      Object.defineProperty(el, 'clientWidth', { configurable: true, value: client })
+      return el
+    }
+
+    function hoverShows(el: HTMLElement): boolean {
+      tooltip(el, { text: 'The whole label', overflowOnly: true })
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      return document.querySelector('.cmdr-tooltip.visible') !== null
+    }
+
+    it('stays quiet while the text fits', () => {
+      const el = sized(makeTrigger(), { scroll: 50, client: 50 })
+      expect(hoverShows(el)).toBe(false)
+    })
+
+    // A label laid out as a row of pieces that each cut themselves never overflows its own box:
+    // the cut is inside a piece, and that's still text the reader can't see.
+    it('shows when a piece inside the trigger cuts its own text', () => {
+      const el = sized(makeTrigger(), { scroll: 50, client: 50 })
+      const piece = sized(document.createElement('span'), { scroll: 80, client: 30 })
+      el.appendChild(piece)
+      expect(hoverShows(el)).toBe(true)
+    })
+  })
+
   // Typing or moving the pane cursor must clear the tooltip the way OS-native ones do: a tooltip
   // hovering over the file list obstructs the very rows you're arrowing through.
   // Regression: with the volume switcher open, a file row behind it still showed its tooltip, drawn

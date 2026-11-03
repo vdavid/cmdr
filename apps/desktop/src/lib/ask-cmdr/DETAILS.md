@@ -249,9 +249,18 @@ it asked for, in `tried` words.
   reach it, ❌ never a raw search scope string.
 - **Gotcha: a path link can't be ellipsized from outside.** A `LinkButton` is a `<button>`, an atomic inline box, so the
   label's `text-overflow` replaced the whole link and every word after it: a long PDF name rendered as "Looked inside …"
-  (seen live, 2026-10-26). A label holding a path (`with-places`) is a flex row instead, where only the path shrinks and
-  truncates itself; `white-space: pre` keeps the spaces a flex row would drop at its pieces' edges. The preview's linked
-  row names truncate themselves the same way, beside a size that stays on their line.
+  (seen live, 2026-10-26). A label holding a path (`with-places`) is a flex row instead, and its words come through
+  `<Trans>`'s `text` snippet as `.words` elements, because bare text beside a flex item can't draw an ellipsis (it cut
+  "Tried to save a note to ../outside.md" to "Tried to s", path gone, #897). The words give way first, each with its own
+  ellipsis like a plain label's, and the path keeps its width up to 70% of the label, past which it truncates itself.
+  `white-space: pre` keeps the spaces a flex row would drop at its pieces' edges. The label's overflow tooltip still
+  fires, because `overflowOnly` counts a piece that cuts its own text. The preview's linked row names truncate
+  themselves the same way, beside a size that stays on their line.
+- **Decision: the outcome wraps under the label when the two don't fit, ❌ never squeezes it** (#897). Label, repeat
+  tag, and outcome sit in one wrapping `.body`, so a row that fits stays one line and a tight one becomes two, the
+  outcome (with its `·`) starting under the label. An outcome that reserved up to 60% of the row left the label too
+  little to keep its path; giving the outcome way first instead would hide the reason a call was refused. Checked at the
+  rail's 280 px minimum in English and Czech (2026-11-03, dev app): every path stays whole.
 - **What came back** (`toolOutcomeText`): a `Record` over every outcome kind. Counts, "showed N of M" when the model got
   part of a list, "so far" / "yet" for a lower bound (❌ never "nothing found" while ground is uncovered), one note per
   refusal reason and per `MemoryRefusalKind`, and nothing for `answered` / `saved` (the label and glyph say it), nor for

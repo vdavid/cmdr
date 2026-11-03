@@ -36,9 +36,15 @@
         snippets?: Record<string, Snippet<[Snippet]>>
         /** Plain interpolation params (`{name}`), alongside the tag snippets. */
         params?: TranslationParams
+        /**
+         * Renders each run of plain text between the tags, for a caller that has to style it (the
+         * Ask Cmdr tool line, whose words have to shorten with an ellipsis beside a path). Bare text
+         * nodes without it.
+         */
+        text?: Snippet<[string]>
     }
 
-    const { key, snippets = {}, params }: Props = $props()
+    const { key, snippets = {}, params, text }: Props = $props()
 
     function isMarker(part: unknown): part is Marker {
         return typeof part === 'object' && part !== null && '__trans' in part
@@ -67,4 +73,4 @@
   `{@render content()}`, so the tag's inner text lands inside the component.
 -->
 <!-- eslint-disable-next-line svelte/require-each-key -- positional message parts have no stable id; order is the identity -->
-{#each parts as part}{#if isMarker(part)}{@const childSnippet = snippets[part.tag]}{#if childSnippet}{#snippet content()}{#each part.chunks as chunk}{chunk}{/each}{/snippet}{@render childSnippet(content)}{/if}{:else}{part}{/if}{/each}
+{#each parts as part}{#if isMarker(part)}{@const childSnippet = snippets[part.tag]}{#if childSnippet}{#snippet content()}{#each part.chunks as chunk}{chunk}{/each}{/snippet}{@render childSnippet(content)}{/if}{:else if text}{@render text(String(part))}{:else}{part}{/if}{/each}

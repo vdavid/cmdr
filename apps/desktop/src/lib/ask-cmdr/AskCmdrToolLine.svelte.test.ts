@@ -56,6 +56,19 @@ describe('AskCmdrToolLine', () => {
     expect(target.querySelector('.outcome')?.textContent).toBe('3 items')
   })
 
+  // Bare text beside a flex item can't draw an ellipsis, so a tight row cut "Tried to save a note
+  // to ../outside.md" to "Tried to s" with the path gone (#897). Each run of words is its own
+  // element, so it shortens with an ellipsis like a plain label while the path keeps its room.
+  it('puts the words around a path in elements of their own, so a tight row can cut them with an ellipsis', () => {
+    const { target } = render(call({ kind: 'folder', path: { text: '/Users/me/Downloads', linkable: true } }))
+    const label = target.querySelector('.label')
+    const bareText = [...(label?.childNodes ?? [])].filter(
+      (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '',
+    )
+    expect(bareText).toEqual([])
+    expect([...(label?.querySelectorAll('.words') ?? [])].map((el) => el.textContent)).toEqual(['Listed '])
+  })
+
   it('sets what came back apart: a dot on screen, a comma for a screen reader', () => {
     const { target } = render(call({ kind: 'folder', path: { text: '/Users/me/Desktop', linkable: true } }))
     const dot = target.querySelector('.dot')
