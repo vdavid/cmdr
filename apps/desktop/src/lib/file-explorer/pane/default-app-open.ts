@@ -74,7 +74,7 @@ export async function openWithDefaultAppOrExplain(volumeId: string, entry: FileE
 
 function explainRefusal(entry: FileEntry, error: unknown): DefaultAppOpenOutcome {
   const failure = asOpenPathError(error)
-  log.info('{fileName} didn’t open: {reason}', { fileName: entry.name, reason: failure?.type ?? String(error) })
+  log.info('{fileName} didn’t open: {reason}', { fileName: entry.name, reason: failure?.type ?? error })
   if (failure?.type === 'notOnThisMac') {
     explainNotOnThisMac()
     return 'refusedNotOnThisMac'

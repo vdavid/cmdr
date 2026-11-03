@@ -18,7 +18,7 @@ import { toCanonical, type CanonicalPath } from '#lib/path/canonical.js'
 import type { FileEntry } from '../types'
 
 const { launcher, settings, policy, viewer, navigate } = vi.hoisted<{
-  launcher: { open: Mock; openOnVolume: Mock }
+  launcher: { open: Mock<(path: string) => Promise<void>>; openOnVolume: Mock }
   settings: { getSetting: Mock }
   policy: {
     resolveEnterPolicy: Mock

@@ -28,6 +28,7 @@ export type {
   EditorOpenReport,
   GetInfoError,
   OpenInEditorError,
+  OpenPathError,
   OpenTerminalError,
   OpenTerminalOutcome,
   TerminalApp,
