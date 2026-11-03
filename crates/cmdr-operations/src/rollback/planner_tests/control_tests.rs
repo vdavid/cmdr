@@ -421,6 +421,23 @@ async fn the_dispatch_names_where_the_reversal_will_act() {
     assert_eq!(plan.summary.from.as_deref(), Some("/landed"));
     assert_eq!(plan.summary.to, None, "a removal has nowhere to put anything");
 
+    // A cross-volume move creates its destination folders the way a copy does, and
+    // its undo takes them away again: the newest row is one, so nothing goes back.
+    rig.seed(
+        "move-op",
+        OpKind::Move,
+        "src",
+        Some("dst"),
+        RollbackState::Rollbackable,
+        vec![
+            file_unit(0, "src", "/f.txt", "dst", "/landed/f.txt", FILE_BYTES as i64),
+            dir_unit(1, "dst", "/landed"),
+        ],
+    );
+    let plan = rollback_operation(&rig.vm, &rig.writer, "move-op", |_plan| Ok(())).expect("dispatch");
+    assert_eq!(plan.summary.from.as_deref(), Some("/landed"));
+    assert_eq!(plan.summary.to, None, "a created folder is removed, never moved back");
+
     // A move undo takes items FROM where they landed and puts them back.
     let (rig, _src, _dst) = moved_across(1, Duration::ZERO).await;
     let plan = rollback_operation(&rig.vm, &rig.writer, "op", |_plan| Ok(())).expect("dispatch");

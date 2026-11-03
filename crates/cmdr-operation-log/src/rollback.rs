@@ -186,6 +186,16 @@ fn is_created_in_place(unit: &RollbackUnit) -> bool {
         && unit.dest_path.as_deref() == Some(unit.source_path.as_path())
 }
 
+/// The inverse for one item, the ONE decision both the reversal and the dispatch
+/// summary read. A directory the operation created in place is taken away again
+/// whatever the op kind; everything else follows the kind's table.
+fn item_action(kind: OpKind, entry_type: EntryType, created_in_place: bool) -> Option<InverseAction> {
+    if entry_type == EntryType::Dir && created_in_place {
+        return Some(InverseAction::RemoveDirIfEmpty);
+    }
+    inverse_action(kind, entry_type)
+}
+
 fn inverse_action(kind: OpKind, entry_type: EntryType) -> Option<InverseAction> {
     match kind {
         OpKind::Copy => Some(match entry_type {
@@ -542,16 +552,8 @@ async fn reverse_item(
     kind: OpKind,
     unit: &RollbackUnit,
 ) -> ItemResult {
-    let action = if unit.entry_type == EntryType::Dir && is_created_in_place(unit) {
-        // A directory the operation created, whatever the op kind (see
-        // `is_created_in_place`): the inverse is to take it away again, never to
-        // rename it onto itself.
-        InverseAction::RemoveDirIfEmpty
-    } else {
-        match inverse_action(kind, unit.entry_type) {
-            Some(action) => action,
-            None => return ItemResult::Skipped(SkipReason::Failed),
-        }
+    let Some(action) = item_action(kind, unit.entry_type, is_created_in_place(unit)) else {
+        return ItemResult::Skipped(SkipReason::Failed);
     };
     match action {
         InverseAction::RemoveFileIfUnchanged => remove_file_if_unchanged(volumes, runner, unit, false).await,
@@ -875,7 +877,7 @@ fn summarize_inverse(conn: &rusqlite::Connection, op: &OperationRow) -> InverseS
     } else {
         acting_on.parent().map(Path::to_path_buf)
     };
-    let to = match inverse_action(op.kind, unit.entry_type) {
+    let to = match item_action(op.kind, unit.entry_type, is_created_in_place(unit)) {
         Some(InverseAction::RestoreMove) => unit.source_path.parent().map(Path::to_path_buf),
         _ => None,
     };
