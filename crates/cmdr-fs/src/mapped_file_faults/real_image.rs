@@ -36,7 +36,7 @@ fn reading_a_mapping_whose_disk_was_force_detached_reads_zeros_and_moves_the_gen
     super::install_test_handler();
     let before = super::generation();
 
-    image.force_detach().expect("hdiutil detach -force");
+    image.force_detach().expect("force-detach the image");
 
     // Every page this read crosses is a dead vnode's: without the recovery, SIGBUS ends the
     // process here.

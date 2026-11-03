@@ -32,6 +32,13 @@ pub enum CreateFs {
     LegacyExFat,
 }
 
+impl CreateFs {
+    /// One of the two FAT shapes only the hand-run fixture may make.
+    pub(super) fn is_legacy_fat(self) -> bool {
+        matches!(self, Self::LegacyFat32 | Self::LegacyExFat)
+    }
+}
+
 /// The partition scheme a blank image is laid out with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreateLayout {
@@ -65,8 +72,20 @@ pub(super) enum Call<'a> {
     Info,
     /// `diskutil info -plist`.
     DiskInfo { target: &'a str },
-    /// `hdiutil detach`, optionally `-force`, of an image's physical whole disk.
-    Detach { whole: &'a str, force: bool },
+    /// `diskutil eject`, optionally `force`, of an image's physical whole disk, which
+    /// detaches the image: the successor macOS 27 names for `hdiutil detach`. `force`
+    /// takes the place of `-force`: it detaches past a process holding a file open on a
+    /// volume, where the plain eject is dissented (verified on macOS 27.0.1, a `sleep`
+    /// holding a file on a probe image, 2026-11-03).
+    ///
+    /// ❗ `legacy_fat` keeps `hdiutil detach` (and `-force`) for a FAT or exFAT image: its
+    /// unmount is the FSKit `msdos` kernel-panic surface, and the hand-run fixture that
+    /// makes one may never run in a lane, so the move to `eject` can't be proven there.
+    Detach {
+        whole: &'a str,
+        force: bool,
+        legacy_fat: bool,
+    },
     /// `diskutil apfs addVolume <container> APFS <name> -nomount`.
     AddApfsVolume { container: &'a str, name: &'a str },
     /// `diskutil partitionDisk <whole> GPT JHFS+ <first> 60M JHFS+ <second> R`.
@@ -179,8 +198,30 @@ impl Call<'_> {
             }
             Call::Info => ("hdiutil", owned(&["info", "-plist"])),
             Call::DiskInfo { target } => ("diskutil", owned(&["info", "-plist", target])),
-            Call::Detach { whole, force: false } => ("hdiutil", owned(&["detach", &format!("/dev/{whole}")])),
-            Call::Detach { whole, force: true } => ("hdiutil", owned(&["detach", "-force", &format!("/dev/{whole}")])),
+            Call::Detach {
+                whole,
+                force,
+                legacy_fat: false,
+            } => {
+                let mut args = owned(&["eject"]);
+                if force {
+                    args.push("force".to_string());
+                }
+                args.push(whole.to_string());
+                ("diskutil", args)
+            }
+            Call::Detach {
+                whole,
+                force,
+                legacy_fat: true,
+            } => {
+                let mut args = owned(&["detach"]);
+                if force {
+                    args.push("-force".to_string());
+                }
+                args.push(format!("/dev/{whole}"));
+                ("hdiutil", args)
+            }
             Call::AddApfsVolume { container, name } => (
                 "diskutil",
                 owned(&["apfs", "addVolume", container, "APFS", name, "-nomount"]),
@@ -415,6 +456,7 @@ mod tests {
         let call = Call::Detach {
             whole: "disk5",
             force: false,
+            legacy_fat: false,
         };
         let result = gated(
             &call,
@@ -427,6 +469,45 @@ mod tests {
         );
         assert!(result.is_ok());
         assert!(checked.get(), "a detach must be ownership-checked");
+    }
+
+    /// `diskutil eject` for every image the lane can prove; `hdiutil detach` stays for
+    /// the FAT fixture, whose unmount no lane may drive.
+    #[test]
+    fn a_detach_ejects_through_diskutil_except_for_a_legacy_fat_image() {
+        let detach = |force, legacy_fat| {
+            Call::Detach {
+                whole: "disk5",
+                force,
+                legacy_fat,
+            }
+            .describe()
+        };
+        assert_eq!(detach(false, false), "diskutil eject disk5");
+        assert_eq!(detach(true, false), "diskutil eject force disk5");
+        assert_eq!(detach(false, true), "hdiutil detach /dev/disk5");
+        assert_eq!(detach(true, true), "hdiutil detach -force /dev/disk5");
+    }
+
+    /// `diskutil` makes every APFS image; it has no HFS+ and no layout choice.
+    #[test]
+    fn an_apfs_image_is_created_through_diskutil_and_the_rest_through_hdiutil() {
+        let create = |fs, layout| {
+            Call::Create {
+                image: Path::new("/tmp/image.dmg"),
+                size: "64m",
+                fs,
+                layout,
+                volume_name: "CMDR1",
+            }
+            .describe()
+        };
+        assert_eq!(
+            create(CreateFs::Apfs, CreateLayout::Gpt),
+            "diskutil image create blank --fs APFS --size 64m --volumeName CMDR1 /tmp/image.dmg"
+        );
+        assert!(create(CreateFs::HfsPlus, CreateLayout::Gpt).starts_with("hdiutil create "));
+        assert!(create(CreateFs::LegacyFat32, CreateLayout::Mbr).starts_with("hdiutil create "));
     }
 
     /// A rename changes a mounted volume, so it's proven ours like any other change.

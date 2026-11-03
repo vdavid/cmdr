@@ -124,10 +124,10 @@ pub enum Refusal {
         /// The physical whole disk it resolved to.
         whole: String,
     },
-    /// `detach -force` on an image whose backing file lives on another attached
+    /// A forced detach of an image whose backing file lives on another attached
     /// image. Detach inner images first, without force.
     ForceOnNestedImage,
-    /// `detach -force` on an image that another of this session's images is stored
+    /// A forced detach of an image that another of this session's images is stored
     /// on. ❌ Never force an outer image.
     ForceOnOuterImage {
         /// The attached image stored on this one.
@@ -220,7 +220,7 @@ pub(super) fn physical_whole(
     Ok(store_facts.parent_whole_disk)
 }
 
-/// Whether `detach -force` may run on the image backed by `our_image`: it's
+/// Whether a forced detach may run on the image backed by `our_image`: it's
 /// attached, it isn't stored on an attached image, and none of `session_images`
 /// is stored on it. `host_node` answers the `/dev/` node of the volume holding a
 /// backing file (`statfs`), and is only ever asked about this session's own files.

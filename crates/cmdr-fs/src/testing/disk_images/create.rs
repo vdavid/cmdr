@@ -26,9 +26,10 @@ impl DiskImageSession {
     /// Runs `call`, a [`Call::Create`] for `image_path`. A busy answer is retried once the
     /// failed attempt's leftover is gone, and any failed attempt leaves nothing behind.
     pub(super) fn create_image(&self, image_path: &Path, call: Call<'_>) -> Result<(), HarnessError> {
+        let legacy_fat = matches!(call, Call::Create { fs, .. } if fs.is_legacy_fat());
         retrying_busy_create(
             || self.run(image_path, call).map(drop),
-            || self.settle_failed_create(image_path),
+            || self.settle_failed_create(image_path, legacy_fat),
         )
     }
 
@@ -37,9 +38,10 @@ impl DiskImageSession {
     ///
     /// ❌ Never `-force`: a holder that won't let go is what this waits out, and past
     /// [`CREATE_SETTLE`] the leftover is `reclaim_orphans`' to take at the next `acquire`.
-    pub(super) fn settle_failed_create(&self, image_path: &Path) -> Result<(), HarnessError> {
+    /// `legacy_fat` picks the detach verb, as for [`Call::Detach`].
+    pub(super) fn settle_failed_create(&self, image_path: &Path, legacy_fat: bool) -> Result<(), HarnessError> {
         let mut still_busy = None;
-        let detached = holds_within(CREATE_SETTLE, || match self.detach_leftover(image_path) {
+        let detached = holds_within(CREATE_SETTLE, || match self.detach_leftover(image_path, legacy_fat) {
             Ok(()) => true,
             Err(error) => {
                 still_busy = Some(error);
@@ -57,7 +59,7 @@ impl DiskImageSession {
         }
     }
 
-    fn detach_leftover(&self, image_path: &Path) -> Result<(), HarnessError> {
+    fn detach_leftover(&self, image_path: &Path, legacy_fat: bool) -> Result<(), HarnessError> {
         let whole = match self.whole_of(image_path) {
             Ok(whole) => whole,
             Err(error) if error.refusal() == Some(&Refusal::ImageNotAttached) => return Ok(()),
@@ -66,6 +68,7 @@ impl DiskImageSession {
         let detach = Call::Detach {
             whole: &whole,
             force: false,
+            legacy_fat,
         };
         match self.run(image_path, detach) {
             Ok(_) => self.until_unlisted(image_path),

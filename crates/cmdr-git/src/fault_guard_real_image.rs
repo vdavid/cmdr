@@ -62,7 +62,7 @@ fn reading_a_packed_blob_after_its_disk_was_force_detached_answers_volume_gone()
     };
     mapped_file_faults::install_test_handler();
 
-    image.force_detach().expect("hdiutil detach -force");
+    image.force_detach().expect("force-detach the image");
 
     let watch = FaultWatch::start();
     let read = crate::tree::read_blob(&handle, blob_id);

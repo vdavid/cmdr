@@ -1284,24 +1284,24 @@ would drift apart.
   tests take turns, and one can't unmount under another. A second `acquire` on a thread that already holds one panics
   rather than waiting on itself forever.
 - **The runner (`runner.rs`).** The closed `Call` enum IS the verb list: `hdiutil create`, `attach -plist -nobrowse`,
-  `info -plist`, `detach` and `detach -force`; `diskutil image create blank --fs APFS` (every APFS image; HFS+ and the
-  legacy FAT shapes stay on `hdiutil create`, see "Off the deprecated `hdiutil` verbs" below), `info -plist`,
-  `apfs addVolume … -nomount`, `partitionDisk … JHFS+ … R`, `mount -mountOptions nobrowse` (optionally
-  `-mountPoint <dir>`, a mount inside a test's own folder), `image attach --mountOptions nobrowse` (the DiskImages2 path
-  Finder takes, for `attach_stored_here`: an image on another image's volume, served by a `diskimagesiod` under its own
-  uid), `unmount`, `unmountDisk`, `renameVolume`, and `eject`; plus `/sbin/umount`. `unmount` and `unmountDisk` are what
-  a DiskArbitration approval test drives, since both go through DA. `/sbin/umount` is the opposite case and the one verb
-  that isn't a disk tool: it goes straight to the kernel, so DA asks nobody and a session hears about it only
-  afterwards, which is how a vanished drive is driven without pulling a real cable. It's ownership-checked like every
-  other change. A verb gets added with its first caller. Every call is SIGKILLed past 30 s and reaped. Output goes to
-  anonymous temp files rather than pipes, so a large plist can't stall the tool and a helper holding a pipe can't block
-  a read past the kill.
+  and `info -plist`; `diskutil image create blank --fs APFS` (every APFS image; HFS+ and the legacy FAT shapes stay on
+  `hdiutil create`, see "Off the deprecated `hdiutil` verbs" below), `eject <whole>` and `eject force <whole>` (the
+  image's detach, `Call::Detach`), `info -plist`, `apfs addVolume … -nomount`, `partitionDisk … JHFS+ … R`,
+  `mount -mountOptions nobrowse` (optionally `-mountPoint <dir>`, a mount inside a test's own folder),
+  `image attach --mountOptions nobrowse` (the DiskImages2 path Finder takes, for `attach_stored_here`: an image on
+  another image's volume, served by a `diskimagesiod` under its own uid), `unmount`, `unmountDisk`, `renameVolume`, and
+  `eject`; plus `/sbin/umount`. `unmount` and `unmountDisk` are what a DiskArbitration approval test drives, since both
+  go through DA. `/sbin/umount` is the opposite case and the one verb that isn't a disk tool: it goes straight to the
+  kernel, so DA asks nobody and a session hears about it only afterwards, which is how a vanished drive is driven
+  without pulling a real cable. It's ownership-checked like every other change. A verb gets added with its first caller.
+  Every call is SIGKILLed past 30 s and reaped. Output goes to anonymous temp files rather than pipes, so a large plist
+  can't stall the tool and a helper holding a pipe can't block a read past the kill.
 - **Ownership before every change (`facts.rs`).** A call that changes a disk runs only after `diskutil info -plist`
   walks its target to the physical whole disk (a partition's `ParentWholeDisk`; for an APFS volume or container, through
   `APFSPhysicalStores` to the store's parent) and `hdiutil info -plist` lists BOTH the node and that whole disk under
   this image's `image-path`. A mount-point target must still be that volume's `MountPoint`. It's read fresh for every
   call because DiskArbitration hands a freed BSD unit to the next disk at once, so a node stored a second ago can name
-  someone's Time Machine drive. `detach -force` also refuses an image stored on another attached image, and an image
+  someone's Time Machine drive. A forced detach also refuses an image stored on another attached image, and an image
   another of the session's images is stored on (decided on the `statfs` host node of the session's OWN backing files, ❌
   never a stat of someone else's image).
 - **`image-path` is compared exactly, never canonicalized.** `hdiutil info` spells the backing file the way
@@ -1332,10 +1332,10 @@ would drift apart.
   takes `fs_usage`, so who holds it in the wild is unproven (others blame `XProtectBehaviorService`, GitHub
   `actions/runner-images#7522`). It came once in a `disk-images` lane (#832), and 80 plain creates under load 55–64
   didn't reproduce it, so the pins drive it with their own holder.
-- **Teardown.** `DiskImage`'s `Drop` resolves the whole disk fresh, detaches, falls back to a guarded `-force`, waits
-  until `hdiutil info` stops listing the image, and then its `TestDir` deletes the file. The wait is load-bearing: a
-  detach can exit 0 while `hdiutil info` still lists the image, which flaked a test asserting "detached" right after the
-  drop under load (#830, the sparse two-volume image, about 1 run in 100). An image that's already gone (an eject
+- **Teardown.** `DiskImage`'s `Drop` resolves the whole disk fresh, detaches, falls back to a guarded forced detach,
+  waits until `hdiutil info` stops listing the image, and then its `TestDir` deletes the file. The wait is load-bearing:
+  a detach can exit 0 while `hdiutil info` still lists the image, which flaked a test asserting "detached" right after
+  the drop under load (#830, the sparse two-volume image, about 1 run in 100). An image that's already gone (an eject
   detached it) is fine; one that won't detach panics the test unless it's already panicking, so a leak never passes
   silently.
 - **Leftovers are reclaimed at `acquire`**, because no `Drop` runs when the test process is SIGKILLed — which is what
@@ -1360,6 +1360,16 @@ would drift apart.
     None, and no layout, so HFS+ (`Hfs`, `HfsTwoPartitions`, `attach_stored_here`) and the MBR FAT fixture have no
     `diskutil` spelling (verified on macOS 27.0.1, `--help` and a rejected `--fs HFS+`, 2026-11-03). Making HFS+ from
     `--fs None` plus `eraseDisk` would add a browsable mount and two more verbs to every HFS+ image, for a warning.
+  - **`detach`: moved, except for the FAT fixture.** `Call::Detach` runs `diskutil eject <whole>`, which detaches the
+    image (both the store and its synthesized APFS container leave), and `diskutil eject force <whole>` replaces
+    `-force`: a `sleep` holding a file dissents the plain eject and the forced one goes through (verified on macOS
+    27.0.1, a probe image, 2026-11-03). The real-image pins that force-detach (the unmount approver's ignored dissent,
+    the mapped-file and `fault_guard` recoveries, the index's vanish) passed on it. ❗ A FAT or exFAT image keeps
+    `hdiutil detach` (`legacy_fat`): its unmount is the FSKit `msdos` kernel-panic surface, and the fixture that makes
+    one may never run in a lane, so nothing can prove the new verb there.
+  - **`attach` stays**: `Call::Attach` and `Call::AttachThroughDaemon` differ on purpose (a same-uid helper versus a
+    `diskimagesiod`), and moving every image to the daemon changes who a holder scan finds in the eject pins. The
+    warning names `diskutil image attach` as the successor, so this is the next step once Apple removes the verb.
   - **`info` stays**: `diskutil image info` takes one image, and nothing lists every attached one, which the ownership
     guard needs.
 

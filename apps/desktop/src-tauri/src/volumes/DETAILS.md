@@ -396,7 +396,7 @@ approver couldn't install, and logs an `error`. ❌ Never both: two pre-unmount 
 (`real_image.rs`, `pnpm check disk-images`) installs a session that acts only on its own image's BSD nodes and drives
 real `diskutil` unmounts: verified on macOS 27.0 (2026-09-16) that an idle volume's unmount is asked about while it's
 still mounted, a held file's refusal hands the index back after the idle, the first ask of a two-partition disk lets go
-of both partitions, a dissent refuses a non-force unmount, `hdiutil detach -force` ignores that dissent, and a person's
+of both partitions, a dissent refuses a non-force unmount, a forced detach ignores that dissent (`hdiutil detach -force` then; `diskutil eject force` since 2026-11-03, #849), and a person's
 enable issued during an ask never lands an index on the drive that's leaving. A repo open on the drive with its pack
 mapped lets go during the ask, so a plain `diskutil unmount` goes through (Darwin 27.0.0, 2026-10-19); the test host
 releases through a real `GitPortal` set on `FakeHost::git`.

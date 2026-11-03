@@ -221,7 +221,7 @@ fn a_stop_that_overruns_the_budget_dissents_and_a_forced_detach_ignores_the_diss
         "nothing unmounts under an index still letting go"
     );
 
-    image.force_detach().expect("hdiutil detach -force");
+    image.force_detach().expect("force-detach the image");
 
     wait_until(
         PATIENCE,

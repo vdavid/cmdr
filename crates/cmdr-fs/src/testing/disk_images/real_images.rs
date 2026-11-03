@@ -280,7 +280,9 @@ fn a_held_device_makes_the_create_fail_and_leave_its_image_attached(fs: CreateFs
         assert!(listed(&session), "a held create leaves its image attached");
 
         drop(holder);
-        session.settle_failed_create(&image_path).expect("the leftover goes");
+        session
+            .settle_failed_create(&image_path, false)
+            .expect("the leftover goes");
         assert!(!listed(&session), "the settle detaches the leftover");
         assert!(!image_path.exists(), "and removes its file, so a retry can create it");
         return;

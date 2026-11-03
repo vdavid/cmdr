@@ -51,7 +51,7 @@ const PARK_AFTER_DIRS: u64 = 5;
 /// What the test does while the walk is parked.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum AtThePark {
-    /// `hdiutil detach -force` the image, then release the walk.
+    /// Force-detach the image, then release the walk.
     DetachTheImage,
     /// Release the walk with the image still attached.
     LeaveTheImage,

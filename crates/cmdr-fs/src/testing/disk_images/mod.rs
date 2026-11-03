@@ -17,7 +17,7 @@
 //! - **Before every call that changes a disk, the target is proven ours**: `diskutil`
 //!   resolves it to its physical whole disk and `hdiutil info` must list both under
 //!   this image's backing file. DiskArbitration reuses a freed BSD unit at once, so
-//!   a stored node is never trusted. `detach -force` also refuses nested and outer
+//!   a stored node is never trusted. A forced detach also refuses nested and outer
 //!   images.
 //! - **Unique volume names** (`CMDR<pid><n>`), `-nobrowse` everywhere, and a
 //!   [`DiskImage`] detaches and deletes itself on drop, unwind included.
@@ -162,9 +162,11 @@ impl DiskImageSession {
         let node = whole.strip_prefix("/dev/").unwrap_or(whole);
         match self.run(
             image_path,
+            // An orphan carries `CMDR<digits>` volumes, a name the FAT fixture never gives.
             Call::Detach {
                 whole: node,
                 force: false,
+                legacy_fat: false,
             },
         ) {
             Ok(_) => log::info!(
@@ -204,7 +206,7 @@ impl DiskImageSession {
     }
 
     /// Runs `call`. A call that changes a disk runs only after its target is proven
-    /// to belong to the image backed by `owner` (and, for `detach -force`, that the
+    /// to belong to the image backed by `owner` (and, for a forced detach, that the
     /// image isn't nested in or holding another).
     fn run(&self, owner: &Path, call: Call<'_>) -> Result<Finished, HarnessError> {
         runner::gated(
@@ -364,6 +366,8 @@ pub struct DiskImage {
     /// how `hdiutil info` spells it back.
     image_path: PathBuf,
     volumes: Vec<MountedVolume>,
+    /// A FAT or exFAT image, detached through `hdiutil` (`Call::Detach`).
+    legacy_fat: bool,
     /// Dropped after `Drop::drop` runs, so the file outlives the detach. `None` for an
     /// image stored on another image's volume, whose teardown takes the file with it.
     _dir: Option<TestDir>,
@@ -478,6 +482,7 @@ impl DiskImage {
             session: Arc::clone(session),
             image_path,
             volumes: Vec::new(),
+            legacy_fat: fs.is_legacy_fat(),
             _dir: Some(dir),
         };
         image.volumes = image.mounted_volumes(&[volume_name])?;
@@ -510,6 +515,7 @@ impl DiskImage {
             session: Arc::clone(session),
             image_path,
             volumes: Vec::new(),
+            legacy_fat: false,
             _dir: None,
         };
         image.volumes = image.mounted_volumes(&[&volume_name])?;
@@ -625,13 +631,14 @@ impl DiskImage {
         self.volume(index)
     }
 
-    /// `hdiutil detach -force` of the whole image, once it's proven ours and not
+    /// `diskutil eject force` of the whole image, once it's proven ours and not
     /// nested. A detached image answers [`Refusal::ImageNotAttached`].
     pub fn force_detach(&self) -> Result<(), HarnessError> {
         let whole = self.whole()?;
         self.run(Call::Detach {
             whole: &whole,
             force: true,
+            legacy_fat: self.legacy_fat,
         })
         .map(|_| ())
     }
@@ -746,6 +753,7 @@ impl DiskImage {
         match self.run(Call::Detach {
             whole: &whole,
             force: false,
+            legacy_fat: self.legacy_fat,
         }) {
             Ok(_) => self.session.until_unlisted(&self.image_path),
             Err(error) if error.refusal() == Some(&Refusal::ImageNotAttached) => Ok(()),
