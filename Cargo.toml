@@ -53,9 +53,6 @@ tauri-plugin-store = { path = "vendor/tauri-plugin-store" }
 # A raw copy keeps an encrypted entry's encrypted and data descriptor flags, so a
 # ZipCrypto entry kept through a zip edit still decrypts (#592).
 zip = { path = "vendor/zip" }
-# TEMPORARY: smb2 0.40.0 (named streams for copies, #405) until it is on crates.io. The
-# final commit of the branch drops this line.
-smb2 = { path = "/Users/veszelovszki/projects-git/vdavid/smb2/.claude/worktrees/streams-for-copies/crates/smb2" }
 
 # Optimized builds cross crate boundaries. Cargo's default (`lto = false`,
 # `codegen-units = 16`) inlines only `#[inline]` and generic functions between
