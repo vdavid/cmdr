@@ -251,7 +251,13 @@ impl S3Client {
     }
 
     /// Counts `request` under its S3 operation. A no-op outside tests.
-    #[cfg_attr(not(any(test, feature = "testing")), allow(clippy::unused_self))]
+    #[cfg_attr(
+        not(any(test, feature = "testing")),
+        allow(
+            clippy::unused_self,
+            reason = "the shipped build counts nothing; the test build reads `self`"
+        )
+    )]
     fn note_sent(&self, request: &S3Request) {
         #[cfg(any(test, feature = "testing"))]
         {
