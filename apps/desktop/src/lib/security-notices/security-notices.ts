@@ -1,8 +1,7 @@
 /**
  * The in-app notice for a refused access attempt (#457, the CRA's "report on possible
  * unauthorised access"): a web page reaching for the MCP server, a server reply refused for its
- * signature, an update that isn't a genuine Cmdr release. One isn't a refusal: a launch that came up in
- * MCP direct mode.
+ * signature, an update that isn't a genuine Cmdr release.
  *
  * The backend decides WHAT reaches the person and HOW OFTEN (`src-tauri/src/security_notices/`:
  * a typed `AccessNotice` per source, re-raised with the grown count at most once a minute). This
@@ -16,13 +15,10 @@
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import type { SecurityNoticeRaised } from '#lib/ipc/bindings.js'
 import type { ReportIncident } from '#lib/error-reporter/report-incident.js'
-import { onSecurityNoticeRaised, takeSecurityNoticesFromLaunch } from '#lib/tauri-commands/index.js'
+import { onSecurityNoticeRaised } from '#lib/tauri-commands/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import SecurityNoticeToastContent from './SecurityNoticeToastContent.svelte'
-import { getAppLogger } from '#lib/logging/logger.js'
 import { isDismissed, markDismissed, securityNoticeId } from './dismissed-notices'
-
-const log = getAppLogger('securityNotices')
 
 export { dismissSecurityNotice, _resetSecurityNoticesForTest } from './dismissed-notices'
 
@@ -47,7 +43,6 @@ export function announceSecurityNotice({ notice, count }: SecurityNoticeRaised):
   }
   switch (notice.kind) {
     case 'mcpForeignOrigin':
-    case 'mcpDirectModeOnAtLaunch':
     case 'smbSignatureRefused':
       addToast(SecurityNoticeToastContent, { ...shared, level: 'warn' })
       return
@@ -66,12 +61,6 @@ let unlisten: UnlistenFn | null = null
 export async function startSecurityNotices(): Promise<void> {
   if (unlisten) return
   unlisten = await onSecurityNoticeRaised(announceSecurityNotice)
-  // What launch raised before any window listened.
-  try {
-    for (const raised of await takeSecurityNoticesFromLaunch()) announceSecurityNotice(raised)
-  } catch (error) {
-    log.warn("Couldn't read the notices from launch: {error}", { error })
-  }
 }
 
 export function stopSecurityNotices(): void {

@@ -594,11 +594,8 @@ async fn it_refuses_an_outside_client_off_direct_mode_with_the_typed_reason() {
         &json!({ "type": TRANSFER }),
     )
     .await
-    .expect_err("this isn't an E2E run, and nobody turned the setting on");
-    assert_eq!(
-        error.data,
-        Some(json!({ "reason": "directModeOff", "setting": "developer.mcpDirectMode" }))
-    );
+    .expect_err("this isn't an E2E run, and nothing asked for direct mode");
+    assert_eq!(error.data, Some(json!({ "reason": "directModeOff" })));
 }
 
 #[tokio::test]

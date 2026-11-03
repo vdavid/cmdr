@@ -469,9 +469,6 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `，` is what keeps the row reading as one line with a box in the middle. ❗ Don't wrap it in `「」`: it's a widget,
   not a quoted name.
 
-- **MCP direct mode is `直接模式`, apart from the SMB `直接連線`.** `settings.developer.mcpDirectMode.label` names a
-  mode with no person in the loop; the SMB term names a connection, so sharing a word would read as one feature.
-
 - **Consent wording stays exact.** "Stay home" in `ai.cloudConsent.askCmdr.protectedContents` is `只會留在你的 Mac 上`.
   In `ai.cloudConsent.askCmdr.actions`, undoing an operation is `復原` (the dialog it opens) and tags' "no undo" is
   `無法還原`. "Detach" in `askCmdr.tool.eject.doing` is `卸下`, covering eject, unmount, and disconnect, since `退出`

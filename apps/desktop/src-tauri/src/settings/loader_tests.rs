@@ -107,12 +107,13 @@ fn restricted_window_settings_parse_set_values() {
     assert_eq!(parsed.appearance_app_color.as_deref(), Some("blue"));
 }
 
+/// Direct mode was once a setting. A file that still says it parses, and the key turns nothing on:
+/// direct mode comes from the environment only (`tools::policy::direct_mode`).
 #[test]
-fn direct_mode_reads_from_its_dotted_key_and_stays_unset_when_absent() {
-    let on = parse_settings(r#"{ "developer.mcpDirectMode": true }"#).expect("parses");
-    assert_eq!(on.developer_mcp_direct_mode, Some(true));
-    let absent = parse_settings("{}").expect("parses");
-    assert_eq!(absent.developer_mcp_direct_mode, None);
+fn a_stale_direct_mode_key_is_ignored_harmlessly() {
+    let parsed =
+        parse_settings(r#"{ "developer.mcpDirectMode": true, "developer.mcpEnabled": true }"#).expect("parses");
+    assert_eq!(parsed.developer_mcp_enabled, Some(true));
 }
 
 #[test]

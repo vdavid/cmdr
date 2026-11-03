@@ -19,18 +19,6 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "Az MCP közvetlen módja be van kapcsolva",
-  "@securityNotices.mcpDirectModeOn.title": {
-    "sourceHash": "5d0520c"
-  },
-  "securityNotices.mcpDirectModeOn.body": "A Cmdren kívüli AI-eszközök anélkül olvashatják a fájljaidat és erősíthetnek meg műveleteket, hogy megkérdeznének. Ha nem te kapcsoltad be, kapcsold ki az MCP-beállításokban.",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "sourceHash": "fd2972f"
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "MCP-beállítások",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "sourceHash": "c63c58c"
-  },
   "securityNotices.smbSignatureRefused.title": "A Cmdr elutasított egy választ innen: {name}",
   "@securityNotices.smbSignatureRefused.title": {
     "sourceHash": "aedb947"

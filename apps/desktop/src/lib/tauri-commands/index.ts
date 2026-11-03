@@ -520,7 +520,7 @@ export {
   onAgentWakeStatus,
   onAgentWakeStaged,
 } from './ask-cmdr'
-export { onSecurityNoticeRaised, takeSecurityNoticesFromLaunch } from './security-notices'
+export { onSecurityNoticeRaised } from './security-notices'
 export { onStateRecoveryQueued, takeStateRecoveries } from './state-recovery'
 export type {
   BulkRenameCheckProgress,
@@ -819,8 +819,6 @@ export {
   setMcpPort,
   getMcpRunning,
   getMcpPort,
-  setMcpDirectMode,
-  getMcpDirectMode,
   updateFileWatcherDebounce,
   updateServiceResolveTimeout,
   setDirectSmbConnection,

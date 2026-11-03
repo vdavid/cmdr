@@ -2864,8 +2864,7 @@
     ],
     "forms": "n.: connect directly → připojit se přímo; Try connecting directly → Zkusit se připojit přímo; Connected directly → Připojeno přímo; its opposite, the system connection → systémové připojení",
     "confidence": "high",
-    "sources": "MS (direct connection → přímé připojení); derived from the connect ruling (připojit)",
-    "note": "MCP direct mode is Přímý režim on the same root (settings.developer.mcpDirectMode.label); in prose přímý režim MCP."
+    "sources": "MS (direct connection → přímé připojení); derived from the connect ruling (připojit)"
   },
   "native": {
     "chosen": "nativní",

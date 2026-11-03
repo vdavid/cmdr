@@ -5,8 +5,6 @@ Must-knows in `CLAUDE.md`; the backend half (which events notify, the rate limit
 
 ## Per kind
 
-- **`mcpDirectModeOnAtLaunch`**: warn, persistent, drained at `startSecurityNotices` since `setup()` raised it before
-  any window listened. "MCP settings" opens Settings › AI › MCP server, where the toggle is.
 - **`mcpForeignOrigin`**: warn, persistent. "MCP settings" opens Settings › AI › MCP server
   (`openSettingsWindow('security-notice-toast', …)`) and closes the toast; Dismiss closes it for the session. A web page
   has no innocent setup story, so it stays up until the person answers it.

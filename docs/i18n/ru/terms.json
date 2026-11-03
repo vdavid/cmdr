@@ -1356,8 +1356,7 @@
     "accept": ["напрям", "прям"],
     "forms": "Connect directly → Подключиться напрямую; Cmdr's fast direct connection → быстрое прямое подключение Cmdr",
     "confidence": "high",
-    "sources": "MS (direct connect → прямое соединение); Thunar (Send directly → Отправить напрямую); macOS live Framework (directly connected → при непосредственном подключении)",
-    "note": "The MCP setting Direct mode shares the root: Прямой режим, in prose прямой режим MCP (settings.developer.mcpDirectMode.label). No pile source names it."
+    "sources": "MS (direct connect → прямое соединение); Thunar (Send directly → Отправить напрямую); macOS live Framework (directly connected → при непосредственном подключении)"
   },
   "directory-hotlist": {
     "chosen": "Избранные каталоги",

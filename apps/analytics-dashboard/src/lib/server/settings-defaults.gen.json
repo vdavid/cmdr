@@ -2837,7 +2837,6 @@
     "behavior.serversPinHintSeen": false,
     "behavior.switcherFavoritesExpanded": false,
     "behavior.textEditorHintSeen": false,
-    "developer.mcpDirectMode": false,
     "developer.mcpEnabled": false,
     "developer.mcpPort": 0,
     "developer.verboseLogging": false,

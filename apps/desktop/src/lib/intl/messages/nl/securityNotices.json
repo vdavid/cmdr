@@ -19,18 +19,6 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "Directe modus van de MCP-server staat aan",
-  "@securityNotices.mcpDirectModeOn.title": {
-    "sourceHash": "5d0520c"
-  },
-  "securityNotices.mcpDirectModeOn.body": "AI-tools buiten Cmdr kunnen je bestanden lezen en acties bevestigen zonder het je te vragen. Heb je dit niet zelf aangezet? Zet het dan uit in de MCP-instellingen.",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "sourceHash": "fd2972f"
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "MCP-instellingen",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "sourceHash": "c63c58c"
-  },
   "securityNotices.smbSignatureRefused.title": "Cmdr weigerde een antwoord van {name}",
   "@securityNotices.smbSignatureRefused.title": {
     "sourceHash": "aedb947"

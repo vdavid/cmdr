@@ -1221,8 +1221,7 @@
     "chosen": "пряме підʼєднання",
     "accept": ["прям", "напряму", "безпосередн"],
     "confidence": "tentative",
-    "sources": "MS (direct connect → пряме підключення); connect ruling (підʼєднати, macOS Finder and AppKit); no source names Cmdr's own SMB path",
-    "note": "MCP direct mode is «Прямий режим» on the same root (settings.developer.mcpDirectMode.label)."
+    "sources": "MS (direct connect → пряме підключення); connect ruling (підʼєднати, macOS Finder and AppKit); no source names Cmdr's own SMB path"
   },
   "directory-hotlist": {
     "chosen": "Обрані директорії",

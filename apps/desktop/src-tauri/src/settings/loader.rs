@@ -50,10 +50,6 @@ pub struct Settings {
     pub developer_mcp_enabled: Option<bool>,
     #[serde(alias = "developer.mcpPort", default)]
     pub developer_mcp_port: Option<u16>,
-    /// Display only: any same-user process can write this file, so it counts only with the secret
-    /// store's item behind it (`tools::policy::seed_direct_mode_at_launch`).
-    #[serde(alias = "developer.mcpDirectMode", default)]
-    pub developer_mcp_direct_mode: Option<bool>,
     #[serde(alias = "indexing.enabled", default)]
     pub indexing_enabled: Option<bool>,
     /// Drive-indexing freshness UX. All three gate FRONTEND behavior (the
@@ -208,7 +204,6 @@ impl Default for Settings {
             full_disk_access_choice: FullDiskAccessChoice::Unanswered,
             developer_mcp_enabled: None,
             developer_mcp_port: None,
-            developer_mcp_direct_mode: None,
             indexing_enabled: None,
             indexing_ask_for_each_drive: None,
             indexing_stale_notify: None,
@@ -319,7 +314,6 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     }
 
     let developer_mcp_enabled = json.get("developer.mcpEnabled").and_then(|v| v.as_bool());
-    let developer_mcp_direct_mode = json.get("developer.mcpDirectMode").and_then(|v| v.as_bool());
 
     let developer_mcp_port = json
         .get("developer.mcpPort")
@@ -387,7 +381,6 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         full_disk_access_choice,
         developer_mcp_enabled,
         developer_mcp_port,
-        developer_mcp_direct_mode,
         indexing_enabled,
         indexing_ask_for_each_drive,
         indexing_stale_notify,

@@ -15,12 +15,10 @@ import { mount, tick, unmount, flushSync } from 'svelte'
 const settingsState = {
   enabled: false as boolean,
   port: 0 as number,
-  directMode: false as boolean,
 }
 const tauriState = {
   running: false as boolean,
   actualPort: null as number | null,
-  directMode: false as boolean,
 }
 // Captured `onSpecificSettingChange` callbacks, keyed by setting id, so tests can simulate
 // a user editing the port or flipping the enabled toggle (the component reacts to these).
@@ -30,13 +28,11 @@ vi.mock('#lib/settings/settings-store.js', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'developer.mcpEnabled') return settingsState.enabled
     if (key === 'developer.mcpPort') return settingsState.port
-    if (key === 'developer.mcpDirectMode') return settingsState.directMode
     return undefined
   }),
   setSetting: vi.fn((key: string, value: unknown) => {
     if (key === 'developer.mcpEnabled') settingsState.enabled = value as boolean
     if (key === 'developer.mcpPort') settingsState.port = value as number
-    if (key === 'developer.mcpDirectMode') settingsState.directMode = value as boolean
     return Promise.resolve()
   }),
   resetSetting: vi.fn(),
@@ -56,17 +52,9 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   setMcpPort: vi.fn(() => Promise.resolve({ kind: 'stopped' })),
   getMcpRunning: vi.fn(() => Promise.resolve(tauriState.running)),
   getMcpPort: vi.fn(() => Promise.resolve(tauriState.actualPort)),
-  setMcpDirectMode: vi.fn(() => Promise.resolve({ on: false, survivesRestart: true })),
-  getMcpDirectMode: vi.fn(() => Promise.resolve(tauriState.directMode)),
 }))
 
-import {
-  checkPortAvailable,
-  findAvailablePort,
-  setMcpDirectMode,
-  setMcpEnabled,
-  setMcpPort,
-} from '#lib/tauri-commands/index.js'
+import { checkPortAvailable, findAvailablePort, setMcpEnabled, setMcpPort } from '#lib/tauri-commands/index.js'
 
 /** Drain the microtask queue so an enqueued operation chain (apply → outcome → sync) settles. */
 async function flushMicrotasks(): Promise<void> {
@@ -96,12 +84,9 @@ describe('McpServerSection', () => {
   beforeEach(() => {
     settingsState.enabled = false
     settingsState.port = 0
-    settingsState.directMode = false
     tauriState.running = false
     tauriState.actualPort = null
-    tauriState.directMode = false
     settingChangeCallbacks.clear()
-    ;(setMcpDirectMode as Mock).mockClear()
     ;(checkPortAvailable as Mock).mockClear()
     ;(setMcpPort as Mock).mockResolvedValue({ kind: 'stopped' })
     ;(setMcpEnabled as Mock).mockResolvedValue({ kind: 'stopped' })
@@ -227,80 +212,10 @@ describe('McpServerSection', () => {
     void unmount(component)
   })
 
-  describe('direct mode', () => {
-    it('is out of every tool’s reach, so only this section writes it', () => {
-      expect(getSettingDefinition('developer.mcpDirectMode')?.mcpSettable).toBe(false)
-      expect(getSettingDefinition('developer.mcpDirectMode')?.default).toBe(false)
-    })
-
-    it('sends a real toggle to the backend exactly once', async () => {
-      const { component } = await render()
-
-      settingsState.directMode = true
-      ;(setMcpDirectMode as Mock).mockResolvedValueOnce({ on: true, survivesRestart: true })
-      tauriState.directMode = true
-      settingChangeCallbacks.get('developer.mcpDirectMode')?.(true)
-      await flushMicrotasks()
-      await tick()
-
-      expect(setMcpDirectMode).toHaveBeenCalledTimes(1)
-      expect(setMcpDirectMode).toHaveBeenCalledWith(true)
-      void unmount(component)
-    })
-
-    it('takes the backend off when the row resets, so no item outlives the setting', async () => {
-      settingsState.directMode = true
-      tauriState.directMode = true
-      const { component } = await render()
-      await flushMicrotasks()
-
-      // What `resetSetting` tells its listeners: the default.
-      settingsState.directMode = false
-      tauriState.directMode = false
-      settingChangeCallbacks.get('developer.mcpDirectMode')?.(false)
-      await flushMicrotasks()
-      await tick()
-
-      expect(setMcpDirectMode).toHaveBeenCalledTimes(1)
-      expect(setMcpDirectMode).toHaveBeenCalledWith(false)
-      void unmount(component)
-    })
-
-    it('shows what the backend really has, since the saved value alone proves nothing', async () => {
-      // `settings.json` says on, and launch found nothing behind it.
-      settingsState.directMode = true
-      tauriState.directMode = false
-
-      const { component } = await render()
-      await flushMicrotasks()
-
-      expect(settingsState.directMode).toBe(false)
-      expect(setMcpDirectMode).not.toHaveBeenCalled()
-      void unmount(component)
-    })
-
-    it('ignores the echo of its own sync', async () => {
-      const { component } = await render()
-
-      settingChangeCallbacks.get('developer.mcpDirectMode')?.(false)
-      await flushMicrotasks()
-
-      expect(setMcpDirectMode).not.toHaveBeenCalled()
-      void unmount(component)
-    })
-
-    it('says so when the setting lasts only until Cmdr quits', async () => {
-      const { target, component } = await render()
-
-      settingsState.directMode = true
-      tauriState.directMode = true
-      ;(setMcpDirectMode as Mock).mockResolvedValueOnce({ on: true, survivesRestart: false })
-      settingChangeCallbacks.get('developer.mcpDirectMode')?.(true)
-      await flushMicrotasks()
-      await tick()
-
-      expect(target.textContent).toContain('until you quit Cmdr')
-      void unmount(component)
-    })
+  it('has no direct mode switch, since direct mode comes from the environment only', async () => {
+    const { target, component } = await render()
+    expect(getSettingDefinition('developer.mcpDirectMode' as never)).toBeUndefined()
+    expect(target.textContent).not.toMatch(/direct mode/i)
+    void unmount(component)
   })
 })

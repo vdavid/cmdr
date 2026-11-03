@@ -1502,22 +1502,6 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "Přímý režim",
-  "@settings.developer.mcpDirectMode.label": {
-    "sourceHash": "8273bcf"
-  },
-  "settings.developer.mcpDirectMode.description": "Umožní připojeným nástrojům AI číst vaše soubory a potvrzovat dialogová okna, aniž by se vás ptaly. Zapínejte to jen při testování nebo vývoji s nimi.",
-  "@settings.developer.mcpDirectMode.description": {
-    "sourceHash": "d85f109"
-  },
-  "settings.developer.mcpDirectMode.keywords": "testování, automatizace, potvrzení, obejít, vývojář, bez dotazu, nebezpečné",
-  "@settings.developer.mcpDirectMode.keywords": {
-    "sourceHash": "285cb60"
-  },
-  "settings.mcp.directModeThisSessionOnly": "Přímý režim zůstane zapnutý, dokud Cmdr neukončíte, protože tento počítač ho nedokáže bezpečně uchovat přes restart.",
-  "@settings.mcp.directModeThisSessionOnly": {
-    "sourceHash": "f5d30da"
-  },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59",

@@ -550,11 +550,11 @@ async fn nothing_past_a_person_runs_on_any_origin_either_way() {
     }
 }
 
-/// E2E runs in direct mode, and so does anyone who turned it on: that's for outside clients, and the
-/// agent never gets it.
+/// E2E runs in direct mode, and so does a dev build that asks for it: that's for outside clients, and
+/// the agent never gets it.
 #[tokio::test]
 async fn direct_mode_never_reaches_the_agent() {
-    crate::tools::policy::set_direct_mode_setting_for_test(true);
+    crate::tools::policy::set_direct_mode_for_test(true);
     assert!(crate::tools::policy::direct_mode());
     for (tool, params) in ways_past_a_person() {
         for call in both_ways(&tool, &params) {
@@ -574,7 +574,7 @@ async fn direct_mode_never_reaches_the_agent() {
     let front = FakeFrontend::new();
     let answer = front.call((ToolId::Quit, json!({})), TurnOrigin::Text).await;
     assert_eq!(answer["data"]["refusal"], "declined", "{answer}");
-    crate::tools::policy::set_direct_mode_setting_for_test(false);
+    crate::tools::policy::set_direct_mode_for_test(false);
 }
 
 /// Every tool the table has, read off it: a turn Cmdr started reaches reads, proposals, and memory, and

@@ -888,8 +888,7 @@
     "chosen": "közvetlen kapcsolat",
     "accept": ["közvetlen", "közvetlenül"],
     "confidence": "high",
-    "sources": "catalog (fileExplorer.pane.connectedDirectlyToast, fileExplorer.network.osMountFallback.message)",
-    "note": "The MCP setting Direct mode shares the root: Közvetlen mód (settings.developer.mcpDirectMode.label)."
+    "sources": "catalog (fileExplorer.pane.connectedDirectlyToast, fileExplorer.network.osMountFallback.message)"
   },
   "finder-extension": {
     "chosen": "Finder-bővítmény",

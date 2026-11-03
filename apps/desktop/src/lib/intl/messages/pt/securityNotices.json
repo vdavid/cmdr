@@ -19,18 +19,6 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "O modo direto do MCP está ativado",
-  "@securityNotices.mcpDirectModeOn.title": {
-    "sourceHash": "5d0520c"
-  },
-  "securityNotices.mcpDirectModeOn.body": "Ferramentas de IA fora do Cmdr podem ler seus arquivos e confirmar ações sem perguntar a você. Se não foi você quem ativou isso, desative nos ajustes do MCP.",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "sourceHash": "fd2972f"
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "Ajustes do MCP",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "sourceHash": "c63c58c"
-  },
   "securityNotices.smbSignatureRefused.title": "O Cmdr recusou uma resposta de {name}",
   "@securityNotices.smbSignatureRefused.title": {
     "sourceHash": "aedb947"

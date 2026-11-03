@@ -305,7 +305,7 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **The cloud AI consent stays exact.** `ai.cloudConsent.askCmdr.protectedContents`: "stay home" is
   `luôn ở lại trên máy Mac này`, and Messages and Notes are Apple's `Tin nhắn` and `Ghi chú` while Mail stays Mail
   (macOS `InfoPlist.loctable`). `ai.cloudConsent.askCmdr.actions`: "no undo" is `thẻ thì không thể hoàn tác`. ❌ Don't
-  hedge either. Direct mode is `Chế độ trực tiếp` (MS mode → `chế độ`; catalog `kết nối trực tiếp`).
+  hedge either.
 - **Two first persons, and they're not interchangeable.** David speaking is `mình` (`onboarding.stepBeta.greeting`,
   `.feedback.call`, `.star`, `.openBeta`); the USER speaking, as on a radio option, is `tôi`
   (`onboarding.stepAi.cloud.label` = `Có, tôi muốn AI`). Picking the wrong one flips who is talking.

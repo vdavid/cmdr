@@ -70,20 +70,6 @@ describe('a web page at the MCP server', () => {
   })
 })
 
-describe('a launch in MCP direct mode', () => {
-  it('says what the setting allows, and opens MCP settings or dismisses', async () => {
-    const notice: AccessNotice = { kind: 'mcpDirectModeOnAtLaunch' }
-    const target = await mountNotice(notice)
-    expect(target.textContent).toContain('MCP direct mode is on')
-    click(target, 'MCP settings')
-    await vi.waitFor(() => {
-      expect(openSettingsWindow).toHaveBeenCalledWith('security-notice-toast', ['AI', 'MCP server'])
-    })
-    click(target, 'Dismiss')
-    expect(dismissSecurityNotice).toHaveBeenCalledWith(notice)
-  })
-})
-
 describe('a refused server reply', () => {
   it('names the share, and reconnects or disconnects it', async () => {
     const target = await mountNotice({ kind: 'smbSignatureRefused', volumeId: 'smb-nas-photos' })

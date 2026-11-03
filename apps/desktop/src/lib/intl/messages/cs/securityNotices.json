@@ -19,18 +19,6 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "Přímý režim MCP je zapnutý",
-  "@securityNotices.mcpDirectModeOn.title": {
-    "sourceHash": "5d0520c"
-  },
-  "securityNotices.mcpDirectModeOn.body": "Nástroje AI mimo Cmdr můžou číst vaše soubory a potvrzovat akce, aniž by se vás ptaly. Pokud jste to nezapnuli vy, vypněte to v nastavení MCP.",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "sourceHash": "fd2972f"
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "Nastavení MCP",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "sourceHash": "c63c58c"
-  },
   "securityNotices.smbSignatureRefused.title": "Cmdr odmítl odpověď ze sdílené složky {name}",
   "@securityNotices.smbSignatureRefused.title": {
     "sourceHash": "aedb947"

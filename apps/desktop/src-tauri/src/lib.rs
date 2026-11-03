@@ -759,9 +759,6 @@ pub fn run() {
             app.manage(tools::ask::ToolAskRegistry::default());
             app.manage(ui_state::ArchivePasswordPromptStore::new());
 
-            // Before the server starts, so no request can see direct mode unsettled.
-            tools::policy::seed_direct_mode_at_launch(saved_settings.developer_mcp_direct_mode);
-
             // Start MCP server for AI agent integration
             // Use settings from user preferences, with env vars as override for dev
             let mcp_config = mcp::McpConfig::from_settings_and_env(

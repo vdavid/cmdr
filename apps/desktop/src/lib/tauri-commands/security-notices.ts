@@ -3,19 +3,11 @@
 // gate decides what reaches the person and how often (`src-tauri/src/security_notices/`).
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import { commands, events, type SecurityNoticeRaised } from '#lib/ipc/bindings.js'
-
-/**
- * What launch raised before any window listened (a launch in MCP direct mode), handed over once.
- */
-export function takeSecurityNoticesFromLaunch(): Promise<SecurityNoticeRaised[]> {
-  return commands.takeSecurityNoticesFromLaunch()
-}
+import { events, type SecurityNoticeRaised } from '#lib/ipc/bindings.js'
 
 /**
  * Subscribe to `security-notice-raised`. One-shot per raise and NOT seeded: a refusal raised before
- * this window existed was for a moment that's gone. A notice about launch itself waits for
- * {@link takeSecurityNoticesFromLaunch}.
+ * this window existed was for a moment that's gone.
  *
  * ⚠️ It reaches EVERY window. Subscribe from the main window only, or the settings window raises
  * its own copy of the toast.

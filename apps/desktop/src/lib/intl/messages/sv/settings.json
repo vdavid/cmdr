@@ -1506,22 +1506,6 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "Direktläge",
-  "@settings.developer.mcpDirectMode.label": {
-    "sourceHash": "8273bcf"
-  },
-  "settings.developer.mcpDirectMode.description": "Låt anslutna AI-verktyg läsa dina filer och bekräfta dialoger utan att fråga dig. Slå bara på det här när du testar eller utvecklar med dem.",
-  "@settings.developer.mcpDirectMode.description": {
-    "sourceHash": "d85f109"
-  },
-  "settings.developer.mcpDirectMode.keywords": "test, testning, automatisering, kringgå, utan bekräftelse, utvecklare, utveckling",
-  "@settings.developer.mcpDirectMode.keywords": {
-    "sourceHash": "285cb60"
-  },
-  "settings.mcp.directModeThisSessionOnly": "Direktläget är på tills du avslutar Cmdr, eftersom den här datorn inte kan behålla det på ett säkert sätt vid en omstart.",
-  "@settings.mcp.directModeThisSessionOnly": {
-    "sourceHash": "f5d30da"
-  },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59",

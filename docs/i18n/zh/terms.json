@@ -772,13 +772,6 @@
     "forms": "web link → 网页链接; “sits behind a DFS link” → 访问 X 要通过一个指向另一台服务器的链接 (`*.linkTargetUnreachable*`, one frame; a literal 链接后面 isn't natural Chinese)",
     "sources": "catalog (share-link and Google Drive link commands, viewer.markdown.link.*); MS terminology"
   },
-  "mcp-direct-mode": {
-    "chosen": "直接模式",
-    "confidence": "tentative",
-    "forms": "the toggle 直接模式; in prose MCP 直接模式",
-    "note": "Keep 直接 in step with 直接连接; no reference source names this Cmdr-only setting.",
-    "sources": "none in the pile; catalog 直接连接 (direct-connection) and 模式 (搜索模式, 跟随模式)"
-  },
   "mcp-server": {
     "chosen": "MCP 服务器",
     "confidence": "high",

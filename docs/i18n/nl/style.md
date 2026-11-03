@@ -256,10 +256,8 @@ second half is now a normal plural with a real verb
 - **Een leeg inline-vakje (`<field></field>`) hoort achter het scheidbare partikel**, niet ertussenin:
   `Vul je e-mailadres in <field></field> om …`. Het partikel hoort bij zijn werkwoord; het vakje komt daarna, op
   dezelfde plek als in het Engels.
-- **Direct mode heet `Directe modus`, en een compound op MCP werkt daar niet.** `MCP-directe modus` struikelt, dus de
-  toast zegt `Directe modus van de MCP-server staat aan` en de consent-tekst `de directe modus van MCP`. De
-  buitenstaander die via MCP verbindt, is een `AI-tool` (`AI-client` als naam van de bron); `hulpmiddel` blijft voor wat
-  de AI zelf aanroept (`askCmdr.tool.toolDetails.doing`).
+- **De buitenstaander die via MCP verbindt, is een `AI-tool`** (`AI-client` als naam van de bron); `hulpmiddel` blijft
+  voor wat de AI zelf aanroept (`askCmdr.tool.toolDetails.doing`).
 - **Een tool-regel die een venster opent, noemt de titel van dat venster:** `Opent het venster ‘Kopieer’`,
   `Venster ‘Nieuwe map’ geopend`. Zo zegt de regel eerlijk dat er nog niets gekopieerd is. Zonder vaste titel een
   compound: `zoekvenster`, `terugdraaivenster`.

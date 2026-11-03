@@ -78,11 +78,6 @@ fn recover_settings<R: Runtime>(app: &AppHandle<R>, path: &Path) {
     }
 }
 
-/// Whether this session replaced `settings.json`, so whatever a value in it vouched for is gone.
-pub fn settings_file_recovered() -> bool {
-    SETTINGS_RECOVERED.load(Ordering::Relaxed)
-}
-
 /// The stored `settings.json` as raw JSON, for a Rust reader that decides on consent (analytics).
 /// `Null` when there's no file (a first launch: the defaults). A file that's there but can't be
 /// read or parsed reads as every consent off, the same answer the frontend's store gives that

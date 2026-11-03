@@ -15,11 +15,11 @@ WebSocket to the LAN).
 
 ## Direct mode
 
-`pnpm dev` isn't enough for everything. Off direct mode a client refuses the `DevOnly` tools (`dialog_confirm`,
-`resolve_conflict`, `queue_move_locked`, `connect_to_server`, `ai_search`), memory, and file contents, with
-`data: { reason: "directModeOff", setting: "developer.mcpDirectMode" }`, and a `Sensitive` tool shows a person a
-question. An E2E or capture run of a debug or `playwright-e2e` build has it on; otherwise the Settings row is the only
-switch. `apps/desktop/src-tauri/src/tools/DETAILS.md` § Direct mode.
+Off direct mode a client refuses the `DevOnly` tools (`dialog_confirm`, `resolve_conflict`, `queue_move_locked`,
+`connect_to_server`, `ai_search`), memory, and file contents, with `data: { reason: "directModeOff" }`, and a
+`Sensitive` tool shows a person a question. To drive a dev app fully, start it with `CMDR_MCP_DIRECT_MODE=1 pnpm dev`.
+An E2E or capture run has it on by itself. Only debug and `playwright-e2e` builds honor either; a release build never
+has direct mode. `apps/desktop/src-tauri/src/tools/DETAILS.md` § Direct mode.
 
 ## Port discovery
 

@@ -882,7 +882,6 @@
     "chosen": "直接連線",
     "confidence": "high",
     "forms": "the setting label says 直接連接 (settings.network.directSmbConnection.label)",
-    "note": "The SMB connection only. MCP direct mode is a separate thing, 直接模式 (style.md § Notes and decisions).",
     "sources": "catalog fileExplorer.navigation.useDirectConnection, fileExplorer.pane.connectedDirectlyToast"
   },
   "finder-extension": {

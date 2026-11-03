@@ -30,13 +30,5 @@
   "securityNotices.updateNotGenuine.body": "Todas las actualizaciones tienen que llevar la firma de Cmdr, y esta no la lleva. No se instaló nada y tu Cmdr actual está intacto. Descarga la versión más reciente desde getcmdr.com y, por favor, cuéntaselo a David: puede que alguien esté manipulando las actualizaciones.",
   "@securityNotices.updateNotGenuine.body": {
     "sourceHash": "9af9fb9"
-  },
-  "securityNotices.mcpDirectModeOn.body": "Las herramientas de IA externas a Cmdr pueden leer tus archivos y confirmar acciones sin preguntarte. Si no lo activaste tú, desactívalo en la configuración de MCP.",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "sourceHash": "123a6d9"
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "Configuración de MCP",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "sourceHash": "aa20168"
   }
 }

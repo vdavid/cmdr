@@ -1504,22 +1504,6 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "直接模式",
-  "@settings.developer.mcpDirectMode.label": {
-    "sourceHash": "8273bcf"
-  },
-  "settings.developer.mcpDirectMode.description": "让已连接的 AI 工具不问你就读取你的文件、确认对话框。只在你用它们做测试或开发时才开启。",
-  "@settings.developer.mcpDirectMode.description": {
-    "sourceHash": "d85f109"
-  },
-  "settings.developer.mcpDirectMode.keywords": "测试、调试、自动化、开发、开发者、绕过、跳过确认、免确认、无人值守",
-  "@settings.developer.mcpDirectMode.keywords": {
-    "sourceHash": "285cb60"
-  },
-  "settings.mcp.directModeThisSessionOnly": "直接模式会一直开启到你退出 Cmdr，因为这台电脑没法在重启后安全地保留这项设置。",
-  "@settings.mcp.directModeThisSessionOnly": {
-    "sourceHash": "f5d30da"
-  },
   "settings.developer.mcpPort.label": "端口",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59"

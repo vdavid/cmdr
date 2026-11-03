@@ -1507,22 +1507,6 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "Direktmodus",
-  "@settings.developer.mcpDirectMode.label": {
-    "sourceHash": "8273bcf"
-  },
-  "settings.developer.mcpDirectMode.description": "Erlaube verbundenen KI-Werkzeugen, deine Dateien zu lesen und Dialoge zu bestätigen, ohne dich zu fragen. Schalte das nur ein, während du mit ihnen testest oder entwickelst.",
-  "@settings.developer.mcpDirectMode.description": {
-    "sourceHash": "d85f109"
-  },
-  "settings.developer.mcpDirectMode.keywords": "testen, Test, Automatisierung, automatisch, bestätigen, umgehen, Entwicklung, ohne Nachfrage",
-  "@settings.developer.mcpDirectMode.keywords": {
-    "sourceHash": "285cb60"
-  },
-  "settings.mcp.directModeThisSessionOnly": "Der Direktmodus bleibt eingeschaltet, bis du Cmdr beendest, weil dieser Computer ihn nicht sicher über einen Neustart hinweg behalten kann.",
-  "@settings.mcp.directModeThisSessionOnly": {
-    "sourceHash": "f5d30da"
-  },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59",

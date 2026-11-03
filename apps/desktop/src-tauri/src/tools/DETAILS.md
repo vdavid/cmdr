@@ -13,8 +13,8 @@ access)` in `policy.rs` is pure, is the only thing deciding, and answers Allow, 
 - Agent, on a turn Cmdr started (a wake, a follow-up): `Read`, `ReadContents`, `Propose`, and `Memory` allow; `DevOnly`
   refuses; the rest refuse `refusedInBackground`.
 - Outside client, direct: everything allows.
-- Outside client, not direct: `Sensitive` asks; `ReadContents`, `Memory`, and `DevOnly` refuse `directModeOff` naming
-  `developer.mcpDirectMode`; the rest allow.
+- Outside client, not direct (every release build): `Sensitive` asks; `ReadContents`, `Memory`, and `DevOnly` refuse
+  `directModeOff`; the rest allow.
 
 Dialogs are for "right now, on a turn you started"; proposals are for batches and background work. Both stay, and the
 system prompt says which to use.
@@ -263,7 +263,8 @@ client's disconnect as its cancel. A handler that needs it takes the table's `ct
 - `Caller::initiator` is who the operation log credits: `Agent` → `agent`, `External` → `aiClient`, whoever confirms it.
 - `Caller::guarded` is everything but `External { direct: true }`. What a guarded caller opens must arm before a keystroke
   can touch it (`apps/desktop/src/lib/ui/DETAILS.md` § The started-elsewhere guard), since someone may be typing elsewhere
-  as it appears. Direct mode is the way out: a person said this client may go past them.
+  as it appears. Direct mode is the way out: a test run or a developer's environment said this client may go past a
+  person.
 - `ToolCtx::stamp` puts both on an event's payload as `initiator` and `guard`. Every opener of a dialog or editor uses it,
   and so does a direct create. `mcp-listeners.ts` reads them failing closed: anything but `agent` is `aiClient`, ❌ never
   `user`, and only a plain `false` turns the guard off.
@@ -310,34 +311,27 @@ gate and before the handler, only when `admit` answers Ask, so direct mode never
 
 ## Direct mode
 
-The switch that lets an outside client use the tools that go past a person (`policy.rs`). The agent never gets it.
+What lets an outside client use the tools that go past a person (`policy.rs`). It exists so the E2E suite and an agent
+driving a dev build can reach everything. The agent never gets it, and ❌ no production user ever has it.
 
-- **On** when an E2E or capture run happens in a build that honors it (`E2E_HONORED`: debug or `playwright-e2e`), or when
-  `developer.mcpDirectMode` is on. A release build ignores the environment, since `CMDR_E2E_MODE` is readable in every
-  build.
+- **On** only in a build that honors the environment (`E2E_HONORED`: debug or `playwright-e2e`), and there only during an
+  E2E or capture run (`test_mode::automated_run`) or when `CMDR_MCP_DIRECT_MODE=1` asks (exactly `1`). `direct_mode()`
+  reads both per request. A test flips it with `set_direct_mode_for_test`.
+- **A release build is never in it**, whatever the environment, `settings.json`, or the Keychain say. Every variable is
+  readable in every build, so the build check is the whole guard; `a_release_build_is_never_direct_whatever_the_environment_says`
+  pins it.
+- **Decision: env only, no setting** (David, 2026-11-03). A Settings switch let a person (or a same-user process that
+  wrote `settings.json` and a Keychain item) hand an outside client Cmdr's Full Disk Access with nobody watching. A stale
+  `developer.mcpDirectMode` key in someone's `settings.json` parses and turns nothing on; launch reads no Keychain item
+  to clean anything up.
 - **Off**, a `DevOnly`, `ReadContents`, or `Memory` tool, and `multi_rename`'s media fields, refuse an outside client with
-  `data: { reason: "directModeOff", setting: "developer.mcpDirectMode" }` (`admit`). `tools/list` still lists them.
-  `mcp/handler.rs` reads an atomic per request, so a toggle applies to the next call.
-- **On**, an outside client's successful content read lands in the security log, by tool and never by path
-  (`McpContentRead`).
-- **Decision: the JSON value never turns it on by itself.** A same-user process with no Full Disk Access can write
-  `settings.json` or launch Cmdr with a crafted `CMDR_DATA_DIR`, then read `~/Documents` through Cmdr's Full Disk Access.
-  So launch seeds the atomic only when the JSON says on AND `secrets`'s `mcp.directMode` item reads through
-  `store().vouching()`. It reads the item only when the JSON says on, so nobody else gets a Keychain touch at launch. A
-  fallback file store vouches for nothing, so there the toggle lasts the session and the row says so.
+  `data: { reason: "directModeOff" }` (`admit`), saying the person can do it in Cmdr. `tools/list` still lists them.
 - **Decision: an outside client reads file contents only in direct mode.** `ReadContents` covers `inspect_file`,
   `image_facts`, and `search_photos`, and `multi_rename`'s media fields refuse the same way, closing the side door.
   Otherwise any local process able to read `mcp.token` could read what Cmdr's Full Disk Access reaches, silently. Reading
   `cmdr://` resources stays allowed.
-- **Gaps in this check are tracked privately** and reviewed before every release. The check itself:
-  `../secrets/DETAILS.md` § Vouching. The user-facing account: `docs/security.md` § MCP direct mode.
-- **The Settings row is the only writer** (`McpServerSection.svelte`, `set_mcp_direct_mode`). The setting is
-  `mcpSettable: false`, and the row shows what `get_mcp_direct_mode` answers, so a JSON value alone doesn't read as on.
-  Each real change, and a launch that comes up on, lands in the security log.
-- **A reset takes the item with it.** The row's reset reaches `set_mcp_direct_mode(false)` through
-  `McpServerSection`'s listener, and a recovered `settings.json` clears it at launch (`seed_direct_mode_at_launch`).
-- **A launch that comes up on tells the person** (`AccessNotice::McpDirectModeOnAtLaunch`), so direct mode is never on
-  quietly. It's raised in `setup()`, so the main window drains it through `take_security_notices_from_launch`.
+- **On**, an outside client's successful content read lands in the security log, by tool and never by path
+  (`McpContentRead`).
 
 ## The `Session` tier
 

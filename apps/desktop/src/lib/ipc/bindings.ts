@@ -2623,21 +2623,6 @@ export const commands = {
     typedError<AiApiKeyStatus, AiApiKeyError>(__TAURI_INVOKE('get_ai_api_key_status', { providerId })),
   deleteAiApiKey: (providerId: string) =>
     typedError<null, AiApiKeyError>(__TAURI_INVOKE('delete_ai_api_key', { providerId })),
-  /**
-   *  Turn direct mode on or off, called only by `McpServerSection.svelte`: the setting is
-   *  `mcpSettable: false`, so no tool can reach it. Blocks on the secret store, off the IPC thread.
-   */
-  setMcpDirectMode: (enabled: boolean) => __TAURI_INVOKE<McpDirectModeOutcome>('set_mcp_direct_mode', { enabled }),
-  /**
-   *  Returns whether the person's direct mode setting is really on in this process, which the JSON
-   *  value alone doesn't say. An automated run's direct mode doesn't show here.
-   */
-  getMcpDirectMode: () => __TAURI_INVOKE<boolean>('get_mcp_direct_mode'),
-  /**
-   *  Hands over what was raised before any window listened. The main window calls this once it
-   *  listens, and a second call answers nothing, so a reloaded webview doesn't say it twice.
-   */
-  takeSecurityNoticesFromLaunch: () => __TAURI_INVOKE<SecurityNoticeRaised[]>('take_security_notices_from_launch'),
   // Returns whether the MCP server is currently running.
   getMcpRunning: () => __TAURI_INVOKE<boolean>('get_mcp_running'),
   // Returns the port the MCP server is actually listening on, or null if not running.
@@ -5813,11 +5798,6 @@ export type AccessNotice =
   | { kind: 'smbSignatureRefused'; volumeId: string }
   // An offered update didn't carry Cmdr's signature, so nothing was installed.
   | { kind: 'updateNotGenuine'; version: string; check: SignatureCheck }
-  /**
-   *  Cmdr came up with MCP direct mode on, so outside clients can go past a person. Said at every
-   *  launch it's true, so direct mode is never on quietly (`tools/DETAILS.md` § Direct mode).
-   */
-  | { kind: 'mcpDirectModeOnAtLaunch' }
 
 // Active settings snapshot cached at startup for inclusion in crash reports.
 export type ActiveSettings = {
@@ -12202,15 +12182,6 @@ export type MaskError =
   | { type: 'unclosed'; at: number }
   // A placeholder Cmdr doesn't know, as typed between the brackets.
   | { type: 'unknown'; placeholder: string }
-
-/**
- *  What turning direct mode on or off came to. `survives_restart` is false when this store can't
- *  back the setting, so it lasts until Cmdr quits.
- */
-export type McpDirectModeOutcome = {
-  on: boolean
-  survivesRestart: boolean
-}
 
 /**
  *  `mcp-settings-close`: ask the settings window to close itself. Emitted via a

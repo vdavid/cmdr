@@ -132,10 +132,7 @@ fn media_fields_answer_what_a_contents_tool_answers() {
     use crate::tools::policy::Caller;
 
     let refused = media_fields_admitted(Caller::External { direct: false }).expect_err("off direct mode");
-    assert_eq!(
-        refused.data,
-        Some(json!({ "reason": "directModeOff", "setting": "developer.mcpDirectMode" }))
-    );
+    assert_eq!(refused.data, Some(json!({ "reason": "directModeOff" })));
     assert!(media_fields_admitted(Caller::External { direct: true }).is_ok());
     for origin in [TurnOrigin::Text, TurnOrigin::Wake] {
         assert!(media_fields_admitted(Caller::Agent { origin }).is_ok(), "{origin:?}");

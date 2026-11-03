@@ -1504,22 +1504,6 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "直接模式",
-  "@settings.developer.mcpDirectMode.label": {
-    "sourceHash": "8273bcf"
-  },
-  "settings.developer.mcpDirectMode.description": "讓已連接的 AI 工具不問你就讀取你的檔案、確認對話方塊。只在你用它們測試或開發時才開啟。",
-  "@settings.developer.mcpDirectMode.description": {
-    "sourceHash": "d85f109"
-  },
-  "settings.developer.mcpDirectMode.keywords": "測試, 自動化, 自動, 確認, 略過, 跳過, 開發, 開發者",
-  "@settings.developer.mcpDirectMode.keywords": {
-    "sourceHash": "285cb60"
-  },
-  "settings.mcp.directModeThisSessionOnly": "直接模式會維持開啟到你結束 Cmdr，因為這台電腦無法在重新啟動後安全地保留它。",
-  "@settings.mcp.directModeThisSessionOnly": {
-    "sourceHash": "f5d30da"
-  },
   "settings.developer.mcpPort.label": "連接埠",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59"

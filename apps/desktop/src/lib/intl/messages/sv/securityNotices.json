@@ -19,18 +19,6 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "MCP-direktläget är på",
-  "@securityNotices.mcpDirectModeOn.title": {
-    "sourceHash": "5d0520c"
-  },
-  "securityNotices.mcpDirectModeOn.body": "AI-verktyg utanför Cmdr kan läsa dina filer och bekräfta åtgärder utan att fråga dig. Om du inte har slagit på det här, stäng av det i MCP-inställningar.",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "sourceHash": "fd2972f"
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "MCP-inställningar",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "sourceHash": "c63c58c"
-  },
   "securityNotices.smbSignatureRefused.title": "Cmdr avvisade ett svar från {name}",
   "@securityNotices.smbSignatureRefused.title": {
     "sourceHash": "aedb947"

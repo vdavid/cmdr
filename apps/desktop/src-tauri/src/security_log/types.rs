@@ -26,14 +26,8 @@ pub enum SecurityEvent {
     McpServerTurnedOff {
         by: Initiator,
     },
-    /// Direct mode went on or off: outside clients may then go past a person. `by: launch` means this
-    /// launch came up with it on.
-    McpDirectModeChanged {
-        on: bool,
-        by: Initiator,
-    },
-    /// An outside client read file contents through Cmdr, under direct mode, with `tool`. Never the
-    /// path.
+    /// An outside client read file contents through Cmdr, under direct mode (a dev or test build
+    /// only), with `tool`. Never the path.
     McpContentRead {
         tool: ContentTool,
     },
@@ -279,7 +273,6 @@ mod tests {
         match event {
             SecurityEvent::CloudAiConsentGiven | SecurityEvent::CloudAiConsentWithdrawn => &[],
             SecurityEvent::McpServerTurnedOn { .. } | SecurityEvent::McpServerTurnedOff { .. } => &["by"],
-            SecurityEvent::McpDirectModeChanged { .. } => &["on", "by"],
             SecurityEvent::McpContentRead { .. } => &["tool"],
             SecurityEvent::McpRejectionsStarted { .. } => &["reason"],
             SecurityEvent::McpRejectionsEnded { .. } => &["reason", "count"],
@@ -315,13 +308,6 @@ mod tests {
             (
                 SecurityEvent::McpServerTurnedOff { by: Initiator::User },
                 r#"{"kind":"mcp_server_turned_off","by":"user"}"#,
-            ),
-            (
-                SecurityEvent::McpDirectModeChanged {
-                    on: true,
-                    by: Initiator::Launch,
-                },
-                r#"{"kind":"mcp_direct_mode_changed","on":true,"by":"launch"}"#,
             ),
             (
                 SecurityEvent::McpRejectionsStarted {

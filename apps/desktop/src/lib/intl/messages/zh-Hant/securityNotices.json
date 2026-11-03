@@ -19,18 +19,6 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "MCP 直接模式已開啟",
-  "@securityNotices.mcpDirectModeOn.title": {
-    "sourceHash": "5d0520c"
-  },
-  "securityNotices.mcpDirectModeOn.body": "Cmdr 以外的 AI 工具可以不問你就讀取你的檔案、確認動作。如果這不是你開啟的，請到「MCP 設定」把它關掉。",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "sourceHash": "fd2972f"
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "MCP 設定",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "sourceHash": "c63c58c"
-  },
   "securityNotices.smbSignatureRefused.title": "Cmdr 拒絕了來自 {name} 的回覆",
   "@securityNotices.smbSignatureRefused.title": {
     "sourceHash": "aedb947"

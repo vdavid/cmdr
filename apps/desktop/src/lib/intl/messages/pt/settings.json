@@ -1506,22 +1506,6 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "Modo direto",
-  "@settings.developer.mcpDirectMode.label": {
-    "sourceHash": "8273bcf"
-  },
-  "settings.developer.mcpDirectMode.description": "Permite que ferramentas de IA conectadas leiam seus arquivos e confirmem caixas de diálogo sem perguntar a você. Ative isso só enquanto estiver testando ou desenvolvendo com elas.",
-  "@settings.developer.mcpDirectMode.description": {
-    "sourceHash": "d85f109"
-  },
-  "settings.developer.mcpDirectMode.keywords": "testes, automação, confirmação, pular confirmação, sem supervisão, desenvolvedor, desenvolvimento",
-  "@settings.developer.mcpDirectMode.keywords": {
-    "sourceHash": "285cb60"
-  },
-  "settings.mcp.directModeThisSessionOnly": "O modo direto fica ativado até você encerrar o Cmdr, porque este computador não consegue mantê-lo com segurança depois de reiniciar.",
-  "@settings.mcp.directModeThisSessionOnly": {
-    "sourceHash": "f5d30da"
-  },
   "settings.developer.mcpPort.label": "Porta",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59"

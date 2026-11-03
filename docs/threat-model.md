@@ -120,10 +120,8 @@ risk.
     or `quoted form of`.
 - **Residual risk**:
   - With MCP turned on, a holder of the token can work the app and read Cmdr's own views and what it shows, and can open
-    dialogs a person confirms. With direct mode on too, it can read file contents and run destructive tools without a
-    dialog; that's the feature, for the developer who turned it on.
-  - Gaps found in MCP direct mode's check are tracked privately and reviewed before every release (`docs/security.md` §
-    MCP direct mode).
+    dialogs a person confirms. It can't read file contents or confirm a dialog itself. Direct mode, which can, exists
+    only in debug and `playwright-e2e` builds (`docs/security.md` § MCP direct mode).
   - `llama-server` has no API key, so any local process or user can run inference on it. It holds no user data beyond
     the current request. Low.
   - Keychain items use the default access control, so the user's other processes are trusted the way macOS trusts them.

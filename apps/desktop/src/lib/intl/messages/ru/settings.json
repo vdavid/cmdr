@@ -1502,22 +1502,6 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "Прямой режим",
-  "@settings.developer.mcpDirectMode.label": {
-    "sourceHash": "8273bcf"
-  },
-  "settings.developer.mcpDirectMode.description": "Подключенные инструменты ИИ смогут читать ваши файлы и подтверждать диалоговые окна, не спрашивая вас. Включайте этот режим только на время тестирования или разработки с ними.",
-  "@settings.developer.mcpDirectMode.description": {
-    "sourceHash": "d85f109"
-  },
-  "settings.developer.mcpDirectMode.keywords": "тестирование, автоматизация, подтверждение, обход, разработчик, без вопросов",
-  "@settings.developer.mcpDirectMode.keywords": {
-    "sourceHash": "285cb60"
-  },
-  "settings.mcp.directModeThisSessionOnly": "Прямой режим останется включенным, пока вы не завершите Cmdr: на этом компьютере его нельзя безопасно сохранить после перезапуска.",
-  "@settings.mcp.directModeThisSessionOnly": {
-    "sourceHash": "f5d30da"
-  },
   "settings.developer.mcpPort.label": "Порт",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59"

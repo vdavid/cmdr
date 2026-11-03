@@ -17,8 +17,6 @@ key noted where it differs from the field name.
   mechanically, so tests on each side stand in for a parity check.
 - `full_disk_access_choice`: consulted at launch by the FDA gate, via `read_fda_choice` (registry key, falling back to
   the pre-migration top-level name, and reporting a value it can't parse).
-- `developer_mcp_direct_mode: Option<bool>`: display only, since any same-user process can write this file. It counts at
-  launch only with its `secrets` item behind it (`tools/DETAILS.md` § Direct mode).
 - `developer_mcp_enabled: Option<bool>`. Absent (the common case) → `None` → `mcp/config.rs` uses its
   env → setting → debug-build-on fallback. The FE settings store persists sparsely (only keys an actor explicitly
   set), so it doesn't write the registry-default `false` here as if it were a user choice. An older data dir may

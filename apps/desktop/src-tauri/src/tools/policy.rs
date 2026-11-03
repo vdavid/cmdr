@@ -1,11 +1,12 @@
 //! Who may run what: [`admit`], the one decision, over who's calling ([`Caller`], [`ToolCtx`]) and
-//! what a tool does ([`Access`]). And direct mode: the switch that lets an outside MCP client use the
-//! tools that go past a person.
+//! what a tool does ([`Access`]). And direct mode: what lets an outside MCP client use the tools that
+//! go past a person.
 //!
-//! Direct mode is on in an E2E run of a build that honors it, or when the person turned on
-//! `developer.mcpDirectMode` in Settings. The agent never gets it. The decision record, and what the
-//! Keychain item does and doesn't prove: `DETAILS.md` § Direct mode.
+//! Direct mode is on only in a build that honors the environment (debug or `playwright-e2e`), during
+//! an automated run or when `CMDR_MCP_DIRECT_MODE=1` asks. A release build is never in it, and the
+//! agent never gets it. `DETAILS.md` § Direct mode.
 
+#[cfg(test)]
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use cmdr_operation_log::types::Initiator;
@@ -16,7 +17,6 @@ use super::actions::ToolError;
 use super::ask::AskFacts;
 use super::registry::Access;
 use crate::agent::types::TurnOrigin;
-use crate::secrets::{SecretStore, SecretStoreError};
 use crate::security_log::{ContentTool, SecurityEvent};
 use crate::test_mode::{self, AutomatedRun};
 
@@ -103,7 +103,7 @@ impl Refusal {
                 "Ask Cmdr can't run {name}: {reason}. Say what you'd like the user to do; they answer it in Cmdr."
             ),
             Refusal::DirectModeOff => format!(
-                "The {name} tool needs direct mode. A person can turn it on in Cmdr, in Settings > AI > MCP server."
+                "Outside clients can't run {name}. Tell the person what you'd like done, and they'll do it in Cmdr."
             ),
         }
     }
@@ -111,7 +111,7 @@ impl Refusal {
     /// The refusal as a tool answer. `data` is the contract; the message is the human half.
     pub fn into_error(self, name: &str) -> ToolError {
         let data = match self {
-            Refusal::DirectModeOff => json!({ "reason": DIRECT_MODE_OFF, "setting": DIRECT_MODE_SETTING_ID }),
+            Refusal::DirectModeOff => json!({ "reason": DIRECT_MODE_OFF }),
             Refusal::InBackground | Refusal::DevOnly(_) => json!({ "refusal": self.token() }),
         };
         ToolError::invalid_params(self.message(name)).with_data(data)
@@ -150,8 +150,8 @@ impl Caller {
     }
 
     /// Whether what this caller opens must arm before a keystroke can touch it, since someone may be
-    /// typing elsewhere as it appears. Direct mode is the one way out: it means a person said this
-    /// client may go past them.
+    /// typing elsewhere as it appears. Direct mode is the one way out: it means a test run or a
+    /// developer's environment said this client may go past a person.
     pub fn guarded(self) -> bool {
         !matches!(self, Caller::External { direct: true })
     }
@@ -191,153 +191,52 @@ impl ToolCtx {
     }
 }
 
-/// The setting a refusal names, so a client's author knows what to turn on.
-const DIRECT_MODE_SETTING_ID: &str = "developer.mcpDirectMode";
-
 /// The token a refusal carries in `data.reason`.
 const DIRECT_MODE_OFF: &str = "directModeOff";
 
-/// The `secrets` item that backs the setting. `settings.json` is display only, since any same-user
-/// process can write it. ❌ Keep it out of reach of every other secret's key: a key an outsider
-/// chooses must never land on this name.
-const DIRECT_MODE_ITEM: &str = "mcp.directMode";
-const DIRECT_MODE_ITEM_VALUE: &[u8] = b"on";
+/// The variable that asks for direct mode outside an automated run, so an agent can drive a
+/// `pnpm dev` app fully. `1` is the only value that asks.
+const DIRECT_MODE_ENV: &str = "CMDR_MCP_DIRECT_MODE";
 
-/// Whether this build lets an automated run turn direct mode on. `CMDR_E2E_MODE` is readable in
-/// every build, so a release build ignoring it is what keeps an environment variable from being a
-/// way past a person. The same guard as `secrets::PLAINTEXT_OVERRIDE_HONORED`.
+/// Whether this build honors the environment's say on direct mode at all. Every variable is
+/// readable in every build, so a release build ignoring them is what keeps an environment variable
+/// from being a way past a person. The same guard as `secrets::PLAINTEXT_OVERRIDE_HONORED`.
 const E2E_HONORED: bool = cfg!(any(debug_assertions, feature = "playwright-e2e"));
 
-/// The person's setting, as this process believes it. Written only by [`seed_direct_mode_at_launch`]
-/// and [`set_direct_mode`], and read per request, so a toggle applies to the next call.
-static DIRECT_MODE_SETTING: AtomicBool = AtomicBool::new(false);
+/// A test's say on direct mode, so it can show what direct mode changes without touching the
+/// process environment other tests read.
+#[cfg(test)]
+static DIRECT_MODE_FOR_TEST: AtomicBool = AtomicBool::new(false);
 
-/// Whether an outside client is in direct mode right now.
+/// Whether an outside client is in direct mode right now. Read per request, from the environment
+/// only: no setting, no file, and no Keychain item can turn it on.
 pub fn direct_mode() -> bool {
+    #[cfg(test)]
+    if DIRECT_MODE_FOR_TEST.load(Ordering::Relaxed) {
+        return true;
+    }
     direct_mode_from(
         E2E_HONORED,
         test_mode::automated_run(),
-        DIRECT_MODE_SETTING.load(Ordering::Relaxed),
+        env_asks_for_direct_mode(std::env::var(DIRECT_MODE_ENV).ok().as_deref()),
     )
 }
 
-/// Flips the setting in this process only, so a test can say what direct mode changes with no
-/// Keychain anywhere near it.
+/// Turns direct mode on or off for this process's tests.
 #[cfg(test)]
-pub(crate) fn set_direct_mode_setting_for_test(on: bool) {
-    DIRECT_MODE_SETTING.store(on, Ordering::Relaxed);
+pub(crate) fn set_direct_mode_for_test(on: bool) {
+    DIRECT_MODE_FOR_TEST.store(on, Ordering::Relaxed);
 }
 
-/// The person's setting alone, without an automated run: what the Settings row shows.
-pub fn direct_mode_setting() -> bool {
-    DIRECT_MODE_SETTING.load(Ordering::Relaxed)
+fn env_asks_for_direct_mode(value: Option<&str>) -> bool {
+    value == Some("1")
 }
 
 /// Pure core of [`direct_mode`]. `e2e_honored` is [`E2E_HONORED`], passed in so tests can cover the
-/// release arm. Any run counts, `capture` included: it's an E2E run that also takes screenshots.
-fn direct_mode_from(e2e_honored: bool, run: AutomatedRun, setting: bool) -> bool {
-    (e2e_honored && run != AutomatedRun::None) || setting
-}
-
-/// What launch makes of the saved setting: on only when `settings.json` says on AND the store's item
-/// backs it. Both closures run only when the JSON says on, so nobody else pays at launch: asking
-/// whether the store is file-backed opens it, which on Linux is a keyring probe. A file-backed store
-/// can't vouch for anything, so there the toggle lasts one session.
-fn direct_mode_at_launch(
-    json_on: bool,
-    file_backed: impl FnOnce() -> bool,
-    item_backs_it: impl FnOnce() -> bool,
-) -> bool {
-    json_on && !file_backed() && item_backs_it()
-}
-
-/// Whether the store's item says direct mode is on. A refused read means the item is there and won't
-/// read without a prompt, so it doesn't count.
-fn item_backs_direct_mode(store: &dyn SecretStore) -> bool {
-    match store.get(DIRECT_MODE_ITEM) {
-        Ok(value) => value == DIRECT_MODE_ITEM_VALUE,
-        Err(SecretStoreError::NotFound(_)) => {
-            log::warn!(target: "mcp::direct_mode", "The saved setting says on, with no item behind it, so direct mode stays off");
-            false
-        }
-        Err(error) => {
-            log::warn!(target: "mcp::direct_mode", "Direct mode stays off, since its item doesn't read without a prompt: {error}");
-            false
-        }
-    }
-}
-
-/// A reset of `settings.json` takes the item with it, so a reset setting stays reset. This is
-/// for the recovery that replaces the file; the Settings row's own reset goes through
-/// [`set_direct_mode`].
-fn forget_item_after_settings_reset(store: &dyn SecretStore) {
-    // allowed-discarded-outcome: it logs a refusal, and launch has nobody to answer
-    persist_direct_mode(store, false, false);
-}
-
-/// Reads the saved setting into the atomic, before the MCP server starts. Records a launch that came
-/// up in direct mode.
-pub fn seed_direct_mode_at_launch(saved: Option<bool>) {
-    if crate::state_recovery::settings_file_recovered() {
-        forget_item_after_settings_reset(crate::secrets::store().vouching());
-    }
-    let on = direct_mode_at_launch(saved == Some(true), crate::secrets::is_file_backed, || {
-        item_backs_direct_mode(crate::secrets::store().vouching())
-    });
-    DIRECT_MODE_SETTING.store(on, Ordering::Relaxed);
-    if let Some(event) = launch_event(on) {
-        crate::security_log::record(event);
-    }
-}
-
-fn launch_event(on: bool) -> Option<SecurityEvent> {
-    on.then_some(SecurityEvent::McpDirectModeChanged {
-        on: true,
-        by: crate::security_log::Initiator::Launch,
-    })
-}
-
-/// What a toggle did. `survives_restart` is false when the setting lasts this session only, because
-/// the store can't back it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DirectModeChange {
-    pub changed: bool,
-    pub survives_restart: bool,
-}
-
-/// Turns direct mode on or off for this session and writes the item that backs it across a restart.
-/// Off takes effect first, so a store that refuses can't keep it on.
-pub fn set_direct_mode(on: bool) -> DirectModeChange {
-    let was = DIRECT_MODE_SETTING.swap(on, Ordering::Relaxed);
-    let survives_restart =
-        persist_direct_mode(crate::secrets::store().vouching(), crate::secrets::is_file_backed(), on);
-    DirectModeChange {
-        changed: was != on,
-        survives_restart,
-    }
-}
-
-/// Writes or removes the item. Answers whether what's stored now matches `on`.
-fn persist_direct_mode(store: &dyn SecretStore, file_backed: bool, on: bool) -> bool {
-    if !on {
-        return match store.delete(DIRECT_MODE_ITEM) {
-            Ok(()) | Err(SecretStoreError::NotFound(_)) => true,
-            Err(error) => {
-                log::warn!(target: "mcp::direct_mode", "Couldn't remove direct mode's item: {error}");
-                false
-            }
-        };
-    }
-    if file_backed {
-        return false;
-    }
-    match store.set(DIRECT_MODE_ITEM, DIRECT_MODE_ITEM_VALUE) {
-        Ok(()) => true,
-        Err(error) => {
-            log::warn!(target: "mcp::direct_mode", "Direct mode lasts this session only: {error}");
-            false
-        }
-    }
+/// release arm, where it's always off. Any run counts, `capture` included: it's an E2E run that
+/// also takes screenshots.
+fn direct_mode_from(e2e_honored: bool, run: AutomatedRun, env_asks: bool) -> bool {
+    e2e_honored && (run != AutomatedRun::None || env_asks)
 }
 
 #[cfg(test)]
@@ -402,11 +301,13 @@ mod tests {
     }
 
     #[test]
-    fn a_release_build_ignores_an_automated_run() {
-        // `CMDR_E2E_MODE` is readable in every build, so honoring it there would make an
+    fn a_release_build_is_never_direct_whatever_the_environment_says() {
+        // Both variables are readable in every build, so honoring either there would make an
         // environment variable a way past a person.
         for run in RUNS {
-            assert!(!direct_mode_from(false, run, false), "{run:?}");
+            for env_asks in [false, true] {
+                assert!(!direct_mode_from(false, run, env_asks), "{run:?} {env_asks}");
+            }
         }
     }
 
@@ -418,40 +319,18 @@ mod tests {
     }
 
     #[test]
-    fn the_setting_works_in_every_build_and_every_run() {
-        for honored in [false, true] {
-            for run in RUNS {
-                assert!(direct_mode_from(honored, run, true), "{honored} {run:?}");
-            }
+    fn the_env_var_turns_it_on_in_a_build_that_honors_it() {
+        for run in RUNS {
+            assert!(direct_mode_from(true, run, true), "{run:?}");
         }
     }
 
-    /// The whole launch truth table, with the release guard in force.
     #[test]
-    fn launch_comes_up_direct_only_when_the_json_and_the_item_agree() {
-        let release = |json: bool, file_backed: bool, item: bool| {
-            let setting = direct_mode_at_launch(json, || file_backed, || item);
-            direct_mode_from(false, AutomatedRun::None, setting)
-        };
-        assert!(release(true, false, true), "JSON on, item there");
-        assert!(!release(true, false, false), "JSON on, item absent");
-        assert!(!release(false, false, true), "JSON off, item there");
-        assert!(!release(false, false, false), "both off");
-        assert!(!release(true, true, true), "a file-backed store vouches for nothing");
-    }
-
-    #[test]
-    fn launch_reads_the_item_only_when_the_json_says_on() {
-        // A locked Keychain raises a password prompt, so a person who never turned this on must
-        // not pay for it at every launch.
-        let on = direct_mode_at_launch(
-            false,
-            || panic!("the store was opened with the JSON off"),
-            || panic!("the item was read with the JSON off"),
-        );
-        assert!(!on);
-        let on = direct_mode_at_launch(true, || true, || panic!("a file-backed store's item was read"));
-        assert!(!on);
+    fn only_exactly_one_asks_for_it() {
+        assert!(env_asks_for_direct_mode(Some("1")));
+        for value in [None, Some(""), Some("0"), Some("true"), Some("yes"), Some(" 1")] {
+            assert!(!env_asks_for_direct_mode(value), "{value:?}");
+        }
     }
 
     /// Every class, by hand, so a new one can't reach the matrix unseen (`every_class` is exhaustive).
@@ -531,14 +410,17 @@ mod tests {
     }
 
     #[test]
-    fn a_direct_mode_refusal_names_the_setting_in_its_typed_data() {
+    fn a_direct_mode_refusal_carries_its_typed_reason_and_no_setting_to_flip() {
         for access in [Access::DevOnly("a reason"), Access::ReadContents, Access::Memory] {
             let Verdict::Refuse(refusal) = admit(OFF_DIRECT, access) else {
                 panic!("{access:?} refuses off direct mode");
             };
+            let error = refusal.into_error("resolve_conflict");
+            assert_eq!(error.data, Some(json!({ "reason": "directModeOff" })));
             assert_eq!(
-                refusal.into_error("resolve_conflict").data,
-                Some(json!({ "reason": "directModeOff", "setting": "developer.mcpDirectMode" }))
+                error.message,
+                "Outside clients can't run resolve_conflict. Tell the person what you'd like done, and they'll do \
+                 it in Cmdr."
             );
         }
     }
@@ -597,63 +479,5 @@ mod tests {
                 _ => assert_eq!(hints.destructive_hint, Some(false), "{access:?}"),
             }
         }
-    }
-
-    #[test]
-    fn the_item_round_trips_and_turning_off_removes_it() {
-        let _guard = crate::test_support::isolate_secrets();
-        let store = crate::secrets::store().vouching();
-
-        assert!(!item_backs_direct_mode(store), "nothing is stored yet");
-        assert!(persist_direct_mode(store, false, true));
-        assert!(item_backs_direct_mode(store));
-        assert!(persist_direct_mode(store, false, false));
-        assert!(!item_backs_direct_mode(store), "off removes it");
-        assert!(persist_direct_mode(store, false, false), "off while off is fine");
-    }
-
-    #[test]
-    fn a_recovered_settings_file_takes_the_item_with_it() {
-        let _guard = crate::test_support::isolate_secrets();
-        let store = crate::secrets::store().vouching();
-        assert!(persist_direct_mode(store, false, true));
-
-        forget_item_after_settings_reset(store);
-
-        assert!(
-            !item_backs_direct_mode(store),
-            "nothing is left to vouch for a later JSON value"
-        );
-    }
-
-    #[test]
-    fn a_file_backed_store_writes_nothing_and_says_the_setting_lasts_this_session() {
-        let _guard = crate::test_support::isolate_secrets();
-        let store = crate::secrets::store().vouching();
-
-        assert!(!persist_direct_mode(store, true, true));
-        assert!(!item_backs_direct_mode(store));
-    }
-
-    #[test]
-    fn an_item_with_some_other_value_backs_nothing() {
-        let _guard = crate::test_support::isolate_secrets();
-        let store = crate::secrets::store().vouching();
-
-        store.set(DIRECT_MODE_ITEM, b"yes").expect("the test store writes");
-        assert!(!item_backs_direct_mode(store));
-    }
-
-    #[test]
-    fn only_a_launch_that_came_up_direct_is_recorded() {
-        use crate::security_log::Initiator;
-        assert_eq!(
-            launch_event(true),
-            Some(SecurityEvent::McpDirectModeChanged {
-                on: true,
-                by: Initiator::Launch
-            })
-        );
-        assert_eq!(launch_event(false), None);
     }
 }

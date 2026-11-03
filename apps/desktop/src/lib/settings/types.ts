@@ -734,7 +734,6 @@ export interface SettingsValues {
   // Developer
   'developer.mcpEnabled': boolean
   'developer.mcpPort': number
-  'developer.mcpDirectMode': boolean
   'developer.verboseLogging': boolean
 
   // Advanced

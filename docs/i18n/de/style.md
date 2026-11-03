@@ -329,9 +329,9 @@ Dateien".
   natürliches Passiv hat.
 - **„This opens {name}“ → `Damit wird {name} … geöffnet`** (`ui.toolAsk.*`): Das Passiv hält `{name}` aus einer
   Kasus-Stelle heraus. `mit {app}` statt `in {app}`, wie „Öffnen mit“.
-- **direct mode → `Direktmodus` / `MCP-Direktmodus`** (`settings.developer.mcpDirectMode.label`). „stay home“ →
-  `bleiben zu Hause` (`ai.cloudConsent.askCmdr.protectedContents`): bewusst wörtlich, weil eine weichere Form das
-  Versprechen abschwächt. „Their names“ → `Die Dateinamen`, weil `Ihre` auf das letzte Nomen der Liste zurückgriffe.
+- **„stay home“ → `bleiben zu Hause`** (`ai.cloudConsent.askCmdr.protectedContents`): bewusst wörtlich, weil eine
+  weichere Form das Versprechen abschwächt. „Their names“ → `Die Dateinamen`, weil `Ihre` auf das letzte Nomen der Liste
+  zurückgriffe.
 
 ## Open questions
 

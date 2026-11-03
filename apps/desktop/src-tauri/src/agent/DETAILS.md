@@ -354,5 +354,5 @@ Vocabulary: "the agent" is this feature; external MCP clients are "outside clien
 - **D60**: User-granted autonomy is an auto-apply policy on the proposal pipeline's apply step (a Settings toggle,
   default off), never raw tool exposure; the toggle is changeable only in the Settings UI, never via `set_setting` or
   the agent. A CLI flag was rejected: it's invisible to whoever reviews what the app may do. Why: drop only the review
-  click, keep the audit and safety machinery, and make self-enabled autonomy impossible. Unbuilt. `developer.mcpDirectMode`
-  is a different switch: it's for outside clients, and the agent never gets it.
+  click, keep the audit and safety machinery, and make self-enabled autonomy impossible. Unbuilt. MCP direct mode is a
+  different thing: it's for outside clients in dev and test builds only, and the agent never gets it.

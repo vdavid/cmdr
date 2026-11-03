@@ -23,18 +23,6 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "description": "Button on that notice that opens Cmdr's Settings on the “MCP server” section (settings.section.mcpServer), where the person can turn the server off. Short control label; it may name that section. \"MCP\" stays as-is. Pop-up notice (toast) in the corner of Cmdr's main window."
   },
-  "securityNotices.mcpDirectModeOn.title": "MCP direct mode is on",
-  "@securityNotices.mcpDirectModeOn.title": {
-    "description": "Headline of a warning notice shown each time Cmdr starts while the “Direct mode” setting of its MCP server is on (settings.developer.mcpDirectMode.label). MCP is the local connection AI tools use to control Cmdr. \"MCP\" (Model Context Protocol) stays as-is. Sentence case, no full stop. Pop-up notice (toast) in the corner of Cmdr's main window."
-  },
-  "securityNotices.mcpDirectModeOn.body": "AI tools outside Cmdr can read your files and confirm actions without asking you. If you didn’t turn this on, turn it off in MCP settings.",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "description": "Body of that notice: what the setting allows, and what to do if the person didn't choose it. Calm, not alarming. Plain text. Pop-up notice (toast) in the corner of Cmdr's main window."
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "MCP settings",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "description": "Button on that notice that opens Cmdr's Settings on the “MCP server” section (settings.section.mcpServer), where the person can turn direct mode off. Short control label; it may name that section. \"MCP\" stays as-is. Pop-up notice (toast) in the corner of Cmdr's main window."
-  },
   "securityNotices.smbSignatureRefused.title": "Cmdr refused a reply from {name}",
   "@securityNotices.smbSignatureRefused.title": {
     "description": "Headline of a warning notice: a network share (SMB) answered on a secured (signed) connection with a reply that didn't carry its signature, so Cmdr didn't trust it. \"Cmdr\" is the product name. Sentence case, no full stop. Pop-up notice (toast) in the corner of Cmdr's main window.",

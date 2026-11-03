@@ -287,8 +287,8 @@ shipping a new binary. Mechanism, the rotation caveat, and the test that guards 
 
 AI features deliberately send user data OFF the Mac, to the cloud AI service the user configured, with their own API
 key: folder name suggestions (the folder path and up to 100 names), search in plain words (the typed query), select by
-description (the prompt and up to 240 names), MCP `ai_search` (direct mode only), and Ask Cmdr (detailed below). Local
-AI sends nothing.
+description (the prompt and up to 240 names), MCP `ai_search` (direct mode only, so dev and test builds), and Ask Cmdr
+(detailed below). Local AI sends nothing.
 
 - **One consent, enforced in the backend, fail-closed.** Nothing reaches a cloud service until the user turns on "Allow
   cloud AI". Every LLM backend comes from `ai::manager::resolve_backend(app)`, which checks
@@ -395,20 +395,16 @@ Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask 
 
 ## MCP direct mode
 
-Direct mode lets an outside MCP client use the tools that go past a person. It's off by default, the Settings row is the
-only way to turn it on (`mcpSettable: false`), and every change lands in the security log. The agent never gets it. The
-mechanism: `apps/desktop/src-tauri/src/tools/DETAILS.md` § Direct mode.
+Direct mode lets an outside MCP client use the tools that go past a person. A release build never has it: there's no
+setting, and nothing in the environment, `settings.json`, or the Keychain turns it on. Only debug and `playwright-e2e`
+builds honor it, during an E2E run or when `CMDR_MCP_DIRECT_MODE=1` asks, so tests and an agent driving a dev build
+reach everything. The agent never gets it. The mechanism: `apps/desktop/src-tauri/src/tools/DETAILS.md` § Direct mode.
 
-- **Off, the token gets a client in and little past a person.** It can work the app, open the dialogs a person confirms,
-  and read Cmdr's own views, and a person answers before anything `Sensitive`. It can't read file contents or memory, or
-  call a `DevOnly` tool. On, those all open, and each successful content read lands in the security log by tool, never
-  by path.
-- **It's never on quietly.** A launch that comes up in direct mode raises a persistent notice, and a recovered
-  `settings.json` clears the Keychain item, so direct mode can't outlast a reset.
-- **`settings.json` alone doesn't turn it on**, since a same-user process with no Full Disk Access can write that file,
-  and the prize is everything Cmdr's Full Disk Access can read. Launch also needs a Keychain item that reads without a
-  prompt, which isn't proof of who wrote it.
-- **Gaps in this check are tracked privately** and reviewed before every release.
+- **In a release build, the token gets a client in and little past a person.** It can work the app, open the dialogs a
+  person confirms, and read Cmdr's own views, and a person answers before anything `Sensitive`. It can't read file
+  contents or memory, or call a `DevOnly` tool such as `dialog_confirm`, so it can't confirm anything for the person.
+- **In a dev or test build with direct mode on**, those all open, and each successful content read lands in the security
+  log by tool, never by path.
 
 ## AI API keys
 

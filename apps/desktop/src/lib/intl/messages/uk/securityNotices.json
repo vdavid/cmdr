@@ -19,18 +19,6 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "Прямий режим MCP увімкнено",
-  "@securityNotices.mcpDirectModeOn.title": {
-    "sourceHash": "5d0520c"
-  },
-  "securityNotices.mcpDirectModeOn.body": "Інструменти ШІ поза Cmdr можуть читати ваші файли й підтверджувати дії, не питаючи вас. Якщо ви цього не вмикали, вимкніть це в параметрах MCP.",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "sourceHash": "fd2972f"
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "Параметри MCP",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "sourceHash": "c63c58c"
-  },
   "securityNotices.smbSignatureRefused.title": "Cmdr відхилив відповідь спільної папки «{name}»",
   "@securityNotices.smbSignatureRefused.title": {
     "sourceHash": "aedb947"

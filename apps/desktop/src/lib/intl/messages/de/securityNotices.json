@@ -19,18 +19,6 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "Der MCP-Direktmodus ist eingeschaltet",
-  "@securityNotices.mcpDirectModeOn.title": {
-    "sourceHash": "5d0520c"
-  },
-  "securityNotices.mcpDirectModeOn.body": "KI-Werkzeuge außerhalb von Cmdr können deine Dateien lesen und Aktionen bestätigen, ohne dich zu fragen. Wenn du das nicht eingeschaltet hast, schalte es in den MCP-Einstellungen aus.",
-  "@securityNotices.mcpDirectModeOn.body": {
-    "sourceHash": "fd2972f"
-  },
-  "securityNotices.mcpDirectModeOn.openSettings": "MCP-Einstellungen",
-  "@securityNotices.mcpDirectModeOn.openSettings": {
-    "sourceHash": "c63c58c"
-  },
   "securityNotices.smbSignatureRefused.title": "Cmdr hat eine Antwort von {name} abgelehnt",
   "@securityNotices.smbSignatureRefused.title": {
     "sourceHash": "aedb947"

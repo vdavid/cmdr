@@ -4109,12 +4109,6 @@
     "sense": "Cmdr’s Jump typing mode: typing in a pane moves the cursor to the best-matching name without hiding anything. The other mode is the quick filter. Not navigating to a typed path, and not the plain verb “jump to”.",
     "distinct": ["quick-filter", "go-to-path"]
   },
-  "mcp-direct-mode": {
-    "distinct": ["direct-connection"],
-    "en": "direct mode",
-    "match": ["direct mode"],
-    "sense": "The MCP server setting that lets outside AI tools read file contents and confirm dialogs with no person involved. Nothing to do with Cmdr's direct SMB connection."
-  },
   "private-key": {
     "distinct": ["host-key", "password"],
     "en": "private key",

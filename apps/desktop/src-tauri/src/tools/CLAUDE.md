@@ -29,8 +29,8 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
   arm (`DETAILS.md` § Who's calling).
 - **A `Sensitive` tool names an `ask:` plan**, which reads and runs twice, ❌ never a question in a handler. `DETAILS.md`
   § The human gate.
-- **`DevOnly`, `ReadContents`, and `Memory` refuse an outside client off direct mode** (`admit`), and ❌ the JSON setting
-  alone never turns it on. `DETAILS.md` § Direct mode.
+- **`DevOnly`, `ReadContents`, and `Memory` refuse an outside client off direct mode** (`admit`). Direct mode comes from
+  the environment only, in debug and `playwright-e2e` builds; ❌ a release build never has it. `DETAILS.md` § Direct mode.
 - **A call is checked against its declared schema before a handler sees it** (`params.rs`). Every schema closes itself
   with `additionalProperties: false`, nested objects too. Params are camelCase, tool
   names snake_case.
