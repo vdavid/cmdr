@@ -100,3 +100,63 @@ async fn a_device_lost_under_the_event_loop_detaches_its_volumes() {
         "a device that went away leaves nothing behind, but these storages stayed: {still_attached:?}"
     );
 }
+
+/// Two connects for one device that overlap open it ONCE.
+///
+/// Three callers reach `connect()` on their own schedule: the hotplug watcher's
+/// auto-connect retry loop (#834), the user's `connect_mtp_device` (the dialogs'
+/// Retry), and the session-reset reopen loop. The registry check alone is a
+/// check-then-act, so two that overlapped both opened the device: on real USB
+/// the loser's open reads as `ExclusiveAccess` and raises the ptpcamerad dialog
+/// for a phone that just connected, and where both opens succeed the second entry
+/// replaces the first and orphans its session.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn overlapping_connects_for_one_device_open_it_once() {
+    let _guard = device_lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let device_id = crate::list_mtp_devices()
+        .into_iter()
+        .find(|d| d.location_id == fixture.location_id)
+        .map(|d| d.id)
+        .expect("the virtual device must appear in discovery");
+
+    let analytics = Arc::new(RecordingAnalytics::new());
+    let host = VolumeHost::builder().analytics(analytics.clone()).build();
+    let manager = MtpConnectionManager::new(host, no_device_events(), MtpVolumeRegistrar::detached());
+
+    // Two connects that really overlap: both queue while the test holds the device's
+    // slot, the way a 30 s open holds it, and go once it's let go. Racing two bare
+    // tasks instead caught the double open only about one run in a hundred.
+    let held = manager.connect_gates.claim(&device_id).await;
+    let spawn_connect = || {
+        let (manager, device_id) = (Arc::clone(&manager), device_id.clone());
+        tokio::spawn(async move { manager.connect(&device_id, DeviceWatch::Off).await })
+    };
+    let (first, second) = (spawn_connect(), spawn_connect());
+    cmdr_fs::testing::wait_until_async(std::time::Duration::from_secs(5), "both connects to queue", || {
+        manager.connect_gates.claimants(&device_id) == 3
+    })
+    .await;
+    assert!(
+        !first.is_finished() && !second.is_finished(),
+        "a connect must wait while another one for the same device is under way"
+    );
+    drop(held);
+    let first = first.await.unwrap().expect("the first connect succeeds");
+    let second = second
+        .await
+        .unwrap()
+        .expect("the overlapping connect gets the same session");
+    assert_eq!(
+        first.storages.iter().map(|s| s.id).collect::<Vec<_>>(),
+        second.storages.iter().map(|s| s.id).collect::<Vec<_>>()
+    );
+
+    manager
+        .disconnect(&device_id, MtpDisconnectReason::User)
+        .await
+        .expect("disconnecting a device we just connected");
+    unregister_virtual_mtp_device(fixture.location_id);
+
+    assert_eq!(analytics.events().len(), 1, "one open, so one counter");
+}

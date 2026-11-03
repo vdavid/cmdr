@@ -183,6 +183,25 @@ a macOS daemon is the app's business, not a device's lifecycle.
 and a caller that could learn "nobody heard that" would start branching on it. An emit failure is logged where the
 mapping happens and dropped there.
 
+## One connect per device at a time (`connect_gate.rs`)
+
+Three callers reach `connect()` on their own schedule: the app's hotplug auto-connect retry loop, the user's
+`connect_mtp_device` (the ptpcamerad and udev dialogs' Retry), and the session-reset reopen loop. The registry check at
+the top of `connect()` is a check-then-act, so two that overlapped both opened the device (caught by racing two bare
+tasks against the virtual device, about one run in a hundred, 2026-11-03): on real USB the loser's open reads as
+exclusive access and raises the ptpcamerad dialog for a phone that just connected, and where both opens succeed the
+second `DeviceEntry` replaces the first and orphans its session.
+
+- `ConnectGates` holds one `tokio::sync::Mutex` per device, claimed for the whole of `connect()`. A caller that waited
+  re-checks the registry and returns the session the first one opened; if the first failed, it makes its own attempt.
+- Per device, so one phone stalling its open for 30 s never holds up another.
+- Waiting holds nothing on the wire, so a waiter dropped mid-wait is safe (unlike dropping an attempt, see "No dropping
+  timeouts").
+- A slot exists only while someone holds or waits for it: `ConnectSlot`'s `Drop` removes it when the map holds the only
+  clone, under the same lock a new claimant clones through.
+- `disconnect()` takes no slot. A disconnect that lands mid-open finds nothing to remove; the app's watcher covers the
+  MTP-off case by re-checking the flag once the attempt ends.
+
 ## Upload partial cleanup (two-phase PTP uploads)
 
 PTP uploads are two-phase: `SendObjectInfo` creates the object on the device, then `SendObject` streams the bytes. If
