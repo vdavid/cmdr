@@ -821,6 +821,22 @@
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"
   },
+  "askCmdr.find.region": "Найти в чате",
+  "@askCmdr.find.region": {
+    "sourceHash": "df9554c"
+  },
+  "askCmdr.find.ariaLabel": "Поиск в этом чате",
+  "@askCmdr.find.ariaLabel": {
+    "sourceHash": "49be9b7"
+  },
+  "askCmdr.find.placeholder": "Найти в чате…",
+  "@askCmdr.find.placeholder": {
+    "sourceHash": "b26600e"
+  },
+  "askCmdr.find.loadedOnly": "Поиск по загруженным сообщениям",
+  "@askCmdr.find.loadedOnly": {
+    "sourceHash": "8b4e09d"
+  },
   "askCmdr.threads.open": "Чаты",
   "@askCmdr.threads.open": {
     "sourceHash": "ef5b404"
