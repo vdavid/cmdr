@@ -29,8 +29,9 @@ and `legacy_split.rs` (the per-volume cases).
   pass), and `scoring_policy` (the classification fingerprint that pass scored under; see below).
 - **`visits`** (visits file) — the navigation-visit signal, `path → (count, last-visit seconds)`, on the same folded
   key. Counts and timestamps only, no content, local-only. Fed by `record_visit` (`../DETAILS.md` § The visit signal).
-- **`meta`** and **`split_from`** (visits file) — its `schema_version`, and the token of each older build's combined
-  file whose visits were merged in, so a re-run of the split never adds them twice.
+- **`meta`**, **`split_from`**, and **`split_rows`** (visits file) — its `schema_version`; the token of each older
+  build's combined file whose visits were merged in, with when; and the ledger of how much of each row each token
+  contributed, so the split never adds the same visit twice (`legacy_split.rs` § How a row merges).
 
 All are `WITHOUT ROWID`. Every weight row carries the as-of generation it was scored at, the honest staleness marker an
 offline-unmounted read caveats with; all rows from the last full pass share it, and the read API surfaces it. Because a

@@ -279,6 +279,7 @@ fn footprint_growth(before: Option<u64>) -> Option<u64> {
 /// missing or unopenable DB yields an empty map (the visit signal is absent, not
 /// an error).
 pub(super) fn load_visits(data_dir: &std::path::Path, volume_id: &str) -> HashMap<String, u32> {
+    crate::importance::store::wait_for_background_split();
     let db_path = visits_db_path(data_dir, volume_id);
     let mut out = HashMap::new();
     if let Ok(conn) = crate::importance::store::open_read_connection(&db_path)

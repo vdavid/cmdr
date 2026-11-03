@@ -259,7 +259,7 @@ fn a_crash_inside_the_copy_leaves_nothing_half_copied() {
             [],
         )
         .expect("half the copy");
-        tx.execute("INSERT INTO split_from VALUES (?1, 2)", [&token])
+        tx.execute("INSERT INTO split_from VALUES (?1, 2, 0)", [&token])
             .expect("mark");
         // Dropped without a commit: what a crash before the commit leaves.
     }
@@ -277,7 +277,7 @@ fn a_crash_inside_the_copy_leaves_nothing_half_copied() {
 fn a_crash_after_the_copy_only_deletes_the_old_store() {
     let d = Dirs::apart();
     write_legacy(&d.old(), &TWO_VISITS);
-    let copied = copy_visits(&sqlite_util::open(&d.old()).expect("open"), &d.visits()).expect("copy");
+    let copied = copy_visits(&open_old(&d.old()).expect("open").expect("visits"), &d.visits(), now()).expect("copy");
     assert_eq!(copied, 2, "test setup: the copy committed");
 
     let report = split_legacy_stores(&d.dirs);
@@ -411,10 +411,18 @@ fn together_the_combined_store_splits_too() {
     assert!(none_of(&d.old()));
 }
 
+/// Unix seconds now, for visits an older build records AFTER a split.
+fn now() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("clock")
+        .as_secs() as i64
+}
+
 /// The downgrade round trip: after a split, an older build finds no combined store,
 /// starts a fresh one and records visits in it, and the user upgrades again. That
-/// file is a different one (a new token), so it splits too, and its visits ADD to
-/// what the visits file already holds.
+/// file is a different one (a new token) whose visits all happened after the split,
+/// so they ADD to what the visits file already holds.
 #[test]
 fn a_downgrade_round_trip_merges_both_histories() {
     let d = Dirs::apart();
@@ -422,9 +430,10 @@ fn a_downgrade_round_trip_merges_both_histories() {
     split_legacy_stores(&d.dirs);
 
     // The older build's session: one known folder again, one new.
+    let later = now() + 100;
     write_legacy(
         &d.old(),
-        &[("/Users/me/projects", 2, 2_000), ("/Users/me/Music", 1, 1_500)],
+        &[("/Users/me/projects", 2, later), ("/Users/me/Music", 1, later)],
     );
 
     let report = split_legacy_stores(&d.dirs);
@@ -433,10 +442,152 @@ fn a_downgrade_round_trip_merges_both_histories() {
     assert_eq!(
         all_visits(&d.visits()),
         rows(&[
-            ("/Users/me/projects", 14, 2_000),
+            ("/Users/me/projects", 14, later as u64),
             ("/Users/me/Downloads", 3, 900),
-            ("/Users/me/Music", 1, 1_500),
+            ("/Users/me/Music", 1, later as u64),
         ])
     );
+    assert!(none_of(&d.old()));
+}
+
+/// The copy commits and marks its token, the delete fails, and the user runs an
+/// older build, which keeps recording into the SAME file (same token). The next
+/// split adds exactly what that build wrote, never zero and never the whole file
+/// again.
+#[test]
+fn an_older_build_writing_under_a_marked_token_adds_only_what_it_wrote() {
+    let d = Dirs::apart();
+    write_legacy(&d.old(), &TWO_VISITS);
+    copy_visits(&open_old(&d.old()).expect("open").expect("visits"), &d.visits(), now()).expect("copy");
+
+    // The older build's session in the combined file it still finds.
+    let later = now() + 100;
+    {
+        let conn = sqlite_util::open(&d.old()).expect("open");
+        conn.execute(
+            "UPDATE visits SET visit_count = 15, last_visit_secs = ?1 WHERE path = '/Users/me/projects'",
+            [later],
+        )
+        .expect("three more visits");
+        conn.execute(
+            "INSERT INTO visits VALUES (?1, '/Users/me/Music', 1, ?2)",
+            rusqlite::params![normalize_for_comparison("/Users/me/Music"), later],
+        )
+        .expect("a new folder");
+    }
+
+    split_legacy_stores(&d.dirs);
+
+    assert_eq!(
+        all_visits(&d.visits()),
+        rows(&[
+            ("/Users/me/projects", 15, later as u64),
+            ("/Users/me/Downloads", 3, 900),
+            ("/Users/me/Music", 1, later as u64),
+        ])
+    );
+    assert!(none_of(&d.old()));
+}
+
+/// Time Machine brings back a copy of the old combined store after the split,
+/// taken either before the split stamped it or after. Its visits are history the
+/// visits file already holds, so they add nothing.
+#[test]
+fn a_restored_copy_of_a_split_store_adds_nothing() {
+    for stamped in [false, true] {
+        let d = Dirs::apart();
+        write_legacy(&d.old(), &TWO_VISITS);
+        let backup = d.dirs.data.join("backup.db");
+        if stamped {
+            copy_visits(&open_old(&d.old()).expect("open").expect("visits"), &d.visits(), now()).expect("copy");
+        }
+        sqlite_util::open(&d.old())
+            .expect("open")
+            .execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+            .expect("fold");
+        std::fs::copy(d.old(), &backup).expect("back it up");
+        split_legacy_stores(&d.dirs);
+
+        std::fs::rename(&backup, d.old()).expect("restore it");
+        split_legacy_stores(&d.dirs);
+
+        assert_eq!(all_visits(&d.visits()), two_visits(), "stamped: {stamped}");
+        assert!(none_of(&d.old()));
+    }
+}
+
+/// Damage found in the NEW visits file mid-copy says nothing about the old one:
+/// the old store stays whole for the next launch rather than being discarded.
+#[test]
+fn damage_in_the_new_visits_file_leaves_the_old_store_whole() {
+    let d = Dirs::apart();
+    write_legacy(&d.old(), &TWO_VISITS);
+    {
+        let conn = crate::importance::store::visits::open_write_connection(&d.visits()).expect("new");
+        let tx = conn.unchecked_transaction().expect("tx");
+        for i in 0..2_000 {
+            tx.execute(
+                "INSERT INTO visits VALUES (?1, ?1, 1, 1)",
+                [format!("/padding/folder-{i:05}-with-a-longer-name-to-fill-pages")],
+            )
+            .expect("pad");
+        }
+        tx.commit().expect("commit");
+        conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);").expect("fold");
+    }
+    let root_page: u64 = sqlite_util::open(&d.visits())
+        .expect("open")
+        .query_row("SELECT rootpage FROM sqlite_master WHERE name = 'visits'", [], |r| {
+            r.get(0)
+        })
+        .expect("root page");
+    {
+        use std::io::{Seek, SeekFrom, Write};
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .open(d.visits())
+            .expect("open file");
+        file.seek(SeekFrom::Start((root_page - 1) * 4096)).expect("seek");
+        file.write_all(&[0xFF; 4096]).expect("damage the visits table");
+    }
+
+    let report = split_legacy_stores(&d.dirs);
+
+    assert_eq!(report.left.len(), 1, "{report:?}");
+    assert!(report.discarded.is_empty(), "{report:?}");
+    assert!(
+        crate::importance::store::holds_visits(&d.old()),
+        "every old visit still there"
+    );
+}
+
+/// The copy and the token are what the delete relies on, so both reach the disk
+/// before it: full syncs, and `F_FULLFSYNC` on macOS.
+#[test]
+fn the_copy_and_the_token_are_written_durably() {
+    let d = Dirs::apart();
+    write_legacy(&d.old(), &TWO_VISITS);
+    let pragma = |conn: &Connection, name: &str| -> i64 {
+        conn.query_row(&format!("PRAGMA {name}"), [], |r| r.get(0)).expect(name)
+    };
+    let old = open_old(&d.old()).expect("open").expect("visits");
+    let new = open_new(&d.visits()).expect("new");
+    for conn in [&old, &new] {
+        assert_eq!(pragma(conn, "synchronous"), 2, "FULL");
+        assert_eq!(pragma(conn, "fullfsync"), 1);
+        assert_eq!(pragma(conn, "checkpoint_fullfsync"), 1);
+    }
+}
+
+/// The split runs off the caller's thread; whatever needs the visits waits for it.
+#[test]
+fn a_background_split_is_waited_for() {
+    let d = Dirs::apart();
+    write_legacy(&d.old(), &TWO_VISITS);
+
+    split_in_background(d.dirs.clone(), |_| {});
+    wait_for_background_split();
+
+    assert_eq!(all_visits(&d.visits()), two_visits());
     assert!(none_of(&d.old()));
 }

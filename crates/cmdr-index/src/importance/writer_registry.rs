@@ -58,6 +58,8 @@ impl WriterRegistry {
         // then insert, taking whichever writer won if two callers raced. The
         // loser's freshly-spawned writer is dropped (its thread shuts down when the
         // last handle drops); no second live writer persists on the DB.
+        // The visits file it attaches may still be filling from an older build's store.
+        super::store::wait_for_background_split();
         let db_path = importance_db_path(data_dir, volume_id);
         super::store::ImportanceStore::open(&db_path)?; // create file + schema.
         let built = ImportanceWriter::spawn(&db_path, Some(&visits_db_path(data_dir, volume_id)))?;

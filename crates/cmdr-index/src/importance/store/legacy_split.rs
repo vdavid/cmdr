@@ -1,5 +1,5 @@
-//! Splitting an older build's combined importance store, once per volume, at
-//! build time, before anything opens it.
+//! Splitting an older build's combined importance store, once per volume, in
+//! the background right after the index is built.
 //!
 //! An older build kept weights AND visits in one `importance-{id}.db` in the data
 //! dir. This build keeps the visits in `visits-{id}.db` there and the weights in
@@ -10,40 +10,51 @@
 //!
 //! **Crash-safe at every point, and never counts a visit twice.** Per volume:
 //!
-//! 1. Stamp a random token into the OLD file's `meta`, unless it has one. A crash
-//!    after this changed nothing a reader cares about.
-//! 2. In ONE transaction on the NEW file: add the old rows (merged into any the
-//!    new file already has) AND record the token in `split_from`. Both land or
-//!    neither does, so a crash leaves the copy either done and marked, or not
-//!    started. A re-run finds the token marked and skips the copy.
-//! 3. Fold the old file's WAL in, close it, and delete it. A crash here leaves a
-//!    file the next run deletes without copying again (its token is marked), or
-//!    sidecars with no database, which the next run deletes.
+//! 1. Stamp a random token into the OLD file's `meta`, unless it has one.
+//! 2. In ONE transaction on the NEW file: merge the old rows in, record the token
+//!    in `split_from`, and record in `split_rows` how much of each row this token
+//!    has contributed. Both files sync fully (`F_FULLFSYNC`), the new file's WAL is
+//!    folded in, and its folder entry is synced, all BEFORE step 3.
+//! 3. Fold the old file's WAL in, close it, and delete it.
 //!
-//! The token, rather than a plain "split done" flag, is what keeps a DOWNGRADE
-//! round trip honest: an older build finds no combined file, starts a fresh one
-//! and records visits in it, and the next upgrade splits THAT file too (a new
-//! token), merging its visits in. A flag would skip it and lose them.
+//! A crash before step 2 commits redoes the copy; after it, the re-run finds the
+//! ledger says everything is accounted for, adds nothing, and deletes.
+//!
+//! **How a row merges**, which is what keeps the round trips honest:
+//!
+//! - **A token already in the ledger** (a re-run, an older build that kept writing
+//!   into a file whose delete failed, a restored copy taken after the stamp): adds
+//!   only what the row has beyond what that token contributed.
+//! - **A new token, a row last visited AFTER the latest split**: visits recorded
+//!   since, by an older build that started a fresh combined file. Added.
+//! - **A new token, a row last visited at or before the latest split**: history
+//!   the visits file already holds (Time Machine restored a copy of the old store
+//!   from before its split). Merged by `max`, so it adds nothing it already has.
 //!
 //! The other cases, per volume:
 //!
 //! - **The old file isn't a sound database**: deleted. Nothing in it can be read,
-//!   which is what every earlier build did to such a file on open.
+//!   which is what every earlier build did to such a file on open. Only damage
+//!   found in the OLD file counts: damage in the new one leaves the old one whole.
 //! - **It has no `visits` table**: in a separate drive-index dir it's a stray and
 //!   is deleted; when both dirs are one folder it's this build's own weights store
 //!   and is left alone.
 //! - **Anything else goes wrong** (a full disk, a permission): left where it is
 //!   with the reason, for the next launch. Until then a same-folder host can't
-//!   recreate it either ([`super::ImportanceStoreError::HoldsVisits`]).
+//!   recreate it ([`super::ImportanceStoreError::HoldsVisits`]) nor a rebuild delete
+//!   it (`volume_files::remove`).
 
 use std::io::ErrorKind;
 use std::path::Path;
+use std::sync::{Condvar, Mutex};
+use std::time::Duration;
 
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior};
 
 use super::ImportanceStoreError;
 use crate::indexing::store::normalize_for_comparison;
 use crate::volume_files::{StoreDirs, VolumeStore};
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::sqlite_util;
 
 /// The old file's `meta` key for the token step 1 stamps.
@@ -52,8 +63,8 @@ const SPLIT_TOKEN_KEY: &str = "visits_split_token";
 /// What [`split_legacy_stores`] did, volume by volume, for the host's log line.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub(crate) struct LegacySplit {
-    /// Volumes whose visits moved to their own file, with how many rows came over
-    /// (0 when an earlier, interrupted run had already copied them).
+    /// Volumes whose visits moved to their own file, with how many rows changed
+    /// the visits file (0 when an earlier, interrupted run had already copied them).
     pub(crate) split: Vec<(String, u64)>,
     /// Volumes whose old file was deleted with nothing to move: unsound, a stray,
     /// or only sidecars left by an interrupted delete.
@@ -62,13 +73,53 @@ pub(crate) struct LegacySplit {
     pub(crate) left: Vec<(String, String)>,
 }
 
+// ── The background run ───────────────────────────────────────────────────────
+
+/// Whether a background split is running. Whatever needs the visits waits on it
+/// ([`wait_for_background_split`]).
+static RUNNING: Mutex<bool> = Mutex::new(false);
+static FINISHED: Condvar = Condvar::new();
+
+/// How long a caller waits for a background split before going ahead: far more
+/// than a split takes (it copies about 100 KB per volume), and short enough that a
+/// stuck disk can't hold a writer forever.
+const WAIT_CAP: Duration = Duration::from_secs(30);
+
+/// Run [`split_legacy_stores`] on a blocking thread, handing the report to
+/// `report`. Marked running before it returns, so a caller that comes after can't
+/// slip in ahead of it.
+///
+/// ⚠️ Safe only because the host holds the data dir's instance lock: no other
+/// process has these files. In this one, everything that opens the visits or the
+/// weights waits for the split first.
+pub(crate) fn split_in_background(dirs: StoreDirs, report: impl FnOnce(LegacySplit) + Send + 'static) {
+    *RUNNING.lock_ignore_poison() = true;
+    crate::indexing::host::runtime::spawn_blocking(move || {
+        report(split_legacy_stores(&dirs));
+        *RUNNING.lock_ignore_poison() = false;
+        FINISHED.notify_all();
+    });
+}
+
+/// Block until a background split has finished (at most [`WAIT_CAP`]). Instant
+/// when none is running. Called from blocking threads only: the writer registry,
+/// the launch probe, and the pass's visit read.
+pub(crate) fn wait_for_background_split() {
+    let running = RUNNING.lock_ignore_poison();
+    let (_running, timeout) = FINISHED
+        .wait_timeout_while(running, WAIT_CAP, |running| *running)
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if timeout.timed_out() {
+        log::warn!(target: "importance", "the older importance stores' split is still running after {WAIT_CAP:?}; going ahead");
+    }
+}
+
+// ── The split ────────────────────────────────────────────────────────────────
+
 /// Split every older build's combined importance store in `dirs.data`.
 ///
 /// Runs whether or not the two dirs are one folder: the visits have to come out
 /// of the combined file either way.
-///
-/// ⚠️ Nothing may have these files open: the caller holds the data dir's instance
-/// lock and runs this before the importance scheduler starts.
 pub(crate) fn split_legacy_stores(dirs: &StoreDirs) -> LegacySplit {
     let mut report = LegacySplit::default();
     for volume_id in importance_volume_ids(&dirs.data) {
@@ -83,12 +134,19 @@ pub(crate) fn split_legacy_stores(dirs: &StoreDirs) -> LegacySplit {
 }
 
 enum Outcome {
-    /// The visits moved over; this many rows were copied this run.
+    /// The visits moved over; this many rows changed the visits file this run.
     Split(u64),
     /// This build's own weights store, in a host that keeps one folder.
     Current,
     Discarded,
     Left(String),
+}
+
+/// Which file a copy failed on, which decides whether the OLD file is damaged.
+#[derive(Debug)]
+enum CopyError {
+    Old(ImportanceStoreError),
+    New(ImportanceStoreError),
 }
 
 /// Every volume with an importance file in `dir`: its database, or a sidecar
@@ -142,9 +200,10 @@ fn split_one(dirs: &StoreDirs, volume_id: &str) -> Outcome {
         Err(e) => return Outcome::Left(format!("can't read the old store: {e}")),
     };
 
-    let copied = match copy_visits(&old, &VolumeStore::Visits.db_path(&dirs.data, volume_id)) {
+    let new_db = VolumeStore::Visits.db_path(&dirs.data, volume_id);
+    let copied = match copy_visits(&old, &new_db, now_secs()) {
         Ok(copied) => copied,
-        Err(e) if e.is_corruption() => {
+        Err(CopyError::Old(e)) if e.is_corruption() => {
             log::warn!(
                 target: "importance",
                 "the old importance store of '{volume_id}' is damaged ({e}); its visits can't be read"
@@ -152,7 +211,8 @@ fn split_one(dirs: &StoreDirs, volume_id: &str) -> Outcome {
             drop(old);
             return discard(&old_db);
         }
-        Err(e) => return Outcome::Left(format!("can't move the visits out: {e}")),
+        Err(CopyError::Old(e)) => return Outcome::Left(format!("can't read the old visits: {e}")),
+        Err(CopyError::New(e)) => return Outcome::Left(format!("can't write the new visits file: {e}")),
     };
 
     if let Err(why) = fold_the_wal_in_and_close(old) {
@@ -164,12 +224,20 @@ fn split_one(dirs: &StoreDirs, volume_id: &str) -> Outcome {
     }
 }
 
+/// Every write here must be on disk before the old file goes: a full sync per
+/// commit, and `F_FULLFSYNC` on macOS, where a plain `fsync` stops at the drive's
+/// cache.
+fn sync_fully(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch("PRAGMA synchronous = FULL; PRAGMA fullfsync = ON; PRAGMA checkpoint_fullfsync = ON;")
+}
+
 /// Open the old file, or `None` when it has no `visits` table (nothing to move).
 fn open_old(old_db: &Path) -> Result<Option<Connection>, ImportanceStoreError> {
     let conn = sqlite_util::open(old_db)?;
     // An older schema may still name the collation in a column definition.
     super::connection::register_collation(&conn)?;
     conn.execute_batch("PRAGMA busy_timeout = 5000;")?;
+    sync_fully(&conn)?;
     let has_visits: bool = conn.query_row(
         "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'visits')",
         [],
@@ -178,42 +246,106 @@ fn open_old(old_db: &Path) -> Result<Option<Connection>, ImportanceStoreError> {
     Ok(has_visits.then_some(conn))
 }
 
-/// Steps 1 and 2: stamp the old file's token, then copy its rows and mark the
-/// token in the new file in one transaction. Returns the rows copied (0 when the
-/// token was already marked).
-fn copy_visits(old: &Connection, new_db: &Path) -> Result<u64, ImportanceStoreError> {
-    let token = stamp_token(old)?;
-    let rows = read_old_visits(old)?;
+/// Open the new visits file for the copy, syncing fully.
+fn open_new(new_db: &Path) -> Result<Connection, ImportanceStoreError> {
+    let conn = super::visits::open_write_connection(new_db)?;
+    sync_fully(&conn)?;
+    Ok(conn)
+}
 
-    let mut new = super::visits::open_write_connection(new_db)?;
+/// Steps 1 and 2: stamp the old file's token, then merge its rows into the new
+/// file under the ledger (module docs § How a row merges), durably. Returns how
+/// many rows changed the visits file.
+fn copy_visits(old: &Connection, new_db: &Path, now_secs: i64) -> Result<u64, CopyError> {
+    let token = stamp_token(old).map_err(CopyError::Old)?;
+    let rows = read_old_visits(old).map_err(CopyError::Old)?;
+
+    let mut new = open_new(new_db).map_err(CopyError::New)?;
+    let changed = merge_rows(&mut new, &token, &rows, now_secs).map_err(CopyError::New)?;
+    // The commit is in the new WAL; fold it into the database file, then sync the
+    // folder so the files' own entries survive a power loss too.
+    let _ = new.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()));
+    drop(new);
+    sync_folder_of(new_db).map_err(|e| CopyError::New(e.into()))?;
+    Ok(changed)
+}
+
+fn merge_rows(
+    new: &mut Connection,
+    token: &str,
+    rows: &[(String, i64, i64)],
+    now_secs: i64,
+) -> Result<u64, ImportanceStoreError> {
     let tx = new.transaction_with_behavior(TransactionBehavior::Immediate)?;
-    let already: Option<i64> = tx
-        .query_row("SELECT rows FROM split_from WHERE token = ?1", [&token], |row| {
-            row.get(0)
-        })
-        .optional()?;
-    if already.is_some() {
-        return Ok(0);
-    }
+    let known = tx
+        .query_row("SELECT 1 FROM split_from WHERE token = ?1", [token], |_| Ok(()))
+        .optional()?
+        .is_some();
+    let latest_split: Option<i64> = tx.query_row("SELECT max(at_secs) FROM split_from", [], |row| row.get(0))?;
+    let mut changed = 0;
     {
-        // Merged, never replaced: the new file may hold visits of its own (a
-        // downgrade round trip recorded some in each).
-        let mut insert = tx.prepare_cached(
+        let mut contributed =
+            tx.prepare_cached("SELECT visit_count FROM split_rows WHERE token = ?1 AND path_folded = ?2")?;
+        let mut add = tx.prepare_cached(
             "INSERT INTO visits (path_folded, path, visit_count, last_visit_secs) VALUES (?1, ?2, ?3, ?4)
              ON CONFLICT(path_folded) DO UPDATE SET
                  visit_count = visit_count + excluded.visit_count,
                  last_visit_secs = max(last_visit_secs, excluded.last_visit_secs)",
         )?;
-        for (path, count, last) in &rows {
-            insert.execute(rusqlite::params![normalize_for_comparison(path), path, count, last])?;
+        let mut keep_the_larger = tx.prepare_cached(
+            "INSERT INTO visits (path_folded, path, visit_count, last_visit_secs) VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(path_folded) DO UPDATE SET
+                 visit_count = max(visit_count, excluded.visit_count),
+                 last_visit_secs = max(last_visit_secs, excluded.last_visit_secs)
+             WHERE excluded.visit_count > visit_count OR excluded.last_visit_secs > last_visit_secs",
+        )?;
+        let mut account = tx.prepare_cached(
+            "INSERT INTO split_rows (token, path_folded, visit_count) VALUES (?1, ?2, ?3)
+             ON CONFLICT(token, path_folded) DO UPDATE SET visit_count = max(visit_count, excluded.visit_count)",
+        )?;
+        for (path, count, last) in rows {
+            let folded = normalize_for_comparison(path);
+            let written = if known {
+                let already: i64 = contributed
+                    .query_row(rusqlite::params![token, folded], |row| row.get(0))
+                    .optional()?
+                    .unwrap_or(0);
+                let extra = count - already;
+                if extra > 0 {
+                    add.execute(rusqlite::params![folded, path, extra, last])?
+                } else {
+                    0
+                }
+            } else if latest_split.is_some_and(|at| *last <= at) {
+                keep_the_larger.execute(rusqlite::params![folded, path, count, last])?
+            } else {
+                add.execute(rusqlite::params![folded, path, count, last])?
+            };
+            changed += written as u64;
+            account.execute(rusqlite::params![token, folded, count])?;
         }
     }
     tx.execute(
-        "INSERT INTO split_from (token, rows) VALUES (?1, ?2)",
-        rusqlite::params![token, rows.len() as i64],
+        "INSERT OR IGNORE INTO split_from (token, rows, at_secs) VALUES (?1, ?2, ?3)",
+        rusqlite::params![token, rows.len() as i64, now_secs],
     )?;
     tx.commit()?;
-    Ok(rows.len() as u64)
+    Ok(changed)
+}
+
+/// Sync `file`'s folder, so a file created in it survives a power loss.
+fn sync_folder_of(file: &Path) -> std::io::Result<()> {
+    match file.parent() {
+        Some(dir) if !dir.as_os_str().is_empty() => std::fs::File::open(dir)?.sync_all(),
+        _ => Ok(()),
+    }
+}
+
+fn now_secs() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 /// The old file's split token, stamping a fresh one if it has none.

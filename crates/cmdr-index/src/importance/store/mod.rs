@@ -10,7 +10,8 @@
 //!   from a schema change ([`visits`]).
 //!
 //! An older build kept both in one `importance-{id}.db` in the data dir;
-//! [`split_legacy_stores`] splits that at build time.
+//! `legacy_split.rs` splits that in the background after the build, and whatever
+//! opens these files first waits for it ([`wait_for_background_split`]).
 //!
 //! The weights store's discipline:
 //!
@@ -57,7 +58,7 @@ use rusqlite::Connection;
 use crate::indexing::store::normalize_for_comparison;
 pub(crate) use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
-pub(crate) use legacy_split::split_legacy_stores;
+pub(crate) use legacy_split::{split_in_background, wait_for_background_split};
 
 /// Bump to invalidate on-disk `importance.db` files. A mismatch deletes the DB
 /// file and recreates it fresh (the cache is disposable, no migrations).
@@ -78,8 +79,8 @@ pub(crate) use legacy_split::split_legacy_stores;
 ///
 /// `4`: weights only. The `visits` table moved to `visits-{id}.db` in the data
 /// dir, and this file to the drive-index dir. ⚠️ A schema-3 file is the one
-/// older store that must NOT be recreated before [`split_legacy_stores`] has
-/// moved its visits out, which [`ImportanceStore::open`] enforces
+/// older store that must NOT be recreated before the split has moved its visits
+/// out (`legacy_split.rs`), which [`ImportanceStore::open`] enforces
 /// ([`ImportanceStoreError::HoldsVisits`]).
 const SCHEMA_VERSION: &str = "4";
 
@@ -163,6 +164,8 @@ pub(crate) fn needs_full_pass(
     volume_id: &str,
     index_scan: Option<&str>,
 ) -> Result<bool, ImportanceStoreError> {
+    // In a one-folder host the weights path may still be the older combined store.
+    wait_for_background_split();
     let store = ImportanceStore::open(&importance_db_path(data_dir, volume_id))?;
     Ok(
         store.recompute_generation()? == 0
@@ -415,14 +418,7 @@ fn refuse_if_holds_visits(db_path: &Path) -> Result<(), ImportanceStoreError> {
 /// Whether the file at `db_path` has a `visits` table with at least one row. A
 /// file that can't be read answers no: nothing in it can be saved either.
 pub(crate) fn holds_visits(db_path: &Path) -> bool {
-    if !db_path.exists() {
-        return false;
-    }
-    let Ok(conn) = cmdr_fs::sqlite_util::open(db_path) else {
-        return false;
-    };
-    conn.query_row("SELECT EXISTS (SELECT 1 FROM visits)", [], |row| row.get::<_, bool>(0))
-        .unwrap_or(false)
+    crate::volume_files::holds_visit_rows(db_path)
 }
 
 // ── Shared query helpers (used by the store handle and the writer thread) ─────

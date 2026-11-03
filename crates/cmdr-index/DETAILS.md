@@ -200,24 +200,37 @@ then ONE `rename` of the database file. A crash at any point leaves either nothi
 
 ### Splitting an older build's importance store (`importance/store/legacy_split.rs`)
 
-`IndexBuilder::build` runs it right after the drive-index move, every launch, before the importance scheduler starts:
-for each `importance-{id}.db` in the data dir that still has a `visits` table, it moves the visits into `visits-{id}.db`
-and deletes the old file. Unlike the move it runs when both folders are one too (the visits must leave the combined file
-either way), and in that layout a weights-only file at the same path is this build's own store and is left alone. The
-module docs carry the per-volume cases. The shape that makes it crash-safe:
+`IndexBuilder::build` starts it right after the drive-index move, every launch, on a blocking thread (`build` runs on
+the host's setup thread, which a slow disk must never hold up). Everything that opens the visits or the weights (the
+writer registry, the launch probe, a pass's visit read) waits for it first through `wait_for_background_split`, and the
+instance lock keeps other processes out. For each `importance-{id}.db` in the data dir that still has a `visits` table,
+it moves the visits into `visits-{id}.db` and deletes the old file. Unlike the move it runs when both folders are one
+too (the visits must leave the combined file either way), and in that layout a weights-only file at the same path is
+this build's own store and is left alone. The module docs carry the per-volume cases. The shape that makes it
+crash-safe:
 
 1. Stamp a random token into the OLD file's `meta` (kept if it has one).
-2. In ONE transaction on the NEW file, merge the old rows in AND record the token in `split_from`.
-3. Fold the old WAL in, close, delete.
+2. In ONE transaction on the NEW file, merge the old rows in, record the token in `split_from`, and record in the
+   `split_rows` ledger how much of each row that token contributed.
+3. Only once step 2 is on disk (`synchronous = FULL` + `fullfsync` on both files, the new WAL folded in, the folder
+   entry synced): fold the old WAL in, close, delete.
 
-A crash before step 2 commits redoes the copy; after it, the token is marked and the re-run only deletes. Merging (not
-replacing) plus a per-file token keeps the downgrade round trip honest: an older build starts a fresh combined file, and
-the next upgrade splits that one too and adds its visits. An unreadable old file is deleted (no earlier build kept one
-either); any other failure leaves it whole for the next launch.
+A crash before step 2 commits redoes the copy; after it, the ledger says everything is accounted for and the re-run only
+deletes. How a row merges (module docs § How a row merges) is what keeps the round trips honest:
 
-- **The guard behind it**: `ImportanceStore::open` never recreates a file that still holds visit rows
-  (`ImportanceStoreError::HoldsVisits`), so in the one-folder layout a schema mismatch can't drop history the split
-  hasn't moved (`a_weights_open_never_recreates_a_file_still_holding_visits`).
+- **A token in the ledger** adds only what the row has beyond it: a re-run adds nothing, and an older build that kept
+  recording into a file whose delete failed has exactly its new visits added.
+- **A new token, rows visited after the latest split** (an older build started a fresh combined file): added.
+- **A new token, rows visited no later than the latest split** (Time Machine restored the old store from before its
+  split): merged by `max`, so restored history adds nothing.
+
+An unreadable old file is deleted (no earlier build kept one either), but only when the OLD file is the damaged one;
+damage found in the new visits file, and any other failure, leaves the old file whole for the next launch.
+
+- **The guards behind it**: `ImportanceStore::open` never recreates a file that still holds visit rows
+  (`ImportanceStoreError::HoldsVisits`), and `volume_files::remove` never deletes one for a removal that keeps the
+  visits (a rebuild), so in the one-folder layout neither can drop history the split hasn't moved. A forget takes the
+  old combined file too, so a forgotten volume's history can't come back with the next split.
 - **Every crash point is a test** in `legacy_split_tests.rs`, plus the build-level
   `building_splits_an_older_builds_importance_store`.
 

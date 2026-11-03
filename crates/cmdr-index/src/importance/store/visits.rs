@@ -33,7 +33,10 @@ const ATTACHED_AS: &str = "visit_log";
 // `visits` keys on the same BINARY `path_folded` fold as the weights
 // (`DETAILS.md` § The folded-key primary key). `split_from` records each
 // older build's combined store whose visits were moved in, by the token
-// `legacy_split.rs` stamps into it, so a re-run never adds them twice.
+// `legacy_split.rs` stamps into it, and when; `split_rows` is the ledger of how
+// much of each row each token contributed, so a re-run, or an older build that
+// kept writing into the same file, adds only what's new
+// (`legacy_split.rs` § How a row merges).
 const CREATE_TABLES: &str = "
     CREATE TABLE IF NOT EXISTS visits (
         path_folded     TEXT    PRIMARY KEY,
@@ -48,8 +51,16 @@ const CREATE_TABLES: &str = "
     ) WITHOUT ROWID;
 
     CREATE TABLE IF NOT EXISTS split_from (
-        token TEXT    PRIMARY KEY,
-        rows  INTEGER NOT NULL
+        token   TEXT    PRIMARY KEY,
+        rows    INTEGER NOT NULL,
+        at_secs INTEGER NOT NULL
+    ) WITHOUT ROWID;
+
+    CREATE TABLE IF NOT EXISTS split_rows (
+        token       TEXT    NOT NULL,
+        path_folded TEXT    NOT NULL,
+        visit_count INTEGER NOT NULL,
+        PRIMARY KEY (token, path_folded)
     ) WITHOUT ROWID;
 ";
 

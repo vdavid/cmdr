@@ -75,6 +75,8 @@ fn building_splits_an_older_builds_importance_store() {
         })
         .build()
         .expect("build");
+    // It runs off the building thread; whatever needs the visits waits for it.
+    crate::importance::store::wait_for_background_split();
 
     assert!(!old.exists(), "the combined store left the data dir");
     let visits: (String, i64) = cmdr_fs::sqlite_util::open(&data.join("visits-root.db"))

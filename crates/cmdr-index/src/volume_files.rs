@@ -308,12 +308,29 @@ fn release_holders(store: VolumeStore, data_dir: &Path, volume_id: &str) {
 /// it. A file that isn't there is fine. Every store is attempted even when one
 /// refuses, and the first refusal is what comes back.
 ///
+/// An older build's combined importance store (weights AND visits in one
+/// `importance-{id}.db` in the data dir, until `importance/store/legacy_split.rs`
+/// splits it) belongs to BOTH importance stores, so:
+///
+/// - A removal that keeps the visits never deletes a weights path that still holds
+///   visit rows (one folder for both dirs, where it IS the weights path).
+/// - A removal that takes the visits takes it too, wherever it is, or the next
+///   split would bring a forgotten volume's history back.
+///
 /// ⚠️ The caller has already made sure nothing reads or writes the INDEX database:
 /// its holders are the lifecycle's, not this module's.
 pub(crate) fn remove(dirs: &StoreDirs, volume_id: &str, why: Removal) -> Result<(), String> {
     let mut first_refusal = None;
     for store in why.stores() {
         let db_path = dirs.db_path(store, volume_id);
+        if store == VolumeStore::Importance && !why.takes(VolumeStore::Visits) && holds_visit_rows(&db_path) {
+            log::warn!(
+                target: "indexing::retention",
+                "keeping {}: it still holds visits an older build kept there, and this removal keeps visits",
+                LogPrivate::file_path(&db_path)
+            );
+            continue;
+        }
         release_holders(store, &dirs.data, volume_id);
         if let Err(e) = sqlite_util::delete_database(&db_path) {
             first_refusal.get_or_insert(format!("Failed to delete {}: {e}", db_path.display()));
@@ -328,7 +345,26 @@ pub(crate) fn remove(dirs: &StoreDirs, volume_id: &str, why: Removal) -> Result<
             }
         }
     }
+    if why.takes(VolumeStore::Visits) {
+        let combined = VolumeStore::Importance.db_path(&dirs.data, volume_id);
+        if let Err(e) = sqlite_util::delete_database(&combined) {
+            first_refusal.get_or_insert(format!("Failed to delete {}: {e}", combined.display()));
+        }
+    }
     first_refusal.map_or(Ok(()), Err)
+}
+
+/// Whether the database at `db_path` has a `visits` table with at least one row.
+/// A file that's missing or can't be read answers no: nothing in it can be kept.
+pub(crate) fn holds_visit_rows(db_path: &Path) -> bool {
+    if !db_path.exists() {
+        return false;
+    }
+    let Ok(conn) = sqlite_util::open(db_path) else {
+        return false;
+    };
+    conn.query_row("SELECT EXISTS (SELECT 1 FROM visits)", [], |row| row.get::<_, bool>(0))
+        .unwrap_or(false)
 }
 
 /// Ask every thread to close the read connections it caches to `volume_id`'s
@@ -597,6 +633,58 @@ mod tests {
 
         assert_eq!(bytes_on_disk(&dirs, "root", Removal::Forgotten), 40);
         assert_eq!(bytes_on_disk(&dirs, "root", Removal::IndexRebuild), 30);
+    }
+
+    /// An older build's combined store (weights AND visits) at `path`.
+    fn write_combined(path: &Path) {
+        let conn = sqlite_util::open(path).expect("open");
+        conn.execute_batch(
+            "CREATE TABLE visits (path_folded TEXT PRIMARY KEY, path TEXT NOT NULL,
+                 visit_count INTEGER NOT NULL, last_visit_secs INTEGER NOT NULL);
+             INSERT INTO visits VALUES ('/users/me', '/Users/me', 4, 40);",
+        )
+        .expect("combined store");
+    }
+
+    /// With one folder for both dirs, the weights path IS an older build's combined
+    /// store until its split lands. A rebuild keeps visits, so it must not delete
+    /// that file as if it were only weights.
+    #[test]
+    fn a_rebuild_never_deletes_a_weights_path_still_holding_visits() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dirs = StoreDirs::single(dir.path());
+        let combined = dirs.db_path(VolumeStore::Importance, VOLUME_ID);
+        write_combined(&combined);
+
+        remove(&dirs, VOLUME_ID, Removal::IndexRebuild).expect("rebuild");
+        assert!(combined.exists(), "the visits in it are kept");
+
+        remove(&dirs, VOLUME_ID, Removal::Forgotten).expect("forget");
+        assert!(!combined.exists(), "a forget takes the visits anyway");
+    }
+
+    /// Forgetting a volume takes an older build's combined store left in the data
+    /// dir too (a split that hasn't landed yet), or the next split would bring the
+    /// forgotten history back. A rebuild leaves it for the split.
+    #[test]
+    fn forgetting_takes_an_older_builds_combined_store_too() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let dirs = StoreDirs {
+            data: root.path().join("data"),
+            drive_index: root.path().join("cache"),
+        };
+        std::fs::create_dir_all(&dirs.data).expect("data");
+        let combined = VolumeStore::Importance.db_path(&dirs.data, VOLUME_ID);
+        write_combined(&combined);
+
+        remove(&dirs, VOLUME_ID, Removal::IndexRebuild).expect("rebuild");
+        assert!(combined.exists());
+
+        remove(&dirs, VOLUME_ID, Removal::Forgotten).expect("forget");
+        assert!(
+            sqlite_util::database_files(&combined).iter().all(|f| !f.exists()),
+            "gone with its sidecars"
+        );
     }
 
     /// With the drive index in a folder of its own, each store is found, measured,
