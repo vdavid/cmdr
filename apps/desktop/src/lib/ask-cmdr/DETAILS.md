@@ -963,7 +963,9 @@ attachments) with mocked events, `ask-cmdr-stop-and-reload.test.ts` a Stop and a
 `ask-cmdr-turn-parity.test.ts` the round reducer and live-equals-reload; `ask-cmdr-sessions.test.ts` covers list
 paging/search/rename/archive. The E2E spec also drives the sessions path end-to-end (create two threads, search finds
 the right one via real FTS over the persisted messages, switch works) — it seeds a per-run nonce into the message text
-so search never matches a thread left by an earlier run.
+so search never matches a thread left by an earlier run. `ask-cmdr-sessions.spec.ts` covers what a result shows and the
+keyboard: the older thread ABOUT the term ranks above a newer passing mention, each row has an age and marked words, and
+↓ then Enter opens the second.
 
 A message `[tool:copy] {"pane":"left"}` calls that one tool through the real gate, then signs off
 (`rail_fake_tool_trigger`), which is how `ask-cmdr-capability.spec.ts` acts as the agent against the real webview. The
