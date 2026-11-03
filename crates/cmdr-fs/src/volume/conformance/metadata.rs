@@ -5,8 +5,9 @@
 //! Each assertion holds a backend to its own [`Volume::metadata_caps`], so a
 //! backend can't claim a class it doesn't honor, and the copy engine's loss
 //! note (which trusts the caps) can't stay silent about one it drops. The
-//! classes a listing can show (creation date, mode) are asserted here; the flags and the xattrs have no listing field,
-//! so a backend that stores them pins them in its own suite. The contract:
+//! classes a listing can show (creation date, mode) are asserted here; the xattrs, which no listing shows, in
+//! `xattrs.rs` (`assert_a_copy_keeps_xattrs`), and a backend that stores the flags pins them in its own suite. The
+//! contract:
 //! `crates/cmdr-operations/src/transfer/volume/DETAILS.md`
 //! § "Copies keep the source's metadata".
 

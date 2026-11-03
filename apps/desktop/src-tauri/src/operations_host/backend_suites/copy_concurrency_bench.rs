@@ -228,6 +228,14 @@ impl Volume for FixedConcurrencySource {
     ) -> StdPin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         self.inner.open_read_stream_with_hint(path, size_hint)
     }
+    fn open_read_stream_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+        size_hint: Option<u64>,
+        ask: cmdr_fs::metadata::MetadataAsk,
+    ) -> StdPin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.inner.open_read_stream_for_copy(path, size_hint, ask)
+    }
     fn read_range<'a>(
         &'a self,
         path: &'a Path,

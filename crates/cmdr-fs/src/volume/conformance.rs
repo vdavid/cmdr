@@ -51,7 +51,7 @@ pub use modification_date::{
     assert_landed_time_agrees_with_get_metadata, assert_read_stream_reports_the_listed_date,
     assert_write_from_stream_keeps_the_source_date,
 };
-pub use xattrs::assert_xattrs_keep_their_promises;
+pub use xattrs::{assert_a_copy_keeps_xattrs, assert_xattrs_keep_their_promises};
 
 /// The size `path` reports right now, for a fixture precondition or an
 /// after-the-fact "nothing was overwritten" check.

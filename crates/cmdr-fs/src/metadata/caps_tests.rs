@@ -132,3 +132,21 @@ fn only_a_flag_the_write_couldnt_keep_sends_the_set_after_the_landing() {
         UserFlags::HIDDEN | UserFlags::LOCKED
     );
 }
+
+/// A copy asks for the values its destination keeps and an outline of the rest
+/// the source reports; a class the source can't report is in neither.
+#[test]
+fn a_copy_asks_values_for_what_it_keeps_and_an_outline_for_what_it_loses() {
+    let ask = MetadataAsk::for_copy(MetadataCaps::ALL, SMB_LIKE);
+    assert_eq!(ask.values, MetadataClasses::CREATED);
+    assert_eq!(
+        ask.outline,
+        MetadataClasses::MODE | MetadataClasses::FLAGS | MetadataClasses::XATTRS
+    );
+    assert!(ask.mentions(MetadataClasses::XATTRS));
+
+    let ask = MetadataAsk::for_copy(SMB_LIKE, MetadataCaps::ALL);
+    assert_eq!(ask.values, MetadataClasses::CREATED);
+    assert_eq!(ask.outline, MetadataClasses::NONE);
+    assert!(!ask.mentions(MetadataClasses::XATTRS));
+}

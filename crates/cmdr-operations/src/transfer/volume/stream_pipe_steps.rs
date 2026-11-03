@@ -22,7 +22,7 @@ use crate::transfer::volume::{extract_quarantine, landed_flags};
 use crate::transfer::volume_outage::{self, StartedOn};
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses};
+use cmdr_fs::metadata::{CarriedMetadata, MetadataAsk, MetadataClasses};
 use cmdr_fs::volume::{StreamWritten, VolumeError, VolumeReadStream};
 
 /// The source, open and wrapped, with what was asked of it before the write
@@ -105,12 +105,16 @@ impl FileRun<'_> {
         // so a failure that turns out to be a replaced session's is run again
         // rather than reported (`volume_outage::StartedOn`).
         let started_on = StartedOn::now(&[source_volume, dest_volume]);
+        // What the destination and the loss note below will ask the stream,
+        // so a source that learns it in its open's own frame (SMB's stream
+        // listing) asks only then.
+        let ask = MetadataAsk::for_copy(source_volume.metadata_caps(), dest_volume.metadata_caps());
         let opened = tokio::select! {
             biased;
             () = state.backend_abort.cancelled() => {
                 return Err(hard_abort_error(self.source_path)).at_source(self.source_path).map_err(Stop::Over);
             }
-            opened = source_volume.open_read_stream_with_hint(self.source_path, self.source_facts.size) => opened,
+            opened = source_volume.open_read_stream_for_copy(self.source_path, self.source_facts.size, ask) => opened,
         };
         let stream = opened.map_err(|error| Stop::Faulted(Box::new(Fault::OpenSource { error, started_on })))?;
         let Some(size) = stream.total_size().known() else {

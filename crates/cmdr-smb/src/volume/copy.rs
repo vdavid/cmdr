@@ -16,6 +16,10 @@
 //! - **A server without it** (older Samba, some NAS firmware) refuses the
 //!   resume-key request before anything is written at `to`, and that refusal
 //!   answers `NotSupported`: the caller's signal to stream the file instead.
+//! - **Copychunk moves the file's own bytes, never its named streams**, so a
+//!   tagged file's xattrs go across beside it: listed alongside the source's
+//!   open (no round trip of its own), and only a file that has some pays one
+//!   for their values and one to write them (`copy_xattrs.rs`).
 //! - **Only one share qualifies.** A copychunk names its source by a resume key
 //!   from an open on the same tree; the engine asks only when both sides are the
 //!   very same volume (the trait's default `may_copy_on_server_from`).
@@ -25,14 +29,16 @@ use std::path::Path;
 use std::pin::Pin;
 
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::volume::{MutationEvent, ServerCopyProgress, Volume, VolumeError};
+use cmdr_fs::metadata::{CarriedMetadata, ClassOutcome, MetadataReport};
+use cmdr_fs::volume::{MutationEvent, ServerCopyProgress, StreamWritten, Volume, VolumeError};
 use log::debug;
 use smb2::client::Connection;
 use smb2::client::tree::Tree;
 use smb2::types::FileId;
-use smb2::{FileInfo, ResumeKey};
+use smb2::{FileInfo, ResumeKey, StreamInfo};
 
 use super::SmbVolume;
+use super::copy_xattrs::{XattrAsk, source_xattrs};
 use super::dfs_links::is_behind_dfs_link;
 use super::mapping::user_flags_of;
 use super::session::TransferLease;
@@ -57,7 +63,7 @@ impl SmbVolume {
         from: &Path,
         to: &Path,
         progress: &dyn ServerCopyProgress,
-    ) -> Result<u64, VolumeError> {
+    ) -> Result<StreamWritten, VolumeError> {
         let smb_from = self.to_smb_path(from)?;
         let smb_to = self.to_smb_path(to)?;
         debug!(
@@ -78,13 +84,22 @@ impl SmbVolume {
             on: _lease,
         } = self.transfer_lease().await?;
 
-        // The dates come from a `stat`, the handle from an open; both ride one
+        // The dates come from a `stat`, the handle from an open, and on a share
+        // with named streams the xattrs' names from a listing; all ride one
         // round trip on the multiplexed connection.
-        let (stat, open) = {
+        let (stat, open, listed) = {
             let mut stat_conn = conn.clone();
+            let mut list_conn = conn.clone();
+            let listing = async {
+                match self.stores_xattrs() {
+                    true => tree.list_streams(&mut list_conn, &smb_from).await.ok(),
+                    false => None,
+                }
+            };
             tokio::join!(
                 tree.stat(&mut stat_conn, &smb_from),
-                tree.open_file(&mut conn, &smb_from)
+                tree.open_file(&mut conn, &smb_from),
+                listing
             )
         };
         let (source, total) = self.handle_copy_result("copy_on_server(open source)", &smb_from, generation, open)?;
@@ -99,6 +114,7 @@ impl SmbVolume {
                     smb_from: &smb_from,
                     smb_to: &smb_to,
                     generation,
+                    listed: listed.as_deref(),
                 };
                 self.copy_from_open_source(&mut conn, &copy, progress).await
             }
@@ -122,13 +138,14 @@ impl SmbVolume {
     }
 
     /// Everything after the source is open: the resume key, the destination, the
-    /// slices, and the dates. The source handle is the caller's to close.
+    /// slices, the xattrs, and the dates. The source handle is the caller's to
+    /// close.
     async fn copy_from_open_source(
         &self,
         conn: &mut Connection,
         copy: &SliceCopy<'_>,
         progress: &dyn ServerCopyProgress,
-    ) -> Result<u64, VolumeError> {
+    ) -> Result<StreamWritten, VolumeError> {
         // ❗ Before the destination is touched: this is where a server without
         // copychunk says so, and a refusal here leaves `to` exactly as it was.
         let key = self.handle_copy_result(
@@ -142,6 +159,28 @@ impl SmbVolume {
             .await?;
 
         let mut outcome = self.copy_slices(conn, copy, dest, &key, progress).await;
+        // The streams copychunk left behind, onto the copy while its handle is
+        // open (a stream opens beside it) and before its dates, which a stream
+        // write moves on `streams_xattr`.
+        let carried = CarriedMetadata {
+            xattrs: match outcome.is_ok() {
+                true => source_xattrs(copy.tree, conn, copy.smb_from, copy.listed, XattrAsk::Values)
+                    .await
+                    .values(),
+                false => Vec::new(),
+            },
+            ..CarriedMetadata::default()
+        };
+        let mut xattrs_kept = ClassOutcome::Absent;
+        if outcome.is_ok() {
+            match self
+                .put_copied_xattrs(copy.tree, conn, copy.smb_to, copy.generation, &carried.xattrs, false)
+                .await
+            {
+                Ok(kept) => xattrs_kept = kept,
+                Err(e) => outcome = Err(e),
+            }
+        }
         if outcome.is_ok() {
             // Copychunk moves bytes only, so the date and Hidden are ours to
             // carry. On the copy's OWN handle, before it closes: a path stamp
@@ -173,7 +212,11 @@ impl SmbVolume {
             // the error that caused it.
             let _ = copy.tree.delete_file(conn, copy.smb_to).await;
         }
-        outcome.map(|()| copy.total)
+        let report = MetadataReport {
+            xattrs: xattrs_kept,
+            ..MetadataReport::ABSENT
+        };
+        outcome.map(|()| StreamWritten::with_report(copy.total, &report, &carried, None))
     }
 
     /// Opens `smb_to` as a copy destination, created or TRUNCATED as the trait
@@ -290,6 +333,9 @@ struct SliceCopy<'a> {
     smb_to: &'a str,
     /// The session the copy runs on, for the error funnel.
     generation: RanOn,
+    /// The source's streams, listed beside its open; `None` on a share without
+    /// them, or when the listing didn't answer.
+    listed: Option<&'a [StreamInfo]>,
 }
 
 /// `copy_within`'s bare progress callback as a [`ServerCopyProgress`]: reports

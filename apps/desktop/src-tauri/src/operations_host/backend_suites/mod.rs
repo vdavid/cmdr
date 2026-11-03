@@ -95,10 +95,13 @@ mod smb_archive_integration_test;
 // Hidden and Locked onto and off a share: the local half needs macOS's flags.
 #[cfg(target_os = "macos")]
 mod smb_flags_test;
+// Finder tags and other xattrs onto and off a share: the local half writes `com.apple.*` xattrs.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_full_concurrency_test;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_look_alike_test;
+#[cfg(target_os = "macos")]
+mod smb_xattrs_test;
 // A copy that loses the network mid-transfer waits for it (`#398`), through a
 // proxy of the test's own so the shared stack is never touched.
 #[cfg(any(target_os = "macos", target_os = "linux"))]

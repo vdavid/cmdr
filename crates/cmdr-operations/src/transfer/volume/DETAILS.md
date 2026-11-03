@@ -1492,16 +1492,18 @@ store.** This is the canonical home of the contract, for every engine: the trait
 backend docs, and the code comments that cite an invariant by number point here. Local → local copies keep everything on
 their own path (`chunked_copy.rs`, copyfile/clonefile, `cmdr_fs::metadata`); their folders are below. The invariants,
 what each pair keeps, and the decisions behind both close this section. Measured evidence:
-`docs/notes/transfer-metadata-experiments-2026-10-11.md`. Open: xattrs over direct SMB
-([#405](https://github.com/vdavid/cmdr/issues/405)). Moving a Locked item asks first and unlocks only with consent:
+`docs/notes/transfer-metadata-experiments-2026-10-11.md`. Moving a Locked item asks first and unlocks only with consent:
 `crates/cmdr-operations/DETAILS.md` § "Moving Locked items".
 
 - **Source half**: `VolumeReadStream::modified_at` (REQUIRED, so a new backend can't skip mtime by omission) and
   `VolumeReadStream::metadata(wanted)` (default empty: creation date, mode, user flags, xattrs, as a
   `cmdr_fs::metadata::CarriedMetadata`). A stream answers from what its open already learned (the stat, the listing
   entry, the CREATE response), ❌ never an extra round trip, and reads a costly class (a local file's xattrs) only when
-  `wanted` asks. A wrapper (`CheckpointStream`, `fresh_compress.rs`'s pause wrapper, the quarantine decorator) forwards
-  both. `ChannelReadStream` takes them through `with_modified_at` and `with_metadata`.
+  `wanted` asks. The engine opens the source with `Volume::open_read_stream_for_copy`, handing it the
+  `MetadataAsk::for_copy` of the pair (the values the destination keeps, an outline of what it can't), so a backend that
+  learns a class in its open's own frame asks only for a copy that will look: SMB's stream listing. A wrapper
+  (`CheckpointStream`, `fresh_compress.rs`'s pause wrapper, the quarantine decorator) forwards both. `ChannelReadStream`
+  takes them through `with_modified_at` and `with_metadata`.
 - **Destination half**: every destination that can store a class writes it inside `write_from_stream`, asking `metadata`
   once, before the first chunk, for the classes it stores. So every engine path (staged, single-shot, whole-publish)
   gets it with no engine code. A staged write sets it on the temp and the engine's final rename carries it; an in-place
@@ -1641,7 +1643,10 @@ every real store, so a folder dated when it's created lists "now" by the end of 
   one-frame compound write. Folders by path, both times in one compound. The landing rename keeps `CreationTime`
   (`crates/cmdr-smb/DETAILS.md` § "Dates on copies"). Hidden and Locked map to `HIDDEN` and `READONLY`: Hidden rides the
   write's dates frame, Read-only the post-landing `apply_metadata`, one frame for a Locked file alone; a dotfile's
-  Hidden is its name's, never a flag (`crates/cmdr-smb/DETAILS.md` § "Hidden and Locked on copies").
+  Hidden is its name's, never a flag (`crates/cmdr-smb/DETAILS.md` § "Hidden and Locked on copies"). On a share with
+  named streams (per share, from the connect probe) the xattrs too, both ways and on folders, as the streams macOS's own
+  client writes; the listing rides the read's frame and the values go on the staged temp before the dates
+  (`crates/cmdr-smb/DETAILS.md` § "Xattrs on copies").
 - **Archive (source only)**: reports each entry's date and mode from the parsed index, and its xattrs from its
   AppleDouble sidecar (a Finder-made zip's `__MACOSX`, a macOS tar's `._name`) or pax records, on random-access reads
   and the one-pass sequential extract alike (whole seconds; zip's DOS time keeps even seconds); a folder's xattrs
@@ -1759,8 +1764,8 @@ it yet.
   unlocked for the rename and locked again where it lands. **Cross-filesystem local move**: the chunked row, made
   permanent; a Locked or `deny delete` original is unlocked right before Phase 4 deletes it, on the same consent
   (`crates/cmdr-operations/DETAILS.md` § "Moving Locked items").
-- **Local ↔ direct SMB, and SMB → SMB**: mtime, birth, Hidden, and Locked, on files and folders; xattrs lost (#405);
-  mode and ACL not applicable.
+- **Local ↔ direct SMB, and SMB → SMB**: mtime, birth, Hidden, and Locked, on files and folders, and the xattrs on a
+  share with named streams (lost, and noted, on one without); mode and ACL not applicable.
 - **Local ↔ SFTP**: mtime and the file mode (folded); birth not applicable (SFTP v3); a folder's mode not carried (§
   "What mode a landed file wears").
 - **Local → WebDAV**: mtime where the server stores one (Nextcloud, not `mod_dav`), plus on Nextcloud file and folder

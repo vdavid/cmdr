@@ -292,8 +292,9 @@ async fn smb_integration_apply_metadata_dates_a_folder() {
 /// The shared metadata assertions, over a real share, held to
 /// `SmbVolume::METADATA_CAPS`: SMB keeps and reports the creation date
 /// (`CreationTime`) on a file written in one frame, on a file streamed through
-/// the writer, and on a folder. Mode, flags, and xattrs aren't carried over
-/// this client yet.
+/// the writer, and on a folder. A share has no mode; the flags are
+/// `attributes_integration_test.rs`'s, and the xattrs, on a share with named
+/// streams, `copy_xattrs_integration_test.rs`'s.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_a_copy_keeps_the_creation_date_per_the_shared_contract() {
