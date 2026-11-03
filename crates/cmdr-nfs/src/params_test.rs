@@ -1,6 +1,25 @@
 use super::*;
 
 #[test]
+fn the_e2e_portmapper_override_reads_a_port_and_ignores_anything_else() {
+    assert_eq!(portmap_port_override(Some("15480")), Some(15480));
+    assert_eq!(portmap_port_override(Some(" 15480\n")), Some(15480));
+    // Unset, empty, zero, or not a port: the standard 111.
+    assert_eq!(portmap_port_override(None), None);
+    assert_eq!(portmap_port_override(Some("")), None);
+    assert_eq!(portmap_port_override(Some("0")), None);
+    assert_eq!(portmap_port_override(Some("111111")), None);
+    assert_eq!(portmap_port_override(Some("nas:111")), None);
+}
+
+#[cfg(not(feature = "playwright-e2e"))]
+#[test]
+fn a_build_without_the_e2e_feature_always_asks_portmap_on_111() {
+    // The override is compiled out: nothing in the environment can move it.
+    assert_eq!(NfsServer::new("nas", None).portmap_port, None);
+}
+
+#[test]
 fn a_place_with_no_port_is_minted_on_the_nfs_port() {
     // Identity can't wait for portmap: a saved place must name one id before
     // anything is dialed, and the same one after.

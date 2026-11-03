@@ -858,7 +858,9 @@ E2E test hooks split along two axes:
     to the folder it staged, so the indexer's own rollups can't join the digest; `stage_agent_rollup` stages one without
     waking, which is how a spec proves that. Its `quiet` argument picks which script the wake's fake assistant plays
     (the ordinary reply, or the `nothing_to_suggest` call that makes a wake delete its own thread); the flag is sticky,
-    so a spec wanting an ordinary wake afterwards passes it explicitly.
+    so a spec wanting an ordinary wake afterwards passes it explicitly. It also forwards `cmdr-nfs/playwright-e2e`,
+    under which `CMDR_NFS_PORTMAP_PORT` moves where every `NfsServer::new` asks the portmapper (the NFS Docker fixture's
+    `rpcbind` is on 15480, and 111 on a Mac takes root); `crates/cmdr-nfs/DETAILS.md` § "The E2E portmapper override".
   - `virtual-mtp`: virtual MTP device with deterministic fixtures.
   - `smb-e2e`: virtual SMB hosts injected into mDNS discovery.
 

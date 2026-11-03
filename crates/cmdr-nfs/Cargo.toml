@@ -21,6 +21,11 @@ workspace = true
 #
 # Never enable in a production build.
 testing = ["cmdr-fs/testing"]
+# Lets `CMDR_NFS_PORTMAP_PORT` move where `NfsServer::new` asks the portmapper,
+# so the app's E2E build reaches the Docker fixture's relocated `rpcbind`
+# (`params.rs`). Never enable in a production build; the app's `playwright-e2e`
+# forwards to it.
+playwright-e2e = []
 # Exposes `fuzzing`, the entry point the `nfs_reply` target in `fuzz/` (repo
 # root) drives: every reply decoder over one record. Never enable in a
 # production build.
