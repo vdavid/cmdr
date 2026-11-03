@@ -59,10 +59,6 @@ pub trait SecretStore: Send + Sync {
     /// data" can remove each one. ❌ No default impl: a backend that forgot it would leave every
     /// password behind while the wipe reported success.
     fn keys(&self) -> Result<Vec<String>, SecretStoreError>;
-    /// This store, for an item whose being there has to say Cmdr put it there: on the Keychain,
-    /// reads and writes with every prompt refused (`DETAILS.md` § Vouching). Elsewhere, the store
-    /// itself. ❌ No default impl: a backend must decide this, or it would vouch by accident.
-    fn vouching(&self) -> &dyn SecretStore;
 }
 
 /// What the person sees the store's items under: the Keychain item name on macOS (instance
@@ -215,10 +211,6 @@ impl SecretStore for TestStore {
 
     fn keys(&self) -> Result<Vec<String>, SecretStoreError> {
         plain_file::PlainFileStore::new(isolated_store_dir()).keys()
-    }
-
-    fn vouching(&self) -> &dyn SecretStore {
-        self
     }
 }
 

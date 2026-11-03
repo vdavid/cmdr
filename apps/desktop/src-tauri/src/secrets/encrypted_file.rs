@@ -263,11 +263,6 @@ impl SecretStore for EncryptedFileStore {
             .map_err(|e| SecretStoreError::Other(format!("Lock error: {}", e)))?;
         Ok(read_store(&self.path, &self.password()?)?.0.into_keys().collect())
     }
-
-    /// Vouches for nothing, which `is_file_backed` tells callers: the key is the machine id.
-    fn vouching(&self) -> &dyn SecretStore {
-        self
-    }
 }
 
 #[cfg(test)]
