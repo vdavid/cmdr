@@ -389,7 +389,7 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
         .expect("walk");
 
     let db_path = importance_db_path(dir.path(), ROOT_VOLUME_ID);
-    let writer = ImportanceWriter::spawn(&db_path).expect("writer");
+    let writer = ImportanceWriter::spawn(&db_path, None).expect("writer");
     let weights = Weights::default();
 
     // Full pass 1: score everything at generation 1.

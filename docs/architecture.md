@@ -565,10 +565,11 @@ the vendored fork are ordinary members.
     `crates/cmdr-index/src/indexing/CLAUDE.md`
   - `importance/`: Deterministic folder-importance scoring (pure `scorer/`: values-in/score-out `Weights` + explain
     breakdown) that expensive features (agent, media-ML enrichment) consume. A read-consumer of `indexing/`, sibling to
-    `search/`, with its own per-volume `importance.db` store, a multi-volume kind-aware scheduler (Local + SMB scored,
-    MTP excluded) that recomputes on scan completion (full) and on live listing changes (incremental) — both driven by a
-    neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
-    (queryable even for an unmounted volume). See its `crates/cmdr-index/src/importance/CLAUDE.md`
+    `search/`, with its own per-volume stores (weights in the cache dir, visits in the data dir), a multi-volume
+    kind-aware scheduler (Local + SMB scored, MTP excluded) that recomputes on scan completion (full) and on live
+    listing changes (incremental) — both driven by a neutral lifecycle bus in `indexing/` — and the consumable
+    `ImportanceIndex` read API consumers reach it through (queryable even for an unmounted volume). See its
+    `crates/cmdr-index/src/importance/CLAUDE.md`
   - `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
     object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via
     an on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part

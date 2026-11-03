@@ -1,4 +1,5 @@
-//! Connection factories for `importance.db`.
+//! Connection factories for `importance-{id}.db` (the weights) and, through
+//! `visits.rs`, `visits-{id}.db`.
 //!
 //! Every connection registers the shared `platform_case` collation (reused from
 //! `indexing::store`) for parity with the index store's connection setup and creates
@@ -19,7 +20,7 @@ use crate::indexing::store::register_platform_case_collation;
 /// index store's `apply_pragmas` so the two DBs behave identically under
 /// contention, page-cache budget included
 /// ([`cmdr_fs::sqlite_util::apply_page_cache`]).
-fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), ImportanceStoreError> {
+pub(super) fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), ImportanceStoreError> {
     if !readonly {
         conn.execute_batch(
             "PRAGMA auto_vacuum = INCREMENTAL;
@@ -38,7 +39,16 @@ fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), ImportanceStor
 /// created if missing. Used by the writer thread and by `ImportanceStore::open`
 /// (which also owns the schema-version check). Callers own the returned
 /// connection.
+///
+/// Creates the parent folder: the weights live in a cache folder a cleaner app
+/// may empty while Cmdr runs, and that should cost a rescore, never a volume
+/// whose writer can't start until the next launch.
 pub(crate) fn open_write_connection(db_path: &Path) -> Result<Connection, ImportanceStoreError> {
+    if let Some(parent) = db_path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        std::fs::create_dir_all(parent)?;
+    }
     let conn = cmdr_fs::sqlite_util::open(db_path)?;
     register_collation(&conn)?;
     apply_pragmas(&conn, false)?;
@@ -60,7 +70,7 @@ pub(crate) fn open_read_connection(db_path: &Path) -> Result<Connection, Importa
 /// Register the shared `platform_case` collation, mapping the index store's error
 /// into ours. The registrar only fails with an underlying sqlite error (a
 /// collation-registration failure), which our `Sqlite` variant carries directly.
-fn register_collation(conn: &Connection) -> Result<(), ImportanceStoreError> {
+pub(super) fn register_collation(conn: &Connection) -> Result<(), ImportanceStoreError> {
     register_platform_case_collation(conn).map_err(|e| match e {
         crate::indexing::store::IndexStoreError::Sqlite(e) => ImportanceStoreError::Sqlite(e),
         crate::indexing::store::IndexStoreError::Io(e) => ImportanceStoreError::Io(e),

@@ -92,22 +92,27 @@ pub(super) fn stop_hook_for(scheduler: &Arc<ImportanceScheduler>) -> Box<dyn Fn(
     })
 }
 
-/// Register the scheduler as what holds each volume's importance database open,
-/// so a removal of that database asks it to let go first
-/// (`crate::volume_files::register_holder`).
+/// Register the scheduler as what holds each volume's importance databases open
+/// (the weights, and the visits its writer attaches), so a removal of either asks
+/// it to let go first (`crate::volume_files::register_holder`). A rebuild takes
+/// the weights alone, and the writer holds both, so each store needs its own
+/// registration; letting go twice for a removal that takes both is harmless.
 ///
 /// Weak, for the same reason as the stop hook: the registry lives for the process,
 /// and must not keep alive a scheduler its host dropped.
 pub(super) fn hold_the_importance_store(scheduler: &Arc<ImportanceScheduler>) {
-    let scheduler = Arc::downgrade(scheduler);
-    crate::volume_files::register_holder(
-        crate::volume_files::VolumeStore::Importance,
-        Box::new(move |data_dir, volume_id| {
-            if let Some(scheduler) = scheduler.upgrade() {
-                scheduler.let_go_of(data_dir, volume_id);
-            }
-        }),
-    );
+    use crate::volume_files::VolumeStore;
+    for store in [VolumeStore::Importance, VolumeStore::Visits] {
+        let scheduler = Arc::downgrade(scheduler);
+        crate::volume_files::register_holder(
+            store,
+            Box::new(move |data_dir, volume_id| {
+                if let Some(scheduler) = scheduler.upgrade() {
+                    scheduler.let_go_of(data_dir, volume_id);
+                }
+            }),
+        );
+    }
 }
 
 /// For a volume being wired, enqueue a full recompute IFF its store can't be trusted:

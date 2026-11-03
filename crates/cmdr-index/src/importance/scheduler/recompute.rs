@@ -21,7 +21,7 @@ use crate::importance::classify::PathSpace;
 use crate::importance::scorer::{SignalSet, Weights, explain};
 use crate::importance::signals::{OptionalSignals, signals_for_dir};
 use crate::importance::stop::{PassError, StopPoll, check};
-use crate::importance::store::importance_db_path;
+use crate::importance::store::{importance_db_path, visits_db_path};
 use crate::importance::writer::{ImportanceWriter, WeightDelta, WeightRow};
 #[cfg(any(test, feature = "tooling"))]
 use crate::indexing::store::IndexStore;
@@ -200,8 +200,8 @@ pub struct MeasureOutcome {
 /// is, and the phase wall-clock split, exercising the SAME walk + score + write path
 /// a live recompute uses (so the floored-skip and trimmed-JSON shape are measured
 /// faithfully). Spotlight is never sampled here (the tool has no live volume;
-/// `last_used` redistributes per `available`), and visits come from the target
-/// `importance.db` if it already holds any.
+/// `last_used` redistributes per `available`), and no visits are read or written:
+/// the writer stages weights only.
 #[cfg(any(test, feature = "tooling"))]
 pub fn recompute_index_to_db(
     index_db: &std::path::Path,
@@ -247,7 +247,7 @@ pub fn recompute_index_to_db(
 
     // Write + flush (the write phase).
     let write_started = std::time::Instant::now();
-    let writer = ImportanceWriter::spawn(importance_db).map_err(|e| e.to_string())?;
+    let writer = ImportanceWriter::spawn(importance_db, None).map_err(|e| e.to_string())?;
     let generation = writer.next_generation().map_err(|e| e.to_string())?;
     let rows_written = rows.len();
     writer.write_weights(generation, rows).map_err(|e| e.to_string())?;
@@ -275,11 +275,12 @@ fn footprint_growth(before: Option<u64>) -> Option<u64> {
     }
 }
 
-/// Read the visit table into a path→count map for the recompute pass. A missing
-/// or unopenable DB yields an empty map (the visit signal is absent, not an
-/// error).
+/// Read the volume's visits file into a path→count map for the recompute pass. A
+/// missing or unopenable DB yields an empty map (the visit signal is absent, not
+/// an error).
 pub(super) fn load_visits(data_dir: &std::path::Path, volume_id: &str) -> HashMap<String, u32> {
-    let db_path = importance_db_path(data_dir, volume_id);
+    crate::importance::store::wait_for_background_split();
+    let db_path = visits_db_path(data_dir, volume_id);
     let mut out = HashMap::new();
     if let Ok(conn) = crate::importance::store::open_read_connection(&db_path)
         && let Ok(mut stmt) = conn.prepare("SELECT path, visit_count FROM visits")

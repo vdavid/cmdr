@@ -171,11 +171,12 @@ stand-in for the MDItem query.
 `SAMPLE_CAP` is a guess until measured on a real home; the caller hands the sampler only the paths it can use, not the
 whole volume's, which is worth ~60 MB of transient on a local volume.
 
-## The visit signal (`apps/desktop/src-tauri/src/commands/importance.rs` + the store's `visits` table)
+## The visit signal (`apps/desktop/src-tauri/src/commands/importance.rs` + `visits-{id}.db`)
 
 A typed `record_visit(Location)` IPC command the frontend's navigation-commit point calls fire-and-forget (the
 `persistLastUsedPath` hook in `apps/desktop/src/lib/file-explorer/pane/persistence-subscriber.svelte.ts`, alongside the
-existing last-used-path save). It persists a compact per-volume `visits` row: **counts and timestamps only, no content,
+existing last-used-path save). It persists a compact per-volume `visits` row in the volume's visits file, apart from the
+weights so backups keep it and skip them (`store/DETAILS.md` § Two files): **counts and timestamps only, no content,
 local-only** — the privacy-sane shape, noted in `docs/security.md`. The scorer's visit-activity signal reads it on the
 next recompute.
 
@@ -243,19 +244,20 @@ and moves on; the recompute callers `let _ =` the result, so a checkpoint hiccup
 ## The shared writer registry (`writer_registry.rs`)
 
 The one-writer-per-DB invariant must hold in spirit, not be papered over by WAL busy-timeouts: both `record_visit` and
-every recompute write to a volume's `importance.db`. `WriterRegistry` (owned by the `ImportanceScheduler`, in Tauri
-managed state) hands both a SHARED long-lived `ImportanceWriter` per volume, created lazily on first use and living
-until the volume's importance database is removed. `record_visit` reaches it via
-`app.try_state::<Arc<ImportanceScheduler>>()`; the scheduler's recompute reaches it via `writer_for`. Creation reserves
-the slot then builds outside the map lock, so two concurrent first-uses can't race two threads onto one DB. Keyed by
-volume id and independent of the index registry, so a writer outlives an unmount and a late `record_visit` or queued
-recompute still has one writer to go through.
+every recompute write to a volume's importance stores (one connection: the weights, with the visits file ATTACHed).
+`WriterRegistry` (owned by the `ImportanceScheduler`, in Tauri managed state) hands both a SHARED long-lived
+`ImportanceWriter` per volume, created lazily on first use and living until the volume's importance database is removed.
+`record_visit` reaches it via `app.try_state::<Arc<ImportanceScheduler>>()`; the scheduler's recompute reaches it via
+`writer_for`. Creation reserves the slot then builds outside the map lock, so two concurrent first-uses can't race two
+threads onto one DB. Keyed by volume id and independent of the index registry, so a writer outlives an unmount and a
+late `record_visit` or queued recompute still has one writer to go through.
 
-**The one thing that ends a writer early is its database being deleted.** The scheduler registers as the importance
-store's holder, and a removal (a forgotten or evicted volume) calls `WriterRegistry::retire` first: the thread is shut
-down and joined, and the next `writer_for` builds a fresh one on a fresh database. A pass looks at its stop signal right
-before it asks for a writer, because asking CREATES the database and a forgotten volume has just had its one deleted.
-The whole mechanism: `crates/cmdr-index/DETAILS.md` § "A volume's files, and the one door they leave by".
+**The one thing that ends a writer early is its database being deleted.** The scheduler registers as the holder of both
+importance stores, and a removal (a forgotten or evicted volume, or a rebuild, which takes the weights alone) calls
+`WriterRegistry::retire` first: the thread is shut down and joined, and the next `writer_for` builds a fresh one on a
+fresh database. A pass looks at its stop signal right before it asks for a writer, because asking CREATES the database
+and a forgotten volume has just had its one deleted. The whole mechanism: `crates/cmdr-index/DETAILS.md` § "A volume's
+files, and the one door they leave by".
 
 ## Synthetic-home fixture generator (`fixtures.rs`, `cfg(test)`)
 

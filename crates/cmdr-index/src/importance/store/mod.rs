@@ -1,9 +1,19 @@
-//! Per-volume `importance.db`: the disposable store for folder-importance weights
-//! and the navigation-visit signal.
+//! Per-volume importance stores: the disposable weights and the durable visits.
 //!
-//! One DB file per volume (`importance-{volume_id}.db`), a sibling of the drive
-//! index's `index-{volume_id}.db`, carrying the index's disposable-cache
-//! discipline verbatim:
+//! Two DB files per volume, in two folders (`crate::volume_files::StoreDirs`):
+//!
+//! - **`importance-{volume_id}.db`**: the folder weights, a sibling of the drive
+//!   index's `index-{volume_id}.db` in the drive-index dir (out of backups),
+//!   carrying the index's disposable-cache discipline verbatim (below).
+//! - **`visits-{volume_id}.db`**: the navigation-visit signal, in the data dir
+//!   (backed up), because no scan can bring it back. ❌ Never deleted to recover
+//!   from a schema change ([`visits`]).
+//!
+//! An older build kept both in one `importance-{id}.db` in the data dir;
+//! `legacy_split.rs` splits that in the background after the build, and whatever
+//! opens these files first waits for it ([`wait_for_background_split`]).
+//!
+//! The weights store's discipline:
 //!
 //! - **Folded-key rows.** The primary key is a precomputed `path_folded` column
 //!   (`normalize_for_comparison(path)` — the same fold the `platform_case`
@@ -31,12 +41,15 @@
 //!
 //! ## The visit table
 //!
-//! A compact per-volume `visits` table: `path → (count, last-visit seconds)`.
-//! Counts and timestamps only — no content, local-only. It feeds the scorer's
-//! visit-activity signal on the next recompute. Privacy posture is documented in
-//! `docs/security.md`.
+//! A compact per-volume `visits` table: `path → (count, last-visit seconds)`, in
+//! its own file. Counts and timestamps only — no content, local-only. It feeds the
+//! scorer's visit-activity signal on the next recompute. The writer's connection
+//! ATTACHes the file, so `visits` resolves there with no schema prefix. Privacy
+//! posture is documented in `docs/security.md`.
 
 mod connection;
+mod legacy_split;
+pub(crate) mod visits;
 
 use std::path::{Path, PathBuf};
 
@@ -45,6 +58,7 @@ use rusqlite::Connection;
 use crate::indexing::store::normalize_for_comparison;
 pub(crate) use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
+pub(crate) use legacy_split::{split_in_background, wait_for_background_split};
 
 /// Bump to invalidate on-disk `importance.db` files. A mismatch deletes the DB
 /// file and recreates it fresh (the cache is disposable, no migrations).
@@ -62,7 +76,13 @@ pub(crate) use connection::open_write_connection;
 /// incremental subtree-clear DELETE full-scan the table (a custom collation defeats
 /// the b-tree range/LIKE optimization); the BINARY folded key restores an
 /// index-served range delete. An older DB recreates fresh.
-const SCHEMA_VERSION: &str = "3";
+///
+/// `4`: weights only. The `visits` table moved to `visits-{id}.db` in the data
+/// dir, and this file to the drive-index dir. ⚠️ A schema-3 file is the one
+/// older store that must NOT be recreated before the split has moved its visits
+/// out (`legacy_split.rs`), which [`ImportanceStore::open`] enforces
+/// ([`ImportanceStoreError::HoldsVisits`]).
+const SCHEMA_VERSION: &str = "4";
 
 /// Meta key for the per-volume recompute generation: a monotonically increasing
 /// counter bumped once per full-volume recompute pass. Every weight row is
@@ -82,8 +102,8 @@ pub(crate) const RECOMPUTE_GENERATION_KEY: &str = "recompute_generation";
 /// rows forever. (The local `root` volume held 188,760 of them on 2026-09-03.)
 ///
 /// Why a stamp rather than a [`SCHEMA_VERSION`] bump, which would also force a
-/// rescore: the bump deletes the DB file, and the `visits` table in it is the one
-/// thing here that ISN'T regenerable. Navigation history is real user data.
+/// rescore: the stamp re-arms only the volumes whose rows it has to, on the
+/// existing file, while a bump recreates every user's store at once.
 pub(crate) const SCORING_POLICY_KEY: &str = "scoring_policy";
 
 /// Meta key for the index scan the stored weights were computed against: the drive
@@ -109,13 +129,6 @@ const CREATE_TABLES_SQL: &str = "
         score            REAL    NOT NULL,
         signals          TEXT    NOT NULL,
         as_of_generation INTEGER NOT NULL
-    ) WITHOUT ROWID;
-
-    CREATE TABLE IF NOT EXISTS visits (
-        path_folded     TEXT    PRIMARY KEY,
-        path            TEXT    NOT NULL,
-        visit_count     INTEGER NOT NULL DEFAULT 0,
-        last_visit_secs INTEGER NOT NULL DEFAULT 0
     ) WITHOUT ROWID;
 
     CREATE TABLE IF NOT EXISTS meta (
@@ -151,6 +164,8 @@ pub(crate) fn needs_full_pass(
     volume_id: &str,
     index_scan: Option<&str>,
 ) -> Result<bool, ImportanceStoreError> {
+    // In a one-folder host the weights path may still be the older combined store.
+    wait_for_background_split();
     let store = ImportanceStore::open(&importance_db_path(data_dir, volume_id))?;
     Ok(
         store.recompute_generation()? == 0
@@ -159,11 +174,20 @@ pub(crate) fn needs_full_pass(
     )
 }
 
-/// Resolve the `importance.db` path for a volume, beside the drive index's DB in
-/// the app data dir. Mirrors the index's `index-{volume_id}.db` naming so the two
-/// disposable caches live together and relocate together (location-independence).
+/// Resolve a volume's weights database for the host whose data dir is
+/// `data_dir`: `importance-{volume_id}.db` beside the drive index's
+/// `index-{volume_id}.db`, in the folder `StoreDirs` keeps the rebuildable caches
+/// in (the data dir itself for a host that keeps everything together).
 pub fn importance_db_path(data_dir: &Path, volume_id: &str) -> PathBuf {
-    crate::volume_files::VolumeStore::Importance.db_path(data_dir, volume_id)
+    use crate::volume_files::{StoreDirs, VolumeStore};
+    StoreDirs::for_data_dir(data_dir).db_path(VolumeStore::Importance, volume_id)
+}
+
+/// Resolve a volume's visits database for the host whose data dir is
+/// `data_dir`: `visits-{volume_id}.db`, in the data dir.
+pub(crate) fn visits_db_path(data_dir: &Path, volume_id: &str) -> PathBuf {
+    use crate::volume_files::{StoreDirs, VolumeStore};
+    StoreDirs::for_data_dir(data_dir).db_path(VolumeStore::Visits, volume_id)
 }
 
 /// A stored weight for one folder: the scalar, the raw signal vector it was
@@ -197,6 +221,10 @@ pub enum ImportanceStoreError {
         /// The one this build writes.
         expected: &'static str,
     },
+    /// The file at the weights path still holds navigation visits nothing has
+    /// moved out yet (an older build's combined store, before its split), so it's
+    /// left alone rather than recreated. The next build-time split moves them.
+    HoldsVisits,
 }
 
 impl std::fmt::Display for ImportanceStoreError {
@@ -209,6 +237,9 @@ impl std::fmt::Display for ImportanceStoreError {
                     f,
                     "importance store schema mismatch (found {found}, expected {expected})"
                 )
+            }
+            ImportanceStoreError::HoldsVisits => {
+                write!(f, "importance store still holds visits that haven't been split out")
             }
         }
     }
@@ -225,6 +256,19 @@ impl From<rusqlite::Error> for ImportanceStoreError {
 impl From<std::io::Error> for ImportanceStoreError {
     fn from(e: std::io::Error) -> Self {
         ImportanceStoreError::Io(e)
+    }
+}
+
+impl ImportanceStoreError {
+    /// Whether SQLite says the file isn't a sound database (not one at all, or a
+    /// corrupt one): the only case where deleting a file can't lose more than is
+    /// already lost. Typed on the result code, never the message.
+    pub(crate) fn is_corruption(&self) -> bool {
+        matches!(
+            self,
+            ImportanceStoreError::Sqlite(rusqlite::Error::SqliteFailure(e, _))
+                if matches!(e.code, rusqlite::ErrorCode::NotADatabase | rusqlite::ErrorCode::DatabaseCorrupt)
+        )
     }
 }
 
@@ -246,16 +290,22 @@ impl ImportanceStore {
     /// cache discipline: register `platform_case`, run pragmas, create tables,
     /// check the schema version, and on a mismatch or corruption delete and
     /// recreate the file fresh.
+    ///
+    /// ❗ Never deletes a file that still holds visits ([`holds_visits`]): that's
+    /// an older build's combined store whose split hasn't run, and recreating it
+    /// would throw away the user's navigation history.
     pub fn open(db_path: &Path) -> Result<Self, ImportanceStoreError> {
         match Self::try_open(db_path) {
             Ok(store) => Ok(store),
             Err(ImportanceStoreError::SchemaMismatch { found, expected }) => {
+                refuse_if_holds_visits(db_path)?;
                 log::info!(
                     "Importance DB schema version changed (found {found}, expected {expected}), recreating importance DB"
                 );
                 Self::delete_and_recreate(db_path)
             }
             Err(e) => {
+                refuse_if_holds_visits(db_path)?;
                 log::warn!("Importance DB open failed ({e}), deleting and recreating");
                 Self::delete_and_recreate(db_path)
             }
@@ -349,12 +399,26 @@ impl ImportanceStore {
     pub(crate) fn weight_for(&self, path: &str) -> Result<Option<StoredWeight>, ImportanceStoreError> {
         read_weight(&self.read_conn, path)
     }
+}
 
-    /// Read one folder's visit record, or `None` if never visited.
-    #[cfg(test)]
-    pub(crate) fn visit_for(&self, path: &str) -> Result<Option<(u64, u64)>, ImportanceStoreError> {
-        read_visit(&self.read_conn, path)
+/// Refuse to delete `db_path` while it still holds visits: see
+/// [`ImportanceStore::open`].
+fn refuse_if_holds_visits(db_path: &Path) -> Result<(), ImportanceStoreError> {
+    if holds_visits(db_path) {
+        log::error!(
+            target: "importance",
+            "{} still holds visits that haven't been split out; leaving it for the next launch's split",
+            cmdr_fs::log_private::LogPrivate::file_path(db_path)
+        );
+        return Err(ImportanceStoreError::HoldsVisits);
     }
+    Ok(())
+}
+
+/// Whether the file at `db_path` has a `visits` table with at least one row. A
+/// file that can't be read answers no: nothing in it can be saved either.
+pub(crate) fn holds_visits(db_path: &Path) -> bool {
+    crate::volume_files::holds_visit_rows(db_path)
 }
 
 // ── Shared query helpers (used by the store handle and the writer thread) ─────
@@ -407,10 +471,10 @@ pub(super) fn read_weight(conn: &Connection, path: &str) -> Result<Option<Stored
     }
 }
 
-/// Read one visit row as `(count, last_visit_secs)`. Reached only through the
-/// gated [`ImportanceStore::visit_for`].
+/// Read one visit row as `(count, last_visit_secs)` from a connection that sees
+/// the `visits` table (the visits file's own, or one that attached it).
 #[cfg(test)]
-pub(super) fn read_visit(conn: &Connection, path: &str) -> Result<Option<(u64, u64)>, ImportanceStoreError> {
+pub(crate) fn read_visit(conn: &Connection, path: &str) -> Result<Option<(u64, u64)>, ImportanceStoreError> {
     let mut stmt = conn.prepare_cached("SELECT visit_count, last_visit_secs FROM visits WHERE path_folded = ?1")?;
     let mut rows = stmt.query_map(rusqlite::params![normalize_for_comparison(path)], |row| {
         Ok((row.get::<_, i64>(0)? as u64, row.get::<_, i64>(1)? as u64))

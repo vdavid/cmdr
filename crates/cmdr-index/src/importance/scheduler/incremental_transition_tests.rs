@@ -64,7 +64,7 @@ impl TestVolume {
     fn new(strategy: WalkStrategy) -> Self {
         let dir = tempfile::tempdir().expect("temp dir");
         let index = IndexStore::open(&dir.path().join("index-root.db")).expect("open index");
-        let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID)).expect("writer");
+        let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID), None).expect("writer");
         Self {
             dir,
             index,

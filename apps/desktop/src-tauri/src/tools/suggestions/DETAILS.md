@@ -221,7 +221,7 @@ and is refused as `ImpossibleWindow`, as is an inverted size window. Proposing o
 review that can't contain anything.
 
 **"Last opened" is not expressible**, and it is the feature's flagship example ("installers you've already opened"). The
-drive index carries size, modification time, and inode; there is no access time, and `importance.db`'s visit counts are
+drive index carries size, modification time, and inode; there is no access time, and importance's visit counts are
 per-FOLDER, not per-file (verified against the selector resolver and the importance schema, 2026-08-18). A predicate
 that compiled and matched nothing would be worse than its absence: the agent would propose over it and the user would
 review an empty group. So the schema omits it and the system prompt carries the positive instruction — say when the

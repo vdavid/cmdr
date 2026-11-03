@@ -123,12 +123,12 @@ comparing memory numbers: Rust test runs are measured under the counting allocat
 
 ## One fingerprint helper, two policy stamps (`fingerprint.rs`)
 
-All three databases here are disposable caches, and two of them persist a stamp saying which compile-time policy their
-rows were written under: the index's scan exclusions (`indexing/scanner/exclusions.rs::exclusion_policy_fingerprint`,
-gating `index_predates_exclusion_policy`) and importance's classification rules
-(`importance/classify.rs::scoring_policy_fingerprint`, gating `store::needs_full_pass`). Both hash their constant lists
-through `fingerprint::fingerprint_of`, so editing a list re-arms every existing DB with no version number for anyone to
-forget to bump.
+The drive index and importance's weights are disposable caches, and both persist a stamp saying which compile-time
+policy their rows were written under: the index's scan exclusions
+(`indexing/scanner/exclusions.rs::exclusion_policy_fingerprint`, gating `index_predates_exclusion_policy`) and
+importance's classification rules (`importance/classify.rs::scoring_policy_fingerprint`, gating
+`store::needs_full_pass`). Both hash their constant lists through `fingerprint::fingerprint_of`, so editing a list
+re-arms every existing DB with no version number for anyone to forget to bump.
 
 The mixing is FNV-1a rather than `DefaultHasher` because the value goes to disk and must not shift with a toolchain
 upgrade. It's crate-internal and shared rather than copied per subsystem, so ONE golden test
@@ -139,30 +139,39 @@ symmetric stamp-and-compare test while silently skipping the work the stamp exis
 
 `IndexConfig` carries two folders, and `volume_files::StoreDirs` says which store is in which:
 
-- **`drive_index_dir`**: the drive index. Cmdr points it at `~/Library/Caches/com.veszelovszki.cmdr/drive-index/` (app
-  side: `config::drive_index_dir`, which also covers dev, worktree, and E2E instances).
-- **`data_dir`**: importance and media, in `~/Library/Application Support/com.veszelovszki.cmdr/` beside the app's own
-  state.
+- **`drive_index_dir`**: the rebuildable caches, the drive index and importance's weights. Cmdr points it at
+  `~/Library/Caches/com.veszelovszki.cmdr/drive-index/` (app side: `config::drive_index_dir`, which also covers dev,
+  worktree, and E2E instances).
+- **`data_dir`**: what a scan can't bring back, importance's visits and the media index, in
+  `~/Library/Application Support/com.veszelovszki.cmdr/` beside the app's own state.
 
-**Decision: only the drive index moves to Caches.** Why: it's the bulk (1.08 GB on David's Mac against 180 MB of
-importance and 31 MB of media, 2026-10-06), it changes constantly, and a rescan rebuilds every byte of it, so backing it
-up costs disk and backup time for nothing. `~/Library/Caches` is the platform's own "don't back up, may be purged"
-folder: Time Machine skips it (verified on macOS 27.0 with `tmutil isexcluded ~/Library/Caches`, 2026-10-06), and it's
-the conventional exclusion for other backup tools too (not verified tool by tool), which a per-file Time Machine
-attribute isn't. A cleaner app emptying it costs a rescan, the same path as any missing index. The other two stay in the
-data dir because they hold what a scan can't bring back: importance's `visits` table is the user's navigation history,
-and the media index is hours of OCR and embedding work. A purge of either would silently lose that, and a backup restore
-should bring it back.
+A caller names the host by its data dir, and `StoreDirs::for_data_dir` answers both folders from it (the configured pair
+when that's the configured data dir, else one folder for a test's own). That's why `ImportanceIndex::open(data_dir, …)`
+finds weights that live in the cache dir without deriving one folder from the other.
+
+**Decision: the rebuildable caches move to Caches.** Why: they're the bulk (1.08 GB of drive index and about 180 MB of
+importance weights on David's Mac, against 104 KB of visits and 31 MB of media, 2026-10-06), they change constantly, and
+a rescan or rescore rebuilds every byte, so backing them up costs disk and backup time for nothing. `~/Library/Caches`
+is the platform's own "don't back up, may be purged" folder: Time Machine skips it (verified on macOS 27.0 with
+`tmutil isexcluded ~/Library/Caches`, 2026-10-06; `tmutil` hung without Full Disk Access when re-checked 2026-11-03),
+and it's the conventional exclusion for other backup tools too (not verified tool by tool), which a per-file Time
+Machine attribute isn't. A cleaner app emptying it costs a rescan and a rescore, the same path as any missing store.
+Visits and media stay in the data dir: the visits are the user's navigation history, and the media index is hours of OCR
+and embedding work. A purge of either would silently lose that, and a backup restore should bring it back.
+
+**Decision (David, 2026-11-03): split importance into a weights store and a visits store, and rescore rather than move
+the weights.** An older build kept both in one `importance-{id}.db` in the data dir, so ~180 MB of churn rode every
+backup for 104 KB that mattered (GitHub issue #378). The weights moved beside the drive index in `drive-index/` rather
+than to a folder of their own: they're scores of the drive index's folders, a third configured folder would buy nothing,
+and renaming `drive-index/` would mean another move of gigabytes. Moving the weights across was rejected for a one-time
+background, cancelable full pass per volume (a missing weights store is already what triggers one), which keeps the
+split down to the small, precious part. The split is `importance/store/legacy_split.rs`, below.
 
 **Rejected: `NSURLIsExcludedFromBackupKey` on the data-dir files.** It's per file and lost when SQLite deletes and
 recreates one (a schema bump, a corruption rebuild), so it would need re-asserting on every open plus each sidecar; only
 Time Machine honors it; and excluding importance or media would drop exactly the data that justifies keeping them out of
 Caches. Excluding a dedicated FOLDER would hold up better, but nothing in the data dir is a pure cache except what
 moved.
-
-**Gotcha: importance's weights are still backed up.** Its file is 99.8% rebuildable weights (67 MB of rows, plus free
-pages, against 104 KB of visits, 2026-10-06), and they're rewritten on every rescore. Splitting `visits` into a store of
-its own would let the weights move to Caches too; not done yet.
 
 **Gotcha: the cache dir is shared.** WebKit (`WebKit/`) and Core ML (`com.apple.e5rt.e5bundlecache/`) keep their caches
 in the same `~/Library/Caches/<bundle id>/`, which is why the index has a `drive-index/` folder of its own.
@@ -186,16 +195,54 @@ then ONE `rename` of the database file. A crash at any point leaves either nothi
 - **A stray `-wal` in the destination is deleted before the move**: SQLite would replay a log that belongs to no
   database onto the one that arrives, which is corruption
   (`a_stray_log_in_the_new_folder_is_never_replayed_onto_the_moved_database`).
-- **`IndexStore::open` creates its parent folder**, so a cache folder emptied while Cmdr runs costs a rescan of what's
-  opened next, never a failed volume until the next launch.
+- **`IndexStore::open` creates its parent folder** (so do importance's weights and visits opens), so a cache folder
+  emptied while Cmdr runs costs a rescan of what's opened next, never a failed volume until the next launch.
+
+### Splitting an older build's importance store (`importance/store/legacy_split.rs`)
+
+`IndexBuilder::build` starts it right after the drive-index move, every launch, on a blocking thread (`build` runs on
+the host's setup thread, which a slow disk must never hold up). Everything that opens the visits or the weights (the
+writer registry, the launch probe, a pass's visit read), and every `volume_files::remove` (a forget at launch could
+otherwise delete files the split then recreates), waits for it first. The wait is `volume_files::wait_for_store_work`,
+marked by a drop guard so a panicking split can't leave waiters hanging, and the instance lock keeps other processes
+out. For each `importance-{id}.db` in the data dir that still has a `visits` table, it moves the visits into
+`visits-{id}.db` and deletes the old file. Unlike the move it runs when both folders are one too (the visits must leave
+the combined file either way), and in that layout a weights-only file at the same path is this build's own store and is
+left alone. The module docs carry the per-volume cases. The shape that makes it crash-safe:
+
+1. Stamp a random token into the OLD file's `meta` (kept if it has one).
+2. In ONE transaction on the NEW file, merge the old rows in, record the token in `split_from`, and record in the
+   `split_rows` ledger how much of each row that token contributed.
+3. Only once step 2 is on disk (`synchronous = FULL` + `fullfsync` on both files, the new WAL folded in, the folder
+   entry synced): fold the old WAL in, close, delete.
+
+A crash before step 2 commits redoes the copy; after it, the ledger says everything is accounted for and the re-run only
+deletes. How a row merges (module docs § How a row merges) is what keeps the round trips honest:
+
+- **A token in the ledger** adds only what the row has beyond it: a re-run adds nothing, and an older build that kept
+  recording into a file whose delete failed has exactly its new visits added.
+- **A new token, rows visited after the latest split** (an older build started a fresh combined file): added.
+- **A new token, rows visited no later than the latest split** (Time Machine restored the old store from before its
+  split): merged by `max`, so restored history adds nothing.
+
+An unreadable old file is deleted (no earlier build kept one either), but only when the OLD file is the damaged one;
+damage found in the new visits file, and any other failure, leaves the old file whole for the next launch.
+
+- **The guards behind it**: `ImportanceStore::open` never recreates a file that still holds visit rows
+  (`ImportanceStoreError::HoldsVisits`), and `volume_files::remove` never deletes one for a removal that keeps the
+  visits (a rebuild), so in the one-folder layout neither can drop history the split hasn't moved. A forget takes the
+  old combined file too, so a forgotten volume's history can't come back with the next split.
+- **Every crash point is a test** in `legacy_split_tests.rs`, plus the build-level
+  `building_splits_an_older_builds_importance_store`.
 
 ## A volume's files, and the one door they leave by (`volume_files.rs`)
 
-Three stores each keep a file set per volume, all named after the volume id, each in its own folder (§ "Where the stores
+Four stores each keep a file set per volume, all named after the volume id, each in its own folder (§ "Where the stores
 live"):
 
 - The drive index: `index-{id}.db`, plus SQLite's `-wal` and `-shm`.
-- Folder importance: `importance-{id}.db`, plus the same two.
+- Folder importance's weights: `importance-{id}.db`, plus the same two.
+- Folder importance's visits: `visits-{id}.db`, plus the same two.
 - The media index: `media-{id}.db`, the same two, and one vector index per ANN space beside it
   (`media-{id}.clip.usearch`, `.usearch.meta`, `.usearch.dirty`).
 
@@ -208,11 +255,11 @@ Forgetting a share left its importance database behind for good (tens of MB each
 did the same, and the retired-ID sweep took the media database and left its vector index. So a caller now names a REASON
 and never a list of stores, and `Removal::takes` answers per store in one exhaustive match:
 
-- **`Forgotten`** (the user forgot the drive, cleared every index, or the retention cap evicted it): the index and
-  importance. Importance scores the folders of an index that is going.
+- **`Forgotten`** (the user forgot the drive, cleared every index, or the retention cap evicted it): the index and both
+  importance stores. Importance scores the folders of an index that is going.
 - **`IndexRebuild`** (a `Failed` index a start clears, a walk-built index that predates the exclusion policy): the index
-  alone. The volume is staying, the next completed scan rescores importance in full, and the visit history in that
-  database is not something a scan brings back.
+  and the weights scored from it. The visits stay: the volume is staying, and its navigation history is not something a
+  scan brings back.
 - **`Unreachable`** (a volume ID from a retired scheme): every store. Nothing can open any of it again.
 
 A fourth store is a new `VolumeStore` variant, and the compiler then asks what each reason does with it.
@@ -230,10 +277,11 @@ to the database, unlink it with its sidecars, retire again, then unlink what the
 and why it brackets the unlink: `crates/cmdr-fs/DETAILS.md` § "Retiring cached read connections".
 
 **Holders.** A subsystem that keeps a store open outside the lifecycle registry registers a release through
-`register_holder`, so `indexing` never calls `importance` by name. The importance scheduler is the one holder today: its
-per-volume writer thread is shut down and joined (`WriterRegistry::retire`) before the unlink. Skipping that costs
-twice: the writer's connection keeps the unlinked file's blocks allocated, and the writer stays in the registry, so a
-share indexed again writes every weight into the unlinked file while the new database on disk stays empty
+`register_holder`, so `indexing` never calls `importance` by name. The importance scheduler is the one holder today,
+registered for the weights AND the visits (its writer holds both on one connection, and a rebuild takes only the
+weights): its per-volume writer thread is shut down and joined (`WriterRegistry::retire`) before the unlink. Skipping
+that costs twice: the writer's connection keeps the unlinked file's blocks allocated, and the writer stays in the
+registry, so a share indexed again writes every weight into the unlinked file while the new database on disk stays empty
 (`a_forgotten_volumes_writer_lets_go_of_its_database`). A release is handed the data dir as well as the volume id and
 ignores one that isn't its own, since two hosts in one process (tests) can share an id. The index database's own holders
 are the lifecycle's, drained by the teardown in its own load-bearing order, and are not registered here.

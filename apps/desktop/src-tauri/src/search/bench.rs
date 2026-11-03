@@ -6,8 +6,8 @@
 //! cargo test -p cmdr --lib search::bench::bench_synthetic -- --ignored --nocapture
 //!
 //! # A real index DB (field-accurate; point it at a copy or the live file — the read is read-only):
-//! CMDR_SEARCH_BENCH_DB="$HOME/Library/Application Support/com.veszelovszki.cmdr/index-root.db" \
-//! CMDR_SEARCH_BENCH_IMPORTANCE_DB="$HOME/Library/Application Support/com.veszelovszki.cmdr/importance-root.db" \
+//! CMDR_SEARCH_BENCH_DB="$HOME/Library/Caches/com.veszelovszki.cmdr/drive-index/index-root.db" \
+//! CMDR_SEARCH_BENCH_IMPORTANCE_DB="$HOME/Library/Caches/com.veszelovszki.cmdr/drive-index/importance-root.db" \
 //!   cargo test -p cmdr --lib search::bench::bench_real_index -- --ignored --nocapture
 //!
 //! # The unscoped fan-out: several volumes' arenas, one after another vs all at once.

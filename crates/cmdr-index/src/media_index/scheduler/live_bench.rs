@@ -242,7 +242,7 @@ fn build_dirs(conn: &rusqlite::Connection, dirs: &[String]) {
 fn seed_importance(data_dir: &std::path::Path, volume_id: &str, count: usize) {
     let path = importance_db_path(data_dir, volume_id);
     ImportanceStore::open(&path).expect("open importance store");
-    let writer = ImportanceWriter::spawn(&path).expect("importance writer");
+    let writer = ImportanceWriter::spawn(&path, None).expect("importance writer");
     let rows: Vec<WeightRow> = (0..count)
         .map(|i| WeightRow {
             path: format!("/Users/dev/folder{}/sub{}", i % 512, i),

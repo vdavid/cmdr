@@ -1,8 +1,9 @@
-# Importance store (`importance.db`)
+# Importance store (`importance-{id}.db` + `visits-{id}.db`)
 
-The per-volume SQLite cache: `mod.rs` (schema, `SCHEMA_VERSION`, the read helpers, `needs_full_pass`), `connection.rs`
-(the read/write connection factories). `../writer.rs` owns every write, on ONE thread per volume. The disposable-cache
-rule and the floor doctrine are in `../CLAUDE.md`.
+Two files per volume: the weights, a SQLite cache in the cache dir (`mod.rs`: schema, `SCHEMA_VERSION`, the read
+helpers, `needs_full_pass`; `connection.rs`: the connection factories), and the visits, user data in the data dir
+(`visits.rs`). `legacy_split.rs` splits an older build's combined file at build time. `../writer.rs` owns every write,
+on ONE thread per volume. The disposable-cache rule and the floor doctrine are in `../CLAUDE.md`.
 
 ## Must-knows
 
@@ -15,7 +16,11 @@ rule and the floor doctrine are in `../CLAUDE.md`.
   `folded(query)`. ❌ Don't add a query that compares `path` under the collation.
 - **`SCHEMA_VERSION` is a cache version, not a migration target.** A bump delete-and-recreates every user's
   `importance-{volume_id}.db` on next launch (one recompute, nothing lost). ❌ Don't write a migration. Bump it for a
-  change to what rows or JSON the store persists, not only for a `CREATE TABLE` change.
+  change to what rows or JSON the store persists, not only for a `CREATE TABLE` change. ❗ `open` refuses to recreate a
+  file that still holds visit rows (`HoldsVisits`): that's an older build's combined file the split hasn't reached.
+- **The visits file is NOT a cache.** ❌ Never delete-and-recreate it on a schema change (a change is a migration, and
+  David's call); only a file SQLite calls unsound is replaced. Its `visits` SQL is unchanged because the writer ATTACHes
+  it.
 - **`needs_full_pass` must force the WRITE-path open FIRST, then read the meta table.** ❌ Never a read-path generation
   probe: the recreate is lazy and write-path only, so a read probe sees the OUTGOING schema's stamped generation, skips
   the pass, and the recreate then wipes it — the volume sticks at "never scored" forever. The ordering, and which
@@ -24,8 +29,8 @@ rule and the floor doctrine are in `../CLAUDE.md`.
   `classify::scoring_policy_fingerprint()` (a content hash of every classifier list plus `SCORING_RULES_VERSION`); a
   mismatch or an absent stamp makes `needs_full_pass` say yes. Nothing else revisits stored rows: a full pass runs once,
   an incremental only touches changed folders. ❌ Write it in `apply_full_pass` and nowhere else: an incremental can't
-  vouch for the rows it didn't touch. A `SCHEMA_VERSION` bump would force a rescore too, but it deletes the DB and
-  `visits` with it, which is real user data. Details: `DETAILS.md` § The scoring-policy stamp.
+  vouch for the rows it didn't touch. A `SCHEMA_VERSION` bump would force a rescore too, but for every user's every
+  volume at once. Details: `DETAILS.md` § The scoring-policy stamp.
 - **`SCORED_SCAN_KEY` is what makes a scan whose pass never landed get redone** at the next launch (the index's
   `scan_completed_at`, compared by inequality). Same rule: ❌ write it in `apply_full_pass` only. `DETAILS.md` § The
   scan stamp.

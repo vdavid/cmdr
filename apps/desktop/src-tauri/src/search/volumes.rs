@@ -35,7 +35,8 @@ pub(crate) use weights::{start_importance_weight_subscriber, weights_for};
 
 // ── App data dir (set once at startup) ───────────────────────────────
 
-/// The resolved app data dir, where every `importance-{volume_id}.db` lives. Set
+/// The resolved app data dir, which the importance read API takes to find each
+/// volume's weights (`cmdr_index::importance::read::ImportanceIndex::open`). Set
 /// from app setup (search commands and MCP have no `AppHandle`, so they read it
 /// from here instead of re-resolving), and swapped under a guard by a test that
 /// needs its own — a live search builds a real index DB in there, so a shared path
@@ -55,7 +56,8 @@ pub(crate) fn set_drive_index_dir(dir: PathBuf) {
     *DRIVE_INDEX_DIR.lock_ignore_poison() = Some(dir);
 }
 
-/// The two folders a load reads: the drive index's and the importance store's.
+/// The two folders a load reads from: the drive index's, and the data dir the
+/// importance read API resolves the weights from.
 struct SearchDirs {
     data: PathBuf,
     drive_index: PathBuf,

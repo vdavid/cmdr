@@ -4,26 +4,39 @@ The on-disk contract for a volume's folder weights and its navigation-visit coun
 work here: editing, planning, reorganizing, or advising. The writer thread and its transactions live one level up
 (`../DETAILS.md` § The writer).
 
-Per-volume `importance-{volume_id}.db` in the app data dir (the drive index's `index-{volume_id}.db` is in the cache
-dir) (`importance_db_path`). It carries the index's disposable-cache discipline verbatim: the shared `platform_case`
-collation (reused from `indexing::store`, the SAME filesystem case/normalization rule) registered on every connection,
-delete-and-recreate on a `SCHEMA_VERSION` mismatch (no migrations, weights are regenerable), and ONE writer thread per
-DB.
+## Two files
 
-## The three tables
+- **`importance-{volume_id}.db`**, the weights, beside the drive index's `index-{volume_id}.db` in the cache dir, out of
+  backups (`importance_db_path`). It carries the index's disposable-cache discipline verbatim: the shared
+  `platform_case` collation (reused from `indexing::store`, the SAME filesystem case/normalization rule) registered on
+  every connection, delete-and-recreate on a `SCHEMA_VERSION` mismatch (no migrations, weights are regenerable), and ONE
+  writer thread per DB.
+- **`visits-{volume_id}.db`**, the navigation visits, in the data dir, backed up (`visits_db_path`, `visits.rs`). Not a
+  cache: it's never recreated for a schema change, and the only file it replaces is one SQLite calls unsound
+  (`NotADatabase` / `DatabaseCorrupt`, typed). The writer ATTACHes it to its weights connection as `visit_log`, so the
+  `visits` SQL reads as it did when both lived in one file; the recompute pass reads it on a connection of its own
+  (`load_visits`).
 
-- **`weights`** — keyed by `path_folded` (the BINARY primary key), with the verbatim `path` as a plain column. Each row
-  also holds the scalar `score`, the serialized raw `FolderSignals` vector (so a future consumer can re-weight under its
-  own profile without a rescan), and the **as-of `recompute_generation`** the pass stamped.
-- **`visits`** — the navigation-visit signal, `path → (count, last-visit seconds)`. Counts and timestamps only, no
-  content, local-only. Fed by `record_visit` (`../DETAILS.md` § The visit signal).
-- **`meta`** — `schema_version`, the per-volume `recompute_generation` counter (bumped once per full pass), and
-  `scoring_policy` (the classification fingerprint that pass scored under; see below).
+Why two, where each lives, and the older build's split: `../../../DETAILS.md` § "Where the stores live" (the decision)
+and `legacy_split.rs` (the per-volume cases).
 
-All three are `WITHOUT ROWID`. Every weight row carries the as-of generation it was scored at, the honest staleness
-marker an offline-unmounted read caveats with; all rows from the last full pass share it, and the read API surfaces it.
-Because a full pass rewrites the whole table (`../DETAILS.md` § The writer), a surviving row is never at an older
-generation than the store's.
+## The tables
+
+- **`weights`** (weights file) — keyed by `path_folded` (the BINARY primary key), with the verbatim `path` as a plain
+  column. Each row also holds the scalar `score`, the serialized raw `FolderSignals` vector (so a future consumer can
+  re-weight under its own profile without a rescan), and the **as-of `recompute_generation`** the pass stamped.
+- **`meta`** (weights file) — `schema_version`, the per-volume `recompute_generation` counter (bumped once per full
+  pass), and `scoring_policy` (the classification fingerprint that pass scored under; see below).
+- **`visits`** (visits file) — the navigation-visit signal, `path → (count, last-visit seconds)`, on the same folded
+  key. Counts and timestamps only, no content, local-only. Fed by `record_visit` (`../DETAILS.md` § The visit signal).
+- **`meta`**, **`split_from`**, and **`split_rows`** (visits file) — its `schema_version`; the token of each older
+  build's combined file whose visits were merged in, with when; and the ledger of how much of each row each token
+  contributed, so the split never adds the same visit twice (`legacy_split.rs` § How a row merges).
+
+All are `WITHOUT ROWID`. Every weight row carries the as-of generation it was scored at, the honest staleness marker an
+offline-unmounted read caveats with; all rows from the last full pass share it, and the read API surfaces it. Because a
+full pass rewrites the whole table (`../DETAILS.md` § The writer), a surviving row is never at an older generation than
+the store's.
 
 `ImportanceStore` is the read side and the schema-lifecycle owner: `open` applies the schema check plus
 delete-and-recreate, and hands out a read connection. The writer thread opens its own connection through
@@ -111,9 +124,9 @@ touches folders the filesystem changed. So a classification fix ships and stays 
 `score=0.898, pathClass=projectRoot` and `$HOME` at `score=0.954`, the two scores that had the agent's wake firing
 continuously. The stamp is what makes a fix like that reach them.
 
-**Why a stamp rather than a `SCHEMA_VERSION` bump**, which would also force a rescore: the bump deletes the DB file, and
-`visits` is the one table here that isn't regenerable. Navigation history is real user data, so a scoring change re-arms
-the weights and leaves it alone (`re_arming_the_scoring_policy_keeps_the_visit_history` pins that).
+**Why a stamp rather than a `SCHEMA_VERSION` bump**, which would also force a rescore: the stamp re-arms only the stores
+whose rows predate the policy, on the file they're in, while a bump recreates every user's every store.
+`re_arming_the_scoring_policy_keeps_the_visit_history` pins that a re-arm leaves the visits alone.
 
 ❌ **Stamp it in `apply_full_pass` and nowhere else.** A full pass is the one moment the table provably holds nothing
 but rows this build's classifiers produced. An incremental can't vouch for the rows it didn't touch, so stamping there

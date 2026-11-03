@@ -39,7 +39,7 @@ pub(crate) fn make_importance_db(data_dir: &Path, volume_id: &str, rows: &[(&str
     use cmdr_index::importance::testing::importance_db_path;
     use cmdr_index::importance::testing::{ImportanceWriter, WeightRow};
     let db_path = importance_db_path(data_dir, volume_id);
-    let writer = ImportanceWriter::spawn(&db_path).expect("spawn writer");
+    let writer = ImportanceWriter::spawn(&db_path, None).expect("spawn writer");
     let weight_rows: Vec<WeightRow> = rows
         .iter()
         .map(|(path, score)| WeightRow {

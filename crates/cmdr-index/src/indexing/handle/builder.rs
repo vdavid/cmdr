@@ -134,6 +134,7 @@ impl IndexBuilder {
         let config = self.effective_config();
         let index = self.install();
         adopt_a_drive_index_left_in_the_data_dir(&config);
+        split_an_older_builds_importance_stores(&config);
         crate::indexing::lifecycle::state::init();
         Ok(index)
     }
@@ -315,4 +316,46 @@ fn adopt_a_drive_index_left_in_the_data_dir(config: &IndexConfig) {
     for (volume_id, why) in &report.left {
         log::warn!(target: "indexing", "the drive index of '{volume_id}' stays in the data dir until the next launch: {why}");
     }
+}
+
+/// Move the visits out of each combined importance store an older build left in
+/// the data dir, and delete it (`importance/store/legacy_split.rs`). Its weights
+/// rebuild on the volume's next full pass, which a missing weights store triggers
+/// by itself.
+///
+/// On a blocking thread, since `build` runs on the host's setup thread: a slow
+/// disk must never hold up the window. Everything that opens the visits or the
+/// weights waits for it first (`wait_for_background_split`), and the host's
+/// instance lock keeps every other process out.
+///
+/// Unlike the drive-index move this runs when both dirs are one folder too: the
+/// visits have to leave the combined file either way. A no-op for the lazy
+/// no-host fallback (no data dir).
+fn split_an_older_builds_importance_stores(config: &IndexConfig) {
+    if config.data_dir.as_os_str().is_empty() {
+        return;
+    }
+    let drive_index = if config.drive_index_dir.as_os_str().is_empty() {
+        config.data_dir.clone()
+    } else {
+        config.drive_index_dir.clone()
+    };
+    let dirs = crate::volume_files::StoreDirs {
+        data: config.data_dir.clone(),
+        drive_index,
+    };
+    crate::importance::store::split_in_background(dirs, |report| {
+        if !report.split.is_empty() || !report.discarded.is_empty() {
+            let rows: u64 = report.split.iter().map(|(_, rows)| rows).sum();
+            log::info!(
+                target: "importance",
+                "split the older importance stores: {} split ({rows} visit rows moved), {} discarded; their weights rebuild on the next full pass",
+                report.split.len(),
+                report.discarded.len()
+            );
+        }
+        for (volume_id, why) in &report.left {
+            log::warn!(target: "importance", "the older importance store of '{volume_id}' stays until the next launch: {why}");
+        }
+    });
 }

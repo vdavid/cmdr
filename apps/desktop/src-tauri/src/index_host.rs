@@ -53,9 +53,11 @@ pub fn install(app: &AppHandle) {
     // the one place that turns stored settings into what the index acts on. The
     // media-policy IPC setters re-apply their own fields as the user changes them.
     //
-    // The drive index goes to the cache dir, which backups skip; building the index moves
-    // one an older build left in the data dir (`cmdr_index`'s `drive_index_relocation.rs`).
-    // That move is why `lib.rs` claims the instance lock BEFORE calling this.
+    // The drive index and importance's weights go to the cache dir, which backups skip;
+    // building the index moves a drive index an older build left in the data dir and splits
+    // its importance store (`cmdr_index`'s `drive_index_relocation.rs`,
+    // `importance/store/legacy_split.rs`). Those moves are why `lib.rs` claims the instance
+    // lock BEFORE calling this.
     match crate::config::resolved_app_data_dir(app) {
         Ok(data_dir) => {
             let drive_index_dir = drive_index_dir(&data_dir);

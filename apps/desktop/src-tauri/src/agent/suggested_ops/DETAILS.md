@@ -47,7 +47,7 @@ and `resolve_over_share` re-addresses each match onto the root's volume. Only `N
 
 **Not available through the index today: "last opened".** The plan's flagship example ("installers you've already
 opened") wants it, and the drive index carries size, modification time, and inode but no access time. The visit counts
-in `importance.db` are per-FOLDER, not per-file. So a selector can express "old `.dmg` files in Downloads" but not yet
+in `visits-{id}.db` are per-FOLDER, not per-file. So a selector can express "old `.dmg` files in Downloads" but not yet
 "ones you opened"; wiring an access-time source is its own effort, not a line in this module.
 
 ## The display text, and why it carries no prose

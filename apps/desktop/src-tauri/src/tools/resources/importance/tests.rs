@@ -26,7 +26,7 @@ pub(crate) fn scored_signals(path_class: PathClass, now: u64) -> FolderSignals {
 /// signals, so `explain`'s recomputed breakdown matches the stored scalar.
 pub(crate) fn write_db(dir: &Path, volume_id: &str, rows: &[(&str, FolderSignals)], now: u64) {
     let db_path = importance_db_path(dir, volume_id);
-    let writer = ImportanceWriter::spawn(&db_path).expect("spawn writer");
+    let writer = ImportanceWriter::spawn(&db_path, None).expect("spawn writer");
     let weight_rows: Vec<WeightRow> = rows
         .iter()
         .map(|(path, signals)| {

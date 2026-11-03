@@ -34,7 +34,7 @@ does. Depth: `DETAILS.md`.
   index reads a sleeping share member's index on disk, read-only, re-addressed (`DETAILS.md` § Where a proposal may
   point).
 - **There is no last-opened predicate, and adding one needs an access-time source first.** The drive index has size,
-  mtime, and inode; `importance.db`'s visits are per-FOLDER. A predicate that silently matched nothing would be worse
+  mtime, and inode; importance's visits (`visits-{id}.db`) are per-FOLDER. A predicate that silently matched nothing would be worse
   than its absence. The prompt tells the model to say when a file last CHANGED instead.
 - **The planned shapes are the validation.** `SourceShape` carries each verb's target and `PlannedSources` carries the
   naming a hand-listed group needs (a selector supplies its own), so a trash group with a destination, or a rename built

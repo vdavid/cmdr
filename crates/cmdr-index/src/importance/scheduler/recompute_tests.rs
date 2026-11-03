@@ -34,7 +34,7 @@ fn full_recompute_ranks_meaningful_folders_above_machine_output() {
         .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
         .expect("pool")
         .expect("walk");
-    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID)).expect("writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID), None).expect("writer");
     let weights = Weights::default();
     let outcome = recompute_folders(
         &RecomputeInputs {
@@ -307,7 +307,7 @@ fn descendants_of_a_floored_folder_floor_too() {
     }
 
     // Score the walk and assert the deep dist floors to 0 despite mixed, recent files.
-    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID)).expect("writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID), None).expect("writer");
     let weights = Weights::default();
     recompute_folders(
         &RecomputeInputs {

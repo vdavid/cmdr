@@ -168,7 +168,8 @@ pub struct ImportanceIndex {
 }
 
 impl ImportanceIndex {
-    /// Open the read API for `volume_id` under `data_dir`. Does not touch the DB
+    /// Open the read API for `volume_id`'s weights, for the host whose data dir is
+    /// `data_dir` (`importance_db_path` says where they are). Does not touch the DB
     /// until the first read (the connection is lazy), so this is cheap and never
     /// fails on a missing file — a `weight_for` on an unscored volume returns
     /// `None`.
@@ -552,24 +553,22 @@ fn row_to_scored_weight(row: &rusqlite::Row<'_>) -> rusqlite::Result<ScoredWeigh
     })
 }
 
-/// Enumerate the volume ids that have an `importance.db` on disk under `data_dir`,
-/// root first then the rest sorted (a stable roster). The importance stores outlive
+/// Enumerate the volume ids that have a weights store on disk for the host whose
+/// data dir is `data_dir` (`importance-{id}.db`, in the folder `StoreDirs` keeps
+/// them in), root first then the rest sorted (a stable roster). The importance stores outlive
 /// their volume's mount by design, so this is the offline-capable answer to "which
 /// volumes have importance data" without a live scheduler, index registry, or mount
 /// — the roster the `cmdr://importance` resource iterates. MTP is never
 /// background-scored, so no `importance-mtp-*.db` exists to list.
 pub fn scored_volume_ids(data_dir: &std::path::Path) -> Vec<String> {
-    let mut ids: Vec<String> = match std::fs::read_dir(data_dir) {
+    use crate::volume_files::{StoreDirs, VolumeStore};
+    let dirs = StoreDirs::for_data_dir(data_dir);
+    let mut ids: Vec<String> = match std::fs::read_dir(dirs.of(VolumeStore::Importance)) {
         Ok(entries) => entries
             .filter_map(|e| e.ok())
             .filter_map(|e| e.file_name().into_string().ok())
-            .filter_map(|name| {
-                // `importance-{volume_id}.db`. The `-wal` / `-shm` sidecars end
-                // `.db-wal` / `.db-shm`, so the `.db` suffix check drops them.
-                name.strip_prefix("importance-")
-                    .and_then(|rest| rest.strip_suffix(".db"))
-                    .map(str::to_string)
-            })
+            // `importance-{volume_id}.db`; a `-wal` / `-shm` sidecar names nothing.
+            .filter_map(|name| VolumeStore::Importance.volume_id_of(&name).map(str::to_string))
             .collect(),
         Err(_) => Vec::new(),
     };

@@ -118,8 +118,9 @@ fn os_default_data_dir() -> Option<PathBuf> {
 /// shared: WebKit and Core ML keep theirs there too.
 const DRIVE_INDEX_DIR_NAME: &str = "drive-index";
 
-/// Where the drive index lives: `drive-index/` in the app's cache dir, a rebuildable cache of
-/// gigabytes that backups should skip (Time Machine excludes `~/Library/Caches` by default).
+/// Where the drive index and importance's weights live: `drive-index/` in the app's cache dir,
+/// rebuildable caches of gigabytes that backups should skip (Time Machine excludes
+/// `~/Library/Caches` by default).
 /// The cache dir, by priority:
 /// 1. `CMDR_CACHE_DIR` (set by `tauri-wrapper.ts` for dev, mirroring Tauri's `app_cache_dir()`)
 /// 2. `<CMDR_DATA_DIR>/cache`, so an E2E or capture run that names only a data dir stays wholly

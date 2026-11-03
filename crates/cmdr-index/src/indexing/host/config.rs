@@ -34,17 +34,20 @@ use crate::media_index::network::config::NetworkEnrichConfig;
 /// Everything the index needs from the product.
 #[derive(Clone, Debug)]
 pub struct IndexConfig {
-    /// Where the importance and media databases live: the durable app data dir,
-    /// resolved once by the app so dev, production, and each worktree stay
-    /// separated. Importance keeps navigation visits nothing can rebuild, and the
-    /// media index is hours of image analysis, so both stay where backups reach.
+    /// Where importance's visits and the media databases live: the durable app
+    /// data dir, resolved once by the app so dev, production, and each worktree
+    /// stay separated. The visits are navigation history nothing can rebuild, and
+    /// the media index is hours of image analysis, so both stay where backups
+    /// reach. Also the name a caller hands the crate's API for this index.
     pub data_dir: PathBuf,
-    /// Where the drive index's databases live. A rebuildable cache measured in
-    /// gigabytes, so the app points it at a folder backups skip (on macOS,
-    /// `~/Library/Caches`). May equal `data_dir`.
+    /// Where the rebuildable caches live: the drive index's databases and
+    /// importance's weights. Gigabytes that churn, so the app points it at a folder
+    /// backups skip (on macOS, `~/Library/Caches`). May equal `data_dir`.
     ///
     /// When it differs, building the index moves any drive index an older build
-    /// left in `data_dir` over here (`drive_index_relocation.rs`).
+    /// left in `data_dir` over here (`drive_index_relocation.rs`). Either way it
+    /// splits an older build's combined importance store
+    /// (`importance/store/legacy_split.rs`).
     pub drive_index_dir: PathBuf,
     /// The media index's user-controlled policy.
     pub media: MediaConfig,
@@ -161,7 +164,7 @@ pub(crate) fn data_dir() -> Result<PathBuf, DataDirUnset> {
         .ok_or(DataDirUnset)
 }
 
-/// Where the drive index's databases live. Errs exactly when [`data_dir`] does.
+/// Where the drive index and importance's weights live. Errs exactly when [`data_dir`] does.
 pub(crate) fn drive_index_dir() -> Result<PathBuf, DataDirUnset> {
     DIRS.read_ignore_poison()
         .as_ref()

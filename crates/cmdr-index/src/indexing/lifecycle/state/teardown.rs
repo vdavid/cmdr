@@ -516,7 +516,7 @@ pub(super) fn remove_instance_and_handles_on(registry: &Registry, volume_id: &st
 /// state for a volume.
 ///
 /// `why` decides WHICH files: a forgotten volume loses every store that scores or
-/// describes its index, a rebuild loses the index database alone
+/// describes its index, a rebuild loses the index database and the weights scored from it
 /// (`volume_files::Removal`). ❌ Never unlink a volume's database anywhere else:
 /// `volume_files::remove` is the one door, which is what keeps a store from being
 /// left behind by a path written before it existed.

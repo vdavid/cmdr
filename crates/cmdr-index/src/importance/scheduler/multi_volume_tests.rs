@@ -298,7 +298,7 @@ fn should_enqueue_full_pass_gates_on_kind_and_store_state() {
     // A store already carrying a generation (a completed full pass) ⇒ no re-enqueue,
     // so the sweep never rescores an already-scored volume on every launch.
     let scored = tempfile::tempdir().expect("temp dir");
-    let writer = ImportanceWriter::spawn(&importance_db_path(scored.path(), ROOT_VOLUME_ID)).expect("writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(scored.path(), ROOT_VOLUME_ID), None).expect("writer");
     writer
         .write_weights(
             1,
@@ -459,7 +459,7 @@ fn offline_unmounted_read_returns_stored_weights_after_index_gone() {
         .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
         .expect("pool")
         .expect("walk");
-    let writer = ImportanceWriter::spawn(&importance_db_path(data_dir.path(), volume_id)).expect("writer");
+    let writer = ImportanceWriter::spawn(&importance_db_path(data_dir.path(), volume_id), None).expect("writer");
     let weights = Weights::default();
     let smb_available = SignalSet {
         visit_available: true,
@@ -552,7 +552,7 @@ fn multi_volume_recompute_scores_each_volume_into_its_own_store() {
             .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
             .expect("pool")
             .expect("walk");
-        let writer = ImportanceWriter::spawn(&importance_db_path(data_dir.path(), volume_id)).expect("writer");
+        let writer = ImportanceWriter::spawn(&importance_db_path(data_dir.path(), volume_id), None).expect("writer");
         let outcome = recompute_folders(
             &RecomputeInputs {
                 writer: &writer,
