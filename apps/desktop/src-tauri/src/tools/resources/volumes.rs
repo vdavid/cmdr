@@ -20,6 +20,10 @@ use super::indexing::status_token;
 use crate::file_system::volume::SpaceInfo;
 use crate::index_host::index;
 use crate::search::format_size;
+#[cfg(target_os = "macos")]
+use cmdr_fs::deadline::{BlockingBudget, Deadline, timeout_detached_within};
+#[cfg(target_os = "macos")]
+use std::time::Duration;
 
 /// A volume's transport kind, the coarse routing hint an agent reads first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -110,7 +114,8 @@ pub(crate) struct VolumeSummary {
     /// not applicable.
     pub ejectable: Option<bool>,
     /// Index freshness token (`fresh` / `scanning` / `stale` / `off`), shared with
-    /// `cmdr://indexing`. `None` for kinds that are never indexed (virtual).
+    /// `cmdr://indexing`. `None` for kinds that are never indexed (virtual), and
+    /// for a row whose status didn't answer in time (a dead mount).
     pub index_status: Option<&'static str>,
     /// How live the volume's session is (`direct` / `os_mount` / `disconnected` /
     /// `needs_sign_in` / `needs_host_key_approval` / `saved`). `None` for anything
@@ -322,7 +327,75 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
 /// handler (a dying mount once made `cmdr://state` reads take a flat 30 s). See
 /// `volumes/DETAILS.md` § "Hung mounts".
 pub(crate) async fn current_listing() -> (Vec<crate::volume_listing::LocationInfo>, bool) {
-    crate::volume_listing::list_with_timeout(std::time::Duration::from_secs(2)).await
+    crate::volume_listing::list_with_timeout(Duration::from_secs(2)).await
+}
+
+/// How long one snapshot waits for all of its rows' index statuses together.
+#[cfg(target_os = "macos")]
+const INDEX_STATUS_WAIT: Duration = Duration::from_secs(2);
+
+/// Every index status read a snapshot runs, from every caller (`cmdr://state`,
+/// `list_volumes`, the chat envelope). A read stuck on a dead mount keeps its
+/// permit until its `statfs` really returns, so a client re-reading the state
+/// can't pile pool threads up behind one wedged share.
+#[cfg(target_os = "macos")]
+static INDEX_STATUS_READS: BlockingBudget = BlockingBudget::new(8);
+
+/// Each row's index status, in row order, or `None` for a row that didn't answer
+/// within [`INDEX_STATUS_WAIT`].
+///
+/// Path-based status resolution routes each volume to its OWN index (see
+/// `indexing::routing::volume_id_for_local_path`): a mounted-but-unindexed
+/// external drive (`/Volumes/X`) reports `off`, not `root`'s freshness, so this
+/// can't disagree with `cmdr://indexing`. ❗ A server row (it carries a
+/// `connection_state`) and a scheme root (`mtp://…`, `sftp://…`) are looked up by
+/// their volume id instead: a scheme root is no path a router can place, and a
+/// saved share's path is its LAST mount point, which with nothing mounted there
+/// routes to `root` and would read `root`'s `fresh`.
+///
+/// ❗ The path route asks `statfs` whether the path is an SMB mount, and that
+/// blocks for minutes on a dead NFS, AFP, or SMB mount. So every read runs off
+/// the async runtime, all rows at once under ONE deadline: a dead mount costs
+/// its own row's status, ❌ never the whole resource or its healthy rows.
+#[cfg(target_os = "macos")]
+async fn index_statuses(rows: &[&crate::volume_listing::LocationInfo]) -> Vec<Option<cmdr_index::VolumeIndexStatus>> {
+    let reads = rows.iter().map(|loc| {
+        let (path, id) = (loc.path.clone(), loc.id.clone());
+        let by_path = path.starts_with('/') && loc.connection_state.is_none();
+        move || {
+            if by_path {
+                index().volume_status_for_path(&path)
+            } else {
+                index().volume_status(&id)
+            }
+        }
+    });
+    read_all_within(&Deadline::new(INDEX_STATUS_WAIT), &INDEX_STATUS_READS, reads).await
+}
+
+/// Run every blocking `read` concurrently under `budget`, answering in order, with
+/// `None` for each one `deadline` outran. A read that outlives the deadline runs
+/// on detached and keeps its permit until it ends; one that only gets its permit
+/// after the deadline doesn't start.
+#[cfg(target_os = "macos")]
+async fn read_all_within<T: Send + 'static, F: FnOnce() -> T + Send + 'static>(
+    deadline: &Deadline,
+    budget: &'static BlockingBudget,
+    reads: impl IntoIterator<Item = F>,
+) -> Vec<Option<T>> {
+    // Fixed here because the detached tasks outlive `deadline`.
+    let give_up_at = tokio::time::Instant::now() + deadline.remaining();
+    let bounded = reads.into_iter().map(|read| async move {
+        let answer = timeout_detached_within(deadline, || (), |_| (), async move {
+            budget
+                .run(move || (tokio::time::Instant::now() < give_up_at).then(read))
+                .await
+                .map_err(|_| ())
+        })
+        .await;
+        answer.ok().flatten()
+    });
+    futures_util::future::join_all(bounded).await
 }
 
 /// [`snapshot_volumes`] over a listing already in hand (macOS reads it; the Linux
@@ -343,31 +416,20 @@ pub(crate) async fn snapshot_volumes_from(locations: &[crate::volume_listing::Lo
         // resource's docs advertised them as the contract. It also folds in every
         // device provider's storages, which is why there is no MTP block below on
         // this platform. (`current_listing`.)
-        for loc in locations {
-            // A favorite is a folder ON a volume, and every consumer of this
-            // snapshot already lists favorites in their own section
-            // (`cmdr://state` `favorites:`, `list_volumes` `favorites`). As a row
-            // here it read as `kind: local`, the phone one included.
-            if loc.category == crate::volumes::LocationCategory::Favorite {
-                continue;
-            }
+        // A favorite is a folder ON a volume, and every consumer of this
+        // snapshot already lists favorites in their own section
+        // (`cmdr://state` `favorites:`, `list_volumes` `favorites`). As a row
+        // here it read as `kind: local`, the phone one included.
+        let rows: Vec<_> = locations
+            .iter()
+            .filter(|loc| loc.category != crate::volumes::LocationCategory::Favorite)
+            .collect();
+        let statuses = index_statuses(&rows).await;
+        for (loc, status) in rows.into_iter().zip(statuses) {
             let connection_state = loc.connection_state.map(connection_state_token);
             let device_readiness = loc.device_readiness.map(device_readiness_token);
             let kind = kind_for_location(loc.fs_type.as_deref(), loc.connection_state.is_some());
             let on_a_real_path = loc.path.starts_with('/');
-            // Path-based status resolution routes each volume to its OWN index (see
-            // `indexing::routing::volume_id_for_local_path`): a mounted-but-unindexed
-            // external drive (`/Volumes/X`) reports `off`, not `root`'s freshness, so
-            // this can't disagree with `cmdr://indexing`. ❗ A server row (it carries
-            // a `connection_state`) and a scheme root (`mtp://…`, `sftp://…`) are
-            // looked up by their volume id instead: a scheme root is no path a router
-            // can place, and a saved share's path is its LAST mount point, which with
-            // nothing mounted there routes to `root` and would read `root`'s `fresh`.
-            let status = if on_a_real_path && loc.connection_state.is_none() {
-                index().volume_status_for_path(&loc.path)
-            } else {
-                index().volume_status(&loc.id)
-            };
             out.push(VolumeSummary {
                 name: loc.name.clone(),
                 id: loc.id.clone(),
@@ -376,7 +438,7 @@ pub(crate) async fn snapshot_volumes_from(locations: &[crate::volume_listing::Lo
                 filesystem: loc.fs_type.clone(),
                 read_only: Some(loc.mount_is_read_only),
                 ejectable: Some(loc.is_ejectable),
-                index_status: Some(index_status_token(&status)),
+                index_status: status.as_ref().map(index_status_token),
                 connection_state,
                 // ❗ Only a real mount point. A scheme root is not a path a
                 // `search` scope can take, and handing one over as `mountPath`

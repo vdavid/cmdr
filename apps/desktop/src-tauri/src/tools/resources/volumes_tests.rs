@@ -388,3 +388,73 @@ fn mixed_fixture_keeps_every_entry_uniform_head() {
         ]
     );
 }
+
+/// ❗ **A dead mount costs its own row, never the snapshot.** The path route asks
+/// `statfs` whether a row is an SMB mount, and on a dead NFS, AFP, or SMB mount
+/// that call blocks for minutes. A read parked like that has to come back as
+/// "can't tell" inside the deadline, while the healthy rows beside it answer.
+#[cfg(target_os = "macos")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_read_stuck_on_a_dead_mount_answers_nothing_in_time_and_the_rest_still_answer() {
+    static BUDGET: BlockingBudget = BlockingBudget::new(4);
+    let (release, parked) = std::sync::mpsc::channel::<()>();
+    let reads: Vec<Box<dyn FnOnce() -> &'static str + Send>> = vec![
+        Box::new(|| "fresh"),
+        Box::new(move || {
+            // Stands in for a `statfs` on a hung mount.
+            let _ = parked.recv();
+            "stale"
+        }),
+        Box::new(|| "off"),
+    ];
+
+    let started = std::time::Instant::now();
+    let answers = read_all_within(&Deadline::new(Duration::from_millis(300)), &BUDGET, reads).await;
+
+    assert_eq!(answers, vec![Some("fresh"), None, Some("off")]);
+    assert!(
+        started.elapsed() < Duration::from_secs(2),
+        "waited {:?}",
+        started.elapsed()
+    );
+    drop(release);
+}
+
+/// A read that only gets its permit after the deadline passed is work for nobody,
+/// so it doesn't start: a queue behind a wedged share drains without touching it.
+#[cfg(target_os = "macos")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_read_queued_past_the_deadline_never_starts() {
+    static ONE_AT_A_TIME: BlockingBudget = BlockingBudget::new(1);
+    let (release, parked) = std::sync::mpsc::channel::<()>();
+    let wedged = read_all_within(
+        &Deadline::new(Duration::from_millis(100)),
+        &ONE_AT_A_TIME,
+        [move || {
+            let _ = parked.recv();
+        }],
+    )
+    .await;
+    assert_eq!(
+        wedged,
+        vec![None],
+        "precondition: the wedged read holds the only permit"
+    );
+
+    let started_late = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let flag = started_late.clone();
+    let queued = read_all_within(
+        &Deadline::new(Duration::from_millis(100)),
+        &ONE_AT_A_TIME,
+        [move || flag.store(true, std::sync::atomic::Ordering::SeqCst)],
+    )
+    .await;
+    assert_eq!(queued, vec![None]);
+
+    // Free the permit. The budget hands permits out in order, so once a later
+    // read gets one, the queued read has had its turn and declined it.
+    drop(release);
+    let later = read_all_within(&Deadline::new(Duration::from_secs(5)), &ONE_AT_A_TIME, [|| ()]).await;
+    assert_eq!(later, vec![Some(())]);
+    assert!(!started_late.load(std::sync::atomic::Ordering::SeqCst));
+}
