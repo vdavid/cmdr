@@ -59,7 +59,7 @@ impl SmbVolumeInner {
     /// `SmbVolumeInner::do_attempt_reconnect`; the watcher bails on errors and we
     /// respawn here on the next successful reconnect).
     pub(super) fn spawn_watcher(&self, params: &SmbConnectionParams, generation: SessionGeneration) {
-        use crate::build_smb_addr;
+        use crate::smb_addr;
 
         // A retired share no longer owns its volume id, and the watcher is
         // id-scoped: it feeds the listing cache and the index for that id, and
@@ -70,7 +70,7 @@ impl SmbVolumeInner {
         }
 
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
-        let addr = build_smb_addr(&params.server, params.port);
+        let (server, port) = (params.server.clone(), params.port);
         let share = params.share_name.clone();
         let username = params.username.clone();
         let password = params.password.clone();
@@ -99,9 +99,12 @@ impl SmbVolumeInner {
         // where `tokio::spawn` panics.
         // The previous watcher's session, if it died on a torn-down connection.
         let replaces = self.retired_watcher_session.lock_ignore_poison().take();
-        self.host.runtime().spawn(super::watcher::run_smb_watcher(
-            addr, share, username, password, volume, replaces, cancel_rx,
-        ));
+        // The address resolves inside the task (`smb_addr` may ask the resolver for a
+        // `.local` name), so spawning stays synchronous.
+        self.host.runtime().spawn(async move {
+            let addr = smb_addr(&server, port).await;
+            super::watcher::run_smb_watcher(addr, share, username, password, volume, replaces, cancel_rx).await;
+        });
 
         if let Ok(mut guard) = self.watcher_cancel.lock() {
             *guard = Some(cancel_tx);

@@ -111,7 +111,8 @@ mount already under way may still finish, and then the share simply shows up mou
   and share-level entries under each name it goes by on ITS port (`SmbHostGroup::credential_names`), plus a port-less
   entry a lookup found its password under this session, and the in-memory cache. A port-less entry nobody found for it
   stays: it is also the key of the server on 445 of the same machine. SFTP and WebDAV servers get the same box
-  (`forget_server_secret`).
+  (`forget_server_secret`), which for SMB takes the same names (`smb_hosts::smb_secret_scope`) by a host's listing id or
+  a share's place id.
 - ❗ Both act on the row they were raised on, by its id alone, and take exactly the store rows that row showed. A host's
   identity is its address AND port, so a Forget never reaches another server on the same machine.
 

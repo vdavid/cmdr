@@ -53,7 +53,7 @@ mod link_consent;
 pub mod types;
 pub mod volume;
 
-pub use connection::{build_smb_addr, try_list_shares_as_guest, try_list_shares_authenticated, try_open_share};
+pub use connection::{smb_addr, try_list_shares_as_guest, try_list_shares_authenticated, try_open_share};
 pub use errors::{classify_authenticated_error, classify_error, is_auth_error};
 pub use link_consent::LinkConsents;
 pub use types::{AuthMode, ShareInfo, ShareListError, ShareListResult, convert_shares};

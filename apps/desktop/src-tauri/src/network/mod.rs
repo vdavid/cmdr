@@ -126,6 +126,8 @@ pub(crate) mod smb_pane_upgrade;
 pub(crate) mod smb_saved_shares;
 // Which server each share is on (its NEGOTIATE GUID), so two addresses of one NAS prove one share.
 pub(crate) mod smb_server_guid;
+// What the UI calls a share ("private on Home NAS"): the one spelling every surface shares.
+pub(crate) mod smb_share_label;
 
 // The "we're stuck on the kernel mount" notice's once-per-server ledger. Lives
 // beside `smb_upgrade` (its only caller) rather than inside it, so the ledger is

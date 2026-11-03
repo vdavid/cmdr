@@ -439,16 +439,19 @@ pub fn create_network_host(address: &str, port: u16) -> NetworkHost {
 
 /// Returns the path to the manual servers store file.
 fn get_store_path<R: Runtime>(app: &AppHandle<R>) -> Option<PathBuf> {
-    crate::config::resolved_app_data_dir(app)
+    let path = crate::config::resolved_app_data_dir(app)
         .ok()
-        .map(|dir| dir.join(MANUAL_SERVERS_FILENAME))
+        .map(|dir| dir.join(MANUAL_SERVERS_FILENAME))?;
+    names::note_app_store(&path);
+    Some(path)
 }
 
 /// Every manually-typed SMB server, as the store holds it.
 ///
-/// ❗ Reads the FILE. There is no in-memory mirror here (the discovery host map
-/// is where a loaded entry ends up, and that map is about what's reachable
-/// rather than what's saved), so a caller on a hot path wants to ask once.
+/// ❗ Reads the FILE. There is no in-memory mirror of the entries (the discovery
+/// host map is where a loaded entry ends up, and that map is about what's
+/// reachable rather than what's saved), so a caller on a hot path wants to ask
+/// once. Only the typed NAMES are mirrored, for labels ([`typed_name`]).
 pub fn all<R: Runtime>(app: &AppHandle<R>) -> Vec<ManualServerEntry> {
     read_store(app).servers
 }
@@ -457,7 +460,9 @@ pub fn all<R: Runtime>(app: &AppHandle<R>) -> Vec<ManualServerEntry> {
 /// doesn't read is set aside before anything writes over it, and a server entry
 /// that doesn't read costs that entry only.
 fn read_store_from_path(path: &Path) -> ManualServersStore {
-    super::server_list_file::read(path, StateFile::SmbServers)
+    let store: ManualServersStore = super::server_list_file::read(path, StateFile::SmbServers);
+    names::mirror(path, &store.servers);
+    store
 }
 
 /// Writes the store to a path on disk, durably. `manual-servers.json` holds
@@ -465,6 +470,7 @@ fn read_store_from_path(path: &Path) -> ManualServersStore {
 /// zero-length write here loses real config.
 fn write_store_to_path(path: &Path, store: &ManualServersStore) {
     super::server_list_file::save(path, "the manual SMB servers", store);
+    names::mirror(path, &store.servers);
 }
 
 /// Loads the store from disk.
@@ -778,6 +784,12 @@ pub fn load_manual_servers<R: Runtime>(app_handle: &AppHandle<R>) {
         );
     }
 }
+
+#[path = "manual_servers_names.rs"]
+mod names;
+pub use names::typed_name;
+#[cfg(test)]
+pub(crate) use names::{named_for_test, typed_name_among};
 
 #[path = "manual_servers_account.rs"]
 mod account;

@@ -158,13 +158,30 @@ fn normalize(s: &str) -> String {
 /// (`nas.local:11482`) and [`smb_server`]'s host + port from a mount fold to the same
 /// key. One machine can run several SMB servers, each with its own accounts. On 445
 /// (or with no port) the key is exactly the bare name, as it always was.
+///
+/// ❗ A fully qualified name's trailing dot goes from the HOST half, before the port
+/// (`nas.local.:11481` is `nas:11481`), or the sheet's spelling and the mount's key
+/// one password twice (#915).
 pub fn credential_key(server: &str) -> String {
     let normalized = normalize(server);
     match split_port(&normalized) {
-        Some((host, port)) if port != SMB_PORT => format!("{}:{port}", bare_name(host)),
-        Some((host, _)) => bare_name(host),
+        Some((host, port)) if port != SMB_PORT => format!("{}:{port}", bare_name(host.trim_end_matches('.'))),
+        Some((host, _)) => bare_name(host.trim_end_matches('.')),
         None => bare_name(&normalized),
     }
+}
+
+/// The key [`credential_key`] gave `server` before it dropped a trailing dot ahead of
+/// the port, when that differs: `nas.local.:11481` was filed as itself. Only for a
+/// FORGET, so a password saved under the old spelling can't outlive its server.
+pub fn legacy_credential_key(server: &str) -> Option<String> {
+    let normalized = normalize(server);
+    let legacy = match split_port(&normalized) {
+        Some((host, port)) if port != SMB_PORT => format!("{}:{port}", bare_name(host)),
+        Some((host, _)) => bare_name(host),
+        None => return None,
+    };
+    (legacy != credential_key(server)).then_some(legacy)
 }
 
 /// SMB's own port, which a server name leaves unsaid.
@@ -356,6 +373,20 @@ mod tests {
         assert_eq!(credential_key(&smb_server("fe80::1", 11482)), "fe80::1:11482");
         // A bare IPv6 literal has no port: its last group is not one.
         assert_eq!(credential_key("fe80::1"), "fe80::1");
+    }
+
+    /// ❗ A fully qualified name keeps its trailing dot BEFORE the port (#915): the Add
+    /// server sheet's `nas.local.:11481` saved under one key while the upgrade and
+    /// "Connect directly" (`nas.local:11481`) read and saved under another, so
+    /// forgetting the server by one spelling left the other's password behind.
+    #[test]
+    fn credential_key_drops_a_trailing_dot_before_the_port() {
+        assert_eq!(credential_key("home-nas.local.:11481"), "home-nas:11481");
+        assert_eq!(
+            credential_key(&smb_server("home-nas.local.", 11481)),
+            credential_key(&smb_server("home-nas.local", 11481))
+        );
+        assert_eq!(credential_key("Home-NAS.local.:445"), "home-nas");
     }
 
     /// IP literals have no bare form; they pass through (lowercased) unchanged so two

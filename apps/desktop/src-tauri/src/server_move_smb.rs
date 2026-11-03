@@ -196,7 +196,7 @@ fn announce_redial(places: &[String]) {
 
 /// What the volume list calls a share: its mount row's spelling, `{share} on {server}`.
 fn share_label(share: &str, server: &str) -> String {
-    format!("{share} on {server}")
+    crate::network::smb_share_label::filed(share, server, None, None)
 }
 
 // ============================================================================

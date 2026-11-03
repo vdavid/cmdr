@@ -100,6 +100,20 @@ fn make_account_name(server: &str, share: Option<&str>) -> String {
     }
 }
 
+/// The account [`make_account_name`] gave `server` before its key dropped a trailing
+/// dot ahead of the port (`server_identity::legacy_credential_key`), when that differs.
+/// ❗ Forget only: nothing reads or writes there any more, but a password saved there
+/// must not outlive its server.
+fn legacy_account_name(server: &str, share: Option<&str>) -> Option<String> {
+    use unicode_normalization::UnicodeNormalization;
+
+    let key = crate::network::server_identity::legacy_credential_key(server)?;
+    Some(match share {
+        Some(s) => format!("smb://{}/{}", key, s.nfc().collect::<String>()),
+        None => format!("smb://{}", key),
+    })
+}
+
 /// Parses a stored password entry to extract username and password.
 /// Format: "username\0password" (null-separated)
 fn parse_password_entry(data: &[u8]) -> Option<SmbCredentials> {
@@ -240,9 +254,11 @@ pub fn forget_server_credentials(servers: &[String], shares: &[String]) -> Resul
     let mut accounts: Vec<String> = Vec::new();
     for name in &names {
         for share in std::iter::once(None).chain(shares.iter().map(|share| Some(share.as_str()))) {
-            let account = make_account_name(name, share);
-            if !accounts.contains(&account) {
-                accounts.push(account);
+            let legacy = legacy_account_name(name, share);
+            for account in std::iter::once(make_account_name(name, share)).chain(legacy) {
+                if !accounts.contains(&account) {
+                    accounts.push(account);
+                }
             }
         }
     }
@@ -292,22 +308,16 @@ pub fn has_credentials(server: &str, share: Option<&str>) -> bool {
     get_credentials(server, share).is_ok()
 }
 
-/// Whether a sign-in to `share` finds a password: its own entry, else the
-/// server's, the order the backend reads them in.
+/// Whether a sign-in finds a password under any of `servers`: a share's own entry
+/// (each of `shares`), else the server's, the order the backend reads them in. The
+/// read-side twin of [`forget_server_credentials`], over the same names.
 ///
 /// ❗ Both count (#530): a check of the server's alone showed Remember off on a
 /// share that signs in with its own.
-pub fn has_share_credentials(server: &str, share: &str) -> bool {
-    has_credentials(server, Some(share)) || has_credentials(server, None)
-}
-
-/// Forgets every password a sign-in to `share` would find (its own entry and
-/// the server's), answering whether there was one.
-///
-/// ❗ Both go (#530): the share's own is read first, so leaving it signs the
-/// share in as if nothing was forgotten.
-pub fn forget_share_credentials(server: &str, share: &str) -> bool {
-    forget_server_credentials(&[server.to_string()], &[share.to_string()]).is_ok_and(|gone| gone > 0)
+pub fn has_server_credentials(servers: &[String], shares: &[String]) -> bool {
+    servers
+        .iter()
+        .any(|server| shares.iter().any(|share| has_credentials(server, Some(share))) || has_credentials(server, None))
 }
 
 #[cfg(test)]

@@ -117,7 +117,7 @@ impl VolumeFacts {
             let name = saved_shares
                 .iter()
                 .find(|share| share.volume_id.as_deref() == Some(id.as_str()))
-                .map(|share| format!("{} on {}", share.share_name, share.server_name))
+                .map(crate::network::smb_share_label::saved)
                 .unwrap_or_else(|| volume.name().to_string());
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             let name = volume.name().to_string();
@@ -154,7 +154,7 @@ impl VolumeFacts {
                 ));
             }
             for share in saved_shares {
-                let (Some(id), Some(mount_path)) = (share.volume_id, share.mount_path) else {
+                let (Some(id), Some(mount_path)) = (share.volume_id.clone(), share.mount_path.clone()) else {
                     continue;
                 };
                 if known(&volumes, &id) {
@@ -168,7 +168,7 @@ impl VolumeFacts {
                 }) else {
                     continue;
                 };
-                let name = format!("{} on {}", share.share_name, share.server_name);
+                let name = crate::network::smb_share_label::saved(&share);
                 let identity = share_identity(&id);
                 volumes.push(fact(
                     id,

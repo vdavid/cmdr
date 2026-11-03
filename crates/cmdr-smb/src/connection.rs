@@ -7,13 +7,87 @@ use log::debug;
 use smb2::{ClientConfig, SmbClient};
 use std::time::Duration;
 
-/// Builds an smb2 address string from a hostname/IP and port.
+/// The smb2 address to dial `hostname` (an IP or a host name) on `port`.
 ///
-/// Strips `.local` suffix from hostnames because smb2 uses the addr host
-/// component in UNC paths (`\\server\IPC$`), and some servers reject `.local`.
-pub fn build_smb_addr(hostname: &str, port: u16) -> String {
-    let host = hostname.strip_suffix(".local").unwrap_or(hostname);
-    format!("{}:{}", host, port)
+/// smb2 uses ONE string for both the TCP dial and the UNC server name
+/// (`\\server\IPC$`), and some servers reject a `.local` name there. So an mDNS
+/// `.local` name (`nas.local`, `nas.local.`) is resolved here, the system resolver
+/// answering it through mDNS, and dialed by its IPv4 address, which every server
+/// accepts in a UNC path (the discovered-IP path has always done this).
+///
+/// ❗ Never dials the `.local`-stripped name when the name resolves (#912): `nas`
+/// alone isn't an mDNS name, so a typed `nas.local` with no discovered IP never
+/// connected. A name with only an IPv6 address is dialed as typed (a link-local
+/// address needs its scope, which an addr string can't carry); one that doesn't
+/// resolve at all falls back to the stripped name, which unicast DNS may know.
+pub async fn smb_addr(hostname: &str, port: u16) -> String {
+    smb_addr_with(
+        hostname,
+        port,
+        |host, port| async move { resolve_ipv4(&host, port).await },
+    )
+    .await
+}
+
+/// How long the system resolver may take to answer a `.local` name. mDNS answers
+/// in milliseconds when the host is up; a host that's gone costs this once per dial.
+const LOCAL_NAME_RESOLVE_LIMIT: Duration = Duration::from_secs(5);
+
+/// [`smb_addr`] over a resolver, so a test needs no network.
+async fn smb_addr_with<F, Fut>(hostname: &str, port: u16, resolve: F) -> String
+where
+    F: FnOnce(String, u16) -> Fut,
+    Fut: Future<Output = Resolved>,
+{
+    let Some(stripped) = mdns_host(hostname) else {
+        return format!("{hostname}:{port}");
+    };
+    match resolve(hostname.to_string(), port).await {
+        Resolved::V4(ip) => format!("{ip}:{port}"),
+        Resolved::V6Only => format!("{hostname}:{port}"),
+        Resolved::Nothing => format!("{stripped}:{port}"),
+    }
+}
+
+/// What the system resolver said about a `.local` name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Resolved {
+    V4(std::net::Ipv4Addr),
+    V6Only,
+    Nothing,
+}
+
+/// The host half of an mDNS `.local` name (`nas` for `nas.local` and `nas.local.`),
+/// or `None` for any other name or an IP.
+fn mdns_host(hostname: &str) -> Option<&str> {
+    let name = hostname.strip_suffix('.').unwrap_or(hostname);
+    let cut = name.len().checked_sub(".local".len())?;
+    let (host, suffix) = name.split_at_checked(cut)?;
+    (suffix.eq_ignore_ascii_case(".local") && !host.is_empty()).then_some(host)
+}
+
+/// Asks the system resolver for `hostname`, bounded by [`LOCAL_NAME_RESOLVE_LIMIT`].
+async fn resolve_ipv4(hostname: &str, port: u16) -> Resolved {
+    let lookup = tokio::net::lookup_host((hostname, port));
+    let Ok(Ok(addrs)) = tokio::time::timeout(LOCAL_NAME_RESOLVE_LIMIT, lookup).await else {
+        debug!(
+            "smb_addr: host={:?} didn't resolve; dialing it without .local",
+            LogPrivate::host(hostname)
+        );
+        return Resolved::Nothing;
+    };
+    let addrs: Vec<std::net::SocketAddr> = addrs.collect();
+    addrs
+        .iter()
+        .find_map(|addr| match addr.ip() {
+            std::net::IpAddr::V4(ip) => Some(Resolved::V4(ip)),
+            std::net::IpAddr::V6(_) => None,
+        })
+        .unwrap_or(if addrs.is_empty() {
+            Resolved::Nothing
+        } else {
+            Resolved::V6Only
+        })
 }
 
 /// How long NEGOTIATE and SESSION_SETUP may stay silent before a volume's connect
@@ -53,14 +127,12 @@ async fn connect_volume_client_within(mut config: ClientConfig, handshake: Durat
     Ok(client)
 }
 
-/// Determines the server address string for smb2, preferring an IP over a hostname.
-///
-/// An IP needs no `.local` handling, so it's formatted directly; a hostname goes
-/// through [`build_smb_addr`] for the strip.
-fn build_addr(hostname: &str, ip_address: Option<&str>, port: u16) -> String {
+/// Determines the server address string for smb2, preferring a discovered IP over
+/// a hostname, which goes through [`smb_addr`].
+async fn build_addr(hostname: &str, ip_address: Option<&str>, port: u16) -> String {
     match ip_address {
         Some(ip) => format!("{}:{}", ip, port),
-        None => build_smb_addr(hostname, port),
+        None => smb_addr(hostname, port).await,
     }
 }
 
@@ -71,7 +143,7 @@ pub async fn try_list_shares_as_guest(
     port: u16,
     timeout: Duration,
 ) -> Result<Vec<smb2::ShareInfo>, smb2::Error> {
-    let addr = build_addr(hostname, ip_address, port);
+    let addr = build_addr(hostname, ip_address, port).await;
     debug!(
         "try_list_shares_as_guest: host={:?}, port={port}",
         LogPrivate::host(ip_address.unwrap_or(hostname))
@@ -110,7 +182,7 @@ pub async fn try_list_shares_authenticated(
     password: &str,
     timeout: Duration,
 ) -> Result<Vec<smb2::ShareInfo>, smb2::Error> {
-    let addr = build_addr(hostname, ip_address, port);
+    let addr = build_addr(hostname, ip_address, port).await;
     debug!(
         "try_list_shares_authenticated: host={:?}, port={port}, user={:?}",
         LogPrivate::host(ip_address.unwrap_or(hostname)),
@@ -151,7 +223,7 @@ pub async fn try_list_shares_authenticated(
 /// hard budget bounds the future too.
 pub async fn try_open_share(params: &SmbConnectionParams, timeout: Duration) -> Result<(), smb2::Error> {
     let config = ClientConfig {
-        addr: build_smb_addr(&params.server, params.port),
+        addr: smb_addr(&params.server, params.port).await,
         timeout,
         username: params.username.clone(),
         password: params.password.clone(),
@@ -199,7 +271,7 @@ pub async fn try_open_share(params: &SmbConnectionParams, timeout: Duration) -> 
 /// `timeout` bounds the TCP connect and the NEGOTIATE reply each, through smb2's
 /// own deadlines.
 pub async fn probe_server_guid(hostname: &str, port: u16, timeout: Duration) -> Result<smb2::pack::Guid, smb2::Error> {
-    let mut connection = smb2::client::Connection::connect(&build_smb_addr(hostname, port), timeout).await?;
+    let mut connection = smb2::client::Connection::connect(&smb_addr(hostname, port).await, timeout).await?;
     connection.set_response_timeout(Some(timeout));
     connection.negotiate().await?;
     // `negotiate` stores the params before it returns `Ok`.
@@ -216,34 +288,78 @@ mod integration_test;
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_build_addr_with_ip() {
-        assert_eq!(build_addr("nas.local", Some("192.168.1.50"), 445), "192.168.1.50:445");
+    #[tokio::test]
+    async fn a_discovered_ip_is_dialed_on_any_port() {
+        assert_eq!(
+            build_addr("nas.local", Some("192.168.1.50"), 445).await,
+            "192.168.1.50:445"
+        );
+        assert_eq!(build_addr("nas.local", Some("10.0.0.5"), 9445).await, "10.0.0.5:9445");
     }
 
-    #[test]
-    fn test_build_addr_strips_local_suffix() {
-        assert_eq!(build_addr("nas.local", None, 445), "nas:445");
+    /// A resolver that answers `answer`, and panics if a name that isn't `.local`
+    /// reaches it.
+    fn resolver(answer: Resolved) -> impl FnOnce(String, u16) -> std::future::Ready<Resolved> {
+        move |host, _| {
+            assert!(mdns_host(&host).is_some(), "only a .local name is resolved, got {host}");
+            std::future::ready(answer)
+        }
     }
 
-    #[test]
-    fn test_build_addr_no_local_suffix() {
-        assert_eq!(build_addr("nas", None, 445), "nas:445");
+    /// ❗ **A typed `.local` name with no discovered IP dials its resolved address**
+    /// (#912), ❌ never the stripped name: `nas` alone isn't an mDNS name, so the TCP
+    /// connect failed and the server never connected. The IPv4 address also keeps
+    /// `.local` out of the UNC path, which some servers reject.
+    #[tokio::test]
+    async fn a_local_name_dials_its_resolved_ipv4_address() {
+        let ip = std::net::Ipv4Addr::new(192, 168, 1, 50);
+        for typed in ["nas.local", "nas.local.", "NAS.LOCAL"] {
+            assert_eq!(
+                smb_addr_with(typed, 11481, resolver(Resolved::V4(ip))).await,
+                "192.168.1.50:11481",
+                "{typed}"
+            );
+        }
     }
 
-    /// `build_smb_addr` is what the SMB backend calls to reach a server, so the
-    /// `.local` strip has to hold on the PUBLIC entry point, not only on the
-    /// private variant the share-listing path uses.
-    #[test]
-    fn build_smb_addr_strips_local_and_keeps_the_port_separate() {
-        assert_eq!(build_smb_addr("nas.local", 445), "nas:445");
-        assert_eq!(build_smb_addr("nas", 445), "nas:445");
-        assert_eq!(build_smb_addr("192.168.1.50", 10480), "192.168.1.50:10480");
+    /// A `.local` name with only an IPv6 address is dialed as typed (an addr string
+    /// can't carry a link-local scope); one nothing resolves falls back to the
+    /// stripped name, which unicast DNS may know.
+    #[tokio::test]
+    async fn a_local_name_without_ipv4_is_dialed_as_typed_or_stripped() {
+        assert_eq!(
+            smb_addr_with("nas.local", 445, resolver(Resolved::V6Only)).await,
+            "nas.local:445"
+        );
+        assert_eq!(
+            smb_addr_with("nas.local", 445, resolver(Resolved::Nothing)).await,
+            "nas:445"
+        );
     }
 
-    #[test]
-    fn test_build_addr_non_standard_port() {
-        assert_eq!(build_addr("nas.local", Some("10.0.0.5"), 9445), "10.0.0.5:9445");
+    /// Anything that isn't a `.local` name goes out exactly as given, without a lookup.
+    #[tokio::test]
+    async fn other_names_and_ips_dial_as_given() {
+        for (typed, addr) in [
+            ("nas", "nas:445"),
+            ("192.168.1.50", "192.168.1.50:445"),
+            ("files.example.com", "files.example.com:445"),
+            ("my.localhost", "my.localhost:445"),
+            (".local", ".local:445"),
+        ] {
+            let no_lookup = |host: String, _: u16| -> std::future::Ready<Resolved> { panic!("looked up {host}") };
+            assert_eq!(smb_addr_with(typed, 445, no_lookup).await, addr);
+        }
+    }
+
+    /// The real resolver, on a name every machine resolves: `localhost` isn't a
+    /// `.local` name, so this pins only that an IP literal answers as itself.
+    #[tokio::test]
+    async fn the_system_resolver_answers_an_ip_literal() {
+        assert_eq!(
+            resolve_ipv4("127.0.0.1", 445).await,
+            Resolved::V4(std::net::Ipv4Addr::LOCALHOST)
+        );
     }
 
     /// Regression anchor for `#406`: a server that accepts the TCP connection and
