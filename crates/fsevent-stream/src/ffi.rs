@@ -16,13 +16,13 @@ use std::time::Duration;
 
 use core_foundation::array::{CFArray, CFArrayRef};
 use core_foundation::base::{
-    kCFAllocatorDefault, Boolean, CFAllocatorCopyDescriptionCallBack, CFAllocatorRef, CFAllocatorReleaseCallBack,
-    CFAllocatorRetainCallBack, CFIndex, TCFType,
+    Boolean, CFAllocatorCopyDescriptionCallBack, CFAllocatorRef, CFAllocatorReleaseCallBack, CFAllocatorRetainCallBack,
+    CFIndex, TCFType, kCFAllocatorDefault,
 };
 use core_foundation::date::CFTimeInterval;
 use core_foundation::runloop::{CFRunLoop, CFRunLoopIsWaiting, CFRunLoopMode, CFRunLoopRef};
 use core_foundation::string::{CFString, CFStringRef};
-use core_foundation::url::{kCFURLPOSIXPathStyle, CFURL};
+use core_foundation::url::{CFURL, kCFURLPOSIXPathStyle};
 
 fn str_path_to_cfstring_ref(source: &Path) -> io::Result<CFString> {
     CFURL::from_path(source, source.is_dir())
@@ -312,8 +312,10 @@ impl Drop for SysFSEventStream {
     }
 }
 
+// SAFETY: These signatures match `CoreServices/FSEvents/FSEvents.h` (macOS SDK), so declaring
+// them as-is is sound; every call stays `unsafe` and documents its own preconditions.
 #[link(name = "CoreServices", kind = "framework")]
-extern "C" {
+unsafe extern "C" {
     fn FSEventStreamCreate(
         allocator: CFAllocatorRef,
         callback: FSEventStreamCallback,

@@ -2,7 +2,7 @@ use std::ffi::c_void;
 use std::panic::catch_unwind;
 use std::sync::mpsc::Sender;
 
-use core_foundation::base::{kCFAllocatorDefault, TCFType};
+use core_foundation::base::{TCFType, kCFAllocatorDefault};
 use core_foundation::runloop::{
     CFRunLoopActivity, CFRunLoopObserver, CFRunLoopObserverContext, CFRunLoopObserverCreate, CFRunLoopObserverRef,
 };
@@ -58,7 +58,7 @@ pub fn create_oneshot_observer(interest: CFRunLoopActivity, tx: Sender<CFRunLoop
 
 #[cfg(test)]
 mod tests {
-    use std::sync::mpsc::{channel, RecvTimeoutError};
+    use std::sync::mpsc::{RecvTimeoutError, channel};
     use std::time::Duration;
 
     use core_foundation::runloop::kCFRunLoopBeforeWaiting;

@@ -4,9 +4,9 @@ use std::fs::File;
 use std::io;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::mpsc::{channel, Receiver, RecvTimeoutError};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::mpsc::{Receiver, RecvTimeoutError, channel};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -15,12 +15,12 @@ use futures_util::stream::StreamExt;
 use tempfile::tempdir;
 
 use crate::ffi::{
-    kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagNoDefer, kFSEventStreamCreateFlagNone,
-    kFSEventStreamCreateFlagUseCFTypes, kFSEventStreamCreateFlagUseExtendedData, kFSEventStreamEventIdSinceNow,
     FSEventStreamCreateFlags, FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream, SysFSEventStreamContext,
-    SysFSEventStreamRef,
+    SysFSEventStreamRef, kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagNoDefer,
+    kFSEventStreamCreateFlagNone, kFSEventStreamCreateFlagUseCFTypes, kFSEventStreamCreateFlagUseExtendedData,
+    kFSEventStreamEventIdSinceNow,
 };
-use crate::stream::{create_event_stream, Event, StreamContextInfo, StreamFlags, TEST_RUNNING_RUNLOOP_COUNT};
+use crate::stream::{Event, StreamContextInfo, StreamFlags, TEST_RUNNING_RUNLOOP_COUNT, create_event_stream};
 
 static TEST_PARALLEL_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 

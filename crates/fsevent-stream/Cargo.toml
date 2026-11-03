@@ -2,7 +2,7 @@
 name = "cmdr-fsevent-stream"
 version = "0.3.0"
 authors = ["LightQuantum <self@lightquantum.me>", "David Veszelovszki <david@veszelovszki.com>"]
-edition = "2021"
+edition = "2024"
 description = "Stream-based macOS FSEvents bindings for Cmdr, forked from `fsevent-stream` and maintained in the Cmdr monorepo."
 license = "MIT"
 keywords = ["filesystem", "events", "watch", "notify", "macos"]

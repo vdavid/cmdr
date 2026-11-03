@@ -1,6 +1,6 @@
 //! Stream-based `FSEvents` interface.
 
-use std::ffi::{c_void, CStr, OsStr};
+use std::ffi::{CStr, OsStr, c_void};
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::os::raw::c_char;
@@ -8,9 +8,9 @@ use std::os::unix::ffi::OsStrExt;
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::channel;
-use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::thread;
 use std::time::Duration;
@@ -19,18 +19,17 @@ use core_foundation::array::CFArray;
 use core_foundation::base::{CFIndex, FromVoid};
 use core_foundation::dictionary::CFDictionary;
 use core_foundation::number::CFNumber;
-use core_foundation::runloop::{kCFRunLoopBeforeWaiting, kCFRunLoopDefaultMode, CFRunLoop};
+use core_foundation::runloop::{CFRunLoop, kCFRunLoopBeforeWaiting, kCFRunLoopDefaultMode};
 use core_foundation::string::CFString;
 use futures_core::Stream;
-use futures_util::stream::{iter, StreamExt};
+use futures_util::stream::{StreamExt, iter};
 use log::{error, trace};
 use tokio_stream::wrappers::ReceiverStream;
 
 use crate::ffi::{
-    extended_data_path_key, extended_file_id_key, kFSEventStreamCreateFlagFileEvents,
-    kFSEventStreamCreateFlagUseCFTypes, kFSEventStreamCreateFlagUseExtendedData, CFRunLoopExt,
-    FSEventStreamCreateFlags, FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream, SysFSEventStreamContext,
-    SysFSEventStreamRef,
+    CFRunLoopExt, FSEventStreamCreateFlags, FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream,
+    SysFSEventStreamContext, SysFSEventStreamRef, extended_data_path_key, extended_file_id_key,
+    kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagUseCFTypes, kFSEventStreamCreateFlagUseExtendedData,
 };
 pub use crate::flags::StreamFlags;
 use crate::impl_release_callback;
