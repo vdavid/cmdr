@@ -48,6 +48,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Закрити",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "Перевірка того, що у вас відкрито",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -884,6 +888,22 @@
   "askCmdr.sessions.archivedBadge": "Заархівовано",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Очистити пошук",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Знайдені чати",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} чат} few {{countText} чати} many {{countText} чатів} other {{countText} чату}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144"
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Активність: {folder}} one {Активність: {folder} і ще {otherCountText} папка} few {Активність: {folder} і ще {otherCountText} папки} many {Активність: {folder} і ще {otherCountText} папок} other {Активність: {folder} і ще {otherCountText} папки}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Запитати про вибране",
   "@askCmdr.composer.attach": {

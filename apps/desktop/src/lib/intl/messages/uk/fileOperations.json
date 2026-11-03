@@ -524,6 +524,10 @@
   "@fileOperations.transferProgress.titleReversalDeleting": {
     "sourceHash": "587f4a3"
   },
+  "fileOperations.transferProgress.titleReversalRestoringTags": "{count, plural, =0 {Повернення старих тегів} one {Повернення старих тегів {countText} файлу} few {Повернення старих тегів {countText} файлів} many {Повернення старих тегів {countText} файлів} other {Повернення старих тегів {countText} файлу}}…",
+  "@fileOperations.transferProgress.titleReversalRestoringTags": {
+    "sourceHash": "71e6947"
+  },
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Повернення старих назв} =1 {Повернення старої назви} one {Повернення старих назв {countText} файлу} few {Повернення старих назв {countText} файлів} many {Повернення старих назв {countText} файлів} other {Повернення старих назв {countText} файлу}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
     "sourceHash": "2ad8510"
@@ -1019,6 +1023,10 @@
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Файлам буде повернуто старі назви. Cmdr пропускає все, у чому не впевнений, тож деякі файли можуть залишитися з теперішніми назвами.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
     "sourceHash": "37932e7"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTags": "Файлам буде повернуто теги, які вони мали раніше. Cmdr пропускає кожен файл, теги якого відтоді змінилися, тож деякі файли можуть залишитися з теперішніми тегами.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTags": {
+    "sourceHash": "9dc7b0d"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "Залишити як є",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
