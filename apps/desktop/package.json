@@ -97,7 +97,7 @@
     "knip": "^6.44.0",
     "oxlint": "^1.89.0",
     "postcss-html": "^2.0.0",
-    "rollup-plugin-sbom": "4.0.1",
+    "rollup-plugin-sbom": "5.0.1",
     "stylelint": "^17.16.0",
     "stylelint-config-standard": "^40.0.0",
     "stylelint-declaration-block-no-ignored-properties": "3.0.0",

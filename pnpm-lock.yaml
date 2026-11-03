@@ -444,8 +444,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0(postcss@8.5.31)
       rollup-plugin-sbom:
-        specifier: 4.0.1
-        version: 4.0.1(ajv@8.20.0)(rolldown@1.2.15)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        specifier: 5.0.1
+        version: 5.0.1(ajv@8.20.0)(rolldown@1.2.15)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       stylelint:
         specifier: ^17.16.0
         version: 17.16.0(supports-color@10.2.2)(typescript@6.0.3)
@@ -5795,8 +5795,8 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  rollup-plugin-sbom@4.0.1:
-    resolution: {integrity: sha512-gRzuUXt/9MFhQ8+Pf6W/yNmBvUYM7CxgXpO3x4xJOQ3l6c/7O7D/oFPIRsDvqHvxg5DDjlSYkqwshDbv7eMiCQ==}
+  rollup-plugin-sbom@5.0.1:
+    resolution: {integrity: sha512-EoEIjOv8S7CsGZ4h3mIDu9x6VP/pE5sXBeCKd43u9imvAYLRGdcnvPsegFiRN+1WsTfHt05zZvfmURfmQ7S0+g==}
     engines: {node: '>=22.9.0'}
     peerDependencies:
       rolldown: ^1
@@ -12874,7 +12874,7 @@ snapshots:
       '@rolldown/binding-win32-arm64-msvc': 1.2.15
       '@rolldown/binding-win32-x64-msvc': 1.2.15
 
-  rollup-plugin-sbom@4.0.1(ajv@8.20.0)(rolldown@1.2.15)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
+  rollup-plugin-sbom@5.0.1(ajv@8.20.0)(rolldown@1.2.15)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       '@cyclonedx/cyclonedx-library': 10.3.0(ajv@8.20.0)(packageurl-js@2.0.1)(spdx-expression-parse@5.0.0)
       normalize-package-data: 9.0.0
