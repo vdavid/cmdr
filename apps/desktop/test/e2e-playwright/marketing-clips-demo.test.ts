@@ -11,7 +11,7 @@ import { join } from 'node:path'
 // Before the import: the module reads it once. Kilobytes instead of ~400 MB per staging.
 process.env.CMDR_CLIPS_DEMO_SIZE_SCALE = '0.001'
 const {
-  BOUQUET_PHOTO,
+  ARTWORK,
   DEMO,
   MARKER,
   QUEUE_SOURCES,
@@ -51,8 +51,8 @@ describe('the demo tree', () => {
     expect(existsSync(join(root, MARKER))).toBe(true)
     for (const dir of Object.values(DEMO)) expect(existsSync(join(root, dir)), dir).toBe(true)
     for (const project of QUEUE_SOURCES) expect(existsSync(join(root, DEMO.projects, project)), project).toBe(true)
-    expect(statSync(join(root, DEMO.fieldNotes, BOUQUET_PHOTO.file)).size).toBeGreaterThan(100_000)
-    expect(readFileSync(join(root, DEMO.fieldNotes, VIEWER_DOC), 'utf8')).toContain(BOUQUET_PHOTO.author)
+    expect(statSync(join(root, DEMO.fieldNotes, ARTWORK.file)).size).toBeGreaterThan(100_000)
+    expect(readFileSync(join(root, DEMO.fieldNotes, VIEWER_DOC), 'utf8')).toContain(ARTWORK.artist)
   })
 
   it('restages a tree an older version staged', () => {

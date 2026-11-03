@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync, statSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -19,6 +19,7 @@ import {
   mergeClipsManifest,
   missingEncodeTools,
   outputWidth,
+  planKeyCaptions,
   planTrim,
   probeVideo,
   videoFilter,
@@ -57,6 +58,31 @@ describe('planTrim', () => {
   it('clamps the poster into the clip', () => {
     expect(planTrim(markers({ posterEpochMs: 2_000_000 })).posterS).toBe(8)
     expect(planTrim(markers({ posterEpochMs: 0 })).posterS).toBe(0)
+  })
+})
+
+describe('planKeyCaptions', () => {
+  it("puts each press on the encoded clip's clock and leaves out the ones off the clip", () => {
+    const m = markers({
+      keys: [
+        { epochMs: 1_000_100, label: 'Esc' },
+        { epochMs: 1_000_500, label: '⌘F' },
+        { epochMs: 1_002_750, label: 'invoice' },
+        { epochMs: 1_008_500, label: 'Enter' },
+        { epochMs: 1_009_000, label: '⌘W' },
+      ],
+    })
+    expect(planKeyCaptions(m, planTrim(m))).toEqual({
+      keys: [
+        { at: 0, label: '⌘F' },
+        { at: 2.25, label: 'invoice' },
+        { at: 8, label: 'Enter' },
+      ],
+    })
+  })
+
+  it('writes an empty list for a take that pressed nothing, or an older master', () => {
+    expect(planKeyCaptions(markers(), planTrim(markers()))).toEqual({ keys: [] })
   })
 })
 
@@ -162,7 +188,7 @@ describe.skipIf(tools.length > 0)('encodeClip on a synthetic master', () => {
     rmSync(dir, { recursive: true, force: true })
   })
 
-  it('writes AV1, H.264, and a poster at the capped width and the marked duration', () => {
+  it('writes AV1, H.264, a poster, and key captions at the capped width and the marked duration', () => {
     const entry = encodeClip({
       master,
       markers: markers({
@@ -171,6 +197,7 @@ describe.skipIf(tools.length > 0)('encodeClip on a synthetic master', () => {
         startEpochMs: 500,
         endEpochMs: 3000,
         posterEpochMs: 1500,
+        keys: [{ epochMs: 1200, label: '⌘F' }],
       }),
       outDir: dir,
     })
@@ -187,7 +214,10 @@ describe.skipIf(tools.length > 0)('encodeClip on a synthetic master', () => {
     const poster = join(dir, 'search-dark.webp')
     expect(existsSync(poster)).toBe(true)
     expect(statSync(poster).size).toBeGreaterThan(0)
-    // Only the three deliverables (plus the master) are left behind.
+    expect(JSON.parse(readFileSync(join(dir, 'search-dark.keys.json'), 'utf8'))).toEqual({
+      keys: [{ at: 0.7, label: '⌘F' }],
+    })
+    // Only the four deliverables (plus the master) are left behind.
     expect(existsSync(join(dir, 'search-dark.poster.png'))).toBe(false)
   }, 120_000)
 })

@@ -77,19 +77,19 @@ export const AI_QUERY = 'tax report from last year'
 export const SEARCH_QUERY = 'invoice'
 
 /**
- * The viewer clip's photo: a real camera photo (Canon EOS 760D, 2016-10-14, per its EXIF),
- * committed as a 2,400 px copy of the 6,000 px original, its metadata kept, so the hex
- * view's first rows read its own caption. ❗ CC BY-SA 2.0: anything showing it carries the
- * credit below (the staged README does, and `docs/guides/product-clips.md` § "Credits").
+ * The viewer clip's image: a photo of a real painting, "Abstract landscape with sun"
+ * (acrylic on canvas, 1990) by Fons Heijnsbroek, who dedicated it to the public domain
+ * (CC0), so it needs no credit. Committed as a 2,400 px copy of the 6,555 px original,
+ * its metadata kept, so the hex view's first rows read real file headers.
  */
-export const BOUQUET_PHOTO = {
-  file: 'autumn-bouquet.jpg',
-  title: 'Autumn bouquet',
-  author: 'Susanne Nilsson',
-  source: 'https://www.flickr.com/photos/infomastern/30427779760/',
-  commons: 'https://commons.wikimedia.org/wiki/File:Autumn_bouquet_(30427779760).jpg',
-  license: 'CC BY-SA 2.0',
-  licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0/',
+export const ARTWORK = {
+  file: 'abstract-landscape-with-sun.jpg',
+  title: 'Abstract landscape with sun',
+  artist: 'Fons Heijnsbroek',
+  year: 1990,
+  commons:
+    "https://commons.wikimedia.org/wiki/File:'Abstract_landscape_with_sun'_-_large_acrylic_painting_on_canvas,_painted_in_1990_by_Dutch_artist_Fons_Heijnsbroek,_free_image_of_art_in_high_resolutions.jpg",
+  license: 'CC0',
 } as const
 
 /** The Markdown file the viewer clip shows as text, then formatted. */
@@ -156,7 +156,7 @@ export function removeDemoTree(root = DEMO_ROOT): void {
  * What the marker says. Bump the version whenever the staged content changes, so the next
  * run restages instead of keeping a stale tree.
  */
-const MARKER_TEXT = 'Staged by pnpm marketing:clips (demo tree v6). Safe to delete.\n'
+const MARKER_TEXT = 'Staged by pnpm marketing:clips (demo tree v7). Safe to delete.\n'
 
 /**
  * Makes sure the demo tree is there and current, and puts its mutable folders back.
@@ -356,8 +356,8 @@ function stageDocuments(root: string): void {
 
   const notes = join(root, DEMO.fieldNotes)
   mkdirSync(notes, { recursive: true })
-  writeFileSync(join(notes, VIEWER_DOC), STILL_LIFE_README)
-  copyFileSync(join(ASSETS, BOUQUET_PHOTO.file), join(notes, BOUQUET_PHOTO.file))
+  writeFileSync(join(notes, VIEWER_DOC), PRINT_RUN_README)
+  copyFileSync(join(ASSETS, ARTWORK.file), join(notes, ARTWORK.file))
 }
 
 /**
@@ -395,28 +395,27 @@ function stageTaxes(root: string): void {
 
 /**
  * The viewer clip's Markdown: headings, bold, a list, and a table read differently as text
- * and formatted, and the photo it embeds is the one the clip opens first. It carries the
- * photo's credit, which the license asks of anything showing it.
+ * and formatted, and the image it embeds is the one the clip opens first.
  */
-const STILL_LIFE_README = `# Autumn still life
+const PRINT_RUN_README = `# Print run: ${ARTWORK.title}
 
-One bouquet, one window, a slow afternoon in October.
+Giclée prints of the ${String(ARTWORK.year)} acrylic, for the spring show.
 
-## In the vase
+## Checklist
 
-- **Guelder rose** berries, for the red
-- **Virginia creeper**, halfway through turning
-- **Ivy** seed heads and wild grasses, for texture
-- One stray **Chinese lantern**
+- **Proof** on matte cotton rag, then on gloss
+- **Colour check** against the canvas, in daylight
+- Sign and number each print in **pencil**
+- Ship the framed ones by the **14th**
 
-## Shot list
+## Sizes
 
-| Shot   | Lens         | Light         |
-| ------ | ------------ | ------------- |
-| Wide   | 35 mm        | Window, left  |
-| Detail | 100 mm macro | Bounce, right |
+| Size   | Paper       | Copies |
+| ------ | ----------- | ------ |
+| Small  | 30 × 23 cm  | 40     |
+| Large  | 90 × 68 cm  | 10     |
 
-![${BOUQUET_PHOTO.title}](${BOUQUET_PHOTO.file})
+![${ARTWORK.title}](${ARTWORK.file})
 
-*Photo: [${BOUQUET_PHOTO.title}](${BOUQUET_PHOTO.source}) by ${BOUQUET_PHOTO.author}, [${BOUQUET_PHOTO.license}](${BOUQUET_PHOTO.licenseUrl}).*
+*${ARTWORK.title}, ${ARTWORK.artist}, ${String(ARTWORK.year)}. Public domain (${ARTWORK.license}).*
 `

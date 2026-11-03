@@ -42,10 +42,27 @@ export interface Take {
   markEnd: () => void
   /** Notes a key moment by name (the long-form video beats list them for the editor). */
   note: (label: string) => void
+  /**
+   * Captions a key press (`⌘F`, `↓`, a typed word) at this moment, for the website's
+   * KeyCastr-style overlay. Scenes reach it through `captionKey`, which finds the take
+   * that is rolling.
+   */
+  key: (label: string) => void
   /** Marks where the clip ends, stops the recorder, and writes the markers file. */
   finish: () => Promise<void>
   /** Stops the recorder and throws the master away. For a take that failed partway. */
   abandon: () => Promise<void>
+}
+
+/** The take that is recording now, which `captionKey` writes to; `null` between takes. */
+let rolling: Take | null = null
+
+/**
+ * Captions a key press on the take that is recording, and does nothing off camera, so a
+ * helper can caption every press it makes without knowing whether a take is rolling.
+ */
+export function captionKey(label: string): void {
+  rolling?.key(label)
 }
 
 /**
@@ -78,6 +95,7 @@ export async function startTake(options: {
   let startEpochMs: number | null = null
   let posterEpochMs: number | null = null
   const notes: { epochMs: number; label: string }[] = []
+  const keys: { epochMs: number; label: string }[] = []
   let usableEndEpochMs: number | null = null
 
   async function stop(): Promise<void> {
@@ -85,7 +103,7 @@ export async function startTake(options: {
     await events.next('done', waitBudget(30000))
   }
 
-  return {
+  const take: Take = {
     markStart: () => {
       startEpochMs = Date.now()
     },
@@ -98,8 +116,12 @@ export async function startTake(options: {
     note: (label) => {
       notes.push({ epochMs: Date.now(), label })
     },
+    key: (label) => {
+      keys.push({ epochMs: Date.now(), label })
+    },
     finish: async () => {
       const endEpochMs = usableEndEpochMs ?? Date.now()
+      if (rolling === take) rolling = null
       await stop()
       if (startEpochMs === null) {
         rmSync(recording, { force: true })
@@ -115,16 +137,20 @@ export async function startTake(options: {
         // A take with no explicit poster moment uses its midpoint.
         posterEpochMs: posterEpochMs ?? Math.round((startEpochMs + endEpochMs) / 2),
         notes,
+        keys,
       }
       writeFileSync(`${base}.markers.json`, `${JSON.stringify(markers, null, 2)}\n`)
     },
     abandon: async () => {
+      if (rolling === take) rolling = null
       await stop().catch(() => {
         proc.kill('SIGKILL')
       })
       rmSync(recording, { force: true })
     },
   }
+  rolling = take
+  return take
 }
 
 /** Reads the recorder's JSON lines and hands them out by kind; an `error` line rejects any waiter. */

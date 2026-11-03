@@ -56,7 +56,9 @@ import {
   waitForTaxAnswer,
 } from './marketing-clips-scenes.js'
 import { AI_QUERY, DEMO, DEMO_ROOT, SENSOR_LOG_QUERY, resetBackup, resetCameraRoll } from './marketing-clips-demo.js'
+import { captionKey } from './marketing-clips-take.js'
 import type { Take } from './marketing-clips-take.js'
+import { pressCaptioned } from './marketing-clips-keys.js'
 
 /**
  * The video's main-window look: bigger than the clips, at 125% zoom, so a 1080p export
@@ -75,6 +77,7 @@ export async function openEntry(page: TauriPage, pane: 'left' | 'right', name: s
   await mcpCall('move_cursor', { pane, filename: name })
   await hold(450)
   await ensureExplorerFocused(page)
+  captionKey('Enter')
   await page.keyboard.press('Enter')
 }
 
@@ -86,7 +89,7 @@ export async function openEntry(page: TauriPage, pane: 'left' | 'right', name: s
  */
 export async function goParent(page: TauriPage): Promise<void> {
   await ensureExplorerFocused(page)
-  await pressKey(page, 'Meta+ArrowUp')
+  await pressCaptioned(page, 'Meta+ArrowUp')
 }
 
 /**

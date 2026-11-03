@@ -37,7 +37,6 @@ import {
   closeSearchDialog,
   getActiveMode,
   openSearchDialog,
-  pressMetaDigit,
   resetSearchDialog,
 } from './search-helpers.js'
 import { appPid, setWindowSize, windowMetrics } from './marketing-shots-helpers.js'
@@ -53,7 +52,7 @@ import {
 } from './marketing-stage.js'
 import {
   AI_QUERY,
-  BOUQUET_PHOTO,
+  ARTWORK,
   DEMO,
   DEMO_ROOT,
   QUEUE_SOURCES,
@@ -62,7 +61,8 @@ import {
   resetBackup,
   resetRawImports,
 } from './marketing-clips-demo.js'
-import { startTake } from './marketing-clips-take.js'
+import { captionKey, startTake } from './marketing-clips-take.js'
+import { pressCaptioned, runCaptioned, typeCaptioned } from './marketing-clips-keys.js'
 import type { ClipTheme, Take } from './marketing-clips-take.js'
 
 const LOG = '[marketing-clips]'
@@ -122,6 +122,18 @@ export async function typeSlowly(page: TauriPage, selector: string, text: string
       })()`)
     await hold(perCharMs)
   }
+}
+
+/** Opens the search dialog with its shortcut, captioned. */
+async function openSearchCaptioned(page: TauriPage): Promise<void> {
+  await runCaptioned(page, 'search.open')
+  await page.waitForSelector(SEARCH_OVERLAY, waitBudget(3000))
+}
+
+/** Closes the search dialog with Esc, captioned once. */
+async function closeSearchCaptioned(page: TauriPage): Promise<void> {
+  captionKey('Esc')
+  await closeSearchDialog(page)
 }
 
 export async function invoke(page: TauriPage, command: string, args: Record<string, unknown>): Promise<void> {
@@ -288,7 +300,7 @@ export async function copyRollback(page: TauriPage, theme: ClipTheme): Promise<v
       await hold(700)
       take.markStart()
       await hold(LEAD_IN_MS)
-      await dispatchMenuCommand(page, 'file.copy')
+      await runCaptioned(page, 'file.copy')
       await page.waitForSelector(TRANSFER_DIALOG, waitBudget(5000))
       await hold(700)
       await clickTransferStart(page)
@@ -416,10 +428,12 @@ export async function multiRename(page: TauriPage, theme: ClipTheme): Promise<vo
       await hold(700)
       take.markStart()
       await hold(LEAD_IN_MS)
-      await dispatchMenuCommand(page, 'file.multiRename')
+      await runCaptioned(page, 'file.multiRename')
       await page.waitForSelector(MULTI_RENAME, waitBudget(5000))
       await hold(900)
-      await typeSlowly(page, `${MULTI_RENAME} input[aria-label="Name mask"]`, 'Iceland [Y-M-D] [C:3]')
+      await typeCaptioned('Iceland [Y-M-D] [C:3]', (text) =>
+        typeSlowly(page, `${MULTI_RENAME} input[aria-label="Name mask"]`, text),
+      )
       await hold(1300)
       take.markPoster()
       await hold(700)
@@ -637,12 +651,12 @@ export async function search(page: TauriPage, theme: ClipTheme): Promise<void> {
       await hold(LEAD_IN_MS)
 
       // A plain filename search, AI off.
-      await openSearchDialog(page)
+      await openSearchCaptioned(page)
       await hold(500)
-      await typeSlowly(page, SEARCH_INPUT, SEARCH_QUERY, 110)
+      await typeCaptioned(SEARCH_QUERY, (text) => typeSlowly(page, SEARCH_INPUT, text, 110))
       await page.waitForSelector(`${SEARCH_OVERLAY} .result-row`, waitBudget(30000))
       await hold(2600)
-      await closeSearchDialog(page)
+      await closeSearchCaptioned(page)
       await hold(600)
 
       // Settings > Provider: Local LLM, and the model starts.
@@ -655,21 +669,21 @@ export async function search(page: TauriPage, theme: ClipTheme): Promise<void> {
       await hold(700)
 
       // The same dialog, now with "Ask anything".
-      await openSearchDialog(page)
+      await openSearchCaptioned(page)
       await hold(500)
       if ((await getActiveMode(page)) !== 'ai') {
-        await pressMetaDigit(page, 1)
+        await pressCaptioned(page, 'Meta+1')
         await expect.poll(() => getActiveMode(page), { timeout: waitBudget(5000) }).toBe('ai')
       }
       await hold(700)
-      await typeSlowly(page, SEARCH_INPUT, AI_QUERY, 95)
+      await typeCaptioned(AI_QUERY, (text) => typeSlowly(page, SEARCH_INPUT, text, 95))
       await hold(500)
-      await pressKey(page, 'Enter')
+      await pressCaptioned(page, 'Enter')
       await waitForTaxAnswer(page)
       await hold(1000)
       take.markPoster()
       await hold(3000)
-      await closeSearchDialog(page)
+      await closeSearchCaptioned(page)
       await hold(800)
     })
   } finally {
@@ -719,7 +733,7 @@ export async function languageSwitch(page: TauriPage, theme: ClipTheme): Promise
         .toBe(true)
       await hold(700)
       for (let i = 0; i < 12; i++) {
-        await pressKey(settings, 'ArrowDown')
+        await pressCaptioned(settings, 'ArrowDown')
         await hold(650)
         if (i === 5) take.markPoster()
       }
@@ -924,6 +938,8 @@ function viewerModeLabel(viewer: TauriPage): Promise<string> {
  * land on nothing.
  */
 async function switchViewerMode(viewer: TauriPage, digit: '0' | '1' | '2' | '3', label: string): Promise<void> {
+  // One caption however many presses it takes: the re-presses are for a viewer still loading.
+  captionKey(digit)
   await expect
     .poll(
       async () => {
@@ -963,7 +979,7 @@ export async function viewer(page: TauriPage, theme: ClipTheme): Promise<void> {
     // Off camera: Text view, what the Markdown window shows when it comes up.
     await switchViewerMode(doc.viewer, '1', 'Text')
 
-    const shown = await openClipViewer(page, join(folder, BOUQUET_PHOTO.file))
+    const shown = await openClipViewer(page, join(folder, ARTWORK.file))
     photo = shown
     await expect.poll(() => imagesLoaded(shown.viewer, '.media-image'), { timeout: waitBudget(10000) }).toBe(true)
     await stackOn(page, shown.label, doc.label)

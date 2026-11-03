@@ -40,23 +40,43 @@ Slugs come from `apps/desktop/test/e2e-playwright/marketing-clips-slugs.ts`; eac
   starts.
 - `language-switch`: Settings > Appearance > Language, the list open, ArrowDown twelve times; the picker previews each
   language as it's highlighted, so the window re-renders in each.
-- `viewer` (~20 s): a real photo (an autumn bouquet), then the same file as Binary (2) and Hex (3), whose first rows
-  read the photo's own caption; then a Markdown README as Text (1), then formatted (0). Two viewer windows stacked on
-  one frame, the README's behind: a window reaches another file only through a Markdown link, and a linked file opens
-  formatted, never as text.
+- `viewer` (~20 s): a photo of a real painting, then the same file as Binary (2) and Hex (3); then a Markdown README as
+  Text (1), then formatted (0). Two viewer windows stacked on one frame, the README's behind: a window reaches another
+  file only through a Markdown link, and a linked file opens formatted, never as text.
 - `settings`: a pan through seven Settings sections, one per group.
 
-## Credits
+## The image the viewer shows
 
-Third-party content the clips show. Anything that shows it (the clip, its poster, a page embedding it) owes its credit.
+"Abstract landscape with sun", acrylic on canvas, 1990, by Fons Heijnsbroek, dedicated to the public domain (CC0), so no
+credit is owed anywhere it shows:
+<https://commons.wikimedia.org/wiki/File:'Abstract_landscape_with_sun'_-_large_acrylic_painting_on_canvas,_painted_in_1990_by_Dutch_artist_Fons_Heijnsbroek,_free_image_of_art_in_high_resolutions.jpg>.
+Committed as a 2,400 px copy of the 6,555 px original, metadata kept:
+`apps/desktop/test/e2e-playwright/marketing-clips-assets/abstract-landscape-with-sun.jpg` (`ARTWORK` in
+`marketing-clips-demo.ts`). A replacement must be human-made (a photo or an artwork, ❌ never AI-generated) and CC0.
 
-- **"Autumn bouquet"** by Susanne Nilsson, CC BY-SA 2.0 (<https://creativecommons.org/licenses/by-sa/2.0/>), from
-  <https://www.flickr.com/photos/infomastern/30427779760/> via Wikimedia Commons
-  (<https://commons.wikimedia.org/wiki/File:Autumn_bouquet_(30427779760).jpg>). A camera photo (Canon EOS 760D,
-  2016-10-14, per its EXIF), committed as a 2,400 px copy with its metadata kept:
-  `apps/desktop/test/e2e-playwright/marketing-clips-assets/autumn-bouquet.jpg`. Shown in the `viewer` clip. The staged
-  README ends with the credit, but on screen it's only a Text-view line cut off at the window's edge, so a page showing
-  the clip carries the credit itself.
+## Key captions
+
+Every key press a take makes is captioned the way KeyCastr shows it, for the website's overlay: `⌘F`, `↓`, `Enter`,
+`Esc`, `⇧⌘N` (modifiers in Apple's order, ⌃⌥⇧⌘), and a typed string as one label (`invoice`). A command the scene
+dispatches in place of its shortcut carries the shortcut (`F5` for `file.copy`). The scenes press keys only through
+`marketing-clips-keys.ts` (`pressCaptioned`, `runCaptioned`, `typeCaptioned`), which caption onto the take that is
+recording; a press off camera captions nothing. Mouse clicks aren't captioned.
+
+The encoder writes `{slug}-{theme}.keys.json` beside each clip, the contract the website builds against:
+
+```json
+{
+  "keys": [
+    { "at": 1.53, "label": "⌘F" },
+    { "at": 2.1, "label": "invoice" }
+  ]
+}
+```
+
+- `at`: seconds from the ENCODED clip's first frame (after the trim), three decimals, in press order. A press before the
+  start marker or after the end is left out.
+- `label`: what to show. A typed string is captioned once, as it starts.
+- A clip with no key presses gets `{ "keys": [] }`.
 
 ## Demo video footage (`--video`)
 
@@ -87,6 +107,7 @@ Into `apps/website/public/clips/` (or `--out`), per clip and theme:
 - `{slug}-{theme}-av1.mp4`: SVT-AV1, screen-content mode (`scm=1`), 30 fps, at most 1,500 px wide.
 - `{slug}-{theme}-h264.mp4`: the fallback for browsers without AV1 decode; `faststart`, `yuv420p`.
 - `{slug}-{theme}.webp`: the poster, cut at the moment the scene marks as representative.
+- `{slug}-{theme}.keys.json`: the take's key captions (§ "Key captions").
 - `clips.json`: one line per clip with `width`, `height`, `duration`, and `themes`. An `--only` run merges into it.
 
 The lossless masters (ProRes 4444, ~60 MB a second at 2x) and their trim markers stay in `brand/clip-masters/`,

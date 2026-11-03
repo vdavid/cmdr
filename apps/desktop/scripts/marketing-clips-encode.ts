@@ -10,6 +10,9 @@
  *   decodes AV1 only in hardware: M3+, iPhone 15 Pro+).
  * - `{slug}-{theme}.webp`: the poster frame, shown before play and under
  *   `prefers-reduced-motion`.
+ * - `{slug}-{theme}.keys.json`: the take's key presses on the clip's own clock, for the
+ *   website's key-caption overlay (`planKeyCaptions`; the contract is in
+ *   `docs/guides/product-clips.md` § "Key captions").
  *
  * The planning (`planTrim`, `ffmpegVideoArgs`, `mergeClipsManifest`) is pure and unit
  * tested; `encodeClip` shells out to `ffmpeg`, `ffprobe`, and `magick` and is tested on a
@@ -50,6 +53,13 @@ export interface ClipMarkers {
   endEpochMs: number
   /** The representative moment the poster frame is taken from. */
   posterEpochMs: number
+  /** Each key press the take captioned (`captionKey`), in order. Absent in older masters. */
+  keys?: { epochMs: number; label: string }[]
+}
+
+/** What `{slug}-{theme}.keys.json` holds: each press, seconds from the ENCODED clip's start. */
+export interface KeyCaptions {
+  keys: { at: number; label: string }[]
 }
 
 /** Offsets into the master, in seconds, for one encode. */
@@ -83,6 +93,18 @@ export function planTrim(markers: ClipMarkers): TrimPlan {
   const durationS = (markers.endEpochMs - markers.startEpochMs) / 1000
   const posterS = Math.min(durationS, Math.max(0, (markers.posterEpochMs - markers.startEpochMs) / 1000))
   return { startS: round3(startS), durationS: round3(durationS), posterS: round3(posterS) }
+}
+
+/**
+ * The take's key presses on the encoded clip's clock: `at` counts from the clip's first
+ * frame (the start marker, where the trim cuts), so a press before the start or after the
+ * end is off the clip and left out.
+ */
+export function planKeyCaptions(markers: ClipMarkers, plan: TrimPlan): KeyCaptions {
+  const keys = (markers.keys ?? [])
+    .map((k) => ({ at: round3((k.epochMs - markers.startEpochMs) / 1000), label: k.label }))
+    .filter((k) => k.at >= 0 && k.at <= plan.durationS)
+  return { keys }
 }
 
 function round3(n: number): number {
@@ -293,9 +315,10 @@ export function encodeClip(options: { master: string; markers: ClipMarkers; outD
   const av1 = `${base}-av1.mp4`
   const h264 = `${base}-h264.mp4`
   const poster = `${base}.webp`
+  const keys = `${base}.keys.json`
   const posterPng = `${base}.poster.png`
   // The extension stays last so ffmpeg and magick still infer the container.
-  const finals = [av1, h264, poster]
+  const finals = [av1, h264, poster, keys]
   const staged = finals.map((path) => path.replace(/(\.\w+)$/, '.encoding$1'))
 
   try {
@@ -305,6 +328,7 @@ export function encodeClip(options: { master: string; markers: ClipMarkers; outD
     // Lossy WebP: the poster is on screen for a moment before the video, and a q88
     // frame is a fraction of the lossless one with no visible difference at that size.
     runTool('magick', [posterPng, '-quality', '88', '-define', 'webp:method=6', staged[2]])
+    writeFileSync(staged[3], `${JSON.stringify(planKeyCaptions(markers, plan), null, 2)}\n`)
     for (const [i, path] of finals.entries()) renameSync(staged[i], path)
   } finally {
     for (const path of [...staged, posterPng]) rmSync(path, { force: true })
