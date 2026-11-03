@@ -136,6 +136,18 @@
   "@commands.askCmdrNewChat.description": {
     "sourceHash": "957741b"
   },
+  "commands.askCmdrFind.label": "Im Chat suchen",
+  "@commands.askCmdrFind.label": {
+    "sourceHash": "df9554c"
+  },
+  "commands.askCmdrFindNext.label": "Nächster Treffer im Chat",
+  "@commands.askCmdrFindNext.label": {
+    "sourceHash": "1c2da9b"
+  },
+  "commands.askCmdrFindPrevious.label": "Vorheriger Treffer im Chat",
+  "@commands.askCmdrFindPrevious.label": {
+    "sourceHash": "d28d025"
+  },
   "commands.feedbackSend.label": "Feedback senden",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
