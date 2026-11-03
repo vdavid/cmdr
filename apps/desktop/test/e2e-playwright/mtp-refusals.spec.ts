@@ -1,7 +1,7 @@
 /**
  * E2E tests for what an MTP device refuses: the clipboard (⌘C / ⌘X / ⌘V), which
- * can't carry files off a device, and a read-only storage, which turns every
- * write away.
+ * can't carry files off a device, opening a file in another app, which has no path
+ * to hand over, and a read-only storage, which turns every write away.
  *
  * Requires the app to be built with `--features playwright-e2e,virtual-mtp`.
  * Shared setup and vocabulary: `mtp-helpers.ts`.
@@ -21,11 +21,13 @@ import {
   mcpAwaitItem,
 } from '../e2e-shared/mcp-client.js'
 import {
+  clearOpenedPaths,
   clickEntryInPane,
   dismissOverlay,
   ensureAppReady,
   expectAndDismissToast,
   fileExistsInPane,
+  getOpenedPaths,
   moveCursorToFile,
   pressKey,
   CTRL_OR_META,
@@ -124,6 +126,35 @@ test.describe('MTP clipboard rejection', () => {
     await tauriPage.keyboard.press('v')
     await tauriPage.keyboard.up(CTRL_OR_META)
     await expectAndDismissToast(tauriPage, 'Use F5 to copy files onto this device.', { timeout: waitBudget(5000) })
+  })
+})
+
+test.describe('MTP open in another app', () => {
+  // A phone's file has no path another app can open. Enter used to hand its `mtp://` path
+  // to the OS opener, which did nothing and said nothing (ERR-NHM5T's shape).
+  test('Enter on an MTP file says why it can’t open, and launches nothing', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'Documents')
+    await mcpNavToPath('left', `${mtpPath}/Documents`)
+    await mcpAwaitItem('left', 'report.txt')
+    await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') === 'report.txt'`,
+          ),
+        { timeout: waitBudget(2000) },
+      )
+      .toBeTruthy()
+    await clearOpenedPaths(tauriPage)
+
+    await pressKey(tauriPage, 'Enter')
+
+    await expectAndDismissToast(tauriPage, 'it isn’t a regular file on your Mac', { timeout: waitBudget(5000) })
+    expect(await getOpenedPaths(tauriPage)).toEqual([])
   })
 })
 
