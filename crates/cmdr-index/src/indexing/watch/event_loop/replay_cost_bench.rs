@@ -241,8 +241,8 @@ mod bench {
             pending_rescans.len()
         );
         for (i, (n, took)) in drains.iter().enumerate() {
-            // allowed-pluralize-noun: a measurement printout; a window holds thousands of paths.
             eprintln!(
+                // allowed-pluralize-noun: a measurement printout; a window holds thousands of paths.
                 "  drain {i}: {n} paths in {:.2}s ({:.1} µs/path)",
                 took.as_secs_f64(),
                 per(*took, *n)
