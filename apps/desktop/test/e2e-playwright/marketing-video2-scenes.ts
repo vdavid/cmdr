@@ -581,6 +581,7 @@ export async function undo(page: TauriPage): Promise<void> {
         previewId: null,
         preKnownConflicts: [],
       },
+      initiator: 'user',
     })})`,
   )
   await expect

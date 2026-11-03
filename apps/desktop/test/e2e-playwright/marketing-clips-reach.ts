@@ -225,16 +225,13 @@ async function connectBucket(page: TauriPage): Promise<void> {
  */
 export async function reachNetwork(page: TauriPage, theme: ClipTheme): Promise<void> {
   await forgetNas(page)
-  // Connected once per run: a second connect re-registered the live bucket, and it took
-  // longer than the select's patience to come back (2026-11-03).
-  const live = await mcpSelectVolume('right', S3.bucket).then(
-    () => true,
-    () => false,
-  )
-  if (!live) {
-    await connectBucket(page)
-    await selectVolumeWhenListed(S3.bucket)
-  }
+  // Connected once per run (the orchestrator forgets it before launch): a second connect
+  // re-registered the live bucket, and it took longer than the select's patience to come
+  // back. Asked of the saved list, ❌ not of `select_volume`, which also answers to the
+  // bucket's favorite and opened a bucket nothing had connected (2026-11-03).
+  const saved = await page.evaluate<SavedServer[]>(`window.__TAURI_INTERNALS__.invoke('list_saved_servers')`)
+  if (!saved.some((s) => s.protocol === 's3' && s.displayName === S3.bucket)) await connectBucket(page)
+  await selectVolumeWhenListed(S3.bucket)
   await favoriteRightPane(page, BUCKET_FAVORITE, new RegExp(`s3://[^\\s"]*?/${S3.bucket}(?=/|\\s|"|$)`))
   await stageMain(page, theme, DEMO_ROOT, join(DEMO_ROOT, DEMO.photos))
   await dismissAllToasts(page)
@@ -351,7 +348,7 @@ export async function reachDevices(page: TauriPage, theme: ClipTheme): Promise<v
   await lockBackup(page)
   await mcpCall('move_cursor', { pane: 'right', filename: RESTIC.folder })
   // On `..`, where closing the phone's tab leaves the cursor too, so the loop's seam is clean.
-  await mcpCall('move_cursor', { pane: 'left', filename: '..' })
+  await mcpCall('move_cursor', { pane: 'left', index: 0 })
   await waitRow(page, 'website')
   try {
     const take = await recordWindow(page, { slug: 'reach-devices', theme, label: 'main' })

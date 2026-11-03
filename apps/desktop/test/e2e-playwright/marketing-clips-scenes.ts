@@ -12,6 +12,7 @@
  */
 
 import { waitBudget } from './wait-budget.js'
+import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { mcpCall } from '../e2e-shared/mcp-client.js'
@@ -357,6 +358,16 @@ export async function opsQueue(page: TauriPage, theme: ClipTheme): Promise<void>
         if (i === 2) take.markPoster()
         await hold(350)
       }
+      // The starts are fire-and-forget, so a refused one is silent: check that copies ran,
+      // or an empty queue reads as a finished one. A changed IPC signature (the
+      // `initiator` argument) once recorded five seconds of "Nothing in the queue"
+      // (2026-11-03).
+      await expect
+        .poll(() => readdirSync(join(DEMO_ROOT, DEMO.backup)).length, {
+          timeout: waitBudget(5000),
+          message: 'no copy reached Backup; check the copy_between_volumes arguments',
+        })
+        .toBeGreaterThan(0)
       await expect
         .poll(
           () =>
@@ -397,6 +408,7 @@ async function startCopy(page: TauriPage, source: string, destination: string): 
       previewId: null,
       preKnownConflicts: [],
     },
+    initiator: 'user',
   }
   await page.evaluate(`void window.__TAURI_INTERNALS__.invoke('copy_between_volumes', ${JSON.stringify(args)})`)
 }
