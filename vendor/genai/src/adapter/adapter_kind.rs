@@ -92,7 +92,7 @@ pub enum AdapterKind {
 	Omlx,
 
 	/// Google Vertex AI (Model Garden). Supports Gemini and Claude models via publishers/google and publishers/anthropic.
-	/// Uses namespace routing: `vertex::gemini-2.5-flash`, `vertex::claude-sonnet-4-6`
+	/// Uses namespace routing: `vertex::gemini-3.8-flash`, `vertex::claude-sonnet-4-6`
 	Vertex,
 
 	/// GitHub Models inference API (multi-publisher gateway for OpenAI, Anthropic, and Google models).
@@ -140,6 +140,16 @@ pub enum AdapterKind {
 	/// Example: `heabsy::qwen38`. Website: <https://heabsy.com/platform>.
 	/// Uses `HEABSY_API_KEY`. Embeddings are not supported.
 	Heabsy,
+
+	/// Runcrate: OpenAI-compatible inference API for open models, selected via the `runcrate::` namespace.
+	/// Example: `runcrate::deepseek-ai/DeepSeek-V4.1-Flash`. Website: <https://www.runcrate.ai>.
+	/// Uses `RUNCRATE_API_KEY`.
+	Runcrate,
+
+	/// CloudGPU: OpenAI-compatible inference API for open models, selected via the `cloudgpu::` namespace.
+	/// Example: `cloudgpu::deepseek-v4.1-flash`. Website: <https://cloudgpu.app>.
+	/// Uses `CLOUDGPU_API_KEY`. Embeddings are not supported.
+	CloudGpu,
 
 	/// For MiniMax (Anthropic-compatible protocol)
 	MiniMax,
@@ -191,6 +201,8 @@ adapter_kind_str_maps! {
 	Requesty           => "Requesty",           "requesty",            adapters::all_adapters::RequestyAdapter;
 	ApiRoute           => "ApiRoute",           "api_route",           adapters::all_adapters::ApiRouteAdapter;
 	Heabsy             => "Heabsy",             "heabsy",              adapters::all_adapters::HeabsyAdapter;
+	Runcrate           => "Runcrate",           "runcrate",            adapters::all_adapters::RuncrateAdapter;
+	CloudGpu           => "CloudGpu",           "cloudgpu",            adapters::all_adapters::CloudGpuAdapter;
 	MiniMax            => "MiniMax",            "minimax",             adapters::all_adapters::MiniMaxAdapter;
 }
 
@@ -218,7 +230,7 @@ impl AdapterKind {
 	/// - e.g., for together.ai `together::meta-llama/Llama-3-8b-chat-hf`
 	/// - e.g., for nebius with `nebius::Qwen/Qwen3-235B-A22B`
 	/// - e.g., for ZAI coding plan with `zai_coding::glm-4.6`
-	/// - e.g., for vertex with `vertex::gemini-2.5-flash` or `vertex::claude-sonnet-4-6`
+	/// - e.g., for vertex with `vertex::gemini-3.8-flash` or `vertex::claude-sonnet-4-6`
 	///
 	/// And all adapters can be force namspaced as well.
 	///

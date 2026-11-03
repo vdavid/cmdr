@@ -83,9 +83,7 @@ impl Adapter for VertexAdapter {
 		_web_client: &WebClient,
 	) -> Result<Vec<String>> {
 		Ok(vec![
-			"gemini-2.5-pro".to_string(),
-			"gemini-2.5-flash".to_string(),
-			"gemini-2.5-flash-lite".to_string(),
+			"gemini-3.8-flash".to_string(),
 			"claude-sonnet-4-6".to_string(),
 			"claude-opus-4-6".to_string(),
 			"claude-haiku-4-5".to_string(),
@@ -113,8 +111,9 @@ impl Adapter for VertexAdapter {
 				ServiceType::Embed => format!("{base_url}{publisher_path}/models/{model_name}:predict"),
 			},
 			VertexPublisher::Anthropic => match service_type {
-				ServiceType::Chat | ServiceType::ChatStream => {
-					format!("{base_url}{publisher_path}/models/{model_name}:rawPredict")
+				ServiceType::Chat => format!("{base_url}{publisher_path}/models/{model_name}:rawPredict"),
+				ServiceType::ChatStream => {
+					format!("{base_url}{publisher_path}/models/{model_name}:streamRawPredict")
 				}
 				ServiceType::Embed => format!("{base_url}{publisher_path}/models/{model_name}:predict"),
 			},
@@ -294,3 +293,11 @@ impl VertexAdapter {
 }
 
 // endregion: --- Anthropic Publisher Support
+
+// region:    --- Tests
+
+#[cfg(test)]
+#[path = "adapter_impl_tests.rs"]
+mod tests;
+
+// endregion: --- Tests

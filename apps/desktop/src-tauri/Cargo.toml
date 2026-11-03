@@ -259,14 +259,14 @@ rand = "0.10"
 # that reject custom `temperature` (HTTP 400) and (2) Responses-only models that 404 on
 # `/v1/chat/completions`.
 #
-# Pinned at the EXACT 0.7.1 (published 2026-10-23). The line ships often and breaks APIs in
+# Pinned at the EXACT 0.7.2 (published 2026-10-28). The line ships often and breaks APIs in
 # minors, so pin exact to avoid surprise breakage on `cargo update`. 0.7 is what lets reasoning
 # survive a tool loop: Anthropic signed and redacted thinking blocks, OpenAI Responses encrypted
 # reasoning items, Gemini per-part thought signatures, and Mistral `thinking` chunks round-trip
 # (`src/agent/llm/DETAILS.md` § Reasoning round-trip). Patched through `vendor/genai/CMDR-PATCH.md` (OpenRouter's streamed
 # `reasoning_details`). Solo maintainer; MIT/Apache-2.0; ~25k LOC
 # if we ever need to fork.
-genai = "=0.7.1"
+genai = "=0.7.2"
 # Type-safe IPC: typed Rust↔TS bindings for tauri commands and events.
 # Generated `bindings.ts` lands in `apps/desktop/src/lib/ipc/`; the frontend
 # imports `commands.commandName(args)` instead of `invoke('command_name', ...)`.

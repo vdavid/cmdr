@@ -12,7 +12,7 @@
 [package]
 edition = "2024"
 name = "genai"
-version = "0.7.1"
+version = "0.7.2"
 build = false
 autolib = false
 autobins = false
@@ -383,6 +383,10 @@ path = "tests/tests_yakbak_openai_resp.rs"
 [[test]]
 name = "tests_yakbak_opencode_go"
 path = "tests/tests_yakbak_opencode_go.rs"
+
+[[test]]
+name = "tests_yakbak_parser_regressions"
+path = "tests/tests_yakbak_parser_regressions.rs"
 
 [[test]]
 name = "tests_yakbak_record"
