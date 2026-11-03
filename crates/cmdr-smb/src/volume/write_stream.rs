@@ -286,13 +286,17 @@ impl SmbVolume {
                     mut conn,
                     generation,
                 }) = self.clone_session().await
-                    && let Err(e) = tree.delete_file(&mut conn, &smb_path).await
-                    && is_behind_dfs_link(&e)
                 {
-                    let _ = self
-                        .inner
-                        .link_delete_file(generation.into(), &LeaseOn::Main, &tree, &smb_path)
-                        .await;
+                    match tree.delete_file(&mut conn, &smb_path).await {
+                        Ok(()) => self.delete_staging_fork_file(&tree, &mut conn, &smb_path).await,
+                        Err(e) if is_behind_dfs_link(&e) => {
+                            let _ = self
+                                .inner
+                                .link_delete_file(generation.into(), &LeaseOn::Main, &tree, &smb_path)
+                                .await;
+                        }
+                        Err(_) => {}
+                    }
                 }
             };
 

@@ -43,4 +43,21 @@ in another: order effects, which is why the reads now interleave.
   context's `READDIRATTR` on a listing (an smb2 follow-up). A copy onto a destination that keeps nothing of them (SFTP,
   S3, MTP) still lists, for the loss note's sake: one line in `copy_xattrs.rs::XattrAsk::of` would trade that note for
   the listing.
-- Not measured: a real NAS (QNAP's `qnap_macea` and Synology), over a LAN.
+- Not measured: a Synology.
+
+## On a real QNAP, over the LAN
+
+- **Rig**: David's QNAP TS-464 (QuTS hero, ZFS, Samba 4.20, `catia fruit qnap_macea streams_depot`), share `naspi`, from
+  the M3 MacBook on the home LAN at ~2.9 ms ping. smb2 0.40.0's `nas_the_listing_on_a_small_read_costs`
+  (`crates/smb2/tests/integration.rs`, debug build): 200 plain 4 KiB files read one at a time with
+  `read_file_compound_sized_with_info` (before) and `read_file_compound_sized_with_streams` (a copy's read), interleaved
+  file by file, the order flipped every run, median of seven runs. The protocol-level calls Cmdr's two read paths make,
+  so this is the listing's cost alone; the volume bench above wasn't rerun there because every file it deletes lands in
+  the share's recycle bin.
+- **Results** (two runs, 2026-11-03): 5.92 and 6.13 ms per read before, 6.35 and 6.43 ms with the listing: **+0.3–0.4
+  ms, +5–7%** per plain small file read. That's server work (`fruit`, `qnap_macea`, and `streams_depot` each look), not
+  a round trip, so it's 3–4x the loopback Samba's 20–40 µs, and over the 2% bar for a copy of many small files from this
+  NAS. Run alone, one at a time; the copy engine's 10 at once overlap latency but not the NAS's work.
+- **What the QNAP keeps**: every xattr round-trips through a copy and its landing rename, byte for byte. A resource fork
+  sits in a visible `._` file the share's recycle bin leaves behind on a delete, which is why deleting a staging temp
+  now deletes its `._` file too: `crates/cmdr-smb/DETAILS.md` § "Xattrs on copies".

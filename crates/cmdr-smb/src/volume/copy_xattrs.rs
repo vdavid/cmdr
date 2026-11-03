@@ -221,6 +221,47 @@ impl SmbVolume {
     }
 }
 
+/// The AppleDouble file beside `smb_path` (`._<name>`), where a `vfs_fruit`
+/// share with `fruit:resource = file` keeps the file's resource fork.
+fn apple_double_path(smb_path: &str) -> String {
+    match smb_path.rsplit_once('/') {
+        Some((folder, name)) => format!("{folder}/._{name}"),
+        None => format!("._{smb_path}"),
+    }
+}
+
+impl SmbVolume {
+    /// Deletes the `._` file a staging temp just deleted at `smb_path` may have
+    /// left behind. A QNAP keeps a resource fork in one, and its recycle bin
+    /// moves a deleted file without it (macOS's own client leaves it too), so a
+    /// rolled-back temp that got a fork, or the aside of a replaced file that
+    /// had one, would leave `._.cmdr-…` in the user's folder. Only Cmdr's own
+    /// staging names, on a share with named streams, best-effort: one round
+    /// trip, a missing one is the usual answer. Evidence: smb2's
+    /// `docs/notes/named-streams-and-xattrs.md`.
+    pub(super) async fn delete_staging_fork_file(&self, tree: &Tree, conn: &mut Connection, smb_path: &str) {
+        let is_staging = Path::new(smb_path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(cmdr_fs::staging::is_staging_temp_name);
+        if !is_staging || !self.stores_xattrs() || self.inner.link_paths.covers(smb_path) {
+            return;
+        }
+        let companion = apple_double_path(smb_path);
+        match tree.delete_file(conn, &companion).await {
+            Ok(()) => debug!(
+                "smb: deleted the `._` file a staging temp left at path={:?}",
+                LogPrivate::file_path(&companion)
+            ),
+            Err(e) if e.kind() == smb2::ErrorKind::NotFound => {}
+            Err(e) => debug!(
+                "smb: the `._` file beside staging temp path={:?} stays: {e}",
+                LogPrivate::file_path(smb_path)
+            ),
+        }
+    }
+}
+
 impl SmbVolume {
     /// A folder's xattrs, for a copy whose destination keeps them: a stream
     /// listing, then one overlapped read of what it names. A folder behind a

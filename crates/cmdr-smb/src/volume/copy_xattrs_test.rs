@@ -42,6 +42,13 @@ fn names_alone_are_an_outline_and_never_values() {
     assert_eq!(values.outline(), vec![tags]);
 }
 
+/// The `._` file sits beside its file, in the same folder, at the share root too.
+#[test]
+fn the_apple_double_file_sits_beside_its_file() {
+    assert_eq!(apple_double_path("a/b/.cmdr-tmp-x"), "a/b/._.cmdr-tmp-x");
+    assert_eq!(apple_double_path(".cmdr-tmp-x"), "._.cmdr-tmp-x");
+}
+
 #[test]
 fn provenance_is_never_carried() {
     assert!(!carries_stream(PROVENANCE));

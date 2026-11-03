@@ -1059,13 +1059,19 @@ source's metadata".
   (`smb_xattrs_test.rs::smb_integration_a_rollback_takes_back_tagged_copies_on_the_share`). A plain Samba answers the
   compounded listing with the default stream alone, so a read there reads "none". The fixture's file system keeps all of
   a file's xattrs in one 4 KiB block (`STATUS_DISK_FULL` past it): a large resource fork needs a real NAS.
+- **On a QNAP** (verified on David's TS-464, QuTS hero, Samba 4.20 with `catia fruit qnap_macea streams_depot`,
+  2026-11-03, smb2's `nas_a_copy_keeps_its_xattrs_and_a_deleted_temp_leaves_its_fork_file` and a one-off probe through
+  `SmbVolume`): tags, a comment, FinderInfo, a 300 KiB resource fork, and a plain xattr round-trip byte for byte, and
+  the landing rename keeps them. The resource fork lives in a visible `._<name>` file (`fruit:resource = file`), and the
+  share's recycle bin turns a delete into a move that leaves it behind, through macOS's own client too. So deleting a
+  staging temp (`.cmdr-tmp-`, `.cmdr-temp-`) also deletes its `._` file (`copy_xattrs.rs::delete_staging_fork_file`, on
+  `delete` and on the write's own `delete_partial`): one round trip, only on a share with streams, so a rolled-back copy
+  and a replaced file's aside leave nothing in the user's folder. A file the user deletes keeps its `._`, as in Finder.
 - **Cost** (`examples/copy_xattrs_bench.rs`, `docs/notes/smb-copy-xattrs-bench-2026-11-03.md`): big-file reads and
   writes unchanged within noise; a plain small file's read with the listing costs about 20–40 µs more of the server's
-  time on loopback, which is 8–18% of a 0.2 ms loopback read and a few percent of a LAN copy; a tagged file's read about
-  0.25 ms more and its write 0.5–1.4 ms more on loopback.
-- **Not verified**: a real Synology or QNAP (QNAP's `fruit:resource = file` keeps a resource fork in a `._` file, which
-  smb2 saw stay behind on a delete: `~/projects-git/vdavid/smb2/docs/notes/named-streams-and-xattrs.md`, so a rollback
-  there may leave one), and Finder showing the tags through a mount (the byte-level match is smb2's proof).
+  time on loopback (8–18% of a 0.2 ms read) and 0.3–0.4 ms on the QNAP over the LAN (+5–7% of a 6 ms read, one at a
+  time); a tagged file's read about 0.25 ms more and its write 0.5–1.4 ms more on loopback.
+- **Not verified**: a Synology, and Finder showing the tags through a mount (the byte-level match is smb2's proof).
 - **The Finder-mounted share keeps them on its own path** (the native chunked arm through `smbfs`; on the guest fixture,
   which has no `vfs_fruit`, as `._` sidecars, and a resource fork is lost:
   `crates/cmdr-operations/src/transfer/DETAILS.md` § "Local copies stage").
