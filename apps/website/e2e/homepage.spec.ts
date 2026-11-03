@@ -172,9 +172,12 @@ test.describe('Homepage', () => {
   test('testimonials name real users', async ({ page }) => {
     await page.goto('/')
     const section = page.getByRole('region', { name: 'Testimonials' })
-    await expect(section.locator('blockquote')).toHaveCount(2)
+    await expect(section.locator('blockquote')).toHaveCount(3)
     await expect(section).toContainText('Sven Kopetzki')
     await expect(section).toContainText('Robert Benedict')
+    // A quote without the person's yes goes up without a name.
+    await expect(section).toContainText('An early user')
+    await expect(section).not.toContainText('Jojo')
     // The avatar is a local, pipeline-optimized copy, never a hotlink to Gravatar.
     const avatar = section.locator('img')
     await expect(avatar).toHaveCount(1)
