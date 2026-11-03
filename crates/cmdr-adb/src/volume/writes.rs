@@ -199,17 +199,36 @@ impl AdbVolume {
         if !force && found != WhatIsThere::Nothing {
             return Err(VolumeError::AlreadyExists(device_to));
         }
-        if self.occupant(&device_from).await? == WhatIsThere::Nothing {
-            return Err(volume_error_from_errno(ENOENT, &device_from));
-        }
         // ❌ Never clear a destination that's the source re-cased: `/sdcard` is
         // case-insensitive, so that `rmdir` would take the source itself.
         if found == WhatIsThere::Directory && !is_the_source_recased(&device_from, &device_to) {
+            // ❗ The source is proven BEFORE a folder gives way for it: a
+            // missing source must leave the user's empty folder standing.
+            self.refuse_a_missing_source(&device_from).await?;
             self.remove_empty_directory(to, &device_to).await?;
         }
-        self.shell_verb(&["mv", "-f", &device_from, &device_to], &device_to)
-            .await?;
+        // A missing source is asked about only once `mv` fails, so the common
+        // landing (a temp onto a free name) costs no stat of it (#339).
+        if let Err(e) = self
+            .shell_verb(&["mv", "-f", &device_from, &device_to], &device_to)
+            .await
+        {
+            // Only a source PROVEN missing replaces the verb's own failure; a
+            // stat that can't tell leaves it standing.
+            if matches!(self.occupant(&device_from).await, Ok(WhatIsThere::Nothing)) {
+                return Err(volume_error_from_errno(ENOENT, &device_from));
+            }
+            return Err(e);
+        }
         self.notify_renamed(from, to).await;
+        Ok(())
+    }
+
+    /// `NotFound` naming the source when nothing is at `device_from`.
+    async fn refuse_a_missing_source(&self, device_from: &str) -> Result<(), VolumeError> {
+        if self.occupant(device_from).await? == WhatIsThere::Nothing {
+            return Err(volume_error_from_errno(ENOENT, device_from));
+        }
         Ok(())
     }
 

@@ -70,6 +70,12 @@ pub enum WriteMode {
     CreateNewInFreshFolder,
     /// Whatever holds the name is the caller's to replace: a temp it minted, a
     /// name it claimed with a placeholder, a file the user chose to overwrite.
+    ///
+    /// ❗ A backend may write it IN PLACE (local disk, SFTP, SMB, WebDAV, and
+    /// ADB do), so the name can hold a partial until the write ends, and after a
+    /// crash. A caller that must keep a user's filename whole stages first (the
+    /// transfer engine always does); a backend ❌ never stages this mode again on
+    /// top of the caller's temp, which costs a rename per file.
     CreateOrReplace,
 }
 

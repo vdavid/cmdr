@@ -464,8 +464,102 @@ async fn a_path_escaping_the_root_is_refused_before_any_io() {
     assert!(server.tree().lock().unwrap().get("/etc/passwd").is_none());
 }
 
+/// The device shell commands the fake was asked to run whose verb is `verb`.
+fn shell_runs(server: &FakeAdbServer, verb: &str) -> usize {
+    server
+        .requests()
+        .iter()
+        .filter_map(|r| r.strip_prefix("shell,v2,raw:"))
+        .filter(|command| crate::testing::split_argv(command).first().is_some_and(|v| v == verb))
+        .count()
+}
+
+/// ❗ #339: a replacing write's name is the caller's (the transfer engine's own
+/// `.cmdr-tmp-*`), so the bytes go straight onto it, over what's there, with no
+/// second stage and no `mv`.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_write_lands_through_a_staging_sibling_and_leaves_no_partial() {
+async fn a_replacing_write_streams_straight_onto_the_callers_name() {
+    let (server, volume) = seeded().await;
+    let payload = vec![5u8; 150_003];
+    volume
+        .write_from_stream(
+            &fixture_path("/sdcard/target.txt"),
+            WriteMode::CreateOrReplace,
+            StreamLength::Known(payload.len() as u64),
+            Box::new(super::streams::BytesReadStream::new(payload.clone())),
+            &|_| std::ops::ControlFlow::Continue(()),
+        )
+        .await
+        .expect("the upload must land");
+    assert_eq!(shell_runs(&server, "mv"), 0, "{:?}", server.requests());
+    let tree = server.tree();
+    let tree = tree.lock().unwrap();
+    assert_eq!(tree.file_bytes("/sdcard/target.txt"), Some(payload));
+    assert!(
+        !tree
+            .paths()
+            .iter()
+            .any(|p| p.rsplit('/').next().is_some_and(is_staging_temp_name)),
+        "{:?}",
+        tree.paths()
+    );
+}
+
+/// A replacing write that fails after `SEND` truncated the name takes what it
+/// sent away: nothing half-written stays at the caller's name.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_replacing_write_whose_source_fails_removes_what_it_sent() {
+    let (server, volume) = seeded().await;
+    let outcome = volume
+        .write_from_stream(
+            &fixture_path("/sdcard/target.txt"),
+            WriteMode::CreateOrReplace,
+            StreamLength::Unknown,
+            Box::new(ChunkedSource::failing_unknown(&[3u8; 90_003], 31_003)),
+            &|_| std::ops::ControlFlow::Continue(()),
+        )
+        .await;
+    assert!(
+        matches!(outcome, Err(VolumeError::DeviceDisconnected(_))),
+        "the source's own failure is the cause: {outcome:?}"
+    );
+    assert!(server.tree().lock().unwrap().get("/sdcard/target.txt").is_none());
+}
+
+/// A rename of a missing source names the SOURCE, and ❗ a forced one onto an
+/// empty folder leaves the folder standing: the source is proven before the
+/// folder gives way, and asked about only once `mv` fails otherwise.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_rename_of_a_missing_source_names_it_and_clears_nothing() {
+    let mut tree = seeded_tree();
+    tree.add_dir("/sdcard/empty");
+    let server = FakeAdbServer::start(tree).await;
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+
+    for (to, force) in [
+        ("/sdcard/free.txt", false),
+        ("/sdcard/target.txt", true),
+        ("/sdcard/empty", true),
+    ] {
+        let outcome = volume
+            .rename(&fixture_path("/sdcard/gone.txt"), &fixture_path(to), force)
+            .await;
+        assert!(
+            matches!(&outcome, Err(VolumeError::NotFound(path)) if path == "/sdcard/gone.txt"),
+            "onto {to}: {outcome:?}"
+        );
+    }
+    let tree = server.tree();
+    let tree = tree.lock().unwrap();
+    assert!(tree.get("/sdcard/empty").is_some(), "the empty folder stays");
+    assert_eq!(
+        tree.file_bytes("/sdcard/target.txt").as_deref(),
+        Some(&b"the user's target file"[..])
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_create_new_write_lands_through_a_staging_sibling_and_leaves_no_partial() {
     let (server, volume) = seeded().await;
     let payload: Vec<u8> = (0..200_000u32).map(|i| (i % 251) as u8).collect();
     let source = Box::new(super::streams::BytesReadStream::new(payload.clone()));
@@ -473,7 +567,7 @@ async fn a_write_lands_through_a_staging_sibling_and_leaves_no_partial() {
     let written = volume
         .write_from_stream(
             &fixture_path("/sdcard/big.bin"),
-            WriteMode::CreateOrReplace,
+            WriteMode::CreateNew,
             StreamLength::Known(payload.len() as u64),
             source,
             &|progress| {

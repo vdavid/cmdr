@@ -9,6 +9,7 @@
 use std::io::Read;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -36,6 +37,7 @@ pub struct FakeAdbServer {
     requests: Arc<Mutex<Vec<String>>>,
     transfer_flags: Arc<Mutex<Vec<(&'static str, u32)>>>,
     answering: watch::Sender<bool>,
+    round_trip: Arc<Mutex<Duration>>,
     accept: JoinHandle<()>,
     connections: Arc<Mutex<Vec<JoinHandle<()>>>>,
 }
@@ -57,6 +59,7 @@ struct Shared {
     requests: Arc<Mutex<Vec<String>>>,
     transfer_flags: Arc<Mutex<Vec<(&'static str, u32)>>>,
     answering: watch::Sender<bool>,
+    round_trip: Arc<Mutex<Duration>>,
 }
 
 impl FakeAdbServer {
@@ -72,6 +75,7 @@ impl FakeAdbServer {
             requests: Arc::new(Mutex::new(Vec::new())),
             transfer_flags: Arc::new(Mutex::new(Vec::new())),
             answering: watch::Sender::new(true),
+            round_trip: Arc::new(Mutex::new(Duration::ZERO)),
         };
         let connections: Arc<Mutex<Vec<JoinHandle<()>>>> = Arc::new(Mutex::new(Vec::new()));
         let accept = {
@@ -98,6 +102,7 @@ impl FakeAdbServer {
             requests: shared.requests,
             transfer_flags: shared.transfer_flags,
             answering: shared.answering,
+            round_trip: shared.round_trip,
             accept,
             connections,
         }
@@ -155,6 +160,14 @@ impl FakeAdbServer {
     /// Answers every parked request, and every later one straight away.
     pub fn release_answers(&self) {
         self.answering.send_replace(true);
+    }
+
+    /// Waits `round_trip` before answering every DEVICE service (`sync:` and
+    /// each shell command), modeling the USB hop the loopback fake doesn't have:
+    /// one wait per socket, which is what a small-file copy pays per request.
+    /// `Duration::ZERO` (the default) answers at once.
+    pub fn set_device_round_trip(&self, round_trip: Duration) {
+        *self.round_trip.lock_ignore_poison() = round_trip;
     }
 
     /// Kills every open socket. The listener stays up, so clients reconnect.
@@ -231,6 +244,12 @@ async fn serve_connection(mut stream: TcpStream, shared: Shared) -> std::io::Res
         let mut answering = shared.answering.subscribe();
         if answering.wait_for(|open| *open).await.is_err() {
             return Ok(());
+        }
+        if request == "sync:" || request.starts_with("shell,v2,raw:") {
+            let round_trip = *shared.round_trip.lock_ignore_poison();
+            if !round_trip.is_zero() {
+                tokio::time::sleep(round_trip).await;
+            }
         }
         if let Some(serial) = request.strip_prefix("host:transport:") {
             let state = shared
