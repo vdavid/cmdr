@@ -994,11 +994,14 @@ reviews them, so a property that can't fail looks exactly like one that holds. T
 input that reaches the check, plus a recorded change that breaks it. Ordinary example tests are out of scope;
 `cargo mutants` triage serves those (`docs/testing.md`).
 
-**A property** is a fuzz target (`fuzz:<target>`, read from `fuzz/Cargo.toml`'s `[[bin]]` tables) or an interleaving
-test (`shuttle:<fn name>`, every `fn shuttle_*` in a `shuttleCrates` member, § "Interleaving tests (Shuttle)"). A new
-family (Kani proofs) is a `propertyKind` in its own `property-mutants-<kind>.go`, listed in `propertyKinds`: how to list
-its properties, check its own record fields, install its tools, and build and run one catcher in a tree.
-`property-mutants-fuzz.go` is the model.
+**A property** is a fuzz target (`fuzz:<target>`, read from `fuzz/Cargo.toml`'s `[[bin]]` tables), a Kani proof
+(`kani:<crate>/<module path>::<fn>`, every `#[kani::proof]` in a library crate's `src/`, found by
+`desktop-rust-kani.go`'s `findKaniProofs`), or an interleaving test (`shuttle:<fn name>`, every `fn shuttle_*` in a
+`shuttleCrates` member, § "Interleaving tests (Shuttle)"). The Kani name is everything `cargo kani --harness … --exact`
+needs, because the mirror has no `.git` to rediscover proofs from. A new family is a `propertyKind` in its own
+`property-mutants-<kind>.go`, listed in `propertyKinds`: how to list its properties, check its own record fields,
+install its tools, and build and run one catcher in a tree. `property-mutants-fuzz.go` is the model;
+`property-mutants-kani.go` is the one with no input.
 
 **A record** sits beside its property in a `*.mutants.json` (fuzz: `fuzz/fuzz_targets/<target>.mutants.json`):
 
@@ -1024,12 +1027,13 @@ its properties, check its own record fields, install its tools, and build and ru
   deleted.
 - A shuttle record sits beside its tests (`<tests file>.mutants.json`), takes no `input` (the test is the input), and
   its catcher is that one test, run as the lane runs it.
-- `input` (fuzz only): the input that reaches the property, and it must be in the target's corpus: a seed in
-  `fuzz/seeds/<target>/`, or one too big to commit raw, gzipped in `fuzz/large-seeds/<target>/` (the check decompresses
-  it first). So every fuzz run starts from it, and the mutant run is the corpus's coverage witness (`fuzz/DETAILS.md` §
-  "Mutant records").
-- `expect`: text the failure prints, normally the assertion's message (one without a message prints its expression).
-  It's what proves THIS property caught the mutant, not some other panic on the way.
+- `input` (fuzz only; a Kani record refuses one, since a proof covers every input up to its bound): the input that
+  reaches the property, and it must be in the target's corpus: a seed in `fuzz/seeds/<target>/`, or one too big to
+  commit raw, gzipped in `fuzz/large-seeds/<target>/` (the check decompresses it first). So every fuzz run starts from
+  it, and the mutant run is the corpus's coverage witness (`fuzz/DETAILS.md` § "Mutant records").
+- `expect`: text the failure prints, normally the assertion's message (one without a message prints its expression; Kani
+  prints it as `Failed Checks: "<message>"`). It's what proves THIS property caught the mutant, not some other panic on
+  the way.
 - Paths are repo-relative and can't leave the repo; an unknown field fails, so a typo can't go unread.
 
 **Adding a record**:
@@ -1067,7 +1071,9 @@ verdict.
 milliseconds; the slow half took 10m56s with a cold mirror and 4m15s warm, about 25 s per mutant, nearly all of it
 rebuilding the mutated crate under the sanitizer. So the fast half runs in `--fast`, and the slow half runs where the
 fuzz run does: CI-only and slow, its own job in `slow-checks.yml` every six days. That job builds cold, deliberately
-uncached: the Rust caches already press GitHub's 10 GB ceiling. Each record adds roughly a rebuild of its crate.
+uncached: the Rust caches already press GitHub's 10 GB ceiling. Each record adds roughly a rebuild of its crate. A Kani
+record runs its proof twice (clean, then mutated) after a ~16 s build of its crate under Kani: rollback's six took 17 s
+together, the sanitizer's four about 6.5 min (M1 Max, warm mirror, 2026-11-03).
 
 ## Interleaving tests (Shuttle)
 
@@ -2166,24 +2172,25 @@ Checks by app and tech:
   `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps (CI-only), fuzz
   (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a target loosens
   its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding, and takes inputs past
-  its seeds' size only through `fuzzTargetMaxLen`), miri (slow, macOS only, CI every six days: the modules whose
-  `unsafe` is pure Rust, under Miri; § "Miri"), mutant-records and property-mutants (every property has a recorded
-  one-line change that makes it fail: the fast half checks the records still apply, the slow CI-only half applies each
-  in a mirror and runs its catcher; § "Property mutants"), shuttle (slow: the `shuttle_*` thread-interleaving tests,
-  each crate with its `shuttle` feature in a private target dir; § "Interleaving tests (Shuttle)"), jscpd (the clone
-  list, on a per-file-pair ratchet), log-error-macro, macos-availability (no call to a selector newer than the bundle's
-  `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework in the BUILT binary's load
-  commands newer than that same floor, which is the half no runtime gate can save; § "macOS framework floor"),
-  sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide shared page cache
-  is always installed before SQLite initializes), error-string-match, lock-poison (two lanes: an error-level one for an
-  acquisition that records no poison-handling choice, and a warn-only one for a failure that's silently discarded, on a
-  per-file ratchet), log-private-values (an unmarked path, name, or identity in a log macro, strict with no allowlist,
-  and a marked value made into a `String`; § "The log-private-values check"), test-sleep (flags a fixed `thread::sleep`
-  / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
-  sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
-  `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
-  fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
-  opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
+  its seeds' size only through `fuzzTargetMaxLen`), kani (CI-only and slow: every `#[kani::proof]`, one `cargo kani` per
+  crate on the pinned Kani; `docs/tooling/testing.md` § "Kani proofs"), miri (slow, macOS only, CI every six days: the
+  modules whose `unsafe` is pure Rust, under Miri; § "Miri"), mutant-records and property-mutants (every property has a
+  recorded one-line change that makes it fail: the fast half checks the records still apply, the slow CI-only half
+  applies each in a mirror and runs its catcher; § "Property mutants"), shuttle (slow: the `shuttle_*`
+  thread-interleaving tests, each crate with its `shuttle` feature in a private target dir; § "Interleaving tests
+  (Shuttle)"), jscpd (the clone list, on a per-file-pair ratchet), log-error-macro, macos-availability (no call to a
+  selector newer than the bundle's `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework
+  in the BUILT binary's load commands newer than that same floor, which is the half no runtime gate can save; § "macOS
+  framework floor"), sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
+  shared page cache is always installed before SQLite initializes), error-string-match, lock-poison (two lanes: an
+  error-level one for an acquisition that records no poison-handling choice, and a warn-only one for a failure that's
+  silently discarded, on a per-file ratchet), log-private-values (an unmarked path, name, or identity in a log macro,
+  strict with no allowlist, and a marked value made into a `String`; § "The log-private-values check"), test-sleep
+  (flags a fixed `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt
+  out a genuine sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture
+  built on `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each
+  other's live fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is
+  load bearing opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
   `CachedScanResult` / `SourceHint` / `VolumePreflight` / `WrittenFile` in test code, so a fixture can only be one of
   the shapes a named constructor actually builds; it ships with ZERO findings on purpose and is a regression fence
   rather than a finder — the shapes are already clean, and the point is that the next test author can't undo that by

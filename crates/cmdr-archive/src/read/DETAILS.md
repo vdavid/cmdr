@@ -162,14 +162,25 @@ Entry names are attacker-controlled. `sanitize_entry_name` is the **single choke
 enters the tree; its guarantee: _no `Accepted` path, joined under any root, escapes that root._ Enforced at the index
 layer (not only at extraction) so an escaping path never even becomes a browsable node — defense in depth.
 
-Rules: normalize `\`→`/`; drop empty and `.` components (collapses leading/trailing/doubled slashes); **clamp** absolute
-paths to the root (strip leading slashes — the entry stays visible, can't escape, matches `unzip`); **quarantine**
-(reject) any entry with a `..` component (it can't be safely clamped to one in-root location), that normalizes to
-nothing, or that nests past the depth cap (see Resource caps above). Quarantined raw names are recorded on the index
-(`quarantined()`) with their reason for diagnostics; they're absent from the tree.
+Rules: split on both `/` and `\`; drop empty and `.` components (collapses leading/trailing/doubled slashes); **clamp**
+absolute paths to the root (strip leading slashes — the entry stays visible, can't escape, matches `unzip`);
+**quarantine** (reject) any entry with a `..` component (it can't be safely clamped to one in-root location), that
+normalizes to nothing, or that nests past the depth cap (see Resource caps above). Quarantined raw names are recorded on
+the index (`quarantined()`) with their reason for diagnostics; they're absent from the tree.
 
 Note `..` matches only a whole component — `..foo` and `foo..bar` are legitimate filenames. (rc-zip's own
 `Entry::sanitized_name` uses a coarser `contains("..")` substring test and doesn't normalize `\`; we don't use it.)
+
+**The decision is proven, not only tested.** `walk_components` is the sanitizer's whole decision, allocation-free: it
+scans bytes for `/` and `\` (ASCII, so every cut is a char boundary), hands each kept component to a closure, and
+returns the verdict; `sanitize_entry_name` only joins the kept components. Two Kani proofs (`name/proofs.rs`,
+`pnpm check kani`) cover every name up to 12 bytes over `{a, ., /, \}`, which is every name as far as the walk can tell:
+each kept component is a plain name (never empty, `.`, `..`, or holding a separator), and the verdict is traversal
+exactly when a `..` component is there, empty exactly when nothing is kept, and too deep exactly past the cap (a cap of
+3 standing in for `MAX_COMPONENT_DEPTH`). The `archive_entry_name` fuzz target checks the joined `String` on top. Why
+the hand-rolled scan: with `str::split`, `Vec`, or `String` inside the decision, Kani timed out at four bytes (4M SAT
+variables at three; Kani 0.68.0, M1 Max, 2026-11-03), and the walk proves 12 bytes in about 95 s. A `..` quarantines on
+sight, so it wins over a depth bomb it follows.
 
 ## Zip cloaking: one name per entry, the central directory's
 

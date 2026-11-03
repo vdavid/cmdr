@@ -161,6 +161,9 @@ opt-level = 3
 unused = { level = "deny", priority = -1 }
 # Redundant path prefixes (`std::path::Path` where `Path` is already imported).
 unused_qualifications = "warn"
+# `cfg(kani)` is set only when `cargo kani` builds the Kani proofs, so every
+# other build skips them (`docs/tooling/testing.md` § "Kani proofs").
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(kani)"] }
 
 [workspace.lints.clippy]
 # Use the `log::*` macros, so error-report bundles capture the context.

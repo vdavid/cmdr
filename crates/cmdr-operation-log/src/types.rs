@@ -28,6 +28,8 @@ macro_rules! token_enum {
     ) => {
         $(#[$meta])*
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, specta::Type)]
+        // Any variant, for the Kani proofs (`rollback/proofs.rs`).
+        #[cfg_attr(kani, derive(kani::Arbitrary))]
         // The serde/specta wire form (camelCase, for IPC + `bindings.ts`) is
         // SEPARATE from the DB `as_token` (stable snake_case). Callers cross IPC
         // as this typed enum, never a string; the store

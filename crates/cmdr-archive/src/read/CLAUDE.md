@@ -22,7 +22,8 @@ the `Volume` trait, capability flags, and any write path.
 - `reader.rs`: `ArchiveEntryReader` — chunked, off-executor decompression. `extract.rs`: `SubtreeExtractReader` — the
   one-pass subtree extractor for sequential formats (compressed tar, 7z), decode-once bulk extract.
 - `sidecars.rs`: which entries are AppleDouble sidecars per format, and the xattrs a parse holds or a copy reads.
-- `name.rs`: `sanitize_entry_name` — the Zip Slip defense. `cache.rs`: `ArchiveIndexCache`. `error.rs`: `ArchiveError`.
+- `name.rs`: `sanitize_entry_name` — the Zip Slip defense, its decision Kani-proven (`name/proofs.rs`). `cache.rs`:
+  `ArchiveIndexCache`. `error.rs`: `ArchiveError`.
 
 ## Must-knows
 

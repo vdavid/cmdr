@@ -99,7 +99,7 @@ type propertyKind struct {
 }
 
 // propertyKinds is every kind the checks know.
-var propertyKinds = []propertyKind{fuzzPropertyKind, shuttlePropertyKind}
+var propertyKinds = []propertyKind{fuzzPropertyKind, kaniPropertyKind, shuttlePropertyKind}
 
 // propertyKindNamed finds a kind, or nil.
 func propertyKindNamed(kinds []propertyKind, name string) *propertyKind {

@@ -119,9 +119,13 @@ vitest's 5 s timeout under load (`shortcuts-store.test.ts`).
 - **Pure function with a few specific inputs**: Plain example tests in `mod tests`
 - **Behavior coverage of an existing tested function**: `cargo mutants` survivor triage: every survived mutant is a
   behavior-level gap
-- **A property that must be able to fail** (a fuzz target's assertion, a Shuttle interleaving test; Kani proofs as they
-  land): a failing mutant on record beside it (`*.mutants.json`), enforced by `mutant-records` and `property-mutants`.
-  See `scripts/check/checks/DETAILS.md` § "Property mutants". Example tests stay with `cargo mutants` triage
+- **A small decision that guards user data or blocks a path escape** (a sanitizer, a snapshot comparison, a state
+  resolution): a Kani proof over every input up to a bound, when the decision is allocation-free over enums, integers,
+  or short byte strings. See `tooling/testing.md` § "Kani proofs". Unicode, I/O, and big parsers stay with proptest and
+  fuzzing
+- **A property that must be able to fail** (a fuzz target's assertion, a Kani proof, a Shuttle interleaving test): a
+  failing mutant on record beside it (`*.mutants.json`), enforced by `mutant-records` and `property-mutants`. See
+  `scripts/check/checks/DETAILS.md` § "Property mutants". Example tests stay with `cargo mutants` triage
 - **A race between threads** (cancel versus finish, a flush versus its writer): a Shuttle test (`shuttle_*`), see
   `docs/tooling/testing.md` § "Shuttle". Ordinary tests only see the interleavings the machine happens to produce
 - **State machine transition**: Rust unit test, **drive via the public interface**, not by setting the atomic directly
@@ -838,7 +842,7 @@ These modules have invested test infrastructure. New code here must keep that ba
   (use `tempdir`-backed) and a dedicated test mutex (INDEXING is global).
 - **`apps/desktop/src-tauri/src/file_viewer/`**: `SearchStatus` transitions through `search_cancel` are subtle (the
   thread writes `Cancelled`, the caller must not null `session.search` first). See `session.rs::tests`.
-- **`crates/cmdr-index/src/indexing/store/`**: `platform_case_compare` (in `store/mod.rs`) has proptests in
+- **`crates/cmdr-index/src/indexing/store/`**: `platform_case_compare` (in `store/collation.rs`) has proptests in
   `store/tests/path_resolution.rs` for comparator algebra and NFC≡NFD equivalence. Don't regress these.
 
 ## E2E env-var hooks

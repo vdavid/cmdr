@@ -507,7 +507,12 @@ and it must stay that way (this subsystem holds no file-moving code). Injection 
 the same move the `spawn` hook in `rollback_operation` makes. The loop stays here; its end-to-end cells drive it with
 the real executor, so they and their rig live beside that executor
 (`crates/cmdr-operations/src/rollback/planner_tests/`), and only the pure decision helpers are tested here
-(`src/rollback/decision_tests.rs`).
+(`src/rollback/decision_tests.rs`). Three of them are also PROVEN for every input with Kani (`src/rollback/proofs.rs`,
+`pnpm check kani`): `verify_snapshot` matches exactly when every recorded field is present and unchanged (over every
+`u64` and `i64`, assuming a field holds its live value cast `as i64`, as every journal writer records it),
+`resolve_final_state` never calls a run rolled back with items skipped or unattempted and never loses a partial op, and
+`item_action` removes created folders, checks a copy's original, and agrees with `inverse_kind`. Each has failing
+mutants on record beside it (`proofs.mutants.json`). The token enums derive `kani::Arbitrary` under `cfg(kani)` only.
 
 The runner carries the loop's three live answers as well as its hands:
 
@@ -680,7 +685,9 @@ matching folder, a pre-v4 row, a volume that can't say),
 
 ### Per-kind inverse table
 
-The op kind + item entry-type map to one of four inverse actions (`inverse_action`):
+The op kind + item entry-type map to one of four inverse actions (`inverse_action`); `item_action` adds the
+created-in-place override below and is the ONE per-item decision: the reversal acts on it and the dispatch summary
+(`summarize_inverse`) names it, so the queue row can't say "move back" for a folder the reversal removes:
 
 - **copy** → file: `RemoveCopyIfOriginalStays` (delete the copied dest if it still matches the snapshot AND its original
   is still there, § "A copy's original must still be there"); dir: the created dir is `RemoveDirIfEmpty`. A copy of a

@@ -1,0 +1,52 @@
+{
+  "mutants": [
+    {
+      "property": "kani:cmdr-operation-log/rollback::proofs::a_snapshot_matches_exactly_when_nothing_changed",
+      "why": "a file that shrank since the snapshot passes as unchanged, so rollback removes it",
+      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "find": "if ls as i64 != ss {",
+      "replace": "if ls as i64 > ss {",
+      "expect": "a Match that doesn't mean unchanged"
+    },
+    {
+      "property": "kani:cmdr-operation-log/rollback::proofs::a_snapshot_matches_exactly_when_nothing_changed",
+      "why": "an item with nothing recorded passes as unchanged, so rollback acts on what it can't verify",
+      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "find": "    if verified_any {",
+      "replace": "    if verified_any || snap_size.is_none() {",
+      "expect": "a Match that doesn't mean unchanged"
+    },
+    {
+      "property": "kani:cmdr-operation-log/rollback::proofs::a_run_never_claims_more_than_it_reversed",
+      "why": "the resume rule's comparison flips, so an empty pass over a partly rolled back op calls it fully rolled back",
+      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "find": "} else if skipped > 0 || (resuming && reversed == 0) {",
+      "replace": "} else if skipped > 0 || (resuming && reversed > 0) {",
+      "expect": "an empty pass finished a partial op"
+    },
+    {
+      "property": "kani:cmdr-operation-log/rollback::proofs::a_run_never_claims_more_than_it_reversed",
+      "why": "a canceled run that reversed some items reads as untouched, so its partial state is lost",
+      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "find": "        if reversed == 0 {",
+      "replace": "        if reversed < 2 {",
+      "expect": "a partly reversed op reads as untouched"
+    },
+    {
+      "property": "kani:cmdr-operation-log/rollback::proofs::every_item_gets_the_inverse_its_kind_promises",
+      "why": "a copied file is removed without checking that its original is still there",
+      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "find": "EntryType::File => InverseAction::RemoveCopyIfOriginalStays,",
+      "replace": "EntryType::File => InverseAction::RemoveFileIfUnchanged,",
+      "expect": "a copy removed without checking its original"
+    },
+    {
+      "property": "kani:cmdr-operation-log/rollback::proofs::every_item_gets_the_inverse_its_kind_promises",
+      "why": "a folder a move created is moved onto itself rather than removed, leaving its empty skeleton",
+      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "find": "if entry_type == EntryType::Dir && created_in_place {",
+      "replace": "if entry_type == EntryType::Dir && created_in_place && kind != OpKind::Move {",
+      "expect": "a created folder isn't removed"
+    }
+  ]
+}

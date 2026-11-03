@@ -140,7 +140,23 @@ var AllChecks = []CheckDefinition{
 		Inputs:      rustCompileInputs,
 		Run:         RunMiri,
 	},
-	// Every property (a fuzz target today) has a recorded one-line change that
+	// The Kani proofs (`#[kani::proof]`), each crate's in one `cargo kani` on
+	// Kani's own pinned nightly. Minutes per run, so slow and CI-only like the
+	// fuzz run, with its own job in `slow-checks.yml`. Builds into
+	// `target/kani/`, so no lock on the shared build dir.
+	{
+		ID:          "desktop-rust-kani",
+		CpuWeight:   2,
+		Nickname:    "kani",
+		DisplayName: "Kani proofs",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		CIOnly:      true,
+		IsSlow:      true,
+		Inputs:      rustCompileInputs,
+		Run:         RunKani,
+	},
+	// Every property (a fuzz target, a Kani proof, or a Shuttle test) has a recorded one-line change that
 	// makes it fail, so a property that can't fail doesn't pass for one that
 	// holds. This half reads records only, in milliseconds: a property with no
 	// record, or a record a refactor stranded, fails at the commit that did it.

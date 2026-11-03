@@ -66,34 +66,70 @@ pub enum QuarantineReason {
 /// Normalizes a raw zip entry name into a safe inner path. See the module docs
 /// for the full rule set and the safety guarantee.
 pub fn sanitize_entry_name(raw: &str) -> SanitizedName {
-    // Windows-authored archives use `\` as the separator; normalize first so
-    // component splitting and the `..` check see a single separator.
-    let normalized = raw.replace('\\', "/");
+    // One allocation: the kept components never outgrow the raw name.
+    let mut inner = String::with_capacity(raw.len());
+    let verdict = walk_components(raw, MAX_COMPONENT_DEPTH, |component| {
+        if !inner.is_empty() {
+            inner.push('/');
+        }
+        inner.push_str(component);
+    });
+    match verdict {
+        Ok(()) => SanitizedName::Accepted(inner),
+        Err(reason) => SanitizedName::Quarantined(reason),
+    }
+}
 
-    let mut components: Vec<&str> = Vec::new();
-    for component in normalized.split('/') {
+/// The sanitizer's whole decision: calls `keep` with each component `raw`
+/// keeps, in order, and says whether the name is accepted. Joined with `/`, the
+/// kept components are the accepted path.
+///
+/// It allocates nothing and scans bytes by hand, which is what lets a Kani proof
+/// cover every name up to its bound (`name/proofs.rs`): `str::split` and any
+/// `Vec` or `String` put the same proof out of reach at four bytes. A `..`
+/// quarantines on sight, so it wins over a depth bomb it follows. `max_depth` is
+/// [`MAX_COMPONENT_DEPTH`] in the app and small in the proof, so the cap is
+/// covered too.
+fn walk_components<'a>(raw: &'a str, max_depth: usize, mut keep: impl FnMut(&'a str)) -> Result<(), QuarantineReason> {
+    let bytes = raw.as_bytes();
+    let mut depth = 0;
+    let mut start = 0;
+    for end in 0..=bytes.len() {
+        // Windows-authored archives use `\` as the separator. Both are ASCII, which
+        // never occurs inside a multi-byte UTF-8 char, so every cut is a char
+        // boundary.
+        if end < bytes.len() && !matches!(bytes[end], b'/' | b'\\') {
+            continue;
+        }
+        let component = &raw[start..end];
+        start = end + 1;
         match component {
             // Empty (leading/trailing/doubled slash) and `.` carry no path
-            // information — drop them. Dropping a leading empty component is
+            // information, so they drop. Dropping a leading empty component is
             // exactly what clamps an absolute path to the root.
             "" | "." => {}
             // Traversal can't be safely clamped to one in-root location.
-            ".." => return SanitizedName::Quarantined(QuarantineReason::ParentTraversal),
-            other => components.push(other),
+            ".." => return Err(QuarantineReason::ParentTraversal),
+            other => {
+                depth += 1;
+                keep(other);
+            }
         }
     }
-
-    if components.is_empty() {
-        return SanitizedName::Quarantined(QuarantineReason::Empty);
+    if depth == 0 {
+        return Err(QuarantineReason::Empty);
     }
     // Cap nesting depth to defuse the ancestor-materialization bomb (see
     // MAX_COMPONENT_DEPTH). Checked here, the single choke point, so a depth
     // bomb never reaches the tree builder.
-    if components.len() > MAX_COMPONENT_DEPTH {
-        return SanitizedName::Quarantined(QuarantineReason::TooDeep);
+    if depth > max_depth {
+        return Err(QuarantineReason::TooDeep);
     }
-    SanitizedName::Accepted(components.join("/"))
+    Ok(())
 }
+
+#[cfg(kani)]
+mod proofs;
 
 #[cfg(test)]
 mod tests {
@@ -164,6 +200,21 @@ mod tests {
             sanitize_entry_name(&name),
             SanitizedName::Quarantined(QuarantineReason::TooDeep)
         );
+    }
+
+    #[test]
+    fn traversal_wins_over_a_depth_bomb_it_follows() {
+        let name = format!("{}/..", vec!["a"; MAX_COMPONENT_DEPTH + 1].join("/"));
+        assert_eq!(
+            sanitize_entry_name(&name),
+            SanitizedName::Quarantined(QuarantineReason::ParentTraversal)
+        );
+    }
+
+    #[test]
+    fn non_ascii_names_split_only_on_separators() {
+        assert_eq!(accepted("répertoire\\fichier.txt"), "répertoire/fichier.txt");
+        assert_eq!(accepted("/日本/./語"), "日本/語");
     }
 
     #[test]

@@ -1,0 +1,36 @@
+{
+  "mutants": [
+    {
+      "property": "kani:cmdr-archive/read::name::proofs::kept_components_are_plain_names",
+      "why": "a `.` component is kept rather than dropped",
+      "file": "crates/cmdr-archive/src/read/name.rs",
+      "find": "\"\" | \".\" => {}",
+      "replace": "\"\" => {}",
+      "expect": "kept a dot component"
+    },
+    {
+      "property": "kani:cmdr-archive/read::name::proofs::kept_components_are_plain_names",
+      "why": "Windows `\\` separators are kept inside a component rather than split on",
+      "file": "crates/cmdr-archive/src/read/name.rs",
+      "find": "if end < bytes.len() && !matches!(bytes[end], b'/' | b'\\\\') {",
+      "replace": "if end < bytes.len() && bytes[end] != b'/' {",
+      "expect": "kept a component with a separator in it"
+    },
+    {
+      "property": "kani:cmdr-archive/read::name::proofs::the_verdict_matches_the_name",
+      "why": "a `..` component drops silently instead of quarantining the entry",
+      "file": "crates/cmdr-archive/src/read/name.rs",
+      "find": "\"..\" => return Err(QuarantineReason::ParentTraversal),",
+      "replace": "\"..\" => {}",
+      "expect": "a `..` component and the traversal verdict disagree"
+    },
+    {
+      "property": "kani:cmdr-archive/read::name::proofs::the_verdict_matches_the_name",
+      "why": "the depth cap lets one component past it through",
+      "file": "crates/cmdr-archive/src/read/name.rs",
+      "find": "if depth > max_depth {",
+      "replace": "if depth > max_depth + 1 {",
+      "expect": "the depth cap and the verdict disagree"
+    }
+  ]
+}

@@ -1018,3 +1018,5 @@ pub use skips::{SkipBreakdown, SkipTally};
 // beside it: `crates/cmdr-operations/src/rollback/planner_tests/`.
 #[cfg(test)]
 mod decision_tests;
+#[cfg(kani)]
+mod proofs;
