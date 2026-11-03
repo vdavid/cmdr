@@ -40,6 +40,26 @@
   "@ui.copyBox.copy": {
     "sourceHash": "e21f935"
   },
+  "ui.findBar.previous": "Kết quả trước",
+  "@ui.findBar.previous": {
+    "sourceHash": "daa2f8c"
+  },
+  "ui.findBar.next": "Kết quả tiếp theo",
+  "@ui.findBar.next": {
+    "sourceHash": "825e5ab"
+  },
+  "ui.findBar.close": "Đóng tìm kiếm",
+  "@ui.findBar.close": {
+    "sourceHash": "eb903c9"
+  },
+  "ui.findBar.matchPosition": "{currentText} / {totalText}",
+  "@ui.findBar.matchPosition": {
+    "sourceHash": "1f6ce86"
+  },
+  "ui.findBar.noMatches": "Không có kết quả khớp",
+  "@ui.findBar.noMatches": {
+    "sourceHash": "2df01a0"
+  },
   "ui.copyBox.copied": "Đã sao chép!",
   "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
