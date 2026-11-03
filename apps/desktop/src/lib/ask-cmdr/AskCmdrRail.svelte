@@ -18,6 +18,7 @@
     import AskCmdrSessions from './AskCmdrSessions.svelte'
     import AskCmdrGate from './AskCmdrGate.svelte'
     import AskCmdrCostFooter from './AskCmdrCostFooter.svelte'
+    import AskCmdrFind from './AskCmdrFind.svelte'
     import {
         askCmdrState,
         closeRail,
@@ -207,6 +208,7 @@
     {#if gate === 'off' || gate === 'cloudOff'}
         <AskCmdrGate kind={gate} />
     {:else if chatting}
+        <AskCmdrFind rail={railElement} thread={listElement} partial={hasOlderMessages()} />
         <div class="rail-body" bind:this={listElement} onscroll={onListScroll}>
             {#if hasOlderMessages()}
                 <button type="button" class="load-earlier" disabled={askCmdrState.loadingOlder} onclick={() => void onLoadEarlier()}>

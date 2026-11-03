@@ -1329,6 +1329,22 @@
   "@askCmdr.loadEarlier": {
     "description": "Button at the top of a long Ask Cmdr chat that loads the previous page of older messages. Sentence case."
   },
+  "askCmdr.find.region": "Find in chat",
+  "@askCmdr.find.region": {
+    "description": "Accessible name of the find bar that opens at the top of the Ask Cmdr chat (Cmd+F while the chat has focus). Screen readers announce it as a search landmark. Sentence case."
+  },
+  "askCmdr.find.ariaLabel": "Find in this chat",
+  "@askCmdr.find.ariaLabel": {
+    "description": "Accessible name of the text field in the Ask Cmdr find bar, where the user types words to find in the open conversation. Sentence case."
+  },
+  "askCmdr.find.placeholder": "Find in chat…",
+  "@askCmdr.find.placeholder": {
+    "description": "Placeholder in the empty text field of the Ask Cmdr find bar, which searches the open conversation. Keep it short; the field is narrow. Keep the ellipsis."
+  },
+  "askCmdr.find.loadedOnly": "Searching loaded messages",
+  "@askCmdr.find.loadedOnly": {
+    "description": "Quiet note beside the match counter of the Ask Cmdr find bar, shown when the chat has older messages that aren't loaded yet: the find covers only what is on screen. The user can load older ones with the \"Load earlier messages\" button. Keep it short."
+  },
   "askCmdr.threads.open": "Chats",
   "@askCmdr.threads.open": {
     "description": "Accessible label and tooltip for the rail header button that opens the list of past Ask Cmdr chats. Sentence case.",

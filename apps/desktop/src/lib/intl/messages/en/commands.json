@@ -157,6 +157,18 @@
   "@commands.askCmdrNewChat.description": {
     "description": "Longer help text for the \"New Ask Cmdr chat\" command, shown as a secondary line in the command palette."
   },
+  "commands.askCmdrFind.label": "Find in chat",
+  "@commands.askCmdrFind.label": {
+    "description": "Command name, listed in the keyboard shortcuts settings and help: with focus in Ask Cmdr (the chat rail where the user chats with an AI about their files), opens a find bar that searches the open conversation. \"Ask Cmdr\" is the product name."
+  },
+  "commands.askCmdrFindNext.label": "Next match in chat",
+  "@commands.askCmdrFindNext.label": {
+    "description": "Command name, listed in the keyboard shortcuts settings and help: moves to the next match of the find bar in the Ask Cmdr chat rail."
+  },
+  "commands.askCmdrFindPrevious.label": "Previous match in chat",
+  "@commands.askCmdrFindPrevious.label": {
+    "description": "Command name, listed in the keyboard shortcuts settings and help: moves to the previous match of the find bar in the Ask Cmdr chat rail."
+  },
   "commands.feedbackSend.label": "Send feedback",
   "@commands.feedbackSend.label": {
     "description": "Command name that opens a form to send feedback to the app's maker. Appears in the command palette and the Help menu.",

@@ -1,17 +1,19 @@
 <!--
-    The viewer's search bar: the query field, the case and regex toggles, the match counter,
-    the stop / previous / next / close buttons, and the progress bar under them.
+    The viewer's search bar: the house `FindBar` plus the viewer's own pieces, the case and
+    regex toggles, the running counter (spinner, percent, "(partial)", an invalid regex),
+    the Stop button, and the progress bar under the row.
 
     Presentational only. Every value and action belongs to the page's `createViewerSearch`
     composable, passed in whole; the page shows the bar while `search.searchVisible`. The
-    `.search-bar` class is load-bearing: the page's copy handler lets a copy inside it
-    through to the native selection.
+    viewer hears Enter / ⇧Enter / Escape at the window (`viewer-keyboard.ts`), so the bar
+    takes no keys of its own. `FindBar`'s `.search-bar` root class is load-bearing: the
+    page's copy handler lets a copy inside it through to the native selection.
 -->
 
 <script lang="ts">
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { tString } from '#lib/intl/messages.svelte.js'
-    import TextInput from '#lib/ui/TextInput.svelte'
+    import FindBar from '#lib/ui/FindBar.svelte'
     import Spinner from '#lib/ui/Spinner.svelte'
     import type { createViewerSearch } from './viewer-search.svelte'
 
@@ -23,23 +25,17 @@
     }
 
     const { search, onFocusChange }: Props = $props()
+
+    const position = $derived(
+        tString('viewer.search.matchPosition', {
+            current: search.currentMatchIndex + 1,
+            total: search.searchMatches.length,
+            more: search.searchLimitReached ? 'yes' : 'no',
+        }),
+    )
 </script>
 
-<div class="search-bar" role="search">
-    <TextInput
-        bind:inputElement={search.searchInputRef}
-        bind:value={search.searchQuery}
-        type="search"
-        radius="sm"
-        containerStyle="flex: 1; max-width: 300px"
-        placeholder={tString('viewer.search.placeholder')}
-        ariaLabel={tString('viewer.search.ariaLabel')}
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck={false}
-        onfocus={() => { onFocusChange(true); }}
-        onblur={() => { onFocusChange(false); }}
-    />
+{#snippet toggles()}
     <button
         type="button"
         class="search-toggle"
@@ -63,68 +59,42 @@
     >
         .*
     </button>
-    <span class="match-count" aria-live="polite">
-        {#if search.searchStatus === 'invalidQuery'}
-            <span class="search-error" role="alert">{search.searchError}</span>
-        {:else if search.searchStatus === 'running'}
-            <span class="search-spinner"><Spinner size="sm" /></span>
-            {#if search.searchMatches.length > 0}
-                {tString('viewer.search.matchPosition', {
-                    current: search.currentMatchIndex + 1,
-                    total: search.searchMatches.length,
-                    more: search.searchLimitReached ? 'yes' : 'no',
-                })}
-                &middot; {Math.round(search.searchProgress * 100)}%
-            {:else}
-                {tString('viewer.search.searching')} {Math.round(search.searchProgress * 100)}%
-            {/if}
-        {:else if search.searchMatches.length > 0}
-            {tString('viewer.search.matchPosition', {
-                current: search.currentMatchIndex + 1,
-                total: search.searchMatches.length,
-                more: search.searchLimitReached ? 'yes' : 'no',
-            })}
-            {#if search.searchStatus === 'cancelled'}
-                {tString('viewer.search.partial')}
-            {/if}
-        {:else if search.searchQuery && (search.searchStatus === 'done' || search.searchStatus === 'cancelled')}
-            {tString('viewer.search.noMatches')}{search.searchStatus === 'cancelled'
-                ? ' ' + tString('viewer.search.partial')
-                : ''}
+{/snippet}
+
+{#snippet status()}
+    {#if search.searchStatus === 'invalidQuery'}
+        <span class="search-error" role="alert">{search.searchError}</span>
+    {:else if search.searchStatus === 'running'}
+        <span class="search-spinner"><Spinner size="sm" /></span>
+        {#if search.searchMatches.length > 0}
+            {position} &middot; {Math.round(search.searchProgress * 100)}%
+        {:else}
+            {tString('viewer.search.searching')} {Math.round(search.searchProgress * 100)}%
         {/if}
-    </span>
+    {:else if search.searchMatches.length > 0}
+        {position}
+        {#if search.searchStatus === 'cancelled'}
+            {tString('viewer.search.partial')}
+        {/if}
+    {:else if search.searchQuery && (search.searchStatus === 'done' || search.searchStatus === 'cancelled')}
+        {tString('viewer.search.noMatches')}{search.searchStatus === 'cancelled'
+            ? ' ' + tString('viewer.search.partial')
+            : ''}
+    {/if}
+{/snippet}
+
+{#snippet stop()}
     {#if search.searchStatus === 'running'}
         <button
-            onclick={() => {
-                search.stopSearch()
-            }}
+            type="button"
+            onclick={() => { search.stopSearch(); }}
             aria-label={tString('viewer.search.stop')}
             use:tooltip={tString('viewer.search.stopTooltip')}>&#x25A0;</button
         >
     {/if}
-    <button
-        onclick={() => {
-            search.findPrev()
-        }}
-        disabled={search.searchMatches.length === 0}
-        aria-label={tString('viewer.search.previous')}
-        use:tooltip={{ text: tString('viewer.search.previous'), shortcut: '⇧Enter' }}>&#x25B2;</button
-    >
-    <button
-        onclick={() => {
-            search.findNext()
-        }}
-        disabled={search.searchMatches.length === 0}
-        aria-label={tString('viewer.search.next')}
-        use:tooltip={{ text: tString('viewer.search.next'), shortcut: 'Enter' }}>&#x25BC;</button
-    >
-    <button
-        onclick={() => {
-            search.closeSearch()
-        }}
-        aria-label={tString('viewer.search.close')}
-        use:tooltip={{ text: tString('viewer.search.closeTooltip'), shortcut: 'Esc' }}>&#x2715;</button
-    >
+{/snippet}
+
+{#snippet progress()}
     {#if search.searchStatus === 'running'}
         <div
             class="search-progress"
@@ -136,27 +106,30 @@
             <div class="search-progress-fill" style="width: {search.searchProgress * 100}%"></div>
         </div>
     {/if}
-</div>
+{/snippet}
+
+<FindBar
+    bind:inputElement={search.searchInputRef}
+    bind:query={search.searchQuery}
+    placeholder={tString('viewer.search.placeholder')}
+    ariaLabel={tString('viewer.search.ariaLabel')}
+    total={search.searchMatches.length}
+    {status}
+    options={toggles}
+    actions={stop}
+    footer={progress}
+    onPrevious={() => { search.findPrev(); }}
+    onNext={() => { search.findNext(); }}
+    onClose={() => { search.closeSearch(); }}
+    onfocus={() => { onFocusChange(true); }}
+    onblur={() => { onFocusChange(false); }}
+    previousLabel={tString('viewer.search.previous')}
+    nextLabel={tString('viewer.search.next')}
+    closeLabel={tString('viewer.search.close')}
+    closeTooltip={tString('viewer.search.closeTooltip')}
+/>
 
 <style>
-    .search-bar {
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        padding: var(--spacing-xs) var(--spacing-sm);
-        background: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--color-border-strong);
-        flex-shrink: 0;
-    }
-
-    .match-count {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        min-width: 70px;
-        white-space: nowrap;
-    }
-
     .search-spinner {
         vertical-align: text-bottom;
         margin-right: var(--spacing-xxs);
@@ -184,36 +157,8 @@
         }
     }
 
-    .search-bar button {
-        background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        padding: var(--spacing-xxs) var(--spacing-xs);
-        line-height: var(--font-line-height-flat);
-        transition: all var(--transition-base);
-    }
-
-    .search-bar button:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 1px;
-    }
-
-    .search-bar button:hover:not(:disabled) {
-        background: var(--color-bg-secondary);
-        color: var(--color-text-primary);
-    }
-
-    .search-bar button:disabled {
-        opacity: 0.4;
-        cursor: default;
-    }
-
-    /* Search-mode toggles (Aa, .*). Use the same chrome as other search-bar
-       buttons but switch background + text colour when active so the toggle
-       state is visible at a glance. */
+    /* Search-mode toggles (Aa, .*). The bar's button chrome, with the background and text
+       switching when active so the toggle state is visible at a glance. */
     .search-toggle {
         font-family: var(--font-mono);
         min-width: 2.2em;

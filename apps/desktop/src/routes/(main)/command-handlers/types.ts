@@ -96,6 +96,10 @@ export type DispatchExemptId =
   | 'queue.nextControl'
   | 'queue.previousControl'
   | 'queue.close'
+  // The Ask Cmdr rail's in-chat find, answered by the rail's own keydown.
+  | 'askCmdr.find'
+  | 'askCmdr.findNext'
+  | 'askCmdr.findPrevious'
   // ErrorPane owns ⌘D through its own CAPTURE-phase document listener, which runs
   // ahead of the dispatch spine on purpose (it must beat any user binding on ⌘D).
   | 'errorPane.toggleTechnicalDetails'

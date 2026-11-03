@@ -91,6 +91,9 @@ export const COMMAND_IDS = [
   // Ask Cmdr chat rail (alpha)
   'askCmdr.toggle',
   'askCmdr.newChat',
+  'askCmdr.find',
+  'askCmdr.findNext',
+  'askCmdr.findPrevious',
 
   // Search
   'search.open',

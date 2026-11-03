@@ -484,11 +484,13 @@ describe('operation-log shortcut binding', () => {
 
 describe('go-to-path shortcut binding', () => {
   // ⌘G is the menu accelerator; ⌘⇧G matches Finder's "Go to Folder…" for muscle memory.
-  it('binds nav.goToPath to ⌘G, then ⌘⇧G, and nothing else claims either', () => {
+  // The one other claimant is the Ask Cmdr rail's in-chat find, a fixed key heard only
+  // while the rail has focus (it shadows Go to path there, on purpose).
+  it('binds nav.goToPath to ⌘G, then ⌘⇧G, and only the rail’s find shares them', () => {
     const cmd = commands.find((c) => c.id === 'nav.goToPath')
     expect(cmd?.shortcuts).toEqual(['⌘G', '⌘⇧G'])
-    expect(claimants('⌘G')).toEqual(['nav.goToPath'])
-    expect(claimants('⌘⇧G')).toEqual(['nav.goToPath'])
+    expect(claimants('⌘G')).toEqual(['nav.goToPath', 'askCmdr.findNext'])
+    expect(claimants('⌘⇧G')).toEqual(['nav.goToPath', 'askCmdr.findPrevious'])
   })
 })
 

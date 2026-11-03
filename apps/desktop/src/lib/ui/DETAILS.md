@@ -26,6 +26,9 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
   replacement)
 - **`TextInput.svelte`** / **`TextArea.svelte`**: The house text fields (single-line / multi-line); chrome in `app.css`
   § "Text fields", shared prop types in `text-field-types.ts`
+- **`FindBar.svelte`**: The house find bar (field, polite counter, Previous / Next / Close, owner snippets). With
+  **`find-bar.ts`** (`stepMatchIndex`, the wrap-around step every owner shares) and **`find-in-dom.ts`** (find over a
+  live DOM tree's `data-find-region` text, painted through the CSS Custom Highlight API). See § FindBar
 - **`Combobox.svelte`**: Presentational Ark `Combobox`: text-field-with-suggestions, async list, free text (model
   picker)
 - **`portal-target.ts`**: Where `Select` / `Combobox` menus portal: `document.body`, or the overlay a modal layer
@@ -988,6 +991,23 @@ through `.search-container input.text-field-control`. The state classes (`-inval
 wrapping `TextInput` around them would mean giving up Ark's collection, keyboard, and ARIA wiring. They read the four
 text-field tokens instead. When the field look changes, change the tokens; if you change a `.text-field*` class in a way
 the tokens don't carry, mirror it in both.
+
+## FindBar
+
+- **Presentational, keys stay with the owner.** The viewer hears Enter / ⇧Enter / Escape at its window
+  (`routes/viewer/viewer-keyboard.ts`); the Ask Cmdr rail hears them on its own element
+  (`../ask-cmdr/ask-cmdr-find.svelte.ts`). The bar only passes `onkeydown` through to its field.
+- **The root's `.search-bar` class is a contract**: the viewer's copy handler lets a copy inside it through, and the
+  viewer's E2E specs find the field by it. Its button chrome is `:global`, so an owner's snippet buttons (the viewer's
+  toggles and Stop) wear it too.
+- **Strings default to `ui.findBar.*`**; the viewer passes its own `viewer.search.*` labels and counter (`status`
+  snippet: spinner, percent, "(partial)", an invalid regex), which already carry their translations.
+- **`find-in-dom.ts` never mutates the searched tree.** Wrapping hits in `<mark>` would split text nodes a component
+  still holds and updates (a streaming answer), garbling the next update; a highlight range touches nothing. Ranges die
+  when their nodes re-render, so the owner re-runs the find on content change. Where the API is missing (WebKit before
+  Safari 17.2: macOS 10.15 and 11), the current match's region gets `data-find-current`, which the owner outlines, and
+  the other hits go unpainted (the count and the scroll still work). Case folding is per code point and keeps the
+  string's length, so an offset in the folded text is an offset in the DOM text.
 
 ## Combobox
 

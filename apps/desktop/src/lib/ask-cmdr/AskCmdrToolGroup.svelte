@@ -57,7 +57,7 @@
         <span class="chevron">
             <Icon name={open ? 'chevron-down' : 'chevron-right'} size={13} aria-hidden="true" />
         </span>
-        <span class="summary">{summary}</span>
+        <span class="summary" data-find-region>{summary}</span>
     </button>
     {#if open}
         <div class="group-body" id={bodyId} bind:this={bodyEl}>

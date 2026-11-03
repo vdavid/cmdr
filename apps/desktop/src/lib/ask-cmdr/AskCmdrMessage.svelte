@@ -96,7 +96,7 @@
 {#if message.kind === 'user'}
     <div class="msg user">
         <div class="user-stack">
-            <div class="bubble" data-text-region>{message.text}</div>
+            <div class="bubble" data-text-region data-find-region>{message.text}</div>
             {#if message.attachments.length > 0}
                 <div class="user-attachments">
                     {#each message.attachments as attachment (attachment.path)}
@@ -132,7 +132,7 @@
                     {/if}
                 </div>
             {:else}
-                <div class="prose" data-text-region aria-live={segment.lastRound ? 'polite' : undefined}>
+                <div class="prose" data-text-region data-find-region aria-live={segment.lastRound ? 'polite' : undefined}>
                     <!-- eslint-disable-next-line svelte/no-at-html-tags -- untrusted model text is HTML-entity-escaped (escapeForMarkdownLite) before snarkdown inside renderAssistantMarkdown; this is the XSS boundary. -->
                     {@html renderAssistantMarkdown(segment.text)}{#if message.streaming && index === segments.length - 1}<span
                             class="cursor"

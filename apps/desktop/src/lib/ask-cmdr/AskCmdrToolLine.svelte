@@ -104,7 +104,7 @@
         {/if}
     </span>
     <span class="body">
-        <span class="label" class:with-places={withPlaces} use:tooltip={{ text: labelText, overflowOnly: true }}>
+        <span class="label" data-find-region class:with-places={withPlaces} use:tooltip={{ text: labelText, overflowOnly: true }}>
             <Trans
                 key={label.key}
                 params={label.params}
@@ -121,7 +121,7 @@
             <span class="result">
                 <span class="dot" aria-hidden="true">·</span>
                 <span class="sr-only">{tString('askCmdr.tool.outcomeSeparator')}</span>
-                <span class="outcome" use:tooltip={{ text: outcome, overflowOnly: true }}>{outcome}</span>
+                <span class="outcome" data-find-region use:tooltip={{ text: outcome, overflowOnly: true }}>{outcome}</span>
             </span>
         {/if}
     </span>

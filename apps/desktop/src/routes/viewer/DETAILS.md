@@ -60,10 +60,11 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
   the Go menu's enabled push) over **`viewer-history.ts`** (pure history with scroll positions). See § "Links and
   history".
 - Presentational: **`ViewerToolbar`** (title-bar overlay, owns `data-tauri-drag-region`, disabled-not-hidden in media),
-  **`ViewerStatusBar`** (keeps `user-select: text`), **`ViewerSearchBar`** (bound whole to the `createViewerSearch`
-  composable; its `.search-bar` class is what the page's copy handler lets through), **`ViewerCopyDialogs`**,
-  **`EncodingPicker`**, **`ViewModePicker`** (text / binary / hex / optional rendered media),
-  **`ViewerReloadToastContent`** (session id and change kind as toast props).
+  **`ViewerStatusBar`** (keeps `user-select: text`), **`ViewerSearchBar`** (the house `FindBar` plus the viewer's
+  toggles, counter, Stop, and progress, bound whole to the `createViewerSearch` composable; `FindBar`'s `.search-bar`
+  class is what the page's copy handler lets through), **`ViewerCopyDialogs`**, **`EncodingPicker`**,
+  **`ViewModePicker`** (text / binary / hex / optional rendered media), **`ViewerReloadToastContent`** (session id and
+  change kind as toast props).
 
 ## Rows, not lines
 

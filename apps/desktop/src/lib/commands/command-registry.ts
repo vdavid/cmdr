@@ -109,6 +109,12 @@ export const FIXED_KEY_COMMAND_IDS = [
   'queue.nextControl',
   'queue.previousControl',
   'queue.close',
+  // The Ask Cmdr rail's in-chat find, answered by the rail's own keydown while it has focus
+  // (`lib/ask-cmdr/ask-cmdr-find.svelte.ts`). They shadow Search files' ⌘F and Go to path's
+  // ⌘G there, which is the point, so they're fixed like the viewer's ⌘F.
+  'askCmdr.find',
+  'askCmdr.findNext',
+  'askCmdr.findPrevious',
   // Family 4 — deliberate override. ErrorPane claims ⌘D through a CAPTURE-phase
   // document listener that runs ahead of the dispatch spine, so it wins over
   // whatever the user bound ⌘D to. Fixed because releasing the key would falsify

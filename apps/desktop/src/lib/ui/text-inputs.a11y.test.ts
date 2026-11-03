@@ -1,6 +1,6 @@
 /**
  * Tier 3 a11y tests for the value-entry primitives: the two text fields, the
- * number field, the slider, and the copyable code box.
+ * number field, the slider, the copyable code box, and the find bar.
  *
  * One file per primitive would cost about five times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -21,6 +21,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
 }))
 
 import CopyBox from './CopyBox.svelte'
+import FindBar from './FindBar.svelte'
 import NumberInput from './NumberInput.svelte'
 import Slider from './Slider.svelte'
 import TextArea from './TextArea.svelte'
@@ -391,5 +392,57 @@ describe('CopyBox a11y', () => {
     })
     await tick()
     await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for the `FindBar` primitive: a named search landmark with a labelled
+ * field, a polite counter, and named Previous / Next / Close buttons, empty and with matches.
+ */
+describe('FindBar a11y', () => {
+  const handlers = { onPrevious: vi.fn(), onNext: vi.fn(), onClose: vi.fn() }
+
+  it('empty, with no matches yet, has no a11y violations', async () => {
+    const target = container()
+    mount(FindBar, {
+      target,
+      props: { ariaLabel: 'Find in this chat', placeholder: 'Find in chat…', regionLabel: 'Find in chat', ...handlers },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+    expect(target.querySelector('[role="search"]')?.getAttribute('aria-label')).toBe('Find in chat')
+    expect(target.querySelector('.match-count')?.getAttribute('aria-live')).toBe('polite')
+  })
+
+  it('with matches and a note has no a11y violations and says where it is', async () => {
+    const target = container()
+    mount(FindBar, {
+      target,
+      props: {
+        query: 'report',
+        total: 12,
+        current: 3,
+        note: 'Searching loaded messages',
+        ariaLabel: 'Find in this chat',
+        placeholder: 'Find in chat…',
+        ...handlers,
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+    expect(target.querySelector('.match-count')?.textContent.trim()).toBe('3 of 12')
+    const buttons = [...target.querySelectorAll('button')].map((b) => b.getAttribute('aria-label'))
+    expect(buttons).toEqual(['Previous match', 'Next match', 'Close find'])
+  })
+
+  it('says "No matches" for a query that found nothing, and disables the steps', async () => {
+    const target = container()
+    mount(FindBar, {
+      target,
+      props: { query: 'zzz', total: 0, current: 0, ariaLabel: 'Find', placeholder: 'Find', ...handlers },
+    })
+    await tick()
+    expect(target.querySelector('.match-count')?.textContent.trim()).toBe('No matches')
+    expect(target.querySelector<HTMLButtonElement>('button[aria-label="Next match"]')?.disabled).toBe(true)
   })
 })

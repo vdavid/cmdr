@@ -546,6 +546,39 @@ registry lives below `commands/` rather than inside the chat command.
   drops its page the same way when any thread load happened since it asked, because its offset tiled against a list that
   is no longer on screen. ❌ Don't add a read that writes thread state after an `await` without this check.
 
+## In-chat find
+
+- **⌘F while the rail has focus** opens a find bar over the open conversation (`AskCmdrFind.svelte`, the house
+  `FindBar`; state and keys in `ask-cmdr-find.svelte.ts`). The keys are the FIXED `askCmdr.find` / `askCmdr.findNext` /
+  `askCmdr.findPrevious` commands (scope `Main window/Ask Cmdr`, listed read-only in Settings and the help window),
+  heard on the rail's own `<aside>` through `eventMatchesCommand` and CLAIMED (`claimKey`), so the document dispatcher
+  never sees them: Search files keeps ⌘F and Go to path keeps ⌘G everywhere else. Listening on the rail element IS the
+  rail-focus check (`explorerState.getRailFocused()` follows the same `focusin`). ⌘G / ⇧⌘G step from anywhere in the
+  rail while the bar is up; Enter / ⇧Enter and Escape only from the find field (in the composer they're the composer's).
+  Escape restores focus through `captureFocusOrigin` / `restoreFocus`, falling back to the rail when the element is
+  gone.
+- **What it searches is what's rendered**: the text nodes of the thread's `data-find-region`s (user bubbles, assistant
+  prose, tool-line labels and outcomes, group summaries), so Markdown matches without its asterisks and a line inside a
+  closed group isn't a hit until the group opens. `#lib/ui/find-in-dom.ts` walks them and paints through the CSS Custom
+  Highlight API, which never touches a node: wrapping hits in `<mark>` would split text nodes Svelte still updates, and
+  building HTML from message text would sidestep `renderAssistantMarkdown`, the XSS boundary. Old WebKit (no API)
+  outlines the current match's region instead.
+- **Loaded messages only.** A long chat is paged (§ Sessions, search, message paging), and the find covers what's
+  loaded, saying "Searching loaded messages" while `hasOlderMessages()`; "Load earlier" pulls a page in and the find
+  picks it up. Decision/Why: searching the whole thread needs a per-message backend search plus loading every page down
+  to the oldest hit, while the soft cap keeps most chats on one page; the FTS the sessions panel uses finds threads, not
+  messages.
+- **Streaming and re-renders**: a `MutationObserver` on the thread re-runs the find once per frame while the bar is up,
+  keeping the current index (clamped) and never scrolling. Only typing (debounced `FIND_TYPING_DEBOUNCE_MS`, landing on
+  the first hit at or below the view's top) and a step move the view, centring the match only when it's off screen;
+  `prefers-reduced-motion` makes that a jump.
+- **The menu road.** ⌘F and ⌘G are also native menu accelerators (Edit > Search files, Go > Go to path), and this repo
+  has seen AppKit fire a menu ahead of the webview for ⌘A (`routes/(main)/DETAILS.md` § Native-menu and input-focus
+  interactions). For these three keys the webview hears them first and the claim stops the menu: real ⌘F, ⌘G, ⇧⌘G, and
+  Escape with focus in the rail opened and stepped the find, and neither Search files nor Go to path opened (verified on
+  macOS 27, dev build, keypresses sent through System Events, 2026-11-03). So there's no menu claim
+  (`#lib/commands/menu-claims.ts`): one would also hijack a MOUSE pick of Edit > Search files while the rail has focus.
+
 ## Attachments by reference
 
 - The composer stages `AttachmentRef { path, kind }` chips (`askCmdrState.attachments`), sent with the next message and

@@ -519,4 +519,38 @@ export const mainWindowCommands: CommandSource[] = [
     descriptionKey: 'commands.askCmdrNewChat.description',
     status: getBadgeStatus('ask-cmdr'),
   },
+
+  // ============================================================================
+  // Main window/Ask Cmdr - in-chat find (the rail's own keys, while it has focus)
+  // ============================================================================
+  // Fixed like the viewer's ⌘F: the rail's keydown asks `eventMatchesCommand` for these
+  // (`lib/ask-cmdr/ask-cmdr-find.svelte.ts`) and claims the key, so ⌘F and ⌘G keep meaning
+  // Search files and Go to path everywhere else. Enter / ⇧Enter step only from the find field.
+  {
+    id: 'askCmdr.find',
+    nameKey: 'commands.askCmdrFind.label',
+    scope: 'Main window/Ask Cmdr',
+    showInPalette: false,
+    shortcuts: ['⌘F'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
+  {
+    id: 'askCmdr.findNext',
+    nameKey: 'commands.askCmdrFindNext.label',
+    scope: 'Main window/Ask Cmdr',
+    showInPalette: false,
+    shortcuts: ['⌘G', 'Enter'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
+  {
+    id: 'askCmdr.findPrevious',
+    nameKey: 'commands.askCmdrFindPrevious.label',
+    scope: 'Main window/Ask Cmdr',
+    showInPalette: false,
+    shortcuts: ['⌘⇧G', '⇧Enter'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
 ]

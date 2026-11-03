@@ -10,6 +10,7 @@ import {
 } from '#lib/tauri-commands/index.js'
 import { segmentLine, type LineSegment, type SegmentMatchInput, type SelectionBoundsInput } from './line-segments'
 import { recenterOffset } from './viewer-search-scroll'
+import { stepMatchIndex } from '#lib/ui/find-bar.js'
 
 const SEARCH_POLL_INTERVAL = 100
 
@@ -330,13 +331,13 @@ export function createViewerSearch(deps: SearchDeps) {
 
   function findNext() {
     if (searchMatches.length === 0) return
-    currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length
+    currentMatchIndex = stepMatchIndex(currentMatchIndex, searchMatches.length, 'next')
     scrollToMatch(searchMatches[currentMatchIndex])
   }
 
   function findPrev() {
     if (searchMatches.length === 0) return
-    currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length
+    currentMatchIndex = stepMatchIndex(currentMatchIndex, searchMatches.length, 'previous')
     scrollToMatch(searchMatches[currentMatchIndex])
   }
 

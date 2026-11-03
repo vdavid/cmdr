@@ -187,10 +187,10 @@ file layouts `a11y-coverage` accepts (colocated per component, or one directory-
 
 ### Search highlight colors
 
-| Token                      | Light                     | Dark                       | Role                                   |
-| -------------------------- | ------------------------- | -------------------------- | -------------------------------------- |
-| `--color-highlight`        | `rgba(255, 213, 0, 0.4)`  | `rgba(255, 213, 100, 0.9)` | Find-in-file and settings search match |
-| `--color-highlight-active` | `rgba(255, 150, 50, 0.6)` | `rgba(255, 150, 100, 0.9)` | Currently focused search match         |
+| Token                      | Light                     | Dark                       | Role                                                  |
+| -------------------------- | ------------------------- | -------------------------- | ----------------------------------------------------- |
+| `--color-highlight`        | `rgba(255, 213, 0, 0.4)`  | `rgba(255, 213, 100, 0.9)` | Find-in-file, find-in-chat, and settings search match |
+| `--color-highlight-active` | `rgba(255, 150, 50, 0.6)` | `rgba(255, 150, 100, 0.9)` | Currently focused search match                        |
 
 Dark mode uses near-opaque highlights because the dark background absorbs more color: translucent yellow becomes
 invisible.
@@ -695,6 +695,17 @@ Two conventions the fields establish app-wide, both global rules in `app.css`:
 
 `Combobox` and `NumberInput` render Ark UI's own input, so they can't delegate to `TextInput` without losing Ark's
 wiring. They read the same four tokens instead, which is what keeps every field in the app identical.
+
+### Find bar (app)
+
+`FindBar` (`lib/ui/`) is the strip that finds text in the content under it: a query field, a polite match counter ("3 of
+12", "No matches"), and Previous / Next / Close. It sits flush under its surface's header with a strong bottom border,
+and the current match wears `--color-highlight-active` over the others' `--color-highlight` (§ Search highlight colors).
+Two owners: the file viewer, which adds its case and regex toggles, Stop, and a progress bar through the `options` /
+`actions` / `footer` snippets, and the Ask Cmdr rail's in-chat find, which adds a quiet `note` when it covers only the
+loaded messages. Presentational: the owner keeps the query, the matches, and the keys (Enter / ⇧Enter step, Escape
+closes). Shared stepping: `stepMatchIndex` in `apps/desktop/src/lib/ui/find-bar.ts`; finding over rendered DOM text:
+`apps/desktop/src/lib/ui/find-in-dom.ts`.
 
 ### Text input and text area (app)
 

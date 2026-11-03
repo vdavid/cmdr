@@ -50,6 +50,30 @@
     "description": "Resting label of the Copy button next to a string shown for copying (a terminal command, a file path). Tight button; keep short.",
     "screenshot": "alert-long-unbroken-path.png"
   },
+  "ui.findBar.previous": "Previous match",
+  "@ui.findBar.previous": {
+    "description": "Accessible label and tooltip of the up-arrow button in a find bar (the strip that finds text in the content below it), which moves to the previous match. Sentence case."
+  },
+  "ui.findBar.next": "Next match",
+  "@ui.findBar.next": {
+    "description": "Accessible label and tooltip of the down-arrow button in a find bar, which moves to the next match. Sentence case."
+  },
+  "ui.findBar.close": "Close find",
+  "@ui.findBar.close": {
+    "description": "Accessible label and tooltip of the close (X) button of a find bar. Sentence case."
+  },
+  "ui.findBar.matchPosition": "{currentText} of {totalText}",
+  "@ui.findBar.matchPosition": {
+    "description": "Find bar counter: which match is the current one out of all found, for example \"3 of 12\".",
+    "placeholders": {
+      "currentText": "1-based number of the current match, already formatted (for example 3)",
+      "totalText": "How many matches were found, already formatted (for example 1,204)"
+    }
+  },
+  "ui.findBar.noMatches": "No matches",
+  "@ui.findBar.noMatches": {
+    "description": "Find bar counter when the typed text appears nowhere in the content being searched."
+  },
   "ui.copyBox.copied": "Copied!",
   "@ui.copyBox.copied": {
     "description": "Brief confirmation shown on the Copy button right after the string was copied, replacing the word Copy for a couple of seconds. Tight button; keep short."

@@ -16,16 +16,16 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 3812 / 5502 keys have a screenshot (69%):** 2076 direct (38%) and 1736 representative (32%). 1498 remain
+**Total: 3809 / 5511 keys have a screenshot (69%):** 2076 direct (38%) and 1733 representative (31%). 1510 remain
 uncoupled, and 192 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
 | adb             |      3 |              0 |        19 |      0 |    22 |   14% |
 | ai              |      1 |            143 |         0 |      0 |   144 |  100% |
-| askCmdr         |    187 |            296 |        42 |      0 |   525 |   92% |
+| askCmdr         |    187 |            292 |        46 |      0 |   525 |   91% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
-| commands        |    230 |              5 |        87 |      0 |   322 |   73% |
+| commands        |    230 |              5 |        90 |      0 |   325 |   72% |
 | common          |      9 |              1 |         9 |      0 |    19 |   53% |
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
@@ -52,11 +52,11 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |
 | servers         |     95 |             79 |        57 |      0 |   231 |   75% |
 | settings        |    449 |             45 |       400 |      0 |   894 |   55% |
-| shortcuts       |     35 |             30 |         0 |      0 |    65 |  100% |
+| shortcuts       |     35 |             31 |         0 |      0 |    66 |  100% |
 | stateRecovery   |      0 |              0 |        33 |      0 |    33 |    0% |
 | suggestedOps    |     85 |              0 |        25 |      0 |   110 |   77% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |
-| ui              |     10 |              0 |        46 |      0 |    56 |   18% |
+| ui              |     10 |              0 |        51 |      0 |    61 |   16% |
 | updates         |      6 |             26 |         0 |      0 |    32 |  100% |
 | viewer          |     30 |             91 |         0 |      0 |   121 |  100% |
 | whatsNew        |      8 |              1 |         2 |      0 |    11 |   82% |

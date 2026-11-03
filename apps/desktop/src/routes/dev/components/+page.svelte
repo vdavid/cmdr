@@ -29,6 +29,7 @@
     import ColumnListSection from './sections/ColumnListSection.svelte'
     import ShortcutChipSection from './sections/ShortcutChip.svelte'
     import CopyBoxSection from './sections/CopyBoxSection.svelte'
+    import FindBarSection from './sections/FindBarSection.svelte'
     import EmptyStates from './sections/EmptyStates.svelte'
     import TransferTreeSection from './sections/TransferTreeSection.svelte'
 
@@ -106,6 +107,7 @@
         <SliderSection />
         <NumberInputSection />
         <TextInputSection />
+        <FindBarSection />
         <PopoverSection />
         <MenuSection />
         <FilterPopoverSection />
