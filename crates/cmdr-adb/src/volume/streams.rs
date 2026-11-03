@@ -164,19 +164,23 @@ impl AdbVolume {
         Ok(outcome.stdout[prefix..end].to_vec())
     }
 
-    /// Streams `stream` onto `dest` through a staging sibling, then moves it
-    /// into place.
+    /// Streams `stream` onto `dest`.
     ///
     /// `SEND` writes the file at the name it is given, byte by byte, so the
-    /// name holds a partial for the whole upload. It lands on
-    /// `<name>.cmdr-tmp-<uuid>` beside the destination and takes the real name by
-    /// one `mv -f`, so nothing half-written ever wears the user's filename; on
-    /// any failure the staging name is removed. ❗ Cancellation arrives only
+    /// name holds a partial for the whole upload. ❗ Cancellation arrives only
     /// through `on_progress` answering `Break`: there is no token on this path.
     ///
-    /// `CreateNew` stats the destination right before the `mv -f` and refuses
-    /// an occupied one, taking only the staging name away (`writes.rs` § "The
-    /// two accepted TOCTOU windows": `mv -n` can't say whether it moved).
+    /// - **`CreateOrReplace` sends straight to `dest`**: the name is the
+    ///   caller's, and the transfer engine's is always its own `.cmdr-tmp-*`
+    ///   (it stages every write here, `write_is_single_shot` keeping its `false`
+    ///   default, and lands the temp itself). Staging it again cost a second
+    ///   `mv` per file, #339. ❗ Every failure removes whatever is at `dest`
+    ///   afterwards, the contract WebDAV's and SFTP's in-place writes keep.
+    /// - **`CreateNew` stages**: it lands on `<name>.cmdr-tmp-<uuid>` beside
+    ///   the destination, stats the destination right before one `mv -f`, and
+    ///   refuses an occupied one, taking only the staging name away (`writes.rs`
+    ///   § "The two accepted TOCTOU windows": `mv -n` can't say whether it
+    ///   moved). On any failure the staging name is removed.
     pub(super) async fn write_from_stream_impl(
         &self,
         dest: &Path,
@@ -186,6 +190,27 @@ impl AdbVolume {
         on_progress: &(dyn Fn(StreamWriteProgress) -> ControlFlow<()> + Sync),
     ) -> Result<StreamWritten, VolumeError> {
         let device = self.to_device_path(dest)?;
+        if !mode.refuses_occupied() {
+            debug!(
+                "AdbVolume::write_from_stream: {device} in place, length={length:?}",
+                device = LogPrivate::file_path(&device)
+            );
+            let mut session = self.open_sync(&device).await?;
+            let pumped = self
+                .pump(&mut session, &device, &device, length, &mut stream, on_progress)
+                .await;
+            session.quit().await;
+            return match pumped {
+                Ok(written) => {
+                    self.notify_created(dest).await;
+                    Ok(StreamWritten::nothing_refused(written))
+                }
+                Err(e) => {
+                    self.remove_partial(&device).await;
+                    Err(e)
+                }
+            };
+        }
         let staging = staging_name_for(&device);
         debug!(
             "AdbVolume::write_from_stream: {device} via {staging}, length={length:?}",
@@ -201,16 +226,14 @@ impl AdbVolume {
 
         match pumped {
             Ok(written) => {
-                if mode.refuses_occupied() {
-                    let refusal = match self.occupant(&device).await {
-                        Ok(WhatIsThere::Nothing) => None,
-                        Ok(_) => Some(VolumeError::AlreadyExists(device.clone())),
-                        Err(cant_tell) => Some(cant_tell),
-                    };
-                    if let Some(refusal) = refusal {
-                        self.remove_partial(&staging).await;
-                        return Err(refusal);
-                    }
+                let refusal = match self.occupant(&device).await {
+                    Ok(WhatIsThere::Nothing) => None,
+                    Ok(_) => Some(VolumeError::AlreadyExists(device.clone())),
+                    Err(cant_tell) => Some(cant_tell),
+                };
+                if let Some(refusal) = refusal {
+                    self.remove_partial(&staging).await;
+                    return Err(refusal);
                 }
                 if let Err(e) = self.shell_verb(&["mv", "-f", &staging, &device], &device).await {
                     self.remove_partial(&staging).await;

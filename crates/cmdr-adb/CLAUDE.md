@@ -33,8 +33,8 @@ words.
   `..` above `/` is refused, never anchored.
 - **❌ Never collect a file into a `Vec<u8>`.** `RECV`/`SEND` stream chunkwise; `read_range` runs bounded, quoted
   device-side `dd`.
-- **❗ Every write lands under a staging name (`<name>.cmdr-tmp-<uuid>`) and is `mv -f`ed into place.** `SEND` accepts
-  known or unknown length but truncates on open, so direct writes stage.
+- **❗ `SEND` truncates, so `CreateNew` stages and `mv -f`s in; `CreateOrReplace` (the engine's own temp) goes in
+  place**, ❌ never re-staged (#339).
 - **❗ Every mutation calls `notify_mutation`.** There is no watcher; `can_watch_listings` is `false` and stays so.
 - **❗ The walk and the listing patch come from `cmdr_fs::volume::{scan_walk, patching}`**, ❌ never a copy here. But ❌
   do NOT adopt `MakesDirectories`: the shell's native `mkdir -p` is one verb at any depth, where that walk costs a

@@ -52,6 +52,9 @@ mod adb_transfer_test;
 // and delete patching it, an unplug mid-scan, and another phone's path kept out.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod adb_index_test;
+// What a copy of many small files onto a phone costs in device round trips.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod adb_small_files_test;
 
 // Archive browsing and remote editing over a virtual MTP device: the archive
 // routing is this app's, so the cell sits with the pipeline it asserts on rather

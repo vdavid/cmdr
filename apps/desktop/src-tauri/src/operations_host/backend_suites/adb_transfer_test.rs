@@ -156,11 +156,10 @@ async fn a_fresh_zip_streams_directly_onto_a_phone_and_opens_with_valid_contents
     a_compress_onto_the_server_lands_a_valid_zip(Arc::clone(&phone.volume), phone.dir.clone(), true).await;
 }
 
-/// A file copied onto a phone lands whole, and ❗ the phone's writer never
-/// streams at the name it lands on: `SEND` truncates on open, so it sends to
-/// `<name>.cmdr-tmp-<uuid>` and one `mv` gives the bytes their name. The
-/// engine already writes to a staging name of its own, so the writer's move is
-/// the one landing ON a staging name.
+/// A file copied onto a phone lands whole, and ❗ the user's filename is only
+/// ever reached by one `mv` from the engine's own `<name>.cmdr-tmp-<uuid>`:
+/// `SEND` truncates on open, so the bytes stream onto that temp, and the writer
+/// stages nothing of its own on top (#339).
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn a_file_copied_onto_a_phone_lands_whole_through_a_staging_name() {
     let phone = dialed_phone("R58M-Copy-Onto", "copy-onto").await;
@@ -188,21 +187,17 @@ async fn a_file_copied_onto_a_phone_lands_whole_through_a_staging_name() {
     );
 
     let moves = moves_on_the_device(&phone.fake);
+    let final_name = format!("{}/uploaded.bin", phone.device_dir);
     assert!(
-        moves.iter().any(|(from, to)| {
-            from.strip_prefix(to.as_str())
-                .and_then(|suffix| suffix.strip_prefix(STAGING_TEMP_MARKER))
-                .is_some_and(|id| uuid::Uuid::parse_str(id).is_ok())
-                && to.contains(STAGING_TEMP_MARKER)
-                && to.starts_with(&phone.device_dir)
-        }),
-        "the phone's writer lands every upload by renaming its own staging sibling; moves: {moves:?}"
-    );
-    assert!(
-        moves
-            .iter()
-            .any(|(from, to)| *to == format!("{}/uploaded.bin", phone.device_dir) && from.contains(STAGING_TEMP_MARKER)),
-        "the user's filename is only ever reached by a rename from a staging name; moves: {moves:?}"
+        matches!(
+            &moves[..],
+            [(from, to)] if *to == final_name
+                && from
+                    .strip_prefix(final_name.as_str())
+                    .and_then(|suffix| suffix.strip_prefix(STAGING_TEMP_MARKER))
+                    .is_some_and(|id| uuid::Uuid::parse_str(id).is_ok())
+        ),
+        "the user's filename is reached by exactly one rename, from the engine's staging name; moves: {moves:?}"
     );
     assert_no_staging_litter(phone.volume.as_ref(), &phone.dir, "a copy onto a phone").await;
 }
