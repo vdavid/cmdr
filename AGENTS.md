@@ -144,7 +144,7 @@ Writing them:
 Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.); it's cache-aware. **Before each
 commit: `pnpm check --fast && pnpm check svelte-tests-related`**, plus, if you touched Rust, `pnpm check clippy` (naming
 a check runs only that one) and the Rust tests you touched (`cargo nextest run <name>`, see `docs/tooling/testing.md`).
-`--fast` (~6 s) is light scanners only, no compilers, typecheckers, test suites, or formatters; `svelte-tests-related`
+`--fast` (~9 s) is scanners plus knip, no compilers, typecheckers, test suites, or formatters; `svelte-tests-related`
 runs the vitest files that reach your branch's changes; clippy (~25 s warm) catches in seconds what would otherwise cost
 a 30-minute CI cycle. CI runs the rest (§ Workflow). Scope by name (`pnpm check clippy`), tech (`rust`), or app
 (`desktop`). Full docs in `scripts/check/CLAUDE.md`. Before landing, run `pnpm check` in the background (it can pass 10
