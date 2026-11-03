@@ -543,6 +543,23 @@ pub fn database_files(db_path: &Path) -> [PathBuf; 3] {
     [db_path.to_path_buf(), sidecar("-wal"), sidecar("-shm")]
 }
 
+/// Delete a database's `-wal` and `-shm`, keeping the main file. A sidecar that
+/// isn't there is fine; the first refusal stops it.
+///
+/// ⚠️ Only for a database nothing has open: a live connection's sidecars are
+/// part of the database.
+pub fn delete_sidecars(db_path: &Path) -> std::io::Result<()> {
+    let [_, wal, shm] = database_files(db_path);
+    for file in [wal, shm] {
+        match std::fs::remove_file(&file) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e),
+        }
+    }
+    Ok(())
+}
+
 /// Delete a database and its sidecars, retiring the read connections cached to it.
 ///
 /// A file that isn't there is fine. Every file is attempted even when one

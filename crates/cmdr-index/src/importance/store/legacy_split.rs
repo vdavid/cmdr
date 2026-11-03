@@ -47,7 +47,6 @@
 //!   recreate it ([`super::ImportanceStoreError::HoldsVisits`]) nor a rebuild delete
 //!   it (`volume_files::remove`).
 
-use std::io::ErrorKind;
 use std::path::Path;
 
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior};
@@ -106,7 +105,7 @@ pub(crate) fn wait_for_background_split() {
 /// of the combined file either way.
 pub(crate) fn split_legacy_stores(dirs: &StoreDirs) -> LegacySplit {
     let mut report = LegacySplit::default();
-    for volume_id in importance_volume_ids(&dirs.data) {
+    for volume_id in VolumeStore::Importance.volume_ids_in(&dirs.data) {
         match split_one(dirs, &volume_id) {
             Outcome::Split(rows) => report.split.push((volume_id, rows)),
             Outcome::Current => {}
@@ -133,38 +132,13 @@ enum CopyError {
     New(ImportanceStoreError),
 }
 
-/// Every volume with an importance file in `dir`: its database, or a sidecar
-/// whose database is gone.
-fn importance_volume_ids(dir: &Path) -> Vec<String> {
-    let Ok(read_dir) = std::fs::read_dir(dir) else {
-        return Vec::new();
-    };
-    let mut volume_ids: Vec<String> = Vec::new();
-    for entry in read_dir.flatten() {
-        let file_name = entry.file_name();
-        let Some(file_name) = file_name.to_str() else {
-            continue;
-        };
-        let db_name = file_name
-            .strip_suffix("-wal")
-            .or_else(|| file_name.strip_suffix("-shm"))
-            .unwrap_or(file_name);
-        if let Some(volume_id) = VolumeStore::Importance.volume_id_of(db_name)
-            && !volume_ids.iter().any(|seen| seen == volume_id)
-        {
-            volume_ids.push(volume_id.to_string());
-        }
-    }
-    volume_ids
-}
-
 fn split_one(dirs: &StoreDirs, volume_id: &str) -> Outcome {
     let old_db = VolumeStore::Importance.db_path(&dirs.data, volume_id);
     if !old_db.exists() {
         // Sidecars an interrupted delete left. They belong to no database, and in a
         // one-folder host SQLite would replay a stray `-wal` onto the weights store
         // created at this path next.
-        return match delete_sidecars(&old_db) {
+        return match sqlite_util::delete_sidecars(&old_db) {
             Ok(()) => Outcome::Discarded,
             Err(e) => Outcome::Left(format!("can't delete the old sidecars: {e}")),
         };
@@ -375,18 +349,6 @@ fn fold_the_wal_in_and_close(old: Connection) -> Result<(), String> {
     drop(old);
     if busy != 0 {
         return Err("the old store is in use by another process".to_string());
-    }
-    Ok(())
-}
-
-fn delete_sidecars(db: &Path) -> std::io::Result<()> {
-    let [_, wal, shm] = sqlite_util::database_files(db);
-    for file in [wal, shm] {
-        match std::fs::remove_file(&file) {
-            Ok(()) => {}
-            Err(e) if e.kind() == ErrorKind::NotFound => {}
-            Err(e) => return Err(e),
-        }
     }
     Ok(())
 }

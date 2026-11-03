@@ -183,6 +183,32 @@ impl VolumeStore {
         file_name.strip_prefix(self.prefix())?.strip_suffix(".db")
     }
 
+    /// Every volume with any of this store's SQLite files in `dir`: its database,
+    /// or a sidecar whose database is gone. Each id once; an unreadable `dir`
+    /// answers none.
+    pub(crate) fn volume_ids_in(self, dir: &Path) -> Vec<String> {
+        let Ok(read_dir) = std::fs::read_dir(dir) else {
+            return Vec::new();
+        };
+        let mut volume_ids: Vec<String> = Vec::new();
+        for entry in read_dir.flatten() {
+            let file_name = entry.file_name();
+            let Some(file_name) = file_name.to_str() else {
+                continue;
+            };
+            let db_name = file_name
+                .strip_suffix("-wal")
+                .or_else(|| file_name.strip_suffix("-shm"))
+                .unwrap_or(file_name);
+            if let Some(volume_id) = self.volume_id_of(db_name)
+                && !volume_ids.iter().any(|seen| seen == volume_id)
+            {
+                volume_ids.push(volume_id.to_string());
+            }
+        }
+        volume_ids
+    }
+
     /// What the store keeps beside its database that SQLite doesn't own.
     fn derived_files(self, db_path: &Path) -> Vec<PathBuf> {
         match self {

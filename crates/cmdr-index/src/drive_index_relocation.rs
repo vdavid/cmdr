@@ -63,7 +63,7 @@ pub(crate) fn relocate_drive_index(from: &Path, to: &Path) -> DriveIndexRelocati
     if from == to {
         return report;
     }
-    let volume_ids = drive_index_volume_ids(from);
+    let volume_ids = VolumeStore::Index.volume_ids_in(from);
     if volume_ids.is_empty() {
         return report;
     }
@@ -88,31 +88,6 @@ enum Outcome {
     Left(String),
 }
 
-/// Every volume with any drive-index file in `dir`: its database, or a sidecar
-/// whose database is gone.
-fn drive_index_volume_ids(dir: &Path) -> Vec<String> {
-    let Ok(read_dir) = std::fs::read_dir(dir) else {
-        return Vec::new();
-    };
-    let mut volume_ids: Vec<String> = Vec::new();
-    for entry in read_dir.flatten() {
-        let file_name = entry.file_name();
-        let Some(file_name) = file_name.to_str() else {
-            continue;
-        };
-        let db_name = file_name
-            .strip_suffix("-wal")
-            .or_else(|| file_name.strip_suffix("-shm"))
-            .unwrap_or(file_name);
-        if let Some(volume_id) = VolumeStore::Index.volume_id_of(db_name)
-            && !volume_ids.iter().any(|seen| seen == volume_id)
-        {
-            volume_ids.push(volume_id.to_string());
-        }
-    }
-    volume_ids
-}
-
 fn relocate_one(from: &Path, to: &Path, volume_id: &str) -> Outcome {
     let old_db = VolumeStore::Index.db_path(from, volume_id);
     let new_db = VolumeStore::Index.db_path(to, volume_id);
@@ -123,14 +98,14 @@ fn relocate_one(from: &Path, to: &Path, volume_id: &str) -> Outcome {
     if let Err(why) = fold_the_wal_in(&old_db) {
         return Outcome::Left(why);
     }
-    if let Err(e) = delete_sidecars(&new_db) {
+    if let Err(e) = sqlite_util::delete_sidecars(&new_db) {
         return Outcome::Left(format!("can't clear stray files beside {}: {e}", new_db.display()));
     }
     match std::fs::rename(&old_db, &new_db) {
         Ok(()) => {
             // The close in `fold_the_wal_in` deleted them; this only catches a
             // filesystem that kept an empty pair.
-            let _ = delete_sidecars(&old_db);
+            let _ = sqlite_util::delete_sidecars(&old_db);
             Outcome::Moved
         }
         Err(e) if e.kind() == ErrorKind::CrossesDevices => {
@@ -166,18 +141,6 @@ fn fold_the_wal_in(db: &Path) -> Result<(), String> {
         Ok(meta) if meta.len() > 0 => Err(format!("{} still has a write-ahead log", db.display())),
         _ => Ok(()),
     }
-}
-
-fn delete_sidecars(db: &Path) -> std::io::Result<()> {
-    let [_, wal, shm] = sqlite_util::database_files(db);
-    for file in [wal, shm] {
-        match std::fs::remove_file(&file) {
-            Ok(()) => {}
-            Err(e) if e.kind() == ErrorKind::NotFound => {}
-            Err(e) => return Err(e),
-        }
-    }
-    Ok(())
 }
 
 fn discard(old_db: &Path) -> Outcome {
