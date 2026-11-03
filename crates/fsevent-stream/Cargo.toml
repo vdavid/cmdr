@@ -19,11 +19,7 @@ homepage = "https://github.com/vdavid/cmdr/tree/main/crates/fsevent-stream"
 # The check runner reads this key to drop the crate from non-macOS lanes
 # (`scripts/check/checks/cargo-workspace.go`).
 [package.metadata.cmdr]
-# Our code now (upstream is dead), held to the workspace lints. `vendored` still
-# keeps the house source scanners (poison handling, no fixed sleeps in tests, …)
-# off it until it's brought up to them; then this becomes the default `app`.
-# The check runner reads this key.
-kind = "vendored"
+# No `kind`: it's first-party code (the default `app`), held to every house rule.
 platforms = ["macos"]
 
 # The house lint set lives in the workspace root's `[workspace.lints]`, so this

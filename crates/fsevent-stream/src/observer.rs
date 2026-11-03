@@ -4,8 +4,7 @@ use std::sync::mpsc::Sender;
 
 use core_foundation::base::{kCFAllocatorDefault, TCFType};
 use core_foundation::runloop::{
-    CFRunLoopActivity, CFRunLoopObserver, CFRunLoopObserverContext, CFRunLoopObserverCreate,
-    CFRunLoopObserverRef,
+    CFRunLoopActivity, CFRunLoopObserver, CFRunLoopObserverContext, CFRunLoopObserverCreate, CFRunLoopObserverRef,
 };
 
 use crate::utils::FlagsExt;
@@ -17,11 +16,7 @@ pub struct ObserverContextInfo {
 
 impl_release_callback!(release_observer_ctx, const ObserverContextInfo);
 
-extern "C" fn observer_callback(
-    _observer: CFRunLoopObserverRef,
-    activity: CFRunLoopActivity,
-    info: *mut c_void,
-) {
+extern "C" fn observer_callback(_observer: CFRunLoopObserverRef, activity: CFRunLoopActivity, info: *mut c_void) {
     drop(catch_unwind(move || {
         // SAFETY: `info` is the boxed `ObserverContextInfo` from `create_oneshot_observer`. The
         // observer owns it and releases it only when the observer is deallocated, which can't
@@ -34,10 +29,7 @@ extern "C" fn observer_callback(
     }));
 }
 
-pub fn create_oneshot_observer(
-    interest: CFRunLoopActivity,
-    tx: Sender<CFRunLoopActivity>,
-) -> CFRunLoopObserver {
+pub fn create_oneshot_observer(interest: CFRunLoopActivity, tx: Sender<CFRunLoopActivity>) -> CFRunLoopObserver {
     // On the stack: `CFRunLoopObserverCreate` copies the struct out, so a boxed one leaked.
     let mut ctx = CFRunLoopObserverContext {
         version: 0,

@@ -24,6 +24,7 @@ watcher (`apps/desktop/src-tauri/src/file_system/CLAUDE.md`).
 - **A callback must never unwind into C.** Its `catch_unwind` raises the overflow flag; any dropped event must too.
 - **`abort` waits for the run loop to reach `BeforeWaiting`**, so a worker that never runs it would hang `abort`. Report
   failure through the run-loop channel instead.
-- `kind = "vendored"` (`Cargo.toml`) still keeps the house source scanners off this crate; workspace lints apply.
+- **First-party (`app` kind)**: every house scanner and the workspace lints apply. Tokio only; the upstream `async-std`
+  arm is gone.
 
 Context and observer ownership, the callback contract, and the verified FSEvents behaviors: `DETAILS.md`.

@@ -16,8 +16,8 @@ use std::time::Duration;
 
 use core_foundation::array::{CFArray, CFArrayRef};
 use core_foundation::base::{
-    kCFAllocatorDefault, Boolean, CFAllocatorCopyDescriptionCallBack, CFAllocatorRef,
-    CFAllocatorReleaseCallBack, CFAllocatorRetainCallBack, CFIndex, TCFType,
+    kCFAllocatorDefault, Boolean, CFAllocatorCopyDescriptionCallBack, CFAllocatorRef, CFAllocatorReleaseCallBack,
+    CFAllocatorRetainCallBack, CFIndex, TCFType,
 };
 use core_foundation::date::CFTimeInterval;
 use core_foundation::runloop::{CFRunLoop, CFRunLoopIsWaiting, CFRunLoopMode, CFRunLoopRef};
@@ -52,7 +52,7 @@ pub struct __FSEventStream {
 
 pub type SysFSEventStreamRef = *mut __FSEventStream;
 
-/// An ergonomic wrapper of [`SysFSEventStreamRef`](SysFSEventStreamRef).
+/// An ergonomic wrapper of [`SysFSEventStreamRef`].
 ///
 /// This wrapper complies with Rust's ownership model, and releases its resource when dropped.
 ///
@@ -142,7 +142,7 @@ pub struct SysFSEventStreamContext {
     pub copy_description: Option<CFAllocatorCopyDescriptionCallBack>,
 }
 
-/// Generate a callback that free the context when the stream created by [`SysFSEventStream::new`](SysFSEventStream::new) is released.
+/// Generate a callback that free the context when the stream created by [`SysFSEventStream::new`] is released.
 ///
 /// Usage: `impl_release_callback!(release_ctx, YourCtxType)`
 ///
@@ -175,9 +175,9 @@ macro_rules! impl_release_callback {
 }
 
 impl SysFSEventStreamContext {
-    /// Create a new [`SysFSEventStreamContext`](SysFSEventStreamContext).
+    /// Create a new [`SysFSEventStreamContext`].
     ///
-    /// `release_callback` can be constructed using [`impl_release_callback`](impl_release_callback) macro.
+    /// `release_callback` can be constructed using [`impl_release_callback`] macro.
     pub fn new<T>(ctx: T, release_callback: CFAllocatorReleaseCallBack) -> Self {
         let ctx = Box::into_raw(Box::new(ctx));
         Self {
@@ -191,7 +191,7 @@ impl SysFSEventStreamContext {
 }
 
 impl SysFSEventStream {
-    /// Create a new [`SysFSEventStream`](SysFSEventStream).
+    /// Create a new [`SysFSEventStream`].
     ///
     /// Takes ownership of `context.info` whatever the outcome: on success the stream calls
     /// `context.release` when it's deallocated, and on failure it has been called by the time this
@@ -216,10 +216,7 @@ impl SysFSEventStream {
                 // `FSEventStreamCreate` returns NULL for an empty list; reject it here so the
                 // error says why.
                 if cf_paths.is_empty() {
-                    Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        "no paths to watch",
-                    ))
+                    Err(io::Error::new(io::ErrorKind::InvalidInput, "no paths to watch"))
                 } else {
                     Ok(cf_paths)
                 }
@@ -280,11 +277,7 @@ impl SysFSEventStream {
         // SAFETY: As in `schedule`: a valid stream ref, a retained run loop, and a mode the
         // caller vouches for.
         unsafe {
-            FSEventStreamUnscheduleFromRunLoop(
-                self.0,
-                run_loop.as_concrete_TypeRef(),
-                run_loop_mode,
-            );
+            FSEventStreamUnscheduleFromRunLoop(self.0, run_loop.as_concrete_TypeRef(), run_loop_mode);
         }
     }
     pub fn start(&mut self) -> bool {

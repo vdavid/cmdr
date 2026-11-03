@@ -29,8 +29,8 @@ use tokio_stream::wrappers::ReceiverStream;
 use crate::ffi::{
     extended_data_path_key, extended_file_id_key, kFSEventStreamCreateFlagFileEvents,
     kFSEventStreamCreateFlagUseCFTypes, kFSEventStreamCreateFlagUseExtendedData, CFRunLoopExt,
-    FSEventStreamCreateFlags, FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream,
-    SysFSEventStreamContext, SysFSEventStreamRef,
+    FSEventStreamCreateFlags, FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream, SysFSEventStreamContext,
+    SysFSEventStreamRef,
 };
 pub use crate::flags::StreamFlags;
 use crate::impl_release_callback;
@@ -38,10 +38,9 @@ use crate::observer::create_oneshot_observer;
 use crate::utils::FlagsExt;
 
 #[cfg(test)]
-pub(crate) static TEST_RUNNING_RUNLOOP_COUNT: std::sync::atomic::AtomicUsize =
-    std::sync::atomic::AtomicUsize::new(0);
+pub(crate) static TEST_RUNNING_RUNLOOP_COUNT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
-/// An owned permission to stop an [`EventStream`](EventStream) and terminate its backing `RunLoop`.
+/// An owned permission to stop an [`EventStream`] and terminate its backing `RunLoop`.
 ///
 /// A `EventStreamHandler` *detaches* the associated Stream and `RunLoop` when it is dropped, which
 /// means that there is no longer any handle to them and no way to `abort` them.
@@ -61,7 +60,7 @@ pub struct EventStreamHandler {
 unsafe impl Send for EventStreamHandler {}
 
 impl EventStreamHandler {
-    /// Stop an [`EventStream`](EventStream) and terminate its backing `RunLoop`.
+    /// Stop an [`EventStream`] and terminate its backing `RunLoop`.
     ///
     /// Calling this method multiple times has no extra effect and won't cause any panic, error,
     /// or undefined behavior.
@@ -114,10 +113,10 @@ impl Display for Event {
 
 /// A stream of `FSEvents` API event batches.
 ///
-/// You may want a stream of [`Event`](Event) instead of a stream of batches of it.
-/// Call [`EventStream::into_flatten`](EventStream::into_flatten) to get one.
+/// You may want a stream of [`Event`] instead of a stream of batches of it.
+/// Call [`EventStream::into_flatten`] to get one.
 ///
-/// Call [`create_event_stream`](create_event_stream) to create it.
+/// Call [`create_event_stream`] to create it.
 pub struct EventStream {
     stream: ReceiverStream<Vec<Event>>,
     /// Set to `true` when events are dropped (the internal channel is full, or an event couldn't be
@@ -126,7 +125,7 @@ pub struct EventStream {
 }
 
 impl EventStream {
-    /// Flatten event batches and produce a stream of [`Event`](Event).
+    /// Flatten event batches and produce a stream of [`Event`].
     pub fn into_flatten(self) -> impl Stream<Item = Event> {
         self.flat_map(iter)
     }
@@ -173,7 +172,7 @@ struct SendableCFRunLoop(CFRunLoop);
 // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
 unsafe impl Send for SendableCFRunLoop {}
 
-/// Create a new [`EventStream`](EventStream) and [`EventStreamHandler`](EventStreamHandler) pair.
+/// Create a new [`EventStream`] and [`EventStreamHandler`] pair.
 ///
 /// # Errors
 /// Return error when `paths_to_watch` is empty or holds an invalid path, or when `FSEvents`
@@ -187,9 +186,7 @@ pub fn create_event_stream<P: AsRef<Path>>(
     latency: Duration,
     flags: FSEventStreamCreateFlags,
 ) -> io::Result<(EventStream, EventStreamHandler)> {
-    if flags.contains(kFSEventStreamCreateFlagUseExtendedData)
-        && !flags.contains(kFSEventStreamCreateFlagUseCFTypes)
-    {
+    if flags.contains(kFSEventStreamCreateFlagUseExtendedData) && !flags.contains(kFSEventStreamCreateFlagUseCFTypes) {
         panic!("UseExtendedData requires UseCFTypes");
     }
 
@@ -228,14 +225,7 @@ pub fn create_event_stream<P: AsRef<Path>>(
         normal_callback
     };
 
-    let mut stream = SysFSEventStream::new(
-        callback,
-        &stream_context,
-        paths_to_watch,
-        since_when,
-        latency,
-        flags,
-    )?;
+    let mut stream = SysFSEventStream::new(callback, &stream_context, paths_to_watch, since_when, latency, flags)?;
 
     // channel to pass runloop around
     let (runloop_tx, runloop_rx) = channel();
@@ -270,12 +260,9 @@ pub fn create_event_stream<P: AsRef<Path>>(
         TEST_RUNNING_RUNLOOP_COUNT.fetch_sub(1, Ordering::SeqCst);
     });
 
-    let Some(SendableCFRunLoop(runloop)) = runloop_rx.recv().expect("receive runloop from worker")
-    else {
+    let Some(SendableCFRunLoop(runloop)) = runloop_rx.recv().expect("receive runloop from worker") else {
         thread_handle.join().expect("thread to shut down");
-        return Err(io::Error::other(
-            "FSEventStreamStart couldn't start the stream",
-        ));
+        return Err(io::Error::other("FSEventStreamStart couldn't start the stream"));
     };
 
     let stream = ReceiverStream::new(event_rx);
@@ -327,7 +314,7 @@ macro_rules! define_callback {
                 num_events: usize,                           // size_t numEvents
                 event_paths: *mut c_void,                    // void *eventPaths
                 event_flags: *const FSEventStreamEventFlags, // const FSEventStreamEventFlags eventFlags[]
-                event_ids: *const FSEventStreamEventId, // const FSEventStreamEventId eventIds[]
+                event_ids: *const FSEventStreamEventId,      // const FSEventStreamEventId eventIds[]
             ) {
                 fn event_iter(
                     $num: usize,
@@ -380,14 +367,7 @@ macro_rules! define_callback {
             // batch, so it raises the overflow flag like any other lost event (a missing
             // extended-data key, for example, panics in `CFDictionary::get`).
             let outcome = catch_unwind(move || {
-                callback_impl(
-                    stream_ref,
-                    info,
-                    num_events,
-                    event_paths,
-                    event_flags,
-                    event_ids,
-                );
+                callback_impl(stream_ref, info, num_events, event_paths, event_flags, event_ids);
             });
             if outcome.is_err() {
                 error!("FSEvents callback panicked (batch dropped, overflow flagged)");

@@ -1612,7 +1612,7 @@ no Go edit:
 - **`kind`** decides which scanners have jurisdiction. `app` (the default) is first-party code linked into the Cmdr
   process. `tool` is a first-party standalone developer CLI: its own process, its own stdout, its own SQLite connection,
   so the rules written for the app process describe a situation it isn't in (`crates/index-query`). `vendored` is a
-  third-party fork whose value is that it still matches upstream (`crates/fsevent-stream`). An unknown value is an
+  third-party fork whose value is that it still matches upstream (no member uses it today). An unknown value is an
   error, not a silent default.
 - **`platforms`** is the target-OS allowlist the member claims for itself, in cargo's `target_os` spelling. Empty means
   portable. `CargoSelectionArgs` turns it into `--workspace --exclude <name>` for every lane whose target can't build
@@ -2677,11 +2677,11 @@ drops a file that reaches zero, so the number only goes down; raising one needs 
 
 ### The log-private-values check
 
-**Decision**: `log-private-values`, a fast-lane Go scanner over every first-party member (app and tool kinds; the
-vendored `fsevent-stream` fork is out by kind), holds every log macro to the marker convention
-(`crates/cmdr-fs/DETAILS.md` § "Marked log values"). **Why**: an error report can only hash a value exactly when the
-site marked it; an unmarked one falls to the regex redactor's guess at where a name ends, which is the leak class behind
-#491. It keeps every site exact: the migration drove it to zero, and it now fails on any new unmarked value.
+**Decision**: `log-private-values`, a fast-lane Go scanner over every first-party member (app and tool kinds; a
+`vendored` member would be out by kind), holds every log macro to the marker convention (`crates/cmdr-fs/DETAILS.md` §
+"Marked log values"). **Why**: an error report can only hash a value exactly when the site marked it; an unmarked one
+falls to the regex redactor's guess at where a name ends, which is the leak class behind #491. It keeps every site
+exact: the migration drove it to zero, and it now fails on any new unmarked value.
 
 What it reads: every `trace!` / `debug!` / `info!` / `warn!` / `error!` / `log!` / `log_error!` invocation, bare or
 path-qualified, with any delimiter, parsed over `rust-source.go`'s masked copy so a `(` or `,` inside a string, a char

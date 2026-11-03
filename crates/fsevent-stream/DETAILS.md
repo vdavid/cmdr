@@ -49,6 +49,13 @@ All verified on macOS 27.0.1 with throwaway probe tests, 2026-11-03:
   safe.
 - A path `CFURLCreateFromFileSystemRepresentation` rejects (the empty string) fails in `new` before FSEvents sees it.
 
+## The real-FSEvents delivery test
+
+`must_receive_fs_events` runs five flag combinations against a live `fseventsd`. Its producer paces each create and
+delete on the consumer echoing that step's delivery back (`wait_for_delivery`, bounded at 2 s a step), never on a fixed
+sleep: a create+delete with no gap coalesces into one event, and a just-armed watch can drop the first mutation, so it
+keeps making fresh pairs until one lands whole.
+
 ## Soundness fixes over upstream (regression anchors)
 
 - NULL stream from an empty path list used to be scheduled, started, and released:

@@ -366,9 +366,6 @@ func TestModuleCyclesPackagesAreTheLibraryMembers(t *testing.T) {
 		if pkg == "index-query" || pkg == "operation-log-dump" {
 			t.Errorf("%s is a bin-only tool with no `--lib` graph", pkg)
 		}
-		if pkg == "cmdr-fsevent-stream" {
-			t.Errorf("%s is vendored; its module layout isn't ours to ratchet", pkg)
-		}
 	}
 }
 
