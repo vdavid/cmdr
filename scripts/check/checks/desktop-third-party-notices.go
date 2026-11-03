@@ -115,9 +115,14 @@ func RunThirdPartyNotices(ctx *CheckContext) (CheckResult, error) {
 		len(rust.packages), len(npm), len(vendored), len(rust.texts))
 
 	if ctx.CI && changed {
+		// CI only verifies, so this is the one place a reader can see WHAT went stale; without it a
+		// difference that a local run doesn't reproduce (a platform-dependent input) can't be told
+		// apart from a forgotten regeneration.
 		return CheckResult{}, fmt.Errorf(
-			"%s is stale (%s). Run `pnpm check third-party-notices` and commit the result",
-			NoticesFileName, summary)
+			"%s is stale (%s). Run `pnpm check third-party-notices` and commit the result\n%s%s",
+			NoticesFileName, summary,
+			firstDifference(NoticesFileName, original, generated),
+			firstDifference(packagesJSONPath, originalPackages, generatedPackages))
 	}
 	if changed {
 		if err := os.WriteFile(noticesPath, generated, 0o644); err != nil {
@@ -129,6 +134,25 @@ func RunThirdPartyNotices(ctx *CheckContext) (CheckResult, error) {
 		return SuccessWithChanges(fmt.Sprintf("%s regenerated (%s)", NoticesFileName, summary)), nil
 	}
 	return Success(fmt.Sprintf("%s in sync (%s)", NoticesFileName, summary)), nil
+}
+
+// firstDifference names the first line where a committed generated file and a fresh
+// generation part ways, with two lines of each, or "" when they're equal.
+func firstDifference(name string, committed, generated []byte) string {
+	if bytes.Equal(committed, generated) {
+		return ""
+	}
+	a := strings.Split(string(committed), "\n")
+	b := strings.Split(string(generated), "\n")
+	i := 0
+	for i < len(a) && i < len(b) && a[i] == b[i] {
+		i++
+	}
+	lines := func(s []string) string {
+		return strings.Join(s[min(i, len(s)):min(i+2, len(s))], " ⏎ ")
+	}
+	return fmt.Sprintf("  %s: first difference at line %d\n    committed: %s\n    generated: %s\n",
+		name, i+1, lines(a), lines(b))
 }
 
 // renderPackagesJSON emits the dialog's data. Indented and newline-terminated
