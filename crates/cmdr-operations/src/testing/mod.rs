@@ -30,6 +30,8 @@ pub use engine::{RegisteredOperation, TestOperationLog, TestOperations};
 // Taking back what a test put in the user's real Trash.
 mod trash_cleanup;
 pub use trash_cleanup::TrashCleanup;
+#[cfg(target_os = "macos")]
+pub(crate) use trash_cleanup::note_trashed;
 
 // A real queued operation, parked on the engine a cell names.
 pub use super::test_support::QueuedOperationFixture;

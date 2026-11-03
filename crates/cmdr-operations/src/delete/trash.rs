@@ -71,6 +71,10 @@ pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, MutationError>
                 detail: e.to_string(),
             })?;
         let in_trash = resulting.and_then(|u| u.path()).map(|p| PathBuf::from(p.to_string()));
+        #[cfg(any(test, feature = "testing"))]
+        if let Some(landed) = &in_trash {
+            crate::testing::note_trashed(landed);
+        }
         Ok(in_trash)
     })
 }
