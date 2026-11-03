@@ -12,7 +12,7 @@ use super::stamping::{source_times, stamped};
 use super::state::RanOn;
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::metadata::MetadataClasses;
+use cmdr_fs::metadata::{ClassOutcome, MetadataClasses};
 use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::volume::{MutationEvent, StreamLength, StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode};
 use log::debug;
@@ -256,12 +256,19 @@ impl SmbVolume {
                 on,
             } = self.transfer_lease().await?;
             // The creation date and Hidden ride the dates' frame; Read-only
-            // waits for the landing (the copy's `apply_metadata`). A share has
-            // no mode, and xattrs wait for named streams (vdavid/smb2#9).
-            let carried = stream.metadata(MetadataClasses::CREATED | MetadataClasses::FLAGS);
+            // waits for the landing (the copy's `apply_metadata`). The xattrs
+            // go on as named streams before the dates, on a share that has
+            // them (`copy_xattrs.rs`). A share has no mode.
+            let wanted = self
+                .metadata_caps()
+                .stores
+                .intersection(MetadataClasses::CREATED | MetadataClasses::FLAGS | MetadataClasses::XATTRS);
+            let carried = stream.metadata(wanted);
             let times = source_times(stream.modified_at(), carried.created, carried.flags);
             // Set when the server refuses `times`, for the write's report.
             let mut times_refused = false;
+            // What became of the xattrs, for the write's report.
+            let xattrs_kept: ClassOutcome;
 
             // Best-effort delete of a partial file on a FRESH cloned session.
             // Once a `FileWriter` is open and bytes have streamed into it, an
@@ -279,13 +286,17 @@ impl SmbVolume {
                     mut conn,
                     generation,
                 }) = self.clone_session().await
-                    && let Err(e) = tree.delete_file(&mut conn, &smb_path).await
-                    && is_behind_dfs_link(&e)
                 {
-                    let _ = self
-                        .inner
-                        .link_delete_file(generation.into(), &LeaseOn::Main, &tree, &smb_path)
-                        .await;
+                    match tree.delete_file(&mut conn, &smb_path).await {
+                        Ok(()) => self.delete_staging_fork_file(&tree, &mut conn, &smb_path).await,
+                        Err(e) if is_behind_dfs_link(&e) => {
+                            let _ = self
+                                .inner
+                                .link_delete_file(generation.into(), &LeaseOn::Main, &tree, &smb_path)
+                                .await;
+                        }
+                        Err(_) => {}
+                    }
                 }
             };
 
@@ -397,6 +408,12 @@ impl SmbVolume {
                         }
                         let written =
                             self.handle_smb_result("write_from_stream(compound)", &smb_path, ran_on, write_result)?;
+                        // Before the dates: a stream write moves the file's
+                        // date on `streams_xattr`. A lost connection fails the
+                        // write with no cleanup, as the stamp's does below.
+                        xattrs_kept = self
+                            .put_copied_xattrs(&tree, &mut conn, &smb_path, ran_on, &carried.xattrs, through_link)
+                            .await?;
                         // The frame's CLOSE already stamped the server's own
                         // dates, so these go by path, after it. A refusal
                         // keeps the server's; a lost connection fails the
@@ -432,6 +449,8 @@ impl SmbVolume {
                         "SmbVolume::write_from_stream: the credit window can't fund one compound write; streaming the drained {} bytes to the staging temp instead",
                         buffer.len()
                     );
+                    // For the xattrs beside the writer, which owns `conn`.
+                    let mut side_conn = conn.clone();
                     let writer_result = self.open_writer(&tree, conn, (ran_on, &on), &smb_path, mode).await;
                     let mut writer =
                         self.handle_smb_result("write_from_stream(open)", &smb_path, ran_on, writer_result)?;
@@ -450,6 +469,17 @@ impl SmbVolume {
                     }
                     // The source signalled end-of-stream by returning None
                     // above (we exited the drain loop). No further chunks.
+                    match self
+                        .put_copied_xattrs(&tree, &mut side_conn, &smb_path, ran_on, &carried.xattrs, false)
+                        .await
+                    {
+                        Ok(kept) => xattrs_kept = kept,
+                        Err(ve) => {
+                            let _ = writer.abort().await;
+                            delete_partial().await;
+                            return Err(ve);
+                        }
+                    }
                     if let Some(times) = times {
                         match self.stamp_writer(&mut writer, times, &smb_path, ran_on).await {
                             Ok(took) => times_refused = !took,
@@ -476,6 +506,8 @@ impl SmbVolume {
                 // owned `FileWriter` on the cloned `Connection` directly —
                 // no client mutex is held while WRITEs are in flight, so N
                 // concurrent large copies pipeline over one SMB session.
+                // For the xattrs beside the writer, which owns `conn`.
+                let mut side_conn = conn.clone();
                 let writer_result = self.open_writer(&tree, conn, (ran_on, &on), &smb_path, mode).await;
                 let mut writer = self.handle_smb_result("write_from_stream(open)", &smb_path, ran_on, writer_result)?;
 
@@ -544,6 +576,21 @@ impl SmbVolume {
                     }
                 }
 
+                // Beside the open writer (a stream opens past its no-sharing
+                // handle) and before its dates, which then outlast the stream
+                // writes' own bump on `streams_xattr`. `DETAILS.md` § "Xattrs
+                // on copies".
+                match self
+                    .put_copied_xattrs(&tree, &mut side_conn, &smb_path, ran_on, &carried.xattrs, false)
+                    .await
+                {
+                    Ok(kept) => xattrs_kept = kept,
+                    Err(ve) => {
+                        let _ = writer.abort().await;
+                        delete_partial().await;
+                        return Err(ve);
+                    }
+                }
                 if let Some(times) = times {
                     match self.stamp_writer(&mut writer, times, &smb_path, ran_on).await {
                         Ok(took) => times_refused = !took,
@@ -597,7 +644,13 @@ impl SmbVolume {
                 )
                 .await;
             }
-            Ok(stamped(bytes_written, &carried, stream.modified_at(), times_refused))
+            Ok(stamped(
+                bytes_written,
+                &carried,
+                stream.modified_at(),
+                times_refused,
+                xattrs_kept,
+            ))
         })
     }
 }

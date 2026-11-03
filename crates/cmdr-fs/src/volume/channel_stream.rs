@@ -24,6 +24,10 @@ pub struct ChannelReadStream {
     bytes_read: u64,
     modified_at: Option<std::time::SystemTime>,
     metadata: CarriedMetadata,
+    /// What `metadata_outline` answers when the open learned more classes than
+    /// it read values for (an xattr's name without its value). `None`: the
+    /// same as `metadata`.
+    outline: Option<CarriedMetadata>,
 }
 
 impl ChannelReadStream {
@@ -45,6 +49,7 @@ impl ChannelReadStream {
             bytes_read: 0,
             modified_at: None,
             metadata: CarriedMetadata::default(),
+            outline: None,
         }
     }
 
@@ -63,6 +68,16 @@ impl ChannelReadStream {
     #[must_use]
     pub fn with_metadata(mut self, metadata: CarriedMetadata) -> Self {
         self.metadata = metadata;
+        self
+    }
+
+    /// What the source file carries, as far as the open learned it without
+    /// reading values, for [`VolumeReadStream::metadata_outline`]: an xattr's
+    /// name with an empty value, say. ❗ Never what `metadata` hands out, so an
+    /// empty value can't be written as a real one.
+    #[must_use]
+    pub fn with_metadata_outline(mut self, outline: CarriedMetadata) -> Self {
+        self.outline = Some(outline);
         self
     }
 }
@@ -102,5 +117,13 @@ impl VolumeReadStream for ChannelReadStream {
 
     fn metadata(&self, wanted: MetadataClasses) -> CarriedMetadata {
         self.metadata.clone().restricted_to(wanted)
+    }
+
+    fn metadata_outline(&self, wanted: MetadataClasses) -> CarriedMetadata {
+        self.outline
+            .as_ref()
+            .unwrap_or(&self.metadata)
+            .clone()
+            .restricted_to(wanted)
     }
 }

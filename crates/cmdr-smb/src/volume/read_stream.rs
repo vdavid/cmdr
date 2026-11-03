@@ -5,11 +5,12 @@
 //! taking that fast path. Writing a stream into a file is `write_stream`.
 
 use super::SmbVolume;
+use super::copy_xattrs::{SourceXattrs, XattrAsk, source_xattrs};
 use super::dfs_links::is_behind_dfs_link;
 use super::mapping::{map_smb_error, user_flags_of};
 use super::session::TransferLease;
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses, UserFlags};
+use cmdr_fs::metadata::{CarriedMetadata, MetadataAsk, MetadataClasses, UserFlags};
 use cmdr_fs::volume::{ChannelReadStream, StreamLength, VolumeError, VolumeReadStream};
 use log::{debug, warn};
 use smb2::client::stream::FileDownload;
@@ -75,6 +76,8 @@ pub(super) struct InlineReadStream {
     created: Option<std::time::SystemTime>,
     /// Hidden and Locked, from the same CREATE response's attributes.
     flags: UserFlags,
+    /// The xattrs, from the stream listing in the same frame.
+    xattrs: SourceXattrs,
 }
 
 impl InlineReadStream {
@@ -87,6 +90,7 @@ impl InlineReadStream {
             modified_at,
             created: None,
             flags: UserFlags::NONE,
+            xattrs: SourceXattrs::None,
         }
     }
 
@@ -96,6 +100,13 @@ impl InlineReadStream {
     pub(super) fn with_source_info(mut self, info: &smb2::FileInfo, smb_path: &str) -> Self {
         self.created = info.created.to_system_time();
         self.flags = user_flags_of(info.attributes, name_of(smb_path));
+        self
+    }
+
+    /// The source file's xattrs, as far as the read learned them.
+    #[must_use]
+    pub(super) fn with_xattrs(mut self, xattrs: SourceXattrs) -> Self {
+        self.xattrs = xattrs;
         self
     }
 }
@@ -109,6 +120,8 @@ struct OpenedDownload {
     created: Option<std::time::SystemTime>,
     /// Hidden and Locked, from the same CREATE response's attributes.
     flags: UserFlags,
+    /// The xattrs, from the stream listing in the same frame.
+    xattrs: SourceXattrs,
 }
 
 /// The last component of an SMB path, which decides whether Samba's Hidden is
@@ -151,6 +164,17 @@ impl VolumeReadStream for InlineReadStream {
         CarriedMetadata {
             created: self.created,
             flags: self.flags,
+            xattrs: self.xattrs.values(),
+            ..CarriedMetadata::default()
+        }
+        .restricted_to(wanted)
+    }
+
+    fn metadata_outline(&self, wanted: MetadataClasses) -> CarriedMetadata {
+        CarriedMetadata {
+            created: self.created,
+            flags: self.flags,
+            xattrs: self.xattrs.outline(),
             ..CarriedMetadata::default()
         }
         .restricted_to(wanted)
@@ -158,12 +182,27 @@ impl VolumeReadStream for InlineReadStream {
 }
 
 impl SmbVolume {
+    /// Inherent body for the `open_read_stream_for_copy` trait method (thin
+    /// delegator in `volume_impl`): the hinted read, listing the file's streams
+    /// in its own frame when the copy asks about xattrs and the share has them
+    /// (`copy_xattrs.rs`).
+    pub(super) async fn open_read_stream_for_copy_impl(
+        &self,
+        path: &Path,
+        size_hint: Option<u64>,
+        ask: MetadataAsk,
+    ) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
+        let xattrs = XattrAsk::of(ask, self.stores_xattrs());
+        self.open_read_stream_with_hint_impl(path, size_hint, xattrs).await
+    }
+
     /// Inherent body for the `open_read_stream_with_hint` trait method (thin
-    /// delegator in `volume_impl`).
+    /// delegator in `volume_impl`, with `XattrAsk::Nothing`).
     pub(super) async fn open_read_stream_with_hint_impl(
         &self,
         path: &Path,
         size_hint: Option<u64>,
+        xattrs: XattrAsk,
     ) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
         let smb_path = self.to_smb_path(path)?;
 
@@ -209,10 +248,19 @@ impl SmbVolume {
                     LogPrivate::file_path(&smb_path),
                     size
                 );
-                // The date rides on the frame's own CREATE response.
-                let read_result = tree
-                    .read_file_compound_sized_with_info(&mut conn, &smb_path, size)
-                    .await;
+                // The date rides on the frame's own CREATE response, and the
+                // stream listing (asked only for a copy that wants it) on the
+                // same frame.
+                let read_result = match xattrs.lists() {
+                    true => {
+                        tree.read_file_compound_sized_with_streams(&mut conn, &smb_path, size)
+                            .await
+                    }
+                    false => tree
+                        .read_file_compound_sized_with_info(&mut conn, &smb_path, size)
+                        .await
+                        .map(|(data, info)| (data, info, None)),
+                };
                 match read_result {
                     Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => {
                         debug!(
@@ -242,7 +290,7 @@ impl SmbVolume {
                         );
                     }
                     read_result => {
-                        let (data, info) = self.handle_smb_result(
+                        let (data, info, listed) = self.handle_smb_result(
                             "open_read_stream_with_hint(compound)",
                             &smb_path,
                             ran_on,
@@ -250,8 +298,11 @@ impl SmbVolume {
                         )?;
                         if data.len() as u64 == size {
                             let modified_at = info.modified.to_system_time();
+                            let carried = source_xattrs(&tree, &mut conn, &smb_path, listed.as_deref(), xattrs).await;
                             return Ok(Box::new(
-                                InlineReadStream::new(data, modified_at).with_source_info(&info, &smb_path),
+                                InlineReadStream::new(data, modified_at)
+                                    .with_source_info(&info, &smb_path)
+                                    .with_xattrs(carried),
                             ) as Box<dyn VolumeReadStream>);
                         }
                         debug!(
@@ -269,7 +320,7 @@ impl SmbVolume {
             LogPrivate::volume(&self.inner.share_name),
             LogPrivate::file_path(&smb_path)
         );
-        let stream = self.open_smb_download_stream(&smb_path).await?;
+        let stream = self.open_smb_download_stream(&smb_path, xattrs).await?;
         Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
     }
 
@@ -287,7 +338,11 @@ impl SmbVolume {
     /// This is the single streaming-read primitive for `SmbVolume`. The
     /// cross-volume streaming path (`open_read_stream`) goes through here, so
     /// no path has to buffer whole files in memory.
-    pub(super) async fn open_smb_download_stream(&self, smb_path: &str) -> Result<ChannelReadStream, VolumeError> {
+    pub(super) async fn open_smb_download_stream(
+        &self,
+        smb_path: &str,
+        xattrs: XattrAsk,
+    ) -> Result<ChannelReadStream, VolumeError> {
         let lease = self.transfer_lease().await?;
 
         // The open reports the size and the date together: both ride on the
@@ -318,6 +373,8 @@ impl SmbVolume {
                 ran_on,
                 on,
             } = lease;
+            // For the xattr reads beside the download, which holds `conn`.
+            let mut side_conn = conn.clone();
             // A file behind a DFS link opens through the link, and that
             // download owns the target's connection (`dfs_links.rs`). Under a
             // known link it goes there first, skipping the refused open.
@@ -328,7 +385,7 @@ impl SmbVolume {
             };
             let opened = match through_link {
                 Some(opened) => opened,
-                None => match tree.download(&mut conn, &smb_path_owned).await {
+                None => match open_download(&tree, &mut conn, &smb_path_owned, xattrs).await {
                     Err(e) if is_behind_dfs_link(&e) => share
                         .open_link_download(ran_on, &on, &tree, &smb_path_owned)
                         .await
@@ -353,6 +410,9 @@ impl SmbVolume {
 
             let total_size = download.size();
             let info = download.info();
+            // A download through a DFS link listed nothing: its xattrs stay
+            // unknown, which the loss note can't count.
+            let carried = source_xattrs(&tree, &mut side_conn, &smb_path_owned, download.streams(), xattrs).await;
             let opened = OpenedDownload {
                 total_size,
                 modified_at: info.and_then(|info| info.modified.to_system_time()),
@@ -360,6 +420,7 @@ impl SmbVolume {
                 flags: info.map_or(UserFlags::NONE, |info| {
                     user_flags_of(info.attributes, name_of(&smb_path_owned))
                 }),
+                xattrs: carried,
             };
             if opened_tx.send(Ok(opened)).is_err() {
                 // Caller dropped the stream before receiving size. Dropping the
@@ -449,15 +510,36 @@ impl SmbVolume {
             }
         };
 
-        Ok(
-            ChannelReadStream::new(chunk_rx, cancel_tx, StreamLength::Known(opened.total_size))
-                .with_modified_at(opened.modified_at)
-                .with_metadata(CarriedMetadata {
-                    created: opened.created,
-                    flags: opened.flags,
-                    ..CarriedMetadata::default()
-                }),
-        )
+        let carried = CarriedMetadata {
+            created: opened.created,
+            flags: opened.flags,
+            xattrs: opened.xattrs.values(),
+            ..CarriedMetadata::default()
+        };
+        let stream = ChannelReadStream::new(chunk_rx, cancel_tx, StreamLength::Known(opened.total_size))
+            .with_modified_at(opened.modified_at);
+        Ok(match opened.xattrs {
+            SourceXattrs::Names(names) => stream.with_metadata_outline(CarriedMetadata {
+                xattrs: names,
+                ..carried.clone()
+            }),
+            SourceXattrs::None | SourceXattrs::Values(_) => stream,
+        }
+        .with_metadata(carried))
+    }
+}
+
+/// The download's open, listing the file's streams in the same frame when
+/// `xattrs` asks.
+async fn open_download<'a>(
+    tree: &'a smb2::client::Tree,
+    conn: &'a mut smb2::client::Connection,
+    smb_path: &str,
+    xattrs: XattrAsk,
+) -> Result<FileDownload<'a>, smb2::Error> {
+    match xattrs.lists() {
+        true => tree.download_with_streams(conn, smb_path).await,
+        false => tree.download(conn, smb_path).await,
     }
 }
 

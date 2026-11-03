@@ -76,6 +76,37 @@ impl MetadataCaps {
     }
 }
 
+/// What a copy will ask of a source's read stream beyond its bytes, told to the
+/// source when it opens (`Volume::open_read_stream_for_copy`), so a backend whose
+/// open can learn a class in a frame it already sends knows to, and one whose
+/// open can't skips the cost for every copy that never asks.
+// DEFAULT-OK: asks nothing, which is what any read outside a copy needs.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct MetadataAsk {
+    /// The classes whose VALUES the destination writes
+    /// (`VolumeReadStream::metadata`).
+    pub values: MetadataClasses,
+    /// The classes the loss note only needs to know the source HAS
+    /// (`VolumeReadStream::metadata_outline`): an xattr's name, not its value.
+    pub outline: MetadataClasses,
+}
+
+impl MetadataAsk {
+    /// What a copy of a file from `source` onto `destination` asks: the values
+    /// the destination keeps, and an outline of what it can't.
+    pub fn for_copy(source: MetadataCaps, destination: MetadataCaps) -> Self {
+        Self {
+            values: source.reports.intersection(destination.stores),
+            outline: destination.file_classes_at_risk_from(source),
+        }
+    }
+
+    /// Whether the copy asks about `class` at all, values or outline.
+    pub fn mentions(self, class: MetadataClasses) -> bool {
+        self.values.union(self.outline).contains(class)
+    }
+}
+
 #[cfg(test)]
 #[path = "caps_tests.rs"]
 mod tests;

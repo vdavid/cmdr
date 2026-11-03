@@ -35,8 +35,8 @@ impl SmbVolume {
     /// folders, riding the frames a date already costs: Hidden goes on the
     /// staged temp with its dates, and Read-only (Locked) only after the
     /// landing, one frame for a Locked file alone (`DETAILS.md` § "Dates on
-    /// copies" and § "Hidden and Locked on copies"). The xattrs wait for named
-    /// streams (vdavid/smb2#9), and a share has no POSIX mode.
+    /// copies" and § "Hidden and Locked on copies"). A share has no POSIX
+    /// mode, and without named streams no xattrs either.
     pub const METADATA_CAPS: MetadataCaps = MetadataCaps {
         stores: MetadataClasses::CREATED.union(MetadataClasses::FLAGS),
         reports: MetadataClasses::CREATED.union(MetadataClasses::FLAGS),
@@ -44,6 +44,23 @@ impl SmbVolume {
         folder_dates: true,
         staged_flags: UserFlags::HIDDEN,
     };
+
+    /// [`Self::METADATA_CAPS`] plus the xattrs, on a share with named streams:
+    /// what macOS's own client stores them in, so Finder sees them through a
+    /// mount (`DETAILS.md` § "Xattrs on copies"). Per share, from the connect
+    /// probe (`xattrs.rs::learn_xattr_support`), since a server without
+    /// `vfs_fruit` or streams refuses them.
+    pub const NAMED_STREAM_CAPS: MetadataCaps = MetadataCaps {
+        stores: Self::METADATA_CAPS.stores.union(MetadataClasses::XATTRS),
+        reports: Self::METADATA_CAPS.reports.union(MetadataClasses::XATTRS),
+        folder_stores: Self::METADATA_CAPS.folder_stores.union(MetadataClasses::XATTRS),
+        ..Self::METADATA_CAPS
+    };
+
+    /// Whether this share has named streams, as its connect probe said.
+    pub(super) fn stores_xattrs(&self) -> bool {
+        self.inner.stores_xattrs.load(Ordering::Relaxed)
+    }
 }
 
 impl Volume for SmbVolume {
@@ -190,7 +207,7 @@ impl Volume for SmbVolume {
     /// Samba has none, and this hides the tag colors there rather than offering a
     /// click that can only fail.
     fn supports_xattrs(&self) -> bool {
-        self.inner.stores_xattrs.load(Ordering::Relaxed)
+        self.stores_xattrs()
     }
 
     fn read_xattr_many<'a>(
@@ -426,7 +443,10 @@ impl Volume for SmbVolume {
     /// Bytes stream out over smb2 (`open_read_stream`), so a share can be the
     /// source of a cross-volume copy.
     fn metadata_caps(&self) -> MetadataCaps {
-        Self::METADATA_CAPS
+        match self.stores_xattrs() {
+            true => Self::NAMED_STREAM_CAPS,
+            false => Self::METADATA_CAPS,
+        }
     }
 
     /// Every listing row and `stat` carries the server's creation time
@@ -490,7 +510,11 @@ impl Volume for SmbVolume {
         to: &'a Path,
         on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(async move { self.copy_on_server_impl(from, to, &ProgressOnly(on_progress)).await })
+        Box::pin(async move {
+            self.copy_on_server_impl(from, to, &ProgressOnly(on_progress))
+                .await
+                .map(|written| written.bytes)
+        })
     }
 
     /// The trait default's gate, but handing the engine's own progress to the
@@ -507,9 +531,7 @@ impl Volume for SmbVolume {
             if mode.refuses_occupied() || !self.may_copy_on_server_from(source) {
                 return Err(VolumeError::NotSupported);
             }
-            self.copy_on_server_impl(from, to, progress)
-                .await
-                .map(StreamWritten::nothing_refused)
+            self.copy_on_server_impl(from, to, progress).await
         })
     }
 
@@ -565,7 +587,9 @@ impl Volume for SmbVolume {
                 LogPrivate::file_path(&smb_path)
             );
 
-            let stream = self.open_smb_download_stream(&smb_path).await?;
+            let stream = self
+                .open_smb_download_stream(&smb_path, super::copy_xattrs::XattrAsk::Nothing)
+                .await?;
             Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
         })
     }
@@ -577,7 +601,18 @@ impl Volume for SmbVolume {
         path: &'a Path,
         size_hint: Option<u64>,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        Box::pin(self.open_read_stream_with_hint_impl(path, size_hint))
+        Box::pin(self.open_read_stream_with_hint_impl(path, size_hint, super::copy_xattrs::XattrAsk::Nothing))
+    }
+
+    /// The hinted read, listing the file's named streams in its own frame for a
+    /// copy that asks about xattrs (`copy_xattrs.rs`).
+    fn open_read_stream_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+        size_hint: Option<u64>,
+        ask: cmdr_fs::metadata::MetadataAsk,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(self.open_read_stream_for_copy_impl(path, size_hint, ask))
     }
 
     fn open_read_stream_for_scan<'a>(

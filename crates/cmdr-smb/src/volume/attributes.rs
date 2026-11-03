@@ -40,11 +40,13 @@ impl SmbVolume {
             .attributes)
     }
 
-    /// The creation and modification dates and Hidden and Locked, in the one
-    /// frame a date alone costs. The flags go as the whole attribute set
-    /// (`HIDDEN`, `READONLY`), which REPLACES the item's settable ones; a set
-    /// with neither (append-only, no-dump) has nothing to send and answers
-    /// `NotApplicable`. Mode and xattrs aren't settable over this client.
+    /// The xattrs (as named streams, on a share that has them), then the
+    /// creation and modification dates and Hidden and Locked in the one frame a
+    /// date alone costs: the xattrs first, since a stream write moves the date
+    /// on `streams_xattr`. The flags go as the whole attribute set (`HIDDEN`,
+    /// `READONLY`), which REPLACES the item's settable ones; a set with neither
+    /// (append-only, no-dump) has nothing to send and answers `NotApplicable`.
+    /// A share has no mode.
     pub(super) async fn apply_metadata_impl(
         &self,
         path: &Path,
@@ -52,6 +54,9 @@ impl SmbVolume {
         modified: Option<std::time::SystemTime>,
     ) -> MetadataReport {
         let mut report = MetadataReport::none_applicable(carried, modified);
+        if !carried.xattrs.is_empty() && self.stores_xattrs() {
+            report.xattrs = self.apply_xattrs_by_path(path, carried).await;
+        }
         let attributes = Some(attributes_of(carried.flags)).filter(|attributes| attributes.bits() != 0);
         if carried.created.is_none() && modified.is_none() && attributes.is_none() {
             return report;
@@ -89,11 +94,24 @@ impl SmbVolume {
         report
     }
 
-    /// A folder's Hidden and Locked, for a copy that keeps them: one `stat`
-    /// round trip, since a listing entry has nowhere to carry them. The copy
-    /// asks only when its destination keeps a folder's flags
-    /// (`folder_metadata.rs` in the app).
+    /// A folder's Hidden and Locked and its xattrs, each only when `wanted`:
+    /// the flags in one `stat` round trip, since a listing entry has nowhere to
+    /// carry them (the copy asks only when its destination keeps a folder's
+    /// flags, `folder_metadata.rs` in the app), and the xattrs in a stream
+    /// listing plus one overlapped read of what it names, on a share that has
+    /// them.
     pub(super) async fn folder_metadata_impl(&self, path: &Path, wanted: MetadataClasses) -> CarriedMetadata {
+        let xattrs = match wanted.contains(MetadataClasses::XATTRS) && self.stores_xattrs() {
+            true => self.folder_xattrs(path).await,
+            false => Vec::new(),
+        };
+        CarriedMetadata {
+            xattrs,
+            ..self.folder_flags(path, wanted).await
+        }
+    }
+
+    async fn folder_flags(&self, path: &Path, wanted: MetadataClasses) -> CarriedMetadata {
         if !wanted.contains(MetadataClasses::FLAGS) {
             return CarriedMetadata::default();
         }

@@ -26,6 +26,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize};
 mod attributes;
 mod closing_reads;
 mod copy;
+mod copy_xattrs;
 mod dfs_links;
 mod foreground_yield;
 mod link_watch;
@@ -699,6 +700,8 @@ mod attributes_integration_test;
 mod black_hole_proxy;
 #[cfg(test)]
 mod conformance_test;
+#[cfg(test)]
+mod copy_xattrs_integration_test;
 #[cfg(test)]
 mod credit_cap_proxy;
 #[cfg(test)]

@@ -924,20 +924,20 @@ The contract: `crates/cmdr-operations/src/transfer/volume/DETAILS.md` § "Copies
 - **The scan pool's prefetch stays dateless**: enrichment never copies those bytes.
 - **Destination half: `write_from_stream_impl` stamps `LastWriteTime` and `CreationTime`**, both in the one
   `FILE_BASIC_INFORMATION` (`stamping.rs::source_times`; access and change times go as 0, "don't change"), so the
-  creation date costs no frame. It asks the stream for `CREATED` and the flags (§ "Hidden and Locked on copies"); a
-  share has no mode, and xattrs wait for named streams. Best effort: a refused stamp is a `warn!` and the copy succeeds,
-  and the write reports the creation date and Hidden refused (`stamping.rs::stamped`) for the copy's loss note. ❗ A
-  stamp that meets the session ending fails the write with `DeviceDisconnected` through the funnel
-  (`stamping.rs::stamp_taken`): a write never reports `Ok` past its own last step seeing the connection die, or the
-  transfer lands the file or starts the next one on a dead session. The compound path deletes nothing on that error (its
-  CLOSE already ran, at what may be the user's real name); the transfer settles the create by comparing bytes and puts
-  the source's dates on by path (`transfer/interrupted_landing.rs::settle_unanswered_create`). The streaming path cleans
-  up as for a failed chunk. Gotcha/Why: the server rewrites a file's date when the handle that WROTE it closes, so the
-  moment matters. The streaming writer stamps its own handle before `finish()` (`stamp_writer`, which
-  `FileWriter::set_times` orders after the pending writes); the one-frame compound write has already closed its handle,
-  so it stamps by path right after, one more compound frame (CREATE+SET_INFO+CLOSE). ❌ Never stamp by path while a
-  writer is still open: its close wins. A one-shot write to the user's real name (unstaged, `write_is_single_shot`)
-  shows the server's dates for that one frame.
+  creation date costs no frame. It asks the stream for `CREATED` and the flags (§ "Hidden and Locked on copies") and, on
+  a share with named streams, the xattrs, which go on first (§ "Xattrs on copies"); a share has no mode. Best effort: a
+  refused stamp is a `warn!` and the copy succeeds, and the write reports the creation date and Hidden refused
+  (`stamping.rs::stamped`) for the copy's loss note. ❗ A stamp that meets the session ending fails the write with
+  `DeviceDisconnected` through the funnel (`stamping.rs::stamp_taken`): a write never reports `Ok` past its own last
+  step seeing the connection die, or the transfer lands the file or starts the next one on a dead session. The compound
+  path deletes nothing on that error (its CLOSE already ran, at what may be the user's real name); the transfer settles
+  the create by comparing bytes and puts the source's dates on by path
+  (`transfer/interrupted_landing.rs::settle_unanswered_create`). The streaming path cleans up as for a failed chunk.
+  Gotcha/Why: the server rewrites a file's date when the handle that WROTE it closes, so the moment matters. The
+  streaming writer stamps its own handle before `finish()` (`stamp_writer`, which `FileWriter::set_times` orders after
+  the pending writes); the one-frame compound write has already closed its handle, so it stamps by path right after, one
+  more compound frame (CREATE+SET_INFO+CLOSE). ❌ Never stamp by path while a writer is still open: its close wins. A
+  one-shot write to the user's real name (unstaged, `write_is_single_shot`) shows the server's dates for that one frame.
 - **The landing rename keeps `CreationTime`** (verified on the Docker guest share, Samba 4.20.6 with
   `store dos attributes = yes`,
   `conformance_test.rs::smb_integration_a_copy_keeps_the_creation_date_per_the_shared_contract`, 2026-10-11):
@@ -959,8 +959,9 @@ The contract: `crates/cmdr-operations/src/transfer/volume/DETAILS.md` § "Copies
 - **Folders: `apply_metadata` stamps `CreationTime` and `LastWriteTime` by path** (`mutation.rs::set_times_impl`,
   `Tree::set_times`, which opens with no create options so a directory opens like a file; one frame for both), then
   patches the parent listing with a `Modified`. The copy engine calls it on each folder it created once the contents
-  landed. Mode and xattrs answer `NotApplicable`. Pinned by `smb_integration_apply_metadata_dates_a_folder`, the
-  creation-date conformance cell, and the engine's `smb_integration_folders_copied_*` cells.
+  landed, after its xattrs (§ "Xattrs on copies"). Mode answers `NotApplicable`. Pinned by
+  `smb_integration_apply_metadata_dates_a_folder`, the creation-date conformance cell, and the engine's
+  `smb_integration_folders_copied_*` cells.
 
 ## Hidden and Locked on copies
 
@@ -1023,23 +1024,62 @@ does, measured by smb2: `~/projects-git/vdavid/smb2/docs/notes/named-streams-and
   with the mount gone, another client's tag reaching the listing host, and against the plain guest fixture, a server
   with no streams saying so.
 
-## Finder tags and other xattrs on copies (open gap)
+## Xattrs on copies
 
-A direct-SMB copy keeps no xattrs either way: Finder tags, comments, custom icons (FinderInfo), and resource forks stay
-behind, and the loss note says so (`METADATA_CAPS` claims no `XATTRS`; a tag lost both ways verified on the QNAP,
-2026-10-31, `docs/notes/smb-finder-tags-2026-10-31.md`). Tracked as [#405](https://github.com/vdavid/cmdr/issues/405);
-the streams it needs are § "Extended attributes".
+`copy_xattrs.rs`. A direct-SMB copy keeps a file's and a folder's Finder tags, comments, custom icons (FinderInfo), and
+resource forks, both ways, on a share with named streams, as the streams macOS's own client stores them in (smb2's xattr
+mapping: `AFP_AfpInfo`, `AFP_Resource`, and each other xattr under its own name with `:` as `U+F022`). So Finder through
+a mount of the same share sees what Cmdr wrote, and the other way round. On a share without streams the copy lands and
+the loss note names them. The contract: `crates/cmdr-operations/src/transfer/volume/DETAILS.md` § "Copies keep the
+source's metadata".
 
-- **What it has to write**: what `smbfs` writes, so Finder on any Mac sees it: `AFP_AfpInfo`, `AFP_Resource`, and each
-  other xattr as a stream whose name carries the `U+F022` mapping for `:` (#289's verified QNAP finding).
-- **The caps come from probing each share**: a server without `vfs_fruit` or streams refuses them, so a backend-wide
-  claim would lie, and a refusal counts as a reported loss.
-- **Ordering**: written as streams on the staged temp before its landing rename, like any staged xattr; read off the
-  CREATE plus a stream enumeration the read can compound.
-- **The Finder-mounted share already keeps them** (the native chunked arm through `smbfs`; on the guest fixture, which
-  has no `vfs_fruit`, as `._` sidecars, and a resource fork is lost: `crates/cmdr-operations/src/transfer/DETAILS.md` §
-  "Local copies stage"). The `vfs_fruit` answer through a mount is unchecked; `smb-consumer-fruit` is the fixture to
-  ask.
+- **Caps per share**: `metadata_caps()` is `NAMED_STREAM_CAPS` (`METADATA_CAPS` plus `XATTRS` stored, reported, and kept
+  on folders) only when the connect probe found `supports_named_streams` (`learn_xattr_support`). A backend-wide claim
+  would lie on a plain Samba.
+- **Source: the listing rides the read's own frame.** The engine tells the open what the copy will ask
+  (`Volume::open_read_stream_for_copy`, `cmdr_fs::metadata::MetadataAsk`), and `XattrAsk::of` turns it into a listing
+  only for a share with streams and a copy that asks about xattrs: smb2's `read_file_compound_sized_with_streams`
+  (CREATE + READ + QUERY_INFO + CLOSE) or `download_with_streams` (CREATE + QUERY_INFO). A file listing none costs no
+  round trip more (pinned `(1, 4)` against today's `(1, 3)`); a file with some costs one, its values read overlapped
+  (`Tree::get_xattrs`, `(2, 7)` for one tag). Values only for a destination that keeps them; for one that can't, the
+  names alone go to `metadata_outline` for the loss note (❌ never to `metadata`, where an empty value would be written
+  as a real one). A read that isn't a copy's, and a file behind a DFS link, lists nothing.
+- **Destination: on the staged temp, before the dates.** `write_from_stream_impl` asks the stream for `XATTRS` on a
+  share that has them and `put_copied_xattrs` writes them overlapped (`set_xattrs_on_new_file`, one round trip for small
+  ones, no existence probe: the copy just made the file). The one-frame path writes them after its CLOSE and before the
+  path stamp; the streaming path beside the still-open writer and before `stamp_writer`. Gotcha/Why: a stream write
+  moves the file's `LastWriteTime` on `streams_xattr`, so anything after the dates would undo them. A refusal (a value
+  past the server's limit, a name that isn't UTF-8, a path behind a DFS link) is `Refused` in the write's report, a
+  counted loss; only the session ending fails the write, as `stamp_taken` does.
+- **Folders** through `apply_metadata` after their subtree lands: the xattrs through smb2's `set_xattr` (which checks
+  the folder is still there), then the dates and flags in one frame. `folder_metadata` reads a source folder's with a
+  listing and one overlapped read.
+- **Copychunk moves no streams**, so a copy inside the share carries them itself: the listing runs beside the source's
+  open and stat (no round trip of its own), then a tagged file pays one to read them and one to write them on the open
+  copy, before its dates. Pinned by `smb_integration_a_server_side_copy_carries_the_streams_copychunk_leaves_behind`.
+- **Evidence** (verified on `smb-consumer-fruit`, Samba 4.20.6 with `catia fruit streams_xattr`, 2026-11-03, smb2 0.40.0
+  and `copy_xattrs_integration_test.rs`): a stream opens beside a `FileWriter` holding the file with `ShareAccess(0)`;
+  the writer's own date stamp outlasts the stream writes; the landing rename keeps every stream, one-frame and streamed
+  alike; a delete takes them with the file, so both rollbacks leave nothing behind
+  (`smb_xattrs_test.rs::smb_integration_a_rollback_takes_back_tagged_copies_on_the_share`). A plain Samba answers the
+  compounded listing with the default stream alone, so a read there reads "none". The fixture's file system keeps all of
+  a file's xattrs in one 4 KiB block (`STATUS_DISK_FULL` past it): a large resource fork needs a real NAS.
+- **On a QNAP** (verified on David's TS-464, QuTS hero, Samba 4.20 with `catia fruit qnap_macea streams_depot`,
+  2026-11-03, smb2's `nas_a_copy_keeps_its_xattrs_and_a_deleted_temp_leaves_its_fork_file` and a one-off probe through
+  `SmbVolume`): tags, a comment, FinderInfo, a 300 KiB resource fork, and a plain xattr round-trip byte for byte, and
+  the landing rename keeps them. The resource fork lives in a visible `._<name>` file (`fruit:resource = file`), and the
+  share's recycle bin turns a delete into a move that leaves it behind, through macOS's own client too. So deleting a
+  staging temp (`.cmdr-tmp-`, `.cmdr-temp-`) also deletes its `._` file (`copy_xattrs.rs::delete_staging_fork_file`, on
+  `delete` and on the write's own `delete_partial`): one round trip, only on a share with streams, so a rolled-back copy
+  and a replaced file's aside leave nothing in the user's folder. A file the user deletes keeps its `._`, as in Finder.
+- **Cost** (`examples/copy_xattrs_bench.rs`, `docs/notes/smb-copy-xattrs-bench-2026-11-03.md`): big-file reads and
+  writes unchanged within noise; a plain small file's read with the listing costs about 20–40 µs more of the server's
+  time on loopback (8–18% of a 0.2 ms read) and 0.3–0.4 ms on the QNAP over the LAN (+5–7% of a 6 ms read, one at a
+  time); a tagged file's read about 0.25 ms more and its write 0.5–1.4 ms more on loopback.
+- **Not verified**: a Synology, and Finder showing the tags through a mount (the byte-level match is smb2's proof).
+- **The Finder-mounted share keeps them on its own path** (the native chunked arm through `smbfs`; on the guest fixture,
+  which has no `vfs_fruit`, as `._` sidecars, and a resource fork is lost:
+  `crates/cmdr-operations/src/transfer/DETAILS.md` § "Local copies stage").
 
 ## Server-side copy (copychunk)
 

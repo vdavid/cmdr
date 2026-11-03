@@ -168,6 +168,7 @@ impl SmbVolume {
                 )
                 .await;
             self.handle_smb_result("delete", &smb_path, generation, r)?;
+            self.delete_staging_fork_file(&tree, &mut conn, &smb_path).await;
         }
 
         if let (Some(parent), Some(name)) = (path.parent(), path.file_name())

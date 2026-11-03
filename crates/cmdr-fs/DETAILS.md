@@ -281,7 +281,13 @@ macOS 27.0, APFS, with a C helper replaying each syscall sequence, 2026-10-11).
   is the pair question the loss note asks, and `CarriedMetadata::worth_keeping` narrows it to what a person would miss
   (a birth before the last edit, a mode a fresh file wouldn't get, any flag, any xattr but the quarantine).
   `VolumeReadStream::metadata_outline` answers it cheaply (a local file's xattrs by name only). The note itself is the
-  app's, in the contract section the previous bullet names.
+  app's, in the contract section the previous bullet names. A per-share claim is fine (WebDAV's dates, SMB's xattrs on a
+  share with named streams), as long as it's settled before the first copy asks.
+- **A copy tells the source what it'll ask** (`MetadataAsk::for_copy` into `Volume::open_read_stream_for_copy`, default
+  the hinted open): the values the destination keeps and an outline of the rest. ❗ For a backend whose open can learn a
+  class in a frame it already sends (SMB lists a file's streams in its read's own frame) but whose stream can't fetch it
+  later, since `metadata` is synchronous. A wrapper volume forwards it; `ChannelReadStream::with_metadata_outline` holds
+  names a read learned without their values, which `metadata` never hands out.
 - **A routed mode is folded, never copied** (`routed_mode`): a volume's mode is metadata out of an archive header, a
   repo object, or a device's `stat`, not authority enough to widen anything or set setuid. It folds against the umask
   default (`default_file_mode`, `default_folder_mode`), which a one-time throwaway folder probes: `umask(2)` can't be

@@ -1743,6 +1743,31 @@ pub trait Volume: Send + Sync {
         self.open_read_stream(path)
     }
 
+    /// [`open_read_stream_with_hint`](Self::open_read_stream_with_hint) for a
+    /// copy, told what the copy will ask the stream's `metadata` and
+    /// `metadata_outline` about (`ask`), so a backend that learns a class in a
+    /// frame its open already sends asks for it only when someone will look:
+    /// `SmbVolume` lists a file's named streams in the read's own frame, and
+    /// reads their values only for a destination that keeps xattrs.
+    ///
+    /// The stream still answers `metadata(wanted)` for any `wanted`; a class
+    /// `ask` left out may just come back empty. Default: the hinted open, which
+    /// is right for every backend whose open learns the same either way. ❗ A
+    /// wrapper volume forwards it.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn open_read_stream_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+        size_hint: Option<u64>,
+        ask: crate::metadata::MetadataAsk,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        let _ = ask;
+        self.open_read_stream_with_hint(path, size_hint)
+    }
+
     /// Opens a read stream for BACKGROUND bulk work (media enrichment prefetch),
     /// bracketed by [`begin_scan_session`](Self::begin_scan_session) /
     /// [`end_scan_session`](Self::end_scan_session).

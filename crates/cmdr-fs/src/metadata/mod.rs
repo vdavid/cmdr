@@ -50,7 +50,7 @@ pub use blockers::{
     OpenedFolder, ParentOpening, RemovalLock, RemovalRefusal, Unblock, clear_blockers, open_parent_folder,
     removal_lock, remove_dir_clearing_blockers, remove_file_clearing_blockers, remove_tree_clearing_blockers,
 };
-pub use caps::MetadataCaps;
+pub use caps::{MetadataAsk, MetadataCaps};
 pub use carried::{CarriedMetadata, Xattr};
 pub use classes::MetadataClasses;
 pub use flags::UserFlags;

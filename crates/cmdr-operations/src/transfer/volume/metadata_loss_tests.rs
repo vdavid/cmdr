@@ -35,7 +35,8 @@ const EXECUTABLE: u32 = 0o755;
 fn sources() -> Vec<(&'static str, MetadataCaps)> {
     vec![
         ("local", LocalPosixVolume::METADATA_CAPS),
-        ("SMB", cmdr_smb::volume::SmbVolume::METADATA_CAPS),
+        ("SMB without named streams", cmdr_smb::volume::SmbVolume::METADATA_CAPS),
+        ("SMB with named streams", cmdr_smb::volume::SmbVolume::NAMED_STREAM_CAPS),
         ("SFTP", cmdr_sftp::SftpVolume::METADATA_CAPS),
         ("ADB", cmdr_adb::AdbVolume::METADATA_CAPS),
         ("S3", cmdr_s3::S3Volume::METADATA_CAPS),
@@ -51,7 +52,8 @@ fn sources() -> Vec<(&'static str, MetadataCaps)> {
 fn destinations() -> Vec<(&'static str, MetadataCaps)> {
     vec![
         ("local", LocalPosixVolume::METADATA_CAPS),
-        ("SMB", cmdr_smb::volume::SmbVolume::METADATA_CAPS),
+        ("SMB without named streams", cmdr_smb::volume::SmbVolume::METADATA_CAPS),
+        ("SMB with named streams", cmdr_smb::volume::SmbVolume::NAMED_STREAM_CAPS),
         ("SFTP", cmdr_sftp::SftpVolume::METADATA_CAPS),
         ("ADB", cmdr_adb::AdbVolume::METADATA_CAPS),
         ("S3", cmdr_s3::S3Volume::METADATA_CAPS),

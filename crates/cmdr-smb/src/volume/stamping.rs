@@ -91,16 +91,19 @@ impl SmbVolume {
 }
 
 /// What a write of `bytes` reports: the creation date and the staged flags
-/// rode `times`, so the server took both or refused both.
+/// rode `times`, so the server took both or refused both; the xattrs went as
+/// streams of their own (`xattrs`, `Absent` for none).
 pub(super) fn stamped(
     bytes: u64,
     carried: &CarriedMetadata,
     modified: Option<std::time::SystemTime>,
     refused: bool,
+    xattrs: ClassOutcome,
 ) -> StreamWritten {
     let stamped = CarriedMetadata {
         created: carried.created,
         flags: carried.flags.intersection(SmbVolume::METADATA_CAPS.staged_flags),
+        xattrs: carried.xattrs.clone(),
         ..CarriedMetadata::default()
     };
     let outcome = if refused {
@@ -108,7 +111,10 @@ pub(super) fn stamped(
     } else {
         ClassOutcome::Kept
     };
-    let report = MetadataReport::uniform(&stamped, modified, outcome);
+    let report = MetadataReport {
+        xattrs,
+        ..MetadataReport::uniform(&stamped, modified, outcome)
+    };
     StreamWritten::with_report(bytes, &report, &stamped, modified)
 }
 
