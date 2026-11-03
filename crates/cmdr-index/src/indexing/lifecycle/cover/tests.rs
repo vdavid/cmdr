@@ -353,13 +353,17 @@ fn a_walk_cancelled_partway_reports_the_ground_it_covered() {
 fn a_background_walk_hands_its_ground_to_the_walk_somebody_is_waiting_on() {
     let f = Fixture::new();
     let root = f.tree.path();
-    // Wide enough that the walk is still reading when it is asked to stop, so
-    // "it handed the ground over" and "it had already finished" are different
-    // outcomes.
+    // Exactly one batch wide (2 000 rows), so reading `big` fills and sends it.
     for index in 0..2_000 {
         std::fs::create_dir_all(root.join("big").join(format!("sub-{index:04}"))).expect("dirs");
     }
     f.seed_chain(&root.join("big"));
+    // Held at the door of its first sub-folder, so the walk is still mid-way when
+    // it is asked to stop. ❌ Not "wide enough that it's still reading": 2 000 empty
+    // folders read in tens of milliseconds, and a loaded machine starved this
+    // thread longer than that, so the walk sometimes finished first and had
+    // nothing to stop (3 of 200 at load 60, 2026-11-03).
+    let park = crate::indexing::scanner::park::ParkHandle::arm(Path::new(&f.path("big")), 1);
 
     let walk = start(
         // The phase machine's shape: it runs many walks in a row, so it owes the
@@ -368,11 +372,24 @@ fn a_background_walk_hands_its_ground_to_the_walk_somebody_is_waiting_on() {
         vec![f.path("big")],
         CoverageDimension::Listing,
     );
+    assert!(
+        park.wait_until_parked(std::time::Duration::from_secs(10)),
+        "precondition: the walk read `big` and stopped at its first sub-folder"
+    );
     // One batch in hand means the walk is writing, so what follows is about a
     // walk with rows in flight rather than one that never started.
     walk.next_batch()
         .expect("the walk delivers before anyone asks for its ground");
-    let drainer = std::thread::spawn(move || drain(walk));
+    // Let the walk go only once the yield reached it, so it can't finish first.
+    let drainer = std::thread::spawn(move || {
+        cmdr_fs::testing::wait_until(
+            std::time::Duration::from_secs(10),
+            "the yield to reach the background walk",
+            || walk.is_stopped_for_test(),
+        );
+        park.release();
+        drain(walk)
+    });
 
     // The real door, so the stop travels the yield channel the way a preemption
     // does — and `preempt` returns exactly when the ground changes hands.
