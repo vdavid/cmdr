@@ -151,6 +151,18 @@
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
+  "ui.toolAsk.setSetting.oldValue": "舊值：",
+  "@ui.toolAsk.setSetting.oldValue": {
+    "sourceHash": "b692194"
+  },
+  "ui.toolAsk.setSetting.newValue": "新值：",
+  "@ui.toolAsk.setSetting.newValue": {
+    "sourceHash": "dca4696"
+  },
+  "ui.toolAsk.setSetting.systemDefault": "跟隨系統",
+  "@ui.toolAsk.setSetting.systemDefault": {
+    "sourceHash": "b045921"
+  },
   "ui.toolAsk.setSetting.emptyValue": "無",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"

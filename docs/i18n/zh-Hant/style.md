@@ -470,9 +470,9 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   not a quoted name.
 
 - **Consent wording stays exact.** "Stay home" in `ai.cloudConsent.askCmdr.protectedContents` is `只會留在你的 Mac 上`.
-  In `ai.cloudConsent.askCmdr.actions`, undoing an operation is `復原` (the dialog it opens) and tags' "no undo" is
-  `無法還原`. "Detach" in `askCmdr.tool.eject.doing` is `卸下`, covering eject, unmount, and disconnect, since `退出`
-  means eject alone.
+  In `ai.cloudConsent.askCmdr.actions`, undoing an operation is `復原` (the dialog it opens), and so is undoing a tag
+  change (`標籤的更改可以復原`), since it runs through that same operation-log rollback. "Detach" in
+  `askCmdr.tool.eject.doing` is `卸下`, covering eject, unmount, and disconnect, since `退出` means eject alone.
 
 ### `*Aria` containment pairs that are load-bearing
 

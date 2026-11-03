@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>用自然語言搜尋</b>：你輸入的文字，或是你開啟 MCP 直接模式後，已連接的 AI 工具要求的內容",
+  "ai.cloudConsent.search": "<b>用自然語言搜尋</b>：你輸入的文字",
   "@ai.cloudConsent.search": {
-    "sourceHash": "b5c8d93"
+    "sourceHash": "e6d4ef9"
   },
   "ai.cloudConsent.selection": "<b>依描述選取</b>：你輸入的內容，加上目前資料夾裡最多 240 個名稱",
   "@ai.cloudConsent.selection": {
@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "在你自己開始的對話裡，Ask Cmdr 還能替你操作這個 App：導覽、選取、排序、開啟分頁和對話方塊，以及連線到你儲存的位置。複製、移動、壓縮、刪除、重新命名和復原一項操作，都會先開啟對話方塊或編輯器讓你確認，在你確認之前什麼都不會發生。開啟檔案、更改設定（Cmdr 外觀的設定除外）、結束 Cmdr、退出磁碟機、移除伺服器和更改索引，都會先問你。建立指定名稱的資料夾或檔案、替檔案加上標籤，會立刻執行，不會問你，而且標籤無法還原。它準備成計畫的重新命名和整理，會等你同意。",
+  "ai.cloudConsent.askCmdr.actions": "在你自己開始的對話裡，Ask Cmdr 還能替你操作這個 App：導覽、選取、排序、開啟分頁和對話方塊，以及連線到你儲存的位置。複製、移動、壓縮、刪除、重新命名和復原一項操作，都會先開啟對話方塊或編輯器讓你確認，在你確認之前什麼都不會發生。開啟檔案、更改設定（Cmdr 外觀的設定除外）、結束 Cmdr、退出磁碟機、移除伺服器和更改索引，都會先問你。建立指定名稱的資料夾或檔案、替檔案加上標籤，會立刻執行，不會問你，不過標籤的更改可以復原。它準備成計畫的重新命名和整理，會等你同意。",
   "@ai.cloudConsent.askCmdr.actions": {
-    "sourceHash": "bf002cc"
+    "sourceHash": "3a26068"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr 會給自己記下關於你的筆記：你喜歡怎麼整理東西、你以前拒絕過什麼，還有任何你要它記住的事。只要這些筆記還在，你送出的每一則訊息都會帶著它們一起走，其中也可能包含 Cmdr 在你照片裡辨識出的文字。你隨時可以在 Ask Cmdr 的設定裡讀它們，或是全部清掉。",
   "@ai.cloudConsent.askCmdr.memory": {

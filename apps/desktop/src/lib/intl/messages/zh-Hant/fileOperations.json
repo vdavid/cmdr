@@ -523,6 +523,10 @@
   "@fileOperations.transferProgress.titleReversalDeleting": {
     "sourceHash": "587f4a3"
   },
+  "fileOperations.transferProgress.titleReversalRestoringTags": "{count, plural, =0 {正在把原本的標籤改回去} other {正在把 {countText} 個檔案的標籤改回去}}⋯",
+  "@fileOperations.transferProgress.titleReversalRestoringTags": {
+    "sourceHash": "71e6947"
+  },
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {正在把原本的名稱改回去} other {正在把 {countText} 個原本的名稱改回去}}⋯",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
     "sourceHash": "2ad8510"
@@ -1018,6 +1022,10 @@
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "這會把檔案原本的名稱改回去。Cmdr 會略過沒有把握的部分，所以可能有些會保留現在的名稱。",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
     "sourceHash": "37932e7"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTags": "這會把檔案原本的標籤改回去。Cmdr 會略過之後標籤又被改過的檔案，所以可能有些會保留現在的標籤。",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTags": {
+    "sourceHash": "9dc7b0d"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "維持原樣",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
