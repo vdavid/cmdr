@@ -118,7 +118,7 @@ export function createViewerCopy(deps: CopyDeps) {
    * Picks the right copy band and either reads immediately (silent) or returns a
    * `proceed()` for the caller to drive after user confirmation.
    *
-   * Empty selections return `{ kind: 'empty' }` (caller should no-op). A second copy
+   * Empty selections return `{ kind: 'empty' }` (the caller says so). A second copy
    * gesture while one is in flight returns `{ kind: 'busy' }` (caller should no-op).
    */
   async function runCopy(): Promise<CopyOutcome> {
@@ -198,7 +198,8 @@ interface CopyOrchestratorDeps {
  * Owns the dialog state the page binds to `ViewerCopyDialogs` (`confirmBytes`,
  * `refuseBytes`) plus the deferred `proceed` callback for a confirmed read. Wraps the
  * lower-level `createViewerCopy` read/write composable; the page calls `handleCopy()`
- * on ⌘C / context-menu Copy and `handleSaveAs()` from the dialog's "Save as" action.
+ * on ⌘C / context-menu Copy and `handleSaveAs()` from the dialog's "Save as" action. Every
+ * outcome the user acts on gets a toast, nothing selected included.
  *
  * Lives in `.svelte.ts` because `confirmBytes` / `refuseBytes` are `$state`.
  */
@@ -241,11 +242,37 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
     addToast(tString('viewer.copy.onClipboard', { size: formatByteSize(bytes) }), { level: 'info' })
   }
 
+  /**
+   * Says a copy found nothing selected, so the clipboard didn't change. ❗ Never quiet: a
+   * silent no-op left people pasting their OLD clipboard, believing they'd copied
+   * (ERR-ZNNZH). `view` and `branch` name which empty exit ran, for the next report's log.
+   */
+  function reportNothingToCopy(view: string, branch: string): void {
+    log.debug('Copy found nothing selected: view={view}, branch={branch}', { view, branch })
+    addToast(tString('viewer.copy.nothingSelected'), { level: 'info', id: 'viewer-copy-nothing-selected' })
+  }
+
+  /** The toast for a confirmed read that didn't finish. `cancelled` is the user's Escape: no toast. */
+  function reportReadFailure(failure: RangeFailure): void {
+    if (failure.reason === 'cancelled') return
+    log.warn('Confirmed copy read failed: reason={reason}, error={error}', {
+      reason: failure.reason,
+      error: failure.error ? JSON.stringify(failure.error) : 'none',
+    })
+    addToast(tString(failure.reason === 'timedOut' ? 'viewer.copy.readTooLong' : 'viewer.copy.readFailed'), {
+      level: 'warn',
+    })
+  }
+
   async function handleCopy(): Promise<void> {
     const outcome = await copy.runCopy()
     switch (outcome.kind) {
       case 'empty':
+        reportNothingToCopy('text', 'viewerSelection')
+        return
       case 'busy':
+        // The copy already under way reports for itself.
+        log.debug('Copy pressed while a copy read is still running; ignored')
         return
       case 'silent':
         await handleSilentCopy(outcome.text)
@@ -267,15 +294,8 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
         confirmProceed = async () => {
           confirmBytes = null
           const res = await outcome.proceed()
-          if (res.ok) {
-            await handleSilentCopy(res.text)
-          } else if (res.reason === 'cancelled') {
-            // User pressed Escape; no toast.
-          } else if (res.reason === 'timedOut') {
-            addToast(tString('viewer.copy.readTooLong'), { level: 'warn' })
-          } else {
-            addToast(tString('viewer.copy.readFailed'), { level: 'warn' })
-          }
+          if (res.ok) await handleSilentCopy(res.text)
+          else reportReadFailure(res)
         }
         return
       case 'unknown-size':
@@ -285,9 +305,8 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
         confirmProceed = async () => {
           confirmBytes = null
           const res = await outcome.proceed()
-          if (res.ok) {
-            await handleSilentCopy(res.text)
-          }
+          if (res.ok) await handleSilentCopy(res.text)
+          else reportReadFailure(res)
         }
         return
       case 'refuse':
@@ -372,6 +391,12 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
       return refuseBytes !== null
     },
     handleCopy,
+    /**
+     * Copies text the page already holds (a formatted document's or the Binary view's
+     * browser selection) and confirms it the way a text-view copy does.
+     */
+    copyText: handleSilentCopy,
+    reportNothingToCopy,
     handleSaveAs,
     cancelConfirm,
     dismissRefuse,

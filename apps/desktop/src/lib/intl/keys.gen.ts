@@ -5372,6 +5372,7 @@ export type MessageKey =
   | 'viewer.content.ariaLabel'
   | 'viewer.copy.clipboardUnreachable'
   | 'viewer.copy.copyFailed'
+  | 'viewer.copy.nothingSelected'
   | 'viewer.copy.onClipboard'
   | 'viewer.copy.readFailed'
   | 'viewer.copy.readTooLong'

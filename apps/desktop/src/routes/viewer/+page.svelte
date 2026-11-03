@@ -46,7 +46,7 @@
     import { createIndexingPoll } from './viewer-indexing-poll'
     import { handleOpenFailure } from './viewer-open-failure'
     import { createViewerKeyboard, isSearchInputFocused } from './viewer-keyboard'
-    import { runViewerContextMenuAction, runViewerEditAction } from './viewer-menu-actions'
+    import { editSurfaceFor, runViewerContextMenuAction, runViewerEditAction } from './viewer-menu-actions'
     import { createViewerTail } from './viewer-tail.svelte'
     import {
         createViewerSelection,
@@ -636,6 +636,16 @@
                 log.warn('Copying the search query to the clipboard failed: {error}', { error: e })
             })
         },
+        selectAllDocument: () => {
+            markdownViewRef?.selectAll()
+        },
+        readDomSelection: () => window.getSelection()?.toString() ?? '',
+        copyDomText: (text: string) => {
+            void copyFlow.copyText(text)
+        },
+        reportNothingToCopy: (surface: string) => {
+            copyFlow.reportNothingToCopy(surface, 'browserSelection')
+        },
     }
 
     /**
@@ -866,18 +876,7 @@
         // `viewer-menu-actions.ts`. An image or PDF has no text to select or copy; a formatted
         // Markdown document uses the browser's own selection, like Binary and Hex.
         unlistenEditAction = await onViewerEditAction(({ action }) => {
-            const formattedDocument = viewMode === 'media' && media.kind === 'markdown'
-            if ((viewMode === 'binary' || viewMode === 'hex' || formattedDocument) && action === 'copy') {
-                const selected = window.getSelection()?.toString()
-                if (selected) viewerEditActionDeps.writeClipboardText(selected)
-                return
-            }
-            if (formattedDocument && action === 'selectAll') {
-                markdownViewRef?.selectAll()
-                return
-            }
-            if (!isTextView) return
-            runViewerEditAction(action, viewerEditActionDeps)
+            runViewerEditAction(action, editSurfaceFor(viewMode, media.kind), viewerEditActionDeps)
         })
 
         // Copy / Select all from the native right-click menu over the text, always the file's.

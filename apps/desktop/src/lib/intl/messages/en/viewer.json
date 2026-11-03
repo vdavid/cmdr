@@ -625,6 +625,12 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
+  "viewer.copy.nothingSelected": "Nothing’s selected, so nothing was copied. Select some text first.",
+  "@viewer.copy.nothingSelected": {
+    "description": "Short info toast in the file viewer window when the user pressed Cmd+C or picked Edit > Copy with no text selected, in the plain text view, the formatted Markdown view, or the Binary and Hex views. Says the clipboard didn't change, so they don't paste their old clipboard by mistake, and what to do instead. Never use the words 'error' or 'failed'.",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
   "viewer.copy.clipboardUnreachable": "Couldn’t reach the clipboard. Try again?",
   "@viewer.copy.clipboardUnreachable": {
     "description": "Warning toast when writing to the system clipboard failed. Conversational, suggests retrying.",

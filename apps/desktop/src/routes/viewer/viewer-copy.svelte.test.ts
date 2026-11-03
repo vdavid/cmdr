@@ -106,3 +106,55 @@ describe('the "saved" toast', () => {
     )
   })
 })
+
+// ERR-ZNNZH: a ⌘C that found nothing selected used to return without a word, so the
+// person pasted their old clipboard believing they'd copied.
+describe('a copy with nothing to copy', () => {
+  it('says nothing was selected, instead of leaving the old clipboard in place silently', async () => {
+    const orchestrator = wire({ kind: 'empty' })
+
+    await orchestrator.handleCopy()
+
+    expect(writeText).not.toHaveBeenCalled()
+    expect(addToast).toHaveBeenCalledExactlyOnceWith(tString('viewer.copy.nothingSelected'), expect.anything())
+  })
+
+  it('stays quiet when a copy is already under way, since that one will report', async () => {
+    const orchestrator = wire({ kind: 'busy' })
+
+    await orchestrator.handleCopy()
+
+    expect(addToast).not.toHaveBeenCalled()
+  })
+})
+
+describe('a read whose size wasn’t known up front', () => {
+  it('says the read didn’t finish, instead of closing the dialog with nothing copied', async () => {
+    const orchestrator = wire({
+      kind: 'unknown-size',
+      bytes: null,
+      proceed: () => Promise.resolve({ ok: false, reason: 'other' }),
+    })
+
+    await orchestrator.handleCopy()
+    orchestrator.proceedConfirm()
+
+    await vi.waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith(tString('viewer.copy.readFailed'), { level: 'warn' })
+    })
+    expect(writeText).not.toHaveBeenCalled()
+  })
+})
+
+describe('copying text the page already holds (a formatted document’s selection)', () => {
+  it('confirms what landed on the clipboard, like a text-view copy does', async () => {
+    const orchestrator = wire({ kind: 'empty' })
+
+    await orchestrator.copyText('héllo')
+
+    expect(writeText).toHaveBeenCalledWith('héllo')
+    expect(addToast).toHaveBeenCalledWith(tString('viewer.copy.onClipboard', { size: formatByteSize(6) }), {
+      level: 'info',
+    })
+  })
+})

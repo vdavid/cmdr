@@ -32,8 +32,11 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
   live keys. How the window reads rebinds without store access: `lib/shortcuts/DETAILS.md` § "The viewer's keys".
 - **`viewer-menu-actions.ts`**: `runViewerEditAction`, the dispatcher behind the viewer menu bar's Edit > Copy and
   Edit > Select all. Branches on search-input focus through the same `isSearchInputFocused` / `inputHasSelection` the
-  keydown router uses, so the menu path and the ⌘-chord path end in the same two functions. Beside it,
-  `runViewerContextMenuAction` for the native right-click menu, which never branches. See § Gotchas.
+  keydown router uses, so the menu path and the ⌘-chord path end in the same two functions, then on the view's
+  `ViewerEditSurface` (`editSurfaceFor(viewMode, media.kind)`): `text` takes the viewer's own selection, the formatted
+  Markdown document and Binary / Hex take the browser's, and a picture or PDF takes nothing. Beside it,
+  `runViewerContextMenuAction` for the native right-click menu, which never branches. See § Gotchas and § "Copy that
+  finds nothing".
 - Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-caret-geometry.ts`**
   (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter and the ONE place line text is
   measured: row hit-test, character rects, `caretRectFor`, `measureColumnWidth`), **`viewer-pointer-drag.svelte.ts`**
@@ -169,8 +172,23 @@ keeps them out of `css-unused`'s sight (no markup carries them). The document sc
 (arrows, Space, Page keys); the view focuses it itself after each render, quietly (`focusQuietly`: the `quiet-focus`
 class until blur, plus `focusVisible: false`), because WebKit matches `:focus-visible` on a programmatic focus that
 follows a key press and the `0` switch painted a window-sized ring (#761). Tab focus still shows the ring; it's
-`user-select: text`, and Edit > Copy / Select all act on the browser selection (`selectAll()` on the component). A link
-click never navigates the webview: § "Links and history".
+`user-select: text`, and Edit > Copy / Select all act on the browser selection (`selectAll()` on the component). Here
+the menu IS the ⌘C path: the page's keydown leaves the chord alone in media mode, so the Edit menu's key equivalent
+takes it and emits `ViewerEditAction`. A copy confirms itself with the same "on clipboard" toast a text-view copy shows
+(`copyFlow.copyText`). A link click never navigates the webview: § "Links and history".
+
+### Copy that finds nothing
+
+Every Copy that finds nothing selected says "Nothing's selected, so nothing was copied" (`viewer.copy.nothingSelected`)
+and logs at debug which view and which branch ran (`view=text, branch=viewerSelection`, or
+`view=formattedDocument|bytes, branch=browserSelection`), through `copyFlow.reportNothingToCopy`. ❌ Never let one
+return quietly: a ⌘C over a formatted `.md` flashed the Edit menu, changed nothing, and the person pasted their old
+clipboard (ERR-ZNNZH, macOS 26.6.2, 0.58.0). Its cause stays unproven: the bundle's log held no clipboard warning and no
+viewer line at all, so either the browser selection read empty or `navigator.clipboard.writeText` resolved without
+writing. The two are now told apart: the first toasts "nothing selected", the second toasts "on clipboard". `busy` (a
+second ⌘C while a read runs) only logs, since the first copy reports. A picture or a PDF copies nothing and says
+nothing: a PDF's own selection lives inside its `<embed>`, out of the page's reach, and the viewer bar's Custom Copy
+never reaches the embed as a native `copy:` (unverified whether the embed takes ⌘C itself before the menu does).
 
 ### Links and history
 
