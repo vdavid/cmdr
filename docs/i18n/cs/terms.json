@@ -3065,6 +3065,12 @@
     "confidence": "high",
     "sources": "Dolphin: Uvolnit místo na disku; Midnight Commander Uvolnit; cs errors.json already uses uvolni místo"
   },
+  "ai-plan": {
+    "chosen": "tarif",
+    "confidence": "high",
+    "forms": "upgrade your plan → přejít na vyšší tarif",
+    "sources": "MS data plan → datový tarif; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "poskytovatel",
     "accept": ["poskytovat", "poskytovatel"],

@@ -20,11 +20,6 @@ version = 2
 # transitive or not, still fails this check.
 unmaintained = "workspace"
 ignore = [
-  # `async-std` is discontinued and reaches us as a dev-dependency of our vendored
-  # `cmdr-fsevent-stream` fork, where it backs the `async-std` feature and the crate's
-  # own tests (`crates/fsevent-stream/src/tests.rs`). Test-only, never in a shipped
-  # binary. Drop this entry if the fork moves those tests to tokio.
-  "RUSTSEC-2025-0052",
   # The Marvin attack: `rsa`'s private-key operations aren't constant-time, so an
   # observer who can time them may eventually recover the key. No patched version
   # exists, so the only lever is whether we compile RSA at all.

@@ -341,15 +341,6 @@ async fn smoke_openai_responses_tool_loop() {
 }
 
 #[tokio::test]
-#[ignore = "real API call: set OPENAI_API_KEY to run"]
-async fn smoke_openai_chat_reasoning_tool_loop() {
-    // `o3` stays on chat-completions, where OpenAI keeps reasoning server-side: nothing
-    // comes back to replay, and nothing has to.
-    let backend = remote("OPENAI_API_KEY", "https://api.openai.com/v1/", "o3");
-    assert_tool_loop("o3", backend, ReasoningEffort::Medium, false).await;
-}
-
-#[tokio::test]
 #[ignore = "real API call: set GEMINI_API_KEY to run"]
 async fn smoke_gemini_tool_loop() {
     let backend = remote(
@@ -805,13 +796,13 @@ async fn smoke_groq_deferred_tool() {
     assert_reaches_a_deferred_tool("groq gpt-oss-120b", backend).await;
 }
 
-/// The preset's default model unless `MISTRAL_MODEL` names another: a free Mistral workspace gets
-/// no requests at all on `mistral-small-*` (`x-ratelimit-limit-req-minute: 0`) but does on the
-/// Ministral models, so `MISTRAL_MODEL=ministral-14b-latest` proves the host on a free key.
+/// The preset's default model unless `MISTRAL_MODEL` names another. The default is a Ministral
+/// model because a free Mistral workspace gets no requests at all on `mistral-small-*`
+/// (`x-ratelimit-limit-req-minute: 0`); `MISTRAL_MODEL=mistral-small-latest` needs a paid key.
 #[tokio::test]
 #[ignore = "real API call: set MISTRAL_API_KEY to run"]
 async fn smoke_mistral_deferred_tool() {
-    let model = std::env::var("MISTRAL_MODEL").unwrap_or_else(|_| "mistral-small-latest".to_string());
+    let model = std::env::var("MISTRAL_MODEL").unwrap_or_else(|_| "ministral-14b-latest".to_string());
     let backend = remote("MISTRAL_API_KEY", "https://api.mistral.ai/v1", &model);
     assert_reaches_a_deferred_tool(&model, backend).await;
 }

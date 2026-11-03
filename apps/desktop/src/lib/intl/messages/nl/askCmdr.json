@@ -722,6 +722,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.modelNotInPlan.named": "Je abonnement bij {provider} bevat dit model niet. Kies een ander model bij Instellingen, of upgrade je abonnement.",
+  "@askCmdr.error.modelNotInPlan.named": {
+    "sourceHash": "9f2c237"
+  },
+  "askCmdr.error.modelNotInPlan.unnamed": "Je abonnement bij deze AI-aanbieder bevat dit model niet. Kies een ander model bij Instellingen, of upgrade je abonnement.",
+  "@askCmdr.error.modelNotInPlan.unnamed": {
+    "sourceHash": "b90bf30"
+  },
   "askCmdr.error.requestTooLarge.named": "{provider} heeft dit geweigerd: de limiet van je abonnement is kleiner dan één verzoek van Cmdr, want daar zitten altijd de instructies van Cmdr in. Een korter bericht helpt niet. Neem een groter abonnement bij {provider} of kies een andere aanbieder bij Instellingen.",
   "@askCmdr.error.requestTooLarge.named": {
     "sourceHash": "f878555"

@@ -52,10 +52,6 @@ id = "RUSTSEC-2026-0372"
 reason = "zvariant_derive is unmaintained (notice only): a proc macro on the same Linux-only zbus path as RUSTSEC-2026-0370."
 
 [[IgnoredVulns]]
-id = "RUSTSEC-2025-0052"
-reason = "async-std is discontinued: a dev-dependency of the vendored cmdr-fsevent-stream fork, used by its tests only. Same entry in deny.toml."
-
-[[IgnoredVulns]]
 id = "RUSTSEC-2024-0436"
 reason = "paste is unmaintained: a proc macro, so it runs at compile time and leaves nothing in the binary."
 

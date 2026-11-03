@@ -534,6 +534,10 @@ pub enum AgentLlmError {
     /// The provider is rate-limiting or the account is out of quota (HTTP 429); the
     /// string is for display only.
     RateLimited(String),
+    /// The account's plan doesn't include this model (a 429 with a zero request limit, as a
+    /// free Mistral workspace gets on `mistral-small-latest`). Retrying won't help; another
+    /// model or plan does. The string is for display only.
+    ModelNotInPlan(String),
     /// The provider won't take a request this big (HTTP 413), typically an account plan
     /// whose per-minute token cap is below one prompt (Groq's free tier). Retrying won't help.
     /// The string is for display only.
@@ -555,6 +559,7 @@ impl AgentLlmError {
         match self {
             Self::AuthFailed(detail)
             | Self::RateLimited(detail)
+            | Self::ModelNotInPlan(detail)
             | Self::RequestTooLarge(detail)
             | Self::Provider(detail) => Some(detail),
             _ => None,
@@ -571,6 +576,7 @@ impl std::fmt::Display for AgentLlmError {
             Self::Timeout => write!(f, "the AI request timed out"),
             Self::AuthFailed(detail) => write!(f, "the AI provider rejected the API key: {detail}"),
             Self::RateLimited(detail) => write!(f, "the AI provider is rate-limiting or out of quota: {detail}"),
+            Self::ModelNotInPlan(detail) => write!(f, "the AI provider's plan doesn't include this model: {detail}"),
             Self::RequestTooLarge(detail) => write!(f, "the AI provider won't take a request this big: {detail}"),
             Self::BudgetExhausted => write!(f, "the message budget was exhausted"),
             Self::Provider(detail) => write!(f, "the AI provider returned a problem: {detail}"),
@@ -592,6 +598,7 @@ mod tests {
         use AgentLlmError as E;
         assert_eq!(E::AuthFailed("bad key".into()).detail(), Some("bad key"));
         assert_eq!(E::RateLimited("slow down".into()).detail(), Some("slow down"));
+        assert_eq!(E::ModelNotInPlan("limit 0".into()).detail(), Some("limit 0"));
         assert_eq!(
             E::Provider("HTTP 404: model gone".into()).detail(),
             Some("HTTP 404: model gone")

@@ -213,6 +213,9 @@ pub enum AgentErrorKindView {
     Timeout,
     AuthFailed,
     RateLimited,
+    /// The account's plan doesn't include the chosen model. The rail names the provider and
+    /// points at Settings, so it doesn't read as the provider being busy.
+    ModelNotInPlan,
     /// The provider's plan won't take a request as big as one Ask Cmdr prompt. The rail names
     /// the provider, so this doesn't read as Cmdr's own problem.
     RequestTooLarge,
@@ -243,6 +246,7 @@ impl AgentErrorKindView {
             AgentErrorKindView::Timeout => "timeout",
             AgentErrorKindView::AuthFailed => "auth_failed",
             AgentErrorKindView::RateLimited => "rate_limited",
+            AgentErrorKindView::ModelNotInPlan => "model_not_in_plan",
             AgentErrorKindView::RequestTooLarge => "request_too_large",
             AgentErrorKindView::BudgetExhausted => "budget_exhausted",
             AgentErrorKindView::RepeatedToolCall => "repeated_tool_call",
@@ -261,6 +265,7 @@ impl From<AgentErrorKind> for AgentErrorKindView {
             AgentErrorKind::Timeout => Self::Timeout,
             AgentErrorKind::AuthFailed => Self::AuthFailed,
             AgentErrorKind::RateLimited => Self::RateLimited,
+            AgentErrorKind::ModelNotInPlan => Self::ModelNotInPlan,
             AgentErrorKind::RequestTooLarge => Self::RequestTooLarge,
             AgentErrorKind::BudgetExhausted => Self::BudgetExhausted,
             AgentErrorKind::RepeatedToolCall => Self::RepeatedToolCall,

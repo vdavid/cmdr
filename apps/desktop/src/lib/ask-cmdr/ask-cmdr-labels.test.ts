@@ -59,4 +59,14 @@ describe('errorMessage', () => {
     expect(unnamed).not.toBe('')
     expect(unnamed).not.toBe(named)
   })
+
+  it('says the plan lacks the model, naming the provider, so it can’t read as the provider being busy', () => {
+    const named = errorMessage('modelNotInPlan', null, 'Mistral AI')
+    expect(named).toContain('Mistral AI')
+    expect(named).not.toBe(errorMessage('rateLimited'))
+    const unnamed = errorMessage('modelNotInPlan')
+    expect(unnamed).not.toBe('')
+    expect(unnamed).not.toBe(named)
+    expect(unnamed).not.toBe(errorMessage('rateLimited'))
+  })
 })

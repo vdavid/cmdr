@@ -12,8 +12,7 @@ import (
 func RunRustfmt(ctx *CheckContext) (CheckResult, error) {
 	// `--all` covers every workspace member. `cmdr-fsevent-stream` needs no
 	// exclusion here even though it's macOS-only: rustfmt parses, it doesn't
-	// compile. It pins its own `rustfmt.toml` to keep upstream's defaults, which
-	// rustfmt honors per source file.
+	// compile.
 	fileCount, err := countWorkspaceRustFiles(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("couldn't enumerate Rust sources: %w", err)

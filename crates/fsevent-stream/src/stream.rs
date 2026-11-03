@@ -1,12 +1,6 @@
 //! Stream-based `FSEvents` interface.
-#![allow(
-    clippy::non_send_fields_in_send_ty,
-    clippy::cast_possible_wrap,
-    clippy::borrow_interior_mutable_const,
-    clippy::module_name_repetitions
-)]
 
-use std::ffi::{c_void, CStr, OsStr};
+use std::ffi::{CStr, OsStr, c_void};
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::os::raw::c_char;
@@ -14,35 +8,28 @@ use std::os::unix::ffi::OsStrExt;
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::channel;
-use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::thread;
 use std::time::Duration;
 
-#[cfg(feature = "async-std")]
-use async_std1 as async_std;
 use core_foundation::array::CFArray;
 use core_foundation::base::{CFIndex, FromVoid};
 use core_foundation::dictionary::CFDictionary;
 use core_foundation::number::CFNumber;
-use core_foundation::runloop::{kCFRunLoopBeforeWaiting, kCFRunLoopDefaultMode, CFRunLoop};
+use core_foundation::runloop::{CFRunLoop, kCFRunLoopBeforeWaiting, kCFRunLoopDefaultMode};
 use core_foundation::string::CFString;
 use futures_core::Stream;
-use futures_util::stream::{iter, StreamExt};
+use futures_util::stream::{StreamExt, iter};
 use log::{error, trace};
-#[cfg(feature = "tokio")]
-use tokio1 as tokio;
-#[cfg(feature = "tokio")]
 use tokio_stream::wrappers::ReceiverStream;
 
 use crate::ffi::{
-    kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagUseCFTypes,
-    kFSEventStreamCreateFlagUseExtendedData, kFSEventStreamEventExtendedDataPathKey,
-    kFSEventStreamEventExtendedFileIDKey, CFRunLoopExt, FSEventStreamCreateFlags,
-    FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream, SysFSEventStreamContext,
-    SysFSEventStreamRef,
+    CFRunLoopExt, FSEventStreamCreateFlags, FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream,
+    SysFSEventStreamContext, SysFSEventStreamRef, extended_data_path_key, extended_file_id_key,
+    kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagUseCFTypes, kFSEventStreamCreateFlagUseExtendedData,
 };
 pub use crate::flags::StreamFlags;
 use crate::impl_release_callback;
@@ -50,10 +37,9 @@ use crate::observer::create_oneshot_observer;
 use crate::utils::FlagsExt;
 
 #[cfg(test)]
-pub(crate) static TEST_RUNNING_RUNLOOP_COUNT: std::sync::atomic::AtomicUsize =
-    std::sync::atomic::AtomicUsize::new(0);
+pub(crate) static TEST_RUNNING_RUNLOOP_COUNT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
-/// An owned permission to stop an [`EventStream`](EventStream) and terminate its backing `RunLoop`.
+/// An owned permission to stop an [`EventStream`] and terminate its backing `RunLoop`.
 ///
 /// A `EventStreamHandler` *detaches* the associated Stream and `RunLoop` when it is dropped, which
 /// means that there is no longer any handle to them and no way to `abort` them.
@@ -64,13 +50,16 @@ pub struct EventStreamHandler {
     runloop: Option<(CFRunLoop, thread::JoinHandle<()>)>,
 }
 
-// Safety:
-// - According to the Apple documentation, it's safe to move `CFRef`s across threads.
-//   https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
+// SAFETY: The only non-`Send` field is the `CFRunLoop`, a retained CF reference. Retain and
+// release are thread-safe for every CF object, and the run-loop calls `abort` makes from the
+// handler's thread (`CFRunLoopAddObserver`, `CFRunLoopRemoveObserver`, `CFRunLoopIsWaiting`,
+// `CFRunLoopStop`) are documented as callable from any thread ("Core Foundation run loop
+// functions are generally thread-safe", Threading Programming Guide § Run Loops, and the Thread
+// Safety Summary).
 unsafe impl Send for EventStreamHandler {}
 
 impl EventStreamHandler {
-    /// Stop an [`EventStream`](EventStream) and terminate its backing `RunLoop`.
+    /// Stop an [`EventStream`] and terminate its backing `RunLoop`.
     ///
     /// Calling this method multiple times has no extra effect and won't cause any panic, error,
     /// or undefined behavior.
@@ -78,6 +67,8 @@ impl EventStreamHandler {
         if let Some((runloop, thread_handle)) = self.runloop.take() {
             let (tx, rx) = channel();
             let observer = create_oneshot_observer(kCFRunLoopBeforeWaiting, tx);
+            // SAFETY: `kCFRunLoopDefaultMode` is an immutable `CFStringRef` constant exported by
+            // CoreFoundation, initialized before any Rust code runs; reading it is a plain load.
             runloop.add_observer(&observer, unsafe { kCFRunLoopDefaultMode });
 
             if !runloop.is_waiting() {
@@ -85,6 +76,7 @@ impl EventStreamHandler {
                 rx.recv().expect("channel to receive BeforeWaiting signal");
             }
 
+            // SAFETY: As above, a read of CoreFoundation's immutable mode constant.
             runloop.remove_observer(&observer, unsafe { kCFRunLoopDefaultMode });
             runloop.stop();
 
@@ -120,22 +112,19 @@ impl Display for Event {
 
 /// A stream of `FSEvents` API event batches.
 ///
-/// You may want a stream of [`Event`](Event) instead of a stream of batches of it.
-/// Call [`EventStream::into_flatten`](EventStream::into_flatten) to get one.
+/// You may want a stream of [`Event`] instead of a stream of batches of it.
+/// Call [`EventStream::into_flatten`] to get one.
 ///
-/// Call [`create_event_stream`](create_event_stream) to create it.
+/// Call [`create_event_stream`] to create it.
 pub struct EventStream {
-    #[cfg(feature = "tokio")]
     stream: ReceiverStream<Vec<Event>>,
-    #[cfg(feature = "async-std")]
-    stream: async_std::channel::Receiver<Vec<Event>>,
     /// Set to `true` when events are dropped (the internal channel is full, or an event couldn't be
     /// built), so the consumer knows to rescan.
     overflow: Arc<AtomicBool>,
 }
 
 impl EventStream {
-    /// Flatten event batches and produce a stream of [`Event`](Event).
+    /// Flatten event batches and produce a stream of [`Event`].
     pub fn into_flatten(self) -> impl Stream<Item = Event> {
         self.flat_map(iter)
     }
@@ -166,30 +155,27 @@ impl Stream for EventStream {
 }
 
 pub(crate) struct StreamContextInfo {
-    #[cfg(feature = "tokio")]
     event_handler: tokio::sync::mpsc::Sender<Vec<Event>>,
-    #[cfg(feature = "async-std")]
-    event_handler: async_std::channel::Sender<Vec<Event>>,
     /// Shared flag set to `true` when events are dropped: `try_send` failed, or an event couldn't be built.
     overflow: Arc<AtomicBool>,
 }
 
 impl_release_callback!(release_context, StreamContextInfo);
 
-/// A CFRunLoop that can be sent across threads.
-///
-/// SAFETY: CFRunLoop is a Core Foundation type. Apple documents that CF objects can be
-/// retained/released and used across threads. CFRunLoopStop (the only cross-thread operation
-/// we perform) is explicitly documented as thread-safe.
-/// https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
+/// A CFRunLoop that can be sent across threads, from the worker that owns it to the handler.
 struct SendableCFRunLoop(CFRunLoop);
 
+// SAFETY: A `CFRunLoop` is a retained CF reference, and CF retain/release is thread-safe. The
+// receiving thread only uses it through `EventStreamHandler::abort`, whose run-loop calls are
+// documented as callable from any thread (see the `Send` impl on `EventStreamHandler`).
+// https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
 unsafe impl Send for SendableCFRunLoop {}
 
-/// Create a new [`EventStream`](EventStream) and [`EventStreamHandler`](EventStreamHandler) pair.
+/// Create a new [`EventStream`] and [`EventStreamHandler`] pair.
 ///
 /// # Errors
-/// Return error when there's any invalid path in `paths_to_watch`.
+/// Return error when `paths_to_watch` is empty or holds an invalid path, or when `FSEvents`
+/// refuses to create or start the stream.
 ///
 /// # Panics
 /// Panic when the given flags combination is illegal.
@@ -199,9 +185,7 @@ pub fn create_event_stream<P: AsRef<Path>>(
     latency: Duration,
     flags: FSEventStreamCreateFlags,
 ) -> io::Result<(EventStream, EventStreamHandler)> {
-    if flags.contains(kFSEventStreamCreateFlagUseExtendedData)
-        && !flags.contains(kFSEventStreamCreateFlagUseCFTypes)
-    {
+    if flags.contains(kFSEventStreamCreateFlagUseExtendedData) && !flags.contains(kFSEventStreamCreateFlagUseCFTypes) {
         panic!("UseExtendedData requires UseCFTypes");
     }
 
@@ -211,10 +195,7 @@ pub fn create_event_stream<P: AsRef<Path>>(
     /// At ~300 bytes per batch slot, 32K ≈ 10 MB worst case.
     const CHANNEL_CAPACITY: usize = 32_768;
 
-    #[cfg(feature = "tokio")]
     let (event_tx, event_rx) = tokio::sync::mpsc::channel(CHANNEL_CAPACITY);
-    #[cfg(feature = "async-std")]
-    let (event_tx, event_rx) = async_std::channel::bounded(CHANNEL_CAPACITY);
 
     let overflow = Arc::new(AtomicBool::new(false));
 
@@ -243,52 +224,51 @@ pub fn create_event_stream<P: AsRef<Path>>(
         normal_callback
     };
 
-    let mut stream = SysFSEventStream::new(
-        callback,
-        &stream_context,
-        paths_to_watch,
-        since_when,
-        latency,
-        flags,
-    )?;
+    let mut stream = SysFSEventStream::new(callback, &stream_context, paths_to_watch, since_when, latency, flags)?;
 
     // channel to pass runloop around
     let (runloop_tx, runloop_rx) = channel();
 
     let thread_handle = thread::spawn(move || {
         #[cfg(test)]
-        TEST_RUNNING_RUNLOOP_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        TEST_RUNNING_RUNLOOP_COUNT.fetch_add(1, Ordering::SeqCst);
 
         let current_runloop = CFRunLoop::get_current();
 
-        // Safety: kCFRunLoopDefaultMode is a valid static CFStringRef from CoreFoundation.
+        // SAFETY: `kCFRunLoopDefaultMode` is CoreFoundation's immutable, always-valid mode
+        // `CFStringRef`, which is `schedule`'s whole contract. Scheduling on THIS thread's run
+        // loop is what pins every callback (and so every access to the stream context) to this
+        // thread, and the stream is stopped and invalidated here before it's released.
         unsafe { stream.schedule(&current_runloop, kCFRunLoopDefaultMode) };
-        stream.start();
+        if stream.start() {
+            // `abort` ends `CFRunLoopRun` with `CFRunLoopStop`.
+            runloop_tx
+                .send(Some(SendableCFRunLoop(current_runloop)))
+                .expect("send runloop to stream");
 
-        // the calling to CFRunLoopRun will be terminated by CFRunLoopStop call in drop()
-        runloop_tx
-            .send(SendableCFRunLoop(current_runloop))
-            .expect("send runloop to stream");
-
-        CFRunLoop::run_current();
-        stream.stop();
+            CFRunLoop::run_current();
+            stream.stop();
+        } else {
+            // Without a started stream there's nothing to run, and `abort` would wait forever
+            // for a `BeforeWaiting` that never comes, so report the failure instead.
+            drop(runloop_tx.send(None));
+        }
         stream.invalidate();
 
         #[cfg(test)]
-        TEST_RUNNING_RUNLOOP_COUNT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+        TEST_RUNNING_RUNLOOP_COUNT.fetch_sub(1, Ordering::SeqCst);
     });
 
-    #[cfg(feature = "tokio")]
+    let Some(SendableCFRunLoop(runloop)) = runloop_rx.recv().expect("receive runloop from worker") else {
+        thread_handle.join().expect("thread to shut down");
+        return Err(io::Error::other("FSEventStreamStart couldn't start the stream"));
+    };
+
     let stream = ReceiverStream::new(event_rx);
-    #[cfg(feature = "async-std")]
-    let stream = event_rx;
     Ok((
         EventStream { stream, overflow },
         EventStreamHandler {
-            runloop: Some((
-                runloop_rx.recv().expect("receive runloop from worker").0,
-                thread_handle,
-            )),
+            runloop: Some((runloop, thread_handle)),
         },
     ))
 }
@@ -299,6 +279,24 @@ enum CallbackError {
     ToI64,
 }
 
+/// Defines an `FSEventStreamCallback` around `$body`, which turns one batch into events.
+///
+/// The FSEvents callback contract every `SAFETY:` comment in these callbacks leans on
+/// (`FSEventStreamCallback` docs and `FSEvents/FSEvents.h`):
+///
+/// - FSEvents calls back only on the run loop the stream is scheduled on (our worker thread in
+///   `create_event_stream`), one call at a time, and never after `FSEventStreamInvalidate`.
+/// - `info` is the context's `info` pointer: our boxed `StreamContextInfo`. It's freed only by
+///   `release_context`, which FSEvents calls when the stream is deallocated, after the worker
+///   has stopped and invalidated it, so it outlives every callback. We only ever take `&` to it.
+/// - `event_flags` and `event_ids` point to `num_events` elements each, valid for the call.
+/// - `event_paths` holds `num_events` entries, owned by FSEvents (Get rule) and released after
+///   the callback returns. Its shape is fixed by the create flags, which pick the callback: a
+///   `CFArrayRef` of `CFStringRef` with `UseCFTypes`, a `CFArrayRef` of `CFDictionaryRef` (a
+///   `CFStringRef` under `path`, a `CFNumberRef` under `fileID`) with `UseExtendedData`, and a C
+///   array of NUL-terminated C strings without `UseCFTypes`.
+/// - Nothing borrowed from these outlives the call: `$body`'s iterator is collected into owned
+///   `Event`s before the callback returns.
 macro_rules! define_callback {
     ($name: ident, ($num: ident, $paths: ident, $flags: ident, $ids: ident)$body: block) => {
         extern "C" fn $name(
@@ -315,7 +313,7 @@ macro_rules! define_callback {
                 num_events: usize,                           // size_t numEvents
                 event_paths: *mut c_void,                    // void *eventPaths
                 event_flags: *const FSEventStreamEventFlags, // const FSEventStreamEventFlags eventFlags[]
-                event_ids: *const FSEventStreamEventId, // const FSEventStreamEventId eventIds[]
+                event_ids: *const FSEventStreamEventId,      // const FSEventStreamEventId eventIds[]
             ) {
                 fn event_iter(
                     $num: usize,
@@ -328,9 +326,14 @@ macro_rules! define_callback {
 
                 trace!("Received {} event(s)", num_events);
 
-                let info = info as *const StreamContextInfo;
-                let event_handler = unsafe { &(*info).event_handler };
-                let overflow = unsafe { &(*info).overflow };
+                // SAFETY: `info` is our live `StreamContextInfo` for the whole callback (see the
+                // macro docs), and shared references are all anyone takes to it. Its fields are
+                // `Sync` (an mpsc `Sender` and an `AtomicBool`).
+                let context = unsafe { &*(info as *const StreamContextInfo) };
+                let StreamContextInfo {
+                    event_handler,
+                    overflow,
+                } = context;
 
                 // An event we can't build is an event the consumer never sees, so raise the
                 // overflow flag: that's the consumer's "history is incomplete, rescan" signal.
@@ -359,109 +362,137 @@ macro_rules! define_callback {
                 }
             }
 
-            drop(catch_unwind(move || {
-                callback_impl(
-                    stream_ref,
-                    info,
-                    num_events,
-                    event_paths,
-                    event_flags,
-                    event_ids,
-                );
-            }));
+            // A panic must not unwind into FSEvents' C frames. Catching it drops the whole
+            // batch, so it raises the overflow flag like any other lost event (a missing
+            // extended-data key, for example, panics in `CFDictionary::get`).
+            let outcome = catch_unwind(move || {
+                callback_impl(stream_ref, info, num_events, event_paths, event_flags, event_ids);
+            });
+            if outcome.is_err() {
+                error!("FSEvents callback panicked (batch dropped, overflow flagged)");
+                // SAFETY: The panic unwound out of `callback_impl`, but `info` is still our live
+                // `StreamContextInfo` (FSEvents frees it only after invalidation, see the macro
+                // docs), and we only take a shared reference to an atomic.
+                let context = unsafe { &*(info as *const StreamContextInfo) };
+                context.overflow.store(true, Ordering::Relaxed);
+            }
         }
     };
 }
 
+/// Reads event `idx`'s flags and id.
+///
+/// # Safety
+/// `flags` and `ids` must point to arrays of more than `idx` elements, as FSEvents' callback
+/// arguments do for every `idx < num_events`.
+unsafe fn flags_and_id(
+    flags: *const FSEventStreamEventFlags,
+    ids: *const FSEventStreamEventId,
+    idx: usize,
+) -> (FSEventStreamEventFlags, FSEventStreamEventId) {
+    // SAFETY: In bounds by this function's contract, and both arrays are plain integers that
+    // FSEvents initialized.
+    unsafe { (*flags.add(idx), *ids.add(idx)) }
+}
+
+/// The `path` string of an extended-data event dictionary.
+fn extended_data_path(dict: &CFDictionary<CFString>) -> PathBuf {
+    let value = *dict.get(extended_data_path_key());
+    // SAFETY: FSEvents documents the `path` value as a `CFStringRef`, borrowed from the
+    // dictionary (Get rule): `from_void` wraps it without a retain, and the wrapper doesn't
+    // outlive `dict`.
+    let path = unsafe { CFString::from_void(value) };
+    PathBuf::from(path.to_string())
+}
+
 define_callback!(cf_ext_with_id_callback, (num, paths, flags, ids){
+    // SAFETY: With `UseExtendedData`, `paths` is a `CFArrayRef` of `CFDictionaryRef` that
+    // FSEvents keeps alive for the callback (see the macro docs); `from_void` borrows it
+    // without a retain, and the iterator holding it is collected before the callback returns.
     let paths = unsafe { CFArray::<CFDictionary<CFString>>::from_void(paths) };
     (0..num).map(move |idx| {
-        Ok((
-            unsafe { paths.get_unchecked(idx as CFIndex) },
-            unsafe { *flags.add(idx) },
-            unsafe { *ids.add(idx) },
-        ))
-        .and_then(|(dict, flags, id)| {
-            Ok(Event {
-                path: PathBuf::from(
-                    (*unsafe {
-                        CFString::from_void(*dict.get(&*kFSEventStreamEventExtendedDataPathKey),)
-                    })
-                        .to_string(),
-                ),
-                inode: Some(
-                    unsafe {CFNumber::from_void(*dict.get(&*kFSEventStreamEventExtendedFileIDKey))}
-                        .to_i64()
-                        .ok_or(CallbackError::ToI64)?,
-                ),
-                flags: StreamFlags::from_bits_retain(flags),
-                raw_flags: flags,
-                id,
-            })
+        // SAFETY: `idx < num`, the length of `paths`, `flags`, and `ids` alike.
+        let dict = unsafe { paths.get_unchecked(idx as CFIndex) };
+        // SAFETY: `idx < num`, the length of both arrays.
+        let (flags, id) = unsafe { flags_and_id(flags, ids, idx) };
+        let file_id = *dict.get(extended_file_id_key());
+        // SAFETY: FSEvents documents the `fileID` value as a `CFNumberRef`, borrowed from
+        // `dict` (Get rule) for no longer than this closure.
+        let inode = unsafe { CFNumber::from_void(file_id) }
+            .to_i64()
+            .ok_or(CallbackError::ToI64)?;
+        Ok(Event {
+            path: extended_data_path(&dict),
+            inode: Some(inode),
+            flags: StreamFlags::from_bits_retain(flags),
+            raw_flags: flags,
+            id,
         })
     })
 });
 
 define_callback!(cf_ext_callback, (num, paths, flags, ids){
+    // SAFETY: As in `cf_ext_with_id_callback`: with `UseExtendedData`, `paths` is a borrowed
+    // `CFArrayRef` of `CFDictionaryRef`, alive for the callback.
     let paths = unsafe { CFArray::<CFDictionary<CFString>>::from_void(paths) };
     (0..num).map(move |idx| {
-        Ok((
-            unsafe { paths.get_unchecked(idx as CFIndex) },
-            unsafe { *flags.add(idx) },
-            unsafe { *ids.add(idx) },
-        )).map(|(dict, flags, id)| Event {
-                path: PathBuf::from(
-                    (*unsafe {
-                        CFString::from_void(*dict.get(&*kFSEventStreamEventExtendedDataPathKey),)
-                    })
-                        .to_string(),
-                ),
-                inode: None,
-                flags: StreamFlags::from_bits_retain(flags),
-                raw_flags: flags,
-                id,
-            })
+        // SAFETY: `idx < num`, the length of `paths`, `flags`, and `ids` alike.
+        let dict = unsafe { paths.get_unchecked(idx as CFIndex) };
+        // SAFETY: `idx < num`, the length of both arrays.
+        let (flags, id) = unsafe { flags_and_id(flags, ids, idx) };
+        Ok(Event {
+            path: extended_data_path(&dict),
+            inode: None,
+            flags: StreamFlags::from_bits_retain(flags),
+            raw_flags: flags,
+            id,
+        })
     })
 });
 
 define_callback!(cf_callback, (num, paths, flags, ids){
+    // SAFETY: With `UseCFTypes` (and no extended data), `paths` is a `CFArrayRef` of
+    // `CFStringRef` that FSEvents keeps alive for the callback; `from_void` borrows it without
+    // a retain, and the iterator holding it is collected before the callback returns.
     let paths = unsafe { CFArray::<CFString>::from_void(paths) };
     (0..num).map(move |idx| {
-        Ok((
-            unsafe { paths.get_unchecked(idx as CFIndex) },
-            unsafe { *flags.add(idx) },
-            unsafe { *ids.add(idx) },
-        )).map(|(path, flags, id)| Event {
-                    path: PathBuf::from((*path).to_string()),
-                    inode: None,
-                    flags: StreamFlags::from_bits_retain(flags),
-                    raw_flags: flags,
-                    id,
-                })
+        // SAFETY: `idx < num`, the length of `paths`, `flags`, and `ids` alike.
+        let path = unsafe { paths.get_unchecked(idx as CFIndex) };
+        // SAFETY: `idx < num`, the length of both arrays.
+        let (flags, id) = unsafe { flags_and_id(flags, ids, idx) };
+        Ok(Event {
+            path: PathBuf::from(path.to_string()),
+            inode: None,
+            flags: StreamFlags::from_bits_retain(flags),
+            raw_flags: flags,
+            id,
+        })
     })
 });
 
 define_callback!(normal_callback, (num, paths, flags, ids){
+    // Without `UseCFTypes`, `paths` is a C array of `num` C strings, freed by FSEvents after
+    // the callback returns.
     let paths = paths as *const *const c_char;
     (0..num).map(move |idx| {
-        Ok((
-            unsafe { *paths.add(idx) },
-            unsafe { *flags.add(idx) },
-            unsafe { *ids.add(idx) },
-        )).map(|(path, flags, id)| Event {
-                path: PathBuf::from(
-                    OsStr::from_bytes(unsafe { CStr::from_ptr(path) }.to_bytes())
-                        .to_os_string(),
-                ),
-                inode: None,
-                flags: StreamFlags::from_bits_retain(flags),
-                raw_flags: flags,
-                id,
-            })
+        // SAFETY: `idx < num`, the length of the `paths` array FSEvents passed.
+        let path = unsafe { *paths.add(idx) };
+        // SAFETY: `idx < num`, the length of both arrays.
+        let (flags, id) = unsafe { flags_and_id(flags, ids, idx) };
+        // SAFETY: Each entry is a non-NULL, NUL-terminated C string that FSEvents keeps alive
+        // until the callback returns; the bytes are copied into an owned `PathBuf` right here.
+        let path = unsafe { CStr::from_ptr(path) };
+        Ok(Event {
+            path: PathBuf::from(OsStr::from_bytes(path.to_bytes())),
+            inode: None,
+            flags: StreamFlags::from_bits_retain(flags),
+            raw_flags: flags,
+            id,
+        })
     })
 });
 
-#[cfg(all(test, feature = "tokio"))]
+#[cfg(test)]
 mod callback_tests {
     use std::ffi::CString;
 
@@ -502,5 +533,37 @@ mod callback_tests {
         assert_eq!(event.path, PathBuf::from("/tmp/new-file"));
         assert_eq!(event.id, 42);
         assert!(!overflow.load(Ordering::Relaxed));
+    }
+
+    /// Regression: a panic inside the callback (here `CFDictionary::get` on an extended-data
+    /// dictionary with no `path` key) used to drop the batch without raising the overflow flag,
+    /// so the consumer never learned to rescan.
+    #[test]
+    fn panic_while_building_a_batch_flags_overflow() {
+        use core_foundation::base::{CFType, TCFType};
+
+        let (tx, mut rx) = tokio::sync::mpsc::channel(4);
+        let overflow = Arc::new(AtomicBool::new(false));
+        let mut context = StreamContextInfo {
+            event_handler: tx,
+            overflow: overflow.clone(),
+        };
+
+        let no_keys = CFDictionary::<CFString, CFType>::from_CFType_pairs(&[]);
+        let paths = CFArray::from_CFTypes(&[no_keys]);
+        let flags = [StreamFlags::ITEM_CREATED.bits()];
+        let ids = [7];
+
+        cf_ext_callback(
+            std::ptr::null_mut(),
+            std::ptr::addr_of_mut!(context).cast(),
+            1,
+            paths.as_concrete_TypeRef() as *mut c_void,
+            flags.as_ptr(),
+            ids.as_ptr(),
+        );
+
+        assert!(rx.try_recv().is_err(), "the batch was dropped");
+        assert!(overflow.load(Ordering::Relaxed), "and the drop was flagged");
     }
 }

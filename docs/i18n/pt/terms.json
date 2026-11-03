@@ -86,6 +86,12 @@
     "sources": "shipped pt catalog (ai.translateError.*, settings.ai.tooltipOff)",
     "decision": "Ask Cmdr names only the chat panel"
   },
+  "ai-plan": {
+    "chosen": "plano",
+    "confidence": "high",
+    "forms": "upgrade your plan → faça upgrade do seu plano; your {provider} plan → seu plano em {provider} (no contracted article on the brand)",
+    "sources": "MS (pt-BR) service plan → plano de serviço, data plan → plano de dados; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "provedor",
     "confidence": "high",

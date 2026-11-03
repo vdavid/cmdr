@@ -160,6 +160,12 @@
     ],
     "note": "One round runs one or more of them: раунд пошуків."
   },
+  "ai-plan": {
+    "chosen": "тариф",
+    "confidence": "high",
+    "forms": "upgrade your plan → перейти на вищий тариф; your {provider} plan → ваш тариф у постачальника {provider}",
+    "sources": "MS data plan → тарифний план, service plan → план послуг; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "постачальник",
     "accept": ["постачальник"],

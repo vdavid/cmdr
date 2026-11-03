@@ -110,6 +110,12 @@
     "forms": "AI features → AI-functies; the AI (acting subject) → de AI; Cmdr's AI → de AI van Cmdr",
     "sources": "catalog (settings.ai.tooltipOff, settings.ai.provider.description, settings.askCmdr.intro)"
   },
+  "ai-plan": {
+    "chosen": "abonnement",
+    "confidence": "high",
+    "forms": "upgrade your plan → upgrade je abonnement",
+    "sources": "MS data plan → data-abonnement; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "accept": ["AI-aanbieder", "cloudaanbieder"],
     "avoid": [

@@ -1,40 +1,28 @@
-#![allow(clippy::borrow_interior_mutable_const, clippy::cast_possible_wrap)]
-
+use std::ffi::c_void;
 use std::fs;
 use std::fs::File;
+use std::io;
 use std::os::unix::fs::MetadataExt;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::channel;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::mpsc::{Receiver, RecvTimeoutError, channel};
 use std::thread;
-use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-#[cfg(feature = "async-std")]
-use async_std1 as async_std;
 use futures_util::future::FutureExt;
 use futures_util::stream::StreamExt;
-use once_cell::sync::Lazy;
 use tempfile::tempdir;
-#[cfg(feature = "tokio")]
-use tokio1 as tokio;
 
 use crate::ffi::{
-    kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagNoDefer,
-    kFSEventStreamCreateFlagNone, kFSEventStreamCreateFlagUseCFTypes,
-    kFSEventStreamCreateFlagUseExtendedData, kFSEventStreamEventIdSinceNow,
-    FSEventStreamCreateFlags,
+    FSEventStreamCreateFlags, FSEventStreamEventFlags, FSEventStreamEventId, SysFSEventStream, SysFSEventStreamContext,
+    SysFSEventStreamRef, kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagNoDefer,
+    kFSEventStreamCreateFlagNone, kFSEventStreamCreateFlagUseCFTypes, kFSEventStreamCreateFlagUseExtendedData,
+    kFSEventStreamEventIdSinceNow,
 };
-use crate::stream::{
-    create_event_stream, Event, StreamContextInfo, StreamFlags, TEST_RUNNING_RUNLOOP_COUNT,
-};
+use crate::stream::{Event, StreamContextInfo, StreamFlags, TEST_RUNNING_RUNLOOP_COUNT, create_event_stream};
 
-#[cfg(feature = "tokio")]
-static TEST_PARALLEL_LOCK: Lazy<tokio::sync::Mutex<()>> = Lazy::new(|| tokio::sync::Mutex::new(()));
-#[cfg(feature = "async-std")]
-static TEST_PARALLEL_LOCK: Lazy<async_std::sync::Mutex<()>> =
-    Lazy::new(|| async_std::sync::Mutex::new(()));
+static TEST_PARALLEL_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 #[test]
 fn must_steam_context_info_send_and_sync() {
@@ -42,18 +30,7 @@ fn must_steam_context_info_send_and_sync() {
     check_send::<StreamContextInfo>();
 }
 
-#[cfg(feature = "tokio")]
 #[tokio::test]
-async fn must_abort_stream_tokio() {
-    must_abort_stream().await;
-}
-
-#[cfg(feature = "async-std")]
-#[async_std::test]
-async fn must_abort_stream_async_std() {
-    must_abort_stream().await;
-}
-
 async fn must_abort_stream() {
     // Acquire the lock so that no other runloop can be created during this test.
     let _guard = TEST_PARALLEL_LOCK.lock().await;
@@ -93,18 +70,7 @@ async fn must_abort_stream() {
     assert_eq!(TEST_RUNNING_RUNLOOP_COUNT.load(Ordering::SeqCst), 0);
 }
 
-#[cfg(feature = "tokio")]
 #[tokio::test]
-async fn must_receive_fs_events_tokio() {
-    must_receive_fs_events().await;
-}
-
-#[cfg(feature = "async-std")]
-#[async_std::test]
-async fn must_receive_fs_events_async_std() {
-    must_receive_fs_events().await;
-}
-
 async fn must_receive_fs_events() {
     // Acquire the lock so that runloop created in this test won't affect others.
     let _guard = TEST_PARALLEL_LOCK.lock().await;
@@ -147,14 +113,35 @@ async fn must_receive_fs_events() {
 /// panic. 25 s keeps this assertion authoritative (its message names the flags and
 /// dumps the events) with the cap as the hang backstop. The producer below keeps
 /// making fresh pairs the whole time, so this is a backstop for "the watch never
-/// delivers", not a latency guess: measured 4.6–14.8 s over 8 runs on an M3 Max
-/// under concurrent load, 2026-08-08.
+/// delivers", not a latency guess. With the producer pacing on delivery rather than
+/// fixed sleeps, the whole test takes 0.6–0.7 s (3 runs on an idle M-series Mac,
+/// macOS 27.0.1, 2026-11-03); it took 4.6–14.8 s under load with the sleeps.
 const DELIVERY_BUDGET: Duration = Duration::from_secs(25);
 
 /// One create/delete pair the producer made, and the inode it had.
 struct Probe {
     path: PathBuf,
     inode: i64,
+}
+
+/// How long the producer waits for one step of a pair to be delivered before moving on.
+/// A step can legitimately never arrive (the just-armed watch drops it, or a flag combination
+/// reports directories rather than files), so this bounds a wait that may not end on its own.
+const STEP_DELIVERY_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// Waits until the consumer echoes an event for `path` carrying `wanted`, or the step times
+/// out. Returns `false` once the consumer is gone, telling the producer to stop.
+fn wait_for_delivery(seen: &Receiver<Event>, path: &Path, wanted: StreamFlags) -> bool {
+    let deadline = Instant::now() + STEP_DELIVERY_TIMEOUT;
+    loop {
+        let left = deadline.saturating_duration_since(Instant::now());
+        match seen.recv_timeout(left) {
+            Ok(event) if event.path == path && event.flags.contains(wanted) => return true,
+            Ok(_) => {}
+            Err(RecvTimeoutError::Timeout) => return true,
+            Err(RecvTimeoutError::Disconnected) => return false,
+        }
+    }
 }
 
 /// Whether `events` carry the file-level creation AND removal of one probe.
@@ -200,6 +187,8 @@ async fn must_receive_fs_events_impl(
     // reachable without weakening them.
     let stop = Arc::new(AtomicBool::new(false));
     let (probe_tx, probe_rx) = channel::<Probe>();
+    // Every event the consumer sees, echoed back so the producer can pace on delivery.
+    let (seen_tx, seen_rx) = channel::<Event>();
     let producer_stop = Arc::clone(&stop);
     let producer = thread::spawn(move || {
         let mut serial = 0_u32;
@@ -210,9 +199,9 @@ async fn must_receive_fs_events_impl(
             // First we create a file.
             let f = File::create(&path).expect("to be created");
             let inode = f.metadata().expect("to be fetched").ino() as i64;
-            // Sync and wait so that ITEM_CREATE and ITEM_DELETE events won't be coalesced.
-            // On macOS Sequoia, FSEvents needs a brief window between close() and unlink() to
-            // deliver separate events; without this, rapid create+delete merges into a single event.
+            // Delete only once the watch has delivered the create (or the step's deadline
+            // passed): on macOS Sequoia a create+delete with no gap between close() and
+            // unlink() coalesces into a single event.
             f.sync_all().expect("to succeed");
             drop(f);
             if probe_tx
@@ -224,13 +213,20 @@ async fn must_receive_fs_events_impl(
             {
                 return;
             }
-            sleep(Duration::from_millis(200));
+            if !wait_for_delivery(&seen_rx, &path, StreamFlags::ITEM_CREATED) {
+                return;
+            }
 
             // Now we delete this file.
             fs::remove_file(&path).expect("to be removed");
             // Ensure the filesystem is up to date.
+            // SAFETY: (test) `sync(2)` takes no arguments, touches no Rust-owned memory, and
+            // can't fail.
             unsafe { libc::sync() };
-            sleep(Duration::from_millis(300));
+            // And the next pair starts once this removal is out, so the two don't merge.
+            if !wait_for_delivery(&seen_rx, &path, StreamFlags::ITEM_REMOVED) {
+                return;
+            }
         }
     });
 
@@ -242,6 +238,8 @@ async fn must_receive_fs_events_impl(
             let Some(event) = stream.next().await else {
                 return false;
             };
+            // The producer may already be gone; it only needs the signal while it's waiting.
+            drop(seen_tx.send(event.clone()));
             events.push(event);
             while let Ok(probe) = probe_rx.try_recv() {
                 probes.push(probe);
@@ -257,17 +255,12 @@ async fn must_receive_fs_events_impl(
         }
     };
     let remaining = deadline.saturating_duration_since(Instant::now());
-    #[cfg(feature = "tokio")]
-    let delivered = tokio::time::timeout(remaining, collect)
-        .await
-        .unwrap_or(false);
-    #[cfg(feature = "async-std")]
-    let delivered = async_std::future::timeout(remaining, collect)
-        .await
-        .unwrap_or(false);
+    let delivered = tokio::time::timeout(remaining, collect).await.unwrap_or(false);
 
-    // Stop producing before the temp dir goes away, then tear the stream down.
+    // Stop producing before the temp dir goes away, then tear the stream down. Dropping
+    // `seen_tx` wakes a producer that's waiting on a delivery.
     stop.store(true, Ordering::SeqCst);
+    drop(seen_tx);
     producer.join().expect("to join");
     handler.abort();
 
@@ -282,10 +275,81 @@ async fn must_receive_fs_events_impl(
         DELIVERY_BUDGET,
         flags,
         events.len(),
-        events
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join(", ")
+        events.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
     );
+}
+
+/// A context whose drop is counted, so a test can see `SysFSEventStream::new` release it exactly
+/// once on every path (never leaked, never double freed).
+struct CountedContext(Arc<AtomicUsize>);
+
+impl Drop for CountedContext {
+    fn drop(&mut self) {
+        self.0.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+crate::impl_release_callback!(release_counted_context, CountedContext);
+
+extern "C" fn ignore_events(
+    _stream_ref: SysFSEventStreamRef,
+    _info: *mut c_void,
+    _num_events: usize,
+    _event_paths: *mut c_void,
+    _event_flags: *const FSEventStreamEventFlags,
+    _event_ids: *const FSEventStreamEventId,
+) {
+}
+
+fn create_counted<P: AsRef<Path>>(
+    paths: impl IntoIterator<Item = P>,
+) -> (io::Result<SysFSEventStream>, Arc<AtomicUsize>) {
+    let drops = Arc::new(AtomicUsize::new(0));
+    let context = SysFSEventStreamContext::new(CountedContext(Arc::clone(&drops)), release_counted_context);
+    let stream = SysFSEventStream::new(
+        ignore_events,
+        &context,
+        paths,
+        kFSEventStreamEventIdSinceNow,
+        Duration::ZERO,
+        kFSEventStreamCreateFlagNone,
+    );
+    (stream, drops)
+}
+
+#[test]
+fn stream_releases_its_context_once_when_dropped() {
+    let (stream, drops) = create_counted(["."]);
+    let stream = stream.expect("to be created");
+    assert_eq!(drops.load(Ordering::SeqCst), 0, "the live stream still owns it");
+    drop(stream);
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+}
+
+/// Regression: `FSEventStreamCreate` returns NULL for an empty path list, and we used to wrap
+/// that NULL and go on to schedule, start, and release it.
+#[test]
+fn empty_path_list_is_an_error_and_releases_the_context_once() {
+    let (stream, drops) = create_counted(Vec::<&Path>::new());
+    assert_eq!(stream.err().map(|err| err.kind()), Some(io::ErrorKind::InvalidInput));
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+}
+
+/// Regression: a path `CFURL` rejects used to return early and leak the boxed context.
+#[test]
+fn invalid_path_is_an_error_and_releases_the_context_once() {
+    let (stream, drops) = create_counted([""]);
+    assert!(stream.is_err());
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn create_event_stream_rejects_an_empty_path_list() {
+    let created = create_event_stream(
+        Vec::<&Path>::new(),
+        kFSEventStreamEventIdSinceNow,
+        Duration::ZERO,
+        kFSEventStreamCreateFlagNone,
+    );
+    assert_eq!(created.err().map(|err| err.kind()), Some(io::ErrorKind::InvalidInput));
 }

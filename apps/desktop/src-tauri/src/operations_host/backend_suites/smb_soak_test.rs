@@ -35,15 +35,88 @@ use cmdr_smb::volume::*;
 // because it permits writes. Never runs by default; gated on `#[ignore]`.
 // Run it through `scripts/soak-smb.sh`, which exports the stack's ports.
 
+/// Ratio of late-window to early-window median RSS above which the soak fails.
+///
+/// Why 1.3: after warm-up both allocators (macOS system malloc, Linux
+/// mimalloc) hold a plateau, and a window median shrugs off the odd spiky
+/// iteration, so a clean run sits at or below 1.0 (the allocator returning
+/// pages pulls it under). Measured: plateau ~40 MB, ratio 0.82 (verified on
+/// macOS 27, release `scripts/soak-smb.sh` with `CMDR_SOAK_ITERATIONS=200`,
+/// 2026-11-03). 1.3 is ~12 MB of headroom on that plateau, enough for
+/// fragmentation and page-retention noise. A real leak keeps growing: 10 KB
+/// per iteration is ~100 MB over the 30-min soak's ~10,000 iterations, far
+/// past the line.
+const RSS_GROWTH_MAX_RATIO: f64 = 1.3;
+
+/// Median of `values`, or `None` when empty. Doesn't need sorted input.
+fn median(values: &[f64]) -> Option<f64> {
+    if values.is_empty() {
+        return None;
+    }
+    let mut sorted = values.to_vec();
+    sorted.sort_by(f64::total_cmp);
+    let mid = sorted.len() / 2;
+    Some(if sorted.len().is_multiple_of(2) {
+        (sorted[mid - 1] + sorted[mid]) / 2.0
+    } else {
+        sorted[mid]
+    })
+}
+
+/// Current-RSS trend over a soak: medians of an early and a late window.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct RssTrend {
+    early_median_mb: f64,
+    late_median_mb: f64,
+}
+
+impl RssTrend {
+    fn ratio(&self) -> f64 {
+        self.late_median_mb / self.early_median_mb
+    }
+}
+
+/// Splits per-iteration RSS samples into windows of 10% each: skips the first
+/// 10% (warm-up: allocator arenas, connection buffers, and lazy statics fill
+/// in there), takes the next 10% as the early window, and the last 10% as the
+/// late window. Returns `None` below 20 samples (the windows would overlap or
+/// hold too few points for a median to mean anything) or when the early
+/// median isn't positive (RSS unreadable).
+fn rss_trend(samples_mb: &[f64]) -> Option<RssTrend> {
+    let n = samples_mb.len();
+    if n < 20 {
+        return None;
+    }
+    let window = n / 10;
+    let early_median_mb = median(&samples_mb[window..2 * window])?;
+    let late_median_mb = median(&samples_mb[n - window..])?;
+    (early_median_mb > 0.0).then_some(RssTrend {
+        early_median_mb,
+        late_median_mb,
+    })
+}
+
+/// This process's current resident set size in megabytes, or 0 if it can't
+/// be read. Reuses `sys` across samples so each call refreshes one pid only.
+fn process_current_rss_mb(sys: &mut sysinfo::System, pid: sysinfo::Pid) -> f64 {
+    use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
+    sys.refresh_processes_specifics(
+        ProcessesToUpdate::Some(&[pid]),
+        true,
+        ProcessRefreshKind::nothing().with_memory(),
+    );
+    sys.process(pid)
+        .map(|p| p.memory() as f64 / (1024.0 * 1024.0))
+        .unwrap_or(0.0)
+}
+
 /// `getrusage(RUSAGE_SELF).ru_maxrss`: peak resident set size. On macOS the
 /// value is in bytes; on Linux it's in kilobytes. Returns megabytes.
 ///
-/// Why peak-RSS not current-RSS: macOS/Linux both surface `ru_maxrss` from
-/// `getrusage(2)` without needing extra deps (`sysinfo` with `process`
-/// feature, `proc_pidinfo` FFI, or `/proc/self/status`). For a leak hunt
-/// peak RSS is actually the metric we want; current RSS oscillates with
-/// glibc/jemalloc GC, peak is monotonic and only grows when we genuinely
-/// retain more bytes.
+/// Logged as context only. Peak RSS never falls, so it can't show a leak
+/// until the leak outgrows the biggest earlier spike (fixture setup, the
+/// first copy's buffers). The leak check uses current RSS via
+/// `process_current_rss_mb` and `rss_trend`.
 fn process_peak_rss_mb() -> f64 {
     #[cfg(unix)]
     {
@@ -186,9 +259,11 @@ async fn smb_soak_copy_loop() {
         fixture_start.elapsed()
     );
 
-    // Baseline snapshot before the loop so deltas are meaningful. Force
-    // an initial RSS read so macOS's ru_maxrss is warmed up.
-    let baseline_rss_mb = process_peak_rss_mb();
+    // Baseline snapshot before the loop so deltas are meaningful.
+    let self_pid = sysinfo::get_current_pid().expect("read own pid for RSS sampling");
+    let mut sys = sysinfo::System::new().expect("init sysinfo for RSS sampling");
+    let baseline_rss_mb = process_current_rss_mb(&mut sys, self_pid);
+    let baseline_peak_rss_mb = process_peak_rss_mb();
     let baseline_fds = open_fd_count();
     let baseline_credits = smb_credits_snapshot(&smb_vol).await;
     log::info!(
@@ -206,7 +281,8 @@ async fn smb_soak_copy_loop() {
         Some(_) => Vec::with_capacity(1024),
         None => Vec::with_capacity(iteration_budget),
     };
-    let mut peak_rss_mb = baseline_rss_mb;
+    // Per-iteration current RSS, for the leak trend (`rss_trend`).
+    let mut per_iter_rss_mb: Vec<f64> = Vec::with_capacity(per_iter_ms.capacity());
     let mut peak_fds = baseline_fds;
     let mut iter_errors: Vec<String> = Vec::new();
     let mut iter_idx: usize = 0;
@@ -293,14 +369,11 @@ async fn smb_soak_copy_loop() {
             break;
         }
 
-        // Refresh peaks. Read the current per-iter resource sample and
-        // track the high-water marks so the final assertions see the
-        // worst case, not just the end state.
-        let rss = process_peak_rss_mb();
+        // Per-iteration resource sample: current RSS feeds the leak trend,
+        // FDs track a high-water mark for the final log.
+        let rss = process_current_rss_mb(&mut sys, self_pid);
+        per_iter_rss_mb.push(rss);
         let fds = open_fd_count();
-        if rss > peak_rss_mb {
-            peak_rss_mb = rss;
-        }
         if fds > peak_fds {
             peak_fds = fds;
         }
@@ -331,7 +404,8 @@ async fn smb_soak_copy_loop() {
 
     let total_elapsed = loop_start.elapsed();
     let total_iters = per_iter_ms.len();
-    let final_rss_mb = process_peak_rss_mb();
+    let final_rss_mb = process_current_rss_mb(&mut sys, self_pid);
+    let final_peak_rss_mb = process_peak_rss_mb();
     let final_fds = open_fd_count();
     let final_credits = smb_credits_snapshot(&smb_vol).await;
 
@@ -369,12 +443,29 @@ async fn smb_soak_copy_loop() {
         drift
     );
     log::info!(
-        "smb_soak_copy_loop: RSS baseline {:.1} MB → peak {:.1} MB → final {:.1} MB (Δ peak {:+.1} MB)",
+        "smb_soak_copy_loop: current RSS baseline {:.1} MB → final {:.1} MB (Δ {:+.1} MB)",
         baseline_rss_mb,
-        peak_rss_mb,
         final_rss_mb,
-        peak_rss_mb - baseline_rss_mb,
+        final_rss_mb - baseline_rss_mb,
     );
+    // Peak RSS is context only: it never falls, so it can't show a leak (see `process_peak_rss_mb`).
+    log::info!(
+        "smb_soak_copy_loop: peak RSS (getrusage) before loop {:.1} MB → after {:.1} MB",
+        baseline_peak_rss_mb,
+        final_peak_rss_mb,
+    );
+    // Iterations that broke early (copy failure, mismatch) push no RSS sample,
+    // so this can be shorter than `per_iter_ms`; the `iter_errors` assert below
+    // reports those runs first.
+    let rss = rss_trend(&per_iter_rss_mb);
+    if let Some(t) = rss {
+        log::info!(
+            "smb_soak_copy_loop: RSS trend early median {:.1} MB, last10% median {:.1} MB, ratio {:.3}",
+            t.early_median_mb,
+            t.late_median_mb,
+            t.ratio(),
+        );
+    }
     log::info!(
         "smb_soak_copy_loop: FDs baseline {} → peak {} → final {} (Δ final {:+})",
         baseline_fds,
@@ -388,12 +479,25 @@ async fn smb_soak_copy_loop() {
         final_credits
     );
 
-    // Hard failures: any iteration error, drift, memory peak, FD leak.
+    // Hard failures: any iteration error, drift, memory growth, FD leak.
     assert!(
         iter_errors.is_empty(),
         "{} iteration error(s):\n  - {}",
         iter_errors.len(),
         iter_errors.join("\n  - ")
+    );
+    let rss = rss.unwrap_or_else(|| {
+        panic!(
+            "couldn't compute an RSS trend from {} (need 20+, and a readable RSS)",
+            crate::pluralize::pluralize(per_iter_rss_mb.len() as u64, "sample")
+        )
+    });
+    assert!(
+        rss.ratio() < RSS_GROWTH_MAX_RATIO,
+        "current RSS grew {:.3}× (early median {:.1} MB, last10% median {:.1} MB); exceeds {RSS_GROWTH_MAX_RATIO}× (suggests a leak)",
+        rss.ratio(),
+        rss.early_median_mb,
+        rss.late_median_mb,
     );
     assert!(
         drift < 1.20,
@@ -401,13 +505,6 @@ async fn smb_soak_copy_loop() {
         drift,
         first_avg,
         last_avg
-    );
-    assert!(
-        peak_rss_mb - baseline_rss_mb < 100.0,
-        "peak RSS grew by {:.1} MB (baseline {:.1} MB, peak {:.1} MB); exceeds 100 MB ceiling",
-        peak_rss_mb - baseline_rss_mb,
-        baseline_rss_mb,
-        peak_rss_mb
     );
     let fd_delta = final_fds as i64 - baseline_fds as i64;
     assert!(
@@ -417,4 +514,54 @@ async fn smb_soak_copy_loop() {
         baseline_fds,
         final_fds
     );
+}
+
+#[cfg(test)]
+mod rss_trend_tests {
+    use super::*;
+
+    #[test]
+    fn median_handles_odd_even_and_empty() {
+        assert_eq!(median(&[]), None);
+        assert_eq!(median(&[3.0, 1.0, 2.0]), Some(2.0));
+        assert_eq!(median(&[4.0, 1.0, 3.0, 2.0]), Some(2.5));
+    }
+
+    #[test]
+    fn rss_trend_needs_twenty_samples() {
+        assert_eq!(rss_trend(&[50.0; 19]), None);
+        assert!(rss_trend(&[50.0; 20]).is_some());
+    }
+
+    #[test]
+    fn rss_trend_rejects_unreadable_rss() {
+        assert_eq!(rss_trend(&[0.0; 100]), None);
+    }
+
+    #[test]
+    fn rss_trend_skips_warm_up_spike() {
+        // First 10% balloons (setup), then a flat plateau: no growth.
+        let mut samples = vec![200.0; 10];
+        samples.extend(std::iter::repeat_n(50.0, 90));
+        let t = rss_trend(&samples).expect("trend");
+        assert_eq!(t.early_median_mb, 50.0);
+        assert_eq!(t.late_median_mb, 50.0);
+        assert!(t.ratio() < RSS_GROWTH_MAX_RATIO);
+    }
+
+    #[test]
+    fn rss_trend_ignores_isolated_spikes() {
+        // A plateau with every 7th sample spiking 3× stays well under the ratio.
+        let samples: Vec<f64> = (0..200).map(|i| if i % 7 == 0 { 150.0 } else { 50.0 }).collect();
+        let t = rss_trend(&samples).expect("trend");
+        assert!(t.ratio() < RSS_GROWTH_MAX_RATIO, "ratio {}", t.ratio());
+    }
+
+    #[test]
+    fn rss_trend_flags_steady_leak() {
+        // 50 MB plus 0.25 MB retained per iteration over 200 iterations.
+        let samples: Vec<f64> = (0..200).map(|i| 50.0 + 0.25 * i as f64).collect();
+        let t = rss_trend(&samples).expect("trend");
+        assert!(t.ratio() > RSS_GROWTH_MAX_RATIO, "ratio {}", t.ratio());
+    }
 }

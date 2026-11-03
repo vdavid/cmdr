@@ -131,8 +131,8 @@ func rustdocArgs(members []WorkspaceMember, targetOS string) ([]string, int) {
 	documented := 0
 	for _, m := range members {
 		// A vendored fork's docs aren't ours to hold to this, and `--all-features`
-		// doesn't even build one: `cmdr-fsevent-stream` carries mutually exclusive
-		// `tokio` / `async-std` feature arms, so turning both on fails to compile.
+		// may not even build one (upstream crates often carry mutually exclusive
+		// feature arms).
 		if m.Kind == KindVendored || !m.BuildsOn(targetOS) {
 			continue
 		}

@@ -111,6 +111,12 @@
     "note": "Where the English subject is Cmdr, write Cmdr; `suggestedOps.*` keeps AI deliberately to separate the model's claims from Cmdr's facts.",
     "sources": "catalog (settings.ai.tooltipOff)"
   },
+  "ai-plan": {
+    "chosen": "套餐",
+    "confidence": "high",
+    "forms": "upgrade your plan → 升级你的套餐",
+    "sources": "MS data plan → 流量套餐; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "avoid": [
       {

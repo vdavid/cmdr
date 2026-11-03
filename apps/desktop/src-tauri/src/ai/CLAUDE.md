@@ -13,7 +13,7 @@ The local-AI lifecycle is split by concern around ONE shared singleton: `state.r
 `connection_check.rs`, and `stream_registry.rs` borrow through its `MANAGER` lock — don't add a second copy of that
 state. `download.rs` / `extract.rs` / `process.rs` are its stateless leaves.
 
-Cloud-side: `client.rs` is the `genai` chat client (`AiBackend`; routing in `client/routing.rs`), logged via `llm_log/CLAUDE.md`;
+Cloud-side: `client.rs` is the `genai` chat client (`AiBackend`; routing and error classing in `client/{routing,classify}.rs`), logged via `llm_log/CLAUDE.md`;
 `cloud_consent.rs` ("Allow cloud AI"), `managed.rs` (the MDM policy's AI side), `model_capabilities.rs` (provider-reported
 model windows; a cache), `api_keys.rs`, `suggestions.rs`,
 `translate_error.rs`, and the test-only `smoke_providers.rs` sit beside it. Per-file detail: DETAILS.md.
@@ -38,9 +38,9 @@ model windows; a cache), `api_keys.rs`, `suggestions.rs`,
   Refresh pins there; the header has the recipe.
 - **A red `gemini-smoke` means the model is gone; its WARN means Google was flaky** (it flaps 200/503/bodyless 404).
   ❌ Never quiet a warn by loosening it.
-- **Classify a provider failure by HTTP status, never its sentence.** `map_genai_error` must reach
-  `ai_error_for_status` from BOTH `genai` shapes: `Web{Adapter,Model}Call`, AND the `WebStream` wrapping a boxed
-  `HttpError`. Missing the stream one degrades every streaming failure to `ServerError` — the agent's own path.
+- **Classify a provider failure by status and headers, never its sentence.** `map_genai_error` must cover BOTH
+  `genai` shapes: `Web{Adapter,Model}Call` AND the `WebStream` boxing an `HttpError`. Missing the stream one makes
+  every streaming failure a `ServerError` (the agent's path).
 - **`genai` needs `base_url` ending in `/`.** Without it, `Url::join("chat/completions")` strips the last segment and you
   hit a 404. `build_client` appends `/` if missing.
 - **Process spawn + `child_pid` assignment must be synchronous inside the MANAGER lock** (`spawn_and_track_server`):

@@ -35,6 +35,12 @@ use crate::managed_policy::AiDestination;
 /// backends hand it one, so the build can't fail.
 mod routing;
 
+mod classify;
+pub(crate) use classify::map_genai_error;
+pub(super) use classify::provider_error_message;
+#[cfg(test)]
+use classify::{ai_error_for_status, provider_error_detail};
+
 #[cfg(test)]
 use routing::is_openai_chat_reasoning_model;
 use routing::{adjust_for_model, remote_model_iden, replays_chat_reasoning_for_host, wants_top_level_cache_marker};
@@ -356,6 +362,10 @@ pub enum AiError {
     AuthFailed(String),
     /// The provider is rate-limiting requests or the account is out of quota (HTTP 429).
     RateLimited(String),
+    /// The account's plan doesn't include this model: a 429 whose request limit is zero
+    /// (`plan_allows_no_requests`), as a free Mistral workspace answers `mistral-small-latest`.
+    /// Every call gets it, so waiting changes nothing; picking another model or plan does.
+    ModelNotInPlan(String),
     /// The provider won't take a request this big (HTTP 413). On Groq's free tier this is a
     /// tokens-per-minute cap below one Ask Cmdr prompt, so every call gets it and retrying
     /// changes nothing.
@@ -384,6 +394,7 @@ impl Display for AiError {
             Self::Timeout => write!(f, "AI request timed out"),
             Self::AuthFailed(msg) => write!(f, "AI provider rejected the API key: {msg}"),
             Self::RateLimited(msg) => write!(f, "AI provider is rate-limiting or out of quota: {msg}"),
+            Self::ModelNotInPlan(msg) => write!(f, "AI provider's plan doesn't include this model: {msg}"),
             Self::RequestTooLarge(msg) => write!(f, "AI provider won't take a request this big: {msg}"),
             Self::NotFound(msg) => write!(f, "AI provider has no such model or endpoint: {msg}"),
             Self::EmptyResponse => write!(f, "AI returned no text"),
@@ -656,97 +667,6 @@ fn make_resolver(endpoint: String, auth: AuthData, force_adapter: ForceAdapter) 
             model,
         })
     })
-}
-
-/// Classifies a provider HTTP error status into the right [`AiError`] so the frontend can
-/// show a specific toast (key rejected vs. out of quota vs. generic server error). Branches
-/// on the numeric status, never the message body. 429 covers both rate-limiting and
-/// OpenAI's `insufficient_quota`; 413 is a request past what the provider (or the account's
-/// plan) takes in one go; 401/403 is a rejected key; 404 is a model id the provider
-/// doesn't serve (a typo, or one it decommissioned) or a base URL with the wrong path.
-fn ai_error_for_status(status: u16, detail: String) -> AiError {
-    match status {
-        401 | 403 => AiError::AuthFailed(detail),
-        404 => AiError::NotFound(detail),
-        413 => AiError::RequestTooLarge(detail),
-        429 => AiError::RateLimited(detail),
-        _ => AiError::ServerError(detail),
-    }
-}
-
-/// Builds the display detail for a failed provider response: `HTTP <status>: <message>`.
-/// The message is the JSON body's `error.message` when present (OpenAI, OpenRouter,
-/// Anthropic, and Gemini all put the human sentence there), else the raw body, capped so
-/// an HTML error page (a proxy, Cloudflare) can't flood the UI or the logs. Display only,
-/// never control flow: classification stays on the numeric status (`ai_error_for_status`).
-fn provider_error_detail(status: impl Display, body: &str) -> String {
-    format!("HTTP {status}: {}", provider_error_message(body))
-}
-
-/// The human sentence in a failed provider response: the JSON body's `error.message`, else the
-/// raw body, capped at 400 chars. Shared with the key check, which shows it as a detail line.
-pub(super) fn provider_error_message(body: &str) -> String {
-    const MAX_CHARS: usize = 400;
-    let message = serde_json::from_str::<Value>(body)
-        .ok()
-        .and_then(|value| Some(value.get("error")?.get("message")?.as_str()?.to_string()))
-        .unwrap_or_else(|| body.to_string());
-    let message = message.trim();
-    if message.chars().count() > MAX_CHARS {
-        let capped: String = message.chars().take(MAX_CHARS).collect();
-        format!("{capped}…")
-    } else {
-        message.to_string()
-    }
-}
-
-/// Maps `genai`'s rich error tree to our flat [`AiError`]. Pattern-matches on the
-/// known transport variants instead of grepping the `Display` output. Shared with
-/// the agent LLM (`crate::agent::llm`), which maps `AiError` on to its own typed
-/// error, so the status-based classification lives in one place.
-pub(crate) fn map_genai_error(e: genai::Error) -> AiError {
-    use genai::Error as G;
-    use genai::webc::Error as W;
-
-    // A failure on the STREAMING path arrives differently: `genai` wraps the response error in
-    // `WebStream { error: BoxError }`, where the box holds a `genai::Error::HttpError` carrying
-    // the status. Without this arm every streaming failure fell through to the catch-all below,
-    // so a rejected key or an exhausted quota reached the UI as a generic server error — on the
-    // path the agent and folder suggestions actually use.
-    if let G::WebStream { error, .. } = &e
-        && let Some(G::HttpError { status, body, .. }) = error.downcast_ref::<G>()
-    {
-        return ai_error_for_status(status.as_u16(), provider_error_detail(status, body));
-    }
-
-    let webc = match &e {
-        G::WebAdapterCall { webc_error, .. } | G::WebModelCall { webc_error, .. } => Some(webc_error),
-        _ => None,
-    };
-
-    if let Some(webc) = webc {
-        match webc {
-            W::Reqwest(req) if req.is_timeout() => return AiError::Timeout,
-            W::Reqwest(req) if req.is_connect() => return AiError::Unavailable,
-            W::Reqwest(req) => return AiError::ServerError(format!("network error: {req}")),
-            W::ResponseFailedStatus { status, body, .. } => {
-                return ai_error_for_status(status.as_u16(), provider_error_detail(status, body));
-            }
-            W::ResponseFailedNotJson { content_type, body } => {
-                return AiError::ParseError(format!(
-                    "expected JSON response, got content-type {content_type}: {body}"
-                ));
-            }
-            W::ResponseFailedInvalidJson { body, cause } => {
-                return AiError::ParseError(format!("invalid JSON ({cause}): {body}"));
-            }
-            W::JsonValueExt(err) => {
-                return AiError::ParseError(format!("JSON shape mismatch: {err}"));
-            }
-        }
-    }
-
-    AiError::ServerError(e.to_string())
 }
 
 /// Checks if the local llama-server is healthy. Pings `/health` directly; `genai`

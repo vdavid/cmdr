@@ -150,7 +150,9 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     name: 'Mistral AI',
     effortTerm: 'reasoningEffort',
     baseUrl: 'https://api.mistral.ai/v1',
-    defaultModel: 'mistral-small-latest',
+    // Not `mistral-small-latest`: a free workspace gets `x-ratelimit-limit-req-minute: 0` on it, so
+    // every call 429s, while Ministral answers on free keys (`agent/llm/DETAILS.md` § Tests).
+    defaultModel: 'ministral-14b-latest',
     requiresApiKey: true,
     setup: {
       kind: 'cloud',

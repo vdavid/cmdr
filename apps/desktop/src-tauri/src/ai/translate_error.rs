@@ -106,6 +106,9 @@ impl From<AiError> for AiTranslateError {
             // Same reasoning: a translation prompt is small, so a 413 there is rare, and the
             // detail line names the provider's limit.
             AiError::RequestTooLarge(_) => K::ServerError,
+            // The rate-limit toast already says "check your plan", the nearest headline we have;
+            // the detail line carries the provider's own sentence.
+            AiError::ModelNotInPlan(_) => K::RateLimited,
             AiError::EmptyResponse => K::EmptyResponse,
             AiError::ServerError(_) => K::ServerError,
             AiError::ParseError(_) => K::ParseError,
@@ -129,6 +132,7 @@ mod tests {
             (AiError::RateLimited("x".into()), K::RateLimited),
             (AiError::NotFound("x".into()), K::ServerError),
             (AiError::RequestTooLarge("x".into()), K::ServerError),
+            (AiError::ModelNotInPlan("x".into()), K::RateLimited),
             (AiError::EmptyResponse, K::EmptyResponse),
             (AiError::ServerError("x".into()), K::ServerError),
             (AiError::ParseError("x".into()), K::ParseError),
