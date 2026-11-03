@@ -10,6 +10,7 @@ import {
   type EditorOpenReport,
   type GetInfoError,
   type OpenInEditorError,
+  type OpenPathError,
   type OpenTerminalError,
   type OpenTerminalOutcome,
   type TerminalAppList,
@@ -35,18 +36,35 @@ export type {
   TextEditorList,
 } from '#lib/ipc/bindings.js'
 
+/** A default-app open that didn't happen, still carrying the backend's typed reason. */
+export class OpenPathFailure extends TypedFailure<OpenPathError> {
+  constructor(failure: OpenPathError) {
+    super(failure, `open refused: ${failure.type}`)
+    this.name = 'OpenPathFailure'
+  }
+}
+
+/** The typed refusal behind a caught value, or `null` when it isn't one. */
+export function asOpenPathError(error: unknown): OpenPathError | null {
+  return error instanceof OpenPathFailure ? error.failure : null
+}
+
 /**
- * Opens a file with the system's default application.
+ * Opens a file with the system's default application, and resolves once the OS
+ * opener has answered.
  *
  * Routes through the backend `openPath` command (not the opener plugin) so the
  * `playwright-e2e` build can record the open instead of launching an external
  * app. Otherwise the E2E suite floods the desktop with orphan TextEdit/Preview
- * windows it can't close. See `src-tauri/src/commands/file_actions.rs`.
+ * windows it can't close. See `src-tauri/src/file_system/default_app.rs`.
  * @param path - Path to the file to open.
+ * @param volumeId - The volume the row lives on, which refuses when its paths aren't ones
+ *   another app can open right now (a direct SMB share whose macOS mount is gone).
+ * @throws OpenPathFailure carrying the typed `OpenPathError`; `asOpenPathError` gets it back.
  */
-export async function openFile(path: string): Promise<void> {
-  const res = await commands.openPath(path)
-  if (res.status === 'error') throwIpcError(res.error)
+export async function openFile(path: string, volumeId: string | null): Promise<void> {
+  const res = await commands.openPath(path, volumeId)
+  if (res.status === 'error') throw new OpenPathFailure(res.error)
 }
 
 /**

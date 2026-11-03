@@ -7,7 +7,8 @@
  *   `ask` raises the popup, and the whole policy is skipped once the PANE is
  *   already inside an archive,
  * - an archive file browses in place like a folder,
- * - a file inside an archive routes to the viewer, not the OS default app,
+ * - a file inside an archive routes to the viewer, not the OS default app (what
+ *   the default-app open says and refuses is `default-app-open.test.ts`'s),
  * - every search-results row leaves the snapshot volume first, and an
  *   unresolvable path navigates nowhere,
  * - going up remembers the folder we came from so it lands selected.
@@ -16,9 +17,8 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { toCanonical, type CanonicalPath } from '#lib/path/canonical.js'
 import type { FileEntry } from '../types'
 
-const { ipc, settings, policy, viewer, navigate, opening } = vi.hoisted<{
-  ipc: { openFile: Mock }
-  opening: { announceOpening: Mock }
+const { launcher, settings, policy, viewer, navigate } = vi.hoisted<{
+  launcher: { open: Mock; openOnVolume: Mock }
   settings: { getSetting: Mock }
   policy: {
     resolveEnterPolicy: Mock
@@ -29,8 +29,9 @@ const { ipc, settings, policy, viewer, navigate, opening } = vi.hoisted<{
   viewer: { openFileViewer: Mock }
   navigate: { resolveLocationOrToast: Mock }
 }>(() => ({
-  ipc: { openFile: vi.fn() },
-  opening: { announceOpening: vi.fn() },
+  // `open` sees the path alone, so most assertions stay one-argument; `openOnVolume`
+  // is the module's real two-argument seam, for the test that pins the volume.
+  launcher: { open: vi.fn(), openOnVolume: vi.fn() },
   settings: { getSetting: vi.fn() },
   policy: {
     resolveEnterPolicy: vi.fn(),
@@ -46,9 +47,13 @@ const { ipc, settings, policy, viewer, navigate, opening } = vi.hoisted<{
   navigate: { resolveLocationOrToast: vi.fn() },
 }))
 
-vi.mock('#lib/tauri-commands/index.js', () => ({ openFile: ipc.openFile }))
 vi.mock('#lib/settings/index.js', () => ({ getSetting: settings.getSetting }))
-vi.mock('./opening-toast', () => ({ announceOpening: opening.announceOpening }))
+vi.mock('./default-app-open', () => ({
+  openWithDefaultAppOrExplain: (volumeId: string, entry: FileEntry) => {
+    launcher.openOnVolume(volumeId, entry)
+    return launcher.open(entry.path)
+  },
+}))
 vi.mock('./archive-enter-policy', () => ({
   resolveEnterPolicy: policy.resolveEnterPolicy,
   enterBehaviorFromSettings: policy.enterBehaviorFromSettings,
@@ -90,7 +95,7 @@ describe('createEntryActivation', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ipc.openFile.mockResolvedValue(undefined)
+    launcher.open.mockResolvedValue(undefined)
     policy.pathInsideArchive.mockReturnValue(false)
     policy.pathCrossesArchiveBoundary.mockReturnValue(false)
     policy.resolveEnterPolicy.mockReturnValue(null)
@@ -140,7 +145,7 @@ describe('createEntryActivation', () => {
       await createEntryActivation(deps).handleNavigate(entry)
       expect(calls.openEnterMenu).toHaveBeenCalledWith(entry)
       expect(calls.loadDirectory).not.toHaveBeenCalled()
-      expect(ipc.openFile).not.toHaveBeenCalled()
+      expect(launcher.open).not.toHaveBeenCalled()
     })
 
     it('launches the OS default app for `open`', async () => {
@@ -148,7 +153,7 @@ describe('createEntryActivation', () => {
       await createEntryActivation(deps).handleNavigate(
         entryOf({ name: 'a.app', path: '/dir/a.app', isDirectory: true }),
       )
-      expect(ipc.openFile).toHaveBeenCalledWith('/dir/a.app')
+      expect(launcher.open).toHaveBeenCalledWith('/dir/a.app')
       expect(calls.loadDirectory).not.toHaveBeenCalled()
     })
 
@@ -215,28 +220,23 @@ describe('createEntryActivation', () => {
       policy.pathInsideArchive.mockImplementation((p: string) => p.startsWith('/dir/a.zip/'))
       await createEntryActivation(deps).handleNavigate(entryOf({ name: 'inner.txt', path: '/dir/a.zip/inner.txt' }))
       expect(viewer.openFileViewer).toHaveBeenCalledWith('/dir/a.zip/inner.txt', 'root')
-      expect(ipc.openFile).not.toHaveBeenCalled()
+      expect(launcher.open).not.toHaveBeenCalled()
     })
 
     it('hands a plain file to the OS default app', async () => {
       await createEntryActivation(deps).handleNavigate(entryOf())
-      expect(ipc.openFile).toHaveBeenCalledWith('/dir/a.txt')
+      expect(launcher.open).toHaveBeenCalledWith('/dir/a.txt')
     })
 
-    it('says which file is opening, so a slow share doesn’t look like a dead keypress', async () => {
+    it('asks about the file on the pane’s own drive, which decides whether another app can open it', async () => {
       const entry = entryOf()
       await createEntryActivation(deps).handleNavigate(entry)
-      expect(opening.announceOpening).toHaveBeenCalledWith(entry)
+      expect(launcher.openOnVolume).toHaveBeenCalledExactlyOnceWith('root', entry)
     })
 
-    it('says nothing when the entry browses instead of launching', async () => {
+    it('launches nothing when the entry browses instead', async () => {
       await createEntryActivation(deps).handleNavigate(entryOf({ name: 'sub', path: '/dir/sub', isDirectory: true }))
-      expect(opening.announceOpening).not.toHaveBeenCalled()
-    })
-
-    it('stays silent when the OS refuses to open a file', async () => {
-      ipc.openFile.mockRejectedValue(new Error('no handler'))
-      await expect(createEntryActivation(deps).handleNavigate(entryOf())).resolves.toBeUndefined()
+      expect(launcher.openOnVolume).not.toHaveBeenCalled()
     })
 
     it('navigates nowhere when a search-results row cannot be resolved', async () => {
@@ -256,7 +256,7 @@ describe('createEntryActivation', () => {
 
     it('open hands the entry to LaunchServices', async () => {
       await createEntryActivation(deps).openEntryExternally(entryOf({ name: 'a.zip', path: '/dir/a.zip' }))
-      expect(ipc.openFile).toHaveBeenCalledWith('/dir/a.zip')
+      expect(launcher.open).toHaveBeenCalledWith('/dir/a.zip')
     })
   })
 })
@@ -286,7 +286,7 @@ describe('what a tool has to ask about', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ipc.openFile.mockResolvedValue(undefined)
+    launcher.open.mockResolvedValue(undefined)
     policy.pathInsideArchive.mockReturnValue(false)
     policy.pathCrossesArchiveBoundary.mockReturnValue(false)
     policy.resolveEnterPolicy.mockReturnValue(null)
@@ -336,13 +336,13 @@ describe('what a tool has to ask about', () => {
     it('a yes on what is still there opens it', async () => {
       const { activation } = activate()
       expect(await activation.openForTool(file, { expectedPath: file.path })).toBe('opened')
-      expect(ipc.openFile).toHaveBeenCalledExactlyOnceWith(file.path)
+      expect(launcher.open).toHaveBeenCalledExactlyOnceWith(file.path)
     })
 
     it('a yes on something else opens nothing', async () => {
       const { activation } = activate()
       expect(await activation.openForTool(file, { expectedPath: '/dir/other' })).toBe('changedWhileAsking')
-      expect(ipc.openFile).not.toHaveBeenCalled()
+      expect(launcher.open).not.toHaveBeenCalled()
     })
 
     it('a yes on an entry set to Ask opens it, with no popup a stray Enter could answer', async () => {
@@ -350,7 +350,7 @@ describe('what a tool has to ask about', () => {
       const { deps, activation } = activate()
       expect(await activation.openForTool(bundle, { expectedPath: bundle.path })).toBe('opened')
       expect(deps.openEnterMenu).not.toHaveBeenCalled()
-      expect(ipc.openFile).toHaveBeenCalledExactlyOnceWith(bundle.path)
+      expect(launcher.open).toHaveBeenCalledExactlyOnceWith(bundle.path)
     })
 
     it('with nobody asked, a folder browses', async () => {
@@ -362,7 +362,7 @@ describe('what a tool has to ask about', () => {
     it('with nobody asked, a cursor that moved onto a file launches nothing', async () => {
       const { activation } = activate()
       expect(await activation.openForTool(file, { mayLaunch: false })).toBe('changedWhileAsking')
-      expect(ipc.openFile).not.toHaveBeenCalled()
+      expect(launcher.open).not.toHaveBeenCalled()
     })
 
     it('with nobody asked, an entry set to Ask raises no popup', async () => {

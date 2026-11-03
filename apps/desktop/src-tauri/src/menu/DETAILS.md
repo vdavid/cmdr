@@ -229,7 +229,7 @@ Exceptions that do NOT use `"execute-command"`:
   prefix-routed
   (`on_menu_event` matches `tag-color:`) — NOT in `menu_id_to_command` — and call
   `file_system::tags_io::toggle_from_menu` on the RIGHT-CLICKED selection (`MenuState.context.paths`), which then calls
-  `Listings::apply_row_facts(MenuState.context.tags_listing_id, …)`. Acting on the right-clicked set
+  `Listings::apply_row_facts(MenuState.context.listing_id, …)`. Acting on the right-clicked set
   is why they can't route through `execute-command`: a frontend command reads the *focused-pane*
   selection, which differs when the right-click lands on an unselected row. The write runs on
   its own task (off the main/menu thread). The keyboard-assignable `tags.toggle*` commands cover

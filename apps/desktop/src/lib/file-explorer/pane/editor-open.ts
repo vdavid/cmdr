@@ -12,20 +12,16 @@
  * `#lib/text-editor`. The guard stays here because it's a pane question: is there
  * a real file behind this row. The setting never widens what it accepts.
  *
- * Two gates, in this order, the same pair the snapshot clipboard uses:
- *
- * 1. The PATH scheme (`isPlainFilesystemPath`). It holds with no volume to ask: a
- *    search-results pane's own volume is virtual, and an unplugged phone has left
- *    the volume list while its rows still read `adb://…`.
- * 2. The row's CAPABILITY (`rowIsOsVisible`). It knows what a path can't show: an
- *    archive's insides and the `.git` portal look like plain paths.
+ * The gate is `rowHasFileOnThisMac`, the same one Enter's default-app open uses
+ * (`default-app-open.ts`): the path scheme first, then the row's capability, which
+ * knows what a path can't show (an archive's insides and the `.git` portal look like
+ * plain paths).
  */
 
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
-import { isPlainFilesystemPath } from '#lib/path/canonical.js'
 import { openFileInEditor } from '#lib/text-editor/open-file-in-editor.js'
-import { rowIsOsVisible } from './volume-capabilities'
+import { rowHasFileOnThisMac } from './volume-capabilities'
 
 /**
  * What an F4 press did: asked an app to open the file, refused the row on screen,
@@ -37,7 +33,7 @@ export type EditorPressOutcome = 'opened' | 'refusedNotOnThisMac' | 'launchFaile
 
 /** Whether `rowPath`, living on `volumeId`, is a file the OS text editor can open. */
 export function canOpenInEditor(volumeId: string, rowPath: string): boolean {
-  return isPlainFilesystemPath(rowPath) && rowIsOsVisible(volumeId, rowPath)
+  return rowHasFileOnThisMac(volumeId, rowPath)
 }
 
 /**

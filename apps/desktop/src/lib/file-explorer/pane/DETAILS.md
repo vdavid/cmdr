@@ -89,7 +89,8 @@ suite:
 - `entry-activation.ts`: what opening an entry does (redirect, archive Enter policy, browse, viewer, OS default app).
   `opening-toast.ts`: the two-second "{file} is opening in {app}…" toast beside every OS-default-app launch. The app
   name is a LaunchServices lookup by EXTENSION (`default_app_name`), never by the file's URL, so a slow share can't
-  delay it; the price is that a per-file Get Info "Open with" override isn't seen.
+  delay it; the price is that a per-file Get Info "Open with" override isn't seen. `default-app-open.ts`: the
+  default-app open itself (§ "Opening a file in its default app").
 - `breadcrumb-bar.ts`: the displayed path plus the segment-click, context-menu, and volume-switch handlers.
 - `deleted-dir-poll.ts` / `mtp-disconnect-watch.svelte.ts`: the two "what I'm showing is gone" recoveries.
 - `snapshot-selection-sync.svelte.ts`: a search-results pane's cursor and selection remapped by PATH whenever its
@@ -523,7 +524,18 @@ volume-id string. The record has two halves, and which half answers is the whole
   widens what the guard accepts. The pane's `file.edit`, the search-results F4 (against the snapshot's `volumeId`), and
   the new-file auto-open all call it; its `EditorPressOutcome` is `opened` (an app was asked, a fallback included),
   `refusedNotOnThisMac`, or `launchFailed`, and `file.edit` counts `editor_opened` only on `opened`. ❌ Never call
-  `openInEditor` on a row directly: an editor launch on a scheme path does nothing and says nothing.
+  `openInEditor` on a row directly: an editor launch on a scheme path does nothing and says nothing. Its gate is
+  `rowHasFileOnThisMac` (scheme plus `rowIsOsVisible`), shared with the default-app open below.
+- **Opening a file in its default app goes through `default-app-open.ts`** (Enter, double-click, the Enter popup's Open,
+  the context menu's Open, `open_under_cursor`). `openWithDefaultAppOrExplain(volumeId, entry)` refuses a row
+  `rowHasFileOnThisMac` rejects with `fileExplorer.open.notOnThisMac` (pointing at the live View key), then calls
+  `openFile(path, volumeId)`, which now waits for macOS's answer and throws a typed `OpenPathError`. The backend asks
+  the ROW's volume too, because a direct SMB share whose macOS mount went away keeps `/Volumes/…` rows, has no switcher
+  row, and so classifies as `local` here (`apps/desktop/src-tauri/src/file_system/default_app.rs`). Its `notOnThisMac`
+  gets the same toast, `notOpened` / `launchRefused` get `fileExplorer.open.didNotOpen`, and `timedOut` only logs (the
+  app may still open). Every refusal toast reuses the "Opening…" toast's id and waits for it to land, so the reason
+  replaces it rather than the other way round. "Open with" is decided in Rust (`menu/open_with.rs::launch_with` asks the
+  listing's volume) and announced through `open-with-copy-bridge.ts`.
 - **❗ Nothing switches exhaustively over `VolumeKind`.** Every consumer is a positive-list comparison, so a new member
   compiles clean everywhere and silently falls out of each list. The five to walk when you add one:
   `pane/clipboard-operations.ts` (the system-clipboard refusal — a missed kind puts an unusable scheme path on the OS
@@ -1938,10 +1950,10 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
 - **`resolveActivation` (`entry-activation.ts`) is the decision chain, with no side effects**: `handleNavigate` acts on
   it, and `open_under_cursor`'s question reads it, so what a tool asks about can't drift from what Enter does.
 - **`handleNavigate` consults it before the browse arm**, but only when NOT `pathInsideArchive(entry.path)` (a file
-  inside an archive keeps the viewer interim). `ask` → `enterMenu.openFor`; `open` → `openEntryExternally` (`openFile`,
-  i.e. LaunchServices — a `.zip` opens in the OS archive tool, a `.app` launches); `browse` → falls through to
-  `browseIntoEntry`. On the search-results snapshot pane the popup is skipped (opening any real entry switches volume
-  first via `goToRealEntry`).
+  inside an archive keeps the viewer interim). `ask` → `enterMenu.openFor`; `open` → `openEntryExternally`
+  (`default-app-open.ts`, i.e. LaunchServices — a `.zip` opens in the OS archive tool, a `.app` launches); `browse` →
+  falls through to `browseIntoEntry`. On the search-results snapshot pane the popup is skipped (opening any real entry
+  switches volume first via `goToRealEntry`).
 - **`enter-menu.svelte.ts` (`createEnterMenu`) holds the popup state**; `enter-menu.ts` builds the items and computes
   the cursor-row anchor. The menu (`lib/ui/Menu`) is **portaled to `document.body`** so the explorer's `onfocusin` focus
   guard (`key-dispatch.ts`, which only exempts `[role="dialog"]`) doesn't yank focus off the `role="menu"`; on close the

@@ -1134,6 +1134,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             OpenWithCopyRefused,
             // The same launch that did go ahead, on read-only copies the app got.
             OpenWithCopyLaunched,
+            // An "Open with" click on a file whose volume has no macOS mount behind
+            // its paths, so no app launched (file_system/default_app.rs).
+            crate::file_system::default_app::OpenWithNotOnThisMac,
             // A question for a person, and its withdrawal (tools/ask.rs).
             crate::tools::ask::ToolAskRequested,
             crate::tools::ask::ToolAskDismissed,

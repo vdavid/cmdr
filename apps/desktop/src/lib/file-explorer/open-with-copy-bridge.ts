@@ -9,6 +9,11 @@
  * - `open-with-copy-launched`: the app got a read-only copy. Nothing else tells the
  *   person that what they save there won't go back into the original.
  *
+ * A third event rides along, `open-with-not-on-this-mac`: the row's volume hands out
+ * paths no other app can open (a phone, a server, a direct SMB share whose macOS mount
+ * went away), so no app launched. Rust checks it in `launch_with`, because only the
+ * volume knows when a share's mount is gone.
+ *
  * The click lands on the native context menu, which Rust handles end to end
  * (`menu/open_with.rs::launch_with`), so the frontend never sees the launch: the
  * events are its only way to hear about it. Keyed per file, so clicking again replaces
@@ -22,8 +27,14 @@ import { getAppLogger } from '#lib/logging/logger.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { formatByteSize } from '#lib/units/index.js'
 import { formatInteger } from '#lib/intl/number-format.js'
-import { onOpenWithCopyLaunched, onOpenWithCopyRefused } from '#lib/tauri-commands/index.js'
-import type { OpenWithCopyLaunched, OpenWithCopyRefused, OpenWithCopySource } from '#lib/ipc/bindings.js'
+import { onOpenWithCopyLaunched, onOpenWithCopyRefused, onOpenWithNotOnThisMac } from '#lib/tauri-commands/index.js'
+import type {
+  OpenWithCopyLaunched,
+  OpenWithCopyRefused,
+  OpenWithCopySource,
+  OpenWithNotOnThisMac,
+} from '#lib/ipc/bindings.js'
+import { viewShortcut } from './pane/default-app-open'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 
 const log = getAppLogger('fileExplorer')
@@ -31,15 +42,26 @@ const log = getAppLogger('fileExplorer')
 /** Long enough to read a two-sentence notice that says what to do next. */
 const NOTICE_TIMEOUT_MS = 10_000
 
-/** Mounts both listeners. Returns their unsubscribe. */
+/** Mounts all three listeners. Returns their unsubscribe. */
 export async function startOpenWithCopyBridge(): Promise<UnlistenFn> {
   const unlistenRefused = await onOpenWithCopyRefused(raiseNotice)
   const unlistenLaunched = await onOpenWithCopyLaunched(raiseLaunchedNotice)
+  const unlistenNotOnThisMac = await onOpenWithNotOnThisMac(raiseNotOnThisMacNotice)
   log.debug('Open-with copy notice bridge mounted')
   return () => {
     unlistenRefused()
     unlistenLaunched()
+    unlistenNotOnThisMac()
   }
+}
+
+function raiseNotOnThisMacNotice({ appName }: OpenWithNotOnThisMac): void {
+  log.info('Open with {appName} didn’t launch: the file has no path another app can open', { appName })
+  addToast(tString('fileExplorer.openWith.notOnThisMac', { appName, viewKey: viewShortcut() }), {
+    level: 'info',
+    timeoutMs: NOTICE_TIMEOUT_MS,
+    id: 'open-with-not-on-this-mac',
+  })
 }
 
 function raiseLaunchedNotice({ fileName, appName, copyCount }: OpenWithCopyLaunched): void {

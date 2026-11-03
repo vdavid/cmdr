@@ -645,12 +645,13 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         let ctx = menu_state.context.lock_ignore_poison();
         let app_path = ctx.open_with_apps.get(bundle_id).cloned();
         let paths: Vec<PathBuf> = ctx.paths.iter().map(PathBuf::from).collect();
+        let listing_id = ctx.listing_id.clone();
         drop(ctx);
 
         if let Some(app_path) = app_path
             && !paths.is_empty()
         {
-            super::open_with::launch_with(app, paths, app_path);
+            super::open_with::launch_with(app, paths, app_path, &listing_id);
         } else {
             log::warn!("Open with: missing app or paths for {bundle_id}");
         }
@@ -664,20 +665,17 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         use std::path::PathBuf;
 
         let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let paths: Vec<PathBuf> = menu_state
-            .context
-            .lock_ignore_poison()
-            .paths
-            .iter()
-            .map(PathBuf::from)
-            .collect();
+        let ctx = menu_state.context.lock_ignore_poison();
+        let paths: Vec<PathBuf> = ctx.paths.iter().map(PathBuf::from).collect();
+        let listing_id = ctx.listing_id.clone();
+        drop(ctx);
 
         // NSOpenPanel must run on the main thread. on_menu_event is invoked on
         // the main thread by Tauri/muda, so this is safe.
         if let Some(app_path) = pick_app_via_open_panel()
             && !paths.is_empty()
         {
-            super::open_with::launch_with(app, paths, app_path);
+            super::open_with::launch_with(app, paths, app_path, &listing_id);
         }
         return;
     }
@@ -764,7 +762,7 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             let menu_state = app.state::<MenuState<tauri::Wry>>();
             let ctx = menu_state.context.lock_ignore_poison();
             let paths = ctx.paths.clone();
-            let listing_id = ctx.tags_listing_id.clone();
+            let listing_id = ctx.listing_id.clone();
             drop(ctx);
             if !paths.is_empty() {
                 crate::file_system::tags_io::toggle_from_menu(app.clone(), listing_id, paths, color);

@@ -27,6 +27,7 @@ restic backup's snapshots: the overlay row, the parked hub, and the write guards
 - `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback.
 - `file_provider_actions/`: every provider's own File Provider actions in the file context menu (Dropbox, Google Drive,
   MacDroid, any provider).
+- `default_app.rs`: Enter's open in the default app (§ "Default app").
 - `open_with.rs`: the "Open with" candidate apps. `share.rs`: the `Share` submenu's services.
 - `get_info.rs`: Finder's Get Info window, through `osascript`, refusing up front when the user has turned off Cmdr's control
   of Finder (why `osascript` and not an in-process Apple Event: its module doc).
@@ -306,6 +307,25 @@ already provider-agnostic: a streamed Drive file carries `SF_DATALESS` like any 
   aren't what people read: VS Code's plist says `Code`, while Finder, Spotlight, and the Dock say "Visual Studio Code"
   (verified on macOS 26.6.2 with VS Code 1.137.0, compiled probe, 2026-09-11). The terminal row, the text editor row,
   and the file-viewer row in `reveal/` name apps through it too.
+
+## Default app (`default_app.rs`)
+
+- `open_path` (the command) passes straight through to `open_with_default_app(path, volume_id)`. `volume_id` is the
+  volume the ROW lives on; a registered one answering `paths_are_os_visible() == false` refuses with `NotOnThisMac`
+  before anything launches. That's the direct SMB share whose macOS mount went away: smb2 keeps browsing, the rows keep
+  their `/Volumes/…` paths, and nothing lives there. The frontend can't see it (a stranded volume has no switcher row,
+  so it classifies as `local`), which is why the check is here. An unregistered id (the search-results snapshot, a
+  favorite) skips it.
+- Then it runs `open` (`xdg-open` on Linux) to its exit under `crate::subprocess::output_within` (15 s), off the IPC
+  thread. A non-zero exit is `NotOpened { exit_code }`: `open` exits 1 for a missing file and for one no app takes
+  alike (verified on macOS 27.0, `open /nonexistent…` in `default_app_test.rs`, 2026-11-03). ❌ Never read its stderr
+  to tell them apart: the wording is the OS's. A spawn failure is `LaunchRefused { errno }`, the deadline `TimedOut`.
+- Why it waits: a spawned-and-forgotten `open` hides every refusal, and Enter on a stranded share did nothing at all
+  (ERR-NHM5T).
+- "Open with" (`menu/open_with.rs::launch_with`) asks the same question through `listing_paths_reach_other_apps`, since
+  the menu knows the pane's listing, not its volume, and announces a refusal as `OpenWithNotOnThisMac`. Rows that need
+  extraction (an archive's insides, a `.git` snapshot, a backup) skip it: the copy is what the app opens.
+- The `playwright-e2e` build asks the volume the same way, then records into `crate::open_mock` instead of launching.
 
 ## The Share submenu (`share.rs`)
 

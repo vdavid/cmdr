@@ -19,8 +19,11 @@ import type { FileEntry } from '../types'
 /** How long the toast stays. Long enough to read, short enough to never pile up. */
 export const OPENING_TOAST_MS = 2000
 
-/** One id, so a burst of Enter presses replaces the toast instead of stacking it. */
-const TOAST_ID = 'opening-file'
+/**
+ * One id, so a burst of Enter presses replaces the toast instead of stacking it, and
+ * an open that didn't happen replaces it with the reason (`default-app-open.ts`).
+ */
+export const OPENING_TOAST_ID = 'opening-file'
 
 export async function announceOpening(entry: FileEntry): Promise<void> {
   // `defaultAppName` answers `null` rather than throwing (off macOS, or no app).
@@ -28,5 +31,5 @@ export async function announceOpening(entry: FileEntry): Promise<void> {
   const message = appName
     ? tString('fileExplorer.openingToast.withApp', { fileName: entry.name, appName })
     : tString('fileExplorer.openingToast.noApp', { fileName: entry.name })
-  addToast(message, { id: TOAST_ID, dismissal: 'transient', timeoutMs: OPENING_TOAST_MS })
+  addToast(message, { id: OPENING_TOAST_ID, dismissal: 'transient', timeoutMs: OPENING_TOAST_MS })
 }

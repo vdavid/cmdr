@@ -9,8 +9,9 @@
  * 3. a directory or archive file browses in place;
  * 4. a file inside an archive goes to the viewer (its inner path doesn't exist
  *    on disk, so the OS open would be a silent no-op);
- * 5. anything else goes to its default app, with a short "Opening…" toast
- *    (`opening-toast.ts`).
+ * 5. anything else goes to its default app, with a short "Opening…" toast, or a
+ *    toast saying why it didn't (`default-app-open.ts`: a row with no file another
+ *    app can open, or macOS saying no).
  *
  * On a search-results pane every arm that would browse or launch instead LEAVES
  * the snapshot volume first: `resolveLocationOrToast` resolves the row's real
@@ -19,7 +20,6 @@
  * no longer available".
  */
 
-import { openFile } from '#lib/tauri-commands/index.js'
 import type { FileEntry } from '../types'
 import type { Location } from '#lib/tauri-commands/index.js'
 import { getSetting } from '#lib/settings/index.js'
@@ -29,7 +29,7 @@ import { resolveEnterPolicy, enterBehaviorFromSettings, type EnterBehaviorByForm
 import { openFileViewer } from '#lib/file-viewer/open-viewer.js'
 import { resolveLocationOrToast } from '../navigation/navigate-and-select'
 import type { LoadDirectoryArgs } from './types'
-import { announceOpening } from './opening-toast'
+import { openWithDefaultAppOrExplain } from './default-app-open'
 
 /**
  * What opening an entry does: the decision chain above, with no side effects. `launch` and `choose`
@@ -105,7 +105,7 @@ export interface EntryActivation {
   handleNavigate: (entry: FileEntry) => Promise<void>
   /** Step into a folder / archive / bundle. Also the popup's Browse choice. */
   browseIntoEntry: (entry: FileEntry) => Promise<void>
-  /** Hand an entry to its default app. Also the popup's Open choice. */
+  /** Hand an entry to its default app, or say why not. Also the popup's Open choice and the context menu's Open. */
   openEntryExternally: (entry: FileEntry) => Promise<void>
   /** What opening an entry would do, for a tool's question. */
   describe: (entry: FileEntry) => CursorItemDescription
@@ -136,17 +136,11 @@ export function createEntryActivation(deps: EntryActivationDeps): EntryActivatio
 
   /**
    * Hand an entry to its default app via LaunchServices: a `.zip` opens in the OS
-   * archive tool, a `.app`/`.bundle` launches, any other file opens normally.
+   * archive tool, a `.app`/`.bundle` launches, any other file opens normally. A row
+   * no other app can open, or a launch macOS refuses, gets a toast saying so.
    */
   async function openEntryExternally(entry: FileEntry): Promise<void> {
-    // Side by side with the launch, never in front of it: the toast is the
-    // feedback a slow share otherwise lacks.
-    void announceOpening(entry)
-    try {
-      await openFile(entry.path)
-    } catch {
-      // Silently fail - file open errors are expected sometimes
-    }
+    await openWithDefaultAppOrExplain(deps.getVolumeId(), entry)
   }
 
   /**

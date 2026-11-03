@@ -613,6 +613,22 @@ export function rowIsOsVisible(volumeId: string, rowPath: string): boolean {
 }
 
 /**
+ * Whether ONE row is a file another app on this Mac can open by its path: the gate
+ * in front of every hand-off to an outside app (F4's editor, Enter's default app).
+ *
+ * `rowIsOsVisible` plus the PATH scheme (`isPlainFilesystemPath`), which holds with
+ * no volume to ask: a search-results pane's own volume is virtual, and an unplugged
+ * phone has left the volume list while its rows still read `adb://…`.
+ *
+ * ❗ The instant half only. A direct SMB share whose macOS mount went away keeps
+ * `/Volumes/…` rows and has no switcher row to classify, so it passes here; the
+ * backend's `open_path` asks the volume itself (`file_system/default_app.rs`).
+ */
+export function rowHasFileOnThisMac(volumeId: string, rowPath: string): boolean {
+  return isPlainFilesystemPath(rowPath) && rowIsOsVisible(volumeId, rowPath)
+}
+
+/**
  * Whether a tag can be stored on one row, the gate on the context menu's tag colors: the
  * volume has to store xattrs, and the row has to be a real entry on it. Not
  * `rowIsOsVisible`: a tag goes through the volume, so a share whose macOS mount is gone

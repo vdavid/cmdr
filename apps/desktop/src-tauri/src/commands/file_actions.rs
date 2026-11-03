@@ -4,13 +4,13 @@
 //! and the iCloud make-available-offline / remove-download pair. Thin pass-throughs
 //! that shell out or delegate to `file_system`.
 
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-#[cfg(not(all(target_os = "macos", feature = "playwright-e2e")))]
+#[cfg(target_os = "linux")]
 use std::process::Command;
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tokio::time::Duration;
 
+use crate::file_system::default_app::OpenPathError;
 use crate::file_system::get_info::GetInfoError;
 use crate::file_system::google_drive::DriveItemLinks;
 #[cfg(target_os = "macos")]
@@ -229,43 +229,17 @@ pub async fn list_text_editors(app_choice: String) -> TimedOut<TextEditorList> {
 
 /// Open a file (or folder) with the system's default application.
 ///
-/// Backs the frontend "open" action (Enter / double-click / MCP `open_under_cursor`
-/// on a file entry). Kept in Rust rather than the frontend opener plugin so the
-/// `playwright-e2e` build can swap in a launch-free variant: the real one spawns
-/// TextEdit/Preview/etc. per open, and the E2E suite (which creates and opens
-/// files) has no way to close them, so they pile up unbounded across runs.
+/// Backs the frontend "open" action (Enter / double-click / the context menu's Open /
+/// MCP `open_under_cursor` on a file entry). `volume_id` is the volume the row lives
+/// on, so a volume whose paths other apps can't open right now refuses before
+/// anything launches. Waits for the opener's answer, so a refusal comes back typed
+/// rather than vanishing (`file_system::default_app`). Kept in Rust rather than the
+/// frontend opener plugin so the `playwright-e2e` build can record the open instead
+/// of spawning TextEdit/Preview/etc. per open, which the E2E suite has no way to close.
 #[tauri::command]
 #[specta::specta]
-#[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
-pub fn open_path(path: String) -> Result<(), String> {
-    Command::new("open").arg(&path).spawn().map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-#[cfg(all(target_os = "linux", not(feature = "playwright-e2e")))]
-pub fn open_path(path: String) -> Result<(), String> {
-    Command::new("xdg-open").arg(&path).spawn().map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-#[cfg(all(not(any(target_os = "macos", target_os = "linux")), not(feature = "playwright-e2e")))]
-pub fn open_path(_path: String) -> Result<(), String> {
-    Err("Open is not available on this platform".to_string())
-}
-
-/// E2E variant: record the open request instead of launching an external app,
-/// so the suite never floods the desktop with orphan TextEdit/Preview windows.
-/// Specs can assert intent via `crate::open_mock`.
-#[tauri::command]
-#[specta::specta]
-#[cfg(feature = "playwright-e2e")]
-pub fn open_path(path: String) -> Result<(), String> {
-    crate::open_mock::record(path);
-    Ok(())
+pub async fn open_path(path: String, volume_id: Option<String>) -> Result<(), OpenPathError> {
+    crate::file_system::default_app::open_with_default_app(path, volume_id).await
 }
 
 /// E2E: the paths `open_path` recorded (oldest first), so a spec can assert that

@@ -1,6 +1,7 @@
 /**
- * Tests for the "Open with" copy notices: what the person is told when they picked an app
- * for a file inside an archive, and either nothing opened or the app got a read-only copy.
+ * Tests for the "Open with" notices: what the person is told when they picked an app
+ * for a file inside an archive, and either nothing opened or the app got a read-only copy,
+ * and when the file has no path any app can open.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type {
@@ -8,6 +9,7 @@ import type {
   OpenWithCopyRefusal,
   OpenWithCopyRefused,
   OpenWithCopySource,
+  OpenWithNotOnThisMac,
 } from '#lib/ipc/bindings.js'
 
 /** Only the fields these cells assert on; the real options type is wider. */
@@ -20,7 +22,13 @@ let emitRefused: (payload: OpenWithCopyRefused) => void
 let emitLaunched: (payload: OpenWithCopyLaunched) => void
 const unlisten = vi.fn()
 const unlistenLaunched = vi.fn()
+let emitNotOnThisMac: (payload: OpenWithNotOnThisMac) => void
+const unlistenNotOnThisMac = vi.fn()
 vi.mock('#lib/tauri-commands/index.js', () => ({
+  onOpenWithNotOnThisMac: (handler: (payload: OpenWithNotOnThisMac) => void) => {
+    emitNotOnThisMac = handler
+    return Promise.resolve(unlistenNotOnThisMac)
+  },
   onOpenWithCopyRefused: (handler: (payload: OpenWithCopyRefused) => void) => {
     emitRefused = handler
     return Promise.resolve(unlisten)
@@ -125,6 +133,7 @@ describe('the open-with refusal notice', () => {
     stop()
     expect(unlisten).toHaveBeenCalled()
     expect(unlistenLaunched).toHaveBeenCalled()
+    expect(unlistenNotOnThisMac).toHaveBeenCalled()
   })
 })
 
@@ -147,5 +156,19 @@ describe('the open-with read-only copy notice', () => {
     const [message] = addToast.mock.calls[0]
     expect(message).toContain('3 files')
     expect(message).not.toContain('a.pdf')
+  })
+})
+
+describe('the open-with not-on-this-Mac notice', () => {
+  // A direct SMB share whose macOS mount is gone, a phone, a server: the app would
+  // have opened on a path that leads nowhere.
+  it('names the app and points at the viewer instead', () => {
+    emitNotOnThisMac({ appName: 'Preview' })
+
+    expect(addToast).toHaveBeenCalledTimes(1)
+    const [message, options] = addToast.mock.calls[0]
+    expect(message).toContain('Preview')
+    expect(message).toContain('F3')
+    expect(options.level).toBe('info')
   })
 })

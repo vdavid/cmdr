@@ -190,7 +190,7 @@ pub fn show_file_context_menu<R: Runtime>(
         context.path = path.clone();
         context.filename = filename.clone();
         context.paths = context_paths;
-        context.tags_listing_id = pane.listing_id;
+        context.listing_id = pane.listing_id;
         #[cfg(target_os = "macos")]
         {
             // Both filled in below, from the facts that answered in time, and later by the

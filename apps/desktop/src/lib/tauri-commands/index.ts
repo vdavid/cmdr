@@ -136,6 +136,8 @@ export {
   openInEditor,
   OpenInEditorFailure,
   asOpenInEditorError,
+  OpenPathFailure,
+  asOpenPathError,
   listTextEditors,
   listTerminalApps,
   openTerminalHere,
@@ -155,6 +157,7 @@ export type {
   GetInfoError,
   MenuAnchor,
   OpenInEditorError,
+  OpenPathError,
   OpenTerminalError,
   OpenTerminalOutcome,
   PaneContextMenuFacts,
@@ -641,6 +644,7 @@ export {
   onMediaIndexFolderChoice,
   onMenuBarRebuilt,
   onOpenWithCopyRefused,
+  onOpenWithNotOnThisMac,
   onOpenWithCopyLaunched,
 } from './menu-events'
 

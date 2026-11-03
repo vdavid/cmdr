@@ -316,9 +316,11 @@ pub struct MenuContext {
     #[cfg(target_os = "macos")]
     pub file_provider_offer: Option<crate::file_system::file_provider_actions::ProviderOffer>,
     /// The focused pane's `listing_id` at the time the menu was shown, so a
-    /// `tag-color:N` click can refresh that listing's cache after writing tags.
-    /// Empty when the caller has no listing to refresh (the tag still writes to disk).
-    pub tags_listing_id: String,
+    /// `tag-color:N` click can refresh that listing's cache after writing tags, and
+    /// an "Open with" click can ask the listing's volume whether other apps can open
+    /// its paths. Empty when the caller has no listing (the tag still writes to disk,
+    /// and the launch goes ahead).
+    pub listing_id: String,
 }
 
 /// Context for the network host context menu (stored so on_menu_event can emit it).

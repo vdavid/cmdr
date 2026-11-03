@@ -2066,13 +2066,16 @@ export const commands = {
   /**
    *  Open a file (or folder) with the system's default application.
    *
-   *  Backs the frontend "open" action (Enter / double-click / MCP `open_under_cursor`
-   *  on a file entry). Kept in Rust rather than the frontend opener plugin so the
-   *  `playwright-e2e` build can swap in a launch-free variant: the real one spawns
-   *  TextEdit/Preview/etc. per open, and the E2E suite (which creates and opens
-   *  files) has no way to close them, so they pile up unbounded across runs.
+   *  Backs the frontend "open" action (Enter / double-click / the context menu's Open /
+   *  MCP `open_under_cursor` on a file entry). `volume_id` is the volume the row lives
+   *  on, so a volume whose paths other apps can't open right now refuses before
+   *  anything launches. Waits for the opener's answer, so a refusal comes back typed
+   *  rather than vanishing (`file_system::default_app`). Kept in Rust rather than the
+   *  frontend opener plugin so the `playwright-e2e` build can record the open instead
+   *  of spawning TextEdit/Preview/etc. per open, which the E2E suite has no way to close.
    */
-  openPath: (path: string) => typedError<null, string>(__TAURI_INVOKE('open_path', { path })),
+  openPath: (path: string, volumeId: string | null) =>
+    typedError<null, OpenPathError>(__TAURI_INVOKE('open_path', { path, volumeId })),
   /**
    *  The Google Drive web URLs for an item, or `None` when the path isn't one we can
    *  identify. Backs "Open in Google Drive", "Copy Google Drive link", and "Ask Gemini".
@@ -5710,6 +5713,7 @@ export const events = {
   openSettings: makeEvent<OpenSettings>('open-settings'),
   openWithCopyLaunched: makeEvent<OpenWithCopyLaunched>('open-with-copy-launched'),
   openWithCopyRefused: makeEvent<OpenWithCopyRefused>('open-with-copy-refused'),
+  openWithNotOnThisMac: makeEvent<OpenWithNotOnThisMac>('open-with-not-on-this-mac'),
   operationsChanged: makeEvent<OperationsChanged>('operations-changed'),
   osLocalesChanged: makeEvent<OsLocalesChanged>('os-locales-changed'),
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
@@ -13973,6 +13977,28 @@ export type OpenInEditorError =
   // The launch didn't finish inside the command's deadline.
   | { type: 'timedOut' }
 
+// Why a file didn't go to its default app. The frontend words every variant.
+export type OpenPathError =
+  /**
+   *  The file's volume hands out paths no other app can open right now (a direct
+   *  SMB share whose macOS mount is gone). Nothing was launched.
+   */
+  | { type: 'notOnThisMac' }
+  /**
+   *  The opener ran and refused: the file isn't there, or no app takes it.
+   *  `exit_code` is `None` when a signal ended it.
+   */
+  | { type: 'notOpened'; exitCode: number | null }
+  // The opener couldn't be started. Carries the OS errno where there is one.
+  | { type: 'launchRefused'; errno: number | null }
+  /**
+   *  The opener didn't answer inside the deadline and was stopped. The app may
+   *  still open the file.
+   */
+  | { type: 'timedOut' }
+  // There's no opener on this platform.
+  | { type: 'unsupported' }
+
 /**
  *  `open-settings`: open the settings window deep-linked to `section` (MCP
  *  `dialog open settings --section …`). Emitted to the main window.
@@ -14072,6 +14098,17 @@ export type OpenWithCopySource =
   | 'repoHistory'
   // A file in one of a restic repo's backup snapshots.
   | 'backup'
+
+/**
+ *  `open-with-not-on-this-mac`: an "Open with" click on a file whose volume hands
+ *  out paths no other app can open right now, so no app was launched. The main
+ *  window says so in a toast; without it, the app would open on a file that isn't
+ *  there, or the click would do nothing.
+ */
+export type OpenWithNotOnThisMac = {
+  // The chosen app's display name (its bundle name without `.app`).
+  appName: string
+}
 
 /**
  *  An operation's header plus a page of its items, with dir prefixes resolved to

@@ -2,6 +2,8 @@
 
 pub mod backend_settings;
 pub mod cloud_actions;
+/// Ungated: `open_path` answers with its error type on every platform.
+pub mod default_app;
 #[cfg(target_os = "macos")]
 pub mod file_provider_actions;
 /// A bounded pool of 8 MB-stack OS threads for synchronous macOS framework calls.

@@ -458,6 +458,20 @@
       "appName": "the app's name as macOS shows it, for example Preview (do not translate)"
     }
   },
+  "fileExplorer.open.notOnThisMac": "Cmdr can’t open this file in another app yet, because it isn’t a regular file on your Mac. Press {viewKey} to view it.",
+  "@fileExplorer.open.notOnThisMac": {
+    "description": "Info toast shown when the user presses Enter, double-clicks, or picks Open on a file that no other app can open by its path: a file on a phone or camera, on a server reached over SFTP, WebDAV, or S3, in the virtual .git folders, or on a network share Cmdr still reaches over its own connection after macOS lost track of it. Nothing opened, so the toast says why and points at the key that opens Cmdr's own viewer, which can show the file. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'.",
+    "placeholders": {
+      "viewKey": "the key the user has bound to View, for example F3 (do not translate)"
+    }
+  },
+  "fileExplorer.open.didNotOpen": "{fileName} didn’t open. macOS couldn’t find the file, or an app that opens it.",
+  "@fileExplorer.open.didNotOpen": {
+    "description": "Warning toast shown when the user pressed Enter, double-clicked, or picked Open on a file, Cmdr handed it to macOS, and macOS said no: the file wasn't where it should be (for example, a network drive dropped off), or no installed app opens this kind of file. Never use the words 'error' or 'failed'.",
+    "placeholders": {
+      "fileName": "the file's name, for example report.pdf (do not translate)"
+    }
+  },
   "fileExplorer.openingToast.noApp": "Opening {fileName}…",
   "@fileExplorer.openingToast.noApp": {
     "description": "Short self-dismissing toast (two seconds) shown right after the user presses Enter or double-clicks a file, when Cmdr doesn't know which app will open it (or the item is an app itself).",
@@ -1452,6 +1466,14 @@
     "placeholders": {
       "fileName": "the file’s name, e.g. report.pdf. Never translate it",
       "appName": "the app the user picked, e.g. Preview. Never translate it"
+    }
+  },
+  "fileExplorer.openWith.notOnThisMac": "{appName} can’t open this file, because it isn’t a regular file on your Mac. Press {viewKey} to view it in Cmdr.",
+  "@fileExplorer.openWith.notOnThisMac": {
+    "description": "Info toast shown after the user right-clicked a file, picked an app under \"Open with\", and nothing opened, because no other app can open the file by its path: it's on a phone or camera, on a server reached over SFTP, WebDAV, or S3, or on a network share Cmdr still reaches over its own connection after macOS lost track of it. Points at the key that opens Cmdr's own viewer, which can show the file. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'.",
+    "placeholders": {
+      "appName": "the app's name, for example Preview (do not translate)",
+      "viewKey": "the key the user has bound to View, for example F3 (do not translate)"
     }
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Couldn’t read {fileName} to open it in {appName}. Check that its drive is still connected, then try again.",

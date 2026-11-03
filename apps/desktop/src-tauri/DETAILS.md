@@ -41,7 +41,7 @@ depend on each other. A block whose only home would be "startup, part 4" stays i
 ## The E2E build's launch mock (`open_mock.rs`)
 
 Every action that hands a path to another app records into `crate::open_mock` under the `playwright-e2e` feature
-instead of launching: `open_path` and `open_in_editor` (`commands/file_actions.rs`), and "open terminal here"
+instead of launching: `open_path` (`src/file_system/default_app.rs`) and `open_in_editor` (`commands/file_actions.rs`), and "open terminal here"
 (`src/file_system/terminal.rs`). The suite creates files and opens them, and it can't close a TextEdit or terminal window,
 so real launches would pile up unbounded across runs. It's crate-level rather than colocated with any one of them
 because all three share the store the specs read back through `e2e_opened_paths`. Same shape as the clipboard mock

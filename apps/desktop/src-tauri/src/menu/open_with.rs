@@ -190,13 +190,25 @@ fn other_item<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<MenuItem<R>> {
 /// Every other launch stays on the main thread, synchronous, as it always was.
 ///
 /// A pull that can't finish (too big, a locked or damaged archive) launches nothing and
-/// tells the main window why (`OpenWithCopyRefused`), which shows it as a toast.
+/// tells the main window why (`OpenWithCopyRefused`), which shows it as a toast. So does
+/// a row on a volume whose paths no other app can open right now, like a direct SMB
+/// share whose macOS mount is gone (`OpenWithNotOnThisMac`): `listing_id` is the pane's
+/// listing the menu went up over, which names that volume.
 #[cfg(target_os = "macos")]
-pub(super) fn launch_with<R: Runtime>(app: &AppHandle<R>, paths: Vec<PathBuf>, app_path: PathBuf) {
+pub(super) fn launch_with<R: Runtime>(app: &AppHandle<R>, paths: Vec<PathBuf>, app_path: PathBuf, listing_id: &str) {
+    use crate::file_system::default_app::listing_paths_reach_other_apps;
     use crate::file_system::open_with::open_paths_with;
     use crate::file_viewer::open_with_extract;
 
     if !open_with_extract::any_needs_extraction(&paths) {
+        if !listing_paths_reach_other_apps(listing_id) {
+            log::info!(
+                "Open with {}: not launching, the pane's volume has no macOS mount behind its paths",
+                LogPrivate::path(&app_path)
+            );
+            announce_not_on_this_mac(app, &app_path);
+            return;
+        }
         if let Err(e) = open_paths_with(&paths, &app_path) {
             log::warn!("Open with failed for {}: {e}", LogPrivate::path(&app_path));
         }
@@ -241,6 +253,22 @@ fn announce_launched_copy<R: Runtime>(
         && let Err(e) = notice.emit(app)
     {
         log::warn!("Open with: couldn't tell the main window the app got a copy: {e}");
+    }
+}
+
+/// Tells the main window an "Open with" launch didn't happen because the file has no
+/// path another app can open.
+#[cfg(target_os = "macos")]
+fn announce_not_on_this_mac<R: Runtime>(app: &AppHandle<R>, app_path: &std::path::Path) {
+    use crate::file_system::default_app::OpenWithNotOnThisMac;
+    use tauri_specta::Event;
+
+    let app_name = app_path.file_stem().map_or_else(
+        || app_path.display().to_string(),
+        |stem| stem.to_string_lossy().into_owned(),
+    );
+    if let Err(e) = (OpenWithNotOnThisMac { app_name }).emit(app) {
+        log::warn!("Open with: couldn't tell the main window the file isn't on this Mac: {e}");
     }
 }
 

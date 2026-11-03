@@ -14,6 +14,7 @@ import {
   type MenuSort,
   type OpenWithCopyLaunched,
   type OpenWithCopyRefused,
+  type OpenWithNotOnThisMac,
   type ShowSearchResultInFolder,
   type ViewModeChanged,
 } from '#lib/ipc/bindings.js'
@@ -95,6 +96,17 @@ export function onMediaIndexFolderChoice(handler: (payload: MediaIndexFolderChoi
  */
 export function onOpenWithCopyRefused(handler: (payload: OpenWithCopyRefused) => void): Promise<UnlistenFn> {
   return events.openWithCopyRefused.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * An "Open with" click on a file whose volume hands out paths no other app can open
+ * right now (a direct SMB share whose macOS mount is gone, a phone, a server), so no
+ * app launched. The payload names the app.
+ */
+export function onOpenWithNotOnThisMac(handler: (payload: OpenWithNotOnThisMac) => void): Promise<UnlistenFn> {
+  return events.openWithNotOnThisMac.listen((event) => {
     handler(event.payload)
   })
 }
