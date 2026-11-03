@@ -141,7 +141,8 @@ The full top-level inventory is here:
   patiently: `src/transfer/DETAILS.md` § "Waiting out a volume that went away"), `status_cache.rs` (the status cache,
   the busy-volumes set it derives, the external drag-out seam, and `get_operation_status`), `summary.rs` (what the queue
   row says an operation acts on, § "What a row says it acts on"), `operation_intent.rs` (`OperationIntent`,
-  `PauseGate`), `human_wait.rs` (how long a person, or a volume that left, has kept the operation waiting),
+  `PauseGate`), `sync_primitives.rs` (std's sync primitives, or Shuttle's under `--features shuttle`, § "Thread
+  interleavings (Shuttle)"), `human_wait.rs` (how long a person, or a volume that left, has kept the operation waiting),
   `metadata_losses.rs` (per-class counts of the metadata a destination couldn't keep, for the completion's note:
   `src/transfer/volume/DETAILS.md` § "Copies keep the source's metadata"), `mount_boundary.rs` (where a delete's walk
   stops: `src/delete/DETAILS.md` § "A mount is a wall"), `archive_edit/` (the zip-edit driver).
@@ -152,12 +153,11 @@ The full top-level inventory is here:
   `Volume::clear_blockers` after its plain removal is refused, never by a volume's own `delete`, which is also F8's).
   That recheck shares `verify_snapshot` + `SkipReason` with the operation-log history engine — ❌ never a batch or a
   fork of either, so one reversal can't quietly grow a laxer rule than the other; only the `Drop` net is unconditional.
-  The persisted leftover ledger is eight files: `in_flight_records.rs` (what a record IS: its kind, its path space, and
+  The persisted leftover ledger is seven files: `in_flight_records.rs` (what a record IS: its kind, its path space, and
   what that kind needs), `in_flight_temps.rs` (the log and the store, and what an operation records),
   `in_flight_landing.rs` (a staged temp turning into a landing before its way is cleared, and back),
   `in_flight_claim.rs` (the engine's one claim: the only code that opens, replays, and truncates a ledger file),
   `in_flight_log_writer.rs` (the thread that writes the log, so no record is file I/O on an async worker),
-  `in_flight_sync.rs` (the locks, queues, and threads all of it shares: std's, or Shuttle's under `--features shuttle`),
   `in_flight_sweep.rs` (what a launch and a returning drive DO with one), and `in_flight_sweep_surface.rs` (the four
   filesystem primitives those rules act through). § "What the sweep does with each kind" and § "Who claims the ledger"
   below hold the rules; `src/transfer/DETAILS.md` § "Which path space a recorded partial lives in" holds the path-space
@@ -2793,6 +2793,31 @@ process-global.
 
 See also: `docs/testing.md` for the project-wide testing playbook.
 
+## Thread interleavings (Shuttle)
+
+Two places here are raced by several threads at once and guard data or liveness: the in-flight ledger (copies recording,
+a quit flushing, a launch sweeping, arrivals claiming) and the pause gate (a parked worker, a person pausing and
+stopping, quit's teardown). Their races run under [Shuttle](https://github.com/awslabs/shuttle) in
+`in_flight_shuttle_tests.rs` and `operation_intent_shuttle_tests.rs`, through the `desktop-rust-shuttle` lane
+(`scripts/check/checks/DETAILS.md` § "Interleaving tests (Shuttle)").
+
+- **The seam is `sync_primitives.rs`**, a `cfg`'d re-export: the crate's `shuttle` feature swaps those modules' `Mutex`,
+  `Condvar`, `Once`, `mpsc`, atomics, and threads for Shuttle's, and a shipped build names std's types and nothing else.
+  Shuttle's PCT scheduler then picks who runs next at every lock, send, and atomic, and prints the schedule of any
+  failure (`shuttle_support.rs` says how to replay it). ❗ Anything those threads share goes through it, or Shuttle
+  can't switch threads there.
+- ❌ **Never turn the feature on outside that lane**: Shuttle's primitives panic outside a Shuttle run, so every other
+  cell touching a ledger or a gate would fail.
+- **Each cell has a recorded mutant** (the `*.mutants.json` beside it). Three of them survive every example cell here
+  and fall to Shuttle within a few schedules (verified 2026-11-03, `shuttle` 0.9.9, each applied by hand against
+  `cargo nextest run -p cmdr-operations`): an arrival's claim split across two locks, a launch sweep settling what the
+  ledger holds rather than what it replayed, and a gate wake that notifies its condvar without the lock (a lost wakeup
+  that leaves a cancelled, paused copy parked for good).
+- **What Shuttle can't see**: a switch happens only at its own primitives, so tokio's `Notify` is one opaque step. The
+  async gate's lost-wakeup window (creating the `Notified` after the flag check) never opens under it; that ordering
+  stays pinned by its comment and tokio's documented pattern. And it treats every atomic ordering as `SeqCst`, so a
+  `Relaxed` that needed `Acquire` passes.
+
 ## Bulk rename's hop log
 
 `BulkRenameRecorder` (`rename/bulk.rs`) journals every filesystem hop the moment it lands, and the rows that never moved
@@ -2939,17 +2964,7 @@ engine it's handed (each launch on an engine of its own, whose `FakeVolumes` hol
 what that ledger alone believes is on disk. So a cell's log, tally, and live set hold its own records and nothing else,
 and it can assert on all of them whole.
 
-**Its interleavings run under Shuttle** (`in_flight_shuttle_tests.rs`, the `desktop-rust-shuttle` lane). The crate's
-`shuttle` feature swaps the ledger's `Mutex`, `Once`, `mpsc`, and threads for Shuttle's through `in_flight_sync.rs`, a
-re-export, so a shipped build names std's types and nothing else; its PCT scheduler then picks who runs next at every
-lock and send. The cells race copies, an aside, a quit's flush, a launch sweep, and two arrivals of one volume on the
-real code, and each has a recorded mutant (`in_flight_shuttle_tests.mutants.json`). Two of those (an arrival's claim
-split across two locks, and a launch sweep settling what the ledger holds rather than what it replayed) survive every
-example cell here and fall to Shuttle within a few schedules (verified 2026-11-03, `shuttle` 0.9.9, applied by hand
-against `cargo nextest run -p cmdr-operations`). ❗ Anything the ledger's threads share goes through
-`in_flight_sync.rs`, or Shuttle can't switch threads there. ❌ Never turn the feature on outside that lane: Shuttle's
-primitives panic outside a Shuttle run, so every other cell touching a ledger would fail. A failing schedule replays
-with `CMDR_SHUTTLE_REPLAY` (the test file's docs).
+**Its races run under Shuttle** (`in_flight_shuttle_tests.rs`): § "Thread interleavings (Shuttle)".
 
 - ❌ **Don't reintroduce a singleton that tests install a log into.** That's how a sweep cell replayed the records of
   every transfer test running beside it and deleted their live temps mid-copy under plain `cargo test` (#162; the check

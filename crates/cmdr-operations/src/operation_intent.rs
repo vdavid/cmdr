@@ -6,11 +6,11 @@
 //! and re-exported from there, so existing `state::OperationIntent` /
 //! `state::PauseGate` / `state::IntentCell` paths keep resolving.
 
-use cmdr_fs::ignore_poison::IgnorePoison;
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-use std::sync::{Arc, Condvar};
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
 
 use super::human_wait::{HumanWaitClock, HumanWaitSource};
+use super::sync_primitives::{AtomicBool, AtomicU8, Condvar, Mutex, lock_ignore_poison};
 
 // ============================================================================
 // Operation intent (state machine for cancellation)
@@ -230,7 +230,7 @@ pub struct PauseGate {
     /// Guards nothing real — `Condvar::wait` needs a held `MutexGuard`. The flag
     /// itself is the `AtomicBool` so non-waiting readers (`is_paused`) and the
     /// async waiter don't need the lock.
-    condvar_mutex: std::sync::Mutex<()>,
+    condvar_mutex: Mutex<()>,
     condvar: Condvar,
     notify: tokio::sync::Notify,
     /// The operation's human-wait accounting, driven from the same two calls
@@ -244,7 +244,7 @@ impl PauseGate {
     pub(super) fn new(human_wait: Arc<HumanWaitClock>) -> Self {
         Self {
             paused: AtomicBool::new(false),
-            condvar_mutex: std::sync::Mutex::new(()),
+            condvar_mutex: Mutex::new(()),
             condvar: Condvar::new(),
             notify: tokio::sync::Notify::new(),
             human_wait,
@@ -289,7 +289,7 @@ impl PauseGate {
         // just-about-to-`wait` thread isn't missed (the waiter re-checks under
         // the lock).
         {
-            let _guard = self.condvar_mutex.lock_ignore_poison();
+            let _guard = lock_ignore_poison(&self.condvar_mutex);
             self.condvar.notify_all();
         }
         // Wake the async waiter. `notify_waiters` only wakes tasks already
@@ -318,7 +318,7 @@ impl PauseGate {
     /// that misses one of the walk's cancel routes leaves the thread on the
     /// gate with nobody left to open it.
     pub fn wait_while_paused_sync_until(&self, should_stop: &dyn Fn() -> bool) {
-        let mut guard = self.condvar_mutex.lock_ignore_poison();
+        let mut guard = lock_ignore_poison(&self.condvar_mutex);
         while self.is_paused() && !should_stop() {
             // Recover from poison the same way `lock_ignore_poison` does: a
             // panic elsewhere shouldn't abort the app, and this guards no real
@@ -357,7 +357,6 @@ impl PauseGate {
 mod tests {
     use super::*;
     use std::sync::Arc;
-    use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
     use std::time::{Duration, Instant};
 
     // ---- OperationIntent::from_u8 ----
@@ -714,3 +713,7 @@ mod tests {
         assert!(gate.is_paused(), "cancel path leaves paused set");
     }
 }
+
+#[cfg(all(test, feature = "shuttle"))]
+#[path = "operation_intent_shuttle_tests.rs"]
+mod shuttle_tests;

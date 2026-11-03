@@ -93,8 +93,8 @@ slow lane, and its own job in `slow-checks.yml`). The scope, adding a module, an
 `#[test] fn shuttle_*` cells run a crate's real concurrent code under Shuttle's PCT scheduler, which picks who runs next
 at every lock and send, so a race the machine rarely produces shows up within a few hundred schedules and replays from
 the schedule it prints. The crate's `shuttle` feature swaps its primitives for Shuttle's; `pnpm check shuttle` (slow, CI
-every six days) builds and runs them in a target dir of their own. Today: the in-flight ledger
-(`crates/cmdr-operations/src/in_flight_shuttle_tests.rs`). How it's wired and adding a crate:
+every six days) builds and runs them in a target dir of their own. Today: the in-flight ledger and the pause gate
+(`crates/cmdr-operations/DETAILS.md` § "Thread interleavings (Shuttle)"). How it's wired and adding a crate:
 `scripts/check/checks/DETAILS.md` § "Interleaving tests (Shuttle)".
 
 ### Property mutants (every property can fail)

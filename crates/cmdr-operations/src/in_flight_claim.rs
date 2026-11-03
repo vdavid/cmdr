@@ -8,8 +8,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use super::super::host::{EngineHost, OperationErrorReport};
+use super::super::sync_primitives::thread;
 use super::log_writer::LogWriter;
-use super::primitives::thread;
 use super::{Ledger, Record, RecordedTemp, STORE_FILENAME, SweepHandle, TrackedItem, append, sweep};
 use cmdr_fs::log_private::LogPrivate;
 

@@ -117,11 +117,14 @@ mod scan_walker;
 mod scan_watchdog;
 mod scope;
 mod scratch_dir;
+#[cfg(all(test, feature = "shuttle"))]
+mod shuttle_support;
 mod source_binding;
 mod sources_gone_slot;
 mod state;
 mod status_cache;
 mod summary;
+mod sync_primitives;
 mod target_names;
 mod transfer;
 mod transfer_sides;

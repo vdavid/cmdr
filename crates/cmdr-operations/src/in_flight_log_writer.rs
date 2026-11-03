@@ -36,7 +36,7 @@
 //! The quit teardown waits for the queue to drain ([`LogWriter::barrier`]), so
 //! an ordinary quit loses nothing.
 
-use super::primitives::{mpsc, thread};
+use super::super::sync_primitives::{mpsc, thread};
 use std::fs::File;
 use std::io::Write;
 

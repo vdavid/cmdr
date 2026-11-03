@@ -4,14 +4,12 @@
 //!
 //! Built only under `--features shuttle` (the `desktop-rust-shuttle` lane),
 //! which swaps the ledger's locks, queues, and threads for Shuttle's
-//! (`in_flight_sync.rs`), so its scheduler picks who runs next at every lock
+//! (`sync_primitives.rs`), so its scheduler picks who runs next at every lock
 //! and send. Every test is named `shuttle_*`, which is how the lane and the
 //! property-mutant checks find it.
 //!
-//! A failure prints the schedule that broke it. Replay that one schedule with
-//! `CMDR_SHUTTLE_REPLAY='<schedule>' cargo test -p cmdr-operations --features
-//! shuttle --lib -- <test name>`, or rerun a whole exploration with
-//! `SHUTTLE_RANDOM_SEED=<seed>`.
+//! A failure prints the schedule that broke it; `shuttle_support.rs` says how
+//! to replay it.
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -21,33 +19,11 @@ use std::time::Duration;
 use shuttle::sync::mpsc;
 use shuttle::thread;
 
+use super::super::shuttle_support::explore;
 use super::super::state::WriteOperationState;
 use super::super::testing::TestOperations;
 use super::{ItemKind, Ledger, Record, RecordHome, STORE_FILENAME, TrackedRecord, retire, track};
 use cmdr_fs::testing::TestDir;
-
-/// Schedules per test. Every recorded mutant (`in_flight_shuttle_tests.mutants.json`)
-/// goes red within the first handful, on every seed tried; 300 keeps the three
-/// tests near a second and a half.
-const SCHEDULES: usize = 300;
-
-/// PCT's bug depth: how many ordering constraints a bug may need at once. Three
-/// covers "the writer falls behind while one thread acts and another reads".
-const PCT_DEPTH: usize = 3;
-
-/// Runs `body` under `SCHEDULES` schedules, or under the one schedule
-/// `CMDR_SHUTTLE_REPLAY` names.
-///
-/// PCT rather than uniformly random: a uniform pick keeps the ledger's writer
-/// thread close behind its producers, so "the flush returned before the writer
-/// got there" survived 300 random schedules and fell to PCT's first few. PCT
-/// starves a thread on purpose.
-fn explore(body: impl Fn() + Send + Sync + 'static) {
-    match std::env::var("CMDR_SHUTTLE_REPLAY") {
-        Ok(schedule) => shuttle::replay(body, &schedule),
-        Err(_) => shuttle::check_pct(body, SCHEDULES, PCT_DEPTH),
-    }
-}
 
 /// A scratch dir for one schedule, with the ledger's data dir inside it.
 fn scratch(name: &str) -> (TestDir, PathBuf) {

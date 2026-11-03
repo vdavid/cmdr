@@ -1,0 +1,20 @@
+{
+  "mutants": [
+    {
+      "property": "shuttle:shuttle_a_stop_always_frees_a_worker_parked_on_the_sync_gate",
+      "why": "the wake notifies the condvar without its lock, so a stop landing between the worker's check and its wait is lost and a cancelled, paused copy stays parked for good",
+      "file": "crates/cmdr-operations/src/operation_intent.rs",
+      "find": "            let _guard = lock_ignore_poison(&self.condvar_mutex);",
+      "replace": "            let _guard = ();",
+      "expect": "deadlock!"
+    },
+    {
+      "property": "shuttle:shuttle_a_stop_always_frees_a_task_parked_on_the_async_gate",
+      "why": "the wake reaches only the sync waiter, so a paused async volume copy never hears its cancel",
+      "file": "crates/cmdr-operations/src/operation_intent.rs",
+      "find": "        self.notify.notify_waiters();",
+      "replace": "        let _ = &self.notify;",
+      "expect": "deadlock!"
+    }
+  ]
+}

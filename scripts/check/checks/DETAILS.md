@@ -1076,15 +1076,15 @@ concurrent code under [Shuttle](https://github.com/awslabs/shuttle)'s scheduler,
 and send and prints the schedule of any failure. Each crate in `shuttleCrates` carries a `shuttle` feature that swaps
 its primitives for Shuttle's, so the lane builds `-p <crate> --features shuttle --lib` in `target/shuttle`, a build dir
 of its own (the flip would otherwise rebuild the shared lanes' artifacts), runs clippy over it (no other lane compiles
-that code), then the tests. Only `cmdr-operations` has them today (its in-flight ledger,
-`crates/cmdr-operations/DETAILS.md` § "Testing the in-flight temp ledger").
+that code), then the tests. Only `cmdr-operations` has them today (its in-flight ledger and pause gate,
+`crates/cmdr-operations/DETAILS.md` § "Thread interleavings (Shuttle)").
 
-- **Cost** (M1 Max, 2026-11-03): the three ledger cells run 300 PCT schedules each in ~1.6 s; the lane took 1m55s with a
-  cold `target/shuttle`, nearly all of it compiling.
+- **Cost** (M1 Max, 2026-11-03): the five cells run 300 PCT schedules each in ~1.2 s; the lane took 1m55s with a cold
+  `target/shuttle`, nearly all of it compiling.
 - **Why its own lane**: under the feature, Shuttle's primitives panic outside a Shuttle run, so the crate's other tests
   can't share the build. `workspace-member-coverage` lists it as a targeted `-p` lane for that reason.
 - **Adding a crate**: give it a `shuttle` feature over an optional `shuttle` dependency, swap its primitives through a
-  `cfg`'d re-export (`crates/cmdr-operations/src/in_flight_sync.rs` is the model), and add it to `shuttleCrates`.
+  `cfg`'d re-export (`crates/cmdr-operations/src/sync_primitives.rs` is the model), and add it to `shuttleCrates`.
 
 ## Allowlist shrink-wrap
 

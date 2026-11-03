@@ -118,10 +118,10 @@ use std::sync::Arc;
 
 use super::host::EngineHost;
 use super::state::WriteOperationState;
+use super::sync_primitives::{self as primitives, Mutex, MutexGuard, Once, mpsc, thread};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use log_writer::LogWriter;
-use primitives::{Mutex, MutexGuard, Once, mpsc, thread};
 
 /// The persisted log's file name inside the app data dir.
 const STORE_FILENAME: &str = "in-flight-temps.log";
@@ -739,9 +739,6 @@ fn compact_if_large(store: &mut Store) {
     store.logged_bytes = contents.len() as u64;
     log.rewrite(contents);
 }
-
-#[path = "in_flight_sync.rs"]
-mod primitives;
 
 #[path = "in_flight_log_writer.rs"]
 mod log_writer;
