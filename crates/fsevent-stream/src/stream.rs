@@ -190,7 +190,7 @@ unsafe impl Send for SendableCFRunLoop {}
 ///
 /// # Errors
 /// Return error when `paths_to_watch` is empty or holds an invalid path, or when `FSEvents`
-/// refuses to create the stream.
+/// refuses to create or start the stream.
 ///
 /// # Panics
 /// Panic when the given flags combination is illegal.
@@ -264,20 +264,33 @@ pub fn create_event_stream<P: AsRef<Path>>(
 
         // Safety: kCFRunLoopDefaultMode is a valid static CFStringRef from CoreFoundation.
         unsafe { stream.schedule(&current_runloop, kCFRunLoopDefaultMode) };
-        stream.start();
+        if stream.start() {
+            // `abort` ends `CFRunLoopRun` with `CFRunLoopStop`.
+            runloop_tx
+                .send(Some(SendableCFRunLoop(current_runloop)))
+                .expect("send runloop to stream");
 
-        // the calling to CFRunLoopRun will be terminated by CFRunLoopStop call in drop()
-        runloop_tx
-            .send(SendableCFRunLoop(current_runloop))
-            .expect("send runloop to stream");
-
-        CFRunLoop::run_current();
-        stream.stop();
+            CFRunLoop::run_current();
+            stream.stop();
+        } else {
+            // Without a started stream there's nothing to run, and `abort` would wait forever
+            // for a `BeforeWaiting` that never comes, so report the failure instead.
+            drop(runloop_tx.send(None));
+        }
         stream.invalidate();
 
         #[cfg(test)]
         TEST_RUNNING_RUNLOOP_COUNT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
     });
+
+    let Some(SendableCFRunLoop(runloop)) = runloop_rx.recv().expect("receive runloop from worker")
+    else {
+        thread_handle.join().expect("thread to shut down");
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            "FSEventStreamStart couldn't start the stream",
+        ));
+    };
 
     #[cfg(feature = "tokio")]
     let stream = ReceiverStream::new(event_rx);
@@ -286,10 +299,7 @@ pub fn create_event_stream<P: AsRef<Path>>(
     Ok((
         EventStream { stream, overflow },
         EventStreamHandler {
-            runloop: Some((
-                runloop_rx.recv().expect("receive runloop from worker").0,
-                thread_handle,
-            )),
+            runloop: Some((runloop, thread_handle)),
         },
     ))
 }
