@@ -522,7 +522,8 @@ with, so the two cannot disagree across a midnight or a timezone move.
 
 `runner::completion_for_failure` classifies a failed turn by TYPED variant (❌ never by the
 provider's wording; `error-string-match` forbids it and wording drifts). `AgentErrorKind::NoKey`,
-`AuthFailed`, and `RateLimited` become `WakeCompletion::ProviderRefused`: all three are settled
+`AuthFailed`, `RateLimited`, and `RequestTooLarge` (a plan too small for one prompt) become
+`WakeCompletion::ProviderRefused`: all four are settled
 facts about the rest of the day rather than something worth retrying at the ordinary pace. The
 verdict rides home on the `WakeFinished` message the turn thread already sends, which is the only
 path by which a provider's answer reaches the scheduler.

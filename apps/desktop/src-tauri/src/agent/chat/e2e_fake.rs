@@ -203,6 +203,7 @@ fn rail_fake_failure(kind: &str) -> crate::agent::llm::types::AgentLlmError {
         "timeout" => AgentLlmError::Timeout,
         "authFailed" => AgentLlmError::AuthFailed("Scripted key refusal".to_string()),
         "rateLimited" => AgentLlmError::RateLimited("Scripted rate limit".to_string()),
+        "requestTooLarge" => AgentLlmError::RequestTooLarge("Scripted request too large".to_string()),
         "budgetExhausted" => AgentLlmError::BudgetExhausted,
         _ => AgentLlmError::Provider("Scripted provider failure".to_string()),
     }

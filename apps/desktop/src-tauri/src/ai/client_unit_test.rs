@@ -204,6 +204,11 @@ fn ai_error_for_status_classifies_by_code() {
     // 429 is both rate-limiting and OpenAI's `insufficient_quota`.
     assert!(matches!(ai_error_for_status(429, "x".into()), AiError::RateLimited(_)));
     assert!(matches!(ai_error_for_status(500, "x".into()), AiError::ServerError(_)));
+    // 413: Groq's free tier answers it to any request past its tokens-per-minute cap.
+    assert!(matches!(
+        ai_error_for_status(413, "x".into()),
+        AiError::RequestTooLarge(_)
+    ));
     // 404: a model id the provider doesn't serve (decommissioned, or a typo), or a base
     // URL with the wrong path. The `<provider>-smoke` lanes branch on this variant.
     assert!(matches!(ai_error_for_status(404, "x".into()), AiError::NotFound(_)));

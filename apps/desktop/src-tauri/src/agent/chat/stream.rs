@@ -213,6 +213,9 @@ pub enum AgentErrorKindView {
     Timeout,
     AuthFailed,
     RateLimited,
+    /// The provider's plan won't take a request as big as one Ask Cmdr prompt. The rail names
+    /// the provider, so this doesn't read as Cmdr's own problem.
+    RequestTooLarge,
     BudgetExhausted,
     /// The turn went in a circle: the model kept re-sending a tool call that had already come
     /// back with a problem, after being told repeating it changes nothing.
@@ -240,6 +243,7 @@ impl AgentErrorKindView {
             AgentErrorKindView::Timeout => "timeout",
             AgentErrorKindView::AuthFailed => "auth_failed",
             AgentErrorKindView::RateLimited => "rate_limited",
+            AgentErrorKindView::RequestTooLarge => "request_too_large",
             AgentErrorKindView::BudgetExhausted => "budget_exhausted",
             AgentErrorKindView::RepeatedToolCall => "repeated_tool_call",
             AgentErrorKindView::UnfinishedReply => "unfinished_reply",
@@ -257,6 +261,7 @@ impl From<AgentErrorKind> for AgentErrorKindView {
             AgentErrorKind::Timeout => Self::Timeout,
             AgentErrorKind::AuthFailed => Self::AuthFailed,
             AgentErrorKind::RateLimited => Self::RateLimited,
+            AgentErrorKind::RequestTooLarge => Self::RequestTooLarge,
             AgentErrorKind::BudgetExhausted => Self::BudgetExhausted,
             AgentErrorKind::RepeatedToolCall => Self::RepeatedToolCall,
             AgentErrorKind::UnfinishedReply => Self::UnfinishedReply,

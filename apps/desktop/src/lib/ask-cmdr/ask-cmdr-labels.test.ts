@@ -49,4 +49,14 @@ describe('errorMessage', () => {
     expect(errorMessage('managedByOrganization')).toBe(errorMessage('managedByOrganization', null))
     expect(errorMessage('timeout', null)).not.toBe('')
   })
+
+  it('names the provider whose plan refused a request too big, so it can’t read as Cmdr’s problem', () => {
+    const named = errorMessage('requestTooLarge', null, 'Groq')
+    expect(named).toContain('Groq')
+    expect(named).not.toBe(errorMessage('rateLimited'))
+    // A custom endpoint or local server has no name to give, so the line says "your AI provider".
+    const unnamed = errorMessage('requestTooLarge')
+    expect(unnamed).not.toBe('')
+    expect(unnamed).not.toBe(named)
+  })
 })

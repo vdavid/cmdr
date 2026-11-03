@@ -5981,6 +5981,11 @@ export type AgentErrorKindView =
   | 'timeout'
   | 'authFailed'
   | 'rateLimited'
+  /**
+   *  The provider's plan won't take a request as big as one Ask Cmdr prompt. The rail names
+   *  the provider, so this doesn't read as Cmdr's own problem.
+   */
+  | 'requestTooLarge'
   | 'budgetExhausted'
   /**
    *  The turn went in a circle: the model kept re-sending a tool call that had already come

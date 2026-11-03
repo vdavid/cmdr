@@ -477,6 +477,10 @@ fn ai_error_maps_to_typed_agent_error() {
         AgentLlmError::from(AiError::RateLimited("slow down".into())),
         AgentLlmError::RateLimited("slow down".into())
     );
+    assert_eq!(
+        AgentLlmError::from(AiError::RequestTooLarge("TPM limit 8000".into())),
+        AgentLlmError::RequestTooLarge("TPM limit 8000".into())
+    );
     assert!(matches!(
         AgentLlmError::from(AiError::EmptyResponse),
         AgentLlmError::Provider(_)

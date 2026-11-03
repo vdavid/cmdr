@@ -21,6 +21,7 @@
  */
 
 import { getAppLogger } from '#lib/logging/logger.js'
+import { getCloudProvider, getSetting } from '#lib/settings/index.js'
 import { refreshRailGate } from './ask-cmdr-gate.svelte'
 import { openerItem } from './ask-cmdr-history'
 import type { AssistantItem, RailMessage, RailToolCall, Round } from './ask-cmdr-messages'
@@ -803,7 +804,17 @@ function applyFailed(
     errorKind: kind,
     detail: detail ?? undefined,
     managed: managed ?? undefined,
+    provider: kind === 'requestTooLarge' ? namedCloudProvider() : undefined,
   })
+}
+
+/** The brand name of the cloud provider Ask Cmdr talks to, or `undefined` for a local server or a
+ * custom endpoint (whose preset name, "Custom", names nothing). */
+function namedCloudProvider(): string | undefined {
+  if (getSetting('ai.provider') !== 'cloud') return undefined
+  const providerId = getSetting('ai.cloudProvider')
+  if (providerId === 'custom') return undefined
+  return getCloudProvider(providerId)?.name
 }
 
 /**

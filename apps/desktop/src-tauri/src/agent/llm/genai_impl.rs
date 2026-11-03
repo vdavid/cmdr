@@ -526,7 +526,7 @@ fn map_usage(usage: GenaiUsage) -> AgentUsage {
 // region: --- Error + provider mapping
 
 /// Maps `crate::ai`'s transport error to the agent seam's typed error. The status
-/// classification (401/403 → auth, 429 → rate-limited) happened upstream by HTTP
+/// classification (401/403 → auth, 413 → too large, 429 → rate-limited) happened upstream by HTTP
 /// status, so this stays a variant-to-variant mapping.
 impl From<AiError> for AgentLlmError {
     fn from(error: AiError) -> Self {
@@ -535,6 +535,7 @@ impl From<AiError> for AgentLlmError {
             AiError::Timeout => AgentLlmError::Timeout,
             AiError::AuthFailed(detail) => AgentLlmError::AuthFailed(detail),
             AiError::RateLimited(detail) => AgentLlmError::RateLimited(detail),
+            AiError::RequestTooLarge(detail) => AgentLlmError::RequestTooLarge(detail),
             AiError::NotFound(detail) => AgentLlmError::Provider(detail),
             AiError::EmptyResponse => AgentLlmError::Provider("the model returned no text".to_string()),
             AiError::ServerError(detail) => AgentLlmError::Provider(detail),

@@ -356,6 +356,10 @@ pub enum AiError {
     AuthFailed(String),
     /// The provider is rate-limiting requests or the account is out of quota (HTTP 429).
     RateLimited(String),
+    /// The provider won't take a request this big (HTTP 413). On Groq's free tier this is a
+    /// tokens-per-minute cap below one Ask Cmdr prompt, so every call gets it and retrying
+    /// changes nothing.
+    RequestTooLarge(String),
     /// The provider has no such model, or the base URL points at a path it doesn't serve
     /// (HTTP 404). The commonest BYOK misconfiguration, and what a decommissioned model id
     /// looks like from our side — the `<provider>-smoke` lanes branch on this variant to
@@ -380,6 +384,7 @@ impl Display for AiError {
             Self::Timeout => write!(f, "AI request timed out"),
             Self::AuthFailed(msg) => write!(f, "AI provider rejected the API key: {msg}"),
             Self::RateLimited(msg) => write!(f, "AI provider is rate-limiting or out of quota: {msg}"),
+            Self::RequestTooLarge(msg) => write!(f, "AI provider won't take a request this big: {msg}"),
             Self::NotFound(msg) => write!(f, "AI provider has no such model or endpoint: {msg}"),
             Self::EmptyResponse => write!(f, "AI returned no text"),
             Self::ServerError(msg) => write!(f, "AI server error: {msg}"),
@@ -656,12 +661,14 @@ fn make_resolver(endpoint: String, auth: AuthData, force_adapter: ForceAdapter) 
 /// Classifies a provider HTTP error status into the right [`AiError`] so the frontend can
 /// show a specific toast (key rejected vs. out of quota vs. generic server error). Branches
 /// on the numeric status, never the message body. 429 covers both rate-limiting and
-/// OpenAI's `insufficient_quota`; 401/403 is a rejected key; 404 is a model id the provider
+/// OpenAI's `insufficient_quota`; 413 is a request past what the provider (or the account's
+/// plan) takes in one go; 401/403 is a rejected key; 404 is a model id the provider
 /// doesn't serve (a typo, or one it decommissioned) or a base URL with the wrong path.
 fn ai_error_for_status(status: u16, detail: String) -> AiError {
     match status {
         401 | 403 => AiError::AuthFailed(detail),
         404 => AiError::NotFound(detail),
+        413 => AiError::RequestTooLarge(detail),
         429 => AiError::RateLimited(detail),
         _ => AiError::ServerError(detail),
     }

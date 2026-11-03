@@ -219,6 +219,8 @@ export type MessageKey =
   | 'askCmdr.error.provider'
   | 'askCmdr.error.rateLimited'
   | 'askCmdr.error.repeatedToolCall'
+  | 'askCmdr.error.requestTooLarge.named'
+  | 'askCmdr.error.requestTooLarge.unnamed'
   | 'askCmdr.error.timeout'
   | 'askCmdr.error.unavailable'
   | 'askCmdr.error.unfinishedReply'

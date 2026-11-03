@@ -1181,6 +1181,21 @@
     "description": "Shown when the provider is rate-limiting or the account is out of quota. Friendly; avoids the words error and failed. The apostrophe is U+2019.",
     "screenshot": "ask-cmdr-errors.png"
   },
+  "askCmdr.error.requestTooLarge.named": "{provider} turned this down: your plan’s limit is smaller than one request from Cmdr, which always carries its instructions. A shorter message won’t help. Try a bigger plan with {provider}, or pick another provider in settings.",
+  "@askCmdr.error.requestTooLarge.named": {
+    "description": "Shown in the Ask Cmdr chat when the AI provider refused the request as too large for the person's plan. This happens on plans with a small per-minute limit (Groq's free tier, for example): every request Cmdr sends includes its own instructions to the model, which alone are over that limit, so every message is refused no matter how short. Makes clear the limit is the provider's, not Cmdr's, and says what helps. The provider's own explanation shows on a line under this one. Friendly and actionable; avoids the words error and failed. The apostrophes are U+2019. Sentence case.",
+    "placeholders": {
+      "provider": "The AI provider's brand name, never translated (for example Groq)."
+    },
+    "screenshot": "ask-cmdr-chat.png",
+    "screenshotNote": "A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line."
+  },
+  "askCmdr.error.requestTooLarge.unnamed": "Your AI provider turned this down: your plan’s limit is smaller than one request from Cmdr, which always carries its instructions. A shorter message won’t help. Try a bigger plan, or pick another provider in settings.",
+  "@askCmdr.error.requestTooLarge.unnamed": {
+    "description": "The same message as askCmdr.error.requestTooLarge.named, for a provider Cmdr has no name for (a custom endpoint or a local server). Shown in the Ask Cmdr chat when the AI provider refused the request as too large for the person's plan: every request Cmdr sends includes its own instructions to the model, which alone are over the plan's limit, so every message is refused no matter how short. Makes clear the limit is the provider's, not Cmdr's, and says what helps. Friendly and actionable; avoids the words error and failed. The apostrophes are U+2019. Sentence case.",
+    "screenshot": "ask-cmdr-chat.png",
+    "screenshotNote": "A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line."
+  },
   "askCmdr.error.budgetExhausted": "This one hit its limit before finishing. Try asking something more specific.",
   "@askCmdr.error.budgetExhausted": {
     "description": "Shown when a single answer used up its tool-step or time budget before finishing. Friendly and actionable; avoids the words error and failed.",

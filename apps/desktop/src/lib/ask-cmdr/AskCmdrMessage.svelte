@@ -165,7 +165,7 @@
     <div class="msg error" role="status">
         <Icon name="triangle-alert" size={14} aria-hidden="true" />
         <div class="error-stack">
-            <span>{errorMessage(message.errorKind, message.managed)}</span>
+            <span>{errorMessage(message.errorKind, message.managed, message.provider)}</span>
             {#if message.detail}
                 <!-- The provider's own wording, so the user sees what to fix. Plain {text}
                      (Svelte auto-escapes) — never {@html}; this string is untrusted. -->

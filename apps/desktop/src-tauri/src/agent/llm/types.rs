@@ -510,6 +510,10 @@ pub enum AgentLlmError {
     /// The provider is rate-limiting or the account is out of quota (HTTP 429); the
     /// string is for display only.
     RateLimited(String),
+    /// The provider won't take a request this big (HTTP 413), typically an account plan
+    /// whose per-minute token cap is below one prompt (Groq's free tier). Retrying won't help.
+    /// The string is for display only.
+    RequestTooLarge(String),
     /// A per-message budget (tool turns / wall time / tokens) was exhausted.
     BudgetExhausted,
     /// Any other provider-side failure; the string is for display only.
@@ -525,7 +529,10 @@ impl AgentLlmError {
     /// quota reset time); it never drives control flow.
     pub fn detail(&self) -> Option<&str> {
         match self {
-            Self::AuthFailed(detail) | Self::RateLimited(detail) | Self::Provider(detail) => Some(detail),
+            Self::AuthFailed(detail)
+            | Self::RateLimited(detail)
+            | Self::RequestTooLarge(detail)
+            | Self::Provider(detail) => Some(detail),
             _ => None,
         }
     }
@@ -540,6 +547,7 @@ impl std::fmt::Display for AgentLlmError {
             Self::Timeout => write!(f, "the AI request timed out"),
             Self::AuthFailed(detail) => write!(f, "the AI provider rejected the API key: {detail}"),
             Self::RateLimited(detail) => write!(f, "the AI provider is rate-limiting or out of quota: {detail}"),
+            Self::RequestTooLarge(detail) => write!(f, "the AI provider won't take a request this big: {detail}"),
             Self::BudgetExhausted => write!(f, "the message budget was exhausted"),
             Self::Provider(detail) => write!(f, "the AI provider returned a problem: {detail}"),
             Self::Managed(refusal) => write!(f, "the organization's policy refuses this AI request ({refusal:?})"),

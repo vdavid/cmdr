@@ -103,6 +103,9 @@ impl From<AiError> for AiTranslateError {
             // (and toast copy, in every catalog) only if we decide a wrong model id deserves a
             // headline of its own.
             AiError::NotFound(_) => K::ServerError,
+            // Same reasoning: a translation prompt is small, so a 413 there is rare, and the
+            // detail line names the provider's limit.
+            AiError::RequestTooLarge(_) => K::ServerError,
             AiError::EmptyResponse => K::EmptyResponse,
             AiError::ServerError(_) => K::ServerError,
             AiError::ParseError(_) => K::ParseError,
@@ -125,6 +128,7 @@ mod tests {
             (AiError::AuthFailed("x".into()), K::AuthFailed),
             (AiError::RateLimited("x".into()), K::RateLimited),
             (AiError::NotFound("x".into()), K::ServerError),
+            (AiError::RequestTooLarge("x".into()), K::ServerError),
             (AiError::EmptyResponse, K::EmptyResponse),
             (AiError::ServerError("x".into()), K::ServerError),
             (AiError::ParseError("x".into()), K::ParseError),

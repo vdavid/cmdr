@@ -198,7 +198,7 @@ runs below, 2026-10-27):
   live (no DeepSeek key); Fireworks' DeepSeek V4.1 below speaks the same format.
 - **Mistral** (`magistral-*`): reasoning streams as `thinking` content chunks and must go back as a leading `thinking`
   chunk; a `reasoning_content` field 422s (extra fields forbidden). The host routes to genai's Mistral dialect, which
-  does both. Not yet run live (the key was rate-limited on every call, 2026-10-27): `smoke_mistral_tool_loop`.
+  does both. Not yet run live: our free key gets no requests on `magistral-*` (§ Tests), `smoke_mistral_tool_loop`.
 - **Groq**: returns reasoning in `reasoning`, and 400s an assistant turn carrying `reasoning_content` ("property
   'reasoning_content' is unsupported", verified on `openai/gpt-oss-120b`, live tool loop, 2026-10-27). Reasoning stays
   out of the replay.
@@ -264,7 +264,8 @@ Caveats for the picker:
 ## Error mapping
 
 Provider transport errors are classified by HTTP status once, upstream, in `crate::ai` (`ai_error_for_status`:
-401/403 → auth, 429 → rate-limited). `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
+401/403 → auth, 413 → request too large, 429 → rate-limited). `RequestTooLarge` is the plan-too-small case (§ Tests),
+which the rail words with the provider's name and the wake loop treats as settled, like a spent quota. `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
 (`impl From<AiError>`), so there is no message-string matching anywhere. `AiError::Managed` stays typed as
 `AgentLlmError::Managed(refusal)` (the runtime's `ManagedByOrganization`), never a `Provider` string
 (`../../ai/DETAILS.md` § Managed policy). `AgentLlmError::NoKey` /
@@ -288,9 +289,24 @@ observable typed rather than read out of the model's wording.
 **Lazy tool loading, live** (verified on these models, `smoke_*_deferred_tool`, 2026-11-02; each is one turn on the real
 prefix): `claude-haiku-5-5`, `gpt-5.5`, and `gemini-3.6-flash` read `tool_details`, then `use_tool`, with no problem on the
 way, and each provider takes the stored `use_tool` back on replay. `gpt-4.1-mini` and Ministral 3B on Cmdr's llama-server
-skip `tool_details` and guess. What they do: `../../tools/DETAILS.md` § Lazy loading. `gemini-3.8-flash` answered 503
-throughout, Mistral's key 429s, and Groq's free tier refuses a 9,745-token request against its 8,000 a minute, so those
-three are unproven.
+skip `tool_details` and guess. What they do: `../../tools/DETAILS.md` § Lazy loading.
+
+- **`gemini-3.8-flash`** (the Gemini preset's default): reads `tool_details`, then `use_tool`, with no problem on the
+  way (verified `smoke_gemini_default_deferred_tool`, 2026-11-03). The model was under "high demand" that night: a
+  tiny `generateContent` 503'd, and the three-call turn took 372 s, so a single call can come close to the rail's
+  120 s stall limit (`chat::context::STREAM_STALL_TIMEOUT`) while Google is overloaded.
+- **Mistral**: the host takes the prefix, the tool-search pair, and a stored `use_tool` back (verified on
+  `ministral-14b-latest`, `MISTRAL_MODEL=ministral-14b-latest smoke_mistral_deferred_tool`, 2026-11-03). Like Ministral
+  3B locally, it skips `tool_details`, guesses `sortBy`, and gets it right on the gate's second try. The preset's
+  default, `mistral-small-latest`, stays unproven: our key's free workspace gets
+  `x-ratelimit-limit-req-minute: 0` on it (and on `mistral-medium-*`, `magistral-small-*`, `devstral-small-*`), so even
+  a five-token request 429s, while the Ministral models and `open-mistral-nemo` answer (probed five times,
+  04:04–04:25 UTC, 2026-11-03). Proving the default needs a key on a paid plan.
+- **Groq's free tier**: refuses every turn, because its 8,000-tokens-a-minute cap is below the fixed prefix (HTTP 413,
+  "Request too large … Limit 8000, Requested 9,077", 2026-11-03). That 413 is its own typed kind
+  (`AiError::RequestTooLarge` → `AgentErrorKind::RequestTooLarge`), and the rail names the provider and says the
+  plan's limit is the problem. We keep the core prefix rather than trim it under 8,000, which would cost every other
+  provider a `tool_details` round trip (#895).
 
 - `types.rs`: `ToolId` serializes as a bare wire name; the `from_wire_name` gate shape; an `AgentMessage` with a
   tool-call-with-reasoning survives a serde round-trip with the blob intact (DB persistence fidelity).

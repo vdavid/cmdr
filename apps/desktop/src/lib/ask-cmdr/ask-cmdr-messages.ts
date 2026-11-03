@@ -79,6 +79,9 @@ export type RailMessage =
       detail?: string
       /** Which rule of the organization's policy refused, for `managedByOrganization`. */
       managed?: ManagedAiRefusal
+      /** The cloud provider's brand name, for `requestTooLarge`, read when the turn failed so a
+       * later provider switch can't rename it. Absent for a custom endpoint or a local server. */
+      provider?: string
     }
   /** What a wake noticed, which opens every thread the agent started for itself. It sits
    * where a user bubble would, because that is the role it plays in the transcript.
