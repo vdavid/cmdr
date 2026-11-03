@@ -105,7 +105,9 @@ stays simple:
   only: the UI branches on `errorKind`, never on `detail`. `managedByOrganization` (the organization's MDM policy
   refused the turn, nothing sent) words the rule that refused through `managedAiRefusalMessage`: the send refusal and
   the `failed` event carry it as `managed` beside the unit kind. `askCmdr.error.managedByOrganization` is the fallback
-  when none came.
+  when none came. `requestTooLarge` (HTTP 413: the plan's limit is under one request, Groq's free tier) names the
+  provider: the item stores the preset's brand name as `provider`, read from settings when the turn fails so a later
+  provider switch can't rename it, and a local server or custom endpoint gets the unnamed line.
 - `stopped` → the backend's terminal for a cancelled turn. After the rail's own Stop it settles the stopped bubble (§
   Stop is local first). With no stop pending here (the status corner stopped a wake) it ends the turn like `done`
   (`endTurn`: stats, finalize, `streaming = false`, the review), so the watchdog never calls an ended turn a timeout.
