@@ -48,6 +48,10 @@
   "@askCmdr.softCap.action": {
     "sourceHash": "677d4c2"
   },
+  "askCmdr.softCap.dismiss": "Скрыть",
+  "@askCmdr.softCap.dismiss": {
+    "sourceHash": "48845bf"
+  },
   "askCmdr.tool.appState.doing": "Проверка того, что у вас открыто",
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
@@ -884,6 +888,22 @@
   "askCmdr.sessions.archivedBadge": "В архиве",
   "@askCmdr.sessions.archivedBadge": {
     "sourceHash": "bdb8650"
+  },
+  "askCmdr.sessions.clearSearch": "Очистить поиск",
+  "@askCmdr.sessions.clearSearch": {
+    "sourceHash": "3b7ea51"
+  },
+  "askCmdr.sessions.resultsLabel": "Найденные чаты",
+  "@askCmdr.sessions.resultsLabel": {
+    "sourceHash": "420272e"
+  },
+  "askCmdr.sessions.resultCount": "{count, plural, one {{countText} чат} few {{countText} чата} many {{countText} чатов} other {{countText} чата}}",
+  "@askCmdr.sessions.resultCount": {
+    "sourceHash": "e9d3144"
+  },
+  "askCmdr.sessions.wakeTitle": "{otherCount, plural, =0 {Активность в папке {folder}} one {Активность в папке {folder} и еще в {otherCountText} папке} few {Активность в папке {folder} и еще в {otherCountText} папках} many {Активность в папке {folder} и еще в {otherCountText} папках} other {Активность в папке {folder} и еще в {otherCountText} папки}}",
+  "@askCmdr.sessions.wakeTitle": {
+    "sourceHash": "923c7d2"
   },
   "askCmdr.composer.attach": "Спросить о выделенном",
   "@askCmdr.composer.attach": {

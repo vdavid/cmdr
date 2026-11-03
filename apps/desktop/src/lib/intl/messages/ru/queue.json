@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {Копирование} move {Перемещение} delete {Удаление} trash {Перемещение в Корзину} rename {Переименование} create_folder {Создание папки} create_file {Создание файла} archive_edit {Изменение архива} compress {Сжатие} other {Выполнение}}",
+  "queue.row.label": "{type, select, copy {Копирование} move {Перемещение} delete {Удаление} trash {Перемещение в Корзину} rename {Переименование} create_folder {Создание папки} create_file {Создание файла} archive_edit {Изменение архива} compress {Сжатие} tag {Изменение тегов} other {Выполнение}}",
   "@queue.row.label": {
-    "sourceHash": "3c8e776"
+    "sourceHash": "b051663"
   },
   "queue.row.reversalMovingBack": "Возврат файлов на место",
   "@queue.row.reversalMovingBack": {
@@ -30,6 +30,10 @@
   "queue.row.reversalRenamingBack": "Возврат прежних имен",
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalRestoringTags": "Возврат прежних тегов",
+  "@queue.row.reversalRestoringTags": {
+    "sourceHash": "1b063e8"
   },
   "queue.row.reversalInFolder": "в папке {folder}",
   "@queue.row.reversalInFolder": {

@@ -524,6 +524,10 @@
   "@fileOperations.transferProgress.titleReversalDeleting": {
     "sourceHash": "587f4a3"
   },
+  "fileOperations.transferProgress.titleReversalRestoringTags": "{count, plural, =0 {Возврат прежних тегов} one {Возврат прежних тегов для {countText} файла} few {Возврат прежних тегов для {countText} файлов} many {Возврат прежних тегов для {countText} файлов} other {Возврат прежних тегов для {countText} файла}}…",
+  "@fileOperations.transferProgress.titleReversalRestoringTags": {
+    "sourceHash": "71e6947"
+  },
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Возврат прежних имен} =1 {Возврат прежнего имени} one {Возврат {countText} прежнего имени} few {Возврат {countText} прежних имен} many {Возврат {countText} прежних имен} other {Возврат {countText} прежнего имени}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
     "sourceHash": "2ad8510"
@@ -1019,6 +1023,10 @@
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Файлы получат прежние имена. Cmdr пропускает объекты, в которых не уверен, поэтому некоторые могут сохранить текущие имена.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
     "sourceHash": "37932e7"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTags": "Файлы получат прежние теги. Cmdr пропускает файлы, теги которых с тех пор изменились, поэтому у некоторых могут остаться текущие теги.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTags": {
+    "sourceHash": "9dc7b0d"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "Оставить как есть",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
