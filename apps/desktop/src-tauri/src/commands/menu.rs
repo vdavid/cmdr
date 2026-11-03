@@ -540,3 +540,21 @@ pub fn show_network_host_context_menu(
 
     popup_context_menu(&menu, window, anchor)
 }
+
+/// Hands the viewer bar's Edit > Copy or Select all to the native responder chain, for a view
+/// whose selection only that chain reaches: the PDF embed. WebKit's PDF view keeps its text and
+/// selection inside the embed, out of the page's DOM, and answers only the `copy:` /
+/// `selectAll:` selectors a Predefined menu item would send. The viewer bar's pair is Custom
+/// (`window_events::ViewerEditAction` says why), so without this hop ⌘C over a PDF copied
+/// nothing. Off macOS there's no responder chain, and it does nothing.
+#[tauri::command]
+#[specta::specta]
+pub fn viewer_forward_edit_action_to_page(app_handle: AppHandle, action: crate::window_events::ViewerEditActionKind) {
+    let selector = crate::menu::native_edit_selector_for_viewer_page(action);
+    #[cfg(target_os = "macos")]
+    if let Err(e) = app_handle.run_on_main_thread(move || crate::menu::send_native_edit_selector(selector)) {
+        log::warn!(target: "viewer", "Failed to forward {selector:?} to the viewer page: {e}");
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = (app_handle, selector);
+}

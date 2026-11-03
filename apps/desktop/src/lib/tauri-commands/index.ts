@@ -92,6 +92,7 @@ export {
   viewerWriteRangeToFile,
   viewerSetEncoding,
   viewerSetTailMode,
+  viewerForwardEditActionToPage,
   viewerReload,
   viewerGetEncodingOptions,
   onViewerPullProgress,

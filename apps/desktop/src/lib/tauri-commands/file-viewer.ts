@@ -23,6 +23,7 @@ import {
   type SeekTargetKind,
   type TotalRows,
   type ViewerContentKind,
+  type ViewerEditActionKind,
   type ViewerError,
   type ViewerPullProgress,
   type ViewerRow,
@@ -376,6 +377,14 @@ export function viewerSetEncoding(sessionId: string, encoding: FileEncoding) {
 /** Toggles tail mode for a viewer session (auto-follow new bytes as the file grows). */
 export function viewerSetTailMode(sessionId: string, enabled: boolean) {
   return commands.viewerSetTailMode(sessionId, enabled)
+}
+
+/**
+ * Hands Edit > Copy or Select all to the native responder chain, for the one view whose
+ * selection only that chain reaches: the PDF embed.
+ */
+export function viewerForwardEditActionToPage(action: ViewerEditActionKind) {
+  return commands.viewerForwardEditActionToPage(action)
 }
 
 /** Reopens the viewer's backend against the file on disk under the session's current encoding. */

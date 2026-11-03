@@ -129,6 +129,12 @@ branches on `viewMode`: text uses the line pipeline; binary and hex use original
   keydown router only handles Escape in media mode (an image first gets `MediaImageView.handleKey`, which skips keys
   aimed at a focused control; the PDF embed owns its own). A media session has empty text fields, so don't undo these
   guards or the empty line code runs and can throw.
+- **A PDF's Copy and Select all go native.** Its text and selection live inside WebKit's PDF embed, which answers only
+  the `copy:` / `selectAll:` selectors a Predefined menu item sends, and the viewer bar's pair is Custom (§ Gotchas). So
+  while `MediaPdfView` is mounted it hands every `ViewerEditAction` to `viewer_forward_edit_action_to_page`, which sends
+  that selector to the first responder. The page's own dispatch does nothing for a PDF, so the two never both act on the
+  file. Without the hop, ⌘C over a selected PDF passage left the clipboard unchanged (`MediaPdfView.svelte.test.ts`; the
+  native half isn't verified in a running app yet).
 - **Two-way switch between rendered media and raw text.** A viewer window shows exactly one file for its life, so the
   file's natural media kind stays recoverable on the frontend: `media.setFromOpenResult` stamps `lastMediaKind` on any
   media open, and `reset()` PRESERVES it across the switch to text. "View as text" (`media.viewAsText()`) resets the

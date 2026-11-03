@@ -3,9 +3,17 @@
    * Inline PDF view for the file viewer's `pdf` kind. WKWebView's PDFKit-backed
    * `<embed>` supplies its own scroll / zoom / page UI, so we only fill the content
    * area and surface a brief loading spinner.
+   *
+   * Its text and selection live inside the embed, where neither the page nor the
+   * viewer's own selection model reaches, so Edit > Copy and Select all (⌘C / ⌘A)
+   * go to the native responder chain while this view is on screen.
    */
   import Spinner from '#lib/ui/Spinner.svelte'
   import { tString } from '#lib/intl/messages.svelte.js'
+  import { onViewerEditAction, viewerForwardEditActionToPage } from '#lib/tauri-commands/index.js'
+  import { getAppLogger } from '#lib/logging/logger.js'
+
+  const log = getAppLogger('viewer')
 
   type Props = {
     /** `cmdr-media://localhost/<token>` URL for the PDF bytes. */
@@ -32,6 +40,23 @@
       loaded = true
     }, 600)
     return () => { clearTimeout(timer); }
+  })
+
+  $effect(() => {
+    let unlisten: (() => void) | undefined
+    let gone = false
+    void onViewerEditAction(({ action }) => {
+      viewerForwardEditActionToPage(action).catch((error: unknown) => {
+        log.warn('Forwarding {action} to the PDF failed: {error}', { action, error })
+      })
+    }).then((stop) => {
+      if (gone) stop()
+      else unlisten = stop
+    })
+    return () => {
+      gone = true
+      unlisten?.()
+    }
   })
 
   function handleLoad(): void {

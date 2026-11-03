@@ -151,18 +151,34 @@ pub(crate) fn native_edit_selector_for(menu_id: &str) -> Option<NativeEditSelect
 /// `NSApplication.sendAction:to:from:` with nil target (routes to the first responder).
 #[cfg(target_os = "macos")]
 fn send_native_edit_action(menu_id: &str) {
+    if let Some(selector) = native_edit_selector_for(menu_id) {
+        send_native_edit_selector(selector);
+    }
+}
+
+/// The native selector the viewer page asks for when the view on screen keeps its selection
+/// where only the responder chain reaches it: the PDF embed (`viewer_forward_edit_action_to_page`).
+pub(crate) fn native_edit_selector_for_viewer_page(action: ViewerEditActionKind) -> NativeEditSelector {
+    match action {
+        ViewerEditActionKind::Copy => NativeEditSelector::Copy,
+        ViewerEditActionKind::SelectAll => NativeEditSelector::SelectAll,
+    }
+}
+
+/// Sends `selector` to the key window's first responder, exactly like a Predefined menu item.
+#[cfg(target_os = "macos")]
+pub(crate) fn send_native_edit_selector(selector: NativeEditSelector) {
     use objc2::sel;
     use objc2_app_kit::NSApplication;
 
-    let selector = match native_edit_selector_for(menu_id) {
-        Some(NativeEditSelector::Cut) => sel!(cut:),
-        Some(NativeEditSelector::Copy) => sel!(copy:),
-        Some(NativeEditSelector::Paste) => sel!(paste:),
-        Some(NativeEditSelector::SelectAll) => sel!(selectAll:),
-        None => return,
+    let selector = match selector {
+        NativeEditSelector::Cut => sel!(cut:),
+        NativeEditSelector::Copy => sel!(copy:),
+        NativeEditSelector::Paste => sel!(paste:),
+        NativeEditSelector::SelectAll => sel!(selectAll:),
     };
 
-    let mtm = objc2::MainThreadMarker::new().expect("send_native_edit_action must be called from the main thread");
+    let mtm = objc2::MainThreadMarker::new().expect("send_native_edit_selector must be called from the main thread");
     let ns_app = NSApplication::sharedApplication(mtm);
 
     // sendAction:to:from: with nil `to` sends to the first responder, exactly like
@@ -953,6 +969,20 @@ mod native_edit_selector_tests {
         assert_eq!(
             native_edit_selector_for(SELECT_ALL_ID),
             Some(NativeEditSelector::SelectAll)
+        );
+    }
+
+    /// The PDF view's Copy and Select all go native: its text lives in the embed, which only
+    /// the responder chain reaches, and a Copy anywhere else would miss it.
+    #[test]
+    fn the_viewer_pages_pdf_copy_and_select_all_map_to_the_native_pair() {
+        assert_eq!(
+            native_edit_selector_for_viewer_page(ViewerEditActionKind::Copy),
+            NativeEditSelector::Copy
+        );
+        assert_eq!(
+            native_edit_selector_for_viewer_page(ViewerEditActionKind::SelectAll),
+            NativeEditSelector::SelectAll
         );
     }
 

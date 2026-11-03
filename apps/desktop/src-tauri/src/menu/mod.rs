@@ -136,6 +136,9 @@ pub(crate) use item_states::{note_viewer_search_focus, swap_to_main_menu, swap_t
 pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
 pub use menu_bar_builder::build_menu;
 pub use menu_handlers::handle_menu_event;
+pub(crate) use menu_handlers::native_edit_selector_for_viewer_page;
+#[cfg(target_os = "macos")]
+pub(crate) use menu_handlers::send_native_edit_selector;
 #[cfg(target_os = "macos")]
 pub use menu_handlers::{
     cleanup_macos_menus, cleanup_macos_menus_from_command, set_display_accelerators,

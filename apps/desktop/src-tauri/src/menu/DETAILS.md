@@ -577,6 +577,9 @@ menu is swapped wholesale via `app.set_menu()`:
       it copies the footer. The frontend runs the same two functions ⌘A / ⌘C already run
       (`apps/desktop/src/routes/viewer/viewer-menu-actions.ts`), so it doesn't matter whether a ⌘-chord reaches the webview before the
       menu's key equivalent.
+    - ❗ The one view that needs the native selectors back is the PDF: its selection lives in WebKit's embed, so the
+      viewer page hands the action back through `viewer_forward_edit_action_to_page`, which sends `copy:` /
+      `selectAll:` itself (`native_edit_selector_for_viewer_page`).
     - ❗ All four ids are viewer-specific, NOT the main bar's `EDIT_CUT_ID` / `EDIT_COPY_ID` / `EDIT_PASTE_ID` /
       `SELECT_ALL_ID`. Both bars share `EDIT_MENU_ID`, and `handle_menu_event` tells the two lanes apart by item id
       alone; reusing them would make one click mean two things. The viewer's items had no ids at all while they were

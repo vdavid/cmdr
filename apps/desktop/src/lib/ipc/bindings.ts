@@ -1828,6 +1828,16 @@ export const commands = {
   viewerSetWordWrap: (label: string, checked: boolean) =>
     typedError<null, string>(__TAURI_INVOKE('viewer_set_word_wrap', { label, checked })),
   /**
+   *  Hands the viewer bar's Edit > Copy or Select all to the native responder chain, for a view
+   *  whose selection only that chain reaches: the PDF embed. WebKit's PDF view keeps its text and
+   *  selection inside the embed, out of the page's DOM, and answers only the `copy:` /
+   *  `selectAll:` selectors a Predefined menu item would send. The viewer bar's pair is Custom
+   *  (`window_events::ViewerEditAction` says why), so without this hop ⌘C over a PDF copied
+   *  nothing. Off macOS there's no responder chain, and it does nothing.
+   */
+  viewerForwardEditActionToPage: (action: ViewerEditActionKind) =>
+    __TAURI_INVOKE<void>('viewer_forward_edit_action_to_page', { action }),
+  /**
    *  Tells the viewer menu bar whether this viewer's search box holds keyboard focus, which is what
    *  decides whether its Edit > Cut and Edit > Paste look live.
    *
