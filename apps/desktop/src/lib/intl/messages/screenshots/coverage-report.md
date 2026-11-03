@@ -16,21 +16,21 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 3805 / 5495 keys have a screenshot (69%):** 2076 direct (38%) and 1729 representative (31%). 1498 remain
+**Total: 3808 / 5498 keys have a screenshot (69%):** 2076 direct (38%) and 1732 representative (32%). 1498 remain
 uncoupled, and 192 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
 | adb             |      3 |              0 |        19 |      0 |    22 |   14% |
 | ai              |      1 |            143 |         0 |      0 |   144 |  100% |
-| askCmdr         |    187 |            290 |        42 |      0 |   519 |   92% |
+| askCmdr         |    187 |            292 |        42 |      0 |   521 |   92% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
 | commands        |    230 |              5 |        87 |      0 |   322 |   73% |
 | common          |      9 |              1 |         9 |      0 |    19 |   53% |
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
 | errorReporter   |     16 |              0 |        43 |      0 |    59 |   27% |
-| errors          |    157 |            477 |         0 |      0 |   634 |  100% |
+| errors          |    157 |            478 |         0 |      0 |   635 |  100% |
 | feedback        |      8 |              6 |         2 |      0 |    16 |   88% |
 | fileExplorer    |    162 |             79 |       307 |      0 |   548 |   44% |
 | fileOperations  |    141 |             87 |       111 |      0 |   339 |   67% |
