@@ -18,6 +18,8 @@ pnpm icons
 - `apps/analytics-dashboard/static/logo.svg` and `apps/desktop/static/logo.svg`: minified copies, for the dashboard
   favicon and the About window.
 - `apps/desktop/static/favicon.png`: the webview favicon, invisible in a Tauri window but real.
+- `apps/desktop/finder-extension/MenuIcon.png` and `MenuIcon@2x.png`: the icon beside "Open in Cmdr" in Finder's
+  right-click menu, rendered from the SVG at 16 and 32 px.
 - `_ignored/designs/app-logo-1024px-x-1024px.png`: a 1024 master, only an input to the manual step below.
 
 ## The manual step: the macOS Tahoe icon

@@ -33,7 +33,13 @@ final class OpenInCmdr: FIFinderSync {
         let menu = NSMenu(title: "")
         // In the system's language: macOS picks from this bundle's `lproj` folders.
         let title = Bundle.main.localizedString(forKey: serviceName, value: serviceName, table: nil)
-        menu.addItem(withTitle: title, action: #selector(openInCmdr(_:)), keyEquivalent: "")
+        let item = menu.addItem(withTitle: title, action: #selector(openInCmdr(_:)), keyEquivalent: "")
+        // Cmdr's icon beside the title, like other apps' Finder items. `MenuIcon.png` and its
+        // `@2x` come from the logo via `pnpm icons`; `image(forResource:)` joins the two.
+        if let icon = Bundle.main.image(forResource: "MenuIcon") {
+            icon.size = NSSize(width: 16, height: 16)
+            item.image = icon
+        }
         return menu
     }
 
