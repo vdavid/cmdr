@@ -192,6 +192,7 @@ describe('drag-drop-controller', () => {
     config: AccessConfig = {},
     paneWrapperEls?: Record<'left' | 'right', HTMLDivElement | undefined>,
     resolvePathVolume?: Parameters<typeof createDragDropController>[0]['resolvePathVolume'],
+    home = '/Users/nobody',
   ) {
     const access = buildAccess(config)
     const { dialogs, showTransfer, showAlert } = buildDialogs()
@@ -202,6 +203,7 @@ describe('drag-drop-controller', () => {
         dialogs,
         getPaneWrapperEls: () => paneWrapperEls ?? { left: undefined, right: undefined },
         resolvePathVolume,
+        homeDir: () => Promise.resolve(home),
       })
     })
     return { controller, showTransfer, showAlert }
@@ -298,6 +300,28 @@ describe('drag-drop-controller', () => {
     it("returns the pane's current path for a pane target", () => {
       const { controller } = create({ paths: { right: '/right/here' } })
       expect(controller.targetPathOf(paneTarget('right'))).toBe('/right/here')
+    })
+
+    // A first-run pane and the Home shortcut sit at `~`: spelled that way, no volume root
+    // matched it, so a same-disk drop preselected Copy and the descendant guard missed.
+    it('spells a `~` pane path out from the home folder', async () => {
+      const { controller } = create({ paths: { right: '~/Downloads' } }, undefined, undefined, '/Users/x')
+      await flushDrop()
+      expect(controller.targetPathOf(paneTarget('right'))).toBe('/Users/x/Downloads')
+    })
+
+    it('picks Move for a same-disk drop onto a `~` pane', async () => {
+      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
+      const { controller, showTransfer } = create(
+        { focusedPane: 'left', paths: { right: '~/Downloads' }, volumes: [ROOT_VOLUME] },
+        undefined,
+        undefined,
+        '/Users/x',
+      )
+      await flushDrop()
+      controller.handleDrop([SAME_VOL_PATH_A], { x: 1, y: 1 })
+      await flushDrop()
+      expect(showTransfer.mock.calls[0][0].operationType).toBe('move')
     })
   })
 

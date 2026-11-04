@@ -710,6 +710,7 @@
     // A double-click (mouse) or double tap (touch, pen) opens the row (`row-activation.ts`).
     const rowActivation = createRowActivation({
         getListingId: () => listingId,
+        hold: handleMouseDown,
         activate: (actualIndex) => {
             cancelClickToRename()
             const entry = cache.getEntryAt(actualIndex)
@@ -950,7 +951,9 @@
                         data-filename={file.name}
                         data-drop-target-path={file.isDirectory ? file.path : undefined}
                         style="height: {rowHeight}px; grid-template-columns: {gridTemplate};"
-                        onpointerdown={rowActivation.onPointerDown}
+                        onpointerdown={(e: PointerEvent) => {
+                            rowActivation.onPointerDown(e, globalIndex)
+                        }}
                         onmousedown={(e: MouseEvent) => {
                             handleMouseDown(e, globalIndex)
                         }}

@@ -9,7 +9,8 @@ lands in a typed answer here; the listing commands go to the real listing engine
   secondary windows as in-page panels (Settings, Keyboard shortcuts, the operation queue, and `viewer-*`; the rest
   refused). `menu-bar.svelte.ts`: the macOS menu bar, drawn from `menu-engine.ts` (the desktop's own bar and fold,
   through WASM). `traffic-lights.ts`: the macOS window buttons the page draws, at the app's own `trafficLightPosition`.
-  `drag-regions.ts`: Tauri's injected `drag.js`, ported, so the pages' drag strips move their panel.
+  `drag-regions.ts`: Tauri's injected `drag.js`, ported, so the pages' drag strips move their panel. `drag-session.ts`:
+  the OS's file drag, answering `start_drag_paths` with Tauri's drag-drop events (DETAILS § Drag and drop).
 - `answers.ts` (app commands), `volumes.ts`, `plugins.ts` (in-memory `plugin:store`, path, app), `opener.ts` (every
   external link opens in a new tab), `listing.ts` (routes to the WASM engine, loaded once by `engine-module.ts`, which
   answers the viewer too), `unanswered.ts` (`window.__cmdrDemo.unanswered`; an unanswered void resolves, any other

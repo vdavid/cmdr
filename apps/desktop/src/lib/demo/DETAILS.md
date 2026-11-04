@@ -283,6 +283,39 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
 - Not answered yet: multi-rename (`open_multi_rename`, so its dialog fails to open), tags (`toggle_tags`), and the new
   folder dialog's AI name suggestions (`get_ai_status`).
 
+## Drag and drop
+
+On desktop, `start_drag_paths` hands the files to AppKit, which owns the mouse from then on and reports what it does
+through wry's drag-drop events (`tauri://drag-enter`, `-over`, `-drop`, `-leave`) plus the swizzle's `drag-modifiers`.
+`drag-session.ts` is that OS session for a page: its answer to `start_drag_paths` follows the pointer that's still down
+and sends the same events to the main window. So the app's drag controller
+(`file-explorer/pane/drag-drop-controller.svelte.ts`) runs unchanged: the hit test, the cursor label, auto-scroll, the
+self-drag identity, and the real transfer dialog on the in-browser write engine.
+
+- Events: `drag-modifiers` then `tauri://drag-enter` on the first move (or the release), `-over` per move, `-drop` where
+  it lets go. Positions are client px, which is what the controller reads Tauri's as. Modifiers come off the pointer and
+  key events (Option copies, ⌘ or Shift moves, as on desktop) and go out on enter and on each change.
+- Leaving the page sends `-leave`, coming back `-enter` again (the controller's re-entry fingerprint keeps it a
+  self-drag). Letting go outside the page is a clean no-op: nothing out there takes the files. Escape cancels, kept from
+  the app as AppKit keeps it; so does `pointercancel`, a window `blur`, and a button that was already up when the
+  session began (a quick flick).
+- While it runs, the page's mouse events are kept from the app (`mousedown` through `contextmenu`, plus the release's
+  own `click` a task later), as an OS drag loop keeps them from the webview.
+- Touch: the app arms a drag on a held touch and keeps the page from scrolling under it, generic code for any touch
+  browser (`file-explorer/drag/DETAILS.md` § Touch drags); the session follows that pointer like a mouse.
+- The drag image: the app writes a PNG for the OS session (`tempDir`, `join`, `plugin-fs` `writeFile` / `remove`).
+  `plugins.ts` joins paths for real and takes the writes and drops them, since nothing reads them; `plugins.test.ts`
+  fails if a second app module starts using `plugin-fs`, which would need its own answer. The swizzle's state
+  (`prepare_self_drag_overlay`, `clear_self_drag_overlay`, `set_self_drag_resolved_op`) is silent.
+- Files dragged in from the OS do nothing: the window cancels `dragover` / `drop`, else the browser opens the file in
+  place of the demo. Decision: no import. A browser hands over bytes with no path, and the in-memory volume takes no
+  outside bytes today (the engine would need a create-file-from-bytes write and the controller a non-path drop source),
+  which is a feature, not a drag shim.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-04): a mouse drag of `notes.md` from `~` to the other
+  pane's `~/Downloads` shows "Move to Downloads" and opens Move 1 file, which lands it; with Option it's Copy; dropping
+  onto the Documents row moves it there; an iPad-emulated touch held 450 ms then dragged does the same, and a quick
+  swipe starts no drag; `__cmdrDemo.unanswered` stays empty.
+
 ## Links
 
 - Every external link the app opens goes through `openExternalUrl` (`plugin:opener|open_url`): About, the feedback

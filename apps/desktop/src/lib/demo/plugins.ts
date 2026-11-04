@@ -1,9 +1,9 @@
 /**
  * Tauri plugin commands (`plugin:<name>|<command>`) the backend answers: the store plugin, which
  * keeps each file in memory (a demo session's settings live until the tab reloads, and every
- * webview sees the same values, as with the real plugin), plus `path`, `app`, and the opener's
- * `open_url` (a new browser tab, `opener.ts`). Commands about one
- * webview's own window live in `webview.ts`.
+ * webview sees the same values, as with the real plugin), plus `path`, `app`, the drag image's `fs`
+ * writes, and the opener's `open_url` (a new browser tab, `opener.ts`). Commands about one webview's
+ * own window live in `webview.ts`.
  */
 import { browserSafeShortcuts } from './browser-shortcuts.js'
 import { DEMO_HOME } from './demo-tree.js'
@@ -52,6 +52,18 @@ function entriesOf(payload: Record<string, unknown>): Map<string, unknown> {
 
 type PluginHandler = (payload: Record<string, unknown>) => unknown
 
+/** `path.join` as the plugin answers it on macOS: `/`-joined, with `.`, `..`, and doubled slashes folded. */
+function joinPaths(parts: string[]): string {
+  const absolute = parts[0]?.startsWith('/') ?? false
+  const segments: string[] = []
+  for (const segment of parts.join('/').split('/')) {
+    if (segment === '' || segment === '.') continue
+    if (segment === '..') segments.pop()
+    else segments.push(segment)
+  }
+  return (absolute ? '/' : '') + segments.join('/')
+}
+
 const handlers: Partial<Record<string, PluginHandler>> = {
   'plugin:store|load': (p) =>
     storeFor(p.path as string, (p.options as { defaults?: Record<string, unknown> } | undefined)?.defaults),
@@ -81,6 +93,12 @@ const handlers: Partial<Record<string, PluginHandler>> = {
   'plugin:resources|close': () => undefined,
   // Every standard folder resolves inside the demo's home, which is all the app asks for.
   'plugin:path|resolve_directory': () => DEMO_HOME,
+  'plugin:path|join': (p) => joinPaths(p.paths as string[]),
+  // The one `plugin-fs` user is the drag image (`file-explorer/drag/drag-drop.ts`), a temp PNG for
+  // the OS drag session to read. A page has no OS to read it, so it's taken and dropped; the volume
+  // never sees it. `plugins.test.ts` keeps it the one user.
+  'plugin:fs|write_file': () => undefined,
+  'plugin:fs|remove': () => undefined,
   'plugin:app|version': () => 'demo',
   'plugin:app|set_app_theme': () => undefined,
   'plugin:app|name': () => 'Cmdr',

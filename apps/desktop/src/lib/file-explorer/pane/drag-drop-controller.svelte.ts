@@ -5,6 +5,8 @@ import {
   type UnlistenFn,
 } from '#lib/tauri-commands/index.js'
 import { getCurrentWebview } from '@tauri-apps/api/webview'
+import { homeDir } from '@tauri-apps/api/path'
+import { toCanonical } from '#lib/path/canonical.js'
 import { toViewportPosition } from '../drag/drag-position'
 import {
   getIsDraggingFromSelf,
@@ -68,6 +70,8 @@ export interface DragDropControllerDeps {
    * so the controller stays headless-testable; defaults to the real command.
    */
   resolvePathVolume?: (path: string) => Promise<PathVolumeResolution>
+  /** The user's home folder, for a `~` pane path; injected for the same reason. Defaults to Tauri's. */
+  homeDir?: () => Promise<string>
 }
 
 /**
@@ -90,6 +94,15 @@ export interface DragDropControllerDeps {
 export function createDragDropController(deps: DragDropControllerDeps) {
   const { access, dialogs, getPaneWrapperEls } = deps
   const resolveVolumeForPath = deps.resolvePathVolume ?? resolvePathVolume
+
+  // A pane can sit at `~` (a first run, the Home shortcut), which no volume root matches, so the
+  // drop rules compare its spelled-out path. Empty until it lands: `~` stays as is meanwhile.
+  let home = ''
+  ;(deps.homeDir ?? homeDir)()
+    .then((dir) => {
+      home = dir.endsWith('/') ? dir.slice(0, -1) : dir
+    })
+    .catch(() => undefined)
 
   // Drag image size from the source app (macOS only, via swizzle).
   // If the source provides a large preview (like Finder), we suppress our overlay.
@@ -301,11 +314,21 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     handleDragOver(position)
   }
 
-  /** Resolves the effective target path for a drop target (folder path or pane's current path). */
+  /**
+   * Resolves the effective target path for a drop target (folder path or pane's current path),
+   * spelled the way the dragged paths are: a `~` pane path from the home folder, or the volume
+   * match (Move vs. Copy) and the descendant guard would compare two spellings of one folder.
+   */
   function targetPathOf(resolved: ReturnType<typeof resolveDropTarget>): string | null {
     if (!resolved) return null
     if (resolved.type === 'folder') return resolved.path
-    return access.getPanePath(resolved.paneId)
+    const panePath = access.getPanePath(resolved.paneId)
+    if (!home || !panePath.startsWith('~')) return panePath
+    try {
+      return toCanonical(panePath, home)
+    } catch {
+      return panePath
+    }
   }
 
   function scheduleDragAutoScroll() {
