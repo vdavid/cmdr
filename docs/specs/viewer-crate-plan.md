@@ -16,7 +16,8 @@ Survey taken 2026-11-04 on `main` at `49aad7f793`. Re-grep before each milestone
 2. **Characterize first.** The wire-shape and open-routing pins (milestone 1) land before any code moves, and stay green
    unchanged through every later commit.
 3. **The crate never names Tauri or the app.** No `tauri`, `tauri_specta`, `crate::` reach into `cmdr_lib`, no volume
-   manager, no `AppHandle`. App concerns arrive through one injected host seam. `index-crate-isolation` enforces it.
+   manager, no `AppHandle`. App concerns arrive through injected host seams (`host/`, one trait per concern).
+   `index-crate-isolation` enforces it.
 4. **Threads and clocks go through seams.** Every background job goes through the crate's one worker module (natively
    the same `std::thread::spawn` it is today); every clock read through `cmdr_fs::rt`. The crate's `clippy.toml` bans
    the direct calls, like `crates/cmdr-listing/clippy.toml`.
@@ -90,15 +91,24 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
 - **`crates/cmdr-viewer`** (named after the UI): everything in `file_viewer/` except the app-kept files in rule 7, with
   `media_protocol.rs`'s pure half as a framework-free `media_serve` (a plain status / headers / body answer the app
   converts to `tauri::http::Response` and the demo turns into a `Blob`).
-- **One host seam**, a trait the app implements in `file_viewer/` (beside the kept files) and the WASM engine implements
-  over its `InMemoryVolume`: which volume serves an id, whether a path routes over its parent, the materialize call,
-  remote image download, the log display transform, `viewer_opened` analytics, and the file-changed event. Modeled on
-  `crates/cmdr-listing/src/host/`; one trait per concern if that reads better. Event payload structs live in the crate
-  with `specta::Type`; the app wraps each in a same-named `tauri_specta::Event` type so the event name and `bindings.ts`
-  don't move.
-- **One worker module** in the crate: `spawn(job)` and `after(delay, job)`. Natively exactly today's `thread::spawn` (+
-  `thread::sleep`). In the browser, `cmdr_fs::rt`'s `spawn_local` (and `rt::time::sleep`), so a search still returns at
-  once and fills in via `search_poll`, as the frontend expects.
+- **Host seams, one trait per concern**, in the crate's `host/` like `crates/cmdr-listing/src/host/`, each with a no-op
+  default: `host/volumes.rs` (which volume serves an id, whether a path routes over its parent), `host/pulls.rs` (the
+  materialize call and a Markdown image's `MediaSource`), `host/events.rs` (file changed, media load, pull progress,
+  each carrying the window label where desktop uses `emit_to`), `host/remote.rs` (remote image download),
+  `host/analytics.rs` (`viewer_opened` facts). The log display transform is pure (`redact/markers.rs` `display_line`),
+  so it's a `fn(&str) -> Cow<str>` field on the `Viewer`, not a trait. The app implements them in `file_viewer/` beside
+  the kept files, the WASM engine over its `InMemoryVolume`.
+- **The app owns the wire types of its events** (the `cmdr-listing` pattern: the engine reports facts through
+  `host/events.rs`, `listing_host/events.rs` turns them into `tauri_specta::Event` structs). `ViewerMediaLoad`,
+  `ViewerPullProgress`, and the `viewer:file-changed` payload stay app structs with their derives, so `bindings.ts`
+  can't grow a same-named crate type. The browser host mirrors the same JSON, pinned against `bindings.ts`.
+- **One worker module** in the crate: `spawn(job) -> JoinHandle` and `after(delay, job)`. Natively exactly today's
+  `thread::spawn` (+ `thread::sleep`), the handle a `std::thread::JoinHandle`. In the browser `spawn` runs the job
+  INLINE and hands back a finished handle: a page has one thread, so a search started in `spawn_local` would block the
+  page anyway, and inline means `search_start` returns with the search done and the first `search_poll` answers it.
+  `after` uses `rt`'s `spawn_local` + `rt::time::sleep`. The search watchdog (a sleep loop that `join`s the worker) is
+  native-only; in the browser a cancel can't interrupt a running search (demo files are small; document it in the
+  crate's `DETAILS.md`).
 - **Watcher** is a native-only module of the crate (`cfg(not(target_family = "wasm"))`, the `cmdr-fs` gating style); a
   wasm session is never watchable.
 - **The demo** reads files through the real `PositionedRead::Held` path: `InMemoryVolume` gains `open_random_reader` (a
@@ -118,6 +128,14 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
     link, a missing file, a folder. Per case: origin kind, content kind, watcher yes/no, temp yes/no, analytics facts.
   - `media_protocol` answers: status, headers, body for no range, a range, an open-ended range, an unsatisfiable range,
     an unknown token, a dropped token.
+  - Events: `ViewerMediaLoad` in every phase (`Reading`, `Done`, `Failed`) and `ViewerPullProgress`, each with its
+    `emit_to` target (the window label), through the pure emit closures `serve_volume` and `open_pulling` already take.
+  - Search: match rows, `column` and `length` in UTF-16 units (a non-BMP line, a CRLF line, a regex match), and
+    `SearchPollResult` across start, poll, cancel.
+  - Markdown at session level: `viewer_render_markdown`'s HTML with image sources rewritten to tokens and links
+    rewritten, through `open_session` on a fixture document (tokens masked).
+  - Log view rows (`RowText::LogDisplay`): markers gone, values shown.
+  - For each item, either name the existing test that already pins it (in the milestone's commit body) or add one.
 - **Intentions**: these tests are the proof for rule 1. Pin reality, including anything that looks odd; flag oddities to
   the lead, don't fix them here. Reuse `row_characterization_test.rs`, `session_test.rs`, `media_protocol_test.rs`,
   `analytics_test.rs` where they already pin; add only the gaps.
@@ -128,8 +146,12 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
 
 ### 2. Seams in place, still inside the app
 
+- **Split into four commits, each a reviewable step that keeps milestone 1's pins green**: (a) the bridge, the worker
+  module, and the clocks; (b) the host traits and the app's implementations, including the event wire types staying
+  app-side; (c) the `media_serve` split; (d) `Viewer` and `MediaTokens` as values. The bullets below say what each
+  covers.
 - **Scope**: in `file_viewer/`, without moving a file:
-  - The host seam (above) and the app's implementation; `init_app_handle` becomes the host install. `origin.rs`,
+  - The host traits (above) and the app's implementations; `init_app_handle` becomes the host install. `origin.rs`,
     `markdown_session.rs`, `markdown_images.rs`, `session.rs`, `row_text.rs`, `log_view.rs` call the host, never
     `crate::` app modules.
   - The worker module; every `thread::spawn` / `thread::sleep` in crate-bound files goes through it.
@@ -155,7 +177,8 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
     three `init_*`, `tools/read/inspect/*` (headless calls need no instance; check each), and the tests in
     `adb/volume_wiring_test.rs` and `commands/file_viewer_test.rs`. List them fresh by `codegraph_callers` before
     starting.
-  - The `tauri_specta::Event` derives moved to app-side wrappers.
+  - The event structs (`ViewerMediaLoad`, `ViewerPullProgress`) move to the app's host side with their
+    `tauri_specta::Event` derives; the crate-bound code reports through `host/events.rs`.
   - `PreviewTemp`: the crate-bound session holds a handle type the crate defines; creating and deleting the temp stays
     with `materialize.rs`.
   - Logic in `commands/file_viewer.rs` that is more than a pass-through (window registration, `open_may_materialize`
@@ -167,9 +190,9 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
   - `tauri::async_runtime::block_on` is `Runtime::block_on` on Tauri's global runtime; a `Handle::block_on` replacement
     behaves the same on a multi-thread runtime from a non-async thread, and both panic inside an async context. Every
     caller today runs on a `spawn_blocking` or plain OS thread; keep it so, and say so in the bridge's doc comment.
-  - The event wrapper must keep the struct name (the event name derives from it) and the serde shape; `bindings.ts` zero
-    diff is the gate.
-  - `close_session` is the one choke point that drops `SESSIONS`, the media token, and the temp; the host seam must not
+  - The event structs keep their names (the event name derives from them) and serde shapes, and no crate type may share
+    a name with one (specta would emit both into `bindings.ts`); `bindings.ts` zero diff is the gate.
+  - `close_session` is the one choke point that drops `SESSIONS`, the media token, and the temp; the host seams must not
     add a second path.
   - The FSEvents subscribe stays on the watcher manager thread, never inline in `open_session`.
 - **Test plan**: milestone 1's pins unchanged; the full `file_viewer` and `tools::read::inspect` suites;
@@ -213,8 +236,11 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
     32-lowercase-hex, 128-bit format).
   - Remote Markdown images: native-only download; in the browser, the host refuses (the demo's CSP allows no network).
   - `InMemoryVolume::open_random_reader` in `cmdr-fs`, with conformance tests.
-  - Add `cmdr-viewer` to `desktop-rust-listing-wasm`'s build (it comes in as a dependency in milestone 5) and to
-    `workspace-member-coverage`.
+  - A dedicated check, `desktop-rust-viewer-wasm`:
+    `cargo build -p cmdr-viewer --target wasm32-unknown-unknown --profile wasm-release`, in CI's "Desktop (Rust)" job,
+    registered in `workspace-member-coverage`. The listing-wasm check can't gate this milestone: it only pulls the
+    viewer in once milestone 5 adds the dependency. Once it does, keep the dedicated check only if it still catches
+    something the smoke doesn't, else fold it.
 - **Intentions**: the browser traps are runtime-only (`crates/cmdr-listing-wasm/CLAUDE.md`), so a compile is not proof.
   Milestone 5's smoke run is.
 - **Landmines**:
@@ -228,7 +254,7 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
     version before choosing.
   - Measure the `.wasm` size before and after (about 2 MB today, 2026-11-04). `regex`, `ammonia` (html5ever),
     `encoding_rs`, and `image` all add weight; report the number, and trim features only if it's large.
-- **Test plan**: the wasm build in the check; native suites unchanged.
+- **Test plan**: `pnpm check desktop-rust-viewer-wasm`; native suites unchanged.
 - **DONE**: `cmdr-viewer` compiles for wasm32 with no native-only dep in that graph, and desktop is untouched.
 
 ### 5. The WASM engine hosts the viewer
