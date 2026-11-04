@@ -7,6 +7,7 @@
 //! holds the drive-index size lookup used to render directory sizes in conflict
 //! UI.
 
+use crate::local_disk::errno;
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, LogError, write_plain};
 use std::collections::HashSet;
 use std::fs;
@@ -165,11 +166,11 @@ pub(super) fn unconfirmed_copy(
 /// `EOPNOTSUPP` are one number, macOS keeps them apart, and `ENOSYS` is 78 on
 /// macOS and 38 on Linux (`durability_tests.rs` pins each one).
 const DIRECTORY_FSYNC_UNSUPPORTED: [i32; 5] = [
-    libc::ENOTSUP,
-    libc::EOPNOTSUPP,
-    libc::EINVAL,
-    libc::ENOSYS,
-    libc::ENOTTY,
+    errno::ENOTSUP,
+    errno::EOPNOTSUPP,
+    errno::EINVAL,
+    errno::ENOSYS,
+    errno::ENOTTY,
 ];
 
 /// Whether a directory fsync failed because the filesystem doesn't do directory
@@ -186,8 +187,7 @@ fn refuses_directory_fsync(e: &io::Error) -> bool {
 /// fsync" warning by volume. `None` when it can't be read, which groups those
 /// directories together rather than warning for each.
 fn volume_of(dir: &Path) -> Option<u64> {
-    use std::os::unix::fs::MetadataExt;
-    fs::metadata(dir).ok().map(|meta| meta.dev())
+    fs::metadata(dir).ok().map(|meta| crate::local_disk::device_of(&meta))
 }
 
 /// `fdatasync`s one created file. A symlink carries no data of its own, and

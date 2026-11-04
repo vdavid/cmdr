@@ -63,6 +63,7 @@ use cmdr_fs::log_private::LogPrivate;
 ///
 /// Runs on its own thread (`Operations::claim_ledger` says why nothing waits on it), so
 /// blocking filesystem calls inside the async rules are free here.
+#[cfg(not(target_family = "wasm"))]
 pub(super) fn persisted_orphans(ledger: &Ledger, host: &EngineHost, locals: &[Record]) -> SweepTally {
     // Legal here and only here: this is the sweep's own thread, never a runtime
     // worker, so `block_on` parks nothing the app shares.
@@ -107,6 +108,7 @@ pub(super) fn persisted_orphans(ledger: &Ledger, host: &EngineHost, locals: &[Re
 /// mount for 30-120 s. On a runtime worker that parks a thread the whole app
 /// shares. "It's only a handful of records" is today's shape, not a property: a
 /// drive back from a long trip can carry many.
+#[cfg(not(target_family = "wasm"))]
 pub(super) fn on_volume_arrival(ledger: &Ledger, host: &Arc<EngineHost>, volume_id: &str) {
     let claimed = ledger.claim_pending(volume_id);
     if claimed.is_empty() {
@@ -124,6 +126,30 @@ pub(super) fn on_volume_arrival(ledger: &Ledger, host: &Arc<EngineHost>, volume_
         let tally = runtime.block_on(on_volume(&ledger, &host, &volume_id, claimed));
         report(&tally);
     });
+}
+
+/// The browser build's launch sweep: it never has persisted records (its ledger
+/// runs unpersisted), and it has no thread to `block_on` from.
+#[cfg(target_family = "wasm")]
+pub(super) fn persisted_orphans(_ledger: &Ledger, _host: &EngineHost, _locals: &[Record]) -> SweepTally {
+    SweepTally::default()
+}
+
+/// The browser build's arrival sweep: the same rules, awaited on the page's
+/// event loop (no blocking pool, no `block_on`).
+#[cfg(target_family = "wasm")]
+pub(super) fn on_volume_arrival(ledger: &Ledger, host: &Arc<EngineHost>, volume_id: &str) {
+    let claimed = ledger.claim_pending(volume_id);
+    if claimed.is_empty() {
+        return;
+    }
+    let volume_id = volume_id.to_string();
+    let ledger = ledger.clone();
+    let host = Arc::clone(host);
+    drop(host.runtime().spawn(async move {
+        let tally = on_volume(&ledger, &host, &volume_id, claimed).await;
+        report(&tally);
+    }));
 }
 
 /// Settles `records` against the volume that owns them.

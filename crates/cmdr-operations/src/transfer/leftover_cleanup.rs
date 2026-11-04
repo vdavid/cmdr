@@ -159,9 +159,15 @@ pub(crate) fn finish_in_background(
         state: Arc::clone(state),
         home,
     };
-    cleanups
-        .passes
-        .spawn_on(run(pass, left, quit), &state.scope().host().runtime());
+    // `track_future` + the engine's runtime is what `TaskTracker::spawn_on` does, spelled so
+    // the browser build's runtime (not a tokio `Handle`) can run it too.
+    drop(
+        state
+            .scope()
+            .host()
+            .runtime()
+            .spawn(cleanups.passes.track_future(run(pass, left, quit))),
+    );
 }
 
 /// One background pass: the volume it deletes on, the stopped operation, and

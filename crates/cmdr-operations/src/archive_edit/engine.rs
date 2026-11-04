@@ -5,10 +5,11 @@
 //! deletion for an into-archive move. The cancel-vs-fault split every stage
 //! returns is [`EditError`], in its own leaf so `remote` can name it too.
 
+use crate::rt::Instant;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::super::OperationEventSink;
 use super::super::host::EngineHost;

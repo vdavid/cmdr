@@ -4,8 +4,8 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use super::super::staged_write::Replaces;
+use crate::rt::Instant;
 use std::sync::Arc;
-use std::time::Instant;
 
 use crate::event_sinks::OperationEventSink;
 use crate::state::{OperationIntent, WriteOperationState};

@@ -6,11 +6,12 @@
 //! A child of `scan_cache`, so it builds and reads a `CachedScanResult`
 //! through its private fields while nothing else can.
 
+use crate::rt::Instant;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tokio::sync::Notify;
 

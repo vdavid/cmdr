@@ -15,8 +15,8 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::rt::Runtime as Handle;
 use cmdr_operation_log::types::OperationId;
-use tokio::runtime::Handle;
 
 use super::transfer_tree::{TransferTree, TransferTreeView, TransferTreeViewRequest};
 use super::types::ProgressAxis;

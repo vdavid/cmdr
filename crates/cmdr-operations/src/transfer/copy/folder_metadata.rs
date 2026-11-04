@@ -11,7 +11,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io;
-use std::os::unix::fs::{DirBuilderExt as _, PermissionsExt as _};
 use std::path::{Path, PathBuf};
 
 use cmdr_fs::log_private::LogPrivate;
@@ -33,7 +32,7 @@ fn creation_mode(source_dir: Option<&Path>) -> u32 {
     match source_dir.map(fs::symlink_metadata) {
         // No source (a destination folder that didn't exist yet): a plain `mkdir`.
         None => 0o777,
-        Some(Ok(meta)) => (meta.permissions().mode() & 0o777) | OWNER_RWX,
+        Some(Ok(meta)) => (crate::local_disk::mode_of(&meta.permissions()) & 0o777) | OWNER_RWX,
         // An unreadable source folder: the narrowest folder the copy can fill.
         Some(Err(_)) => OWNER_RWX,
     }
@@ -65,7 +64,7 @@ impl DirMapping<'_> {
 pub(super) fn create_dirs_like_their_sources(dirs: &[PathBuf], mapping: &DirMapping<'_>) -> io::Result<()> {
     for dir in dirs {
         let mode = creation_mode(mapping.source_of(dir).as_deref());
-        match fs::DirBuilder::new().mode(mode).create(dir) {
+        match crate::local_disk::create_dir_with_mode(dir, mode) {
             Ok(()) => {}
             Err(e) if e.kind() == io::ErrorKind::AlreadyExists && dir.is_dir() => {}
             Err(e) => return Err(e),
@@ -77,19 +76,20 @@ pub(super) fn create_dirs_like_their_sources(dirs: &[PathBuf], mapping: &DirMapp
 /// Creates the one folder `dir` (its parent exists) for `source_dir`, born
 /// with [`creation_mode`].
 pub(super) fn create_dir_like_its_source(dir: &Path, source_dir: &Path) -> io::Result<()> {
-    fs::DirBuilder::new().mode(creation_mode(Some(source_dir))).create(dir)
+    crate::local_disk::create_dir_with_mode(dir, creation_mode(Some(source_dir)))
 }
 
 /// Narrows a folder another helper just made with a plain `mkdir` to what
 /// [`creation_mode`] would have given it. Best effort: the final pass sets the
 /// exact mode on success either way.
 pub(super) fn narrow_like_its_source(dir: &Path, source_dir: &Path) {
-    let Ok(born) = fs::symlink_metadata(dir).map(|meta| meta.permissions().mode() & 0o7777) else {
+    let Ok(born) = fs::symlink_metadata(dir).map(|meta| crate::local_disk::mode_of(&meta.permissions()) & 0o7777)
+    else {
         return;
     };
     let narrowed = born & creation_mode(Some(source_dir));
     if narrowed != born
-        && let Err(e) = fs::set_permissions(dir, fs::Permissions::from_mode(narrowed))
+        && let Err(e) = crate::local_disk::set_mode(dir, narrowed)
     {
         log::debug!(target: "transfer", "copy: {} stays {born:o}, not {narrowed:o}: {e}", LogPrivate::dir_path(dir));
     }

@@ -8,12 +8,13 @@
 //! `scan.rs` is what turns a walk into a `ScanResult`; `scan_dry_run.rs` turns
 //! one into a conflict preview.
 
+use crate::rt::Instant;
 use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use cmdr_fs::apple_double::SidecarRule;
 use cmdr_fs::log_private::LogPrivate;
@@ -239,10 +240,7 @@ pub(super) fn walk_dir_recursive<E>(
     (ctx.park_while_paused)();
 
     let metadata = fs::symlink_metadata(path).map_err(|e| (ctx.on_io_error)(path, e))?;
-    let device = {
-        use std::os::unix::fs::MetadataExt;
-        metadata.dev()
-    };
+    let device = crate::local_disk::device_of(&metadata);
 
     if metadata.is_symlink() {
         // Symlinks contribute their own (tiny) target-string length, never

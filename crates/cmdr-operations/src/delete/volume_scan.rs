@@ -2,9 +2,10 @@
 //! remove, deepest first, with what each entry is (a link is a leaf, #505) and
 //! what a re-run after an outage must still find (`outage.rs`).
 
+use crate::rt::Instant;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::super::event_sinks::OperationEventSink;
 use super::super::scan_preview::entry_in_parent_listing;

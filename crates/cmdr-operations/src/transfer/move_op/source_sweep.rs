@@ -504,10 +504,7 @@ fn count_unscanned_entries(dir: &Path, scanned_paths: &HashSet<PathBuf>, sidecar
     let (Ok(dir_meta), Ok(entries)) = (fs::symlink_metadata(dir), fs::read_dir(dir)) else {
         return 0;
     };
-    let device = {
-        use std::os::unix::fs::MetadataExt;
-        dir_meta.dev()
-    };
+    let device = crate::local_disk::device_of(&dir_meta);
     let mut count = 0;
     for entry in entries.flatten() {
         let path = entry.path();

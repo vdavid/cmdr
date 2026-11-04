@@ -53,7 +53,7 @@ pub(super) fn check_local_copy_space(
         operation_id,
     )?;
     check_copy_space(destination, total_bytes, available, config.space_shortfall, || {
-        if cmdr_local::filesystem_kind::path_is_on_network_mount(destination) {
+        if crate::local_disk::is_on_network_mount(destination) {
             return Ok(None);
         }
         let cancelled = || state.intent().is_cancelled();

@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::runtime::Handle;
+use cmdr_fs::rt::Runtime as Handle;
 
 use super::super::event_sinks::OperationEventSink;
 use super::super::types::{WriteOperationPhase, WriteProgressEvent};

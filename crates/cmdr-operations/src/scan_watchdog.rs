@@ -20,10 +20,11 @@
 //! so a walk that finishes late stays quiet rather than contradicting a timeout
 //! the user has already been shown.
 
+use crate::rt::Instant;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::Operations;
 use super::event_sinks::ScanPreviewEventSink;

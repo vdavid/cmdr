@@ -20,8 +20,9 @@
     expect(dead_code, reason = "only the macOS real-detach lane arms the park")
 )]
 
+use crate::rt::Instant;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// How long a parked overwrite waits for its release before carrying on.
 pub(crate) const PARK_CAP: Duration = Duration::from_secs(30);

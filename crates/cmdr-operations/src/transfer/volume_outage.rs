@@ -73,7 +73,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use tokio::time::Instant;
+use crate::rt::time::Instant;
 
 use super::super::event_sinks::OperationEventSink;
 use super::super::state::WriteOperationState;
@@ -632,7 +632,7 @@ struct Outage {
     /// outage that ended (and was replaced) can't remove the new one.
     id: u64,
     started: Instant,
-    gave_up_at: Option<std::time::Instant>,
+    gave_up_at: Option<crate::rt::Instant>,
     /// How long the outage had lasted when it was given up on, kept with the
     /// give-up so a job queued behind it can say how long Cmdr waited.
     waited: Duration,
@@ -666,7 +666,7 @@ impl Outages {
     ///
     /// The membership holds the record table until it leaves, so it outlives
     /// nothing but its own wait.
-    fn join(outages: &Arc<Self>, lane: &LaneKey, born: std::time::Instant, budget: Duration) -> Joined {
+    fn join(outages: &Arc<Self>, lane: &LaneKey, born: crate::rt::Instant, budget: Duration) -> Joined {
         let mut records = outages.records.lock_ignore_poison();
         let now = crate::rt::time::now();
         if let Some(outage) = records.get_mut(lane) {
@@ -713,7 +713,7 @@ impl Outages {
     /// [`join`](Self::join) judges it for an operation born at `born`: a
     /// stopped operation's cleanup then gets one look and no second wait
     /// (`leftover_cleanup.rs`).
-    pub(crate) fn gave_up_on(&self, lane: &LaneKey, born: std::time::Instant, budget: Duration) -> bool {
+    pub(crate) fn gave_up_on(&self, lane: &LaneKey, born: crate::rt::Instant, budget: Duration) -> bool {
         self.records
             .lock_ignore_poison()
             .get(lane)

@@ -25,9 +25,9 @@ use super::super::types::{
     CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationError,
     WriteOperationStartResult, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
+use crate::local_disk::rename_exclusive as rename_local_exclusive;
 use cmdr_fs::twin_path;
 use cmdr_fs::volume::{LaneKey, Volume};
-use cmdr_local::rename_local_exclusive;
 use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind, OperationId};
 
 mod by_move;

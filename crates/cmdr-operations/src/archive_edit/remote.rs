@@ -42,6 +42,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, UNIX_EPOCH};
 
+#[cfg(not(target_family = "wasm"))]
 use tokio::io::AsyncWriteExt;
 
 use super::super::in_flight_temps;
@@ -59,7 +60,6 @@ use super::outage_wait::{Next, StepError, landing_failure, rerun_through_outages
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{Volume, VolumeError};
-use cmdr_local::LocalPosixVolume;
 use cmdr_operation_log::types::NotRollbackableReason;
 
 #[derive(Debug, Clone, Copy)]
@@ -197,11 +197,8 @@ async fn place_local_file(
     // A `LocalPosixVolume` gives us a streaming reader over the local working file
     // (the same primitive the cross-volume copy engine uses for a local source),
     // and is what a settled swap compares the remote archive against.
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
-        "archive-upload",
-        "/",
-        state.scope().host().volume_host().clone(),
-    ));
+    let local: Arc<dyn Volume> =
+        crate::local_disk::folder_volume("archive-upload", "/", state.scope().host().volume_host().clone());
     let volumes = [parent];
     let mut outages = 0;
     loop {
@@ -253,6 +250,7 @@ async fn place_local_file(
 /// Nothing remote is written. `fsync`s the local copy so the subsequent parse
 /// sees complete bytes even under memory pressure. Truncates the local file
 /// first, so a pull that runs again after an outage starts clean.
+#[cfg(not(target_family = "wasm"))]
 async fn pull_archive(
     parent: &dyn Volume,
     remote_path: &Path,
@@ -274,6 +272,21 @@ async fn pull_archive(
     file.flush().await.map_err(local_error)?;
     file.sync_all().await.map_err(local_error)?;
     Ok(())
+}
+
+/// The browser build has no local disk to pull a working copy onto (and archive
+/// edits refuse before they get here on a host without one).
+#[cfg(target_family = "wasm")]
+async fn pull_archive(
+    _parent: &dyn Volume,
+    _remote_path: &Path,
+    local_working: &Path,
+    _state: &WriteOperationState,
+) -> Result<(), StepError> {
+    Err(StepError::Ended(io_op(
+        &local_working.display().to_string(),
+        "no local disk",
+    )))
 }
 
 /// Uploads the edited local copy to the staged write's temp via

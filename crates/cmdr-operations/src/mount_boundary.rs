@@ -32,15 +32,13 @@ use super::types::{MountedVolumeAction, WriteOperationError};
 ///
 /// ❗ Blocks on a `stat`, so an async caller runs it on the blocking pool.
 pub(crate) fn is_mount_boundary(path: &Path, dev: u64) -> bool {
-    use std::os::unix::fs::MetadataExt;
-
     // `/` has no parent to cross from.
     let Some(parent) = path.parent() else {
         return false;
     };
     // Following: the parent may be spelled through a link (`/tmp`), and what
     // holds `path` is the link's target.
-    if std::fs::metadata(parent).is_ok_and(|parent_meta| parent_meta.dev() == dev) {
+    if std::fs::metadata(parent).is_ok_and(|parent_meta| crate::local_disk::device_of(&parent_meta) == dev) {
         return false;
     }
     // The table spells a mount point with its links resolved (`/private/tmp/…`).
@@ -140,11 +138,10 @@ pub(crate) async fn refuse_a_volume_mount_point(
     state: &Arc<WriteOperationState>,
 ) -> Result<(), WriteOperationError> {
     let found = on_local_disk(volume, &[path.to_path_buf()], state, |on_disk| {
-        use std::os::unix::fs::MetadataExt;
         let on_disk = on_disk.into_iter().next()?;
         // A path that can't be stat'd isn't refused here: the listing that
         // follows reports it.
-        let dev = std::fs::symlink_metadata(&on_disk).ok()?.dev();
+        let dev = crate::local_disk::device_of(&std::fs::symlink_metadata(&on_disk).ok()?);
         is_mount_boundary(&on_disk, dev).then_some(on_disk)
     })
     .await?;

@@ -9,4 +9,4 @@
 //! `start_paused` test controls). Swapping one for the other moves a site on or
 //! off the paused test clock.
 
-pub(crate) use cmdr_fs::rt::{now, since, task, time, wall_now};
+pub(crate) use cmdr_fs::rt::{Instant, now, since, task, time, wall_now};

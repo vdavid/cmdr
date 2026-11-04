@@ -26,14 +26,15 @@
 //! them. The runner also owns the loop's three live answers: stop ([`StopMeans`]),
 //! pause (the op's `PauseGate`), and progress (`write-progress` frames).
 
+use crate::rt::Instant;
 use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use tokio::runtime::Handle;
+use cmdr_fs::rt::Runtime as Handle;
 use tokio::sync::oneshot;
 
 use cmdr_fs::ignore_poison::IgnorePoison;

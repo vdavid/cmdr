@@ -2,11 +2,12 @@
 //!
 //! Contains state tracking for in-progress operations and status caches for query APIs.
 
+use crate::rt::Instant;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 use super::eta::{EtaEstimator, EtaSample, ReversalBar};

@@ -24,11 +24,11 @@
 //! call, and `known_directory_paths` so `build_pre_skip_set` can exclude
 //! top-level directories from the file-only bulk-skip.
 
+use crate::rt::Instant;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::time::Instant;
 
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::scan_cache::ScanPreviews;

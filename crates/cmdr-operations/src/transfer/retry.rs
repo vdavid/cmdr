@@ -232,7 +232,7 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(20)).await;
             draining.stop_work_after_failure();
         });
-        let started = tokio::time::Instant::now();
+        let started = crate::rt::time::Instant::now();
         assert!(!wait_before_retry(&state, 1).await, "a draining sibling doesn't go on");
         assert!(
             started.elapsed() < Duration::from_millis(200),
@@ -273,7 +273,7 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(20)).await;
             engine.cancel_write_operation(&op_id, false);
         });
-        let started = tokio::time::Instant::now();
+        let started = crate::rt::time::Instant::now();
         let go_on = wait_before_retry(&state, 1).await;
         assert!(!go_on, "a cancelled operation must not go on to another attempt");
         assert!(

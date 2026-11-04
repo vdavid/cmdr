@@ -153,7 +153,7 @@ where
 }
 
 /// The work's own result, with a panicked task as the `Unexpected` fallback.
-fn flatten_join<T>(joined: Result<Result<T, MutationError>, tokio::task::JoinError>) -> Result<T, MutationError> {
+fn flatten_join<T>(joined: Result<Result<T, MutationError>, cmdr_fs::rt::JoinError>) -> Result<T, MutationError> {
     match joined {
         Ok(result) => result,
         Err(join_err) => Err(MutationError::Unexpected {

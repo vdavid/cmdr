@@ -17,8 +17,8 @@ use super::fresh_plan::{FreshPlan, RemoteFeed};
 use super::fresh_rows::CompressRows;
 use super::fresh_zip::{FreshZipCancellation, FreshZipError, FreshZipProgressObserver, spawn_fresh_zip_with_progress};
 use super::outage_wait::StepError;
+use cmdr_fs::rt::Runtime as Handle;
 use cmdr_fs::volume::{StreamLength, StreamWriteProgress, Volume, VolumeError, WriteMode};
-use tokio::runtime::Handle;
 
 /// How one pipeline run ended, participant by participant.
 pub(super) struct PipelineEnd {

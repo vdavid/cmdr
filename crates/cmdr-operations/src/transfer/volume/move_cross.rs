@@ -13,11 +13,11 @@
 //!
 //! Semantics, flows, and decisions: `../DETAILS.md` § "Volume copy + move".
 
+use crate::rt::Instant;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Instant;
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;

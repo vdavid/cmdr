@@ -572,7 +572,7 @@ pub(super) fn patch_listings_after_create(
         log::warn!("Created entry has no file name: {}", LogPrivate::path(new_path));
         return;
     };
-    cmdr_local::mutation::patch_listing_after_local_mutation(
+    crate::local_disk::patch_listings_after(
         host.listings(),
         volume_id.unwrap_or(cmdr_fs::volume::DEFAULT_VOLUME_ID),
         parent_path,

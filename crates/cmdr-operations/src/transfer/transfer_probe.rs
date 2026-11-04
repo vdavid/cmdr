@@ -21,11 +21,12 @@
 //! misses and every call is a no-op, which is what the unit tests and the
 //! local-FS path rely on.
 
+use crate::rt::Instant;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tokio_util::sync::CancellationToken;
 
@@ -973,7 +974,7 @@ impl WatchdogState {
 /// Spawns the watchdog on the operation's runtime. It holds the probe table
 /// weakly, a background loop that must not keep a dropped engine alive, and
 /// ends at the first tick after the operation's guard removed it.
-fn spawn_watchdog(runtime: &tokio::runtime::Handle, probes: Weak<Probes>, operation_id: String) {
+fn spawn_watchdog(runtime: &cmdr_fs::rt::Runtime, probes: Weak<Probes>, operation_id: String) {
     runtime.spawn(async move {
         let mut watchdog = WatchdogState::new();
         let started = crate::rt::now();

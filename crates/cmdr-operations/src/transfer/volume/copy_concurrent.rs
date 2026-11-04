@@ -31,13 +31,15 @@
 //!
 //! Semantics, the cancel-drain contract, and the merge invariant: `DETAILS.md`.
 
+use crate::rt::Instant;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use tokio::task::{Id as TaskId, JoinError, JoinSet};
+use crate::rt::task::{Id as TaskId, JoinSet};
+use cmdr_fs::rt::JoinError;
 
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::host::OperationErrorReport;
@@ -157,14 +159,14 @@ struct ConcurrentDriver<'a> {
     /// driver, even one dropped mid-run.
     in_flight: JoinSet<CopyTaskOutput>,
     /// The engine's runtime, which every task spawns on (`src/host/CLAUDE.md`).
-    runtime: tokio::runtime::Handle,
+    runtime: cmdr_fs::rt::Runtime,
     /// The sources still to prepare, in the order the user selected them.
     sources: std::iter::Enumerate<std::slice::Iter<'a, PathBuf>>,
     /// Set once the driver has SEEN its work stop (`state.stop_work`: the
     /// user's cancel or rollback, or its own first failure): from then on it
     /// stops waiting indefinitely for its tasks and gives them a bounded window
     /// to stop. See `copy.rs::CANCEL_DRAIN_DEADLINE`.
-    drain_deadline: Option<tokio::time::Instant>,
+    drain_deadline: Option<crate::rt::time::Instant>,
     /// Whether that window is the hard-abort tier's short one rather than the
     /// cooperative cancel's. Latched, so the abort re-arms the deadline once.
     drain_shortened: bool,

@@ -129,23 +129,27 @@ The full top-level inventory is here:
   crate may name; every submodule but `host` is private), `testing/` (`any(test, feature = "testing")`:
   `TestOperations`, an engine a test owns, in `engine.rs`; the Criterion bench's door in `bench.rs`; and what test cells
   outside the crate reach beyond the public list), `local_start.rs` (the local copy, move, delete, and trash starters
-  and the `start_write_operation` lifecycle they share), `handle.rs` (building an `Operations` and reaching its parts),
-  `scope.rs` (`OpScope`, what one operation reaches its engine through), `host/` (what the engine needs from the app:
-  the runtime, the volumes, the engine-wide events, and the optional seams, § "The engine's host"), `manager.rs`
-  (registry + lane admission; what the queue window asks in `manager/queue_api.rs`, its request answers in
-  `manager/wire.rs`, reordering the line in `manager/reorder.rs`, and a retained failure's way to start again in
-  `manager/retry.rs`, § "Retained failures"), `state.rs` (`WriteOperationState`, plus `state/settled_guard.rs`: the
-  settle guard, `state/registry.rs`: `WriteOperationRegistry` and its walks, and `state/controls.rs`: the by-id cancel /
-  abort / pause / resume / conflict-answer entry points, re-exported through `state`, and `state/activity.rs`: the one
-  wait classifier, § "Naming a wait"), `outage_slot.rs` (which volume the operation waits on to come back, and how
-  patiently: `src/transfer/DETAILS.md` § "Waiting out a volume that went away"), `status_cache.rs` (the status cache,
-  the busy-volumes set it derives, the external drag-out seam, and `get_operation_status`), `summary.rs` (what the queue
-  row says an operation acts on, § "What a row says it acts on"), `operation_intent.rs` (`OperationIntent`,
-  `PauseGate`), `sync_primitives.rs` (std's sync primitives, or Shuttle's under `--features shuttle`, § "Thread
-  interleavings (Shuttle)"), `human_wait.rs` (how long a person, or a volume that left, has kept the operation waiting),
-  `metadata_losses.rs` (per-class counts of the metadata a destination couldn't keep, for the completion's note:
-  `src/transfer/volume/DETAILS.md` § "Copies keep the source's metadata"), `mount_boundary.rs` (where a delete's walk
-  stops: `src/delete/DETAILS.md` § "A mount is a wall"), `archive_edit/` (the zip-edit driver).
+  and the `start_write_operation` lifecycle they share), `local_disk.rs` (the host's own disk as the shared code needs
+  it: errnos, a file's device and mode, the no-replace rename, mount and filesystem questions, a volume over a local
+  folder; natively forwards to `cmdr_local` / `libc` / `std::os::unix`, in the browser build the answers of a host with
+  none), `rt.rs` (the clocks, timers, and yields, over `cmdr_fs::rt`; `host/DETAILS.md`), `handle.rs` (building an
+  `Operations` and reaching its parts), `scope.rs` (`OpScope`, what one operation reaches its engine through), `host/`
+  (what the engine needs from the app: the runtime, the volumes, the engine-wide events, and the optional seams, § "The
+  engine's host"), `manager.rs` (registry + lane admission; what the queue window asks in `manager/queue_api.rs`, its
+  request answers in `manager/wire.rs`, reordering the line in `manager/reorder.rs`, and a retained failure's way to
+  start again in `manager/retry.rs`, § "Retained failures"), `state.rs` (`WriteOperationState`, plus
+  `state/settled_guard.rs`: the settle guard, `state/registry.rs`: `WriteOperationRegistry` and its walks, and
+  `state/controls.rs`: the by-id cancel / abort / pause / resume / conflict-answer entry points, re-exported through
+  `state`, and `state/activity.rs`: the one wait classifier, § "Naming a wait"), `outage_slot.rs` (which volume the
+  operation waits on to come back, and how patiently: `src/transfer/DETAILS.md` § "Waiting out a volume that went
+  away"), `status_cache.rs` (the status cache, the busy-volumes set it derives, the external drag-out seam, and
+  `get_operation_status`), `summary.rs` (what the queue row says an operation acts on, § "What a row says it acts on"),
+  `operation_intent.rs` (`OperationIntent`, `PauseGate`), `sync_primitives.rs` (std's sync primitives, or Shuttle's
+  under `--features shuttle`, § "Thread interleavings (Shuttle)"), `human_wait.rs` (how long a person, or a volume that
+  left, has kept the operation waiting), `metadata_losses.rs` (per-class counts of the metadata a destination couldn't
+  keep, for the completion's note: `src/transfer/volume/DETAILS.md` § "Copies keep the source's metadata"),
+  `mount_boundary.rs` (where a delete's walk stops: `src/delete/DETAILS.md` § "A mount is a wall"), `archive_edit/` (the
+  zip-edit driver).
 - The in-flight ledgers and what reverses them: `ledger.rs` (`CopyTransaction` and `WrittenFile`, the vocabulary of what
   an operation currently has at the destination, plus the `Drop` panic net) and `reversal.rs` (the policy over it: the
   recheck before each destructive act, and `ReversalTally`), plus `unblocked_removal.rs` (the one removal every reversal
@@ -2701,6 +2705,20 @@ without `rt-multi-thread`: the engine builds no runtime of its own and spawns on
 engine, and the build's long pole would become `cmdr-fs → cmdr-listing → cmdr-operations → cmdr`; the one type the
 engine needed from it, the collator, sits in `cmdr-collation` instead. `cmdr-index` stays out the same way: the engine
 asks the index through `OperationIndex`.
+
+## The browser build
+
+The demo's WASM engine links this crate (`crates/cmdr-listing-wasm`), so it builds for `wasm32-unknown-unknown`:
+`cmdr-local` and tokio's `fs` are host-only dependencies (`Cargo.toml`), the shared code reaches the host's disk only
+through `local_disk.rs` (the browser answers there are a host with none), and clocks go through `rt.rs`. The local-disk
+engine still COMPILES there but can't be reached: that host's `OperationVolumes::local_disk` is `None`
+(`host/DETAILS.md`), and `lib.rs` allows the dead code that leaves on that target. The leftover sweep's `block_on`
+shapes have browser twins (`in_flight_sweep.rs`): no persisted records there, and the arrival sweep awaits on the page's
+loop. The wasm lane (`desktop-rust-listing-wasm`) compiles it beside the listing engine (`browserBound` in
+`scripts/build-listing-wasm/main.go`). Not yet enforced by a check: some shared modules still name `libc` /
+`std::os::unix` inside their own `cfg(unix)` branches (`error_classification.rs`, `free_space.rs`, `ledger.rs`,
+`rename.rs`, `validation.rs`, `transfer_sides.rs`, …); they compile in the browser as they are, and move into
+`local_disk.rs` when next touched.
 
 ## Testing bar
 

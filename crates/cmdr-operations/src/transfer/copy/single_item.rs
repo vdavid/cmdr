@@ -528,7 +528,7 @@ pub(in crate::transfer) fn copy_single_item(
                     path: source_for_symlink.display().to_string(),
                     message: format!("Failed to read symlink: {}", e).into(),
                 })?;
-                std::os::unix::fs::symlink(&link_target, target).map_err(|e| WriteOperationError::IoError {
+                crate::local_disk::symlink(&link_target, target).map_err(|e| WriteOperationError::IoError {
                     path: target.display().to_string(),
                     message: format!("Failed to create symlink: {}", e).into(),
                 })?;

@@ -6,11 +6,12 @@
 //! the whole entry point: it answers `Ok(true)` when the caller must stop
 //! because the dry run has spoken for the operation.
 
+use crate::rt::Instant;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::cancellable::run_cancellable_scoped;
 use super::conflict::{calculate_dest_path, create_conflict_info, sample_conflicts};
@@ -209,10 +210,7 @@ fn dry_run_scan_recursive(
 
         // Scan contents
         let entries = fs::read_dir(path).with_path(path)?;
-        let device = {
-            use std::os::unix::fs::MetadataExt;
-            metadata.dev()
-        };
+        let device = crate::local_disk::device_of(&metadata);
 
         for entry in entries.flatten() {
             if sidecars.is_sidecar(path, device, &entry.file_name()) {
