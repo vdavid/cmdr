@@ -27,9 +27,9 @@ merge of the PR head on top of `main`: it makes the head an ancestor while leavi
 `-record N` builds it in a land of its own, after the branch landed: a `record-pr-<N>` branch holding the current
 `origin/main` plus that merge (`chore: record PR #<N> as merged`), checked for an empty tree diff and the PR head's
 ancestry before it's pushed. It goes through CI like any land, fast-forwards `main`, waits for PR N to read merged, and
-deletes the record branch. Since it changes no file, CI skips every lane, `hygiene` included, and goes green in about a
-minute (`docs/tooling/ci.md` § The hygiene job). The why and the mechanics: `scripts/land/DETAILS.md` § Decision: record
-a contributor PR in its own land.
+deletes the record branch. Since it changes no file, CI skips every lane, the light lane's hygiene included, and goes
+green in about a minute (`docs/tooling/ci.md` § The light lane). The why and the mechanics: `scripts/land/DETAILS.md` §
+Decision: record a contributor PR in its own land.
 
 - **Gotcha / Why:** the record's diff against `main` is empty, which reads like a mistake. That's what it's for: it
   carries only the ancestry. Don't "clean it up".

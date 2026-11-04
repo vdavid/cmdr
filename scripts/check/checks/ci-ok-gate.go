@@ -19,6 +19,7 @@ var ciOKGateExempt = map[string]string{
 	"warm-e2e-linux-cache":    "a post-land cache warm on `main` pushes, not a check; a failure only costs the next PR a cold E2E build",
 	"warm-rust-cache":         "a post-land cache warm on `main` pushes, not a check; a failure only costs the next PR a cold Linux Rust build",
 	"warm-rust-macos-cache":   "a post-land cache warm on `main` pushes, not a check; a failure only costs the next PR a cold macOS clippy build",
+	"warm-light-cache":        "a post-land cache warm on `main` pushes, not a check; a failure only costs the next PR a `pnpm install` and cold Go tools",
 	"prune-superseded-caches": "a post-land cache cleanup on `main` pushes, not a check; a failure only leaves old cache entries to age out",
 }
 
@@ -118,10 +119,13 @@ func validateVerifiedPushSkipsLanes(jobs map[string][]string, gateNeeds []string
 	return violations
 }
 
-// jobOutputs returns a job's `outputs:` map, key to raw value.
+// jobOutputs returns a job's `outputs:` map, key to raw value. A value the formatter folded
+// onto the lines below its key (indented deeper than it) is joined back, so a long output
+// can't slip past the rules that read it.
 func jobOutputs(body []string) map[string]string {
 	out := map[string]string{}
 	in := false
+	last := ""
 	for _, line := range body {
 		if strings.HasPrefix(line, "    outputs:") {
 			in = true
@@ -133,8 +137,19 @@ func jobOutputs(body []string) map[string]string {
 		if !strings.HasPrefix(line, "      ") {
 			break
 		}
-		if k, v, ok := strings.Cut(strings.TrimSpace(line), ":"); ok && !strings.HasPrefix(k, "#") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if strings.HasPrefix(line, "       ") {
+			if last != "" {
+				out[last] = strings.TrimSpace(out[last] + " " + trimmed)
+			}
+			continue
+		}
+		if k, v, ok := strings.Cut(trimmed, ":"); ok {
 			out[k] = strings.TrimSpace(v)
+			last = k
 		}
 	}
 	return out
