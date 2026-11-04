@@ -852,7 +852,7 @@ fn a_source_read_error_reaches_a_live_run_as_an_unreadable_index() {
         json!([{
             "runId": "golden-run",
             "error": "indexUnreadable",
-            "message": "Cmdr can't read this drive's index. Re-indexing the drive fixes it.",
+            "message": "Cmdr can’t read this drive’s index. Re-indexing the drive fixes it.",
         }])
     );
 }

@@ -437,7 +437,7 @@ fn groundwork(
 }
 
 /// What a run says when the index won't open or a read from it fails.
-const INDEX_UNREADABLE: &str = "Cmdr can't read this drive's index. Re-indexing the drive fixes it.";
+const INDEX_UNREADABLE: &str = "Cmdr can’t read this drive’s index. Re-indexing the drive fixes it.";
 
 /// The covered half as a live run takes it: the same pass `run_blocking` makes, its
 /// failure classified the way the run's error event reports it. A query the engine
