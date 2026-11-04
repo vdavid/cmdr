@@ -11,6 +11,7 @@
 #![warn(unused_crate_dependencies)]
 #![deny(missing_docs)]
 
+pub mod backend_listings;
 #[cfg(target_family = "wasm")]
 mod bindings;
 pub mod commands;

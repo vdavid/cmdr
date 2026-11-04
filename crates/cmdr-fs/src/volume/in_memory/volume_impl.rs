@@ -246,21 +246,28 @@ impl Volume for InMemoryVolume {
         content: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // A device breathes at every call (`with_yielding`; a no-op otherwise).
-            self.breathe().await;
-            let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
+            let result: Result<(), VolumeError> = async {
+                // A device breathes at every call (`with_yielding`; a no-op otherwise).
+                self.breathe().await;
+                let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+                    message: "Lock poisoned".into(),
+                    raw_os_error: None,
+                })?;
 
-            let normalized = self.normalize(path);
+                let normalized = self.normalize(path);
 
-            if entries.contains_key(&normalized) {
-                return Err(VolumeError::AlreadyExists(normalized.display().to_string()));
+                if entries.contains_key(&normalized) {
+                    return Err(VolumeError::AlreadyExists(normalized.display().to_string()));
+                }
+
+                Self::insert_file(&mut entries, normalized, InMemoryContent::bytes(content));
+                Ok(())
             }
-
-            Self::insert_file(&mut entries, normalized, InMemoryContent::bytes(content));
-            Ok(())
+            .await;
+            if result.is_ok() {
+                self.patch_created_at(&self.normalize(path)).await;
+            }
+            result
         })
     }
 
@@ -269,45 +276,52 @@ impl Volume for InMemoryVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // A device breathes at every call (`with_yielding`; a no-op otherwise).
-            self.breathe().await;
-            if self.create_directory_not_found {
-                return Err(VolumeError::NotFound(self.normalize(path).display().to_string()));
+            let result: Result<(), VolumeError> = async {
+                // A device breathes at every call (`with_yielding`; a no-op otherwise).
+                self.breathe().await;
+                if self.create_directory_not_found {
+                    return Err(VolumeError::NotFound(self.normalize(path).display().to_string()));
+                }
+
+                let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+                    message: "Lock poisoned".into(),
+                    raw_os_error: None,
+                })?;
+
+                let normalized = self.normalize(path);
+
+                // Mirror `std::fs::create_dir`: error on an existing entry rather
+                // than overwriting it. This is what lets the folder-merge walker use
+                // `AlreadyExists` as the "this level pre-existed, merge into it"
+                // signal (see `Volume::create_directory_errors_on_existing_dir`).
+                if entries.contains_key(&normalized) {
+                    return Err(VolumeError::AlreadyExists(normalized.display().to_string()));
+                }
+
+                let name = normalized
+                    .file_name()
+                    .map(|s| s.to_string_lossy().to_string())
+                    .unwrap_or_default();
+
+                let metadata = FileEntry {
+                    modified_at: Some(Self::now_secs()),
+                    created_at: Some(Self::now_secs()),
+                    permissions: 0o755,
+                    owner: "testuser".to_string(),
+                    group: "staff".to_string(),
+                    ..FileEntry::new(name, normalized.display().to_string(), true, false)
+                };
+
+                Self::touch_parent_of(&mut entries, &normalized);
+                entries.insert(normalized, InMemoryEntry::new(metadata, None));
+
+                Ok(())
             }
-
-            let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
-
-            let normalized = self.normalize(path);
-
-            // Mirror `std::fs::create_dir`: error on an existing entry rather
-            // than overwriting it. This is what lets the folder-merge walker use
-            // `AlreadyExists` as the "this level pre-existed, merge into it"
-            // signal (see `Volume::create_directory_errors_on_existing_dir`).
-            if entries.contains_key(&normalized) {
-                return Err(VolumeError::AlreadyExists(normalized.display().to_string()));
+            .await;
+            if result.is_ok() {
+                self.patch_created_at(&self.normalize(path)).await;
             }
-
-            let name = normalized
-                .file_name()
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or_default();
-
-            let metadata = FileEntry {
-                modified_at: Some(Self::now_secs()),
-                created_at: Some(Self::now_secs()),
-                permissions: 0o755,
-                owner: "testuser".to_string(),
-                group: "staff".to_string(),
-                ..FileEntry::new(name, normalized.display().to_string(), true, false)
-            };
-
-            Self::touch_parent_of(&mut entries, &normalized);
-            entries.insert(normalized, InMemoryEntry::new(metadata, None));
-
-            Ok(())
+            result
         })
     }
 
@@ -410,38 +424,45 @@ impl Volume for InMemoryVolume {
 
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // A device breathes at every call (`with_yielding`; a no-op otherwise).
-            self.breathe().await;
-            if self.delete_fails {
-                return Err(VolumeError::IoError {
-                    message: "injected delete failure".into(),
+            let result: Result<(), VolumeError> = async {
+                // A device breathes at every call (`with_yielding`; a no-op otherwise).
+                self.breathe().await;
+                if self.delete_fails {
+                    return Err(VolumeError::IoError {
+                        message: "injected delete failure".into(),
+                        raw_os_error: None,
+                    });
+                }
+
+                let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+                    message: "Lock poisoned".into(),
                     raw_os_error: None,
-                });
+                })?;
+
+                let normalized = self.normalize(path);
+
+                // `Volume::delete`'s contract is "file or EMPTY directory only"
+                // (LocalPosix uses `std::fs::remove_dir`, which fails `ENOTEMPTY`;
+                // SMB returns STATUS_DIRECTORY_NOT_EMPTY). Honor it here, because
+                // real data-safety logic LEANS on the refusal: the same-volume
+                // rename-merge preserves a skipped child's source purely by letting
+                // its parent's cleanup delete fail, and the volume move's source
+                // sweep relies on the same shape. A test double that deleted a
+                // non-empty directory would orphan the children in the map and let
+                // every such regression pass silently.
+                Self::refuse_if_held(&entries, &normalized)?;
+
+                entries
+                    .remove(&normalized)
+                    .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
+                Self::touch_parent_of(&mut entries, &normalized);
+                Ok(())
             }
-
-            let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
-
-            let normalized = self.normalize(path);
-
-            // `Volume::delete`'s contract is "file or EMPTY directory only"
-            // (LocalPosix uses `std::fs::remove_dir`, which fails `ENOTEMPTY`;
-            // SMB returns STATUS_DIRECTORY_NOT_EMPTY). Honor it here, because
-            // real data-safety logic LEANS on the refusal: the same-volume
-            // rename-merge preserves a skipped child's source purely by letting
-            // its parent's cleanup delete fail, and the volume move's source
-            // sweep relies on the same shape. A test double that deleted a
-            // non-empty directory would orphan the children in the map and let
-            // every such regression pass silently.
-            Self::refuse_if_held(&entries, &normalized)?;
-
-            entries
-                .remove(&normalized)
-                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
-            Self::touch_parent_of(&mut entries, &normalized);
-            Ok(())
+            .await;
+            if result.is_ok() {
+                self.patch_deleted_at(&self.normalize(path)).await;
+            }
+            result
         })
     }
 
@@ -490,82 +511,89 @@ impl Volume for InMemoryVolume {
         force: bool,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // A device breathes at every call (`with_yielding`; a no-op otherwise).
-            self.breathe().await;
-            if self.renames_by_copy {
-                return Err(VolumeError::NotSupported);
-            }
-            if let Some(failure) = &self.rename_failure {
-                return Err(failure.clone());
-            }
-            let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
-
-            let from_normalized = self.normalize(from);
-            let to_normalized = self.normalize(to);
-
-            if !force && from_normalized != to_normalized && entries.contains_key(&to_normalized) {
-                return Err(VolumeError::AlreadyExists(to_normalized.display().to_string()));
-            }
-            // Even forced, never a folder that holds something (`Volume::rename`).
-            if from_normalized != to_normalized {
-                Self::refuse_if_held(&entries, &to_normalized)?;
-            }
-            if self.rename_to_failing.read_ignore_poison().contains(&to_normalized) {
-                return Err(VolumeError::IoError {
-                    message: crate::error_detail::ErrorDetail::at_path(
-                        "configured to fail a rename to ",
-                        to.to_string_lossy(),
-                    ),
+            let result: Result<(), VolumeError> = async {
+                // A device breathes at every call (`with_yielding`; a no-op otherwise).
+                self.breathe().await;
+                if self.renames_by_copy {
+                    return Err(VolumeError::NotSupported);
+                }
+                if let Some(failure) = &self.rename_failure {
+                    return Err(failure.clone());
+                }
+                let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+                    message: "Lock poisoned".into(),
                     raw_os_error: None,
-                });
-            }
+                })?;
 
-            let mut entry = entries
-                .remove(&from_normalized)
-                .ok_or_else(|| VolumeError::NotFound(from_normalized.display().to_string()))?;
+                let from_normalized = self.normalize(from);
+                let to_normalized = self.normalize(to);
 
-            // Update the metadata to reflect the new name and path
-            let new_name = to_normalized
-                .file_name()
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or_default();
-            entry.metadata.name = new_name;
-            entry.metadata.path = to_normalized.display().to_string();
-            let was_directory = entry.metadata.is_directory;
+                if !force && from_normalized != to_normalized && entries.contains_key(&to_normalized) {
+                    return Err(VolumeError::AlreadyExists(to_normalized.display().to_string()));
+                }
+                // Even forced, never a folder that holds something (`Volume::rename`).
+                if from_normalized != to_normalized {
+                    Self::refuse_if_held(&entries, &to_normalized)?;
+                }
+                if self.rename_to_failing.read_ignore_poison().contains(&to_normalized) {
+                    return Err(VolumeError::IoError {
+                        message: crate::error_detail::ErrorDetail::at_path(
+                            "configured to fail a rename to ",
+                            to.to_string_lossy(),
+                        ),
+                        raw_os_error: None,
+                    });
+                }
 
-            Self::touch_parent_of(&mut entries, &from_normalized);
-            Self::touch_parent_of(&mut entries, &to_normalized);
-            entries.insert(to_normalized.clone(), entry);
+                let mut entry = entries
+                    .remove(&from_normalized)
+                    .ok_or_else(|| VolumeError::NotFound(from_normalized.display().to_string()))?;
 
-            // Renaming a DIRECTORY carries its whole subtree along — that's the
-            // single server-side call the same-volume move is built on ("a whole
-            // subtree moves with one rename, never descended"). Re-key every
-            // descendant. Moving only the directory node would silently orphan
-            // the contents: they'd vanish from every listing while still sitting
-            // in the map, so a test asserting by exact path would still find them
-            // and a subtree walk would not — passing vacuously over exactly the
-            // data-loss shape these tests exist to catch.
-            if was_directory {
-                let descendants: Vec<PathBuf> = entries
-                    .keys()
-                    .filter(|k| k.starts_with(&from_normalized) && *k != &from_normalized)
-                    .cloned()
-                    .collect();
-                for old_key in descendants {
-                    let Ok(suffix) = old_key.strip_prefix(&from_normalized) else {
-                        continue;
-                    };
-                    let new_key = to_normalized.join(suffix);
-                    if let Some(mut moved) = entries.remove(&old_key) {
-                        moved.metadata.path = new_key.display().to_string();
-                        entries.insert(new_key, moved);
+                // Update the metadata to reflect the new name and path
+                let new_name = to_normalized
+                    .file_name()
+                    .map(|s| s.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                entry.metadata.name = new_name;
+                entry.metadata.path = to_normalized.display().to_string();
+                let was_directory = entry.metadata.is_directory;
+
+                Self::touch_parent_of(&mut entries, &from_normalized);
+                Self::touch_parent_of(&mut entries, &to_normalized);
+                entries.insert(to_normalized.clone(), entry);
+
+                // Renaming a DIRECTORY carries its whole subtree along — that's the
+                // single server-side call the same-volume move is built on ("a whole
+                // subtree moves with one rename, never descended"). Re-key every
+                // descendant. Moving only the directory node would silently orphan
+                // the contents: they'd vanish from every listing while still sitting
+                // in the map, so a test asserting by exact path would still find them
+                // and a subtree walk would not — passing vacuously over exactly the
+                // data-loss shape these tests exist to catch.
+                if was_directory {
+                    let descendants: Vec<PathBuf> = entries
+                        .keys()
+                        .filter(|k| k.starts_with(&from_normalized) && *k != &from_normalized)
+                        .cloned()
+                        .collect();
+                    for old_key in descendants {
+                        let Ok(suffix) = old_key.strip_prefix(&from_normalized) else {
+                            continue;
+                        };
+                        let new_key = to_normalized.join(suffix);
+                        if let Some(mut moved) = entries.remove(&old_key) {
+                            moved.metadata.path = new_key.display().to_string();
+                            entries.insert(new_key, moved);
+                        }
                     }
                 }
+                Ok(())
             }
-            Ok(())
+            .await;
+            if result.is_ok() {
+                self.patch_renamed_at(&self.normalize(from), &self.normalize(to)).await;
+            }
+            result
         })
     }
 
@@ -792,54 +820,61 @@ impl Volume for InMemoryVolume {
             return Box::pin(async { Err(VolumeError::NotSupported) });
         };
         Box::pin(async move {
-            // What it keeps: of the flags only `staged_flags`, the ones a real
-            // destination puts on the staged temp; the copy puts the rest on
-            // after the landing rename (`Volume::apply_metadata`).
-            let mut carried = stream.metadata(self.metadata_caps.stores);
-            carried.flags = carried.flags.intersection(self.metadata_caps.staged_flags);
-            let kept = carried
-                .clone()
-                .restricted_to(MetadataClasses::ALL.without(self.write_refuses));
-            self.check_room_for(size)?;
-            let mut data = ContentSink::default();
-            let mut bytes_written = 0u64;
+            let result: Result<StreamWritten, VolumeError> = async {
+                // What it keeps: of the flags only `staged_flags`, the ones a real
+                // destination puts on the staged temp; the copy puts the rest on
+                // after the landing rename (`Volume::apply_metadata`).
+                let mut carried = stream.metadata(self.metadata_caps.stores);
+                carried.flags = carried.flags.intersection(self.metadata_caps.staged_flags);
+                let kept = carried
+                    .clone()
+                    .restricted_to(MetadataClasses::ALL.without(self.write_refuses));
+                self.check_room_for(size)?;
+                let mut data = ContentSink::default();
+                let mut bytes_written = 0u64;
 
-            while let Some(result) = stream.next_chunk().await {
-                let chunk = result?;
-                bytes_written += chunk.len() as u64;
-                data.push(&chunk);
-                self.breathe().await;
+                while let Some(result) = stream.next_chunk().await {
+                    let chunk = result?;
+                    bytes_written += chunk.len() as u64;
+                    data.push(&chunk);
+                    self.breathe().await;
 
-                if on_progress(StreamWriteProgress {
-                    bytes_written,
-                    expected_length: StreamLength::Known(size),
-                }) == std::ops::ControlFlow::Break(())
-                {
-                    return Err(VolumeError::IoError {
-                        message: "Operation cancelled".into(),
-                        raw_os_error: None,
-                    });
+                    if on_progress(StreamWriteProgress {
+                        bytes_written,
+                        expected_length: StreamLength::Known(size),
+                    }) == std::ops::ControlFlow::Break(())
+                    {
+                        return Err(VolumeError::IoError {
+                            message: "Operation cancelled".into(),
+                            raw_os_error: None,
+                        });
+                    }
                 }
-            }
 
-            let data = data.finish();
-            if self.publishes_writes_whole && mode == WriteMode::CreateOrReplace {
-                self.replace_whole(dest, data)?;
-            } else {
-                self.create_content(dest, data)?;
+                let data = data.finish();
+                if self.publishes_writes_whole && mode == WriteMode::CreateOrReplace {
+                    self.replace_whole(dest, data)?;
+                } else {
+                    self.create_content(dest, data)?;
+                }
+                // Keeps the source's date the way a real destination does, so an
+                // engine test copying onto the double sees the same answer.
+                if let Some(secs) = stream
+                    .modified_at()
+                    .and_then(|date| date.duration_since(std::time::UNIX_EPOCH).ok())
+                {
+                    self.set_modified_at(dest, Some(secs.as_secs()));
+                }
+                if !kept.is_empty() {
+                    self.set_carried_metadata(dest, kept);
+                }
+                Ok(self.written(dest, bytes_written, &carried, stream.modified_at()))
             }
-            // Keeps the source's date the way a real destination does, so an
-            // engine test copying onto the double sees the same answer.
-            if let Some(secs) = stream
-                .modified_at()
-                .and_then(|date| date.duration_since(std::time::UNIX_EPOCH).ok())
-            {
-                self.set_modified_at(dest, Some(secs.as_secs()));
+            .await;
+            if result.is_ok() {
+                self.patch_created_at(&self.normalize(dest)).await;
             }
-            if !kept.is_empty() {
-                self.set_carried_metadata(dest, kept);
-            }
-            Ok(self.written(dest, bytes_written, &carried, stream.modified_at()))
+            result
         })
     }
 
@@ -893,6 +928,15 @@ impl Volume for InMemoryVolume {
 
     fn hold_for_transfer(&self) -> Option<crate::volume::TransferHold> {
         self.transfer_hold()
+    }
+
+    fn notify_mutation<'a>(
+        &'a self,
+        _volume_id: &'a str,
+        parent_path: &'a Path,
+        mutation: crate::volume::MutationEvent,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move { self.patch_reported(parent_path, mutation).await })
     }
 
     fn supports_local_fs_access(&self) -> bool {

@@ -255,26 +255,23 @@ impl OperationLogWriter {
     /// [`OperationLogStore`](super::store::OperationLogStore) first is the
     /// canonical schema-lifecycle owner, but the factory migrates idempotently
     /// either way.
-    #[cfg(not(target_family = "wasm"))]
     pub fn spawn(db_path: &Path) -> Result<Self, OperationLogStoreError> {
         let conn = open_write_connection(db_path)?;
-        let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(CHANNEL_CAPACITY);
-        let handle = thread::Builder::new()
-            .name("operation-log-writer".into())
-            .spawn(move || writer_loop(conn, receiver))
-            .map_err(OperationLogStoreError::Io)?;
-        Ok(Self {
-            sender,
-            thread_handle: Arc::new(Mutex::new(Some(handle))),
-            db_path: db_path.to_path_buf(),
-        })
-    }
-
-    /// The browser build's writer: the write connection, applied to inline (the
-    /// module docs say why). Same contract as the thread's.
-    #[cfg(target_family = "wasm")]
-    pub fn spawn(db_path: &Path) -> Result<Self, OperationLogStoreError> {
-        let conn = open_write_connection(db_path)?;
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(CHANNEL_CAPACITY);
+            let handle = thread::Builder::new()
+                .name("operation-log-writer".into())
+                .spawn(move || writer_loop(conn, receiver))
+                .map_err(OperationLogStoreError::Io)?;
+            Ok(Self {
+                sender,
+                thread_handle: Arc::new(Mutex::new(Some(handle))),
+                db_path: db_path.to_path_buf(),
+            })
+        }
+        // The browser build's writer: the connection, applied to inline (module docs).
+        #[cfg(target_family = "wasm")]
         Ok(Self {
             inline: Arc::new(Mutex::new(Some(conn))),
             db_path: db_path.to_path_buf(),
@@ -366,19 +363,18 @@ impl OperationLogWriter {
         Ok(())
     }
 
-    /// Shut the writer down and join its thread. Idempotent.
-    #[cfg(not(target_family = "wasm"))]
+    /// Shut the writer down and join its thread (in the browser build, close its
+    /// connection). Idempotent.
     pub fn shutdown(&self) {
-        let _ = self.sender.send(WriteMessage::Shutdown);
-        if let Some(handle) = self.thread_handle.lock_ignore_poison().take() {
-            let _ = handle.join();
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let _ = self.sender.send(WriteMessage::Shutdown);
+            if let Some(handle) = self.thread_handle.lock_ignore_poison().take() {
+                let _ = handle.join();
+            }
         }
-    }
-
-    /// Shut the writer down: its connection closes. Idempotent.
-    #[cfg(target_family = "wasm")]
-    pub fn shutdown(&self) {
         // Already shut is the only refusal, and the answer is the same.
+        #[cfg(target_family = "wasm")]
         let _ = self.send(WriteMessage::Shutdown);
     }
 

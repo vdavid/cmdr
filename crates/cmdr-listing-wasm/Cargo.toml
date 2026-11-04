@@ -36,5 +36,7 @@ wasm-bindgen-futures = "0.4.76"
 js-sys = "0.3.103"
 
 [dev-dependencies]
+# The listing engine's fixtures (`TestEngine`, `TestListing`) for the backend-listings cells.
+cmdr-listing = { path = "../cmdr-listing", features = ["testing"] }
 # The shim's tests run natively, on a real runtime, against the same engine.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

@@ -1170,6 +1170,10 @@ unless set, so a test that only cares about bytes sees the store it always did:
 - **Yielding** (`with_yielding`): every call and streamed chunk hands the thread back once a slice has passed since the
   last time (`rt::task::yield_now`, a macrotask in the browser), like a device waiting on I/O. That's what keeps the
   page painting and Cancel clickable during a 1,200-file delete.
+- **Pane patches** (`with_pane_patches(volume_id, listings)`, `src/volume/in_memory/panes.rs`): every create, delete,
+  rename, and streamed write then patches the listings through the shared patcher (`patching.rs`), as SFTP and S3 do,
+  and `notify_mutation` (the engine's own reports) goes there too. The demo hands it its listing engine
+  (`crates/cmdr-listing-wasm/src/backend_listings.rs`). Without it nothing is patched, as before.
 - **Capacity** (`with_capacity`): free space is the total minus what the files hold, read live, and a write that
   wouldn't fit is refused `StorageFull` before it reads a byte.
 

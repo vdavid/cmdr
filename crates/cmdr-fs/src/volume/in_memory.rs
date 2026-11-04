@@ -28,6 +28,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 mod device;
 mod links;
+mod panes;
 mod transfer_holds;
 mod volume_impl;
 mod xattrs;
@@ -155,6 +156,8 @@ pub struct InMemoryVolume {
     /// A total size the stored files count against, live. `None` (the default)
     /// keeps `space_info`'s fixed answer. Set via [`Self::with_capacity`].
     capacity: Option<u64>,
+    /// The panes a write patches (`with_pane_patches`); `None` patches nothing.
+    pane_patches: Option<panes::PanePatches>,
     /// When set, [`Volume::rename`] returns this error instead of moving the entry,
     /// and the store is left exactly as it was. The variant matters: a caller that
     /// clears the destination on ANY rename failure deletes the user's file over a
@@ -274,6 +277,7 @@ impl InMemoryVolume {
             bandwidth: None,
             yielder: None,
             capacity: None,
+            pane_patches: None,
             rename_failure: None,
             rename_to_failing: RwLock::new(HashSet::new()),
             create_directory_not_found: false,
