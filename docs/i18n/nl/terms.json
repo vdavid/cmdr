@@ -767,7 +767,7 @@
   "menu": {
     "chosen": "menu",
     "accept": ["menu’s", "menu's"],
-    "forms": "compounds close up (contextmenu, Favorietenmenu, voorinstellingenmenu); Open the X menu → Open X-menu, closed up (Open voorinstellingenmenu)",
+    "forms": "compounds close up (contextmenu, Favorietenmenu, voorinstellingenmenu); Open the X menu → Open X-menu, closed up (Open voorinstellingenmenu); menu bar → menubalk (macOS 27 System Settings pane, ControlCenterSettings)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Open menu); catalog Favorietenmenu, contextmenu"
   },

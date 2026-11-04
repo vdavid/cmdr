@@ -926,7 +926,7 @@
   "menu": {
     "chosen": "menü",
     "accept": ["menüt", "menüb", "menüj"],
-    "forms": "X menu → X menü, two words (Kedvencek menü, Előbeállítások menü); context menu → Helyi menü",
+    "forms": "X menu → X menü, two words (Kedvencek menü, Előbeállítások menü); context menu → Helyi menü; menu bar → menüsor (macOS 27 System Settings pane, ControlCenterSettings)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Menü megnyitása); catalog Kedvencek menü, Helyi menü"
   },

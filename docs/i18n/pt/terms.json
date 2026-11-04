@@ -712,7 +712,7 @@
   "menu": {
     "chosen": "menu",
     "accept": ["menus"],
-    "forms": "Open the X menu → Abrir menu de X, no article (Abrir menu de contexto, Menu de favoritos)",
+    "forms": "Open the X menu → Abrir menu de X, no article (Abrir menu de contexto, Menu de favoritos); menu bar → barra de menus (macOS 27 System Settings pane, ControlCenterSettings)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Abrir Menu, sentence-cased here); catalog Menu de favoritos, menu de contexto"
   },

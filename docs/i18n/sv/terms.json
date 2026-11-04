@@ -812,7 +812,7 @@
   "menu": {
     "chosen": "meny",
     "accept": ["menyn", "menyer"],
-    "forms": "compounds close up (snabbmeny, Favoritmeny, förinställningsmenyn); a named menu in prose → Hjälp-menyn",
+    "forms": "compounds close up (snabbmeny, Favoritmeny, förinställningsmenyn); a named menu in prose → Hjälp-menyn; menu bar → menyrad (macOS 27 System Settings pane, ControlCenterSettings)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Öppna meny); catalog Favoritmeny, snabbmeny"
   },

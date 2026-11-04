@@ -721,7 +721,7 @@
   },
   "menu": {
     "chosen": "menu",
-    "forms": "Open the X menu → Mở menu X (Mở menu chuột phải, Menu mục ưa thích)",
+    "forms": "Open the X menu → Mở menu X (Mở menu chuột phải, Menu mục ưa thích); menu bar → thanh menu (macOS 27 System Settings pane, ControlCenterSettings)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Mở menu); catalog Menu mục ưa thích"
   },

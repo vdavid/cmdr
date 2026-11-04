@@ -873,7 +873,7 @@
   "menu": {
     "chosen": "menu",
     "accept": ["menus"],
-    "forms": "Open the X menu → Ouvrir le menu des X (Ouvrir le menu contextuel, Menu des favoris)",
+    "forms": "Open the X menu → Ouvrir le menu des X (Ouvrir le menu contextuel, Menu des favoris); menu bar → barre des menus (macOS 27 System Settings pane, ControlCenterSettings)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Ouvrir le menu); catalog Menu des favoris, menu contextuel"
   },

@@ -2443,7 +2443,7 @@
     ],
     "chosen": "選單",
     "confidence": "high",
-    "forms": "menu names in prose take corner brackets: 「說明」選單",
+    "forms": "menu names in prose take corner brackets: 「說明」選單; menu bar → 選單列 (macOS 27 System Settings pane, ControlCenterSettings)",
     "sources": "AP-HK, TC, DOL"
   },
   "merge": {

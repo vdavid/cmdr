@@ -856,7 +856,7 @@
   "menu": {
     "chosen": "Menü",
     "accept": ["menü"],
-    "forms": "compounds close up (Kontextmenü, Favoritenmenü); a named menu in prose → das Menü „Hilfe“; Open the presets menu → Menü „Voreinstellungen“ öffnen",
+    "forms": "compounds close up (Kontextmenü, Favoritenmenü); a named menu in prose → das Menü „Hilfe“; Open the presets menu → Menü „Voreinstellungen“ öffnen; menu bar → Menüleiste (macOS 27 System Settings pane, ControlCenterSettings)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Menü öffnen); catalog Kontextmenü, Favoritenmenü"
   },

@@ -12,6 +12,10 @@
   "@ui.modalDialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "ui.menuBar.label": "Menüsor",
+  "@ui.menuBar.label": {
+    "sourceHash": "2d9de7e"
+  },
   "ui.popover.defaultAriaLabel": "Beállítások",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

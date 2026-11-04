@@ -794,7 +794,7 @@
   "menu": {
     "chosen": "menú",
     "accept": ["menús"],
-    "forms": "Open the X menu → Abrir el menú de X (Abrir el menú contextual, Menú de favoritos)",
+    "forms": "Open the X menu → Abrir el menú de X (Abrir el menú contextual, Menú de favoritos); menu bar → barra de menús (macOS 27 System Settings pane, ControlCenterSettings)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Abrir menú); catalog Menú de favoritos, menú contextual"
   },

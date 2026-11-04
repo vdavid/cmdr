@@ -785,7 +785,7 @@
   },
   "menu": {
     "chosen": "菜单",
-    "forms": "X menu → X菜单, tight (个人收藏菜单, 预置菜单); context menu → 右键菜单; a named menu in prose → “帮助”菜单",
+    "forms": "X menu → X菜单, tight (个人收藏菜单, 预置菜单); context menu → 右键菜单; a named menu in prose → “帮助”菜单; menu bar → 菜单栏 (macOS 27 System Settings pane, ControlCenterSettings)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → 打开菜单); catalog 个人收藏菜单, 右键菜单"
   },
