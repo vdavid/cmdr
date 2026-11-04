@@ -148,10 +148,13 @@ an in-memory source answers from a tree.
   `const _: () = assert!(cmdr_search::ARENA_ROOT_ID == cmdr_index::store::ROOT_ID);`.
 - **`SearchRows`** (trait): `fn arena(&self) -> &SearchIndex`, `fn path_prefix(&self) -> &str` (mount root, empty for
   root), `fn resolve_scope(&self, index_paths: &[(String, String)]) -> Result<ScopeResolution, SourceError>` (original
-  path plus index-relative path in; a typed scope plus the `unresolved` list out). The crate first expands `~` from
-  `ctx.home_dir` and maps each path into the index space (`to_index_relative`, pure, moves into the crate), so no source
-  sees a `~` or a mount-absolute path. The host's `IndexSource` still canonicalizes (`realpath` under its deadline)
-  before handing paths in; that step is host-only by nature.
+  path plus index-relative path in; a typed scope plus the `unresolved` list out). The path pipeline keeps today's order
+  (`query.rs:355-366, 422`): `~` expansion, then `realpath`, then the mount-prefix strip, because an index-relative path
+  can't be canonicalized. So `search_covered` takes `(original, canonical)` pairs; the crate owns the two pure steps
+  (`expand_tilde(path, home)` and `to_index_relative`) and the host owns the one in between. The host's
+  `canonicalize_scope_path` stays ONE host helper, calling the crate's `expand_tilde` first, because coverage
+  (`execute/coverage.rs:126`) and the walked-scope filter (`live_run.rs:307`) read it too. The demo host calls
+  `expand_tilde` alone (a page has no `realpath`).
 - **`ResolvedScope`** (crate-internal enum): `Whole`, `Ids(Vec<i64>)`, `Nothing`. It replaces the "empty `include_ids`
   means whole volume, `[i64::MIN]` means nothing" encoding (`query.rs:387-392`): the engine takes it as a parameter
   instead of reading `SearchQuery::include_path_ids`, which stays on the wire type untouched (`bindings.ts`).
@@ -248,9 +251,13 @@ nothing else in the plan may move a golden.
   directory size filter and `sortBy: size` / `modified`, include scopes, unresolved scope, whole-volume mount-root
   scope, system dirs on and off, count-only, the limit ceiling, too broad under both evaluators). Plus the event traces
   of live runs over a fully covered scope (progress batches, the complete payload) and of one that fails (the error
-  event). Committed as JSON goldens. The corpus writer inserts rows in `MemorySource`'s defined order (root, then
-  depth-first, children by byte name), so M4 can require equal ids. Record `bench_arena_scan` and
-  `bench_query_allocations` (release, a real `index-root.db`) in `docs/notes/`.
+  event). Committed as JSON goldens. The harness enters through ONE test-only function,
+  `golden_run(query, target, loaded, weights) -> Result<SearchResult-shaped JSON, String>`, whose signature stays fixed
+  through M2; only its body follows the code (`search_covered_half` today, `search_covered` after M1c), so the proof
+  isn't rewritten by the change it proves. Weights go in as an argument, never through `volumes::weights_for`'s static
+  (`execute.rs:227`). The corpus writer inserts rows in `MemorySource`'s defined order (root, then depth-first, children
+  by byte name), so M4 can require equal ids. Record `bench_arena_scan` and `bench_query_allocations` (release, a real
+  `index-root.db`) in `docs/notes/`.
 - **Intentions**: the proof every later milestone must match. Platform-dependent answers get one golden per platform
   today; M1 turns them into explicit `NameRules` runs.
 - **Landmines**: pin reality, not expectation. Make each pin bite: break the engine on purpose (drop the NFD step, flip
@@ -264,22 +271,34 @@ nothing else in the plan may move a golden.
 - **Test plan**: the goldens themselves, green on macOS and Linux CI.
 - **DONE**: goldens committed and green on both; each family seen red once; baseline numbers in `docs/notes/`.
 
-### M1: cut the seams in place (M)
+### M1: cut the seams in place (L, as three sub-milestones)
 
-- **Scope**: still in the app crate, so every change is a reviewable diff instead of a diff inside a `git mv`. Introduce
-  `NameRules` and `SearchContext` and route all three `cfg!(target_os)` decisions and the exclusion fold through them;
-  pass `home_dir` in (engine, `parse_scope`); read the timing log's clock through `cmdr_fs::rt`. Make `SearchIndex`
-  fields private behind the Contract B accessors and add `ArenaBuilder`; port every hand-built fixture to it. Define
-  `SearchRows`, `DirSizeSource`, `ScopeResolution`, `ResolvedScope`, `SearchError`, and `IndexSource`; turn
-  `search_covered_half` into `search_covered` over them, with `~` expansion and `to_index_relative` on the crate side of
-  the seam. Map `SearchError` onto `SearchRunError` in `live_run.rs` (change 6). Import `pluralize` from `cmdr-fs`.
-  Remove the core's `cmdr_index` imports: `ARENA_ROOT_ID` plus the static assert; `SYSTEM_DIR_EXCLUDES` moves to
-  `cmdr-fs` (`cmdr-index`'s `importance/classify.rs` and the app read it there, and `cmdr-index` drops the root
-  re-export, which tightens its ceiling); `normalize_for_comparison` from `cmdr_fs::name_fold`; `matches_covered` and
-  `covered_name` move to the live-walk code (`live.rs`) as an adapter building a `Candidate`. Fix
-  `execute.rs::fill_dir_sizes`, which swallows a `dir_stats` read error today (`let _ =` plus `if let Ok`) and ships
-  directory rows with no size and no log line: through `DirSizeSource::of`, a read error fails the search, exactly as
-  `dir_sizes_for` already does (change 4). Scope resolution gets the same treatment (change 5).
+Still in the app crate, so every change is a reviewable diff instead of a diff inside a `git mv`. Three commits (or
+small commit groups), each with M0's goldens green:
+
+- **M1a, the arena facade**: Contract B accessors, private fields, `ArenaBuilder`, and every hand-built fixture ported
+  (`bench.rs`, `ranking/tests.rs`, `engine/tests/`, the loader's merge).
+- **M1b, no ambient platform**: `NameRules`, `SearchContext`, `home_dir`, the `cmdr_fs::rt` clock, and the core's
+  `cmdr_index` imports gone (`ARENA_ROOT_ID`, `SYSTEM_DIR_EXCLUDES` to `cmdr-fs`, the fold, `pluralize`, the
+  `CoveredEntry` adapter).
+- **M1c, the seam**: the traits, `ResolvedScope`, `SearchError`, `search_covered`, the path pipeline, and changes 4–6.
+
+The details for all three:
+
+- **Scope**: Introduce `NameRules` and `SearchContext` and route all three `cfg!(target_os)` decisions and the exclusion
+  fold through them; pass `home_dir` in (engine, `parse_scope`); read the timing log's clock through `cmdr_fs::rt`. Make
+  `SearchIndex` fields private behind the Contract B accessors and add `ArenaBuilder`; port every hand-built fixture to
+  it. Define `SearchRows`, `DirSizeSource`, `ScopeResolution`, `ResolvedScope`, `SearchError`, and `IndexSource`; turn
+  `search_covered_half` into `search_covered` over them, with `expand_tilde` and `to_index_relative` on the crate side
+  of the seam and `realpath` between them on the host's. Map `SearchError` onto `SearchRunError` in `live_run.rs`
+  (change 6). Import `pluralize` from `cmdr-fs`. Remove the core's `cmdr_index` imports: `ARENA_ROOT_ID` plus the static
+  assert; `SYSTEM_DIR_EXCLUDES` moves to `cmdr-fs` (`cmdr-index`'s `importance/classify.rs` and the app read it there,
+  and `cmdr-index` drops the root re-export, which tightens its ceiling); `normalize_for_comparison` from
+  `cmdr_fs::name_fold`; `matches_covered` and `covered_name` move beside `WalkJudge` (which stays in the app when M3
+  splits `live.rs`) as an adapter building a `Candidate`. Fix `execute.rs::fill_dir_sizes`, which swallows a `dir_stats`
+  read error today (`let _ =` plus `if let Ok`) and ships directory rows with no size and no log line: through
+  `DirSizeSource::of`, a read error fails the search, exactly as `dir_sizes_for` already does (change 4). Scope
+  resolution gets the same treatment (change 5).
 - **Intentions**: after M1, the future crate's files compile with only `cmdr-fs`, `regex`, `rayon`,
   `unicode-normalization`, `serde`, `specta`, `time`, and `log` in their imports. M2 is then pure relocation.
 - **Landmines**: `NameRules::host()` must reproduce today's `cfg` answer exactly, including the fold being a no-op off
@@ -334,8 +353,10 @@ nothing else in the plan may move a golden.
   is the same report with an empty frontier (`WalkEnding::NothingToWalk`, `CoverageKind::Covered`), and the demo passes
   empty unreadable lists. The crate gains `tokio-util` (the spec `cmdr-listing` uses) for `CancellationToken`.
 - **Intentions**: the demo's run must say exactly what a desktop run over a fully indexed drive says, without
-  re-implementing batching or the terminal rules. Events as facts, wire types in the app: the listing engine's
-  `ListingEvents` shape, and `operations_host/wire.rs`'s `wire_event!` as the fact-to-wire pattern to copy.
+  re-implementing batching or the terminal rules. Event envelopes stay in the app; payload data lives in the crate
+  (specta-derived DTOs such as `SearchRunCoverage` and `SearchRunError`, as `cmdr-listing` carries its own). The
+  pattern: the listing engine's `ListingEvents` shape, and `operations_host/wire.rs`'s `wire_event!` as the fact-to-wire
+  pattern to copy.
 - **Landmines**: `ResultStream`'s flush interval reads `Instant`: route it through `cmdr_fs::rt`. Decision 11 (supersede
   by `order`, never arrival) and "superseding is not cancelling" move verbatim, tests with them. The registry lock used
   by tests (`test_registry_lock`) becomes per-value. No crate type may share a name with an app event (specta would emit
@@ -352,6 +373,11 @@ nothing else in the plan may move a golden.
   `MemorySource`'s id order). Build the crate for `wasm32-unknown-unknown` in the build script's wasm lane (add it to
   `browserBound` once the write-engine branch, which introduces that list, has landed). Link it into `cmdr-listing-wasm`
   behind a minimal call so `smoke.mjs` runs one query in Node.
+- **Where the differential test lives**: in the app, because `IndexSource` is app-only:
+  `apps/desktop/src-tauri/src/search/source_equivalence_test.rs`, reusing M0's corpus writer and `golden_run`. It needs
+  `MemorySource` from the crate's `testing` feature, enabled in the app's `[dev-dependencies]` the way `cmdr-listing`'s
+  is (`cmdr-search = { path = ..., features = ["testing"] }`). `MemorySource` itself is public (the demo uses it); the
+  feature carries the corpus helpers.
 - **Intentions**: the equivalence test is what lets the demo say "the real search": same core, rows from another source,
   proven identical.
 - **Landmines**: scope resolution in `MemorySource` takes its fold from `NameRules`, which must equal what
@@ -393,11 +419,13 @@ nothing else in the plan may move a golden.
   file persistence; the demo keeps an in-memory list for the session (David, 2026-11-04).
 - **Intentions**: one dedupe key and one list rule for both hosts, so a recent search dedupes in the demo exactly as on
   a Mac. A desktop win too: four features' list rules become testable without a file or an app.
-- **Landmines**: pick the pure list's home by its users: four app features, so a tiny Tauri-free crate (or a module in
-  an existing shared crate if a reviewer finds a natural one), ❌ never inside `cmdr-search` where Go to path and
-  multi-rename would depend on search. Entry ids: if minting one reads a clock or an RNG, it's a host parameter (the
-  browser panics on `SystemTime::now`). The six-segment key is pinned by `key_carries_scope_and_exclude_system_dirs`; it
-  moves with the helpers. The on-disk format of all four files is unchanged: their existing load tests stay green.
+- **Decision: the pure list is a tiny crate, `crates/cmdr-recents`.** Its users are four app features plus the demo, so
+  it belongs to none of them: inside `cmdr-search`, Go to path and multi-rename would depend on search, and no existing
+  shared crate is about lists (`cmdr-fs` is filesystem vocabulary). A crate costs one entry in the isolation and
+  demo-input lists and gives the rule its own tests. ❌ Never inside `cmdr-search`.
+- **Landmines**: Entry ids: if minting one reads a clock or an RNG, it's a host parameter (the browser panics on
+  `SystemTime::now`). The six-segment key is pinned by `key_carries_scope_and_exclude_system_dirs`; it moves with the
+  helpers. The on-disk format of all four files is unchanged: their existing load tests stay green.
 - **Test plan**: `recents` and the four features' history tests unchanged; a new crate test drives the pure list.
 - **DONE**: no Tauri in the list logic; all four histories load the same files; `bindings.ts` unchanged.
 
@@ -436,10 +464,10 @@ nothing else in the plan may move a golden.
 
 ### M8: close out (S)
 
-- **Scope**: the three demo-image input lists (below) name `crates/cmdr-search` (and the pure recents crate, if M6 made
-  one); `crates/cmdr-listing-wasm/DETAILS.md` § "Where the demo differs from the app" gains the search differences
-  (recent searches last one session, no symlink canonicalization, no AI); wasm size before and after in that doc, with
-  rayon's share named; wipe this spec per `docs/specs/DETAILS.md` § "Wiping a shipped spec".
+- **Scope**: the three demo-image input lists (below) name `crates/cmdr-search` and `crates/cmdr-recents`;
+  `crates/cmdr-listing-wasm/DETAILS.md` § "Where the demo differs from the app" gains the search differences (recent
+  searches last one session, no symlink canonicalization, no AI); wasm size before and after in that doc, with rayon's
+  share named; wipe this spec per `docs/specs/DETAILS.md` § "Wiping a shipped spec".
 - **DONE**: CI publishes a demo image with ⌘F; the adversarial conformance review (against the invariants below) and the
   docs-audit agent pass.
 
