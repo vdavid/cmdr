@@ -441,6 +441,11 @@ jobs:
       - name: Check vendored patches still apply
         run: ./scripts/check/check --check desktop-rust-vendor-patch-applied --ci
 
+      # `fuzz/` sits outside the workspace with its own lockfile that nothing bumps, so
+      # a shared crate drifting there makes the fuzz lane test code the app doesn't ship.
+      - name: Check the fuzz lockfile is in step with the root one
+        run: ./scripts/check/check --check desktop-rust-fuzz-lock-in-step --ci
+
       # The app reads the advisory list leniently (a broken one is "no advisory"), so a
       # typo would silently drop a notice users should act on. Validate it before it ships.
       - name: Check the security advisory list

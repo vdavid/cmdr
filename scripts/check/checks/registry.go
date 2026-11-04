@@ -397,6 +397,18 @@ var AllChecks = []CheckDefinition{
 		Run:    RunVendorPatchApplied,
 	},
 	{
+		ID:          "desktop-rust-fuzz-lock-in-step",
+		Nickname:    "fuzz-lock-in-step",
+		DisplayName: "fuzz lockfile in step with the root one",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   nil,
+		IsFast:      true,
+		// Two TOML parses, no cargo call: the lockfiles are the whole answer.
+		Inputs: inputs([]string{"Cargo.lock", "fuzz/Cargo.lock"}),
+		Run:    RunFuzzLockInStep,
+	},
+	{
 		ID:          "desktop-rust-listing-wasm",
 		CpuWeight:   8,
 		Exclusive:   ResourceCargoBuildDir,
