@@ -1,0 +1,237 @@
+name: Rust lane
+
+# The Linux Rust lane, called by `ci.yml` (`desktop-rust`): the platform-blind scanners, clippy,
+# the wasm builds, rustdoc, and the suite. Its own file so an edit here reruns this lane alone
+# (the `rust` filter in `ci.yml` lists it). `docs/tooling/ci.md` § Lane files.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# The Rust cache saves from `main` only; a called workflow doesn't inherit the caller's `env`, so
+# this restates `ci.yml`'s `SAVE_RUST_CACHE` (see its comment). Named so it doesn't start with
+# `RUST` or `CARGO`: rust-cache hashes env vars with those prefixes into its key.
+env:
+  SAVE_RUST_CACHE: ${{ github.ref == 'refs/heads/main' }}
+
+jobs:
+  # The disk reclaim here and in the fixtures lane runs only on a small runner
+  # (`free-disk-if-small`). Most runners have a 145 GB root disk with 86 GB free at the start,
+  # where a cold run of each job peaked at ~80 GB used (sampled every 5 s, PR #593, 2026-10-20)
+  # and the ~1.5 min reclaim buys nothing. Some get a 72 GB disk, which ran out mid-link
+  # (run 41839837176, 2026-11-04). Each job ends by printing `df -h /`.
+  lane:
+    name: Scanners, clippy, wasm, rustdoc, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Free disk space on a small runner
+        uses: ./.github/actions/free-disk-if-small
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      # Caches the compiled `target/` dir plus the cargo registry/index/git deps,
+      # keyed on Cargo.lock + rustc. The old registry-only cache left the full
+      # ~1000-crate Tauri tree to recompile cold every run (~16 min); with target/
+      # cached, an unchanged-deps push recompiles only the `cmdr` crate. rust-cache
+      # prunes intelligently to stay under GitHub's 10 GB per-repo cache ceiling.
+      #
+      # `cache-on-failure` is load-bearing, not a nicety: the action's save step
+      # is `post-if: success() || CACHE_ON_FAILURE`, so by default one failing
+      # check means the whole job saves nothing, and every later run recompiles
+      # the Tauri tree from cold while still failing. A red job is exactly when
+      # the cache matters most, because that's the state you push fixes into.
+      #
+      # `shared-key` names the entry explicitly (it equals the job-ID key rust-cache used to
+      # derive from `desktop-rust`), so the fixtures lane and `ci.yml`'s `warm-rust-cache` use
+      # this same entry. Saved from `main` only (`SAVE_RUST_CACHE`). The toolchain step before it
+      # keeps the key stable across runner images (see the action).
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: desktop-rust
+          cache-on-failure: true
+          save-if: ${{ env.SAVE_RUST_CACHE }}
+
+      - name: Install Tauri dependencies (Linux)
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Check rustfmt
+        run: ./scripts/check/check --check desktop-rust-rustfmt --ci
+
+      # Cheap static lints first, so a violation fails before the long compiles below.
+      # Member coverage leads: if a crate has fallen outside the lanes, every check
+      # after it is green over a smaller tree than anyone thinks.
+      - name: Check workspace member coverage
+        run: ./scripts/check/check --check workspace-member-coverage --ci
+
+      # The index crates' boundary: no tauri in their trees, and the public surface
+      # stays where the audit put it. Cheap (cargo metadata + a source walk), and a
+      # breach here makes every later green misleading about what's encapsulated.
+      - name: Check index-crate isolation
+        run: ./scripts/check/check --check index-crate-isolation --ci
+
+      # The write engine builds for the browser demo, which has no local disk, so
+      # only its local-engine modules and `local_disk/` may name the host OS.
+      - name: Check the write engine's local-disk boundary
+        run: ./scripts/check/check --check operations-local-disk-boundary --ci
+
+      # A dependency bump past a vendored fork's version makes cargo quietly resolve
+      # crates.io again, so the fix stops shipping with nothing but a build warning.
+      - name: Check vendored patches still apply
+        run: ./scripts/check/check --check desktop-rust-vendor-patch-applied --ci
+
+      # `fuzz/` sits outside the workspace with its own lockfile that nothing bumps, so
+      # a shared crate drifting there makes the fuzz lane test code the app doesn't ship.
+      - name: Check the fuzz lockfile is in step with the root one
+        run: ./scripts/check/check --check desktop-rust-fuzz-lock-in-step --ci
+
+      # The app reads the advisory list leniently (a broken one is "no advisory"), so a
+      # typo would silently drop a notice users should act on. Validate it before it ships.
+      - name: Check the security advisory list
+        run: ./scripts/check/check --check desktop-security-advisories --ci
+
+      - name: Check cfg-gate
+        run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
+
+      - name: Check log-error-macro
+        run: ./scripts/check/check --check desktop-rust-log-error-macro --ci
+
+      # The macOS deployment floor. Linux has no SDK, so this scans against the
+      # committed selector list a macOS run refreshes; it's the only gate between a
+      # too-new selector and an app that aborts on launch for everyone on an older Mac.
+      - name: Check macos-availability
+        run: ./scripts/check/check --check desktop-rust-macos-availability --ci
+
+      - name: Check sqlite-open-direct
+        run: ./scripts/check/check --check desktop-rust-sqlite-open-direct --ci
+
+      - name: Check prompt-lint
+        run: ./scripts/check/check --check desktop-prompt-lint --ci
+
+      - name: Check discarded-outcome
+        run: ./scripts/check/check --check desktop-rust-discarded-outcome --ci
+
+      - name: Check error-string-match
+        run: ./scripts/check/check --check desktop-rust-error-string-match --ci
+
+      - name: Check fixture-lane-coverage
+        run: ./scripts/check/check --check desktop-fixture-lane-coverage --ci
+
+      - name: Check lock-poison
+        run: ./scripts/check/check --check desktop-rust-lock-poison --ci
+
+      - name: Check tools-module-boundary
+        run: ./scripts/check/check --check tools-module-boundary --ci
+
+      - name: Check log-private-values
+        run: ./scripts/check/check --check desktop-rust-log-private-values --ci
+
+      - name: Check test-sleep
+        run: ./scripts/check/check --check desktop-rust-test-sleep --ci
+
+      - name: Check fixed-temp-dir
+        run: ./scripts/check/check --check desktop-rust-fixed-temp-dir --ci
+
+      - name: Check no-hand-rolled-fixture
+        run: ./scripts/check/check --check desktop-rust-no-hand-rolled-fixture --ci
+
+      - name: Check derive-default-justified
+        run: ./scripts/check/check --check desktop-rust-derive-default-justified --ci
+
+      - name: Check probe-unwrap-justified
+        run: ./scripts/check/check --check desktop-rust-probe-unwrap-justified --ci
+
+      - name: Check mtp-dropping-timeout
+        run: ./scripts/check/check --check desktop-rust-mtp-dropping-timeout --ci
+
+      - name: Check mtp-no-transport-reset
+        run: ./scripts/check/check --check desktop-rust-mtp-no-transport-reset --ci
+
+      - name: Check ipc-enum-camelcase
+        run: ./scripts/check/check --check desktop-rust-ipc-enum-camelcase --ci
+
+      - name: Check pluralize-noun
+        run: ./scripts/check/check --check desktop-pluralize-noun --ci
+
+      - name: Run jscpd
+        run: ./scripts/check/check --check desktop-rust-jscpd --ci
+
+      - name: Run cargo-machete
+        run: ./scripts/check/check --check desktop-rust-cargo-machete --ci
+
+      # Fails if THIRD-PARTY-NOTICES.md doesn't match the current lockfiles.
+      # Lives in this job for the cargo toolchain plus rust-cache, which keeps
+      # the `cargo install cargo-about` build out of every subsequent run.
+      - name: Check third-party notices
+        run: ./scripts/check/check --check desktop-third-party-notices --ci
+
+      - name: Run clippy
+        run: ./scripts/check/check --check desktop-rust-clippy --ci
+
+      # The browser demo's listing engine: a wasm32 build plus a Node smoke run, the only
+      # lane that sees a host-only dep or a `std` clock reach the engine. `wasm-bindgen-cli`
+      # installs into `~/.cargo/bin`, which rust-cache keeps; the C toolchain that compiles
+      # SQLite for wasm32 comes from its own cache.
+      - name: Install the wasm C toolchain
+        uses: ./.github/actions/wasm-toolchain
+        with:
+          save-cache: ${{ env.SAVE_RUST_CACHE }}
+
+      - name: Build the listing engine for wasm
+        run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
+
+      # The file viewer's core compiles for the browser: the only lane that sees a host-only
+      # dep reach `cmdr-viewer` before the demo engine hosts it.
+      - name: Build the viewer core for wasm
+        run: ./scripts/check/check --check desktop-rust-viewer-wasm --ci
+
+      # A broken intra-doc link is invisible to every other lane, because only
+      # `cargo doc` resolves one. These steps are sequential, so this lane keeps
+      # the shared, cached `target/` here; locally it gets a private one to stay
+      # off cargo's build-directory lock (see `desktop-rust-rustdoc.go`).
+      - name: Check rustdoc links
+        run: ./scripts/check/check --check desktop-rust-rustdoc --ci
+
+      # Rendered HTML nothing downstream reads, and caching it costs twice: ~200 MB of
+      # rust-cache payload, and eight `##[error]` annotations on every cold-cache run, in a
+      # log where each red line reads as a cause. `Swatinem/rust-cache` treats any dir under
+      # `target/` named `tests` as a cargo test profile, then walks its `target`/`trybuild`
+      # children without awaiting (`src/cleanup.ts`), so the rejection escapes its `try` and
+      # Node prints `ENOENT ... opendir '.../doc/cmdr_index/indexing/tests/target'`. This
+      # lane documents `cmdr_index::indexing::tests` because it runs `--all-features` and the
+      # module is `cfg(any(test, feature = "testing"))`. `always()`, so a failing step above
+      # still leaves a doc-free cache.
+      - name: Drop rustdoc HTML before it reaches the cache
+        if: always()
+        run: rm -rf target/doc
+
+      # Before the suite, because it says whether the suite is running under the
+      # caps and groups its config claims. A filter that selects nothing drops
+      # its tests back to the global cap and full parallelism, silently.
+      - name: Check nextest filter coverage
+        run: ./scripts/check/check --check nextest-filter-coverage --ci
+
+      - name: Run Rust tests
+        run: ./scripts/check/check --check desktop-rust-tests --ci
+
+      - name: Report disk usage
+        if: always()
+        run: df -h /

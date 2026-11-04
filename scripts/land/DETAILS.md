@@ -241,9 +241,9 @@ fast-forwarded onto `main` once `CI OK` is green on it (`record.go`).
 Why: a merge commit can't ride a rebase, and `main` gets about eight lands an hour against a 25–35 min CI, so a content
 branch carrying the record almost never found `main` still under it, and `land` refused it. PR #393 (2026-10-21) needed
 a manual `git rebase --rebase-merges`, which replayed the `ours` merge as a conflicting real merge that had to be redone
-by hand. Split off, the record's tree equals `main`'s, so CI skips every lane, `hygiene` included (`docs/tooling/ci.md`
-§ The hygiene job), and goes green in about a minute: the window `main` has to stay still shrinks from half an hour to
-one minute.
+by hand. Split off, the record's tree equals `main`'s, so CI skips every lane, the light lane's hygiene included
+(`docs/tooling/ci.md` § The light lane), and goes green in about a minute: the window `main` has to stay still shrinks
+from half an hour to one minute.
 
 - **Built, never rebased**: `git commit-tree <main>^{tree} -p <main> -p <PR head>`, which is what
   `git merge -s ours --no-ff` makes, with no checkout. Before the push, `verifyRecord` checks the tree equals `main`'s

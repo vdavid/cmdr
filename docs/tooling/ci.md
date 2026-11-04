@@ -7,7 +7,8 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 
 | Workflow                | Trigger                                 | What it does                                                                                        |
 | ----------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `ci.yml`                | PRs, pushes to main, manual             | Main suite. Change detection gates the jobs (`hygiene`: § The hygiene job); deploys website         |
+| `ci.yml`                | PRs, pushes to main, manual             | Main suite: change detection, one `uses:` job per lane (§ Lane files), the deploy, and `CI OK`      |
+| `<lane>-lane.yml`       | Called by `ci.yml`                      | One lane's steps each: `rust`, `rust-fixtures`, `macos`, `svelte`, `e2e-linux`, `website`, `light`  |
 | `slow-checks.yml`       | Every 6 days (3 AM UTC), manual         | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                   |
 | `advisories.yml`        | Daily (4:17 AM UTC), manual             | osv-scanner (every lockfile) and cargo-deny (no compile): new advisories surface in a day           |
 | `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                      |
@@ -17,7 +18,6 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | `scorecard.yml`         | Push to main, weekly, rule edits        | OpenSSF Scorecard: publishes the score (README badge) and SARIF to code scanning. § below           |
 | `codeql.yml`            | PRs, push to main, weekly, manual       | CodeQL (Actions, JS/TS, Rust); a high or critical finding fails it and blocks releases. § below     |
 | `gradle-wrapper.yml`    | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard |
-| `macos-lane.yml`        | Called by `ci.yml`                      | The macOS lane's steps. § macOS lane                                                                |
 
 `slow-checks.yml` also runs the long fuzz job (20 minutes per target, findings uploaded as `fuzz-artifacts`;
 `fuzz/DETAILS.md` § "Running and reproducing"). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch:
@@ -30,8 +30,10 @@ checks, so it could deploy a broken site. Don't reintroduce it.
 
 ## Change detection (`ci.yml`'s `changes` job)
 
-`dorny/paths-filter` computes one output per app-ish area (`rust`, `svelte`, `desktop`, `website`, `api-server`,
-`dashboard`, `scripts`); each job gates on its output, and `workflow_dispatch` with `run_all` bypasses all gates.
+`dorny/paths-filter` computes one output per lane (`rust`, `rust-fixtures`, `rust-macos`, `svelte`, `desktop`,
+`website`) and per light-lane section (`scripts`, `api-server`, `dashboard`, `termbase`, `changelog`, `scorecard`); each
+lane gates on its output, and `workflow_dispatch` with `run_all` bypasses all gates. The three Rust lanes share their
+inputs through the `rust-inputs` YAML anchor, which dorny expands.
 
 Rules the filter block follows (comments in `ci.yml` restate these next to the filters):
 
@@ -39,21 +41,26 @@ Rules the filter block follows (comments in `ci.yml` restate these next to the f
   `apps/desktop/test/smb-servers/` because the SMB integration tests run against those containers; the `svelte` filter
   includes `apps/desktop/eslint-plugins/` and `test/e2e-shared/` because ESLint and Vitest cover them; the `desktop`
   filter (gating the Linux E2E job, which builds the whole app) includes the Rust workspace inputs. The root
-  `eslint-plugins/` (custom rules both the desktop app and the dashboard enforce) is in the `svelte` and `dashboard`
-  filters for the same reason.
-- **`.mise.toml` and `.github/workflows/ci.yml` are in every filter**: a toolchain bump or a CI edit can change any
-  job's behavior, so everything reruns.
+  `eslint-plugins/` (custom rules every app's ESLint config imports) is in the `svelte`, `website`, `api-server`, and
+  `dashboard` filters for the same reason.
+- **Each lane's filter lists its own lane file and the composite actions it uses**, and no other lane's file, so an edit
+  to one lane's steps reruns that lane alone (§ Lane files).
+- **`.mise.toml` and `.github/workflows/ci.yml` are in every filter**: a toolchain bump or an edit to the orchestration
+  can change any job's behavior, so everything reruns.
 - **`pnpm-lock.yaml` is in every Node-based filter** so lockfile-only bumps (`pnpm dedupe`, transitive updates) still
   run the affected apps' checks.
+- **A filter that gates one light-lane check carries that check's whole fingerprint** (`termbase`, `changelog`,
+  `scorecard`): its `Inputs`, `GlobalInputs`, and the runner files its `Run` reaches. `scorecard` is the one deliberate
+  narrowing (§ The light lane).
 - **`rust`, `svelte`, `desktop`, and `scripts` skip `CLAUDE.md` and `DETAILS.md`**
   (`predicate-quantifier: some-with-excludes` plus `!` patterns), so an agent-docs edit no longer runs the half-hour
   macOS lane. Their jobs never read those files; every docs check, and `analytics-event-catalog` (the one check that
-  reads a `DETAILS.md`), runs in `hygiene` on every change. Other `.md` files stay in: the agent prompts and
+  reads a `DETAILS.md`), runs in the light lane on every change. Other `.md` files stay in: the agent prompts and
   `CHANGELOG.md` compile into the app.
 
 The `ci-coverage` check (below) validates that every concrete path in the filter block exists, so a renamed config file
 can't silently rot a filter again (this happened: the filter watched `vite.config.ts` long after the file became
-`vite.config.js`).
+`vite.config.js`), and enforces the lane-file and gated-check rules.
 
 ## The registry ↔ CI contract (`ci-coverage`)
 
@@ -69,9 +76,10 @@ platform-gated `#[tauri::command]`s mean a Linux runner regenerates a different 
 report "stale" there. It stays a local macOS pre-commit check. The Playwright E2E suite is similar (needs a macOS window
 server).
 
-`ci-coverage` (in the `hygiene` job and the `--fast` lane) enforces:
+`ci-coverage` (in the light lane and the `--fast` lane) enforces:
 
-1. Every `--check <name>` in any workflow resolves to a registry ID or nickname.
+1. Every `--check <name>` in any workflow resolves to a registry ID or nickname. Only lines that mention `scripts/check`
+   count, so a multi-check step keeps its comma list on the invoking line.
 2. Every registry check is referenced by some workflow, or carries a `NotInCI` reason on its `CheckDefinition` (see
    `scripts/check/checks/DETAILS.md` § Field semantics). A reason on a check that IS referenced fails too, so excuses
    can't go stale.
@@ -79,25 +87,71 @@ server).
 4. Every static path prefix in a registry check's `Inputs` (and in `GlobalInputs`, which now names the runner core file
    by file) exists. A dead `Inputs` glob would silently make the input-fingerprint cache skip a check whose real
    (renamed) sources changed. Same robust file-existence shape as rule 3; it deliberately does NOT reconcile `Inputs`
-   against the filter sets (the filter ↔ app ↔ check mapping isn't 1:1, so a strict reconciliation would be flaky). The
-   cache's real correctness backstop is that `--ci` always runs fresh. See the input-fingerprint cache section in
-   `scripts/check/CLAUDE.md`.
+   against the per-app filter sets (the filter ↔ app ↔ check mapping isn't 1:1, so a strict reconciliation would be
+   flaky). The cache's real correctness backstop is that `--ci` always runs fresh. See the input-fingerprint cache
+   section in `scripts/check/CLAUDE.md`.
 5. The `CI OK` gate sees every job and always reports (§ Branch protection).
+6. Every filter a lane's caller reads (in its `if:` or `with:`) matches the lane file, every local composite action it
+   uses (followed into nested actions), `ci.yml`, and `.mise.toml`; no filter names another lane's file outright; and
+   every `*-lane.yml` has a caller (`scripts/check/checks/ci-lane-files.go`). Before it, `macos-lane.yml` sat only in
+   the `finder-extension` filter (which gates one step), and no filter watched `.github/actions/`, so an edit to the
+   macOS lane's steps or to a composite action ran nothing that tested it.
+7. Each filter in `ciFilterGatedChecks` covers its check's whole fingerprint, so gating a check that used to run on
+   every change never skips a change it reads. Deliberate narrowings sit in `ciFilterNarrowedInputs` with a reason.
 
 Practical consequence: **when you add a check, CI fails until you either add a workflow step for it or set `NotInCI`
 with a reason.** When you rename one, CI fails until every workflow catches up. That's the point.
 
-## The hygiene job
+## Lane files
 
-Runs on every unverified PR and push (no path gate; § Landing doesn't re-run the suite), except a PR that changes no
-file. Holds the checks whose inputs no per-app filter can cover:
+Each lane's steps live in a reusable workflow of its own (`rust-lane.yml`, `rust-fixtures-lane.yml`, `macos-lane.yml`,
+`svelte-lane.yml`, `e2e-linux-lane.yml`, `website-lane.yml`, `light-lane.yml`), and `ci.yml` keeps the triggers,
+`changes`, one `uses:` job per lane, the base-image, warm, prune, publish, and deploy jobs, and `CI OK`. About a third
+of PR runs touched `ci.yml` (40 runs to 2026-11-04), and with every lane's steps in it, each such edit ran every lane:
+~2 runner-hours, the macOS lane's 34 min among them. Now an edit to one lane file reruns that lane, and editing `ci.yml`
+itself still reruns all.
 
-- `oxfmt` formats the whole monorepo (docs, configs, workflows). Before the hygiene job, a docs-only commit ran zero CI,
-  so unformatted markdown could land on main and fail the next unrelated PR's CI. Locally, the git hooks apply all three
-  formatters at commit and push time: `docs/tooling/git-hooks.md`.
-- `changelog-commit-links` (previously duplicated across three jobs; needs `fetch-depth: 0`) and `changelog-security`
-  (each `### Security` line's advisory fields).
-- `workflows-hardening`, `workflows-rustup`, and `ci-coverage` — the workflow files they scan are no app's territory.
+- **The calling job keeps the lane's ID and `name:`**, so `CI OK`'s `needs`, the release gate, and `pnpm land`'s
+  early-red matching (which reads a reusable workflow's jobs as `<caller name> / <job name>`) see the same lanes. A
+  lane's result is its whole file's: one red job inside makes the caller `failure`.
+- **What a caller can't do**: set `timeout-minutes` or `runs-on` (the lane's own jobs carry them), or pass its `env`
+  down, so each lane file that saves a Rust cache restates `SAVE_RUST_CACHE`. Permissions only narrow: the caller grants
+  what the lane's jobs may ask for (`pull-requests: read` for the light lane, `packages: read` for E2E).
+- **`e2e-base-image` stays in `ci.yml`**: OpenSSF Scorecard waives a job's `packages: write` only in a workflow it
+  recognizes as packaging, which `ci.yml` is (its `docker push`); in `e2e-linux-lane.yml` it was a new Token-Permissions
+  finding (scorecard v5.5.0, `pnpm check scorecard`, 2026-11-05).
+- The website lane's `demo` job uploads the `website-demo` artifact, which `publish-website-demo` in `ci.yml` downloads:
+  artifacts are per run, so a called workflow's jobs and the caller's share them.
+
+## The light lane
+
+`light-lane.yml`, one job: everything that needs no Rust and no browser, so a narrow PR (docs, Go, API server,
+dashboard, CI config) pays setup once and takes one runner. It runs on every unverified PR and push (§ Landing doesn't
+re-run the suite), except a PR that changes no file. Every check step runs once setup is done, even after another
+failed, so a red run lists every failure, like the four separate jobs it replaced did.
+
+- **Repo hygiene, on every change**: the checks whose inputs no per-app filter can cover. `oxfmt` formats the whole
+  monorepo (before hygiene ran on every change, a docs-only commit ran zero CI, so unformatted markdown could land on
+  `main` and fail the next unrelated PR; locally the git hooks apply all three formatters: `docs/tooling/git-hooks.md`).
+  Then `changelog-security`, the docs checks, the translator-guide and unused-key scans, the cross-app guards, and the
+  workflow guards (`workflows-hardening`, `workflows-rustup`, `ci-coverage`: the files they scan are no app's
+  territory). Grouped a few per step: one invocation runs its checks in parallel.
+- **Per filter**: the Go checks (`scripts`, one invocation, so nilaway's ~1 min overlaps the rest), the API server
+  (`api-server`), and the dashboard (`dashboard`).
+- **Three slow hygiene checks, per filter** (each filter carries the check's fingerprint, `ci-coverage` rule 7):
+  `desktop-i18n-termbase` (~40 s) on `termbase`; `changelog-commit-links` on `changelog`, which alone needs history, so
+  the lane fetches it (`git fetch --unshallow`) only then; `scorecard-local` on `scorecard`.
+- **Scorecard's trigger has two halves.** Its file checks read workflows, Dockerfiles, the Renovate config, the license,
+  security policy, and fuzz harness: the `scorecard` filter. But Binary-Artifacts and Pinned-Dependencies' shell half
+  read EVERY file, by content (read in ossf/scorecard v5.5.0's source, 2026-11-05: its raw Binary-Artifacts check
+  matches magic bytes or a binary extension, and its shell-download validator a shell extension or shebang), so on a PR
+  the lane's first step reads the PR's file list (`pulls/{n}/files`) and runs Scorecard when a file, a deleted one or a
+  rename's old path included, has a binary or shell extension, a Dockerfile or `.github/` path, a shebang, or a NUL in
+  its first 1,024 bytes. 3,000+ files (the API's cap) or a failed lookup runs it. A push or dispatch always runs it.
+- **The runner is an input** (`runs-on`, default `ubuntu-latest`). `ci.yml`'s top-level `LIGHT_LANE_RUNNER` is the one
+  switch: set it to `cmdr-light` and trusted runs go to the self-hosted runner. `changes`' runner step hands a fork PR
+  `ubuntu-latest` whatever the switch says (`head.repo.full_name != github.repository`), since a self-hosted runner
+  keeps state and sits on our network.
 
 **A PR whose head tree equals its base branch's skips it** (`changes`' `same-tree` step, pull requests only). That's a
 `pnpm land -record N` record (`docs/guides/handling-prs.md`): an `ours` merge that changes no file, only ancestry, so
@@ -111,6 +165,13 @@ lanes, and the record lands in about a minute instead of waiting out a busy queu
 - Verified offline only (2026-10-21, the step's script against the live API: `main`'s tip read same, PR #393's head
   differed, a missing SHA warned and ran hygiene). The first real record PR is its live test.
 
+**Its caches** (`.github/actions/light-cache`, shared with `warm-light-cache` so keys and paths match): `node_modules`
+(every workspace's, keyed on the lockfile, `pnpm-workspace.yaml`, and `.mise.toml`; a hit skips `pnpm install`), the
+built check tool (keyed on its non-test Go sources and the Go version), and the Go caches (module and build caches plus
+the runner's `go install`ed tools, scorecard's among them; restored only when the Go checks or Scorecard run). They save
+from `main` only, like the Rust caches, and `warm-light-cache` fills them after a verified land. `GOFLAGS=-count=1`
+keeps test results out of the Go build cache, so `go test` always runs for real.
+
 ## Build caching
 
 The Rust compile dominates CI time (a cold ~1000-crate Tauri tree is ~10-16 min). Four caches keep it down. Each has a
@@ -119,23 +180,24 @@ silent** (a warning, not a red job):
 
 - **`desktop-rust`** (per push): `Swatinem/rust-cache` (SHA-pinned; `workflows-hardening` requires the pin) caches
   `target/` + cargo registry/index/git deps, keyed on Cargo.lock + rustc. An unchanged-deps push recompiles only the
-  `cmdr` crate (~16 → ~7 min). The entry is named by `shared-key: desktop-rust` (the same key rust-cache derives from
-  the job ID), so `desktop-rust-fixtures` restores it too, never saving, and the repo keeps one Linux Rust entry. Both
-  jobs reclaim disk only on a small runner, through the `free-disk-if-small` action (`.github/actions/`): it removes the
-  unused preinstalled SDKs when `/` starts under 60 GB free, and logs the free space before and after. Most runners have
-  a 145 GB root disk with 86 GB free at the start, where a cold run of each peaked at ~80 GB used (sampled every 5 s, PR
-  #593, 2026-10-20) and an unconditional reclaim cost ~1.5 min for nothing. But the `ubuntu-latest` fleet isn't uniform:
-  a runner with a 72 GB disk (`/dev/nvme0n1p1`, image 20261101.64.1) ran `cargo test --no-run` out of space mid-link
-  (run 41839837176, 2026-11-04). Both jobs end on `df -h /`.
+  `cmdr` crate (~16 → ~7 min). The entry is named by `shared-key: desktop-rust` (not derived from the job ID, which in a
+  lane file is `lane`), so `desktop-rust-fixtures` restores it too, never saving, and the repo keeps one Linux Rust
+  entry. Both jobs reclaim disk only on a small runner, through the `free-disk-if-small` action (`.github/actions/`): it
+  removes the unused preinstalled SDKs when `/` starts under 60 GB free, and logs the free space before and after. Most
+  runners have a 145 GB root disk with 86 GB free at the start, where a cold run of each peaked at ~80 GB used (sampled
+  every 5 s, PR #593, 2026-10-20) and an unconditional reclaim cost ~1.5 min for nothing. But the `ubuntu-latest` fleet
+  isn't uniform: a runner with a 72 GB disk (`/dev/nvme0n1p1`, image 20261101.64.1) ran `cargo test --no-run` out of
+  space mid-link (run 41839837176, 2026-11-04). Both jobs end on `df -h /`.
 - **The Rust caches save from `main` only** (`desktop-rust` and `desktop-rust-macos`; `SAVE_RUST_CACHE` at the top of
-  `ci.yml`, which also gates the E2E target cache below). PR runs restore `main`'s entry and save nothing. When every PR
-  saved its own ~1.7 GB entry, the repo sat at ~12 GB, LRU evicted entries within minutes, and nearly every PR run built
-  cold (PR #593, 2026-10-20). **Load-bearing companion: the `warm-rust-*` jobs.** A verified `main` push skips the Rust
-  lanes, so nothing else would write `main`'s entries. Post-land on `main`, one job per entry restores it with the
-  lane's exact rust-cache inputs; on an exact hit it skips every build step (~1 min), on a miss it runs the lane's
-  compiling checks and saves. They skip when the Rust lanes ran on that push, and they're exempt from `ci-ok`
-  (`ciOKGateExempt`). Their rust-cache inputs and the steps before them must match the lane's: rust-cache hashes the
-  rustc version and `CARGO*`/ `RUST*` env into the key, which is also why the switch is named `SAVE_RUST_CACHE`.
+  `ci.yml` and restated in each lane file that saves one, which also gates the E2E target cache below). PR runs restore
+  `main`'s entry and save nothing. When every PR saved its own ~1.7 GB entry, the repo sat at ~12 GB, LRU evicted
+  entries within minutes, and nearly every PR run built cold (PR #593, 2026-10-20). **Load-bearing companion: the
+  `warm-rust-*` jobs.** A verified `main` push skips the Rust lanes, so nothing else would write `main`'s entries.
+  Post-land on `main`, one job per entry restores it with the lane's exact rust-cache inputs; on an exact hit it skips
+  every build step (~1 min), on a miss it runs the lane's compiling checks and saves. They skip when the Rust lanes ran
+  on that push, and they're exempt from `ci-ok` (`ciOKGateExempt`). Their rust-cache inputs and the steps before them
+  must match the lane's: rust-cache hashes the rustc version and `CARGO*`/ `RUST*` env into the key, which is also why
+  the switch is named `SAVE_RUST_CACHE`.
 - **Every rust-cache step follows the `pinned-rust-toolchain` action** (`.github/actions/`). rust-cache hashes the rustc
   version of EVERY installed toolchain, and the runner image preinstalls its own `stable`. While GitHub rolls out a new
   image (days, after each Rust release), runners differ, so one job wrote two keys run by run: `e3a6d410` with the old
@@ -184,9 +246,9 @@ saved ~1.7 GB of Rust and ~1.2 GB of E2E target, the repo sat at ~12 GB, and LRU
 
 **Load-bearing companion: the `prune-superseded-caches` job.** A new `Cargo.lock` gives each big entry a new key, and
 the old one lingers until 7 unused days pass, so two generations put the repo at ~11.5 GB (2026-10-22). Post-land on
-`main`, after every job that saves one, it keeps the most recently used `main` entry per family (`v0-rust-*` and
-`*-docker-e2e-*`, the key minus its trailing hash parts) and deletes the rest. It's exempt from `ci-ok`. Protect the
-per-push `desktop-rust` cache first; the udeps cache is the one to drop under pressure.
+`main`, after every job that saves one, it keeps the most recently used `main` entry per family (`v0-rust-*`,
+`*-docker-e2e-*`, and the light lane's `light-*`, the key minus its trailing hash parts) and deletes the rest. It's
+exempt from `ci-ok`. Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop under pressure.
 
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured
@@ -224,9 +286,10 @@ Every other `ci.yml` job runs on ubuntu, so code under `cfg(target_os = "macos")
 Mac last ran `pnpm check`. This job runs on `macos-26` (the release builder's image, so it lints against the shipping
 SDK; free for a public repo) and asks the three questions Linux can't answer for that code: `desktop-rust-clippy`,
 `desktop-rust-rustdoc`, and `desktop-rust-tests`, in that order. The other platform-blind scanners stay in
-`desktop-rust` alone. Gated on the `rust` filter like `desktop-rust`, so it runs in parallel with it.
+`desktop-rust` alone. Gated on the `rust-macos` filter (the Rust lanes' shared inputs plus its own lane file), so it
+runs in parallel with `desktop-rust`.
 
-Its steps live in the reusable `macos-lane.yml`, called by `ci.yml`'s `desktop-rust-macos`.
+Its steps live in the reusable `macos-lane.yml`, called by `ci.yml`'s `desktop-rust-macos` (§ Lane files).
 
 First, before clippy, it runs `desktop-finder-extension-compile`: both slices of the Swift Finder extension,
 cross-compiled by `swiftc` on the one runner. Nothing else compiles it before a release build, which is where `Logger`
@@ -352,7 +415,8 @@ through `CODEQL_EXTRACTOR_RUST_OPTION_*` env vars.
 `ci-ok` is the single required status check, and `main`'s ruleset names it by its check-run name, **`CI OK`** (❌ don't
 rename the job's `name:`). It needs every job in `ci.yml` except the post-land ones (`deploy-website` and the `warm-*`
 cache jobs), `changes` included, and passes only when each result is `success` or `skipped` and `changes` is `success`.
-A lane skipped by change detection passes; a failed `changes`, which skips every lane, is red.
+A lane skipped by change detection passes; a failed `changes`, which skips every lane, is red. A lane that calls a lane
+file reports its whole file's result, so a red job inside it fails the gate.
 
 One exception: on a `main` push, a `cancelled` `desktop-rust-macos` passes when `main` has moved past the commit (the
 current head differs from it and `compare/{sha}...{head}` reads `ahead`), because a newer push replaced it in the lane's
@@ -362,8 +426,8 @@ failed lookup stays red.
 It must report on EVERY run, because GitHub counts a skipped required check as passing and a missing one waits forever:
 
 - `if: always()`, never `!cancelled()`, so a cancelled run reports red instead of skipped.
-- The `pull_request` trigger takes no `paths` / `paths-ignore`: a docs-only PR still runs `changes`, `hygiene`, and the
-  gate. Lanes gate on the `changes` filter instead.
+- The `pull_request` trigger takes no `paths` / `paths-ignore`: a docs-only PR still runs `changes`, the light lane, and
+  the gate. Lanes gate on the `changes` filter instead.
 
 `ci-coverage` rule 5 (`scripts/check/checks/ci-ok-gate.go`) enforces all three, plus the verified-push skip (§ Landing
 doesn't re-run the suite); a job that genuinely shouldn't gate goes in its `ciOKGateExempt` map with a reason.
@@ -395,8 +459,8 @@ and one on a PR. A landed commit already went green on its PR, and on a `push` i
    `github.sha` (verified on cli/cli PR #14858's merge commit 8553724d1, `gh api .../commits/{sha}/pulls`, 2026-10-30);
    for a rebase merge it's the last replayed commit, the push's `github.sha` too (PRs #642 and #644, 2026-10-21).
 
-Either way `verified` is set, every lane output reads `false`, and `hygiene` skips too. `CI OK` then reports green on
-the push in about a minute, and `deploy-website` runs off the raw `website-changed` filter. Anything else (an admin
+Either way `verified` is set, every lane output reads `false`, and the light lane skips too. `CI OK` then reports green
+on the push in about a minute, and `deploy-website` runs off the raw `website-changed` filter. Anything else (an admin
 push, a PR whose head never went green, an earlier commit of a replayed series) runs in full; so does any failed lookup.
 (Verified on the first real land, run 39137865939, 2026-10-18: every lane skipped.)
 

@@ -363,10 +363,10 @@ nothing links to it, it's out of the sitemap, and it's `noindex` until David lau
   does; without a local demo it uses an empty dir and `CMDR_WEBSITE_DEMO=0`).
 - **Changing the webhook**: the listener reads `hooks.json` only at start (no `-hotreload`), so a change to it takes a
   `sudo systemctl restart deploy-webhook` on the server after it lands, then a redeploy (`workflow_dispatch`).
-- **CI**: the `website-demo` job builds it on the bare runner (the `website` job runs inside the Playwright image, which
-  has no Rust) and hands it over as an artifact, which `publish-website-demo` reuses when it exists. Both build through
-  `.github/actions/build-website-demo`. The `website` filter includes the demo's inputs, so a change there re-runs the
-  lane and redeploys.
+- **CI**: the website lane's `demo` job (`.github/workflows/website-lane.yml`) builds it on the bare runner (its `site`
+  job runs inside the Playwright image, which has no Rust) and hands it over as an artifact, which
+  `publish-website-demo` reuses when it exists. Both build through `.github/actions/build-website-demo`. The `website`
+  filter includes the demo's inputs, so a change there re-runs the lane and redeploys.
 - **Serving** (`nginx.conf`): `/demo` redirects to `/demo/`; `/demo/_app/immutable/` is content-hashed (a year,
   immutable, and a bare 404 when missing: no body, the demo's headers, never the site's HTML 404 page, so the demo's
   loader can tell a stale chunk name in an old tab from a real failure); anything else under `/demo/` is the file or,

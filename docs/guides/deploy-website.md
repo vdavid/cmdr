@@ -7,8 +7,8 @@ The website (getcmdr.com) is automatically deployed when changes are pushed to t
 1. Push to `main` (or merge a PR). A change to `apps/website/**` triggers it, and so does a change to what the browser
    demo at `/demo/` builds from (the desktop frontend, the listing engine's crates, the WASM build script, the Cargo
    workspace files; the full list is `ci.yml`'s `website` filter).
-2. GitHub Actions runs the `website-demo` job (builds the demo) and then the `website` job (oxfmt, ESLint, typecheck,
-   build with the demo, Playwright, Lighthouse)
+2. GitHub Actions runs the `website` lane (`.github/workflows/website-lane.yml`): its `demo` job builds the demo, then
+   its `site` job runs ESLint, typecheck, the build with the demo, Playwright, and Lighthouse
 3. If all checks pass, the `publish-website-demo` job pushes the demo bundle as the public image
    `ghcr.io/vdavid/cmdr-demo:<content key>` (skipped when an image of the same sources exists), then the
    `deploy-website` job sends a webhook to the server, its signed payload carrying the image's digest and content key
