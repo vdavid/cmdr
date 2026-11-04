@@ -1,7 +1,7 @@
 # The drive search in its own crate
 
 Issue: [#302](https://github.com/vdavid/cmdr/issues/302) (the browser demo is the second host). Status: the early fixes
-and M0–M2 are done (2026-11-04, on `worktree-agent-a4584c6f915858b16`); M3 is next. Process:
+and M0–M3 are done (2026-11-04, M3 on `worktree-agent-ad4d51f7315be2933`); M4 waits for the demo batch. Process:
 `docs/guides/multi-agent-refactors.md` (characterize, then convert; fresh-eyes review rounds before executing).
 
 **Problem**: the ⌘F search engine (query model, matcher, excludes, ranking, the arena and its scan) lives in the app
