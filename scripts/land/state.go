@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // The decisions that make `land` idempotent: each run reads where the branch stands locally
@@ -192,13 +193,46 @@ func prTitle(commits []commit) string {
 	return commits[0].Subject
 }
 
-// prBody lists every commit message, oldest first, one heading each.
+// maxPRBodyBytes is GitHub's PR body limit: 65,536 characters, past which `gh pr create`
+// fails. Measured in bytes, which are never fewer than characters however GitHub counts
+// them, so a body under it is under GitHub's limit too.
+const maxPRBodyBytes = 65_536
+
+// prBodyTooLongNote heads a body that had to drop the commit messages to fit.
+const prBodyTooLongNote = "The commit messages run past GitHub's 65,536-character PR body limit, so this lists their subjects, oldest first. The full messages are in the commits."
+
+// prBody lists every commit message, oldest first, one heading each. A branch whose messages
+// don't fit GitHub's limit gets its subjects under a note instead, cut on a rune boundary if
+// even those don't fit.
 func prBody(commits []commit) string {
 	parts := make([]string, 0, len(commits))
 	for _, c := range commits {
 		parts = append(parts, "### "+c.message())
 	}
-	return strings.Join(parts, "\n")
+	if full := strings.Join(parts, "\n"); len(full) <= maxPRBodyBytes {
+		return full
+	}
+	var subjects strings.Builder
+	for _, c := range commits {
+		subjects.WriteString("- " + c.Subject + "\n")
+	}
+	head := prBodyTooLongNote + "\n\n"
+	if len(head)+subjects.Len() <= maxPRBodyBytes {
+		return head + subjects.String()
+	}
+	const ellipsis = "\n…\n"
+	return head + truncateOnRune(subjects.String(), maxPRBodyBytes-len(head)-len(ellipsis)) + ellipsis
+}
+
+// truncateOnRune cuts s to at most n bytes without splitting a UTF-8 sequence.
+func truncateOnRune(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return s[:n]
 }
 
 // squashMessage keeps every commit message, oldest first, so the oldest subject becomes the title.

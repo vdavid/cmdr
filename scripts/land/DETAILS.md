@@ -55,6 +55,11 @@ Probe (2026-10-18, temporary rulesets mimicking A and B on `refs/heads/probe-lan
 trigger. Title: the oldest commit's subject. Body: every commit message. Nobody reads it; the commit messages are the
 record. A closed PR is never revived: `land` opens a fresh one.
 
+Gotcha/Why: GitHub refuses a PR body past 65,536 characters, and `gh pr create` then fails the whole land (a big
+multi-agent batch with verbose messages reaches it). Past that, `prBody` lists the subjects under a note saying the full
+messages are in the commits, and cuts even that list on a rune boundary if it has to. It measures BYTES, never fewer
+than characters however GitHub counts them, so the fallback is never one character too long. Pinned in `state_test.go`.
+
 ## Decision: idempotent, no state of its own
 
 Each run reads the branch and GitHub and picks up from there (`nextStartStep`, `ciVerdict`): an already-pushed branch
