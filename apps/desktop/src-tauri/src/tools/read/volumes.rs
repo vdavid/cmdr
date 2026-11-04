@@ -24,7 +24,7 @@ use tauri::{AppHandle, Runtime};
 
 use crate::location::Location;
 use crate::location::resolve::{LocationInput, VolumeFacts, resolve};
-use crate::search::{format_size, format_timestamp};
+use crate::search::{format_local_date, format_size};
 use crate::tools::resources::favorites::FavoriteSummary;
 use crate::tools::resources::volumes::{VolumeKind, VolumeSummary, current_listing, snapshot_volumes_from};
 use crate::tools::{ToolError, ToolResult};
@@ -173,7 +173,7 @@ fn to_volume_snapshot(v: &VolumeSummary, facts: &VolumeFacts) -> VolumeSnapshot 
             Some(_) => Some("stale".to_string()),
             None => v.index_status.map(str::to_string),
         },
-        as_of: offline_as_of.map(format_timestamp),
+        as_of: offline_as_of.map(format_local_date),
         connection_state: v.connection_state.map(str::to_string),
         same_share_as: facts.same_share_as(&v.id),
         device_readiness: v.device_readiness.map(str::to_string),

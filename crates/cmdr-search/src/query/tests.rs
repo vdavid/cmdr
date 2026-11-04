@@ -1,4 +1,6 @@
 use super::*;
+use crate::local_days::FixedZone;
+use time::macros::date;
 
 // ── glob_to_regex ────────────────────────────────────────────────
 //
@@ -141,37 +143,37 @@ fn make_query(
 #[test]
 fn summarize_empty_query() {
     let q = make_query(None, PatternType::Glob, None, None, None, None, None);
-    assert_eq!(summarize_query(&q), "(all entries)");
+    assert_eq!(summarize_query(&q, &utc()), "(all entries)");
 }
 
 #[test]
 fn summarize_name_only() {
     let q = make_query(Some("tes"), PatternType::Glob, None, None, None, None, None);
-    assert_eq!(summarize_query(&q), "\"tes\"");
+    assert_eq!(summarize_query(&q, &utc()), "\"tes\"");
 }
 
 #[test]
 fn summarize_glob_pattern() {
     let q = make_query(Some("*.pdf"), PatternType::Glob, None, None, None, None, None);
-    assert_eq!(summarize_query(&q), "\"*.pdf\"");
+    assert_eq!(summarize_query(&q, &utc()), "\"*.pdf\"");
 }
 
 #[test]
 fn summarize_regex_pattern() {
     let q = make_query(Some("Q[1-4].*"), PatternType::Regex, None, None, None, None, None);
-    assert_eq!(summarize_query(&q), "\"Q[1-4].*\" (regex)");
+    assert_eq!(summarize_query(&q, &utc()), "\"Q[1-4].*\" (regex)");
 }
 
 #[test]
 fn summarize_size_min() {
     let q = make_query(None, PatternType::Glob, Some(2 * 1024 * 1024), None, None, None, None);
-    assert_eq!(summarize_query(&q), "size >= 2 MiB");
+    assert_eq!(summarize_query(&q, &utc()), "size >= 2 MiB");
 }
 
 #[test]
 fn summarize_size_max() {
     let q = make_query(None, PatternType::Glob, None, Some(500 * 1024), None, None, None);
-    assert_eq!(summarize_query(&q), "size <= 500 KiB");
+    assert_eq!(summarize_query(&q, &utc()), "size <= 500 KiB");
 }
 
 #[test]
@@ -185,21 +187,21 @@ fn summarize_size_range() {
         None,
         None,
     );
-    assert_eq!(summarize_query(&q), "size 1 MiB\u{2013}5 GiB");
+    assert_eq!(summarize_query(&q, &utc()), "size 1 MiB\u{2013}5 GiB");
 }
 
 #[test]
 fn summarize_date_after() {
     // 2025-01-01 00:00:00 UTC = 1735689600
     let q = make_query(None, PatternType::Glob, None, None, Some(1_735_689_600), None, None);
-    assert_eq!(summarize_query(&q), "last mod after 2025-01-01");
+    assert_eq!(summarize_query(&q, &utc()), "last mod after 2025-01-01");
 }
 
 #[test]
 fn summarize_date_before() {
     // 2026-03-01 00:00:00 UTC = 1772265600
     let q = make_query(None, PatternType::Glob, None, None, None, Some(1_772_323_200), None);
-    assert_eq!(summarize_query(&q), "last mod before 2026-03-01");
+    assert_eq!(summarize_query(&q, &utc()), "last mod before 2026-03-01");
 }
 
 #[test]
@@ -213,19 +215,19 @@ fn summarize_date_range() {
         Some(1_772_323_200),
         None,
     );
-    assert_eq!(summarize_query(&q), "last mod 2025-01-01\u{2013}2026-03-01");
+    assert_eq!(summarize_query(&q, &utc()), "last mod 2025-01-01\u{2013}2026-03-01");
 }
 
 #[test]
 fn summarize_dirs_only() {
     let q = make_query(Some("*.pdf"), PatternType::Glob, None, None, None, None, Some(true));
-    assert_eq!(summarize_query(&q), "\"*.pdf\", dirs only");
+    assert_eq!(summarize_query(&q, &utc()), "\"*.pdf\", dirs only");
 }
 
 #[test]
 fn summarize_files_only() {
     let q = make_query(None, PatternType::Glob, None, None, None, None, Some(false));
-    assert_eq!(summarize_query(&q), "files only");
+    assert_eq!(summarize_query(&q, &utc()), "files only");
 }
 
 #[test]
@@ -240,7 +242,7 @@ fn summarize_combined() {
         None,
     );
     assert_eq!(
-        summarize_query(&q),
+        summarize_query(&q, &utc()),
         "\"tes\", size >= 2 MiB, last mod before 2026-03-01"
     );
 }
@@ -248,7 +250,7 @@ fn summarize_combined() {
 #[test]
 fn summarize_size_bytes() {
     let q = make_query(None, PatternType::Glob, Some(500), None, None, None, None);
-    assert_eq!(summarize_query(&q), "size >= 500 B");
+    assert_eq!(summarize_query(&q, &utc()), "size >= 500 B");
 }
 
 #[test]
@@ -262,13 +264,13 @@ fn summarize_size_gb() {
         None,
         None,
     );
-    assert_eq!(summarize_query(&q), "size >= 1 GiB");
+    assert_eq!(summarize_query(&q, &utc()), "size >= 1 GiB");
 }
 
 #[test]
 fn summarize_empty_name_pattern() {
     let q = make_query(Some(""), PatternType::Glob, None, None, None, None, None);
-    assert_eq!(summarize_query(&q), "(all entries)");
+    assert_eq!(summarize_query(&q, &utc()), "(all entries)");
 }
 
 // ── Diagnostic-safe summary ──────────────────────────────────────
@@ -336,7 +338,10 @@ fn functional_summary_keeps_the_literal_pattern_for_mcp() {
         None,
     );
 
-    assert_eq!(summarize_query(&q), format!("\"{FUNCTIONAL_SENTINEL}\" (regex)"));
+    assert_eq!(
+        summarize_query(&q, &utc()),
+        format!("\"{FUNCTIONAL_SENTINEL}\" (regex)")
+    );
 }
 
 #[test]
@@ -344,6 +349,87 @@ fn diagnostic_summary_pluralizes_a_one_character_pattern() {
     let q = make_query(Some("x"), PatternType::Glob, None, None, None, None, None);
 
     assert!(summarize_query_for_diagnostics(&q).starts_with("pattern=glob(1 char),"));
+}
+
+// ── Local dates and times ────────────────────────────────────────
+//
+// Every date a person or the model reads is on the user's calendar. Three zones pin
+// it: UTC-5 (New York in winter), UTC+9 (Tokyo), and Stockholm across its
+// 2026-03-29 summer-time change (UTC+1 to UTC+2).
+
+fn utc() -> FixedZone {
+    FixedZone {
+        today: date!(2026 - 11 - 04),
+        offset_secs: 0,
+        switch_on: None,
+    }
+}
+
+fn zone(offset_secs: i64) -> FixedZone {
+    FixedZone { offset_secs, ..utc() }
+}
+
+/// Stockholm around 2026-03-29. `FixedZone` switches at a local midnight rather than
+/// at 02:00, which is close enough to pin "each instant takes its own offset".
+fn stockholm_spring() -> FixedZone {
+    FixedZone {
+        offset_secs: 3_600,
+        switch_on: Some((date!(2026 - 03 - 29), 7_200)),
+        ..utc()
+    }
+}
+
+/// 2026-01-15 03:30:00 UTC.
+const EARLY_MORNING_UTC: u64 = 1_768_447_800;
+/// 2026-01-15 20:30:00 UTC.
+const EVENING_UTC: u64 = 1_768_509_000;
+
+#[test]
+fn a_date_west_of_utc_falls_on_the_local_day_before() {
+    assert_eq!(zone(-5 * 3_600).format_date(EARLY_MORNING_UTC), "2026-01-14");
+    assert_eq!(utc().format_date(EARLY_MORNING_UTC), "2026-01-15");
+}
+
+#[test]
+fn a_date_east_of_utc_falls_on_the_local_day_after() {
+    assert_eq!(zone(9 * 3_600).format_date(EVENING_UTC), "2026-01-16");
+    assert_eq!(utc().format_date(EVENING_UTC), "2026-01-15");
+}
+
+#[test]
+fn a_time_of_day_is_local_and_carries_its_offset() {
+    assert_eq!(
+        zone(-5 * 3_600).format_datetime(EARLY_MORNING_UTC),
+        "2026-01-14T22:30:00-05:00"
+    );
+    assert_eq!(
+        zone(9 * 3_600).format_datetime(EVENING_UTC),
+        "2026-01-16T05:30:00+09:00"
+    );
+    assert_eq!(utc().format_datetime(EVENING_UTC), "2026-01-15T20:30:00+00:00");
+}
+
+#[test]
+fn each_instant_takes_its_own_offset_across_a_summer_time_change() {
+    let stockholm = stockholm_spring();
+    // 2026-03-28 12:00 UTC: winter time.
+    assert_eq!(stockholm.format_datetime(1_774_699_200), "2026-03-28T13:00:00+01:00");
+    // 2026-03-29 12:00 UTC: summer time.
+    assert_eq!(stockholm.format_datetime(1_774_785_600), "2026-03-29T14:00:00+02:00");
+    // 2026-03-28 22:30 UTC: past the switch, so already the 29th here.
+    assert_eq!(stockholm.format_date(1_774_737_000), "2026-03-29");
+}
+
+#[test]
+fn a_summary_names_the_users_days() {
+    // "After 2026-01-15" in Tokyo starts at 2026-01-14 15:00 UTC, which UTC reads as the 14th.
+    let tokyo_midnight = 1_768_402_800;
+    let q = make_query(None, PatternType::Glob, None, None, Some(tokyo_midnight), None, None);
+    assert_eq!(summarize_query(&q, &zone(9 * 3_600)), "last mod after 2026-01-15");
+    // "Before 2026-01-15" in New York ends at 2026-01-15 05:00 UTC.
+    let new_york_midnight = 1_768_453_200;
+    let q = make_query(None, PatternType::Glob, None, None, None, Some(new_york_midnight), None);
+    assert_eq!(summarize_query(&q, &zone(-5 * 3_600)), "last mod before 2026-01-15");
 }
 
 // ── parse_scope ─────────────────────────────────────────────────

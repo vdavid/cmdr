@@ -14401,14 +14401,19 @@ export type PaneFileEntry = {
   isDirectory: boolean
   size: number | null
   recursiveSize: number | null
-  modified: string | null
-  // When the item was made, ISO 8601, if its volume records it.
-  created?: string | null
   /**
-   *  When the item landed in its folder (Finder's "Date Added"), ISO 8601, if its
-   *  volume records it.
+   *  Last modified, seconds since the Unix epoch. Raw seconds rather than a string
+   *  so `cmdr://state` renders every date through the one formatter, in the user's
+   *  zone (`search::format_local_datetime`).
    */
-  added?: string | null
+  modified: number | null
+  // When the item was made, seconds since the Unix epoch, if its volume records it.
+  created?: number | null
+  /**
+   *  When the item landed in its folder (Finder's "Date Added"), seconds since the
+   *  Unix epoch, if its volume records it.
+   */
+  added?: number | null
   /**
    *  `Some(true)` while this directory's recursive size can still move: a walk
    *  is on it, above it, or below it (the roll-up repairs ancestors), the

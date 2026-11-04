@@ -239,7 +239,7 @@ impl From<SleepingIndex> for OfflineIndex {
     fn from(sleeper: SleepingIndex) -> Self {
         Self {
             volume_id: sleeper.root.volume_id,
-            as_of: sleeper.as_of.map(crate::search::format_timestamp),
+            as_of: sleeper.as_of.map(crate::search::format_local_date),
         }
     }
 }

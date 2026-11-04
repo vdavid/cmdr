@@ -47,11 +47,6 @@ export function paneListingOf(pane: { hasError: boolean; loading: boolean; stall
   return pane.stalled ? 'stalled' : 'loading'
 }
 
-/** A listing's seconds-since-epoch date as the ISO string `cmdr://state` carries, or `null` when absent. */
-function isoDate(seconds: number | null | undefined): string | null {
-  return seconds != null ? new Date(seconds * 1000).toISOString() : null
-}
-
 export interface PaneMcpSyncDeps {
   paneId: 'left' | 'right'
   /**
@@ -205,9 +200,9 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
       isDirectory: entry.isDirectory,
       size: entry.size ?? null,
       recursiveSize: entry.recursiveSize ?? null,
-      modified: isoDate(entry.modifiedAt),
-      created: isoDate(entry.createdAt),
-      added: isoDate(entry.addedAt),
+      modified: entry.modifiedAt ?? null,
+      created: entry.createdAt ?? null,
+      added: entry.addedAt ?? null,
       // The SAME per-row answer the file list's hourglass renders from, ❌ never
       // the raw `recursiveSizePending` field alone: that covers only this dir's
       // own draining writes, and misses the walk that is rewriting it, which is

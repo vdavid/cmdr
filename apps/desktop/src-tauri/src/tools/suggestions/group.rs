@@ -17,7 +17,7 @@ use super::list::{GroupSummaryOut, to_group_summary};
 use crate::agent::AgentDb;
 use crate::agent::store::proposals::{GroupSummary, ProposalOp, count_ops, get_group, page_ops, read_server_proposal};
 use crate::agent::types::OpStatus;
-use crate::search::{format_size, format_timestamp};
+use crate::search::{format_local_date, format_size};
 use crate::tools::{ToolError, ToolResult};
 
 /// The default page. Generous enough that a normal group arrives whole, and the size cut
@@ -157,6 +157,6 @@ fn to_op(op: ProposalOp) -> OpOut {
         snapshot_size: op.snapshot_size,
         snapshot_size_human: op.snapshot_size.map(format_size),
         snapshot_modified: op.snapshot_mtime,
-        snapshot_modified_human: op.snapshot_mtime.map(|at| format_timestamp(at.max(0) as u64)),
+        snapshot_modified_human: op.snapshot_mtime.map(|at| format_local_date(at.max(0) as u64)),
     }
 }

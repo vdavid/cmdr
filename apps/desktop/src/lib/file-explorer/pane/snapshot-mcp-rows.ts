@@ -40,7 +40,7 @@ export function snapshotMcpRows(
       isDirectory: entry.isDirectory,
       size: entry.size ?? null,
       recursiveSize: null,
-      modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
+      modified: entry.modifiedAt ?? null,
       recursiveSizeUpdating: null,
       recursiveSizeComplete: null,
       recursiveSizeStale: null,

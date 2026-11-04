@@ -277,7 +277,15 @@ fn an_ok_row_carries_spoken_size_and_date_beside_the_raw_values() {
     let modified = file.modified.expect("a fresh file has an mtime");
     let human = file.modified_human.expect("and its spoken twin");
     assert!(modified.starts_with(&human), "{modified} should begin with {human}");
-    assert!(modified.ends_with('Z'), "RFC 3339 UTC: {modified}");
+    let offset = &modified[modified.len() - 6..];
+    assert!(
+        offset.starts_with(['+', '-']) && offset.as_bytes()[3] == b':',
+        "RFC 3339 with the local offset: {modified}"
+    );
+    assert_eq!(
+        modified,
+        format_local_datetime(modified_secs(&std::fs::metadata(&path).unwrap()).unwrap())
+    );
 }
 
 // ── The window shaper ─────────────────────────────────────────────────────────

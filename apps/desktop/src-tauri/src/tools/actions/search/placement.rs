@@ -105,7 +105,7 @@ pub(crate) fn offline_note(offline: &Offline) -> String {
         Some(at) => format!(
             "Note: {} isn't connected, so this answers from its index as of {}, and can't see changes since. Tell the user it needs connecting for a live answer.",
             offline.name,
-            crate::search::format_timestamp(at)
+            crate::search::format_local_date(at)
         ),
         None => format!(
             "Note: {} isn't connected, so this answers from what its index holds, which never finished a full walk. Tell the user it needs connecting for a live answer.",

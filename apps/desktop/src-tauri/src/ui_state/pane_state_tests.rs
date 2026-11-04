@@ -26,7 +26,7 @@ fn test_pane_state_store_update_left() {
             is_directory: false,
             size: Some(1024),
             recursive_size: None,
-            modified: Some("2024-01-01T00:00:00Z".to_string()),
+            modified: Some(1_704_067_200),
             recursive_size_updating: None,
             tags: vec![],
             ..Default::default()
@@ -140,7 +140,7 @@ fn test_file_entry_serialization() {
         is_directory: false,
         size: Some(42),
         recursive_size: None,
-        modified: Some("2024-01-01T00:00:00Z".to_string()),
+        modified: Some(1_704_067_200),
         recursive_size_updating: None,
         tags: vec![],
         ..Default::default()

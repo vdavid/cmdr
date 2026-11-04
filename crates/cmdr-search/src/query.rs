@@ -3,6 +3,7 @@
 
 use std::borrow::Cow;
 
+use super::local_days::LocalDays;
 use super::types::{PatternType, SearchQuery};
 
 // ── System directory exclusions ──────────────────────────────────────
@@ -16,7 +17,7 @@ pub use cmdr_fs::system_dirs::SYSTEM_DIR_EXCLUDES;
 /// Build a dense, human-readable summary of a `SearchQuery` for functional display.
 ///
 /// Examples: `"tes"`, `"*.pdf", dirs only`, `size >= 2 MB, last mod before 2026-03-01`
-pub fn summarize_query(query: &SearchQuery) -> String {
+pub fn summarize_query(query: &SearchQuery, days: &impl LocalDays) -> String {
     let mut parts = Vec::new();
 
     // Name pattern
@@ -44,12 +45,12 @@ pub fn summarize_query(query: &SearchQuery) -> String {
         (Some(after), Some(before)) => {
             parts.push(format!(
                 "last mod {}–{}",
-                format_timestamp(after),
-                format_timestamp(before)
+                days.format_date(after),
+                days.format_date(before)
             ));
         }
-        (Some(after), None) => parts.push(format!("last mod after {}", format_timestamp(after))),
-        (None, Some(before)) => parts.push(format!("last mod before {}", format_timestamp(before))),
+        (Some(after), None) => parts.push(format!("last mod after {}", days.format_date(after))),
+        (None, Some(before)) => parts.push(format!("last mod before {}", days.format_date(before))),
         (None, None) => {}
     }
 
@@ -192,13 +193,6 @@ pub fn parse_size(text: &str) -> Option<u64> {
     };
     let value: f64 = number.trim().parse().ok()?;
     (value.is_finite() && value >= 0.0).then_some((value * multiplier as f64) as u64)
-}
-
-pub fn format_timestamp(ts: u64) -> String {
-    let format = time::macros::format_description!("[year]-[month]-[day]");
-    time::OffsetDateTime::from_unix_timestamp(ts as i64)
-        .map(|dt| dt.format(&format).unwrap_or_else(|_| ts.to_string()))
-        .unwrap_or_else(|_| ts.to_string())
 }
 
 // ── Glob to regex conversion ─────────────────────────────────────────

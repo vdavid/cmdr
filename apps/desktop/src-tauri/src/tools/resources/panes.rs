@@ -2,7 +2,7 @@
 //! pane state used by ordinary MCP resources.
 
 use super::StateOptions;
-use crate::search::format_size;
+use crate::search::{format_local_datetime, format_size};
 use crate::ui_state::pane_state::{DisplayedDate, PaneFileEntry, PaneListing, PaneState, TabInfo};
 
 /// The `listing:` value for a pane whose listing isn't settled, or `None` for one that is.
@@ -48,13 +48,13 @@ pub(crate) fn format_file_compact(
                 parts.push(marker);
             }
         }
-        if let Some(ref modified) = file.modified {
-            parts.push(modified.clone());
+        if let Some(modified) = file.modified {
+            parts.push(format_local_datetime(modified));
         }
         let shown_date = match displayed_date {
             DisplayedDate::Modified => None,
-            DisplayedDate::Created => file.created.as_ref().map(|date| format!("created:{date}")),
-            DisplayedDate::Added => file.added.as_ref().map(|date| format!("added:{date}")),
+            DisplayedDate::Created => file.created.map(|at| format!("created:{}", format_local_datetime(at))),
+            DisplayedDate::Added => file.added.map(|at| format!("added:{}", format_local_datetime(at))),
         };
         parts.extend(shown_date);
     }
@@ -263,8 +263,8 @@ pub(crate) fn build_pane_yaml_with_options(state: &PaneState, indent: &str, opts
         } else if let Some(recursive_size) = cursor_file.recursive_size {
             lines.push(format!("{}  size: {}", indent, format_size(recursive_size)));
         }
-        if let Some(ref modified) = cursor_file.modified {
-            lines.push(format!("{}  modified: {}", indent, modified));
+        if let Some(modified) = cursor_file.modified {
+            lines.push(format!("{}  modified: {}", indent, format_local_datetime(modified)));
         }
     }
 

@@ -1140,8 +1140,16 @@ subtree that's already gone, where the truth is far lower — and that's exactly
 folder read `≥422 GB` on its way down to 56 KB (2026-09-07). Both booleans still ship, so a caller that wants to know
 which uncertainty it has can look.
 
-**One formatter, `search::format_size` + `format_timestamp`.** ❌ Never a second one: two would round differently and
-the same folder would read two sizes across two surfaces. Like the `search` results table, this path does NOT consult
+**One formatter, `search::format_size` + `format_local_date` / `format_local_datetime`.** ❌ Never a second one: two
+would round differently and the same folder would read two sizes across two surfaces. Every date the model reads is in
+the user's zone (`apps/desktop/src-tauri/src/search/zone.rs`, the machine's `chrono::Local`, each instant with its own summer-time offset):
+`format_local_date` writes `YYYY-MM-DD` for a field without a time of day (every `*Human` date, `asOf`, and the dates
+in `interpretedQuery`), so it carries no offset; `format_local_datetime` writes RFC 3339 to the second WITH the offset
+(`2026-03-29T14:00:00+02:00`, `+00:00` in UTC, never `Z`) for a field that shows a time of day (`inspect_file`'s
+`modified`, and every date on a `cmdr://state` row). The offset makes it unambiguous across a summer-time change and
+comparable with another zone's stamp, while still reading as the clock the user saw. Raw epoch fields (`modified` on
+`list_dir` and `search` rows) stay seconds. `PaneFileEntry` carries seconds for the same reason: the frontend pushes
+raw numbers and `resources/panes.rs` formats them, so `cmdr://state` can't drift from the tools. Like the `search` results table, this path does NOT consult
 the user's SI-vs-binary units setting; MCP/agent output stays internally consistent instead of tracking a UI preference.
 It's base 1024, so it writes IEC symbols (`KiB`, `MiB`, `GiB`, `TiB`). Its inverse, `search::parse_size`, lets the
 symbol pick the base (`MiB` = 1,048,576, `MB` = 1,000,000, a bare `KB` = 1,000), and every typed or model-written

@@ -2,13 +2,16 @@
 //! formatting. The public-API checks (resource count, URIs, mime types) live in
 //! `resource_tests.rs`.
 
-use crate::search::format_size;
+use crate::search::{format_local_datetime, format_size};
 use crate::tools::resources::panes::{
     build_pane_yaml_with_options, format_file_compact, format_tab_compact, tags_marker,
 };
 use crate::tools::resources::{StateOptions, build_recent_errors_yaml, parse_state_options, split_uri};
 use crate::ui_state::listing_errors::RecentListingError;
 use crate::ui_state::pane_state::{DisplayedDate, MountErrorInfo, PaneFileEntry, PaneListing, PaneState, TabInfo};
+
+/// 2024-01-15 12:00 UTC.
+const JAN_15_NOON: u64 = 1_705_320_000;
 
 #[test]
 fn parse_state_options_defaults() {
@@ -110,7 +113,7 @@ fn test_format_file_compact() {
         is_directory: false,
         size: Some(1024),
         recursive_size: None,
-        modified: Some("2024-01-15".to_string()),
+        modified: Some(JAN_15_NOON),
         recursive_size_updating: None,
         tags: vec![],
         ..Default::default()
@@ -130,7 +133,13 @@ fn test_format_file_compact() {
 
     // With details
     let formatted = format_file_compact(&file, 0, true, true, true, DisplayedDate::Modified);
-    assert_eq!(formatted, "i:0 f test.txt 1 KiB 2024-01-15 [cur] [sel]");
+    assert_eq!(
+        formatted,
+        format!(
+            "i:0 f test.txt 1 KiB {} [cur] [sel]",
+            format_local_datetime(JAN_15_NOON)
+        )
+    );
 
     // Directory
     let dir = PaneFileEntry {
@@ -154,13 +163,16 @@ fn test_format_file_compact() {
         is_directory: true,
         size: None,
         recursive_size: Some(169),
-        modified: Some("2026-03-19T17:33:53.000Z".to_string()),
+        modified: Some(1_773_941_633),
         recursive_size_updating: None,
         tags: vec![],
         ..Default::default()
     };
     let formatted = format_file_compact(&dir_with_size, 5, false, false, true, DisplayedDate::Modified);
-    assert_eq!(formatted, "i:5 d src 169 B 2026-03-19T17:33:53.000Z");
+    assert_eq!(
+        formatted,
+        format!("i:5 d src 169 B {}", format_local_datetime(1_773_941_633))
+    );
 
     // Directory whose recursive size is still moving gets a [size-unsettled]
     // marker (the "size updating" hourglass, observable without DOM access), and
@@ -245,7 +257,7 @@ fn test_build_pane_yaml() {
                 is_directory: false,
                 size: Some(100),
                 recursive_size: None,
-                modified: Some("2024-01-15".to_string()),
+                modified: Some(JAN_15_NOON),
                 recursive_size_updating: None,
                 tags: vec![],
                 ..Default::default()
@@ -784,13 +796,18 @@ fn a_sort_the_location_honors_has_no_fallback_line() {
     assert!(!yaml.contains("sortFallback"), "{yaml}");
 }
 
+// 2020-01-01, 2019-06-01, and 2026-10-23 08:00, all UTC.
+const MODIFIED: u64 = 1_577_836_800;
+const CREATED: u64 = 1_559_347_200;
+const ADDED: u64 = 1_792_742_400;
+
 fn dated_row() -> PaneFileEntry {
     PaneFileEntry {
         name: "a.zip".to_string(),
         path: "/Users/test/Downloads/a.zip".to_string(),
-        modified: Some("2020-01-01T00:00:00.000Z".to_string()),
-        created: Some("2019-06-01T00:00:00.000Z".to_string()),
-        added: Some("2026-10-23T08:00:00.000Z".to_string()),
+        modified: Some(MODIFIED),
+        created: Some(CREATED),
+        added: Some(ADDED),
         ..Default::default()
     }
 }
@@ -818,12 +835,18 @@ fn a_row_shows_the_date_its_pane_shows() {
 
     let by_added = full_pane_sorted("added", None, DisplayedDate::Added);
     let by_added = build_pane_yaml_with_options(&by_added, "  ", &opts);
-    assert!(by_added.contains("added:2026-10-23T08:00:00.000Z"), "{by_added}");
+    assert!(
+        by_added.contains(&format!("added:{}", format_local_datetime(ADDED))),
+        "{by_added}"
+    );
     assert!(!by_added.contains("created:"), "{by_added}");
 
     let by_created = full_pane_sorted("created", None, DisplayedDate::Created);
     let by_created = build_pane_yaml_with_options(&by_created, "  ", &opts);
-    assert!(by_created.contains("created:2019-06-01T00:00:00.000Z"), "{by_created}");
+    assert!(
+        by_created.contains(&format!("created:{}", format_local_datetime(CREATED))),
+        "{by_created}"
+    );
     assert!(!by_created.contains("added:"), "{by_created}");
 
     let by_name = full_pane_sorted("name", None, DisplayedDate::Modified);
@@ -843,7 +866,7 @@ fn a_row_in_a_fallback_shows_no_extra_date() {
         "  ",
         &StateOptions::default(),
     );
-    assert!(yaml.contains("2020-01-01T00:00:00.000Z"), "{yaml}");
+    assert!(yaml.contains(&format_local_datetime(MODIFIED)), "{yaml}");
     assert!(!yaml.contains("added:2026"), "{yaml}");
 }
 
@@ -856,7 +879,10 @@ fn a_row_date_follows_the_pushed_displayed_date_not_the_sort_strings() {
         "  ",
         &StateOptions::default(),
     );
-    assert!(yaml.contains("created:2019-06-01T00:00:00.000Z"), "{yaml}");
+    assert!(
+        yaml.contains(&format!("created:{}", format_local_datetime(CREATED))),
+        "{yaml}"
+    );
 }
 
 /// The empty-field fallbacks describe a `PaneState` no pane ever pushed, and
