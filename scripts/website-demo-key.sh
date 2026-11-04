@@ -25,6 +25,7 @@ paths=(
   apps/desktop/package.json
   apps/desktop/vite.config.js
   apps/desktop/tsconfig.json
+  apps/desktop/scripts/precompress-demo.ts
   apps/website/demo-image.Dockerfile
   crates/cmdr-listing-wasm
   crates/cmdr-listing

@@ -101,19 +101,8 @@ func run(root, out string, smoke, golden bool) error {
 		return err
 	}
 
-	wasm := filepath.Join(root, "target", wasmTarget, profile, strings.ReplaceAll(crateName, "-", "_")+".wasm")
-	if err := command(root, "wasm-bindgen", "--target", "web", "--out-dir", out, "--out-name", outName, wasm); err != nil {
-		return fmt.Errorf("wasm-bindgen: %w", err)
-	}
-	// The glue is an ES module; saying so keeps Node from guessing (and warning) when it loads it.
-	if err := os.WriteFile(filepath.Join(out, "package.json"), []byte("{ \"type\": \"module\" }\n"), 0o644); err != nil {
+	if err := bindAndOptimize(root, out); err != nil {
 		return err
-	}
-	if err := command(root, "wasm-opt", wasmOptArgs(filepath.Join(out, outName+"_bg.wasm"))...); err != nil {
-		return fmt.Errorf("wasm-opt (binaryen, pinned in .mise.toml; run `mise install`): %w", err)
-	}
-	if info, err := os.Stat(filepath.Join(out, outName+"_bg.wasm")); err == nil {
-		fmt.Printf("build-listing-wasm: %s (%d KiB)\n", out, info.Size()/1024)
 	}
 
 	if smoke {
@@ -123,6 +112,27 @@ func run(root, out string, smoke, golden bool) error {
 	}
 	if golden {
 		return replayGolden(root, tc)
+	}
+	return nil
+}
+
+// bindAndOptimize turns cargo's `.wasm` into the shipped module in `out`: `wasm-bindgen --target
+// web`, the ES-module marker, then `wasm-opt` in place.
+func bindAndOptimize(root, out string) error {
+	wasm := filepath.Join(root, "target", wasmTarget, profile, strings.ReplaceAll(crateName, "-", "_")+".wasm")
+	if err := command(root, "wasm-bindgen", "--target", "web", "--out-dir", out, "--out-name", outName, wasm); err != nil {
+		return fmt.Errorf("wasm-bindgen: %w", err)
+	}
+	// The glue is an ES module; saying so keeps Node from guessing (and warning) when it loads it.
+	if err := os.WriteFile(filepath.Join(out, "package.json"), []byte("{ \"type\": \"module\" }\n"), 0o644); err != nil {
+		return err
+	}
+	bound := filepath.Join(out, outName+"_bg.wasm")
+	if err := command(root, "wasm-opt", wasmOptArgs(bound)...); err != nil {
+		return fmt.Errorf("wasm-opt (binaryen, pinned in .mise.toml; run `mise install`): %w", err)
+	}
+	if info, err := os.Stat(bound); err == nil {
+		fmt.Printf("build-listing-wasm: %s (%d KiB)\n", out, info.Size()/1024)
 	}
 	return nil
 }

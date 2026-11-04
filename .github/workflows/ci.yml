@@ -298,6 +298,7 @@ jobs:
               - 'apps/desktop/package.json'
               - 'apps/desktop/vite.config.js'
               - 'apps/desktop/tsconfig.json'
+              - 'apps/desktop/scripts/precompress-demo.ts'
               - 'crates/cmdr-listing-wasm/**'
               - 'crates/cmdr-listing/**'
               - 'crates/cmdr-fs/**'

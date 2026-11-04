@@ -8,7 +8,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "dev:demo": "pnpm -w build:listing-wasm && CMDR_DEMO_BUILD=1 vite dev",
-    "build:demo": "pnpm -w build:listing-wasm && CMDR_DEMO_BUILD=1 vite build",
+    "build:demo": "pnpm -w build:listing-wasm && CMDR_DEMO_BUILD=1 vite build && node scripts/precompress-demo.ts build-demo",
     "preview": "vite preview",
     "prepare": "svelte-kit sync",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

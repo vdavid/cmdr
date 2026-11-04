@@ -186,8 +186,9 @@ was deleted.)
   PostHog, the deploy hook) and nginx's `/download/latest` redirects stay uncached. Every deploy purges the zone
   (`infra/deploy-webhook/deploy-website.sh`). Link-preview bots (`TelegramBot`, `Twitterbot`, and so on) skip the edge
   cache, so they always reach nginx's access log; human page views served from the edge don't, and Umami counts them.
-  nginx doesn't compress: Cloudflare only compresses with Brotli or zstd when the origin sends plain bytes. The rule
-  itself lives in the infra repo (`cloudflare/getcmdr.com-cache.tf`).
+  nginx doesn't compress: Cloudflare only compresses with Brotli or zstd when the origin sends plain bytes (the demo's
+  precompressed bundle is the one exception, § Browser demo). The rule itself lives in the infra repo
+  (`cloudflare/getcmdr.com-cache.tf`).
 - **Always-latest download links**: `getcmdr.com/download/latest/<arch>` (and bare `/download/latest`, which hands out
   the universal build) is an nginx `return 302` to the API server's `/download/latest/<arch>`, query string preserved so
   `?ref=` and `?src=` survive. It lives in `nginx.conf`, not Astro, because a static build can only emit a meta-refresh
@@ -370,6 +371,30 @@ nothing links to it, it's out of the sitemap, and it's `noindex` until David lau
   immutable, a real 404 when missing); anything else under `/demo/` is the file or, failing that, the app page, so a
   deep link or reload boots the app. nginx's own mime table serves `.wasm` as `application/wasm` (verified in
   `nginx:alpine` 1.31.6, `curl -I`, 2026-11-04).
+- **Precompressed Brotli**: `pnpm build:demo` ends with `apps/desktop/scripts/precompress-demo.ts`, which writes a
+  quality-11, 16 MiB-window `<file>.br` next to every `.wasm`, `.js`, and `.css` of 10 KiB or more under
+  `_app/immutable/` (57 files, 21,571,685 → 5,034,366 bytes, about 20–40 s on a Mac, 2026-11-04). The engine `.wasm`
+  goes out as 2,571,369 bytes instead of 9,358,817. It runs in CI with the rest of the demo build, so the `.br` files
+  ship inside the demo image and the server only copies them.
+  - nginx serves them with no third-party module (`nginx-demo-precompressed.conf`, included by one location per type
+    under `/demo/_app/immutable/`): a `map` turns `Accept-Encoding: br` into a `.br` suffix, `try_files $uri.br $uri`
+    falls back to the plain file, a per-location `types` gives the twin its original's Content-Type, and
+    `Content-Encoding: br` follows the file actually served, with `Vary: Accept-Encoding` on both. Verified in
+    `nginx:alpine` 1.31.6 (`curl -D -` with `br`, `gzip`, and `identity`; the `br` body decoded byte-identical; a file
+    with no twin went out plain and unlabeled; 2026-11-04).
+  - **Cloudflare must pass the origin's `br` through.** Its docs say it asks the origin with `accept-encoding: br, gzip`
+    and keeps an origin's `br` for visitors that accept it, as long as no content-rewriting feature touches the response
+    (developers.cloudflare.com/speed/optimization/content/compression/, read 2026-11-04). If it ever stops, nginx
+    answers plain and the edge compresses as before, so nothing breaks; the page only downloads more.
+  - **The post-deploy check**: `content-encoding: br` alone proves nothing, since the edge's own Brotli says the same.
+    The tell is the ETag: when Cloudflare compresses, it weakens the origin's ETag to `W/"…"`; a passed-through `.br`
+    keeps nginx's strong `"<mtime>-<size in hex>"`, and that size is the `.br` file's. Run
+    `curl -s https://getcmdr.com/demo/ | grep -o '/demo/_app/immutable/[^"]*\.js' | sort -u | while read -r p; do echo "$(curl -sI -H 'Accept-Encoding: br' "https://getcmdr.com$p" | tr -d '\r' | grep -i '^etag:') $p"; done`
+    and every chunk of 10 KiB or more should print a strong `etag: "…"`; a `W/` there means the edge recompressed it.
+    Before this shipped, `chunks/IoygyzeY.js` (646,867 bytes) went out as 166,052 bytes of edge Brotli with
+    `etag: W/"6aebaa25-9ded3"`; its quality-11 twin is 137,492 bytes, 17% smaller (2026-11-04). For the engine, find
+    `cmdr_listing_wasm_bg.<hash>.wasm` in the browser's network tab on `/demo/` (it loads lazily, so the page's HTML
+    doesn't name it) and `curl -sI -H 'Accept-Encoding: br'` it the same way.
 - **Headers**: `nginx-demo-security-headers.conf` replaces the site's CSP for `/demo/` only, sharing the rest via
   `nginx-security-headers-base.conf`. The policy and why each part is there are in that file's header. Verified in the
   built image with Chromium (2026-11-04): no CSP violation on boot, `WebAssembly.instantiate` allowed under `/demo/` and
