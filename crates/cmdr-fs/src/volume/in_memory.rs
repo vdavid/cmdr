@@ -912,14 +912,10 @@ impl InMemoryVolume {
 
     /// Gets current timestamp as seconds since Unix epoch.
     fn now_secs() -> u64 {
-        // `std`'s clock panics on `wasm32-unknown-unknown`; the browser build
-        // reads the page's (`DETAILS.md` § "The browser build").
-        #[cfg(not(target_family = "wasm"))]
-        use std::time::{SystemTime, UNIX_EPOCH};
-        #[cfg(target_family = "wasm")]
-        use web_time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
+        // `std`'s clock panics on `wasm32-unknown-unknown`; `rt` reads the page's
+        // there (`DETAILS.md` § "The browser build").
+        crate::rt::wall_now()
+            .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0)
     }

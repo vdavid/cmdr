@@ -143,7 +143,18 @@ allows:
   ambient-runtime lookup (`Instant::now` / `elapsed` on both clocks, `SystemTime::now`,
   `tokio::time::{sleep, sleep_until, timeout, interval}`, `Handle::current`), and `rt/` opts out with one `#[allow]`.
   Method bans, not `disallowed-types`: natively `rt::Instant` and `rt::Runtime` ARE the `std` and tokio types, so a type
-  ban would fire on the seam itself. `desktop-rust-listing-wasm`'s smoke test backs it at runtime.
+  ban would fire on the seam itself. `desktop-rust-listing-wasm`'s smoke test backs it at runtime. This crate's own
+  `clippy.toml` carries the clock half of that list (not the spawn bans: `deadline` and the fallback runtime spawn on
+  the ambient runtime by design), because `InMemoryVolume`, the scan clocks, and `deadline` run in the browser too;
+  `testing/` opts out with a reasoned module-level `#[allow]`, and `lib.rs` lifts the bans for its own tests.
+- **What else `rt` carries for the write engine**: `rt::wall_now()` (`std`'s `SystemTime`, re-based from the page's
+  clock in the browser), `rt::spawn_ambient` (`tokio::spawn` natively, the page's loop in the browser; only for
+  `deadline`'s ambient design), `rt::task::{JoinSet, Id, AbortHandle, yield_now}` (tokio's natively; in the browser a
+  set over `spawn_local` that, like tokio's, aborts what's left when dropped, and a `setTimeout(0)` macrotask yield so
+  the page paints and fires timers, which tokio's microtask-shaped yield with no runtime would starve), and
+  `rt::time::{timeout_at, interval_delayed, Interval, Elapsed}`. In the browser `JoinError::is_panic` is always `false`:
+  `panic = "abort"` ends the module first. `smoke.mjs` runs `rtSelfTest` (`src/rt_self_test.rs`) against the real
+  `.wasm`: join order, abort, drop-aborts, a yield that lets a timer fire, `timeout_at`, the interval, the wall clock.
 - **`Path::is_absolute` is always `false` on that target** (it has no notion of a filesystem root). Code the browser
   build runs checks a leading `/` instead (`crates/cmdr-listing-wasm/src/tree.rs`); `InMemoryVolume::normalize` gets the
   right answer anyway, because joining a rooted path onto `/` replaces it.

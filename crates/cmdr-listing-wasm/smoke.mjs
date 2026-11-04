@@ -102,6 +102,9 @@ try {
   } catch (error) {
     if (error?.type !== 'gone') fail(`a missing listing rejected with ${JSON.stringify(error)}`)
   }
+  // The runtime seam's browser half: task sets, aborts, macrotask yields, timers, the wall clock.
+  const rtSummary = await glue.rtSelfTest(Date.now())
+  console.log(`listing-wasm smoke: ${rtSummary}`)
 } catch (error) {
   fail(error?.stack ?? String(error))
 }

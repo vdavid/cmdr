@@ -25,8 +25,8 @@ use std::time::Duration;
 
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
+use crate::rt::time::Instant;
 use log::warn;
-use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 
 /// How long silence lasts before the watchdog asks, and how long it waits for
@@ -68,7 +68,7 @@ impl Liveness {
     /// A fresh watch: nothing waiting, the server last heard from now.
     pub fn new() -> Self {
         Self {
-            last_heard: Mutex::new(Instant::now()),
+            last_heard: Mutex::new(crate::rt::time::now()),
             in_flight: AtomicUsize::new(0),
             watching: AtomicBool::new(false),
             lost: CancellationToken::new(),
@@ -77,7 +77,7 @@ impl Liveness {
 
     /// The server just proved it's there.
     pub fn heard(&self) {
-        *self.last_heard.lock_ignore_poison() = Instant::now();
+        *self.last_heard.lock_ignore_poison() = crate::rt::time::now();
     }
 
     /// Cancelled when the server is gone.
@@ -111,7 +111,7 @@ impl Liveness {
     }
 
     fn quiet_for(&self) -> Duration {
-        self.last_heard.lock_ignore_poison().elapsed()
+        crate::rt::time::now().saturating_duration_since(*self.last_heard.lock_ignore_poison())
     }
 
     /// Whether the watchdog has anything left to watch over.
@@ -172,14 +172,14 @@ where
         let quiet_for = liveness.quiet_for();
         if unanswered == 0 && quiet_for < timings.quiet {
             tokio::select! {
-                () = tokio::time::sleep(timings.quiet - quiet_for) => {}
+                () = crate::rt::time::sleep(timings.quiet - quiet_for) => {}
                 () = liveness.lost.cancelled() => {}
             }
             continue;
         }
-        let asked = Instant::now();
+        let asked = crate::rt::time::now();
         let answered = tokio::select! {
-            answered = tokio::time::timeout(timings.probe_budget, probe()) => answered.unwrap_or(false),
+            answered = crate::rt::time::timeout(timings.probe_budget, probe()) => answered.unwrap_or(false),
             // Somebody else found the server gone; the loop's head ends the watch.
             () = liveness.lost.cancelled() => continue,
         };

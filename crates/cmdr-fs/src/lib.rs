@@ -17,6 +17,15 @@
 //! crate's own contract, not the workspace's.
 #![warn(unused_crate_dependencies)]
 #![deny(missing_docs)]
+// `clippy.toml` refuses direct clock and timer reads (the browser build traps on
+// them); a test drives paused tokio clocks and real ones of its own, as a host does.
+#![cfg_attr(
+    test,
+    allow(
+        clippy::disallowed_methods,
+        reason = "tests drive their own clocks and timers, as a host would"
+    )
+)]
 
 pub mod apple_double;
 pub mod archive_format;
