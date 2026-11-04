@@ -32,6 +32,10 @@ export function directConnectionUnavailableMessage(reason: UpgradeFailure, serve
       return tString('fileExplorer.pane.directConnectionShareNotOnServerToast', { server })
     case 'otherServerNotAllowed':
       return tString('fileExplorer.pane.directConnectionOtherServerNotAllowedToast', { server })
+    case 'negotiationInvalid':
+      return tString('fileExplorer.pane.directConnectionNegotiationInvalidToast', { server })
+    case 'encryptionUnavailable':
+      return tString('fileExplorer.pane.directConnectionEncryptionUnavailableToast', { server })
     case 'unexpected':
       return tString('fileExplorer.pane.directConnectionUnexpectedToast', { server })
     case 'blockedByThisMac':
@@ -80,3 +84,16 @@ export function nothingToUpgradeMessage(status: 'volumeGone' | 'notSmbMount', na
       return tString('fileExplorer.pane.directConnectionNotNetworkShareToast', { volume: name })
   }
 }
+
+/**
+ * The reasons a retry can't fix that the OS-mount notice gives their own sentence
+ * (`shareNotOnServer`, the other one, has the notice's default sentence).
+ */
+export const STUCK_REASONS = [
+  'otherServerNotAllowed',
+  'negotiationInvalid',
+  'encryptionUnavailable',
+] as const satisfies readonly UpgradeFailure[]
+
+/** One of {@link STUCK_REASONS}: what the notice says instead of offering a retry. */
+export type StuckReason = (typeof STUCK_REASONS)[number]

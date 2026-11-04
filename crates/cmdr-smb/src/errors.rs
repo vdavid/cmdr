@@ -39,6 +39,12 @@ pub fn classify_error(err: &smb2::Error) -> ShareListError {
     {
         return ShareListError::HostUnreachable { message };
     }
+    // By variant: `EncryptionRequired` shares its `Unsupported` kind and means something else
+    // (Cmdr required encryption the server can't give), but Cmdr never sets
+    // `ClientConfig::require_encryption`, so it can't arrive yet.
+    if let smb2::Error::EncryptionUnavailable { .. } = err {
+        return ShareListError::EncryptionUnavailable { message };
+    }
     match err.kind() {
         ErrorKind::AuthRequired => ShareListError::AuthRequired { message },
         ErrorKind::AccessDenied => ShareListError::AuthFailed { message },
@@ -46,6 +52,7 @@ pub fn classify_error(err: &smb2::Error) -> ShareListError {
         // Only a named login gets here, so the credentials are what's wrong.
         ErrorKind::GuestSessionRefused => ShareListError::AuthFailed { message },
         ErrorKind::SignatureInvalid => ShareListError::SignatureInvalid { message },
+        ErrorKind::NegotiateValidationFailed => ShareListError::NegotiationInvalid { message },
         ErrorKind::NotFound => ShareListError::ProtocolError { message },
         ErrorKind::ConnectionLost => ShareListError::HostUnreachable { message },
         ErrorKind::TimedOut => ShareListError::Timeout { message },
@@ -120,6 +127,37 @@ mod tests {
         assert!(matches!(
             classify_authenticated_error(&signature_refused()),
             ShareListError::SignatureInvalid { .. }
+        ));
+    }
+
+    /// A negotiation the server didn't confirm (smb2 0.41) is a possible sign of tampering, like a
+    /// refused signature: typed, not auth, and never the `ProtocolError` that sends a listing down
+    /// the unverified CLI fallback.
+    #[test]
+    fn an_unconfirmed_negotiation_is_typed_and_not_an_auth_error() {
+        let err = smb2::Error::NegotiateValidationFailed {
+            reason: "the server answered a different dialect".to_string(),
+        };
+        assert!(!is_auth_error(&err));
+        assert!(matches!(
+            classify_error(&err),
+            ShareListError::NegotiationInvalid { .. }
+        ));
+        assert!(matches!(
+            classify_authenticated_error(&err),
+            ShareListError::NegotiationInvalid { .. }
+        ));
+    }
+
+    /// A server that only accepts encrypted connections, on a connection that agreed on no cipher.
+    /// Its own answer, ❌ never `ProtocolError`: the CLI fallback lists unencrypted.
+    #[test]
+    fn a_server_requiring_encryption_it_did_not_negotiate_is_typed() {
+        let err = smb2::Error::EncryptionUnavailable { share: None };
+        assert!(!is_auth_error(&err));
+        assert!(matches!(
+            classify_error(&err),
+            ShareListError::EncryptionUnavailable { .. }
         ));
     }
 
