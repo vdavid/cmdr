@@ -215,6 +215,7 @@ describe('FullListHeader a11y', () => {
     dateColumn: DateColumn
     dateFallbackNote: string | undefined
     showExtensionInName: boolean
+    showDateColumn: boolean
     gitColumnVisible: boolean
     skipTransition: boolean
     scrollbarWidth: number
@@ -234,6 +235,7 @@ describe('FullListHeader a11y', () => {
         dateColumn: 'modified',
         dateFallbackNote: undefined,
         showExtensionInName: false,
+        showDateColumn: true,
         gitColumnVisible: false,
         skipTransition: false,
         scrollbarWidth: 0,

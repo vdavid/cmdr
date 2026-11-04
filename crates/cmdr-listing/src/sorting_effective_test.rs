@@ -10,7 +10,9 @@
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::SupportedDates;
 
-use super::sorting::{DirectorySortMode, EffectiveSort, SortColumn, SortOrder, sort_key_changed};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
+
+use super::sorting::{EffectiveSort, sort_key_changed};
 use super::sorting_test_support::{every_date, make_dir_with_recursive_size, make_entry, sort_entries};
 
 const ALL_COLUMNS: [SortColumn; 6] = [

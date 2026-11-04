@@ -51,6 +51,10 @@ tokio-util = { version = "0.7.18", default-features = false }
 # the way a listing does). Its own crate, so code that only orders names (the
 # write engine's tree order) needn't depend on the listing engine.
 cmdr-collation = { path = "../cmdr-collation" }
+# What a pane asks to sort by (`SortColumn`, `SortOrder`, `DirectorySortMode`),
+# re-exported at the root. Its own crate so the menu bar names a sort without
+# linking this engine.
+cmdr-sort = { path = "../cmdr-sort" }
 # The stall watch polls every read of a volume at once (`FuturesUnordered`).
 futures-util = "0.3"
 # Fuzzy matcher for the in-directory "type to jump" feature (`fuzzy_jump.rs`).

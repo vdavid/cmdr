@@ -95,6 +95,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   read the four gotchas regardless (ASCII is the wire default and corrupts files, a dropped data stream wedges the
   connection unless it goes through `abort()`, FTPS session reuse works on rustls and fails on native-tls, and non-UTF-8
   filenames are unaddressable without patching the crate).
+- `show-hn-capacity-2026-11.md` — whether getcmdr.com, the `/demo/`, and the api-server survive a Show HN front-page
+  day, measured on 2026-11-04. **The static site and demo hold (Cloudflare cache, a fast origin); the risk is D1's
+  Free-plan cap of 100,000 row writes a day, already about half used on a normal day**, then the Workers Free cap of
+  100,000 requests, which fails closed on the download button. Both go away with Workers Paid. Carries the traffic
+  estimates with sources, the request path, ranked failure modes, and the fixes waiting on David. Read it before a
+  launch post or before changing what the api-server writes per request.
 
 **Load-bearing as the evidence behind a decision that would otherwise look arbitrary:**
 

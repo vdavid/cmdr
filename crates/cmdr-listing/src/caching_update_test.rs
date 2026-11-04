@@ -6,8 +6,8 @@
 
 use super::caching_test::{insert_test_listing, make_dir_entry, make_entry};
 use super::diff::PaneRows;
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::testing::TestEngine;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 #[test]
 fn test_update_entry_sorted_in_place_for_non_sort_change() {

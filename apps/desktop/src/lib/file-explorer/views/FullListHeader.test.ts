@@ -25,6 +25,7 @@ function mountHeader(props: Partial<Parameters<typeof mountHeaderRaw>[0]> = {}) 
     dateColumn: 'modified' as const,
     dateFallbackNote: undefined,
     showExtensionInName: false,
+    showDateColumn: true,
     gitColumnVisible: false,
     skipTransition: false,
     scrollbarWidth: 0,
@@ -40,6 +41,7 @@ function mountHeaderRaw(props: {
   dateColumn: DateColumn
   dateFallbackNote: string | undefined
   showExtensionInName: boolean
+  showDateColumn: boolean
   gitColumnVisible: boolean
   skipTransition: boolean
   scrollbarWidth: number
@@ -81,6 +83,13 @@ describe('columns', () => {
     const target = mountHeader({ showExtensionInName: false })
 
     expect(target.querySelector('.header-name-ext')).toBeNull()
+  })
+
+  it('drops the date cell, chevron included, with its column', () => {
+    const target = mountHeader({ showDateColumn: false, gridTemplate: '16px 1fr 28px 115px' })
+
+    expect(labels(target)).toEqual(['Name', 'Ext', 'Size'])
+    expect(target.querySelector('.header-date')).toBeNull()
   })
 
   it('mirrors the grid template it was handed', () => {

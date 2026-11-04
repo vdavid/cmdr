@@ -106,7 +106,7 @@
     import { type CanonicalPath, parentOf, toCanonical } from '#lib/path/canonical.js'
     import { getVolumes as getStoreVolumes } from '#lib/stores/volume-store.svelte.js'
     import type { UnreachableState } from '../tabs/tab-types'
-    import { getUsageBar, formatBarTooltip } from '../disk-space-utils'
+    import { getUsageBar, formatBarTooltip, formatDiskSpaceStatus } from '../disk-space-utils'
     import {
         getFileSizeFormat,
         getSpaceCalculatesFolderSize,
@@ -2445,6 +2445,7 @@
                 role="meter"
                 aria-label={tString('fileExplorer.pane.diskUsageAriaLabel')}
                 aria-valuenow={usageBar?.usedPercent ?? 0}
+                aria-valuetext={diskSpace.volumeSpace ? formatDiskSpaceStatus(diskSpace.volumeSpace, getFileSizeFormat()) : undefined}
                 aria-valuemin={0}
                 aria-valuemax={100}
             >

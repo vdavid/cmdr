@@ -12,7 +12,7 @@ use super::cached_listing::CachedListing;
 use super::engine::Listings;
 use super::operations::ListingLookupError;
 use super::pipeline::{OverlayRows, Prepared};
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 const DIR: &str = "/two-engines";
 

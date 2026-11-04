@@ -1,0 +1,22 @@
+{
+  "about": "How a drive's free percent reads. `formatFreePercent` (free-percent.test.ts) must produce `text` (the status bar, minimum zero decimals) and `toastText` (the low-disk-space warning, minimum one decimal), and the backend's emit gate (`src-tauri/src/space_poller/readout.rs`) must truncate to the same figure, so the two can't drift. en-US digits.",
+  "cases": [
+    { "name": "a middling drive truncates", "percent": 50.7, "text": "50", "toastText": "50.7" },
+    { "name": "just under the 95 band stays whole", "percent": 94.99, "text": "94", "toastText": "94.9" },
+    { "name": "the 95 band starts with a tenth", "percent": 95, "text": "95.0", "toastText": "95.0" },
+    { "name": "the 95 band truncates its tenth", "percent": 97.86, "text": "97.8", "toastText": "97.8" },
+    { "name": "just under the 99 band keeps a tenth", "percent": 98.99, "text": "98.9", "toastText": "98.9" },
+    { "name": "the 99 band starts with hundredths", "percent": 99, "text": "99.00", "toastText": "99.00" },
+    { "name": "a nearly empty drive", "percent": 99.6, "text": "99.60", "toastText": "99.60" },
+    { "name": "the 99 band truncates its hundredths", "percent": 99.648, "text": "99.64", "toastText": "99.64" },
+    { "name": "almost empty never reads 100", "percent": 99.999, "text": "99.99", "toastText": "99.99" },
+    { "name": "one byte used on a petabyte", "percent": 99.9999999999999, "text": "99.99", "toastText": "99.99" },
+    { "name": "an empty drive", "percent": 100, "text": "100", "toastText": "100.0" },
+    { "name": "just over the 5 band stays whole", "percent": 5.01, "text": "5", "toastText": "5.0" },
+    { "name": "under 5 free shows a tenth", "percent": 4.99, "text": "4.9", "toastText": "4.9" },
+    { "name": "the low-space warning's usual figure", "percent": 4.2, "text": "4.2", "toastText": "4.2" },
+    { "name": "under 1 free shows hundredths", "percent": 0.4, "text": "0.40", "toastText": "0.40" },
+    { "name": "a sliver free never reads 0", "percent": 0.001, "text": "0.01", "toastText": "0.01" },
+    { "name": "a full drive", "percent": 0, "text": "0", "toastText": "0.0" }
+  ]
+}

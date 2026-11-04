@@ -17,10 +17,10 @@ use crate::foreign_path::Listed;
 use crate::host::{ForegroundHold, ForegroundLeases, ListingEnd, ListingEvents, OpenedListing, Unregistered};
 use crate::listing_id::ListingId;
 use crate::pipeline::ReadBy;
-use crate::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::stall::{ListingRead, ReadOutcome, StallWatch, read_until_answered};
 use cmdr_fs::benchmark;
 use cmdr_fs::volume::{ListingProgress, VolumeError};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 // ============================================================================
 // Types and state

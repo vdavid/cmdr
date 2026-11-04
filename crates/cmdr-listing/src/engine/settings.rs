@@ -6,8 +6,8 @@ use crate::listing_id::ListingId;
 use crate::operations::PaneMarks;
 use crate::quick_filter::NameFilterResult;
 use crate::quick_filter::OnNoMatch;
-use crate::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::{ListingLookupError, ResortResult};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 use super::Listings;
 

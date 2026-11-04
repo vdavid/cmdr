@@ -261,6 +261,12 @@ engine's fold: `crates/cmdr-listing-wasm/DETAILS.md` § Folder sizes), no AI, no
 demo can't ask it, so `getIcons` answers every id with the app's bundled generic folder or document
 (`static/icons/default-*.png`), through `$app/paths`' `asset()` so they resolve under `/demo`.
 
+- Gotcha: the unanswered fallback answers `null`, which is only right for a void command. A value command left
+  unanswered gets a `null` the app's types say can't happen: `getRecentSearches` did, and the search dialog's render
+  threw on it, so ⌘F flashed the dialog and its boundary closed it. Answer every value command the app asks for.
+- Search: `prepareSearchIndex` refuses (the app's own "index not available" path), with empty recent searches and
+  excludes and no cloud consent, until the index runs in the engine (`docs/specs/demo-index-plan.md`).
+
 ## Writes
 
 - Every write, queue, path, and undo command goes to the real write engine in the WASM module
@@ -320,7 +326,10 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
   sees them, so those commands move to ⌃. Seeded into `shortcuts.json` as `shortcut:<commandId>` keys, the same delta
   the Settings editor writes, so every hint in menus, the palette, and the function bar shows the remapped combo with no
   demo awareness in the shortcut system.
-- `plugins.ts` seeds `settings.json` with onboarding done (a visitor came to try the panes) and the app color on Cmdr
-  gold. The registry default is `system`, and the desktop default stays so; the seed is the demo's only lever. Settings
-  still offers "System theme color", which in the demo is the virtual Mac's accent, the blue `getAccentColor` answers.
-  Since the seed differs from the registry default, App color shows its reset arrow, and reset picks that blue.
+- `plugins.ts` seeds `settings.json` as a user who just finished the current wizard (`onboarding.completed` and
+  `onboarding.upgradeNudgeShown`, the two flags `startup-gates.ts::completeOnboardingWizard` writes): a visitor came to
+  try the panes. The full wizard is no first impression here: step 1 is Full Disk Access, which a browser can't grant,
+  and its Allow path needs a restart. It also seeds the app color on Cmdr gold. The registry default is `system`, and
+  the desktop default stays so; the seed is the demo's only lever. Settings still offers "System theme color", which in
+  the demo is the virtual Mac's accent, the blue `getAccentColor` answers. Since the seed differs from the registry
+  default, App color shows its reset arrow, and reset picks that blue.

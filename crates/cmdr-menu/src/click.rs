@@ -64,7 +64,7 @@ mod tests {
     use crate::ids::{
         SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_NAME_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_ZOOM_IN_ID,
     };
-    use cmdr_listing::{SortColumn, SortOrder};
+    use cmdr_sort::{SortColumn, SortOrder};
 
     /// Every clickable row the bar builds answers, on both platforms: an item or check with no
     /// answer would be a dead row.

@@ -10,7 +10,7 @@ use crate::DirectoryDiffBatch;
 use crate::host::events::StalledOn;
 use crate::host::{ListingEnd, ListingEvents};
 use crate::listing_id::ListingId;
-use crate::sorting::SortColumn;
+use cmdr_sort::SortColumn;
 
 /// Records every report, per kind and in one combined order.
 // DEFAULT-OK: a recorder that has heard nothing yet holds empty lists.

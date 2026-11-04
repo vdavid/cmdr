@@ -4,7 +4,7 @@
     "description": "Body of the persistent in-app warning toast when the startup (boot) disk is low on free space, e.g. 'Your startup disk is running low on space: 4.2 GB free (3.1%).'. 'startup disk' is the macOS term for the boot volume.",
     "placeholders": {
       "freeText": "amount of free space, already formatted with its unit (e.g. 4.2 GB)",
-      "percentText": "free space as a percentage, already formatted to one decimal (e.g. 3.1)"
+      "percentText": "free space as a percentage, already formatted with at least one decimal (e.g. 3.1, or 0.04 below one percent)"
     }
   },
 
@@ -28,7 +28,7 @@
     "description": "Body of the macOS system notification warning of low disk space, e.g. '4.2 GB free (3.1%) on your startup disk.'. 'startup disk' is the macOS term for the boot volume.",
     "placeholders": {
       "freeText": "amount of free space, already formatted with its unit (e.g. 4.2 GB)",
-      "percentText": "free space as a percentage, already formatted to one decimal (e.g. 3.1)"
+      "percentText": "free space as a percentage, already formatted with at least one decimal (e.g. 3.1, or 0.04 below one percent)"
     }
   }
 }

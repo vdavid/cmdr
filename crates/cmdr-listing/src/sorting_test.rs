@@ -8,10 +8,10 @@
 //! directory ranks against the files beside it is `sorting_dir_mode_test`, and
 //! the order names themselves collate in is `collation_test`.
 
-use super::sorting::DirectorySortMode;
 use super::sorting_test_support::{entry_comparator, make_dir_with_recursive_size, make_entry, sort_entries};
 use super::{SortColumn, SortOrder};
 use cmdr_fs::entry::FileEntry;
+use cmdr_sort::DirectorySortMode;
 
 // ============================================================================
 // Natural sorting tests (alphanumeric)

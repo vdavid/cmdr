@@ -23,6 +23,8 @@
          * column: the two sort triggers share the Name track instead.
          */
         showExtensionInName: boolean
+        /** Whether the date column takes a track (a narrow pane drops it; `full-list-column-fit.ts`). */
+        showDateColumn: boolean
         /** Whether the optional Git status column takes a track. */
         gitColumnVisible: boolean
         /** Suppresses the column-width transition for one paint after a nav. */
@@ -51,6 +53,7 @@
         dateColumn,
         dateFallbackNote,
         showExtensionInName,
+        showDateColumn,
         gitColumnVisible,
         skipTransition,
         scrollbarWidth,
@@ -150,21 +153,24 @@
     <!-- One date column: it sorts by (and lights up for) the requested date, and its label
          names the date its cells show, which is Modified in a fallback. The Sort by chevron
          shares its track, left of the caret, and comes first in DOM order so ←/→ walk the
-         row left to right. -->
-    <span class="header-date">
-        <DateSortChevron onOpen={openSortMenu} />
-        <SortableHeader
-            column={dateHeaderSortColumn(sortBy)}
-            {isFocused}
-            {clearsSortLabel}
-            label={tString(headerLabelKey(dateColumn))}
-            fallbackNote={dateFallbackNote}
-            align="right"
-            currentSortColumn={sortBy}
-            currentSortOrder={sortOrder}
-            onClick={sort}
-        />
-    </span>
+         row left to right. A narrow pane drops it with its column; the date sorts stay in
+         the row's right-click Sort by popup. -->
+    {#if showDateColumn}
+        <span class="header-date">
+            <DateSortChevron onOpen={openSortMenu} />
+            <SortableHeader
+                column={dateHeaderSortColumn(sortBy)}
+                {isFocused}
+                {clearsSortLabel}
+                label={tString(headerLabelKey(dateColumn))}
+                fallbackNote={dateFallbackNote}
+                align="right"
+                currentSortColumn={sortBy}
+                currentSortOrder={sortOrder}
+                onClick={sort}
+            />
+        </span>
+    {/if}
 </div>
 
 <style>

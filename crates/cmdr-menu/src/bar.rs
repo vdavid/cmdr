@@ -56,7 +56,7 @@ use crate::spec::{
     SubmenuRole, SubmenuSpec, both, check, cmd_or_ctrl, displayed_item, item, labeled_item, linux_only, macos,
     macos_menu, macos_only, menu, predefined, split, submenu,
 };
-use cmdr_listing::{SortColumn, SortOrder};
+use cmdr_sort::{SortColumn, SortOrder};
 
 /// A View > Sort by row: a check item showing whether the focused pane asked for `role`.
 const fn sort_check(id: &'static str, key: &'static str, accelerator: Accelerator, role: SortCheck) -> Entry {

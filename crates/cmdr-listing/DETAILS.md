@@ -590,7 +590,8 @@ argued for. Everything counted exists for a named caller:
   poller): the ten oracle methods (`authoritative_listing` through `summaries`) and `ListingSummary`.
   `open_listing_paths` is the NFS poller's: the directories one volume's panes show, a typed question rather than a read
   of the `summaries` triage snapshot.
-- **Sorting outside a listing** (search results, the local reader): `SortColumn`, `SortOrder`, `DirectorySortMode`,
+- **Sorting outside a listing** (search results, the local reader): `SortColumn`, `SortOrder`, `DirectorySortMode`
+  (re-exported from `cmdr-sort`, so a crate that only names a sort skips this engine: `crates/cmdr-sort/DETAILS.md`),
   `EffectiveSort`, `SortableEntry`, `entry_comparator`, `sort_entries`, `NameCollator`, and `Listings::collator`.
   `EffectiveSort` is the one input both sort functions take, and `resolve` its only constructor, so a caller outside a
   listing can't sort by a date without stating which dates its rows carry.

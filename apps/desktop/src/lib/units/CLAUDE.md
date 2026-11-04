@@ -17,13 +17,14 @@ code-side rate formatter that bakes in the noun: `'files/s'` once shipped Englis
 ## Module map
 
 - `index.ts`: the public surface. `formatByteSize` reads the user's `appearance.fileSizeFormat`; everything else
-  re-exports from the two leaves.
+  re-exports from the leaves.
 - `byte-size.ts`: the unit math with the base passed in (`formatFileSizeWithFormat`, `formatTieredSize`,
   `formatDriveFigure`, `formatRoundSize`, `unitLabel`, `bytesLabel`, `formatExactBytes`, `formatSizePairWithFormat`,
   `fixedUnitFor`, `dynamicTierIndex`, `baseFor`), plus the `ByteCount` / `BytesPerSecond` brands.
 - `duration.ts`: `formatDuration` (seconds, worded by `#lib/intl/duration-format` in the UI language),
   `formatMilliseconds` (sub-second precision), `formatFilesPerSecond` (the rounding policy plus a locale-formatted
   `text` and the `value` the catalog pluralizes on), and the `Seconds` brand.
+- `free-percent.ts`: `formatFreePercent`, a drive's free percent (banded, truncated).
 
 ## Must-knows
 
@@ -31,13 +32,13 @@ code-side rate formatter that bakes in the noun: `'files/s'` once shipped Englis
   hardcoding base 1024 while labelling the result "KB"/"MB"/"GB", which is how two windows came to show different
   numbers for the same transfer. `cmdr/no-private-unit-format` rejects new ones (binary ladder literals in arithmetic,
   and formatter-shaped names whose body does unit work). Opt out per-line, with a reason.
-- **`<Size bytes>`** (`#lib/ui/Size.svelte`) is the COMPONENT form: same numbers plus the size-tier colors. Prefer it in
-  markup; use `formatByteSize` for tooltips, toasts, and anything composing a string. `<Size bytes rounded>` is the LIVE
-  form — a tenth below ten, whole units above ("1.7 GB", "24 GB") — for the transfer bars only, where the number changes
-  several times a second. ❌ Not whole units at every scale: that printed "2 GB / 2 GB (70%)". A size someone compares
-  or copies keeps its two decimals.
+- **`<Size bytes>`** (`#lib/ui/Size.svelte`) is the COMPONENT form (plus size-tier colors); `formatByteSize` composes
+  strings. `<Size bytes rounded>` is the LIVE form — a tenth below ten, whole units above ("1.7 GB", "24 GB") — for the
+  transfer bars only, where the number changes several times a second. ❌ Not whole units at every scale: that printed
+  "2 GB / 2 GB (70%)". A size someone compares or copies keeps its two decimals.
 - **A drive's free or total space is `formatDriveSize(bytes, driveBytes)`**: one step is about 1/1000 of the drive. ❗
-  `space_poller/readout.rs` mirrors it; `drive-figure-cases.json` tests both.
+  `space_poller/readout.rs` mirrors it; `drive-figure-cases.json` tests both (and `free-percent-cases.json` the
+  percent).
 - **`formatDuration` requires a branded `seconds(n)`**, and rates are branded `bytesPerSecond(n)`. IPC hands you bare
   numbers, so brand at the edge — for `write-progress` that's `transferReadout(event)` in
   `apps/desktop/src/lib/file-operations/progress-readout.ts`. `formatByteSize` takes a plain `number` on purpose: ~40

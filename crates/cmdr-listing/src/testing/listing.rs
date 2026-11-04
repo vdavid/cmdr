@@ -12,8 +12,8 @@ use crate::Listings;
 use crate::cached_listing::CachedListing;
 use crate::listing_id::ListingId;
 use crate::pipeline::{ListedDates, OverlayRows, Prepared};
-use crate::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use cmdr_fs::volume::SupportedDates;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 /// A listing a test put into `engine`, ended on drop.
 ///

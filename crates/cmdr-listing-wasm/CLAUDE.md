@@ -33,6 +33,7 @@ The engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`. Not
   The `cfg` makes a threaded build fail to compile; ❌ never drop it.
 - **The `wasm-bindgen` CLI must equal the locked crate exactly.** The build script reads `Cargo.lock` and installs the
   match; ❌ never pin the CLI anywhere else.
+- No `tauri` in the tree, enforced by `index-crate-isolation`: the demo reaches the app's logic only through the crates.
 
 The decision (target, runtime), the JS API, the build, and where the demo differs from the app: `DETAILS.md`. Read it
 before any non-trivial work here: editing, planning, reorganizing, or advising.

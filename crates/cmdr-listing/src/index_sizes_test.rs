@@ -23,9 +23,9 @@ use super::engine::Listings;
 use super::host::{ListingIndex, ListingVolumes, NoEvents, Unregistered};
 use super::listing_id::ListingId;
 use super::pipeline::{OverlayRows, Prepared};
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::testing::{hold_diffs, pending_changes};
 use cmdr_fs::testing::{wait_until, wait_until_async};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 const DIR: &str = "/sized";
 const FOLDER: &str = "/sized/photos";
