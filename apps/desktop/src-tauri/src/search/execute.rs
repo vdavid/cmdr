@@ -248,7 +248,7 @@ fn search_covered_half(
     } else {
         // The rows are the right rows; they just don't carry a directory's recursive
         // size yet, because that isn't in the entries table.
-        fill_dir_sizes(&mut entries, &loaded.pool);
+        fill_dir_sizes(&mut entries, &loaded.pool)?;
     }
 
     Ok(CoveredHalf {
@@ -324,7 +324,11 @@ fn dir_sizes_for(query: &SearchQuery, pool: &ReadPool) -> Result<Option<engine::
 /// Fill directory entries' sizes from a volume's `dir_stats` (batch lookup by entry
 /// id). Files already carry their size from the entries table; only directories
 /// reach here sizeless.
-fn fill_dir_sizes(entries: &mut [SearchResultEntry], pool: &ReadPool) {
+///
+/// ❌ A read that fails fails the search, never ships the rows sizeless: a folder
+/// with no size reads as "unknown" in the dialog, so a broken read would answer
+/// confidently and wrongly, the same trap [`dir_sizes_for`] refuses.
+fn fill_dir_sizes(entries: &mut [SearchResultEntry], pool: &ReadPool) -> Result<(), String> {
     let dir_indices: Vec<usize> = entries
         .iter()
         .enumerate()
@@ -332,18 +336,19 @@ fn fill_dir_sizes(entries: &mut [SearchResultEntry], pool: &ReadPool) {
         .map(|(i, _)| i)
         .collect();
     if dir_indices.is_empty() {
-        return;
+        return Ok(());
     }
     let entry_ids: Vec<i64> = dir_indices.iter().map(|&i| entries[i].entry_id).collect();
-    let _ = pool.with_conn(|conn| {
-        if let Ok(stats_batch) = IndexStore::get_dir_stats_batch_by_ids(conn, &entry_ids) {
-            for (i, &idx) in dir_indices.iter().enumerate() {
-                if let Some(Some(stats)) = stats_batch.get(i) {
-                    entries[idx].size = Some(stats.recursive_logical_size);
-                }
-            }
+    let stats_batch = pool
+        .with_conn(|conn| IndexStore::get_dir_stats_batch_by_ids(conn, &entry_ids))
+        .map_err(|e| format!("Couldn't read directory sizes: {e}"))?
+        .map_err(|e| format!("Couldn't read directory sizes: {e}"))?;
+    for (i, &idx) in dir_indices.iter().enumerate() {
+        if let Some(Some(stats)) = stats_batch.get(i) {
+            entries[idx].size = Some(stats.recursive_logical_size);
         }
-    });
+    }
+    Ok(())
 }
 
 #[cfg(test)]

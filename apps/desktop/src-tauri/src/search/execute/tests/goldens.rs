@@ -755,3 +755,33 @@ fn the_other_platforms_goldens_hold_under_its_rules() {
     };
     assert_same(&read_goldens(platform), &answers_under(rules));
 }
+
+// ── A source that can't be read ──────────────────────────────────────
+//
+// The arena is loaded, then the database behind it breaks, so the search's own reads
+// (folder sizes, the scope) are what meet the failure. ❌ None of them may answer
+// as if the read had worked: an empty size reads as "unknown", an unresolved scope as
+// a typo, and both are confident wrong answers.
+
+/// The boot corpus, loaded, with `sql` run against its database afterwards.
+fn broken_root(sql: &str) -> (tempfile::TempDir, LoadedVolume) {
+    let dir = tempfile::tempdir().expect("a temp dir for the golden index");
+    let loaded = load(dir.path(), "index-root-golden.db", &root_corpus(), None);
+    let conn = IndexStore::open_write_connection(&dir.path().join("index-root-golden.db")).expect("a write connection");
+    conn.execute_batch(sql).expect("break the golden index");
+    (dir, loaded)
+}
+
+#[test]
+fn a_folder_size_that_cant_be_read_fails_the_search() {
+    let (_dir, loaded) = broken_root("DROP TABLE dir_stats;");
+    let query = SearchQuery {
+        is_directory: Some(true),
+        ..base()
+    };
+    let answer = golden_run(&query, &target_for(Volume::Root, &query), &loaded, &root_weights());
+    assert!(
+        answer.is_err(),
+        "folders with no size, answered as if sized: {answer:?}"
+    );
+}
