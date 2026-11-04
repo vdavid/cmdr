@@ -32,7 +32,7 @@ export interface DemoBackend {
   emit(event: string, payload: unknown, target: EventTarget): void
   /** Attaches a webview to the event fan-out. Returns the detach. */
   attach(webview: DemoWebview): () => void
-  /** The menu bar's state, which the top frame's bar draws (`menu-bar.ts`). */
+  /** The menu bar's state, which the top frame's bar draws (`menu-bar.svelte.ts`). */
   readonly menu: MenuEngineHandle
   /** The secondary windows, which a menu click can close or hand an edit to. */
   readonly windows: WindowHost

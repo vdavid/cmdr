@@ -104,9 +104,9 @@ every window. The demo keeps that shape, so secondary windows share its state, a
 
 ## The menu bar
 
-- **What**: a strip at the top of the page (`menu-bar.ts`, first in `<body>`, so the app's flex column starts under it)
-  that draws the macOS menu bar the desktop builds and sends what its items send. It sets `--cmdr-demo-window-top` on
-  `:root` to its height, for the demo chrome that sits on the main window.
+- **What**: a strip at the top of the page (`menu-bar.svelte.ts`, first in `<body>`, so the app's flex column starts
+  under it) that draws the macOS menu bar the desktop builds and sends what its items send. It sets
+  `--cmdr-demo-window-top` on `:root` to its height, for the demo chrome that sits on the main window.
 - **Decision**: the bar is the desktop's own, through WASM. `crates/cmdr-menu` holds the bar as data and the enabled
   fold; `cmdr-listing-wasm`'s `DemoMenuBar` stores the menu-state pushes the app already sends the native menu
   (`activate_window_menu`, `set_commands_refused_over_dialog`, `update_menu_accelerator`, `update_sort_menu`,
@@ -119,6 +119,11 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   (`browser-shortcuts.ts`) shows: Tab > New tab reads ⌃T.
 - **Clicks**: `execute-command`, `settings-changed`, `view-mode-changed`, and `menu-sort` go to the main window, as
   `handle_menu_event`'s `emit_to("main")`. With a panel in front, Close tab closes it and an edit goes to its frame
+- **Language**: the closed strip redraws the moment the top frame's language lands, from a `$effect` over the catalog's
+  locale-version rune (the file is `.svelte.ts` for it), as `followWindowTitle` keeps a native title in step. Decision:
+  not on the `set_ui_language` push the desktop's menu rebuilds on. Why: Rust reads its own catalog synchronously, but
+  the push reaches the demo before the webview's new catalog chunk loads, so a redraw on it would draw the old words. An
+  open menu is left alone; its next open redraws it.
   (`document.execCommand`, best effort: browsers refuse a scripted paste).
 - **Keys**: ⌃F2 focuses the bar (macOS's own shortcut for it); ←/→, ↑/↓, Enter, Space, Home/End, and Esc walk it as a
   Mac menu does; every key the bar or an open menu has is kept from the app (`stopPropagation` in a window capture
@@ -156,7 +161,7 @@ its title bar (`windows.ts`).
   Panel: close closes the window; zoom fills the desktop under the menu bar (capped at the window's `maxWidth`) and
   back; minimize stays inert, as there's no Dock to restore from. Labels reuse `ui.modalDialog.close`,
   `menu.window.minimize`, and `menu.window.zoom`. The lights aren't Tab stops and never take focus, as on macOS.
-- The main lights sit under the menu bar: their `top` adds `--cmdr-demo-window-top`, which `menu-bar.ts` sets.
+- The main lights sit under the menu bar: their `top` adds `--cmdr-demo-window-top`, which `menu-bar.svelte.ts` sets.
 
 ## Framed by another page
 
