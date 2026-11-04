@@ -7,6 +7,7 @@
 import { mockIPC, mockWindows } from '@tauri-apps/api/mocks'
 import type { Payload } from './answer-types.js'
 import type { DemoBackend, EventTarget } from './backend.js'
+import { installDragRegions } from './drag-regions.js'
 
 /** A listener's target, as `@tauri-apps/api/event`'s `listen` sends it. */
 type ListenTarget = { kind: 'Any' } | { kind: string; label: string }
@@ -102,6 +103,8 @@ export function installWebview(backend: Pick<DemoBackend, 'invoke' | 'emit' | 'a
   mockWindows(label)
   mockIPC((cmd, payload) => invoke(cmd, (payload ?? {}) as Payload))
   const detach = backend.attach({ label, deliver })
+  // Tauri's injected drag script, for this window: the backend moves the panel (`windows.ts`).
+  installDragRegions((cmd, payload) => invoke(cmd, { ...payload, label }))
   // A secondary window's iframe going away is that window closing: stop sending it events.
   window.addEventListener('pagehide', detach)
 }

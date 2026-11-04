@@ -1,9 +1,11 @@
 /**
  * The demo's macOS window buttons (close, minimize, zoom), drawn by the page because no OS draws
- * them. The main window's sit at its top-left over the app's overlay title bar, where the app
- * already leaves them room; each in-page secondary window has its own in its title bar
- * (`windows.ts`). Measured off macOS 27's own rendering; see `DETAILS.md` § Traffic lights.
+ * them. Every window's sit where the app's own `trafficLightPosition` puts them on the desktop
+ * (the main window's from `tauri.conf.json`, a panel's from its creation options, `windows.ts`),
+ * over the overlay title bar the app already leaves them room in. Measured off macOS 27's own
+ * rendering; see `DETAILS.md` § Traffic lights.
  */
+import tauriConfig from '../../../src-tauri/tauri.conf.json'
 import { getMessage } from '#lib/intl/messages.svelte.js'
 
 /** What one window's lights do. A missing action leaves that light inert (`aria-disabled`). */
@@ -23,8 +25,35 @@ export interface TrafficLights {
   setZoomGlyph(glyph: ZoomGlyph): void
 }
 
-/** Where macOS puts the main window's close button: its top-left corner, in CSS pixels. */
-export const MAIN_LIGHTS_OFFSET = { left: 9, top: 8 }
+/** A window's `trafficLightPosition`, in logical points, as the app hands it to Tauri. */
+export interface TrafficLightPosition {
+  x: number
+  y: number
+}
+
+/** The close button's top-left corner inside its window, in CSS pixels. */
+export interface LightsInset {
+  left: number
+  top: number
+}
+
+/**
+ * How far above `trafficLightPosition.y` the close button's top edge lands. Tauri (tao's
+ * `position_traffic_lights`) puts the buttons at `x` and grows the title-bar container to the
+ * button's frame height plus `y`; AppKit keeps the button's frame pinned to the container's
+ * bottom, so the visible 14 pt light ends up 9 pt above `y` (verified on macOS 27,
+ * `screencapture -l` of Cmdr 0.59.0 at 2x, 2026-11-04: main and viewer (9, 17) draw at (9, 8),
+ * Settings (20, 29) at (20, 20)).
+ */
+const LIGHT_TOP_ABOVE_Y = 9
+
+/** Where a window's lights draw, from the `trafficLightPosition` the app gives that window. */
+export function lightsInset(position: TrafficLightPosition): LightsInset {
+  return { left: position.x, top: position.y - LIGHT_TOP_ABOVE_Y }
+}
+
+/** The main window's, from the same `tauri.conf.json` the desktop builds it from. */
+export const MAIN_LIGHTS_INSET = lightsInset(tauriConfig.app.windows[0].trafficLightPosition)
 
 /** A glyph as a CSS mask: one SVG in the 28-unit box the 2x measurements were taken in. */
 function glyph(shapes: string): string {
@@ -56,8 +85,8 @@ const STYLE = `
 }
 .cmdr-demo-lights-main {
   position: fixed;
-  left: ${String(MAIN_LIGHTS_OFFSET.left)}px;
-  top: calc(var(--cmdr-demo-window-top, 0px) + ${String(MAIN_LIGHTS_OFFSET.top)}px);
+  left: ${String(MAIN_LIGHTS_INSET.left)}px;
+  top: calc(var(--cmdr-demo-window-top, 0px) + ${String(MAIN_LIGHTS_INSET.top)}px);
   z-index: var(--z-sticky);
 }
 .cmdr-demo-light {

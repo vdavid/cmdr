@@ -8,7 +8,14 @@
 import { resolve } from '$app/paths'
 import { refuseWith, type Payload } from './answer-types.js'
 import type { EventTarget } from './backend.js'
-import { createMainWindowLights, createTrafficLights, type TrafficLights } from './traffic-lights.js'
+import {
+  createMainWindowLights,
+  createTrafficLights,
+  lightsInset,
+  MAIN_LIGHTS_INSET,
+  type TrafficLightPosition,
+  type TrafficLights,
+} from './traffic-lights.js'
 
 /**
  * The windows that open. Settings and Keyboard shortcuts run on the stores and answers the demo
@@ -18,6 +25,9 @@ const OPENABLE = new Set(['settings', 'shortcuts'])
 
 /** Room the panel leaves around itself inside the viewport, in CSS pixels. */
 const MARGIN = 16
+
+/** How much of a panel's top stays on screen when dragged down: a title bar's height, enough to grab it again. */
+const TITLE_STRIP = 28
 
 type Emit = (event: string, payload: unknown, target: EventTarget) => void
 type Handler = (payload: Payload) => unknown
@@ -57,28 +67,22 @@ const STYLE = `
   flex-direction: column;
   overflow: hidden;
   background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-window);
   box-shadow: var(--shadow-lg);
 }
-.cmdr-demo-window-bar {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--spacing-sm);
-  /* 9px: macOS's inset of the close button from the window's left edge. */
-  padding: var(--spacing-xs) 9px;
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
+/* The hairline sits over the page, as a macOS window's does, so the page and the lights measure
+   from the window's outer edge as on desktop (a layout border would push both 1px in). */
+.cmdr-demo-window::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 1px solid var(--color-border);
+  border-radius: inherit;
+  pointer-events: none;
 }
-.cmdr-demo-window-bar.dragging { cursor: grabbing; }
-.cmdr-demo-window-title { text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cmdr-demo-window .cmdr-demo-lights { justify-self: start; cursor: default; }
+/* Over the page's overlay title bar, as the OS draws them over a Tauri overlay window. */
+.cmdr-demo-window .cmdr-demo-lights { position: absolute; z-index: 1; }
 .cmdr-demo-window iframe { flex: 1; width: 100%; border: 0; background: transparent; }
 .cmdr-demo-window.dragging iframe { pointer-events: none; }
 `
@@ -136,9 +140,11 @@ export function createWindowHost(emit: Emit): WindowHost {
     if (panel.unzoomed) {
       Object.assign(style, panel.unzoomed)
       panel.unzoomed = null
+      panel.lights.setZoomGlyph('enterFullScreen')
       return
     }
     panel.unzoomed = { left: style.left, top: style.top, width: style.width, height: style.height }
+    panel.lights.setZoomGlyph('exitFullScreen')
     const width = Math.min(window.innerWidth - 2 * MARGIN, panel.maxWidth)
     style.width = `${String(width)}px`
     const top = desktopTop()
@@ -183,30 +189,35 @@ export function createWindowHost(emit: Emit): WindowHost {
     emit('tauri://focus', null, { kind: 'label', label: 'main' })
   }
 
-  function makeDraggable(panel: Panel, bar: HTMLElement): void {
-    bar.addEventListener('pointerdown', (down) => {
-      if (down.button !== 0 || (down.target as HTMLElement).closest('button')) return
-      const start = panel.root.getBoundingClientRect()
-      const dx = down.clientX - start.left
-      const dy = down.clientY - start.top
-      bar.setPointerCapture(down.pointerId)
-      panel.root.classList.add('dragging')
-      bar.classList.add('dragging')
-      const move = (event: PointerEvent) => {
-        const rect = panel.root.getBoundingClientRect()
-        // The title bar stays reachable: never dragged past an edge.
-        panel.root.style.left = `${String(clamp(event.clientX - dx, 0, window.innerWidth - rect.width))}px`
-        panel.root.style.top = `${String(clamp(event.clientY - dy, desktopTop(), window.innerHeight - bar.offsetHeight))}px`
+  /**
+   * `start_dragging` from the page's drag region (`drag-regions.ts`): the panel follows the mouse
+   * until it's released, as the OS moves a window. Screen coordinates, since the press was in the
+   * panel's frame and the moves may land in either document (the frame stops taking the pointer
+   * once `dragging` is on, but a browser can keep routing a held button's moves to it).
+   */
+  function startDrag(panel: Panel, screenX: number, screenY: number): void {
+    const start = panel.root.getBoundingClientRect()
+    const windows = [window, panel.iframe.contentWindow].filter((w): w is Window => w !== null)
+    panel.root.classList.add('dragging')
+    const move = (event: MouseEvent) => {
+      const { width } = panel.root.getBoundingClientRect()
+      // The window's top strip stays reachable: never dragged past an edge.
+      const left = clamp(start.left + event.screenX - screenX, 0, window.innerWidth - width)
+      const top = clamp(start.top + event.screenY - screenY, desktopTop(), window.innerHeight - TITLE_STRIP)
+      panel.root.style.left = `${String(left)}px`
+      panel.root.style.top = `${String(top)}px`
+    }
+    const up = () => {
+      for (const w of windows) {
+        w.removeEventListener('mousemove', move)
+        w.removeEventListener('mouseup', up)
       }
-      const up = () => {
-        bar.removeEventListener('pointermove', move)
-        panel.root.classList.remove('dragging')
-        bar.classList.remove('dragging')
-      }
-      bar.addEventListener('pointermove', move)
-      bar.addEventListener('pointerup', up, { once: true })
-      bar.addEventListener('pointercancel', up, { once: true })
-    })
+      panel.root.classList.remove('dragging')
+    }
+    for (const w of windows) {
+      w.addEventListener('mousemove', move)
+      w.addEventListener('mouseup', up)
+    }
   }
 
   function open(options: Payload): void {
@@ -231,13 +242,9 @@ export function createWindowHost(emit: Emit): WindowHost {
     root.style.left = `${String(Math.round((window.innerWidth - width) / 2))}px`
     root.style.top = `${String(top + Math.round((window.innerHeight - top - height) / 2))}px`
 
-    const bar = document.createElement('div')
-    bar.className = 'cmdr-demo-window-bar'
-    const heading = document.createElement('span')
-    heading.className = 'cmdr-demo-window-title'
-    heading.textContent = title
-    // Close closes; zoom fills the viewport and back, as on a resizable window; minimize stays
-    // inert, since a page has no Dock to bring a minimized panel back from.
+    // Close closes; zoom fills the viewport and back, the nearest a panel gets to full screen;
+    // minimize stays inert, since a page has no Dock to bring a minimized panel back from. The
+    // glyph is the full-screen arrows a resizable window's green light shows on macOS 27.
     const lights = createTrafficLights(
       {
         close: () => {
@@ -247,20 +254,24 @@ export function createWindowHost(emit: Emit): WindowHost {
           zoom(panel)
         },
       },
-      'zoom',
+      'enterFullScreen',
     )
-    // The right column mirrors the lights' width, so the title stays centered on the window.
-    bar.append(lights.root, heading, document.createElement('span'))
+    // Every Cmdr window is an overlay window with a hidden title: no title bar of its own, the
+    // lights over the page at its `trafficLightPosition`, and the page's drag strip under them.
+    const inset = options.trafficLightPosition
+      ? lightsInset(options.trafficLightPosition as TrafficLightPosition)
+      : MAIN_LIGHTS_INSET
+    lights.root.style.left = `${String(inset.left)}px`
+    lights.root.style.top = `${String(inset.top)}px`
 
     const iframe = document.createElement('iframe')
     iframe.name = label
     iframe.title = title
     iframe.src = routeUrl(typeof options.url === 'string' ? options.url : '/')
 
-    root.append(bar, iframe)
+    root.append(lights.root, iframe)
     const maxWidth = Number(options.maxWidth) || Infinity
     const panel: Panel = { label, root, iframe, lights, unzoomed: null, maxWidth }
-    makeDraggable(panel, bar)
     root.addEventListener('pointerdown', () => {
       focusPanel(panel)
     })
@@ -307,6 +318,18 @@ export function createWindowHost(emit: Emit): WindowHost {
     'plugin:window|set_focus': (p) => {
       const panel = panels.get(p.label as string)
       if (panel) focusPanel(panel)
+      return null
+    },
+    // A press and a double click on the page's drag region (`drag-regions.ts`). The main window is
+    // the page itself, so its own drag strip moves nothing.
+    'plugin:window|start_dragging': (p) => {
+      const panel = panels.get(p.label as string)
+      if (panel) startDrag(panel, Number(p.screenX), Number(p.screenY))
+      return null
+    },
+    'plugin:window|internal_toggle_maximize': (p) => {
+      const panel = panels.get(p.label as string)
+      if (panel) zoom(panel)
       return null
     },
     // Cmdr's own child-window commands: a window closing itself (Esc in Settings) and being raised.

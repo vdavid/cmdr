@@ -70,9 +70,9 @@ every window. The demo keeps that shape, so secondary windows share its state, a
 ## Secondary windows
 
 - `windows.ts` (`createWindowHost`, owned by the backend) answers the app's window plumbing:
-  `plugin:webview|create_webview_window` opens an in-page panel (a draggable title bar with the window's own title and a
-  close button, around a same-origin `<iframe name="<label>">` of the route under the demo's base), and
-  `get_all_windows`, `close`, `destroy`, `set_focus`, `set_effects`, plus Cmdr's `close_child_window` and
+  `plugin:webview|create_webview_window` opens an in-page panel (a same-origin `<iframe name="<label>">` of the route
+  under the demo's base, with the window's traffic lights over it), and `get_all_windows`, `close`, `destroy`,
+  `set_focus`, `set_effects`, `start_dragging`, `internal_toggle_maximize`, plus Cmdr's `close_child_window` and
   `raise_child_window`, work against those panels. Opening one that's already open raises it, through the app's own
   `getByLabel` + `raiseChildWindow` path.
 - Only `settings` and `shortcuts` open (`OPENABLE`). Every other label (`viewer-*`, `queue`, `debug`) gets Tauri's
@@ -84,12 +84,16 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   remembers what had focus in the main window when a panel took it and puts it back when the last panel closes. It also
   sends `tauri://focus` / `tauri://blur` / `tauri://destroyed` to the windows involved, as Tauri does.
 - Look: plain app tokens (`--color-bg-primary`, `--radius-window`, `--shadow-lg`, `--z-modal`), injected once as a
-  `<style>` under `.cmdr-demo-window`. The title bar holds the window's traffic lights (§ Traffic lights) and its own
-  title. Decision: the lights sit in that bar rather than over the content at Settings' desktop spot (20, 29), since the
-  page inside is an iframe and only the bar can drag the panel; Settings' sidebar keeps its empty traffic-light row
-  under it. It opens centered, sized to the window's width and height clamped to the viewport (fits at 960×600), and
-  can't be dragged past an edge. Opening, dragging, and zoom all keep it under the menu bar (`--cmdr-demo-window-top`),
-  as macOS keeps windows under its own.
+  `<style>` under `.cmdr-demo-window`. Decision: no title bar of the demo's own. Every Cmdr window is an overlay window
+  with a hidden title, so the panel is the page edge to edge, its lights over the page where its `trafficLightPosition`
+  puts them (§ Traffic lights), and the page's own drag strip (`data-tauri-drag-region`) moves it. Why: a demo bar
+  pushed the page down and put the lights in a spot no real window has (David saw them oversized in Settings). The strip
+  works because `drag-regions.ts` ports Tauri's injected `drag.js` into every frame: a press there sends
+  `start_dragging` (plus the press's screen position, which a page needs), and a double click released in place sends
+  `internal_toggle_maximize`, the panel's zoom. The panel follows the mouse in screen coordinates, listening in both its
+  frame and the page, since a held button's moves can stay with the frame. It opens centered, sized to the window's
+  width and height clamped to the viewport (fits at 960×600), and can't be dragged past an edge. Opening, dragging, and
+  zoom all keep it under the menu bar (`--cmdr-demo-window-top`), as macOS keeps windows under its own.
 - Verified in headless Chromium (2026-11-04): ⌘, opens Settings; Esc, ⌃W, and the red light close it, and the cursor
   keys move the main pane's cursor right after; dragging moves and clamps it; F3 on a file opens nothing; a "Size
   colors" change in Settings recolors the main window's sizes through the fan-out. Keyboard shortcuts opens from the
@@ -115,15 +119,15 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   and a click that sent anything other than the native event would need its own handler in the app.
 - **Words**: each row's catalog key through `getMessage`, its `{token}`s replaced literally, as the desktop's
   `menu_t_with` does. The app menu's title is the literal `Cmdr`.
-- **Shortcuts**: the spec's accelerators in a Mac's glyphs, or the pushed rebind, so the browser-safe map
-  (`browser-shortcuts.ts`) shows: Tab > New tab reads ⌃T.
-- **Clicks**: `execute-command`, `settings-changed`, `view-mode-changed`, and `menu-sort` go to the main window, as
-  `handle_menu_event`'s `emit_to("main")`. With a panel in front, Close tab closes it and an edit goes to its frame
 - **Language**: the closed strip redraws the moment the top frame's language lands, from a `$effect` over the catalog's
   locale-version rune (the file is `.svelte.ts` for it), as `followWindowTitle` keeps a native title in step. Decision:
   not on the `set_ui_language` push the desktop's menu rebuilds on. Why: Rust reads its own catalog synchronously, but
   the push reaches the demo before the webview's new catalog chunk loads, so a redraw on it would draw the old words. An
   open menu is left alone; its next open redraws it.
+- **Shortcuts**: the spec's accelerators in a Mac's glyphs, or the pushed rebind, so the browser-safe map
+  (`browser-shortcuts.ts`) shows: Tab > New tab reads ⌃T.
+- **Clicks**: `execute-command`, `settings-changed`, `view-mode-changed`, and `menu-sort` go to the main window, as
+  `handle_menu_event`'s `emit_to("main")`. With a panel in front, Close tab closes it and an edit goes to its frame
   (`document.execCommand`, best effort: browsers refuse a scripted paste).
 - **Keys**: ⌃F2 focuses the bar (macOS's own shortcut for it); ←/→, ↑/↓, Enter, Space, Home/End, and Esc walk it as a
   Mac menu does; every key the bar or an open menu has is kept from the app (`stopPropagation` in a window capture
@@ -137,22 +141,31 @@ every window. The demo keeps that shape, so secondary windows share its state, a
 
 ## Traffic lights
 
-On desktop the OS draws the close, minimize, and zoom buttons over the main window's overlay title bar
-(`trafficLightPosition` in `tauri.conf.json`), and the app only leaves them room. In a browser nothing draws them, so
-`traffic-lights.ts` does, from the demo's own DOM: the main window's as a fixed group at its top-left, each panel's in
-its title bar (`windows.ts`).
+On desktop the OS draws the close, minimize, and zoom buttons over each window's overlay title bar, at the
+`trafficLightPosition` the app gives that window, and the app only leaves them room. In a browser nothing draws them, so
+`traffic-lights.ts` does, from the demo's own DOM: the main window's as a fixed group at its top-left, each panel's
+absolutely placed over its frame (`windows.ts`).
 
-- Measured, not guessed (macOS 27, 2026-11-04): AppKit rendered a standard window's buttons offscreen at 2x in light and
-  dark, key and inactive, hovered and not (a Swift script swizzling the key-appearance and mouse-in-group getters, then
-  `cacheDisplay`), and `screencapture -l` of the running Cmdr gave the main window's placement. Each light is 14 px, on
-  a 23 px pitch; Cmdr's main window puts the close button at (9, 8), a standard window at (9, 9). The fills, rims,
-  glows, and glyph shapes and colors in `STYLE` are sampled from those renders.
+- Placement has one source, the app's own numbers: the main window's `trafficLightPosition` is read from
+  `tauri.conf.json` (imported), and a panel's from the `create_webview_window` options its opener sends (Settings (20,
+  29), Keyboard shortcuts (14, 18), viewer and queue (9, 17), as `LogicalPosition` serializes, `{ x, y }`).
+  `lightsInset` turns one into the close button's corner: `x` as is, `y - 9` for the top (tao grows the title-bar
+  container to the button's frame plus `y`, and AppKit pins the button to the container's bottom).
+- Measured, not guessed (macOS 27.0.1, Cmdr 0.59.0, 2026-11-04): `screencapture -l` of the running app's windows at 2x,
+  the lights' edges found by a pixel scan: main and viewer (9, 17) draw at (9, 8), Settings (20, 29) at (20, 20). Every
+  window's lights are the same size, so the only per-window difference is the inset: 14 px each, on a 23 px pitch (9 px
+  gaps). AppKit also rendered a standard window's buttons offscreen at 2x in light and dark, key and inactive, hovered
+  and not (a Swift script swizzling the key-appearance and mouse-in-group getters, then `cacheDisplay`); the fills,
+  rims, glows, and glyph shapes and colors in `STYLE` are sampled from those renders.
+- Verified against `pnpm build:demo` in headless Chromium at 1x and 2x (2026-11-04): main (9, 8), Settings (20, 20),
+  Keyboard shortcuts (14, 9), each 14 px on a 23 px pitch, measured from the panel's outer edge (its hairline is an
+  overlay, so it doesn't push the page or the lights in); Settings' own drag strip moves its panel.
 - Light: a vertical fill that brightens toward the bottom, a dark rim strongest at the sides, a soft tinted glow below.
   Dark: a bright rim at the top and bottom and a bloom near the bottom, no glow. Inactive: light grey or dark grey with
   the matching rim. Hovering the group lights all three and shows every glyph, even on an inactive window, as macOS
   does.
-- Glyphs: × and −; zoom shows full-screen arrows on the main window (inward ones while full screen) and a plus on a
-  panel, matching AppKit's glyph for a full-screen-capable window and a plain resizable one.
+- Glyphs: × and −; zoom shows full-screen arrows (inward ones while full screen, or while a panel is zoomed), as every
+  Cmdr window is resizable and so full-screen capable, and Settings' real green light shows them.
 - Active state: lit for the key window while the page has focus (`document.hasFocus()`, read a task after `focus` /
   `blur`, since focus moving into a panel's iframe blurs the top window), grey otherwise. The window host tracks the key
   window as it raises and closes panels.
@@ -238,16 +251,6 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
 - Not refused yet: multi-rename (`open_multi_rename` is unanswered, so its dialog fails to open) and tags (`toggle_tags`
   has no error arm). Real file operations in the demo are #929.
 
-## The listing seam
-
-- `listing.ts` (`startListingEngine`) imports the engine module, `await`s its `init()`, and builds one `DemoListing`
-  over `demoEntries` (`{ volumeId, root, entries }`, the shape `crates/cmdr-listing-wasm/src/tree.rs` reads). Loading
-  starts at boot, so the `.wasm` downloads while the app starts; the first listing command waits for it.
-- Routing: the backend tries its TS tables first, then `DemoMenuBar.handles(cmd)`, then `DemoListing.handles(cmd)`, then
-  `unanswered`. So a new engine command (#929) needs no TS change, and a TS answer for an engine command would shadow
-  it.
-- `demo.invoke(cmd, args)` takes the Tauri (snake_case) name and the camelCase IPC args, and resolves or rejects exactly
-  as `invoke` does. `listing.ts` expands `~` in `path` / `paths` first (`demoPath`): the engine has no home folder.
 ## Links
 
 - Every external link the app opens goes through `openExternalUrl` (`plugin:opener|open_url`): About, the feedback
@@ -260,6 +263,16 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
 - Risk: the tab opens a few microtasks after the click (the invoke is a promise chain), which Chromium and Firefox count
   as the same user gesture; a stricter popup blocker may still hold it.
 
+## The listing seam
+
+- `listing.ts` (`startListingEngine`) imports the engine module, `await`s its `init()`, and builds one `DemoListing`
+  over `demoEntries` (`{ volumeId, root, entries }`, the shape `crates/cmdr-listing-wasm/src/tree.rs` reads). Loading
+  starts at boot, so the `.wasm` downloads while the app starts; the first listing command waits for it.
+- Routing: the backend tries its TS tables first, then `DemoMenuBar.handles(cmd)`, then `DemoListing.handles(cmd)`, then
+  `unanswered`. So a new engine command (#929) needs no TS change, and a TS answer for an engine command would shadow
+  it.
+- `demo.invoke(cmd, args)` takes the Tauri (snake_case) name and the camelCase IPC args, and resolves or rejects exactly
+  as `invoke` does. `listing.ts` expands `~` in `path` / `paths` first (`demoPath`): the engine has no home folder.
 - Engine events (`onEvent(name, payload)`, Tauri names) go to the backend's fan-out a task late, in order. Why the
   delay: the in-memory read can finish inside `list_directory_start_streaming`, but the pane expects that command's
   answer before the listing's first event, as Rust's spawned read guarantees.
