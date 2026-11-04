@@ -4,14 +4,22 @@ The website (getcmdr.com) is automatically deployed when changes are pushed to t
 
 ## How it works
 
-1. Push to `main` (or merge a PR)
-2. GitHub Actions runs the `website` job (oxfmt, ESLint, typecheck, build, Playwright, Lighthouse)
+1. Push to `main` (or merge a PR). A change to `apps/website/**` triggers it, and so does a change to what the browser
+   demo at `/demo/` builds from (the desktop frontend, the listing engine's crates, the WASM build script, the Cargo
+   workspace files; the full list is `ci.yml`'s `website` filter).
+2. GitHub Actions runs the `website-demo` job (builds the demo) and then the `website` job (oxfmt, ESLint, typecheck,
+   build with the demo, Playwright, Lighthouse)
 3. If all checks pass, the `deploy-website` job sends a webhook to the server
 4. The server verifies the signature and runs the deploy script:
    - Pulls the latest code
-   - Rebuilds the Docker image, which fetches the live update manifest (`latest.json` of the GitHub release marked
-     "Latest") into the site; a failed fetch fails the build and the old site stays up
+   - Rebuilds the Docker image: the `demo` stage builds the browser demo (Rust to WASM, then the desktop frontend;
+     cached when its sources didn't change), and the site stage fetches the live update manifest (`latest.json` of the
+     GitHub release marked "Latest") into the site. A failed fetch or demo build fails the build, and the old site stays
+     up
    - Restarts the container
+
+The build runs with a fresh `DEPLOY_ID` build arg and never with `--no-cache`, which would also drop the demo's BuildKit
+cache mounts and rebuild its Rust from cold every deploy (`apps/website/DETAILS.md` § Browser demo).
 
 ## Server setup (one-time)
 
@@ -229,8 +237,9 @@ sudo -u deploy-cmdr -i
 cd /opt/cmdr
 git fetch origin main && git reset --hard origin/main
 cd apps/website
-# Build first so the old container keeps serving during the build (avoids ~15s downtime)
-docker compose build --no-cache
+# Build first so the old container keeps serving during the build (avoids ~15s downtime).
+# A fresh DEPLOY_ID refetches the live manifest; `--no-cache` would rebuild the demo's Rust cold.
+docker compose build --build-arg DEPLOY_ID="manual-$(date +%s)"
 docker compose down
 docker compose up -d
 ```

@@ -326,12 +326,35 @@ func desktopAppInputs() []string {
 	)
 }
 
-// websiteInputs mirrors ci.yml's `website` filter.
+// websiteInputs and websiteDemoInputs together mirror ci.yml's `website` filter.
 var websiteInputs = []string{
 	"apps/website/**",
 	".dockerignore",
 	"CHANGELOG.md",
+	"feature-status.json",
 	"pnpm-lock.yaml",
+}
+
+// websiteDemoInputs are what the browser demo at /demo/ builds from (`pnpm build:demo`: the
+// listing engine for wasm32, then the desktop frontend's demo build), for the website checks that
+// see the demo: the Docker build always builds it, and the E2E tests it when dist/ holds it.
+var websiteDemoInputs = []string{
+	"package.json",
+	"apps/desktop/src/**",
+	"apps/desktop/static/**",
+	"apps/desktop/package.json",
+	"apps/desktop/vite.config.js",
+	"apps/desktop/tsconfig.json",
+	"crates/cmdr-listing-wasm/**",
+	"crates/cmdr-listing/**",
+	"crates/cmdr-fs/**",
+	"crates/cmdr-collation/**",
+	"vendor/**",
+	"scripts/build-listing-wasm.sh",
+	"scripts/build-listing-wasm/**",
+	"Cargo.toml",
+	"Cargo.lock",
+	"rust-toolchain.toml",
 }
 
 // apiServerInputs mirrors ci.yml's `api-server` filter.

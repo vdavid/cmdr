@@ -1,0 +1,3 @@
+# The browser demo (/demo/) is the desktop frontend's markup (apps/desktop/src/app.html), copied in by
+# src/plugins/demo.ts, so the desktop's own lint owns it. This config is for the Astro pages.
+dist/demo/

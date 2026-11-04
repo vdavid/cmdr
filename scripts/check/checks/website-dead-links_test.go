@@ -73,6 +73,20 @@ func TestWebsiteDeadLinksFlagsEmptyMissingAndBadAnchor(t *testing.T) {
 	}
 }
 
+// The browser demo is the desktop frontend's build, copied in by `src/plugins/demo.ts`: Vite
+// content-hashes its assets itself (no `?v=`), and the desktop's checks own its markup. A site page
+// linking TO it still resolves against its files.
+func TestWebsiteDeadLinksSkipsTheBrowserDemo(t *testing.T) {
+	distDir := t.TempDir()
+	writeDistPage(t, distDir, "index.html", `<a href="/demo/">demo</a>`)
+	writeDistPage(t, distDir, "demo/index.html", `<link href="/demo/_app/immutable/assets/0.7l93QJKm.css"><a href="/gone/">x</a>`)
+	writeDistFile(t, distDir, "demo/_app/immutable/assets/0.7l93QJKm.css", 10)
+
+	if broken := deadLinksIn(t, distDir); len(broken) != 0 {
+		t.Fatalf("expected the demo to be skipped, got:\n%s", strings.Join(broken, "\n"))
+	}
+}
+
 func TestWebsiteDeadLinksFlagsUnversionedPublicAssets(t *testing.T) {
 	distDir := t.TempDir()
 	// `asset-versions.ts` appends `?v=` to every `public/` asset; one it missed would be cached

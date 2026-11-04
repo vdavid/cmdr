@@ -237,6 +237,7 @@ func TestInputSetsExcludeOnlyAgentDocs(t *testing.T) {
 		"rustFixtureServers":  rustFixtureServerInputs,
 		"svelteInputs":        svelteInputs,
 		"websiteInputs":       websiteInputs,
+		"websiteDemoInputs":   websiteDemoInputs,
 		"apiServerInputs":     apiServerInputs,
 		"dashboardInputs":     dashboardInputs,
 		"goScriptsInputs":     goScriptsInputs,

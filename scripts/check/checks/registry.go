@@ -1381,7 +1381,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🐳 Docker",
 		DependsOn:   nil,
-		Inputs:      websiteInputs,
+		Inputs:      inputs(websiteInputs, websiteDemoInputs),
 		Run:         RunWebsiteDockerBuild,
 	},
 	{
@@ -1454,7 +1454,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
 		DependsOn:   []string{"website-build"},
-		Inputs:      websiteInputs,
+		Inputs:      inputs(websiteInputs, websiteDemoInputs),
 		Run:         RunWebsiteE2E,
 	},
 	{

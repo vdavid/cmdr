@@ -23,6 +23,7 @@
     "i18n:shots:overflow": "pnpm --filter @cmdr/desktop i18n:shots:overflow",
     "icons": "./scripts/regenerate-icons.sh",
     "build:listing-wasm": "./scripts/build-listing-wasm.sh",
+    "build:demo": "./scripts/build-listing-wasm.sh && pnpm --filter @cmdr/desktop build:demo",
     "check": "./scripts/check.sh",
     "land": "./scripts/land.sh"
   },
