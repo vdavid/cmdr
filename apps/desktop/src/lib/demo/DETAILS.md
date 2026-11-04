@@ -99,6 +99,34 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   listening for `focusin` outside the panels and lowering them; nothing in the app reacts badly to the missing events
   today.
 
+## The menu bar
+
+- **What**: a strip at the top of the page (`menu-bar.ts`, first in `<body>`, so the app's flex column starts under it)
+  that draws the macOS menu bar the desktop builds and sends what its items send. It sets `--cmdr-demo-window-top` on
+  `:root` to its height, for the demo chrome that sits on the main window.
+- **Decision**: the bar is the desktop's own, through WASM. `crates/cmdr-menu` holds the bar as data and the enabled
+  fold; `cmdr-listing-wasm`'s `DemoMenuBar` stores the menu-state pushes the app already sends the native menu
+  (`activate_window_menu`, `set_commands_refused_over_dialog`, `update_menu_accelerator`, `update_sort_menu`,
+  `update_view_mode_menu`, `sync_menu_show_hidden`, the live labels) and answers the bar and a click from them
+  (`crates/cmdr-listing-wasm/DETAILS.md` § The JS API). **Why**: a TS copy of the bar would drift on the first new item,
+  and a click that sent anything other than the native event would need its own handler in the app.
+- **Words**: each row's catalog key through `getMessage`, its `{token}`s replaced literally, as the desktop's
+  `menu_t_with` does. The app menu's title is the literal `Cmdr`.
+- **Shortcuts**: the spec's accelerators in a Mac's glyphs, or the pushed rebind, so the browser-safe map
+  (`browser-shortcuts.ts`) shows: Tab > New tab reads ⌃T.
+- **Clicks**: `execute-command`, `settings-changed`, `view-mode-changed`, and `menu-sort` go to the main window, as
+  `handle_menu_event`'s `emit_to("main")`. With a panel in front, Close tab closes it and an edit goes to its frame
+  (`document.execCommand`, best effort: browsers refuse a scripted paste).
+- **Keys**: ⌃F2 focuses the bar (macOS's own shortcut for it); ←/→, ↑/↓, Enter, Space, Home/End, and Esc walk it as a
+  Mac menu does; every key the bar or an open menu has is kept from the app (`stopPropagation` in a window capture
+  listener). A greyed row never picks. OS rows (Services, Hide, Quit, Undo, Minimize) draw greyed.
+- **Look**: the app's glass tokens (`app.css` § Frosted-glass material), sized against macOS 27's bar and an open menu
+  (`menu-bar-style.ts`). A draft David reviews.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-04): View > Show hidden files lists `.zshrc` and the
+  check follows; View > Command palette opens it; Go > Home runs; View > Sort by > Size checks Size once the sort lands;
+  Tab > New tab adds a tab and reads ⌃T; Cmdr > Settings opens its panel, File's items grey while it's in front, and Tab
+  > Close tab closes it; the keyboard path from ⌃F2 reaches the palette; nothing lands in `unanswered`.
+
 ## Framed by another page
 
 The landing page may embed the demo in an iframe. Nothing may assume a full browser window: sizes come from the frame's
@@ -178,8 +206,9 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
 - `listing.ts` (`startListingEngine`) imports the engine module, `await`s its `init()`, and builds one `DemoListing`
   over `demoEntries` (`{ volumeId, root, entries }`, the shape `crates/cmdr-listing-wasm/src/tree.rs` reads). Loading
   starts at boot, so the `.wasm` downloads while the app starts; the first listing command waits for it.
-- Routing: the backend tries its TS tables first, then `DemoListing.handles(cmd)`, then `unanswered`. So a new engine
-  command (#929) needs no TS change, and a TS answer for an engine command would shadow it.
+- Routing: the backend tries its TS tables first, then `DemoMenuBar.handles(cmd)`, then `DemoListing.handles(cmd)`, then
+  `unanswered`. So a new engine command (#929) needs no TS change, and a TS answer for an engine command would shadow
+  it.
 - `demo.invoke(cmd, args)` takes the Tauri (snake_case) name and the camelCase IPC args, and resolves or rejects exactly
   as `invoke` does. `listing.ts` expands `~` in `path` / `paths` first (`demoPath`): the engine has no home folder.
 - Engine events (`onEvent(name, payload)`, Tauri names) go to the backend's fan-out a task late, in order. Why the

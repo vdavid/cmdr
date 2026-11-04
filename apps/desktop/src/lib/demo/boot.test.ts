@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const calls = vi.hoisted(() => ({ created: 0, webviews: [] as [unknown, string][] }))
+const calls = vi.hoisted(() => ({ created: 0, webviews: [] as [unknown, string][], menuBars: 0 }))
 
 vi.mock('./backend.js', () => ({
   createDemoBackend: () => {
     calls.created++
     return { id: 'own backend' }
+  },
+}))
+vi.mock('./menu-bar.js', () => ({
+  installMenuBar: () => {
+    calls.menuBars++
   },
 }))
 vi.mock('./webview.js', () => ({
@@ -20,6 +25,7 @@ type Host = { __cmdrDemoBackend?: unknown }
 afterEach(() => {
   calls.created = 0
   calls.webviews = []
+  calls.menuBars = 0
   delete (window as unknown as Host).__cmdrDemoBackend
   vi.restoreAllMocks()
 })
@@ -35,6 +41,7 @@ describe('boot role', () => {
     expect(calls.created).toBe(1)
     expect(calls.webviews).toEqual([[{ id: 'own backend' }, 'main']])
     expect((window as unknown as Host).__cmdrDemoBackend).toEqual({ id: 'own backend' })
+    expect(calls.menuBars).toBe(1)
   })
 
   it("makes a demo window's iframe a webview over its parent's backend, labeled by its name", () => {
@@ -44,6 +51,8 @@ describe('boot role', () => {
     installDemoBackend()
     expect(calls.created).toBe(0)
     expect(calls.webviews).toEqual([[shared, 'settings']])
+    // One bar per page, in the top frame.
+    expect(calls.menuBars).toBe(0)
   })
 
   it('is its own top when framed by a page with no backend, or by another origin', () => {

@@ -30,9 +30,11 @@ vi.mock('virtual:cmdr-listing-wasm', () => ({
 }))
 
 import { DEMO_HOME, DEMO_ROOT, DEMO_VOLUME_ID } from './demo-tree.js'
+import { _resetEngineModuleForTests } from './engine-module.js'
 import { startListingEngine } from './listing.js'
 
 afterEach(() => {
+  _resetEngineModuleForTests()
   engine.invoked = []
   engine.failInit = false
   vi.useRealTimers()

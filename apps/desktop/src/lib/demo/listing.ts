@@ -6,6 +6,7 @@
  */
 import type { Payload } from './answer-types.js'
 import { DEMO_ROOT, DEMO_VOLUME_ID, demoEntries } from './demo-tree.js'
+import { loadEngineModule } from './engine-module.js'
 import { demoPath } from './volumes.js'
 
 /** The loaded engine, by Tauri command name, as the backend routes to it. */
@@ -36,21 +37,22 @@ function expandPaths(payload: Payload): Payload {
  * before the listing's first event, as Rust's spawned read guarantees.
  */
 export function startListingEngine(sink: ListingEventSink): ListingEngineHandle {
-  const ready = (async () => {
-    const wasm = await import('virtual:cmdr-listing-wasm')
-    await wasm.default()
+  const ready = loadEngineModule().then((wasm) => {
+    if (!wasm) return null
     const tree = { volumeId: DEMO_VOLUME_ID, root: DEMO_ROOT, entries: demoEntries }
-    const engine = new wasm.DemoListing(tree, (event, payload) => {
-      setTimeout(() => {
-        sink(event, payload)
-      }, 0)
-    })
-    return { DemoListing: wasm.DemoListing, engine }
-  })().catch((error: unknown) => {
-    // Once, loudly: without the engine every listing command shows up as unanswered.
-    // eslint-disable-next-line no-console -- the demo's developer reads the devtools console
-    console.error('[demo] the listing engine did not load', error)
-    return null
+    try {
+      const engine = new wasm.DemoListing(tree, (event, payload) => {
+        setTimeout(() => {
+          sink(event, payload)
+        }, 0)
+      })
+      return { DemoListing: wasm.DemoListing, engine }
+    } catch (error) {
+      // The engine refuses a bad tree at construction; every listing command is then unanswered.
+      // eslint-disable-next-line no-console -- the demo's developer reads the devtools console
+      console.error('[demo] the listing engine refused the demo tree', error)
+      return null
+    }
   })
 
   return {

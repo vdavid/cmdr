@@ -89,6 +89,10 @@ const STYLE = `
 export interface WindowHost {
   /** The backend's answer for a window command, or `undefined` for one this host doesn't own. */
   handler(cmd: string): Handler | undefined
+  /** The panel in front, while one is open: what the menu bar's Close tab closes outside the main window. */
+  front(): { label: string; frame: HTMLIFrameElement } | undefined
+  /** Closes the panel labeled `label`, as its close button does. */
+  close(label: string): void
 }
 
 export function createWindowHost(emit: Emit): WindowHost {
@@ -98,7 +102,11 @@ export function createWindowHost(emit: Emit): WindowHost {
   // element while another window is key; the page has one focus, so the main window's is kept here.
   let mainFocus: HTMLElement | null = null
 
+  // The panel raised last, while it's open.
+  let front: Panel | undefined
+
   function focusPanel(panel: Panel): void {
+    front = panel
     const active = document.activeElement
     if (active instanceof HTMLElement && !active.closest('.cmdr-demo-window')) mainFocus = active
     // On top of the other panels, as the raised window is.
@@ -113,6 +121,7 @@ export function createWindowHost(emit: Emit): WindowHost {
     const panel = panels.get(label)
     if (!panel) return
     panels.delete(label)
+    if (front === panel) front = undefined
     emit('tauri://destroyed', null, { kind: 'label', label })
     panel.root.remove()
     // The window under it gets focus back, as macOS hands it to the next window.
@@ -259,5 +268,7 @@ export function createWindowHost(emit: Emit): WindowHost {
 
   return {
     handler: (cmd) => handlers[cmd],
+    front: () => (front ? { label: front.label, frame: front.iframe } : undefined),
+    close,
   }
 }

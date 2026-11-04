@@ -10,6 +10,7 @@
  * embed): a parent without a backend, or a cross-origin one, makes this frame the top.
  */
 import { createDemoBackend, type DemoBackend } from './backend.js'
+import { installMenuBar } from './menu-bar.js'
 import { exposeUnanswered } from './unanswered.js'
 import { installWebview } from './webview.js'
 
@@ -39,6 +40,15 @@ export function installDemoBackend(): void {
   ;(window as unknown as DemoHost).__cmdrDemoBackend = backend
   exposeUnanswered()
   installWebview(backend, 'main')
+  // The macOS menu bar a page doesn't have, over the top frame's main window only: a secondary
+  // window shares the one bar, as on a Mac.
+  installMenuBar({
+    menu: backend.menu,
+    emit: (event, payload, target) => {
+      backend.emit(event, payload, target)
+    },
+    windows: backend.windows,
+  })
 }
 
 if (__CMDR_DEMO_BUILD__) installDemoBackend()

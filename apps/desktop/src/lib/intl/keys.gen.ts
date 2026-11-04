@@ -5341,6 +5341,7 @@ export type MessageKey =
   | 'ui.loadingIcon.loading'
   | 'ui.loadingIcon.loadingBackupIndex'
   | 'ui.loadingIcon.openingFolder'
+  | 'ui.menuBar.label'
   | 'ui.modalDialog.close'
   | 'ui.numberInput.decrease'
   | 'ui.numberInput.increase'

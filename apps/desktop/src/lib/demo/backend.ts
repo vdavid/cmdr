@@ -1,16 +1,17 @@
 /**
- * The demo's one backend per page: every answer, the stores, the WASM listing engine, and the event
- * fan-out to every attached webview. Lives in the top frame; a secondary window (an iframe of its
- * route) reaches it through `window.parent.__cmdrDemoBackend`, the way every Tauri webview talks to
+ * The demo's one backend per page: every answer, the stores, the WASM listing engine, the menu
+ * bar's state (`menu-engine.ts`), and the event fan-out to every attached webview. Lives in the top
+ * frame; a secondary window (an iframe of its route) reaches it through `window.parent.__cmdrDemoBackend`, the way every Tauri webview talks to
  * the one Rust process. See `DETAILS.md` § Backend and webviews.
  */
 import type { AnswerTable, Payload } from './answer-types.js'
 import { appAnswers, rawAnswers, silentCommands } from './answers.js'
 import { startListingEngine, type ListingEngineHandle } from './listing.js'
+import { startMenuEngine, type MenuEngineHandle } from './menu-engine.js'
 import { pluginHandler } from './plugins.js'
 import { noteUnanswered } from './unanswered.js'
 import { volumeAnswers } from './volumes.js'
-import { createWindowHost } from './windows.js'
+import { createWindowHost, type WindowHost } from './windows.js'
 import { writeAnswers } from './writes.js'
 
 type Handler = (payload: Payload) => unknown
@@ -31,6 +32,10 @@ export interface DemoBackend {
   emit(event: string, payload: unknown, target: EventTarget): void
   /** Attaches a webview to the event fan-out. Returns the detach. */
   attach(webview: DemoWebview): () => void
+  /** The menu bar's state, which the top frame's bar draws (`menu-bar.ts`). */
+  readonly menu: MenuEngineHandle
+  /** The secondary windows, which a menu click can close or hand an edit to. */
+  readonly windows: WindowHost
 }
 
 function camelCase(snake: string): string {
@@ -50,11 +55,13 @@ export function createDemoBackend(): DemoBackend {
     emit(event, payload, { kind: 'everyone' })
   })
 
+  const menu = startMenuEngine()
   const windows = createWindowHost(emit)
 
   async function invoke(cmd: string, payload: Payload): Promise<unknown> {
     const handler = windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
     if (handler) return handler(payload)
+    if (await menu.handles(cmd)) return menu.invoke(cmd, payload)
     if (await engine.handles(cmd)) return engine.invoke(cmd, payload)
     return noteUnanswered(cmd, payload)
   }
@@ -62,6 +69,8 @@ export function createDemoBackend(): DemoBackend {
   return {
     invoke,
     emit,
+    menu,
+    windows,
     attach(webview) {
       webviews.add(webview)
       return () => webviews.delete(webview)

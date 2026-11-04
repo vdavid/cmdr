@@ -19,6 +19,20 @@ vi.mock('./listing.js', () => ({
   },
 }))
 
+// A fake menu engine claiming one push, so the test pins that menu pushes reach it, not a TS table.
+vi.mock('./menu-engine.js', () => ({
+  startMenuEngine: () => ({
+    ready: Promise.resolve(true),
+    handles: (cmd: string) => Promise.resolve(cmd === 'activate_window_menu'),
+    invoke: (cmd: string) => {
+      engine.calls.push(`menu:${cmd}`)
+      return Promise.resolve(null)
+    },
+    bar: () => [],
+    click: () => ({ kind: 'nothing' }),
+  }),
+}))
+
 import { createDemoBackend, type DemoWebview, type EventTarget } from './backend.js'
 import { DEMO_VOLUME_ID } from './demo-tree.js'
 
@@ -39,6 +53,12 @@ describe('demo backend', () => {
   it('routes a command only the engine handles to the engine', async () => {
     const backend = createDemoBackend()
     expect(await backend.invoke('get_file_range', { listingId: 'l' })).toBe('engine:get_file_range')
+  })
+
+  it('hands the menu-state pushes to the menu engine', async () => {
+    const backend = createDemoBackend()
+    expect(await backend.invoke('activate_window_menu', { kind: 'main' })).toBeNull()
+    expect(engine.calls).toContain('menu:activate_window_menu')
   })
 
   it('answers plugin, raw, silent, and window commands', async () => {

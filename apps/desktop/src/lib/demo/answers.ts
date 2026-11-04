@@ -27,20 +27,11 @@ const empty = () => []
  */
 export const rawAnswers: Partial<Record<string, (payload: Payload) => unknown>> = {
   configure_ai: (): ConfigureAiOutcome => ({ secretStoreError: null }),
-  // Menu and window syncs that return nothing (the wrappers in `app-state.ts` and `app.html`'s boot guard).
+  // Window syncs that return nothing (the wrappers in `app-state.ts` and `app.html`'s boot guard). The
+  // menu-state pushes aren't here: the menu bar's engine stores them (`menu-engine.ts`).
   show_main_window: nothing,
   set_ui_language: nothing,
-  update_pin_tab_menu: nothing,
-  set_reopen_closed_tab_enabled: nothing,
-  update_view_mode_menu: nothing,
-  set_file_operations_blocked: nothing,
-  set_open_terminal_here_enabled: nothing,
-  set_commands_refused_over_dialog: nothing,
-  sync_menu_show_hidden: nothing,
   update_menu_context: nothing,
-  update_select_same_kind_menu: nothing,
-  update_undo_trash_menu: nothing,
-  activate_window_menu: nothing,
   order_window_to_back: nothing,
 }
 
@@ -53,7 +44,6 @@ export const rawAnswers: Partial<Record<string, (payload: Payload) => unknown>> 
 export const silentCommands: readonly VoidCommand[] = [
   'registerKnownDialogs',
   'setMainWindowVisible',
-  'updateSortMenu',
   'notifyDialogOpened',
   'notifyDialogClosed',
   'setServersViewShown',
@@ -153,8 +143,6 @@ export const appAnswers: AnswerTable = {
   recordVisit: none,
   // A demo panel opens centered every time (`windows.ts`): no remembered rect.
   getChildWindowRect: none,
-  // No native menu to show the accelerator in.
-  updateMenuAccelerator: none,
   // No Finder tags, packages, custom folder icons, or index-backed folder stats on the demo volume.
   enrichTags: () => ({ data: null, timedOut: false }),
   enrichPackages: () => ({ data: null, timedOut: false }),
