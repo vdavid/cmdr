@@ -1,0 +1,36 @@
+name: Free disk space on a small runner
+description: >-
+  Removes the preinstalled SDKs this repo never uses (Android, .NET, GHC, Swift, CodeQL), but only when the root disk
+  starts with less free space than `min-free-gb`. Logs the free space before and after either way. Run it right after
+  checkout.
+
+# Why: GitHub's `ubuntu-latest` fleet isn't uniform. Most runners have a 145 GB root disk (`/dev/root`, 86 GB free at
+# the start), where a cold `desktop-rust` run peaks at ~80 GB used and the reclaim's ~1.5 min buys nothing. But some
+# get a 72 GB disk (`/dev/nvme0n1p1`, image 20261101.64.1), and there `cargo test --no-run` ran out of space mid-link
+# (`rustc-LLVM ERROR: IO failure on output stream: No space left on device`, run 41839837176, 2026-11-04). So the
+# reclaim runs only where it's needed. `docs/tooling/ci.md` § Build caching.
+inputs:
+  min-free-gb:
+    description: Free GB on `/` below which the reclaim runs.
+    default: '60'
+runs:
+  using: composite
+  steps:
+    - name: Free disk space on a small runner
+      shell: bash
+      env:
+        MIN_FREE_GB: ${{ inputs.min-free-gb }}
+      run: |
+        free_gb() { df --output=avail -BG / | tail -1 | tr -dc '0-9'; }
+        before=$(free_gb)
+        df -h /
+        if [ "$before" -ge "$MIN_FREE_GB" ]; then
+          echo "${before} GB free, at least ${MIN_FREE_GB} GB: no reclaim needed."
+          exit 0
+        fi
+        echo "Only ${before} GB free, under ${MIN_FREE_GB} GB: removing the unused preinstalled SDKs."
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift \
+          /opt/hostedtoolcache/CodeQL || true
+        after=$(free_gb)
+        df -h /
+        echo "Freed $((after - before)) GB: ${before} GB -> ${after} GB free."
