@@ -429,6 +429,17 @@ What falls out of doing it ourselves, and what the tests pin:
 - **Below the last rendered row** → the end of that line. **Above the first** → offset 0.
 - **Word wrap**: character boxes run in reading order, so the search compares row (`y`) first and `x` only within a row.
   A wrapped logical line spans several rows and each resolves independently.
+- **A point in the leading snaps onto the nearest visual row and keeps its `x`.** A text `Range`'s rect is the font's
+  ascent + descent, not the line box, so a band above and below every visual row belongs to no character. Decision/Why:
+  `findOffsetByGeometry` searches once, and when no box covers `y` it re-runs at the middle of the nearer of the two
+  rows around the answer (two extra probes, only in the gap). Before, a point in the band between rows N and N+1
+  resolved to the wrap point whatever its `x`, so a drag with both ends there selected nothing and ⌘C copied an empty
+  string (#962: with wrap on, the old "drag within viewport" spec aimed at the middle of `.line-text`, which on an even
+  number of visual rows is exactly that band). It's our geometry, not a WebKitGTK quirk: WebKitGTK reports correct glyph
+  boxes with 4 px of leading between visual rows, and the same drag aimed at the glyphs copied fine (verified on the
+  Linux Docker lane, `ubuntu:26.04` WebKitGTK, E2E red/green, 2026-11-05; the cell also passes on macOS WKWebView).
+  Pinned by `viewer-caret-geometry.test.ts` ("glyph boxes shorter than the row pitch") and the "drag across a wrapped
+  no-space row" cell in `viewer-wordwrap-scroll.spec.ts`.
 - **Offsets stay on codepoint boundaries.** `measure` snaps onto the start of the codepoint covering the probe and
   reports its two-unit span, so an astral character is one box and the caret can't land between its surrogates.
 - **Drag and autoscroll aim through `caretFromPointClamped`.** Past the top or bottom edge it snaps horizontally to that
