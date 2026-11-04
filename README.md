@@ -31,8 +31,8 @@ pain point about the OS was a fast, rock-solid, and pleasant file manager. Cmdr 
 Then there is AI. With LLMs, some really cool features became possible that never were. I'm experimenting with adding
 these features gradually. But the intention is that AI features remain fully **optional**. With AI features off, you've
 got a Total Commander-like experience. With it, you get natural-language search and smart selection, with smart renaming
-and (human-approved!) auto-organization coming soon. AI features are local-by-default, so no files or other data leave
-your Mac.
+and (human-approved!) auto-organization coming soon. AI features are off by default, and both local and cloud AI are
+opt-in, so no files or other data leave your Mac unless you choose to.
 
 Core features:
 

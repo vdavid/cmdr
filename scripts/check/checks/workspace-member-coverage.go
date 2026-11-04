@@ -154,6 +154,7 @@ var rustMetaChecks = map[string]string{
 	"desktop-macos-framework-floor":        "it reads a BUILT binary's Mach-O load commands, which is the linked whole rather than any member's sources; every member that contributes a framework link is in it by construction",
 	"desktop-macos-symbol-floor":           "same reason as its framework sibling: it reads a BUILT binary's imported symbols, so every member that contributes one is in it by construction",
 	"desktop-rust-vendor-patch-applied":    "it reads the root manifest's `[patch.crates-io]` and `Cargo.lock`, which describe the resolved dependency graph rather than any member's sources",
+	"desktop-rust-fuzz-lock-in-step":       "it compares two lockfiles (`Cargo.lock` and `fuzz/Cargo.lock`), which describe resolved dependency graphs rather than any member's sources",
 	"desktop-finder-extension-compile":     "it compiles the Swift Finder extension, which sits outside the Cargo workspace; it reaches no member",
 }
 

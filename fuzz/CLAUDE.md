@@ -17,8 +17,9 @@ per target); CI runs the same lane for 20 minutes per target in `slow-checks.yml
 
 - **Outside the workspace, on the pinned nightly** (`nightlyToolchain` in
   `scripts/check/checks/desktop-rust-cargo-udeps.go`). `Cargo.lock` here is its own; it started as a copy of the root
-  one, so keep the shared crates' versions in step. ❗ The root `[patch.crates-io]` doesn't reach here: a vendored crate
-  a target links (today `rc-zip` and `zip`) needs its line repeated in `Cargo.toml`, or the lane stops building.
+  one, and `pnpm check fuzz-lock-in-step` fails when a crate both resolve drifts (its message names the
+  `cargo update --precise` fix). ❗ The root `[patch.crates-io]` doesn't reach here: a vendored crate a target links
+  (today `rc-zip` and `zip`) needs its line repeated in `Cargo.toml`, or the lane stops building.
 - **Every command passes `-O -a`** (optimized, debug assertions on). Mixing flags rebuilds everything.
 - **`pdf` and `image_headers` MIRROR app code** (`tools/read/inspect/pdf.rs`, `exif.rs`,
   `crates/cmdr-viewer/src/media.rs`): instrumenting the Tauri app isn't worth it. Change those calls, change the target.
