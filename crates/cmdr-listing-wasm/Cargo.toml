@@ -1,0 +1,37 @@
+[package]
+name = "cmdr-listing-wasm"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[lib]
+# `cdylib` is the `.wasm` the website loads; `rlib` lets the native tests link it.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# The real listing engine, and the vocabulary its answers are made of. No app
+# crate: this is the engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`.
+cmdr-listing = { path = "../cmdr-listing" }
+cmdr-fs = { path = "../cmdr-fs" }
+log = "0.4"
+# The wire shapes: every answer and event crosses as the same JSON Tauri sends.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+# The JS API (`src/bindings.rs`) and its `Promise`s.
+wasm-bindgen = "0.2.126"
+wasm-bindgen-futures = "0.4.76"
+# `JSON.parse` / `JSON.stringify` at the boundary, and the event callback's `Function`.
+js-sys = "0.3.103"
+
+[dev-dependencies]
+# The shim's tests run natively, on a real runtime, against the same engine.
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

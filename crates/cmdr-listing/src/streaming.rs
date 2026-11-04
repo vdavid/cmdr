@@ -260,8 +260,8 @@ impl Inner {
         // when filesystem I/O blocks (slow or stuck network drives). A read that goes
         // quiet reports the listing stalled and keeps it alive until the volume
         // answers again (`stall.rs`).
-        let total_start = std::time::Instant::now();
-        let read_start = std::time::Instant::now();
+        let total_start = crate::rt::now();
+        let read_start = crate::rt::now();
         let on_stalled = |stalled_on| events.stalled(&id, stalled_on);
         let on_progress: Arc<dyn Fn(ListingProgress) + Send + Sync> = {
             let events = Arc::clone(events);
@@ -305,7 +305,7 @@ impl Inner {
             entries,
         } = listed;
         let path = listed_path.as_path();
-        let read_dir_time = read_start.elapsed();
+        let read_dir_time = crate::rt::since(read_start);
         benchmark::log_event_value("read_dir COMPLETE, entries", entries.len());
 
         // Emit read-complete event (before sorting/caching) so UI can show "All N files loaded"
@@ -323,7 +323,7 @@ impl Inner {
         // PANE sees that the volume doesn't hold (`pipeline.rs`). A routed volume has
         // no drive index (an archive's inner paths and a git snapshot's paths aren't
         // real FS paths), so enrich and verify are skipped.
-        let enrich_start = std::time::Instant::now();
+        let enrich_start = crate::rt::now();
         let read_by = ReadBy::Volume {
             volume: &volume,
             routed: is_routed,
@@ -332,7 +332,7 @@ impl Inner {
         if !is_routed {
             self.index.verify_directory(volume_id, path);
         }
-        let enrich_ms = enrich_start.elapsed().as_millis();
+        let enrich_ms = crate::rt::since(enrich_start).as_millis();
 
         // Build the listing (it asks the volume seam for its spelling, so before
         // the cache lock), then sort it: the listing resolves the requested column
@@ -350,9 +350,9 @@ impl Inner {
             dir_sort_mode,
         );
         benchmark::log_event("sort START");
-        let sort_start = std::time::Instant::now();
+        let sort_start = crate::rt::now();
         listing.sort_rows(&self.collator());
-        let sort_ms = sort_start.elapsed().as_millis();
+        let sort_ms = crate::rt::since(sort_start).as_millis();
         benchmark::log_event("sort END");
         let effective_sort_by = listing.effective().column();
 
@@ -361,7 +361,7 @@ impl Inner {
         // without this, a cancel arriving between a check and insert would leave a stale
         // entry (listDirectoryEnd would try to remove before the entry exists, then this
         // insert would add it permanently).
-        let cache_write_start = std::time::Instant::now();
+        let cache_write_start = crate::rt::now();
         let cached_path = listing.path.as_path().to_path_buf();
         // The row count comes off the listing's own map, so the number the frontend
         // sizes its scroller with is produced by the same filter every later fetch
@@ -380,7 +380,7 @@ impl Inner {
 
             cache.insert(listing_id.to_string(), listing);
         }
-        let cache_write_ms = cache_write_start.elapsed().as_millis();
+        let cache_write_ms = crate::rt::since(cache_write_start).as_millis();
         if !is_routed {
             self.respell_if_read_by_a_replaced_backend(volume_id, listing_id, path, &volume);
         }
@@ -388,7 +388,7 @@ impl Inner {
         // Whatever a subsystem keeps alive while a pane shows this directory: in
         // Cmdr the change watch first, then the git portal's per-repo watcher.
         // `host/observers.rs`.
-        let watcher_start_t = std::time::Instant::now();
+        let watcher_start_t = crate::rt::now();
         self.listing_opened(&OpenedListing {
             id: &id,
             volume_id,
@@ -397,7 +397,7 @@ impl Inner {
             stored_path: &cached_path,
             engine: self,
         });
-        let watcher_start_ms = watcher_start_t.elapsed().as_millis();
+        let watcher_start_ms = crate::rt::since(watcher_start_t).as_millis();
 
         // Volume root for the event (the FE uses it to decide "at volume root"). For
         // an archive this is the `.zip` path, so the FE breadcrumb renders
@@ -409,7 +409,7 @@ impl Inner {
         let empty_at_volume_root = total_count == 0 && volume_root == path;
 
         // Emit completion event
-        let emit_t = std::time::Instant::now();
+        let emit_t = crate::rt::now();
         events.finished(
             &id,
             ListingEnd::Complete {
@@ -422,8 +422,8 @@ impl Inner {
                 effective_sort_by,
             },
         );
-        let to_complete_emit_ms = emit_t.elapsed().as_millis();
-        let total_ms = total_start.elapsed().as_millis();
+        let to_complete_emit_ms = crate::rt::since(emit_t).as_millis();
+        let total_ms = crate::rt::since(total_start).as_millis();
 
         // Consolidated log for the listing pipeline: INFO, or WARN when the read was
         // slow (`listing_done_level`). Grepable single-line structured record. See

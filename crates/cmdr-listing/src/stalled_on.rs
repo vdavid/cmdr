@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::rt::Runtime;
 use cmdr_fs::volume::{BackendKind, Volume};
-use tokio::runtime::Handle;
 
 use crate::host::MountTable;
 pub use crate::host::events::StalledOn;
@@ -25,7 +25,7 @@ const RESOLVE_TIMEOUT: Duration = Duration::from_millis(500);
 /// is resolved through its symlinks first (`~/nas` → `/Volumes/nas`), off-thread
 /// and bounded by [`RESOLVE_TIMEOUT`].
 pub(crate) async fn stalled_on(
-    runtime: &Handle,
+    runtime: &Runtime,
     mounts: Arc<dyn MountTable>,
     volume: &Arc<dyn Volume>,
     path: &Path,
@@ -39,7 +39,7 @@ pub(crate) async fn stalled_on(
     }
     let path = path.to_path_buf();
     let resolved = runtime.spawn_blocking(move || stalled_on_mount_of(mounts.as_ref(), &resolve_symlinks(&path)));
-    match tokio::time::timeout(RESOLVE_TIMEOUT, resolved).await {
+    match crate::rt::time::timeout(RESOLVE_TIMEOUT, resolved).await {
         Ok(Ok(answer)) => answer,
         // Timed out (the probe sits on a hung mount) or the task panicked.
         _ => StalledOn::Unknown,

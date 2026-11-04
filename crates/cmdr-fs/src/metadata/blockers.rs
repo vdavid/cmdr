@@ -16,6 +16,7 @@ use std::io;
 use std::path::Path;
 
 use super::LandedMetadata;
+#[cfg(not(target_family = "wasm"))]
 use crate::log_private::LogPrivate;
 
 /// What [`clear_blockers`] did to one item.
@@ -199,6 +200,18 @@ impl Drop for OpenedFolder {
 /// a reversal now empties. ❗ The folder isn't removed here: what's opened is put
 /// back by [`OpenedFolder::close`].
 pub fn open_parent_folder(child: &Path) -> ParentOpening {
+    // The browser build has no folder modes to change (`DETAILS.md` § "The browser build").
+    #[cfg(target_family = "wasm")]
+    {
+        let _ = child;
+        ParentOpening::NothingToOpen
+    }
+    #[cfg(not(target_family = "wasm"))]
+    open_host_parent_folder(child)
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn open_host_parent_folder(child: &Path) -> ParentOpening {
     use std::os::unix::fs::PermissionsExt as _;
 
     let Some(folder) = child.parent().filter(|p| !p.as_os_str().is_empty()) else {

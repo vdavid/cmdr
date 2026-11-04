@@ -117,6 +117,7 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr-http", Kind: KindApp, Glob: "crates/cmdr-http/**"},
 	{Pkg: "cmdr-index", Kind: KindApp, Glob: "crates/cmdr-index/**"},
 	{Pkg: "cmdr-listing", Kind: KindApp, Glob: "crates/cmdr-listing/**"},
+	{Pkg: "cmdr-listing-wasm", Kind: KindApp, Glob: "crates/cmdr-listing-wasm/**"},
 	{Pkg: "cmdr-local", Kind: KindApp, Glob: "crates/cmdr-local/**"},
 	{Pkg: "cmdr-media-meta", Kind: KindApp, Glob: "crates/cmdr-media-meta/**"},
 	{Pkg: "cmdr-mtp", Kind: KindApp, Glob: "crates/cmdr-mtp/**"},
@@ -175,7 +176,8 @@ var rustWorkspaceConfigInputs = []string{
 // updater key (`updater/signature.rs` reads `updater-backup.pub`). The security
 // advisory module embeds the committed advisory list (`security_advisories/mod.rs`).
 // The frontend-bridge redaction test reads the marker vocabulary and the shared
-// case table the TS logger is tested against (`redact/fe_bridge_tests.rs`).
+// case table the TS logger is tested against (`redact/fe_bridge_tests.rs`). The browser
+// demo's event drift guard reads the generated bindings (`cmdr-listing-wasm/src/events_test.rs`).
 //
 // A lane carries this whenever its own set covers the tree that does the
 // embedding, which is what `TestRustInputsCoverEveryEmbeddedFile` walks the whole
@@ -186,6 +188,7 @@ var rustWorkspaceConfigInputs = []string{
 var rustEmbeddedInputs = []string{
 	"CHANGELOG.md",
 	"apps/desktop/src/lib/commands/command-ids.ts",
+	"apps/desktop/src/lib/ipc/bindings.ts",
 	"apps/desktop/src/lib/logging/bridge-redaction-cases.json",
 	"apps/desktop/src/lib/logging/log-markers.json",
 	"apps/desktop/src/lib/units/drive-figure-cases.json",

@@ -22,6 +22,7 @@
     "i18n:shots:no-couple": "pnpm --filter @cmdr/desktop i18n:shots:no-couple",
     "i18n:shots:overflow": "pnpm --filter @cmdr/desktop i18n:shots:overflow",
     "icons": "./scripts/regenerate-icons.sh",
+    "build:listing-wasm": "./scripts/build-listing-wasm.sh",
     "check": "./scripts/check.sh",
     "land": "./scripts/land.sh"
   },

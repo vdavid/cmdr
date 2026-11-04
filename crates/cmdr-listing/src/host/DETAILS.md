@@ -19,7 +19,8 @@ Two inputs aren't traits:
 
 - **The runtime**, a `tokio::runtime::Handle` (`ListingsBuilder::runtime`), defaulting to `cmdr-fs`'s fallback runtime,
   as `VolumeHost` does. Every engine spawn goes there: a bare `tokio::spawn` inherits an ambient runtime, and a
-  watcher's OS thread has none.
+  watcher's OS thread has none. The browser build has no `runtime()` to call; it always runs on the page's event loop
+  (`../../DETAILS.md` § "The browser build").
 - **`ScratchVisibility`**, engine STATE the host sets (`Listings::set_scratch_visibility`) and reads back to flip one of
   its two flags. Each operation reads it once, before the cache lock, and passes it down as a `Copy` value.
 

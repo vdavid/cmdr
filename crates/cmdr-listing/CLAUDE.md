@@ -17,7 +17,9 @@ Tauri-free; Cmdr hosts it from `apps/desktop/src-tauri/src/listing_host/`.
 - **The host is a value.** New state is an `Inner` field, ❌ never a `static`. An app concern arrives through a `host`
   seam, called per read or mutation (never per entry) and never under an engine lock. `with_rows` is the one closure run
   under the cache lock; it never re-enters `Listings`. Background loops hold `Inner` weakly, so a dropped engine ends.
-- **Spawn on the engine's runtime**: a bare `tokio::spawn` panics on a watcher's OS thread (banned in `clippy.toml`).
+- **Spawn, sleep, and read the clock through `crate::rt`**: a bare `tokio::spawn` panics on a watcher's OS thread
+  (banned in `clippy.toml`), and a direct `tokio::time` or `std::time::Instant` panics in the browser build.
+  `DETAILS.md` § "The browser build".
 - **Gate test scaffolding on `any(test, feature = "testing")`**, ❌ never `cfg(test)` alone: host tests need it.
 - **Neither a row number nor a path indexes `entries`.** `CachedListing::rows` is the ONLY filter point; by-path callers
   use `index_of_path` / `indices_of_paths`, and a mutating caller resolves BEFORE `entries_mut`, which drops both maps.

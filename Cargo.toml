@@ -9,6 +9,7 @@ members = [
   "crates/cmdr-http",
   "crates/cmdr-index",
   "crates/cmdr-listing",
+  "crates/cmdr-listing-wasm",
   "crates/cmdr-local",
   "crates/cmdr-media-meta",
   "crates/cmdr-mtp",
@@ -85,6 +86,18 @@ inherits = "release"
 lto = false
 debug-assertions = false
 overflow-checks = false
+
+# The browser demo's listing engine (`crates/cmdr-listing-wasm`, built by
+# `scripts/build-listing-wasm.sh`): every byte is a download, so it trades build
+# time for size. Nothing native builds with it.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "s"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+debug = false
+strip = true
 
 # Debug builds carry line tables instead of full DWARF. Panics, `backtrace`, and every log line still
 # resolve to file and line; what's gone is inspecting variables in a debugger, which isn't how we work.
