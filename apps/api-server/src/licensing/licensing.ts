@@ -11,6 +11,7 @@ import {
 } from './license'
 import { manualLicenses } from './manual-licenses'
 import { adminLicenses } from './admin-licenses'
+import { notifySale, saleNotices } from './sale-notices'
 import { sendLicenseEmail, type EmailedLicense } from '../email/license'
 import { sendDeviceCountAlert } from '../email/ops-alerts'
 import { verifyPaddleWebhookMulti } from './paddle'
@@ -398,7 +399,7 @@ licensing.post('/webhook/paddle', async (c) => {
   console.log('Received webhook:', payload.event_type)
 
   try {
-    return await dispatchWebhookEvent(payload, c.env)
+    return await dispatchWebhookEvent(payload, c.env, (work) => scheduleBackground(c, work))
   } catch (error) {
     console.error('Webhook processing failed:', error instanceof Error ? error.message : String(error))
     return c.json({ error: 'Internal server error' }, 500)
@@ -406,13 +407,17 @@ licensing.post('/webhook/paddle', async (c) => {
 })
 
 /** Route a verified webhook to its handler: a purchase mints, an adjustment may revoke, the rest is acknowledged. */
-async function dispatchWebhookEvent(payload: PaddleWebhookPayload, env: Bindings): Promise<Response> {
+async function dispatchWebhookEvent(
+  payload: PaddleWebhookPayload,
+  env: Bindings,
+  background: Background,
+): Promise<Response> {
   if (payload.event_type === 'transaction.completed') {
     if (isSubscriptionFollowUp(payload.data?.origin)) {
       console.log('Subscription follow-up transaction, nothing to issue:', payload.data?.id, payload.data?.origin)
       return Response.json({ status: 'ignored', event: payload.event_type, origin: payload.data?.origin })
     }
-    return await processCompletedTransaction(payload, env)
+    return await processCompletedTransaction(payload, env, background)
   }
   if (payload.event_type === 'adjustment.created' || payload.event_type === 'adjustment.updated') {
     const adjustment = parseAdjustment(payload.data)
@@ -445,7 +450,14 @@ function isSubscriptionFollowUp(origin: string | undefined): boolean {
 }
 
 /** Process a completed Paddle transaction: claim it, mint licenses if needed, email them. */
-async function processCompletedTransaction(payload: PaddleWebhookPayload, env: Bindings): Promise<Response> {
+/** Work that runs after the response is sent (`waitUntil`), so nobody waits on it. */
+type Background = (work: Promise<void>) => Promise<void>
+
+async function processCompletedTransaction(
+  payload: PaddleWebhookPayload,
+  env: Bindings,
+  background: Background,
+): Promise<Response> {
   const purchaseData = extractPurchaseData(payload)
   if (!purchaseData) {
     console.error('Missing customer_id or transaction ID in webhook payload')
@@ -524,6 +536,10 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
   })
 
   await markIssuanceDelivered(env.TELEMETRY_DB, purchaseData.transactionId, new Date())
+
+  // Only now, with the buyer served: the sale notice to David is best-effort and never throws, so it
+  // can't hold up Paddle's 200 or put a fulfilled purchase back up for retry (`sale-notices.ts`).
+  await background(notifySale(env, purchaseData.transactionId).then(() => undefined))
 
   console.log('Licenses sent to:', redactEmail(customer.email), 'type:', licenseType, 'quantity:', shortCodes.length)
   return Response.json({
@@ -661,5 +677,6 @@ async function readStoredLicenses(kv: KVNamespace, shortCodes: string[]): Promis
 // features, mounted here so the licensing area stays one route module from `index.ts`'s point of view.
 licensing.route('/', manualLicenses)
 licensing.route('/', adminLicenses)
+licensing.route('/', saleNotices)
 
 export { licensing }
