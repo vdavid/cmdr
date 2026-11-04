@@ -6,11 +6,11 @@ lands in a typed answer here; the listing commands go to the real listing engine
 
 - `boot.ts`: picks the frame's role. `backend.ts`: the page's one backend (answers, stores, engine, event fan-out).
   `webview.ts`: one frame's `__TAURI_INTERNALS__`, forwarding to the backend and holding its listeners. `windows.ts`:
-  secondary windows as in-page panels (Settings and Keyboard shortcuts; the rest refused).
+  secondary windows as in-page panels (Settings, Keyboard shortcuts, and `viewer-*`; the rest refused).
 - `answers.ts` (app commands), `writes.ts` (every write refused, typed), `volumes.ts`, `plugins.ts` (in-memory
-  `plugin:store`, path, app), `listing.ts` (loads and routes to the WASM engine), `unanswered.ts`
-  (`window.__cmdrDemo.unanswered`).
-- `demo-tree.ts` and `browser-shortcuts.ts`: PLACEHOLDER content David still decides.
+  `plugin:store`, path, app), `listing.ts` (loads and routes to the WASM engine, which answers the viewer too),
+  `demo-contents.ts` (the text files' real bytes), `unanswered.ts` (`window.__cmdrDemo.unanswered`).
+- `demo-tree.ts`, `demo-contents.ts`, and `browser-shortcuts.ts`: PLACEHOLDER content David still decides.
 
 Run: `pnpm dev:demo` or `pnpm build:demo` (into `apps/desktop/build-demo/`, base `/demo`) in `apps/desktop`. Both build
 the WASM engine first.

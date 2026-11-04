@@ -74,7 +74,7 @@ impl Fixture {
             "viewer_open",
             json!({ "path": path, "volumeId": "root", "windowLabel": window, "rows": "raw" }),
         )
-        .unwrap_or_else(|e| panic!("{path} opens: {e}"))
+        .unwrap_or_else(|e| panic!("opening {path}: {e}"))
     }
 }
 

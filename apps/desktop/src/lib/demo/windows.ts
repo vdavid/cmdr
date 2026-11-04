@@ -12,9 +12,15 @@ import type { EventTarget } from './backend.js'
 
 /**
  * The windows that open. Settings and Keyboard shortcuts run on the stores and answers the demo
- * has; the viewer and the queue need backends the demo doesn't have yet, so they're refused.
+ * has, and the file viewer on the WASM engine's viewer (its labels are `viewer-<timestamp>`, several
+ * at once). The queue needs a backend the demo doesn't have yet, so it's refused.
  */
 const OPENABLE = new Set(['settings', 'shortcuts'])
+const OPENABLE_PREFIXES = ['viewer-']
+
+export function isOpenable(label: string): boolean {
+  return OPENABLE.has(label) || OPENABLE_PREFIXES.some((prefix) => label.startsWith(prefix))
+}
 
 /** Room the panel leaves around itself inside the viewport, in CSS pixels. */
 const MARGIN = 16
@@ -91,7 +97,8 @@ export interface WindowHost {
   handler(cmd: string): Handler | undefined
 }
 
-export function createWindowHost(emit: Emit): WindowHost {
+/** `onClosed` hears every panel that closes, after its `tauri://destroyed`, as the app's window-destroyed hook does. */
+export function createWindowHost(emit: Emit, onClosed: (label: string) => void = () => {}): WindowHost {
   const panels = new Map<string, Panel>()
   let styled = false
   // What had focus in the main window when a panel took it. A native window keeps its focused
@@ -114,6 +121,7 @@ export function createWindowHost(emit: Emit): WindowHost {
     if (!panel) return
     panels.delete(label)
     emit('tauri://destroyed', null, { kind: 'label', label })
+    onClosed(label)
     panel.root.remove()
     // The window under it gets focus back, as macOS hands it to the next window.
     const next = [...panels.values()].pop()
@@ -222,7 +230,7 @@ export function createWindowHost(emit: Emit): WindowHost {
       const options = p.options as Payload
       const label = options.label as string
       // Tauri's refusal is a string, and it reaches the opener as `tauri://error`.
-      if (!OPENABLE.has(label)) refuseWith(`The ${label} window isn't in the demo`)
+      if (!isOpenable(label)) refuseWith(`The ${label} window isn't in the demo`)
       if (panels.has(label)) refuseWith(`A window labeled ${label} already exists`)
       open(options)
       return null

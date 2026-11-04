@@ -2,12 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 // A fake engine: claims two commands, one of which a TS table also answers, to pin the order.
 const engine = vi.hoisted(() => ({
-  sink: undefined as ((event: string, payload: unknown) => void) | undefined,
+  sink: undefined as ((event: string, payload: unknown, target?: string) => void) | undefined,
   calls: [] as string[],
+  closedWindows: [] as string[],
 }))
 
 vi.mock('./listing.js', () => ({
-  startListingEngine: (sink: (event: string, payload: unknown) => void) => {
+  startListingEngine: (sink: (event: string, payload: unknown, target?: string) => void) => {
     engine.sink = sink
     return {
       handles: (cmd: string) => Promise.resolve(cmd === 'get_file_range' || cmd === 'get_default_volume_id'),
@@ -15,6 +16,7 @@ vi.mock('./listing.js', () => ({
         engine.calls.push(cmd)
         return Promise.resolve(`engine:${cmd}`)
       },
+      closeViewerWindow: (label: string) => engine.closedWindows.push(label),
     }
   },
 }))
@@ -71,5 +73,29 @@ describe('demo backend', () => {
     backend.emit('later', null, { kind: 'everyone' })
     expect(settings.heard).toHaveLength(2)
     expect(main.heard).toHaveLength(3)
+  })
+
+  it('sends an engine event with a target to that window only, and keeps its own notices', () => {
+    const backend = createDemoBackend()
+    const viewer = fakeWebview('viewer-1')
+    backend.attach(viewer.webview)
+    const opened = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+    engine.sink?.('viewer-media-load', { token: 't' }, 'viewer-1')
+    engine.sink?.('demo://open-url', { url: 'https://getcmdr.com/' })
+    engine.sink?.('demo://media-token-dropped', { token: 't' })
+    expect(viewer.heard).toEqual([['viewer-media-load', { token: 't' }, { kind: 'label', label: 'viewer-1' }]])
+    expect(opened).toHaveBeenCalledWith('https://getcmdr.com/', '_blank', 'noopener')
+    opened.mockRestore()
+  })
+
+  it("frees a viewer window's sessions when its panel closes", async () => {
+    const backend = createDemoBackend()
+    await backend.invoke('plugin:webview|create_webview_window', {
+      options: { label: 'viewer-9', url: '/viewer?path=x', title: 'x' },
+    })
+    await backend.invoke('close_child_window', { label: 'viewer-9' })
+    expect(engine.closedWindows).toContain('viewer-9')
+    document.querySelector('.cmdr-demo-window')?.remove()
   })
 })

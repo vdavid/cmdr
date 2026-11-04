@@ -75,9 +75,19 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   `get_all_windows`, `close`, `destroy`, `set_focus`, `set_effects`, plus Cmdr's `close_child_window` and
   `raise_child_window`, work against those panels. Opening one that's already open raises it, through the app's own
   `getByLabel` + `raiseChildWindow` path.
-- Only `settings` and `shortcuts` open (`OPENABLE`). Every other label (`viewer-*`, `queue`, `debug`) gets Tauri's
-  refusal: the creation promise rejects with a string, which reaches the opener as `tauri://error`, so the app's own
-  failure handling runs and no panel appears. They need backends the demo doesn't have yet.
+- `settings`, `shortcuts`, and every `viewer-*` label open (`isOpenable`; the viewer's labels are `viewer-<timestamp>`,
+  several at once). Every other label (`queue`, `debug`) gets Tauri's refusal: the creation promise rejects with a
+  string, which reaches the opener as `tauri://error`, so the app's own failure handling runs and no panel appears. They
+  need backends the demo doesn't have yet.
+- The viewer runs on the WASM engine's viewer (`crates/cmdr-listing-wasm/src/viewer.rs`), so the route is unmodified:
+  its commands route to the engine like the listing's, its native-menu plumbing (`viewer_setup_menu`,
+  `viewer_set_word_wrap`, `viewer_set_search_input_focused`, `viewer_set_history_state`) is silent, and a closing panel
+  calls the engine's `closeViewerWindow` (the app's window-destroyed hook), freeing its sessions and media tokens. An
+  engine event with a target (`viewer-media-load`) reaches that window only. The engine's `demo://open-url` notice opens
+  a followed web link in a new tab; `demo://media-token-dropped` never reaches a listener.
+- Verified in headless Chromium (2026-11-04, local `build:demo`): F3 on `notes.md` renders its Markdown; text mode, ⌘F
+  search with its match count, hex, and a 38 MB generated `Cmdr.dmg` in streaming text all work, and Esc closes the
+  panel, with `__cmdrDemo.unanswered` empty throughout.
 - Keys: Esc is the window's own (Settings calls `close_child_window`); ⌘W is the native menu's Close Window, which the
   browser keeps for its tab, so the panel takes ⌃W, the demo's browser-safe stand-in for ⌘W (`browser-shortcuts.ts`).
 - Focus: a native window keeps its focused element while another window is key, but a page has one focus, so the host
@@ -88,10 +98,10 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   close button's label. It opens centered, sized to the window's width and height clamped to the viewport (fits at
   960×600), and can't be dragged past an edge.
 - Verified in headless Chromium (2026-11-04): ⌘, opens Settings; Esc, ⌃W, and the close button close it, and the cursor
-  keys move the main pane's cursor right after; dragging moves and clamps it; F3 on a file opens nothing; a "Size
-  colors" change in Settings recolors the main window's sizes through the fan-out. Keyboard shortcuts opens from the
-  command palette, closes with Esc, and its "Edit shortcuts" link opens Settings at that section as a second panel (a
-  child window opening another through the shared backend).
+  keys move the main pane's cursor right after; dragging moves and clamps it; a "Size colors" change in Settings
+  recolors the main window's sizes through the fan-out. Keyboard shortcuts opens from the command palette, closes with
+  Esc, and its "Edit shortcuts" link opens Settings at that section as a second panel (a child window opening another
+  through the shared backend).
 - The production CSP (`apps/website/nginx-demo-security-headers.conf`) needs `frame-src 'self'` for the panels: any
   stricter `frame-src` blocks their iframes.
 - Known gap: clicking the main window while a panel is open moves DOM focus there but sends no `tauri://focus` /

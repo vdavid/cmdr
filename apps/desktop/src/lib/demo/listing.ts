@@ -5,6 +5,7 @@
  * `DETAILS.md` § The listing seam.
  */
 import type { Payload } from './answer-types.js'
+import { demoContents } from './demo-contents.js'
 import { DEMO_ROOT, DEMO_VOLUME_ID, demoEntries } from './demo-tree.js'
 import { demoPath } from './volumes.js'
 
@@ -14,10 +15,12 @@ export interface ListingEngineHandle {
   handles(cmd: string): Promise<boolean>
   /** Answers like `invoke`: resolves with the answer, rejects with the typed error value. */
   invoke(cmd: string, payload: Payload): Promise<unknown>
+  /** Frees the viewer sessions (and media tokens) of the window `label`, once it closed. */
+  closeViewerWindow(label: string): void
 }
 
-/** Where the engine's events go: a Tauri event name and its payload. */
-export type ListingEventSink = (event: string, payload: unknown) => void
+/** Where the engine's events go: a Tauri event name, its payload, and the window label an `emit_to` names. */
+export type ListingEventSink = (event: string, payload: unknown, target?: string) => void
 
 /** The engine's view of a path: `~` expanded (it has no home folder), no trailing slash. */
 function expandPaths(payload: Payload): Payload {
@@ -40,11 +43,15 @@ export function startListingEngine(sink: ListingEventSink): ListingEngineHandle 
     const wasm = await import('virtual:cmdr-listing-wasm')
     await wasm.default()
     const tree = { volumeId: DEMO_VOLUME_ID, root: DEMO_ROOT, entries: demoEntries }
-    const engine = new wasm.DemoListing(tree, (event, payload) => {
-      setTimeout(() => {
-        sink(event, payload)
-      }, 0)
-    })
+    const engine = new wasm.DemoListing(
+      tree,
+      (event, payload, target) => {
+        setTimeout(() => {
+          sink(event, payload, target)
+        }, 0)
+      },
+      demoContents(),
+    )
     return { DemoListing: wasm.DemoListing, engine }
   })().catch((error: unknown) => {
     // Once, loudly: without the engine every listing command shows up as unanswered.
@@ -59,6 +66,9 @@ export function startListingEngine(sink: ListingEventSink): ListingEngineHandle 
       const loaded = await ready
       if (!loaded) throw new Error(`[demo] the listing engine did not load, so it can't answer ${cmd}`)
       return loaded.engine.invoke(cmd, expandPaths(payload))
+    },
+    closeViewerWindow: (label) => {
+      void ready.then((loaded) => loaded?.engine.closeViewerWindow(label))
     },
   }
 }

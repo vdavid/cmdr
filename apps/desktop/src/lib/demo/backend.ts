@@ -33,6 +33,17 @@ export interface DemoBackend {
   attach(webview: DemoWebview): () => void
 }
 
+/** The engine's own notices, which no Tauri listener knows (`crates/cmdr-listing-wasm/src/viewer.rs`). */
+const DEMO_EVENT_PREFIX = 'demo://'
+
+/** What the page does for an engine notice: open a followed web link, or revoke a dropped token's URL. */
+function onEngineNotice(event: string, payload: unknown): void {
+  if (event === 'demo://open-url') {
+    const { url } = payload as { url: string }
+    window.open(url, '_blank', 'noopener')
+  }
+}
+
 function camelCase(snake: string): string {
   return snake.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())
 }
@@ -46,11 +57,18 @@ export function createDemoBackend(): DemoBackend {
 
   const silent: AnswerTable = Object.fromEntries(silentCommands.map((name) => [name, () => undefined]))
   const answers = { ...silent, ...appAnswers, ...volumeAnswers, ...writeAnswers } as Record<string, Handler | undefined>
-  const engine: ListingEngineHandle = startListingEngine((event, payload) => {
-    emit(event, payload, { kind: 'everyone' })
+  const engine: ListingEngineHandle = startListingEngine((event, payload, target) => {
+    if (event.startsWith(DEMO_EVENT_PREFIX)) {
+      onEngineNotice(event, payload)
+      return
+    }
+    emit(event, payload, target === undefined ? { kind: 'everyone' } : { kind: 'label', label: target })
   })
 
-  const windows = createWindowHost(emit)
+  // A closed viewer panel frees its sessions, as the app's window-destroyed hook does.
+  const windows = createWindowHost(emit, (label) => {
+    engine.closeViewerWindow(label)
+  })
 
   async function invoke(cmd: string, payload: Payload): Promise<unknown> {
     const handler = windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
