@@ -38,6 +38,11 @@ pub struct ViewerHost {
     pub analytics: Arc<dyn analytics::ViewerAnalytics>,
     pub opener: Arc<dyn opener::LinkOpener>,
     pub log_display: LogDisplay,
+    /// Whether a file a volume doesn't open may open through `std::fs` or a pull instead.
+    /// False for a host with no local files (the browser): there a volume's open error is
+    /// the answer, never the `NotFound` an absent local file would give, and a volume that
+    /// holds no reader is read through its `read_range`.
+    pub local_files: bool,
 }
 
 impl ViewerHost {
@@ -51,6 +56,7 @@ impl ViewerHost {
             events: Arc::new(events::NoEvents),
             analytics: Arc::new(analytics::NoAnalytics),
             opener: Arc::new(opener::NoOpener),
+            local_files: true,
             log_display: as_stored,
         }
     }

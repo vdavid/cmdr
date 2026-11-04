@@ -111,9 +111,10 @@ clock read compiles there and then panics, which only a smoke run against the re
   search there; demo files are small enough that a search runs to the end.
 - **The bridge polls once** (`bridge::poll_once`): an in-memory volume's unpaced read is ready on its first poll; one
   that isn't answers `VolumeError::NotSupported`, never a hang.
-- **No OS fallback** (`origin::HAS_OS_FALLBACK`): a volume's open error is the answer (never the `NotFound` an absent
-  local file would give, since `exists()` is always false there), a volume with no held reader reads through its
-  `read_range`, and a file no volume serves is `NotSupported`. A local file's positioned read is a typed refusal.
+- **No OS fallback** (`ViewerHost::local_files`, false in the demo): a volume's open error is the answer (never the
+  `NotFound` an absent local file would give, since `exists()` is always false there), a volume with no held reader
+  reads through its `read_range`, and a file no volume serves is `NotSupported`. A local file's positioned read is a
+  typed refusal.
 - **No watcher**: `watcher.rs` is native-only (`WatcherEvent` lives in `watcher_event.rs` so sessions build without it).
 - **Markdown paths**: `url`'s path conversions don't exist there, so `markdown_links::text_urls` builds the same URLs
   from the path's text; `markdown_links_test.rs` pins both pairs to the same answers.

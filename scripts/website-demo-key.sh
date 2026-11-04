@@ -31,6 +31,7 @@ paths=(
   crates/cmdr-fs
   crates/cmdr-collation
   crates/cmdr-brief-columns
+  crates/cmdr-viewer
   vendor
   scripts/build-listing-wasm.sh
   scripts/build-listing-wasm

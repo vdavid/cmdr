@@ -1763,6 +1763,7 @@ dependencies = [
  "cmdr-brief-columns",
  "cmdr-fs",
  "cmdr-listing",
+ "cmdr-viewer",
  "js-sys",
  "log",
  "serde",

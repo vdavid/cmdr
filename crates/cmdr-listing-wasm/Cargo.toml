@@ -23,6 +23,8 @@ cmdr-fs = { path = "../cmdr-fs" }
 # Brief mode's column widths and the font metrics the page measures for them,
 # the same code the desktop's commands run.
 cmdr-brief-columns = { path = "../cmdr-brief-columns" }
+# The file viewer's core, over the same volume, answering the viewer's commands.
+cmdr-viewer = { path = "../cmdr-viewer" }
 log = "0.4"
 # The wire shapes: every answer and event crosses as the same JSON Tauri sends.
 serde = { version = "1", features = ["derive"] }
@@ -36,5 +38,7 @@ wasm-bindgen-futures = "0.4.76"
 js-sys = "0.3.103"
 
 [dev-dependencies]
+# `wait_until`, for the viewer tests' native search thread.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # The shim's tests run natively, on a real runtime, against the same engine.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

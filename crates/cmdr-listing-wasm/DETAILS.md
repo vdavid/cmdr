@@ -39,12 +39,19 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
 
 - `default(init?)`: the glue's initializer. In a page `await init()` fetches `cmdr_listing_wasm_bg.wasm` next to the
   glue; Node passes `{ module_or_path: bytes }`.
-- `new DemoListing(tree, onEvent)`: `tree` is
+- `new DemoListing(tree, onEvent, contents?)`: `tree` is
   `{ volumeId, root, entries: [{ path, kind: "file" | "dir" | "symlink", size?, modifiedMs?, createdMs?, symlinkTarget? }] }`,
-  every parent folder listed. Throws on a bad tree (a relative path, a duplicate, a missing parent).
-  `onEvent(name: string, payload: unknown)` hears every event by its Tauri name: `listing-opening`, `listing-progress`,
-  `listing-read-complete`, `listing-complete`, `listing-error`, `listing-cancelled`, `listing-stalled`,
-  `directory-diff`, `listing-respelled`, `directory-deleted`.
+  every parent folder listed. Throws on a bad tree (a relative path, a duplicate, a missing parent). `contents` is
+  `{ [path]: Uint8Array }`: those files' real bytes (and sizes), crossing as bytes, never JSON numbers; every other file
+  reads bytes generated from its path. `onEvent(name: string, payload: unknown, target?: string)` hears every event by
+  its Tauri name: `listing-opening`, `listing-progress`, `listing-read-complete`, `listing-complete`, `listing-error`,
+  `listing-cancelled`, `listing-stalled`, `directory-diff`, `listing-respelled`, `directory-deleted`, and the viewer's
+  `viewer-media-load`, the one with a `target` (the window label the app's `emit_to` names). Two demo-only events:
+  `demo://media-token-dropped` `{ token }` (revoke that token's `blob:` URL) and `demo://open-url` `{ url }` (a followed
+  web or mail link).
+- `demo.mediaBody(token, windowLabel)`: a viewer media token's `{ mime, bytes: Uint8Array }`, or `undefined` (the app's
+  404). That window hears `viewer-media-load` `Done`. `demo.closeViewerWindow(windowLabel)`: frees the window's sessions
+  and tokens, the app's `Destroyed` path.
 - `demo.invoke(command: string, args: object): Promise<unknown>`: a listing command by its Tauri (snake_case) name with
   its camelCase args. Resolves with the command's answer, rejects with its serialized error
   (`{ type: "gone", listingId }`), or a string for args that don't parse or a command it doesn't answer.
@@ -97,3 +104,8 @@ tree lists as a folder (as on disk).
 - **Owners show as empty, permissions are fixed**, and nothing reads tags, packages, index sizes, or git status.
 - **No writes**: the engine answers listing, Brief-width, and font-metrics commands only. Writes (copy, move, rename,
   create) are #929.
+- **The viewer** (`viewer.rs`): every call runs inline, with none of the app's 2 s timeouts or stall watches (an
+  in-memory read can't hang). No LineIndex upgrade, so a big file keeps its estimated row count; a search runs to the
+  end inside `viewer_search_start` and can't be cancelled midway; no watcher, so tail mode never sees a change.
+  `viewer_write_range_to_file` refuses with `destinationIsReadOnly`; web pictures in a Markdown document never load (the
+  page reaches no network). Why each: `crates/cmdr-viewer/DETAILS.md` § "The browser build".

@@ -18,6 +18,7 @@ pub mod events;
 #[cfg(target_family = "wasm")]
 mod rt_self_test;
 pub mod tree;
+pub mod viewer;
 
 #[cfg(test)]
 mod commands_test;
@@ -25,3 +26,5 @@ mod commands_test;
 mod events_test;
 #[cfg(test)]
 mod tree_test;
+#[cfg(test)]
+mod viewer_test;

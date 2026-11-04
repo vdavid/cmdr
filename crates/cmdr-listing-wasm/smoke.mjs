@@ -7,6 +7,8 @@ import { readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { smokeViewer } from './smoke-viewer.mjs'
+
 const pkg = resolve(process.argv[2] ?? 'pkg')
 const glue = await import(pathToFileURL(join(pkg, 'cmdr_listing_wasm.js')).href)
 await glue.default({ module_or_path: await readFile(join(pkg, 'cmdr_listing_wasm_bg.wasm')) })
@@ -105,6 +107,7 @@ try {
   // The runtime seam's browser half: task sets, aborts, macrotask yields, timers, the wall clock.
   const rtSummary = await glue.rtSelfTest(Date.now())
   console.log(`listing-wasm smoke: ${rtSummary}`)
+  console.log(`listing-wasm smoke: ${await smokeViewer(glue, fail)}`)
 } catch (error) {
   fail(error?.stack ?? String(error))
 }

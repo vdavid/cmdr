@@ -109,6 +109,14 @@ fn every_event_matches_the_generated_bindings() {
         batches: Vec::new(),
     };
     assert_matches("directory-diff", diff);
+    // The viewer's media progress: the core's fact goes out as is (`viewer.rs`).
+    let load = cmdr_viewer::MediaLoad {
+        token: String::new(),
+        stage: cmdr_viewer::MediaLoadStage::Done,
+        bytes_done: 0,
+        bytes_total: 0,
+    };
+    assert_matches(crate::viewer::VIEWER_MEDIA_LOAD, load);
     for event in ["listing-respelled", "directory-deleted"] {
         assert_matches(
             event,

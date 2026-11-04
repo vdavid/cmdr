@@ -26,6 +26,7 @@ use serde_json::Value;
 
 use crate::events::{DemoEvents, EventSink, ListingPathEvent};
 use crate::tree::{DemoTree, TreeError};
+use crate::viewer::{DemoViewer, VIEWER_COMMANDS};
 
 /// Every command [`Demo::invoke`] answers, by its Tauri name.
 pub const COMMANDS: &[&str] = &[
@@ -64,6 +65,9 @@ pub struct Demo {
     /// The page's measured fonts, in memory only: the desktop's disk cache has no
     /// counterpart, so a reload measures again.
     fonts: Arc<FontMetricsStore>,
+    /// The file viewer over the same volume, so a file the listing shows is the file
+    /// the viewer opens (`viewer.rs`).
+    viewer: DemoViewer,
 }
 
 impl Demo {
@@ -71,6 +75,12 @@ impl Demo {
     pub fn new(tree: DemoTree, sink: Arc<dyn EventSink>) -> Result<Self, TreeError> {
         let volume_id = tree.volume_id.clone();
         let volume = tree.into_volume()?;
+        let viewer = DemoViewer::new(
+            volume_id.clone(),
+            Arc::clone(&volume),
+            Arc::clone(&sink),
+            page_runtime(),
+        );
         let events = Arc::new(DemoEvents::new(sink));
         let volumes = Arc::new(OneVolume { volume_id, volume });
         let listings = Listings::builder(volumes, Arc::clone(&events) as _).build();
@@ -79,12 +89,23 @@ impl Demo {
             listings,
             events,
             fonts: Arc::new(FontMetricsStore::new()),
+            viewer,
         })
     }
 
     /// Whether [`Demo::invoke`] answers `command`.
     pub fn handles(command: &str) -> bool {
-        COMMANDS.contains(&command)
+        COMMANDS.contains(&command) || DemoViewer::handles(command)
+    }
+
+    /// Every command [`Demo::invoke`] answers.
+    pub fn commands() -> impl Iterator<Item = &'static str> {
+        COMMANDS.iter().chain(VIEWER_COMMANDS).copied()
+    }
+
+    /// The file viewer over the demo's volume.
+    pub fn viewer(&self) -> &DemoViewer {
+        &self.viewer
     }
 
     /// Runs `command` with Tauri-style `args` (camelCase keys).
@@ -268,6 +289,7 @@ impl Demo {
                 let query: BriefColumnsQuery = parse(command, args)?;
                 answer(compute_brief_column_text_widths(l, &self.fonts, &query).map_err(BriefColumnsIpcError::from))
             }
+            _ if DemoViewer::handles(command) => self.viewer.invoke(command, args),
             _ => Err(Value::String(format!("the browser demo doesn't answer `{command}`"))),
         }
     }
@@ -292,15 +314,24 @@ impl Demo {
     }
 }
 
-fn parse<T: DeserializeOwned>(command: &str, args: Value) -> Result<T, Value> {
+/// The runtime the viewer bridges on: the page's event loop in the browser, the caller's
+/// tokio runtime in native tests.
+fn page_runtime() -> cmdr_fs::rt::Runtime {
+    #[cfg(target_family = "wasm")]
+    return cmdr_fs::rt::Runtime::default();
+    #[cfg(not(target_family = "wasm"))]
+    cmdr_fs::rt::Runtime::current()
+}
+
+pub(crate) fn parse<T: DeserializeOwned>(command: &str, args: Value) -> Result<T, Value> {
     serde_json::from_value(args).map_err(|e| Value::String(format!("invalid args for command `{command}`: {e}")))
 }
 
-fn ok(answer: impl Serialize) -> Result<Value, Value> {
+pub(crate) fn ok(answer: impl Serialize) -> Result<Value, Value> {
     serde_json::to_value(answer).map_err(|e| Value::String(e.to_string()))
 }
 
-fn answer<T: Serialize, E: Serialize>(result: Result<T, E>) -> Result<Value, Value> {
+pub(crate) fn answer<T: Serialize, E: Serialize>(result: Result<T, E>) -> Result<Value, Value> {
     match result {
         Ok(answer) => ok(answer),
         Err(error) => Err(ok(error)?),

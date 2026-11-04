@@ -54,6 +54,7 @@ fn app_host() -> ViewerHost {
         analytics: Arc::new(AppAnalytics),
         opener: Arc::new(AppOpener),
         log_display: display_line,
+        local_files: true,
     }
 }
 

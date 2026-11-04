@@ -28,7 +28,7 @@ use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
 use super::markdown_session;
 use super::media_session;
-use super::origin::{HAS_OS_FALLBACK, SourceOrigin, open_for_viewer, open_ranged_for_media};
+use super::origin::{SourceOrigin, open_for_viewer, open_ranged_for_media};
 use super::range_read::{
     RangeEnd, RawSource, RowForm, STREAM_CHUNK_BYTES, Walked, read_range as do_read_range,
     read_range_streamed as stream_range,
@@ -348,9 +348,9 @@ impl Viewer {
         let (origin, opened, watchable) = match on_volume {
             Some(found) => (found.origin, found.opened, found.os_visible),
             None => {
-                // `exists()` is always false in the browser, so asking it would call every
-                // file there missing.
-                if !HAS_OS_FALLBACK {
+                // A host with no local files (the browser, where `exists()` is always false)
+                // would otherwise call every file missing.
+                if !self.host().local_files {
                     return Err(map_volume_error(VolumeError::NotSupported, None));
                 }
                 if !file_path.exists() {
