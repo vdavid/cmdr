@@ -292,7 +292,8 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
   `subprocess` says when `smbutil` / `smbclient` was stopped for not answering. Both are already at Debug in the log
   FILE, so a user's bundle answers this without a re-run.
 - **Directory listing**: `RUST_LOG=cmdr_listing=debug,info pnpm dev`
-- **File viewer**: `RUST_LOG=cmdr_lib::file_viewer=debug,FE:viewer=debug,info pnpm dev`
+- **File viewer**: `RUST_LOG=cmdr_viewer=debug,cmdr_lib::file_viewer=debug,FE:viewer=debug,info pnpm dev` (the core logs
+  as `cmdr_viewer`, the app's host as `cmdr_lib::file_viewer`)
 - **MTP (Android devices)**: `RUST_LOG=cmdr_lib::mtp=debug,FE:mtp=debug,info pnpm dev`
 - **Volume discovery + broadcast**: `RUST_LOG=cmdr_lib::volume_broadcast=debug,cmdr_lib::volumes=debug,info pnpm dev`
 - **AI/LLM**: `RUST_LOG=cmdr_lib::ai=debug,info pnpm dev`

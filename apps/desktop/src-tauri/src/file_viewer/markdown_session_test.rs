@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use super::ViewerContentKind;
 use super::media::{MediaEntry, MediaSource};
-use crate::file_viewer::session_test_support::viewer;
+use crate::file_viewer::app_viewer as viewer;
 use crate::test_support::TestDir;
 
 /// A PNG signature is all the classifier needs.

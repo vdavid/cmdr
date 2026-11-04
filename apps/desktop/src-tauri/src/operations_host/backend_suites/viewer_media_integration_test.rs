@@ -12,10 +12,10 @@ use tauri::http::StatusCode;
 
 use super::network_transfer_test_support::clean_deep;
 use crate::file_system::volume::manager::get_volume_manager;
+use crate::file_viewer::app_viewer as viewer;
 use crate::file_viewer::content_kind::ViewerContentKind;
 use crate::file_viewer::media::MediaSource;
 use crate::file_viewer::media_protocol::serve_volume;
-use crate::file_viewer::session_test_support::viewer;
 
 /// Past one read chunk and one cached block, so reassembly is really exercised.
 const FILE_BYTES: usize = 3 * 1024 * 1024 + 123;

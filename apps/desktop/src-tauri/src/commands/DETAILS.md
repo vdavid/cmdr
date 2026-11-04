@@ -262,7 +262,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `viewer_set_search_input_focused`, which greys the viewer bar's Edit > Cut / Paste with its search box), encoding
   pickers (`viewer_set_encoding` / `viewer_get_encoding_options`), tail mode (`viewer_set_tail_mode`), `viewer_reload`.
   `viewer_get_lines` runs through `get_lines_within`, which flips the fetch's cancel flag when its deadline fires
-  (`file_viewer/DETAILS.md` § Tauri commands).
+  (`apps/desktop/src-tauri/src/file_viewer/DETAILS.md` § Tauri commands).
 - **`menu.rs`**: the context-menu popups (file / breadcrumb / parent row / tab / a file list header's date Sort by /
   network host / function key bar),
   plus `update_menu_context`.

@@ -18,7 +18,7 @@ use super::media_protocol::serve_volume;
 use super::media_volume::{MEDIA_ON_VOLUME_MAX_BYTES, MediaLoad, MediaLoadStage};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{ListingProgress, Volume, VolumeError, VolumeRandomReader};
-use crate::file_viewer::session_test_support::viewer;
+use crate::file_viewer::app_viewer as viewer;
 
 /// `ftypheic`: the bytes the issue was about. Nothing in the app decodes them.
 fn a_heic(len: usize) -> Vec<u8> {

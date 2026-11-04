@@ -13,7 +13,7 @@ use super::materialize::{
 use super::volume_error::map_volume_error;
 use crate::file_system::volume::RoutedKind;
 use crate::file_system::volume::VolumeError;
-use crate::file_viewer::session_test_support::viewer;
+use crate::file_viewer::app_viewer as viewer;
 
 /// Serializes the tests that drive `open_session` (they share the process-wide extract
 /// dir set by `init_materialize_dir`).

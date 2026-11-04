@@ -13,6 +13,7 @@ use tauri::{AppHandle, Emitter};
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
 
+use super::Viewer;
 use super::host::ViewerHost;
 use super::host::analytics::ViewerAnalytics;
 use super::host::events::{FileChange, ViewerEvents};
@@ -23,7 +24,6 @@ use super::host::volumes::ViewerVolumes;
 use super::markdown_image_fetch::{RemoteImage, VolumeImage};
 use super::media::MediaSource;
 use super::pending_open::PendingOpen;
-use super::viewer::Viewer;
 use super::{ViewerError, ViewerOpenResult, materialize};
 
 /// The app's one viewer, over the app's host, on Tauri's runtime. Its tokens are the ones

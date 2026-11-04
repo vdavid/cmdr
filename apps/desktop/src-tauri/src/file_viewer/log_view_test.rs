@@ -1,4 +1,4 @@
-//! The debug log's view: rows, search, copy, and save all work on the text a person reads, while
+//! The debug log's view (the app's log-marker reader under the viewer): rows, search, copy, and save all work on the text a person reads, while
 //! a plain open of the same file shows it as stored.
 
 use std::sync::atomic::AtomicBool;
@@ -6,9 +6,9 @@ use std::time::Duration;
 
 use cmdr_fs::log_private::{CLOSER, LogKind, is_reserved};
 
-use super::session_store::SearchStatus;
+use super::SearchStatus;
+use super::app_viewer as viewer;
 use super::{PendingOpen, RangeEnd, RowText, SaveProgress, SearchMode, SeekTarget};
-use crate::file_viewer::session_test_support::viewer;
 use crate::test_support::{TestDir, wait_until};
 
 /// Two lines: one with a file path marked the way a `{}` site writes it (the value's `{:?}`
