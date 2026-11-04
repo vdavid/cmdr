@@ -128,6 +128,12 @@
     "sources": "catalog (settings.askCmdr.interactiveModel.description, AI-szolgáltató, az AI résznél)",
     "note": "Where English says the AI, Hungarian says az AI, never a Cmdr: suggestedOps.* (Miért, az AI szerint:) names the model, and its neighbor suggestedOps.reversible.moveBack (a Cmdr vissza tudja helyezni) names the app on purpose."
   },
+  "ai-plan": {
+    "chosen": "csomag",
+    "confidence": "high",
+    "forms": "upgrade your plan → bővítsd a csomagodat (macOS Tárhely bővítése); your {provider} plan → a csomagod a szolgáltatónál ({provider})",
+    "sources": "MS data plan → adatforgalmi díjcsomag; macOS AppKit Upgrade Storage → Tárhely bővítése; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "szolgáltató",
     "forms": "AI provider → AI-szolgáltató (acronym compound, hyphenated); your provider → a szolgáltatód; to your provider → a szolgáltatódhoz",

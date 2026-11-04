@@ -295,12 +295,13 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) -> WakeC
 /// forbids the string match, and a provider's wording changes under us without notice.
 fn completion_for_failure(kind: AgentErrorKind, ordinary: WakeCompletion) -> WakeCompletion {
     match kind {
-        // A rejected key, no key at all, a spent quota, and a plan too small for one prompt are
-        // all settled facts about the rest of the day rather than something worth retrying at
-        // the ordinary pace.
+        // A rejected key, no key at all, a spent quota, a plan without the model, and a plan too
+        // small for one prompt are all settled facts about the rest of the day rather than
+        // something worth retrying at the ordinary pace.
         AgentErrorKind::NoKey
         | AgentErrorKind::AuthFailed
         | AgentErrorKind::RateLimited
+        | AgentErrorKind::ModelNotInPlan
         | AgentErrorKind::RequestTooLarge => WakeCompletion::ProviderRefused,
         // ❌ Never fold a transient failure in here. An unreachable provider or a dropped stream
         // says nothing about the key, and six hours of silence for one flaky request would be
@@ -358,6 +359,7 @@ mod tests {
             AgentErrorKind::AuthFailed,
             AgentErrorKind::NoKey,
             AgentErrorKind::RateLimited,
+            AgentErrorKind::ModelNotInPlan,
             AgentErrorKind::RequestTooLarge,
         ] {
             assert_eq!(

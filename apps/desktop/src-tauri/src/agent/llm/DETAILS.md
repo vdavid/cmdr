@@ -184,7 +184,7 @@ runs below, 2026-10-27):
   top-level `{type: "reasoning", encrypted_content}` input item ahead of the `function_call`. Requests run `store:
   false`, so the encrypted copy is the only one (`include: ["reasoning.encrypted_content"]`). genai captures it as
   a `ThoughtSignature` and sends it back as that input item.
-- **OpenAI chat-completions** (`o3`, `gpt-4.1`, Azure OpenAI): stateless. OpenAI keeps the reasoning server-side and
+- **OpenAI chat-completions** (`gpt-4.1`, o-series on Azure OpenAI): stateless. OpenAI keeps the reasoning server-side and
   returns none, so nothing round-trips and nothing has to.
 - **Gemini** (native API): the `thoughtSignature` on each `functionCall` part, back on that same part (Gemini 3
   validates the first call's signature in the current turn), and one on a text part back on that text. genai 0.7 keeps
@@ -264,8 +264,7 @@ Caveats for the picker:
 ## Error mapping
 
 Provider transport errors are classified by HTTP status once, upstream, in `crate::ai` (`ai_error_for_status`:
-401/403 → auth, 413 → request too large, 429 → rate-limited). `RequestTooLarge` is the plan-too-small case (§ Tests),
-which the rail words with the provider's name and the wake loop treats as settled, like a spent quota. `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
+401/403 → auth, 413 → request too large, 429 → rate-limited, or `ModelNotInPlan` when its request-limit header is zero). `RequestTooLarge` is the plan-too-small case and `ModelNotInPlan` the plan-without-this-model case (§ Tests); the rail words both with the provider's name and the wake loop treats both as settled, like a spent quota. `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
 (`impl From<AiError>`), so there is no message-string matching anywhere. `AiError::Managed` stays typed as
 `AgentLlmError::Managed(refusal)` (the runtime's `ManagedByOrganization`), never a `Provider` string
 (`../../ai/DETAILS.md` § Managed policy). `AgentLlmError::NoKey` /
@@ -297,11 +296,11 @@ skip `tool_details` and guess. What they do: `../../tools/DETAILS.md` § Lazy lo
   120 s stall limit (`chat::context::STREAM_STALL_TIMEOUT`) while Google is overloaded.
 - **Mistral**: the host takes the prefix, the tool-search pair, and a stored `use_tool` back (verified on
   `ministral-14b-latest`, `MISTRAL_MODEL=ministral-14b-latest smoke_mistral_deferred_tool`, 2026-11-03). Like Ministral
-  3B locally, it skips `tool_details`, guesses `sortBy`, and gets it right on the gate's second try. The preset's
-  default, `mistral-small-latest`, stays unproven: our key's free workspace gets
+  3B locally, it skips `tool_details`, guesses `sortBy`, and gets it right on the gate's second try. That's why
+  `ministral-14b-latest` is the preset's default: `mistral-small-latest` stays unproven, since our key's free workspace gets
   `x-ratelimit-limit-req-minute: 0` on it (and on `mistral-medium-*`, `magistral-small-*`, `devstral-small-*`), so even
   a five-token request 429s, while the Ministral models and `open-mistral-nemo` answer (probed five times,
-  04:04–04:25 UTC, 2026-11-03). Proving the default needs a key on a paid plan.
+  04:04–04:25 UTC, 2026-11-03). Proving `mistral-small-latest` needs a key on a paid plan. That zero-limit 429 is its own typed kind (`AiError::ModelNotInPlan` → `AgentErrorKind::ModelNotInPlan`, wire `modelNotInPlan`), so the rail says the plan lacks the model instead of "busy or out of quota".
 - **Groq's free tier**: refuses every turn, because its 8,000-tokens-a-minute cap is below the fixed prefix (HTTP 413,
   "Request too large … Limit 8000, Requested 9,077", 2026-11-03). That 413 is its own typed kind
   (`AiError::RequestTooLarge` → `AgentErrorKind::RequestTooLarge`), and the rail names the provider and says the

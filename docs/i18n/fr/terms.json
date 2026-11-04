@@ -98,6 +98,12 @@
     "forms": "AI → IA (section name); the AI acting as subject → l’IA; AI features → fonctionnalités d’IA",
     "sources": "catalog (settings.ai.tooltipOff, settings.ai.provider.description, onboarding.stepAi.intro)"
   },
+  "ai-plan": {
+    "chosen": "forfait",
+    "confidence": "high",
+    "forms": "upgrade your plan → passer à un forfait supérieur; your {provider} plan → votre forfait chez {provider}",
+    "sources": "MS data plan → forfait de données; catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*)"
+  },
   "ai-provider": {
     "chosen": "fournisseur",
     "confidence": "high",

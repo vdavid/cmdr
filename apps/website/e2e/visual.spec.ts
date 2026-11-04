@@ -164,10 +164,13 @@ test.describe('committed baselines', () => {
     })
   })
 
-  // The footer is shared by every page, so one shot covers all of them.
+  // The footer is shared by every page, so one shot covers all of them. Shot on the frozen fixture
+  // page, ❌ not `/`: below the landing's copy its top lands on a fractional pixel that moves with
+  // every landing edit, and the shot flipped between 532 and 533 px tall with the footer unchanged
+  // (2026-11-03).
   test('footer', async ({ page }) => {
     await preparePage(page, 'light')
-    await settle(page, '/')
+    await settle(page, '/visual-fixture')
     await expect(page.locator('footer').first()).toHaveScreenshot('footer.png', {
       maxDiffPixelRatio: 0.01,
     })

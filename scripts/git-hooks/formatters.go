@@ -272,7 +272,7 @@ func (f *rustfmt) format(paths []string) error {
 // rustfmt also rewrites every out-of-line `mod` the file declares, which for a
 // `lib.rs` is the whole crate, including files with work in progress that nobody
 // staged. Running in the file's own directory makes rustfmt resolve the same
-// `rustfmt.toml` it would for the path (`crates/fsevent-stream` pins its own).
+// `rustfmt.toml` it would for the path (a crate may pin its own).
 //
 // A file rustfmt can't parse is left as it is: a commit of broken Rust is the
 // compiler's to report.

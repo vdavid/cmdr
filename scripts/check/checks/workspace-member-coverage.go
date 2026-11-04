@@ -113,7 +113,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-miri":              "`-p` per member named in `miriTargets` (today `cmdr-fs`), `--lib`, narrowed to the modules whose `unsafe` is pure Rust; a targeted lane on its own toolchain and target dir, not a sweep",
 	"desktop-rust-property-mutants":  "the property kinds' own builds (`cargo fuzz`, `cargo kani`, and the Shuttle crates' `cargo nextest` in a mirror of the tree), each reaching only the members its records mutate; targeted, not a sweep",
 	"desktop-rust-shuttle":           "`-p` each crate in `shuttleCrates` with its `shuttle` feature, in a private target dir; a targeted lane over the crates that have interleaving tests, not a sweep",
-	"desktop-rust-module-cycles":     "every first-party library member (`kind = app` with a `src/lib.rs`), one `--lib` graph each; a bin-only tool has no library graph and the vendored fork's module layout isn't ours to ratchet",
+	"desktop-rust-module-cycles":     "every first-party library member (`kind = app` with a `src/lib.rs`), one `--lib` graph each; a bin-only tool has no library graph and a vendored fork's module layout isn't ours to ratchet",
 	"desktop-rust-tests":             "`--workspace` via HostCargoLaneArgs",
 	"nextest-filter-coverage":        "`--workspace` via HostCargoLaneArgs, listing rather than running, so it sees exactly the tests `desktop-rust-tests` does",
 	"desktop-rust-integration-tests": "`--workspace` via HostCargoLaneArgs, narrowed by a filter expression",

@@ -286,6 +286,27 @@ jobs:
               - 'pnpm-lock.yaml'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+              # The browser demo the site publishes at /demo/ (`website-demo` builds it), so a
+              # change to the desktop frontend or the listing engine redeploys the site.
+              - 'package.json'
+              - 'feature-status.json'
+              - 'apps/desktop/src/**'
+              - 'apps/desktop/static/**'
+              - 'apps/desktop/package.json'
+              - 'apps/desktop/vite.config.js'
+              - 'apps/desktop/tsconfig.json'
+              - 'crates/cmdr-listing-wasm/**'
+              - 'crates/cmdr-listing/**'
+              - 'crates/cmdr-fs/**'
+              - 'crates/cmdr-collation/**'
+              - 'vendor/**'
+              - 'scripts/build-listing-wasm.sh'
+              - 'scripts/build-listing-wasm/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '!**/CLAUDE.md'
+              - '!**/DETAILS.md'
             api-server:
               - 'apps/api-server/**'
               - 'pnpm-lock.yaml'
@@ -1279,6 +1300,7 @@ jobs:
         warm-e2e-linux-cache,
         warm-rust-cache,
         warm-rust-macos-cache,
+        website-demo,
       ]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -1311,6 +1333,62 @@ jobs:
   # ===========================================
   # Website
   # ===========================================
+  # The browser demo the site publishes at /demo/: the listing engine built to WASM plus the
+  # desktop frontend's demo build (`pnpm build:demo`, `apps/website/DETAILS.md` § Browser demo).
+  # Its own job on the bare runner because `website` runs inside the Playwright image, which has
+  # no Rust toolchain; `website` takes the result as an artifact and builds the site around it, so
+  # its E2E tests the same /demo/ the deploy's Docker build produces from the same sources.
+  website-demo:
+    name: Website (demo build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.website == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
+      # Its own small entry (four crates for wasm32, plus `wasm-bindgen-cli` in `~/.cargo/bin`),
+      # not `desktop-rust`'s ~1.8 GB native tree it would never use.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: website-demo
+          cache-on-failure: true
+          save-if: ${{ env.SAVE_RUST_CACHE }}
+
+      - name: Cache pnpm
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter @cmdr/desktop
+
+      - name: Build the browser demo
+        run: pnpm build:demo
+
+      - name: Upload the browser demo
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: website-demo
+          path: apps/desktop/build-demo/
+          if-no-files-found: error
+          retention-days: 1
+
   website:
     name: Website
     runs-on: ubuntu-latest
@@ -1322,7 +1400,7 @@ jobs:
     container:
       image: ${{ needs.changes.outputs.playwright-image }}
     timeout-minutes: 20
-    needs: changes
+    needs: [changes, website-demo]
     if: inputs.run_all || needs.changes.outputs.website == 'true'
 
     steps:
@@ -1370,8 +1448,18 @@ jobs:
       - name: Run typecheck
         run: ./scripts/check/check --check website-typecheck --ci
 
+      # Where the site's build expects it (src/plugins/demo.ts), which then fails on a missing demo
+      # instead of publishing a site without /demo/.
+      - name: Download the browser demo
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: website-demo
+          path: apps/desktop/build-demo/
+
       - name: Build website
         run: ./scripts/check/check --check website-build --ci
+        env:
+          CMDR_WEBSITE_DEMO: '1'
 
       - name: Run html-validate
         run: ./scripts/check/check --check website-html-validate --ci
@@ -1825,6 +1913,7 @@ jobs:
         desktop-svelte-eslint-typecheck,
         e2e-base-image,
         desktop-e2e-linux,
+        website-demo,
         website,
         api-server,
         dashboard,

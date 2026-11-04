@@ -26,7 +26,10 @@ git reset --hard origin/main
 
 echo "Building new image (old site stays up during build)..."
 cd apps/website
-docker compose build --no-cache
+# A fresh DEPLOY_ID rebuilds the site stage from the live-manifest fetch on, every deploy. Never
+# `--no-cache`: it also drops BuildKit's cache mounts, so the browser demo's Rust/WASM build would
+# start cold on every deploy (apps/website/Dockerfile, the `demo` stage).
+docker compose build --build-arg DEPLOY_ID="$(git rev-parse --short HEAD)-$(date +%s)"
 
 echo "Swapping containers..."
 docker compose down

@@ -1,28 +1,28 @@
 # Website (getcmdr.com)
 
-Marketing site and blog for Cmdr. Astro + Tailwind v4 (CSS-first config in `src/styles/global.css`), Playwright E2E in
-`e2e/`, statically built. Human-facing; its markdown may use tables freely.
+Marketing site and blog for Cmdr. Astro + Tailwind v4 (config in `src/styles/global.css`), Playwright E2E in `e2e/`,
+statically built. Its markdown may use tables.
 
 ## Module map
 
 - `src/pages/`, `src/layouts/`, `src/components/`: pages, layouts, components.
-- `src/components/icons/`: shared `<Icon name size>` glyph system (Lucide line-art). Every icon goes through it; no
-  `<img>`/raw `~icons`/decorative emoji. [DETAILS.md](DETAILS.md) § Icons.
+- `src/components/icons/`: the `<Icon name size>` glyph system (Lucide). Every icon goes through it; no `<img>`/raw
+  `~icons`/emoji. [DETAILS.md](DETAILS.md) § Icons.
 - `src/content/blog/{slug}/index.md`: blog posts, colocated images (schema in `src/content.config.ts`). Add one:
   `docs/guides/writing-blog-posts.md`.
-- `src/lib/`: typed page content, edited there, never in the page: `roadmap.ts`, `feature-status.ts`, `trust.ts`,
-  `trust-mdm.ts`, `trust-development.ts`, `accessibility-report.ts`. `changelog.ts` renders `CHANGELOG.md`: commit
-  links, `v<version>` anchors. [DETAILS.md](DETAILS.md) § Patterns.
-- `src/components/DevTodo.astro`: loud ⚠️ callout for David, rendered only in dev. [DETAILS.md](DETAILS.md) § Dev-only
-  task callouts.
-- `src/dev/blog-editor/`: dev-only Markdown editor at `/dev/blog` (Vite middleware, absent from prod).
+- `src/lib/`: typed page content (`roadmap.ts`, `trust*.ts`, and so on), edited there, never in the page. `changelog.ts`
+  renders `CHANGELOG.md`. [DETAILS.md](DETAILS.md) § Patterns.
+- `src/components/DevTodo.astro`: dev-only ⚠️ callout for David. [DETAILS.md](DETAILS.md) § Dev-only task callouts.
+- `src/dev/blog-editor/`: dev-only Markdown editor at `/dev/blog` (Vite middleware).
 - `src/pages/llms.txt.ts` / `llms-full.txt.ts`: agent-facing product descriptions; keep synced with product facts.
+- `/demo/`: the browser demo, `src/plugins/demo.ts`. [DETAILS.md](DETAILS.md) § Browser demo.
 
 ## Deployment
 
-Auto-deploys from `main` (`apps/website/**` changes and releases) via `ci.yml`'s `deploy-website` job, a signed webhook
-to Hetzner, the only path. Steps: `docs/guides/deploy-website.md`. `public/latest.json` is a frozen dev copy (deploys
-fetch the live one): ❌ never read the current version from it.
+Auto-deploys from `main` (`apps/website/**`, `/demo/`'s sources, releases) via `ci.yml`'s `deploy-website` job, a signed
+webhook to Hetzner, the only path. ❌ Never `--no-cache` it (drops `/demo/`'s Rust cache). Steps:
+`docs/guides/deploy-website.md`. `public/latest.json` is a frozen dev copy (deploys fetch the live one): ❌ never read
+the current version from it.
 
 ## Analytics (must-knows)
 

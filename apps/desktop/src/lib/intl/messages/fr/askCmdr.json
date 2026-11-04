@@ -723,6 +723,14 @@
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
+  "askCmdr.error.modelNotInPlan.named": "Votre forfait chez {provider} n’inclut pas ce modèle. Choisissez un autre modèle dans les Réglages, ou passez à un forfait supérieur.",
+  "@askCmdr.error.modelNotInPlan.named": {
+    "sourceHash": "9f2c237"
+  },
+  "askCmdr.error.modelNotInPlan.unnamed": "Votre forfait chez ce fournisseur d’IA n’inclut pas ce modèle. Choisissez un autre modèle dans les Réglages, ou passez à un forfait supérieur.",
+  "@askCmdr.error.modelNotInPlan.unnamed": {
+    "sourceHash": "b90bf30"
+  },
   "askCmdr.error.requestTooLarge.named": "{provider} a refusé cette requête : la limite de votre forfait est inférieure à une seule requête de Cmdr, car chacune contient toujours les instructions de Cmdr. Un message plus court n’y changera rien. Passez à un forfait supérieur chez {provider} ou choisissez un autre fournisseur dans les Réglages.",
   "@askCmdr.error.requestTooLarge.named": {
     "sourceHash": "f878555"

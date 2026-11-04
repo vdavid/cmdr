@@ -1244,8 +1244,12 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   nil,
-		Inputs:      svelteInputs,
-		Run:         RunKnip,
+		// Fast despite booting Node: 3.4 s alone with `--fresh`, +1.2 s on the whole `--fast
+		// --fresh` lane (8.0 s to 9.2 s, 2026-11-04), and its config hints (a stale
+		// `ignoreBinaries` entry) otherwise surface only as a red CI run.
+		IsFast: true,
+		Inputs: svelteInputs,
+		Run:    RunKnip,
 	},
 	{
 		ID:          "desktop-svelte-jscpd",
@@ -1377,7 +1381,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🐳 Docker",
 		DependsOn:   nil,
-		Inputs:      websiteInputs,
+		Inputs:      inputs(websiteInputs, websiteDemoInputs),
 		Run:         RunWebsiteDockerBuild,
 	},
 	{
@@ -1450,7 +1454,7 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
 		DependsOn:   []string{"website-build"},
-		Inputs:      websiteInputs,
+		Inputs:      inputs(websiteInputs, websiteDemoInputs),
 		Run:         RunWebsiteE2E,
 	},
 	{

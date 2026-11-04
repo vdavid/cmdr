@@ -11,6 +11,7 @@ import { rehypeBlogMedia } from './src/plugins/blog-media.ts'
 import { stripEmptySrcsetIntegration } from './src/plugins/strip-empty-srcset.ts'
 import { assetVersionsIntegration } from './src/plugins/asset-versions.ts'
 import { cspHashesIntegration } from './src/plugins/csp-hashes.ts'
+import { demoIntegration } from './src/plugins/demo.ts'
 import { fileURLToPath } from 'node:url'
 import { blogEditorDevServer } from './src/dev/blog-editor/dev-server.mjs'
 
@@ -32,14 +33,26 @@ export default defineConfig({
     // /visual-fixture and /clip-fixture are Playwright fixtures (src/pages/visual-fixture.astro,
     // src/pages/clip-fixture.astro): they have to build so the E2E can load them, but they're not
     // content, so keep them out of the sitemap. They carry `noindex` too.
-    sitemap({ filter: (page) => !page.includes('/visual-fixture') && !page.includes('/clip-fixture') }),
+    // /demo/ is copied in after the build (demoIntegration) so it's no Astro route, but the filter
+    // keeps it out even if that changes: it stays unlisted until David launches it.
+    sitemap({
+      filter: (page) =>
+        !page.includes('/visual-fixture') && !page.includes('/clip-fixture') && !page.includes('/demo/'),
+    }),
     smartQuotesIntegration(),
     stripEmptySrcsetIntegration(),
     // After every integration that rewrites HTML, so it versions the URLs they've finished writing.
     assetVersionsIntegration(),
-    // Truly last: a hash covers a script's exact bytes, so nothing may touch the HTML after it.
+    // Last of the site's HTML passes: a hash covers a script's exact bytes, so nothing may touch the
+    // site's HTML after it.
     cspHashesIntegration({
       snippetPath: fileURLToPath(new URL('./nginx-generated/csp-script-hashes.conf', import.meta.url)),
+    }),
+    // After the hashes: it adds the browser demo's own files, which the site's HTML passes never
+    // touch and whose inline scripts get their own policy (src/plugins/demo.ts).
+    demoIntegration({
+      sourceDir: fileURLToPath(new URL('../desktop/build-demo', import.meta.url)),
+      snippetPath: fileURLToPath(new URL('./nginx-generated/csp-demo-script-hashes.conf', import.meta.url)),
     }),
   ],
   server: {

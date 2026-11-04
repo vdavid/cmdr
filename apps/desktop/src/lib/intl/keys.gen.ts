@@ -213,6 +213,8 @@ export type MessageKey =
   | 'askCmdr.error.budgetExhausted'
   | 'askCmdr.error.localWindowTooSmall'
   | 'askCmdr.error.managedByOrganization'
+  | 'askCmdr.error.modelNotInPlan.named'
+  | 'askCmdr.error.modelNotInPlan.unnamed'
   | 'askCmdr.error.noCloudConsent'
   | 'askCmdr.error.noKey'
   | 'askCmdr.error.notConfigured'

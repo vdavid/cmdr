@@ -127,6 +127,13 @@
     "forms": "AI features → AI-funktioner (indefinite); the AI as subject → AI:n, genitive AI:ns",
     "sources": "catalog (settings.ai.tooltipOff, settings.ai.provider.description, ai.translateError.*)"
   },
+  "ai-plan": {
+    "chosen": "plan",
+    "confidence": "tentative",
+    "forms": "upgrade your plan → uppgradera din plan",
+    "sources": "catalog (ai.translateError.rateLimited.body, askCmdr.error.requestTooLarge.named, askCmdr.error.modelNotInPlan.*); MS data plan → dataabonnemang (the phone-subscription sense)",
+    "note": "The catalog says plan in three keys; MS only has the mobile-data sense (abonnemang). A native reviewer may prefer abonnemang."
+  },
   "ai-provider": {
     "accept": ["AI-leverantör", "molnleverantör"],
     "chosen": "leverantör",

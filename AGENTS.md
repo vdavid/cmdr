@@ -119,8 +119,8 @@ Writing them:
   `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-local` (the local disk), `cmdr-media-meta`
   (EXIF, video dates, and media tags), `cmdr-operation-log` (the mutation journal and rollback planner),
   `cmdr-operations` (the write engine), `cmdr-update-trust` (the updater's trust check) carry no `tauri`, enforced by
-  `index-crate-isolation`; plus `cmdr-listing-wasm` (the listing engine in a browser), two dev CLIs, and a vendored
-  `fsevent-stream` fork. Map: `docs/architecture.md`.
+  `index-crate-isolation`; plus `cmdr-listing-wasm` (the listing engine in a browser), two dev CLIs, and
+  `fsevent-stream` (our FSEvents fork). Map: `docs/architecture.md`.
 - `brand/`: brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/business/README.md` (pricing, licensing, product facts), `docs/specs/DETAILS.md` (big design docs; open work is
@@ -145,7 +145,7 @@ Writing them:
 Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.); it's cache-aware. **Before each
 commit: `pnpm check --fast && pnpm check svelte-tests-related`**, plus, if you touched Rust, `pnpm check clippy` (naming
 a check runs only that one) and the Rust tests you touched (`cargo nextest run <name>`, see `docs/tooling/testing.md`).
-`--fast` (~6 s) is light scanners only, no compilers, typecheckers, test suites, or formatters; `svelte-tests-related`
+`--fast` (~9 s) is scanners plus knip, no compilers, typecheckers, test suites, or formatters; `svelte-tests-related`
 runs the vitest files that reach your branch's changes; clippy (~25 s warm) catches in seconds what would otherwise cost
 a 30-minute CI cycle. CI runs the rest (§ Workflow). Scope by name (`pnpm check clippy`), tech (`rust`), or app
 (`desktop`). Full docs in `scripts/check/CLAUDE.md`. Before landing, run `pnpm check` in the background (it can pass 10

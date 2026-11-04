@@ -83,7 +83,7 @@
         "clippy.toml",
         "apps/website/src/layouts/Layout.astro",
         "apps/website/public/scripts/posthog-init.js",
-        "apps/website/nginx-security-headers.conf"
+        "apps/website/nginx-*security-headers*.conf"
       ]
     },
     {
@@ -152,7 +152,7 @@
         "infra/listmonk/**",
         "docs/threat-model.md",
         "apps/website/src/layouts/**",
-        "apps/website/nginx-security-headers.conf"
+        "apps/website/nginx-*security-headers*.conf"
       ]
     },
     {

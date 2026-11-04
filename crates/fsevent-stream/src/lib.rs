@@ -1,7 +1,3 @@
-//! [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/PhotonQuantum/fsevent-stream/Test?style=flat-square)](https://github.com/PhotonQuantum/fsevent-stream/actions/workflows/test.yml)
-//! [![crates.io](https://img.shields.io/crates/v/fsevent-stream?style=flat-square)](https://crates.io/crates/fsevent-stream)
-//! [![Documentation](https://img.shields.io/docsrs/fsevent-stream?style=flat-square)](https://docs.rs/fsevent-stream)
-//!
 //! Stream-based [`FSEvents`](https://developer.apple.com/documentation/coreservices/file_system_events) API bindings.
 //!
 //! ## Features
@@ -22,18 +18,7 @@
 //! };
 //! use cmdr_fsevent_stream::stream::create_event_stream;
 //! use futures_util::StreamExt;
-//! # #[cfg(feature = "tokio")]
-//! # use tokio1 as tokio;
-//! # #[cfg(feature = "async-std")]
-//! # use async_std1 as async_std;
 //! #
-//! # #[cfg(feature = "async-std")]
-//! # #[async_std::main]
-//! # async fn main() {
-//! #     run().await;
-//! # }
-//! #
-//! # #[cfg(feature = "tokio")]
 //! # #[tokio::main]
 //! # async fn main() {
 //! #     run().await;
@@ -59,35 +44,31 @@
 //!
 //! let mut stream = stream.into_flatten();
 //! while let Some(event) = stream.next().await {
-//!     println!(
-//!         "[{}] path: {:?}({}), flags: {} ({:x})",
-//!         event.id,
-//!         event.path,
-//!         event.inode.unwrap_or(-1),
-//!         event.flags,
-//!         event.raw_flags
-//!     );
+//!     log::info!("{event}");
 //! }
 //! # }
 //! ```
 //!
-//! ## Runtime Support
+//! ## Runtime
 //!
-//! Both [`tokio`](https://github.com/tokio-rs/tokio) and [`async-std`](https://github.com/async-rs/async-std) are supported
-//! via feature flags.
-//!
-//! `tokio` support is enabled by default. To enable `async-std` support, disable default features and enable `async-std`
-//! feature.
+//! [`tokio`](https://github.com/tokio-rs/tokio): the event channel is a bounded
+//! `tokio::sync::mpsc` channel. Upstream also offered `async-std`; this fork dropped it.
 //!
 //! ## Changes from upstream
 //!
-//! This is Cmdr's fork of `fsevent-stream`. Behavior that differs from upstream:
+//! This is Cmdr's fork of [`fsevent-stream`](https://github.com/PhotonQuantum/fsevent-stream),
+//! maintained in the Cmdr monorepo since upstream went quiet. Behavior that differs from upstream:
 //!
 //! - **Overflow flag**: `EventStream` carries a shared flag that turns `true` whenever events are
-//!   dropped (the channel is full, or an event couldn't be built), so the consumer can rescan.
+//!   dropped (the channel is full, an event couldn't be built, or the callback panicked), so the
+//!   consumer can rescan.
 //! - **Unknown flag bits are kept**: `Event::flags` is parsed with `from_bits_retain`, so an event
 //!   carrying a bit newer than this crate keeps its known bits. Upstream's `from_bits` dropped the
 //!   whole event, silently.
+//! - **Creation fails loudly**: an empty path list, a NULL stream, or a stream FSEvents won't start
+//!   is an `Err`, where upstream went on with a NULL stream or left `abort` waiting forever.
+//! - **No leaks**: the stream context is released on every error path, and the run-loop observer's
+//!   context no longer leaks on each `abort`.
 //!
 //! ## Acknowledgement
 //!
@@ -100,6 +81,10 @@
 //!
 //! This project is licensed under MIT License.
 
+// The lint set this crate is held to lives in the workspace root's `[workspace.lints]`, opted
+// into by `Cargo.toml`'s `lints.workspace = true`. `unused_crate_dependencies` can't go with them:
+// it's judged per compilation unit, so it belongs on the lib alone.
+#![warn(unused_crate_dependencies)]
 pub mod stream;
 #[macro_use]
 pub mod ffi;

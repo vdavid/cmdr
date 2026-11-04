@@ -139,7 +139,8 @@ fn smoke_provider_models_route_to_their_intended_adapters() {
     for model in [
         sp::OPENAI.model,
         sp::OPENAI_RESPONSES_MODEL,
-        sp::OPENAI_CHAT_REASONING_MODEL,
+        // No live lane since `o3` retires, but Azure OpenAI, OpenRouter, and proxies keep o-series ids.
+        "o3",
     ] {
         assert_eq!(
             remote_model_iden(model, None),
@@ -158,10 +159,10 @@ fn smoke_provider_models_route_to_their_intended_adapters() {
     }
 }
 
-/// Only `gpt-5*` reaches the Responses API in `genai 0.6.5`, and only `o1`/`o3`/`o4`/
-/// `chatgpt-` reach the chat-completions reasoning branch. The two OpenAI smoke models
-/// exist to cover one branch each, so a careless swap that collapses them onto the same
-/// adapter should fail here rather than quietly halve the coverage.
+/// Only `gpt-5*` reaches the Responses API in `genai 0.6.5`. The two OpenAI smoke models
+/// exist to cover one branch each (Responses, and plain chat-completions where `temperature`
+/// survives), so a careless swap that collapses them onto the same adapter should fail here
+/// rather than quietly halve the coverage.
 #[test]
 fn the_two_openai_smoke_models_cover_different_branches() {
     use crate::ai::smoke_providers as sp;
@@ -169,10 +170,6 @@ fn the_two_openai_smoke_models_cover_different_branches() {
     assert!(
         sp::OPENAI_RESPONSES_MODEL.starts_with("gpt-5"),
         "the Responses-API smoke model needs the `gpt-5` prefix genai routes on"
-    );
-    assert!(
-        is_openai_chat_reasoning_model(sp::OPENAI_CHAT_REASONING_MODEL),
-        "the chat-completions reasoning smoke model must match the heuristic it guards"
     );
     assert!(
         !is_openai_chat_reasoning_model(sp::OPENAI.model),
@@ -212,6 +209,68 @@ fn ai_error_for_status_classifies_by_code() {
     // 404: a model id the provider doesn't serve (decommissioned, or a typo), or a base
     // URL with the wrong path. The `<provider>-smoke` lanes branch on this variant.
     assert!(matches!(ai_error_for_status(404, "x".into()), AiError::NotFound(_)));
+}
+
+/// A 429 whose request limit is ZERO isn't the provider being busy: the account's plan doesn't
+/// include the model at all, so every call gets it and waiting changes nothing. Mistral's free
+/// workspaces answer `mistral-small-latest` this way (`x-ratelimit-limit-req-minute: 0`).
+/// Classified from the header, never from the body's wording.
+#[test]
+fn a_429_with_a_zero_request_limit_means_the_plan_excludes_the_model() {
+    fn headers(pairs: &[(&'static str, &'static str)]) -> reqwest::header::HeaderMap {
+        let mut map = reqwest::header::HeaderMap::new();
+        for (name, value) in pairs {
+            map.insert(*name, reqwest::header::HeaderValue::from_static(value));
+        }
+        map
+    }
+    fn stream_429(pairs: &[(&'static str, &'static str)]) -> genai::Error {
+        genai::Error::WebStream {
+            model_iden: ModelIden::new(AdapterKind::OpenAI, "mistral-small-latest"),
+            cause: String::from("HTTP error"),
+            error: Box::new(genai::Error::HttpError {
+                status: reqwest::StatusCode::TOO_MANY_REQUESTS,
+                canonical_reason: "Too Many Requests".to_string(),
+                body: r#"{"message":"Requests rate limit exceeded"}"#.to_string(),
+                headers: Box::new(headers(pairs)),
+            }),
+        }
+    }
+    fn one_shot_429(pairs: &[(&'static str, &'static str)]) -> genai::Error {
+        genai::Error::WebModelCall {
+            model_iden: ModelIden::new(AdapterKind::OpenAI, "mistral-small-latest"),
+            webc_error: genai::webc::Error::ResponseFailedStatus {
+                status: reqwest::StatusCode::TOO_MANY_REQUESTS,
+                body: "rate limited".to_string(),
+                headers: Box::new(headers(pairs)),
+            },
+        }
+    }
+
+    // Mistral's own header, on both shapes genai uses.
+    let zero = [("x-ratelimit-limit-req-minute", "0")];
+    assert!(matches!(map_genai_error(stream_429(&zero)), AiError::ModelNotInPlan(_)));
+    assert!(matches!(
+        map_genai_error(one_shot_429(&zero)),
+        AiError::ModelNotInPlan(_)
+    ));
+    // The OpenAI-style name other providers send means the same at zero.
+    assert!(matches!(
+        map_genai_error(one_shot_429(&[("x-ratelimit-limit-requests", "0")])),
+        AiError::ModelNotInPlan(_)
+    ));
+
+    // A real limit, or no header at all, is an ordinary rate limit or spent quota.
+    assert!(matches!(
+        map_genai_error(stream_429(&[("x-ratelimit-limit-req-minute", "60")])),
+        AiError::RateLimited(_)
+    ));
+    assert!(matches!(map_genai_error(stream_429(&[])), AiError::RateLimited(_)));
+    // A zero REMAINING count is a limit used up, not a limit of zero.
+    assert!(matches!(
+        map_genai_error(stream_429(&[("x-ratelimit-remaining-req-minute", "0")])),
+        AiError::RateLimited(_)
+    ));
 }
 
 /// A streaming failure reaches us wrapped twice (`WebStream` holding a boxed `HttpError`),

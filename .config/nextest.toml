@@ -512,23 +512,16 @@ test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# The vendored `cmdr-fsevent-stream` fork's own delivery test — SELF-HEALING, no retries.
+# `cmdr-fsevent-stream`'s own delivery test — SELF-HEALING, no retries.
 # One `#[test]` runs FIVE real-FSEvents scenarios back to back (one per create-flag
-# combination), and each pays a hard 200 ms create/delete separation (macOS Sequoia
-# coalesces a faster pair into one event). A producer thread keeps redoing that pair on a
-# fresh name until the watch delivers a matching file-level create AND removal, inside a
-# per-scenario 8 s budget, so neither the just-armed-watch drop nor a coalesced lone pair
-# can starve it. So the floor is structural, not slowness: 4.6–14.8 s over 8 runs on an
-# M3 Max under concurrent load, 2026-08-08. The test's own shared budget is 25 s, so its
-# assertion (which names the flags and dumps the events) fires before this cap does;
-# 30 s covers the saturated case while keeping the hang backstop;
-# `real-notify` stops its five live streams from multiplying the other watcher tests'
-# starvation.
-#
-# Splitting it into five `#[test]`s would fit the global cap and is the cleaner test, but
-# `crates/fsevent-stream/` is a vendored fork of a third-party crate where diff-vs-upstream
-# is load-bearing (it's how a rebase onto upstream stays reviewable), so the structural
-# divergence costs more than the override does.
+# combination). A producer thread keeps making create/delete pairs on fresh names, each
+# step paced on the watch delivering the previous one (bounded at 2 s per step), until a
+# matching file-level create AND removal arrive, so neither the just-armed-watch drop nor
+# a coalesced pair can starve it. Idle it takes 0.6–0.7 s (macOS 27.0.1, 2026-11-03), but
+# every step is an `fseventsd` round trip that a loaded host stretches. The test's own
+# shared budget is 25 s, so its assertion (which names the flags and dumps the events)
+# fires before this cap does; 30 s keeps the hang backstop; `real-notify` stops its five
+# live streams from multiplying the other watcher tests' starvation.
 # allowed-unmatched-nextest-filter: macos-only, `cmdr-fsevent-stream` builds on macOS alone
 filter = 'package(cmdr-fsevent-stream) & test(tests::must_receive_fs_events)'
 test-group = 'real-notify'

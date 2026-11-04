@@ -247,6 +247,14 @@
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "5f41c18"
   },
+  "askCmdr.error.modelNotInPlan.named": "Tu plan de {provider} no incluye este modelo. Elige otro modelo en Configuración o mejora tu plan.",
+  "@askCmdr.error.modelNotInPlan.named": {
+    "sourceHash": "df58eb6"
+  },
+  "askCmdr.error.modelNotInPlan.unnamed": "Tu plan con este proveedor de IA no incluye este modelo. Elige otro modelo en Configuración o mejora tu plan.",
+  "@askCmdr.error.modelNotInPlan.unnamed": {
+    "sourceHash": "aa8f744"
+  },
   "askCmdr.error.budgetExhausted": "Esta respuesta llegó a su límite antes de terminar. Intenta preguntar algo más concreto.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "93788fe"

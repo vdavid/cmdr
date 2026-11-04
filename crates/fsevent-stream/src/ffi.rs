@@ -3,10 +3,8 @@
 //! Some of the bindings are lightly wrapped to adapt to Rust's ownership model and provide a more ergonomic experience.
 
 #![allow(
-    non_snake_case,
     non_upper_case_globals,
-    clippy::unreadable_literal,
-    clippy::declare_interior_mutable_const
+    reason = "the constants keep Apple's `kFSEvent…` names, so they match the SDK header and docs"
 )]
 
 use std::ffi::c_void;
@@ -18,14 +16,13 @@ use std::time::Duration;
 
 use core_foundation::array::{CFArray, CFArrayRef};
 use core_foundation::base::{
-    kCFAllocatorDefault, Boolean, CFAllocatorCopyDescriptionCallBack, CFAllocatorRef,
-    CFAllocatorReleaseCallBack, CFAllocatorRetainCallBack, CFIndex, TCFType,
+    Boolean, CFAllocatorCopyDescriptionCallBack, CFAllocatorRef, CFAllocatorReleaseCallBack, CFAllocatorRetainCallBack,
+    CFIndex, TCFType, kCFAllocatorDefault,
 };
 use core_foundation::date::CFTimeInterval;
 use core_foundation::runloop::{CFRunLoop, CFRunLoopIsWaiting, CFRunLoopMode, CFRunLoopRef};
 use core_foundation::string::{CFString, CFStringRef};
-use core_foundation::url::{kCFURLPOSIXPathStyle, CFURL};
-use once_cell::unsync::Lazy;
+use core_foundation::url::{CFURL, kCFURLPOSIXPathStyle};
 
 fn str_path_to_cfstring_ref(source: &Path) -> io::Result<CFString> {
     CFURL::from_path(source, source.is_dir())
@@ -39,6 +36,9 @@ pub(crate) trait CFRunLoopExt {
 
 impl CFRunLoopExt for CFRunLoop {
     fn is_waiting(&self) -> bool {
+        // SAFETY: `self` holds a retained, valid `CFRunLoopRef` for the call. `CFRunLoopIsWaiting`
+        // only reads the run loop's state and is callable from any thread (CF run-loop
+        // functions are thread-safe, Threading Programming Guide § Run Loops).
         unsafe { CFRunLoopIsWaiting(self.as_concrete_TypeRef()) != 0 }
     }
 }
@@ -52,14 +52,20 @@ pub struct __FSEventStream {
 
 pub type SysFSEventStreamRef = *mut __FSEventStream;
 
-/// An ergonomic wrapper of [`SysFSEventStreamRef`](SysFSEventStreamRef).
+/// An ergonomic wrapper of [`SysFSEventStreamRef`].
 ///
 /// This wrapper complies with Rust's ownership model, and releases its resource when dropped.
+///
+/// Invariant: the inner ref is non-NULL and owned (+1, from `FSEventStreamCreate`), which `new`
+/// guarantees. The methods are safe because FSEvents validates call order itself: `start` on an
+/// unscheduled stream returns false, and `stop`, `flush_sync`, and a repeated `invalidate` are
+/// no-ops (verified on macOS 27.0.1, a probe test calling each out of order, 2026-11-03).
 pub struct SysFSEventStream(SysFSEventStreamRef);
 
-// Safety:
-// - According to the Apple documentation, it's safe to move `CFRef`s across threads.
-//   https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
+// SAFETY: The wrapper owns its stream ref outright and isn't `Sync`, so moving it hands the stream
+// to exactly one thread at a time; `FSEventStream` objects aren't tied to the thread that created
+// them. `create_event_stream` creates it on the caller's thread and then uses it only on the
+// worker, where it's scheduled, run, invalidated, and released.
 unsafe impl Send for SysFSEventStream {}
 
 pub type FSEventStreamCallback = extern "C" fn(
@@ -113,10 +119,19 @@ pub const kFSEventStreamEventFlagItemIsHardlink: FSEventStreamEventFlags = 0x001
 pub const kFSEventStreamEventFlagItemIsLastHardlink: FSEventStreamEventFlags = 0x00200000;
 pub const kFSEventStreamEventFlagItemCloned: FSEventStreamEventFlags = 0x00400000;
 
-pub const kFSEventStreamEventExtendedDataPathKey: Lazy<CFString> =
-    Lazy::new(|| CFString::new("path"));
-pub const kFSEventStreamEventExtendedFileIDKey: Lazy<CFString> =
-    Lazy::new(|| CFString::new("fileID"));
+/// The extended-data dictionary key for an event's path (a `CFStringRef`).
+///
+/// The SDK defines it as `CFSTR("path")`, a macro rather than a linkable symbol, so this builds
+/// the same constant string without copying.
+pub fn extended_data_path_key() -> CFString {
+    CFString::from_static_string("path")
+}
+
+/// The extended-data dictionary key for an event's file ID (a `CFNumberRef`), `CFSTR("fileID")`
+/// in the SDK.
+pub fn extended_file_id_key() -> CFString {
+    CFString::from_static_string("fileID")
+}
 
 #[repr(C)]
 pub struct SysFSEventStreamContext {
@@ -127,19 +142,22 @@ pub struct SysFSEventStreamContext {
     pub copy_description: Option<CFAllocatorCopyDescriptionCallBack>,
 }
 
-/// Generate a callback that free the context when the stream created by [`SysFSEventStream::new`](SysFSEventStream::new) is released.
+/// Generate a callback that free the context when the stream created by [`SysFSEventStream::new`] is released.
 ///
 /// Usage: `impl_release_callback!(release_ctx, YourCtxType)`
-// Safety:
-// - The [documentation] for `FSEventStreamContext` states that `release` is only
-//   called when the stream is deallocated, so it is safe to convert `info` back into a
-//   box and drop it.
-//
-// [docs]: https://developer.apple.com/documentation/coreservices/fseventstreamcontext?language=objc
+///
+/// The generated function is sound only as the `release` of a context whose `info` came from
+/// `Box::into_raw(Box::<YourCtxType>::new(..))` (as [`SysFSEventStreamContext::new`] makes it) and
+/// whose `retain` is NULL: CF then calls `release` exactly once, when the owning object is
+/// deallocated, and never touches `info` again.
 #[macro_export]
 macro_rules! impl_release_callback {
     ($name: ident, $ctx_ty: ty) => {
         extern "C" fn $name(ctx: *mut std::ffi::c_void) {
+            // SAFETY: Per the macro's contract, `ctx` is the `Box<$ctx_ty>` leaked into the
+            // context's `info`, and with `retain` NULL, CF calls this exactly once, when the
+            // stream or observer is deallocated (`FSEventStreamContext` docs). Nothing reads
+            // `info` after that, so reclaiming the box here is the single matching free.
             unsafe {
                 drop(Box::from_raw(ctx as *mut $ctx_ty));
             }
@@ -147,6 +165,8 @@ macro_rules! impl_release_callback {
     };
     ($name: ident, const $ctx_ty: ty) => {
         extern "C" fn $name(ctx: *const std::ffi::c_void) {
+            // SAFETY: As in the arm above: the one release of the `Box<$ctx_ty>` behind `info`,
+            // called by CF once, when its owner is deallocated (`CFRunLoopObserverContext`).
             unsafe {
                 drop(Box::from_raw(ctx as *mut $ctx_ty));
             }
@@ -155,9 +175,9 @@ macro_rules! impl_release_callback {
 }
 
 impl SysFSEventStreamContext {
-    /// Create a new [`SysFSEventStreamContext`](SysFSEventStreamContext).
+    /// Create a new [`SysFSEventStreamContext`].
     ///
-    /// `release_callback` can be constructed using [`impl_release_callback`](impl_release_callback) macro.
+    /// `release_callback` can be constructed using [`impl_release_callback`] macro.
     pub fn new<T>(ctx: T, release_callback: CFAllocatorReleaseCallBack) -> Self {
         let ctx = Box::into_raw(Box::new(ctx));
         Self {
@@ -171,10 +191,15 @@ impl SysFSEventStreamContext {
 }
 
 impl SysFSEventStream {
-    /// Create a new [`SysFSEventStream`](SysFSEventStream).
+    /// Create a new [`SysFSEventStream`].
+    ///
+    /// Takes ownership of `context.info` whatever the outcome: on success the stream calls
+    /// `context.release` when it's deallocated, and on failure it has been called by the time this
+    /// returns. So a context must go to exactly one `new` call.
     ///
     /// # Errors
-    /// Return error when there's any invalid path in `paths_to_watch`.
+    /// Return error when `paths_to_watch` is empty or holds an invalid path, or when `FSEvents`
+    /// refuses to create the stream.
     pub fn new<P: AsRef<Path>>(
         callback: FSEventStreamCallback,
         context: &SysFSEventStreamContext,
@@ -183,12 +208,35 @@ impl SysFSEventStream {
         latency: Duration,
         flags: FSEventStreamCreateFlags,
     ) -> io::Result<Self> {
-        let cf_paths: Vec<_> = paths_to_watch
+        let cf_paths = paths_to_watch
             .into_iter()
             .map(|item| str_path_to_cfstring_ref(item.as_ref()))
-            .collect::<Result<_, _>>()?;
+            .collect::<io::Result<Vec<_>>>()
+            .and_then(|cf_paths| {
+                // `FSEventStreamCreate` returns NULL for an empty list; reject it here so the
+                // error says why.
+                if cf_paths.is_empty() {
+                    Err(io::Error::new(io::ErrorKind::InvalidInput, "no paths to watch"))
+                } else {
+                    Ok(cf_paths)
+                }
+            });
+        let cf_paths = match cf_paths {
+            Ok(cf_paths) => cf_paths,
+            Err(err) => {
+                // FSEvents never saw the context, so its info is still ours to release.
+                if let Some(release) = context.release {
+                    release(context.info);
+                }
+                return Err(err);
+            }
+        };
         let cf_path_array = CFArray::from_CFTypes(&cf_paths);
-        Ok(Self(unsafe {
+        // SAFETY: `context` points to a live, fully initialized `FSEventStreamContext` (version 0)
+        // for the duration of the call, and FSEvents copies it rather than keeping the pointer.
+        // `cf_path_array` is a valid `CFArray` of `CFString`s that FSEvents retains as needed.
+        // `callback` is an `extern "C" fn` with the `FSEventStreamCallback` signature.
+        let stream = unsafe {
             FSEventStreamCreate(
                 kCFAllocatorDefault,
                 callback,
@@ -198,14 +246,27 @@ impl SysFSEventStream {
                 latency.as_secs_f64() as CFTimeInterval,
                 flags,
             )
-        }))
+        };
+        if stream.is_null() {
+            // Don't release `context.info` here: FSEvents already did before returning NULL
+            // (verified on macOS 27.0.1, a probe test with a logging release callback,
+            // 2026-11-03), so releasing it again would double free.
+            return Err(io::Error::other("FSEventStreamCreate returned no stream"));
+        }
+        Ok(Self(stream))
     }
     pub fn show(&mut self) {
+        // SAFETY: `self.0` is a valid, owned stream ref (type invariant); `FSEventStreamShow`
+        // only prints the stream's description to stderr.
         unsafe { FSEventStreamShow(self.0) }
     }
     /// # Safety
     /// `run_loop_mode` must be a valid `CFStringRef` (for example, `kCFRunLoopDefaultMode`).
     pub unsafe fn schedule(&mut self, run_loop: &CFRunLoop, run_loop_mode: CFStringRef) {
+        // SAFETY: `self.0` is a valid stream ref (type invariant), `run_loop` is a retained
+        // `CFRunLoopRef` for the call, and the caller vouches for `run_loop_mode`. From here on
+        // FSEvents calls back on `run_loop`'s thread, which is fine for any context we build:
+        // `StreamContextInfo` is `Sync`.
         unsafe {
             FSEventStreamScheduleWithRunLoop(self.0, run_loop.as_concrete_TypeRef(), run_loop_mode);
         }
@@ -213,36 +274,48 @@ impl SysFSEventStream {
     /// # Safety
     /// `run_loop_mode` must be a valid `CFStringRef` (for example, `kCFRunLoopDefaultMode`).
     pub unsafe fn unschedule(&mut self, run_loop: &CFRunLoop, run_loop_mode: CFStringRef) {
+        // SAFETY: As in `schedule`: a valid stream ref, a retained run loop, and a mode the
+        // caller vouches for.
         unsafe {
-            FSEventStreamUnscheduleFromRunLoop(
-                self.0,
-                run_loop.as_concrete_TypeRef(),
-                run_loop_mode,
-            );
+            FSEventStreamUnscheduleFromRunLoop(self.0, run_loop.as_concrete_TypeRef(), run_loop_mode);
         }
     }
     pub fn start(&mut self) -> bool {
+        // SAFETY: `self.0` is a valid stream ref (type invariant). FSEvents rejects a start on an
+        // unscheduled stream by returning false (see the type docs).
         unsafe { FSEventStreamStart(self.0) != 0 }
     }
     pub fn flush_sync(&mut self) {
+        // SAFETY: `self.0` is a valid stream ref (type invariant). Pending events are delivered
+        // synchronously on this thread, which the `Sync` context tolerates.
         unsafe { FSEventStreamFlushSync(self.0) };
     }
     pub fn stop(&mut self) {
+        // SAFETY: `self.0` is a valid stream ref (type invariant); stopping a stream that isn't
+        // started is a no-op.
         unsafe { FSEventStreamStop(self.0) };
     }
     pub fn invalidate(&mut self) {
+        // SAFETY: `self.0` is a valid stream ref (type invariant). After this returns the stream
+        // is unscheduled from every run loop, so no further callback can run.
         unsafe { FSEventStreamInvalidate(self.0) };
     }
 }
 
 impl Drop for SysFSEventStream {
     fn drop(&mut self) {
+        // SAFETY: `self.0` is the +1 reference `FSEventStreamCreate` returned (Create rule) and
+        // this is its one matching release. When the count reaches zero FSEvents calls the
+        // context's `release` on `info`; `create_event_stream` stops and invalidates the stream
+        // first, so no callback can be running or come later when that frees the context.
         unsafe { FSEventStreamRelease(self.0) };
     }
 }
 
+// SAFETY: These signatures match `CoreServices/FSEvents/FSEvents.h` (macOS SDK), so declaring
+// them as-is is sound; every call stays `unsafe` and documents its own preconditions.
 #[link(name = "CoreServices", kind = "framework")]
-extern "C" {
+unsafe extern "C" {
     fn FSEventStreamCreate(
         allocator: CFAllocatorRef,
         callback: FSEventStreamCallback,

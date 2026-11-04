@@ -21,3 +21,26 @@ apps/website/nginx-generated
 apps/website/.astro
 apps/website/playwright-report
 apps/website/test-results
+
+# The browser demo the site publishes at /demo/ (the Dockerfile's `demo` stage): the desktop
+# frontend, plus the Rust workspace the listing engine's WASM build resolves (cargo loads every
+# member and `[patch]` path, so the whole workspace comes along, not only the four crates it
+# compiles).
+!rust-toolchain.toml
+!Cargo.toml
+!Cargo.lock
+!crates/
+!vendor/
+!scripts/build-listing-wasm.sh
+!scripts/build-listing-wasm/
+!apps/desktop/
+
+# And none of their build output or installs, which the stage rebuilds
+**/node_modules
+**/target
+crates/cmdr-listing-wasm/pkg
+apps/desktop/build
+apps/desktop/build-demo
+apps/desktop/.svelte-kit
+apps/desktop/test-results
+apps/desktop/playwright-report

@@ -156,21 +156,6 @@ pub(super) const OPENAI: SmokeProvider = SmokeProvider {
 /// The older `gpt-5-mini` still resolves, but its only snapshot retires 2026-12-11.)
 pub(super) const OPENAI_RESPONSES_MODEL: &str = "gpt-5.4-mini";
 
-/// OpenAI model that stays on `/v1/chat/completions` yet rejects a custom `temperature` —
-/// the case `is_openai_chat_reasoning_model` exists to catch. Needs an `o1`/`o3`/`o4`/
-/// `chatgpt-` prefix; a `gpt-5*` id would route to Responses and test the wrong branch.
-///
-/// (verified on 2026-11-03: `o3` answers chat-completions and rejects `temperature: 0.3` with a
-/// 400, by `curl`. `o3-mini`, `o4-mini`, and `o1` still appear in `GET /v1/models` but every
-/// call is a 404 since their 2026-10-23 shutdown, so listing isn't proof of life.)
-///
-/// **`o3` retires 2026-12-11**, per developers.openai.com/api/docs/deprecations, and it's the
-/// last o-series model on the API; OpenAI's named replacement is `gpt-5.6-sol`, a Responses
-/// model. When this lane goes red on that date there is no successor left: repoint it at a
-/// live `chatgpt-*` id if one exists, or retire the test and the `o1`/`o3`/`o4` arms of
-/// `is_openai_chat_reasoning_model` with it.
-pub(super) const OPENAI_CHAT_REASONING_MODEL: &str = "o3";
-
 /// Reads the provider's key from the environment.
 ///
 /// The check lane only starts the test process once it has resolved a key, so a missing one

@@ -162,9 +162,8 @@ opt-level = 3
 # extern crate" errors for deps only the lib uses. It belongs on the lib target
 # alone, which only a `#![warn(…)]` in `lib.rs` can express.
 #
-# Who opts in: `cmdr` and any crate under `crates/` that we wrote.
-# `crates/fsevent-stream` does NOT: it's a vendored third-party fork, and the
-# `unused_crate_dependencies` / `unwrap_used` churn would bury the upstream diff.
+# Who opts in: `cmdr` and every crate under `crates/` we own, including
+# `crates/fsevent-stream` (forked from a dead upstream, now maintained here).
 # `crates/index-query` and `crates/operation-log-dump` do NOT: they're CLIs whose
 # job is to print to stdout, which `print_stdout` / `print_stderr` deny by design.
 [workspace.lints.rust]

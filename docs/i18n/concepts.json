@@ -106,6 +106,12 @@
     "notMatch": ["the ai search"],
     "sense": "The app's AI-powered functions in general, or the outside model acting as the subject of a sentence."
   },
+  "ai-plan": {
+    "distinct": ["upgrade"],
+    "en": "plan",
+    "match": ["your plan", "bigger plan"],
+    "sense": "The paid or free tier a person has with an AI provider (Mistral's free plan), which sets its quota and which models it serves. Never a rename plan Ask Cmdr prepares."
+  },
   "ai-provider": {
     "distinct": ["cloud-provider", "service"],
     "en": "provider",
@@ -3883,7 +3889,7 @@
     "en": "upgrade",
     "match": ["upgrade", "upgrades", "upgrade page"],
     "note": "An app upgrade (the onboarding upgrade nudge) is an update, not this.",
-    "notMatch": ["upgrade nudge"],
+    "notMatch": ["upgrade nudge", "upgrade your plan"],
     "sense": "Moving to a paid license (the upgrade page)."
   },
   "upload": {
