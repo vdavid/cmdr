@@ -3,6 +3,8 @@
 //! The classification prompt instructs the LLM to extract structured search
 //! parameters from natural language. Rust handles all structural/technical work.
 
+use super::mappings::LocalDays;
+
 /// Classification prompt for the LLM. The LLM classifies intent into predefined
 /// enums and extracts filename keywords. Rust handles all structural/technical work.
 /// `{TODAY}` is replaced at runtime.
@@ -61,11 +63,10 @@ Today: {TODAY}.";
 
 /// `current_type`: `Some(true)` = folders, `Some(false)` = files, `None` = both. Surfaced as a
 /// context line so the model knows the `folders` field is optional and what the user has now.
-pub fn build_classification_prompt(current_type: Option<bool>) -> String {
-    // The user's date, the same calendar the time mapping resolves "today" on: in
-    // UTC the model was handed yesterday's date between local and UTC midnight.
-    use super::mappings::{LocalDays, SystemZone};
-    let today = SystemZone.today();
+/// `days` is the user's calendar, the same one the time mapping resolves "today" on: in
+/// UTC the model was handed yesterday's date between local and UTC midnight.
+pub fn build_classification_prompt(current_type: Option<bool>, days: &impl LocalDays) -> String {
+    let today = days.today();
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let today_str = today.format(&format).expect("date format always succeeds");
     let current_type_label = match current_type {
@@ -80,7 +81,25 @@ pub fn build_classification_prompt(current_type: Option<bool>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::super::mappings::FixedZone;
+
+    /// The prompt on a fixed calendar.
+    fn build_classification_prompt(current_type: Option<bool>) -> String {
+        super::build_classification_prompt(current_type, &zone())
+    }
+
+    fn zone() -> FixedZone {
+        FixedZone {
+            today: time::macros::date!(2026 - 11 - 04),
+            offset_secs: 3_600,
+            switch_on: None,
+        }
+    }
+
+    #[test]
+    fn the_prompt_names_the_users_today() {
+        assert!(build_classification_prompt(None).contains("Today: 2026-11-04."));
+    }
 
     #[test]
     fn test_classification_prompt_contains_date() {

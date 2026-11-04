@@ -1,8 +1,8 @@
 # The drive search in its own crate
 
 Issue: [#302](https://github.com/vdavid/cmdr/issues/302) (the browser demo is the second host). Status: the early fixes
-and M0–M4 are done (2026-11-04), plus M6's pure list (`crates/cmdr-recents`); M5 and M7 are next. Process:
-`docs/guides/multi-agent-refactors.md` (characterize, then convert; fresh-eyes review rounds before executing).
+and M0–M6 are done (2026-11-04); M7 is next. Process: `docs/guides/multi-agent-refactors.md` (characterize, then
+convert; fresh-eyes review rounds before executing).
 
 **Problem**: the ⌘F search engine (query model, matcher, excludes, ranking, the arena and its scan) lives in the app
 crate at `apps/desktop/src-tauri/src/search/`, braided with the index handle, `ReadPool` SQL, Tauri events, app statics,
@@ -417,6 +417,12 @@ The details for all three:
   glob→regex) move with it.
 - **Test plan**: `ai/` tests move unchanged; one translation golden over a fixed "now".
 - **DONE**: no `crate::commands` edge left under `search/`; `bindings.ts` unchanged.
+- **As landed** (2026-11-04): the gate held. `ai/`'s only outside reaches were the crate's own types,
+  `commands::file_system::expand_tilde`, `dirs::home_dir`, and `SystemZone` (`chrono::Local`): no setting, provider, or
+  app state. The pipeline is `crates/cmdr-search/src/translate/` (submodules private, 13 flat re-exports), taking a
+  `LocalDays` calendar and a `home` as parameters; `scope_to_paths` joins in `&str` work. The app keeps `search/ai.rs`:
+  `SystemZone` and three wrappers (`classification_prompt`, `search_query`, `iso_date_to_timestamp`). The tests moved
+  onto `FixedZone`, plus a pinned whole-reply translation; the machine-zone test stays in the app.
 
 ### M6: recent searches go Tauri-free (S–M, after M2, beside M3–M5)
 
@@ -442,8 +448,9 @@ The details for all three:
   `trim_to` / `remove_from` / `dedupe_keeping_newest`, with the id minted by the host (`add_to`'s `fresh_id`; the
   desktop passes a uuid v4). The app's `RecentEntry` requires `RecentItem` and keeps the file constants; the five impls
   (search, selection, Go to path, multi-rename's field history and last settings) split in two, their files and tests
-  unchanged. In the isolation list with a 5 / 0 / 0 ceiling. Still to do: `HistoryEntry` and its key helpers into
-  `cmdr-search`'s `history` module, and the demo's session list (M7).
+  unchanged. In the isolation list with a 5 / 0 / 0 ceiling. Then `HistoryEntry`, `HistoryMode`, `HistoryFilters`,
+  `DEFAULT_MAX_COUNT`, and the key helpers moved into `cmdr_search::history` with the `RecentItem` impl; the app keeps
+  `RECENT_SEARCHES`, the file impl, and the on-disk test. The demo's session list is M7's.
 
 ### M7: ⌘F in the demo (M–L, after M3, M4, M6, the write-engine + viewer branches, and the folder-size fold land)
 

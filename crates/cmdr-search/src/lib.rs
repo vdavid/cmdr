@@ -20,6 +20,7 @@ pub mod query;
 pub mod ranking;
 pub mod run;
 pub mod seam;
+pub mod translate;
 pub mod types;
 
 #[cfg(test)]

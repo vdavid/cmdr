@@ -1,6 +1,20 @@
-# Search AI details
+# Search translation details
 
 Depth and rationale for the NL → `SearchQuery` pipeline. `CLAUDE.md` holds the must-knows.
+
+## Values that read like gaps
+
+- **`type: none` is a valid value, not a missing field.** It survives `validate_type` and reaches `build_search_query`,
+  where `type_to_filter("none")` returns `None`. Treat parser-`Some("none")` and parser-`None` as the same downstream;
+  don't branch on the string.
+- **`folders` ≠ the `type` enum.** `folders: yes|no` is the file-vs-folder dimension (→ `is_directory`); `type:` is the
+  file CATEGORY (photos, code, …). Don't add a Rust-side default that forces `yes`/`no` (next section).
+- **Caveat priority**: an LLM-provided `note` (sanitized: strip `<>`, truncate 200 chars) wins over any Rust-inferred
+  caveat. The "no filename filter" fallback fires only when both `name_pattern` is `None` and the LLM omitted `note`.
+- **The label** truncates by Unicode scalar (emoji-safe), reserving one char for the `…`. A blank or missing label is
+  `None`, and the frontend falls back to the original prompt.
+- **A named scope joins the home folder as `Path::join` would** (`scope_to_paths`, in `&str` work so a browser host
+  reads it the same): no home leaves `Downloads` relative and a `~` path as typed.
 
 ## The `folders` / `current_type` dimension
 
@@ -16,9 +30,8 @@ just returns `is_directory: Option<bool>`.
   models). Lines like `keywords: rymd\ntype: documents\ntime: recent` are trivial for the model to produce and for
   `split_once(':')` to parse. A malformed line drops one field, not the whole response.
 - **LLM picks enum tokens, Rust computes values.** Even 2B models reliably map "last week" → `last_week` across
-  languages, but asking them to emit "1717372800" or `^.*\.(pdf|doc)$` fails ~60% of the time. Separating
-  classification (model) from computation (`mappings/`) makes the pipeline robust regardless of model size or
-  quantization.
+  languages, but asking them to emit "1717372800" or `^.*\.(pdf|doc)$` fails ~60% of the time. Separating classification
+  (model) from computation (`mappings/`) makes the pipeline robust regardless of model size or quantization.
 - **Single LLM pass, no refine step.** Deterministic mapping leaves nothing to refine. A second pass on previous designs
   regressed ~15% of queries (over-narrowing, flag dropping) and doubled latency.
 - **The prompt asks for a display-only `label:` field.** Snapshot panes need a short breadcrumb title ("Big PDFs from

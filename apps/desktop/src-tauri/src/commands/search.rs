@@ -13,12 +13,13 @@ use crate::search::{self, ParsedScope, SearchQuery, SearchResult, VolumeLoad};
 use cmdr_fs::volume::SupportedDates;
 use cmdr_listing::{DirectorySortMode, EffectiveSort, SortColumn, SortOrder, SortableEntry, entry_comparator};
 
-use crate::search::ai::{self, query_builder as ai_query_builder};
+use crate::search::ai;
 use crate::search::history::{DEFAULT_MAX_COUNT, HistoryEntry, RECENT_SEARCHES};
+use cmdr_search::translate;
 
-/// The translation DTOs are defined in `search::ai::types` (business logic owns
-/// its own data) and re-exported here so the IPC surface stays at this path.
-pub use crate::search::ai::types::{TranslateDisplay, TranslatedQuery};
+/// The translation DTOs are `cmdr_search::translate`'s (business logic owns its own
+/// data), re-exported here so the IPC surface stays at this path.
+pub use cmdr_search::translate::{TranslateDisplay, TranslatedQuery};
 
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -258,7 +259,7 @@ pub async fn translate_search_query_with<R: tauri::Runtime>(
 ) -> Result<TranslateResult, AiTranslateError> {
     let backend = crate::ai::manager::resolve_translate_backend(app, false)?
         .with_log_context(crate::ai::llm_log::LlmLogContext::translate_search());
-    let system_prompt = ai::build_classification_prompt(current_type);
+    let system_prompt = ai::classification_prompt(current_type);
 
     // The query's length only, never its text: this log line can reach an error report, and a
     // natural-language query often names the user's files or projects.
@@ -280,16 +281,16 @@ pub async fn translate_search_query_with<R: tauri::Runtime>(
         crate::ai::translate::translate_once(&backend, &system_prompt, &natural_query, &options, "AI search").await?;
 
     // Parse key-value response
-    let parsed = ai::parse_llm_response(&response);
+    let parsed = translate::parse_llm_response(&response);
 
     // Fallback: if parser returned nothing useful, use raw query keywords
     let parsed = if parsed.is_empty() {
         log::info!("AI search: LLM returned empty/garbage response, falling back to raw keywords");
-        let fallback_kw = ai::fallback_keywords(&natural_query);
+        let fallback_kw = translate::fallback_keywords(&natural_query);
         if fallback_kw.is_empty() {
             parsed
         } else {
-            ai::ParsedLlmResponse {
+            translate::ParsedLlmResponse {
                 keywords: Some(fallback_kw),
                 ..Default::default()
             }
@@ -299,11 +300,11 @@ pub async fn translate_search_query_with<R: tauri::Runtime>(
     };
 
     // Build deterministic query
-    let query = ai_query_builder::build_search_query(&parsed);
-    let display = ai_query_builder::build_translate_display(&parsed, &query);
-    let caveat = ai_query_builder::generate_caveat(&parsed, &query);
-    let label = ai_query_builder::build_label(&parsed);
-    let translated_query = ai_query_builder::build_translated_query(&query);
+    let query = ai::search_query(&parsed);
+    let display = translate::build_translate_display(&parsed, &query);
+    let caveat = translate::generate_caveat(&parsed, &query);
+    let label = translate::build_label(&parsed);
+    let translated_query = translate::build_translated_query(&query);
 
     Ok(TranslateResult {
         query: translated_query,

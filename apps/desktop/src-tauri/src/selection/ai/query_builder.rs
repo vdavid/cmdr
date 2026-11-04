@@ -1,6 +1,6 @@
 //! Assembles a `SelectionTranslateResult` from a parsed LLM response.
 //!
-//! Mirrors `crate::search::ai::query_builder` in spirit: pure functions over the
+//! Mirrors `cmdr_search::translate`'s query builder in spirit: pure functions over the
 //! parsed response, no IPC concerns. The result is what crosses the wire to the
 //! frontend selection dialog.
 

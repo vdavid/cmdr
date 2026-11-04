@@ -584,11 +584,18 @@ var surfaceGuardedCrates = []struct {
 		// and the three canonical-key helpers the desktop's Selection history shares
 		// (`normalize_query`, `filters_fingerprint`, `flag`, plus `HistoryMode::as_str`).
 		// Both hosts keep a recents list with one dedupe key, so the key is the crate's.
+		//
+		// Raised 2026-11-04 by one module (`translate`) and its 13 flat re-exports,
+		// when the natural-language pipeline left the app: the prompt, the reply's
+		// parser and fallback, the assembler's five builders, the ISO date reader the
+		// MCP tool uses, the two DTOs, and `LocalDays` (the host's calendar). Its
+		// submodules stay private, so these are the whole promise; the host supplies
+		// the clock and zone, which is why the pipeline could leave the app at all.
 		Name: "cmdr-search",
 		Ceilings: surfaceCeilings{
-			RootPromises:   37,
-			PublicModules:  11,
-			SubsystemItems: 112,
+			RootPromises:   38,
+			PublicModules:  12,
+			SubsystemItems: 125,
 		},
 	},
 	{

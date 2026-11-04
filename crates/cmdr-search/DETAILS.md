@@ -82,6 +82,8 @@ re-exports), nine public modules, 86 items inside them. An item is `pub` only be
 - **A live run's reporting** (raised 2026-11-04 to 33 / 10 / 104, when it joined the crate): `run::*`, the registry
   value, `ResultStream` and its `RunSink` facts, the run-state DTOs, the terminal report's inputs, and `BATCH_ROWS` /
   `BATCH_INTERVAL` (the host's pump and tests). § "A live run's reporting".
+- **Natural language into a query** (raised 2026-11-04 to 38 / 12 / 125): `translate::*`, flat re-exports over private
+  modules (`translate/CLAUDE.md`).
 - **A recent search** (raised 2026-11-04 to 37 / 11 / 112): `history::*`, the entry, its cap, and the key helpers the
   desktop's Selection history shares. § "Recent searches".
 - **A source over rows in memory** (raised 2026-11-04 to 36 root promises): `MemorySource`, `MemoryRow`, and

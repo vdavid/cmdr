@@ -32,8 +32,9 @@ serde = { version = "1", features = ["derive"] }
 # one graph would make these `Type` impls stop satisfying `tauri-specta`, and the
 # app's command signatures collect them.
 specta = { version = "=2.0.0-rc.24", features = ["derive"] }
-# `format_timestamp` formats a given value; nothing here reads a clock.
-time = { version = "0.3", features = ["formatting", "macros"] }
+# `format_timestamp` formats a given value and `translate` parses an ISO date;
+# nothing here reads a clock.
+time = { version = "0.3", features = ["formatting", "macros", "parsing"] }
 # `CancellationToken`, the one cancellation primitive every layer speaks: a live
 # run carries the token that stops its walk. `default-features = false` keeps it to
 # `tokio_util::sync`, as `cmdr-fs` and `cmdr-listing` take it.

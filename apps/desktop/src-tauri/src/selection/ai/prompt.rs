@@ -4,7 +4,7 @@
 //! and translate a user's natural-language intent into the smallest glob or regex
 //! that selects the matching files, plus optional size and date filters.
 //!
-//! Why key-value output and not JSON: same reason `crate::search::ai::prompt` does
+//! Why key-value output and not JSON: same reason `cmdr_search::translate`'s prompt does
 //! it. Missing lines are individually skippable; malformed JSON would void the whole
 //! call. Key-value is also cheaper to parse and read in logs.
 //!
