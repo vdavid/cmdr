@@ -600,4 +600,20 @@ var surfaceGuardedCrates = []struct {
 			SubsystemItems: 0,
 		},
 	},
+	{
+		// Measured 2026-11-04, at the extraction (#302), and set to exactly what the
+		// crate exposes, with no headroom.
+		//
+		// Five root promises, the rules of a most-recently-used list: the
+		// `RecentItem` trait an entry implements, and the four list verbs (`add_to`,
+		// `trim_to`, `remove_from`, `dedupe_keeping_newest`). No public module. A
+		// list's file and locks are the host's, so a persistence item here is a design
+		// change, argued in `crates/cmdr-recents/DETAILS.md` first.
+		Name: "cmdr-recents",
+		Ceilings: surfaceCeilings{
+			RootPromises:   5,
+			PublicModules:  0,
+			SubsystemItems: 0,
+		},
+	},
 }

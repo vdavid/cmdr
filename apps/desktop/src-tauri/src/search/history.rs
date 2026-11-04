@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 use crate::recents::{RecentEntry, RecentsFile};
+use cmdr_recents::RecentItem;
 
 /// Default cap when the user hasn't tuned `search.recentSearches.maxCount`.
 pub const DEFAULT_MAX_COUNT: usize = 1000;
@@ -84,7 +85,9 @@ impl RecentEntry for HistoryEntry {
     const LOG_TARGET: &'static str = "search::history";
     const LOG_NAME: &'static str = "search history";
     const STATE_FILE: crate::state_recovery::StateFile = crate::state_recovery::StateFile::SearchHistory;
+}
 
+impl RecentItem for HistoryEntry {
     fn id(&self) -> &str {
         &self.id
     }

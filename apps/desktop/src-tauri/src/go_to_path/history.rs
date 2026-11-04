@@ -12,6 +12,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::recents::{RecentEntry, RecentsFile};
+use cmdr_recents::RecentItem;
 
 /// Fixed cap on recent paths. Not a setting: the dialog shows at most 10 recents
 /// (digit keys 1-9, 0), so the store mirrors that hard limit.
@@ -37,7 +38,9 @@ impl RecentEntry for RecentPathEntry {
     const LOG_TARGET: &'static str = "go_to_path::history";
     const LOG_NAME: &'static str = "go-to-path history";
     const STATE_FILE: crate::state_recovery::StateFile = crate::state_recovery::StateFile::GoToPathHistory;
+}
 
+impl RecentItem for RecentPathEntry {
     fn id(&self) -> &str {
         &self.id
     }

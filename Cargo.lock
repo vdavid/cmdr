@@ -1468,6 +1468,7 @@ dependencies = [
  "cmdr-nfs",
  "cmdr-operation-log",
  "cmdr-operations",
+ "cmdr-recents",
  "cmdr-restic",
  "cmdr-s3",
  "cmdr-search",
@@ -1913,6 +1914,10 @@ dependencies = [
  "xattr",
  "zip",
 ]
+
+[[package]]
+name = "cmdr-recents"
+version = "0.0.0"
 
 [[package]]
 name = "cmdr-restic"

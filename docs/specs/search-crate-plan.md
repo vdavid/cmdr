@@ -438,6 +438,12 @@ The details for all three:
   helpers. The on-disk format of all four files is unchanged: their existing load tests stay green.
 - **Test plan**: `recents` and the four features' history tests unchanged; a new crate test drives the pure list.
 - **DONE**: no Tauri in the list logic; all four histories load the same files; `bindings.ts` unchanged.
+- **As landed so far** (2026-11-04): `crates/cmdr-recents` holds `RecentItem` (id, `set_id`, dedupe key) and `add_to` /
+  `trim_to` / `remove_from` / `dedupe_keeping_newest`, with the id minted by the host (`add_to`'s `fresh_id`; the
+  desktop passes a uuid v4). The app's `RecentEntry` requires `RecentItem` and keeps the file constants; the five impls
+  (search, selection, Go to path, multi-rename's field history and last settings) split in two, their files and tests
+  unchanged. In the isolation list with a 5 / 0 / 0 ceiling. Still to do: `HistoryEntry` and its key helpers into
+  `cmdr-search`'s `history` module, and the demo's session list (M7).
 
 ### M7: ⌘F in the demo (M–L, after M3, M4, M6, the write-engine + viewer branches, and the folder-size fold land)
 

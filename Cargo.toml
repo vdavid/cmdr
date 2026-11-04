@@ -18,6 +18,7 @@ members = [
   "crates/cmdr-nfs",
   "crates/cmdr-operation-log",
   "crates/cmdr-operations",
+  "crates/cmdr-recents",
   "crates/cmdr-restic",
   "crates/cmdr-s3",
   "crates/cmdr-search",
