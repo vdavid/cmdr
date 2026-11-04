@@ -104,6 +104,7 @@ pub(crate) fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -
 }
 
 /// Everything a main-menu item's enabled state is derived from.
+#[derive(Clone, Copy)]
 struct MenuItemInputs<'a> {
     /// The main file explorer owns the menu (`activate_window_menu("main")`).
     explorer_menu_active: bool,
@@ -138,6 +139,13 @@ fn menu_item_enabled(id: &str, inputs: &MenuItemInputs) -> bool {
         _ => true,
     };
     in_scope && own_verdict && !refused
+}
+
+/// Whether an explorer item held in its own `MenuState` field (outside `items`) is enabled: the
+/// explorer owns the menu and the dialog gate doesn't refuse `command_id`. None of them has a
+/// verdict of its own.
+fn explorer_item_enabled(command_id: &str, inputs: &MenuItemInputs) -> bool {
+    inputs.explorer_menu_active && !inputs.refused.contains(command_id)
 }
 
 /// Records that the search box of viewer `label` took (`focused`) or gave up keyboard focus,
@@ -215,7 +223,7 @@ pub(crate) fn apply_menu_item_states<R: Runtime>(menu_state: &MenuState<R>) {
     // The items held in their own `MenuState` fields, outside `items`. All of them are explorer
     // items with no verdict of their own. The check items name their command by const, since they
     // emit their own events instead of `execute-command`.
-    let explorer_item = |command_id: &str| inputs.explorer_menu_active && !refused.contains(command_id);
+    let explorer_item = |command_id: &str| explorer_item_enabled(command_id, &inputs);
     let pin_tab_command = menu_id_to_command(PIN_TAB_MENU_ID).map_or("", |(command_id, _)| command_id);
     let pin_tab_enabled = explorer_item(pin_tab_command);
     let show_hidden_enabled = explorer_item(VIEW_SHOW_HIDDEN_COMMAND_ID);
@@ -304,3 +312,7 @@ const OPERATION_START_ITEM_IDS: &[&str] = &[
 #[cfg(test)]
 #[path = "item_states_test.rs"]
 mod item_states_test;
+
+#[cfg(test)]
+#[path = "bar_states_test.rs"]
+mod bar_states_test;
