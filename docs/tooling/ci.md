@@ -62,6 +62,15 @@ The `ci-coverage` check (below) validates that every concrete path in the filter
 can't silently rot a filter again (this happened: the filter watched `vite.config.ts` long after the file became
 `vite.config.js`), and enforces the lane-file and gated-check rules.
 
+### Lane markers (skip a lane whose exact inputs already passed)
+
+A filter compares the PR's whole delta against `main`, so a docs fix pushed onto a green Rust branch reruns every Rust
+lane. `scripts/lane-markers/` hashes each lane's exact inputs (its filters' matches at the commit, its workflow and
+local actions, the toolchain pins, the check runner); a lane that passes saves a `lane-green-<lane>-<hash>` Actions
+cache entry, a later PR run that finds it in a trusted scope skips the lane, and `CI OK` re-proves every such skip.
+Pushes, dispatches, and `run_all` ignore markers. Trust argument, store choice, the one risk (a filter missing an input)
+and its guards, and the per-lane wiring: `scripts/lane-markers/DETAILS.md`. No lane is wired to it yet.
+
 ## The registry ↔ CI contract (`ci-coverage`)
 
 CI runs checks by explicit name (`--check <id>`), which means two failure modes are silent: a check added to the
