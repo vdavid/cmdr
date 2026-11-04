@@ -312,13 +312,19 @@ pub(super) struct Fixture {
 impl Fixture {
     /// Register a volume mounted at `path` as `volume_id` on the BSD node `bsd_name`, indexing.
     pub(super) fn indexed_volume(&self, volume_id: &str, bsd_name: &str, path: &Path) {
+        self.registered_volume(volume_id, bsd_name, path);
+        self.index.indexes(volume_id);
+    }
+
+    /// Register a volume mounted at `path` as `volume_id` on the BSD node `bsd_name`, with no index
+    /// on it: a disk image, or a drive the person never turned indexing on for.
+    pub(super) fn registered_volume(&self, volume_id: &str, bsd_name: &str, path: &Path) {
         self.host.nodes.lock_ignore_poison().insert(bsd_name.to_string());
         self.host
             .volumes
             .lock_ignore_poison()
             .insert(path.to_path_buf(), volume_id.to_string());
         self.host.mounted.lock_ignore_poison().insert(path.to_path_buf());
-        self.index.indexes(volume_id);
         self.index.note_root(volume_id, path);
     }
 }
