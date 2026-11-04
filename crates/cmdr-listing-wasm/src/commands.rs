@@ -21,7 +21,6 @@ use cmdr_listing::{
     CompareDirectoriesError, CompareDirectoriesMode, DirectorySortMode, ListingId, ListingRequest, Listings, OnNoMatch,
     PaneMarks, RefreshOutcome, RowBeside, RowSpan, SortColumn, SortOrder,
 };
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -30,6 +29,7 @@ use cmdr_fs::volume::host::VolumeHost;
 use crate::backend_listings::BackendListings;
 use crate::events::{DemoEvents, EventSink, ListingPathEvent};
 use crate::folder_sizes::FolderSizes;
+use crate::invoke::{answer, ok, parse};
 use crate::operations_host::DemoOperations;
 use crate::tree::{DemoTree, TreeError};
 use crate::viewer::{DemoViewer, VIEWER_COMMANDS};
@@ -392,21 +392,6 @@ fn page_runtime() -> cmdr_fs::rt::Runtime {
     return cmdr_fs::rt::Runtime::default();
     #[cfg(not(target_family = "wasm"))]
     cmdr_fs::rt::Runtime::current()
-}
-
-pub(crate) fn parse<T: DeserializeOwned>(command: &str, args: Value) -> Result<T, Value> {
-    serde_json::from_value(args).map_err(|e| Value::String(format!("invalid args for command `{command}`: {e}")))
-}
-
-pub(crate) fn ok(answer: impl Serialize) -> Result<Value, Value> {
-    serde_json::to_value(answer).map_err(|e| Value::String(e.to_string()))
-}
-
-pub(crate) fn answer<T: Serialize, E: Serialize>(result: Result<T, E>) -> Result<Value, Value> {
-    match result {
-        Ok(answer) => ok(answer),
-        Err(error) => Err(ok(error)?),
-    }
 }
 
 /// `ListingStatus` and `StreamingListingStartResult` in the app: the answer is

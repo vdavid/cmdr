@@ -3,7 +3,7 @@
 //! Opens a file, picks the right backend based on file size, and provides a session-based
 //! API for the frontend. Sessions are cached by ID and cleaned up on close.
 
-use super::viewer::Viewer;
+use super::Viewer;
 use super::worker;
 use cmdr_fs::log_error::LogError;
 use std::io::Write;
@@ -306,7 +306,7 @@ impl Viewer {
         // `volume_source`.
         let on_volume = match reuse {
             Some(_) => None,
-            None => open_for_viewer(self, &requested, volume_id)?,
+            None => open_for_viewer(self.host(), self.runtime(), &requested, volume_id)?,
         };
 
         // A volume with no held reader and no OS path may still read by position. Sniff
@@ -316,7 +316,7 @@ impl Viewer {
         if !force_text
             && reuse.is_none()
             && on_volume.is_none()
-            && let Some(found) = open_ranged_for_media(self, &requested, volume_id)?
+            && let Some(found) = open_ranged_for_media(self.host(), self.runtime(), &requested, volume_id)?
             && let Some(result) = media_session::try_open_media(
                 self,
                 media_session::MediaOpen {

@@ -1,6 +1,6 @@
 //! The viewer-session vocabulary and registry: the [`ViewerSession`] a window reads
 //! through and what an open returns ([`ViewerOpenResult`]). The session table itself
-//! is the `Viewer`'s (`viewer.rs`).
+//! is the `Viewer`'s (`lib.rs`).
 //!
 //! Both open paths build on this: text opens in [`super::session`] and media opens in
 //! [`super::media_session`]. Neither imports the other's vocabulary, so the open

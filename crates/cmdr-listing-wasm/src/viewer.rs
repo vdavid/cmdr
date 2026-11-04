@@ -27,8 +27,8 @@ use cmdr_viewer::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use crate::commands::{answer, ok, parse};
 use crate::events::EventSink;
+use crate::invoke::{answer, ok, parse};
 
 /// Every viewer command [`DemoViewer::invoke`] answers, by its Tauri name.
 pub const VIEWER_COMMANDS: &[&str] = &[

@@ -55,7 +55,6 @@ mod search_matcher;
 pub mod session;
 mod session_store;
 pub mod source;
-mod viewer;
 pub mod volume_error;
 pub mod volume_source;
 #[cfg(not(target_family = "wasm"))]
@@ -127,11 +126,17 @@ pub use rows::SEGMENT_BYTES;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{EncodingOptions, SaveProgress, SavedAs, SearchPollResult, ViewerSessionStatus};
 pub use session_store::{BackendType, MediaDimensions, SearchStatus, ViewerOpenResult};
-pub use viewer::Viewer;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use cmdr_fs::error_detail::ErrorDetail;
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, write_plain};
+use cmdr_fs::rt::Runtime;
 use serde::{Deserialize, Serialize};
+
+use host::ViewerHost;
+use session_store::ViewerSession;
 
 /// Maximum file size for FullLoadBackend (1 MB).
 const FULL_LOAD_THRESHOLD: u64 = 1024 * 1024;
@@ -433,8 +438,8 @@ pub trait FileViewerBackend: Send + Sync {
         &self,
         matcher: &Matcher,
         cancel: &std::sync::atomic::AtomicBool,
-        matches: &std::sync::Mutex<Vec<SearchMatch>>,
-        progress: &std::sync::Mutex<u64>,
+        matches: &Mutex<Vec<SearchMatch>>,
+        progress: &Mutex<u64>,
     ) -> Result<u64, ViewerError>;
 
     /// What this backend can do.
@@ -453,4 +458,132 @@ pub trait FileViewerBackend: Send + Sync {
 
     /// File name (last path component).
     fn file_name(&self) -> &str;
+}
+
+/// The file viewer as a value: its sessions, the windows that own them, the opens still
+/// running, its media tokens, the host it reaches the app through, and the runtime its
+/// async volume calls run on. Everything a session touches hangs off one `Viewer`, so
+/// two viewers (two hosts, or two tests) never share a session table.
+///
+/// A cheap handle (`Clone` shares the same state): a background job that outlives the
+/// call that started it (an index upgrade, a watcher) holds a clone. It lives at the
+/// crate root because its session API is implemented by the feature modules beneath it
+/// (`session.rs`, `markdown_session.rs`); this block is only its state.
+#[derive(Clone)]
+pub struct Viewer(Arc<ViewerState>);
+
+struct ViewerState {
+    host: ViewerHost,
+    /// Where the async volume calls run (`bridge.rs`). Handed over by the host at
+    /// creation, ❌ never resolved from an ambient runtime: a reader may drop on a plain
+    /// worker thread, which has none.
+    runtime: Runtime,
+    sessions: Mutex<HashMap<String, ViewerSession>>,
+    /// A viewer window label (`viewer-<timestamp>`) to its session id. The window opens
+    /// the session, so this link is what lets the window-destroyed handler free it: the
+    /// titlebar X never sends `viewer_close`. Without it those sessions (and their
+    /// backends, watchers, and line indexes) leaked until app quit.
+    windows: Mutex<HashMap<String, String>>,
+    /// The in-flight opens that belong to a window, by window label (`pending_open.rs`).
+    pending_opens: Mutex<HashMap<String, Arc<PendingOpen>>>,
+    tokens: Arc<MediaTokens>,
+}
+
+impl Viewer {
+    /// A viewer over `host`, running its async volume calls on `runtime`, with a token
+    /// table of its own.
+    pub fn new(host: ViewerHost, runtime: Runtime) -> Self {
+        Self::with_tokens(host, runtime, Arc::new(MediaTokens::new()))
+    }
+
+    /// A viewer that mints into `tokens`, a table something else (the app's thumbnails)
+    /// mints into too, so one `cmdr-media://` handler serves both.
+    pub fn with_tokens(host: ViewerHost, runtime: Runtime, tokens: Arc<MediaTokens>) -> Self {
+        Self(Arc::new(ViewerState {
+            host,
+            runtime,
+            sessions: Mutex::new(HashMap::new()),
+            windows: Mutex::new(HashMap::new()),
+            pending_opens: Mutex::new(HashMap::new()),
+            tokens,
+        }))
+    }
+
+    /// The media tokens this viewer's sessions mint, which the `cmdr-media://` handler
+    /// resolves.
+    pub fn tokens(&self) -> &Arc<MediaTokens> {
+        &self.0.tokens
+    }
+
+    pub(crate) fn host(&self) -> &ViewerHost {
+        &self.0.host
+    }
+
+    pub(crate) fn runtime(&self) -> &Runtime {
+        &self.0.runtime
+    }
+
+    pub(crate) fn sessions(&self) -> MutexGuard<'_, HashMap<String, ViewerSession>> {
+        self.0.sessions.lock_ignore_poison()
+    }
+
+    /// The session table, or `None` when a panic poisoned it: for a background job
+    /// that has nothing to do once the table is gone.
+    pub(crate) fn sessions_if_healthy(&self) -> Option<MutexGuard<'_, HashMap<String, ViewerSession>>> {
+        // allowed-lock-poison: a background job's bookkeeping (an index timeout, a read's unregister) skips a poisoned table, as it always has
+        self.0.sessions.lock().ok()
+    }
+
+    pub(crate) fn windows(&self) -> MutexGuard<'_, HashMap<String, String>> {
+        self.0.windows.lock_ignore_poison()
+    }
+
+    pub(crate) fn pending_opens(&self) -> MutexGuard<'_, HashMap<String, Arc<PendingOpen>>> {
+        self.0.pending_opens.lock_ignore_poison()
+    }
+
+    /// How a session asking for `rows` shows them, with this host's log transform.
+    pub(crate) fn row_view(&self, rows: RowText) -> RowView {
+        RowView::new(rows, self.0.host.log_display)
+    }
+
+    /// Drops `token` and tells the host, so a host that minted something for it (the
+    /// browser demo's `blob:` URL) can let it go.
+    pub(crate) fn drop_token(&self, token: &str) {
+        self.0.tokens.drop_token(token);
+        self.0.host.events.media_token_dropped(token);
+    }
+
+    /// Starts watching an open for `window_label`, so closing that window abandons it. A
+    /// newer open for the same window replaces (and abandons) an older one. An empty label
+    /// has no window to close, so its open is watched but not registered.
+    pub fn begin_pending_open(&self, window_label: &str) -> Arc<PendingOpen> {
+        let open = Arc::new(PendingOpen::new());
+        if !window_label.is_empty()
+            && let Some(older) = self.pending_opens().insert(window_label.to_string(), Arc::clone(&open))
+        {
+            older.abandon(AbandonReason::Cancelled);
+        }
+        open
+    }
+
+    /// Stops watching `open` for `window_label`, once its waiter is done with it. Leaves a
+    /// newer open for the same window registered.
+    pub fn end_pending_open(&self, window_label: &str, open: &Arc<PendingOpen>) {
+        let mut opens = self.pending_opens();
+        if opens
+            .get(window_label)
+            .is_some_and(|current| Arc::ptr_eq(current, open))
+        {
+            opens.remove(window_label);
+        }
+    }
+
+    /// Abandons the in-flight open of a window that closed, if it has one.
+    pub(crate) fn abandon_pending_open_for_window(&self, window_label: &str) {
+        let open = self.pending_opens().remove(window_label);
+        if let Some(open) = open {
+            open.abandon(AbandonReason::Cancelled);
+        }
+    }
 }

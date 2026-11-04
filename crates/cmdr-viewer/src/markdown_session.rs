@@ -16,7 +16,7 @@ use std::sync::atomic::AtomicBool;
 
 use serde::Serialize;
 
-use super::viewer::Viewer;
+use super::Viewer;
 
 use super::content_kind::{
     CLASSIFY_HEAD_LEN, MARKDOWN_RENDER_CAP_BYTES, ViewerContentKind, is_markdown_extension, is_renderable_markdown,
@@ -88,7 +88,12 @@ pub(super) fn open_markdown_session(viewer: &Viewer, open: MarkdownOpen) -> View
         file: Some(open.opened),
         media_token: None,
         temp: open.temp,
-        markdown: Some(Arc::new(MarkdownDocument::new(viewer, open.requested, open.volume_id))),
+        markdown: Some(Arc::new(MarkdownDocument::new(
+            viewer.tokens(),
+            viewer.host(),
+            open.requested,
+            open.volume_id,
+        ))),
         rows: RowView::raw(),
     });
     viewer.sessions().insert(session_id.clone(), session);

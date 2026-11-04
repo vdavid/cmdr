@@ -8,7 +8,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::super::DemoOperations;
-use crate::commands::{ok, parse};
+use crate::invoke::{ok, parse};
 
 pub(super) const NAMES: &[&str] = &[
     "path_exists",

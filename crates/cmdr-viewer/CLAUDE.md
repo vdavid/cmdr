@@ -7,8 +7,8 @@ model. A host builds one `Viewer` over its `host::ViewerHost`: the desktop app
 
 ## Module map
 
-- `viewer.rs`: `Viewer`, the value that owns it all. `session.rs` (text sessions) + `session_store.rs`. `lib.rs`: the
-  API, `ViewerError`.
+- `lib.rs`: `Viewer`, the value that owns it all (its methods live in `session.rs` / `markdown_session.rs`), the API,
+  `ViewerError`. `session.rs` (text sessions) + `session_store.rs`.
 - `rows.rs` (the row rule), `row_walk.rs` (read forward), `range_read.rs`, `encoding.rs`, the three backends
   (`full_load.rs` / `byte_seek.rs` / `line_index.rs`), `search_matcher.rs`, `row_text.rs` + `log_view.rs`, `watcher.rs`
   (tail mode, native only), `source.rs` + `volume_source.rs` under `origin.rs`: one held handle per session, ❌ never

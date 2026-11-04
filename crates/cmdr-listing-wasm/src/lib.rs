@@ -19,6 +19,7 @@ mod bindings;
 pub mod commands;
 pub mod events;
 pub mod folder_sizes;
+mod invoke;
 pub mod menu;
 pub mod operations_host;
 #[cfg(target_family = "wasm")]

@@ -9,7 +9,8 @@ The engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`. Not
   `commands.rs`: `Demo`, the listing commands by their Tauri names, plus Brief widths and font metrics
   (`cmdr-brief-columns`, memory only). `menu.rs`: `DemoMenu`, the menu-state pushes stored and the macOS bar drawn from
   `cmdr-menu`. `folder_sizes.rs`: the drive index's stand-in, a fold over the volume behind both engines' index seams
-  (DETAILS § Folder sizes). `viewer.rs`: the file viewer's commands (`cmdr-viewer`, same volume). `bindings.rs` (wasm
+  (DETAILS § Folder sizes). `viewer.rs`: the file viewer's commands (`cmdr-viewer`, same volume). `invoke.rs`: the
+  args/answer JSON helpers every command family shares, a leaf so no family imports `commands.rs`. `bindings.rs` (wasm
   only): the `wasm-bindgen` API.
 - `operations_host/`: the write engine's host (seams, sinks, `wire.rs` event names, `commands/` by domain), on the same
   volume and `Listings` the listing engine uses. DETAILS § Writes.

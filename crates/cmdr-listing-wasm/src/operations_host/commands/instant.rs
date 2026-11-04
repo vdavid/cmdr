@@ -12,7 +12,7 @@ use serde_json::Value;
 
 use super::super::DemoOperations;
 use super::super::wire::{self, emit};
-use crate::commands::{answer, ok, parse};
+use crate::invoke::{answer, ok, parse};
 
 pub(super) const NAMES: &[&str] = &[
     "create_directory",

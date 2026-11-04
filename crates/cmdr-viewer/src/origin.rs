@@ -8,8 +8,8 @@ use std::sync::Arc;
 use log::debug;
 
 use super::ViewerError;
+use super::host::ViewerHost;
 use super::source::{OpenedFile, open_local};
-use super::viewer::Viewer;
 use super::volume_error::map_volume_error;
 use super::volume_source::{PositionedRead, open_on_volume, size_on_volume};
 use cmdr_fs::rt::Runtime;
@@ -81,14 +81,15 @@ pub(super) struct VolumeOpen {
 /// is fine and already named the trouble, and a mount's answer could be a `NotFound`, which
 /// reads as "this file was deleted".
 pub(super) fn open_for_viewer(
-    viewer: &Viewer,
+    host: &ViewerHost,
+    runtime: &Runtime,
     requested: &Path,
     volume_id: &str,
 ) -> Result<Option<VolumeOpen>, ViewerError> {
-    match open_through_volume(viewer, requested, volume_id, PositionedRead::Held)? {
+    match open_through_volume(host, runtime, requested, volume_id, PositionedRead::Held)? {
         // A host with no local files (the browser): a volume that holds no handle reads
         // through `read_range` (the demo's unpaced one), with nothing to fall back on.
-        None if !viewer.host().local_files => open_through_volume(viewer, requested, volume_id, PositionedRead::Ranged),
+        None if !host.local_files => open_through_volume(host, runtime, requested, volume_id, PositionedRead::Ranged),
         found => Ok(found),
     }
 }
@@ -99,28 +100,28 @@ pub(super) fn open_for_viewer(
 /// drops this. `None` under the same rules as [`open_for_viewer`], plus any volume whose
 /// paths `std::fs` already opens.
 pub(super) fn open_ranged_for_media(
-    viewer: &Viewer,
+    host: &ViewerHost,
+    runtime: &Runtime,
     requested: &Path,
     volume_id: &str,
 ) -> Result<Option<VolumeOpen>, ViewerError> {
-    let os_visible = viewer
-        .host()
+    let os_visible = host
         .volumes
         .get(volume_id)
         .is_none_or(|volume| volume.paths_are_os_visible());
     if os_visible {
         return Ok(None);
     }
-    open_through_volume(viewer, requested, volume_id, PositionedRead::Ranged)
+    open_through_volume(host, runtime, requested, volume_id, PositionedRead::Ranged)
 }
 
 fn open_through_volume(
-    viewer: &Viewer,
+    host: &ViewerHost,
+    runtime: &Runtime,
     requested: &Path,
     volume_id: &str,
     way: PositionedRead,
 ) -> Result<Option<VolumeOpen>, ViewerError> {
-    let host = viewer.host();
     if host.volumes.routes_over_its_parent(requested) {
         return Ok(None);
     }
@@ -132,7 +133,7 @@ fn open_through_volume(
         volume,
         path: requested.to_path_buf(),
         way,
-        runtime: viewer.runtime().clone(),
+        runtime: runtime.clone(),
     };
     match origin.open_volume() {
         Ok(opened) => Ok(Some(VolumeOpen {

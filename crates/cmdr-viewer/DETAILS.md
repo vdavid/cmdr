@@ -14,8 +14,8 @@ binary-warning classifier.
 ## Key files
 
 - `lib.rs`: public API, constants (1MB threshold, 256-ROW checkpoints), `LineChunk` / `ViewerRow` / `ChunkEnd` /
-  `TotalRows`, `ViewerError` typed enum
-- `viewer.rs`: `Viewer`, the value that owns the sessions, window links, pending opens, tokens, host, and runtime
+  `TotalRows`, `ViewerError` typed enum, and `Viewer`, the value that owns the sessions, window links, pending opens,
+  tokens, host, and runtime. § "Module layering" says why it sits at the root
 - `rows.rs`: the row boundary rule, defined once as a boundary set, plus `RowRuler`, which reads it backward (one
   bounded window per probe, for a seek), and `content_start`'s partner constants `SEGMENT_BYTES` / `MAX_WINDOW_BYTES`
 - `row_walk.rs`: the same set read FORWARD, off the newline stream, for a walk: `next_row_boundary` + `RowReader`,
@@ -85,8 +85,8 @@ one host: the desktop app (`apps/desktop/src-tauri/src/file_viewer/`) and the br
   `images` (a Markdown picture's `MediaSource`), `events` (a watched file changed, a media token dropped), `analytics`
   (`viewer_opened`), `opener` (a web or mail link). The log view's row transform is a plain `fn` field. `ViewerHost`
   bundles them.
-- **The `Viewer` is a value** (`viewer.rs`, § "Key decisions"): every session call is a method on it, and a background
-  job holds a clone. The runtime it was handed is the only one the bridge uses.
+- **The `Viewer` is a value** (`lib.rs`, § "Key decisions"): every session call is a method on it, and a background job
+  holds a clone. The runtime it was handed is the only one the bridge uses.
 - **A host owns its event wire.** The core reports facts (`MediaLoad`, `PullProgress`, `FileChange`); the app turns them
   into its `tauri_specta::Event` structs. Decision: no type here may share an event's name, or specta would emit both
   into `bindings.ts`. The facts serialize to the same JSON as the app's events (both sides pinned).
@@ -815,12 +815,24 @@ changes. The typed enum flows through `tauri-specta` to `bindings.ts` as a discr
 `ViewerError::TimedOut` itself (`blocking_typed_result_with_timeout`), so the frontend has ONE union to match rather
 than a typed error plus a separate timeout shape. Why every family owns its error type: `docs/guides/error-handling.md`.
 
-**Decision**: The viewer is a value (`viewer.rs`: `Viewer`, a cheap `Arc` handle owning the session table, the window
-map, the pending opens, the media tokens, its host, and its runtime), and the app holds one (`app_host::app_viewer()`).
+**Decision**: The viewer is a value (`lib.rs`: `Viewer`, a cheap `Arc` handle owning the session table, the window map,
+the pending opens, the media tokens, its host, and its runtime), and the app holds one (`app_host::app_viewer()`).
 **Why**: a second host (the browser demo) needs its own sessions over its own volume, tests get a table nobody else
 writes, and every app concern arrives through the host instead of a static. Background jobs (search, indexing, the
 watcher) hold a `Viewer` clone. The media token table is its own shared value (`MediaTokens`), since the app's
 thumbnails mint into it too and the one scheme handler serves both.
+
+### Module layering
+
+**Decision**: `Viewer` is defined at the crate root, and the session vocabulary below it never names it: `origin.rs`
+takes the `ViewerHost` and `Runtime` it opens through, and `MarkdownDocument::new` takes the tokens and host it mints
+and pulls through. So `session_store.rs` → `origin.rs` / `markdown_document.rs` is one-way, and only the feature modules
+that implement `Viewer`'s methods (`session.rs`, `markdown_session.rs`, `media_session.rs`) name it. **Why**:
+`module-cycles` (`scripts/check/checks/DETAILS.md` § "Rust module cycles") counts an `impl Viewer` block as the module
+that DEFINES `Viewer`, so with `Viewer` in a sibling `viewer.rs` the split methods read as `viewer` ↔ `session` welding,
+and the vocabulary reaching back up for `viewer.host()` closed a real loop (`viewer` → `session_store` → `origin` →
+`viewer`). At the root, the method split is the idiomatic parent ↔ child hub the check ignores. ❌ Don't pass `&Viewer`
+into `origin.rs`, `session_store.rs`, or `markdown_document.rs`; hand them the pieces.
 
 ## Gotchas
 

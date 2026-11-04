@@ -10,7 +10,7 @@ use serde_json::Value;
 
 use super::super::DemoOperations;
 use super::{OperationIdArgs, OperationIdsArgs};
-use crate::commands::{answer, ok, parse};
+use crate::invoke::{answer, ok, parse};
 
 pub(super) const NAMES: &[&str] = &[
     "list_operations",

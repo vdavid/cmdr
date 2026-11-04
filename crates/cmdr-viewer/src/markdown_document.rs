@@ -10,12 +10,12 @@ use std::sync::{Arc, Mutex};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
+use super::host::ViewerHost;
 use super::host::events::ViewerEvents;
 use super::host::images::DocumentImages;
 use super::markdown_images::{ImageTarget, resolve_image_src};
 use super::markdown_render::ImageMarker;
 use super::media::{MediaSource, MediaTokens};
-use super::viewer::Viewer;
 
 /// A Markdown session's document: where it lives, and the image tokens its render minted.
 pub(super) struct MarkdownDocument {
@@ -38,16 +38,17 @@ pub(super) struct MarkdownDocument {
 }
 
 impl MarkdownDocument {
-    pub(super) fn new(viewer: &Viewer, path: PathBuf, volume_id: String) -> Self {
+    /// A document minting into `tokens` and pulling its images through `host`.
+    pub(super) fn new(tokens: &Arc<MediaTokens>, host: &ViewerHost, path: PathBuf, volume_id: String) -> Self {
         Self {
             path,
             volume_id,
             closed: Arc::new(AtomicBool::new(false)),
             remote_allowed: Arc::new(AtomicBool::new(false)),
             images: Mutex::new(HashMap::new()),
-            tokens: Arc::clone(viewer.tokens()),
-            sources: Arc::clone(&viewer.host().images),
-            events: Arc::clone(&viewer.host().events),
+            tokens: Arc::clone(tokens),
+            sources: Arc::clone(&host.images),
+            events: Arc::clone(&host.events),
         }
     }
 

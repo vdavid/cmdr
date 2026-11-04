@@ -8,7 +8,7 @@
 //! [`super::session`]; both build on [`super::session_store`] (the `ViewerSession` type and
 //! its constructor).
 //!
-//! [`try_open_media`] is the single entry point [`Viewer::open_session`](super::viewer::Viewer::open_session) calls
+//! [`try_open_media`] is the single entry point [`Viewer::open_session`](super::Viewer::open_session) calls
 //! before it builds a text backend: it classifies the file and, for a media kind, opens
 //! the media session and returns the result; otherwise it returns `None` and the caller
 //! falls through to the text path.
@@ -17,6 +17,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
+use super::Viewer;
 use super::content_kind::{CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, media_mime};
 use super::encoding::FileEncoding;
 use super::host::pulls::PreviewTemp;
@@ -29,7 +30,6 @@ use super::session_store::{
     BackendType, MediaDimensions, ViewerOpenResult, ViewerSession, ViewerSessionInit, generate_session_id,
 };
 use super::source::{OpenedFile, read_head};
-use super::viewer::Viewer;
 use super::{FileViewerBackend, LineChunk, ViewerError};
 
 /// One file to classify, through the handle the session opened.
