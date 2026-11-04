@@ -8,9 +8,11 @@ lands in a typed answer here; the listing commands go to the real listing engine
   `webview.ts`: one frame's `__TAURI_INTERNALS__`, forwarding to the backend and holding its listeners. `windows.ts`:
   secondary windows as in-page panels (Settings, Keyboard shortcuts, the operation queue, and `viewer-*`; the rest
   refused). `menu-bar.svelte.ts`: the macOS menu bar, drawn from `menu-engine.ts` (the desktop's own bar and fold,
-  through WASM). `traffic-lights.ts`: the macOS window buttons the page draws, at the app's own `trafficLightPosition`.
-  `drag-regions.ts`: Tauri's injected `drag.js`, ported, so the pages' drag strips move their panel. `drag-session.ts`:
-  the OS's file drag, answering `start_drag_paths` with Tauri's drag-drop events (DETAILS § Drag and drop).
+  through WASM). `context-menu.ts`: the right-click menus, the same engine's rows. Both open `menu-surfaces.ts`'s menus
+  and pick through `menu-click.ts`. `traffic-lights.ts`: the macOS window buttons the page draws, at the app's own
+  `trafficLightPosition`. `drag-regions.ts`: Tauri's injected `drag.js`, ported, so the pages' drag strips move their
+  panel. `drag-session.ts`: the OS's file drag, answering `start_drag_paths` with Tauri's drag-drop events (DETAILS §
+  Drag and drop).
 - `answers.ts` (app commands), `volumes.ts`, `plugins.ts` (in-memory `plugin:store`, path, app), `opener.ts` (every
   external link opens in a new tab), `listing.ts` (routes to the WASM engine, loaded once by `engine-module.ts`, which
   answers the viewer too), `unanswered.ts` (`window.__cmdrDemo.unanswered`; an unanswered void resolves, any other
@@ -37,8 +39,8 @@ the WASM engine first.
 - **Answers are typed against `bindings.ts`** (`AnswerTable`, `VoidCommand`), so a drifted answer fails `svelte-check`.
   An error branch is `refuse(command, typedError)`, never a thrown `Error`.
 - **No menu logic in TS.** Rows, words, shortcuts, enabled and checked state, and what a click sends all come from
-  `cmdr-menu` through `DemoMenuBar`; the app's menu pushes reach it because no TS table answers them. A click sends the
-  native item's own event, so the app's handlers are the ones that run.
+  `cmdr-menu` through `DemoMenuBar`, the right-click menus' too; the app's menu pushes reach it because no TS table
+  answers them. A click sends the native item's own event, so the app's handlers are the ones that run.
 - **No listing or write logic in TS.** The backend tries its TS tables first, then whatever `DemoListing.handles()`
   claims, so a TS answer for an engine command would silently shadow the real engine. `engine-commands.test.ts` pins the
   write, queue, path, and undo commands as engine-only.

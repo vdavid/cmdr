@@ -7706,20 +7706,9 @@ export type ConnectionState =
   | 'saved'
 
 /**
- *  The user's keyboard shortcuts as they stand right now: command-registry id → the
- *  combo in the frontend's canonical spelling (`⌘⇧C`, `F5`, `Space`). The frontend
- *  pushes it with every popup, straight out of the shortcut registry, so a command
- *  nobody has bound is simply absent.
- *
- *  This is how a popup menu's accelerator labels stay true after a rebind. They were
- *  literals once, and a literal starts lying the moment the user changes a key in
- *  Settings > Shortcuts.
- *
- *  ❗ These accelerators never FIRE. A popup's key equivalents are never registered
- *  with the app (only the menu bar's are), so every one of them is display text. That
- *  is why the lookup goes through `frontend_shortcut_to_menu_text` and ❌ never
- *  `frontend_shortcut_to_accelerator`: the menu bar's modifier floor would drop a bare
- *  `Space` or `F5`, which is right there and wrong here.
+ *  The user's keyboard shortcuts as they stand right now: command-registry id → the combo in the
+ *  frontend's canonical spelling (`⌘⇧C`, `F5`, `Space`). The frontend pushes it with every popup,
+ *  straight out of the shortcut registry, so a command nobody has bound is simply absent.
  */
 export type ContextMenuShortcuts = { [key in string]: string }
 
@@ -15112,10 +15101,9 @@ export type QueueRowContextAction = {
 }
 
 /**
- *  One thing a queue row's menu can do. Pause and Resume share a key but are separate
- *  actions, so the label can say which one this click is, and so a pick that went stale
- *  while the menu was up can be told apart. Its menu ids, labels, and commands live with the
- *  menu builder (`menu/queue_row_menu.rs`).
+ *  One thing a queue row's menu can do. Pause and Resume share a key but are separate actions, so
+ *  the label can say which one this click is, and so a pick that went stale while the menu was up
+ *  can be told apart. Its menu ids, labels, and commands live right below.
  */
 export type QueueRowMenuAction =
   | 'moveEarlier'
@@ -15128,7 +15116,10 @@ export type QueueRowMenuAction =
   | 'resume'
   | 'rollback'
 
-// One line of a queue row's menu, as the window lists it.
+/**
+ *  One entry of a queue row's menu, as the queue window lists it
+ *  (`lib/file-operations/queue/queue-row-menu.ts`): every fact behind it lives there.
+ */
 export type QueueRowMenuEntry =
   | { kind: 'item'; action: QueueRowMenuAction; enabled: boolean }
   /**
@@ -20461,9 +20452,9 @@ export type ViewerEditAction = {
 }
 
 /**
- *  Which item of the viewer menu bar's Edit submenu was picked. A typed variant rather
- *  than the menu id as a string: the viewer frontend dispatches on it, and an id is a
- *  backend detail nothing across IPC should be matching on.
+ *  Which item of the viewer menu bar's Edit submenu (or the viewer's text menu) was picked. A
+ *  typed variant rather than the menu id as a string: the viewer frontend dispatches on it, and an
+ *  id is a backend detail nothing across IPC should be matching on.
  */
 export type ViewerEditActionKind =
   // Edit > Copy (⌘C).

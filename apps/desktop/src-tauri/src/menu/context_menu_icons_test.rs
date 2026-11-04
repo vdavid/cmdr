@@ -12,18 +12,36 @@ use std::path::PathBuf;
 ///
 /// The icons land through AppKit, which resolves a Tauri ID to the title it
 /// currently carries and matches on that, so a stale ID costs an icon with no
-/// crash and no log line anyone reads. Building a real menu needs AppKit on the main
-/// thread, so the source is what we can check here.
+/// crash and no log line anyone reads. The menu is data (`cmdr_menu::context::file`), so the
+/// rows and the slot tables the builder reads are what we check.
 #[test]
 fn every_icon_names_an_item_the_context_menu_builds() {
-    let source = include_str!("file_context_menu.rs");
-    let ids: HashSet<&str> = FILE_CONTEXT_ICONS.iter().map(|&(id, _)| id).collect();
-    for id in ids {
-        // The constant's NAME, since that's what the builder call spells.
-        let name = constant_named(id).expect("every context-menu icon id is a `cmdr_menu::ids` constant");
+    use cmdr_menu::context::ContextRow;
+    use cmdr_menu::context::file::{DRIVE_ITEMS, EVICTION_ITEMS, FileMenuFacts, PaneFacts, file_menu};
+    let mut built: HashSet<String> = DRIVE_ITEMS
+        .iter()
+        .chain(EVICTION_ITEMS.iter())
+        .map(|&(id, _)| id.to_string())
+        .collect();
+    for is_directory in [false, true] {
+        let facts = FileMenuFacts {
+            filename: "f",
+            is_directory,
+            pane: PaneFacts::default(),
+            image_index: Default::default(),
+            target: Default::default(),
+            same_kind: None,
+        };
+        for row in file_menu(&facts, cmdr_menu::spec::Platform::MacOs) {
+            if let ContextRow::Item(item) = row {
+                built.insert(item.id);
+            }
+        }
+    }
+    for &(id, _) in FILE_CONTEXT_ICONS {
         assert!(
-            source.contains(&name),
-            "`file_context_menu.rs` builds no item with `{name}`, so its icon never lands"
+            built.contains(id),
+            "the file context menu builds no `{id}` item, so its icon never lands"
         );
     }
 }
@@ -228,15 +246,4 @@ fn share_is_one_run_in_its_submenu_pointing_at_each_offered_service() {
         "submenu share-submenu: share-service:0 = service 0's icon, share-service:1 = service 1's icon".to_string(),
     );
     assert_eq!(described(image_runs(&info)), expected);
-}
-
-/// The `cmdr-menu` `ids.rs` constant whose value is `value`.
-fn constant_named(value: &str) -> Option<String> {
-    include_str!("../../../../../crates/cmdr-menu/src/ids.rs")
-        .lines()
-        .find_map(|line| {
-            let rest = line.trim().strip_prefix("pub const ")?;
-            let (name, rest) = rest.split_once(": &str = \"")?;
-            (rest.strip_suffix("\";")? == value).then(|| name.to_string())
-        })
 }

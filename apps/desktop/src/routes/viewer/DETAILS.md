@@ -927,11 +927,11 @@ so the page shows how far it got. Backend half: `apps/desktop/src-tauri/src/file
   another call to "wait for read"); the FE just sends the id with the read request, and the backend keys the cancel flag
   off that id. Uniqueness within the session is the only invariant.
 - **The right-click menu over the text is a native OS menu**, same as every other right-click in the app
-  (`build_viewer_context_menu` in `src-tauri/src/menu/menu_structure.rs`). `handleContextMenu` cancels the webview's own
-  menu and calls the `showContextMenu` dep, which the page wires to `showViewerContextMenu(hasSelection)`: the native
-  menu can't see the viewer's selection model, so the frontend reads it at open time and Rust greys Copy from that. The
-  pick comes back as `ViewerContextMenuAction` to this viewer, and `runViewerContextMenuAction` runs the same
-  `handleCopy` / `handleSelectAllShortcut` the ⌘-chords end in.
+  (`viewer_text_menu` in `crates/cmdr-menu/src/context/popups.rs`). `handleContextMenu` cancels the webview's own menu
+  and calls the `showContextMenu` dep, which the page wires to `showViewerContextMenu(hasSelection)`: the native menu
+  can't see the viewer's selection model, so the frontend reads it at open time and Rust greys Copy from that. The pick
+  comes back as `ViewerContextMenuAction` to this viewer, and `runViewerContextMenuAction` runs the same `handleCopy` /
+  `handleSelectAllShortcut` the ⌘-chords end in.
   - ❗ It's its own event, ❌ never a `ViewerEditAction`: the bar's pair hands Copy and Select all to the search box
     while it has focus, and a right-click on the text doesn't move focus (`handlePointerDown` ignores button 2), so the
     bar's dispatcher would copy the query from a menu opened over the file.

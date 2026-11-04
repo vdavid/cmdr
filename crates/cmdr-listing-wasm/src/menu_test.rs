@@ -50,7 +50,7 @@ fn push(menu: &DemoMenu, command: &str, args: Value) {
 
 fn emitted(click: Click) -> (String, Value) {
     match click {
-        Click::Emit { event, payload } => (event, payload),
+        Click::Emit { event, payload, .. } => (event, payload),
         other => panic!("expected an emit, got {other:?}"),
     }
 }

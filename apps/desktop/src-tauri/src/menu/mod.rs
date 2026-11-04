@@ -9,22 +9,21 @@
 //!   `menu_bar` / `menu_spec`), the enabled-state fold, and what a click asks for.
 //!   `menu_bar_builder.rs` builds it for the running platform (`build_menu`), and `mnemonics.rs`
 //!   allocates the Linux underline letters.
-//! - `menu_items.rs`: the live labels resolved in the native language (`pin_tab_label`,
-//!   `same_kind_menu_label`, `undo_trash_menu_label`, `detach_label`), and `truncate_for_menu_label`.
-//! - `file_context_menu.rs`: the file context menu (the one a right-click on a row opens), plus
-//!   `ContextMenuPaneFacts` / `ContextMenuResult`. Its macOS `FileContextInfo` is `context_menu_facts.rs`'s.
-//! - `menu_structure.rs`: the smaller context menus (breadcrumb, parent row, function key bar, tab,
-//!   network host, server row, volume row, favorite), the viewer menu, and the
-//!   `ContextMenuShortcuts` / `context_item` vocabulary they all share with the file one.
-//! - `queue_row_menu.rs`: a queue row's right-click menu in the operation queue window, built from
-//!   the entries the window lists (`QueueRowMenuEntry`); a pick goes back as `QueueRowContextAction`.
+//! - Every context menu is data too, in `cmdr_menu::context` (rows, ids, labels, enabled state,
+//!   accelerator sources, and what a pick asks for). `context_rows.rs` builds any of them
+//!   (`build_popup`); `file_context_menu.rs` builds the file one, filling its macOS slots. Its
+//!   macOS `FileContextInfo` is `context_menu_facts.rs`'s.
+//! - `menu_items.rs`: the crate's labels resolved in the native language (`pin_tab_label`,
+//!   `same_kind_menu_label`, `undo_trash_menu_label`), and `detach_word_for_volume_id`.
+//! - `menu_structure.rs`: the viewer window's menu bar.
+//! - `date_sort_menu.rs`: the header Sort by popup's pick event (`DateSortMenuPick`).
 //! - `item_states.rs`: `apply_menu_item_states` (the single writer of every main-menu item's
 //!   enabled state, over `cmdr_menu::enabled`), `set_menu_context`, and the macOS app-menu-bar swap
 //!   between main and viewer.
 //! - `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher wired into the Tauri
 //!   builder, plus the macOS post-construction helpers it shares a platform with
 //!   (`cleanup_macos_menus`, `set_macos_menu_icons`, and the responder-chain edit actions).
-//! - `accelerators.rs`: `frontend_shortcut_to_menu_text` / `frontend_shortcut_to_accelerator` (the
+//! - `accelerators.rs`: `frontend_shortcut_to_accelerator` (the
 //!   crate's conversions for this platform), and `update_menu_item_accelerator` (swapping one on a
 //!   live item).
 //! - `view_mode_items.rs`: keeping the per-pane view-mode items in step, via a full
@@ -60,6 +59,7 @@ mod context_menu_icons;
 mod context_menu_live;
 #[cfg(target_os = "macos")]
 mod context_menu_slots;
+mod context_rows;
 mod date_sort_menu;
 #[cfg(target_os = "macos")]
 mod display_accelerators;
@@ -68,13 +68,11 @@ mod file_context_menu;
 mod file_provider_items;
 pub mod install;
 mod item_states;
-mod queue_row_menu;
 // `pub(crate)` for one helper: `dock::menu` builds its own `NSMenu` by hand (Tauri
 // exposes none) and puts SF Symbols on it with `set_sf_symbol`, so the same glyph
 // rules cover the menu bar and the Dock tile menu. Everything else here stays internal.
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_appkit;
-mod media_index_items;
 mod menu_bar_builder;
 mod menu_handlers;
 mod menu_items;
@@ -85,7 +83,6 @@ pub mod open_with;
 #[cfg(target_os = "macos")]
 mod provider_logos;
 mod rebuild;
-mod selection_submenu;
 #[cfg(target_os = "macos")]
 mod services_context;
 #[cfg(target_os = "macos")]
@@ -116,28 +113,29 @@ use tauri::{
 // Re-export the public API consumed from outside the menu module.
 // All menu item ID constants and the ID ↔ command-registry mapping functions live in
 // `cmdr_menu::ids`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
-pub use accelerators::{
-    frontend_shortcut_to_accelerator, frontend_shortcut_to_menu_text, update_menu_item_accelerator,
-};
+pub use accelerators::{frontend_shortcut_to_accelerator, update_menu_item_accelerator};
+pub use cmdr_menu::context::ContextMenuShortcuts;
+pub use cmdr_menu::context::image_index::ImageIndexMenuState;
+pub use cmdr_menu::context::popups::QueueRowMenuEntry;
 pub use cmdr_menu::ids::*;
 pub use cmdr_menu::sort::RequestedSort;
 pub use cmdr_menu::spec::ViewMode;
+pub use context_menu_header::ContextMenuTarget;
 #[cfg(target_os = "macos")]
 pub use context_menu_header::lend_context_menu_header;
-pub use context_menu_header::{ContextMenuTarget, ContextMenuTargetFacts};
 #[cfg(target_os = "macos")]
 pub use context_menu_icons::lend_context_menu_icons;
 #[cfg(target_os = "macos")]
 pub use context_menu_live::{late_sink, lend_live_menu, next_generation};
-pub use date_sort_menu::{DateSortMenuPick, PaneSide, build_date_sort_menu};
+pub use context_rows::build_popup;
+pub use date_sort_menu::{DateSortMenuPick, PaneSide};
 // On macOS the command builds its `FileContextInfo` through `context_menu_facts`, never by name.
 #[cfg(not(target_os = "macos"))]
 pub use file_context_menu::FileContextInfo;
-pub use file_context_menu::{ContextMenuPaneFacts, build_context_menu};
+pub use file_context_menu::build_context_menu;
 pub(crate) use item_states::{apply_menu_item_states, set_menu_context};
 #[cfg(target_os = "macos")]
 pub(crate) use item_states::{note_viewer_search_focus, swap_to_main_menu, swap_to_viewer_menu};
-pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
 pub use menu_bar_builder::build_menu;
 pub use menu_handlers::handle_menu_event;
 pub(crate) use menu_handlers::native_edit_selector_for_viewer_page;
@@ -148,14 +146,9 @@ pub use menu_handlers::{
     cleanup_macos_menus, cleanup_macos_menus_from_command, set_display_accelerators,
     set_display_accelerators_from_command, set_macos_menu_icons, set_macos_menu_icons_from_command,
 };
-pub(crate) use menu_items::DetachWord;
+pub(crate) use menu_items::{DetachWord, detach_word_for_volume_id};
 pub use menu_items::{SameKindTarget, TrashUndoTarget, pin_tab_label, same_kind_menu_label, undo_trash_menu_label};
-pub use menu_structure::{
-    ContextMenuShortcuts, build_breadcrumb_context_menu, build_function_key_bar_context_menu,
-    build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu, build_viewer_context_menu,
-    build_viewer_menu,
-};
-pub use queue_row_menu::{QueueRowMenuEntry, build_queue_row_context_menu};
+pub use menu_structure::build_viewer_menu;
 pub use rebuild::rebuild_menu_bar;
 #[cfg(target_os = "macos")]
 pub use services_context::lend_services_menu;

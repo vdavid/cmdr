@@ -724,7 +724,7 @@ mod tests {
             }
         }
         assert!(
-            built.len() > 10,
+            built.len() >= 5,
             "only {} menu ids parsed out of {sources:?}; the parser is broken, not the source",
             built.len()
         );

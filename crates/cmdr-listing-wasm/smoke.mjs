@@ -142,6 +142,18 @@ try {
   if (click?.kind !== 'emit' || click.payload?.commandId !== 'nav.goHome') {
     fail(`a Go > Home click came back as ${JSON.stringify(click)}`)
   }
+  // A right-click menu: the popup answers rows, and a pick names its event and window.
+  if (!glue.DemoMenuBar.opensPopup('show_tab_context_menu')) fail('the tab menu is not a popup')
+  const popup = menu.popup(
+    'show_tab_context_menu',
+    { isPinned: false, canClose: true, hasOtherUnpinnedTabs: true },
+    'main',
+  )
+  if (popup?.rows?.[0]?.id !== 'tab_pin') fail(`the tab popup came back as ${JSON.stringify(popup)}`)
+  const pick = menu.contextClick('tab_close')
+  if (pick?.kind !== 'emit' || pick.event !== 'tab-context-action' || pick.to !== 'main') {
+    fail(`a tab popup pick came back as ${JSON.stringify(pick)}`)
+  }
   // The runtime seam's browser half: task sets, aborts, macrotask yields, timers, the wall clock.
   const rtSummary = await glue.rtSelfTest(Date.now())
   console.log(`listing-wasm smoke: ${rtSummary}`)

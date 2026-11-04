@@ -34,6 +34,15 @@ vi.mock('./menu-engine.js', () => ({
     },
     bar: () => [],
     click: () => ({ kind: 'nothing' }),
+    opensPopup: (cmd: string) => Promise.resolve(cmd === 'show_tab_context_menu'),
+    popup: (cmd: string, _payload: unknown, label: string) => {
+      engine.calls.push(`popup:${cmd}:${label}`)
+      return Promise.resolve({
+        anchor: null,
+        rows: [{ kind: 'item', id: 'tab_pin', label: { text: 'Pin tab' }, shortcut: null, enabled: true }],
+      })
+    },
+    contextClick: () => ({ kind: 'nothing' }),
   }),
 }))
 
@@ -63,6 +72,17 @@ describe('demo backend', () => {
     const backend = createDemoBackend()
     expect(await backend.invoke('activate_window_menu', { kind: 'main' })).toBeNull()
     expect(engine.calls).toContain('menu:activate_window_menu')
+  })
+
+  it('draws a right-click menu at the pointer of the window that asked, and answers null', async () => {
+    const backend = createDemoBackend()
+    const origin = { label: 'main', pointer: { x: 12, y: 34 } }
+    expect(await backend.invoke('show_tab_context_menu', {}, origin)).toBeNull()
+    expect(engine.calls).toContain('popup:show_tab_context_menu:main')
+    const menu = document.querySelector<HTMLElement>('.cmdr-demo-menu')
+    expect(menu?.textContent).toContain('Pin tab')
+    expect([menu?.style.left, menu?.style.top]).toEqual(['12px', '34px'])
+    menu?.remove()
   })
 
   it('answers plugin, raw, silent, and window commands', async () => {

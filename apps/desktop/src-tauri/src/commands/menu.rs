@@ -12,10 +12,15 @@ use crate::menu::FileContextInfo;
 #[cfg(target_os = "macos")]
 use crate::menu::context_menu_facts;
 use crate::menu::{
-    ContextMenuPaneFacts, ContextMenuShortcuts, DetachWord, MenuState, SameKindTarget, build_breadcrumb_context_menu,
-    build_context_menu, build_date_sort_menu, build_function_key_bar_context_menu, build_network_host_context_menu,
-    build_parent_row_context_menu, build_queue_row_context_menu, build_tab_context_menu, build_viewer_context_menu,
+    ContextMenuShortcuts, DetachWord, MenuState, SameKindTarget, build_context_menu, build_popup,
+    detach_word_for_volume_id,
 };
+use cmdr_menu::context::file::{FileMenuFacts, PaneFacts, TargetFacts};
+use cmdr_menu::context::popups::{
+    BreadcrumbVolume, NetworkHostFacts, breadcrumb_menu, date_sort_menu, function_key_bar_menu, network_host_menu,
+    parent_row_menu, queue_row_menu, tab_menu, viewer_text_menu,
+};
+use cmdr_menu::spec::Platform;
 use tauri::menu::ContextMenu;
 use tauri::{AppHandle, Manager, Runtime, Window};
 
@@ -246,12 +251,10 @@ pub fn show_file_context_menu<R: Runtime>(
     #[cfg(not(target_os = "macos"))]
     let info = FileContextInfo;
 
-    let result = build_context_menu(
-        app,
-        &filename,
+    let facts = FileMenuFacts {
+        filename: &filename,
         is_directory,
-        &info,
-        ContextMenuPaneFacts {
+        pane: PaneFacts {
             restrict_destination_actions: pane.restrict_destination_actions,
             can_show_in_folder: pane.can_show_in_folder,
             can_open_terminal_here: pane.can_open_terminal_here,
@@ -261,15 +264,14 @@ pub fn show_file_context_menu<R: Runtime>(
             can_share_link: pane.can_share_link,
         },
         image_index,
-        crate::menu::ContextMenuTargetFacts {
+        target: TargetFacts {
             count: target_count,
             count_text: target.count_text.as_deref(),
             size_text: target.size_text.as_deref(),
         },
-        &shortcuts,
-        same_kind.as_ref(),
-    )
-    .map_err(|e| e.to_string())?;
+        same_kind: same_kind.as_ref(),
+    };
+    let result = build_context_menu(app, &facts, &info, &shortcuts).map_err(|e| e.to_string())?;
 
     // Stash the bundle_id → app_path map so on_menu_event can resolve clicks on
     // `open-with:<bundle-id>` items back to a real app URL.
@@ -347,16 +349,14 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
     });
     let detach_word = eject_volume_id
         .as_deref()
-        .map_or(DetachWord::Eject, DetachWord::for_volume_id);
-    let menu = build_breadcrumb_context_menu(
-        app,
-        &shortcuts,
-        eject_volume_name.as_deref(),
-        eject_busy,
-        detach_word,
+        .map_or(DetachWord::Eject, detach_word_for_volume_id);
+    let volume = eject_volume_name.as_deref().map(|name| BreadcrumbVolume {
+        name,
+        busy: eject_busy,
+        word: detach_word,
         offer_eject_all,
-    )
-    .map_err(|e| e.to_string())?;
+    });
+    let menu = build_popup(app, &breadcrumb_menu(volume), &shortcuts).map_err(|e| e.to_string())?;
 
     // Stash eject target so on_menu_event can read it back when the user clicks
     // the "Eject (name)" item. If only one of the two args is present, treat as no
@@ -413,7 +413,7 @@ pub fn show_parent_row_context_menu<R: Runtime>(
         context.path = parent_path;
         context.filename = "..".to_string();
     }
-    let menu = build_parent_row_context_menu(app).map_err(|e| e.to_string())?;
+    let menu = build_popup(app, &parent_row_menu(), &ContextMenuShortcuts::default()).map_err(|e| e.to_string())?;
     popup_context_menu(&menu, window, anchor)?;
     Ok(())
 }
@@ -434,8 +434,8 @@ pub fn show_tab_context_menu(
 ) -> Result<(), String> {
     let app = window.app_handle().clone();
 
-    let menu =
-        build_tab_context_menu(&app, is_pinned, can_close, has_other_unpinned_tabs).map_err(|e| e.to_string())?;
+    let rows = tab_menu(is_pinned, can_close, has_other_unpinned_tabs);
+    let menu = build_popup(&app, &rows, &ContextMenuShortcuts::default()).map_err(|e| e.to_string())?;
     focus_for_context_menu(&window);
     menu.popup(window).map_err(|e| e.to_string())?;
 
@@ -454,7 +454,8 @@ pub fn show_date_sort_menu(
     requested: Option<cmdr_listing::SortColumn>,
     anchor: Option<MenuAnchor>,
 ) -> Result<(), String> {
-    let menu = build_date_sort_menu(window.app_handle(), pane, requested).map_err(|e| e.to_string())?;
+    let rows = date_sort_menu(pane, requested);
+    let menu = build_popup(window.app_handle(), &rows, &ContextMenuShortcuts::default()).map_err(|e| e.to_string())?;
     popup_context_menu(&menu, window, anchor)
 }
 
@@ -466,7 +467,8 @@ pub fn show_date_sort_menu(
 #[specta::specta]
 pub fn show_function_key_bar_context_menu(window: Window<tauri::Wry>) -> Result<(), String> {
     let app = window.app_handle().clone();
-    let menu = build_function_key_bar_context_menu(&app).map_err(|e| e.to_string())?;
+    let menu =
+        build_popup(&app, &function_key_bar_menu(), &ContextMenuShortcuts::default()).map_err(|e| e.to_string())?;
     focus_for_context_menu(&window);
     menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
@@ -479,7 +481,8 @@ pub fn show_function_key_bar_context_menu(window: Window<tauri::Wry>) -> Result<
 #[tauri::command]
 #[specta::specta]
 pub fn show_viewer_context_menu(window: Window<tauri::Wry>, has_selection: bool) -> Result<(), String> {
-    let menu = build_viewer_context_menu(window.app_handle(), has_selection).map_err(|e| e.to_string())?;
+    let rows = viewer_text_menu(has_selection, Platform::current());
+    let menu = build_popup(window.app_handle(), &rows, &ContextMenuShortcuts::default()).map_err(|e| e.to_string())?;
     popup_context_menu(&menu, window, None)
 }
 
@@ -494,7 +497,7 @@ pub fn show_queue_row_context_menu(
     entries: Vec<crate::menu::QueueRowMenuEntry>,
     shortcuts: ContextMenuShortcuts,
 ) -> Result<(), String> {
-    let menu = build_queue_row_context_menu(window.app_handle(), &entries, &shortcuts).map_err(|e| e.to_string())?;
+    let menu = build_popup(window.app_handle(), &queue_row_menu(&entries), &shortcuts).map_err(|e| e.to_string())?;
     popup_context_menu(&menu, window, None)
 }
 
@@ -526,8 +529,13 @@ pub fn show_network_host_context_menu(
 
     let app = window.app_handle().clone();
     let has_mounts = !smb_mounts_from(&smb_servers_of(&host)).is_empty();
-    let menu = build_network_host_context_menu(&app, is_manual, is_saved, has_credentials, has_mounts)
-        .map_err(|e| e.to_string())?;
+    let rows = network_host_menu(NetworkHostFacts {
+        is_manual,
+        is_saved,
+        has_credentials,
+        has_mounts,
+    });
+    let menu = build_popup(&app, &rows, &ContextMenuShortcuts::default()).map_err(|e| e.to_string())?;
 
     // Store context so on_menu_event can include the row and host in the emitted event
     {

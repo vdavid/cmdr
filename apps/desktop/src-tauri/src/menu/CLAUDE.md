@@ -4,9 +4,9 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
 
 ## Module map
 
-The bar as data is `crates/cmdr-menu/CLAUDE.md`; `menu_bar_builder.rs` builds it. `file_context_menu.rs`: the file
-right-click menu. `menu_structure.rs`: the smaller context menus and the viewer menu. `macos_appkit.rs`: the objc2
-boundary. One line per file: DETAILS § File layout.
+The bar and every context menu as data are `crates/cmdr-menu/CLAUDE.md`; `menu_bar_builder.rs` builds the bar,
+`context_rows.rs` any popup, and `file_context_menu.rs` the file one with its macOS slots. `menu_structure.rs`: the
+viewer bar. `macos_appkit.rs`: the objc2 boundary. One line per file: DETAILS § File layout.
 
 ## Must-knows
 
@@ -19,8 +19,8 @@ boundary. One line per file: DETAILS § File layout.
 - **Every menu image goes through ONE door, `set_menu_item_image`**, because macOS 27 hides an item's image unless the
   item opts in, silently (it reads back non-nil, nothing draws). Clippy refuses `NSMenuItem::setImage` and
   `IconMenuItem` elsewhere. A context-menu image is an `ItemImage` in `context_menu_icons::image_runs`.
-- **A popup accelerator is a LABEL the payload carries, ❌ never a literal**: `context_item()` resolves its own menu id
-  through `frontend_shortcut_to_menu_text`, ❌ not the bar's floored `frontend_shortcut_to_accelerator`.
+- **Context menus are the crate's rows** (`cmdr_menu::context`): ❌ never add a row here (the demo would drift). Picks
+  go through `context_click`; a popup accelerator is a row's `Shortcut` over the pushed map, ❌ never a literal.
 - **A BAR combo with no ⌘/⌃/⌥, or one whose key muda can't name (`+`, `*`, `ö`), is DISPLAYED, never registered** —
   `⇧8` IS `*`, and AppKit fires a registered one app-wide. `displayed_item` carries the glyph. ❗ `setAttributedTitle:`
   also rewrites `title` (which muda 0.20's `text()` reads back), so `find_ns_item` and `menu_item_text` both cut at
@@ -29,12 +29,11 @@ boundary. One line per file: DETAILS § File layout.
   thread, so a tokio task deadlocks the app. Clone the handle out (`cloned_handle`). DETAILS § Gotchas.
 - **Accelerator changes go remove/recreate/reinsert**, so `MenuState` tracks each item's submenu and index; a live
   label moves through `MenuState::set_item_label`, ❌ never a bare `set_text`.
-- **Four families skip `"execute-command"`**: CheckMenuItems auto-toggle (it would double-toggle) and send
-  `"settings-changed"` / `"view-mode-changed"`; sort resets its checks, then sends `"menu-sort"`; Cut / Copy / Paste / Move here / Select all
-  are Custom (❌ not Predefined) items forwarding the native selector via `send_native_edit_action()` outside the main
-  window, or ⌘A and the clipboard die there; all four of the VIEWER bar's are Custom too, on their own `VIEWER_*` ids —
-  Copy / Select all emit `ViewerEditAction` to the viewer in front (a native selector would grab its status bar), while
-  Cut / Paste forward the selector to its search box, ❗ Predefined off macOS or ⌘X / ⌘V die there.
+- **Four families skip `"execute-command"`**: CheckMenuItems auto-toggle (they send `"settings-changed"` /
+  `"view-mode-changed"`); sort resets its checks, then sends `"menu-sort"`; the edit items are Custom (❌ not
+  Predefined), forwarding the native selector via `send_native_edit_action()` outside the main window, or ⌘A and the
+  clipboard die there; the VIEWER bar's four are Custom on their own `VIEWER_*` ids (Copy / Select all emit
+  `ViewerEditAction`; Cut / Paste forward to its search box, ❗ Predefined off macOS or ⌘X / ⌘V die there).
 - **Enabled state has ONE writer, `apply_menu_item_states`**: store a new input and add it to the crate's
   `MenuItemInputs` / `menu_item_enabled`, ❌ never a direct `set_enabled`. The viewer bar's Cut / Paste are in there too, following its search box
   (`viewer_search_focus`). Greying is chrome — the real guard is `main_window.is_focused()` in `on_menu_event`;

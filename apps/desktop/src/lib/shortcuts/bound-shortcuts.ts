@@ -12,7 +12,7 @@ import { getEffectiveShortcuts } from './shortcuts-store'
  * its items from this instead of carrying literal strings, which start lying the moment
  * someone rebinds a key in Settings > Shortcuts. A command with nothing bound is left
  * out, and its item then shows no accelerator, which is the honest answer. Rust looks
- * each one up by MENU id (`menu/menu_structure.rs`, `ContextMenuShortcuts`).
+ * each one up by MENU id (`cmdr_menu::context`, `ContextMenuShortcuts`).
  *
  * ❗ The canonical spelling, ❌ never `toDisplayShortcut`: the display glyphs (`⌫`, `⎋`)
  * mean nothing to Rust's accelerator conversion and come out as garbage, and macOS draws

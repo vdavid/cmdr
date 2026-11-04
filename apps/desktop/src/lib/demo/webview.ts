@@ -67,6 +67,14 @@ export function installWebview(
   // Keyed by the handler's callback id, which doubles as the event id `listen` resolves with,
   // as the mocks' own `unregisterListener` assumes.
   const listeners = new Map<number, Listener>()
+  // Where this frame last saw the pointer go down or ask for a context menu: where a native popup
+  // opens when the app names no point (`backend.ts`'s `openPopup`).
+  let lastPointer: { x: number; y: number } | null = null
+  function notePointer(event: MouseEvent): void {
+    lastPointer = { x: event.clientX, y: event.clientY }
+  }
+  window.addEventListener('pointerdown', notePointer, true)
+  window.addEventListener('contextmenu', notePointer, true)
   const internals = () => (window as unknown as { __TAURI_INTERNALS__: TauriInternals }).__TAURI_INTERNALS__
 
   function deliver(event: string, payload: unknown, target: EventTarget): void {
@@ -100,7 +108,7 @@ export function installWebview(
     // backend, which knows the panels; only this frame can answer for itself.
     const own = payload.label === undefined || payload.label === label ? windowAnswer(cmd) : undefined
     if (own) return own()
-    return overTheWire(await backend.invoke(cmd, overTheWire(payload)))
+    return overTheWire(await backend.invoke(cmd, overTheWire(payload), { label, pointer: lastPointer }))
   }
 
   mockWindows(label)

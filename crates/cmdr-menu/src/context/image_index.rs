@@ -14,17 +14,17 @@
 //! it as the way out. Same for a folder an ancestor entry already covers: adding it would
 //! write a redundant entry and change nothing.
 //!
-//! Pure, so the decision is unit-tested without an `AppHandle`; `file_context_menu` renders
-//! whatever this returns.
+//! Pure, so the decision is unit-tested without a menu; `file::file_menu` lays out whatever this
+//! returns.
 
-use super::{
+use crate::ids::{
     MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID, MEDIA_INDEX_INCLUDE_FOLDER_ID,
     MEDIA_INDEX_REMOVE_FOLDER_ID,
 };
 
 /// What the image-search group knows about the right-clicked folder, read from the live
 /// `media_index` gate and config in `show_file_context_menu`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct ImageIndexMenuState {
     /// The master toggle. With it off the whole group is hidden: none of these items
     /// would do anything visible.

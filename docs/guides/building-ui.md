@@ -39,7 +39,9 @@ is in `../design-system.md` § Soft sheets.
 
 Two menu systems: the OS's, through muda (`apps/desktop/src-tauri/src/menu/`), and the house `Menu`
 (`apps/desktop/src/lib/ui/Menu.svelte` plus `createMenu`). **Native for a right-click on a backend object; the house
-`Menu` when the content is more than plain rows, or when the menu hangs off our own chrome.** Apply in order:
+`Menu` when the content is more than plain rows, or when the menu hangs off our own chrome.** A native popup's rows are
+data in `crates/cmdr-menu/src/context/` (the desktop builds them, the browser demo draws them), so a new one starts
+there. Apply in order:
 
 1. **Is any of the CONTENT more than `[icon] label [✓]` rows?** Look in two places, and either one settles it. Inside a
    row: a disk-space bar, a connection dot, a live badge, an inline rename field, a drag handle, a sub-line (the
@@ -69,9 +71,9 @@ Two menu systems: the OS's, through muda (`apps/desktop/src-tauri/src/menu/`), a
    only DOM selection a selector can find is the `.status-bar` footer, and native `selectAll:` highlights the footer
    while native `copy:` copies it. That's the failure shape this question exists to catch, and it's worse than a no-op,
    since the item looks right and does the wrong thing. Its CONTENT (right-click) menu is native the same way: Custom
-   Copy and Select all whose enabled state the frontend computes at open time (`build_viewer_context_menu`) and whose
-   pick Rust emits back to the viewer (`ViewerContextMenuAction`). So frontend state can sit behind a native menu, as
-   long as it's Custom items that hand the pick back; ❌ what never works is a native selector pointed at it.
+   Copy and Select all whose enabled state the frontend computes at open time (`cmdr-menu`'s `viewer_text_menu`) and
+   whose pick Rust emits back to the viewer (`ViewerContextMenuAction`). So frontend state can sit behind a native menu,
+   as long as it's Custom items that hand the pick back; ❌ what never works is a native selector pointed at it.
 
 3. **Tiebreaker: what opened it?** A right-click is an OS convention and people expect the OS's menu. A menu hanging off
    a chip or a button in our own chrome should look like ours.

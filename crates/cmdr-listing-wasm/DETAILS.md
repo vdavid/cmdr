@@ -67,9 +67,18 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
   them, as `commands/menu_state.rs` stores them in `MenuState`. `menu.bar()` answers the macOS bar as it stands:
   `[{ id, title, rows }]`, each row `item` / `check` / `submenu` / `system` / `separator` with its label (a catalog key
   plus tokens, or the app menu's literal `Cmdr`), its shortcut in a Mac's glyphs, and its enabled and checked state, all
-  from `cmdr-menu`. `menu.click(id)` answers what the click sends: `{ kind: "emit", event, payload }`
-  (`execute-command`, `settings-changed`, `view-mode-changed`, `menu-sort`, the payloads `handle_menu_event` emits),
-  `nativeEdit`, `closeFocusedWindow`, or `nothing` for a greyed or OS row.
+  from `cmdr-menu`. `menu.click(id)` answers what the click sends: `{ kind: "emit", event, payload, to }`
+  (`execute-command`, `settings-changed`, `view-mode-changed`, `menu-sort`, the payloads `handle_menu_event` emits, `to`
+  the target window's label), `nativeEdit`, `closeFocusedWindow`, or `nothing` for a greyed or OS row.
+- The right-click menus are the same object (`context_menu.rs`). `DemoMenuBar.opensPopup(command)` claims the
+  `show_*_context_menu` commands (`POPUP_COMMANDS`), and `menu.popup(command, args, windowLabel)` stashes what the menu
+  went up over (the row's path, the eject target, the host row, the window), as `commands/menu.rs` stashes it in
+  `MenuState`, and answers `{ rows, anchor }`: `cmdr-menu`'s rows for those args, plus a `header` row kind, minus every
+  OS-filled `Slot`. `update_menu_context` is one more `invoke` push. `menu.contextClick(id)` answers a pick through
+  `cmdr_menu::context::click::context_click`: an `emit` to `main`, `queue`, or the viewer the menu went up over, an
+  `invoke` (`add_favorite`, as `handle_menu_event` calls it directly), or `nothing` for a row the last popup didn't
+  offer live. What the demo has no OS for: no slot, no image-search group, a breadcrumb volume never busy and always
+  "Eject", a servers hub host with nothing mounted.
 
 The volume is built `with_held_folders_only()`, so a folder the tree doesn't hold ends in the typed `notFound`
 `listing-error` a disk's missing folder does (and a file, `NotADirectory`). The tree: dates are JS milliseconds and
