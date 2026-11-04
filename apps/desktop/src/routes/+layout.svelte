@@ -20,6 +20,7 @@
     import { initAppMode } from '#lib/app-mode.js'
     import { installContextMenuOwnership } from '#lib/context-menu-ownership.js'
     import WindowBoundary from '#lib/error-reporter/WindowBoundary.svelte'
+    import { trackScrollbarWidth } from '#lib/ui/scrollbar-width.js'
 
     const { children }: { children?: Snippet } = $props()
 
@@ -43,7 +44,13 @@
         // user picked SI, and so on). Promise-memoized, so a page that awaits
         // the same call in its own `onMount` shares this run.
         void initWindowSettings()
-        return uninstallContextMenuOwnership
+        // The live `--spacing-scrollbar-width` every gutter-reserving scroller spends,
+        // in every window, following a mouse plugged in or out.
+        const stopScrollbarWidth = trackScrollbarWidth()
+        return () => {
+            uninstallContextMenuOwnership()
+            stopScrollbarWidth()
+        }
     })
 </script>
 

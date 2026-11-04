@@ -222,6 +222,12 @@
     let stopActiveDrag: (() => void) | null = null
 
     const resizeDirections = $derived(resizeDirectionsFor(resizable))
+    /**
+     * Whether `.modal-body` itself is the scroller: a `growDownward` or `resizable` panel
+     * caps its height, so the body takes the overflow, except under `resizable` +
+     * `fillBody`, where the body's own child region scrolls instead.
+     */
+    const bodyScrolls = $derived((growDownward || resizable !== false) && !(resizable !== false && fillBody))
 
     let footerActionsElement: HTMLDivElement | undefined = $state()
     /** How wide the panel must be to hold the footer's buttons on one row; `0` with no footer. */
@@ -676,7 +682,7 @@
                     {@render title()}
                 </h2>
             </div>
-            <div class="modal-body" class:no-footer={!footer}>
+            <div class="modal-body" class:no-footer={!footer} class:scrolls={bodyScrolls}>
                 {@render children()}
             </div>
             {#if guardedFor}
@@ -807,7 +813,6 @@
     .modal-dialog.grow-downward .modal-body {
         flex: 1 1 auto;
         min-height: 0;
-        overflow: auto;
     }
 
     /* The clipping layer, one level below the panel so the bands can hang over the
@@ -827,7 +832,6 @@
     .modal-dialog.resizable .modal-body {
         flex: 1 1 auto;
         min-height: 0;
-        overflow: auto;
     }
 
     /* `fillBody`: a fixed-height frame (the caller caps it via `containerStyle`).
@@ -1008,6 +1012,18 @@
            min-content width alone, so a flex/grid item holding a path must shrink on
            its own terms (`min-width: 0`, plus an ellipsis or the middle truncation). */
         overflow-wrap: break-word;
+    }
+
+    /* The body as the scroller (`bodyScrolls`). The gutter is reserved up front because
+       WebKit lays a scroller's content out as if a classic scrollbar weren't there when
+       it appears inside this flex overlay, so the content ran 17px wider than its box
+       and panned sideways (#889). The right padding gives the gutter back, keeping the
+       content's right edge on the title's inset with or without a visible bar.
+       `DETAILS.md` § "Scrollbar gutters". */
+    .modal-body.scrolls {
+        overflow: auto;
+        scrollbar-gutter: stable;
+        padding-right: calc(var(--spacing-dialog) - var(--spacing-scrollbar-width));
     }
 
     /* Footerless dialogs: the body owns the bottom padding the footer would give. */

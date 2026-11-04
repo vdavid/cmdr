@@ -23,8 +23,8 @@ Reusable components (Ark UI backs the complex ones).
   (`cmdr/dialog-needs-focus-trap`), else Tab leaks into the shortcut-suppressed background: a keyboard lockout.
   `ModalDialog` owns it.
 - **Adding a dialog** (soft sheets too): register its id in `SOFT_DIALOG_REGISTRY`, pass it as `dialogId`, add a gallery
-  row (`dialog-gallery-coverage`). Its `whileOpen` verdict won't compile until answered: it decides whether a file
-  operation may start behind the dialog. `#lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
+  row (`dialog-gallery-coverage`). Its compile-enforced `whileOpen` verdict says whether a file operation may start
+  behind it. `#lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
 - **`ModalDialog` registers what it renders in `open-dialogs.svelte.ts`**, keeping that set exhaustive;
   `OnboardingWizard` alone hand-registers. ❌ An unpaired close blocks file operations until restart.
 - **`ModalDialog`'s overlay starts at `inset: var(--titlebar-height) 0 0 0`**, keeping the macOS window-drag region
@@ -33,20 +33,21 @@ Reusable components (Ark UI backs the complex ones).
   `.modal-overlay:focus { outline: none }` (the scrim holds focus, so a UA ring lines the title bar in the SYSTEM
   accent), ❌ keep the MCP close registration in its `$effect`, or `dialog close` lies, ❌ no `overflow-wrap: anywhere`
   (splits words). DETAILS § ModalDialog.
+- **Dialog scrollers reserve their gutter**, minus `--spacing-scrollbar-width` (#889). DETAILS § Scrollbar gutters.
 - **A button's key is `Button`'s `keyHint`**, ❌ never a chip in its content (`cmdr/key-hint-via-button-prop`).
 - **Don't restyle `.btn-*` colors from a scoped feature component** (`scripts/check-btn-restyle`; one-offs need
   `/* allowed-btn-restyle: <reason> */`). `LinkButton` is the ONLY `cursor: pointer` opt-in.
 - **Per-component traps.** Each has its own section in `DETAILS.md`:
   - `Tooltip`: keep BOTH detached-trigger guards (`destroy()` cancels the timer, `showTooltip` / `positionTooltip` bail
-    on `!el.isConnected`), or a recycled virtual-scroll row fires the 400 ms timer on a dead node. Its hover-suppress
-    flag isn't redundant (scrolling slides a fresh row under a still pointer). ❌ Never a native `title`
-    (`cmdr/no-title-attribute`): it skips keyboard focus. Keep any `aria-label`.
+    on `!el.isConnected`), or a recycled virtual-scroll row fires the timer on a dead node. The hover-suppress flag
+    stays (scrolling slides rows under a still pointer). ❌ Never a native `title` (`cmdr/no-title-attribute`): it skips
+    keyboard focus. Keep any `aria-label`.
   - `ColumnList`: demands read row DATA, ❌ never DOM text (it'd oscillate).
-  - `ShortcutChip`: import `openShortcutCustomization` dynamically in the click handler: a static import drags
+  - `ShortcutChip`: import `openShortcutCustomization` dynamically: a static import drags
     `@tauri-apps/api/webviewWindow` onto a module-eval surface the capability-restricted viewer can't have. Set exactly
     one of `commandId` / `key`.
-  - `Select`: `.select-*` classes are a contract; don't rename or recolor off the accent tokens. `--z-dropdown` on
-    `.select-content`, ❌ never the positioner. Trapping modals call `providePortalTarget`.
+  - `Select`: `.select-*` classes and their accent tokens are a contract. `--z-dropdown` on `.select-content`, ❌ never
+    the positioner. Trapping modals call `providePortalTarget`.
   - `Combobox`: drive its text off `inputValue`, never `value` / `items` (blanks on an empty list).
   - Text fields: chrome lives in `app.css` § "Text fields", so ONE edit restyles all five (keep `Combobox` /
     `NumberInput` in sync). `.text-field` / `.text-field-control` are a selector contract, and `TextInput` is one-way

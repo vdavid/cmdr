@@ -249,6 +249,10 @@
         min-height: 0;
         /* Keep a little room so the scrollbar doesn't crowd the text. */
         padding-right: var(--spacing-xs);
+        /* A reserved gutter, pulled out into the body's inset so the text keeps its edge
+           with a classic scrollbar too (#889). `#lib/ui/DETAILS.md` § "Scrollbar gutters". */
+        scrollbar-gutter: stable;
+        margin-right: calc(var(--spacing-scrollbar-width) * -1);
     }
 
     /* Calm on purpose: the fix is already running, so this informs rather than warns. */
