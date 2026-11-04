@@ -12,6 +12,14 @@ const log = getAppLogger('startup')
 const PAINT_AFTER_SHOW_TIMEOUT_MS = 1000
 
 /**
+ * How long after the repair to keep waiting before calling the window stuck.
+ * A frame that lands inside this is late, not stuck: the 2015 MacBook Air on
+ * Catalina misses the first deadline on every launch while both panes mount,
+ * then paints (Cmdr 0.59.0, 10.15.8, four of four launches, 2026-11-04).
+ */
+const PAINT_AFTER_REPAIR_TIMEOUT_MS = 9000
+
+/**
  * Shows the main window as soon as the app has mounted.
  *
  * The window is created `visible: false` (`tauri.conf.json`) and the backend
@@ -35,19 +43,36 @@ const PAINT_AFTER_SHOW_TIMEOUT_MS = 1000
  * full-root reindex). The repair passes `'repaint-repair'` so it repaints
  * without taking the front back from an app the user switched to meanwhile.
  *
+ * After the repair it keeps waiting, so the log says what happened: a late
+ * frame (a slow Mac with the main thread busy mounting the panes) logs the
+ * real time to first frame at info, and only a window that still hasn't
+ * painted after the full wait warns.
+ *
  * Call fire-and-forget from `onMount` so it never holds up listener setup.
  */
 export async function showMainOnMount(): Promise<void> {
   await showMainWindow('launch')
+  const shownAt = performance.now()
 
-  const paint = await waitForNextPaint(PAINT_AFTER_SHOW_TIMEOUT_MS)
-  if (paint === 'painted') {
-    log.debug('Main window shown and a frame landed')
+  if ((await waitForNextPaint(PAINT_AFTER_SHOW_TIMEOUT_MS)) === 'painted') {
+    log.debug('Main window shown and a frame landed after {ms}ms', { ms: elapsedSince(shownAt) })
     return
   }
 
-  log.warn('No frame within {ms}ms of showing the main window; re-showing to force a repaint', {
-    ms: PAINT_AFTER_SHOW_TIMEOUT_MS,
-  })
   await showMainWindow('repaint-repair')
+  if ((await waitForNextPaint(PAINT_AFTER_REPAIR_TIMEOUT_MS)) === 'painted') {
+    log.info('First frame landed {ms}ms after showing the main window (re-showed at {repairMs}ms to be safe)', {
+      ms: elapsedSince(shownAt),
+      repairMs: PAINT_AFTER_SHOW_TIMEOUT_MS,
+    })
+    return
+  }
+
+  log.warn('No frame within {ms}ms of showing the main window, even after re-showing it to force a repaint', {
+    ms: elapsedSince(shownAt),
+  })
+}
+
+function elapsedSince(start: number): number {
+  return Math.round(performance.now() - start)
 }
