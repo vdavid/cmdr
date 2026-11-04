@@ -19,7 +19,8 @@ enum-to-value mappings, and an assembler. The LLM only classifies intent; Rust c
 - **`types.rs`**: the two serialization DTOs, `TranslatedQuery` and `TranslateDisplay`. Pure data;
   `commands/search.rs` re-exports them, so the IPC import path is unchanged.
 - **`mappings/`**: pure LLM-enum → value conversions split by domain (`type`, `time`, `size_scope`, `keyword`) plus
-  shared `KB/MB/GB` and `KNOWN_EXTENSIONS`. Re-export hub in `mappings/mod.rs`.
+  shared `KB/MB/GB` and `KNOWN_EXTENSIONS`. Re-export hub in `mappings/mod.rs`. `local_days.rs`: the user's calendar
+  (`LocalDays`); every time boundary and the prompt's `{TODAY}` are LOCAL, ❌ never `now_utc()`.
 
 ## Must-knows
 
