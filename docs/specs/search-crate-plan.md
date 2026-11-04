@@ -1,8 +1,8 @@
 # The drive search in its own crate
 
-Issue: [#302](https://github.com/vdavid/cmdr/issues/302) (the browser demo is the second host). Status: PLANNED, not
-started (2026-11-04). Process: `docs/guides/multi-agent-refactors.md` (characterize, then convert; fresh-eyes review
-rounds before executing).
+Issue: [#302](https://github.com/vdavid/cmdr/issues/302) (the browser demo is the second host). Status: the early fixes
+and M0–M2 are done (2026-11-04, on `worktree-agent-a4584c6f915858b16`); M3 is next. Process:
+`docs/guides/multi-agent-refactors.md` (characterize, then convert; fresh-eyes review rounds before executing).
 
 **Problem**: the ⌘F search engine (query model, matcher, excludes, ranking, the arena and its scan) lives in the app
 crate at `apps/desktop/src-tauri/src/search/`, braided with the index handle, `ReadPool` SQL, Tauri events, app statics,
