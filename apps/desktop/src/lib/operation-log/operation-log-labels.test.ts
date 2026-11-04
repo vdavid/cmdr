@@ -31,29 +31,70 @@ import {
   rowStandingNotice,
 } from './operation-log-labels'
 
+/** A finished operation that did everything it planned. */
+function summaryOf(kind: OpKind, archiveSubkind: ArchiveSubkind | null, itemCount: number): string {
+  return operationSummary({ kind, archiveSubkind, itemCount, itemsDone: itemCount, executionStatus: 'done' })
+}
+
 describe('operationSummary', () => {
+  it('reports what a canceled copy actually copied, and that it was canceled', () => {
+    // Regression: a copy canceled about 30 items in read "Copied 1,200 items", the planned count.
+    const summary = operationSummary({
+      kind: 'copy',
+      archiveSubkind: null,
+      itemCount: 1_200,
+      itemsDone: 30,
+      executionStatus: 'canceled',
+    })
+    expect(summary).toBe('Copied 30 items, then canceled (1,200 planned)')
+  })
+
+  it('reports what an operation that stopped on a problem got done', () => {
+    const summary = operationSummary({
+      kind: 'move',
+      archiveSubkind: null,
+      itemCount: 1_200,
+      itemsDone: 1,
+      executionStatus: 'failed',
+    })
+    expect(summary).toBe('Moved 1 item, then stopped (1,200 planned)')
+  })
+
+  it('keeps the planned count for an operation still under way', () => {
+    for (const executionStatus of ['queued', 'running'] as const) {
+      const summary = operationSummary({
+        kind: 'copy',
+        archiveSubkind: null,
+        itemCount: 5,
+        itemsDone: 2,
+        executionStatus,
+      })
+      expect(summary).toBe('Copied 5 items')
+    }
+  })
+
   it('formats each op kind from the typed kind + count', () => {
-    expect(operationSummary('copy', null, 3)).toBe('Copied 3 items')
-    expect(operationSummary('move', null, 3)).toBe('Moved 3 items')
-    expect(operationSummary('delete', null, 3)).toBe('Deleted 3 items')
-    expect(operationSummary('trash', null, 3)).toBe('Moved 3 items to the trash')
-    expect(operationSummary('rename', null, 3)).toBe('Renamed 3 items')
-    expect(operationSummary('createFolder', null, 1)).toBe('Created 1 folder')
-    expect(operationSummary('createFile', null, 1)).toBe('Created 1 file')
+    expect(summaryOf('copy', null, 3)).toBe('Copied 3 items')
+    expect(summaryOf('move', null, 3)).toBe('Moved 3 items')
+    expect(summaryOf('delete', null, 3)).toBe('Deleted 3 items')
+    expect(summaryOf('trash', null, 3)).toBe('Moved 3 items to the trash')
+    expect(summaryOf('rename', null, 3)).toBe('Renamed 3 items')
+    expect(summaryOf('createFolder', null, 1)).toBe('Created 1 folder')
+    expect(summaryOf('createFile', null, 1)).toBe('Created 1 file')
   })
 
   it('resolves the archive_edit subkind (compress vs edit vs extract)', () => {
-    expect(operationSummary('archiveEdit', 'compress', 5)).toBe('Compressed 5 items')
-    expect(operationSummary('archiveEdit', 'edit', 1)).toBe('Edited an archive')
-    expect(operationSummary('archiveEdit', 'extract', 1)).toBe('Extracted an archive')
+    expect(summaryOf('archiveEdit', 'compress', 5)).toBe('Compressed 5 items')
+    expect(summaryOf('archiveEdit', 'edit', 1)).toBe('Edited an archive')
+    expect(summaryOf('archiveEdit', 'extract', 1)).toBe('Extracted an archive')
     // A missing/unknown subkind falls back to the generic archive-edit label.
-    expect(operationSummary('archiveEdit', null, 1)).toBe('Edited an archive')
+    expect(summaryOf('archiveEdit', null, 1)).toBe('Edited an archive')
   })
 
   it('uses the singular plural branch and a thousands separator', () => {
-    expect(operationSummary('copy', null, 1)).toBe('Copied 1 item')
-    expect(operationSummary('delete', null, 1_234)).toBe('Deleted 1,234 items')
-    expect(operationSummary('tag', null, 1)).toBe('Changed the tags on 1 item')
+    expect(summaryOf('copy', null, 1)).toBe('Copied 1 item')
+    expect(summaryOf('delete', null, 1_234)).toBe('Deleted 1,234 items')
+    expect(summaryOf('tag', null, 1)).toBe('Changed the tags on 1 item')
   })
 
   it('covers every OpKind (no unmapped kind)', () => {
@@ -68,9 +109,9 @@ describe('operationSummary', () => {
       'archiveEdit',
       'tag',
     ]
-    for (const kind of kinds) expect(operationSummary(kind, null, 2)).toBeTruthy()
+    for (const kind of kinds) expect(summaryOf(kind, null, 2)).toBeTruthy()
     const subkinds: ArchiveSubkind[] = ['compress', 'edit', 'extract']
-    for (const sub of subkinds) expect(operationSummary('archiveEdit', sub, 2)).toBeTruthy()
+    for (const sub of subkinds) expect(summaryOf('archiveEdit', sub, 2)).toBeTruthy()
   })
 })
 

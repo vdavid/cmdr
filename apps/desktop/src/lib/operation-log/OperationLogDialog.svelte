@@ -258,7 +258,7 @@
                                 >
                                     <Icon name={isOpen ? 'chevron-down' : 'chevron-right'} size={16} />
                                     <span class="op-summary"
-                                        >{operationSummary(op.kind, op.archiveSubkind, op.itemCount)}</span
+                                        >{operationSummary(op)}</span
                                     >
                                     <span class="op-meta">
                                         <span>{initiatorLabel(op.initiator)}</span>
@@ -318,11 +318,7 @@
                                             key="operationLog.dialog.rollbackOf"
                                             snippets={{ operationLink: undidLink }}
                                             params={{
-                                                operation: operationSummary(
-                                                    undid.kind,
-                                                    undid.archiveSubkind,
-                                                    undid.itemCount,
-                                                ),
+                                                operation: operationSummary(undid),
                                                 time: formatDateTime(undid.endedAt ?? undid.startedAt),
                                             }}
                                         />
@@ -341,11 +337,7 @@
                                         key="operationLog.dialog.latestRollback"
                                         snippets={{ operationLink: undoneByLink }}
                                         params={{
-                                            operation: operationSummary(
-                                                undoneBy.kind,
-                                                undoneBy.archiveSubkind,
-                                                undoneBy.itemCount,
-                                            ),
+                                            operation: operationSummary(undoneBy),
                                             time: formatDateTime(undoneBy.endedAt ?? undoneBy.startedAt),
                                         }}
                                     />
