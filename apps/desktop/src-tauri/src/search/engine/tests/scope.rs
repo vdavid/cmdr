@@ -1,5 +1,5 @@
 use super::*;
-use crate::search::index::{OptU64, SearchEntry};
+use crate::search::index::{ArenaBuilder, arena_of};
 use crate::search::types::PatternType;
 
 // ── Scope filtering in search ───────────────────────────────────
@@ -9,8 +9,7 @@ use crate::search::types::PatternType;
 /// /Users/alice/projects/node_modules/pkg.json (id=11)
 /// /Users/alice/.git/config             (id=13)
 fn make_scope_test_index() -> SearchIndex {
-    let mut names = String::new();
-    let test_names = [
+    const NAMES: [&str; 9] = [
         "",             // 0: root
         "Users",        // 1
         "alice",        // 2
@@ -21,99 +20,20 @@ fn make_scope_test_index() -> SearchIndex {
         ".git",         // 7
         "config",       // 8
     ];
-    let offsets: Vec<(u32, u16)> = test_names.iter().map(|n| arena_push(&mut names, n)).collect();
-
-    let mut entries = vec![
-        SearchEntry {
-            id: 1,
-            parent_id: 0,
-            name_offset: offsets[0].0,
-            name_len: offsets[0].1,
-            is_directory: true,
-            size: OptU64::NONE,
-            modified_at: OptU64::NONE,
-        },
-        SearchEntry {
-            id: 2,
-            parent_id: 1,
-            name_offset: offsets[1].0,
-            name_len: offsets[1].1,
-            is_directory: true,
-            size: OptU64::NONE,
-            modified_at: OptU64::new(Some(1000)),
-        },
-        SearchEntry {
-            id: 3,
-            parent_id: 2,
-            name_offset: offsets[2].0,
-            name_len: offsets[2].1,
-            is_directory: true,
-            size: OptU64::NONE,
-            modified_at: OptU64::new(Some(2000)),
-        },
-        SearchEntry {
-            id: 4,
-            parent_id: 3,
-            name_offset: offsets[3].0,
-            name_len: offsets[3].1,
-            is_directory: true,
-            size: OptU64::NONE,
-            modified_at: OptU64::new(Some(3000)),
-        },
-        SearchEntry {
-            id: 9,
-            parent_id: 4,
-            name_offset: offsets[4].0,
-            name_len: offsets[4].1,
-            is_directory: false,
-            size: OptU64::new(Some(1000)),
-            modified_at: OptU64::new(Some(4000)),
-        },
-        SearchEntry {
-            id: 10,
-            parent_id: 4,
-            name_offset: offsets[5].0,
-            name_len: offsets[5].1,
-            is_directory: true,
-            size: OptU64::NONE,
-            modified_at: OptU64::new(Some(5000)),
-        },
-        SearchEntry {
-            id: 11,
-            parent_id: 10,
-            name_offset: offsets[6].0,
-            name_len: offsets[6].1,
-            is_directory: false,
-            size: OptU64::new(Some(500)),
-            modified_at: OptU64::new(Some(6000)),
-        },
-        SearchEntry {
-            id: 12,
-            parent_id: 3,
-            name_offset: offsets[7].0,
-            name_len: offsets[7].1,
-            is_directory: true,
-            size: OptU64::NONE,
-            modified_at: OptU64::new(Some(7000)),
-        },
-        SearchEntry {
-            id: 13,
-            parent_id: 12,
-            name_offset: offsets[8].0,
-            name_len: offsets[8].1,
-            is_directory: false,
-            size: OptU64::new(Some(200)),
-            modified_at: OptU64::new(Some(8000)),
-        },
-    ];
-    // Keep the arena in the order the real loader produces (`ORDER BY id`, segments
-    // merged in range order): `index_of_id` binary-searches it.
-    entries.sort_unstable_by_key(|e| e.id);
-    SearchIndex {
-        names,
-        entries,
-        generation: 1,
-    }
+    arena_of(
+        &[
+            (1, 0, NAMES[0], true, None, None),
+            (2, 1, NAMES[1], true, None, Some(1000)),
+            (3, 2, NAMES[2], true, None, Some(2000)),
+            (4, 3, NAMES[3], true, None, Some(3000)),
+            (9, 4, NAMES[4], false, Some(1000), Some(4000)),
+            (10, 4, NAMES[5], true, None, Some(5000)),
+            (11, 10, NAMES[6], false, Some(500), Some(6000)),
+            (12, 3, NAMES[7], true, None, Some(7000)),
+            (13, 12, NAMES[8], false, Some(200), Some(8000)),
+        ],
+        1,
+    )
 }
 
 #[test]
@@ -319,49 +239,15 @@ fn an_exclude_glob_that_cannot_compile_fails_the_search() {
 /// A two-entry index: one directory whose name contains a newline, holding one file.
 /// `/we\nird/note.txt`
 fn make_newline_dir_index() -> SearchIndex {
-    let mut names = String::new();
-    let offsets: Vec<(u32, u16)> = ["", "we\nird", "note.txt"]
-        .iter()
-        .map(|n| arena_push(&mut names, n))
-        .collect();
-
-    let mut entries = vec![
-        SearchEntry {
-            id: 1,
-            parent_id: 0,
-            name_offset: offsets[0].0,
-            name_len: offsets[0].1,
-            is_directory: true,
-            size: OptU64::NONE,
-            modified_at: OptU64::NONE,
-        },
-        SearchEntry {
-            id: 2,
-            parent_id: 1,
-            name_offset: offsets[1].0,
-            name_len: offsets[1].1,
-            is_directory: true,
-            size: OptU64::NONE,
-            modified_at: OptU64::new(Some(1000)),
-        },
-        SearchEntry {
-            id: 3,
-            parent_id: 2,
-            name_offset: offsets[2].0,
-            name_len: offsets[2].1,
-            is_directory: false,
-            size: OptU64::new(Some(10)),
-            modified_at: OptU64::new(Some(2000)),
-        },
-    ];
-    // Keep the arena in the order the real loader produces (`ORDER BY id`, segments
-    // merged in range order): `index_of_id` binary-searches it.
-    entries.sort_unstable_by_key(|e| e.id);
-    SearchIndex {
-        names,
-        entries,
-        generation: 1,
-    }
+    const NAMES: [&str; 3] = ["", "we\nird", "note.txt"];
+    arena_of(
+        &[
+            (1, 0, NAMES[0], true, None, None),
+            (2, 1, NAMES[1], true, None, Some(1000)),
+            (3, 2, NAMES[2], false, Some(10), Some(2000)),
+        ],
+        1,
+    )
 }
 
 #[test]
@@ -418,27 +304,11 @@ fn matches_sharing_folders_get_the_same_verdict_as_a_fresh_walk() {
         (12, 7, "i.txt", false),
         (13, 3, "j.txt", false),
     ];
-    let mut names = String::new();
-    let entries = rows
-        .iter()
-        .map(|&(id, parent_id, name, is_directory)| {
-            let (name_offset, name_len) = arena_push(&mut names, name);
-            SearchEntry {
-                id,
-                parent_id,
-                name_offset,
-                name_len,
-                is_directory,
-                size: OptU64::NONE,
-                modified_at: OptU64::NONE,
-            }
-        })
-        .collect();
-    let index = SearchIndex {
-        names,
-        entries,
-        generation: 1,
-    };
+    let mut builder = ArenaBuilder::new();
+    for &(id, parent_id, name, is_directory) in &rows {
+        builder.push(id, parent_id, name, is_directory, None, None);
+    }
+    let index = builder.finish(1);
     let query = SearchQuery {
         name_pattern: Some("*.txt".to_string()),
         pattern_type: PatternType::Glob,

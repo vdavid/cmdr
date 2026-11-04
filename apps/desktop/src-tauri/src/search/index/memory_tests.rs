@@ -13,7 +13,7 @@
 //!
 //! Sibling guard on the importance weight map: `search/ranking/memory_tests.rs`.
 
-use super::{OptU64, SearchEntry};
+use super::{ArenaBuilder, SearchEntry};
 use crate::test_support::heap_bytes_held;
 
 /// What one arena row may cost.
@@ -46,17 +46,16 @@ fn a_search_entry_stays_forty_bytes() {
 #[test]
 fn an_arena_row_costs_the_struct_and_nothing_more() {
     let (entries, bytes) = heap_bytes_held(|| {
-        let mut entries: Vec<SearchEntry> = Vec::with_capacity(ROWS);
+        let mut entries = ArenaBuilder::with_capacity(ROWS, 0);
         for i in 0..ROWS {
-            entries.push(SearchEntry {
-                id: i as i64 + 1,
-                parent_id: 1,
-                name_offset: 0,
-                name_len: 0,
-                is_directory: false,
-                size: OptU64::new(Some(i as u64)),
-                modified_at: OptU64::new(Some(1_700_000_000 + i as u64)),
-            });
+            entries.push(
+                i as i64 + 1,
+                1,
+                "",
+                false,
+                Some(i as u64),
+                Some(1_700_000_000 + i as u64),
+            );
         }
         entries
     });

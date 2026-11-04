@@ -60,12 +60,12 @@ impl ScopeFilter {
     ///
     /// `memo` is the calling scan chunk's own (see [`AncestorVerdicts`]).
     fn verdict(&self, index: &SearchIndex, entry_idx: usize, memo: &mut AncestorVerdicts) -> ScopeVerdict {
-        let entry = &index.entries[entry_idx];
+        let (entry_id, entry_parent_id) = (index.id(entry_idx), index.parent_id(entry_idx));
 
         // Include check: walk ancestors and check if any is in include_ids
         if let Some(ref ids) = self.include_ids {
             let mut found = false;
-            let mut current_id = entry.id;
+            let mut current_id = entry_id;
             loop {
                 if ids.contains(&current_id) {
                     found = true;
@@ -75,7 +75,7 @@ impl ScopeFilter {
                     break;
                 }
                 match index.index_of_id(current_id) {
-                    Some(idx) => current_id = index.entries[idx].parent_id,
+                    Some(idx) => current_id = index.parent_id(idx),
                     None => break,
                 }
             }
@@ -89,14 +89,14 @@ impl ScopeFilter {
             // For path-prefix excludes, reconstruct the path lazily — and in the
             // MOUNT space, because a user's path exclude is absolute while the
             // index stores mount-relative paths.
-            let path = apply_path_prefix(&self.path_prefix, &reconstruct_path_from_index(index, entry.id));
+            let path = apply_path_prefix(&self.path_prefix, &reconstruct_path_from_index(index, entry_id));
             if self.excludes.excludes_path(&path) {
                 return ScopeVerdict::Excluded;
             }
         }
 
         // For bare-name excludes, walk ancestors and check directory names
-        if self.excludes.has_name_rules() && self.excluded_by_name_at_or_above(index, entry.parent_id, memo) {
+        if self.excludes.has_name_rules() && self.excluded_by_name_at_or_above(index, entry_parent_id, memo) {
             return ScopeVerdict::Excluded;
         }
 
@@ -122,11 +122,10 @@ impl ScopeFilter {
                 break false;
             };
             memo.walked.push(current_id);
-            let ancestor = &index.entries[idx];
-            if ancestor.is_directory && self.excludes.excludes_dir_name(index.name(ancestor)) {
+            if index.is_directory(idx) && self.excludes.excludes_dir_name(index.name(idx)) {
                 break true;
             }
-            current_id = ancestor.parent_id;
+            current_id = index.parent_id(idx);
         };
         for id in memo.walked.drain(..) {
             memo.by_folder.insert(id, excluded);
@@ -292,13 +291,8 @@ pub(crate) fn search_ranked(
     let t = std::time::Instant::now();
 
     // The per-entry predicates, plus the broad-query guard this arena's size earns.
-    let compiled = CompiledQuery::compile(
-        query,
-        Evaluator::Arena {
-            entries: index.entries.len(),
-        },
-    )
-    .map_err(|e| e.to_string())?;
+    let compiled =
+        CompiledQuery::compile(query, Evaluator::Arena { entries: index.len() }).map_err(|e| e.to_string())?;
     let case_insensitive = compiled.case_insensitive();
 
     // Pre-resolve scope filter
@@ -321,41 +315,41 @@ pub(crate) fn search_ranked(
     // allocations for a query matching nothing on a 5 M-row arena, and 30–45% of the
     // system allocator's search penalty
     // (`docs/notes/performance/search-loop-allocations-2026-09-27.md`).
-    let matching_indices: Vec<usize> = index
-        .entries
-        .par_chunks(SCAN_CHUNK_ROWS)
-        .enumerate()
-        .flat_map_iter(|(chunk_no, chunk)| {
+    let rows = index.len();
+    let matching_indices: Vec<usize> = (0..rows.div_ceil(SCAN_CHUNK_ROWS))
+        .into_par_iter()
+        .flat_map_iter(|chunk_no| {
             let compiled = compiled.clone();
             let scope_filter = scope_filter.clone();
             let mut ancestor_verdicts = AncestorVerdicts::default();
             let first = chunk_no * SCAN_CHUNK_ROWS;
-            chunk.iter().enumerate().filter_map(move |(offset, entry)| {
-                let i = first + offset;
+            (first..(first + SCAN_CHUNK_ROWS).min(rows)).filter(move |&i| {
+                let id = index.id(i);
 
                 // Skip root sentinel
-                if entry.id == ROOT_ID {
-                    return None;
+                if id == ROOT_ID {
+                    return false;
                 }
 
+                let is_directory = index.is_directory(i);
                 if !compiled.matches(&Candidate {
-                    name: index.name(entry),
-                    is_directory: entry.is_directory,
-                    size: entry.size.get(),
-                    modified_at: entry.modified_at.get(),
+                    name: index.name(i),
+                    is_directory,
+                    size: index.size(i),
+                    modified_at: index.modified_at(i),
                 }) {
-                    return None;
+                    return false;
                 }
 
                 // A directory's size filter, applied HERE rather than after ranking:
                 // its size isn't in the arena, so `compiled` couldn't judge it, and a
                 // filter applied to the ranked top-k answers from a recency-ordered
                 // sample instead of from the drive.
-                if entry.is_directory
+                if is_directory
                     && let Some(sizes) = dir_sizes
-                    && !sizes.passes(entry.id)
+                    && !sizes.passes(id)
                 {
-                    return None;
+                    return false;
                 }
 
                 // Scope filter (ancestor walk): only for entries passing all other filters
@@ -364,13 +358,13 @@ pub(crate) fn search_ranked(
                         ScopeVerdict::Inside => {}
                         ScopeVerdict::Excluded => {
                             hidden.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                            return None;
+                            return false;
                         }
-                        ScopeVerdict::OutsideRoots => return None,
+                        ScopeVerdict::OutsideRoots => return false,
                     }
                 }
 
-                Some(i)
+                true
             })
         })
         .collect();
@@ -457,16 +451,15 @@ fn sort_indices(
     limit: usize,
 ) -> Vec<usize> {
     let key = |idx: usize| -> Option<u64> {
-        let entry = &index.entries[idx];
         match sort {
             SearchSort::Size => {
-                if entry.is_directory {
-                    dir_sizes.and_then(|sizes| sizes.get(entry.id))
+                if index.is_directory(idx) {
+                    dir_sizes.and_then(|sizes| sizes.get(index.id(idx)))
                 } else {
-                    entry.size.get()
+                    index.size(idx)
                 }
             }
-            SearchSort::Modified => entry.modified_at.get(),
+            SearchSort::Modified => index.modified_at(idx),
             SearchSort::Relevance => None,
         }
     };
@@ -478,7 +471,7 @@ fn sort_indices(
             (None, Some(_)) => std::cmp::Ordering::Greater,
             (None, None) => std::cmp::Ordering::Equal,
         };
-        ordering.then_with(|| index.entries[*a].id.cmp(&index.entries[*b].id))
+        ordering.then_with(|| index.id(*a).cmp(&index.id(*b)))
     };
     if candidates.len() > limit {
         candidates.select_nth_unstable_by(limit, compare);
@@ -509,20 +502,21 @@ fn apply_path_prefix(prefix: &str, path: &str) -> String {
 /// icon. `home_dir` is the absolute home directory (for the `~` substitution), passed
 /// in so a batch reconstructs it once.
 fn build_result_entry(index: &SearchIndex, idx: usize, path_prefix: &str, home_dir: Option<&str>) -> SearchResultEntry {
-    let entry = &index.entries[idx];
-    let path = apply_path_prefix(path_prefix, &reconstruct_path_from_index(index, entry.id));
+    let entry_id = index.id(idx);
+    let is_directory = index.is_directory(idx);
+    let path = apply_path_prefix(path_prefix, &reconstruct_path_from_index(index, entry_id));
     let parent_path = home_relative_parent(&path, home_dir);
-    let entry_name = index.name(entry);
-    let icon_id = derive_icon_id(entry_name, entry.is_directory);
+    let entry_name = index.name(idx);
+    let icon_id = derive_icon_id(entry_name, is_directory);
     SearchResultEntry {
         name: entry_name.to_string(),
         path,
         parent_path,
-        is_directory: entry.is_directory,
-        size: entry.size.get(),
-        modified_at: entry.modified_at.get(),
+        is_directory,
+        size: index.size(idx),
+        modified_at: index.modified_at(idx),
         icon_id,
-        entry_id: entry.id,
+        entry_id,
     }
 }
 
@@ -568,13 +562,12 @@ pub(crate) fn reconstruct_path_from_index(index: &SearchIndex, entry_id: i64) ->
         }
         match index.index_of_id(current_id) {
             Some(idx) => {
-                let entry = &index.entries[idx];
-                let name = index.name(entry);
+                let name = index.name(idx);
                 if name.is_empty() {
                     break; // root sentinel
                 }
                 components.push(name);
-                current_id = entry.parent_id;
+                current_id = index.parent_id(idx);
             }
             None => break, // orphan or missing parent
         }
@@ -616,8 +609,7 @@ pub(crate) fn hash_path_from_index(index: &SearchIndex, entry_id: i64) -> u64 {
         }
         match index.index_of_id(current_id) {
             Some(idx) => {
-                let entry = &index.entries[idx];
-                let name = index.name(entry);
+                let name = index.name(idx);
                 if name.is_empty() {
                     break; // root sentinel
                 }
@@ -627,7 +619,7 @@ pub(crate) fn hash_path_from_index(index: &SearchIndex, entry_id: i64) -> u64 {
                     deeper.push(name);
                 }
                 depth += 1;
-                current_id = entry.parent_id;
+                current_id = index.parent_id(idx);
             }
             None => break, // orphan or missing parent
         }

@@ -102,8 +102,8 @@ fn a_warm_arena_a_walk_wrote_behind_catches_up_in_place_before_it_answers() {
         panic!("the volume has an index to load");
     };
     let warm_token = warm.coverage_token;
-    let warm_rows = warm.index.entries.len();
-    let warm_rows_at = warm.index.entries.as_ptr() as usize;
+    let warm_rows = warm.index.len();
+    let warm_rows_at = warm.index.rows_address();
     // Nobody else is reading this arena, so it may be extended where it stands.
     drop(warm);
 
@@ -123,23 +123,18 @@ fn a_warm_arena_a_walk_wrote_behind_catches_up_in_place_before_it_answers() {
     let VolumeLoad::Loaded(loaded) = load else {
         panic!("the volume still has an index to load");
     };
-    let names: Vec<&str> = loaded
-        .index
-        .entries
-        .iter()
-        .map(|entry| loaded.index.name(entry))
-        .collect();
+    let names: Vec<&str> = (0..loaded.index.len()).map(|i| loaded.index.name(i)).collect();
     assert!(
         names.contains(&"three.txt"),
         "it holds the rows the walk created: {names:?}"
     );
-    assert!(loaded.index.entries.len() > warm_rows, "appended, not replaced");
+    assert!(loaded.index.len() > warm_rows, "appended, not replaced");
     assert!(
-        loaded.index.entries.windows(2).all(|pair| pair[0].id < pair[1].id),
+        (1..loaded.index.len()).all(|i| loaded.index.id(i - 1) < loaded.index.id(i)),
         "and still sorted by id, which every lookup binary-searches"
     );
     assert_eq!(
-        loaded.index.entries.as_ptr() as usize,
+        loaded.index.rows_address(),
         warm_rows_at,
         "into the arena's own spare capacity, with no second copy of it"
     );

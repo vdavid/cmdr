@@ -359,14 +359,17 @@ pub(crate) fn rank_indices(
 ) -> Vec<usize> {
     let no_weights = weights.is_empty();
     let key_for = |memo: &mut std::collections::HashMap<i64, f64>, idx: usize| {
-        let entry = &index.entries[idx];
-        let band = classify_match(index.name(entry), stem, case_insensitive);
-        let recency = entry.modified_at.get().unwrap_or(0);
+        let band = classify_match(index.name(idx), stem, case_insensitive);
+        let recency = index.modified_at(idx).unwrap_or(0);
         let boosted_recency = if no_weights {
             recency as f64
         } else {
             // A file takes its parent folder's weight; a folder takes its own.
-            let folder_id = if entry.is_directory { entry.id } else { entry.parent_id };
+            let folder_id = if index.is_directory(idx) {
+                index.id(idx)
+            } else {
+                index.parent_id(idx)
+            };
             let weight = *memo
                 .entry(folder_id)
                 .or_insert_with(|| weights.weight_for_hash(super::engine::hash_path_from_index(index, folder_id)));
@@ -376,7 +379,7 @@ pub(crate) fn rank_indices(
             RankKey {
                 band,
                 boosted_recency,
-                id: entry.id,
+                id: index.id(idx),
             },
             idx,
         )

@@ -5,17 +5,9 @@
 use std::collections::HashMap;
 
 use super::*;
-use crate::search::index::{OptU64, SearchEntry, SearchIndex};
+use crate::search::index::{FixtureRow, SearchIndex, arena_of};
 
 // ── Index builder ─────────────────────────────────────────────────────────
-
-/// Push a name into the arena and return `(offset, len)`.
-fn arena_push(names: &mut String, name: &str) -> (u32, u16) {
-    let offset = names.len() as u32;
-    let len = name.len() as u16;
-    names.push_str(name);
-    (offset, len)
-}
 
 /// A file entry under a given parent, with a name and mtime. Directories/parents
 /// are added separately so paths reconstruct.
@@ -30,38 +22,13 @@ struct Spec {
 /// Build an index from specs. Every parent referenced must appear as a spec (or be
 /// `ROOT_ID`-adjacent); the root sentinel (id 1, name "") is added automatically.
 fn build_index(specs: &[Spec]) -> SearchIndex {
-    let mut names = String::new();
-    let root = arena_push(&mut names, "");
-    let mut entries = vec![SearchEntry {
-        id: 1,
-        parent_id: 0,
-        name_offset: root.0,
-        name_len: root.1,
-        is_directory: true,
-        size: OptU64::NONE,
-        modified_at: OptU64::NONE,
-    }];
-    for s in specs {
-        let (off, len) = arena_push(&mut names, s.name);
-        entries.push(SearchEntry {
-            id: s.id,
-            parent_id: s.parent_id,
-            name_offset: off,
-            name_len: len,
-            is_directory: s.is_directory,
-            size: OptU64::NONE,
-            modified_at: OptU64::new(s.modified_at),
-        });
-    }
-    // The real loader reads `ORDER BY id` and merges its segments in range order, so
-    // a fixture that leaves rows in spec order builds an arena production can't
-    // produce — and `index_of_id`'s binary search would answer wrong on it.
-    entries.sort_unstable_by_key(|e| e.id);
-    SearchIndex {
-        names,
-        entries,
-        generation: 1,
-    }
+    let mut rows: Vec<FixtureRow<'_>> = vec![(1, 0, "", true, None, None)];
+    rows.extend(
+        specs
+            .iter()
+            .map(|s| (s.id, s.parent_id, s.name, s.is_directory, None, s.modified_at)),
+    );
+    arena_of(&rows, 1)
 }
 
 /// The ordered result names after ranking the given matching entry ids.
@@ -71,10 +38,7 @@ fn ranked_names(index: &SearchIndex, matching_ids: &[i64], stem: &str, weights: 
         .map(|id| index.index_of_id(*id).expect("id should be in the arena"))
         .collect();
     rank(index, &mut matching, stem, false, weights);
-    matching
-        .iter()
-        .map(|&i| index.name(&index.entries[i]).to_string())
-        .collect()
+    matching.iter().map(|&i| index.name(i).to_string()).collect()
 }
 
 // ── classify_match ─────────────────────────────────────────────────────────
@@ -296,10 +260,7 @@ fn folder_uses_own_weight_file_uses_parent_weight() {
     // /proj is a substring match for "report"? No — classify "proj" vs "report" is
     // Other; "sub-report" is Other too. Same band, same recency, boosted equally.
     // Tie broken by id ascending: 10 before 20.
-    let names: Vec<String> = matching
-        .iter()
-        .map(|&i| index.name(&index.entries[i]).to_string())
-        .collect();
+    let names: Vec<String> = matching.iter().map(|&i| index.name(i).to_string()).collect();
     assert_eq!(names, vec!["proj", "sub-report"]);
     // Sanity: the folder's own path resolves to a weight.
     assert_eq!(weights.weight_for("/proj"), 1.0);
@@ -377,10 +338,7 @@ fn empty_weights_within_band_is_pure_recency() {
         .map(|id| index.index_of_id(*id).expect("id should be in the arena"))
         .collect();
     rank(&index, &mut matching, "report", false, &weights);
-    let recencies: Vec<u64> = matching
-        .iter()
-        .map(|&i| index.entries[i].modified_at.get().unwrap())
-        .collect();
+    let recencies: Vec<u64> = matching.iter().map(|&i| index.modified_at(i).unwrap()).collect();
     assert_eq!(recencies, vec![300, 200, 100], "within-band order is pure recency DESC");
 }
 
@@ -416,7 +374,7 @@ fn equal_keys_break_by_id_deterministically() {
         .map(|id| index.index_of_id(*id).expect("id should be in the arena"))
         .collect();
     rank(&index, &mut matching, "report", false, &weights);
-    let ids: Vec<i64> = matching.iter().map(|&i| index.entries[i].id).collect();
+    let ids: Vec<i64> = matching.iter().map(|&i| index.id(i)).collect();
     assert_eq!(ids, vec![20, 30, 40], "equal keys sort by id ascending");
 }
 

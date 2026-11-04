@@ -80,34 +80,41 @@ impl std::fmt::Debug for OptU64 {
 /// One row of the arena, 40 bytes. See [`OptU64`] before adding a field: the arena holds
 /// one of these per file on the volume, so a byte here is megabytes of peak footprint,
 /// and `search/index/memory_tests.rs` pins the size.
+///
+/// Its fields are private: a row is read through [`SearchIndex`]'s accessors and
+/// written through [`ArenaBuilder::push`], so how a row is stored can change (a mapped
+/// arena, GitHub #114) without touching a caller.
 #[derive(Debug, Clone)]
 pub struct SearchEntry {
-    pub id: i64,
-    pub parent_id: i64,
-    pub name_offset: u32, // byte offset into SearchIndex.names
-    pub name_len: u16,    // byte length (max filename 255 chars = up to 765 bytes UTF-8)
-    pub is_directory: bool,
+    id: i64,
+    parent_id: i64,
+    name_offset: u32, // byte offset into SearchIndex.names
+    name_len: u16,    // byte length (max filename 255 chars = up to 765 bytes UTF-8)
+    is_directory: bool,
     /// Apparent size in bytes, absent for a directory (its recursive size lives in
     /// `dir_stats`) and for every 2nd+ name of a hardlinked inode.
-    pub size: OptU64,
+    size: OptU64,
     /// Last-modified time in seconds since the Unix epoch, absent where unknown.
-    pub modified_at: OptU64,
+    modified_at: OptU64,
 }
 
 // ── Search index ─────────────────────────────────────────────────────
 
-/// The loaded arena for one volume.
+/// The loaded arena for one volume, read by row position (`idx`, `0..len()`).
 ///
-/// **`entries` is sorted by `id`, ascending, and every lookup depends on it.**
-/// `id` is the `entries` table's `INTEGER PRIMARY KEY`, so it is the rowid and a
-/// table scan yields it in order for free; the loader still says `ORDER BY id` so
-/// the guarantee is written down rather than inherited, and `load.rs`'s
-/// `entries_are_sorted_by_id` pins it.
+/// **Rows are sorted by `id`, ascending, and every lookup depends on it.** `id` is
+/// the `entries` table's `INTEGER PRIMARY KEY`, so it is the rowid and a table scan
+/// yields it in order for free; [`ArenaBuilder::push`] asserts it in debug builds,
+/// and the loader's `entries_are_sorted_by_id` pins it.
+///
+/// The accessors are the whole read surface (the arena-snapshot spec's Contract B,
+/// `docs/specs/search-arena-snapshot.md`): ❌ no caller sees the rows or the names
+/// buffer, so a mapped backend can replace them.
 #[derive(Debug)]
 pub struct SearchIndex {
-    pub names: String, // arena: all filenames concatenated
-    pub entries: Vec<SearchEntry>,
-    pub generation: u64,
+    names: String, // arena: all filenames concatenated
+    entries: Vec<SearchEntry>,
+    generation: u64,
 }
 
 impl SearchIndex {
@@ -120,12 +127,68 @@ impl SearchIndex {
         }
     }
 
-    /// Get the filename for an entry from the arena buffer.
-    pub(crate) fn name(&self, entry: &SearchEntry) -> &str {
+    /// How many rows the arena holds, the root sentinel included.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Whether the arena holds no rows at all (not even the root sentinel).
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    /// The `entries` row id at `idx`.
+    #[inline]
+    pub fn id(&self, idx: usize) -> i64 {
+        self.entries[idx].id
+    }
+
+    /// The parent's row id at `idx` (`0` for the root sentinel).
+    #[inline]
+    pub fn parent_id(&self, idx: usize) -> i64 {
+        self.entries[idx].parent_id
+    }
+
+    /// The file name at `idx`, borrowed from the names buffer.
+    #[inline]
+    pub fn name(&self, idx: usize) -> &str {
+        let entry = &self.entries[idx];
         &self.names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize]
     }
 
-    /// Where the row with this id sits in [`entries`](Self::entries), if it is here.
+    /// Whether the row at `idx` is a folder.
+    #[inline]
+    pub fn is_directory(&self, idx: usize) -> bool {
+        self.entries[idx].is_directory
+    }
+
+    /// The apparent size at `idx`: `None` for a folder and for a hardlink-deduped
+    /// name, ❌ never collapsed into `0`.
+    #[inline]
+    pub fn size(&self, idx: usize) -> Option<u64> {
+        self.entries[idx].size.get()
+    }
+
+    /// The modification time at `idx` in Unix seconds, `None` where unknown.
+    #[inline]
+    pub fn modified_at(&self, idx: usize) -> Option<u64> {
+        self.entries[idx].modified_at.get()
+    }
+
+    /// Which writer generation this arena is a snapshot of.
+    #[inline]
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+
+    /// The highest row id the arena holds, where a catch-up starts reading.
+    pub fn last_id(&self) -> Option<i64> {
+        self.entries.last().map(|entry| entry.id)
+    }
+
+    /// Where the row with this id sits, if it is here.
     ///
     /// A binary search over the id-sorted rows rather than a `HashMap<i64, usize>`.
     /// The map cost ~143 MB on David's 5.39 M-row boot index (5.39 M entries round up
@@ -133,9 +196,219 @@ impl SearchIndex {
     /// a ~23-probe one, for a call made a few hundred times per search while ranking
     /// reconstructs paths — microseconds either way against a 100-400 ms scan.
     /// ❌ Don't reintroduce the map: measure the ranking phase first.
-    pub(crate) fn index_of_id(&self, id: i64) -> Option<usize> {
+    #[inline]
+    pub fn index_of_id(&self, id: i64) -> Option<usize> {
         self.entries.binary_search_by_key(&id, |entry| entry.id).ok()
     }
+
+    /// Append the rows created since this arena was read (each past [`Self::last_id`]),
+    /// returning how many.
+    ///
+    /// Into the arena itself when nobody else holds it and it has room
+    /// ([`spare_rows`]), which is the normal case: no copy at all. Otherwise into ONE
+    /// new arena sized for its rows plus the new ones plus fresh room: a search still
+    /// reading the old one keeps it, and a full one grows once rather than doubling.
+    pub fn append_created(index: &mut std::sync::Arc<Self>, created: ArenaBuilder) -> usize {
+        let rows = created.entries.len();
+        if rows == 0 {
+            return 0;
+        }
+        match std::sync::Arc::get_mut(index) {
+            Some(owned) if owned.has_room(&created) => append_rows(&mut owned.names, &mut owned.entries, created),
+            _ => *index = std::sync::Arc::new(index.copy_with_room(created)),
+        }
+        debug_assert!(
+            index.entries.windows(2).all(|w| w[0].id < w[1].id),
+            "the arena must stay strictly ascending by id: index_of_id binary-searches it"
+        );
+        rows
+    }
+
+    /// Whether a batch fits in the arena's spare capacity, rows and names both.
+    fn has_room(&self, created: &ArenaBuilder) -> bool {
+        self.entries.capacity() - self.entries.len() >= created.entries.len()
+            && self.names.capacity() - self.names.len() >= created.names.len()
+    }
+
+    /// A new arena holding this one's rows, then `created`'s, with fresh room past both.
+    fn copy_with_room(&self, created: ArenaBuilder) -> Self {
+        let rows = self.entries.len() + created.entries.len();
+        let name_bytes = self.names.len() + created.names.len();
+        let spare = spare_rows(rows);
+
+        let mut names = String::with_capacity(name_bytes + spare_name_bytes(spare, name_bytes, rows));
+        let mut entries = Vec::with_capacity(rows + spare);
+        names.push_str(&self.names);
+        entries.extend_from_slice(&self.entries);
+        append_rows(&mut names, &mut entries, created);
+        Self {
+            names,
+            entries,
+            generation: self.generation,
+        }
+    }
+
+    /// Rows of room left before a catch-up has to copy the arena.
+    #[cfg(test)]
+    pub(crate) fn spare_rows_left(&self) -> usize {
+        self.entries.capacity() - self.entries.len()
+    }
+
+    /// Where the rows live in memory, so a test can tell an in-place append from a copy.
+    #[cfg(test)]
+    pub(crate) fn rows_address(&self) -> usize {
+        self.entries.as_ptr() as usize
+    }
+}
+
+// ── Building an arena ────────────────────────────────────────────────
+
+/// Rows pushed in ascending id order, then turned into a [`SearchIndex`]. The only way
+/// to make one: a loader pushes what it reads (one builder per parallel range, merged
+/// in range order by [`ArenaBuilder::merge`]), and a test pushes its fixture.
+#[derive(Debug, Default)]
+pub struct ArenaBuilder {
+    names: String,
+    entries: Vec<SearchEntry>,
+}
+
+impl ArenaBuilder {
+    /// An empty builder.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// A builder with room for `rows` rows and `name_bytes` bytes of names.
+    pub fn with_capacity(rows: usize, name_bytes: usize) -> Self {
+        Self {
+            names: String::with_capacity(name_bytes),
+            entries: Vec::with_capacity(rows),
+        }
+    }
+
+    /// Add one row. Ids must strictly ascend (`debug_assert`ed; ❌ never sorted in
+    /// release, the loader reads them in order for free).
+    ///
+    /// `#[inline]`: the loader calls it once per row across the crate edge, and the
+    /// dev and `e2e` profiles run without LTO.
+    #[inline]
+    pub fn push(
+        &mut self,
+        id: i64,
+        parent_id: i64,
+        name: &str,
+        is_directory: bool,
+        size: Option<u64>,
+        modified_at: Option<u64>,
+    ) {
+        debug_assert!(
+            self.entries.last().is_none_or(|last| last.id < id),
+            "arena rows must arrive in ascending id order: index_of_id binary-searches them"
+        );
+        let name_offset = self.names.len() as u32;
+        self.names.push_str(name);
+        self.entries.push(SearchEntry {
+            id,
+            parent_id,
+            name_offset,
+            name_len: name.len() as u16,
+            is_directory,
+            size: OptU64::new(size),
+            modified_at: OptU64::new(modified_at),
+        });
+    }
+
+    /// How many rows are in so far.
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Whether no row is in yet.
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    /// The finished arena, with [`spare_rows`] of room for a later catch-up.
+    pub fn finish(self, generation: u64) -> SearchIndex {
+        Self::merge(vec![self], generation)
+    }
+
+    /// Concatenate builders that hold consecutive id ranges, in order, rebasing each
+    /// one's name offsets.
+    ///
+    /// ⚠️ **This is the load's memory peak**: the destination is reserved at full size
+    /// while the segments still hold the same bytes, so a 320 MB arena transiently costs
+    /// ~640 MB. It falls monotonically as each segment drops at the end of its iteration.
+    /// Removing the peak entirely needs the mapped arena (GitHub #114), not a bigger loop.
+    ///
+    /// The destination also reserves [`spare_rows`] of room past the rows it holds, which
+    /// is what lets [`SearchIndex::append_created`] append without copying the arena.
+    pub fn merge(segments: Vec<ArenaBuilder>, generation: u64) -> SearchIndex {
+        let total_rows: usize = segments.iter().map(|s| s.entries.len()).sum();
+        let total_names: usize = segments.iter().map(|s| s.names.len()).sum();
+        let spare = spare_rows(total_rows);
+
+        let mut names = String::with_capacity(total_names + spare_name_bytes(spare, total_names, total_rows));
+        let mut entries = Vec::with_capacity(total_rows + spare);
+        for segment in segments {
+            append_rows(&mut names, &mut entries, segment);
+        }
+        debug_assert!(
+            entries.windows(2).all(|w| w[0].id < w[1].id),
+            "the arena must stay strictly ascending by id: index_of_id binary-searches it"
+        );
+        SearchIndex {
+            names,
+            entries,
+            generation,
+        }
+    }
+}
+
+/// One hand-written fixture row: `(id, parent_id, name, is_directory, size, modified_at)`.
+#[cfg(test)]
+pub(crate) type FixtureRow<'a> = (i64, i64, &'a str, bool, Option<u64>, Option<u64>);
+
+/// A fixture arena: its rows put in id order (the order the loader reads them in, so
+/// a fixture can list them however reads best) and pushed through [`ArenaBuilder`].
+#[cfg(test)]
+pub(crate) fn arena_of(rows: &[FixtureRow<'_>], generation: u64) -> SearchIndex {
+    let mut sorted = rows.to_vec();
+    sorted.sort_unstable_by_key(|row| row.0);
+    let mut builder = ArenaBuilder::new();
+    for (id, parent_id, name, is_directory, size, modified_at) in sorted {
+        builder.push(id, parent_id, name, is_directory, size, modified_at);
+    }
+    builder.finish(generation)
+}
+
+/// Move a builder's rows onto the end of an arena, rebasing their name offsets.
+fn append_rows(names: &mut String, entries: &mut Vec<SearchEntry>, mut segment: ArenaBuilder) {
+    let base = names.len() as u32;
+    names.push_str(&segment.names);
+    for entry in &mut segment.entries {
+        entry.name_offset += base;
+    }
+    entries.append(&mut segment.entries);
+}
+
+/// How many rows of room an arena keeps past the ones it holds: 1/128 of them, and
+/// never fewer than 64.
+///
+/// A catch-up appends the rows created since the arena was read, and a walk's rows
+/// plus a few minutes of background indexing are thousands, not millions. Room for
+/// 49,000 of them costs 2 MB of rows and about 1 MB of names on a 6.3 M-row boot
+/// index, where running out means reallocating the whole arena: a second copy of it,
+/// transiently. A small arena keeps little room because copying it is cheap.
+pub fn spare_rows(rows: usize) -> usize {
+    (rows / 128).max(64)
+}
+
+/// Name bytes to keep for `spare` rows, at the arena's own average name length.
+fn spare_name_bytes(spare: usize, name_bytes: usize, rows: usize) -> usize {
+    const FALLBACK_AVG_NAME_BYTES: usize = 20;
+    let average = name_bytes.checked_div(rows).unwrap_or(FALLBACK_AVG_NAME_BYTES);
+    spare.saturating_mul(average.max(1))
 }
 
 pub(crate) fn now_secs() -> u64 {
@@ -153,6 +426,24 @@ mod tests {
     use cmdr_index::store::{IndexStore, ROOT_ID};
 
     use super::*;
+
+    // ── Building ─────────────────────────────────────────────────────
+
+    /// A rebased offset is the one thing the merge can silently corrupt: every row
+    /// keeps its own name offset until the builder it came from is concatenated, so
+    /// an off-by-one base shifts a whole segment's names by a few bytes and search
+    /// starts matching neighbours' names.
+    #[test]
+    fn merging_builders_rebases_every_name_offset() {
+        let segment = |id: i64, name: &str| {
+            let mut builder = ArenaBuilder::new();
+            builder.push(id, ROOT_ID, name, false, None, None);
+            builder
+        };
+        let index = ArenaBuilder::merge(vec![segment(1, "alpha"), segment(2, "beta"), segment(3, "gamma")], 0);
+        let read: Vec<&str> = (0..index.len()).map(|i| index.name(i)).collect();
+        assert_eq!(read, vec!["alpha", "beta", "gamma"]);
+    }
 
     // ── The sentinel encoding ────────────────────────────────────────
 
@@ -215,13 +506,11 @@ mod tests {
         let pool = ReadPool::new(db_path).unwrap();
         let index = load_search_index(&pool, &AtomicBool::new(false)).unwrap();
         let size_of = |name: &str| {
-            index
-                .entries
-                .iter()
-                .find(|e| index.name(e) == name)
-                .unwrap_or_else(|| panic!("{name} should be in the arena"))
-                .size
-                .get()
+            index.size(
+                (0..index.len())
+                    .find(|&i| index.name(i) == name)
+                    .unwrap_or_else(|| panic!("{name} should be in the arena")),
+            )
         };
 
         assert_eq!(
@@ -279,13 +568,11 @@ mod tests {
         let pool = ReadPool::new(db_path).unwrap();
         let index = load_search_index(&pool, &AtomicBool::new(false)).unwrap();
         let modified = |name: &str| {
-            index
-                .entries
-                .iter()
-                .find(|e| index.name(e) == name)
-                .unwrap_or_else(|| panic!("{name} should be in the arena"))
-                .modified_at
-                .get()
+            index.modified_at(
+                (0..index.len())
+                    .find(|&i| index.name(i) == name)
+                    .unwrap_or_else(|| panic!("{name} should be in the arena")),
+            )
         };
 
         assert_eq!(modified("undated.txt"), None, "an unknown time stays unknown");
@@ -341,7 +628,7 @@ mod tests {
         let index = load_search_index(&pool, &cancel).unwrap();
 
         // Root sentinel + 4 entries
-        assert_eq!(index.entries.len(), 5);
+        assert_eq!(index.len(), 5);
 
         // Search for PDFs
         let query = SearchQuery {
@@ -381,9 +668,9 @@ mod tests {
 
         // Root sentinel only: before right-sizing this was Vec::with_capacity(5_000_000).
         assert!(
-            index.entries.capacity() < 1000,
+            index.len() + index.spare_rows_left() < 1000,
             "entries capacity {} should track the row count, not the 5M worst case",
-            index.entries.capacity()
+            index.len() + index.spare_rows_left()
         );
     }
 

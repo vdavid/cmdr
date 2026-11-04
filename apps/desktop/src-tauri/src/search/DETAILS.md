@@ -82,8 +82,11 @@ and the A/B method).
 - **❌ Never compare against the sentinel at a call site.** `OptU64`'s inner `u64` is private and `get()` is the only
   way in, so the encoding is invisible outside the type; its `Debug` prints as the `Option` it stands for, so a log
   line never shows a bare `18446744073709551615`.
-- **The arena readers are `engine.rs`** (the `Candidate` build, the `sortBy` key, `build_result_entry`) **and
-  `ranking.rs`** (the recency key). `Candidate`, `CoveredEntry`, and `SearchResultEntry` keep plain `Option<u64>`:
+- **The rows are private**: `SearchIndex`'s accessors (`len`, `id`, `parent_id`, `name`, `is_directory`, `size`,
+  `modified_at`, `index_of_id`, `generation`; the arena-snapshot spec's Contract B) are the whole read surface, and
+  `ArenaBuilder` (push in id order, then `finish` or the loader's `merge`) the only way to make one, so a mapped arena
+  (GitHub #114) can replace the storage without touching a caller. The readers are `engine.rs` (the `Candidate` build,
+  the `sortBy` key, `build_result_entry`) and `ranking.rs` (the recency key). `Candidate`, `CoveredEntry`, and `SearchResultEntry` keep plain `Option<u64>`:
   they're per-result or per-batch, not per-row, so the 16 bytes buy readability there instead of costing memory.
 
 **The next lever is the names arena.** `id_to_index` is already gone (the "no `id_to_index` map" decision below); the
@@ -181,8 +184,8 @@ only sizes an allocation, so a wrong one costs a realloc, never a wrong answer.
 
 `entries` is sorted by `id`, ascending, and `SearchIndex::index_of_id` binary-searches it. `id` is the `entries` table's
 `INTEGER PRIMARY KEY`, hence its rowid, so a table scan already yields that order; the loader still says `ORDER BY id`
-so the guarantee is written down rather than inherited, `merge_segments` debug-asserts it, and every test fixture sorts
-the same way.
+so the guarantee is written down rather than inherited, `ArenaBuilder::push` and `ArenaBuilder::merge` debug-assert it,
+and the fixture helper (`index::arena_of`) sorts its rows first.
 
 **Decision: no `id_to_index` map.** A `HashMap<i64, usize>` over the same rows cost ~143 MB on a 5.39 M-row boot index
 (5.39 M entries round up to 8,388,608 hashbrown buckets at 17 bytes apiece) and bought a ~20 ns lookup instead of a
@@ -515,7 +518,7 @@ of all 6.3 M rows and a peak ~450 MiB higher, where the catch-up reads 0–2,400
   extra result or a stale size, never a missing one, which is the lag background indexing leaves in any warm arena
   (Accepted difference 6). The background refresh in `get_loaded` still rebuilds a stale arena whole, 30 s apart, while
   the dialog stays open.
-- **In place, no copy, in the normal case.** The loader reserves 1/128 of the rows as spare capacity (`spare_rows`, ~2
+- **In place, no copy, in the normal case.** The arena keeps 1/128 of its rows as spare capacity (`index::spare_rows`, ~2
   MB of rows and ~1 MB of names at 6.3 M), and the caller drops its own handle before catching up. A search still
   holding the arena, or a catch-up bigger than the room, gets ONE new copy sized with fresh room; the reader keeps the
   arena it was handed.

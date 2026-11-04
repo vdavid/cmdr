@@ -47,7 +47,7 @@ use cmdr_index::ReadPool;
 use cmdr_index::store::ROOT_ID;
 
 use super::engine::search_ranked;
-use super::index::{OptU64, SearchEntry, SearchIndex, load_search_index};
+use super::index::{ArenaBuilder, SearchEntry, SearchIndex, load_search_index};
 use super::ranking::ImportanceWeights;
 use super::types::{PatternType, SearchQuery};
 
@@ -87,29 +87,24 @@ pub(super) fn build_synthetic_index(n: usize) -> SearchIndex {
     const FANOUT: usize = 6;
     const MAX_DEPTH: usize = 8;
 
-    let mut names = String::with_capacity(n * 20);
-    let mut entries: Vec<SearchEntry> = Vec::with_capacity(n + 1);
-
-    let push = |names: &mut String, entries: &mut Vec<SearchEntry>, id, parent_id, name: &str, is_dir, i: usize| {
-        let name_offset = names.len() as u32;
-        let name_len = name.len() as u16;
-        names.push_str(name);
-        entries.push(SearchEntry {
+    let mut arena = ArenaBuilder::with_capacity(n + 1, n * 20);
+    let push = |arena: &mut ArenaBuilder, id, parent_id, name: &str, is_dir, i: usize| {
+        let size = if is_dir {
+            None
+        } else {
+            Some((i as u64 * 7919) % 50_000_000)
+        };
+        arena.push(
             id,
             parent_id,
-            name_offset,
-            name_len,
-            is_directory: is_dir,
-            size: OptU64::new(if is_dir {
-                None
-            } else {
-                Some((i as u64 * 7919) % 50_000_000)
-            }),
-            modified_at: OptU64::new(Some(1_600_000_000 + (i as u64 * 613) % 60_000_000)),
-        });
+            name,
+            is_dir,
+            size,
+            Some(1_600_000_000 + (i as u64 * 613) % 60_000_000),
+        );
     };
 
-    push(&mut names, &mut entries, ROOT_ID, 0, "", true, 0);
+    push(&mut arena, ROOT_ID, 0, "", true, 0);
 
     // Directories first, breadth-first, until we've spent ~12% of the budget.
     let dir_budget = n / 8;
@@ -124,7 +119,7 @@ pub(super) fn build_synthetic_index(n: usize) -> SearchIndex {
                     break;
                 }
                 let name = format!("{}-{}-{}", WORDS[(next_id as usize + k) % WORDS.len()], depth, next_id);
-                push(&mut names, &mut entries, next_id, parent, &name, true, next_id as usize);
+                push(&mut arena, next_id, parent, &name, true, next_id as usize);
                 all_dirs.push(next_id);
                 next_level.push(next_id);
                 next_id += 1;
@@ -138,7 +133,7 @@ pub(super) fn build_synthetic_index(n: usize) -> SearchIndex {
 
     // Files spread evenly across the directories.
     let mut i = 0usize;
-    while entries.len() < n {
+    while arena.len() < n {
         let parent = all_dirs[i % all_dirs.len()];
         let name = format!(
             "{}-{}.{}",
@@ -146,28 +141,23 @@ pub(super) fn build_synthetic_index(n: usize) -> SearchIndex {
             i,
             EXTS[(i / WORDS.len()) % EXTS.len()]
         );
-        push(&mut names, &mut entries, next_id, parent, &name, false, i);
+        push(&mut arena, next_id, parent, &name, false, i);
         next_id += 1;
         i += 1;
     }
 
-    // Keep the arena in the order the real loader produces (`ORDER BY id`, segments
-    // merged in range order): `index_of_id` binary-searches it.
-    entries.sort_unstable_by_key(|e| e.id);
-    SearchIndex {
-        names,
-        entries,
-        generation: 1,
-    }
+    // Ids climb in push order, the order the real loader produces (`ORDER BY id`):
+    // `index_of_id` binary-searches it.
+    arena.finish(1)
 }
 
 /// An importance map covering every directory in `index`, like a real
 /// `importance-root.db` (a weight on most folders the user has touched).
 pub(super) fn synthetic_weights(index: &SearchIndex) -> ImportanceWeights {
     let mut weights = ImportanceWeights::empty();
-    for (i, e) in index.entries.iter().enumerate() {
-        if e.is_directory && e.id != ROOT_ID {
-            let path = super::engine::reconstruct_path_from_index(index, e.id);
+    for i in 0..index.len() {
+        if index.is_directory(i) && index.id(i) != ROOT_ID {
+            let path = super::engine::reconstruct_path_from_index(index, index.id(i));
             weights.insert(&path, ((i % 100) as f64) / 100.0);
         }
     }
@@ -245,7 +235,7 @@ fn bench_synthetic() {
     let index = build_synthetic_index(n);
     eprintln!(
         "\nsynthetic index: {} entries, built in {:.2?}",
-        index.entries.len(),
+        index.len(),
         t.elapsed()
     );
     let t = Instant::now();
@@ -279,7 +269,7 @@ fn bench_real_index() {
     let t = Instant::now();
     let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load index");
     let load = t.elapsed();
-    eprintln!("\n{db}\n  arena load: {} entries in {load:.2?}", index.entries.len());
+    eprintln!("\n{db}\n  arena load: {} entries in {load:.2?}", index.len());
 
     let weights = match std::env::var("CMDR_SEARCH_BENCH_IMPORTANCE_DB") {
         Ok(path) => {
@@ -334,7 +324,7 @@ fn bench_volume_fanout() {
         let t = Instant::now();
         let pool = ReadPool::new(path.into()).expect("open index DB");
         let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load index");
-        (index.entries.len(), t.elapsed())
+        (index.len(), t.elapsed())
     };
 
     eprintln!("\nfirst pass (page cache as found):");
@@ -409,7 +399,7 @@ fn bench_arena_scan() {
     let empty = ImportanceWeights::empty();
     eprintln!(
         "\n{db}\n  {}, size_of::<SearchEntry>() = {} B, best of {repeats}",
-        pluralize_with(index.entries.len() as u64, "entry", "entries"),
+        pluralize_with(index.len() as u64, "entry", "entries"),
         size_of::<SearchEntry>(),
     );
 
@@ -483,7 +473,7 @@ fn bench_query_allocations() {
     let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load index");
     eprintln!(
         "\n{db}\n  {}, {} scored folders, {} rayon threads, {repeats} runs each", // allowed-pluralize-noun: a bench header; an arena, the weights, and the pool are never one
-        pluralize_with(index.entries.len() as u64, "entry", "entries"),
+        pluralize_with(index.len() as u64, "entry", "entries"),
         weights.len(),
         rayon::current_num_threads(),
     );
@@ -603,9 +593,9 @@ fn bench_arena_bytes() {
     let load = t.elapsed();
     let rss_loaded = process_rss_bytes();
 
-    let rows = index.entries.len() as f64;
+    let rows = index.len() as f64;
     let mb = |bytes: i64| bytes as f64 / (1024.0 * 1024.0);
-    let entries_bytes = (index.entries.capacity() * size_of::<SearchEntry>()) as i64;
+    let entries_bytes = ((index.len() + index.spare_rows_left()) * size_of::<SearchEntry>()) as i64;
     eprintln!(
         "\n{db}\n  {} loaded in {load:.2?}\n  \
          size_of::<SearchEntry>() = {} B\n  \
@@ -613,7 +603,7 @@ fn bench_arena_bytes() {
          of which entries:     {:>9.1} MB\n    \
          names + id map:       {:>9.1} MB\n  \
          process RSS, arena resident: {:.1} MB (empty {:.1} MB)\n",
-        pluralize_with(index.entries.len() as u64, "entry", "entries"),
+        pluralize_with(index.len() as u64, "entry", "entries"),
         size_of::<SearchEntry>(),
         mb(heap),
         heap as f64 / rows,
@@ -624,7 +614,7 @@ fn bench_arena_bytes() {
     );
 
     // Keep the arena alive past the RSS read above.
-    assert!(!index.entries.is_empty(), "the index should hold rows");
+    assert!(!index.is_empty(), "the index should hold rows");
 }
 
 /// Load an importance weight map straight from an `importance-*.db` file (the

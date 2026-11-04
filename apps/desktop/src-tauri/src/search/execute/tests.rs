@@ -6,7 +6,7 @@
 use super::coverage::coverage_kind;
 use super::*;
 use crate::search::engine;
-use crate::search::index::{OptU64, SearchEntry, SearchIndex};
+use crate::search::index::{ArenaBuilder, SearchIndex};
 use crate::search::live::CoverageKind;
 use crate::search::ranking::ImportanceWeights;
 use crate::search::types::{PatternType, SearchResultEntry};
@@ -22,59 +22,18 @@ mod stalled_walk;
 
 // ── Synthetic index builder ──────────────────────────────────────────
 
-fn arena_push(names: &mut String, name: &str) -> (u32, u16) {
-    let offset = names.len() as u32;
-    let len = name.len() as u16;
-    names.push_str(name);
-    (offset, len)
-}
-
 /// Build a tiny index holding one directory per `(dir, file, modified_at)` triple,
 /// each with a single file inside it: `/dir/<file>`. Ids run root sentinel 1, then
 /// dir/file pairs.
 fn index_of(files: &[(&str, &str, u64)]) -> SearchIndex {
-    let mut names = String::new();
-    let (r_off, r_len) = arena_push(&mut names, "");
-    let mut entries = vec![SearchEntry {
-        id: 1,
-        parent_id: 0,
-        name_offset: r_off,
-        name_len: r_len,
-        is_directory: true,
-        size: OptU64::NONE,
-        modified_at: OptU64::NONE,
-    }];
-    for (dir, file, modified_at) in files {
-        let (d_off, d_len) = arena_push(&mut names, dir);
-        let (f_off, f_len) = arena_push(&mut names, file);
-        let dir_id = entries.len() as i64 + 1;
-        entries.push(SearchEntry {
-            id: dir_id,
-            parent_id: 1,
-            name_offset: d_off,
-            name_len: d_len,
-            is_directory: true,
-            size: OptU64::NONE,
-            modified_at: OptU64::new(Some(1)),
-        });
-        entries.push(SearchEntry {
-            id: dir_id + 1,
-            parent_id: dir_id,
-            name_offset: f_off,
-            name_len: f_len,
-            is_directory: false,
-            size: OptU64::new(Some(10)),
-            modified_at: OptU64::new(Some(*modified_at)),
-        });
+    let mut builder = ArenaBuilder::new();
+    builder.push(1, 0, "", true, None, None);
+    for (n, (dir, file, modified_at)) in files.iter().enumerate() {
+        let dir_id = 2 + 2 * n as i64;
+        builder.push(dir_id, 1, dir, true, None, Some(1));
+        builder.push(dir_id + 1, dir_id, file, false, Some(10), Some(*modified_at));
     }
-    // Keep the arena in the order the real loader produces (`ORDER BY id`, segments
-    // merged in range order): `index_of_id` binary-searches it.
-    entries.sort_unstable_by_key(|e| e.id);
-    SearchIndex {
-        names,
-        entries,
-        generation: 1,
-    }
+    builder.finish(1)
 }
 
 /// The common single-file case: `/dir/<file>`.
