@@ -6,6 +6,9 @@
   "compilerOptions": {
     "sourceMap": true,
     "strict": true,
+    // Pinned for the Safari 15.4 floor (a fully patched Catalina), so a newer standard-library
+    // function is a type error here instead of a TypeError on that Mac. ❌ Don't widen it to make
+    // one compile: feature-check the call and cast locally. Why and how: `src/webkit-floor.d.ts`.
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   // `test/fixtures/*.svelte` are components a unit test mounts (they'd fail
