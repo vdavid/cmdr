@@ -657,3 +657,25 @@ fn a_walked_directory_ignores_size_bounds_just_as_an_arena_row_does() {
 
     assert!(compiled.matches_covered(&covered("/Users/alice/Documents", true, Some(4_096), Some(1))));
 }
+
+#[test]
+fn an_unusable_exclude_reads_as_a_fix_and_quotes_a_short_pattern() {
+    let err = CompileError::InvalidExclude {
+        pattern: "?".repeat(200_000),
+        reason: "size limit".to_string(),
+    };
+    // The quote stops at 40 characters, so a pathological glob can't flood the dialog.
+    assert_eq!(
+        err.to_string(),
+        format!(
+            "Cmdr can’t use the exclusion “{}…”. Try a shorter or simpler pattern, or remove it.",
+            "?".repeat(40)
+        )
+    );
+
+    let short = CompileError::InvalidExclude {
+        pattern: "*.tmp".to_string(),
+        reason: String::new(),
+    };
+    assert!(short.to_string().contains("“*.tmp”."));
+}

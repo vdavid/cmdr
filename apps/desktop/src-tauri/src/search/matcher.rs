@@ -95,11 +95,30 @@ impl std::fmt::Display for CompileError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidPattern(reason) => write!(f, "Invalid pattern: {reason}"),
-            Self::InvalidExclude { pattern, reason } => write!(f, "Invalid exclude pattern \"{pattern}\": {reason}"),
+            // `reason` stays out of the sentence: `glob_to_regex` escapes everything but
+            // `*` and `?`, so the regex crate's complaint is a size limit in bytes, which
+            // tells the user nothing they can act on. It rides in `Debug` for logs.
+            Self::InvalidExclude { pattern, .. } => write!(
+                f,
+                "Cmdr can’t use the exclusion “{}”. Try a shorter or simpler pattern, or remove it.",
+                shorten_for_message(pattern)
+            ),
             Self::TooBroad => {
                 f.write_str("Query too broad. Add a filename pattern, size, date, or type filter to narrow results.")
             }
         }
+    }
+}
+
+/// How many characters of a user's pattern a message quotes before it trails off.
+const MESSAGE_PATTERN_CHARS: usize = 40;
+
+/// A pattern quoted in a sentence, cut to [`MESSAGE_PATTERN_CHARS`] with a trailing `…`
+/// so a pathological glob can't flood the dialog.
+fn shorten_for_message(pattern: &str) -> String {
+    match pattern.char_indices().nth(MESSAGE_PATTERN_CHARS) {
+        Some((cut, _)) => format!("{}…", &pattern[..cut]),
+        None => pattern.to_string(),
     }
 }
 
