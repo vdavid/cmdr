@@ -2151,6 +2151,7 @@
     class="file-pane"
     class:is-focused={isFocused}
     onclick={pointer.handlePaneClick}
+    onpointerdown={pointer.handlePanePointerDown}
     onmousedown={pointer.handlePaneMouseDown}
     ondblclick={pointer.handlePaneBackgroundDblClick}
     onkeydown={() => {}}

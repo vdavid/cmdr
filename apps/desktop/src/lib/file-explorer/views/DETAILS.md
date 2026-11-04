@@ -205,7 +205,9 @@ on the same row within 300 ms (Chrome's double-tap window), and drops a `dblclic
 device mode, 2026-11-04; same report at github.com/Leaflet/Leaflet/issues/6777), while Playwright's touch taps do send
 one. The pointer type comes from `pointerdown`, not the `click`, because older WebKit delivers `click` as a plain
 `MouseEvent`. A click-timing detector that also ran for the mouse would open the row twice per double-click (`dblclick`
-follows the second click). Pinned by `row-activation.views.test.ts` and `apps/website/e2e/demo.spec.ts`.
+follows the second click). The same core (`createDoublePress`) drives the pane background's go-up gesture
+(`pane/pane-pointer.ts`). Pinned by `row-activation.views.test.ts`, `pane/pane-pointer.test.ts`, and
+`apps/website/e2e/demo.spec.ts`.
 
 The double-tap detector keys its previous tap by both `listingId` and row index. A navigation can keep the component and
 its old rows mounted until the replacement range lands, so an index alone is not a row identity: row zero from the old

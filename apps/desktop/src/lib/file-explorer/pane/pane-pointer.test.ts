@@ -520,4 +520,51 @@ describe('createPanePointer', () => {
       expect(toast.addToast).not.toHaveBeenCalled()
     })
   })
+
+  // Chrome's device mode sends a double tap as two plain clicks with no `dblclick`
+  // (`views/row-activation.ts`), so a touch or pen goes up on the click pair.
+  describe('double-tapping the pane background', () => {
+    function tap(pointer: ReturnType<typeof createPanePointer>, pointerType: string) {
+      pointer.handlePanePointerDown({ pointerType } as PointerEvent)
+      pointer.handlePaneClick({ target: null } as unknown as MouseEvent)
+    }
+
+    it('goes up one folder on two quick taps, with no dblclick', () => {
+      const pointer = createPanePointer(deps)
+      tap(pointer, 'touch')
+      tap(pointer, 'touch')
+      expect(calls.navigateToParent).toHaveBeenCalledTimes(1)
+    })
+
+    it('goes up once when the browser also sends a dblclick', () => {
+      const pointer = createPanePointer(deps)
+      tap(pointer, 'touch')
+      tap(pointer, 'touch')
+      pointer.handlePaneBackgroundDblClick({ target: null } as unknown as MouseEvent)
+      expect(calls.navigateToParent).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves a mouse to its dblclick: two clicks alone stay put', () => {
+      const pointer = createPanePointer(deps)
+      tap(pointer, 'mouse')
+      tap(pointer, 'mouse')
+      expect(calls.navigateToParent).not.toHaveBeenCalled()
+    })
+
+    it('ignores taps that landed on a row', () => {
+      background.isFileListBackgroundClick.mockReturnValue(false)
+      const pointer = createPanePointer(deps)
+      tap(pointer, 'touch')
+      tap(pointer, 'touch')
+      expect(calls.navigateToParent).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when the setting is off', () => {
+      settings.getSetting.mockReturnValue(false)
+      const pointer = createPanePointer(deps)
+      tap(pointer, 'pen')
+      tap(pointer, 'pen')
+      expect(calls.navigateToParent).not.toHaveBeenCalled()
+    })
+  })
 })

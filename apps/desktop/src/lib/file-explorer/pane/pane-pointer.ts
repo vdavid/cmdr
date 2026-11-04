@@ -36,6 +36,7 @@ import { isFileListBackgroundClick } from './pane-background-dblclick'
 import { sameKindTargetFor } from './select-same-kind'
 import DoubleClickPaneHintToastContent from './DoubleClickPaneHintToastContent.svelte'
 import { readPressedRows } from './pressed-rows'
+import { createDoublePress } from '../views/row-activation'
 
 /** Shift+click args: extend the range from the cursor to the clicked row. */
 export interface ExtendSelectionFromMouseArgs {
@@ -89,6 +90,7 @@ export interface PanePointer {
   handleContextMenu: (entry: FileEntry, anchor?: MenuAnchor | null) => Promise<void>
   handleSelect: (args: SelectPayload) => void
   handlePaneClick: (event: MouseEvent) => void
+  handlePanePointerDown: (event: PointerEvent) => void
   handlePaneMouseDown: (event: MouseEvent) => void
   handlePaneBackgroundDblClick: (event: MouseEvent) => void
 }
@@ -195,6 +197,9 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
     const target = event.target
     if (target instanceof Element && target.closest('.rename-input')) return
     deps.onRequestFocus()
+    // A touch or pen's double tap on the background, which may bring no `dblclick` (`views/row-activation.ts`).
+    // Keyed by the listing, so the tap pair that went up never pairs with a tap in the parent.
+    if (isFileListBackgroundClick(target) && backgroundPress.isDoubleTap(deps.getListingId())) goUpFromBackground()
   }
 
   /**
@@ -213,15 +218,23 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
     deps.onRequestFocus()
   }
 
+  const backgroundPress = createDoublePress()
+
   /**
-   * Double-clicking the empty file-list background navigates up one folder
-   * (Directory Opus-style), gated by `behavior.doubleClickPaneNavigatesToParent`.
+   * Double-clicking (mouse) or double-tapping (touch, pen) the empty file-list background navigates up
+   * one folder (Directory Opus-style), gated by `behavior.doubleClickPaneNavigatesToParent`. A mouse
+   * goes through `dblclick`, a tap pair through `handlePaneClick` (`views/row-activation.ts`).
    * On the very first trigger we raise a one-time INFO toast explaining it, and
    * flip `behavior.doubleClickOnPaneNotificationSeen` so it shows once.
    */
   function handlePaneBackgroundDblClick(event: MouseEvent): void {
-    if (!getSetting('behavior.doubleClickPaneNavigatesToParent')) return
     if (!isFileListBackgroundClick(event.target)) return
+    if (!backgroundPress.isMouseDoubleClick()) return
+    goUpFromBackground()
+  }
+
+  function goUpFromBackground(): void {
+    if (!getSetting('behavior.doubleClickPaneNavigatesToParent')) return
     if (!deps.getHasParent()) return // nothing above (volume root / search-results pane)
     deps.navigateToParent()
     if (!getSetting('behavior.doubleClickOnPaneNotificationSeen')) {
@@ -234,5 +247,12 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
     }
   }
 
-  return { handleSelect, handleContextMenu, handlePaneClick, handlePaneMouseDown, handlePaneBackgroundDblClick }
+  return {
+    handleSelect,
+    handleContextMenu,
+    handlePaneClick,
+    handlePanePointerDown: backgroundPress.onPointerDown,
+    handlePaneMouseDown,
+    handlePaneBackgroundDblClick,
+  }
 }

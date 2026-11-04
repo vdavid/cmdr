@@ -7,7 +7,6 @@ import {
   calculateBriefLayout,
   getColumnForIndex,
   getItemRangeForColumns,
-  isDoubleClick,
 } from './brief-list-utils'
 
 describe('handleArrowKeyNavigation', () => {
@@ -216,90 +215,5 @@ describe('getItemRangeForColumns', () => {
     const result = getItemRangeForColumns(4, 5, 20, 95)
     // Column 4 starts at 80, column 5 would end at 100, but total is 95
     expect(result).toEqual({ startItem: 80, endItem: 95 })
-  })
-})
-
-describe('isDoubleClick', () => {
-  it('returns true for same index within time limit', () => {
-    expect(
-      isDoubleClick({
-        previous: { listingId: 'listing-1', index: 5, time: 1000 },
-        current: { listingId: 'listing-1', index: 5, time: 1200 },
-        doubleClickMs: 300,
-      }),
-    ).toBe(true)
-  })
-
-  it('returns false for different index', () => {
-    expect(
-      isDoubleClick({
-        previous: { listingId: 'listing-1', index: 5, time: 1000 },
-        current: { listingId: 'listing-1', index: 6, time: 1200 },
-        doubleClickMs: 300,
-      }),
-    ).toBe(false)
-  })
-
-  it('returns false for the same index in a replacement listing', () => {
-    expect(
-      isDoubleClick({
-        previous: { listingId: 'listing-1', index: 0, time: 1000 },
-        current: { listingId: 'listing-2', index: 0, time: 1050 },
-      }),
-    ).toBe(false)
-  })
-
-  it('returns false when time exceeds limit', () => {
-    expect(
-      isDoubleClick({
-        previous: { listingId: 'listing-1', index: 5, time: 1000 },
-        current: { listingId: 'listing-1', index: 5, time: 1400 },
-        doubleClickMs: 300,
-      }),
-    ).toBe(false)
-  })
-
-  it('returns false when time exactly at limit', () => {
-    expect(
-      isDoubleClick({
-        previous: { listingId: 'listing-1', index: 5, time: 1000 },
-        current: { listingId: 'listing-1', index: 5, time: 1300 },
-        doubleClickMs: 300,
-      }),
-    ).toBe(false)
-  })
-
-  it('returns true for very fast double click', () => {
-    expect(
-      isDoubleClick({
-        previous: { listingId: 'listing-1', index: 5, time: 1000 },
-        current: { listingId: 'listing-1', index: 5, time: 1050 },
-        doubleClickMs: 300,
-      }),
-    ).toBe(true)
-  })
-
-  it('uses default timeout of 300ms', () => {
-    const previous = { listingId: 'listing-1', index: 5, time: 1000 }
-    expect(isDoubleClick({ previous, current: { listingId: 'listing-1', index: 5, time: 1299 } })).toBe(true)
-    expect(isDoubleClick({ previous, current: { listingId: 'listing-1', index: 5, time: 1300 } })).toBe(false)
-  })
-
-  it('handles custom timeout', () => {
-    const previous = { listingId: 'listing-1', index: 5, time: 1000 }
-    expect(
-      isDoubleClick({
-        previous,
-        current: { listingId: 'listing-1', index: 5, time: 1499 },
-        doubleClickMs: 500,
-      }),
-    ).toBe(true)
-    expect(
-      isDoubleClick({
-        previous,
-        current: { listingId: 'listing-1', index: 5, time: 1500 },
-        doubleClickMs: 500,
-      }),
-    ).toBe(false)
   })
 })
