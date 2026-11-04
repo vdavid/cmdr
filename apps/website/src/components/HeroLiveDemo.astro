@@ -1,0 +1,375 @@
+---
+/**
+ * The hero's live app: `/demo/` (the real frontend on a fake backend, `apps/website/DETAILS.md`
+ * § Browser demo) in a same-origin iframe, inside a tilted window that eases flat and follows the
+ * pointer on hover, with a soft accent glow under the cursor. Being same-origin, the pointer is
+ * tracked inside the iframe too. Once the visitor clicks in, the window goes flat so it's usable.
+ *
+ * The app renders at a fixed desktop size (`DEMO_WIDTH` x `DEMO_HEIGHT`) and is scaled to fit, so it
+ * lays out like a real window at every viewport width.
+ */
+import tryItLive from '../assets/hero/try-it-live.svg?raw'
+---
+
+<div class="live-demo-anchor">
+    <!-- "Try it live" note: Dancing Script Bold (OFL), outlined to paths with Satori, so no font
+         ships. Decorative; the window's own label names it for screen readers. -->
+    <div class="try-live-note" aria-hidden="true">
+        <span class="try-live-lettering" set:html={tryItLive} />
+        <svg class="try-live-arrow" viewBox="0 0 170 120" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path class="try-live-arrow-line" pathLength="1" d="M6 30 C 30 26, 58 34, 70 56 C 80 76, 66 94, 52 86 C 36 76, 52 52, 80 60 C 108 68, 128 88, 158 104"></path>
+            <path class="try-live-arrow-head" pathLength="1" d="M142 106 L 159 104.5 L 151 90"></path>
+        </svg>
+    </div>
+
+    <div class="live-demo" data-live-demo>
+        <div class="live-demo-viewport" data-live-demo-viewport>
+            <iframe
+                src="/demo/"
+                title="Cmdr, running live in your browser"
+                loading="eager"
+                data-live-demo-frame></iframe>
+        </div>
+        <!-- Touch screens get a view-only window that opens the full demo, since a live app here
+             would swallow the page's scroll gestures. -->
+        <a class="live-demo-tap" href="/demo/">Open the live demo</a>
+    </div>
+</div>
+
+<style>
+    .live-demo-anchor {
+        position: relative;
+        margin-top: 3rem;
+    }
+
+    @media (min-width: 1024px) {
+        .live-demo-anchor {
+            position: absolute;
+            top: 50%;
+            right: 3.5rem;
+            width: calc(55% - 3.5rem);
+            margin-top: 0;
+            transform: translateY(-50%);
+        }
+    }
+
+    .live-demo {
+        --mx: 50%;
+        --my: 50%;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: var(--color-background);
+        box-shadow: 0 40px 90px rgb(0 0 0 / 0.45);
+        transform-origin: 30% center;
+        transform: perspective(1400px) rotateY(-12deg) rotateX(5deg) rotate(0.5deg);
+        transform-style: preserve-3d;
+        transition:
+            transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 0.52s ease,
+            filter 0.52s ease;
+        will-change: transform;
+    }
+
+    /* Hover: ease toward flat, lift, and lean a little toward the pointer (the script adds the lean
+       through --tilt-x/--tilt-y). */
+    .live-demo.is-hovered {
+        transform: perspective(1400px) rotateY(calc(-4deg + var(--tilt-y, 0deg)))
+            rotateX(calc(2deg + var(--tilt-x, 0deg))) translateY(-12px) scale(1.03);
+        filter: brightness(1.04);
+        box-shadow:
+            0 32px 80px rgb(0 0 0 / 0.5),
+            0 0 0 1px color-mix(in srgb, var(--color-accent) 40%, transparent);
+    }
+
+    /* In use: flat and still, so clicks land where the visitor aims. */
+    .live-demo.is-engaged {
+        transform: perspective(1400px) translateY(-12px);
+        filter: none;
+    }
+
+    /* Glow under the cursor. */
+    .live-demo::before {
+        content: '';
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border-radius: inherit;
+        background: radial-gradient(
+            420px circle at var(--mx) var(--my),
+            color-mix(in srgb, var(--color-accent) 14%, transparent),
+            transparent 60%
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .live-demo.is-hovered::before {
+        opacity: 1;
+    }
+
+    /* Glass sheen across the window, fading back on hover. */
+    .live-demo::after {
+        content: '';
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border-radius: inherit;
+        background: linear-gradient(
+            115deg,
+            rgb(255 255 255 / 0.08) 0%,
+            transparent 38%,
+            transparent 62%,
+            color-mix(in srgb, var(--color-accent) 12%, transparent) 100%
+        );
+        opacity: 0.9;
+        transition: opacity 0.52s ease;
+    }
+
+    .live-demo.is-hovered::after {
+        opacity: 0.4;
+    }
+
+    .live-demo.is-engaged::after,
+    .live-demo.is-engaged::before {
+        opacity: 0;
+    }
+
+    /* The box takes its width from the window and its height from the app's ratio. ❗ Never give
+       it a fixed height too: with aspect-ratio, a set height drives the WIDTH, so the box keeps its
+       old width when the page narrows and the app spills past the window's edge. */
+    .live-demo-viewport {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 1080 / 690;
+    }
+
+    .live-demo-viewport iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1080px;
+        height: 690px;
+        border: 0;
+        transform-origin: 0 0;
+        transform: scale(var(--demo-scale, 0.5));
+        opacity: 0;
+        transition: opacity 0.6s ease;
+    }
+
+    .live-demo-viewport iframe.is-loaded {
+        opacity: 1;
+    }
+
+    .live-demo-tap {
+        display: none;
+    }
+
+    @media (pointer: coarse) {
+        .live-demo-viewport iframe {
+            pointer-events: none;
+        }
+
+        .live-demo-tap {
+            display: block;
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            /* The label is for screen readers; the window itself is the visible target. */
+            color: transparent;
+        }
+    }
+
+    /* "Try it live" note, sitting in the card's lower-left gap and pointing into the window. */
+    .try-live-note {
+        display: none;
+        color: var(--color-accent-text);
+    }
+
+    @media (min-width: 1400px) and (pointer: fine) {
+        .try-live-note {
+            display: block;
+            pointer-events: none;
+            position: absolute;
+            right: calc(100% - 4rem);
+            bottom: -2.5rem;
+            z-index: 3;
+            width: 15rem;
+            height: 9rem;
+        }
+    }
+
+    .try-live-lettering {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 9.5rem;
+        transform: rotate(-6deg);
+    }
+
+    .try-live-lettering :global(svg) {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .try-live-arrow {
+        position: absolute;
+        right: 0;
+        top: -1rem;
+        width: 9rem;
+        transform: rotate(-38deg);
+    }
+
+    /* Draw the arrow in once, after the text has settled. */
+    .try-live-arrow-line,
+    .try-live-arrow-head {
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+        animation: draw-arrow 0.9s cubic-bezier(0.65, 0, 0.35, 1) 1.2s forwards;
+    }
+
+    .try-live-arrow-head {
+        animation-duration: 0.25s;
+        animation-delay: 2.05s;
+    }
+
+    .try-live-lettering {
+        opacity: 0;
+        animation: note-in 0.6s ease 0.9s forwards;
+    }
+
+    @keyframes draw-arrow {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    @keyframes note-in {
+        from {
+            opacity: 0;
+            transform: rotate(-6deg) translateY(6px);
+        }
+        to {
+            opacity: 1;
+            transform: rotate(-6deg);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .live-demo,
+        .live-demo.is-hovered {
+            transition: none;
+            transform: perspective(1400px) rotateY(-8deg) rotateX(3deg);
+        }
+
+        .try-live-arrow-line,
+        .try-live-arrow-head,
+        .try-live-lettering {
+            animation: none;
+            stroke-dashoffset: 0;
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+    /** The app's layout size inside the window; keep in sync with the iframe's CSS size and the box's aspect-ratio. */
+    const DEMO_WIDTH = 1080
+    const DEMO_HEIGHT = 690
+    /** How far the window leans toward the pointer, either way, in degrees. */
+    const MAX_LEAN_DEG = 2.5
+
+    function setUpLiveDemo(): void {
+        const root = document.querySelector<HTMLElement>('[data-live-demo]')
+        const viewport = root?.querySelector<HTMLElement>('[data-live-demo-viewport]')
+        const frame = root?.querySelector<HTMLIFrameElement>('[data-live-demo-frame]')
+        if (!root || !viewport || !frame || root.dataset.ready) return
+        root.dataset.ready = '1'
+
+        const fit = (): void => {
+            viewport.style.setProperty('--demo-scale', String(viewport.clientWidth / DEMO_WIDTH))
+        }
+        new ResizeObserver(fit).observe(viewport)
+        fit()
+
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+        /** Points the glow and the lean at a spot given as fractions of the window (0 to 1). */
+        const aim = (fx: number, fy: number): void => {
+            root.classList.add('is-hovered')
+            root.style.setProperty('--mx', `${String(fx * 100)}%`)
+            root.style.setProperty('--my', `${String(fy * 100)}%`)
+            if (reducedMotion) return
+            root.style.setProperty('--tilt-y', `${String((fx - 0.5) * 2 * MAX_LEAN_DEG)}deg`)
+            root.style.setProperty('--tilt-x', `${String((0.5 - fy) * 2 * MAX_LEAN_DEG)}deg`)
+        }
+        const release = (): void => {
+            root.classList.remove('is-hovered')
+        }
+
+        // Over the window's border (outside the iframe), its on-screen box is close enough.
+        root.addEventListener('pointermove', (event) => {
+            const box = root.getBoundingClientRect()
+            aim((event.clientX - box.left) / box.width, (event.clientY - box.top) / box.height)
+        })
+        root.addEventListener('pointerleave', release)
+
+        // The app focuses its file pane on boot, which would take the home page's keyboard (Space
+        // and the arrows would drive the app, not scroll the page). So the iframe may only hold
+        // focus once the visitor has clicked into it or tabbed to it.
+        let allowFocus = false
+        let lastTabAt = Number.NEGATIVE_INFINITY
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Tab') lastTabAt = performance.now()
+        })
+        window.addEventListener('blur', () => {
+            if (performance.now() - lastTabAt < 500) allowFocus = true
+            if (allowFocus) {
+                root.classList.add('is-engaged')
+                return
+            }
+            // After the focus move settles, hand the keyboard back to the page.
+            setTimeout(() => {
+                if (document.activeElement === frame && !allowFocus) {
+                    frame.blur()
+                    window.focus()
+                }
+            })
+        })
+        // Leaving the app (a click or Tab elsewhere on the page) lets the window tilt again.
+        window.addEventListener('focus', () => {
+            allowFocus = false
+            root.classList.remove('is-engaged')
+        })
+
+        // Inside the app, coordinates are the iframe's own untransformed pixels, so they map exactly.
+        const onFrameLoad = (): void => {
+            frame.classList.add('is-loaded')
+            const doc = frame.contentDocument
+            if (!doc) return
+            doc.addEventListener('pointermove', (event) => {
+                aim(event.clientX / DEMO_WIDTH, event.clientY / DEMO_HEIGHT)
+            })
+            doc.documentElement.addEventListener('pointerleave', release)
+            doc.addEventListener(
+                'pointerdown',
+                () => {
+                    allowFocus = true
+                    root.classList.add('is-engaged')
+                },
+                { capture: true },
+            )
+        }
+        // The frame can finish loading before this script runs.
+        const loaded = frame.contentDocument?.readyState === 'complete' && frame.contentWindow?.location.pathname.startsWith('/demo')
+        if (loaded) onFrameLoad()
+        else frame.addEventListener('load', onFrameLoad, { once: true })
+    }
+
+    setUpLiveDemo()
+    document.addEventListener('astro:page-load', setUpLiveDemo)
+</script>

@@ -15,7 +15,7 @@ statically built. Its markdown may use tables.
 - `src/components/DevTodo.astro`: dev-only ⚠️ callout for David. [DETAILS.md](DETAILS.md) § Dev-only task callouts.
 - `src/dev/blog-editor/`: dev-only Markdown editor at `/dev/blog` (Vite middleware).
 - `src/pages/llms.txt.ts` / `llms-full.txt.ts`: agent-facing product descriptions; keep synced with product facts.
-- `/demo/`: the browser demo, `src/plugins/demo.ts`. [DETAILS.md](DETAILS.md) § Browser demo.
+- `/demo/` (`src/plugins/demo.ts`), live in the hero. [DETAILS.md](DETAILS.md) § Browser demo.
 
 ## Deployment
 

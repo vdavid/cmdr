@@ -156,7 +156,7 @@ func websiteLinkProblem(distDir string, idsByPage map[string]map[string]bool, li
 	if err != nil {
 		return "unparseable URL", true
 	}
-	if u.Scheme != "" || u.Host != "" {
+	if !websiteJudgesLink(distDir, u) {
 		return "", false
 	}
 
@@ -179,6 +179,28 @@ func websiteLinkProblem(distDir string, idsByPage map[string]map[string]bool, li
 		return fmt.Sprintf("no id %q on %s", fragment, target), true
 	}
 	return "", true
+}
+
+// websiteJudgesLink reports whether this check can judge a parsed link at all: external URLs and
+// other schemes are out of reach (no network in a check), and so is a link into the browser demo
+// when this build didn't publish it (it's opt-in through `CMDR_WEBSITE_DEMO=1`, and the home page's
+// hero embeds it).
+func websiteJudgesLink(distDir string, u *url.URL) bool {
+	if u.Scheme != "" || u.Host != "" {
+		return false
+	}
+	return !websiteIsDemoPath(u.Path) || websiteHasDemo(distDir)
+}
+
+// websiteIsDemoPath reports whether an absolute URL path points into the browser demo.
+func websiteIsDemoPath(urlPath string) bool {
+	return urlPath == "/"+websiteDemoDir || strings.HasPrefix(urlPath, "/"+websiteDemoDir+"/")
+}
+
+// websiteHasDemo reports whether this build published the browser demo.
+func websiteHasDemo(distDir string) bool {
+	info, err := os.Stat(filepath.Join(distDir, websiteDemoDir, "index.html"))
+	return err == nil && !info.IsDir()
 }
 
 // websiteVersionedExtensions mirrors `VERSIONED_EXTENSIONS` in `apps/website/src/plugins/asset-versions.ts`:

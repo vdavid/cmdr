@@ -323,8 +323,18 @@ gives it browser globals.
 ## Browser demo
 
 `/demo/` serves the real desktop frontend on a fake backend, with the listing engine built to WASM (issue #302; the app
-side is `apps/desktop/src/lib/demo/CLAUDE.md`, the engine `crates/cmdr-listing-wasm/CLAUDE.md`). Unlaunched on purpose:
-nothing links to it, it's out of the sitemap, and it's `noindex` until David launches it.
+side is `apps/desktop/src/lib/demo/CLAUDE.md`, the engine `crates/cmdr-listing-wasm/CLAUDE.md`). The home page's hero
+embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until David launches it as a page.
+
+- **The hero embed** (`src/components/HeroLiveDemo.astro`): a same-origin iframe of `/demo/` at a fixed desktop size,
+  scaled to fit a tilted window. Same-origin is load-bearing: the script reads pointer moves inside the frame (for the
+  glow and the lean) and catches the first `pointerdown` there. The app focuses its pane on boot, so the script hands
+  focus back to the page until the visitor clicks into the frame or tabs to it; otherwise Space and the arrows on the
+  home page would drive the app. Touch screens get it view-only, as a link to `/demo/`. The site CSP's
+  `frame-src 'self'` (`nginx-security-headers.conf`) is what lets it load in production.
+- **Dev**: `pnpm dev` serves `/demo/` from `apps/desktop/build-demo/` (a dev-server middleware in `src/plugins/demo.ts`,
+  file else app page, like nginx), so the hero is live locally once `pnpm build:demo` has run; without it, the window
+  shows a one-line "no demo build" note.
 
 - **Build**: `pnpm build:demo` at the repo root (the WASM engine, then `apps/desktop`'s `build:demo` into
   `apps/desktop/build-demo/`). Then `CMDR_WEBSITE_DEMO=1 pnpm build` here: `src/plugins/demo.ts` copies it into

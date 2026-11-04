@@ -43,15 +43,20 @@ for (const theme of ['light', 'dark'] as const) {
           document.documentElement.setAttribute('data-theme', t)
         }, theme)
 
-        // Wait for the theme's color transitions to finish. A fixed wait raced them: the feature cards
-        // transition over 300 ms, so axe sampled half-switched colors (dark text on the light surface).
-        // Only transitions: an infinite decorative animation would never settle.
+        // Wait for the theme's color transitions and the entrance animations to finish. A fixed wait
+        // raced them: the feature cards transition over 300 ms, and the hero's lines fade in over a
+        // second, so axe sampled half-faded colors. Infinite decorative animations never settle, so
+        // they're left out.
         await page.evaluate(async () => {
-          const transitions = document.getAnimations().filter((a) => a instanceof CSSTransition)
-          await Promise.all(transitions.map((a) => a.finished.catch(() => undefined)))
+          const settling = document
+            .getAnimations()
+            .filter((a) => a instanceof CSSTransition || a.effect?.getComputedTiming().iterations !== Infinity)
+          await Promise.all(settling.map((a) => a.finished.catch(() => undefined)))
         })
 
-        const results = await new AxeBuilder({ page }).analyze()
+        // The home page's hero embeds the browser demo: that's the desktop app's markup, which the
+        // desktop's own checks audit (`apps/desktop/src/lib/demo/CLAUDE.md`).
+        const results = await new AxeBuilder({ page }).exclude('iframe[src^="/demo"]').analyze()
 
         // Log violations for visibility
         for (const v of results.violations) {

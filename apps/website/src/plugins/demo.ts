@@ -15,7 +15,7 @@
 
 import type { AstroIntegration } from 'astro'
 import { cp, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname, extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { inlineScriptHashes } from './csp-hashes.ts'
 
@@ -48,6 +48,36 @@ async function exists(path: string): Promise<boolean> {
     () => true,
     () => false,
   )
+}
+
+const DEMO_MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.wasm': 'application/wasm',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.woff2': 'font/woff2',
+}
+
+/** Dev only: the demo build's file for a URL under `/demo`, or its app page for any other path. */
+async function serveDemoFile(sourceDir: string, url: string): Promise<{ body: Buffer | string; type: string } | null> {
+  const pathname = decodeURIComponent(new URL(url, 'http://localhost').pathname)
+  const candidate = normalize(join(sourceDir, pathname))
+  if (
+    candidate.startsWith(sourceDir) &&
+    (await stat(candidate).then(
+      (s) => s.isFile(),
+      () => false,
+    ))
+  ) {
+    return { body: await readFile(candidate), type: DEMO_MIME_TYPES[extname(candidate)] ?? 'application/octet-stream' }
+  }
+  const page = join(sourceDir, 'index.html')
+  if (!(await exists(page))) return null
+  return { body: demoPageHead(await readFile(page, 'utf8')), type: DEMO_MIME_TYPES['.html'] }
 }
 
 export function demoIntegration({
@@ -86,6 +116,28 @@ export function demoIntegration({
         }
         await writeFile(snippetPath, demoSnippet(hashes))
         logger.info(`published /demo/ from ${sourceDir}, ${String(hashes.size)} inline script hash(es)`)
+      },
+      // The home page's hero embeds `/demo/`, so the dev server serves the local demo build there,
+      // the way nginx does in production: the file if it exists, else the app page.
+      'astro:server:setup': ({ server, logger }) => {
+        server.middlewares.use('/demo', (req, res, next) => {
+          void serveDemoFile(sourceDir, req.url ?? '/').then(
+            (file) => {
+              if (!file) {
+                res.statusCode = 404
+                res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+                res.end('No demo build yet. Run `pnpm build:demo` at the repo root.')
+                return
+              }
+              res.setHeader('Content-Type', file.type)
+              res.end(file.body)
+            },
+            (err: unknown) => {
+              logger.error(`couldn't serve /demo${req.url ?? ''}: ${String(err)}`)
+              next()
+            },
+          )
+        })
       },
     },
   }

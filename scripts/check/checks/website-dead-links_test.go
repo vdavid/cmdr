@@ -87,6 +87,25 @@ func TestWebsiteDeadLinksSkipsTheBrowserDemo(t *testing.T) {
 	}
 }
 
+// The demo is published only by an opt-in build, so a site built without it can't judge links
+// into it (the home page's hero embeds it). A build WITH the demo still checks them.
+func TestWebsiteDeadLinksSkipsDemoLinksWhenTheDemoIsNotBuilt(t *testing.T) {
+	distDir := t.TempDir()
+	writeDistPage(t, distDir, "index.html", `<a href="/demo/">demo</a><a href="/demo">demo</a><a href="/demonstration/">x</a>`)
+
+	broken := deadLinksIn(t, distDir)
+	if len(broken) != 1 || !strings.Contains(broken[0], `"/demonstration/"`) {
+		t.Fatalf("expected only /demonstration/ flagged, got:\n%s", strings.Join(broken, "\n"))
+	}
+
+	writeDistPage(t, distDir, "demo/index.html", `<p>app</p>`)
+	writeDistPage(t, distDir, "index.html", `<a href="/demo/">demo</a><a href="/demo/gone.css">x</a>`)
+	broken = deadLinksIn(t, distDir)
+	if len(broken) != 1 || !strings.Contains(broken[0], `"/demo/gone.css"`) {
+		t.Fatalf("expected /demo/gone.css flagged once the demo is built, got:\n%s", strings.Join(broken, "\n"))
+	}
+}
+
 func TestWebsiteDeadLinksFlagsUnversionedPublicAssets(t *testing.T) {
 	distDir := t.TempDir()
 	// `asset-versions.ts` appends `?v=` to every `public/` asset; one it missed would be cached

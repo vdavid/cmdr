@@ -1,117 +1,88 @@
 ---
 import DownloadButton from './DownloadButton.astro'
+import HeroLiveDemo from './HeroLiveDemo.astro'
 
 const currentYear = new Date().getFullYear()
 ---
 
-<section class="hero-section relative overflow-hidden px-6 pt-16 md:px-12 lg:px-20">
-    <!-- Background gradient -->
+<section class="hero-section relative px-3 pt-16 sm:px-6">
     <div
-        class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,color-mix(in_srgb,var(--color-accent)_15%,transparent),transparent)]"
+        class="hero-card relative mx-auto mt-4 max-w-360 overflow-hidden rounded-3xl border border-border-subtle bg-surface px-6 pt-10 pb-12 sm:rounded-[28px] sm:px-10 sm:pt-16 lg:min-h-175 lg:px-14 lg:pt-20 lg:pb-16"
     >
-    </div>
+        <!-- Two soft color pools, the way the card is lit: warm top-left, cool bottom-center. -->
+        <div class="hero-pool hero-pool--warm" aria-hidden="true"></div>
+        <div class="hero-pool hero-pool--cool" aria-hidden="true"></div>
 
-    <!-- Grid pattern overlay -->
-    <div
-        class="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--color-border-subtle)_1px,transparent_1px),linear-gradient(90deg,var(--color-border-subtle)_1px,transparent_1px)] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,black,transparent)] bg-size-[4rem_4rem]"
-    >
-    </div>
-
-    <!-- The section's `pt-16` clears the fixed header; this top padding mirrors the section's side
-         padding per breakpoint, so the gap above the eyebrow matches the gap on its left. -->
-    <div class="hero-content relative z-10 pt-6 text-left md:pt-12 lg:pt-20">
-        <!-- Open-beta eyebrow - Step 1 -->
-        <a
-            href="/features"
-            class="animate-blur-in stagger-1 mb-5 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-sm font-medium text-accent-text transition-colors hover:bg-accent/20"
-        >
-            Now in open beta
-            <span aria-hidden="true">&rarr;</span>
-        </a>
-
-        <!-- Headline - Steps 2 & 3 -->
-        <h1 class="mb-6 text-3xl/tight font-bold tracking-tight md:text-4xl lg:text-6xl">
-            <span class="animate-blur-in stagger-2 inline-block">Finally, a file manager</span>
-            <span class="animate-blur-in stagger-3 gradient-text inline-block">from {currentYear}!</span>
-        </h1>
-
-        <!-- Subheadline - Step 4: a lead line, the two "plus" points as a real list, then the
-             closer. The list owns the indent and the line breaks, so the copy survives being
-             re-worded or translated; `max-w-3xl` keeps each point on one line at the md size. -->
-        <div
-            class="animate-blur-in stagger-4 mb-10 max-w-3xl text-lg/relaxed text-text-secondary md:text-xl"
-        >
-            <p>The standard two-pane file manager experience we love</p>
-            <ul class="mt-1 space-y-1 ps-6">
-                <li>
-                    <em class="text-accent-text">plus</em> a drive index for instant search and folder sizes
-                </li>
-                <li>
-                    <em class="text-accent-text">plus</em> a bunch of (optional!) AI features to organize your
-                    files.
-                </li>
-            </ul>
-            <p class="mt-4">Built in Rust, free for personal use.</p>
-        </div>
-
-        <!-- CTA Button + Homebrew hint - Steps 5 & 6: the hint sits beside the button (vertically
-             centered) when it fits, and stacks below it on narrow viewports. -->
-        <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-            <DownloadButton variant="hero" class="animate-blur-in stagger-5 w-full sm:w-auto" />
+        <div class="hero-content relative z-10 lg:max-w-[40%]">
+            <!-- Open-beta eyebrow - Step 1 -->
             <a
-                href="#homebrew"
-                data-brew-jump
-                class="animate-blur-in stagger-6 inline-flex items-center gap-1.5 self-center text-sm text-text-tertiary underline decoration-border underline-offset-4 transition-colors hover:text-accent-text hover:decoration-accent sm:self-auto"
+                href="/features"
+                class="animate-blur-in stagger-1 mb-5 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-sm font-medium text-accent-text transition-colors hover:bg-accent/20"
             >
-                or Homebrew
-                <svg
-                    class="size-3.5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                >
-                    <path d="M12 5v14M19 12l-7 7-7-7"></path>
-                </svg>
+                Now in open beta
+                <span aria-hidden="true">&rarr;</span>
             </a>
-        </div>
 
-        <!-- Pricing hint - Step 7 -->
-        <p class="animate-blur-in stagger-7 mt-8 text-sm text-text-tertiary">
-            <a
-                href="https://github.com/vdavid/cmdr"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link-muted hover:text-accent-text">Source-available</a
-            > · Free for personal use · $59 once for work
-        </p>
-    </div>
+            <!-- Headline - Steps 2 & 3 -->
+            <h1 class="mb-6 text-3xl/tight font-bold tracking-tight min-[1400px]:text-5xl md:text-4xl">
+                <span class="animate-blur-in stagger-2 inline-block">Finally, a file manager</span>
+                <span class="animate-blur-in stagger-3 gradient-text inline-block">from {currentYear}!</span>
+            </h1>
 
-    <!-- Hero illustration with 3D perspective -->
-    <div class="hero-illustration" aria-hidden="true">
-        <div class="hero-perspective">
-            <div class="hero-base">
-                <!-- Layers are CSS background images (not <img>): the preload scanner downloads every
-                     <img> even inside display:none, so <img> would fetch both theme variants (~2x the
-                     bytes). Background images only load for rendered elements, and image-set() picks
-                     the 1x/2x file by device pixel ratio. -->
-                <!-- Dark variant -->
-                <div class="hero-variant hero-variant--dark">
-                    <div class="hero-layer hero-frame"></div>
-                    <div class="hero-layer hero-right-pane"></div>
-                    <div class="hero-layer hero-left-pane"></div>
-                </div>
-                <!-- Light variant -->
-                <div class="hero-variant hero-variant--light">
-                    <div class="hero-layer hero-frame"></div>
-                    <div class="hero-layer hero-right-pane"></div>
-                    <div class="hero-layer hero-left-pane"></div>
-                </div>
+            <!-- Subheadline - Step 4: a lead line, the two "plus" points as a real list, then the
+                 closer. The list owns the indent and the line breaks, so the copy survives being
+                 re-worded or translated. -->
+            <div class="animate-blur-in stagger-4 mb-10 text-lg/relaxed text-text-secondary">
+                <p>The standard two-pane file manager experience we love</p>
+                <ul class="mt-1 space-y-1 ps-6">
+                    <li>
+                        <em class="text-accent-text">plus</em> a drive index for instant search and folder sizes
+                    </li>
+                    <li>
+                        <em class="text-accent-text">plus</em> a bunch of (optional!) AI features to organize your
+                        files.
+                    </li>
+                </ul>
+                <p class="mt-4">Built in Rust, free for personal use.</p>
             </div>
+
+            <!-- CTA Button + Homebrew hint - Steps 5 & 6: the hint sits beside the button (vertically
+                 centered) when it fits, and stacks below it on narrow viewports. -->
+            <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+                <DownloadButton variant="hero" class="animate-blur-in stagger-5 w-full sm:w-auto" />
+                <a
+                    href="#homebrew"
+                    data-brew-jump
+                    class="animate-blur-in stagger-6 inline-flex items-center gap-1.5 self-center text-sm text-text-tertiary underline decoration-border underline-offset-4 transition-colors hover:text-accent-text hover:decoration-accent sm:self-auto"
+                >
+                    or Homebrew
+                    <svg
+                        class="size-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M12 5v14M19 12l-7 7-7-7"></path>
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Pricing hint - Step 7 -->
+            <p class="animate-blur-in stagger-7 mt-8 text-sm text-text-tertiary">
+                <a
+                    href="https://github.com/vdavid/cmdr"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link-muted hover:text-accent-text">Source-available</a
+                > · Free for personal use · $59 once for work
+            </p>
         </div>
+
+        <HeroLiveDemo />
     </div>
 </section>
 
@@ -157,231 +128,28 @@ const currentYear = new Date().getFullYear()
         }
     }
 
-    .hero-section {
-        min-height: 100vh;
-        position: relative;
-    }
-
-    /* Gradient overlay at bottom - covers full width including padding */
-    .hero-section::after {
-        content: '';
+    .hero-pool {
         pointer-events: none;
-        z-index: 5;
-        background: linear-gradient(to bottom, transparent 50%, var(--color-background) 100%);
         position: absolute;
-        inset: 0;
+        border-radius: 9999px;
     }
 
-    .hero-content {
-        position: relative;
-        z-index: 10;
+    .hero-pool--warm {
+        top: -6rem;
+        left: -6rem;
+        width: 480px;
+        height: 480px;
+        background: radial-gradient(closest-side, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent);
     }
 
-    .hero-illustration {
-        pointer-events: none;
-        user-select: none;
-        width: 100%;
-        position: relative;
-        margin-top: -200px;
-        margin-left: -100px;
+    .hero-pool--cool {
+        right: 30%;
+        bottom: -10rem;
+        width: 520px;
+        height: 520px;
+        background: radial-gradient(closest-side, color-mix(in srgb, var(--color-icon-soon) 14%, transparent), transparent);
     }
 
-    @media (max-width: 767px) {
-        .hero-illustration {
-            height: 600px;
-            margin-top: 0;
-            margin-left: -40px;
-        }
-    }
-
-    .hero-perspective {
-        perspective: 4000px;
-        perspective-origin: 100% 0;
-    }
-
-    .hero-base {
-        transform-origin: 0 0;
-        backface-visibility: hidden;
-        /* Pin the GPU layer so scroll doesn't evict and re-rasterize it: mid-range Android GPUs
-           otherwise discard this heavy 3D-transformed, masked layer's tiles under memory pressure
-           when it scrolls near the viewport edge, then repaint on re-entry (a visible flicker). */
-        will-change: transform;
-        width: 1600px;
-        height: 900px;
-        margin: 280px auto auto;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: -100px;
-        right: 0;
-        transform: translate(2%) scale(1.2) rotateX(47deg) rotateY(31deg) rotate(324deg);
-        /* Right-edge fade, applied once on the assembled layer (not per pane) to collapse three
-           offscreen mask surfaces into one. Stops include a `+ 10vw` term so wider viewports reveal
-           ~10 percentage points more of the image without a breakpoint hop. */
-        mask-image: linear-gradient(to right, black 0%, black calc(50% + 10vw), transparent calc(80% + 10vw));
-    }
-
-    @media (max-width: 767px) {
-        .hero-base {
-            margin-top: 100px;
-            margin-left: 1%;
-            transform: scale(0.7) rotateX(47deg) rotateY(21deg) rotate(330deg);
-        }
-    }
-
-    /* Scale hero image on large screens */
-    @media (min-width: 1700px) {
-        .hero-base {
-            width: 94vw;
-            height: calc(94vw * 9 / 16);
-        }
-    }
-
-    /* Variant containers stack on top of each other inside the hero-base. The masters are the
-       bare window (no baked-in shadow), so the inset keeps the window where and as big as it sat
-       when the shadow margins took up this room (76 and 148 of 1634 px), and the shadow is drawn
-       here instead. A drop-shadow (unlike box-shadow) follows the window's rounded corners.
-       ❗ The shadow must fit inside `.hero-base`: its `mask-image` clips everything outside its box,
-       and the window sits only 42 px below that box's top (81 px above its bottom). A shadow that
-       reaches further is cut off in a hard line. So it's a faint contact shadow plus a soft one
-       pushed DOWN by its offset, which keeps the soft one's top fade inside those 42 px, the way
-       the macOS shadow it replaces was light above and heavy below. */
-    .hero-variant {
-        position: absolute;
-        inset: 4.65% 0 9.06%;
-        filter: drop-shadow(-1px 2px 3px rgb(0 0 0 / 0.18)) drop-shadow(-8px 26px 30px rgb(0 0 0 / 0.36));
-    }
-
-    /* Default: show dark, hide light */
-    .hero-variant--light {
-        display: none;
-    }
-
-    /* System light preference, no explicit dark override */
-    @media (prefers-color-scheme: light) {
-        :global(:root:not([data-theme='dark'])) .hero-variant--dark {
-            display: none;
-        }
-        :global(:root:not([data-theme='dark'])) .hero-variant--light {
-            display: block;
-        }
-    }
-
-    /* Explicit light override */
-    :global(:root[data-theme='light']) .hero-variant--dark {
-        display: none;
-    }
-    :global(:root[data-theme='light']) .hero-variant--light {
-        display: block;
-    }
-
-    .hero-layer {
-        position: absolute;
-        inset: 0;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-size: contain;
-    }
-
-    /* The -webkit-image-set() fallbacks cover Safari < 17, which only knows the prefixed form. */
-    .hero-variant--dark .hero-frame {
-        background-image: -webkit-image-set(
-            url('/hero/cmdr-hero-frame-dark-1x.webp') 1x,
-            url('/hero/cmdr-hero-frame-dark.webp') 2x
-        );
-        background-image: image-set(
-            url('/hero/cmdr-hero-frame-dark-1x.webp') 1x,
-            url('/hero/cmdr-hero-frame-dark.webp') 2x
-        );
-    }
-
-    .hero-variant--dark .hero-left-pane {
-        background-image: -webkit-image-set(
-            url('/hero/cmdr-hero-left-pane-dark-1x.webp') 1x,
-            url('/hero/cmdr-hero-left-pane-dark.webp') 2x
-        );
-        background-image: image-set(
-            url('/hero/cmdr-hero-left-pane-dark-1x.webp') 1x,
-            url('/hero/cmdr-hero-left-pane-dark.webp') 2x
-        );
-    }
-
-    .hero-variant--dark .hero-right-pane {
-        background-image: -webkit-image-set(
-            url('/hero/cmdr-hero-right-pane-dark-1x.webp') 1x,
-            url('/hero/cmdr-hero-right-pane-dark.webp') 2x
-        );
-        background-image: image-set(
-            url('/hero/cmdr-hero-right-pane-dark-1x.webp') 1x,
-            url('/hero/cmdr-hero-right-pane-dark.webp') 2x
-        );
-    }
-
-    .hero-variant--light .hero-frame {
-        background-image: -webkit-image-set(
-            url('/hero/cmdr-hero-frame-light-1x.webp') 1x,
-            url('/hero/cmdr-hero-frame-light.webp') 2x
-        );
-        background-image: image-set(
-            url('/hero/cmdr-hero-frame-light-1x.webp') 1x,
-            url('/hero/cmdr-hero-frame-light.webp') 2x
-        );
-    }
-
-    .hero-variant--light .hero-left-pane {
-        background-image: -webkit-image-set(
-            url('/hero/cmdr-hero-left-pane-light-1x.webp') 1x,
-            url('/hero/cmdr-hero-left-pane-light.webp') 2x
-        );
-        background-image: image-set(
-            url('/hero/cmdr-hero-left-pane-light-1x.webp') 1x,
-            url('/hero/cmdr-hero-left-pane-light.webp') 2x
-        );
-    }
-
-    .hero-variant--light .hero-right-pane {
-        background-image: -webkit-image-set(
-            url('/hero/cmdr-hero-right-pane-light-1x.webp') 1x,
-            url('/hero/cmdr-hero-right-pane-light.webp') 2x
-        );
-        background-image: image-set(
-            url('/hero/cmdr-hero-right-pane-light-1x.webp') 1x,
-            url('/hero/cmdr-hero-right-pane-light.webp') 2x
-        );
-    }
-
-    /* Frame - visible immediately with subtle blur-in */
-    .hero-frame {
-        opacity: 0;
-        animation: hero-image-in 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    /* Right pane - animates in first (blur + translate) */
-    .hero-right-pane {
-        opacity: 0;
-        animation: hero-image-in 2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
-    }
-
-    /* Left pane - animates in second */
-    .hero-left-pane {
-        opacity: 0;
-        animation: hero-image-in 2s cubic-bezier(0.16, 1, 0.3, 1) 1s forwards;
-    }
-
-    @keyframes hero-image-in {
-        0% {
-            opacity: 0;
-            filter: blur(10px);
-            transform: translate(165%, 200%);
-        }
-        100% {
-            opacity: 1;
-            filter: none;
-            transform: none;
-        }
-    }
-
-    /* Degrade to opacity-only fade under reduced motion */
     @keyframes fade-in-only {
         from {
             opacity: 0;
@@ -394,14 +162,6 @@ const currentYear = new Date().getFullYear()
     @media (prefers-reduced-motion: reduce) {
         :global(.animate-blur-in) {
             animation: fade-in-only 0.5s ease both;
-            filter: none;
-            transform: none;
-        }
-
-        .hero-frame,
-        .hero-right-pane,
-        .hero-left-pane {
-            animation: fade-in-only 0.8s ease both;
             filter: none;
             transform: none;
         }
