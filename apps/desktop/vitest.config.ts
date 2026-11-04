@@ -82,6 +82,9 @@ export default defineConfig({
       // As in every non-demo build (`vite.config.js`): a test importing `hooks.client.ts` gets the
       // empty stand-in, so no demo module (and its `$app/*` imports) loads under vitest.
       '#lib/demo/boot.js': path.resolve('./src/lib/demo/boot-absent.ts'),
+      // SvelteKit's `$app/paths` is a virtual module the bare Svelte plugin doesn't provide;
+      // the shim mirrors it for the root base the desktop app runs at.
+      '$app/paths': path.resolve('./src/test-app-paths-shim.ts'),
       '@srsholmes/tauri-playwright': path.resolve('./test/e2e-playwright/vitest-playwright-shim.ts'),
     },
   },

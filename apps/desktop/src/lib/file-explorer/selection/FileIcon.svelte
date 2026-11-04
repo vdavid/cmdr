@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { asset } from '$app/paths'
     import type { FileEntry, SyncStatus } from '../types'
     import {
         getCachedIcon,
@@ -143,7 +144,7 @@
         <img
             class="icon"
             class:gold-folder={recolorToGold}
-            src={isFolderIcon ? '/icons/default-folder.png' : '/icons/default-file.png'}
+            src={asset(isFolderIcon ? 'icons/default-folder.png' : 'icons/default-file.png')}
             alt=""
             width="16"
             height="16"
