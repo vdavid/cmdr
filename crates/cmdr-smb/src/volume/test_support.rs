@@ -91,6 +91,7 @@ fn make_test_volume_full(volume_id: &str, host: VolumeHost, share_root: &str, mo
             link_paths: dfs_links::LinkPaths::default(),
             link_watches: Arc::default(),
             closing_reads: Arc::default(),
+            sidecars: apple_double::Sidecars::default(),
             live_connection: liveness::LiveConnection::new(None),
             transfer,
             active_mount_path: Arc::new(StdRwLock::new(mount_path)),

@@ -524,7 +524,9 @@ impl SmbVolume {
                     opened => opened,
                 };
                 let listed = match opened {
-                    Ok(reader) => read_listing(reader, &display_path, None, cancel, &runtime).await,
+                    Ok(reader) => {
+                        read_listing(reader, &display_path, &self.inner.sidecars, None, cancel, &runtime).await
+                    }
                     Err(e) => Err(ListingStop::Smb(e)),
                 };
                 match listed {

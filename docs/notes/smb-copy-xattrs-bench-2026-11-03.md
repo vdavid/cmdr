@@ -59,5 +59,5 @@ in another: order effects, which is why the reads now interleave.
   a round trip, so it's 3–4x the loopback Samba's 20–40 µs, and over the 2% bar for a copy of many small files from this
   NAS. Run alone, one at a time; the copy engine's 10 at once overlap latency but not the NAS's work.
 - **What the QNAP keeps**: every xattr round-trips through a copy and its landing rename, byte for byte. A resource fork
-  sits in a visible `._` file the share's recycle bin leaves behind on a delete, which is why deleting a staging temp
-  now deletes its `._` file too: `crates/cmdr-smb/DETAILS.md` § "Xattrs on copies".
+  sits in a visible `._` file the share's recycle bin leaves behind on a delete, which is why a delete takes its `._`
+  file along: `crates/cmdr-smb/DETAILS.md` § "AppleDouble sidecars".
