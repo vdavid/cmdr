@@ -80,11 +80,35 @@ describe('demo windows', () => {
     button.remove()
   })
 
-  it('closes from its own close button', () => {
+  it('closes from its red light, keeps minimize inert, and zooms to the viewport and back', () => {
     const { open } = setup()
-    open('settings')
-    panels()[0].querySelector<HTMLButtonElement>('.cmdr-demo-window-close')?.click()
+    open('settings', { width: 400, height: 300 })
+    const [panel] = panels()
+    const light = (kind: string) => panel.querySelector<HTMLButtonElement>(`[data-light="${kind}"]`)
+    expect(light('minimize')?.getAttribute('aria-disabled')).toBe('true')
+    light('minimize')?.click()
+    expect(panels()).toHaveLength(1)
+
+    light('zoom')?.click()
+    expect(panel.style.width).toBe(`${String(window.innerWidth - 32)}px`)
+    light('zoom')?.click()
+    expect(panel.style.width).toBe('400px')
+
+    light('close')?.click()
     expect(panels()).toHaveLength(0)
+  })
+
+  it('lights only the key window, and the main one again once the last panel closes', () => {
+    const { host, open, call } = setup()
+    host.mountMainWindowLights()
+    const mainLights = document.querySelector<HTMLElement>('.cmdr-demo-lights-main')
+    expect(mainLights?.dataset.active).toBe(String(document.hasFocus()))
+    open('settings')
+    call('plugin:window|set_focus', { label: 'settings' })
+    expect(mainLights?.dataset.active).toBe('false')
+    call('plugin:window|close', { label: 'settings' })
+    expect(mainLights?.dataset.active).toBe(String(document.hasFocus()))
+    mainLights?.remove()
   })
 
   it('raises a panel above the others and focuses it', () => {
@@ -134,8 +158,8 @@ describe('demo windows', () => {
     pointer('pointerup', 0, 0)
     expect(panel.classList.contains('dragging')).toBe(false)
 
-    // A press on the close button isn't a drag.
-    panel.querySelector('.cmdr-demo-window-close')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    // A press on a traffic light isn't a drag.
+    panel.querySelector('[data-light="close"]')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     expect(panel.classList.contains('dragging')).toBe(false)
   })
 

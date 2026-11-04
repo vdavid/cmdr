@@ -57,6 +57,8 @@ export function createDemoBackend(): DemoBackend {
 
   const menu = startMenuEngine()
   const windows = createWindowHost(emit)
+  // The backend lives in the top frame, which is the main window.
+  windows.mountMainWindowLights()
 
   async function invoke(cmd: string, payload: Payload): Promise<unknown> {
     const handler = windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]

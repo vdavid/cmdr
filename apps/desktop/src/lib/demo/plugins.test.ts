@@ -22,6 +22,11 @@ describe('in-memory store plugin', () => {
     expect(call('plugin:store|get', { rid, key: 'listing.showHiddenFiles' })).toEqual([false, true])
   })
 
+  it('seeds Cmdr gold as the app color, so "System default" stays a choice in Settings', () => {
+    const rid = load('settings.json')
+    expect(call('plugin:store|get', { rid, key: 'appearance.appColor' })).toEqual(['cmdr-gold', true])
+  })
+
   it('seeds the browser-safe shortcuts as shortcut:<id> keys, as the shortcuts store reads them', () => {
     const rid = load('shortcuts.json')
     for (const [id, combos] of Object.entries(browserSafeShortcuts)) {

@@ -9,8 +9,13 @@ import { DEMO_HOME } from './demo-tree.js'
 
 /** What a fresh demo starts with, per store file. Only keys an actor would have set (sparse, like the app). */
 const seeds: Record<string, Record<string, unknown>> = {
-  // Skip the first-run wizard: a visitor came to try the panes.
-  'settings.json': { 'onboarding.completed': true },
+  'settings.json': {
+    // Skip the first-run wizard: a visitor came to try the panes.
+    'onboarding.completed': true,
+    // The demo shows Cmdr in its own color. "System default" stays in Settings and picks the
+    // virtual Mac's accent, the blue `getAccentColor` answers.
+    'appearance.appColor': 'cmdr-gold',
+  },
   // One `shortcut:<commandId>` key per customization, as `shortcuts-store.ts` reads them.
   'shortcuts.json': Object.fromEntries(
     Object.entries(browserSafeShortcuts).map(([id, keys]) => [`shortcut:${id}`, keys]),

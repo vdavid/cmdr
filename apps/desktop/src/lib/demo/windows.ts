@@ -6,9 +6,9 @@
  * (`tauri://error` on the opener's handle). See `DETAILS.md` § Secondary windows.
  */
 import { resolve } from '$app/paths'
-import { getMessage } from '#lib/intl/messages.svelte.js'
 import { refuseWith, type Payload } from './answer-types.js'
 import type { EventTarget } from './backend.js'
+import { createMainWindowLights, createTrafficLights, type TrafficLights } from './traffic-lights.js'
 
 /**
  * The windows that open. Settings and Keyboard shortcuts run on the stores and answers the demo
@@ -26,6 +26,10 @@ interface Panel {
   label: string
   root: HTMLElement
   iframe: HTMLIFrameElement
+  lights: TrafficLights
+  /** The panel's own size and place before a zoom filled the viewport, for the next zoom to restore. */
+  unzoomed: { left: string; top: string; width: string; height: string } | null
+  maxWidth: number
 }
 
 /** The route URL under the demo's base path, query string kept. */
@@ -58,10 +62,12 @@ const STYLE = `
   box-shadow: var(--shadow-lg);
 }
 .cmdr-demo-window-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  /* 9px: macOS's inset of the close button from the window's left edge. */
+  padding: var(--spacing-xs) 9px;
   background: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-secondary);
@@ -71,22 +77,8 @@ const STYLE = `
   touch-action: none;
 }
 .cmdr-demo-window-bar.dragging { cursor: grabbing; }
-.cmdr-demo-window-title { flex: 1; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cmdr-demo-window-close {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.cmdr-demo-window-close:hover { background: var(--color-bg-tertiary); }
-.cmdr-demo-window-close:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.cmdr-demo-window-title { text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmdr-demo-window .cmdr-demo-lights { justify-self: start; cursor: default; }
 .cmdr-demo-window iframe { flex: 1; width: 100%; border: 0; background: transparent; }
 .cmdr-demo-window.dragging iframe { pointer-events: none; }
 `
@@ -98,6 +90,8 @@ export interface WindowHost {
   front(): { label: string; frame: HTMLIFrameElement } | undefined
   /** Closes the panel labeled `label`, as its close button does. */
   close(label: string): void
+  /** Draws the main window's traffic lights at its top-left (`traffic-lights.ts`). Call once, in the top frame. */
+  mountMainWindowLights(): void
 }
 
 export function createWindowHost(emit: Emit): WindowHost {
@@ -106,6 +100,52 @@ export function createWindowHost(emit: Emit): WindowHost {
   // What had focus in the main window when a panel took it. A native window keeps its focused
   // element while another window is key; the page has one focus, so the main window's is kept here.
   let mainFocus: HTMLElement | null = null
+  // The key window's label, whose lights are lit. Every window's go grey when the page loses
+  // focus, as all of an app's windows do when another app comes forward.
+  let key = 'main'
+  let mainLights: TrafficLights | null = null
+
+  function refreshLights(): void {
+    const pageFocused = document.hasFocus()
+    mainLights?.setActive(pageFocused && key === 'main')
+    for (const panel of panels.values()) panel.lights.setActive(pageFocused && key === panel.label)
+  }
+
+  function setKey(label: string): void {
+    key = label
+    refreshLights()
+  }
+
+  function mountMainWindowLights(): void {
+    if (mainLights) return
+    const lights = createMainWindowLights()
+    mainLights = lights
+    // The app's start script runs in `<body>`, so it exists by the time the backend is created.
+    document.body.append(lights.root)
+    refreshLights()
+    // Focus moving into a panel's iframe blurs this window while the page keeps focus, so the
+    // answer is read a task later, once `document.hasFocus()` has settled.
+    const later = () => setTimeout(refreshLights, 0)
+    window.addEventListener('focus', later)
+    window.addEventListener('blur', later)
+  }
+
+  /** The green light on a resizable window: fill the desktop under the menu bar (up to the window's max width), then back. */
+  function zoom(panel: Panel): void {
+    const style = panel.root.style
+    if (panel.unzoomed) {
+      Object.assign(style, panel.unzoomed)
+      panel.unzoomed = null
+      return
+    }
+    panel.unzoomed = { left: style.left, top: style.top, width: style.width, height: style.height }
+    const width = Math.min(window.innerWidth - 2 * MARGIN, panel.maxWidth)
+    style.width = `${String(width)}px`
+    const top = desktopTop()
+    style.height = `${String(window.innerHeight - top - 2 * MARGIN)}px`
+    style.left = `${String(Math.round((window.innerWidth - width) / 2))}px`
+    style.top = `${String(top + MARGIN)}px`
+  }
 
   // The panel raised last, while it's open.
   let front: Panel | undefined
@@ -118,6 +158,7 @@ export function createWindowHost(emit: Emit): WindowHost {
     for (const other of panels.values()) other.root.style.zIndex = 'var(--z-modal)'
     panel.root.style.zIndex = 'var(--z-modal-top)'
     panel.iframe.focus()
+    setKey(panel.label)
     emit('tauri://blur', null, { kind: 'label', label: 'main' })
     emit('tauri://focus', null, { kind: 'label', label: panel.label })
   }
@@ -138,6 +179,7 @@ export function createWindowHost(emit: Emit): WindowHost {
     window.focus()
     if (mainFocus?.isConnected) mainFocus.focus({ preventScroll: true })
     mainFocus = null
+    setKey('main')
     emit('tauri://focus', null, { kind: 'label', label: 'main' })
   }
 
@@ -194,15 +236,21 @@ export function createWindowHost(emit: Emit): WindowHost {
     const heading = document.createElement('span')
     heading.className = 'cmdr-demo-window-title'
     heading.textContent = title
-    const closeButton = document.createElement('button')
-    closeButton.type = 'button'
-    closeButton.className = 'cmdr-demo-window-close'
-    closeButton.setAttribute('aria-label', getMessage('ui.modalDialog.close'))
-    closeButton.textContent = '×'
-    closeButton.addEventListener('click', () => {
-      close(label)
-    })
-    bar.append(closeButton, heading)
+    // Close closes; zoom fills the viewport and back, as on a resizable window; minimize stays
+    // inert, since a page has no Dock to bring a minimized panel back from.
+    const lights = createTrafficLights(
+      {
+        close: () => {
+          close(label)
+        },
+        zoom: () => {
+          zoom(panel)
+        },
+      },
+      'zoom',
+    )
+    // The right column mirrors the lights' width, so the title stays centered on the window.
+    bar.append(lights.root, heading, document.createElement('span'))
 
     const iframe = document.createElement('iframe')
     iframe.name = label
@@ -210,7 +258,8 @@ export function createWindowHost(emit: Emit): WindowHost {
     iframe.src = routeUrl(typeof options.url === 'string' ? options.url : '/')
 
     root.append(bar, iframe)
-    const panel: Panel = { label, root, iframe }
+    const maxWidth = Number(options.maxWidth) || Infinity
+    const panel: Panel = { label, root, iframe, lights, unzoomed: null, maxWidth }
     makeDraggable(panel, bar)
     root.addEventListener('pointerdown', () => {
       focusPanel(panel)
@@ -276,5 +325,6 @@ export function createWindowHost(emit: Emit): WindowHost {
     handler: (cmd) => handlers[cmd],
     front: () => (front ? { label: front.label, frame: front.iframe } : undefined),
     close,
+    mountMainWindowLights,
   }
 }

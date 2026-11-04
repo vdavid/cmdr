@@ -84,11 +84,13 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   remembers what had focus in the main window when a panel took it and puts it back when the last panel closes. It also
   sends `tauri://focus` / `tauri://blur` / `tauri://destroyed` to the windows involved, as Tauri does.
 - Look: plain app tokens (`--color-bg-primary`, `--radius-window`, `--shadow-lg`, `--z-modal`), injected once as a
-  `<style>` under `.cmdr-demo-window`. The only words are the window's own title and `ui.modalDialog.close` for the
-  close button's label. It opens centered, sized to the window's width and height clamped to the viewport (fits at
-  960×600), and can't be dragged past an edge. Both keep it under the menu bar (`--cmdr-demo-window-top`), as macOS
-  keeps windows under its own.
-- Verified in headless Chromium (2026-11-04): ⌘, opens Settings; Esc, ⌃W, and the close button close it, and the cursor
+  `<style>` under `.cmdr-demo-window`. The title bar holds the window's traffic lights (§ Traffic lights) and its own
+  title. Decision: the lights sit in that bar rather than over the content at Settings' desktop spot (20, 29), since the
+  page inside is an iframe and only the bar can drag the panel; Settings' sidebar keeps its empty traffic-light row
+  under it. It opens centered, sized to the window's width and height clamped to the viewport (fits at 960×600), and
+  can't be dragged past an edge. Opening, dragging, and zoom all keep it under the menu bar (`--cmdr-demo-window-top`),
+  as macOS keeps windows under its own.
+- Verified in headless Chromium (2026-11-04): ⌘, opens Settings; Esc, ⌃W, and the red light close it, and the cursor
   keys move the main pane's cursor right after; dragging moves and clamps it; F3 on a file opens nothing; a "Size
   colors" change in Settings recolors the main window's sizes through the fan-out. Keyboard shortcuts opens from the
   command palette, closes with Esc, and its "Edit shortcuts" link opens Settings at that section as a second panel (a
@@ -128,6 +130,34 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   Tab > New tab adds a tab and reads ⌃T; Cmdr > Settings opens its panel, File's items grey while it's in front, and Tab
   > Close tab closes it; the keyboard path from ⌃F2 reaches the palette; nothing lands in `unanswered`.
 
+## Traffic lights
+
+On desktop the OS draws the close, minimize, and zoom buttons over the main window's overlay title bar
+(`trafficLightPosition` in `tauri.conf.json`), and the app only leaves them room. In a browser nothing draws them, so
+`traffic-lights.ts` does, from the demo's own DOM: the main window's as a fixed group at its top-left, each panel's in
+its title bar (`windows.ts`).
+
+- Measured, not guessed (macOS 27, 2026-11-04): AppKit rendered a standard window's buttons offscreen at 2x in light and
+  dark, key and inactive, hovered and not (a Swift script swizzling the key-appearance and mouse-in-group getters, then
+  `cacheDisplay`), and `screencapture -l` of the running Cmdr gave the main window's placement. Each light is 14 px, on
+  a 23 px pitch; Cmdr's main window puts the close button at (9, 8), a standard window at (9, 9). The fills, rims,
+  glows, and glyph shapes and colors in `STYLE` are sampled from those renders.
+- Light: a vertical fill that brightens toward the bottom, a dark rim strongest at the sides, a soft tinted glow below.
+  Dark: a bright rim at the top and bottom and a bloom near the bottom, no glow. Inactive: light grey or dark grey with
+  the matching rim. Hovering the group lights all three and shows every glyph, even on an inactive window, as macOS
+  does.
+- Glyphs: × and −; zoom shows full-screen arrows on the main window (inward ones while full screen) and a plus on a
+  panel, matching AppKit's glyph for a full-screen-capable window and a plain resizable one.
+- Active state: lit for the key window while the page has focus (`document.hasFocus()`, read a task after `focus` /
+  `blur`, since focus moving into a panel's iframe blurs the top window), grey otherwise. The window host tracks the key
+  window as it raises and closes panels.
+- What each does. Main: zoom toggles the browser's full screen (inert where the page can't, as in a frame without
+  `allow="fullscreen"`); close and minimize stay inert (`aria-disabled`), since a page can't close or hide its tab.
+  Panel: close closes the window; zoom fills the desktop under the menu bar (capped at the window's `maxWidth`) and
+  back; minimize stays inert, as there's no Dock to restore from. Labels reuse `ui.modalDialog.close`,
+  `menu.window.minimize`, and `menu.window.zoom`. The lights aren't Tab stops and never take focus, as on macOS.
+- The main lights sit under the menu bar: their `top` adds `--cmdr-demo-window-top`, which `menu-bar.ts` sets.
+
 ## Framed by another page
 
 The landing page may embed the demo in an iframe. Nothing may assume a full browser window: sizes come from the frame's
@@ -159,7 +189,8 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
   (the engine refuses a bad tree at boot), the browser-safe map (real command ids, the canonical combo vocabulary, no
   clash in an overlapping scope, no browser-reserved combo left), every write refused, the backend's routing order (TS
   tables, then `handles()`, then `unanswered`), the webview's JSON wire and event targets, the window panels'
-  open/close/raise/refuse, and the boot role pick.
+  open/close/raise/refuse/zoom, the traffic lights' actions and key-window state, the Cmdr gold seed, and the boot role
+  pick. The lights' look is QA'd against AppKit's renders in a real browser (§ Traffic lights).
 - vitest aliases `#lib/demo/boot.js` to `boot-absent.ts`, `$app/paths` to `apps/desktop/src/test-app-paths-shim.ts`, and
   `virtual:cmdr-listing-wasm` to `apps/desktop/src/test-listing-wasm-shim.ts`; `listing.test.ts` mocks the last with a
   fake engine. `test-setup.ts` stubs `@tauri-apps/api/event` app-wide, so `webview.test.ts` unmocks it to test the real
@@ -234,4 +265,7 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
   sees them, so those commands move to ⌃. Seeded into `shortcuts.json` as `shortcut:<commandId>` keys, the same delta
   the Settings editor writes, so every hint in menus, the palette, and the function bar shows the remapped combo with no
   demo awareness in the shortcut system.
-- `plugins.ts` seeds `settings.json` with onboarding done: a visitor came to try the panes.
+- `plugins.ts` seeds `settings.json` with onboarding done (a visitor came to try the panes) and the app color on Cmdr
+  gold. The registry default is `system`, and the desktop default stays so; the seed is the demo's only lever. Settings
+  still offers "System theme color", which in the demo is the virtual Mac's accent, the blue `getAccentColor` answers.
+  Since the seed differs from the registry default, App color shows its reset arrow, and reset picks that blue.
