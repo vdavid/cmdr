@@ -102,6 +102,8 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
     const fresh = deps.menu.bar()
     if (!fresh) return
     menus = fresh
+    bar.setAttribute('aria-label', getMessage('ui.menuBar.label'))
+    const focusedIndex = titles.indexOf(document.activeElement as HTMLElement)
     bar.replaceChildren()
     titles = menus.map((menu, index) => {
       const title = document.createElement('div')
@@ -125,6 +127,23 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
       })
       bar.append(title)
       return title
+    })
+    // A redraw under a focused title (the language moved while the bar had the keyboard) keeps its place.
+    if (focusedIndex >= 0) focusTitle(focusedIndex)
+  }
+
+  /**
+   * Redraws the closed strip whenever its words move, as `followWindowTitle` does for a native
+   * title: `labelText` reads the catalog's locale-version rune, so the effect re-runs on every
+   * `setLocale()`, the same moment the rest of the UI re-renders. The `set_ui_language` push the app
+   * sends the native menu can't drive this: it arrives before the new catalog chunk loads, so a
+   * redraw on it would still read the old words. An open menu is left alone; its next open redraws.
+   */
+  function followLanguage(): () => void {
+    return $effect.root(() => {
+      $effect(() => {
+        if (openIndex === null) renderTitles()
+      })
     })
   }
 
@@ -465,7 +484,14 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
   window.addEventListener('keydown', onWindowKey, true)
   document.addEventListener('pointerdown', onPointerDown, true)
   window.addEventListener('blur', onBlur)
-  void deps.menu.ready.then(renderTitles)
+  let stopFollowing: (() => void) | undefined
+  let destroyed = false
+  void deps.menu.ready.then(() => {
+    if (destroyed) return
+    // Drawn now, not on the effect's first (scheduled) run, so the bar is up the moment the engine is.
+    renderTitles()
+    stopFollowing = followLanguage()
+  })
 
   return {
     element: bar,
@@ -473,6 +499,8 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
       closeAll(false)
     },
     destroy: () => {
+      destroyed = true
+      stopFollowing?.()
       closeAll(false)
       window.removeEventListener('keydown', onWindowKey, true)
       document.removeEventListener('pointerdown', onPointerDown, true)

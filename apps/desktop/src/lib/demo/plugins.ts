@@ -1,11 +1,13 @@
 /**
  * Tauri plugin commands (`plugin:<name>|<command>`) the backend answers: the store plugin, which
  * keeps each file in memory (a demo session's settings live until the tab reloads, and every
- * webview sees the same values, as with the real plugin), plus `path` and `app`. Commands about one
+ * webview sees the same values, as with the real plugin), plus `path`, `app`, and the opener's
+ * `open_url` (a new browser tab, `opener.ts`). Commands about one
  * webview's own window live in `webview.ts`.
  */
 import { browserSafeShortcuts } from './browser-shortcuts.js'
 import { DEMO_HOME } from './demo-tree.js'
+import { openInBrowserTab } from './opener.js'
 
 /** What a fresh demo starts with, per store file. Only keys an actor would have set (sparse, like the app). */
 const seeds: Record<string, Record<string, unknown>> = {
@@ -81,6 +83,8 @@ const handlers: Partial<Record<string, PluginHandler>> = {
   'plugin:app|set_app_theme': () => undefined,
   'plugin:app|name': () => 'Cmdr',
   'plugin:app|tauri_version': () => '2',
+  // `openExternalUrl`: a new browser tab, for web and email links only (`opener.ts`).
+  'plugin:opener|open_url': (p) => openInBrowserTab(p.url as string),
 }
 
 /**

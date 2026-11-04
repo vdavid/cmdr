@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { browserSafeShortcuts } from './browser-shortcuts.js'
 import { DEMO_HOME } from './demo-tree.js'
 import { customShortcuts, pluginHandler } from './plugins.js'
@@ -108,5 +108,31 @@ describe('path and app plugins', () => {
 
   it('knows no other plugin command', () => {
     expect(pluginHandler('plugin:dialog|open')).toBeUndefined()
+  })
+})
+
+describe('opener plugin', () => {
+  it('opens a web or email link in a new browser tab, cut off from this page', () => {
+    const opened = vi.spyOn(window, 'open').mockImplementation(() => null)
+    try {
+      for (const url of ['https://github.com/vdavid/cmdr', 'http://example.com/', 'mailto:hello@getcmdr.com']) {
+        expect(call('plugin:opener|open_url', { url })).toBeNull()
+        expect(opened).toHaveBeenLastCalledWith(url, '_blank', 'noopener,noreferrer')
+      }
+    } finally {
+      opened.mockRestore()
+    }
+  })
+
+  it('refuses any other scheme, as the plugin refuses a URL its scope disallows', () => {
+    const opened = vi.spyOn(window, 'open').mockImplementation(() => null)
+    try {
+      for (const url of ['javascript:alert(1)', 'file:///etc/passwd', 'x-apple.systempreferences:', 'not a url']) {
+        expect(() => call('plugin:opener|open_url', { url })).toThrow()
+      }
+      expect(opened).not.toHaveBeenCalled()
+    } finally {
+      opened.mockRestore()
+    }
   })
 })

@@ -22,8 +22,8 @@ enabled state of every row (`bar_states_test.rs`), which before the move was onl
   passes (icons, display accelerators, the Edit cleanup), the main/viewer swap, every context menu, `menu_t` resolution,
   and the parts of a click that need windows (is the main window focused, close the focused window, the native
   selector).
-- **The demo** (`crates/cmdr-listing-wasm/src/menu.rs` + `apps/desktop/src/lib/demo/menu-bar.ts`): it stores the same
-  pushes the desktop's menu-state commands store, asks this crate for the bar's state, and the page draws it.
+- **The demo** (`crates/cmdr-listing-wasm/src/menu.rs` + `apps/desktop/src/lib/demo/menu-bar.svelte.ts`): it stores the
+  same pushes the desktop's menu-state commands store, asks this crate for the bar's state, and the page draws it.
 
 ## The enabled fold
 

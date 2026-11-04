@@ -9,6 +9,7 @@ import { appAnswers, rawAnswers, silentCommands } from './answers.js'
 import { startListingEngine, type ListingEngineHandle } from './listing.js'
 import { startMenuEngine, type MenuEngineHandle } from './menu-engine.js'
 import { pluginHandler } from './plugins.js'
+import { openInBrowserTab } from './opener.js'
 import { noteUnanswered } from './unanswered.js'
 import { demoEntries } from './demo-tree.js'
 import { demoPath, volumeAnswers } from './volumes.js'
@@ -32,7 +33,7 @@ export interface DemoBackend {
   emit(event: string, payload: unknown, target: EventTarget): void
   /** Attaches a webview to the event fan-out. Returns the detach. */
   attach(webview: DemoWebview): () => void
-  /** The menu bar's state, which the top frame's bar draws (`menu-bar.ts`). */
+  /** The menu bar's state, which the top frame's bar draws (`menu-bar.svelte.ts`). */
   readonly menu: MenuEngineHandle
   /** The secondary windows, which a menu click can close or hand an edit to. */
   readonly windows: WindowHost
@@ -59,7 +60,13 @@ export function createDemoBackend(): DemoBackend {
   function onEngineNotice(event: string, payload: unknown): void {
     if (event === 'demo://open-url') {
       const { url } = payload as { url: string }
-      window.open(url, '_blank', 'noopener')
+      // The one opener for every external link, scheme check included.
+      try {
+        openInBrowserTab(url)
+      } catch (refusal) {
+        // eslint-disable-next-line no-console -- the demo's developer reads the devtools console
+        console.warn('[demo] a viewer link the demo does not open', refusal)
+      }
     } else if (event === 'demo://media-token-dropped') {
       const { token } = payload as { token: string }
       const url = mediaUrls.get(token)

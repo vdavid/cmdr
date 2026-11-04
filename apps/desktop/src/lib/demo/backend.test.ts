@@ -106,9 +106,14 @@ describe('demo backend', () => {
 
     engine.sink?.({ name: 'viewer-media-load', payload: { token: 't' }, target: 'viewer-1' })
     engine.sink?.({ name: 'demo://open-url', payload: { url: 'https://getcmdr.com/' } })
+    // The shared opener's scheme check holds for a viewer link too.
+    const warned = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    engine.sink?.({ name: 'demo://open-url', payload: { url: 'javascript:alert(1)' } })
+    warned.mockRestore()
     engine.sink?.({ name: 'demo://media-token-dropped', payload: { token: 't' } })
     expect(viewer.heard).toEqual([['viewer-media-load', { token: 't' }, { kind: 'label', label: 'viewer-1' }]])
-    expect(opened).toHaveBeenCalledWith('https://getcmdr.com/', '_blank', 'noopener')
+    expect(opened).toHaveBeenCalledTimes(1)
+    expect(opened).toHaveBeenCalledWith('https://getcmdr.com/', '_blank', 'noopener,noreferrer')
     opened.mockRestore()
   })
 
