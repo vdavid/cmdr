@@ -304,7 +304,7 @@ pub async fn translate_search_query_with<R: tauri::Runtime>(
 
     // Build deterministic query
     let query = ai::search_query(&parsed);
-    let display = translate::build_translate_display(&parsed, &query);
+    let display = ai::translate_display(&parsed, &query);
     let caveat = translate::generate_caveat(&parsed, &query);
     let label = translate::build_label(&parsed);
     let translated_query = translate::build_translated_query(&query);

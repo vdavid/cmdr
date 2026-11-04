@@ -106,12 +106,19 @@ export function parseSizeToBytes(value: string, unit: SizeUnit): number | undefi
   return Math.round(num * base ** power[unit])
 }
 
-/** Converts ISO date string to unix timestamp (seconds). Returns undefined if empty/invalid. */
+/**
+ * Converts an ISO date (YYYY-MM-DD) to the unix timestamp (seconds) of its LOCAL midnight: the
+ * user's day, the same day the AI's date chips and the MCP dates mean. `new Date('YYYY-MM-DD')`
+ * would read it as UTC midnight, hours off the user's day. Returns undefined if empty/invalid.
+ */
 export function parseDateToTimestamp(value: string): number | undefined {
-  if (!value) return undefined
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return undefined
+  const [year, month, day] = [Number(match[1]), Number(match[2]) - 1, Number(match[3])]
   // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state, just parsing a timestamp
-  const date = new Date(value)
-  if (isNaN(date.getTime())) return undefined
+  const date = new Date(year, month, day)
+  // `Date` rolls an impossible date over (2025-02-30 → March 2); refuse it instead.
+  if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) return undefined
   return Math.floor(date.getTime() / 1000)
 }
 

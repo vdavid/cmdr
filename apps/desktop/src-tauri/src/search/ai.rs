@@ -9,7 +9,7 @@ use chrono::{LocalResult, NaiveDate, TimeZone};
 use time::{Date, Month};
 
 use cmdr_search::SearchQuery;
-use cmdr_search::translate::{self, LocalDays, ParsedLlmResponse};
+use cmdr_search::translate::{self, LocalDays, ParsedLlmResponse, TranslateDisplay};
 
 /// The machine's own zone, through `chrono::Local` (which resolves the offset per
 /// date, so a boundary across a DST change lands on that day's real midnight).
@@ -38,6 +38,11 @@ impl LocalDays for SystemZone {
             None => date.midnight().assume_utc().unix_timestamp().max(0) as u64,
         }
     }
+
+    fn date_of(&self, at: u64) -> Date {
+        let utc = chrono::DateTime::from_timestamp(at as i64, 0).unwrap_or_default();
+        from_naive(utc.with_timezone(&chrono::Local).date_naive())
+    }
 }
 
 fn to_naive(date: Date) -> NaiveDate {
@@ -60,6 +65,11 @@ pub(crate) fn classification_prompt(current_type: Option<bool>) -> String {
 pub(crate) fn search_query(parsed: &ParsedLlmResponse) -> SearchQuery {
     let home = super::host_home_dir();
     translate::build_search_query(parsed, &SystemZone, home.as_deref())
+}
+
+/// A reply's display values (the AI chips), dated on this machine's calendar.
+pub(crate) fn translate_display(parsed: &ParsedLlmResponse, query: &SearchQuery) -> TranslateDisplay {
+    translate::build_translate_display(parsed, query, &SystemZone)
 }
 
 /// The instant an ISO date (YYYY-MM-DD) starts on this machine's calendar. The MCP
@@ -92,6 +102,16 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(search_query(&parsed).modified_after, Some(expected));
+    }
+
+    /// A day's first instant reads back as that day here, so a chip shows the date its
+    /// boundary was computed from. Bites on any machine east of UTC.
+    #[test]
+    fn a_local_midnight_reads_back_as_its_own_date() {
+        let today = SystemZone.today();
+        assert_eq!(SystemZone.date_of(SystemZone.midnight(today)), today);
+        let next = today.next_day().expect("not the last day");
+        assert_eq!(SystemZone.date_of(SystemZone.midnight(next) - 1), today);
     }
 
     #[test]

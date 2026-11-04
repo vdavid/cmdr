@@ -3,7 +3,6 @@
 //! This is the orchestrator: it calls mapping functions from `mappings` to convert
 //! individual fields, then assembles the results into a complete `SearchQuery`.
 
-use crate::query::format_timestamp;
 use crate::types::{PatternType, SearchQuery};
 
 use super::types::{TranslateDisplay, TranslatedQuery};
@@ -101,8 +100,19 @@ pub fn generate_caveat(parsed: &ParsedLlmResponse, query: &SearchQuery) -> Optio
 
 // ── Display value generation ─────────────────────────────────────────
 
-/// Build human-readable display values for the frontend filter UI.
-pub fn build_translate_display(parsed: &ParsedLlmResponse, query: &SearchQuery) -> TranslateDisplay {
+/// Build human-readable display values for the frontend filter UI. Dates read on the
+/// user's calendar (`days`), the one their boundaries were computed on: a range from
+/// local midnight on 2026-10-01 shows "2026-10-01" in every zone.
+pub fn build_translate_display(
+    parsed: &ParsedLlmResponse,
+    query: &SearchQuery,
+    days: &impl LocalDays,
+) -> TranslateDisplay {
+    let local_date = |at: u64| {
+        let format = time::macros::format_description!("[year]-[month]-[day]");
+        let date = days.date_of(at);
+        date.format(&format).unwrap_or_else(|_| date.to_string())
+    };
     TranslateDisplay {
         name_pattern: query.name_pattern.clone(),
         pattern_type: Some(match query.pattern_type {
@@ -111,8 +121,8 @@ pub fn build_translate_display(parsed: &ParsedLlmResponse, query: &SearchQuery) 
         }),
         min_size: query.min_size,
         max_size: query.max_size,
-        modified_after: query.modified_after.map(format_timestamp),
-        modified_before: query.modified_before.map(format_timestamp),
+        modified_after: query.modified_after.map(local_date),
+        modified_before: query.modified_before.map(local_date),
         is_directory: query.is_directory,
         include_paths: query.include_paths.clone(),
         exclude_dir_names: query.exclude_dir_names.clone(),
@@ -312,7 +322,7 @@ mod tests {
             ..Default::default()
         };
         let query = build_search_query(&parsed);
-        let display = build_translate_display(&parsed, &query);
+        let display = build_translate_display(&parsed, &query, &zone(3_600));
         assert!(display.name_pattern.is_some());
         assert_eq!(display.pattern_type.as_deref(), Some("regex"));
         assert!(display.min_size.is_some());
@@ -416,7 +426,7 @@ mod tests {
         let parsed = super::super::parser::parse_llm_response(reply);
         let query = build_search_query(&parsed);
         let translated = serde_json::to_value(build_translated_query(&query)).expect("serializes");
-        let display = serde_json::to_value(build_translate_display(&parsed, &query)).expect("serializes");
+        let display = serde_json::to_value(build_translate_display(&parsed, &query, &zone(3_600))).expect("serializes");
         assert_eq!(
             translated,
             serde_json::json!({
@@ -434,14 +444,36 @@ mod tests {
                 "excludeSystemDirs": null,
             })
         );
-        assert_eq!(display["modifiedAfter"], "2026-09-30");
-        assert_eq!(display["modifiedBefore"], "2026-10-31");
+        // The chip shows the user's days: the range starts on 2026-10-01 and ends at 2026-11-01.
+        assert_eq!(display["modifiedAfter"], "2026-10-01");
+        assert_eq!(display["modifiedBefore"], "2026-11-01");
         assert_eq!(build_label(&parsed).as_deref(), Some("Last month's invoices"));
         assert!(
             query.name_pattern.as_deref().is_some_and(|p| p.contains("invoice")),
             "{:?}",
             query.name_pattern
         );
+    }
+
+    /// A range's chips read as the user's days on either side of UTC, and across a
+    /// summer-time change inside the range.
+    #[test]
+    fn the_date_chips_read_on_the_users_calendar() {
+        let parsed = ParsedLlmResponse {
+            time: Some("last_month".to_string()),
+            ..Default::default()
+        };
+        let stockholm = FixedZone {
+            today: time::macros::date!(2026 - 11 - 04),
+            offset_secs: 7_200,
+            switch_on: Some((time::macros::date!(2026 - 10 - 25), 3_600)),
+        };
+        for (name, days) in [("west", zone(-18_000)), ("east, across DST", stockholm)] {
+            let query = super::build_search_query(&parsed, &days, None);
+            let display = build_translate_display(&parsed, &query, &days);
+            assert_eq!(display.modified_after.as_deref(), Some("2026-10-01"), "{name}");
+            assert_eq!(display.modified_before.as_deref(), Some("2026-11-01"), "{name}");
+        }
     }
 
     // ── ISO date conversion ──────────────────────────────────────────

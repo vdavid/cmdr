@@ -11,12 +11,16 @@
 
 use time::Date;
 
-/// The user's calendar: today's date, and the instant a given date starts.
+/// The user's calendar: today's date, the instant a given date starts, and the date
+/// an instant falls on.
 pub trait LocalDays {
     /// Today's date in the user's zone.
     fn today(&self) -> Date;
     /// Seconds since the Unix epoch at the first instant of `date` in the user's zone.
     fn midnight(&self, date: Date) -> u64;
+    /// The date in the user's zone at `at` (seconds since the Unix epoch). What a
+    /// boundary reads as to a person: `midnight(d)` falls on `d` in every zone.
+    fn date_of(&self, at: u64) -> Date;
 }
 
 /// A fixed-offset calendar for tests, with an optional DST-style switch: dates on or
@@ -43,5 +47,17 @@ impl LocalDays for FixedZone {
             _ => self.offset_secs,
         };
         (date.midnight().assume_utc().unix_timestamp() - offset).max(0) as u64
+    }
+
+    fn date_of(&self, at: u64) -> Date {
+        let on_offset = |offset: i64| {
+            time::OffsetDateTime::from_unix_timestamp(at as i64 + offset)
+                .expect("a test instant is in range")
+                .date()
+        };
+        match self.switch_on {
+            Some((on, after)) if on_offset(after) >= on => on_offset(after),
+            _ => on_offset(self.offset_secs),
+        }
     }
 }

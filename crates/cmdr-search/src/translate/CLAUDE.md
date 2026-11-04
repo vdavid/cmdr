@@ -25,7 +25,9 @@ calendar (`LocalDays`) and home folder in. Parent: `../../CLAUDE.md`.
 - **Validation lives in the parser.** `validate_type` / `_time` / `_size` / `_folders` drop unknown values, so the
   assembler only sees known vocabulary. `scope` is NOT validated: `scope_to_paths` tells a known name from a `PATH`, so
   ❌ no `validate_scope`.
-- **Every time boundary and `{TODAY}` are LOCAL** (`LocalDays`), ❌ never `now_utc()`; the crate reads no clock.
+- **Every time boundary, `{TODAY}`, and the date chips (`build_translate_display`) are LOCAL** (`LocalDays`), ❌ never
+  `now_utc()` or a UTC format; the crate reads no clock. The dialog reads a chip back as local midnight too
+  (`parseDateToTimestamp`), so the round trip lands on the boundary it came from.
 - **`iso_date_to_timestamp` is public for the MCP executor** (the desktop's `search::ai::iso_date_to_timestamp`). ❌
   Don't make it private.
 - **`KNOWN_EXTENSIONS` lives in `mappings.rs`**, ❌ not `keyword_mapping.rs`.
