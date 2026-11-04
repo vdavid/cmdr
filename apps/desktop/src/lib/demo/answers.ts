@@ -160,10 +160,8 @@ export const appAnswers: AnswerTable = {
   enrichPackages: () => ({ data: null, timedOut: false }),
   getCustomFolderIconIds: () => ({ data: [], timedOut: false }),
   getDirStatsBatch: (p) => (p.paths as string[]).map(() => null),
-  getVolumeSpace: () => ({
-    data: { kind: 'bounded', totalBytes: 994_662_584_320, availableBytes: 412_031_113_216, usedBytes: 582_631_471_104 },
-    timedOut: false,
-  }),
+  // Only an S3 transfer has a storage bill to estimate, and the demo has no S3.
+  estimateOperationCost: () => [],
   getVolumeIndexStatusById: (p) => ({
     volumeId: p.volumeId as string,
     enabled: false,
@@ -183,7 +181,6 @@ export const appAnswers: AnswerTable = {
   startIndexingAfterFdaDecision: none,
   listNetworkHosts: empty,
   getNetworkDiscoveryState: () => 'idle',
-  latestOperationProgress: empty,
   suggestedOpsList: empty,
   agentWakeStatus: () => ({ phase: { phase: 'idle' }, readiness: 'askCmdrOff' }),
   getAiRuntimeStatus: () => ({
@@ -201,7 +198,6 @@ export const appAnswers: AnswerTable = {
   }),
   getBusyVolumeIds: empty,
   getEjectingVolumeIds: empty,
-  listOperations: empty,
   getIndexStatus: () => ({
     initialized: false,
     scanning: false,

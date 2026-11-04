@@ -53,12 +53,18 @@ describe('demo windows', () => {
 
   it('refuses the windows the demo has no backend for, and a second window with the same label', () => {
     const { open } = setup()
-    for (const label of ['viewer-123', 'queue', 'debug']) {
+    for (const label of ['viewer-123', 'debug']) {
       expect(() => open(label)).toThrow()
     }
     expect(panels()).toHaveLength(0)
     open('shortcuts')
     expect(() => open('shortcuts')).toThrow()
+    expect(panels()).toHaveLength(1)
+  })
+
+  it('opens the transfer queue, which runs on the write engine', () => {
+    const { open } = setup()
+    open('queue')
     expect(panels()).toHaveLength(1)
   })
 

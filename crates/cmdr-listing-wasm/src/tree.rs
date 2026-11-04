@@ -15,6 +15,10 @@ use serde::Deserialize;
 pub struct DemoTree {
     /// The id panes list it under (`"root"` is the app's main volume).
     pub volume_id: String,
+    /// The name people read it by (`"Macintosh HD"`), as a transfer's summary words
+    /// its ends; the id when the page gives none.
+    #[serde(default)]
+    pub volume_name: Option<String>,
     /// Where the volume is mounted (`"/"`).
     pub root: String,
     /// Every file, folder, and symlink, by absolute path.
@@ -119,7 +123,8 @@ impl DemoTree {
             }
             entries.push(file_entry(entry, name, &dirs));
         }
-        let mut volume = InMemoryVolume::with_entries(self.volume_id, entries)
+        let name = self.volume_name.unwrap_or(self.volume_id);
+        let mut volume = InMemoryVolume::with_entries(name, entries)
             .with_root(root)
             .with_held_folders_only();
         // Every file reads as many bytes as its listing says: generated ones,

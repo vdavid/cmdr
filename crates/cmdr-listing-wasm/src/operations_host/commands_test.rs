@@ -279,6 +279,37 @@ async fn the_trash_refuses_typed_as_on_a_volume_without_one() {
     assert_eq!(events.count("write-complete"), 0);
 }
 
+/// The dialogs' path questions see what the engine wrote, not the page's first tree.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_path_questions_see_every_write() {
+    let (demo, _events) = demo();
+    let made = call(
+        &demo,
+        "create_directory",
+        json!({ "volumeId": "root", "parentPath": "/Users/you", "name": "New", "initiator": "user" }),
+    )
+    .await;
+    assert_eq!(made["type"], "done", "{made}");
+    for command in ["path_exists", "destination_exists"] {
+        let answer = call(&demo, command, json!({ "volumeId": "root", "path": "/Users/you/New" })).await;
+        assert_eq!(answer, json!({ "data": true, "timedOut": false }), "{command}");
+    }
+    let kinds = call(
+        &demo,
+        "stat_paths_kinds",
+        json!({ "paths": ["/Users/you/New", "/Users/you/a.txt", "/Users/you/gone"] }),
+    )
+    .await;
+    assert_eq!(kinds, json!({ "data": [true, false, null], "timedOut": false }));
+    let echo = call(
+        &demo,
+        "destination_root_echo",
+        json!({ "destVolumeId": "root", "destPath": "/Users/you" }),
+    )
+    .await;
+    assert_eq!(echo, Value::Null, "a volume rooted at `/` has no root to echo");
+}
+
 #[test]
 fn every_write_command_is_routed_to_the_write_engine() {
     for command in Demo::commands() {

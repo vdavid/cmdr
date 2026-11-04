@@ -61,8 +61,8 @@ pub const COMMANDS: &[&str] = &[
     "get_brief_column_text_widths",
 ];
 
-/// How fast the demo's one device streams: a 10 MB copy takes about two
-/// seconds, slow enough to watch its progress and pause it in the queue.
+/// How fast the demo's one device streams, slow enough to watch a copy's
+/// progress and pause it in the queue (`DETAILS.md` § Writes has the measured rate).
 pub const DEVICE_BYTES_PER_SEC: u64 = 5 * 1024 * 1024;
 
 /// How long engine work holds the page before it breathes (invariant: no

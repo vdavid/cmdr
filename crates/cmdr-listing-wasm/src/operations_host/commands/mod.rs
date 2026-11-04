@@ -9,6 +9,7 @@
 
 mod history;
 mod instant;
+mod paths;
 mod queue;
 mod transfers;
 
@@ -32,7 +33,13 @@ struct OperationIdsArgs {
 }
 
 /// Every command group, by its Tauri names.
-const GROUPS: &[&[&str]] = &[transfers::NAMES, instant::NAMES, queue::NAMES, history::NAMES];
+const GROUPS: &[&[&str]] = &[
+    transfers::NAMES,
+    instant::NAMES,
+    queue::NAMES,
+    history::NAMES,
+    paths::NAMES,
+];
 
 /// Whether [`DemoOperations::invoke`] answers `command`.
 pub(super) fn handles(command: &str) -> bool {
@@ -54,6 +61,8 @@ impl DemoOperations {
             self.instant(command, args).await
         } else if queue::NAMES.contains(&command) {
             self.queue(command, args).await
+        } else if paths::NAMES.contains(&command) {
+            self.paths(command, args).await
         } else if history::NAMES.contains(&command) {
             self.history(command, args).await
         } else {
