@@ -76,6 +76,30 @@ impl DirSizeSource for IndexSource<'_> {
     }
 }
 
+/// Whose namespace a volume's paths are in, which decides whether a scope path may
+/// go through `realpath` ([`canonicalize_scope_path`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PathNamespace {
+    /// Read through `std::fs` (the boot disk, a local drive, a plain OS mount): the
+    /// index and the walk see the names `realpath` sees, and symlinks and firmlinks
+    /// (`/tmp` → `/private/tmp`) have to resolve for a scope to match.
+    Os,
+    /// Read through Cmdr's own client (SMB, MTP, ADB, …): the backend's names, which
+    /// an OS mount at the same path can spell differently.
+    Backend,
+}
+
+/// The namespace of the volume a search targets. An unregistered volume (the
+/// boot disk before the registry fills, an ejected drive) is `Os`: `realpath`
+/// either answers in the namespace it'll be read in or fails and keeps the
+/// literal.
+pub(crate) fn path_namespace(volume_id: &str) -> PathNamespace {
+    match crate::file_system::volume::manager::get_volume_manager().get(volume_id) {
+        Some(volume) if volume.backend_kind() != cmdr_fs::volume::BackendKind::Local => PathNamespace::Backend,
+        _ => PathNamespace::Os,
+    }
+}
+
 /// Canonicalize a scope include path (resolve symlinks) so it matches the index's
 /// stored REAL paths, without wedging on a hung mount.
 ///
@@ -88,18 +112,31 @@ impl DirSizeSource for IndexSource<'_> {
 /// The tilde is expanded FIRST (`query::expand_tilde` says why that order is
 /// load-bearing). Both halves of a live search take the scope through here.
 ///
+/// `realpath` runs only for a volume read through `std::fs` ([`PathNamespace::Os`]).
+/// A backend volume's paths are in ITS namespace, and the OS mount that may sit at
+/// the same mount point renames them: macOS smbfs hands back every name decomposed
+/// (NFD), while the server stores what it stores (a QNAP: NFC). Canonicalized,
+/// `Rymdskottkärra AB` reached the index lookup and the walk as
+/// `Rymdskottka\u{308}rra AB`, the server answered `STATUS_OBJECT_NAME_NOT_FOUND`, and
+/// every search of an accented NAS folder came back empty (verified on macOS 27 smbfs
+/// against a QNAP TS-464, `realpath` bytes `61 cc 88`, 2026-11-04). ❌ Don't fix that
+/// by normalizing to NFC: a server that stores NFD names breaks instead.
+///
 /// `fs::canonicalize` issues `realpath`, which blocks indefinitely on a dead network
 /// mount, so it runs on a detached worker thread under a 2 s deadline (the sync
 /// analog of `blocking_with_timeout`; the callers are sync). On timeout, an error, or
 /// a non-existent path we keep the literal: best effort, so an offline or unmounted
 /// index's scope still gets its literal match.
-pub(crate) fn canonicalize_scope_path(path: &str) -> String {
-    canonicalize_scope_path_under(path, super::host_home_dir().as_deref())
+pub(crate) fn canonicalize_scope_path(path: &str, namespace: PathNamespace) -> String {
+    canonicalize_scope_path_under(path, super::host_home_dir().as_deref(), namespace)
 }
 
 /// [`canonicalize_scope_path`] with `~` meaning `home`.
-fn canonicalize_scope_path_under(path: &str, home: Option<&str>) -> String {
+fn canonicalize_scope_path_under(path: &str, home: Option<&str>, namespace: PathNamespace) -> String {
     let path = expand_tilde(path, home).into_owned();
+    if namespace == PathNamespace::Backend {
+        return path;
+    }
     let owned = path.clone();
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
@@ -114,10 +151,10 @@ fn canonicalize_scope_path_under(path: &str, home: Option<&str>) -> String {
 /// A query's scope paths as the seam takes them: each as written, beside its
 /// canonical form, with `~` meaning `home` (the search's own home folder, the same
 /// one its result rows write as `~`).
-pub(crate) fn scope_pairs(paths: &[String], home: Option<&str>) -> Vec<(String, String)> {
+pub(crate) fn scope_pairs(paths: &[String], home: Option<&str>, namespace: PathNamespace) -> Vec<(String, String)> {
     paths
         .iter()
-        .map(|path| (path.clone(), canonicalize_scope_path_under(path, home)))
+        .map(|path| (path.clone(), canonicalize_scope_path_under(path, home, namespace)))
         .collect()
 }
 

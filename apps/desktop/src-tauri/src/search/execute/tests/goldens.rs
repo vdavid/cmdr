@@ -326,6 +326,7 @@ fn golden_live_trace(
                 uncovered_scopes: Vec::new(),
                 abandoned_ground: false,
                 abandoned_locations: 0,
+                failed_roots: Vec::new(),
                 capped,
                 target_volume_id: target.volume_id.clone(),
                 hidden_by_excludes: 0,
@@ -676,6 +677,12 @@ fn target_for(volume: Volume, query: &SearchQuery) -> Target {
         from_scope: !include_paths.is_empty(),
         include_paths,
         can_be_indexed: true,
+        // The boot disk reads through `std::fs`; the share is a backend volume. The corpus
+        // paths exist nowhere, so `realpath` would keep them literal either way.
+        namespace: match volume {
+            Volume::Root => crate::search::index_source::PathNamespace::Os,
+            Volume::Share => crate::search::index_source::PathNamespace::Backend,
+        },
     }
 }
 

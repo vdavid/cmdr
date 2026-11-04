@@ -167,6 +167,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, other {Cmdr 无法打开以下文件夹，因此结果中没有其中的文件：}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "开启完全磁盘访问权限后，Cmdr 就能搜索这类文件夹。",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

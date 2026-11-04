@@ -2785,6 +2785,7 @@
           "uncoveredScopes": [],
           "abandonedGround": false,
           "abandonedLocations": 0,
+          "failedRoots": [],
           "capped": true,
           "targetVolumeId": "root",
           "hiddenByExcludes": 0
@@ -2861,6 +2862,7 @@
           "uncoveredScopes": [],
           "abandonedGround": false,
           "abandonedLocations": 0,
+          "failedRoots": [],
           "capped": false,
           "targetVolumeId": "root",
           "hiddenByExcludes": 0
@@ -2947,6 +2949,7 @@
           "uncoveredScopes": [],
           "abandonedGround": false,
           "abandonedLocations": 0,
+          "failedRoots": [],
           "capped": false,
           "targetVolumeId": "root",
           "hiddenByExcludes": 0
@@ -3057,6 +3060,7 @@
           "uncoveredScopes": [],
           "abandonedGround": false,
           "abandonedLocations": 0,
+          "failedRoots": [],
           "capped": false,
           "targetVolumeId": "root",
           "hiddenByExcludes": 0

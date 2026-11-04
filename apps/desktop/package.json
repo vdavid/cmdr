@@ -76,6 +76,7 @@
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-library": "10.3.0",
+    "@eslint-community/regexpp": "4.12.2",
     "@eslint/js": "^10.0.1",
     "@guidepup/virtual-screen-reader": "0.33.0",
     "@iconify-json/lucide": "1.2.149",

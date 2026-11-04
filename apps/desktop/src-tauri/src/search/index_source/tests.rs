@@ -8,6 +8,7 @@ use cmdr_index::store::{IndexStore, ROOT_ID};
 
 use super::*;
 use crate::search::index::load_search_index;
+use crate::search::index_source::PathNamespace;
 use crate::search::seam::{ResolvedScope, resolve_scope};
 use crate::test_support::TestDir;
 
@@ -22,13 +23,41 @@ use crate::test_support::TestDir;
 #[test]
 fn canonicalize_scope_path_expands_the_home_tilde() {
     let home = std::env::var("HOME").expect("HOME is set");
-    assert_eq!(canonicalize_scope_path("~"), canonicalize_scope_path(&home));
-    assert_eq!(
-        canonicalize_scope_path("~/Documents"),
-        canonicalize_scope_path(&format!("{home}/Documents"))
+    for namespace in [PathNamespace::Os, PathNamespace::Backend] {
+        assert_eq!(
+            canonicalize_scope_path("~", namespace),
+            canonicalize_scope_path(&home, namespace)
+        );
+        assert_eq!(
+            canonicalize_scope_path("~/Documents", namespace),
+            canonicalize_scope_path(&format!("{home}/Documents"), namespace)
+        );
+        // A tilde INSIDE a path is an ordinary character, and a file may be named it.
+        assert_eq!(canonicalize_scope_path("/tmp/~notme", namespace), "/tmp/~notme");
+    }
+}
+
+/// Regression: a backend volume's scope path never goes through `realpath`. The
+/// OS mount at the same mount point spells names its own way (macOS smbfs: NFD),
+/// and a canonicalized `Rymdskottkärra AB` reached the NAS as
+/// `Rymdskottka\u{308}rra AB`, which it didn't have. A symlink stands in for the
+/// rename here: anything `realpath` would change, a backend path must keep.
+#[cfg(unix)]
+#[test]
+fn a_backend_scope_path_keeps_the_backends_spelling() {
+    let base = TestDir::new("scope-backend");
+    let real = base.join("real");
+    std::fs::create_dir_all(real.join("Rymdskottkärra AB")).expect("create real dir");
+    let link = base.join("link");
+    std::os::unix::fs::symlink(&real, &link).expect("create symlink");
+
+    let scope = link.join("Rymdskottkärra AB").to_string_lossy().into_owned();
+    assert_eq!(canonicalize_scope_path(&scope, PathNamespace::Backend), scope);
+    assert_ne!(
+        canonicalize_scope_path(&scope, PathNamespace::Os),
+        scope,
+        "the OS namespace still resolves the link, so the stand-in rename is real"
     );
-    // A tilde INSIDE a path is an ordinary character, and a file may be named it.
-    assert_eq!(canonicalize_scope_path("/tmp/~notme"), "/tmp/~notme");
 }
 
 #[cfg(unix)]
@@ -53,11 +82,11 @@ fn canonicalize_scope_path_resolves_symlinks() {
         .expect("canonicalize real")
         .to_string_lossy()
         .into_owned();
-    assert_eq!(canonicalize_scope_path(&through_link), want);
+    assert_eq!(canonicalize_scope_path(&through_link, PathNamespace::Os), want);
 
     // A non-existent path keeps the literal (best-effort: the offline-index case).
     let missing = link.join("nope").to_string_lossy().into_owned();
-    assert_eq!(canonicalize_scope_path(&missing), missing);
+    assert_eq!(canonicalize_scope_path(&missing, PathNamespace::Os), missing);
 }
 
 // ── A mount-rooted volume's scope, through the database ──────────────
@@ -72,6 +101,10 @@ const TEST_MOUNT: &str = "/Volumes/cmdr-test-nas";
 /// `/photos` folder, loaded. The mount root is a path that can't exist, so
 /// `canonicalize_scope_path` keeps the literal deterministically.
 fn mount_rooted_volume() -> (tempfile::TempDir, LoadedVolume) {
+    mount_rooted_volume_at(TEST_MOUNT)
+}
+
+fn mount_rooted_volume_at(mount: &str) -> (tempfile::TempDir, LoadedVolume) {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = dir.path().join("index-smb-test.db");
     let _store = IndexStore::open(&db_path).expect("open store");
@@ -79,12 +112,48 @@ fn mount_rooted_volume() -> (tempfile::TempDir, LoadedVolume) {
     IndexStore::insert_entry_v2(&conn, ROOT_ID, "photos", true, false, None, None, None, None).unwrap();
     let pool = ReadPool::new(db_path).expect("read pool");
     let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load the arena");
-    (dir, LoadedVolume::for_test(index, pool, Some(TEST_MOUNT.to_string())))
+    (dir, LoadedVolume::for_test(index, pool, Some(mount.to_string())))
 }
 
 fn resolved(loaded: &LoadedVolume, paths: &[&str]) -> crate::search::seam::ScopeResolution {
+    resolved_in(loaded, paths, PathNamespace::Backend)
+}
+
+fn resolved_in(
+    loaded: &LoadedVolume,
+    paths: &[&str],
+    namespace: PathNamespace,
+) -> crate::search::seam::ScopeResolution {
     let paths: Vec<String> = paths.iter().map(|p| p.to_string()).collect();
-    resolve_scope(&IndexSource(loaded), &scope_pairs(&paths, None)).expect("the scope resolves")
+    resolve_scope(&IndexSource(loaded), &scope_pairs(&paths, None, namespace)).expect("the scope resolves")
+}
+
+/// Regression: a backend volume's scope resolves against its index under the
+/// backend's own spelling, even where the OS mount at that path spells it
+/// differently. Here the mount point is reached through a symlink, so `realpath`
+/// would move the scope out from under the mount root, the way smbfs's NFD moved
+/// `Rymdskottkärra AB` out from under the index's NFC row.
+#[cfg(unix)]
+#[test]
+fn a_backend_scope_resolves_under_the_backends_spelling() {
+    let base = TestDir::new("scope-backend-mount");
+    std::fs::create_dir_all(base.join("real").join("photos")).expect("create real dir");
+    let mount = base.join("mount");
+    std::os::unix::fs::symlink(base.join("real"), &mount).expect("create symlink");
+    let mount = mount.to_string_lossy().into_owned();
+    let (_dir, loaded) = mount_rooted_volume_at(&mount);
+    let scope = format!("{mount}/photos");
+
+    let r = resolved_in(&loaded, &[&scope], PathNamespace::Backend);
+    assert!(matches!(r.scope, ResolvedScope::Ids(ref ids) if ids.len() == 1));
+    assert!(r.unresolved.is_empty());
+
+    let through_the_os = resolved_in(&loaded, &[&scope], PathNamespace::Os);
+    assert_eq!(
+        through_the_os.unresolved,
+        vec![scope],
+        "the OS namespace renames the path, which is the failure the backend namespace avoids"
+    );
 }
 
 #[test]

@@ -167,6 +167,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, one {O Cmdr não conseguiu abrir esta pasta, então nada dela está nos resultados:} many {O Cmdr não conseguiu abrir estas pastas, então nada delas está nos resultados:} other {O Cmdr não conseguiu abrir estas pastas, então nada delas está nos resultados:}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "Com acesso total ao disco, o Cmdr consegue buscar em pastas como estas.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

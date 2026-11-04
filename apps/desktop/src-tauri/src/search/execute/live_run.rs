@@ -161,6 +161,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
             uncovered_scopes: target.include_paths.clone(),
             abandoned_ground: false,
             abandoned_locations: 0,
+            failed_roots: Vec::new(),
             capped: false,
             target_volume_id: target.volume_id.clone(),
             hidden_by_excludes: 0,
@@ -285,7 +286,8 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
                   unreadable: UnreadableGround,
                   still_covering: Vec<String>,
                   capped: bool,
-                  abandoned_ground: bool| SearchRunCoverage {
+                  abandoned_ground: bool,
+                  failed_roots: Vec<String>| SearchRunCoverage {
         // Ground a walk gave up on reaches this two ways and BOTH have to count.
         // The flag is what THIS walk gave up on; `unreadable.abandoned` is what any
         // walk gave up on durably, which is precisely why the frontier stopped
@@ -296,6 +298,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         // durable half has paths to count; a walk that gave up on ground it never
         // recorded leaves this 0, and the note says the honest thing over it.
         abandoned_locations: cmdr_fs::path_locations::location_count(&unreadable.abandoned),
+        failed_roots,
         // A scope the INDEX couldn't resolve isn't a gap once the walk has been
         // to it: the walk is the probe, and it just answered. Only a walk that
         // ran to the end proves it, so anything short leaves the signal
@@ -305,7 +308,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         unresolved_scopes: match walk {
             WalkEnding::Completed => unresolved_scopes
                 .iter()
-                .filter(|scope| !walked_scopes.contains(&crate::search::index_source::canonicalize_scope_path(scope)))
+                .filter(|scope| !walked_scopes.contains(&target.canonical_scope(scope)))
                 .cloned()
                 .collect(),
             _ => unresolved_scopes.clone(),
@@ -341,6 +344,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
             Vec::new(),
             stream.capped(),
             false,
+            Vec::new(),
         );
         stream.finish(coverage);
         return;
@@ -384,6 +388,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         still_covering,
         stream.capped(),
         walked.abandoned_ground,
+        walked.failed_roots,
     );
     stream.finish(coverage);
 }

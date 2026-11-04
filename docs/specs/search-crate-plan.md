@@ -494,6 +494,10 @@ waits for the demo branches and the fold.
 - **The three demo-image input lists** must stay equal: `scripts/website-demo-key.sh`'s `paths`, `websiteDemoInputs` in
   `scripts/check/checks/inputs.go`, and `.github/workflows/ci.yml`'s `website` filter. M4 adds `crates/cmdr-search` to
   all three, batched with the other demo crates (`docs/guides/multi-agent-refactors.md` § batch landing).
+- **The NAS scope-spelling fix** (`worktree-search-nfd-scope`, landed as #948): scope paths of a backend volume skip
+  `realpath` (`PathNamespace`), and live runs report `failed_roots`. Merged into this branch after M2: the namespace
+  rides on `Target` and reaches the seam through `index_source::scope_pairs`. It is NOT the NFC-name pattern bug M0's
+  `accented_folder` golden pins (on macOS a typed pattern can't find an NFC-stored name), which stays open.
 - **#114, the mapped arena** (`docs/specs/search-arena-snapshot.md`, deferred): this plan lands its Contract B facade,
   so that spec's scope list (`search/index.rs`, `engine.rs`, ...) moves to `crates/cmdr-search/src/`. Update its paths
   in M2.

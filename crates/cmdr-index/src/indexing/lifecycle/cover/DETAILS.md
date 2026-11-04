@@ -81,8 +81,11 @@ reason, so a cancelled walk can't leave the pool standing.
 **Terminal states.** `CoverOutcome.cancelled` separates "the index answers for this scope now" from "somebody stopped
 us", which are different phases in the UI. Neither is a failure: a cancelled walk still left every directory it read
 marked, so the next walk resumes rather than restarts. One frontier root that can't be walked doesn't stop the others —
-it stays frontier, and the next `coverage` call names it again. The one thing that DOES stop them is the volume itself
-going away, below.
+it stays frontier, and the next `coverage` call names it again. It also lands in `CoverOutcome.failed_roots` (a
+bootstrap refusal or `RootOutcome::Failed`), because a caller that only sees `roots_covered` fall short can't tell "the
+drive went away" from "this one folder wouldn't open", and one that ignores it reports "no matches" over a folder
+nothing read. Search's typed answer to it: `apps/desktop/src-tauri/src/search/live/DETAILS.md`. The one thing that DOES
+stop the other roots is the volume itself going away, below.
 
 **A dead volume is concluded once, not per root** (`RootOutcome::VolumeGone`). Re-discovering that a share has stopped
 answering costs whatever the frontier size multiplies it by: over a share a listing that can't be answered runs to

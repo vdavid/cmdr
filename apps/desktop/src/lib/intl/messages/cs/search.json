@@ -167,6 +167,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, one {Tuto složku se Cmdru nepodařilo otevřít, takže z ní ve výsledcích nic není:} few {Tyto složky se Cmdru nepodařilo otevřít, takže z nich ve výsledcích nic není:} many {Tyto složky se Cmdru nepodařilo otevřít, takže z nich ve výsledcích nic není:} other {Tyto složky se Cmdru nepodařilo otevřít, takže z nich ve výsledcích nic není:}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "S plným přístupem k disku může Cmdr prohledávat i takové složky.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

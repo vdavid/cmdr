@@ -167,6 +167,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, other {Cmdr 無法開啟這些資料夾，所以結果裡沒有它們的東西：}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "有了「完全取用磁碟」權限，Cmdr 就能搜尋這類資料夾。",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

@@ -122,7 +122,7 @@ pub(super) fn coverage_scopes(target: &Target) -> Vec<String> {
     target
         .include_paths
         .iter()
-        .map(|path| crate::search::index_source::canonicalize_scope_path(path))
+        .map(|path| target.canonical_scope(path))
         .collect()
 }
 

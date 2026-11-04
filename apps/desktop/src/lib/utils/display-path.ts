@@ -27,10 +27,18 @@ const PICK = '\u0000'
 const PICK_AT_START = /^\u0000\d+(?=\/|$)/
 
 /**
- * An S3 account: `s3://` at a word start, then the key id up to its `@`. The key-id
- * class is `without_s3_key_ids`'s, so a `/`, a space, a quote, or a log marker ends it.
+ * An S3 account: `s3://`, then the key id up to its `@`. The key-id class is
+ * `without_s3_key_ids`'s, so a `/`, a space, a quote, or a log marker ends it.
+ *
+ * ❌ No lookbehind for the "at a word start" half: Safari 15 (a Catalina Mac's newest)
+ * can't compile one, and this module-level regex then stopped 0.59.0's whole frontend
+ * from mounting there. `CONTINUES_A_WORD` checks the preceding character instead,
+ * and the build's `webkitRegexFloor` plugin fails on any lookbehind that slips back in.
  */
-const S3_ACCOUNT = /(?<![\p{L}\p{N}+.-])s3:\/\/[A-Za-z0-9\-_.~+=]+@/gu
+const S3_ACCOUNT = /s3:\/\/[A-Za-z0-9\-_.~+=]+@/g
+
+/** One code point that continues a word, so an `s3://` right after it isn't at a word start. */
+const CONTINUES_A_WORD = /^[\p{L}\p{N}+.-]$/u
 
 /** `text` as a person reads it: every pick segment and every S3 access key id taken out. */
 export function displayPath(text: string): string {
@@ -39,7 +47,20 @@ export function displayPath(text: string): string {
 
 /** `text` with every S3 app path's access key id taken out. Text without one comes back as is. */
 function withoutS3KeyIds(text: string): string {
-  return text.includes('s3://') ? text.replace(S3_ACCOUNT, 's3://') : text
+  if (!text.includes('s3://')) return text
+  return text.replace(S3_ACCOUNT, (match: string, offset: number) =>
+    CONTINUES_A_WORD.test(codePointBefore(text, offset)) ? match : 's3://',
+  )
+}
+
+/** The code point that ends `text` before `offset` (both halves of a surrogate pair), or `''` at the start. */
+function codePointBefore(text: string, offset: number): string {
+  if (offset === 0) return ''
+  const last = text.charCodeAt(offset - 1)
+  const isLowSurrogate = last >= 0xdc00 && last <= 0xdfff
+  const beforeLast = offset >= 2 ? text.charCodeAt(offset - 2) : 0
+  const isPair = isLowSurrogate && beforeLast >= 0xd800 && beforeLast <= 0xdbff
+  return String.fromCodePoint(text.codePointAt(isPair ? offset - 2 : offset - 1) ?? last)
 }
 
 /**

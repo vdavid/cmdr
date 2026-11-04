@@ -167,6 +167,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, one {Cmdr n’a pas pu ouvrir ce dossier, rien de son contenu n’est donc dans les résultats :} many {Cmdr n’a pas pu ouvrir ces dossiers, rien de leur contenu n’est donc dans les résultats :} other {Cmdr n’a pas pu ouvrir ces dossiers, rien de leur contenu n’est donc dans les résultats :}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "Avec l’accès complet au disque, Cmdr peut chercher dans des dossiers comme ceux-ci.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

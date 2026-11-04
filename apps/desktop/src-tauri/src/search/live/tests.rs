@@ -81,6 +81,7 @@ fn covered_everything(roots: usize) -> CoverOutcome {
         roots_covered: roots,
         cancelled: false,
         abandoned_ground: false,
+        failed_roots: Vec::new(),
     }
 }
 
@@ -168,6 +169,7 @@ fn drive(
         uncovered_scopes: Vec::new(),
         abandoned_ground: walked.abandoned_ground,
         abandoned_locations: 0,
+        failed_roots: Vec::new(),
         capped: stream.capped(),
         target_volume_id: run.volume_id.clone(),
         hidden_by_excludes: 0,
@@ -321,6 +323,7 @@ fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
         uncovered_scopes: Vec::new(),
         abandoned_ground: false,
         abandoned_locations: 0,
+        failed_roots: Vec::new(),
         capped: false,
         target_volume_id: "supersede-volume".to_string(),
         hidden_by_excludes: 0,
@@ -541,6 +544,7 @@ fn progress_follows_the_walk_rather_than_the_batches_it_emits() {
         uncovered_scopes: Vec::new(),
         abandoned_ground: false,
         abandoned_locations: 0,
+        failed_roots: Vec::new(),
         capped: false,
         target_volume_id: run.volume_id.clone(),
         hidden_by_excludes: 0,
@@ -611,6 +615,7 @@ fn cancelling_stops_the_run_promptly_and_ends_it_as_cancelled() {
         uncovered_scopes: Vec::new(),
         abandoned_ground: false,
         abandoned_locations: 0,
+        failed_roots: Vec::new(),
         capped: false,
         target_volume_id: run.volume_id.clone(),
         hidden_by_excludes: 0,
@@ -643,6 +648,7 @@ fn a_walk_that_stopped_without_being_asked_reads_as_interrupted() {
             roots_covered: 0,
             cancelled: true,
             abandoned_ground: false,
+            failed_roots: Vec::new(),
         }))
         .expect("send");
     });
@@ -725,12 +731,34 @@ fn ending_of_puts_our_own_cancel_ahead_of_every_other_verdict() {
         roots_covered: 0,
         cancelled: true,
         abandoned_ground: false,
+        failed_roots: Vec::new(),
     };
     assert_eq!(ending_of(Some(&stopped), 1, true), WalkEnding::Cancelled);
     assert_eq!(ending_of(Some(&stopped), 1, false), WalkEnding::Interrupted);
     assert_eq!(ending_of(Some(&covered_everything(2)), 2, false), WalkEnding::Completed);
     assert_eq!(ending_of(None, 0, true), WalkEnding::Cancelled);
     assert_eq!(ending_of(None, 0, false), WalkEnding::Interrupted);
+}
+
+/// Regression: a root the volume answered "no" about is not a drive that went
+/// away. Counted as unreached, the one NAS folder whose name didn't match made
+/// the dialog say the drive had gone, over a share that was fine.
+#[test]
+fn a_failed_root_completes_the_walk_rather_than_interrupting_it() {
+    let one_failed = CoverOutcome {
+        failed_roots: vec!["/Volumes/naspi/papers/Rymdskottkärra AB".to_string()],
+        ..covered_everything(0)
+    };
+    assert_eq!(ending_of(Some(&one_failed), 1, false), WalkEnding::Completed);
+    let one_failed_one_skipped = CoverOutcome {
+        failed_roots: vec!["/Volumes/naspi/a".to_string()],
+        ..covered_everything(0)
+    };
+    assert_eq!(
+        ending_of(Some(&one_failed_one_skipped), 2, false),
+        WalkEnding::Interrupted,
+        "a root nobody asked is still unreached"
+    );
 }
 
 #[test]

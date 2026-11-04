@@ -75,6 +75,16 @@ exist only on a newer ICU than Catalina's. So Safari 15.6.1 on Catalina still ha
 0.55.0's main window there (cmdr-reports#80). The app degrades rather than blocks on this; the ICU gates, the affected
 APIs, and the guardrail are in `apps/desktop/src/lib/intl/DETAILS.md` § Catalina has no Intl.ListFormat.
 
+**Beside the floors, regex syntax.** A regex feature has no lowering either, and the bundler hides that: given a literal
+the target can't parse, it emits `RegExp(`…`, `u`)` instead, silently, which turns a parse error into a runtime
+`SyntaxError` wherever the regex is built. 0.59.0 shipped one module-level lookbehind (Safari 16.4) in
+`apps/desktop/src/lib/utils/display-path.ts`, so on Catalina's Safari 15.6.1 the module graph threw
+`Invalid regular expression: invalid group specifier name` while evaluating, before the logger existed: no frontend log
+line at all, and the backend's 10 s fallback showed a blank window (verified on the Catalina test Mac, 10.15.8 and
+Safari 15.6.1, by loading the build in Safari with an error-reporting hook, 2026-11-04). `webkitRegexFloor` in
+`apps/desktop/scripts/vite-webkit-regex-floor.ts` now fails `vite build` on any lookbehind, `v` flag, inline modifier,
+or duplicate group name in the emitted client chunks, dependencies included.
+
 Together they're why the block screen is an inline ES5 `<script>` in `apps/desktop/src/app.html` that runs before the
 module boot script: a screen shipped inside the bundle is unreachable on exactly the Safari (13.x) that most needs it.
 Its translated copy is spliced in at build time from the message catalogs, so the shell can't drift from what
@@ -110,9 +120,28 @@ its executable asks for it; every other app gets the OS's, unless it asks the sa
   nothing staged: a minimal hardened, WebKit-linked probe took 8.0–13.7 ms per launch without it and 9.9–16.4 ms with it
   (300 launches per variant, three alternating rounds, macOS 26.6.2 on Apple Silicon, 2026-09-13). Next to Cmdr's own
   startup that's noise, which is why it's unconditional.
-- **Open questions** (2026-09-12): the whole chain is read from source, and the first build carrying the flag goes to
-  the Catalina user who reported the problem. On Apple Silicon Big Sur, WebKit's config links `DYLD_FRAMEWORK_PATH`
-  instead for arm64 on the macOS 11 SDK, so the versioned opt-in may not reach an M1 whose OS WebKit is below the floor.
+- **It works on Intel Catalina** (0.59.0 on the Catalina test Mac, 10.15.8, `lsof -p <Cmdr pid>` and `ps` on its WebKit
+  XPC services, 2026-11-04): Cmdr maps the staged `WebKit.framework` and `JavaScriptCore.framework`, and its WebContent,
+  Networking, and GPU processes run from the staged copy.
+- **Open question** (2026-09-12): on Apple Silicon Big Sur, WebKit's config links `DYLD_FRAMEWORK_PATH` instead for
+  arm64 on the macOS 11 SDK, so the versioned opt-in may not reach an M1 whose OS WebKit is below the floor.
+
+### Testing the frontend on the Catalina Mac
+
+CI has no Catalina runner, so the Catalina test Mac (`ssh air`; details in the `air2015` note in David's vault) is the
+check. Two ways, cheapest first:
+
+- **Safari, no app build** (about a minute): serve `apps/desktop/build/` from the laptop with a script injected at the
+  top of `<head>` that POSTs `error`, `unhandledrejection`, and `console.error` back to the server, reverse-tunnel the
+  port with `ssh -R <port>:127.0.0.1:<port> air`, and `open -a Safari http://127.0.0.1:<port>/` there. Safari runs the
+  same staged WebKit and ICU Cmdr gets, so a parse or module-evaluation error shows up with its chunk and column. Past
+  that point, the only errors are the missing `window.__TAURI_INTERNALS__`.
+- **The real app** (about five minutes warm):
+  `node scripts/tauri-wrapper.ts build --no-bundle --target x86_64-apple-darwin -- --profile e2e` in `apps/desktop/`,
+  copy an installed `Cmdr.app` under `~` on the Air, swap in `target/x86_64-apple-darwin/e2e/Cmdr`,
+  `codesign --force --deep -s -` it there, and `open` it. `FE:` lines in `~/Library/Logs/com.veszelovszki.cmdr/cmdr.log`
+  mean the frontend mounted. The jsc in Catalina's own `JavaScriptCore.framework` is Safari 13's, and it can't load the
+  staged framework (missing symbols), so it's no help.
 
 ## Effective minimums imposed by the stack
 

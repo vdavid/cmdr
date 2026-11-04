@@ -45,6 +45,15 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   dialog — all route through the one `scope_pairs`. The pipeline's order is `~` (`query::expand_tilde`, against the
   search context's home), then `realpath` (the host's), then the mount strip (`seam::resolve_scope`), because an
   index-relative path can't be canonicalized.
+- **Only a volume read through `std::fs` is canonicalized** (`index_source::PathNamespace`, decided once per `Target` from
+  the registered volume's `BackendKind`, and the one `Target::canonical_scope` (through
+  `index_source::canonicalize_scope_path`) every site calls, since the coverage
+  question, the index lookup, and the walk's frontier are matched by string). A backend volume's paths are in the
+  backend's namespace, and the OS mount at the same mount point spells names its own way: macOS smbfs returns every
+  name decomposed (NFD) while a QNAP stores NFC, so a canonicalized `Rymdskottkärra AB` reached both the index and the
+  server as `Rymdskottka\u{308}rra AB` and every search of an accented NAS folder came back empty (verified on macOS 27
+  smbfs against a QNAP TS-464, `realpath` bytes `61 cc 88`, 2026-11-04). ❌ Don't normalize to NFC instead: a server
+  that stores NFD breaks the other way. A backend path came from that backend's own listing, so it's already right.
 - **Count-only mode (`SearchQuery.count_only`) trades rows for an exact total, cheaply**: when set,
   `engine::search_ranked` computes `total_count` from the filtered matches but skips ranking, truncation, and per-row
   path materialization (the expensive parts) and returns no rows. The one wrinkle is directory size filters: directory

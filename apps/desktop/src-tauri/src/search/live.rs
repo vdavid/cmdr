@@ -560,6 +560,9 @@ pub(crate) struct WalkResult {
     /// The walk gave up on ground it started, so its rows are a lower bound
     /// whatever `ending` says.
     pub(crate) abandoned_ground: bool,
+    /// Frontier roots the walk couldn't cover while the volume stayed there
+    /// (`CoverOutcome::failed_roots`). Each one is a folder nothing read.
+    pub(crate) failed_roots: Vec<String>,
 }
 
 /// Drive a running walk into `stream` until it ends or somebody stops it.
@@ -590,6 +593,7 @@ pub(crate) fn drive_walk(
         return WalkResult {
             ending: WalkEnding::Interrupted,
             abandoned_ground: false,
+            failed_roots: Vec::new(),
         };
     }
 
@@ -706,6 +710,7 @@ fn pump(
         // A walk nobody heard from can't report what it abandoned; the ending
         // already says the list is a lower bound in that case.
         abandoned_ground: outcome.as_ref().is_some_and(|outcome| outcome.abandoned_ground),
+        failed_roots: outcome.map(|outcome| outcome.failed_roots).unwrap_or_default(),
     }
 }
 
@@ -715,6 +720,10 @@ fn pump(
 /// and the reason we know it was OURS is that we asked: a walk that stopped
 /// without being asked stopped because its ground went away (an ejected drive, a
 /// share that dropped), which is a different sentence and a different state.
+///
+/// A root that FAILED was still answered for: the volume was there and said no
+/// about that one folder, which `failed_roots` reports in its own words. Counted
+/// as unreached, it read as "the drive went away" over a NAS that was fine.
 fn ending_of(outcome: Option<&CoverOutcome>, attempted_roots: usize, cancelled_by_us: bool) -> WalkEnding {
     if cancelled_by_us {
         return WalkEnding::Cancelled;
@@ -723,7 +732,9 @@ fn ending_of(outcome: Option<&CoverOutcome>, attempted_roots: usize, cancelled_b
         // No verdict at all: the reader died, or we stopped listening. Either way
         // nothing may claim the frontier was covered.
         None => WalkEnding::Interrupted,
-        Some(outcome) if outcome.cancelled || outcome.roots_covered < attempted_roots => WalkEnding::Interrupted,
+        Some(outcome) if outcome.cancelled || outcome.roots_covered + outcome.failed_roots.len() < attempted_roots => {
+            WalkEnding::Interrupted
+        }
         Some(_) => WalkEnding::Completed,
     }
 }
