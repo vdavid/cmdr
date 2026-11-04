@@ -339,7 +339,7 @@ impl Volume for ScriptedListVolume {
                 Some((delay, entries)) => {
                     // allowed-test-sleep: the scripted latency IS the subject — it is what makes the
                     // read that started first finish last, deterministically.
-                    tokio::time::sleep(delay).await;
+                    crate::rt::time::sleep(delay).await;
                     Ok(entries)
                 }
                 None => Ok(Vec::new()),

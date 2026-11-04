@@ -217,7 +217,7 @@ impl Beat {
         Self {
             best: AtomicUsize::new(0),
             phase: Mutex::new(None),
-            last_moved: Mutex::new(Instant::now()),
+            last_moved: Mutex::new(crate::rt::time::now()),
             moved: Notify::new(),
         }
     }
@@ -234,7 +234,7 @@ impl Beat {
             std::mem::replace(&mut *last, progress.phase) != progress.phase
         };
         if grew || phase_moved {
-            *self.last_moved.lock_ignore_poison() = Instant::now();
+            *self.last_moved.lock_ignore_poison() = crate::rt::time::now();
             self.moved.notify_one();
         }
     }
@@ -327,7 +327,7 @@ pub(crate) async fn read_until_answered(read: ListingRead<'_>, watch: &StallWatc
         attempts.insert(
             slot.read_id,
             Attempt {
-                started: Instant::now(),
+                started: crate::rt::time::now(),
                 hung: false,
             },
         );
@@ -369,7 +369,7 @@ pub(crate) async fn read_until_answered(read: ListingRead<'_>, watch: &StallWatc
                     LogError(&error),
                 );
                 let wait = if was_hung { Duration::ZERO } else { backoff.step() };
-                next_attempt_at = Some(next_attempt_at.map_or(Instant::now() + wait, |at| at.min(Instant::now() + wait)));
+                next_attempt_at = Some(next_attempt_at.map_or(crate::rt::time::now() + wait, |at| at.min(crate::rt::time::now() + wait)));
             }
             () = beat.moved.notified() => {
                 // The volume answered: nothing is hung any more, and the pane's
@@ -381,7 +381,7 @@ pub(crate) async fn read_until_answered(read: ListingRead<'_>, watch: &StallWatc
                 stalled = false;
             }
             () = sleep_until_opt(stall_check), if stall_check.is_some() => {
-                let now = Instant::now();
+                let now = crate::rt::time::now();
                 let last_moved = beat.last_moved();
                 for (read_id, attempt) in attempts.iter_mut().filter(|(_, a)| !a.hung) {
                     if now >= attempt.started.max(last_moved) + policy.stall_after {

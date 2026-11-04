@@ -610,8 +610,10 @@ The engine also builds for `wasm32-unknown-unknown`, hosted by `crates/cmdr-list
 crate-private module, `src/rt/`, is the whole difference: every spawn, sleep, timeout, and `Instant` in the engine goes
 through `crate::rt`.
 
-- **Natively, `rt` is re-exports**: `Runtime` is `tokio::runtime::Handle`, `rt::time` is `tokio::time`, `rt::Instant` is
-  `std::time::Instant`. The desktop compiles the same code, `start_paused` test clocks included.
+- **Natively, `rt` is re-exports plus one-line wrappers**: `Runtime` is `tokio::runtime::Handle`, `rt::Instant` is
+  `std::time::Instant`, `rt::time::Instant` is tokio's, and `rt::now()`, `rt::since()`,
+  `rt::time::{now, sleep, sleep_until, timeout}` forward to the `std` / tokio call of the same name. The desktop runs
+  the same code, `start_paused` test clocks included.
 - **In the browser (`src/rt/wasm.rs`)**: `Runtime::spawn` is `wasm_bindgen_futures::spawn_local` behind a `oneshot`
   `JoinHandle` (dropping it detaches, as tokio's does), `spawn_blocking` runs the closure inline, `Instant` is
   `web-time`'s, and `sleep` is a `Send` `setTimeout` future (the 50 ms diff flush, the stall clock, the reaper tick).
@@ -621,11 +623,18 @@ through `crate::rt`.
 - **What the gates cost**: `ListingsBuilder::runtime` exists natively only, the default runtime is `cmdr-fs`'s fallback
   natively and the page's loop in the browser (`rt::default_runtime`), and the three wasm deps are under
   `cfg(target_family = "wasm")` in `Cargo.toml`. Nothing else in the engine knows which target it's on.
-- **Guardrail**: a direct `tokio::time`, `tokio::runtime::Handle`, or `std::time::Instant` in engine code compiles on
-  both targets and panics only in the browser. `desktop-rust-listing-wasm`'s smoke test is what catches it.
+- **Enforced**: `clippy.toml`'s `disallowed-methods` refuses every direct clock read, timer, and ambient-runtime lookup
+  (`Instant::now` / `elapsed` on both clocks, `SystemTime::now`, `tokio::time::{sleep, sleep_until, timeout, interval}`,
+  `Handle::current`); `rt/` opts out with one `#[allow]`. They're method bans because a type ban can't work: natively
+  `rt::Instant` and `rt::Runtime` ARE the `std` and tokio types, so it would fire on the seam itself.
+  `desktop-rust-listing-wasm`'s smoke test backs it at runtime.
 
 ## Decisions
 
+- **The executor and clock are a crate-private platform module (`src/rt/`), not a host seam.** A host-injected
+  clock-and-executor trait would box every spawn, lose tokio's `JoinHandle`, and move the desktop's tests off
+  `start_paused` time, all to serve a demo. The module keeps desktop on the exact tokio and `std` calls and confines the
+  browser to one file. Why: § "The browser build"; agreed with the coordinator for #302 (2026-11-04).
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.
   Streaming spawns a task on the host runtime and reports through `ListingEvents`; the frontend stays responsive (Tab
   works, ESC cancels).

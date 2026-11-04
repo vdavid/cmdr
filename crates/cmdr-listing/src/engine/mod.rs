@@ -12,7 +12,7 @@
 //! through `self`, never through the app's accessor: a method that asks for "the"
 //! engine works in the app and quietly reads the wrong one everywhere else.
 
-use crate::rt::{Instant, Runtime};
+use crate::rt::Runtime;
 use std::collections::HashMap;
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, RwLock};
@@ -149,7 +149,7 @@ impl ListingsBuilder {
                 observers: self.observers,
                 scratch: ScratchSettings::new(ScratchVisibility::default()),
                 cache: RwLock::new(HashMap::new()),
-                epoch: Instant::now(),
+                epoch: crate::rt::now(),
                 streaming: RwLock::new(HashMap::new()),
                 diffs,
                 refresh_slots: RwLock::new(HashMap::new()),

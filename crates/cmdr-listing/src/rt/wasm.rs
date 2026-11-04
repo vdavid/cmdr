@@ -86,6 +86,11 @@ pub(crate) mod time {
 
     pub(crate) use web_time::Instant;
 
+    /// The current instant on the page's clock.
+    pub(crate) fn now() -> Instant {
+        Instant::now()
+    }
+
     /// Waits `duration` without blocking the page.
     pub(crate) async fn sleep(duration: Duration) {
         super::Sleep::new(duration).await;
