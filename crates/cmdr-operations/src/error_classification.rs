@@ -9,6 +9,8 @@
 
 use std::path::Path;
 
+use crate::local_disk::errno;
+
 use super::types::{PermissionSide, ReadOnlySide, WriteOperationError};
 
 /// Classifies a raw `std::io::Error` into a specific `WriteOperationError` variant.
@@ -26,7 +28,7 @@ pub(super) fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperat
     #[cfg(unix)]
     if let Some(code) = e.raw_os_error() {
         match code {
-            libc::EROFS => {
+            errno::EROFS => {
                 // EROFS came back from a WRITE, so the refusing half is the
                 // destination by construction.
                 return WriteOperationError::ReadOnlyDevice {
@@ -35,9 +37,9 @@ pub(super) fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperat
                     side: ReadOnlySide::Destination,
                 };
             }
-            libc::ENAMETOOLONG => return WriteOperationError::NameTooLong { path },
+            errno::ENAMETOOLONG => return WriteOperationError::NameTooLong { path },
             // The refused write measured nothing, so it's the sizeless variant.
-            libc::ENOSPC | libc::EDQUOT => return WriteOperationError::DestinationFull { path },
+            errno::ENOSPC | errno::EDQUOT => return WriteOperationError::DestinationFull { path },
             // The one transport errno set, shared with the transfer engine's
             // retry and outage wait, so both agree on what "the link dropped" is.
             code if cmdr_fs::volume::is_transport_errno(code) => {
@@ -47,7 +49,7 @@ pub(super) fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperat
             // that's gone, `ENXIO` from a device node whose hardware left. The
             // SIDE is filled in at the operation's boundary, where the volumes
             // it was handed at start are still known (`transfer_sides.rs`).
-            libc::ENODEV | libc::ENXIO => return WriteOperationError::DeviceDisconnected { path, side: None },
+            errno::ENODEV | errno::ENXIO => return WriteOperationError::DeviceDisconnected { path, side: None },
             _ => {} // Fall through to ErrorKind classification
         }
     }
@@ -86,7 +88,7 @@ pub(super) fn classify_copy_io_error(err: &std::io::Error, source: &Path, destin
         std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::AlreadyExists
     ) || matches!(
         err.raw_os_error(),
-        Some(libc::EROFS | libc::ENOSPC | libc::EDQUOT | libc::ENAMETOOLONG)
+        Some(errno::EROFS | errno::ENOSPC | errno::EDQUOT | errno::ENAMETOOLONG)
     );
     let path = if refused_by_destination { destination } else { source };
     classify_io_error(err, path.display().to_string())
@@ -110,21 +112,7 @@ impl From<std::io::Error> for WriteOperationError {
     }
 }
 
-/// Whether `path` itself carries a lock flag (Finder's Locked, `chflags uchg`, or the
-/// system and append-only kinds): a fact about the item, read with `lstat`, never a
-/// guess from a path or a message.
-#[cfg(target_os = "macos")]
-pub(super) fn is_locked_item(path: &Path) -> bool {
-    use std::os::macos::fs::MetadataExt;
-
-    const LOCKS: u32 = libc::UF_IMMUTABLE | libc::UF_APPEND | libc::SF_IMMUTABLE | libc::SF_APPEND;
-    std::fs::symlink_metadata(path).is_ok_and(|meta| meta.st_flags() & LOCKS != 0)
-}
-
-#[cfg(not(target_os = "macos"))]
-pub(super) fn is_locked_item(_path: &Path) -> bool {
-    false
-}
+pub(super) use crate::local_disk::is_locked_item;
 
 impl WriteOperationError {
     /// A `rename(2)` of `source` refused with no side named, answered for the one

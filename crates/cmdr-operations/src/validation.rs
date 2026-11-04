@@ -226,13 +226,10 @@ fn canonicalize_or_nearest_ancestor(path: &Path) -> std::io::Result<PathBuf> {
 /// interior NUL, which no path the OS produced has); the write itself then refuses it.
 #[cfg(unix)]
 pub(crate) fn folder_write_refusal(folder: &Path) -> Option<i32> {
-    use std::ffi::CString;
-    use std::os::unix::ffi::OsStrExt;
-
-    let c_path = CString::new(folder.as_os_str().as_bytes()).ok()?;
-    // SAFETY: `c_path` is a valid NUL-terminated C string that outlives the call.
-    let refused = unsafe { libc::access(c_path.as_ptr(), libc::W_OK) } != 0;
-    refused.then(|| std::io::Error::last_os_error().raw_os_error().unwrap_or(libc::EACCES))
+    match crate::local_disk::write_probe(folder) {
+        crate::local_disk::WriteProbe::Refused(errno) => Some(errno),
+        crate::local_disk::WriteProbe::Allowed | crate::local_disk::WriteProbe::Unrepresentable => None,
+    }
 }
 
 /// The folder whose permissions refuse a write, for a refusal that happened at `path`.
@@ -360,8 +357,6 @@ pub(crate) fn validate_file_sizes_for_filesystem(
 /// This prevents data loss when copying a file over itself via a symlink.
 #[cfg(unix)]
 pub(crate) fn is_same_file(source: &Path, destination: &Path) -> bool {
-    use std::os::unix::fs::MetadataExt;
-
     let src_meta = match fs::metadata(source) {
         Ok(m) => m,
         Err(_) => return false,
@@ -371,7 +366,7 @@ pub(crate) fn is_same_file(source: &Path, destination: &Path) -> bool {
         Err(_) => return false,
     };
 
-    src_meta.dev() == dst_meta.dev() && src_meta.ino() == dst_meta.ino()
+    crate::local_disk::file_id(&src_meta) == crate::local_disk::file_id(&dst_meta)
 }
 
 #[cfg(not(unix))]
@@ -458,12 +453,10 @@ pub(super) fn is_symlink_loop(path: &Path, visited: &HashSet<PathBuf>) -> bool {
 /// Checks if two paths are on the same filesystem using device IDs.
 #[cfg(unix)]
 pub(crate) fn is_same_filesystem(source: &Path, destination: &Path) -> std::io::Result<bool> {
-    use std::os::unix::fs::MetadataExt;
-
     let source_meta = fs::metadata(source)?;
     let dest_meta = fs::metadata(destination)?;
 
-    Ok(source_meta.dev() == dest_meta.dev())
+    Ok(crate::local_disk::device_of(&source_meta) == crate::local_disk::device_of(&dest_meta))
 }
 
 #[cfg(not(unix))]

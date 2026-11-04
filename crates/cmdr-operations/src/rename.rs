@@ -681,58 +681,39 @@ fn check_rename_permission_sync(path: &Path) -> Result<(), MutationError> {
 }
 
 /// Checks if a directory is writable using access(W_OK).
-#[cfg(unix)]
 fn check_dir_writable(dir: &Path) -> Result<(), MutationError> {
-    use std::ffi::CString;
-    use std::os::unix::ffi::OsStrExt;
-
-    let c_path = CString::new(dir.as_os_str().as_bytes()).map_err(|_| MutationError::NameHasDisallowedCharacter)?;
-    // SAFETY: c_path is a valid null-terminated C string
-    let result = unsafe { libc::access(c_path.as_ptr(), libc::W_OK) };
-    if result != 0 {
-        return Err(MutationError::ParentNotWritable {
+    match crate::local_disk::write_probe(dir) {
+        crate::local_disk::WriteProbe::Allowed => Ok(()),
+        crate::local_disk::WriteProbe::Refused(_) => Err(MutationError::ParentNotWritable {
             path: dir.display().to_string(),
-        });
+        }),
+        crate::local_disk::WriteProbe::Unrepresentable => Err(MutationError::NameHasDisallowedCharacter),
     }
-    Ok(())
-}
-
-#[cfg(not(unix))]
-fn check_dir_writable(_dir: &Path) -> Result<(), MutationError> {
-    Ok(())
 }
 
 /// Checks macOS-specific immutable/SIP/lock flags.
 #[cfg(target_os = "macos")]
 fn check_macos_flags(path: &Path) -> Result<(), MutationError> {
-    use std::ffi::CString;
-    use std::mem::MaybeUninit;
-    use std::os::unix::ffi::OsStrExt;
+    use crate::local_disk::BsdFlags;
 
-    let c_path = CString::new(path.as_os_str().as_bytes()).map_err(|_| MutationError::NameHasDisallowedCharacter)?;
-
-    let mut stat = MaybeUninit::<libc::stat>::uninit();
-    // SAFETY: c_path is valid, stat is a valid pointer
-    let result = unsafe { libc::lstat(c_path.as_ptr(), stat.as_mut_ptr()) };
-    if result != 0 {
+    let flags = match crate::local_disk::bsd_flags(path) {
+        BsdFlags::Read(flags) => flags,
         // Can't stat; file may have been deleted, let the rename itself fail with a clear error
-        return Ok(());
-    }
-
-    // SAFETY: lstat succeeded
-    let stat = unsafe { stat.assume_init() };
+        BsdFlags::Unreadable => return Ok(()),
+        BsdFlags::Unrepresentable => return Err(MutationError::NameHasDisallowedCharacter),
+    };
 
     // UF_IMMUTABLE (user immutable / "uchg" flag)
     const UF_IMMUTABLE: u32 = 0x00000002;
     // SF_IMMUTABLE (system immutable, set by SIP)
     const SF_IMMUTABLE: u32 = 0x00020000;
 
-    if (stat.st_flags & UF_IMMUTABLE) != 0 {
+    if (flags & UF_IMMUTABLE) != 0 {
         return Err(MutationError::FileLocked {
             path: path.display().to_string(),
         });
     }
-    if (stat.st_flags & SF_IMMUTABLE) != 0 {
+    if (flags & SF_IMMUTABLE) != 0 {
         return Err(MutationError::SipProtected {
             path: path.display().to_string(),
         });

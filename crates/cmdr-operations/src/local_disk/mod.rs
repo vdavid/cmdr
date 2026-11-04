@@ -19,7 +19,9 @@ use cmdr_fs::volume::{MutationEvent, NodeIdentity, Volume, VolumeError};
 /// The errnos the shared classifiers compare against, by name.
 pub(crate) mod errno {
     #[cfg(unix)]
-    pub(crate) use libc::{EACCES, EINVAL, ENOSYS, ENOTSUP, ENOTTY, EOPNOTSUPP, EPERM};
+    pub(crate) use libc::{
+        EACCES, EDQUOT, EINVAL, ENAMETOOLONG, ENODEV, ENOSPC, ENOSYS, ENOTSUP, ENOTTY, ENXIO, EOPNOTSUPP, EPERM, EROFS,
+    };
 
     // No OS hands the browser build an errno, so these only have to be names
     // that compile; Linux's values.
@@ -37,7 +39,25 @@ pub(crate) mod errno {
     pub(crate) const ENOTSUP: i32 = 95;
     #[cfg(not(unix))]
     pub(crate) const EOPNOTSUPP: i32 = 95;
+    #[cfg(not(unix))]
+    pub(crate) const EROFS: i32 = 30;
+    #[cfg(not(unix))]
+    pub(crate) const ENAMETOOLONG: i32 = 36;
+    #[cfg(not(unix))]
+    pub(crate) const ENOSPC: i32 = 28;
+    #[cfg(not(unix))]
+    pub(crate) const EDQUOT: i32 = 122;
+    #[cfg(not(unix))]
+    pub(crate) const ENODEV: i32 = 19;
+    #[cfg(not(unix))]
+    pub(crate) const ENXIO: i32 = 6;
 }
+
+mod posix;
+
+#[cfg(target_os = "macos")]
+pub(crate) use posix::{BsdFlags, bsd_flags, read_xattr};
+pub(crate) use posix::{WriteProbe, file_id, home_dir, is_locked_item, is_mount_point, write_probe};
 
 /// The device `metadata` lives on (`st_dev`).
 pub(crate) fn device_of(metadata: &std::fs::Metadata) -> u64 {

@@ -438,6 +438,11 @@ jobs:
       - name: Check index-crate isolation
         run: ./scripts/check/check --check index-crate-isolation --ci
 
+      # The write engine builds for the browser demo, which has no local disk, so
+      # only its local-engine modules and `local_disk/` may name the host OS.
+      - name: Check the write engine's local-disk boundary
+        run: ./scripts/check/check --check operations-local-disk-boundary --ci
+
       # A dependency bump past a vendored fork's version makes cargo quietly resolve
       # crates.io again, so the fix stops shipping with nothing but a build warning.
       - name: Check vendored patches still apply
