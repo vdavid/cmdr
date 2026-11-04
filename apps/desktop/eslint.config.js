@@ -384,6 +384,12 @@ export default tseslint.config(
           message:
             'No top-level for-await in app code: WebKit can run an importer before this module finishes. Export a promise and await it in a startup gate.',
         },
+        // A media URL comes only from `mediaUrl(token)` (`routes/viewer/media-view.ts`), which asks
+        // the webview for its form of the scheme: a hand-built one breaks the demo's `blob:` answer.
+        {
+          selector: 'Literal[value=/cmdr-media:\\/\\//], TemplateElement[value.raw=/cmdr-media:\\/\\//]',
+          message: 'Build a media URL with `mediaUrl(token)` from `routes/viewer/media-view.ts`, never by hand.',
+        },
       ],
       // Catalina's WebKit has no `Intl.ListFormat` (JavaScriptCore installs it only
       // against ICU 67+), so a bare `new Intl.ListFormat` crashed the main window at

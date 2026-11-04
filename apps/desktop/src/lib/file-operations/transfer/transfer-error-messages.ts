@@ -220,8 +220,11 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   source_no_longer_connected: { category: 'needs_action', retryHint: false },
   destination_exists: { category: 'needs_action', retryHint: false },
   permission_denied: { category: 'needs_action', retryHint: false },
-  insufficient_space: { category: 'needs_action', retryHint: false },
-  destination_full: { category: 'needs_action', retryHint: false },
+  // Retry: the suggestion asks the person to free up some space, and once they have, the
+  // same copy is the way out. A Retry of a refused copy asks about space again; one of a copy
+  // started with Copy anyway keeps going ahead (`DETAILS.md` § Copy anyway).
+  insufficient_space: { category: 'needs_action', retryHint: true },
+  destination_full: { category: 'needs_action', retryHint: true },
   // No Retry: the same reply would be refused again, and the backend never retries it either.
   // The way out is reconnecting, which the suggestion says.
   reply_signature_refused: { category: 'needs_action', retryHint: false },

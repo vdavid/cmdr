@@ -3,10 +3,10 @@
 //!
 //! These drive the per-listing half, `publish_replacement`, directly; the arm
 //! that finds the listings is `caching_test.rs`'s.
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::testing::{TestEngine, TestListing, pending_changes, publish_replacement};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::testing::unique_test_id;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 /// Creates a minimal test entry.
 fn make_entry(name: &str, is_dir: bool, size: Option<u64>) -> FileEntry {

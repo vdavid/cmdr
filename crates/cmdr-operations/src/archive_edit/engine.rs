@@ -5,10 +5,11 @@
 //! deletion for an into-archive move. The cancel-vs-fault split every stage
 //! returns is [`EditError`], in its own leaf so `remote` can name it too.
 
+use crate::rt::Instant;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::super::OperationEventSink;
 use super::super::host::EngineHost;
@@ -332,9 +333,9 @@ const PACE_CANCEL_SLICE: Duration = Duration::from_millis(10);
 /// Sleeps for `total`, re-checking `cancelled` every [`PACE_CANCEL_SLICE`] and
 /// returning as soon as it answers `true`.
 fn sleep_unless_cancelled(total: Duration, cancelled: impl Fn() -> bool) {
-    let deadline = Instant::now() + total;
+    let deadline = crate::rt::now() + total;
     while !cancelled() {
-        let remaining = deadline.saturating_duration_since(Instant::now());
+        let remaining = deadline.saturating_duration_since(crate::rt::now());
         if remaining.is_zero() {
             return;
         }
@@ -410,7 +411,7 @@ impl MutatorHooks {
     ) {
         {
             let mut last = self.last_scan_emit.lock_ignore_poison();
-            let now = Instant::now();
+            let now = crate::rt::now();
             if !force && last.is_some_and(|then| now.duration_since(then) < self.progress_interval) {
                 return;
             }
@@ -485,7 +486,7 @@ impl MutatorHooks {
     fn emit_remote_progress(&self, progress: RemoteCommitProgress) {
         if let RemoteCommitProgress::Transferring { bytes_done, .. } = progress {
             let mut last = self.last_remote_emit.lock_ignore_poison();
-            let now = Instant::now();
+            let now = crate::rt::now();
             let due = bytes_done == 0 || last.is_none_or(|then| now.duration_since(then) >= self.progress_interval);
             if !due {
                 return;
@@ -520,7 +521,7 @@ impl MutatorHooks {
         let is_final = progress.entries_done == progress.entries_total;
         {
             let mut last = self.last_emit.lock_ignore_poison();
-            let now = Instant::now();
+            let now = crate::rt::now();
             let due = last.is_none_or(|t| now.duration_since(t) >= self.progress_interval);
             if !due && !is_final {
                 return;

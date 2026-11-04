@@ -5,7 +5,7 @@
 //! A date sort the location can't honor falls back to Modified in the backend, and that ❌ never
 //! reaches here: the menu shows the request, like the pane's header and MCP's `sort`.
 
-use cmdr_listing::{SortColumn, SortOrder};
+use cmdr_sort::{SortColumn, SortOrder};
 
 use crate::bar::MENU_BAR;
 use crate::spec::{CheckRole, Entry, EntryKind, SortCheck, SubmenuRole, SubmenuSpec};

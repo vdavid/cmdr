@@ -66,7 +66,7 @@ fn umask() -> u32 {
 fn probe_umask() -> u32 {
     use std::os::unix::fs::{DirBuilderExt as _, PermissionsExt as _};
 
-    let nanos = std::time::SystemTime::now()
+    let nanos = crate::rt::wall_now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.subsec_nanos())
         .unwrap_or(0);

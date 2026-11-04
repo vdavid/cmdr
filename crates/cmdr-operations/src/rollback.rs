@@ -26,14 +26,15 @@
 //! them. The runner also owns the loop's three live answers: stop ([`StopMeans`]),
 //! pause (the op's `PauseGate`), and progress (`write-progress` frames).
 
+use crate::rt::Instant;
 use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use tokio::runtime::Handle;
+use cmdr_fs::rt::Runtime as Handle;
 use tokio::sync::oneshot;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -131,11 +132,11 @@ impl ReversalRunner {
             let due = must_send
                 || stand
                     .last_emit
-                    .is_none_or(|at| at.elapsed() >= self.state.progress_interval);
+                    .is_none_or(|at| crate::rt::since(at) >= self.state.progress_interval);
             if !due {
                 return;
             }
-            stand.last_emit = Some(Instant::now());
+            stand.last_emit = Some(crate::rt::now());
             WriteProgressEvent::new(
                 self.operation_id.clone(),
                 self.operation_type,

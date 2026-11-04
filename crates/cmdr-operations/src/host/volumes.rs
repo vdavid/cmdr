@@ -61,6 +61,39 @@ pub trait OperationVolumes: VolumeLookup {
     /// Why nothing is registered under `volume_id`. Ask it only after a lookup
     /// came back empty: it doesn't consult the registry. ❗ Asking never dials.
     fn unregistered<'a>(&'a self, volume_id: &'a str) -> VolumeAnswer<'a, UnregisteredVolume>;
+
+    /// Which volume id is this host's LOCAL DISK, the one the engine's `std::fs`
+    /// bodies (the local copy, move, delete, and trash, the local rename and its
+    /// `lstat` pre-flight) may run on: the desktop's is
+    /// [`DEFAULT_VOLUME_ID`](cmdr_fs::volume::DEFAULT_VOLUME_ID), and a host with
+    /// no local disk (the browser demo, whose one volume is also called `"root"`)
+    /// answers `None`, so every operation takes the volume engine.
+    fn local_disk_id(&self) -> Option<&str> {
+        Some(cmdr_fs::volume::DEFAULT_VOLUME_ID)
+    }
+
+    /// The local disk, when `volume_id` names it: the capability every local-disk
+    /// branch of the engine needs to run, so the `std::fs` engine can't start on
+    /// a volume that isn't one. ❌ Don't override it; answer [`Self::local_disk_id`].
+    fn local_disk<'a>(&self, volume_id: &'a str) -> Option<LocalDisk<'a>> {
+        (self.local_disk_id() == Some(volume_id)).then_some(LocalDisk { volume_id })
+    }
+}
+
+/// Proof that an id is this host's local disk, handed out only by
+/// [`OperationVolumes::local_disk`] (its field is private, so nothing else can make
+/// one). The engine's local-disk branches take it, so "run the `std::fs` engine on
+/// a volume that isn't the local disk" can't be written.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LocalDisk<'a> {
+    volume_id: &'a str,
+}
+
+impl<'a> LocalDisk<'a> {
+    /// The local disk's volume id.
+    pub fn volume_id(&self) -> &'a str {
+        self.volume_id
+    }
 }
 
 /// Why no volume is registered under an id. Each caller maps it into its own

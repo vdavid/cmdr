@@ -28,6 +28,8 @@ and `announce` / `announce_on`; `testing.rs` holds the fakes (`RecordingEngineEv
 - **A seam reports facts, ❌ never words**: an error report is a typed `OperationErrorReport`, an instant op's analytics
   an `InstantMutationFact` of categories. The app decides the event, the PostHog name, and the message.
 - **A site passing a path calls `OperationVolumes::resolve`, ❌ never `get`**; one that stays on `get` says why.
+- **A local-disk branch asks `OperationVolumes::local_disk(id)`, ❌ never `id == "root"`**: a host may have none (the
+  browser demo's `root` is a volume), and then every op takes the volume engine.
 - **An arrival listener runs INSIDE the registration, or a reconnect's report**: return at once, hand work to the
   runtime.
 

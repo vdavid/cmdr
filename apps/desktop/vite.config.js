@@ -14,6 +14,7 @@ import { buildBootGuardData, injectBootGuardData } from './scripts/gen-boot-guar
 import { listLocales } from './scripts/i18n-catalog-lib.ts'
 import { frontendSbom } from './scripts/vite-frontend-sbom.ts'
 import { localeCatalogs } from './scripts/vite-locale-catalogs.ts'
+import { demoVoidCommands } from './scripts/vite-demo-void-commands.ts'
 import { webkitRegexFloor } from './scripts/vite-webkit-regex-floor.ts'
 
 // Compiler warnings suppressed app-wide. The ONE list: `svelte-check` (the `svelte-check`
@@ -142,6 +143,8 @@ export default defineConfig(async () => ({
   // tests read the same catalogs the app does.
   plugins: [
     localeCatalogs(),
+    // The demo's void commands (`virtual:cmdr-demo-void-commands`), read off `bindings.ts`.
+    ...(demoBuild ? [demoVoidCommands()] : []),
     Icons({ compiler: 'svelte' }),
     sveltekit({
       ...svelteOptions,

@@ -378,6 +378,8 @@ nothing links to it, it's out of the sitemap, and it's `noindex` until David lau
   pages embed the demo.
 - **Smoke test**: `e2e/demo.spec.ts`, against `dist/` like every website E2E (so it runs without nginx's headers; the
   CSP is verified by hand as above). It skips locally when `dist/demo/` isn't built and fails in CI when it's missing.
+  Locally it needs Playwright's Chromium (`pnpm exec playwright install chromium` here, once). Its full-disk cell opens
+  `/demo/?free=1000` (`crates/cmdr-listing-wasm/DETAILS.md` § Writes).
 - **Other dist checks skip `dist/demo/`**: `.htmlvalidateignore` (the desktop's `app.html` conventions differ) and
   `website-dead-links` (Vite hashes its own asset names, so the `?v=` rule doesn't apply).
 

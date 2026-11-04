@@ -56,9 +56,11 @@ use super::types::{
 };
 use cmdr_fs::volume::Volume;
 
+#[cfg(not(target_family = "wasm"))]
 mod local;
 mod volume;
 
+#[cfg(not(target_family = "wasm"))]
 pub(super) use local::run_scan_preview;
 #[cfg(test)]
 pub(super) use volume::count_selected_links_as_links;
@@ -93,6 +95,16 @@ impl Operations {
     ) -> ScanPreviewStartResult {
         let preview_id = Uuid::new_v4().to_string();
         let preview_id_clone = preview_id.clone();
+        // `None` means "walk the local disk". A host with no local disk (the browser
+        // demo) walks the volume its id names instead.
+        let source_volume = source_volume.or_else(|| {
+            let volumes = self.host().volumes();
+            volumes
+                .local_disk(&source_volume_id)
+                .is_none()
+                .then(|| volumes.get(&source_volume_id))
+                .flatten()
+        });
 
         let state = Arc::new(ScanPreviewState {
             cancelled: AtomicBool::new(false),
@@ -135,6 +147,16 @@ impl Operations {
                 .await;
             });
         } else {
+            #[cfg(target_family = "wasm")]
+            {
+                // No local disk here and no volume under the id: nothing to walk.
+                if watchdog.claim_outcome() {
+                    let path = sources.first().map(|p| p.display().to_string()).unwrap_or_default();
+                    let error = WriteOperationError::SourceNoLongerConnected { path };
+                    settle_failed_preview(self.stores().previews(), &*events, &watchdog, preview_id.clone(), error);
+                }
+            }
+            #[cfg(not(target_family = "wasm"))]
             // The same panic a bare `thread::spawn` raises when the OS refuses a
             // thread; the name is what's new.
             std::thread::Builder::new()

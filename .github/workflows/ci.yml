@@ -304,6 +304,13 @@ jobs:
               - 'crates/cmdr-collation/**'
               - 'crates/cmdr-brief-columns/**'
               - 'crates/cmdr-menu/**'
+              - 'crates/cmdr-operations/**'
+              - 'crates/cmdr-operation-log/**'
+              - 'crates/cmdr-archive/**'
+              - 'crates/cmdr-viewer/**'
+              - 'brand/screenshots/**'
+              - 'apps/desktop/test/e2e-shared/media-fixtures/**'
+              - 'crates/cmdr-sort/**'
               - 'vendor/**'
               - 'scripts/build-listing-wasm.sh'
               - 'scripts/build-listing-wasm/**'
@@ -366,10 +373,11 @@ jobs:
   # ===========================================
   # Desktop app - Rust backend
   # ===========================================
-  # No "Free disk space" step, here or in `desktop-rust-fixtures`: the runner's root disk is
-  # 145 GB with 86 GB free at the start, and a cold run of each job peaked at ~80 GB used,
-  # leaving 68 GB free (sampled every 5 s, PR #593, 2026-10-20). The reclaim cost ~1.5 min a
-  # run. Each job ends by printing `df -h /`, so a future squeeze shows in the log.
+  # The disk reclaim here and in `desktop-rust-fixtures` runs only on a small runner
+  # (`free-disk-if-small`). Most runners have a 145 GB root disk with 86 GB free at the start,
+  # where a cold run of each job peaked at ~80 GB used (sampled every 5 s, PR #593, 2026-10-20)
+  # and the ~1.5 min reclaim buys nothing. Some get a 72 GB disk, which ran out mid-link
+  # (run 41839837176, 2026-11-04). Each job ends by printing `df -h /`.
   desktop-rust:
     name: Desktop (Rust)
     runs-on: ubuntu-latest
@@ -380,6 +388,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Free disk space on a small runner
+        uses: ./.github/actions/free-disk-if-small
 
       - name: Install mise
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
@@ -435,6 +446,11 @@ jobs:
       # breach here makes every later green misleading about what's encapsulated.
       - name: Check index-crate isolation
         run: ./scripts/check/check --check index-crate-isolation --ci
+
+      # The write engine builds for the browser demo, which has no local disk, so
+      # only its local-engine modules and `local_disk/` may name the host OS.
+      - name: Check the write engine's local-disk boundary
+        run: ./scripts/check/check --check operations-local-disk-boundary --ci
 
       # A dependency bump past a vendored fork's version makes cargo quietly resolve
       # crates.io again, so the fix stops shipping with nothing but a build warning.
@@ -526,9 +542,20 @@ jobs:
 
       # The browser demo's listing engine: a wasm32 build plus a Node smoke run, the only
       # lane that sees a host-only dep or a `std` clock reach the engine. `wasm-bindgen-cli`
-      # installs into `~/.cargo/bin`, which rust-cache keeps.
+      # installs into `~/.cargo/bin`, which rust-cache keeps; the C toolchain that compiles
+      # SQLite for wasm32 comes from its own cache.
+      - name: Install the wasm C toolchain
+        uses: ./.github/actions/wasm-toolchain
+        with:
+          save-cache: ${{ env.SAVE_RUST_CACHE }}
+
       - name: Build the listing engine for wasm
         run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
+
+      # The file viewer's core compiles for the browser: the only lane that sees a host-only
+      # dep reach `cmdr-viewer` before the demo engine hosts it.
+      - name: Build the viewer core for wasm
+        run: ./scripts/check/check --check desktop-rust-viewer-wasm --ci
 
       # A broken intra-doc link is invisible to every other lane, because only
       # `cargo doc` resolves one. These steps are sequential, so this lane keeps
@@ -582,6 +609,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Free disk space on a small runner
+        uses: ./.github/actions/free-disk-if-small
 
       - name: Install mise
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
@@ -1161,6 +1191,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # On a cache miss this job runs the lane's compiling checks, so it needs the lane's room too.
+      - name: Free disk space on a small runner
+        uses: ./.github/actions/free-disk-if-small
 
       - name: Install mise
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1

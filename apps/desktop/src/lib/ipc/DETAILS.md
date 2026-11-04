@@ -66,8 +66,8 @@ the only place outside `lib/ipc/` that calls `events.*.emit`.
   `serde_json::Value` payload, both specta blockers. The test is "goes through the generic relay", NOT "starts with
   `mcp-`": `mcp-settings-close` is named `mcp-*` but is a distinct static `emit_to("settings", …)` with a unit payload,
   so it IS a typed `Event`.
-- **`viewer:file-changed:<session-id>`** (`file_viewer/session.rs`): the session id is interpolated into the event name
-  at runtime, so there's no static struct to collect.
+- **`viewer:file-changed:<session-id>`** (`apps/desktop/src-tauri/src/file_viewer/app_host.rs`): the session id is
+  interpolated into the event name at runtime, so there's no static struct to collect.
 
 The same type-shape constraints as commands apply (no `skip_serializing_if`, no `serde_json::Value`); see § Type shape
 constraints below.

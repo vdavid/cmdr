@@ -37,9 +37,6 @@ serde = { version = "1", features = ["derive"] }
 # satisfying `tauri-specta`, and the app's command signatures collect them
 # transitively.
 specta = { version = "=2.0.0-rc.24", features = ["derive"] }
-# `rt` for the injected `Handle` the retention loop runs on (the log builds no
-# runtime), `time` for its tick and the rollback planner's pacing.
-tokio = { version = "1", features = ["rt", "time"] }
 # `fold_name`: the NFC half of the case-folded name column search matches on.
 unicode-normalization = "0.1"
 # Operation ids. UUIDv7, never v4 (`new_operation_id` says why).

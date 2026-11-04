@@ -7,11 +7,11 @@ use super::diff::{DiffChangeType, compute_diff};
 use super::host::ScratchVisibility;
 use super::name_filter::NameFilter;
 use super::pipeline::Prepared;
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::sorting_test_support::sort_entries;
 use super::testing::{TestEngine, TestListing, TestListingGuard, pending_changes, replace_entries};
 use super::{OnNoMatch, PaneMarks};
 use cmdr_fs::entry::FileEntry;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 const DIR: &str = "/test/name-filter";
 

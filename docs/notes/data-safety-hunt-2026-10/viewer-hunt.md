@@ -121,7 +121,7 @@ is in the "Open with" copy lifecycle and two low-severity save quirks.
 - **Severity:** low
 - **Confidence:** confirmed (traced end to end)
 - **Where:** `apps/desktop/src-tauri/src/file_viewer/encoding.rs:427`, `decode_line`;
-  `apps/desktop/src-tauri/src/file_viewer/session.rs:960`, `write_range_to_file_inner`
+  `crates/cmdr-viewer/src/session.rs:960`, `write_range_to_file_inner`
 - **Excerpt:**
 
 ```rust
@@ -155,7 +155,7 @@ is in the "Open with" copy lifecycle and two low-severity save quirks.
 - **Severity:** low
 - **Confidence:** confirmed (traced end to end)
 - **Where:** `apps/desktop/src-tauri/src/commands/file_viewer.rs:469`, `SaveWatch::give_up`;
-  `apps/desktop/src-tauri/src/file_viewer/session.rs:972`, `write_range_to_file_inner`;
+  `crates/cmdr-viewer/src/session.rs:972`, `write_range_to_file_inner`;
   `apps/desktop/src-tauri/src/file_viewer/range_read.rs:352`
 - **Excerpt:**
 
@@ -236,7 +236,7 @@ Read in full:
 
 Read in part (the write, temp, and lifecycle paths):
 
-- `apps/desktop/src-tauri/src/file_viewer/session.rs` (open path 140–440, `with_registered_read`, `SaveProgress`,
+- `crates/cmdr-viewer/src/session.rs` (open path 140–440, `with_registered_read`, `SaveProgress`,
   `write_range_to_file*`, `cancel_read`)
 - `apps/desktop/src-tauri/src/file_viewer/encoding.rs` (`decode_line`)
 - `apps/desktop/src-tauri/src/file_system/text_editor_macos.rs` (choice, `launch_argv`, `open_in_editor`, `launch`)

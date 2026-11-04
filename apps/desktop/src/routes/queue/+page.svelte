@@ -115,8 +115,11 @@
         },
     })
 
-    /** Each row's keyboard half and menu facts (`QueueRow`'s exports), by operation id. */
-    const rowApis: Record<string, (QueueRowApi & QueueRowMenuSource) | undefined> = {}
+    /**
+     * Each row's keyboard half and menu facts (`QueueRow`'s exports), by operation id. Raw state:
+     * read imperatively, never rendered, and a proxy would wrap the component exports.
+     */
+    const rowApis: Record<string, (QueueRowApi & QueueRowMenuSource) | undefined> = $state.raw({})
 
     let gridEl: HTMLDivElement | undefined = $state()
 

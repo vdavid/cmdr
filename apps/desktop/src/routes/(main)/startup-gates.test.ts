@@ -73,6 +73,7 @@ vi.mock('#lib/logging/logger.js', () => ({
 }))
 
 import {
+  completeOnboardingWizard,
   maybeFireUpgradeNudge,
   maybeOfferDockPin,
   maybeOfferFinderExtension,
@@ -387,6 +388,27 @@ describe('maybeFireUpgradeNudge', () => {
 
     expect(mocks.addToast).not.toHaveBeenCalled()
     expect(mocks.getSetting).not.toHaveBeenCalled()
+  })
+
+  // Regression: the nudge is for people who onboarded BEFORE the current wizard. A fresh install
+  // that finishes the wizard has seen every option, yet its next launch used to say "We've added
+  // new onboarding options" (the browser demo showed it on first load, seeded as onboarded).
+  it('stays quiet on the launch after someone finishes the wizard', async () => {
+    mocks.setSetting.mockImplementation((id: string, value: unknown) => {
+      if (id === 'onboarding.upgradeNudgeShown') stored.nudgeShown = value as boolean
+    })
+    mocks.notifyOnboardingComplete.mockImplementation(() => {
+      stored.onboarded = true
+      return Promise.resolve()
+    })
+    stored.choice = 'allow'
+
+    await completeOnboardingWizard()
+    mocks.checkFullDiskAccess.mockResolvedValue(true)
+    await resolveOnboardingMount(ctx)
+
+    expect(mocks.notifyOnboardingComplete).toHaveBeenCalledOnce()
+    expect(mocks.addToast).not.toHaveBeenCalled()
   })
 
   it('fires from the FDA-granted mount branch', async () => {

@@ -107,4 +107,15 @@ export const MENU_BAR_STYLE = `
   margin: 5px 10px;
   background: var(--color-border-glass);
 }
+/* The app's two corners that sit against the page's top edge (the status corner resolves against
+   the initial containing block, the toast stack is fixed): on the desktop that edge is the
+   window's, here it's the bar's, so both move down by the bar or the bar covers them and eats
+   their clicks. The same offsets as their own rules, plus the bar. \`html:root\` outranks the
+   components' scoped classes. */
+html:root .status-corner {
+  top: calc(var(--cmdr-demo-window-top, 0px) + var(--spacing-sm) - var(--spacing-xxs));
+}
+html:root .toast-container:not(.at-bottom) {
+  top: calc(var(--cmdr-demo-window-top, 0px) + var(--spacing-lg));
+}
 `

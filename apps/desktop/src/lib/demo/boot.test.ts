@@ -8,7 +8,7 @@ vi.mock('./backend.js', () => ({
     return { id: 'own backend' }
   },
 }))
-vi.mock('./menu-bar.js', () => ({
+vi.mock('./menu-bar.svelte.js', () => ({
   installMenuBar: () => {
     calls.menuBars++
   },

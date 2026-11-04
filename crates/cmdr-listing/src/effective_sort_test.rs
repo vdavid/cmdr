@@ -14,8 +14,8 @@ use cmdr_fs::testing::unique_test_id;
 use cmdr_fs::volume::{InMemoryVolume, SupportedDates, Volume};
 
 use super::operations::PaneMarks;
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::testing::{TestEngine, TestListingGuard, full_refresh, hold_diffs, read_to_end, request};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 /// Three files whose added order runs against their mtime order, so a sort by
 /// one can't pass for a sort by the other.

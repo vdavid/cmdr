@@ -356,8 +356,9 @@ impl PauseGate {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rt::Instant;
     use std::sync::Arc;
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     // ---- OperationIntent::from_u8 ----
 

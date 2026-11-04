@@ -7,10 +7,28 @@
 #![warn(unused_crate_dependencies)]
 #![warn(unreachable_pub)]
 #![deny(missing_docs)]
+// The browser build (`wasm32`, the demo's engine) leaves the local-disk engine's
+// trees out (`#[cfg(not(target_family = "wasm"))]` on each), so the helpers shared
+// modules keep for it go unused on that target. Expected, not rot.
+#![cfg_attr(
+    target_family = "wasm",
+    allow(
+        dead_code,
+        unused_imports,
+        unused_qualifications,
+        reason = "shared modules keep helpers only the local engine calls, which the browser build doesn't compile, and there `rt::Instant` and `rt::time::Instant` are one type"
+    )
+)]
 // The internals `testing` re-exports for a host's test cells are `pub` so it can;
 // without the feature nothing reaches them, so only a `testing` build (every lint
 // lane's, through the dev-dependencies) can say which `pub` is truly unreachable.
-#![cfg_attr(not(feature = "testing"), allow(unreachable_pub))]
+#![cfg_attr(
+    not(feature = "testing"),
+    allow(
+        unreachable_pub,
+        reason = "only a `testing` build can tell which `pub` is truly unreachable"
+    )
+)]
 // `clippy.toml` refuses an ambient spawn and a global `sync(2)` in the engine; a
 // test drives the engine from threads and tasks of its own, as a host does.
 #![cfg_attr(
@@ -53,6 +71,7 @@ use cmdr_operations as _;
 use criterion as _;
 
 mod archive_edit;
+#[cfg(not(target_family = "wasm"))]
 mod cancellable;
 mod compress_estimate;
 mod conflict;
@@ -61,11 +80,14 @@ mod conflict_preflight;
 mod conflict_slot;
 mod create;
 mod delete;
+mod displaced_entry;
+#[cfg(not(target_family = "wasm"))]
 mod durability;
 mod error_classification;
 mod eta;
 mod event_sinks;
 mod finished_trees;
+#[cfg(not(target_family = "wasm"))]
 mod free_space;
 mod handle;
 // Two engines share nothing.
@@ -78,8 +100,10 @@ mod in_flight_temps;
 mod journal;
 mod journal_search;
 mod leaf_validation;
+mod local_disk;
 // The local-filesystem copy, move, delete, and trash starters.
 mod ledger;
+#[cfg(not(target_family = "wasm"))]
 mod local_start;
 mod look_alike;
 #[cfg(test)]
@@ -91,10 +115,13 @@ mod mutation_error;
 mod mutation_reply;
 mod operation_intent;
 mod outage_slot;
+#[cfg(not(target_family = "wasm"))]
 mod overwrite;
 // The engine half of "paste clipboard content as a file"; its only caller is macOS.
 #[cfg(target_os = "macos")]
 mod create_numbered;
+#[cfg(test)]
+mod golden_trace_tests;
 mod locked_sources;
 mod locked_sources_slot;
 mod queued_sources;
@@ -107,12 +134,19 @@ mod routed_writes;
 #[cfg(test)]
 mod routed_writes_tests;
 mod routing;
+#[cfg(test)]
+mod routing_table_tests;
+mod rt;
+#[cfg(not(target_family = "wasm"))]
 mod scan;
 mod scan_bridge;
 mod scan_cache;
+#[cfg(not(target_family = "wasm"))]
 mod scan_dry_run;
+mod scan_oracle;
 mod scan_preview;
 mod scan_source_tracker;
+#[cfg(not(target_family = "wasm"))]
 mod scan_walker;
 mod scan_watchdog;
 mod scope;
@@ -136,6 +170,7 @@ mod types;
 mod unblocked_removal;
 mod unique_name;
 mod validation;
+mod write_start;
 
 use std::sync::Arc;
 
@@ -190,8 +225,11 @@ pub use source_binding::{ExpectedSources, LocalContent, RemoteContent, SourceFin
 // check, why named items can't land (`TransferLeaves::check_landings`' answer),
 // whether two paths are one local file, and anchoring a volume-relative
 // destination (`routing.rs`).
-pub use delete::cloud_trash::{TrashRoutingAnswer, routing_for_selection as trash_routing_for_selection};
+#[cfg(not(target_family = "wasm"))]
+pub use delete::cloud_trash::routing_for_selection as trash_routing_for_selection;
+#[cfg(not(target_family = "wasm"))]
 pub use delete::trash::{move_to_trash_sync, trash_dir_for_path};
+pub use delete::trash_routing::TrashRoutingAnswer;
 pub use leaf_validation::LandingClash;
 pub use look_alike::held_in_another_spelling;
 pub use rename::same_local_file;
@@ -212,6 +250,11 @@ pub use types::{
 // What the app-side test cells reach beyond the list above.
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
+
+// The golden-trace scenarios and their normalizer, for every host that replays
+// them (this crate's cells and the browser demo's wasm test build).
+#[cfg(any(test, feature = "golden"))]
+pub mod golden;
 
 // ============================================================================
 // Reach for the engine's own modules: siblings and the tests below name these

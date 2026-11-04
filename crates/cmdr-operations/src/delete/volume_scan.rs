@@ -2,9 +2,10 @@
 //! remove, deepest first, with what each entry is (a link is a leaf, #505) and
 //! what a re-run after an outage must still find (`outage.rs`).
 
+use crate::rt::Instant;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::super::event_sinks::OperationEventSink;
 use super::super::scan_preview::entry_in_parent_listing;
@@ -45,7 +46,7 @@ pub(super) struct VolumeScanTracker {
 impl VolumeScanTracker {
     pub(super) fn new(progress_interval: Duration) -> Self {
         Self {
-            last_emit: Mutex::new(Instant::now()),
+            last_emit: Mutex::new(crate::rt::now()),
             progress_interval,
             files_so_far: std::sync::atomic::AtomicUsize::new(0),
             dirs_so_far: std::sync::atomic::AtomicUsize::new(0),
@@ -58,10 +59,10 @@ impl VolumeScanTracker {
     pub(super) fn should_emit(&self) -> bool {
         // A throttle timestamp: a poisoned one is still a timestamp.
         let mut last = self.last_emit.lock_ignore_poison();
-        if last.elapsed() < self.progress_interval {
+        if crate::rt::since(*last) < self.progress_interval {
             return false;
         }
-        *last = Instant::now();
+        *last = crate::rt::now();
         true
     }
 }

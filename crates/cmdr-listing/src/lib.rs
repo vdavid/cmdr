@@ -81,9 +81,10 @@ pub use listing_id::ListingId;
 pub use operations::{ListingLookupError, PaneMarks, ResortResult, RowBeside, RowSpan, SelectionSnapshot};
 pub use quick_filter::{NameFilterResult, OnNoMatch};
 pub use reread::{ReadTicket, RefreshOutcome};
-pub use sorting::{
-    DirectorySortMode, EffectiveSort, SortColumn, SortOrder, SortableEntry, entry_comparator, sort_entries,
-};
+// The sort vocabulary is `cmdr-sort`'s; re-exported so a host names a sort and
+// the comparator that applies it from one place.
+pub use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
+pub use sorting::{EffectiveSort, SortableEntry, entry_comparator, sort_entries};
 pub use stalled_on::StalledOn;
 pub use stats::ListingStats;
 pub use streaming::ListingRequest;

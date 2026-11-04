@@ -140,7 +140,7 @@ an `index/` or `data/` read):
   A repo whose password the hub doesn't hold (remember off, then a restart) answers the copy with
   `WriteOperationError::ArchiveNeedsPassword`, the prompt the unlock dialog's repo variant answers. Hub eviction keeps
   the password, so it never prompts.
-- **F3** (`apps/desktop/src-tauri/src/file_viewer/session_test.rs`): materializes the file through the view's stream into the bounded temp, like
+- **F3** (`apps/desktop/src-tauri/src/file_viewer/snapshot_open_test.rs`): materializes the file through the view's stream into the bounded temp, like
   a file in a git snapshot; a restic read failure is a plain I/O error.
 - **`inspect_file`** (`apps/desktop/src-tauri/src/tools/read/inspect/restic_snapshot_tests.rs`): the same temp, a text window, and the temp
   gone afterwards. No new kind of content leaves.

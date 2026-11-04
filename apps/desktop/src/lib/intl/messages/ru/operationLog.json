@@ -59,6 +59,14 @@
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "operationLog.summary.canceled": "{summary}, затем отменено (запланировано: {plannedText})",
+  "@operationLog.summary.canceled": {
+    "sourceHash": "9a27d89"
+  },
+  "operationLog.summary.stopped": "{summary}, затем остановлено (запланировано: {plannedText})",
+  "@operationLog.summary.stopped": {
+    "sourceHash": "8bf635d"
+  },
   "operationLog.summary.copy": "{count, plural, one {Скопирован {countText} объект} few {Скопированы {countText} объекта} many {Скопировано {countText} объектов} other {Скопировано {countText} объекта}}",
   "@operationLog.summary.copy": {
     "sourceHash": "c296979"

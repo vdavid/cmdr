@@ -14,6 +14,7 @@ use crate::transfer::outage_volume_test_support::{OutageVolume, RenameDrop};
 use crate::types::{ConflictResolution, WriteOperationError};
 use cmdr_fs::testing::wait_until_async;
 use cmdr_fs::volume::{InMemoryVolume, Volume};
+use std::time::Instant;
 
 const WAIT: Duration = Duration::from_secs(10);
 const CADENCE: &[Duration] = &[Duration::from_millis(10), Duration::from_millis(20)];

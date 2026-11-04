@@ -32,6 +32,13 @@ paths=(
   crates/cmdr-collation
   crates/cmdr-brief-columns
   crates/cmdr-menu
+  crates/cmdr-operations
+  crates/cmdr-operation-log
+  crates/cmdr-archive
+  crates/cmdr-viewer
+  brand/screenshots
+  apps/desktop/test/e2e-shared/media-fixtures
+  crates/cmdr-sort
   vendor
   scripts/build-listing-wasm.sh
   scripts/build-listing-wasm

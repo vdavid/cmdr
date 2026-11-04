@@ -109,6 +109,14 @@ fn every_event_matches_the_generated_bindings() {
         batches: Vec::new(),
     };
     assert_matches("directory-diff", diff);
+    // The viewer's media progress: the core's fact goes out as is (`viewer.rs`).
+    let load = cmdr_viewer::MediaLoad {
+        token: String::new(),
+        stage: cmdr_viewer::MediaLoadStage::Done,
+        bytes_done: 0,
+        bytes_total: 0,
+    };
+    assert_matches(crate::viewer::VIEWER_MEDIA_LOAD, load);
     for event in ["listing-respelled", "directory-deleted"] {
         assert_matches(
             event,
@@ -118,4 +126,48 @@ fn every_event_matches_the_generated_bindings() {
             },
         );
     }
+}
+
+/// The write engine's events go out under the names `bindings.ts` declares, each
+/// with the engine type it carries (`operations_host/wire.rs`).
+#[test]
+fn every_write_event_name_matches_the_generated_bindings() {
+    use crate::operations_host::wire::{self, VolumesBusyChanged};
+
+    let named = [
+        (wire::WRITE_PROGRESS, "WriteProgressEvent"),
+        (wire::WRITE_COMPLETE, "WriteCompleteEvent"),
+        (wire::WRITE_CANCELLED, "WriteCancelledEvent"),
+        (wire::WRITE_ERROR, "WriteErrorEvent"),
+        (wire::WRITE_CONFLICT, "WriteConflictEvent"),
+        (wire::WRITE_CONFLICT_RESOLVED, "WriteConflictResolvedEvent"),
+        (wire::WRITE_SOURCE_ITEM_DONE, "WriteSourceItemDoneEvent"),
+        (wire::WRITE_SOURCES_GONE, "WriteSourcesGoneEvent"),
+        (wire::WRITE_LOCKED_SOURCES, "WriteLockedSourcesEvent"),
+        (wire::SCAN_PROGRESS, "ScanProgressEvent"),
+        (wire::SCAN_CONFLICT, "ConflictInfo"),
+        (wire::DRY_RUN_COMPLETE, "DryRunResult"),
+        (wire::WRITE_SETTLED, "WriteSettledEvent"),
+        (wire::MUTATION_SETTLED, "MutationSettled"),
+        (wire::LEFTOVERS_KEPT, "LeftoversKeptEvent"),
+        (wire::OPERATIONS_CHANGED, "OperationsChanged"),
+        (wire::VOLUMES_BUSY_CHANGED, "VolumesBusyChanged"),
+        (wire::SCAN_PREVIEW_PROGRESS, "ScanPreviewProgressEvent"),
+        (wire::SCAN_PREVIEW_COMPLETE, "ScanPreviewCompleteEvent"),
+        (wire::SCAN_PREVIEW_ERROR, "ScanPreviewErrorEvent"),
+        (wire::SCAN_PREVIEW_CANCELLED, "ScanPreviewCancelledEvent"),
+    ];
+    for (event, ts) in named {
+        assert_eq!(
+            ts_type_of_event(event),
+            ts,
+            "`{event}` carries another type in bindings.ts"
+        );
+    }
+    assert_matches(
+        wire::VOLUMES_BUSY_CHANGED,
+        VolumesBusyChanged {
+            volume_ids: vec!["root".into()],
+        },
+    );
 }

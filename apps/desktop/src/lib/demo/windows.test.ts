@@ -35,7 +35,7 @@ describe('demo windows', () => {
     expect(iframe?.name).toBe('settings')
     expect(iframe?.getAttribute('src')).toBe('/settings?section=x')
     expect(panel.getAttribute('role')).toBe('dialog')
-    expect(panel.querySelector('.cmdr-demo-window-title')?.textContent).toBe('Settings')
+    expect(panel.getAttribute('aria-label')).toBe('Settings')
     expect(call('plugin:window|get_all_windows')).toEqual(['main', 'settings'])
     expect(call('plugin:webview|get_all_webviews')).toEqual([
       { label: 'main', windowLabel: 'main' },
@@ -53,13 +53,35 @@ describe('demo windows', () => {
 
   it('refuses the windows the demo has no backend for, and a second window with the same label', () => {
     const { open } = setup()
-    for (const label of ['viewer-123', 'queue', 'debug']) {
+    for (const label of ['debug', 'viewer']) {
       expect(() => open(label)).toThrow()
     }
     expect(panels()).toHaveLength(0)
     open('shortcuts')
     expect(() => open('shortcuts')).toThrow()
     expect(panels()).toHaveLength(1)
+  })
+
+  it('opens the transfer queue, which runs on the write engine', () => {
+    const { open } = setup()
+    open('queue')
+    expect(panels()).toHaveLength(1)
+  })
+
+  it('opens several viewers by their `viewer-` labels, and each close frees that window', () => {
+    const closed: string[] = []
+    const host = createWindowHost(
+      () => {},
+      (label) => closed.push(label),
+    )
+    const call = (cmd: string, payload: Record<string, unknown>) => host.handler(cmd)?.(payload)
+    for (const label of ['viewer-1', 'viewer-2']) {
+      call('plugin:webview|create_webview_window', { options: { label, url: '/viewer?path=x', title: 'x' } })
+    }
+    expect(panels()).toHaveLength(2)
+    call('close_child_window', { label: 'viewer-1' })
+    call('plugin:window|destroy', { label: 'viewer-2' })
+    expect(closed).toEqual(['viewer-1', 'viewer-2'])
   })
 
   it('closes by any of the app paths, gives the main window its focus back, and says so', () => {
@@ -140,45 +162,65 @@ describe('demo windows', () => {
     ])
   })
 
-  it('drags by its title bar, never past the viewport edge', () => {
+  it("draws no title bar of its own: the lights sit where the window's trafficLightPosition puts them", () => {
     const { open } = setup()
+    // Settings' own creation option (`settings-window.ts`), as `LogicalPosition` serializes.
+    open('settings', { trafficLightPosition: { x: 20, y: 29 } })
+    open('shortcuts', { title: 'Keyboard shortcuts', trafficLightPosition: { x: 14, y: 18 } })
+    const [settings, shortcuts] = panels()
+    expect(settings.querySelector('.cmdr-demo-window-bar')).toBeNull()
+    const inset = (panel: HTMLElement) => {
+      const lights = panel.querySelector<HTMLElement>('.cmdr-demo-lights')
+      return { left: lights?.style.left, top: lights?.style.top }
+    }
+    expect(inset(settings)).toEqual({ left: '20px', top: '20px' })
+    expect(inset(shortcuts)).toEqual({ left: '14px', top: '9px' })
+    expect(shortcuts.getAttribute('aria-label')).toBe('Keyboard shortcuts')
+  })
+
+  it("drags from the page's drag region (start_dragging), never past the viewport edge", () => {
+    const { open, call } = setup()
     open('settings', { width: 400, height: 300 })
     const [panel] = panels()
-    const bar = panel.querySelector<HTMLElement>('.cmdr-demo-window-bar')
-    if (!bar) throw new Error('no title bar')
-    bar.setPointerCapture = () => undefined
-    const pointer = (type: string, x: number, y: number) =>
-      bar.dispatchEvent(new PointerEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y, pointerId: 1 }))
+    const mouse = (type: string, x: number, y: number) =>
+      window.dispatchEvent(new MouseEvent(type, { button: 0, screenX: x, screenY: y }))
 
-    pointer('pointerdown', 10, 10)
+    call('plugin:window|start_dragging', { label: 'settings', screenX: 500, screenY: 500 })
     expect(panel.classList.contains('dragging')).toBe(true)
-    pointer('pointermove', -500, -500)
+    mouse('mousemove', 0, 0)
     expect(panel.style.left).toBe('0px')
     expect(panel.style.top).toBe('0px')
-    pointer('pointerup', 0, 0)
+    mouse('mouseup', 0, 0)
     expect(panel.classList.contains('dragging')).toBe(false)
+    mouse('mousemove', 900, 900)
+    expect(panel.style.left).toBe('0px')
+  })
 
-    // A press on a traffic light isn't a drag.
-    panel.querySelector('[data-light="close"]')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    expect(panel.classList.contains('dragging')).toBe(false)
+  it('zooms on a double click in its drag region, as a title bar does', () => {
+    const { open, call } = setup()
+    open('settings', { width: 400, height: 300 })
+    const [panel] = panels()
+    call('plugin:window|internal_toggle_maximize', { label: 'settings' })
+    expect(panel.style.width).toBe(`${String(window.innerWidth - 32)}px`)
+    expect(panel.querySelector<HTMLElement>('.cmdr-demo-lights')?.dataset.zoom).toBe('exitFullScreen')
+    call('plugin:window|internal_toggle_maximize', { label: 'settings' })
+    expect(panel.style.width).toBe('400px')
+    // The main window's own drag region moves nothing: the page is the main window.
+    expect(call('plugin:window|start_dragging', { label: 'main', screenX: 0, screenY: 0 })).toBeNull()
+    expect(call('plugin:window|internal_toggle_maximize', { label: 'main' })).toBeNull()
   })
 
   it('opens and drags under the menu bar, as macOS keeps windows under its own', () => {
     document.documentElement.style.setProperty('--cmdr-demo-window-top', '30px')
     try {
-      const { open } = setup()
+      const { open, call } = setup()
       open('settings', { width: 400, height: 300 })
       const [panel] = panels()
       expect(parseFloat(panel.style.top)).toBe(30 + Math.round((window.innerHeight - 30 - 300) / 2))
-      const bar = panel.querySelector<HTMLElement>('.cmdr-demo-window-bar')
-      if (!bar) throw new Error('no title bar')
-      bar.setPointerCapture = () => undefined
-      const pointer = (type: string, y: number) =>
-        bar.dispatchEvent(new PointerEvent(type, { bubbles: true, button: 0, clientX: 10, clientY: y, pointerId: 1 }))
-      pointer('pointerdown', 10)
-      pointer('pointermove', -500)
+      call('plugin:window|start_dragging', { label: 'settings', screenX: 10, screenY: 500 })
+      window.dispatchEvent(new MouseEvent('mousemove', { screenX: 10, screenY: -500 }))
       expect(panel.style.top).toBe('30px')
-      pointer('pointerup', 0)
+      window.dispatchEvent(new MouseEvent('mouseup', { button: 0 }))
     } finally {
       document.documentElement.style.removeProperty('--cmdr-demo-window-top')
     }

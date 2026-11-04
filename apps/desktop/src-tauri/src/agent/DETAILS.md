@@ -79,11 +79,11 @@ entry names, EXIF including GPS). No tool can return bytes: every result DTO is 
 by a test.
 
 `inspect_file`'s text window reads through the viewer's backends, so what it receives are ROWS, not physical lines
-(`src-tauri/src/file_viewer/CLAUDE.md`). ❗ A row whose `continues` is true was broken by Cmdr at a segment boundary,
+(`crates/cmdr-viewer/CLAUDE.md`). ❗ A row whose `continues` is true was broken by Cmdr at a segment boundary,
 so `window_from_chunk` owes it NO separator: joining those two rows with a `\n` would hand the model a line break the
 file does not contain, and the model would reason about a file shape that isn't there. That is why the loop carries a
 `separator_owed` flag rather than testing `returned > 0`. The same rule, and the reason behind it, is in
-`file_viewer/DETAILS.md` § "Rows, not lines"; this note exists because the agent path is the one that looks like it
+`crates/cmdr-viewer/DETAILS.md` § "Rows, not lines"; this note exists because the agent path is the one that looks like it
 could ignore it. This is the privacy line, and it's structural: the one content read is `Access::ReadContents`, hand-allowlisted, and
 `tools::policy::admit` is the only thing deciding who may run what. A new KIND of content egress (a new tool, or a new field on an existing one) is a disclosure-copy change plus a
 `CLOUD_AI_CONSENT_VERSION` bump (`ai::cloud_consent`), never a silent widening; `docs/security.md` § Cloud AI egress,

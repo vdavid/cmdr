@@ -36,7 +36,9 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use crate::rt::Instant;
 
 use crate::ignore_poison::IgnorePoison;
 
@@ -183,7 +185,7 @@ impl FileProviderDomains {
                 domain_id: Box::new(|path| domain_id_for_dir(&path.to_string_lossy())),
                 candidates: Box::new(candidate_domain_locations),
             },
-            Box::new(Instant::now),
+            Box::new(crate::rt::now),
         )
     }
 
@@ -340,7 +342,7 @@ impl FileProviderDomains {
                 }),
                 candidates: Box::new(move || Some(roots.clone())),
             },
-            Box::new(Instant::now),
+            Box::new(crate::rt::now),
         )
     }
 }

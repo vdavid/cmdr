@@ -47,19 +47,26 @@ fn create_test_dir(label: &str) -> TempDir {
 
 #[test]
 fn instant_descriptor_marks_only_nonroot_volumes_busy() {
+    let engine = TestOperations::new();
+    let host = engine.host();
     // Root (or no volume) → no busy volume (root is never ejectable).
-    let root_none = instant_descriptor(WriteOperationType::CreateFolder, None, "new");
+    let root_none = instant_descriptor(host, WriteOperationType::CreateFolder, None, "new");
     assert!(root_none.volume_ids.is_empty());
     assert!(root_none.lanes.is_empty(), "instant ops never reserve a lane");
 
-    let root_explicit = instant_descriptor(WriteOperationType::CreateFile, Some("root"), "new");
+    let root_explicit = instant_descriptor(host, WriteOperationType::CreateFile, Some("root"), "new");
     assert!(root_explicit.volume_ids.is_empty());
 
     // A real volume → marked busy for the op's duration.
-    let device = instant_descriptor(WriteOperationType::CreateFolder, Some("usb-42"), "new");
+    let device = instant_descriptor(host, WriteOperationType::CreateFolder, Some("usb-42"), "new");
     assert_eq!(device.volume_ids, vec!["usb-42".to_string()]);
     assert!(device.lanes.is_empty());
     assert_eq!(device.summary.source.as_deref(), Some("new"));
+
+    // A host with no local disk (the browser demo): its `root` is a volume like any other.
+    engine.volumes().without_local_disk();
+    let demo_root = instant_descriptor(host, WriteOperationType::CreateFile, Some("root"), "new");
+    assert_eq!(demo_root.volume_ids, vec!["root".to_string()]);
 }
 
 // ============================================================================

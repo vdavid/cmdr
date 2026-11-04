@@ -1,17 +1,21 @@
 /**
  * Tauri plugin commands (`plugin:<name>|<command>`) the backend answers: the store plugin, which
  * keeps each file in memory (a demo session's settings live until the tab reloads, and every
- * webview sees the same values, as with the real plugin), plus `path` and `app`. Commands about one
+ * webview sees the same values, as with the real plugin), plus `path`, `app`, and the opener's
+ * `open_url` (a new browser tab, `opener.ts`). Commands about one
  * webview's own window live in `webview.ts`.
  */
 import { browserSafeShortcuts } from './browser-shortcuts.js'
 import { DEMO_HOME } from './demo-tree.js'
+import { openInBrowserTab } from './opener.js'
 
 /** What a fresh demo starts with, per store file. Only keys an actor would have set (sparse, like the app). */
 const seeds: Record<string, Record<string, unknown>> = {
   'settings.json': {
-    // Skip the first-run wizard: a visitor came to try the panes.
+    // A user who just finished today's wizard (`startup-gates.ts::completeOnboardingWizard` writes
+    // both): a visitor came to try the panes, and there's no newer onboarding to point them at.
     'onboarding.completed': true,
+    'onboarding.upgradeNudgeShown': true,
     // The demo shows Cmdr in its own color. "System default" stays in Settings and picks the
     // virtual Mac's accent, the blue `getAccentColor` answers.
     'appearance.appColor': 'cmdr-gold',
@@ -81,6 +85,23 @@ const handlers: Partial<Record<string, PluginHandler>> = {
   'plugin:app|set_app_theme': () => undefined,
   'plugin:app|name': () => 'Cmdr',
   'plugin:app|tauri_version': () => '2',
+  // `openExternalUrl`: a new browser tab, for web and email links only (`opener.ts`).
+  'plugin:opener|open_url': (p) => openInBrowserTab(p.url as string),
+}
+
+/**
+ * The custom shortcuts `shortcuts.json` holds, by command id: what the desktop's
+ * `get_restricted_window_shortcuts` reads off disk for a window that can't open the
+ * store (the viewer). Only `shortcut:*` keys with a list, and only its strings.
+ */
+export function customShortcuts(): Record<string, string[]> {
+  const entries = stores.get(storeFor('shortcuts.json'))?.entries ?? new Map<string, unknown>()
+  const custom: Record<string, string[]> = {}
+  for (const [key, value] of entries) {
+    if (!key.startsWith('shortcut:') || !Array.isArray(value)) continue
+    custom[key.slice('shortcut:'.length)] = value.filter((combo): combo is string => typeof combo === 'string')
+  }
+  return custom
 }
 
 /** The backend's answer for a plugin command, or `undefined` for one it doesn't know. */

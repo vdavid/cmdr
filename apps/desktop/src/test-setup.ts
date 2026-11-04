@@ -3,6 +3,7 @@
  * Polyfills browser APIs not available in jsdom.
  */
 
+import { mockConvertFileSrc } from '@tauri-apps/api/mocks'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { TestResizeObserver } from '#lib/test-layout.js'
 import { _forgetStartupCatalogForTests } from '#lib/intl/startup-catalog.js'
@@ -14,6 +15,9 @@ import { _forgetStartupCatalogForTests } from '#lib/intl/startup-catalog.js'
 _forgetStartupCatalogForTests()
 beforeEach(() => {
   _forgetStartupCatalogForTests()
+  // `mediaUrl` builds through Tauri's `convertFileSrc`, which reads the webview's internals:
+  // answer it as macOS's webview does, so a media URL reads `cmdr-media://localhost/<token>`.
+  mockConvertFileSrc('macos')
 })
 
 // The app loads a window's catalogs on demand, which makes `setLocale()` async. Every

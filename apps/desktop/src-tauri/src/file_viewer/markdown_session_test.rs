@@ -5,9 +5,9 @@ use std::io::Write as _;
 use std::path::Path;
 use std::sync::Arc;
 
-use super::markdown_session::{allow_remote_images, render_markdown_session};
-use super::media::{self, MediaEntry, MediaSource};
-use super::{ViewerContentKind, session};
+use super::ViewerContentKind;
+use super::media::{MediaEntry, MediaSource};
+use crate::file_viewer::app_viewer as viewer;
 use crate::test_support::TestDir;
 
 /// A PNG signature is all the classifier needs.
@@ -30,7 +30,7 @@ fn tokens(html: &str, kind: &str) -> Vec<String> {
 
 /// What the `cmdr-media://` handler would serve for `token`, fetching it first.
 fn fetch(token: &str) -> Option<MediaEntry> {
-    match media::resolve_token(token)? {
+    match viewer().tokens().resolve_token(token)? {
         MediaSource::Ready(entry) => Some(entry),
         MediaSource::Deferred(deferred) => deferred.fetch(),
         MediaSource::Volume(_) => None,
@@ -51,7 +51,7 @@ fn a_markdown_file_opens_as_a_markdown_session_and_as_text_on_request() {
     let dir = TestDir::new("md_open");
     let path = a_local_document(&dir);
 
-    let rendered = session::open_session(&path, "root").expect("opens");
+    let rendered = viewer().open_session(&path, "root").expect("opens");
     assert_eq!(rendered.kind, ViewerContentKind::Markdown);
     assert!(
         rendered.initial_lines.rows.is_empty(),
@@ -59,12 +59,12 @@ fn a_markdown_file_opens_as_a_markdown_session_and_as_text_on_request() {
     );
     assert!(rendered.media_token.is_none());
 
-    let text = session::open_session_as_text(&path, "root").expect("opens as text");
+    let text = viewer().open_session_as_text(&path, "root").expect("opens as text");
     assert_eq!(text.kind, ViewerContentKind::Text);
     assert_eq!(text.initial_lines.rows[0].text, "# Notes");
 
-    session::close_session(&rendered.session_id).unwrap();
-    session::close_session(&text.session_id).unwrap();
+    viewer().close_session(&rendered.session_id).unwrap();
+    viewer().close_session(&text.session_id).unwrap();
 }
 
 #[test]
@@ -78,18 +78,18 @@ fn a_markdown_file_over_the_cap_opens_as_text() {
     }
     drop(file);
 
-    let opened = session::open_session(path.to_str().unwrap(), "root").expect("opens");
+    let opened = viewer().open_session(path.to_str().unwrap(), "root").expect("opens");
     assert_eq!(opened.kind, ViewerContentKind::Text);
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
 }
 
 #[test]
 fn rendering_serves_local_images_and_only_images_and_holds_remote_ones() {
     let dir = TestDir::new("md_render");
     let path = a_local_document(&dir);
-    let opened = session::open_session(&path, "root").expect("opens");
+    let opened = viewer().open_session(&path, "root").expect("opens");
 
-    let render = render_markdown_session(&opened.session_id).expect("renders");
+    let render = viewer().render_markdown_session(&opened.session_id).expect("renders");
     assert!(render.html.contains(r#"<h1 id="md-notes">"#), "{}", render.html);
     assert!(render.has_remote_images);
     let local = tokens(&render.html, "local");
@@ -102,9 +102,12 @@ fn rendering_serves_local_images_and_only_images_and_holds_remote_ones() {
     assert!(fetch(&local[1]).is_none(), "a text file is never served as an image");
     assert!(fetch(&remote[0]).is_none(), "a web image waits for the user's say-so");
 
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
     for token in local.iter().chain(&remote) {
-        assert!(media::resolve_token(token).is_none(), "closing drops every image token");
+        assert!(
+            viewer().tokens().resolve_token(token).is_none(),
+            "closing drops every image token"
+        );
     }
 }
 
@@ -112,14 +115,20 @@ fn rendering_serves_local_images_and_only_images_and_holds_remote_ones() {
 fn a_second_render_replaces_the_first_ones_tokens() {
     let dir = TestDir::new("md_rerender");
     let path = a_local_document(&dir);
-    let opened = session::open_session(&path, "root").expect("opens");
+    let opened = viewer().open_session(&path, "root").expect("opens");
 
-    let first = tokens(&render_markdown_session(&opened.session_id).unwrap().html, "local");
-    let second = tokens(&render_markdown_session(&opened.session_id).unwrap().html, "local");
-    assert!(media::resolve_token(&first[0]).is_none());
-    assert!(media::resolve_token(&second[0]).is_some());
+    let first = tokens(
+        &viewer().render_markdown_session(&opened.session_id).unwrap().html,
+        "local",
+    );
+    let second = tokens(
+        &viewer().render_markdown_session(&opened.session_id).unwrap().html,
+        "local",
+    );
+    assert!(viewer().tokens().resolve_token(&first[0]).is_none());
+    assert!(viewer().tokens().resolve_token(&second[0]).is_some());
 
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
 }
 
 #[test]
@@ -127,12 +136,12 @@ fn markdown_calls_on_a_session_that_isnt_markdown_are_refused() {
     let dir = TestDir::new("md_not");
     let path = dir.join("plain.txt");
     std::fs::write(&path, "hello\n").unwrap();
-    let opened = session::open_session(path.to_str().unwrap(), "root").expect("opens");
+    let opened = viewer().open_session(path.to_str().unwrap(), "root").expect("opens");
 
-    assert!(render_markdown_session(&opened.session_id).is_err());
-    assert!(allow_remote_images(&opened.session_id).is_err());
+    assert!(viewer().render_markdown_session(&opened.session_id).is_err());
+    assert!(viewer().allow_remote_images(&opened.session_id).is_err());
 
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
 }
 
 /// Registers a volume the OS can't open (a phone) holding a document and its picture,
@@ -163,9 +172,9 @@ fn a_document_on_a_phone_renders_and_pulls_its_pictures_off_the_phone() {
     let id = cmdr_fs::testing::unique_test_id("md-phone");
     let document = a_document_on_a_phone(&id);
 
-    let opened = session::open_session(&document, &id).expect("opens");
+    let opened = viewer().open_session(&document, &id).expect("opens");
     assert_eq!(opened.kind, ViewerContentKind::Markdown);
-    let render = render_markdown_session(&opened.session_id).expect("renders");
+    let render = viewer().render_markdown_session(&opened.session_id).expect("renders");
     let local = tokens(&render.html, "local");
     assert_eq!(local.len(), 1, "{}", render.html);
 
@@ -174,7 +183,7 @@ fn a_document_on_a_phone_renders_and_pulls_its_pictures_off_the_phone() {
     assert!(picture.canonical_path.exists(), "served from a local copy");
     assert_eq!(std::fs::read(&picture.canonical_path).unwrap(), PNG);
 
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
     assert!(!picture.canonical_path.exists(), "the copy goes with the session");
 }
 
@@ -207,12 +216,14 @@ fn a_document_inside_a_zip_renders_with_the_pictures_beside_it() {
     writer.finish().unwrap();
 
     let document = archive.join("docs/README.md");
-    let opened = session::open_session(document.to_str().unwrap(), "root").expect("opens");
+    let opened = viewer()
+        .open_session(document.to_str().unwrap(), "root")
+        .expect("opens");
     assert_eq!(opened.kind, ViewerContentKind::Markdown);
-    let render = render_markdown_session(&opened.session_id).expect("renders");
+    let render = viewer().render_markdown_session(&opened.session_id).expect("renders");
     let local = tokens(&render.html, "local");
 
     let picture = fetch(&local[0]).expect("the picture is extracted and served");
     assert_eq!(picture.mime, "image/png");
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
 }

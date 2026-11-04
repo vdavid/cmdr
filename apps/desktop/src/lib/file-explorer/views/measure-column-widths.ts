@@ -101,6 +101,8 @@ const SIZE_ICON_WIDTH = 14
 
 /** Floor widths so empty or near-empty directories don't collapse the column to zero. */
 const MIN_EXT_WIDTH = 28
+/** The Ext floor at the current text size: `MIN_EXT_WIDTH` is its 100 % width. */
+const extFloor = (): number => Math.round(MIN_EXT_WIDTH * getEffectiveScale())
 const MIN_SIZE_WIDTH = 40
 const MIN_DATE_WIDTH = 70
 
@@ -326,7 +328,7 @@ export function computeFullListColumnWidths(args: {
   const measure = getMeasure()
   if (!measure) {
     return {
-      ext: showExtensionInName ? 0 : MIN_EXT_WIDTH,
+      ext: showExtensionInName ? 0 : extFloor(),
       size: MIN_SIZE_WIDTH,
       date: MIN_DATE_WIDTH,
     }
@@ -394,7 +396,7 @@ export function computeFullListColumnWidths(args: {
   return {
     // The Ext column is hidden when the extension rides in the Name column, so
     // reserve no width for it (the grid template drops the track to match).
-    ext: showExtensionInName ? 0 : Math.max(MIN_EXT_WIDTH, Math.ceil(extMax + MEASUREMENT_SAFETY_PAD)),
+    ext: showExtensionInName ? 0 : Math.max(extFloor(), Math.ceil(extMax + MEASUREMENT_SAFETY_PAD)),
     size: Math.max(MIN_SIZE_WIDTH, Math.ceil(sizeMax + MEASUREMENT_SAFETY_PAD)),
     date: Math.max(MIN_DATE_WIDTH, Math.ceil(dateMax + MEASUREMENT_SAFETY_PAD)),
   }

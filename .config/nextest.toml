@@ -546,10 +546,10 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # place, and a rising rate here is visible without anyone re-measuring. Don't add
 # retries anywhere without that reporting in place (see `docs/testing.md`).
 filter = '''
-    test(file_viewer::watcher_test::watcher_observes_append_within_debounce)
-  + test(file_viewer::watcher_test::watcher_observes_truncation_as_shrunk)
-  + test(file_viewer::watcher_test::watcher_observes_inode_replace)
-  + test(file_viewer::watcher_test::watcher_debounces_rapid_writes)
+    test(watcher_test::watcher_observes_append_within_debounce)
+  + test(watcher_test::watcher_observes_truncation_as_shrunk)
+  + test(watcher_test::watcher_observes_inode_replace)
+  + test(watcher_test::watcher_debounces_rapid_writes)
 '''
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }

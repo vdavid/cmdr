@@ -8,6 +8,7 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 use cmdr_brief_columns::{
     BriefColumnsIpcError, BriefColumnsQuery, FontMetrics, FontMetricsError, FontMetricsStore,
@@ -20,12 +21,18 @@ use cmdr_listing::{
     CompareDirectoriesError, CompareDirectoriesMode, DirectorySortMode, ListingId, ListingRequest, Listings, OnNoMatch,
     PaneMarks, RefreshOutcome, RowBeside, RowSpan, SortColumn, SortOrder,
 };
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use cmdr_fs::volume::host::VolumeHost;
+
+use crate::backend_listings::BackendListings;
 use crate::events::{DemoEvents, EventSink, ListingPathEvent};
+use crate::folder_sizes::FolderSizes;
+use crate::invoke::{answer, ok, parse};
+use crate::operations_host::DemoOperations;
 use crate::tree::{DemoTree, TreeError};
+use crate::viewer::{DemoViewer, VIEWER_COMMANDS};
 
 /// Every command [`Demo::invoke`] answers, by its Tauri name.
 pub const COMMANDS: &[&str] = &[
@@ -48,6 +55,10 @@ pub const COMMANDS: &[&str] = &[
     "refresh_listing",
     "get_listing_stats",
     "refresh_listing_index_sizes",
+    // The drive index's folder stats (`commands/indexing.rs` in the app), off
+    // the volume's fold: the status bar, selection info, and the `..` row.
+    "get_dir_stats",
+    "get_dir_stats_batch",
     // Brief mode's column widths (`commands/font_metrics.rs` and `listing.rs` in the
     // app). The page measures its own fonts and stores them, as the desktop's does.
     "store_font_metrics",
@@ -56,7 +67,21 @@ pub const COMMANDS: &[&str] = &[
     "get_brief_column_text_widths",
 ];
 
-/// One engine over one in-memory volume: what the demo page talks to.
+/// How fast the demo's one device streams, slow enough to watch a copy's
+/// progress and pause it in the queue (`DETAILS.md` § Writes has the measured rate).
+pub const DEVICE_BYTES_PER_SEC: u64 = 40_000_000;
+
+/// How long engine work holds the page before it breathes (invariant: no
+/// stretch past about 50 ms; `smoke.mjs` probes it).
+pub const DEVICE_SLICE: Duration = Duration::from_millis(8);
+
+/// The device's size, the same disk the volume list shows: free space is what
+/// the files leave of it, live.
+pub const DEVICE_CAPACITY_BYTES: u64 = 994_662_584_320;
+
+/// One engine over one in-memory volume: what the demo page talks to. The
+/// listing engine and the write engine share the volume and the panes, so a
+/// write reaches the listings through `directory-diff`.
 #[derive(Clone)]
 pub struct Demo {
     listings: Listings,
@@ -64,31 +89,90 @@ pub struct Demo {
     /// The page's measured fonts, in memory only: the desktop's disk cache has no
     /// counterpart, so a reload measures again.
     fonts: Arc<FontMetricsStore>,
+    operations: DemoOperations,
+    /// Folder sizes off the volume, the drive index's stand-in.
+    sizes: Arc<FolderSizes>,
+    /// The file viewer over the same volume, so a file the listing shows (a copy's
+    /// landed file too) is the file the viewer opens (`viewer.rs`).
+    viewer: DemoViewer,
 }
 
 impl Demo {
-    /// An engine listing `tree`, reporting every event to `sink`.
+    /// The engines over `tree`, reporting every event to `sink`.
     pub fn new(tree: DemoTree, sink: Arc<dyn EventSink>) -> Result<Self, TreeError> {
         let volume_id = tree.volume_id.clone();
-        let volume = tree.into_volume()?;
-        let events = Arc::new(DemoEvents::new(sink));
-        let volumes = Arc::new(OneVolume { volume_id, volume });
-        let listings = Listings::builder(volumes, Arc::clone(&events) as _).build();
+        // Late-bound: the volume patches the panes, which list the volume.
+        let panes = Arc::new(BackendListings::default());
+        let capacity = tree.capacity_bytes().unwrap_or(DEVICE_CAPACITY_BYTES);
+        let store = Arc::new(
+            tree.into_in_memory()?
+                .with_bandwidth(DEVICE_BYTES_PER_SEC)
+                .with_yielding(DEVICE_SLICE)
+                .with_capacity(capacity)
+                .with_pane_patches(volume_id.clone(), Arc::clone(&panes) as _),
+        );
+        // The drive index's stand-in, for the panes, the dialogs, and the status bar.
+        let sizes = Arc::new(FolderSizes::new(Arc::clone(&store)));
+        let volume: Arc<dyn Volume> = store;
+        let viewer = DemoViewer::new(
+            volume_id.clone(),
+            Arc::clone(&volume),
+            Arc::clone(&sink),
+            page_runtime(),
+        );
+        let events = Arc::new(DemoEvents::new(Arc::clone(&sink)));
+        let volumes = Arc::new(OneVolume {
+            volume_id: volume_id.clone(),
+            volume: Arc::clone(&volume),
+        });
+        let listings = Listings::builder(volumes, Arc::clone(&events) as _)
+            .index(Arc::clone(&sizes) as _)
+            .build();
+        panes.attach(&listings);
+        panes.attach_sizes(Arc::clone(&sizes), Arc::clone(&sink));
         listings.start_orphan_reaper();
+        let volume_host = VolumeHost::builder().listings(panes).build();
+        let operations = DemoOperations::new(volume_id, volume, volume_host, &listings, Arc::clone(&sizes) as _, sink);
         Ok(Self {
             listings,
             events,
             fonts: Arc::new(FontMetricsStore::new()),
+            operations,
+            sizes,
+            viewer,
         })
+    }
+
+    /// The write engine's host, for a caller driving the engine directly.
+    #[cfg(test)]
+    pub(crate) fn operations(&self) -> &DemoOperations {
+        &self.operations
     }
 
     /// Whether [`Demo::invoke`] answers `command`.
     pub fn handles(command: &str) -> bool {
-        COMMANDS.contains(&command)
+        COMMANDS.contains(&command) || DemoOperations::handles(command) || DemoViewer::handles(command)
+    }
+
+    /// Every command [`Demo::invoke`] answers, by its Tauri name.
+    pub fn commands() -> impl Iterator<Item = &'static str> {
+        COMMANDS
+            .iter()
+            .chain(VIEWER_COMMANDS)
+            .copied()
+            .chain(DemoOperations::commands())
+    }
+
+    /// The file viewer over the demo's volume.
+    pub fn viewer(&self) -> &DemoViewer {
+        &self.viewer
     }
 
     /// Runs `command` with Tauri-style `args` (camelCase keys).
     pub async fn invoke(&self, command: &str, args: Value) -> Result<Value, Value> {
+        if DemoOperations::handles(command) {
+            return self.operations.invoke(command, args).await;
+        }
         let l = &self.listings;
         match command {
             "list_directory_start_streaming" => {
@@ -243,6 +327,14 @@ impl Demo {
                 l.refresh_index_sizes(&ListingId::new(a.listing_id));
                 Ok(Value::Null)
             }
+            "get_dir_stats" => {
+                let a: PathArgs = parse(command, args)?;
+                ok(self.sizes.dir_stats(&[a.path]).pop().flatten())
+            }
+            "get_dir_stats_batch" => {
+                let a: PathsArgs = parse(command, args)?;
+                ok(self.sizes.dir_stats(&a.paths))
+            }
             "store_font_metrics" => {
                 let a: FontWidthsArgs = parse(command, args)?;
                 answer(widths_from_parallel(a.code_points, a.widths).map(|widths| {
@@ -268,6 +360,7 @@ impl Demo {
                 let query: BriefColumnsQuery = parse(command, args)?;
                 answer(compute_brief_column_text_widths(l, &self.fonts, &query).map_err(BriefColumnsIpcError::from))
             }
+            _ if DemoViewer::handles(command) => self.viewer.invoke(command, args),
             _ => Err(Value::String(format!("the browser demo doesn't answer `{command}`"))),
         }
     }
@@ -292,19 +385,13 @@ impl Demo {
     }
 }
 
-fn parse<T: DeserializeOwned>(command: &str, args: Value) -> Result<T, Value> {
-    serde_json::from_value(args).map_err(|e| Value::String(format!("invalid args for command `{command}`: {e}")))
-}
-
-fn ok(answer: impl Serialize) -> Result<Value, Value> {
-    serde_json::to_value(answer).map_err(|e| Value::String(e.to_string()))
-}
-
-fn answer<T: Serialize, E: Serialize>(result: Result<T, E>) -> Result<Value, Value> {
-    match result {
-        Ok(answer) => ok(answer),
-        Err(error) => Err(ok(error)?),
-    }
+/// The runtime the viewer bridges on: the page's event loop in the browser, the caller's
+/// tokio runtime in native tests.
+fn page_runtime() -> cmdr_fs::rt::Runtime {
+    #[cfg(target_family = "wasm")]
+    return cmdr_fs::rt::Runtime::default();
+    #[cfg(not(target_family = "wasm"))]
+    cmdr_fs::rt::Runtime::current()
 }
 
 /// `ListingStatus` and `StreamingListingStartResult` in the app: the answer is
@@ -372,6 +459,16 @@ struct StartArgs {
 #[serde(rename_all = "camelCase")]
 struct IdArgs {
     listing_id: String,
+}
+
+#[derive(Deserialize)]
+struct PathArgs {
+    path: String,
+}
+
+#[derive(Deserialize)]
+struct PathsArgs {
+    paths: Vec<String>,
 }
 
 #[derive(Deserialize)]

@@ -13,7 +13,14 @@ import { waitBudget } from './wait-budget.js'
 import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, executeViaCommandPalette, getFixtureRoot, pollUntil, sleep } from './helpers.js'
+import {
+  dispatchMenuCommand,
+  ensureAppReady,
+  executeViaCommandPalette,
+  getFixtureRoot,
+  pollUntil,
+  sleep,
+} from './helpers.js'
 
 /**
  * Subdir under the shared fixture root holding the 200 files for this suite.
@@ -288,6 +295,21 @@ async function getColumnWidths(tauriPage: Parameters<typeof ensureAppReady>[0]):
 test.describe('Brief view cursor visibility', () => {
   test.beforeAll(() => {
     ensureBriefCursorFixture()
+  })
+
+  // The resize variant drags the divider, and the split outlives the test: re-center it, or
+  // every later spec meets a ~340 px left pane (`pane-split-leak.ts`).
+  test.afterEach(async ({ tauriPage }) => {
+    await dispatchMenuCommand(tauriPage, 'pane.resetDivider')
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<string | null>(
+            `document.querySelector('.dual-pane-explorer .pane-wrapper')?.style.width ?? null`,
+          ),
+        { timeout: waitBudget(3000) },
+      )
+      .toBe('50%')
   })
 
   test('cursor stays in view under arrow nav, Home/End, PageUp/PageDown, and resize', async ({ tauriPage }) => {

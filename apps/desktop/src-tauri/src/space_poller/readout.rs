@@ -2,15 +2,18 @@
 //!
 //! The frontend writes free and total space with `formatDriveFigure` (the friendliest unit, as
 //! precise as the drive's size makes worth reading: about one step per pixel of the usage bar, and
-//! a tenth below ten), the status bar's free percent and the usage bar's used percent as whole
-//! numbers, and the low-disk-space toast's free percent to one decimal. [`DisplayedSpace`] is those
+//! a tenth below ten), the status bar's free percent banded by `formatFreePercent` (whole numbers
+//! in the middle, a tenth or a hundredth near either end, truncated), the low-disk-space toast's
+//! free percent the same way with at least one decimal, and the usage bar's used percent as a whole
+//! number. [`DisplayedSpace`] is those
 //! figures at those resolutions, never the text: the webview owns locale, separators, and unit
 //! labels. Two readings with equal `DisplayedSpace` draw the same pixels, so emitting the second
 //! would repaint both status bars for nothing.
 //!
 //! ❗ Mirrors `src/lib/units/byte-size.ts` (`formatDriveFigure`, `DRIVE_STEPS`) and
-//! `src/lib/file-explorer/disk-space-utils.ts` (the percentages). Both sides test against
-//! `src/lib/units/drive-figure-cases.json`, so a precision change on one side fails the other's
+//! `src/lib/units/free-percent.ts` (the free percent), and `src/lib/file-explorer/disk-space-utils.ts`
+//! (the used percent). Both sides test against `src/lib/units/drive-figure-cases.json` and
+//! `src/lib/units/free-percent-cases.json`, so a precision change on one side fails the other's
 //! test until it follows.
 
 use serde::Deserialize;
@@ -107,10 +110,10 @@ pub(super) enum DisplayedSpace {
     Bounded {
         free: DisplayedSize,
         total: DisplayedSize,
-        /// The status bar's `(42%)`: whole percent free.
-        free_percent: u64,
-        /// The toast's `4.2%`: free percent in tenths, while the low-disk-space toast is up.
-        toast_free_permille: Option<u64>,
+        /// The status bar's `(42%)` / `(99.64%)`.
+        free_percent: DisplayedPercent,
+        /// The toast's `4.2%`, at least a tenth, while the low-disk-space toast is up.
+        toast_free_percent: Option<DisplayedPercent>,
         /// The usage bar's fill and colour band: whole percent used.
         used_percent: u64,
     },
@@ -139,14 +142,58 @@ pub(super) fn displayed_space(space: &SpaceInfo, format: FileSizeFormat, toast_u
             DisplayedSpace::Bounded {
                 free: displayed_size(available_bytes, Some(total_bytes), format),
                 total: displayed_size(total_bytes, Some(total_bytes), format),
-                free_percent: rounded_percent(free_fraction, 1.0),
-                toast_free_permille: toast_up.then(|| rounded_percent(free_fraction, 10.0)),
+                free_percent: displayed_free_percent(free_fraction * 100.0, 0),
+                toast_free_percent: toast_up.then(|| displayed_free_percent(free_fraction * 100.0, 1)),
                 used_percent: rounded_percent(used_fraction, 1.0),
             }
         }
         SpaceInfo::Unbounded { used_bytes } => DisplayedSpace::Unbounded {
             used: displayed_size(used_bytes, None, format),
         },
+    }
+}
+
+/// A free percent as drawn: its fraction digits and the value scaled by `10^digits`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct DisplayedPercent {
+    digits: u8,
+    scaled: u64,
+}
+
+/// Absorbs float noise like `97.8 * 10 = 977.9999…` before truncating, as `formatFreePercent` does.
+const TRUNCATE_EPSILON: f64 = 1e-9;
+
+/// `formatFreePercent`'s bands: two digits within 1 of an end, one within 5, else whole numbers.
+fn band_digits(percent: f64) -> u8 {
+    if !(1.0..99.0).contains(&percent) {
+        2
+    } else if !(5.0..95.0).contains(&percent) {
+        1
+    } else {
+        0
+    }
+}
+
+/// `percent` (0–100, clamped) as `formatFreePercent` writes it with `min_digits`: banded,
+/// truncated, and strictly between the ends unless exactly at one.
+fn displayed_free_percent(percent: f64, min_digits: u8) -> DisplayedPercent {
+    let clamped = if percent.is_nan() {
+        0.0
+    } else {
+        percent.clamp(0.0, 100.0)
+    };
+    if clamped == 0.0 || clamped == 100.0 {
+        return DisplayedPercent {
+            digits: min_digits,
+            scaled: (clamped as u64) * 10u64.pow(u32::from(min_digits)),
+        };
+    }
+    let digits = band_digits(clamped).max(min_digits);
+    let scale = 10u64.pow(u32::from(digits));
+    let steps = (clamped * scale as f64 + TRUNCATE_EPSILON).floor() as u64;
+    DisplayedPercent {
+        digits,
+        scaled: steps.clamp(1, 100 * scale - 1),
     }
 }
 
@@ -210,7 +257,7 @@ mod tests {
         assert!(matches!(
             displayed_space(&bounded(0, 0), FileSizeFormat::Binary, false),
             DisplayedSpace::Bounded {
-                free_percent: 0,
+                free_percent: DisplayedPercent { digits: 0, scaled: 0 },
                 used_percent: 0,
                 ..
             }
@@ -253,6 +300,56 @@ mod tests {
             let size = displayed_size(case.bytes, Some(case.drive_bytes), case.format);
             assert_eq!(en_text(size, case.format), case.text, "{}", case.name);
         }
+    }
+
+    #[derive(serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct PercentCase {
+        name: String,
+        percent: f64,
+        text: String,
+        toast_text: String,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct PercentCases {
+        cases: Vec<PercentCase>,
+    }
+
+    fn percent_text(p: DisplayedPercent) -> String {
+        let digits = usize::from(p.digits);
+        format!("{:.digits$}", p.scaled as f64 / 10f64.powi(i32::from(p.digits)))
+    }
+
+    #[test]
+    fn truncates_every_free_percent_to_what_the_webview_writes() {
+        // The same table `formatFreePercent` is tested against, so a 99.6%-free drive can't read
+        // "99.60" on screen while the gate still thinks in whole percents (and goes quiet).
+        let table: PercentCases = serde_json::from_str(include_str!("../../../src/lib/units/free-percent-cases.json"))
+            .expect("the shared free-percent table parses");
+        for case in table.cases {
+            assert_eq!(
+                percent_text(displayed_free_percent(case.percent, 0)),
+                case.text,
+                "{}",
+                case.name
+            );
+            assert_eq!(
+                percent_text(displayed_free_percent(case.percent, 1)),
+                case.toast_text,
+                "{} (toast)",
+                case.name
+            );
+        }
+    }
+
+    #[test]
+    fn a_nearly_empty_drive_emits_hundredth_moves() {
+        // 99.60% → 99.62% free on a 1 TB drive: the status bar's text changes, so the gate opens.
+        let total = 1_000_000_000_000;
+        let before = bounded(total, 996_000_000_000);
+        let after = bounded(total, 996_200_000_000);
+        assert!(!same(&before, &after, FileSizeFormat::Si, false));
     }
 
     const TIB: u64 = 1024 * GIB;

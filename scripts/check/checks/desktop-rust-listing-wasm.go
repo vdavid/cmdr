@@ -17,6 +17,12 @@ import (
 // direct `std::time::Instant::now`, `tokio::time`, or thread spawn in the engine compiles for wasm
 // but panics there at runtime, which only the smoke test's real listing reaches.
 //
+// With `-golden` it also builds the crate's wasm TEST target and runs it under Node
+// (`wasm-bindgen-test-runner`): the volume engine's golden traces replayed on the demo's host
+// must equal the fixtures the native engine blesses, catching browser-only drift (the `JoinSet`
+// ordering, the inline op-log writer, inline `spawn_blocking`). A test build, so the shipped
+// `.wasm` carries no scenarios.
+//
 // It builds its own target triple with its own profile (`wasm-release`), so it shares no
 // artifacts with the host lanes and can't invalidate them; it still holds the build directory
 // while cargo runs.
@@ -28,7 +34,7 @@ func RunDesktopRustListingWasm(ctx *CheckContext) (CheckResult, error) {
 	defer os.RemoveAll(outDir)
 
 	script := filepath.Join(ctx.RootDir, "scripts", "build-listing-wasm.sh")
-	cmd := exec.Command(script, "-out", outDir, "-smoke")
+	cmd := exec.Command(script, "-out", outDir, "-smoke", "-golden")
 	cmd.Dir = ctx.RootDir
 	output, runErr := RunCommand(cmd, true)
 	if runErr != nil {
@@ -40,10 +46,16 @@ func RunDesktopRustListingWasm(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("the build left no .wasm: %w", err)
 	}
 	smoke := "smoke test passed"
+	golden := "golden traces match"
 	for _, line := range strings.Split(output, "\n") {
 		if strings.HasPrefix(line, "listing-wasm smoke: OK") {
 			smoke = strings.TrimPrefix(line, "listing-wasm smoke: ")
 		}
+		// libtest's summary: `test result: ok. 7 passed; 0 failed; …`.
+		if rest, ok := strings.CutPrefix(line, "test result: ok. "); ok {
+			passed, _, _ := strings.Cut(rest, ";")
+			golden = fmt.Sprintf("golden traces match in wasm (%s)", passed)
+		}
 	}
-	return Success(fmt.Sprintf("%d KiB .wasm, %s", info.Size()/1024, smoke)), nil
+	return Success(fmt.Sprintf("%d KiB .wasm, %s, %s", info.Size()/1024, smoke, golden)), nil
 }

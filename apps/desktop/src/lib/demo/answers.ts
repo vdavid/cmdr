@@ -6,6 +6,7 @@
 import { asset } from '$app/paths'
 import { refuse, type AnswerTable, type Payload, type VoidCommand } from './answer-types.js'
 import type { ConfigureAiOutcome } from '#lib/tauri-commands/settings.js'
+import { customShortcuts } from './plugins.js'
 
 /** The bundled generic icon for an icon id: a folder for folder-ish ids (as `FileIcon.svelte` reads them), else a document. */
 function genericIcon(iconId: string): string {
@@ -98,6 +99,13 @@ export const appAnswers: AnswerTable = {
   getPathLimits: () => ({ maxNameBytes: 255, maxPathBytes: 1024 }),
   getIsolatedStorePath: none,
   whatsNewDevOverride: none,
+  // The viewer window's native-menu plumbing: a panel has no native menu to sync.
+  viewerSetupMenu: none,
+  viewerSetWordWrap: none,
+  viewerSetSearchInputFocused: none,
+  viewerSetHistoryState: none,
+  // The viewer's shortcut read: the same store the main window's shortcuts live in.
+  getRestrictedWindowShortcuts: customShortcuts,
 
   // Permissions, license, and startup notices
   checkFullDiskAccess: on,
@@ -143,15 +151,13 @@ export const appAnswers: AnswerTable = {
   recordVisit: none,
   // A demo panel opens centered every time (`windows.ts`): no remembered rect.
   getChildWindowRect: none,
-  // No Finder tags, packages, custom folder icons, or index-backed folder stats on the demo volume.
+  // No Finder tags, packages, or custom folder icons on the demo volume. Folder stats
+  // (`get_dir_stats*`) come from the engine's fold over the volume.
   enrichTags: () => ({ data: null, timedOut: false }),
   enrichPackages: () => ({ data: null, timedOut: false }),
   getCustomFolderIconIds: () => ({ data: [], timedOut: false }),
-  getDirStatsBatch: (p) => (p.paths as string[]).map(() => null),
-  getVolumeSpace: () => ({
-    data: { kind: 'bounded', totalBytes: 994_662_584_320, availableBytes: 412_031_113_216, usedBytes: 582_631_471_104 },
-    timedOut: false,
-  }),
+  // Only an S3 transfer has a storage bill to estimate, and the demo has no S3.
+  estimateOperationCost: () => [],
   getVolumeIndexStatusById: (p) => ({
     volumeId: p.volumeId as string,
     enabled: false,
@@ -167,13 +173,30 @@ export const appAnswers: AnswerTable = {
     liveWatch: false,
   }),
 
+  // Search (⌘F) with no drive index: `prepareSearchIndex`'s refusal is the app's own "index not
+  // available" path, so the dialog opens with its inputs off. A stopgap until the index runs in
+  // the WASM engine (`docs/specs/demo-index-plan.md`), which then answers all of these.
+  prepareSearchIndex: () => refuse('prepareSearchIndex', 'The demo has no drive index'),
+  releaseSearchIndex: none,
+  getRecentSearches: empty,
+  // The real list lives in the desktop backend's search module; an empty one leaves the tooltip's heading.
+  getSystemDirExcludes: empty,
+  cloudAiConsentStatus: () => ({
+    accepted: false,
+    currentVersion: 2,
+    acceptedVersion: null,
+    acceptedAt: null,
+    managed: null,
+  }),
+
   // Background subsystems the demo doesn't run
   startIndexingAfterFdaDecision: none,
   listNetworkHosts: empty,
   getNetworkDiscoveryState: () => 'idle',
-  latestOperationProgress: empty,
   suggestedOpsList: empty,
   agentWakeStatus: () => ({ phase: { phase: 'idle' }, readiness: 'askCmdrOff' }),
+  // The AI features need the app's local model or a provider key; a page has neither.
+  getAiStatus: () => 'unavailable',
   getAiRuntimeStatus: () => ({
     serverRunning: false,
     serverStarting: false,
@@ -189,7 +212,6 @@ export const appAnswers: AnswerTable = {
   }),
   getBusyVolumeIds: empty,
   getEjectingVolumeIds: empty,
-  listOperations: empty,
   getIndexStatus: () => ({
     initialized: false,
     scanning: false,

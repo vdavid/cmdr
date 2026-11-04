@@ -74,6 +74,7 @@
     import { showMainOnMount } from './show-main-on-mount'
     import {
         type StartupGatesContext,
+        completeOnboardingWizard,
         maybeOfferNudges,
         maybeRunWhatsNew,
         maybeShowOldMacosNotice,
@@ -88,7 +89,7 @@
     import { createMountScope } from '#lib/utils/mount-scope.js'
     import { SOFT_DIALOG_REGISTRY } from '#lib/ui/dialog-registry.js'
     import { isAnySoftDialogOpen } from '#lib/ui/open-dialogs.svelte.js'
-    import { notifyOnboardingComplete, setOnboardingShowing } from '#lib/updates/updater.svelte.js'
+    import { setOnboardingShowing } from '#lib/updates/updater.svelte.js'
     import { setWizardShowingForDownloadNotice } from '#lib/onboarding/local-download-notice.js'
     import { initSystemStrings } from '#lib/system-strings.svelte.js'
     import { getShowFunctionKeyBar, getShowHiddenFiles } from '#lib/settings/reactive-settings.svelte.js'
@@ -490,21 +491,21 @@
 
     /**
      * Wizard finished. Reached when the user clicks "Finish" on the last step (per-step
-     * persistence is wired inside each `Step*.svelte`). Persists `isOnboarded: true` via
-     * `notifyOnboardingComplete()` so the deferred update toast can fire and we stop
-     * re-opening the wizard on next launch.
+     * persistence is wired inside each `Step*.svelte`). `completeOnboardingWizard()` persists
+     * `isOnboarded: true` (so the deferred update toast can fire and we stop re-opening the
+     * wizard on next launch) and spends the upgrade nudge, since this person saw every option.
      */
     function handleWizardComplete() {
         setOnboardingVisible(false)
         // The wizard is where someone goes to grant FDA, so re-probe on the way out: the badge
         // must disappear the moment it's earned, without waiting for a relaunch.
         void refreshFdaStatus()
-        void notifyOnboardingComplete()
+        void completeOnboardingWizard()
         // Re-attempt the "What's new" check now that onboarding is closed: a popup that
         // `wait`ed on the wizard can show on this pass (matches the update-toast re-attempt).
         void maybeRunWhatsNew(startupGatesCtx)
         // Same for the two offers, so someone finishing onboarding on the day one of them
-        // comes due isn't quietly skipped. `notifyOnboardingComplete` sets the flag
+        // comes due isn't quietly skipped. `completeOnboardingWizard` sets the flag
         // synchronously, so this pass sees it.
         void maybeOfferNudges(startupGatesCtx)
     }

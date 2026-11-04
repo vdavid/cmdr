@@ -5,10 +5,10 @@ use std::path::{Path, PathBuf};
 use super::Listings;
 use super::caching::DirectoryChange;
 use super::diff::PaneRows;
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::testing::{TestEngine, TestListing, TestListingGuard};
 use cmdr_fs::entry::{FileEntry, TagRef};
 use cmdr_fs::testing::unique_test_id;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 fn tag(name: &str, color: u8) -> TagRef {
     TagRef {

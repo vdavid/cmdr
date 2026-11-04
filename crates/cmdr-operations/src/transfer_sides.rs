@@ -255,20 +255,7 @@ pub(crate) fn root_is_listed(root: &Path) -> Option<bool> {
     if let Some(answer) = test_hook::intercept(root) {
         return answer;
     }
-    let root = root.to_string_lossy();
-    #[cfg(target_os = "macos")]
-    {
-        cmdr_local::mount_table::is_mount_point(&root)
-    }
-    #[cfg(target_os = "linux")]
-    {
-        cmdr_local::linux_mounts::is_mount_point(&root)
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        let _ = root;
-        None
-    }
+    crate::local_disk::is_mount_point(root)
 }
 
 /// Test seam: answers the mount-table question for chosen roots on this thread,

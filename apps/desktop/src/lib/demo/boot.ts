@@ -10,7 +10,7 @@
  * embed): a parent without a backend, or a cross-origin one, makes this frame the top.
  */
 import { createDemoBackend, type DemoBackend } from './backend.js'
-import { installMenuBar } from './menu-bar.js'
+import { installMenuBar } from './menu-bar.svelte.js'
 import { exposeUnanswered } from './unanswered.js'
 import { installWebview } from './webview.js'
 

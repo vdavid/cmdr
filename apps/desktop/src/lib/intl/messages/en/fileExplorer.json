@@ -138,7 +138,7 @@
     "placeholders": {
       "freeText": "the space still free, already formatted, like \"91.02 GB\"",
       "totalText": "the drive's total size, already formatted, like \"926.35 GB\"",
-      "percentText": "the free space as a whole number of percent, already formatted, like \"10\""
+      "percentText": "the free space as a percent, already formatted: a whole number like \"10\", or with decimals near either end, like \"97.8\" or \"99.64\""
     },
     "screenshot": "main-window.png"
   },

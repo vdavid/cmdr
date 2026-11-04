@@ -3,12 +3,12 @@
 use super::Listings;
 use super::compare::CompareDirectoriesMode;
 use super::host::ScratchVisibility;
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::sorting_test_support::sort_entries;
 use super::testing::{
     TestEngine, TestListing, TestListingGuard, pending_changes, publish_replacement, replace_entries,
 };
 use cmdr_fs::entry::FileEntry;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 fn file(dir: &str, name: &str, size: u64, modified: u64) -> FileEntry {
     FileEntry {

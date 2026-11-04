@@ -5,19 +5,18 @@ Virtual-scrolling file list components rendering 100k+ directories without DOM p
 ## Module map
 
 `BriefList.svelte` / `FullList.svelte` are the two views (horizontal columns / vertical rows), with `FullListHeader`
-(and its date `DateSortChevron`), `full-list-cache.svelte.ts`, `full-list-git-column.svelte.ts`, and
-`full-list-mouse.ts` beside Full, and `brief-column-widths.svelte.ts` beside Brief. `virtual-scroll.ts` is pure window
-math, `measure-column-widths.ts` is pixel-accurate width measurement via `@chenglou/pretext`, and the `*-utils.ts` trio
-holds the rendering helpers. `list-focus.svelte.ts` gives both listboxes their focus and `aria-activedescendant` (❌
-focus never on a row), and `file-row-a11y.ts` is what every row says (id, name, marked, position); ❌ no per-view copy.
-`mark-run.ts` gives the marked-file bar its run ends from the marked set by global index, ❌ never from rendered
-neighbors (the virtual window's edge would fake an end).
+(and its date `DateSortChevron`), `full-list-cache.svelte.ts`, `full-list-git-column.svelte.ts`, `full-list-mouse.ts`,
+and `full-list-column-fit.ts` (a narrow pane drops the date, then Ext) beside Full, and `brief-column-widths.svelte.ts`
+beside Brief. `virtual-scroll.ts` is pure window math, `measure-column-widths.ts` is pixel-accurate width measurement
+via `@chenglou/pretext`, and the `*-utils.ts` trio holds the rendering helpers. `list-focus.svelte.ts` gives both
+listboxes their focus and `aria-activedescendant` (❌ focus never on a row), and `file-row-a11y.ts` is what every row
+says (id, name, marked, position); ❌ no per-view copy. `mark-run.ts` gives the marked-file bar its run ends from the
+marked set by global index, ❌ never from rendered neighbors (the virtual window's edge would fake an end).
 
 ## Must-knows
 
 - **Data lives in the Rust listing cache (`cmdr-listing`), ❌ never in Svelte `$state`.** The frontend fetches visible
-  ranges on demand (`getFileRange`); only the visible window enters reactivity. Loading 20k+ entries in causes 9+ second
-  freezes.
+  ranges (`getFileRange`); 20k+ entries in `$state` freeze the UI for 9+ seconds.
 - **`hasParent = true` makes UI indices 1-based**: index 0 is the `..` entry (not in backend cache), so
   `cache_index = ui_index - 1`. Forgetting it lands the cursor one row off.
 - **The renderer and the measurer are ONE contract; change both or neither.** `getDirSizeDisplayState`, `wordGitMeta`,
@@ -36,9 +35,9 @@ neighbors (the virtual window's edge would fake an end).
 - **Nothing visible in Brief mode may wait on the width IPC** (how the cursor went invisible in prod). ❌ Don't gate
   `is-under-cursor` on widths, fall back to `capPx`, infer readiness from `rawWidths.length`, or make `capPx` a fetch
   trigger.
-- **Cold-context refreshes replace the visible window atomically.** Navigation, sort, hidden-file changes, and explicit
-  refresh keep the old rows until the forced fetch lands; an epoch drops late rows from the previous listing, and
-  retained rows are paint-only (`getEntryAt` / `indexOfEntry` skip them, else Enter acts on the old folder).
+- **Cold-context refreshes replace the visible window atomically.** Navigation, sort, hidden files, and refresh keep the
+  old rows until the forced fetch lands; an epoch drops late rows, and retained rows are paint-only (`getEntryAt` /
+  `indexOfEntry` skip them, else Enter acts on the old folder).
 - **Rows open only through `row-activation.ts`** (mouse: `dblclick`; touch/pen: two quick clicks, as Chrome's device
   mode sends no `dblclick`), exactly once. ❌ No per-view double-click logic.
 - **A row-asserting unit test mounts through `mountFullList()` / `mountBriefList()`** (`test-full-list.ts` /

@@ -71,7 +71,7 @@ impl crate::Operations {
                 error: routed_transfer_refusal(&routed, ReadOnlySide::Source),
             });
         }
-        if volume_id != "root" {
+        if self.host().volumes().local_disk(&volume_id).is_none() {
             // Plain `get`: the route gate above refused an in-zip or `.git` row.
             let Some(volume) = self.host().volumes().get(&volume_id) else {
                 // Asked before anything runs, so a phone or server nobody connected is worded the way
