@@ -42,8 +42,10 @@ log = "0.4"
 # over brotli and zstd: `docs/notes/adb-sendrecv-compression-2026-10-30.md`.
 lz4_flex = "0.14"
 # The frame format's header, block, and content checksums. Already in the graph
-# through `lz4_flex`, which doesn't expose its own use of it.
-twox-hash = { version = "2", default-features = false, features = ["xxhash32"] }
+# through `lz4_flex`, which doesn't expose its own use of it. At least 2.1.3: before
+# it, `XxHash32::finish` added the length with a plain `+`, which panics in an
+# overflow-checked build (the `adb_lz4` fuzz finding; `lz4_test.rs` holds the input).
+twox-hash = { version = "2.1.5", default-features = false, features = ["xxhash32"] }
 # The backend's own async surface. `net` is the whole transport (the ADB server
 # is a TCP socket on loopback, nothing else), `process` starts an absent server
 # through the platform `adb` binary once, and the rest is what `cmdr-sftp` takes:

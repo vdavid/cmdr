@@ -136,6 +136,22 @@ fn checksums_a_frame_declares_are_verified() {
     assert_refused(decode(&corrupt_content, 999));
 }
 
+// Regression anchor for the `adb_lz4` fuzz finding: `twox-hash` before 2.1.3 added the
+// input length to the converged accumulators with a plain `+`, so an overflow-checked
+// build panicked on any input whose sum wraps. These 16 bytes are brute-forced to wrap
+// (accumulators at `u32::MAX - 15` or above). `Cargo.toml` pins `twox-hash` past the bug.
+#[test]
+fn a_content_checksum_whose_length_add_wraps_still_verifies() {
+    let data = [0x74, 0x1f, 0x97, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let independent_with_content_checksum = 0x40 | FLG_INDEPENDENT_BLOCKS | FLG_CONTENT_CHECKSUM;
+    let mut frame = header(independent_with_content_checksum, BD_64K, &[]);
+    frame.extend_from_slice(&(BLOCK_STORED | data.len() as u32).to_le_bytes());
+    frame.extend_from_slice(&data);
+    frame.extend_from_slice(&0u32.to_le_bytes());
+    frame.extend_from_slice(&xxh32(&data).to_le_bytes());
+    assert_eq!(decode(&frame, 7).unwrap(), data);
+}
+
 #[test]
 fn a_declared_content_size_is_held_to() {
     let framed = |declared: u64| {

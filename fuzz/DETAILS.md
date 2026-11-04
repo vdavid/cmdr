@@ -105,6 +105,12 @@ mirror of the tree and runs the input through the target once. Format, lanes, an
   (`a_listed_name_that_isnt_one_path_segment_is_dropped`). Found while writing `adb_sync`'s listing property.
 - **ADB, ours, fixed**: a sync payload or shell frame length straight off the wire sized a `Vec` (4 GiB per packet).
   Capped before allocating; `crates/cmdr-adb/DETAILS.md` § The wire contract.
+- **LZ4 content checksum, `twox-hash` before 2.1.3, fixed upstream**: `XxHash32::finish` added the input length with a
+  plain `+`, so an overflow-checked build (this lane's `-a`) panicked on any input whose converged accumulators sit
+  within its length of `u32::MAX`. Release builds wrap, which is the spec's answer, so the shipped app never hit it; the
+  lane did because `fuzz/Cargo.lock` lagged the root's 2.1.5. `cmdr-adb` now requires 2.1.5, so no lockfile can resolve
+  the old one. Regression: `a_content_checksum_whose_length_add_wraps_still_verifies` and the 16-byte brute-forced seed
+  `seeds/adb_lz4/checksum-length-wraps.bin`.
 - **PDF, `pdf-extract` 0.12.0, guarded in our wrapper**: a page that is its own `Parent` with no `Resources` recursed
   forever in `get_inherited` (stack overflow, uncontainable). `parent_chain_ends` in `inspect/pdf.rs` skips such pages.
   Worth reporting upstream.

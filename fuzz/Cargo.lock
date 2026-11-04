@@ -496,6 +496,9 @@ dependencies = [
  "unicode-segmentation",
  "uuid",
  "uzers",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-time",
  "xattr",
 ]
 
@@ -2941,9 +2944,9 @@ dependencies = [
 
 [[package]]
 name = "sevenz-rust2"
-version = "0.24.1"
+version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f0c68c0e8289bfd09e49ef433e8de02c7c464afc1d7f5a275c99749a880e301"
+checksum = "30146010a60b5773ef63f7b0033576c7a0487ecc87a30d97b787ca8e27c85140"
 dependencies = [
  "aes 0.9.1",
  "bzip2",
@@ -3400,9 +3403,9 @@ checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
 
 [[package]]
 name = "twox-hash"
-version = "2.1.2"
+version = "2.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ea3136b675547379c4bd395ca6b938e5ad3c3d20fad76e7fe85f9e0d011419c"
+checksum = "86a801b3cea342a06d468c8710662aa29e5e05e4f5c0d62f00bbb7f2ad7941c2"
 
 [[package]]
 name = "type1-encoding-parser"
