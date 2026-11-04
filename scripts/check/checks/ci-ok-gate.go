@@ -15,6 +15,7 @@ const ciOKJobID = "ci-ok"
 var ciOKGateExempt = map[string]string{
 	ciOKJobID:                 "the gate itself",
 	"deploy-website":          "a post-land deploy on `main` pushes, not a check; a PR never runs it",
+	"publish-website-demo":    "the deploy's first half (pushes the browser demo image) on `main` pushes, not a check; a PR never runs it",
 	"warm-e2e-linux-cache":    "a post-land cache warm on `main` pushes, not a check; a failure only costs the next PR a cold E2E build",
 	"warm-rust-cache":         "a post-land cache warm on `main` pushes, not a check; a failure only costs the next PR a cold Linux Rust build",
 	"warm-rust-macos-cache":   "a post-land cache warm on `main` pushes, not a check; a failure only costs the next PR a cold macOS clippy build",

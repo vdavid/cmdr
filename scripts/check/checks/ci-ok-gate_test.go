@@ -28,6 +28,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.lint == 'true'
 
+  publish-website-demo:
+    needs: lint
+
   deploy-website:
     needs: lint
 

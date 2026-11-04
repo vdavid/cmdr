@@ -287,7 +287,10 @@ jobs:
               - '.mise.toml'
               - '.github/workflows/ci.yml'
               # The browser demo the site publishes at /demo/ (`website-demo` builds it), so a
-              # change to the desktop frontend or the listing engine redeploys the site.
+              # change to the desktop frontend or the listing engine redeploys the site. Must
+              # cover every path `scripts/website-demo-key.sh` hashes into the demo image's tag
+              # (`TestWebsiteDemoInputsMatchTheImageKey`).
+              - 'scripts/website-demo-key.sh'
               - 'package.json'
               - 'feature-status.json'
               - 'apps/desktop/src/**'
@@ -1301,6 +1304,7 @@ jobs:
         warm-rust-cache,
         warm-rust-macos-cache,
         website-demo,
+        publish-website-demo,
       ]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -1355,31 +1359,10 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      - name: Keep only the pinned Rust toolchain
-        uses: ./.github/actions/pinned-rust-toolchain
-
-      # Its own small entry (four crates for wasm32, plus `wasm-bindgen-cli` in `~/.cargo/bin`),
-      # not `desktop-rust`'s ~1.8 GB native tree it would never use.
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          shared-key: website-demo
-          cache-on-failure: true
-          save-if: ${{ env.SAVE_RUST_CACHE }}
-
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --filter @cmdr/desktop
-
       - name: Build the browser demo
-        run: pnpm build:demo
+        uses: ./.github/actions/build-website-demo
+        with:
+          save-rust-cache: ${{ env.SAVE_RUST_CACHE }}
 
       - name: Upload the browser demo
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -1839,18 +1822,104 @@ jobs:
   # push and, worse, deployed even when checks failed (it didn't wait for the
   # website job). Keep deployment here, gated on the website checks passing.
   # `workflow_dispatch` on main (with run_all) doubles as the manual deploy lever.
-  deploy-website:
-    name: Deploy website
+  #
+  # The browser demo reaches the server as a prebuilt image, so the shared box never compiles
+  # Rust: this job pushes `ghcr.io/vdavid/cmdr-demo:<content key>` (`scripts/website-demo-key.sh`)
+  # before the deploy fires, and the deploy computes the same key from its checkout. A content key,
+  # not this commit's SHA, because the server deploys `origin/main`, which may already be a newer
+  # commit than this run's, and because a landed commit's lanes usually skip (verified on its PR),
+  # so no run builds per SHA. Same sources, same key, whichever commit asks.
+  # `apps/website/DETAILS.md` § Browser demo.
+  publish-website-demo:
+    name: Publish the browser demo image
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # Deploys when the website lane passed in this run, or when it skipped because the landed
-    # commit was already verified on its PR and the push touched the website.
-    needs: [changes, website]
+    timeout-minutes: 25
+    permissions:
+      contents: read # check out the code
+      packages: write # push to ghcr.io/vdavid/cmdr-demo
+    # The deploy's own condition: it runs exactly when a deploy will.
+    needs: [changes, website-demo, website]
     if: >-
       github.ref == 'refs/heads/main' && !cancelled() && (github.event_name == 'push' || github.event_name ==
       'workflow_dispatch') && needs.changes.result == 'success' && (needs.website.result == 'success' ||
       (needs.website.result == 'skipped' && needs.changes.outputs.verified == 'true' &&
       needs.changes.outputs.website-changed == 'true'))
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Compute the image tag
+        id: image
+        run: echo "ref=ghcr.io/vdavid/cmdr-demo:$(./scripts/website-demo-key.sh)" >>"$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        run: echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # Content-keyed, so an image for these sources is final: a deploy that changed no demo
+      # source finds it and skips the build.
+      - name: Look for an image of these sources
+        id: existing
+        run: |
+          if docker manifest inspect "${{ steps.image.outputs.ref }}" >/dev/null 2>&1; then
+            echo "found=true" >>"$GITHUB_OUTPUT"
+            echo "${{ steps.image.outputs.ref }} already exists."
+          fi
+
+      # This run's `website-demo` built it when the website lane ran; a verified landed commit
+      # skipped that lane, so it builds here.
+      - name: Download the browser demo
+        if: steps.existing.outputs.found != 'true' && needs.website-demo.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: website-demo
+          path: apps/desktop/build-demo/
+
+      - name: Install mise
+        if: steps.existing.outputs.found != 'true' && needs.website-demo.result != 'success'
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        if: steps.existing.outputs.found != 'true' && needs.website-demo.result != 'success'
+        run: mise install
+
+      - name: Build the browser demo
+        if: steps.existing.outputs.found != 'true' && needs.website-demo.result != 'success'
+        uses: ./.github/actions/build-website-demo
+        with:
+          save-rust-cache: ${{ env.SAVE_RUST_CACHE }}
+
+      - name: Push the browser demo image
+        if: steps.existing.outputs.found != 'true'
+        run: |
+          docker build -f apps/website/demo-image.Dockerfile -t "${{ steps.image.outputs.ref }}" apps/desktop/build-demo
+          docker push "${{ steps.image.outputs.ref }}"
+
+      # The server pulls anonymously. A new GHCR package can start out private, and then every
+      # deploy would fail on the pull; this says so here, before the webhook fires.
+      - name: Check the image is public
+        run: |
+          docker logout ghcr.io
+          if ! docker manifest inspect "${{ steps.image.outputs.ref }}" >/dev/null; then
+            echo "::error::${{ steps.image.outputs.ref }} isn't publicly readable. Set the cmdr-demo package's visibility to public: github.com/users/vdavid/packages/container/cmdr-demo/settings."
+            exit 1
+          fi
+
+  deploy-website:
+    name: Deploy website
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Deploys when the website lane passed in this run, or when it skipped because the landed
+    # commit was already verified on its PR and the push touched the website. Always after the
+    # browser demo image for these sources is public.
+    needs: [changes, website, publish-website-demo]
+    if: >-
+      github.ref == 'refs/heads/main' && !cancelled() && (github.event_name == 'push' || github.event_name ==
+      'workflow_dispatch') && needs.changes.result == 'success' && needs.publish-website-demo.result == 'success' &&
+      (needs.website.result == 'success' || (needs.website.result == 'skipped' && needs.changes.outputs.verified ==
+      'true' && needs.changes.outputs.website-changed == 'true'))
 
     steps:
       - name: Trigger deploy webhook

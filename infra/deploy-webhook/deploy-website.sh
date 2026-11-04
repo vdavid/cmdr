@@ -25,11 +25,13 @@ git fetch origin main
 git reset --hard origin/main
 
 echo "Building new image (old site stays up during build)..."
+# The browser demo bundle for exactly this checkout's sources, which CI published before it fired
+# this webhook (apps/website/DETAILS.md § Browser demo). A missing image fails the build, and the
+# old site stays up.
+DEMO_IMAGE="ghcr.io/vdavid/cmdr-demo:$(./scripts/website-demo-key.sh)"
+echo "Browser demo: $DEMO_IMAGE"
 cd apps/website
-# A fresh DEPLOY_ID rebuilds the site stage from the live-manifest fetch on, every deploy. Never
-# `--no-cache`: it also drops BuildKit's cache mounts, so the browser demo's Rust/WASM build would
-# start cold on every deploy (apps/website/Dockerfile, the `demo` stage).
-docker compose build --build-arg DEPLOY_ID="$(git rev-parse --short HEAD)-$(date +%s)"
+docker compose build --no-cache --build-arg DEMO_IMAGE="$DEMO_IMAGE"
 
 echo "Swapping containers..."
 docker compose down
