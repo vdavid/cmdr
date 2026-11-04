@@ -39,7 +39,7 @@ use cmdr_index::ROOT_VOLUME_ID;
 use super::context::{NameRules, SearchContext};
 use super::index_source::{IndexSource, scope_pairs};
 use super::ranking::ImportanceWeights;
-use super::source::{CoveredHalf, search_covered};
+use super::source::{CoveredHalf, SearchError, search_covered};
 use super::types::{SearchQuery, SearchResult};
 use super::volumes::{self, LoadedVolume, VolumeLoad};
 
@@ -178,7 +178,8 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
 
     let weights = volumes::weights_for(&target.volume_id);
     let home_dir = super::host_home_dir();
-    let half = search_covered_half(&query, &target, &loaded, &host_context(&weights, home_dir.as_deref()))?;
+    let half = search_covered_half(&query, &target, &loaded, &host_context(&weights, home_dir.as_deref()))
+        .map_err(|e| e.to_string())?;
 
     Ok(SearchResult {
         entries: half.entries,
@@ -199,10 +200,10 @@ fn search_covered_half(
     target: &Target,
     loaded: &LoadedVolume,
     ctx: &SearchContext<'_>,
-) -> Result<CoveredHalf, String> {
+) -> Result<CoveredHalf, SearchError> {
     let source = IndexSource(loaded);
     let scope = scope_pairs(&target.include_paths, ctx.home_dir);
-    search_covered(&source, &source, query, &scope, ctx).map_err(|e| e.to_string())
+    search_covered(&source, &source, query, &scope, ctx)
 }
 
 /// What a desktop search runs under: this machine's name rules and home folder,

@@ -284,7 +284,7 @@ fn golden_run_under(
         home_dir,
         weights,
     };
-    let half = search_covered_half(query, target, loaded, &ctx)?;
+    let half = search_covered_half(query, target, loaded, &ctx).map_err(|e| e.to_string())?;
     Ok(json!({
         "entries": half.entries.iter().map(row_json).collect::<Vec<_>>(),
         "totalCount": half.total,
@@ -823,4 +823,30 @@ fn a_scope_that_cant_be_resolved_fails_the_search() {
     let query = scoped(named("report"), &["/cmdr-golden/Docs"]);
     let answer = golden_run(&query, &target_for(Volume::Root, &query), &loaded, &root_weights());
     assert!(answer.is_err(), "an unreadable scope, answered as a typo: {answer:?}");
+}
+
+/// A live run says the index can't be read, in words a person can act on, ❌ never
+/// "invalid pattern" over a raw SQL message: the query was fine.
+#[test]
+fn a_source_read_error_reaches_a_live_run_as_an_unreadable_index() {
+    let (_dir, loaded) = broken_root("DROP TABLE dir_stats;");
+    let query = SearchQuery {
+        min_size: Some(1_000_000),
+        ..base()
+    };
+    let trace = golden_live_trace(
+        NameRules::host(),
+        &query,
+        &target_for(Volume::Root, &query),
+        &loaded,
+        &root_weights(),
+    );
+    assert_eq!(
+        trace["errors"],
+        json!([{
+            "runId": "golden-run",
+            "error": "indexUnreadable",
+            "message": "Cmdr can't read this drive's index. Re-indexing the drive fixes it.",
+        }])
+    );
 }

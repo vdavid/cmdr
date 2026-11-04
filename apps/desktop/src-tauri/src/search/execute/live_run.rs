@@ -29,6 +29,7 @@ use crate::search::live::{
     SearchRunCoverage, SearchRunError, WalkEnding, WalkJudge,
 };
 use crate::search::matcher::{CompiledQuery, Evaluator};
+use crate::search::source::SearchError;
 use crate::search::types::SearchQuery;
 use crate::search::volumes::{self, LoadedVolume, VolumeLoad};
 
@@ -426,10 +427,7 @@ fn groundwork(
         VolumeLoad::NotIndexed => None,
         VolumeLoad::Failed(e) => {
             log::warn!("Live search: volume '{}' isn't searchable: {e}", target.volume_id);
-            return Err((
-                SearchRunError::IndexUnreadable,
-                "Cmdr can't read this drive's index. Re-indexing the drive fixes it.".to_string(),
-            ));
+            return Err((SearchRunError::IndexUnreadable, INDEX_UNREADABLE.to_string()));
         }
     };
 
@@ -457,15 +455,26 @@ fn groundwork(
     })
 }
 
+/// What a run says when the index won't open or a read from it fails.
+const INDEX_UNREADABLE: &str = "Cmdr can't read this drive's index. Re-indexing the drive fixes it.";
+
 /// The covered half as a live run takes it: the same pass `run_blocking` makes, its
-/// failure classified the way the run's error event reports it.
+/// failure classified the way the run's error event reports it. A query the engine
+/// refuses is the user's to fix; a read the index couldn't make is the drive's, said
+/// in the words a person can act on, with the detail in the log.
 pub(super) fn covered_half_for_run(
     query: &SearchQuery,
     target: &Target,
     loaded: &LoadedVolume,
     ctx: &SearchContext<'_>,
 ) -> Result<CoveredHalf, (SearchRunError, String)> {
-    search_covered_half(query, target, loaded, ctx).map_err(|message| (SearchRunError::Query, message))
+    search_covered_half(query, target, loaded, ctx).map_err(|error| match error {
+        SearchError::Query(error) => (SearchRunError::Query, error.to_string()),
+        SearchError::SourceUnreadable(error) => {
+            log::warn!("Live search: volume '{}': {error}", target.volume_id);
+            (SearchRunError::IndexUnreadable, INDEX_UNREADABLE.to_string())
+        }
+    })
 }
 
 /// Whether the index gave this run nothing at all: no rows, and no count.
