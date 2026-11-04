@@ -1119,8 +1119,8 @@ the folder that pane is already showing, and the backend gives each copy a free 
   end a duplicate in the rename editor".
 - **The shared destination guard runs against the pane's own folder**, so a read-only volume gets the same alert F5
   gives it. A search-results pane gets the same "not a folder" refusal, and the native context menu omits Duplicate
-  there outright (`menu/menu_structure.rs`, `restrict_destination_actions`): a duplicate of snapshot rows would have to
-  land in each row's own real folder, which one transfer can't express.
+  there outright (`crates/cmdr-menu/src/context/file.rs`, `restrict_destination_actions`): a duplicate of snapshot rows
+  would have to land in each row's own real folder, which one transfer can't express.
 
 **Decision: no F-key bar button.** The bar's ten slots are full, and Duplicate is an F-key idiom in neither Finder nor
 Total Commander. It's reachable by ⌘D, the palette, the right-click menu, and the File menu.

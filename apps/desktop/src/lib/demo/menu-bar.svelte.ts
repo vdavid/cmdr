@@ -2,25 +2,24 @@
  * The demo's top menu bar, in place of the macOS one a browser doesn't have: a strip above the app
  * that draws the desktop's own bar (`menu-engine.ts`, over `crates/cmdr-menu`) and sends exactly
  * what a native click sends, so every handler in the app is the one the native menu reaches. This
- * file only draws and routes: which rows exist, what they say, their shortcuts, whether they're
- * enabled or checked, and what a click sends all come from the engine. See `DETAILS.md` § The menu
- * bar.
+ * file only draws the titles and routes keys: which rows exist, what they say, their shortcuts,
+ * whether they're enabled or checked, and what a click sends all come from the engine; an open
+ * menu is `menu-surfaces.ts`'s, and a pick is `menu-click.ts`'s. See `DETAILS.md` § The menu bar.
  *
  * Keys follow a macOS menu: ⌃F2 focuses the bar (macOS's own "Move focus to the menu bar"),
  * ←/→ move between menus, ↓ / Enter / Space open one, ↑/↓ walk its enabled rows, → opens a
  * submenu, ← closes it, Enter / Space pick, and Esc backs out one level.
  */
-import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { getMessage } from '#lib/intl/messages.svelte.js'
-import type { EventTarget } from './backend.js'
-import type { BarMenu, MenuClick, MenuEngineHandle, MenuRow, MenuRowLabel } from './menu-engine.js'
+import type { BarMenu, MenuEngineHandle } from './menu-engine.js'
 import { MENU_BAR_HEIGHT_PX, MENU_BAR_STYLE } from './menu-bar-style.js'
-import type { WindowHost } from './windows.js'
+import { type MenuClickDeps, performMenuClick } from './menu-click.js'
+import { createMenuStack, ensureMenuStyle, labelText } from './menu-surfaces.js'
 
-export interface MenuBarDeps {
+export { labelText }
+
+export interface MenuBarDeps extends MenuClickDeps {
   menu: Pick<MenuEngineHandle, 'bar' | 'click' | 'ready'>
-  emit: (event: string, payload: unknown, target: EventTarget) => void
-  windows: Pick<WindowHost, 'front' | 'close'>
 }
 
 export interface MenuBarHandle {
@@ -32,56 +31,11 @@ export interface MenuBarHandle {
   destroy(): void
 }
 
-/** One open menu surface: the top-level dropdown, or a submenu. */
-interface Surface {
-  element: HTMLElement
-  rows: { row: MenuRow; element: HTMLElement }[]
-  highlighted: number
-  /** The submenu row this surface hangs off, for a submenu. */
-  parentRow?: HTMLElement
-}
-
-const CHECK_SVG =
-  '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 4.8 9.3 10 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-const ARROW_SVG =
-  '<svg viewBox="0 0 7 12" aria-hidden="true"><path d="M1.5 1.5 6 6l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-
-/** A row's words: the catalog's, with each `{token}` replaced literally, as the desktop's `menu_t_with` does. */
-export function labelText(label: MenuRowLabel): string {
-  if ('text' in label) return label.text
-  let text = getMessage(label.key as MessageKey)
-  for (const [token, value] of Object.entries(label.args)) text = text.split(`{${token}}`).join(value)
-  return text
-}
-
-/** A shortcut's glyphs, one span per modifier and one for the key, which is how a Mac spaces them. */
-function shortcutElement(shortcut: string): HTMLElement {
-  const element = document.createElement('span')
-  element.className = 'cmdr-demo-menu-shortcut'
-  element.setAttribute('aria-hidden', 'true')
-  let rest = shortcut
-  while (rest.length > 1 && '⌃⌥⇧⌘'.includes(rest[0])) {
-    const glyph = document.createElement('span')
-    glyph.textContent = rest[0]
-    element.append(glyph)
-    rest = rest.slice(1)
-  }
-  const key = document.createElement('span')
-  key.textContent = rest
-  element.append(key)
-  return element
-}
-
-function isEnabled(row: MenuRow): boolean {
-  return (row.kind === 'item' || row.kind === 'check' || row.kind === 'submenu') && row.enabled
-}
-
-let nextId = 0
-
 export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
   const style = document.createElement('style')
   style.textContent = MENU_BAR_STYLE
   document.head.append(style)
+  const dropMenuStyle = ensureMenuStyle()
 
   const bar = document.createElement('nav')
   bar.className = 'cmdr-demo-menubar'
@@ -94,9 +48,14 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
   let menus: BarMenu[] = []
   let titles: HTMLElement[] = []
   let openIndex: number | null = null
-  let surfaces: Surface[] = []
   // What had focus before the bar took it, so a pick or Esc puts it back, as closing a native menu does.
   let returnFocus: HTMLElement | null = null
+
+  const stack = createMenuStack((row) => {
+    const outcome = deps.menu.click(row.id)
+    closeAll(true)
+    performMenuClick(outcome, deps)
+  })
 
   function renderTitles(): void {
     const fresh = deps.menu.bar()
@@ -149,7 +108,7 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
 
   function rememberFocus(): void {
     const active = document.activeElement
-    if (active instanceof HTMLElement && !bar.contains(active) && !active.closest('.cmdr-demo-menu')) {
+    if (active instanceof HTMLElement && !bar.contains(active) && !stack.contains(active)) {
       returnFocus = active
     }
   }
@@ -161,89 +120,14 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
     else (document.activeElement as HTMLElement | null)?.blur()
   }
 
-  function closeSurfacesFrom(depth: number): void {
-    for (const surface of surfaces.splice(depth)) {
-      surface.element.remove()
-      surface.parentRow?.setAttribute('aria-expanded', 'false')
-    }
-  }
-
   function closeAll(restore: boolean): void {
-    closeSurfacesFrom(0)
+    stack.close()
     if (openIndex !== null) {
       titles[openIndex]?.classList.remove('is-open')
       titles[openIndex]?.setAttribute('aria-expanded', 'false')
     }
     openIndex = null
     if (restore) restoreFocus()
-  }
-
-  function buildSurface(rows: MenuRow[], labelledBy: string): Surface {
-    const element = document.createElement('div')
-    element.className = 'cmdr-demo-menu'
-    element.id = `cmdr-demo-menu-${String(nextId++)}`
-    element.setAttribute('role', 'menu')
-    element.setAttribute('aria-labelledby', labelledBy)
-    element.tabIndex = -1
-    const surface: Surface = { element, rows: [], highlighted: -1 }
-    for (const row of rows) {
-      if (row.kind === 'separator') {
-        const separator = document.createElement('div')
-        separator.className = 'cmdr-demo-menu-separator'
-        separator.setAttribute('role', 'separator')
-        element.append(separator)
-        continue
-      }
-      const rowElement = document.createElement('div')
-      rowElement.className = 'cmdr-demo-menu-row'
-      rowElement.id = `${element.id}-${String(surface.rows.length)}`
-      rowElement.tabIndex = -1
-      rowElement.setAttribute('role', row.kind === 'check' ? 'menuitemcheckbox' : 'menuitem')
-      if (row.kind === 'check') rowElement.setAttribute('aria-checked', String(row.checked))
-      if (!isEnabled(row)) {
-        rowElement.classList.add('is-disabled')
-        rowElement.setAttribute('aria-disabled', 'true')
-      }
-      const check = document.createElement('span')
-      check.className = 'cmdr-demo-menu-check'
-      if (row.kind === 'check' && row.checked) check.innerHTML = CHECK_SVG
-      const label = document.createElement('span')
-      label.className = 'cmdr-demo-menu-label'
-      label.textContent = labelText(row.label)
-      rowElement.append(check, label)
-      if ((row.kind === 'item' || row.kind === 'check') && row.shortcut) {
-        rowElement.append(shortcutElement(row.shortcut))
-        rowElement.setAttribute('aria-keyshortcuts', row.shortcut)
-      }
-      if (row.kind === 'submenu') {
-        rowElement.setAttribute('aria-haspopup', 'menu')
-        rowElement.setAttribute('aria-expanded', 'false')
-        const arrow = document.createElement('span')
-        arrow.className = 'cmdr-demo-menu-arrow'
-        arrow.innerHTML = ARROW_SVG
-        rowElement.append(arrow)
-      }
-      const index = surface.rows.length
-      rowElement.addEventListener('pointerenter', () => {
-        pointerOver(surface, index)
-      })
-      rowElement.addEventListener('click', () => {
-        activate(surface, index)
-      })
-      element.append(rowElement)
-      surface.rows.push({ row, element: rowElement })
-    }
-    return surface
-  }
-
-  function place(element: HTMLElement, left: number, top: number, flipFrom?: number): void {
-    document.body.append(element)
-    const { width, height } = element.getBoundingClientRect()
-    let x = left
-    if (x + width > window.innerWidth - 4) x = flipFrom === undefined ? window.innerWidth - 4 - width : flipFrom - width
-    const y = Math.min(top, Math.max(0, window.innerHeight - 4 - height))
-    element.style.left = `${String(Math.max(4, x))}px`
-    element.style.top = `${String(y)}px`
   }
 
   function open(index: number, fromKeyboard: boolean): void {
@@ -255,105 +139,13 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
     openIndex = index
     title.classList.add('is-open')
     title.setAttribute('aria-expanded', 'true')
-    const surface = buildSurface(menu.rows, title.id)
-    title.setAttribute('aria-controls', surface.element.id)
-    surfaces = [surface]
     const rect = title.getBoundingClientRect()
-    place(surface.element, rect.left - 2, bar.getBoundingClientRect().bottom + 1)
-    if (fromKeyboard) highlight(surface, nextEnabled(surface, -1, 1))
-    else surface.element.focus({ preventScroll: true })
-  }
-
-  function openSubmenu(parent: Surface, index: number, fromKeyboard: boolean): void {
-    const entry = parent.rows.at(index)
-    if (entry?.row.kind !== 'submenu' || !entry.row.enabled) return
-    const depth = surfaces.indexOf(parent) + 1
-    if (surfaces[depth]?.parentRow === entry.element) {
-      if (fromKeyboard) highlight(surfaces[depth], nextEnabled(surfaces[depth], -1, 1))
-      return
-    }
-    closeSurfacesFrom(depth)
-    const surface = buildSurface(entry.row.rows, entry.element.id)
-    surface.parentRow = entry.element
-    entry.element.setAttribute('aria-expanded', 'true')
-    surfaces.push(surface)
-    const rect = entry.element.getBoundingClientRect()
-    place(surface.element, rect.right + 2, rect.top - 5, rect.left - 2)
-    if (fromKeyboard) highlight(surface, nextEnabled(surface, -1, 1))
-  }
-
-  function highlight(surface: Surface, index: number): void {
-    surface.rows.at(surface.highlighted)?.element.classList.remove('is-highlighted')
-    surface.highlighted = index
-    const entry = surface.rows.at(index)
-    if (index < 0 || !entry) {
-      surface.element.focus({ preventScroll: true })
-      return
-    }
-    entry.element.classList.add('is-highlighted')
-    entry.element.focus({ preventScroll: true })
-    entry.element.scrollIntoView({ block: 'nearest' })
-  }
-
-  function nextEnabled(surface: Surface, from: number, step: 1 | -1): number {
-    const count = surface.rows.length
-    for (let i = 1; i <= count; i++) {
-      const index = (((from + step * i) % count) + count) % count
-      if (isEnabled(surface.rows[index].row)) return index
-    }
-    return -1
-  }
-
-  function pointerOver(surface: Surface, index: number): void {
-    const depth = surfaces.indexOf(surface)
-    if (depth < 0) return
-    const entry = surface.rows[index]
-    if (!isEnabled(entry.row)) {
-      highlight(surface, -1)
-      closeSurfacesFrom(depth + 1)
-      return
-    }
-    highlight(surface, index)
-    if (entry.row.kind === 'submenu') openSubmenu(surface, index, false)
-    else closeSurfacesFrom(depth + 1)
-  }
-
-  function activate(surface: Surface, index: number): void {
-    const entry = surface.rows.at(index)
-    if (!entry || !isEnabled(entry.row)) return
-    if (entry.row.kind === 'submenu') {
-      openSubmenu(surface, index, true)
-      return
-    }
-    if (entry.row.kind !== 'item' && entry.row.kind !== 'check') return
-    const outcome = deps.menu.click(entry.row.id)
-    closeAll(true)
-    perform(outcome)
-  }
-
-  /** Sends what the click asked for, after focus went back where it was, as a native pick does. */
-  function perform(outcome: MenuClick): void {
-    switch (outcome.kind) {
-      case 'emit':
-        deps.emit(outcome.event, outcome.payload, { kind: 'label', label: 'main' })
-        return
-      case 'nativeEdit': {
-        // The responder chain's stand-in: the edit goes to the window in front, which has the text focus.
-        const front = deps.windows.front()
-        if (!front) return
-        front.frame.focus()
-        // eslint-disable-next-line @typescript-eslint/no-deprecated -- the one way a page can hand an edit to the focused field, which is what the native selector does; browsers keep it for exactly this
-        front.frame.contentDocument?.execCommand(outcome.action)
-        return
-      }
-      case 'closeFocusedWindow': {
-        const front = deps.windows.front()
-        if (front) deps.windows.close(front.label)
-        return
-      }
-      case 'nothing':
-        return
-    }
+    const surface = stack.open(
+      menu.rows,
+      { left: rect.left - 2, top: bar.getBoundingClientRect().bottom + 1, labelledBy: title.id },
+      fromKeyboard,
+    )
+    title.setAttribute('aria-controls', surface.id)
   }
 
   function focusTitle(index: number): void {
@@ -364,15 +156,6 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
     target.focus({ preventScroll: true })
   }
 
-  /** Closes the open submenu and puts the cursor back on its row; false when none is open. */
-  function backOutOfSubmenu(): boolean {
-    if (surfaces.length < 2) return false
-    closeSurfacesFrom(surfaces.length - 1)
-    const parent = surfaces.at(-1)
-    if (parent) highlight(parent, parent.highlighted)
-    return true
-  }
-
   /** Opens the menu `step` titles over from the open one, or moves focus along the bar. */
   function moveAlongBar(step: 1 | -1, titleIndex: number): void {
     const count = titles.length
@@ -381,30 +164,17 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
   }
 
   function walkRows(step: 1 | -1, titleIndex: number): void {
-    const surface = surfaces.at(-1)
-    if (openIndex === null || !surface) open(Math.max(0, titleIndex), true)
-    else highlight(surface, nextEnabled(surface, surface.highlighted, step))
-  }
-
-  function arrowRight(titleIndex: number): void {
-    const surface = surfaces.at(-1)
-    if (surface?.rows.at(surface.highlighted)?.row.kind === 'submenu') openSubmenu(surface, surface.highlighted, true)
-    else moveAlongBar(1, titleIndex)
-  }
-
-  function jumpToEnd(toFirst: boolean): void {
-    const surface = surfaces.at(-1)
-    if (surface) highlight(surface, nextEnabled(surface, toFirst ? -1 : 0, toFirst ? 1 : -1))
+    if (openIndex === null || !stack.isOpen) open(Math.max(0, titleIndex), true)
+    else stack.walk(step)
   }
 
   function pick(titleIndex: number): void {
-    const surface = surfaces.at(-1)
-    if (surface && surface.highlighted >= 0) activate(surface, surface.highlighted)
-    else if (openIndex === null && titleIndex >= 0) open(titleIndex, true)
+    if (stack.pickHighlighted()) return
+    if (openIndex === null && titleIndex >= 0) open(titleIndex, true)
   }
 
   function escape(): void {
-    if (backOutOfSubmenu()) return
+    if (stack.backOut()) return
     if (openIndex === null) {
       restoreFocus()
       return
@@ -422,15 +192,17 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
     ArrowUp: (titleIndex) => {
       walkRows(-1, titleIndex)
     },
-    ArrowRight: arrowRight,
+    ArrowRight: (titleIndex) => {
+      if (!stack.openHighlightedSubmenu()) moveAlongBar(1, titleIndex)
+    },
     ArrowLeft: (titleIndex) => {
-      if (!backOutOfSubmenu()) moveAlongBar(-1, titleIndex)
+      if (!stack.backOut()) moveAlongBar(-1, titleIndex)
     },
     Home: () => {
-      jumpToEnd(true)
+      stack.jumpToEnd(true)
     },
     End: () => {
-      jumpToEnd(false)
+      stack.jumpToEnd(false)
     },
     Enter: pick,
     ' ': pick,
@@ -451,9 +223,10 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
     event.stopPropagation()
   }
 
+  /** Whether the bar, or one of ITS menus, has the keyboard (a right-click menu has its own keys). */
   function ownsFocus(): boolean {
     const active = document.activeElement
-    return active instanceof HTMLElement && (bar.contains(active) || active.closest('.cmdr-demo-menu') !== null)
+    return active instanceof HTMLElement && (bar.contains(active) || (openIndex !== null && stack.contains(active)))
   }
 
   function onWindowKey(event: KeyboardEvent): void {
@@ -472,7 +245,7 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
   function onPointerDown(event: PointerEvent): void {
     if (openIndex === null) return
     const target = event.target as Node | null
-    if (target && (bar.contains(target) || surfaces.some((s) => s.element.contains(target)))) return
+    if (target && (bar.contains(target) || stack.contains(target))) return
     closeAll(false)
   }
 
@@ -507,6 +280,7 @@ export function installMenuBar(deps: MenuBarDeps): MenuBarHandle {
       window.removeEventListener('blur', onBlur)
       bar.remove()
       style.remove()
+      dropMenuStyle()
       document.documentElement.style.removeProperty('--cmdr-demo-window-top')
     },
   }

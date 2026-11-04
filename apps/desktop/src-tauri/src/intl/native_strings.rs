@@ -557,7 +557,7 @@ mod tests {
     ///
     /// It scans for the literal rather than for `menu_t` CALL SITES on purpose:
     /// several keys are held in tables and passed as a variable (the tag colors
-    /// in `file_context_menu.rs`, the image-search items in `media_index_items.rs`,
+    /// in `file_context_menu.rs`, the image-search items in `cmdr-menu`'s `context/image_index.rs`,
     /// the pin/unpin pair), and those are exactly the ones a call-site parser
     /// would miss.
     #[test]

@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 /// The bar the demo draws: macOS's, since the demo plays a Mac.
-const PLATFORM: Platform = Platform::MacOs;
+pub(crate) const PLATFORM: Platform = Platform::MacOs;
 
 /// Every command [`DemoMenu::invoke`] answers, by its Tauri name.
 pub const MENU_COMMANDS: &[&str] = &[
@@ -43,6 +43,7 @@ pub const MENU_COMMANDS: &[&str] = &[
     "update_pin_tab_menu",
     "update_select_same_kind_menu",
     "update_undo_trash_menu",
+    "update_menu_context",
 ];
 
 /// What the desktop's `MenuState` holds, minus the muda handles: the pushes, as they arrived.
@@ -156,6 +157,11 @@ pub enum Row {
         /// Its rows.
         rows: Vec<Row>,
     },
+    /// A context menu's first line, naming what it acts on: a label, never picked.
+    Header {
+        /// What it says.
+        label: RowLabel,
+    },
     /// An item the OS wires (Hide, Quit, Services, Undo, Minimize): a browser has no OS to ask.
     System {
         /// What it says.
@@ -218,12 +224,22 @@ pub struct BarMenuView {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Click {
-    /// Send `event` with `payload` to the main window, as `handle_menu_event`'s `emit_to("main")`.
+    /// Send `event` with `payload` to the window labeled `to`, as `handle_menu_event`'s `emit_to`.
     Emit {
         /// The Tauri event name.
         event: String,
         /// Its payload, as `bindings.ts` types it.
         payload: Value,
+        /// The target window's label (`main`, `queue`, or the viewer a popup went up over).
+        to: String,
+    },
+    /// Run the app command `command` with `args`, as `handle_menu_event` calls one directly
+    /// (Add to favorites goes through `add_favorite`'s own gate).
+    Invoke {
+        /// The Tauri command name.
+        command: String,
+        /// Its camelCase args.
+        args: Value,
     },
     /// Hand a native edit selector to whatever has focus outside the main window.
     NativeEdit {
@@ -239,6 +255,8 @@ pub enum Click {
 /// The page's menu bar state.
 pub struct DemoMenu {
     model: Mutex<MenuModel>,
+    /// What the last right-click menu went up over (`context_menu.rs`).
+    pub(crate) context: Mutex<crate::context_menu::ContextModel>,
 }
 
 impl Default for DemoMenu {
@@ -252,6 +270,7 @@ impl DemoMenu {
     pub fn new() -> Self {
         Self {
             model: Mutex::new(MenuModel::new()),
+            context: Mutex::new(crate::context_menu::ContextModel::default()),
         }
     }
 
@@ -307,6 +326,9 @@ impl DemoMenu {
             "update_pin_tab_menu" => m.is_pinned = parse::<PinnedArgs>(command, args)?.is_pinned,
             "update_select_same_kind_menu" => m.same_kind = parse::<TargetArgs<SameKindTarget>>(command, args)?.target,
             "update_undo_trash_menu" => m.undo_trash = parse::<TargetArgs<TrashUndoTarget>>(command, args)?.target,
+            "update_menu_context" => {
+                self.note_menu_context(args)?;
+            }
             other => return Err(Value::String(format!("the demo's menu doesn't answer `{other}`"))),
         }
         Ok(Value::Null)
@@ -340,6 +362,7 @@ impl DemoMenu {
         let emit = |event: &str, payload: Value| Click::Emit {
             event: event.to_string(),
             payload,
+            to: "main".to_string(),
         };
         match click {
             BarClick::Command { command_id, .. } => emit("execute-command", json!({ "commandId": command_id })),
@@ -486,7 +509,7 @@ fn label(spec: Label) -> RowLabel {
     }
 }
 
-fn parse<T: DeserializeOwned>(command: &str, args: Value) -> Result<T, Value> {
+pub(crate) fn parse<T: DeserializeOwned>(command: &str, args: Value) -> Result<T, Value> {
     serde_json::from_value(args).map_err(|e| Value::String(format!("invalid args for command {command}: {e}")))
 }
 

@@ -17,6 +17,7 @@ pub mod backend_listings;
 #[cfg(target_family = "wasm")]
 mod bindings;
 pub mod commands;
+pub mod context_menu;
 pub mod events;
 pub mod folder_sizes;
 mod invoke;
@@ -29,6 +30,8 @@ pub mod viewer;
 
 #[cfg(all(test, not(target_family = "wasm")))]
 mod commands_test;
+#[cfg(all(test, not(target_family = "wasm")))]
+mod context_menu_test;
 #[cfg(all(test, not(target_family = "wasm")))]
 mod events_test;
 #[cfg(all(test, not(target_family = "wasm")))]

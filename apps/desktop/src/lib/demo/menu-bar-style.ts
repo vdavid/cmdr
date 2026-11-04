@@ -44,6 +44,25 @@ export const MENU_BAR_STYLE = `
 .cmdr-demo-menubar-title:focus-visible {
   background: color-mix(in srgb, var(--color-text-primary) 12%, transparent);
 }
+/* The app's two corners that sit against the page's top edge (the status corner resolves against
+   the initial containing block, the toast stack is fixed): on the desktop that edge is the
+   window's, here it's the bar's, so both move down by the bar or the bar covers them and eats
+   their clicks. The same offsets as their own rules, plus the bar. \`html:root\` outranks the
+   components' scoped classes. */
+html:root .status-corner {
+  top: calc(var(--cmdr-demo-window-top, 0px) + var(--spacing-sm) - var(--spacing-xxs));
+}
+html:root .toast-container:not(.at-bottom) {
+  top: calc(var(--cmdr-demo-window-top, 0px) + var(--spacing-lg));
+}
+`
+
+/**
+ * An open menu's look, the bar's dropdowns and the right-click menus alike (`menu-surfaces.ts`):
+ * macOS 27's Liquid Glass menu, plus the dimmed small header line a right-click menu leads with
+ * (the desktop restyles that line the same way, `context_menu_header.rs`).
+ */
+export const MENU_SURFACE_STYLE = `
 .cmdr-demo-menu {
   position: fixed;
   z-index: calc(var(--z-modal-top) + 2);
@@ -107,15 +126,16 @@ export const MENU_BAR_STYLE = `
   margin: 5px 10px;
   background: var(--color-border-glass);
 }
-/* The app's two corners that sit against the page's top edge (the status corner resolves against
-   the initial containing block, the toast stack is fixed): on the desktop that edge is the
-   window's, here it's the bar's, so both move down by the bar or the bar covers them and eats
-   their clicks. The same offsets as their own rules, plus the bar. \`html:root\` outranks the
-   components' scoped classes. */
-html:root .status-corner {
-  top: calc(var(--cmdr-demo-window-top, 0px) + var(--spacing-sm) - var(--spacing-xxs));
-}
-html:root .toast-container:not(.at-bottom) {
-  top: calc(var(--cmdr-demo-window-top, 0px) + var(--spacing-lg));
+.cmdr-demo-menu-header {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  max-width: 320px;
+  padding: 0 10px 0 22px;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 `

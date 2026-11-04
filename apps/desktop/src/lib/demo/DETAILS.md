@@ -154,6 +154,34 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   Tab > New tab adds a tab and reads ⌃T; Cmdr > Settings opens its panel, File's items grey while it's in front, and Tab
   > Close tab closes it; the keyboard path from ⌃F2 reaches the palette; nothing lands in `unanswered`.
 
+## Right-click menus
+
+- **What**: the native popups the app opens (`show_file_context_menu`, the breadcrumb's, a tab's, the date header's Sort
+  by, the function key bar's, the viewer's text, a queue row's, a servers hub host's), drawn as HTML macOS 27 menus
+  (`context-menu.ts`) with the bar's look and keys. The app already cancels the browser's own menu
+  (`#lib/context-menu-ownership.ts`), so a right-click reaches the same `show_*` command it does on desktop.
+- **Decision**: the rows are the desktop's own, through WASM. `crates/cmdr-menu`'s `context` holds every popup's rows
+  and what a pick asks for; `cmdr-listing-wasm`'s `context_menu.rs` answers each `show_*` command with them and stashes
+  what the menu went up over, as `commands/menu.rs` stashes it in `MenuState` (`crates/cmdr-listing-wasm/DETAILS.md` §
+  The JS API). **Why**: the same as the bar's; a TS copy drifts on the first new item, and a pick that sent anything but
+  the native event would need its own handler in the app.
+- **Routing**: the backend asks `menu.opensPopup(cmd)` before the menu-state pushes. Each webview passes its label and
+  where its pointer last went down (`InvokeOrigin`, tracked in `webview.ts`), so the backend draws the menu in the TOP
+  frame at the pointer, offset by the panel's iframe for a secondary window, or at the `anchor` the app names for a
+  keyboard-opened menu (which then starts on its first enabled row). Top frame on purpose: a native popup isn't clipped
+  to its window, and one renderer serves every window. The command answers `null` once the menu is up, as the native one
+  returns while its menu tracks.
+- **Picks**: `menu.contextClick(id)`, then `menu-click.ts` sends it: an event to `main`, `queue`, or the viewer the menu
+  went up over, or the `add_favorite` command (the desktop calls it directly, for its add gate). A row the last popup
+  didn't offer enabled does nothing, in the engine as in the page.
+- **Left out**: every OS-filled group (Open with, Share, the tag colors, the provider's actions, Services): a browser
+  has no OS to ask. The image-search group stays hidden (no media index).
+- **Keys**: ↑/↓, Home/End, → into a submenu, ← or Esc out, Esc closes, Enter / Space pick, Tab closes; every key is kept
+  from the app while the menu is up. The header line is a `presentation` row, never a stop, and names the menu for a
+  screen reader (`aria-label`). A click outside, or the page losing focus, closes it.
+- **Shared with the bar**: `menu-surfaces.ts` (an open menu and its submenus: drawing, placement, highlight, the walk),
+  `menu-click.ts` (performing a pick), and `menu-bar-style.ts`'s `MENU_SURFACE_STYLE`, injected once per document.
+
 ## Traffic lights
 
 On desktop the OS draws the close, minimize, and zoom buttons over each window's overlay title bar, at the

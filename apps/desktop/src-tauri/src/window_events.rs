@@ -116,17 +116,8 @@ pub struct McpSettingsClose;
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 pub struct ViewerWordWrapToggled;
 
-/// Which item of the viewer menu bar's Edit submenu was picked. A typed variant rather
-/// than the menu id as a string: the viewer frontend dispatches on it, and an id is a
-/// backend detail nothing across IPC should be matching on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum ViewerEditActionKind {
-    /// Edit > Copy (⌘C).
-    Copy,
-    /// Edit > Select all (⌘A).
-    SelectAll,
-}
+// Which viewer Edit action was picked; the context menus' vocabulary (`cmdr_menu::context`).
+pub use cmdr_menu::context::click::ViewerEditActionKind;
 
 /// `viewer-edit-action`: Edit > Copy or Edit > Select all was picked while a viewer window
 /// had focus. Emitted to that viewer's label.
@@ -174,23 +165,8 @@ pub struct ViewerHistoryAction {
     pub direction: ViewerHistoryDirection,
 }
 
-/// One thing a queue row's menu can do. Pause and Resume share a key but are separate
-/// actions, so the label can say which one this click is, and so a pick that went stale
-/// while the menu was up can be told apart. Its menu ids, labels, and commands live with the
-/// menu builder (`menu/queue_row_menu.rs`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum QueueRowMenuAction {
-    MoveEarlier,
-    MoveLater,
-    Select,
-    Cancel,
-    Dismiss,
-    Show,
-    Pause,
-    Resume,
-    Rollback,
-}
+// One thing a queue row's menu can do: `cmdr_menu::context::popups`, beside the menu it labels.
+pub use cmdr_menu::context::popups::QueueRowMenuAction;
 
 /// `queue-row-context-action`: an item was picked from a queue row's right-click menu. Emitted
 /// to the `queue` window, which runs it on the row it opened the menu over, through the same

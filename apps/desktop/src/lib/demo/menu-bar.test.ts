@@ -52,7 +52,12 @@ const BAR: BarMenu[] = [
 let handle: MenuBarHandle | undefined
 
 function setup(
-  click: (id: string) => MenuClick = (id) => ({ kind: 'emit', event: 'execute-command', payload: { commandId: id } }),
+  click: (id: string) => MenuClick = (id) => ({
+    kind: 'emit',
+    event: 'execute-command',
+    payload: { commandId: id },
+    to: 'main',
+  }),
 ) {
   const emitted: [string, unknown, unknown][] = []
   const clicked: string[] = []
@@ -67,6 +72,7 @@ function setup(
       },
     },
     emit: (event, payload, target) => emitted.push([event, payload, target]),
+    invoke: vi.fn(() => Promise.resolve(null)),
     windows,
   })
   return { emitted, clicked, windows }

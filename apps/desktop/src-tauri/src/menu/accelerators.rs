@@ -15,13 +15,6 @@ use crate::ignore_poison::IgnorePoison;
 use super::menu_spec::{Platform, display_accelerator_label};
 use super::{MenuItemEntry, MenuState, TrackedItem};
 
-/// Convert frontend shortcut format (⌘2) to the text a menu item shows on this platform (Cmd+2,
-/// Ctrl+2 on Linux), for a POPUP. ❌ The menu bar must not use this:
-/// [`frontend_shortcut_to_accelerator`] is its door. `cmdr_menu::accelerators::to_menu_text`.
-pub fn frontend_shortcut_to_menu_text(shortcut: &str) -> Option<String> {
-    cmdr_menu::accelerators::to_menu_text(shortcut, Platform::current())
-}
-
 /// Convert frontend shortcut format (⌘2) to a Tauri accelerator the menu BAR may register on this
 /// platform, or `None` behind the modifier floor or for a key muda can't name.
 /// `cmdr_menu::accelerators::to_accelerator`.
