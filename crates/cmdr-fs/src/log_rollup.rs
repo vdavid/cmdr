@@ -13,7 +13,9 @@
 
 use std::collections::HashMap;
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use crate::rt::Instant;
 
 use crate::ignore_poison::IgnorePoison;
 
@@ -68,7 +70,7 @@ impl LogRollup {
     /// lost) and once per interval after that; `None` in between, where the
     /// occurrence is counted into the next batch.
     pub fn record(&self, key: &str) -> Option<RollupBatch> {
-        self.record_at(key, Instant::now())
+        self.record_at(key, crate::rt::now())
     }
 
     /// [`record`](Self::record) with the clock injected, so the rules are

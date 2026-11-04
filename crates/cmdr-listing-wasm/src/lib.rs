@@ -15,6 +15,8 @@
 mod bindings;
 pub mod commands;
 pub mod events;
+#[cfg(target_family = "wasm")]
+mod rt_self_test;
 pub mod tree;
 
 #[cfg(test)]

@@ -63,8 +63,18 @@ tree lists as a folder (as on disk).
 ## The build
 
 - `pnpm build:listing-wasm` (`scripts/build-listing-wasm.sh [-out DIR] [-smoke]`, a Go program):
-  `cargo build -p cmdr-listing-wasm --target wasm32-unknown-unknown --profile wasm-release`, then
+  `cargo build -p cmdr-listing-wasm --target wasm32-unknown-unknown --profile wasm-release` (plus the crates the browser
+  build is about to link, `browserBound` in `main.go`, so a host-only dep can't creep into them first), then
   `wasm-bindgen --target web`.
+- **The C toolchain**: `cmdr-fs` links SQLite (`rusqlite`, which in the browser swaps in `sqlite-wasm-rs` and compiles
+  `sqlite3.c` with `cc`). Apple's clang can't target wasm32, and `sqlite-wasm-rs` 0.5.5 has no precompiled option, so
+  the script installs conda-forge's LLVM clang and llvm-ar (pinned in `scripts/build-listing-wasm/toolchain.go`,
+  Renovate-tracked) with mise into a PRIVATE home, `~/.cache/cmdr/wasm-toolchain/` (`CMDR_WASM_TOOLCHAIN_DIR`
+  overrides), and hands cargo only `CC_wasm32_unknown_unknown` / `AR_wasm32_unknown_unknown` as absolute paths. ❗ Never
+  on PATH and never in the default mise home: the conda env ships its own `cc`, `cpp`, `ar`, and `ld`, and their mise
+  shims would sit ahead of `/usr/bin`, one `mise use` away from switching every native C build (verified on macOS 27 and
+  Linux aarch64, mise 2026.10.25, 2026-11-04). First build downloads about 770 MB (macOS) or 1.5 GB (Linux); CI restores
+  it from its own cache (`.github/actions/wasm-toolchain`, saved from `main` only).
 - Output: `crates/cmdr-listing-wasm/pkg/` (gitignored): `cmdr_listing_wasm.js`, `cmdr_listing_wasm_bg.wasm`, their
   `.d.ts`, and a `package.json` saying `"type": "module"`.
 - `wasm-release` (root `Cargo.toml`): `opt-level = "s"`, fat LTO, one codegen unit, `panic = "abort"`, stripped. About 2

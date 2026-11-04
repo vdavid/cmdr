@@ -2,7 +2,8 @@
 //! store, plus its read stream. What the double can be TOLD to be (the knobs,
 //! and the lies it tells on request) lives in the parent module.
 
-use super::{InMemoryEntry, InMemoryVolume};
+use super::device::{Bandwidth, ContentSink, Yielder};
+use super::{InMemoryContent, InMemoryEntry, InMemoryVolume};
 use crate::entry::FileEntry;
 use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;
@@ -15,6 +16,7 @@ use crate::volume::{
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::Arc;
 
 /// Chunk size for InMemoryReadStream (64 KB, small enough to test multi-chunk behavior
 /// without needing large test data).
@@ -22,38 +24,47 @@ const IN_MEMORY_STREAM_CHUNK_SIZE: usize = 64 * 1024;
 
 /// Streaming reader for in-memory files.
 struct InMemoryReadStream {
-    data: Vec<u8>,
-    offset: usize,
+    content: InMemoryContent,
+    offset: u64,
     /// The entry's `modified_at`, as the stream reports it.
     modified_at: Option<std::time::SystemTime>,
     /// Every other class the entry carries, as the stream reports it.
     metadata: CarriedMetadata,
     /// See [`InMemoryVolume::with_read_chunk_delay`]. `None` ⇒ no await ever pends.
     chunk_delay: Option<std::time::Duration>,
+    /// The device's shared throughput (`with_bandwidth`), when it has one.
+    bandwidth: Option<Arc<Bandwidth>>,
+    /// The device's breath between chunks (`with_yielding`), when it has one.
+    yielder: Option<Arc<Yielder>>,
 }
 
 impl VolumeReadStream for InMemoryReadStream {
     fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
         Box::pin(async move {
-            if self.offset >= self.data.len() {
+            if self.offset >= self.content.len() {
                 return None;
             }
             if let Some(delay) = self.chunk_delay {
-                tokio::time::sleep(delay).await;
+                crate::rt::time::sleep(delay).await;
             }
-            let end = (self.offset + IN_MEMORY_STREAM_CHUNK_SIZE).min(self.data.len());
-            let chunk = self.data[self.offset..end].to_vec();
-            self.offset = end;
+            let chunk = self.content.read_at(self.offset, IN_MEMORY_STREAM_CHUNK_SIZE);
+            if let Some(bandwidth) = &self.bandwidth {
+                bandwidth.transfer(chunk.len()).await;
+            }
+            if let Some(yielder) = &self.yielder {
+                yielder.breathe().await;
+            }
+            self.offset += chunk.len() as u64;
             Some(Ok(chunk))
         })
     }
 
     fn total_size(&self) -> StreamLength {
-        StreamLength::Known(self.data.len() as u64)
+        StreamLength::Known(self.content.len())
     }
 
     fn bytes_read(&self) -> u64 {
-        self.offset as u64
+        self.offset
     }
 
     fn modified_at(&self) -> Option<std::time::SystemTime> {
@@ -106,6 +117,8 @@ impl Volume for InMemoryVolume {
         _on_progress: Option<&'a (dyn Fn(crate::volume::ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
             // Check for injected error (E2E testing). Cleared after one use to enable retry testing.
             #[cfg(feature = "playwright-e2e")]
             {
@@ -167,11 +180,17 @@ impl Volume for InMemoryVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        Box::pin(async move { self.stat_with(path, |entry| self.as_listed(entry.clone())) })
+        Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
+            self.stat_with(path, |entry| self.as_listed(entry.clone()))
+        })
     }
 
     fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
         Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
             let normalized = self.normalize(path);
             self.entries.read_ignore_poison().contains_key(&normalized)
         })
@@ -227,6 +246,8 @@ impl Volume for InMemoryVolume {
         content: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
             let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
                 message: "Lock poisoned".into(),
                 raw_os_error: None,
@@ -238,7 +259,7 @@ impl Volume for InMemoryVolume {
                 return Err(VolumeError::AlreadyExists(normalized.display().to_string()));
             }
 
-            Self::insert_file(&mut entries, normalized, content.to_vec());
+            Self::insert_file(&mut entries, normalized, InMemoryContent::bytes(content));
             Ok(())
         })
     }
@@ -248,6 +269,8 @@ impl Volume for InMemoryVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
             if self.create_directory_not_found {
                 return Err(VolumeError::NotFound(self.normalize(path).display().to_string()));
             }
@@ -387,6 +410,8 @@ impl Volume for InMemoryVolume {
 
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
             if self.delete_fails {
                 return Err(VolumeError::IoError {
                     message: "injected delete failure".into(),
@@ -465,6 +490,8 @@ impl Volume for InMemoryVolume {
         force: bool,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
             if self.renames_by_copy {
                 return Err(VolumeError::NotSupported);
             }
@@ -565,6 +592,8 @@ impl Volume for InMemoryVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
             let normalized = self.normalize(path);
             let entries = self.entries.read().map_err(|_| VolumeError::IoError {
                 message: "Lock poisoned".into(),
@@ -637,6 +666,8 @@ impl Volume for InMemoryVolume {
         boundary: &'a crate::volume::ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<crate::volume::BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
             let mut per_path = Vec::with_capacity(paths.len());
             for path in paths {
                 boundary.check().await?;
@@ -676,6 +707,8 @@ impl Volume for InMemoryVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // A device breathes at every call (`with_yielding`; a no-op otherwise).
+            self.breathe().await;
             let normalized = self.normalize(path);
             let entries = self.entries.read().map_err(|_| VolumeError::IoError {
                 message: "Lock poisoned".into(),
@@ -693,17 +726,22 @@ impl Volume for InMemoryVolume {
                 });
             }
 
-            let data = entry.content.clone().unwrap_or_default();
+            let content = entry
+                .content
+                .clone()
+                .unwrap_or_else(|| InMemoryContent::bytes(Vec::new()));
             let modified_at = entry
                 .metadata
                 .modified_at
                 .map(|secs| std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs));
             Ok(Box::new(InMemoryReadStream {
-                data,
+                content,
                 offset: 0,
                 modified_at,
                 metadata: Self::carried_of(entry).restricted_to(self.metadata_caps.reports),
                 chunk_delay: self.read_chunk_delay,
+                bandwidth: self.bandwidth(),
+                yielder: self.yielder(),
             }) as Box<dyn VolumeReadStream>)
         })
     }
@@ -730,10 +768,11 @@ impl Volume for InMemoryVolume {
             if entry.metadata.is_directory {
                 return Err(VolumeError::IsADirectory(normalized.display().to_string()));
             }
-            let content = entry.content.as_deref().unwrap_or_default();
-            let start = (offset as usize).min(content.len());
-            let end = start.saturating_add(len).min(content.len());
-            Ok(content[start..end].to_vec())
+            // Never paced: positioned reads are the viewer's, which polls once.
+            Ok(entry
+                .content
+                .as_ref()
+                .map_or_else(Vec::new, |content| content.read_at(offset, len)))
         })
     }
 
@@ -761,13 +800,15 @@ impl Volume for InMemoryVolume {
             let kept = carried
                 .clone()
                 .restricted_to(MetadataClasses::ALL.without(self.write_refuses));
-            let mut data = Vec::new();
+            self.check_room_for(size)?;
+            let mut data = ContentSink::default();
             let mut bytes_written = 0u64;
 
             while let Some(result) = stream.next_chunk().await {
                 let chunk = result?;
                 bytes_written += chunk.len() as u64;
-                data.extend_from_slice(&chunk);
+                data.push(&chunk);
+                self.breathe().await;
 
                 if on_progress(StreamWriteProgress {
                     bytes_written,
@@ -781,10 +822,11 @@ impl Volume for InMemoryVolume {
                 }
             }
 
+            let data = data.finish();
             if self.publishes_writes_whole && mode == WriteMode::CreateOrReplace {
                 self.replace_whole(dest, data)?;
             } else {
-                self.create_file(dest, &data).await?;
+                self.create_content(dest, data)?;
             }
             // Keeps the source's date the way a real destination does, so an
             // engine test copying onto the double sees the same answer.
@@ -807,7 +849,11 @@ impl Volume for InMemoryVolume {
     }
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
-        Box::pin(async move { self.space_info.ok_or(VolumeError::NotSupported) })
+        Box::pin(async move {
+            self.capacity_space()
+                .or(self.space_info)
+                .ok_or(VolumeError::NotSupported)
+        })
     }
 
     /// The deepest [`with_space_info_under`](Self::with_space_info_under) subtree

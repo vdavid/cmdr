@@ -20,9 +20,13 @@ use crate::ignore_poison::RwLockIgnorePoison;
 use crate::metadata::{CarriedMetadata, ClassOutcome, MetadataCaps, MetadataClasses, MetadataReport};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
+
+pub use device::InMemoryContent;
+use device::{Bandwidth, Yielder};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+mod device;
 mod links;
 mod transfer_holds;
 mod volume_impl;
@@ -31,7 +35,9 @@ mod xattrs;
 /// Entry in the in-memory file system.
 struct InMemoryEntry {
     metadata: FileEntry,
-    content: Option<Vec<u8>>,
+    /// `None` for a folder, and for a file built from a listing alone (it reads
+    /// as empty).
+    content: Option<InMemoryContent>,
     /// The classes `FileEntry` has no field for (the user flags and the
     /// xattrs), so the double stores and reports every class a copy carries.
     /// `created_at` and `permissions` stay on `metadata`, where a listing
@@ -46,7 +52,7 @@ struct InMemoryEntry {
 }
 
 impl InMemoryEntry {
-    fn new(metadata: FileEntry, content: Option<Vec<u8>>) -> Self {
+    fn new(metadata: FileEntry, content: Option<InMemoryContent>) -> Self {
         /// Unique across every in-memory volume in the process, so two entries
         /// never share an identity by accident.
         static NEXT_NODE: AtomicU64 = AtomicU64::new(1);
@@ -140,6 +146,15 @@ pub struct InMemoryVolume {
     /// one poll. Set via [`Self::with_read_chunk_delay`] to model a stream that
     /// arrives over time, so a cancel or a pause has somewhere to land.
     read_chunk_delay: Option<std::time::Duration>,
+    /// One device's throughput, shared by every read stream. `None` (the default)
+    /// streams at memory speed. Set via [`Self::with_bandwidth`].
+    bandwidth: Option<Arc<Bandwidth>>,
+    /// Hands the caller's thread back every slice, like a device waiting on I/O.
+    /// `None` (the default) never yields. Set via [`Self::with_yielding`].
+    yielder: Option<Arc<Yielder>>,
+    /// A total size the stored files count against, live. `None` (the default)
+    /// keeps `space_info`'s fixed answer. Set via [`Self::with_capacity`].
+    capacity: Option<u64>,
     /// When set, [`Volume::rename`] returns this error instead of moving the entry,
     /// and the store is left exactly as it was. The variant matters: a caller that
     /// clears the destination on ANY rename failure deletes the user's file over a
@@ -214,7 +229,7 @@ pub struct InMemoryVolume {
     /// directory keeps the trait's default.
     index_walk_overrides: Vec<(PathBuf, IndexWalk)>,
     /// Live [`Volume::hold_for_transfer`] holds, when counting (`transfer_holds.rs`).
-    transfer_holds: Option<std::sync::Arc<std::sync::atomic::AtomicUsize>>,
+    transfer_holds: Option<Arc<std::sync::atomic::AtomicUsize>>,
     /// What [`Volume::list_directory`] reports as every FILE's modified time,
     /// whatever [`Volume::get_metadata`] answers: an object store's upload
     /// time. `None` (the default) lists the stored time. Set via
@@ -256,6 +271,9 @@ impl InMemoryVolume {
             held_folders_only: false,
             delete_fails: false,
             read_chunk_delay: None,
+            bandwidth: None,
+            yielder: None,
+            capacity: None,
             rename_failure: None,
             rename_to_failing: RwLock::new(HashSet::new()),
             create_directory_not_found: false,
@@ -852,7 +870,7 @@ impl InMemoryVolume {
     /// Puts `data` at `path` in one step, replacing a FILE that's there: the
     /// landing of a [`with_whole_publish`](Self::with_whole_publish) write.
     /// A folder at the name is refused, as an object store's would be.
-    fn replace_whole(&self, path: &Path, data: Vec<u8>) -> Result<(), VolumeError> {
+    fn replace_whole(&self, path: &Path, data: InMemoryContent) -> Result<(), VolumeError> {
         let normalized = self.normalize(path);
         let mut entries = self.entries.write_ignore_poison();
         if entries
@@ -867,13 +885,13 @@ impl InMemoryVolume {
 
     /// Puts a fresh file holding `data` at `normalized`, dated now, replacing
     /// whatever entry is there. The caller has already decided it may.
-    fn insert_file(entries: &mut HashMap<PathBuf, InMemoryEntry>, normalized: PathBuf, data: Vec<u8>) {
+    fn insert_file(entries: &mut HashMap<PathBuf, InMemoryEntry>, normalized: PathBuf, data: InMemoryContent) {
         let name = normalized
             .file_name()
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_default();
         let metadata = FileEntry {
-            size: Some(data.len() as u64),
+            size: Some(data.len()),
             modified_at: Some(Self::now_secs()),
             created_at: Some(Self::now_secs()),
             permissions: 0o644,
@@ -912,14 +930,10 @@ impl InMemoryVolume {
 
     /// Gets current timestamp as seconds since Unix epoch.
     fn now_secs() -> u64 {
-        // `std`'s clock panics on `wasm32-unknown-unknown`; the browser build
-        // reads the page's (`DETAILS.md` § "The browser build").
-        #[cfg(not(target_family = "wasm"))]
-        use std::time::{SystemTime, UNIX_EPOCH};
-        #[cfg(target_family = "wasm")]
-        use web_time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
+        // `std`'s clock panics on `wasm32-unknown-unknown`; `rt` reads the page's
+        // there (`DETAILS.md` § "The browser build").
+        crate::rt::wall_now()
+            .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0)
     }

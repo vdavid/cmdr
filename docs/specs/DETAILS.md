@@ -14,11 +14,14 @@ Read this before adding, wiping, or reorganizing a spec.
 
 ## The specs
 
+- `demo-write-engine-plan.md`: **The browser demo can't copy, move, rename, delete, or undo.** The real write engine and
+  operation log compiled to WASM behind a local-disk facade and the `cmdr_fs::rt` seam, SQLite built with a mise-pinned
+  LLVM clang, then the transfer queue window. Issues: [#929](https://github.com/vdavid/cmdr/issues/929),
+  [#302](https://github.com/vdavid/cmdr/issues/302).
 - `viewer-crate-plan.md`: **The browser demo can't open a file, and the viewer core is untestable without the app.**
   Move the viewer's core into a Tauri-free `crates/cmdr-viewer` behind one host seam, build it into the demo's WASM
   engine, and open the real viewer window in the demo, media through `blob:` URLs. Issue:
   [#302](https://github.com/vdavid/cmdr/issues/302).
-
 - `saved-smb-shares.md`: **A saved SMB server holds only a host, not the user and share the person wants.** A share row
   under its server, recorded at mount time, pinnable and openable like an SFTP place. Issue:
   [cmdr-reports#7](https://github.com/vdavid/cmdr-reports/issues/7).
