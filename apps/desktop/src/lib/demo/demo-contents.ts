@@ -138,7 +138,11 @@ export async function demoContents(): Promise<Record<string, Uint8Array>> {
   const bytesOf = (url: string) => {
     let bytes = fetched.get(url)
     if (!bytes) {
-      bytes = fetch(url).then(async (response) => new Uint8Array(await response.arrayBuffer()))
+      bytes = fetch(url).then(async (response) => {
+        // A 404 page is HTML: as a picture's bytes, the viewer would show a broken image.
+        if (!response.ok) throw new Error(`HTTP ${String(response.status)} for ${url}`)
+        return new Uint8Array(await response.arrayBuffer())
+      })
       fetched.set(url, bytes)
     }
     return bytes
