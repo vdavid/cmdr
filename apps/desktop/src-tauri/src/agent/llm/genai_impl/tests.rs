@@ -1,6 +1,7 @@
 use super::*;
 use serde_json::json;
 
+mod overloaded;
 mod replay_fixtures;
 
 fn origin(adapter: AdapterKind, model: &str) -> ReasoningOrigin {
@@ -484,6 +485,17 @@ fn ai_error_maps_to_typed_agent_error() {
     assert_eq!(
         AgentLlmError::from(AiError::ModelNotInPlan("rate limit exceeded".into())),
         AgentLlmError::ModelNotInPlan("rate limit exceeded".into())
+    );
+    // The provider's `Retry-After` survives the hop, so the runtime's retry can honor it.
+    assert_eq!(
+        AgentLlmError::from(AiError::Overloaded {
+            detail: "HTTP 503: high demand".into(),
+            retry_after: Some(std::time::Duration::from_secs(5)),
+        }),
+        AgentLlmError::Overloaded {
+            detail: "HTTP 503: high demand".into(),
+            retry_after: Some(std::time::Duration::from_secs(5)),
+        }
     );
     assert!(matches!(
         AgentLlmError::from(AiError::EmptyResponse),

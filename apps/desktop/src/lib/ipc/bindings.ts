@@ -5972,6 +5972,11 @@ export type AgentErrorKindView =
    *  the provider, so this doesn't read as Cmdr's own problem.
    */
   | 'requestTooLarge'
+  /**
+   *  The provider stayed overloaded through every retry. The rail names the provider and says
+   *  it's busy, so it doesn't read as a problem with the key or with Cmdr.
+   */
+  | 'providerBusy'
   | 'budgetExhausted'
   /**
    *  The turn went in a circle: the model kept re-sending a tool call that had already come
@@ -6630,6 +6635,12 @@ export type AskCmdrStreamEvent =
   | { type: 'spendPaused'; costMicros: number }
   // Keep going was pressed: the turn runs on, and the question leaves the screen.
   | { type: 'spendResumed' }
+  /**
+   *  The provider is overloaded and the turn waits to try the same model call again, before
+   *  anything of it streamed. `attempt` is the try about to start (2 for the first retry), of
+   *  `attempts` in all. The rail says the provider is busy until the next chunk or the end.
+   */
+  | { type: 'providerBusyRetrying'; attempt: number; attempts: number }
   /**
    *  The user answered a suggestion this thread made, and the line saying so just landed in
    *  its timeline. The persisted event row's identity rides along, so a subscriber that also

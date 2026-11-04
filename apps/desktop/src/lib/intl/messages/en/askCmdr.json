@@ -47,6 +47,23 @@
   "@askCmdr.stalled": {
     "description": "Ask Cmdr status shown after 30 seconds with no visible assistant text or tool progress. It reassures the user and points to the existing Stop control; avoid the words error and failed."
   },
+  "askCmdr.providerBusy.named": "{provider} is busy right now. Trying again ({attemptText} of {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "description": "Ask Cmdr status shown in the assistant's reply bubble, beside a spinner, while the AI provider says it's overloaded (too many people using it at once) and Cmdr waits a few seconds to send the same request again on its own. Reassures the person that nothing is wrong on their side and that Cmdr is handling it; the existing Stop control still works. Ends with an ellipsis character (…). Avoids the words error and failed. Sentence case.",
+    "placeholders": {
+      "provider": "The AI provider's brand name, never translated (for example Google Gemini).",
+      "attemptText": "Which try comes next, a number from 2, already formatted (for example 2).",
+      "attemptsText": "How many tries Cmdr makes in all, a number already formatted (for example 4)."
+    }
+  },
+  "askCmdr.providerBusy.unnamed": "Your AI provider is busy right now. Trying again ({attemptText} of {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "description": "The same status as askCmdr.providerBusy.named, for a provider Cmdr has no name for (a custom endpoint or a local server). Shown beside a spinner while the provider says it's overloaded and Cmdr waits to send the same request again on its own. Ends with an ellipsis character (…). Avoids the words error and failed. Sentence case.",
+    "placeholders": {
+      "attemptText": "Which try comes next, a number from 2, already formatted (for example 2).",
+      "attemptsText": "How many tries Cmdr makes in all, a number already formatted (for example 4)."
+    }
+  },
   "askCmdr.softCap.message": "This chat is getting long. A fresh one keeps replies fast and focused.",
   "@askCmdr.softCap.message": {
     "description": "A gentle nudge shown once an Ask Cmdr conversation fills most of what the AI model can keep in view (about 70%), or once older parts had to be set aside. Friendly, not a hard limit."
@@ -1212,6 +1229,21 @@
   "askCmdr.error.requestTooLarge.unnamed": "Your AI provider turned this down: your plan’s limit is smaller than one request from Cmdr, which always carries its instructions. A shorter message won’t help. Try a bigger plan, or pick another provider in settings.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "description": "The same message as askCmdr.error.requestTooLarge.named, for a provider Cmdr has no name for (a custom endpoint or a local server). Shown in the Ask Cmdr chat when the AI provider refused the request as too large for the person's plan: every request Cmdr sends includes its own instructions to the model, which alone are over the plan's limit, so every message is refused no matter how short. Makes clear the limit is the provider's, not Cmdr's, and says what helps. Friendly and actionable; avoids the words error and failed. The apostrophes are U+2019. Sentence case.",
+    "screenshot": "ask-cmdr-chat.png",
+    "screenshotNote": "A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line."
+  },
+  "askCmdr.error.providerBusy.named": "{provider} is too busy to answer right now, even after a few tries. Give it a few minutes, then send your message again.",
+  "@askCmdr.error.providerBusy.named": {
+    "description": "Shown in the Ask Cmdr chat when the AI provider kept saying it was overloaded (too many people using it at once) and Cmdr's automatic retries didn't get through. Temporary and on the provider's side: the person's key and plan are fine, and nothing is wrong with Cmdr. The message wasn't kept, so they send it again later. The provider's own explanation shows on a line under this one. Friendly and actionable; avoids the words error and failed. Different from askCmdr.error.rateLimited, which is about the person's quota. Sentence case.",
+    "placeholders": {
+      "provider": "The AI provider's brand name, never translated (for example Google Gemini)."
+    },
+    "screenshot": "ask-cmdr-chat.png",
+    "screenshotNote": "A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line."
+  },
+  "askCmdr.error.providerBusy.unnamed": "Your AI provider is too busy to answer right now, even after a few tries. Give it a few minutes, then send your message again.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "description": "The same message as askCmdr.error.providerBusy.named, for a provider Cmdr has no name for (a custom endpoint or a local server). Shown in the Ask Cmdr chat when the AI provider kept saying it was overloaded and Cmdr's automatic retries didn't get through. Temporary and on the provider's side; the message wasn't kept, so the person sends it again later. Friendly and actionable; avoids the words error and failed. Sentence case.",
     "screenshot": "ask-cmdr-chat.png",
     "screenshotNote": "A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line."
   },

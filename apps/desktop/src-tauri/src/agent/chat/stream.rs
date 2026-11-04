@@ -163,6 +163,10 @@ pub enum AskCmdrStreamEvent {
     SpendPaused { cost_micros: i64 },
     /// Keep going was pressed: the turn runs on, and the question leaves the screen.
     SpendResumed,
+    /// The provider is overloaded and the turn waits to try the same model call again, before
+    /// anything of it streamed. `attempt` is the try about to start (2 for the first retry), of
+    /// `attempts` in all. The rail says the provider is busy until the next chunk or the end.
+    ProviderBusyRetrying { attempt: u32, attempts: u32 },
     /// The user answered a suggestion this thread made, and the line saying so just landed in
     /// its timeline. The persisted event row's identity rides along, so a subscriber that also
     /// loaded the row shows it once.
@@ -219,6 +223,9 @@ pub enum AgentErrorKindView {
     /// The provider's plan won't take a request as big as one Ask Cmdr prompt. The rail names
     /// the provider, so this doesn't read as Cmdr's own problem.
     RequestTooLarge,
+    /// The provider stayed overloaded through every retry. The rail names the provider and says
+    /// it's busy, so it doesn't read as a problem with the key or with Cmdr.
+    ProviderBusy,
     BudgetExhausted,
     /// The turn went in a circle: the model kept re-sending a tool call that had already come
     /// back with a problem, after being told repeating it changes nothing.
@@ -248,6 +255,7 @@ impl AgentErrorKindView {
             AgentErrorKindView::RateLimited => "rate_limited",
             AgentErrorKindView::ModelNotInPlan => "model_not_in_plan",
             AgentErrorKindView::RequestTooLarge => "request_too_large",
+            AgentErrorKindView::ProviderBusy => "provider_busy",
             AgentErrorKindView::BudgetExhausted => "budget_exhausted",
             AgentErrorKindView::RepeatedToolCall => "repeated_tool_call",
             AgentErrorKindView::UnfinishedReply => "unfinished_reply",
@@ -267,6 +275,7 @@ impl From<AgentErrorKind> for AgentErrorKindView {
             AgentErrorKind::RateLimited => Self::RateLimited,
             AgentErrorKind::ModelNotInPlan => Self::ModelNotInPlan,
             AgentErrorKind::RequestTooLarge => Self::RequestTooLarge,
+            AgentErrorKind::ProviderBusy => Self::ProviderBusy,
             AgentErrorKind::BudgetExhausted => Self::BudgetExhausted,
             AgentErrorKind::RepeatedToolCall => Self::RepeatedToolCall,
             AgentErrorKind::UnfinishedReply => Self::UnfinishedReply,
@@ -401,6 +410,9 @@ pub fn to_wire_event(event: AgentChatEvent) -> AskCmdrStreamEvent {
         AgentChatEvent::CostMetered => AskCmdrStreamEvent::CostMetered,
         AgentChatEvent::SpendPaused { cost_micros } => AskCmdrStreamEvent::SpendPaused { cost_micros },
         AgentChatEvent::SpendResumed => AskCmdrStreamEvent::SpendResumed,
+        AgentChatEvent::ProviderBusyRetrying { attempt, attempts } => {
+            AskCmdrStreamEvent::ProviderBusyRetrying { attempt, attempts }
+        }
     }
 }
 

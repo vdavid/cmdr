@@ -37,6 +37,8 @@ mod routing;
 
 mod classify;
 pub(crate) use classify::map_genai_error;
+#[cfg(test)]
+use classify::parse_retry_after;
 pub(super) use classify::provider_error_message;
 #[cfg(test)]
 use classify::{ai_error_for_status, provider_error_detail};
@@ -370,6 +372,14 @@ pub enum AiError {
     /// tokens-per-minute cap below one Ask Cmdr prompt, so every call gets it and retrying
     /// changes nothing.
     RequestTooLarge(String),
+    /// The provider is overloaded right now (HTTP 503, as Gemini answers under "high demand", or
+    /// Anthropic's 529 `overloaded_error`). Transient: the key and plan are fine, and the same
+    /// request a few seconds later usually goes through. `retry_after` is the response's
+    /// `Retry-After`, uncapped (the caller's retry policy caps it).
+    Overloaded {
+        detail: String,
+        retry_after: Option<Duration>,
+    },
     /// The provider has no such model, or the base URL points at a path it doesn't serve
     /// (HTTP 404). The commonest BYOK misconfiguration, and what a decommissioned model id
     /// looks like from our side — the `<provider>-smoke` lanes branch on this variant to
@@ -396,6 +406,7 @@ impl Display for AiError {
             Self::RateLimited(msg) => write!(f, "AI provider is rate-limiting or out of quota: {msg}"),
             Self::ModelNotInPlan(msg) => write!(f, "AI provider's plan doesn't include this model: {msg}"),
             Self::RequestTooLarge(msg) => write!(f, "AI provider won't take a request this big: {msg}"),
+            Self::Overloaded { detail, .. } => write!(f, "AI provider is overloaded right now: {detail}"),
             Self::NotFound(msg) => write!(f, "AI provider has no such model or endpoint: {msg}"),
             Self::EmptyResponse => write!(f, "AI returned no text"),
             Self::ServerError(msg) => write!(f, "AI server error: {msg}"),

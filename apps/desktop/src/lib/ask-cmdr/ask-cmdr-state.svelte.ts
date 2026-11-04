@@ -241,6 +241,7 @@ export function settleAssistant(assistant: AssistantItem): void {
   assistant.streaming = false
   assistant.thinking = false
   assistant.stalled = false
+  assistant.busy = undefined
   const lastPersisted = assistant.rounds.findLast((round) => round.messageId !== null)
   if (lastPersisted) assistant.id = lastPersisted.messageId
   assistant.rounds = settleRounds(assistant.rounds)

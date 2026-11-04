@@ -538,6 +538,15 @@ keeps the loop quiet on its own.
 `SettingsChanged` and `ReadinessChanged` clear the stamp outright, and `refresh_readiness` is what
 a key change already sends, so fixing the key is felt at once rather than six hours later.
 
+**The busy tier sits between the ordinary pace and the refusal.** A turn the provider kept turning away as
+overloaded, through its own retries (`../chat/DETAILS.md` § A busy provider), ends `AgentErrorKind::ProviderBusy`,
+which `completion_for_failure` makes `WakeCompletion::ProviderBusy`. `PROVIDER_BUSY_BACKOFF` holds the loop 30 minutes,
+doubling with each busy wake in a row to `PROVIDER_BUSY_BACKOFF_MAX` (two hours). Not the six-hour refusal (the key is
+fine, and overload passes) and not the ordinary spacing (it would walk straight back into the overload); decided
+2026-11-04 (#921). The streak lives in `schedule::Pacing` beside `not_before`, and only `pacing_after` moves either: a
+wake that got through (`Wake`, `ProviderRefused`) or a settings or readiness change (another provider, maybe) resets
+it, and the latter two lift the wait at once.
+
 ## The channel, and why it is a process-global
 
 `channel.rs` holds one `std::sync::mpsc` pair behind a `OnceLock`, created by whichever side

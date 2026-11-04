@@ -12,12 +12,13 @@ use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 
 use super::analytics;
-use super::consume::{StreamOutcome, consume_stream};
+use super::consume::StreamOutcome;
 use super::cost::meter_cost;
 use super::dispatch::{CallContext, ToolDispatcher, dispatch_ok, dispatch_until_stopped};
 use super::events::{AgentChatEvent, AgentErrorKind, ChatEventSink, ResolvedCall, emit};
 use super::limits::{LoopGuard, RoundJudgement, unanswered_wrap_up, wrap_up_limit};
 use super::repeats::{FailedCalls, Repeat};
+use super::retry::{CallEnd, call_model};
 use super::types::{TurnParams, TurnResult, TurnTally, UserTurn};
 use super::{LOG_TARGET, context};
 use crate::agent::chat::context::{
@@ -257,27 +258,16 @@ async fn drive(
             dispatcher.revoke_evidence(&assembled.elision.elided_call_ids);
         }
 
-        // Raced against Stop: a provider slow to answer (a long queue) would otherwise hold the
-        // turn, and its spend, until it did. Dropping the call drops the request. And bounded by
-        // the stall window, so a call that never opens can't hold the turn forever either.
-        let opened = tokio::select! {
-            biased;
-            () = cancel.cancelled() => return TurnEnd::Cancelled,
-            opened = tokio::time::timeout(STREAM_STALL_TIMEOUT, llm.respond(
-                &assembled.system,
-                &assembled.tools,
-                &assembled.messages,
-                params.call,
-                cancel.clone(),
-            )) => opened,
-        };
-        let Ok(opened) = opened else {
-            log::warn!(target: LOG_TARGET, "the model call didn't open within the stall window; ending it as stalled");
-            return stalled(tally);
-        };
-        let stream = match opened {
-            Ok(stream) => stream,
-            Err(error) => {
+        // Opened, read, and retried while the provider is overloaded and nothing has streamed
+        // (`retry.rs`), all raced against Stop and bounded by the stall window.
+        let outcome = match call_model(llm, &assembled, params.call, sink, cancel, &mut tally.busy_retries).await {
+            CallEnd::Streamed(outcome) => outcome,
+            CallEnd::Cancelled => return TurnEnd::Cancelled,
+            CallEnd::NeverOpened => {
+                log::warn!(target: LOG_TARGET, "the model call didn't open within the stall window; ending it as stalled");
+                return stalled(tally);
+            }
+            CallEnd::OpenFailed(error) => {
                 // The call never opened, so it never reached `End`: nothing is
                 // persisted (crash case b). Surface the typed error plus the
                 // provider's own wording for display.
@@ -288,15 +278,14 @@ async fn drive(
                 };
             }
         };
-
-        emit(sink, AgentChatEvent::AssistantStarted);
         let StreamOutcome {
             final_message,
             stop,
             usage,
             stream_error,
             stalled: went_quiet,
-        } = consume_stream(stream, sink, cancel).await;
+            streamed: _,
+        } = outcome;
 
         let mut message = match final_message {
             Some(message) => message,

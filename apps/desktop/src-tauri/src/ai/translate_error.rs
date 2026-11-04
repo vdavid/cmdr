@@ -109,6 +109,8 @@ impl From<AiError> for AiTranslateError {
             // The rate-limit toast already says "check your plan", the nearest headline we have;
             // the detail line carries the provider's own sentence.
             AiError::ModelNotInPlan(_) => K::RateLimited,
+            // The rate-limit toast's "busy" half is exactly this; a translation isn't retried.
+            AiError::Overloaded { .. } => K::RateLimited,
             AiError::EmptyResponse => K::EmptyResponse,
             AiError::ServerError(_) => K::ServerError,
             AiError::ParseError(_) => K::ParseError,
@@ -133,6 +135,13 @@ mod tests {
             (AiError::NotFound("x".into()), K::ServerError),
             (AiError::RequestTooLarge("x".into()), K::ServerError),
             (AiError::ModelNotInPlan("x".into()), K::RateLimited),
+            (
+                AiError::Overloaded {
+                    detail: "x".into(),
+                    retry_after: None,
+                },
+                K::RateLimited,
+            ),
             (AiError::EmptyResponse, K::EmptyResponse),
             (AiError::ServerError("x".into()), K::ServerError),
             (AiError::ParseError("x".into()), K::ParseError),

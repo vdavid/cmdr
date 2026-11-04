@@ -1,6 +1,8 @@
 //! Reading one `respond` stream to its end: the display events it emits on the way, and the two
 //! things that end it early, Stop and silence (`context::STREAM_STALL_TIMEOUT`).
 
+use std::time::Duration;
+
 use futures_util::StreamExt;
 use tokio_util::sync::CancellationToken;
 
@@ -15,6 +17,23 @@ pub(super) struct StreamOutcome {
     pub(super) stream_error: Option<AgentLlmError>,
     /// No stream item came for [`STREAM_STALL_TIMEOUT`], so the stream was dropped.
     pub(super) stalled: bool,
+    /// Something of the reply reached the rail (text, a reasoning tick, a tool line). Until it
+    /// has, the call is safe to send again (`retry.rs`); after, a retry would repeat on screen.
+    pub(super) streamed: bool,
+}
+
+impl StreamOutcome {
+    /// The provider's `Retry-After` when the stream ended on an overload before anything
+    /// streamed, the one shape a retry may answer (genai delivers a 503 as the stream's FIRST
+    /// error, after the call has opened). `Some(None)` is an overload with no `Retry-After`.
+    pub(super) fn overloaded_before_streaming(&self) -> Option<Option<Duration>> {
+        match &self.stream_error {
+            Some(AgentLlmError::Overloaded { retry_after, .. }) if !self.streamed && self.final_message.is_none() => {
+                Some(*retry_after)
+            }
+            _ => None,
+        }
+    }
 }
 
 /// Consume one `respond` stream, emitting display events and capturing the final
@@ -39,6 +58,7 @@ pub(super) async fn consume_stream(
     let mut usage = AgentUsage::default();
     let mut stream_error = None;
     let mut stalled = false;
+    let mut streamed = false;
     loop {
         let next = tokio::select! {
             biased;
@@ -50,16 +70,23 @@ pub(super) async fn consume_stream(
         };
         let Some(item) = next else { break };
         match item {
-            Ok(AgentDelta::Text(text)) => emit(sink, AgentChatEvent::TextDelta { text }),
-            Ok(AgentDelta::ReasoningTick) => emit(sink, AgentChatEvent::ReasoningTick),
+            Ok(AgentDelta::Text(text)) => {
+                streamed = true;
+                emit(sink, AgentChatEvent::TextDelta { text });
+            }
+            Ok(AgentDelta::ReasoningTick) => {
+                streamed = true;
+                emit(sink, AgentChatEvent::ReasoningTick);
+            }
             Ok(AgentDelta::KeepAlive) => {}
             // `use_tool`'s arguments, which say what it runs, are still streaming. Its line arrives
             // with the round's `ToolCallsResolved`, naming the tool: the rail never shows the wrapper.
             Ok(AgentDelta::ToolCallStarted {
                 tool: ToolId::UseTool, ..
-            }) => {}
+            }) => streamed = true,
             Ok(AgentDelta::ToolCallStarted { call_id, tool }) => {
-                emit(sink, AgentChatEvent::ToolCallStarted { call_id, tool })
+                streamed = true;
+                emit(sink, AgentChatEvent::ToolCallStarted { call_id, tool });
             }
             Ok(AgentDelta::End {
                 message,
@@ -82,5 +109,6 @@ pub(super) async fn consume_stream(
         usage,
         stream_error,
         stalled,
+        streamed,
     }
 }

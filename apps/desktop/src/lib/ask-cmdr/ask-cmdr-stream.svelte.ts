@@ -216,8 +216,20 @@ function applySpendPaused(costMicros: number): void {
   if (assistant) {
     assistant.thinking = false
     assistant.stalled = false
+    assistant.busy = undefined
   }
   clearProgressWatchdog()
+}
+
+/** The provider turned the call away as overloaded, and the backend waits to try it again. The
+ * bubble says so in place of "thinking…" or the stall line, and the wait counts as progress: the
+ * backend is working, and the line says what on. */
+function applyProviderBusy(attempt: number, attempts: number): void {
+  const assistant = ensureAssistant()
+  assistant.thinking = false
+  assistant.stalled = false
+  assistant.busy = { attempt, attempts, provider: namedCloudProvider() }
+  resetProgressWatchdog()
 }
 
 /**
@@ -349,6 +361,7 @@ export function stopStreaming(): void {
     bubble.streaming = false
     bubble.thinking = false
     bubble.stalled = false
+    bubble.busy = undefined
     holdTurnGroupsOpen(bubble)
   }
   askCmdrState.streaming = false
@@ -548,9 +561,9 @@ function applyStreamEvent(event: TurnEvent): void {
 }
 
 /** The events about a round's tool lines, the two that report on the CONTEXT (what the
- * assembly set aside, and what it cost), the meter's per-call nudge, and the spend pause's two
- * (the turn stopped between rounds to ask, or it runs on). Split out so `applyStreamEvent` stays
- * under the complexity ceiling and both halves stay exhaustive. */
+ * assembly set aside, and what it cost), the meter's per-call nudge, the spend pause's two
+ * (the turn stopped between rounds to ask, or it runs on), and a busy provider's retry. Split out
+ * so `applyStreamEvent` stays under the complexity ceiling and both halves stay exhaustive. */
 function handleLineContextOrSpendEvent(
   event: Extract<
     TurnEvent,
@@ -564,6 +577,7 @@ function handleLineContextOrSpendEvent(
         | 'costMetered'
         | 'spendPaused'
         | 'spendResumed'
+        | 'providerBusyRetrying'
     }
   >,
 ): void {
@@ -597,6 +611,10 @@ function handleLineContextOrSpendEvent(
     case 'spendResumed':
       askCmdrState.spendPausedMicros = null
       resetProgressWatchdog()
+      return
+    case 'providerBusyRetrying':
+      adoptLiveTurn()
+      applyProviderBusy(event.attempt, event.attempts)
   }
 }
 
@@ -706,18 +724,22 @@ function applyTextDelta(text: string): void {
   const assistant = ensureAssistant()
   assistant.thinking = false
   assistant.stalled = false
+  assistant.busy = undefined
   resetProgressWatchdog()
 }
 
 function applyThinking(): void {
   openRound()
-  ensureAssistant().thinking = true
+  const assistant = ensureAssistant()
+  assistant.thinking = true
+  assistant.busy = undefined
 }
 
 /** Idempotent per call within its round: a repeated line crashes the whole window (Svelte's
  * `each_key_duplicate`, ERR-FRMAR). */
 function applyToolStarted(callId: string, tool: string): void {
   const round = openRound()
+  ensureAssistant().busy = undefined
   if (!round.calls.some((candidate) => candidate.callId === callId)) {
     round.calls.push({ callId, tool, running: true, subject: null, outcome: null, repeatOf: null })
   }
@@ -811,9 +833,13 @@ function applyFailed(
     errorKind: kind,
     detail: detail ?? undefined,
     managed: managed ?? undefined,
-    provider: kind === 'requestTooLarge' || kind === 'modelNotInPlan' ? namedCloudProvider() : undefined,
+    provider: NAMES_THE_PROVIDER.has(kind) ? namedCloudProvider() : undefined,
   })
 }
+
+/** The failure kinds whose line names the provider, so the limit or the overload reads as the
+ * provider's, not Cmdr's. */
+const NAMES_THE_PROVIDER: ReadonlySet<AskCmdrErrorKind> = new Set(['requestTooLarge', 'modelNotInPlan', 'providerBusy'])
 
 /** The brand name of the cloud provider Ask Cmdr talks to, or `undefined` for a local server or a
  * custom endpoint (whose preset name, "Custom", names nothing). */

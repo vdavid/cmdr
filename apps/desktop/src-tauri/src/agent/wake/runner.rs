@@ -303,6 +303,9 @@ fn completion_for_failure(kind: AgentErrorKind, ordinary: WakeCompletion) -> Wak
         | AgentErrorKind::RateLimited
         | AgentErrorKind::ModelNotInPlan
         | AgentErrorKind::RequestTooLarge => WakeCompletion::ProviderRefused,
+        // Overloaded through every retry the turn made: transient, but asking again at the
+        // ordinary pace walks straight back into it.
+        AgentErrorKind::ProviderBusy => WakeCompletion::ProviderBusy,
         // ❌ Never fold a transient failure in here. An unreachable provider or a dropped stream
         // says nothing about the key, and six hours of silence for one flaky request would be
         // the agent punishing the user for their network. `NotConfigured` is a gate
@@ -397,6 +400,18 @@ mod tests {
                 completion_for_failure(kind, WakeCompletion::Wake),
                 WakeCompletion::Wake,
                 "{kind:?} is worth trying again at the ordinary pace"
+            );
+        }
+    }
+
+    /// A provider still overloaded after the turn's own retries is neither a settled refusal nor
+    /// a one-off: it gets the busy tier, from a wake and a follow-up alike.
+    #[test]
+    fn a_busy_provider_earns_the_busy_backoff() {
+        for ordinary in [WakeCompletion::Wake, WakeCompletion::FollowUp] {
+            assert_eq!(
+                completion_for_failure(AgentErrorKind::ProviderBusy, ordinary),
+                WakeCompletion::ProviderBusy
             );
         }
     }

@@ -264,7 +264,7 @@ Caveats for the picker:
 ## Error mapping
 
 Provider transport errors are classified by HTTP status once, upstream, in `crate::ai` (`ai_error_for_status`:
-401/403 → auth, 413 → request too large, 429 → rate-limited, or `ModelNotInPlan` when its request-limit header is zero). `RequestTooLarge` is the plan-too-small case and `ModelNotInPlan` the plan-without-this-model case (§ Tests); the rail words both with the provider's name and the wake loop treats both as settled, like a spent quota. `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
+401/403 → auth, 413 → request too large, 429 → rate-limited, or `ModelNotInPlan` when its request-limit header is zero, 503/529 → `Overloaded` with its `Retry-After`). `Overloaded` is the one transient kind the runtime retries (`../chat/DETAILS.md` § A busy provider); `genai_impl/tests/overloaded.rs` pins a real 503 through genai's Gemini adapter. `RequestTooLarge` is the plan-too-small case and `ModelNotInPlan` the plan-without-this-model case (§ Tests); the rail words both with the provider's name and the wake loop treats both as settled, like a spent quota. `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
 (`impl From<AiError>`), so there is no message-string matching anywhere. `AiError::Managed` stays typed as
 `AgentLlmError::Managed(refusal)` (the runtime's `ManagedByOrganization`), never a `Provider` string
 (`../../ai/DETAILS.md` § Managed policy). `AgentLlmError::NoKey` /
@@ -293,7 +293,7 @@ skip `tool_details` and guess. What they do: `../../tools/DETAILS.md` § Lazy lo
 - **`gemini-3.8-flash`** (the Gemini preset's default): reads `tool_details`, then `use_tool`, with no problem on the
   way (verified `smoke_gemini_default_deferred_tool`, 2026-11-03). The model was under "high demand" that night: a
   tiny `generateContent` 503'd, and the three-call turn took 372 s, so a single call can come close to the rail's
-  120 s stall limit (`chat::context::STREAM_STALL_TIMEOUT`) while Google is overloaded.
+  120 s stall limit (`chat::context::STREAM_STALL_TIMEOUT`) while Google is overloaded. A 503 is now retried (`../chat/DETAILS.md` § A busy provider), and `ask_cmdr_turn` counts busy retries and stalls per preset and model; the default stays `gemini-3.8-flash` unless those numbers show a pattern (decided 2026-11-04, #921).
 - **Mistral**: the host takes the prefix, the tool-search pair, and a stored `use_tool` back (verified on
   `ministral-14b-latest`, `MISTRAL_MODEL=ministral-14b-latest smoke_mistral_deferred_tool`, 2026-11-03). Like Ministral
   3B locally, it skips `tool_details`, guesses `sortBy`, and gets it right on the gate's second try. That's why

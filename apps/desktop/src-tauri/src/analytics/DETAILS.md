@@ -271,8 +271,10 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `ask_cmdr_turn` (backend, `agent/chat/runtime/analytics.rs`, at `run_turn`'s single exit AND on the pre-turn
   refusal path): `origin` (`text` / `wake` / `outcomes` / `resume`), `outcome` (`answered` / `cancelled` / `failed` /
   `refused`), `failure` (the `AgentErrorKind` / `AgentErrorKindView` token, or `none`), `provider` (the `ProviderTag`
-  token, or `unresolved` on a refusal), `tool_turns` + `proposals` buckets; never a prompt, a reply, or anything a tool
-  read. `refused` covers the five gates that answer before a turn exists (no store, Ask Cmdr off (`ask_cmdr_off`), no cloud consent
+  token, or `unresolved` on a refusal), `preset` (the `ai.cloudProvider` preset id, `local`, or `unresolved`), `model`
+  (a public catalog model id on a catalog preset, else `other` / `local` / `unresolved`), `tool_turns` + `proposals` +
+  `busy_retries` buckets, and `stalled` (bool); never a prompt, a reply, or anything a tool read. Why `model` is
+  allowlisted by preset and shape: `agent/chat/DETAILS.md` § The turn event. `refused` covers the five gates that answer before a turn exists (no store, Ask Cmdr off (`ask_cmdr_off`), no cloud consent
   (`no_cloud_consent`), no resolvable provider,
   a local window under the floor), so the funnel has a top as well as a middle. This is the agent funnel's DENOMINATOR: the three `suggestion_group_*`
   events below only become readable against it, because a zero on them otherwise can't be told apart from a feature

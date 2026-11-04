@@ -11,7 +11,7 @@
     import Icon from '#lib/ui/Icon.svelte'
     import Spinner from '#lib/ui/Spinner.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
-    import { errorMessage, undoSkipMessage } from './ask-cmdr-labels'
+    import { errorMessage, providerBusyMessage, undoSkipMessage } from './ask-cmdr-labels'
     import { renderAssistantMarkdown } from './ask-cmdr-markdown'
     import { displaySegments, groupKey } from './ask-cmdr-rounds'
     import { groupSummaryText } from './ask-cmdr-tool-group-summary'
@@ -141,7 +141,13 @@
                 </div>
             {/if}
         {/each}
-        {#if message.thinking || message.stalled}
+        {#if message.busy}
+            <!-- Before the stall line: a busy provider's wait is progress the backend reports. -->
+            <div class="status-line" role="status">
+                <span class="status-glyph"><Spinner size="sm" /></span>
+                <span>{providerBusyMessage(message.busy)}</span>
+            </div>
+        {:else if message.thinking || message.stalled}
             <div class="status-line" role="status">
                 <span class="status-glyph"><Spinner size="sm" /></span>
                 <span>{message.stalled ? tString('askCmdr.stalled') : tString('askCmdr.thinking')}</span>
