@@ -14,7 +14,7 @@ export default defineConfig({
   // builds); here it's always on so the tests run.
   define: {
     __CMDR_E2E_BUILD__: 'true',
-    // Off, as in the app build: a test that imports `hooks.client.ts` must not install the demo's mock backend.
+    // Off, as in the app build (the boot module is aliased away below anyway).
     __CMDR_DEMO_BUILD__: 'false',
     // Empty in unit tests; the worktree-label decoration is exercised in `app-mode.test.ts`
     // by passing the label explicitly rather than relying on this baked-in constant.
@@ -79,6 +79,9 @@ export default defineConfig({
       // never sees these aliases. Why, and what the shim may export:
       // `test/e2e-playwright/vitest-playwright-shim.ts`.
       '@playwright/test': path.resolve('./test/e2e-playwright/vitest-playwright-shim.ts'),
+      // As in every non-demo build (`vite.config.js`): a test importing `hooks.client.ts` gets the
+      // empty stand-in, so no demo module (and its `$app/*` imports) loads under vitest.
+      '#lib/demo/boot.js': path.resolve('./src/lib/demo/boot-absent.ts'),
       '@srsholmes/tauri-playwright': path.resolve('./test/e2e-playwright/vitest-playwright-shim.ts'),
     },
   },

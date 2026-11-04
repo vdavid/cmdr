@@ -1,6 +1,8 @@
 /**
- * Tauri plugin commands (`plugin:<name>|<command>`) the demo answers itself. The store plugin keeps
- * each file in memory, so a demo session's settings live until the tab reloads.
+ * Tauri plugin commands (`plugin:<name>|<command>`) the backend answers: the store plugin, which
+ * keeps each file in memory (a demo session's settings live until the tab reloads, and every
+ * webview sees the same values, as with the real plugin), plus `path` and `app`. Commands about one
+ * webview's own window live in `webview.ts`.
  */
 import { browserSafeShortcuts } from './browser-shortcuts.js'
 import { DEMO_HOME } from './demo-tree.js'
@@ -9,11 +11,14 @@ import { DEMO_HOME } from './demo-tree.js'
 const seeds: Record<string, Record<string, unknown>> = {
   // Skip the first-run wizard: a visitor came to try the panes.
   'settings.json': { 'onboarding.completed': true },
-  'shortcuts.json': browserSafeShortcuts,
+  // One `shortcut:<commandId>` key per customization, as `shortcuts-store.ts` reads them.
+  'shortcuts.json': Object.fromEntries(
+    Object.entries(browserSafeShortcuts).map(([id, keys]) => [`shortcut:${id}`, keys]),
+  ),
 }
 
 const storesByPath = new Map<string, number>()
-const stores = new Map<number, Map<string, unknown>>()
+const stores = new Map<number, { defaults: Record<string, unknown>; entries: Map<string, unknown> }>()
 let nextRid = 1
 
 /** `load`'s `defaults`, applied the way the plugin does: only to keys the file doesn't hold. */
@@ -22,19 +27,23 @@ function storeFor(path: string, defaults: Record<string, unknown> = {}): number 
   if (known !== undefined) return known
   const rid = nextRid++
   storesByPath.set(path, rid)
-  stores.set(rid, new Map(Object.entries({ ...defaults, ...seeds[path] })))
+  stores.set(rid, { defaults, entries: new Map(Object.entries({ ...defaults, ...seeds[path] })) })
   return rid
 }
 
+function storeOf(payload: Record<string, unknown>) {
+  const store = stores.get(payload.rid as number)
+  if (!store) throw new Error(`Demo store ${String(payload.rid)} isn't loaded`)
+  return store
+}
+
 function entriesOf(payload: Record<string, unknown>): Map<string, unknown> {
-  const entries = stores.get(payload.rid as number)
-  if (!entries) throw new Error(`Demo store ${String(payload.rid)} isn't loaded`)
-  return entries
+  return storeOf(payload).entries
 }
 
 type PluginHandler = (payload: Record<string, unknown>) => unknown
 
-const handlers: Record<string, PluginHandler> = {
+const handlers: Partial<Record<string, PluginHandler>> = {
   'plugin:store|load': (p) =>
     storeFor(p.path as string, (p.options as { defaults?: Record<string, unknown> } | undefined)?.defaults),
   'plugin:store|get_store': (p) => storesByPath.get(p.path as string) ?? null,
@@ -49,8 +58,10 @@ const handlers: Record<string, PluginHandler> = {
   'plugin:store|clear': (p) => {
     entriesOf(p).clear()
   },
+  // Back to the `load` defaults, as the plugin does.
   'plugin:store|reset': (p) => {
-    entriesOf(p).clear()
+    const store = storeOf(p)
+    store.entries = new Map(Object.entries(store.defaults))
   },
   'plugin:store|keys': (p) => [...entriesOf(p).keys()],
   'plugin:store|values': (p) => [...entriesOf(p).values()],
@@ -58,25 +69,16 @@ const handlers: Record<string, PluginHandler> = {
   'plugin:store|length': (p) => entriesOf(p).size,
   'plugin:store|save': () => undefined,
   'plugin:store|reload': () => undefined,
+  'plugin:resources|close': () => undefined,
   // Every standard folder resolves inside the demo's home, which is all the app asks for.
   'plugin:path|resolve_directory': () => DEMO_HOME,
-  // The "window" is the browser viewport.
-  'plugin:window|outer_size': () => ({ width: window.innerWidth, height: window.innerHeight }),
-  'plugin:window|inner_size': () => ({ width: window.innerWidth, height: window.innerHeight }),
-  'plugin:window|scale_factor': () => window.devicePixelRatio,
-  'plugin:window|is_fullscreen': () => false,
-  'plugin:window|is_maximized': () => false,
-  'plugin:window|is_focused': () => document.hasFocus(),
-  'plugin:window|is_visible': () => true,
-  'plugin:window|title': () => document.title,
   'plugin:app|version': () => 'demo',
   'plugin:app|set_app_theme': () => undefined,
   'plugin:app|name': () => 'Cmdr',
   'plugin:app|tauri_version': () => '2',
-  'plugin:resources|close': () => undefined,
 }
 
-/** The plugin's answer, or `undefined` for a plugin command the demo doesn't know. */
+/** The backend's answer for a plugin command, or `undefined` for one it doesn't know. */
 export function pluginHandler(cmd: string): PluginHandler | undefined {
   return handlers[cmd]
 }

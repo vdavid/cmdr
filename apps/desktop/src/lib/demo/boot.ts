@@ -1,45 +1,43 @@
 /**
- * The browser demo's stand-in for the Tauri backend: imported first by `hooks.client.ts`, and in
- * demo builds only (`__CMDR_DEMO_BUILD__`) it installs itself before any app module runs. Every
- * `invoke` the app makes lands in `answer()`; events the "backend" sends go through
- * `@tauri-apps/api/mocks`' event emulation. Every other build never sees this module:
- * `vite.config.js` aliases it to the empty `boot-absent.ts` (see `DETAILS.md` § Keeping the demo
- * out of the app); the guard only keeps vitest from installing it.
+ * The browser demo's stand-in for the Tauri backend: `hooks.client.ts` imports it first, and in
+ * demo builds (`__CMDR_DEMO_BUILD__`) it installs itself before any app module runs. Every other
+ * build never sees this module: `vite.config.js` aliases it to the empty `boot-absent.ts` (see
+ * `DETAILS.md` § Keeping the demo out of the app); the guard covers a test that imports it directly.
+ *
+ * The top frame creates the page's one backend and a webview over it. A secondary window (a
+ * same-origin iframe of its route, named after its window label) finds the parent's backend and
+ * installs only a webview. The demo itself may be framed by another page (the landing page's
+ * embed): a parent without a backend, or a cross-origin one, makes this frame the top.
  */
-import { mockIPC, mockWindows } from '@tauri-apps/api/mocks'
-import type { AnswerTable, Payload } from './answer-types.js'
-import { appAnswers, rawAnswers, silentCommands } from './answers.js'
-import { listingAnswers, listingSideAnswers, startListingEngine } from './listing.js'
-import { pluginHandler } from './plugins.js'
-import { exposeUnanswered, noteUnanswered } from './unanswered.js'
-import { volumeAnswers } from './volumes.js'
+import { createDemoBackend, type DemoBackend } from './backend.js'
+import { exposeUnanswered } from './unanswered.js'
+import { installWebview } from './webview.js'
 
-type Handler = (payload: Payload) => unknown
+interface DemoHost {
+  __cmdrDemoBackend?: DemoBackend
+}
 
-function camelCase(snake: string): string {
-  return snake.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())
+/** The parent frame's backend, when this frame is one of the demo's own secondary windows. */
+function parentBackend(): DemoBackend | undefined {
+  if (window.parent === window) return undefined
+  try {
+    return (window.parent as unknown as DemoHost).__cmdrDemoBackend
+  } catch {
+    // A cross-origin parent: someone else's page framing the demo.
+    return undefined
+  }
 }
 
 function installDemoBackend(): void {
-  const silent = Object.fromEntries(silentCommands.map((name) => [name, () => undefined]))
-  const answers: AnswerTable = {
-    ...silent,
-    ...appAnswers,
-    ...volumeAnswers,
-    ...listingSideAnswers,
-    ...listingAnswers(),
+  const shared = parentBackend()
+  if (shared) {
+    installWebview(shared, window.name || 'secondary')
+    return
   }
-  const byName = answers as Record<string, Handler | undefined>
-
-  function answer(cmd: string, payload: Payload): unknown {
-    const handler = pluginHandler(cmd) ?? rawAnswers[cmd] ?? byName[camelCase(cmd)]
-    return handler ? handler(payload) : noteUnanswered(cmd, payload)
-  }
-
+  const backend = createDemoBackend()
+  ;(window as unknown as DemoHost).__cmdrDemoBackend = backend
   exposeUnanswered()
-  mockWindows('main')
-  mockIPC((cmd, payload) => answer(cmd, (payload ?? {}) as Payload), { shouldMockEvents: true })
-  startListingEngine()
+  installWebview(backend, 'main')
 }
 
 if (__CMDR_DEMO_BUILD__) installDemoBackend()

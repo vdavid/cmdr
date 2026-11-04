@@ -16,6 +16,7 @@ export interface DemoEntry {
 }
 
 export const DEMO_VOLUME_ID = 'root'
+export const DEMO_ROOT = '/'
 export const DEMO_HOME = '/Users/you'
 
 const DAY = 24 * 60 * 60 * 1000

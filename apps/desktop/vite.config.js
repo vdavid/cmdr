@@ -61,6 +61,9 @@ const demoBuild = process.env.CMDR_DEMO_BUILD === '1'
 
 const pagesDir = process.env.CMDR_FRONTEND_BUILD_DIR ?? (demoBuild ? 'build-demo' : 'build')
 
+// The demo's WASM listing engine (`pnpm build:listing-wasm`'s output, gitignored).
+const listingWasmDir = fileURLToPath(new URL('../../crates/cmdr-listing-wasm/pkg', import.meta.url))
+
 /**
  * Bakes the old-WebKit boot guard's translated strings into the app shell, and
  * returns the path SvelteKit should read the shell from.
@@ -157,9 +160,16 @@ export default defineConfig(async () => ({
   // Outside the demo build, `hooks.client.ts`'s import of the demo backend resolves to an empty
   // module, so none of `src/lib/demo/` reaches the graph. `boot.ts`'s own `__CMDR_DEMO_BUILD__`
   // guard alone would leave any module-level demo data in the bundle.
+  // In the demo build, `listing.ts`'s `virtual:cmdr-listing-wasm` is the WASM listing engine's JS
+  // glue, built by `pnpm build:listing-wasm` (which `build:demo` and `dev:demo` run first).
   resolve: {
     alias: demoBuild
-      ? []
+      ? [
+          {
+            find: /^virtual:cmdr-listing-wasm$/,
+            replacement: join(listingWasmDir, 'cmdr_listing_wasm.js'),
+          },
+        ]
       : [
           {
             find: /^#lib\/demo\/boot\.js$/,
@@ -212,5 +222,7 @@ export default defineConfig(async () => ({
     watch: {
       ignored: ['**/src-tauri/**'],
     },
+    // SvelteKit's allow list covers the app; the demo's engine fetches its `.wasm` from outside it.
+    fs: demoBuild ? { allow: [listingWasmDir] } : undefined,
   },
 }))
