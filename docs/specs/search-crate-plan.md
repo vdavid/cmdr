@@ -20,8 +20,8 @@ media/OCR search stays in `cmdr-index`'s `media_index` read API, which this crat
 ## Loud rules
 
 - ❌ **Desktop behavior stays byte-identical.** Same results, same order, same counts, same honesty fields, same events,
-  same log lines (shape). M0's goldens prove it; a golden change in M1–M6 is a bug, never a re-record. The one
-  deliberate exception is M1's `fill_dir_sizes` error path.
+  same log lines (shape). M0's goldens prove it; a golden change in M1–M6 is a bug, never a re-record. The only
+  exceptions are listed in § "Deliberate behavior changes", each its own red-first commit.
 - ❌ **`bindings.ts` doesn't change.** specta names a type by its struct identity, not its module, so moved types keep
   their names. Regenerate and `git diff --exit-code apps/desktop/src/lib/ipc/bindings.ts` on every milestone. Specta
   stays pinned `=2.0.0-rc.24` (one specta in the graph, or the `Type` impls stop satisfying `tauri-specta`).
@@ -37,7 +37,8 @@ media/OCR search stays in `cmdr-index`'s `media_index` read API, which this crat
 - ❌ **No ambient platform, clock, home, or runtime in the core.** Name folding comes from a `NameRules` value, the home
   dir and mount prefix are parameters, a timing log reads `cmdr_fs::rt::Instant`, and the core spawns nothing (rayon's
   `par_chunks` is the one parallelism, and it falls back to the calling thread in the browser, § Perf). The crate's
-  `clippy.toml` bans `std::time::Instant::now`, `SystemTime::now`, `dirs::home_dir`, and `std::thread::spawn`.
+  `clippy.toml` bans `std::time::Instant::now`, `SystemTime::now`, `time::OffsetDateTime::now_utc`,
+  `time::OffsetDateTime::now_local`, `dirs::home_dir`, and `std::thread::spawn`.
 - ❌ **No app statics in the crate.** State the core needs is a value the host owns (the listing and viewer rule: "the
   host is a value"). Arena caching, idle drops, load gates, staleness, and the weights subscriber stay host policy.
 - ❌ **No search logic in TS, no `if (demo)` in app code.** The demo's TS search answers are deleted as the engine takes
@@ -45,6 +46,8 @@ media/OCR search stays in `cmdr-index`'s `media_index` read API, which this crat
   silently shadows the engine).
 - ❌ **Don't touch `cmdr-index`'s behavior.** Only its surface shrinks (`SYSTEM_DIR_EXCLUDES` moves to `cmdr-fs`).
 - ❌ **Strip milestone tags** from code, comments, test names, and docs before landing (the guide's `rg`).
+- ❌ **No swallowed source error.** A source read that fails (scope resolution, a size range, a size fill) fails the
+  search as `SearchError::SourceUnreadable`; ❌ never an empty answer, an "unresolved" path, or `SearchRunError::Query`.
 - Every milestone ends with the `AGENTS.md` § "Checker script" cadence
   (`pnpm check --fast && pnpm check svelte-tests-related`, `pnpm check clippy`, the touched crates'
   `cargo nextest run`), the `bindings.ts` diff, and from M4 on `pnpm build:listing-wasm -smoke`.
@@ -90,11 +93,22 @@ media/OCR search stays in `cmdr-index`'s `media_index` read API, which this crat
 - **Platform**: `cfg!(target_os = "macos")` decides the default case rule (`matcher.rs::case_insensitive_for`), NFD
   pattern normalization (`compile_pattern`, `ranking::stem_for`), and, through `cmdr_fs::name_fold`'s `cfg`, the
   exclusion fold. In the browser all three silently take the Linux answer.
-- **Home**: `dirs::home_dir()` in `engine.rs:416` (the `~` parent path) and `query.rs::parse_scope`; `expand_tilde` in
-  `canonicalize_scope_path` and the AI size mapping.
+- **Home**: `dirs::home_dir()` in `engine.rs:416` (the `~` parent path), `query.rs::parse_scope`, and
+  `ai/mappings/size_scope_mapping.rs:32`; `expand_tilde` in `canonicalize_scope_path` (so `~` expands only on the host's
+  path today: a pane at home sends `~` as its scope) and the AI size mapping. `ai/mappings/time_mapping.rs:11` reads
+  `OffsetDateTime::now_utc()`.
 - **Threads and cancellation**: the core uses rayon only. `canonicalize_scope_path` spawns a thread under a 2 s
   `realpath` deadline (host: it guards dead mounts). The loader takes an `&AtomicBool` cancel; live runs take a
-  `CancellationToken` (host). The registry and `ResultStream` use `Mutex` statics and `Instant`.
+  `tokio_util::CancellationToken` (`live.rs:107`), so M3's crate depends on `tokio-util` (the spec `cmdr-listing` uses).
+  The registry and `ResultStream` use `Mutex` statics and `Instant`. `index/load.rs:38`'s `LAST_LOAD_WORKERS` is a
+  `cfg(test)` static in the loader, which stays in the host.
+- **Logging helpers**: `summarize_query_for_diagnostics` calls `crate::pluralize` (`query.rs:100-105`), which is
+  `cmdr_fs::pluralize` re-exported: M1 imports it from `cmdr-fs` directly.
+- **Swallowed errors**: `query.rs:439` `let _ = pool.with_conn(...)` in scope resolution (a pool that won't hand out a
+  connection resolves nothing and the `[i64::MIN]` sentinel returns a silent empty result), `query.rs:450` reports a SQL
+  error as `unresolved` (reads as a typo), `execute.rs::fill_dir_sizes` (`let _ =` plus `if let Ok`), and
+  `execute/live_run.rs:432` maps every covered-half `Err`, a `dir_stats` read failure included, to
+  `SearchRunError::Query` ("invalid pattern") with a raw SQL message.
 - **IPC types in `bindings.ts`**: `SearchQuery`, `SearchResult`, `SearchResultEntry`, `PatternType`, `SearchSort`,
   `ParsedScope` (`types.rs`); `SearchRunCoverage`, `SearchPhase`, `WalkEnding`, `CoverageKind`, `SearchRunError` plus
   the four events (`live/events.rs`); `PrepareResult`, `SearchSortRow`, `SearchSortAnswer`, `TranslateResult`
@@ -127,12 +141,23 @@ an in-memory source answers from a tree.
   `name`, `is_directory`, `size`, `modified_at`, `index_of_id`, `generation`). `SearchEntry` stays 40 bytes and `OptU64`
   stays the only way to read size and date. Built only through:
 - **`ArenaBuilder`**: push rows in ascending id order (`debug_assert` on order, ❌ never a sort in release), names into
-  the one `String`, then `finish()`. Plus `merge_segments` (the parallel load's ordered concat, with `spare_rows` room)
-  and `SearchIndex::append_created` (the catch-up). `ROOT_ID` becomes the crate's own `ARENA_ROOT_ID = 1`; the desktop
-  loader carries `const _: () = assert!(cmdr_search::ARENA_ROOT_ID == cmdr_index::store::ROOT_ID);`.
+  the one `String`, then `finish()`. `push` is `#[inline]`: the host's loader calls it once per row across the crate
+  edge, and the dev and `e2e` profiles run without LTO. Plus `merge_segments` (the parallel load's ordered concat, with
+  `spare_rows` room) and `SearchIndex::append_created` (the catch-up). `ROOT_ID` becomes the crate's own
+  `ARENA_ROOT_ID = 1`; the desktop loader carries
+  `const _: () = assert!(cmdr_search::ARENA_ROOT_ID == cmdr_index::store::ROOT_ID);`.
 - **`SearchRows`** (trait): `fn arena(&self) -> &SearchIndex`, `fn path_prefix(&self) -> &str` (mount root, empty for
-  root), `fn resolve_scope(&self, include_paths: &[String]) -> ScopeResolution` (ids plus a typed `unresolved` list;
-  empty ids means whole volume, today's rule).
+  root), `fn resolve_scope(&self, index_paths: &[(String, String)]) -> Result<ScopeResolution, SourceError>` (original
+  path plus index-relative path in; a typed scope plus the `unresolved` list out). The crate first expands `~` from
+  `ctx.home_dir` and maps each path into the index space (`to_index_relative`, pure, moves into the crate), so no source
+  sees a `~` or a mount-absolute path. The host's `IndexSource` still canonicalizes (`realpath` under its deadline)
+  before handing paths in; that step is host-only by nature.
+- **`ResolvedScope`** (crate-internal enum): `Whole`, `Ids(Vec<i64>)`, `Nothing`. It replaces the "empty `include_ids`
+  means whole volume, `[i64::MIN]` means nothing" encoding (`query.rs:387-392`): the engine takes it as a parameter
+  instead of reading `SearchQuery::include_path_ids`, which stays on the wire type untouched (`bindings.ts`).
+- **`SearchError`**: `Query(..)` (invalid pattern, too broad, a bad exclude glob) and `SourceUnreadable(..)` (any source
+  read). The host maps `SourceUnreadable` to `SearchRunError::IndexUnreadable` with the conversational copy
+  `live_run.rs:425` already uses, and `Query` to `SearchRunError::Query`.
 - **`DirSizeSource`** (trait): `fn in_range(&self, min, max) -> Result<HashMap<i64, u64>, SourceError>` and
   `fn of(&self, ids: &[i64]) -> Result<Vec<Option<u64>>, SourceError>`. Both fail loudly: a read error fails the search
   (❌ never "no map", which the engine reads as "no filter"). There is no "sizes not tracked" answer: every host has
@@ -145,10 +170,14 @@ an in-memory source answers from a tree.
 - **`search_covered(rows, sizes, query, ctx) -> Result<CoveredHalf, SearchError>`**: today's `search_covered_half`
   (scope resolution, the dir-size map, `search_ranked`, the dir-size fill) as one crate function. `run_blocking` and the
   live run's covered half both call it; the host only routes and loads.
-- **`MemorySource`** (crate, M4): `SearchRows` over rows a caller hands in (`path`, kind, size, mtime), ids assigned in
-  path order from `ARENA_ROOT_ID`, scope resolution through a `(parent_id, folded name) → id` map built at load with the
-  SAME fold the index's `resolve_component` uses. Desktop tests use it to test the core with no database; the demo uses
-  it over `InMemoryVolume`.
+- **`MemorySource`** (crate, M4): `SearchRows` over rows a caller hands in (`path`, kind, size, mtime). Ids follow ONE
+  defined order: `ARENA_ROOT_ID` for the root, then depth-first with each folder's children sorted by byte name. Ids
+  matter beyond lookup: every sort breaks ties on entry id (`ranking.rs:297`, `engine.rs:477`) and `entry_id` rides in
+  each result row, so equal answers need equal ids. Scope resolution goes through a `(parent_id, folded name) → id` map
+  built at load with the fold from `NameRules`, which on desktop equals the fold `resolve_component` reads
+  (`name_folded`); ❌ never `normalize_for_comparison` directly (its browser branch is the identity, which would
+  disagree with a demo that presents as a Mac). Desktop tests use it to test the core with no database; the demo uses it
+  over `InMemoryVolume`.
 - **The index-backed source stays in the app** (`search/` becomes the host, the `listing_host/` pattern): `IndexSource`
   wraps `LoadedVolume` (pool, mount root, arena) and answers through the existing SQL (David, 2026-11-04: it's SQL,
   threads, and the app's arena lifecycle, and the demo's rows come from its tree, proven identical by M4).
@@ -165,6 +194,9 @@ an in-memory source answers from a tree.
 - **SQL that could have stayed "smart"**: nothing. The dir-size range scan (33–40 ms) and scope resolution (a handful of
   indexed lookups) were already source questions, and they stay SQL in `IndexSource`. The arena is query-independent and
   cached across queries, so no query predicate can be pushed into the load.
+- **The load is the one per-row crossing**: the host's SQL loader pushes about six million rows into `ArenaBuilder`.
+  `#[inline]` on `push` keeps it a plain copy in every profile; M2's bench pass measures the load (warm, a real
+  `index-root.db`) as well as the scan.
 - **Memory**: unchanged. Same 40-byte row, same id-sorted arena with no id map, same 1/128 spare room, same merge peak
   (the loader's threads stay in the host).
 - **Allocations per query**: unchanged by construction (per-chunk clones of the compiled query and scope filter move
@@ -172,9 +204,39 @@ an in-memory source answers from a tree.
 - **The browser**: rayon-core 1.13.0's `default_global_registry` falls back to a one-thread pool on the calling thread
   when threads are unsupported (`registry.rs` lines 209–228, verified 2026-11-04 by reading the locked source), so
   `par_chunks` runs inline. The demo tree is a few thousand rows: well under a millisecond even at a 2–3× wasm penalty.
-  Only a Node/browser smoke proves the fallback doesn't trap, so M4 adds one.
+  Only a Node/browser smoke proves the fallback doesn't trap, so M4 adds one. Rayon is new to the wasm graph
+  (`cmdr-listing-wasm` carries none today), so M8 records what it adds to the `.wasm`.
+
+## Deliberate behavior changes
+
+The register of every place this plan changes what desktop does. Each is its own commit with a test seen red first, and
+nothing else in the plan may move a golden.
+
+1. **`home_relative_parent` gets a `/` boundary** (`engine.rs:536`, before M0): a bare `strip_prefix(home)` turns
+   `/Users/david/x` into `~id/x` when home is `/Users/dav`.
+2. **"Today" starts at local midnight** (`ai/mappings/time_mapping.rs:11`, before M0): `now_utc()` puts "today" and
+   "yesterday" one to two hours off in Stockholm.
+3. **A bad exclude glob is surfaced** (`excludes.rs:62`, before M0): it's dropped by `if let Ok` today, so the search
+   quietly ignores an exclusion the user typed. It becomes a `Query` error naming the pattern, like an invalid name
+   pattern.
+4. **`fill_dir_sizes` fails the search on a read error** (M1).
+5. **Scope resolution fails the search on a read error** (M1, `query.rs:439` and `:450`): ❌ no more silent empty result
+   or "unresolved" for a SQL failure.
+6. **A source read error reaches the live run as `IndexUnreadable`** (M1, `live_run.rs:432`), with the conversational
+   copy, never `Query` with a raw SQL message.
 
 ## Milestones
+
+### Early fixes: three pre-existing bugs (S, before M0)
+
+- **Scope**: changes 1–3 above, three commits, each red first, in the code where it lives today.
+- **Intentions**: they land before M0 so the goldens pin the fixed behavior, and each fix stays reviewable on its own
+  rather than hidden in a move.
+- **Landmines**: (1) a home of `/` and a parent equal to home both still read right (`~` alone). (2) Local midnight
+  needs the local offset: `time`'s `now_local` can fail on some platforms (its soundness guard), so take the offset
+  where the app already resolves it, and pass "now" in as a value, which M5 needs anyway. A test across a DST change.
+  (3) Check how the dialog and MCP render a `Query` error so the message reads well in both; copy goes past David.
+- **DONE**: three commits, each with a test that was red before its fix.
 
 ### M0: characterize (S–M)
 
@@ -184,15 +246,21 @@ an in-memory source answers from a tree.
   volume with a prefix, `dir_stats` rows for size filters, an importance map). About 40 queries through
   `search_covered_half` (glob, wildcard glob, regex, case override both ways, accented, newline, size and date bounds,
   directory size filter and `sortBy: size` / `modified`, include scopes, unresolved scope, whole-volume mount-root
-  scope, system dirs on and off, count-only, the limit ceiling, too broad under both evaluators). Plus the event trace
-  of one live run over a fully covered scope (progress batches, the complete payload). Committed as JSON goldens. Record
-  `bench_arena_scan` and `bench_query_allocations` (release, a real `index-root.db`) in `docs/notes/`.
+  scope, system dirs on and off, count-only, the limit ceiling, too broad under both evaluators). Plus the event traces
+  of live runs over a fully covered scope (progress batches, the complete payload) and of one that fails (the error
+  event). Committed as JSON goldens. The corpus writer inserts rows in `MemorySource`'s defined order (root, then
+  depth-first, children by byte name), so M4 can require equal ids. Record `bench_arena_scan` and
+  `bench_query_allocations` (release, a real `index-root.db`) in `docs/notes/`.
 - **Intentions**: the proof every later milestone must match. Platform-dependent answers get one golden per platform
   today; M1 turns them into explicit `NameRules` runs.
 - **Landmines**: pin reality, not expectation. Make each pin bite: break the engine on purpose (drop the NFD step, flip
   the `Excluded` count, reverse a tie-break) and see the golden go red, then revert. Fixtures in id order (the arena's
   binary search answers wrong otherwise). The event trace has timing-driven batch splits: drive it with the flush
-  interval out of the picture, or pin only the rows and the terminal payload.
+  interval out of the picture, or pin only the rows and the terminal payload. Keep the goldens hermetic: root the corpus
+  under a path that exists nowhere and isn't under any `$HOME` (`/cmdr-golden`), so `realpath` keeps it literal (macOS
+  rewrites `/tmp` and `/var` to `/private/…`) and the `~` substitution never fires; seed the importance weights
+  explicitly rather than through `volumes::weights_for`'s global. The `~` case gets its own golden in M1, once
+  `home_dir` is a parameter, rather than pinning `HOME` in the environment (`set_var` is `unsafe` in edition 2024).
 - **Test plan**: the goldens themselves, green on macOS and Linux CI.
 - **DONE**: goldens committed and green on both; each family seen red once; baseline numbers in `docs/notes/`.
 
@@ -202,14 +270,16 @@ an in-memory source answers from a tree.
   `NameRules` and `SearchContext` and route all three `cfg!(target_os)` decisions and the exclusion fold through them;
   pass `home_dir` in (engine, `parse_scope`); read the timing log's clock through `cmdr_fs::rt`. Make `SearchIndex`
   fields private behind the Contract B accessors and add `ArenaBuilder`; port every hand-built fixture to it. Define
-  `SearchRows`, `DirSizeSource`, `DirSizeAnswer`, `ScopeResolution`, and `IndexSource`; turn `search_covered_half` into
-  `search_covered` over them. Remove the core's `cmdr_index` imports: `ARENA_ROOT_ID` plus the static assert;
-  `SYSTEM_DIR_EXCLUDES` moves to `cmdr-fs` (`cmdr-index`'s `importance/classify.rs` and the app read it there, and
-  `cmdr-index` drops the root re-export, which tightens its ceiling); `normalize_for_comparison` from
-  `cmdr_fs::name_fold`; `matches_covered` and `covered_name` move to the live-walk code (`live.rs`) as an adapter
-  building a `Candidate`. Fix `execute.rs::fill_dir_sizes`, which swallows a `dir_stats` read error today (`let _ =`
-  plus `if let Ok`) and ships directory rows with no size and no log line: through `DirSizeSource::of`, a read error
-  fails the search, exactly as `dir_sizes_for` already does (invariant 7).
+  `SearchRows`, `DirSizeSource`, `ScopeResolution`, `ResolvedScope`, `SearchError`, and `IndexSource`; turn
+  `search_covered_half` into `search_covered` over them, with `~` expansion and `to_index_relative` on the crate side of
+  the seam. Map `SearchError` onto `SearchRunError` in `live_run.rs` (change 6). Import `pluralize` from `cmdr-fs`.
+  Remove the core's `cmdr_index` imports: `ARENA_ROOT_ID` plus the static assert; `SYSTEM_DIR_EXCLUDES` moves to
+  `cmdr-fs` (`cmdr-index`'s `importance/classify.rs` and the app read it there, and `cmdr-index` drops the root
+  re-export, which tightens its ceiling); `normalize_for_comparison` from `cmdr_fs::name_fold`; `matches_covered` and
+  `covered_name` move to the live-walk code (`live.rs`) as an adapter building a `Candidate`. Fix
+  `execute.rs::fill_dir_sizes`, which swallows a `dir_stats` read error today (`let _ =` plus `if let Ok`) and ships
+  directory rows with no size and no log line: through `DirSizeSource::of`, a read error fails the search, exactly as
+  `dir_sizes_for` already does (change 4). Scope resolution gets the same treatment (change 5).
 - **Intentions**: after M1, the future crate's files compile with only `cmdr-fs`, `regex`, `rayon`,
   `unicode-normalization`, `serde`, `specta`, `time`, and `log` in their imports. M2 is then pure relocation.
 - **Landmines**: `NameRules::host()` must reproduce today's `cfg` answer exactly, including the fold being a no-op off
@@ -217,10 +287,11 @@ an in-memory source answers from a tree.
   `cfg(target_os = "macos")` in `cmdr-fs`, so the browser would get the identity fold: that's what `NameRules` replaces
   in the core. Contract B touches `ranking/tests.rs`'s literal arenas and `bench.rs`. Moving `SYSTEM_DIR_EXCLUDES`
   changes `cmdr-index`'s public surface: run `index-crate-isolation` and commit its rewrite. `include_path_ids` stays a
-  `SearchQuery` field (it's on the wire; changing it is a `bindings.ts` diff). The `fill_dir_sizes` fix is the plan's
-  ONE deliberate behavior change, and only on an error path no golden covers; keep it its own commit.
-- **Test plan**: M0's goldens unchanged; existing suites green; one new test runs the macOS-only goldens under
-  `NameRules::MACOS` on Linux; a failing fill (a `DirSizeSource` fake that errors) fails the search, seen red first.
+  `SearchQuery` field (it's on the wire; changing it is a `bindings.ts` diff); the engine stops reading it. Changes 4–6
+  are one commit each; only change 6 moves a golden (the live-run error event), and that commit says so.
+- **Test plan**: M0's goldens unchanged except change 6's; existing suites green; one new test runs the macOS-only
+  goldens under `NameRules::MACOS` on Linux; a `~` scope golden with an explicit `home_dir`; fakes that fail a fill, a
+  range read, and a scope resolution each fail the search, seen red first.
 - **DONE**: goldens byte-identical; `bindings.ts` unchanged; the core files' imports are the list above; no swallowed
   size read left.
 
@@ -243,8 +314,8 @@ an in-memory source answers from a tree.
   `#[cfg(test)] engine::search` wrapper builds a `SearchResult`; keep it test-only. `cmdr-search` needs the `testing`
   feature gate pattern (`any(test, feature = "testing")`) for fixtures the app's tests use.
 - **Test plan**: goldens unchanged; `cargo nextest run -p cmdr-search` plus the app's search tests; desktop Playwright
-  search specs (`pnpm check desktop-e2e-playwright`); re-run M0's benches and record them beside the baseline (within
-  noise, or stop and investigate).
+  search specs (`pnpm check desktop-e2e-playwright`); re-run M0's benches, plus the arena load time, and record them
+  beside the baseline (within noise, or stop and investigate).
 - **DONE**: app search unchanged, the crate green alone, `index-crate-isolation` green with the new entry, benches
   within noise, `bindings.ts` unchanged.
 
@@ -256,11 +327,15 @@ an in-memory source answers from a tree.
   and a crate `RunSink` trait that hears facts. The app keeps the four `tauri_specta::Event` structs and maps facts onto
   them in `TauriSearchEventSink` and `CollectingSink`; the app holds its one `SearchRuns` where the statics were.
   `WalkJudge` and `drive_walk` stay in the app (they consume `cmdr-index`'s walk), judging through the crate's
-  `CompiledQuery` and `ExcludeRules`. Add `search_fully_covered(...)`: the run a scope with an empty frontier makes
-  (announce, the covered half, finish as `Covered` / complete), which `live_run.rs` calls for that case.
+  `CompiledQuery` and `ExcludeRules`. Move the terminal report too: today's `report` closure (`live_run.rs:283-345`),
+  shared by the empty-frontier, unwalkable, and cancelled paths, becomes a crate `CoverageFacts -> SearchRunCoverage`
+  builder that every terminal path calls (the abandoned-ground fold, `abandoned_locations`, `permission_denied`,
+  `declined`, `still_covering`, the unresolved-scope rule). ❌ No separate "fully covered" function: a fully covered run
+  is the same report with an empty frontier (`WalkEnding::NothingToWalk`, `CoverageKind::Covered`), and the demo passes
+  empty unreadable lists. The crate gains `tokio-util` (the spec `cmdr-listing` uses) for `CancellationToken`.
 - **Intentions**: the demo's run must say exactly what a desktop run over a fully indexed drive says, without
   re-implementing batching or the terminal rules. Events as facts, wire types in the app: the listing engine's
-  `ListingEvents` shape.
+  `ListingEvents` shape, and `operations_host/wire.rs`'s `wire_event!` as the fact-to-wire pattern to copy.
 - **Landmines**: `ResultStream`'s flush interval reads `Instant`: route it through `cmdr_fs::rt`. Decision 11 (supersede
   by `order`, never arrival) and "superseding is not cancelling" move verbatim, tests with them. The registry lock used
   by tests (`test_registry_lock`) becomes per-value. No crate type may share a name with an app event (specta would emit
@@ -273,13 +348,15 @@ an in-memory source answers from a tree.
 
 - **Scope**: `MemorySource` in the crate. A differential test feeds M0's corpus to both `IndexSource` and `MemorySource`
   (with a test `DirSizeSource` over the corpus's own `dir_stats` rows) and requires identical answers on every query,
-  directory size filters and `sortBy: size` included. Build the crate for `wasm32-unknown-unknown` in the build script's
-  wasm lane (add it to `browserBound` once the write-engine branch, which introduces that list, has landed). Link it
-  into `cmdr-listing-wasm` behind a minimal call so `smoke.mjs` runs one query in Node.
+  directory size filters and `sortBy: size` included, `entry_id`s and tie order too (M0's corpus is inserted in
+  `MemorySource`'s id order). Build the crate for `wasm32-unknown-unknown` in the build script's wasm lane (add it to
+  `browserBound` once the write-engine branch, which introduces that list, has landed). Link it into `cmdr-listing-wasm`
+  behind a minimal call so `smoke.mjs` runs one query in Node.
 - **Intentions**: the equivalence test is what lets the demo say "the real search": same core, rows from another source,
   proven identical.
-- **Landmines**: scope resolution in `MemorySource` must fold names the way `IndexStore::resolve_component` does
-  (`name_folded`, the platform fold), or a scope that resolves on desktop is "unresolved" in memory. Paths: the
+- **Landmines**: scope resolution in `MemorySource` takes its fold from `NameRules`, which must equal what
+  `IndexStore::resolve_component` reads (`name_folded`) under `NameRules::host()`, or a scope that resolves on desktop
+  is "unresolved" in memory; the differential test runs scoped queries under both `MACOS` and `LINUX` rules. Paths: the
   browser's `Path::is_absolute` is always `false` (`crates/cmdr-listing-wasm/CLAUDE.md`), so the core uses `&str` path
   work only. The rayon fallback is runtime behavior: only the smoke proves it. `std::time::Instant::now` compiles and
   then panics in the browser: the smoke has to execute the timing log path (`log` level at debug in the smoke).
@@ -289,8 +366,10 @@ an in-memory source answers from a tree.
 ### M5: the AI translation pipeline joins the crate (M, can run beside M3/M4 after M2)
 
 - **Gate**: do it only if the boundary is clean (David, 2026-11-04). First step: list every import `ai/` makes outside
-  itself. If anything beyond `expand_tilde`, the specta DTOs, and a clock read turns up (settings, a provider, app
-  state), stop and report instead of threading it through; review rounds weigh in before execution.
+  itself. Known and expected (each becomes a parameter): `expand_tilde` and `dirs::home_dir()` in
+  `size_scope_mapping.rs`, `now_utc()` in `time_mapping.rs` (already a parameter after the early fix), and the specta
+  DTOs. If anything else turns up (settings, a provider, app state), stop and report instead of threading it through;
+  review rounds weigh in before execution.
 - **Scope**: `ai/`'s prompt, parser, query builder, mappings, and `TranslatedQuery` / `TranslateDisplay` move into the
   crate as a `translate` module. `expand_tilde` becomes the context's `home_dir`; any date math takes "now" as a
   parameter. Backend resolution, keys, and the `translate_search_query` command stay in the app.
@@ -327,15 +406,16 @@ an in-memory source answers from a tree.
 - **Scope**: a `search.rs` host in `crates/cmdr-listing-wasm` (with `search_test.rs`), the demo's third engine beside
   listing and viewer. It builds a `MemorySource` from the demo's `InMemoryVolume` and rebuilds it when the volume's
   write generation moved (a few thousand rows: cheaper than any staleness policy). It answers `prepare_search_index`
-  (`ready: true` on first ask), `search_files`, `search_files_streaming` (through `search_fully_covered`, events by
-  their Tauri names), `cancel_search`, `release_search_index`, `parse_search_scope`, `get_system_dir_excludes`,
-  `sort_search_results` (on the demo's own listing collator), and the recent-search commands (M6's list, in memory for
-  the session). Its `DirSizeSource` is the demo's in-memory folder-size fold (`worktree-agent-a03dc8ea1594f1b12`, in
-  progress: it already feeds `cmdr_listing::IndexSizes` and implements `cmdr_operations`' `OperationIndex`), so a size
-  filter reads the same numbers the panes show. `translate_search_query` keeps the demo's typed "AI unavailable" answer.
-  Delete every TS search answer in `apps/desktop/src/lib/demo/`. `NameRules` for the demo: case-insensitive by default
-  (it presents as a Mac), patterns left in the form typed, because the tree's names are the browser's NFC strings and an
-  NFD pattern would miss every accented name. Home is the demo tree's home, so result rows read `~/…`.
+  (`ready: true` on first ask), `search_files`, `search_files_streaming` (the covered half, then M3's terminal report
+  with an empty frontier, events by their Tauri names), `cancel_search`, `release_search_index`, `parse_search_scope`,
+  `get_system_dir_excludes`, `sort_search_results` (on the demo's own listing collator), and the recent-search commands
+  (M6's list, in memory for the session). Its `DirSizeSource` is the demo's in-memory folder-size fold
+  (`worktree-agent-a03dc8ea1594f1b12`, in progress: it already feeds `cmdr_listing::IndexSizes` and implements
+  `cmdr_operations`' `OperationIndex`), so a size filter reads the same numbers the panes show. `translate_search_query`
+  keeps the demo's typed "AI unavailable" answer. Delete every TS search answer in `apps/desktop/src/lib/demo/`.
+  `NameRules` for the demo: case-insensitive by default (it presents as a Mac), patterns left in the form typed, because
+  the tree's names are the browser's NFC strings and an NFD pattern would miss every accented name. Home is the demo
+  tree's home, so result rows read `~/…`.
 - **Intentions**: the dialog behaves as on a fully indexed Mac, directory size filters included. No temporary
   difference.
 - **Landmines (sizes)**: the fold must be ONE fold for panes, operations, and search: ❌ never a second size rollup in
@@ -358,8 +438,8 @@ an in-memory source answers from a tree.
 
 - **Scope**: the three demo-image input lists (below) name `crates/cmdr-search` (and the pure recents crate, if M6 made
   one); `crates/cmdr-listing-wasm/DETAILS.md` § "Where the demo differs from the app" gains the search differences
-  (recent searches last one session, no symlink canonicalization, no AI); wasm size before and after in that doc; wipe
-  this spec per `docs/specs/DETAILS.md` § "Wiping a shipped spec".
+  (recent searches last one session, no symlink canonicalization, no AI); wasm size before and after in that doc, with
+  rayon's share named; wipe this spec per `docs/specs/DETAILS.md` § "Wiping a shipped spec".
 - **DONE**: CI publishes a demo image with ⌘F; the adversarial conformance review (against the invariants below) and the
   docs-audit agent pass.
 
@@ -407,7 +487,8 @@ David's framing: every step is a genuine architectural win, never a demo-only sh
 4. One matcher, one exclusion set, one `NameRules` per run: no case-folding or normalization rule derived outside it.
 5. The core holds no statics and reads no ambient clock, home, platform, or runtime.
 6. `SearchEntry` is 40 bytes, the arena is id-sorted with no id map, and `OptU64` is the only read of size and date.
-7. A directory size read error fails the search, in the range read and the row fill alike; nothing swallows one.
+7. Every source read error (size range, size fill, scope resolution) fails the search as `SourceUnreadable`, reaching a
+   live run as `IndexUnreadable`; nothing swallows one. A scope is a typed `ResolvedScope`, never a sentinel id.
 8. The browser demo answers every search command through the crate; TS answers none.
 9. One folder-size truth per host: desktop's `dir_stats`, the demo's fold. Search never rolls up sizes of its own.
 10. One recent-list rule and one history key for every host and every history feature.
