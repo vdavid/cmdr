@@ -1168,7 +1168,9 @@ unless set, so a test that only cares about bytes sees the store it always did:
   times the device's speed, since the copy runs `max_concurrent_ops()` streams). A reader back within `DEVICE_BURST` (50
   ms) continues the timeline, so timer lateness and the copy's per-chunk work don't accrue; an idle device banks at most
   that window. Five milliseconds of slack was too tight for a page, whose gaps ran near 10 ms per 64 KiB chunk and cost
-  the demo nearly half its 5 MiB/s (about 2.9 MB/s measured).
+  the demo nearly half its 5 MiB/s (about 2.9 MB/s measured). A chunk whose slot already ended goes at once, with no
+  timer: in a page even a past deadline costs a macrotask (4 ms or more), which held one stream on the 40 MB/s device
+  near 5 MB/s.
 - **Yielding** (`with_yielding`): every call and streamed chunk hands the thread back once a slice has passed since the
   last time (`rt::task::yield_now`, a macrotask in the browser), like a device waiting on I/O. That's what keeps the
   page painting and Cancel clickable during a 1,200-file delete.

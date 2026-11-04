@@ -260,7 +260,7 @@ impl Bandwidth {
             return;
         }
         let takes = Duration::from_nanos((bytes as u128 * 1_000_000_000 / u128::from(self.bytes_per_sec)) as u64);
-        let done = {
+        let (done, now) = {
             let mut free_at = self.free_at.lock_ignore_poison();
             let now = rt::time::now();
             // A reader back within the burst window continues the device's
@@ -273,8 +273,14 @@ impl Bandwidth {
             };
             let done = start + takes;
             *free_at = Some(done);
-            done
+            (done, now)
         };
+        // Behind the timeline, the chunk goes at once: in a page even a past
+        // deadline costs a timer macrotask (4 ms or more), which capped one 64 KiB
+        // stream at about 5 MB/s on a 40 MB/s device.
+        if done <= now {
+            return;
+        }
         rt::time::sleep_until(done).await;
     }
 }

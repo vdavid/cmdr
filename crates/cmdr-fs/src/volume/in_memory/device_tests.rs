@@ -236,6 +236,22 @@ async fn a_reader_with_short_gaps_keeps_the_full_rate() {
     assert_took(rt::time::now() - started, Duration::from_millis(1_010));
 }
 
+/// A chunk whose slot already ended (the reader is behind the device's timeline)
+/// goes at once, never through a timer: a page's timer costs a macrotask of 4 ms or
+/// more, which capped one 64 KiB stream on the demo's 40 MB/s device at about 5 MB/s.
+#[tokio::test(start_paused = true)]
+async fn a_chunk_behind_the_timeline_takes_no_timer() {
+    let device = Bandwidth::new(MIB);
+    device.transfer(1024).await;
+    // allowed-test-sleep: the reader running behind the device's timeline is the subject (paused clock)
+    rt::time::sleep(Duration::from_millis(20)).await;
+    let behind = device.transfer(1024);
+    assert!(
+        futures_util::FutureExt::now_or_never(behind).is_some(),
+        "a slot that ended in the past is ready on its first poll"
+    );
+}
+
 /// A reader slower than the device sets the pace: its gaps aren't banked
 /// past the burst window.
 #[tokio::test(start_paused = true)]
