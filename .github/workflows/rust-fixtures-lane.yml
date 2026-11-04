@@ -1,0 +1,81 @@
+name: Rust fixtures lane
+
+# The Rust lane against the Docker fixtures, called by `ci.yml` (`desktop-rust-fixtures`): the
+# SMB, SFTP, WebDAV, S3, and NFS containers, plus a real Nextcloud, in their own job so their
+# ~10 min of container bring-up runs alongside the Rust lane instead of after it. It restores
+# that lane's rust-cache entry by name and never saves, so the repo keeps one Linux Rust entry.
+# Dependency-only, like every rust-cache entry: the workspace crates compile here once, with the
+# same cargo flags as `desktop-rust-tests` (`HostCargoLaneArgs`). `docs/tooling/ci.md` § Lane files.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  lane:
+    name: Docker fixtures and Nextcloud
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Free disk space on a small runner
+        uses: ./.github/actions/free-disk-if-small
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: desktop-rust
+          save-if: false
+
+      - name: Install Tauri dependencies (Linux)
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      # Two host settings the NFS fixture needs, before its stack comes up:
+      # - `modprobe nfsd`: the fixture is the host kernel's own NFS server, and
+      #   Ubuntu builds `nfsd` as a module a container can't load.
+      # - `ip_unprivileged_port_start=600`: the client binds a source port in
+      #   600–1023 for the `/secure` export, which a non-root process on Linux
+      #   may only do below this sysctl. The cells reach `/secure` at the
+      #   container's own IP, where the bridge keeps the source port intact
+      #   (a published port rewrites it). `apps/desktop/test/nfs-servers/README.md`.
+      - name: Prepare the host for the NFS fixture
+        run: |
+          sudo modprobe nfsd
+          sudo sysctl -w net.ipv4.ip_unprivileged_port_start=600
+
+      - name: Run the Docker fixture integration tests (SMB, SFTP, WebDAV, S3, and NFS)
+        run: ./scripts/check/check --check desktop-rust-integration-tests --ci
+
+      # The sabre/dav cells, against a real Nextcloud. Slow-lane locally (a ~1 GB
+      # pull plus a self-install before the container listens, so a default
+      # `pnpm check` never pays for it), but CI is where "does a real server
+      # still answer this way" has to be asked: the three claims these cells pin
+      # are the only ones in `crates/cmdr-webdav` that no Apache fixture can
+      # reach. Measured 2026-09-02: ~1 min of container, seconds of tests, on a
+      # build the step above already warmed.
+      - name: Run the WebDAV cells against a real Nextcloud (sabre/dav)
+        run: ./scripts/check/check --check desktop-rust-webdav-nextcloud --ci
+
+      - name: Report disk usage
+        if: always()
+        run: |
+          df -h /
+          docker system df

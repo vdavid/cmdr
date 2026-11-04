@@ -43,6 +43,9 @@ jobs:
   warm-rust-macos-cache:
     needs: changes
 
+  warm-light-cache:
+    needs: changes
+
   prune-superseded-caches:
     needs: [warm-rust-cache, warm-rust-macos-cache]
 

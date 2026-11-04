@@ -1,0 +1,271 @@
+name: Light lane
+
+# The light lane, called by `ci.yml` (`light`): one runner for everything that needs no Rust and
+# no browser, so a narrow PR (docs, Go, API server, dashboard, CI config) pays setup once.
+# - Repo hygiene runs on every change: the checks whose inputs no per-app filter can cover
+#   (oxfmt over the whole monorepo, the docs, translator guides, workflow guards, `ci-coverage`).
+# - The rest runs per filter (`ci.yml` passes one input each): the Go checks, the API server,
+#   the dashboard, and the three slow hygiene checks, each gated on exactly what it reads.
+# - Every check step runs once setup is done, even after another one failed, so a red run lists
+#   every failure, like the separate jobs did.
+# `docs/tooling/ci.md` § The light lane.
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: The runner label (`ci.yml` picks it, and never a self-hosted one for a fork PR)
+        type: string
+        default: ubuntu-latest
+      full:
+        description: A `run_all` dispatch, which runs every section
+        type: boolean
+        default: false
+      scripts:
+        description: The Go checks' inputs changed
+        type: boolean
+        default: false
+      api-server:
+        description: The API server's inputs changed
+        type: boolean
+        default: false
+      dashboard:
+        description: The analytics dashboard's inputs changed
+        type: boolean
+        default: false
+      scorecard:
+        description: A path Scorecard's file checks read changed (the content-based half is decided here)
+        type: boolean
+        default: false
+      termbase:
+        description: The translation termbase check's inputs changed
+        type: boolean
+        default: false
+      changelog:
+        description: The CHANGELOG commit-link check's inputs changed
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 20
+    permissions:
+      contents: read # check out the code
+      pull-requests: read # list the PR's files for the Scorecard trigger
+    env:
+      # `go test` never reads a result from the restored Go build cache, so every run tests for
+      # real, as it did before that cache existed. Other go commands ignore the flag.
+      GOFLAGS: -count=1
+
+    steps:
+      # Shallow: only `changelog-commit-links` reads history, and it fetches it below.
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Scorecard's Binary-Artifacts and Pinned-Dependencies (shell half) read EVERY file, by
+      # content: a binary by magic bytes or extension, a shell script by extension or shebang
+      # (scorecard v5.5.0, `checks/raw/binary_artifact.go` and `shell_download_validate.go`).
+      # No path filter can see that, so this looks at the PR's files themselves. The path-based
+      # half is `ci.yml`'s `scorecard` filter. A failed lookup runs Scorecard, never skips it.
+      - name: Look for changed binaries and shell scripts
+        id: scorecard-scan
+        if: ${{ !inputs.full && !inputs.scorecard && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          files="$RUNNER_TEMP/pr-files.tsv"
+          if ! gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" \
+            --jq '.[] | [.status, .filename, (.previous_filename // "")] | @tsv' >"$files"; then
+            echo "::warning::Couldn't list PR #$PR's files; running Scorecard."
+            echo "hit=true" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The API lists at most 3,000 files, so a list that long may be missing the one that matters.
+          if [[ "$(wc -l <"$files")" -ge 3000 ]]; then
+            echo "PR #$PR changes 3,000+ files; running Scorecard."
+            echo "hit=true" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Scorecard's binary extensions and the shells it parses, so a deleted or renamed-away
+          # one counts too (it can make an accepted finding stale, which fails in CI).
+          binary_ext='crx|deb|dex|dey|elf|o|a|so|macho|iso|class|jar|bundle|dylib|lib|msi|dll|drv|efi|exe|ocx|pyc|pyo|par|rpm|wasm|whl'
+          shell_ext='sh|bash|mksh|ksh|zsh|ash|dash'
+          reason() {
+            local path="$1" exists="$2" lower="${1,,}"
+            if [[ "$lower" =~ \.($binary_ext)$ ]]; then echo "a binary extension"; return; fi
+            if [[ "$lower" =~ \.($shell_ext)$ ]]; then echo "a shell extension"; return; fi
+            if [[ "$lower" == *dockerfile* || "$lower" == .github/* ]]; then echo "a Dockerfile or workflow path"; return; fi
+            [[ "$exists" == yes && -f "$path" && ! -L "$path" ]] || return 0
+            if [[ "$(head -c 2 "$path")" == '#!' ]]; then echo "a shebang"; return; fi
+            # A NUL in the first 1,024 bytes, the window Scorecard reads: every magic-byte type it flags has one.
+            local head_bytes; head_bytes=$(head -c 1024 "$path" | wc -c)
+            if [[ "$(head -c 1024 "$path" | tr -d '\000' | wc -c)" -lt "$head_bytes" ]]; then echo "binary content"; fi
+          }
+          while IFS=$'\t' read -r status path previous; do
+            exists=yes
+            [[ "$status" == removed ]] && exists=no
+            why=$(reason "$path" "$exists")
+            if [[ -z "$why" && -n "$previous" ]]; then why=$(reason "$previous" no); path="$previous"; fi
+            if [[ -n "$why" ]]; then
+              echo "$path has $why, which Scorecard's file checks read; running Scorecard."
+              echo "hit=true" >>"$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done <"$files"
+          echo "No changed file is a binary, a shell script, a Dockerfile, or a workflow; Scorecard skips."
+
+      # Each section's gate, once, so every step below reads the same answer.
+      - name: Decide which sections run
+        id: plan
+        env:
+          FULL: ${{ inputs.full }}
+          SCRIPTS: ${{ inputs.scripts }}
+          API_SERVER: ${{ inputs.api-server }}
+          DASHBOARD: ${{ inputs.dashboard }}
+          SCORECARD: ${{ inputs.scorecard || steps.scorecard-scan.outputs.hit == 'true' }}
+          TERMBASE: ${{ inputs.termbase }}
+          CHANGELOG: ${{ inputs.changelog }}
+        run: |
+          on() { [[ "$FULL" == true || "$1" == true ]] && echo true || echo false; }
+          {
+            echo "scripts=$(on "$SCRIPTS")"
+            echo "api-server=$(on "$API_SERVER")"
+            echo "dashboard=$(on "$DASHBOARD")"
+            echo "scorecard=$(on "$SCORECARD")"
+            echo "termbase=$(on "$TERMBASE")"
+            echo "changelog=$(on "$CHANGELOG")"
+            [[ "$(on "$SCRIPTS")" == true || "$(on "$SCORECARD")" == true ]] && echo "go=true" || echo "go=false"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      # `changelog-commit-links` requires every hash to be reachable from HEAD. The shallow
+      # checkout above has one commit, so it fetches the rest, only when the check runs.
+      - name: Fetch the history the CHANGELOG commit links resolve against
+        if: steps.plan.outputs.changelog == 'true'
+        env:
+          SHA: ${{ github.sha }}
+        run: git fetch --no-tags --unshallow origin "$SHA"
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Restore the light lane caches
+        id: cache
+        uses: ./.github/actions/light-cache
+        with:
+          phase: restore
+          go: ${{ steps.plan.outputs.go }}
+
+      - name: Install dependencies
+        if: steps.cache.outputs.node-modules-hit != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build check tool
+        if: steps.cache.outputs.check-tool-hit != 'true'
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      # The check steps below run when this one did, so a red check never hides another.
+      - name: Setup done
+        id: ready
+        run: echo "Setup is done; every gated check below runs, even after another one fails."
+
+      # ---- Repo hygiene: every change ----
+
+      # oxfmt formats the whole monorepo (docs, configs, workflows), so a docs-only commit must still
+      # run it; otherwise unformatted markdown lands on main and fails the next unrelated PR.
+      - name: Check formatting and the CHANGELOG's Security lines
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' }}
+        run: |
+          ./scripts/check/check --ci --check oxfmt,changelog-security
+
+      # `website-trust-sources` lives here, not in the website lane: the map's patterns name files
+      # anywhere in the repo, so a rename outside `apps/website/` can break it.
+      - name: Check the docs
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' }}
+        run: |
+          ./scripts/check/check --ci --check docs-reachable,docs-dead-links,website-trust-sources,docs-section-refs,docs-table-hygiene,docs-link-text,claude-md-details-sibling,file-length,claude-md-length
+
+      # Here rather than in the Svelte lane: the guides and each locale's `mechanics.json` sit
+      # under `docs/i18n/`, which no app filter watches, and the unused-keys scan reads the Rust
+      # app too (`menu_t`), so an app-gated lane would skip exactly the edit that breaks them.
+      - name: Check translator guides, typography, and unused message keys
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' }}
+        run: |
+          ./scripts/check/check --ci --check desktop-i18n-doc-citations,desktop-i18n-mechanics,desktop-message-keys-unused
+
+      # Checks whose inputs span apps, so an app-gated lane would skip the edit that breaks them:
+      # a mutant record names any file (its fuzz target and input sit under `fuzz/`; the slow half
+      # that runs the mutants is in `slow-checks.yml`), the settings-defaults manifest spans the
+      # desktop registry and the dashboard, and the workflow guards read files no app owns.
+      - name: Check the cross-app guards and the workflows
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' }}
+        run: |
+          ./scripts/check/check --ci --check desktop-rust-property-mutant-records,analytics-event-catalog,analytics-settings-defaults,go-version-single-source,e2e-rust-image-pin,workflows-hardening,workflows-rustup,ci-coverage
+
+      # ---- Repo hygiene: only when their inputs changed ----
+
+      - name: Check CHANGELOG commit links
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.changelog == 'true' }}
+        run: ./scripts/check/check --check changelog-commit-links --ci
+
+      # The termbase (`concepts.json`, `<tag>/terms.json`) lives under `docs/i18n/`.
+      - name: Check the translation termbase schema and coverage drift
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.termbase == 'true' }}
+        run: ./scripts/check/check --check desktop-i18n-termbase --ci
+
+      # Its `go install`ed binary rides in the Go caches restored above.
+      - name: Check OpenSSF Scorecard's file-based checks
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.scorecard == 'true' }}
+        run: ./scripts/check/check --check scorecard-local --ci
+
+      # ---- Go (scripts) ----
+
+      # One invocation, so the runner runs the nine in parallel; nilaway alone is about a minute.
+      - name: Run the Go checks and tests
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.scripts == 'true' }}
+        run: |
+          ./scripts/check/check --ci --check scripts-go-gofmt,scripts-go-vet,scripts-go-staticcheck,scripts-go-ineffassign,scripts-go-misspell,scripts-go-gocyclo,scripts-go-nilaway,scripts-go-deadcode,scripts-go-tests
+
+      # ---- API server ----
+
+      # Worker types first, then ESLint, typecheck, and tests: the runner orders them by `DependsOn`.
+      - name: Check the API server (Worker types, ESLint, typecheck, tests)
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.api-server == 'true' }}
+        run: |
+          ./scripts/check/check --ci --check api-server-worker-types,api-server-eslint,api-server-typecheck,api-server-tests
+
+      # ---- Analytics dashboard ----
+
+      # The type-aware checks need `$app/tsconfig` (`node_modules/$app/tsconfig.json`), which the
+      # app's tsconfig extends. The `dashboard-svelte-kit-sync` check generates it locally; CI does
+      # it as a setup step so the checks below can run in any order.
+      - name: Generate the dashboard's SvelteKit types
+        id: dashboard-sync
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.dashboard == 'true' }}
+        run: pnpm exec svelte-kit sync
+        working-directory: ./apps/analytics-dashboard
+
+      - name: Check the dashboard (ESLint, Stylelint, svelte-check, cycles, knip, tests, build)
+        if: ${{ !cancelled() && steps.dashboard-sync.outcome == 'success' }}
+        run: |
+          ./scripts/check/check --ci --check dashboard-eslint,dashboard-stylelint,dashboard-svelte-check,dashboard-import-cycles,dashboard-knip,dashboard-tests,dashboard-build
+
+      # `main` only (see the action); `warm-light-cache` covers the `main` pushes that skip this lane.
+      - name: Save the light lane caches
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+        uses: ./.github/actions/light-cache
+        with:
+          phase: save
+          go: ${{ steps.plan.outputs.go }}
+          node-modules-hit: ${{ steps.cache.outputs.node-modules-hit }}
+          check-tool-hit: ${{ steps.cache.outputs.check-tool-hit }}
+          go-hit: ${{ steps.cache.outputs.go-hit }}
