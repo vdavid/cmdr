@@ -139,7 +139,7 @@ fn band_of(exact: bool, prefix: bool) -> MatchQuality {
 /// A file takes its parent folder's weight; a folder takes its own. Absent
 /// importance data the map is empty and every lookup returns `0.0` — neutral,
 /// never a penalty (the degradation contract). Built per-volume in
-/// [`volumes`](super::volumes) from [`ImportanceIndex`](cmdr_index::importance::ImportanceIndex);
+/// the host (the desktop's `search/volumes.rs`, from `cmdr-index`'s `ImportanceIndex`);
 /// the engine only ever sees this read-only view, so it stays pure.
 ///
 /// ## Why the paths aren't stored
@@ -182,7 +182,7 @@ fn band_of(exact: bool, prefix: bool) -> MatchQuality {
 ///
 /// The map is rebuilt wholesale from a full pass and PATCHED from an incremental one
 /// (`cmdr_index::importance::read::WeightDelta`, applied in
-/// [`volumes`](super::volumes)). The invariant a patch must preserve: the map holds
+/// the host's `search/volumes.rs`). The invariant a patch must preserve: the map holds
 /// exactly the folders scoring ABOVE zero, matching what `for_each_nonzero_weight`
 /// streams. That's why the delta reports a rescored-to-zero folder as a removal
 /// rather than an [`insert`](Self::insert) of `0.0` — an absent key and a `0.0` entry

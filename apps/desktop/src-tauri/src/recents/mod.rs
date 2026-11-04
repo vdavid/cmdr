@@ -193,7 +193,7 @@ impl<E: RecentEntry> RecentsFile<E> {
     }
 
     /// Puts `entry` on top, dropping any earlier entry with the same
-    /// [`RecentEntry::dedupe_key`], and trims the tail to `max_count`.
+    /// [`RecentItem::dedupe_key`], and trims the tail to `max_count`.
     /// `max_count = 0` empties the list and drops the entry.
     ///
     /// The disk write is best-effort: a failure is logged and the in-memory list
