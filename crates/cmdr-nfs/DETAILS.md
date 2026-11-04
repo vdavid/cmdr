@@ -294,6 +294,10 @@ folder edited on a connected place moves the live params (`NfsVolume::set_start_
 - `volume::testing` (`testing` feature, also re-exported at the root): the fixture's server, params, `connect_insecure`,
   `scratch_dir`, and `clean_deep`, for the app's suites (`nfs_transfer_*` in
   `apps/desktop/src-tauri/src/operations_host/backend_suites/`).
+- **Scratch folders share the export root with the seeded tree**, and every worktree on the machine shares the stack, so
+  a cell that lists the root skips `SCRATCH_PREFIX` names: another run's cell can be mid-flight there, and a cell that
+  fails or hits the nextest cap never reaches its `clean_deep`. `scratch_dir` sweeps scratch folders older than an hour
+  (read off the name's own timestamp), so those leftovers don't pile up.
 
 ## Not built
 
