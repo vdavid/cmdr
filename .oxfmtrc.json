@@ -18,6 +18,7 @@
     "vendor/",
     "**/dist/",
     "**/build/",
+    "**/build-demo/",
     "**/.svelte-kit/",
     "**/.astro/",
     "**/src-tauri/",

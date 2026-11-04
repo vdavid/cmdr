@@ -52,7 +52,14 @@ export const svelteOptions = {
 // The adapter rimrafs this dir on every build, so it must never BE a mount point
 // (rmdir on a mount point is EBUSY) — pointing it INSIDE the container's
 // `.svelte-kit` volume satisfies both.
-const pagesDir = process.env.CMDR_FRONTEND_BUILD_DIR ?? 'build'
+// The browser demo build (`pnpm build:demo`, `CMDR_DEMO_BUILD=1`): the same frontend on the fake
+// backend in `src/lib/demo/`, served from getcmdr.com/demo, so it gets that base path and its own
+// output dir (never `build`, which Tauri embeds). Every other build gets `__CMDR_DEMO_BUILD__`
+// false and `#lib/demo/boot.js` aliased to an empty module (grep a bundle for `__cmdrDemo`). See
+// `src/lib/demo/DETAILS.md`.
+const demoBuild = process.env.CMDR_DEMO_BUILD === '1'
+
+const pagesDir = process.env.CMDR_FRONTEND_BUILD_DIR ?? (demoBuild ? 'build-demo' : 'build')
 
 /**
  * Bakes the old-WebKit boot guard's translated strings into the app shell, and
@@ -142,13 +149,28 @@ export default defineConfig(async () => ({
       files: {
         appTemplate: generateAppTemplate(),
       },
+      paths: { base: demoBuild ? '/demo' : '' },
     }),
     ...(withFrontendSbom ? [frontendSbom()] : []),
   ],
 
+  // Outside the demo build, `hooks.client.ts`'s import of the demo backend resolves to an empty
+  // module, so none of `src/lib/demo/` reaches the graph. `boot.ts`'s own `__CMDR_DEMO_BUILD__`
+  // guard alone would leave any module-level demo data in the bundle.
+  resolve: {
+    alias: demoBuild
+      ? []
+      : [
+          {
+            find: /^#lib\/demo\/boot\.js$/,
+            replacement: fileURLToPath(new URL('./src/lib/demo/boot-absent.ts', import.meta.url)),
+          },
+        ],
+  },
+
   define: {
     __CMDR_E2E_BUILD__: JSON.stringify(e2eBuild),
-    __CMDR_DEMO_BUILD__: JSON.stringify(process.env.CMDR_DEMO_BUILD === '1'),
+    __CMDR_DEMO_BUILD__: JSON.stringify(demoBuild),
     __CMDR_WORKTREE_LABEL__: JSON.stringify(worktreeLabel),
   },
 

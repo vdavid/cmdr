@@ -41,6 +41,7 @@ node_modules/
 
 # Tauri/Vite build files
 build/
+build-demo/
 
 # Test results
 playwright-report/
