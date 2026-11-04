@@ -32,10 +32,9 @@
 //! benches, and CLI tools working with a [`VolumeHost::detached`]; the shipped
 //! app always injects, before any volume is constructed.
 //!
-//! The browser build (`wasm32`) has no threads to build one on, and nothing in it
-//! asks: the listing engine spawns through its own executor seam there
-//! (`crates/cmdr-listing/src/rt/`). So a call there with nothing injected panics
-//! loudly rather than hand back a runtime nobody drives.
+//! The browser build (`wasm32`) has no threads to build one on; its runtime is the
+//! page's own event loop ([`crate::rt::Runtime`], the type this seam hands out on
+//! every target), so that's the fallback there.
 //!
 //! [`VolumeHost::runtime`]: super::VolumeHost::runtime
 //! [`VolumeHost::detached`]: super::VolumeHost::detached
@@ -43,7 +42,7 @@
 #[cfg(not(target_family = "wasm"))]
 use std::sync::OnceLock;
 
-use tokio::runtime::Handle;
+use crate::rt::Runtime as Handle;
 #[cfg(not(target_family = "wasm"))]
 use tokio::runtime::{Builder, Runtime};
 
@@ -52,13 +51,10 @@ use tokio::runtime::{Builder, Runtime};
 #[cfg(not(target_family = "wasm"))]
 static FALLBACK: OnceLock<Runtime> = OnceLock::new();
 
-/// The browser build has no fallback (module docs).
+/// The injected runtime, or the page's event loop (module docs).
 #[cfg(target_family = "wasm")]
 pub(super) fn resolve(injected: Option<&Handle>) -> Handle {
-    match injected {
-        Some(handle) => handle.clone(),
-        None => panic!("the browser build has no fallback tokio runtime; spawn through the embedder's executor"),
-    }
+    injected.cloned().unwrap_or_default()
 }
 
 /// The injected handle, or the shared fallback.

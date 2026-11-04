@@ -126,7 +126,7 @@ impl ListingsBuilder {
 
     /// Spawns the engine's background work onto `handle`, so the host keeps ONE
     /// thread pool. Native only: the browser build always runs on the page's
-    /// event loop (`src/rt/`).
+    /// event loop (`cmdr_fs::rt`).
     #[cfg(not(target_family = "wasm"))]
     pub fn runtime(mut self, handle: tokio::runtime::Handle) -> Self {
         self.runtime = handle;

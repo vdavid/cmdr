@@ -1,5 +1,6 @@
-//! Where the engine's background work runs and what clock it reads: the ONE
-//! seam between the engine and its executor.
+//! Where Cmdr's engines run their background work and what clock they read: the
+//! ONE seam between an engine and its executor, shared by the listing engine,
+//! the write engine, and the backends under them.
 //!
 //! On every native target this module is re-exports plus one-line wrappers:
 //! [`Runtime`] IS `tokio::runtime::Handle`, [`Instant`] IS `std::time::Instant`,
@@ -13,70 +14,58 @@
 //! and not another: `DETAILS.md` § "The browser build".
 //!
 //! ❌ Engine code never reads a clock, sleeps, or times out except through here;
-//! `clippy.toml`'s `disallowed-methods` refuses the direct calls everywhere else.
+//! each engine crate's `clippy.toml` refuses the direct calls.
 #![allow(
     clippy::disallowed_methods,
-    reason = "this module is the one place the engine's clock and timer calls are allowed to live"
+    reason = "this module is the one place the engines' clock and timer calls are allowed to live"
 )]
 
 #[cfg(not(target_family = "wasm"))]
-pub(crate) use std::time::Instant;
+pub use std::time::Instant;
 #[cfg(not(target_family = "wasm"))]
-pub(crate) use tokio::runtime::Handle as Runtime;
+pub use tokio::runtime::Handle as Runtime;
 
 #[cfg(target_family = "wasm")]
 mod wasm;
 #[cfg(target_family = "wasm")]
-pub(crate) use wasm::{Instant, Runtime, time};
+pub use wasm::{Instant, JoinError, JoinHandle, Runtime, time};
 
-/// The current instant on the engine's wall-clock-backed `Instant`.
-pub(crate) fn now() -> Instant {
+/// The current instant on the wall-clock-backed [`Instant`].
+pub fn now() -> Instant {
     Instant::now()
 }
 
 /// How long ago `earlier` was.
-pub(crate) fn since(earlier: Instant) -> std::time::Duration {
+pub fn since(earlier: Instant) -> std::time::Duration {
     earlier.elapsed()
 }
 
-/// The engine's timers, on tokio's clock natively (so `start_paused` tests
+/// The engines' timers, on tokio's clock natively (so `start_paused` tests
 /// control them) and on the page's in the browser.
 #[cfg(not(target_family = "wasm"))]
-pub(crate) mod time {
+pub mod time {
     use std::future::IntoFuture;
     use std::time::Duration;
 
-    pub(crate) use tokio::time::Instant;
+    pub use tokio::time::Instant;
 
     /// The current instant on tokio's clock.
-    pub(crate) fn now() -> Instant {
+    pub fn now() -> Instant {
         Instant::now()
     }
 
     /// `tokio::time::sleep`.
-    pub(crate) fn sleep(duration: Duration) -> tokio::time::Sleep {
+    pub fn sleep(duration: Duration) -> tokio::time::Sleep {
         tokio::time::sleep(duration)
     }
 
     /// `tokio::time::sleep_until`.
-    pub(crate) fn sleep_until(deadline: Instant) -> tokio::time::Sleep {
+    pub fn sleep_until(deadline: Instant) -> tokio::time::Sleep {
         tokio::time::sleep_until(deadline)
     }
 
     /// `tokio::time::timeout`.
-    pub(crate) fn timeout<F: IntoFuture>(duration: Duration, future: F) -> tokio::time::Timeout<F::IntoFuture> {
+    pub fn timeout<F: IntoFuture>(duration: Duration, future: F) -> tokio::time::Timeout<F::IntoFuture> {
         tokio::time::timeout(duration, future)
     }
-}
-
-/// Where an engine nobody handed a runtime spawns: `cmdr-fs`'s shared fallback.
-#[cfg(not(target_family = "wasm"))]
-pub(crate) fn default_runtime() -> Runtime {
-    cmdr_fs::volume::host::VolumeHost::detached().runtime()
-}
-
-/// The browser build's only executor, the page's event loop.
-#[cfg(target_family = "wasm")]
-pub(crate) fn default_runtime() -> Runtime {
-    Runtime::default()
 }

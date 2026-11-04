@@ -21,7 +21,7 @@ disallowed-methods = [
   { path = "tokio::task::spawn", reason = "spawn on the engine's runtime (`self.runtime.spawn`): a watcher's OS thread has no ambient one" },
   { path = "tokio::task::spawn_blocking", reason = "use the engine's runtime (`self.runtime.spawn_blocking`): a watcher's OS thread has no ambient one" },
   { path = "std::thread::spawn", reason = "the engine owns no threads; blocking work goes to the runtime's blocking pool" },
-  # The clock and the timers go through `src/rt/` (its own `#[allow]` opts it out): `std`'s clock panics
+  # The clock and the timers go through `cmdr_fs::rt` (named `crate::rt` here): `std`'s clock panics
   # on `wasm32-unknown-unknown`, which takes tokio's timer with it, so a direct call compiles for the
   # browser build and traps only at runtime. `crates/cmdr-listing/DETAILS.md` § "The browser build".
   # ❗ These are METHOD bans, not `disallowed-types`: natively `rt::Instant` and `rt::Runtime` ARE

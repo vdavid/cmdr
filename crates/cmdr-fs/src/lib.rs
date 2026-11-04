@@ -55,6 +55,7 @@ pub mod process_cpu;
 pub mod process_memory;
 pub mod restic_meta;
 pub mod restic_view;
+pub mod rt;
 #[cfg(not(target_family = "wasm"))]
 pub mod sqlite_util;
 pub mod staging;

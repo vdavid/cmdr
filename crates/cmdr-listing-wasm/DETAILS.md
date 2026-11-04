@@ -6,11 +6,10 @@ the seam it needs: `crates/cmdr-listing/DETAILS.md` § "The browser build"; `cmd
 
 ## Decision: `wasm32-unknown-unknown` + `wasm-bindgen`, on the page's event loop
 
-**Decision:** the target is `wasm32-unknown-unknown` with `wasm-bindgen`. The engine's executor and clock go through one
-crate-private seam, `cmdr-listing`'s `src/rt/`: natively it re-exports `tokio::runtime::Handle`, `tokio::time`, and
-`std::time::Instant` (so desktop code is the same code), and in the browser it spawns with
-`wasm_bindgen_futures::spawn_local`, runs blocking work inline, reads `performance.now()` (`web-time`), and sleeps on
-`setTimeout`.
+**Decision:** the target is `wasm32-unknown-unknown` with `wasm-bindgen`. The engines' executor and clock go through one
+seam, `cmdr_fs::rt`: natively it re-exports `tokio::runtime::Handle`, `tokio::time`, and `std::time::Instant` (so
+desktop code is the same code), and in the browser it spawns with `wasm_bindgen_futures::spawn_local`, runs blocking
+work inline, reads `performance.now()` (`web-time`), and sleeps on `setTimeout`.
 
 **Why:** what the engine needs from its host is "run this future", "run this closure", "what time is it", and "wake me
 in 50 ms". A browser answers all four natively, and none of them needs a thread. Options considered (verified on rustc
