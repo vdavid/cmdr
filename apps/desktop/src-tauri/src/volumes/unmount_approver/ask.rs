@@ -50,12 +50,27 @@ pub(super) enum Answer {
     Dissent,
 }
 
-/// The answer once the disk's release came back: dissent while any volume is still letting go of the
-/// drive, or a write op is busy on it.
-pub(super) fn after_release(outcomes: impl IntoIterator<Item = VolumeRelease>, busy: bool) -> Answer {
-    let still_releasing = outcomes
+/// One volume's part in an ask's answer: what its release came to, and whether it had anything to
+/// let go of when the ask marked the drive leaving.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct VolumeAnswer {
+    pub(super) outcome: VolumeRelease,
+    /// It had a local external index, or a start held its ticket, once the ask marked it
+    /// unmount-pending. With neither, nothing can start on it until the unmount settles.
+    pub(super) had_work: bool,
+}
+
+/// The answer once the disk's release came back: dissent while any volume that had work is still
+/// letting go of the drive, or a write op is busy on it.
+///
+/// ❗ A volume with no work never dissents, even when the deadline cut its stop short: an ask that
+/// starts with milliseconds of the chain's budget left can't even collect a no-op stop's answer, and
+/// refusing over it made a non-indexed drive's eject fail whenever another drive's asks had spent
+/// the window (2026-11-02, the disk-images lane with production Cmdr running).
+pub(super) fn after_release(volumes: impl IntoIterator<Item = VolumeAnswer>, busy: bool) -> Answer {
+    let still_releasing = volumes
         .into_iter()
-        .any(|outcome| outcome == VolumeRelease::StillReleasing);
+        .any(|volume| volume.had_work && volume.outcome == VolumeRelease::StillReleasing);
     if still_releasing || busy {
         Answer::Dissent
     } else {
@@ -93,14 +108,31 @@ mod tests {
         busy: false,
     };
 
+    fn worked(outcome: VolumeRelease) -> VolumeAnswer {
+        VolumeAnswer {
+            outcome,
+            had_work: true,
+        }
+    }
+
+    fn idle(outcome: VolumeRelease) -> VolumeAnswer {
+        VolumeAnswer {
+            outcome,
+            had_work: false,
+        }
+    }
+
     #[test]
     fn a_disk_with_nothing_to_stop_or_everything_released_approves() {
-        assert_eq!(after_release([VolumeRelease::NothingToStop], false), Answer::Approve);
+        assert_eq!(
+            after_release([idle(VolumeRelease::NothingToStop)], false),
+            Answer::Approve
+        );
         assert_eq!(
             after_release(
                 [
-                    VolumeRelease::Released { was_indexing: true },
-                    VolumeRelease::NothingToStop
+                    worked(VolumeRelease::Released { was_indexing: true }),
+                    idle(VolumeRelease::NothingToStop)
                 ],
                 false
             ),
@@ -113,8 +145,8 @@ mod tests {
         assert_eq!(
             after_release(
                 [
-                    VolumeRelease::Released { was_indexing: true },
-                    VolumeRelease::StillReleasing
+                    worked(VolumeRelease::Released { was_indexing: true }),
+                    worked(VolumeRelease::StillReleasing)
                 ],
                 false
             ),
@@ -123,9 +155,18 @@ mod tests {
     }
 
     #[test]
+    fn a_volume_with_no_work_whose_stop_the_deadline_cut_short_still_approves() {
+        assert_eq!(
+            after_release([idle(VolumeRelease::StillReleasing)], false),
+            Answer::Approve,
+            "background work that was never there can't block an eject"
+        );
+    }
+
+    #[test]
     fn a_busy_write_op_dissents_even_once_everything_let_go() {
         assert_eq!(
-            after_release([VolumeRelease::Released { was_indexing: true }], true),
+            after_release([worked(VolumeRelease::Released { was_indexing: true })], true),
             Answer::Dissent
         );
     }

@@ -334,8 +334,16 @@ DiskArbitration-535.0.10, 2026-09-14).
 5. `drive_release::release(group, deadline)`: the one wait a DA queue may make.
 6. Records every volume it stopped while indexing, and carries an earlier ask's record forward to this epoch and
    generation. A volume Cmdr's own eject is taking down belongs to that flight, so the approver records none of those.
-7. Answers: dissent (`kDAReturnBusy`) if anything is still letting go, a repo wouldn't let go in time, a write op is
-   busy on the disk, or the unit read came back unreadable; otherwise approve.
+7. Answers: dissent (`kDAReturnBusy`) if a volume that had work is still letting go, a repo wouldn't let go in time, a
+   write op is busy on the disk, or the unit read came back unreadable; otherwise approve. ❗ **"Had work" is read
+   before the release, after step 4**: a local external index, or a start holding the ticket. With neither, nothing can
+   start there until the unmount settles, so a stop the deadline cut short on such a volume is no reason to refuse.
+   Background work never blocks an eject that has nothing to wait for. **Why**: an ask arriving with milliseconds of a
+   busy chain's budget left can't even collect a no-op stop's answer, and refusing over it failed the unmount of a disk
+   image Cmdr never indexed (production Cmdr against the disk-images lane, 2026-11-02, `ask.rs`'s `VolumeAnswer`).
+   Residual, shared with the no-time-left answer: a cancelled start's half-built manager that holds the volume with no
+   registry key and no ticket isn't seen. A volume that HAD work and is still letting go keeps the dissent, since
+   unmounting under a live FSEvents watcher can wedge FSKit (`file_system/volume/DETAILS.md` § "Eject").
 
 **The shared deadline** (`ask.rs`). DA times each callback from when it QUEUED it (10 s, `DAQueue.c:178-180`), not from
 when the client runs it, and a session runs its callbacks one at a time. So an ask starting while an earlier ask's
@@ -399,7 +407,10 @@ still mounted, a held file's refusal hands the index back after the idle, the fi
 of both partitions, a dissent refuses a non-force unmount, a forced detach ignores that dissent (`hdiutil detach -force` then; `diskutil eject force` since 2026-11-03, #849), and a person's
 enable issued during an ask never lands an index on the drive that's leaving. A repo open on the drive with its pack
 mapped lets go during the ask, so a plain `diskutil unmount` goes through (Darwin 27.0.0, 2026-10-19); the test host
-releases through a real `GitPortal` set on `FakeHost::git`.
+releases through a real `GitPortal` set on `FakeHost::git`. ❗ A running Cmdr is asked about the lane's images too: they
+attach `-nobrowse`, which only keeps them out of the switcher, and the registry takes every mount (§ "Which mounts get a
+row"). So that Cmdr's own approver answers each lane unmount alongside the test's, and it must approve a volume it has
+no work on (step 7).
 
 ## Key decisions
 
