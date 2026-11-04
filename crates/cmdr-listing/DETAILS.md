@@ -606,26 +606,24 @@ shipped build.
 
 ## The browser build
 
-The engine also builds for `wasm32-unknown-unknown`, hosted by `crates/cmdr-listing-wasm` for the website's demo. One
-crate-private module, `src/rt/`, is the whole difference: every spawn, sleep, timeout, and `Instant` in the engine goes
-through `crate::rt`.
+The engine also builds for `wasm32-unknown-unknown`, hosted by `crates/cmdr-listing-wasm` for the website's demo. The
+whole difference is `cmdr-fs`'s executor-and-clock seam, `cmdr_fs::rt`, which the engine names as `crate::rt`
+(`src/rt.rs`): every spawn, sleep, timeout, and `Instant` goes through it. What it is on each target, why it's a seam,
+and how clippy enforces it: `crates/cmdr-fs/DETAILS.md` § "The browser build". Here, it covers the 50 ms diff flush, the
+stall clock, and the reaper tick.
 
-- **Natively, `rt` is re-exports**: `Runtime` is `tokio::runtime::Handle`, `rt::time` is `tokio::time`, `rt::Instant` is
-  `std::time::Instant`. The desktop compiles the same code, `start_paused` test clocks included.
-- **In the browser (`src/rt/wasm.rs`)**: `Runtime::spawn` is `wasm_bindgen_futures::spawn_local` behind a `oneshot`
-  `JoinHandle` (dropping it detaches, as tokio's does), `spawn_blocking` runs the closure inline, `Instant` is
-  `web-time`'s, and `sleep` is a `Send` `setTimeout` future (the 50 ms diff flush, the stall clock, the reaper tick).
-- **Why a seam and not a runtime**: `std::time::Instant::now` panics on that target, which takes tokio's whole time
-  driver with it, and a page has no thread to run a runtime on. The target decision and the options it beat:
-  `crates/cmdr-listing-wasm/DETAILS.md` § "Decision".
-- **What the gates cost**: `ListingsBuilder::runtime` exists natively only, the default runtime is `cmdr-fs`'s fallback
-  natively and the page's loop in the browser (`rt::default_runtime`), and the three wasm deps are under
-  `cfg(target_family = "wasm")` in `Cargo.toml`. Nothing else in the engine knows which target it's on.
-- **Guardrail**: a direct `tokio::time`, `tokio::runtime::Handle`, or `std::time::Instant` in engine code compiles on
-  both targets and panics only in the browser. `desktop-rust-listing-wasm`'s smoke test is what catches it.
+- **What the gates cost here**: `ListingsBuilder::runtime` exists natively only, and the default runtime is
+  `VolumeHost::detached().runtime()` on both targets (`rt::default_runtime`). Nothing else in the engine knows which
+  target it's on.
+- **Enforced**: `clippy.toml` carries the clock and timer bans.
 
 ## Decisions
 
+- **The executor and clock are a platform module (`cmdr_fs::rt`), not a host-injected seam.** A clock-and-executor trait
+  would box every spawn, lose tokio's `JoinHandle`, and move the desktop's tests off `start_paused` time, all to serve a
+  demo. The module keeps desktop on the exact tokio and `std` calls and confines the browser to one file. It lives in
+  `cmdr-fs` because the write engine and the backends need the same one. Why: § "The browser build"; agreed with the
+  coordinator for #302 (2026-11-04).
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.
   Streaming spawns a task on the host runtime and reports through `ListingEvents`; the frontend stays responsive (Tab
   works, ESC cancels).

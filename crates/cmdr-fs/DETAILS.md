@@ -108,20 +108,35 @@ the next section.
 
 ## The browser build
 
-`cmdr-listing` builds for `wasm32-unknown-unknown` (`crates/cmdr-listing-wasm`, the website's demo), so this crate does
-too. A browser has no host filesystem, user database, threads, or C toolchain, and the gates are as few and coarse as
-that allows:
+The engines build for `wasm32-unknown-unknown` (`crates/cmdr-listing-wasm`, the website's demo), so this crate does too.
+A browser has no host filesystem, user database, threads, or C toolchain, and the gates are as few and coarse as that
+allows:
 
 - **Host-only deps** sit in `Cargo.toml`'s `cfg(not(target_family = "wasm"))` table: `libc`, `rusqlite`, `uzers`,
   `xattr`, `exacl`, and tokio's `rt-multi-thread`. `dirs` stays unconditional (it answers `None` there). The wasm table
-  adds `uuid`'s `js` randomness and `web-time` for `InMemoryVolume`'s write clock.
+  adds `uuid`'s `js` randomness and `rt`'s browser half (`web-time`, `wasm-bindgen`, `wasm-bindgen-futures`).
 - **Two whole modules are host-only** (`lib.rs`): `mapped_file_faults` (mmap) and `sqlite_util`.
 - **The rest answer as "the platform can't hold this"**, the way the Linux branches already do for macOS-only classes:
   ACL, mode, and xattr reads find nothing, writes report `ClassOutcome::NotApplicable`, the umask is the `022` fallback,
   owners resolve to their numeric id, `open_parent_folder` opens nothing, and `Acl` wraps `Infallible`, so no code path
   can hold one. Each gate sits on the one function that makes the syscall.
-- **The fallback runtime panics there** instead of building a runtime nobody drives (`volume/host/runtime.rs`); the
-  listing engine spawns through its own seam.
+- **`rt` is the executor and clock every engine names** (`src/rt/`, `pub`), shared by `cmdr-listing` and the write
+  engine. Natively it's re-exports plus one-line forwards: `Runtime` is `tokio::runtime::Handle`, `rt::Instant` is
+  `std::time::Instant`, `rt::time::Instant` is tokio's, and `rt::now()`, `rt::since()`,
+  `rt::time::{now, sleep, sleep_until, timeout}` call the `std` / tokio function of the same name, so desktop runs the
+  same code (`start_paused` test clocks included). In the browser (`src/rt/wasm.rs`) `Runtime::spawn` is
+  `wasm_bindgen_futures::spawn_local` behind a `oneshot` `JoinHandle` (dropping it detaches, as tokio's does),
+  `spawn_blocking` runs the closure inline, `Instant` is `web-time`'s, and `sleep` is a `Send` `setTimeout` future. Why
+  a seam and not a runtime: `std::time::Instant::now` panics on that target, which takes tokio's whole time driver with
+  it, and a page has no thread to run a runtime on (`crates/cmdr-listing-wasm/DETAILS.md` § "Decision").
+- **`VolumeHost::runtime` hands out `rt::Runtime`**, so a backend and an engine spawn on the same executor on either
+  target. The fallback is `cmdr-fs`'s multi-threaded runtime natively and the page's event loop in the browser
+  (`volume/host/runtime.rs`).
+- **Enforced per engine crate**: its `clippy.toml` `disallowed-methods` refuses every direct clock read, timer, and
+  ambient-runtime lookup (`Instant::now` / `elapsed` on both clocks, `SystemTime::now`,
+  `tokio::time::{sleep, sleep_until, timeout, interval}`, `Handle::current`), and `rt/` opts out with one `#[allow]`.
+  Method bans, not `disallowed-types`: natively `rt::Instant` and `rt::Runtime` ARE the `std` and tokio types, so a type
+  ban would fire on the seam itself. `desktop-rust-listing-wasm`'s smoke test backs it at runtime.
 - **`Path::is_absolute` is always `false` on that target** (it has no notion of a filesystem root). Code the browser
   build runs checks a leading `/` instead (`crates/cmdr-listing-wasm/src/tree.rs`); `InMemoryVolume::normalize` gets the
   right answer anyway, because joining a rooted path onto `/` replaces it.
@@ -1086,6 +1101,10 @@ Everything above is what the double gets RIGHT unconditionally. On top of that i
 named ways, so a caller's defense against a hostile backend is testable rather than assumed. Each is test-only, and each
 models something a real backend genuinely does:
 
+- **`with_held_folders_only()`** is the one knob that makes the double STRICTER, not hostile: a listing of a folder it
+  doesn't hold answers `NotFound` (a file, `NotADirectory`), as a disk does, where the default lists it empty. The
+  browser demo turns it on (`crates/cmdr-listing-wasm/src/tree.rs`); tests leave it off because most build files without
+  their parent folders.
 - **`with_delete_failing()`** — `delete` returns an `IoError` instead of removing the entry. A backend that can't remove
   a path (a permission, a lock, a dead session).
 - **`set_stat_failing(path)`** — `is_directory` and `get_metadata` (so `entry_kind` too) FAIL for that path rather than

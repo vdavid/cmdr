@@ -114,7 +114,9 @@ impl DemoTree {
             entries.push(file_entry(entry, name, &dirs));
         }
         Ok(Arc::new(
-            InMemoryVolume::with_entries(self.volume_id, entries).with_root(root),
+            InMemoryVolume::with_entries(self.volume_id, entries)
+                .with_root(root)
+                .with_held_folders_only(),
         ))
     }
 }

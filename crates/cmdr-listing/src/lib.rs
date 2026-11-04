@@ -170,7 +170,7 @@ impl Inner {
 
     /// Milliseconds since this engine's epoch: what `last_accessed_ms` holds.
     pub(crate) fn epoch_millis_now(&self) -> u64 {
-        self.epoch.elapsed().as_millis() as u64
+        rt::since(self.epoch).as_millis() as u64
     }
 
     /// `path` in the spelling `volume_id`'s volume keys listings under.

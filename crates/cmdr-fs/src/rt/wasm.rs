@@ -9,7 +9,7 @@
 //! - **Time** is `performance.now()` (`web-time`) and sleeping is `setTimeout`,
 //!   so a 50 ms diff flush is a real 50 ms the page never blocks on.
 //!
-//! `DETAILS.md` § "The browser build" has the why.
+//! `crates/cmdr-fs/DETAILS.md` § "The browser build" has the why.
 
 use std::future::Future;
 use std::pin::Pin;
@@ -17,22 +17,23 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 use std::time::Duration;
 
-use cmdr_fs::ignore_poison::IgnorePoison;
+use crate::ignore_poison::IgnorePoison;
 use tokio::sync::oneshot;
 use wasm_bindgen::prelude::*;
 
-pub(crate) use web_time::Instant;
+pub use web_time::Instant;
 
 /// The browser build's stand-in for `tokio::runtime::Handle`, with the two
 /// methods the engine calls on it.
+// DEFAULT-OK: it carries no state; every `Runtime` is the page's one event loop.
 #[derive(Debug, Clone, Default)]
-pub(crate) struct Runtime {
+pub struct Runtime {
     _private: (),
 }
 
 impl Runtime {
     /// Runs `future` on the page's event loop; the handle hears its output.
-    pub(crate) fn spawn<F>(&self, future: F) -> JoinHandle<F::Output>
+    pub fn spawn<F>(&self, future: F) -> JoinHandle<F::Output>
     where
         F: Future + 'static,
         F::Output: 'static,
@@ -46,7 +47,7 @@ impl Runtime {
     }
 
     /// Runs `work` right here: the browser has no blocking pool (module docs).
-    pub(crate) fn spawn_blocking<F, R>(&self, work: F) -> JoinHandle<R>
+    pub fn spawn_blocking<F, R>(&self, work: F) -> JoinHandle<R>
     where
         F: FnOnce() -> R,
     {
@@ -58,7 +59,7 @@ impl Runtime {
 
 /// A spawned task's output, like `tokio::task::JoinHandle`: dropping it detaches
 /// the task, never cancels it.
-pub(crate) struct JoinHandle<T>(oneshot::Receiver<T>);
+pub struct JoinHandle<T>(oneshot::Receiver<T>);
 
 impl<T> Future for JoinHandle<T> {
     type Output = Result<T, JoinError>;
@@ -71,7 +72,7 @@ impl<T> Future for JoinHandle<T> {
 /// The task ended without an answer (it panicked, which in the browser build
 /// aborts the module anyway).
 #[derive(Debug)]
-pub(crate) struct JoinError;
+pub struct JoinError;
 
 impl std::fmt::Display for JoinError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -80,26 +81,31 @@ impl std::fmt::Display for JoinError {
 }
 
 /// The subset of `tokio::time` the engine uses, on the page's clock.
-pub(crate) mod time {
+pub mod time {
     use std::future::Future;
     use std::time::Duration;
 
-    pub(crate) use web_time::Instant;
+    pub use web_time::Instant;
+
+    /// The current instant on the page's clock.
+    pub fn now() -> Instant {
+        Instant::now()
+    }
 
     /// Waits `duration` without blocking the page.
-    pub(crate) async fn sleep(duration: Duration) {
+    pub async fn sleep(duration: Duration) {
         super::Sleep::new(duration).await;
     }
 
     /// Waits until `deadline` (at once when it's past).
-    pub(crate) async fn sleep_until(deadline: Instant) {
+    pub async fn sleep_until(deadline: Instant) {
         sleep(deadline.saturating_duration_since(Instant::now())).await;
     }
 
     /// `future`'s output, or [`Elapsed`] once `duration` passes first. Like
     /// tokio's, the timeout drops `future`: callers wrap a spawned task's handle,
     /// which detaches.
-    pub(crate) async fn timeout<F: Future>(duration: Duration, future: F) -> Result<F::Output, Elapsed> {
+    pub async fn timeout<F: Future>(duration: Duration, future: F) -> Result<F::Output, Elapsed> {
         tokio::select! {
             biased;
             output = future => Ok(output),
@@ -109,7 +115,7 @@ pub(crate) mod time {
 
     /// The deadline passed before the future answered.
     #[derive(Debug)]
-    pub(crate) struct Elapsed;
+    pub struct Elapsed;
 }
 
 #[wasm_bindgen]
@@ -125,6 +131,7 @@ extern "C" {
 /// there (24.8 days; the engine's longest is the six-hour reaper sweep).
 const MAX_TIMEOUT_MS: f64 = 2_147_483_647.0;
 
+// DEFAULT-OK: a sleep that just started hasn't fired and has no waker yet.
 #[derive(Default)]
 struct SleepState {
     fired: bool,

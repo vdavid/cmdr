@@ -124,6 +124,10 @@ pub struct InMemoryVolume {
     /// an atomic rename-overwrite. Default `false` (rejects collisions, like SMB /
     /// local / a plain in-memory store).
     sibling_duplicates_allowed: bool,
+    /// `true` once [`Self::with_held_folders_only`] asked for it: a listing of a
+    /// folder this store doesn't hold answers `NotFound`, as a disk does. Default
+    /// `false`, because most tests build files without their parent folders.
+    held_folders_only: bool,
     /// When `true`, [`Volume::delete`] returns an `IoError` instead of removing the
     /// entry. Lets the remote-temp-reaper test prove a best-effort reap DELETE
     /// failure never fails the surrounding edit (the edit commits via a
@@ -249,6 +253,7 @@ impl InMemoryVolume {
             read_range_log: std::sync::Mutex::new(Vec::new()),
             read_range_unsupported: false,
             sibling_duplicates_allowed: false,
+            held_folders_only: false,
             delete_fails: false,
             read_chunk_delay: None,
             rename_failure: None,
@@ -407,6 +412,15 @@ impl InMemoryVolume {
     /// exercises mount-root resolution.
     pub fn with_root(mut self, root: impl Into<PathBuf>) -> Self {
         self.root = root.into();
+        self
+    }
+
+    /// Makes [`Volume::list_directory`] answer the way a disk does for a folder
+    /// this store doesn't hold: `NotFound` for a path it has no entry for, and
+    /// `NotADirectory` for a file. The volume root always lists. Off by default:
+    /// most tests list the parent of files they never gave a folder entry.
+    pub fn with_held_folders_only(mut self) -> Self {
+        self.held_folders_only = true;
         self
     }
 
