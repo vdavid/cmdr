@@ -9,6 +9,15 @@ use std::time::Duration;
 use cmdr_fs::rt::{self, Runtime, task::JoinSet, time};
 use wasm_bindgen::prelude::*;
 
+/// How many back-to-back yields the cost probe takes.
+const YIELD_PROBE: u32 = 100;
+/// What those may cost at most: a tenth of what 100 one-millisecond timers would, with
+/// room for a loaded CI runner.
+const YIELD_PROBE_BUDGET: Duration = Duration::from_millis(50);
+
+/// How long yields may go on before a zero-delay timer counts as starved.
+const TIMER_STARVED_AFTER: Duration = Duration::from_secs(1);
+
 /// Runs every check and resolves with a one-line summary, or rejects naming the
 /// first one that failed. `now_ms` is the page's `Date.now()`, for the wall clock.
 #[wasm_bindgen(js_name = rtSelfTest)]
@@ -68,7 +77,9 @@ async fn run(now_ms: f64) -> Result<String, String> {
         return Err("a dropped set's task ran on".into());
     }
 
-    // `yield_now` lets a timer fire: a microtask yield would spin past it forever.
+    // `yield_now` lets a timer fire: a microtask yield would spin past it forever. Bounded
+    // by time, not by count: a yield is a task turn of microseconds, and a zero-delay timer
+    // takes a millisecond or more, so a count would only measure the machine.
     let fired = Rc::new(Cell::new(false));
     let flag = Rc::clone(&fired);
     drop(runtime.spawn(async move {
@@ -76,13 +87,31 @@ async fn run(now_ms: f64) -> Result<String, String> {
         time::sleep(Duration::ZERO).await;
         flag.set(true);
     }));
+    let waiting = time::now();
     let mut yields = 0;
     while !fired.get() {
-        if yields == 100 {
-            return Err("100 yields and a zero-delay timer never fired".into());
+        if time::now().saturating_duration_since(waiting) >= TIMER_STARVED_AFTER {
+            return Err(format!(
+                "{yields} yields over a second and a zero-delay timer never fired"
+            ));
         }
         rt::task::yield_now().await;
         yields += 1;
+    }
+
+    // A yield costs a task turn, not a timer: the copy engine yields once per 64 KiB chunk,
+    // so a clamped `setTimeout(0)` (1 ms in Node, 4 ms or more nested in a browser) capped
+    // one stream far below the device's rate. Old cost here: 100+ ms; new: a few ms.
+    let started = time::now();
+    for _ in 0..YIELD_PROBE {
+        rt::task::yield_now().await;
+    }
+    let spent = time::now().saturating_duration_since(started);
+    if spent >= YIELD_PROBE_BUDGET {
+        return Err(format!(
+            "{YIELD_PROBE} yields took {} ms: a yield is paying a timer clamp",
+            spent.as_millis()
+        ));
     }
 
     // `timeout_at` answers `Elapsed` once its deadline passes.
@@ -108,7 +137,10 @@ async fn run(now_ms: f64) -> Result<String, String> {
         return Err(format!("wall_now is {wall_ms} ms, the page says {now_ms}"));
     }
 
-    Ok(format!("rt OK ({yields} yield(s) to fire a timer)"))
+    Ok(format!(
+        "rt OK ({yields} yield(s) to fire a timer, {YIELD_PROBE} yields in {} ms)",
+        spent.as_millis()
+    ))
 }
 
 async fn sleep_then(ms: u64, label: &'static str) -> &'static str {

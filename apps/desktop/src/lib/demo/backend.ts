@@ -12,7 +12,7 @@ import { startMenuEngine, type ContextPopup, type MenuEngineHandle } from './men
 import { pluginHandler } from './plugins.js'
 import { openInBrowserTab } from './opener.js'
 import { noteUnanswered } from './unanswered.js'
-import { demoEntries } from './demo-tree.js'
+import type { TimedOut } from '#lib/ipc/bindings.js'
 import { demoPath, volumeAnswers } from './volumes.js'
 import { createDragSessions } from './drag-session.js'
 import { createWindowHost, type WindowHost } from './windows.js'
@@ -55,9 +55,6 @@ export interface DemoBackend {
 
 /** The engine's own notices, which no Tauri listener knows (`crates/cmdr-listing-wasm/src/viewer.rs`). */
 const DEMO_EVENT_PREFIX = 'demo://'
-
-/** Every file in the demo tree: what Enter opens in the viewer. */
-const demoFiles = new Set(demoEntries.filter((entry) => entry.kind === 'file').map((entry) => entry.path))
 
 function camelCase(snake: string): string {
   return snake.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())
@@ -126,9 +123,12 @@ export function createDemoBackend(): DemoBackend {
 
   // The demo's "default app" for a file is Cmdr's own viewer: Enter opens it, through the event the
   // main window already answers (`open-file-viewer`). A folder or package keeps `openPath`'s refusal.
-  function openInViewer(payload: Payload): boolean {
+  // What's a file is the live volume's answer (`stat_paths_kinds`), so a file a copy, move, or
+  // rename landed opens too, and one a delete removed doesn't.
+  async function openInViewer(payload: Payload): Promise<boolean> {
     const path = demoPath(String(payload.path))
-    if (!demoFiles.has(path)) return false
+    const kinds = (await engine.invoke('stat_paths_kinds', { paths: [path] })) as TimedOut<(boolean | null)[]>
+    if (kinds.data[0] !== false) return false
     emit('open-file-viewer', { path }, { kind: 'label', label: 'main' })
     return true
   }
@@ -152,7 +152,7 @@ export function createDemoBackend(): DemoBackend {
   }
 
   async function invoke(cmd: string, payload: Payload, origin?: InvokeOrigin): Promise<unknown> {
-    if (cmd === 'open_path' && openInViewer(payload)) return null
+    if (cmd === 'open_path' && (await openInViewer(payload))) return null
     const handler =
       drags.handler(cmd) ?? windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
     if (handler) return handler(payload)
