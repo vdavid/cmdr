@@ -280,7 +280,10 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
    is `refuse('openPath', { type: 'unsupported' })`, typed against that command's error, which `invoke` rejects with as
    it does for a Rust `Err`. Opening a folder or package uses exactly that: the app's own refusal for a platform with no
    opener. Opening a demo FILE (Enter) is the backend's: it sends `open-file-viewer` to the main window, so the demo's
-   default app is Cmdr's own viewer.
+   default app is Cmdr's own viewer. Whether a path is a file is the live volume's answer (the engine's
+   `stat_paths_kinds`), ❌ never the boot tree's `demoEntries`: a set built from the tree once refused every copy, move,
+   and rename the visitor made (the viewer itself already read them, through the volume the write engine wrote to;
+   `viewer_test.rs`'s copied-renamed-moved cell pins that half).
 6. Commands outside the bindings (generic `<R: Runtime>` ones called through raw `invoke`, see `lib/ipc/DETAILS.md`) go
    in `rawAnswers`, keyed by their snake_case wire name, typed by hand against the wrapper's return type.
 7. Plugin commands (`plugin:<name>|<command>`) go in `plugins.ts`, or in `webview.ts`'s `windowAnswer` when they're
