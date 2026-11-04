@@ -47,9 +47,22 @@ wasm-bindgen-futures = "0.4.76"
 js-sys = "0.3.103"
 
 [dev-dependencies]
+# The golden-trace scenarios the native engine blesses, replayed on the demo's
+# host (`src/operations_host/golden_test.rs`), natively and as a wasm test build.
+cmdr-operations = { path = "../cmdr-operations", features = ["golden"] }
+
+# Native-only: the wasm test build compiles just the golden replay, and these
+# (threaded runtimes, `tempfile`, `tokio/net`) don't build for wasm32.
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 # The listing engine's fixtures (`TestEngine`, `TestListing`) for the backend-listings cells.
 cmdr-listing = { path = "../cmdr-listing", features = ["testing"] }
 # `wait_until_async`, the write cells' one way to wait on an event.
 cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # The shim's tests run natively, on a real runtime, against the same engine.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+
+[target.'cfg(target_family = "wasm")'.dev-dependencies]
+# The golden replay's wasm tests, run under Node by `wasm-bindgen-test-runner`
+# (the `wasm-bindgen-cli` the build script installs to match `Cargo.lock`).
+# Pinned to the release that pairs with the locked `wasm-bindgen` 0.2.126.
+wasm-bindgen-test = "=0.3.76"

@@ -251,6 +251,11 @@ pub use types::{
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 
+// The golden-trace scenarios and their normalizer, for every host that replays
+// them (this crate's cells and the browser demo's wasm test build).
+#[cfg(any(test, feature = "golden"))]
+pub mod golden;
+
 // ============================================================================
 // Reach for the engine's own modules: siblings and the tests below name these
 // at the root. Private, so nothing outside the engine can.

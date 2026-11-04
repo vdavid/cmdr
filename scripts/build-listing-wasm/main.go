@@ -10,8 +10,12 @@
 //  3. `wasm-bindgen --target web` into the out dir (default `crates/cmdr-listing-wasm/pkg/`,
 //     gitignored): `cmdr_listing_wasm.js`, `cmdr_listing_wasm_bg.wasm`, and their `.d.ts`.
 //  4. With `-smoke`, loads the result in Node and drives one listing (`smoke.mjs`).
+//  5. With `-golden`, builds the crate's wasm TEST target (the dev profile, so the shipped `.wasm`
+//     carries no scenarios) and runs it under Node with `wasm-bindgen-test-runner`: the volume
+//     engine's golden traces replayed on the demo's host against the fixtures the native engine
+//     blesses (`crates/cmdr-listing-wasm/src/operations_host/golden_test.rs`).
 //
-// Usage (from the wrapper): ./scripts/build-listing-wasm.sh [-out DIR] [-smoke] | -toolchain-only
+// Usage (from the wrapper): ./scripts/build-listing-wasm.sh [-out DIR] [-smoke] [-golden] | -toolchain-only
 package main
 
 import (
@@ -40,6 +44,7 @@ func main() {
 	root := flag.String("root", ".", "the repo root")
 	out := flag.String("out", "", "where the .wasm and JS glue go (default crates/cmdr-listing-wasm/pkg)")
 	smoke := flag.Bool("smoke", false, "load the result in Node and drive one listing")
+	golden := flag.Bool("golden", false, "replay the golden traces as a wasm test build under Node")
 	toolchainOnly := flag.Bool("toolchain-only", false, "install the pinned wasm C toolchain and stop (CI warms its cache with this)")
 	flag.Parse()
 
@@ -50,13 +55,13 @@ func main() {
 		}
 		return
 	}
-	if err := run(*root, *out, *smoke); err != nil {
+	if err := run(*root, *out, *smoke, *golden); err != nil {
 		fmt.Fprintf(os.Stderr, "build-listing-wasm: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(root, out string, smoke bool) error {
+func run(root, out string, smoke, golden bool) error {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return err
@@ -111,7 +116,31 @@ func run(root, out string, smoke bool) error {
 			return fmt.Errorf("smoke test: %w", err)
 		}
 	}
+	if golden {
+		return replayGolden(root, tc)
+	}
 	return nil
+}
+
+// replayGolden builds the crate's wasm test target and runs it under Node.
+func replayGolden(root string, tc wasmToolchain) error {
+	test := exec.Command("cargo", cargoGoldenArgs()...)
+	test.Dir = root
+	test.Env = append(cargoEnv(os.Environ(), tc), "CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner")
+	test.Stdout = os.Stdout
+	test.Stderr = os.Stderr
+	if err := test.Run(); err != nil {
+		return fmt.Errorf("golden replay: %w", err)
+	}
+	fmt.Println("listing-wasm golden: OK")
+	return nil
+}
+
+// cargoGoldenArgs builds and runs only the golden replay: the crate's other test modules are
+// native-only. `wasm-bindgen-test-runner` ships in the same `wasm-bindgen-cli` that
+// `ensureWasmBindgen` matched to `Cargo.lock`, so it pairs with the locked crate too.
+func cargoGoldenArgs() []string {
+	return []string{"test", "-p", crateName, "--lib", "--target", wasmTarget, "--", "golden_test"}
 }
 
 func installToolchainOnly() error {

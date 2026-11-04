@@ -10,9 +10,11 @@
 //! and pane patches. `DETAILS.md` § "Writes".
 
 mod commands;
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod commands_test;
 mod events;
+#[cfg(test)]
+mod golden_test;
 mod sinks;
 mod volumes;
 pub(crate) mod wire;
@@ -36,6 +38,12 @@ pub struct DemoOperations {
     engine: Operations,
     volume_id: String,
     volume: Arc<dyn Volume>,
+    /// The registry the engine resolves volume ids through.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "only the golden replay registers more volumes")
+    )]
+    volumes: Arc<volumes::DemoVolumes>,
     sink: Arc<dyn EventSink>,
     log_db: PathBuf,
 }
@@ -52,6 +60,7 @@ impl DemoOperations {
         sink: Arc<dyn EventSink>,
     ) -> Self {
         let volumes = Arc::new(volumes::DemoVolumes::new(volume_id.clone(), Arc::clone(&volume)));
+        let registry = Arc::clone(&volumes);
         let events = Arc::new(events::DemoEngineEvents {
             sink: Arc::clone(&sink),
         });
@@ -76,9 +85,29 @@ impl DemoOperations {
             engine,
             volume_id,
             volume,
+            volumes: registry,
             sink,
             log_db,
         }
+    }
+
+    /// The engine itself, for a caller driving its entry points directly (the
+    /// golden replay).
+    #[cfg(test)]
+    pub(crate) fn engine(&self) -> &Operations {
+        &self.engine
+    }
+
+    /// The operation log's database.
+    #[cfg(test)]
+    pub(crate) fn log_db(&self) -> &std::path::Path {
+        &self.log_db
+    }
+
+    /// Files another volume beside the page's.
+    #[cfg(test)]
+    pub(crate) fn register_volume(&self, volume_id: &str, volume: Arc<dyn Volume>) {
+        self.volumes.register(volume_id, volume);
     }
 
     /// Whether [`Self::invoke`] answers `command`.
@@ -113,15 +142,20 @@ impl NameOrder for PaneNameOrder {
 
 /// Where the demo's operation log lives: a path on SQLite's in-memory VFS in the
 /// browser (gone on reload, like the volume), a scratch file natively (tests).
+/// Numbered per engine, so two in one module (the golden replay's wasm tests)
+/// never share a journal.
 fn log_db_path() -> PathBuf {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
     #[cfg(target_family = "wasm")]
     {
-        PathBuf::from("/demo/operation-log.db")
+        PathBuf::from(format!(
+            "/demo/operation-log-{}.db",
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ))
     }
     #[cfg(not(target_family = "wasm"))]
     {
-        use std::sync::atomic::{AtomicU64, Ordering};
-        static NEXT: AtomicU64 = AtomicU64::new(0);
         std::env::temp_dir().join(format!(
             "cmdr-demo-operation-log-{}-{}.db",
             std::process::id(),

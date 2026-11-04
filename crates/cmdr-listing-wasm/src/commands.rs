@@ -117,6 +117,12 @@ impl Demo {
         })
     }
 
+    /// The write engine's host, for a caller driving the engine directly.
+    #[cfg(test)]
+    pub(crate) fn operations(&self) -> &DemoOperations {
+        &self.operations
+    }
+
     /// Whether [`Demo::invoke`] answers `command`.
     pub fn handles(command: &str) -> bool {
         COMMANDS.contains(&command) || DemoOperations::handles(command)

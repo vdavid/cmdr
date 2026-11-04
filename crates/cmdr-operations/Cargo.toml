@@ -35,6 +35,13 @@ testing = [
 # Shuttle's primitives work only inside a Shuttle run.
 shuttle = ["dep:shuttle"]
 
+# "Replay the golden traces." The scenarios and normalizer behind `tests/golden/`
+# (`src/golden/`), for a host that replays them on its own engine: the browser
+# demo's wasm test build (`cmdr-listing-wasm`'s `golden_test.rs`). Separate from
+# `testing` because that one pulls `cmdr-local`, which the wasm target can't
+# build. Dev-dependencies only, so no shipped `.wasm` carries the scenarios.
+golden = []
+
 [dependencies]
 # Zip edits and fresh compression: the mutator, the archive volume a fresh zip is
 # parsed through before it publishes, and the archive formats.

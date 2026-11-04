@@ -24,11 +24,11 @@ pub mod operations_host;
 mod rt_self_test;
 pub mod tree;
 
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod commands_test;
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod events_test;
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod menu_test;
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod tree_test;

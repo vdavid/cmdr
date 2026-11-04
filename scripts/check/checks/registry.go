@@ -2074,8 +2074,10 @@ var AllChecks = []CheckDefinition{
 		App:         AppCrates,
 		Tech:        "🦀 Rust",
 		IsFast:      true,
-		Inputs:      inputs([]string{"crates/cmdr-operations/src/**"}),
-		Run:         RunOperationsLocalDiskBoundary,
+		// The golden fixtures ride along only because `src/golden/` embeds them
+		// (`TestRustInputsCoverEveryEmbeddedFile`); the scan never reads them.
+		Inputs: inputs([]string{"crates/cmdr-operations/src/**", "crates/cmdr-operations/tests/golden/**"}),
+		Run:    RunOperationsLocalDiskBoundary,
 	},
 	{
 		ID:          "ci-coverage",

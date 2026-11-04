@@ -567,8 +567,8 @@ it (`scripts/check/checks/`, an allowlist of the module paths above), ❌ not a 
   `TestWebsiteDemoInputsMatchTheImageKey` keeps the first two aligned; the filter is by hand.
 - **Test plan**: native tests of the host (commands, wire pins) with `cargo nextest`; the end-to-end run 6 deferred here
   (copy 3 files, move, delete, rename, mkdir, a conflict answered Skip, a cancel, journal rows read back); the wasm
-  lane's Node smoke, which also replays milestone 3's volume-engine golden traces against the real `.wasm` and diffs
-  them with the native ones (invariant 13), and fails on any `RuntimeError` or unhandled rejection (invariant 6).
+  lane's Node smoke, plus milestone 3's volume-engine golden traces replayed as a wasm test build and diffed with the
+  native ones (invariant 13); the smoke fails on any `RuntimeError` or unhandled rejection (invariant 6).
 - **DONE**: from JS, every write command answers like the desktop's and the panes' listings change through
   `directory-diff`.
 
@@ -646,9 +646,12 @@ Each names the mechanism that enforces it; one without a mechanism is a review i
 12. "Which id is the local disk" is the host's typed answer (`OperationVolumes::local_disk`, `"root"` by default), and
     the routing table pins both shapes.
 13. The golden traces (events with payloads, journal rows, typed outcomes per op kind) are identical before and after
-    every conversion milestone natively, AND the volume-engine traces run through the Node smoke against the real
-    `.wasm` and match the native ones (catching browser `JoinSet` ordering, the inline op-log writer, and inline
-    `spawn_blocking` drift).
+    every conversion milestone natively, AND the volume-engine traces run in the browser build and match the native ones
+    (catching browser `JoinSet` ordering, the inline op-log writer, and inline `spawn_blocking` drift). **DONE**: the
+    scenarios and normalizer are `cmdr_operations::golden` (a dev-only feature); `cmdr-listing-wasm`'s `golden_test.rs`
+    replays the volume ones on a real `Demo`'s host natively and as a wasm test build under Node (`wasm-bindgen-test`),
+    in the `listing-wasm` check. A test build so the shipped `.wasm` carries no scenarios;
+    `crates/cmdr-listing-wasm/DETAILS.md` § "The build".
 14. The demo image's content key, `websiteDemoInputs`, and ci.yml's `website` filter cover every crate the wasm module
     links (`TestWebsiteDemoInputsMatchTheImageKey` for the first two).
 15. A copied file's size and bytes equal its source's, synthetic or real, and a synthetic copy stays a descriptor

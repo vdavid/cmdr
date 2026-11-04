@@ -91,6 +91,6 @@ impl ListingHost for BackendListings {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 #[path = "backend_listings_test.rs"]
 mod tests;

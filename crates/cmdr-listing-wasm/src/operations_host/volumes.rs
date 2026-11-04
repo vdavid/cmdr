@@ -1,8 +1,8 @@
-//! The demo's answer to the write engine's volume registry: one volume, under
-//! its one id, and NO local disk (`local_disk_id` is `None`), so the demo's
-//! `root` takes the volume engine for every operation. Mirrors the desktop's
-//! `operations_host/volumes.rs`, minus the routes: the demo has no archive edits
-//! and no git portal.
+//! The demo's answer to the write engine's volume registry: the page's volumes
+//! by id (the page registers one; the golden replay registers two more), and NO
+//! local disk (`local_disk_id` is `None`), so the demo's `root` takes the volume
+//! engine for every operation. Mirrors the desktop's `operations_host/volumes.rs`,
+//! minus the routes: the demo has no archive edits and no git portal.
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -14,28 +14,44 @@ use cmdr_operations::host::{OperationVolumes, UnregisteredVolume, VolumeAnswer};
 
 type ArrivalListener = Box<dyn Fn(&str) + Send + Sync>;
 
-/// The page's one volume.
+/// The page's volumes, in the order they arrived.
 pub(crate) struct DemoVolumes {
-    volume_id: String,
-    volume: Arc<dyn Volume>,
-    /// Kept so a listener's lifetime matches the app's; the demo's one volume
-    /// never arrives again, so none is ever called.
+    volumes: Mutex<Vec<(String, Arc<dyn Volume>)>>,
     arrival_listeners: Mutex<Vec<ArrivalListener>>,
 }
 
 impl DemoVolumes {
+    /// A registry holding `volume` under `volume_id`.
     pub(crate) fn new(volume_id: String, volume: Arc<dyn Volume>) -> Self {
-        Self {
-            volume_id,
-            volume,
+        let volumes = Self {
+            volumes: Mutex::new(Vec::new()),
             arrival_listeners: Mutex::new(Vec::new()),
+        };
+        volumes.register(&volume_id, volume);
+        volumes
+    }
+
+    /// Files `volume` under `volume_id` (replacing one there) and tells every
+    /// arrival listener, as the app's registry does.
+    pub(crate) fn register(&self, volume_id: &str, volume: Arc<dyn Volume>) {
+        {
+            let mut volumes = self.volumes.lock_ignore_poison();
+            volumes.retain(|(id, _)| id != volume_id);
+            volumes.push((volume_id.to_string(), volume));
+        }
+        for listener in self.arrival_listeners.lock_ignore_poison().iter() {
+            listener(volume_id);
         }
     }
 }
 
 impl VolumeLookup for DemoVolumes {
     fn get(&self, volume_id: &str) -> Option<Arc<dyn Volume>> {
-        (volume_id == self.volume_id).then(|| Arc::clone(&self.volume))
+        self.volumes
+            .lock_ignore_poison()
+            .iter()
+            .find(|(id, _)| id == volume_id)
+            .map(|(_, volume)| Arc::clone(volume))
     }
 }
 
@@ -57,7 +73,11 @@ impl OperationVolumes for DemoVolumes {
     }
 
     fn find_by_root(&self, root: &Path) -> Option<(String, Arc<dyn Volume>)> {
-        (self.volume.root() == root).then(|| (self.volume_id.clone(), Arc::clone(&self.volume)))
+        self.volumes
+            .lock_ignore_poison()
+            .iter()
+            .find(|(_, volume)| volume.root() == root)
+            .map(|(id, volume)| (id.clone(), Arc::clone(volume)))
     }
 
     fn forget_archive_index(&self, _archive_path: &Path) {}

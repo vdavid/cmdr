@@ -71,7 +71,7 @@ tree lists as a folder (as on disk).
 
 ## The build
 
-- `pnpm build:listing-wasm` (`scripts/build-listing-wasm.sh [-out DIR] [-smoke]`, a Go program):
+- `pnpm build:listing-wasm` (`scripts/build-listing-wasm.sh [-out DIR] [-smoke] [-golden]`, a Go program):
   `cargo build -p cmdr-listing-wasm --target wasm32-unknown-unknown --profile wasm-release` (plus the crates the browser
   build is about to link, `browserBound` in `main.go`, so a host-only dep can't creep into them first), then
   `wasm-bindgen --target web`.
@@ -97,24 +97,36 @@ tree lists as a folder (as on disk).
   `cargo tree -p cmdr-listing-wasm --target wasm32-unknown-unknown -e normal --prefix none | rg '\(/'`.
 - The `wasm-bindgen` CLI has to be the exact version of the `wasm-bindgen` crate in `Cargo.lock`, or it refuses the
   module; the script reads the lockfile and `cargo install`s that version into `~/.cargo/bin` when it's missing.
-- The check: `desktop-rust-listing-wasm` runs the script with `-smoke` into a temp dir, in CI's "Desktop (Rust)" job.
-  The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, Brief column
+- The check: `desktop-rust-listing-wasm` runs the script with `-smoke -golden` into a temp dir, in CI's "Desktop (Rust)"
+  job. The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, Brief column
   widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps. Its write half
   (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
   delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
   that fails past a 50 ms hold. Any unhandled rejection fails the run.
+- **The golden replay** (`-golden`, also in the check): `src/operations_host/golden_test.rs` runs every volume-engine
+  scenario in `cmdr_operations::golden` on a real `Demo`'s host (its `DemoVolumes` with the fixtures' `src` and `dst`
+  registered beside the page volume, its engine events, name order, and operation log) and compares the trace, as text,
+  with the fixture the native engine blesses (`crates/cmdr-operations/tests/golden/`, embedded via `VOLUME_GOLDENS`). It
+  runs natively under `cargo nextest`, and the script builds the crate's wasm TEST target (dev profile) and runs it
+  under Node with `wasm-bindgen-test-runner` (from the same lock-matched `wasm-bindgen-cli`), so the browser runtime's
+  `JoinSet` ordering, inline op-log writer, and inline `spawn_blocking` must produce the native traces (plan invariant
+  13). Why a test build: the shipped `.wasm` carries no scenarios (`golden` is a dev-dependency feature). The other test
+  modules are `not(target_family = "wasm")`, with their dev-deps under a native-only target table: threaded tokio,
+  `tempfile`, and `tokio/net` don't build for wasm32. Cost: about 33 s for the first wasm test build, about 1 s warm
+  (the whole check ran 4 s warm, 2026-11-04). Shown red by perturbing one fixture's size (2026-11-04).
 
 ## Writes
 
 `operations_host/` is the write engine's host, mirroring the desktop's `operations_host/`: `volumes.rs`
-(`OperationVolumes` over the one volume; `local_disk_id` is `None`, so the demo's `root` takes the volume engine for
-every op), `events.rs` (`EngineEvents`), `sinks.rs` (the per-op and per-preview sinks; a failure is retained for the
-queue before its `write-error`, as the desktop's terminal effects order it), `wire.rs` (every event name, pinned against
-`bindings.ts` by `events_test.rs`), and `commands/` by domain (`transfers.rs`, `instant.rs`, `queue.rs`, `history.rs`,
-and `paths.rs`: the dialogs' `path_exists`, `destination_exists`, `destination_root_echo`, and `stat_paths_kinds`,
-answered from the live volume). The volume is named after the tree's `volumeName` (`Macintosh HD`), and its `home` makes
-it stand in for the computer's own disk (`Volume::stands_in_for_own_disk`), so a transfer's summary reads `~/Documents`
-as the desktop's does. `Demo` routes a command to it when `DemoOperations::handles` claims it.
+(`OperationVolumes` over the page's volumes by id, one in the page, more in the golden replay; `local_disk_id` is
+`None`, so the demo's `root` takes the volume engine for every op), `events.rs` (`EngineEvents`), `sinks.rs` (the per-op
+and per-preview sinks; a failure is retained for the queue before its `write-error`, as the desktop's terminal effects
+order it), `wire.rs` (every event name, pinned against `bindings.ts` by `events_test.rs`), and `commands/` by domain
+(`transfers.rs`, `instant.rs`, `queue.rs`, `history.rs`, and `paths.rs`: the dialogs' `path_exists`,
+`destination_exists`, `destination_root_echo`, and `stat_paths_kinds`, answered from the live volume). The volume is
+named after the tree's `volumeName` (`Macintosh HD`), and its `home` makes it stand in for the computer's own disk
+(`Volume::stands_in_for_own_disk`), so a transfer's summary reads `~/Documents` as the desktop's does. `Demo` routes a
+command to it when `DemoOperations::handles` claims it.
 
 - **One volume, one `Listings`**: `Demo::new` builds the `InMemoryVolume` once, hands it to both engines, and gives it
   pane patches through `backend_listings.rs`'s late-bound `BackendListings` (the volume needs its listing host before
@@ -124,9 +136,10 @@ as the desktop's does. `Demo` routes a command to it when `DemoOperations::handl
   `crates/cmdr-fs/DETAILS.md` § Bandwidth), so a 120 MB file copies for about 23 s, long enough to watch and pause in
   the queue, `with_yielding(8 ms)` (the page never waits long on engine work), and `with_capacity` at the disk size the
   volume list shows, so free space is live. `Pacing` stays the engine's default `None`.
-- **The journal** is the real `cmdr-operation-log` on `/demo/operation-log.db` (SQLite's in-memory VFS, gone on reload
-  like the volume; the writer applies inline, `cmdr-operation-log`'s browser build). The ledger is claimed unpersisted;
-  its `LedgerUnpersisted` report stays quiet. Natively (tests) the log is a scratch file in the temp dir.
+- **The journal** is the real `cmdr-operation-log` on `/demo/operation-log-<n>.db`, numbered per engine so the golden
+  replay's engines in one module never share one (SQLite's in-memory VFS, gone on reload like the volume; the writer
+  applies inline, `cmdr-operation-log`'s browser build). The ledger is claimed unpersisted; its `LedgerUnpersisted`
+  report stays quiet. Natively (tests) the log is a scratch file in the temp dir.
 
 ## Where the demo differs from the app
 

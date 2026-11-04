@@ -130,25 +130,29 @@ The full top-level inventory is here:
 - `lib.rs` (the `Operations` handle and its `Inner`, and the public list: the `pub use` lines, everything outside the
   crate may name; every submodule but `host` is private), `testing/` (`any(test, feature = "testing")`:
   `TestOperations`, an engine a test owns, in `engine.rs`; the Criterion bench's door in `bench.rs`; and what test cells
-  outside the crate reach beyond the public list), `write_start.rs` (the same-`root` move, delete, and trash starts,
-  routing to the local disk or the volume engine), `local_start.rs` (the local copy, move, delete, and trash starters
-  and the `start_write_operation` lifecycle they share), `local_disk/` (the host's own disk as the shared code needs it:
-  errnos, a file's device and mode, the no-replace rename, mount and filesystem questions, a volume over a local folder;
-  natively forwards to `cmdr_local` / `libc` / `std::os::unix`, in the browser build the answers of a host with none),
-  `rt.rs` (the clocks, timers, and yields, over `cmdr_fs::rt`; `host/DETAILS.md`), `handle.rs` (building an `Operations`
-  and reaching its parts), `scope.rs` (`OpScope`, what one operation reaches its engine through), `host/` (what the
-  engine needs from the app: the runtime, the volumes, the engine-wide events, and the optional seams, § "The engine's
-  host"), `manager.rs` (registry + lane admission; what the queue window asks in `manager/queue_api.rs`, its request
-  answers in `manager/wire.rs`, reordering the line in `manager/reorder.rs`, and a retained failure's way to start again
-  in `manager/retry.rs`, § "Retained failures"), `state.rs` (`WriteOperationState`, plus `state/settled_guard.rs`: the
-  settle guard, `state/registry.rs`: `WriteOperationRegistry` and its walks, and `state/controls.rs`: the by-id cancel /
-  abort / pause / resume / conflict-answer entry points, re-exported through `state`, and `state/activity.rs`: the one
-  wait classifier, § "Naming a wait"), `outage_slot.rs` (which volume the operation waits on to come back, and how
-  patiently: `src/transfer/DETAILS.md` § "Waiting out a volume that went away"), `status_cache.rs` (the status cache,
-  the busy-volumes set it derives, the external drag-out seam, and `get_operation_status`), `summary.rs` (what the queue
-  row says an operation acts on, § "What a row says it acts on"), `operation_intent.rs` (`OperationIntent`,
-  `PauseGate`), `sync_primitives.rs` (std's sync primitives, or Shuttle's under `--features shuttle`, § "Thread
-  interleavings (Shuttle)"), `human_wait.rs` (how long a person, or a volume that left, has kept the operation waiting),
+  outside the crate reach beyond the public list), `golden/` (`any(test, feature = "golden")`: the golden-trace
+  scenarios, written once against a `World`, their normalizer, and `VOLUME_GOLDENS`, the volume fixtures embedded; run
+  by `golden_trace_tests.rs` on both engines and by `cmdr-listing-wasm`'s `golden_test.rs` on the demo's host, natively
+  and in wasm. Its own feature because `testing` pulls `cmdr-local`, which wasm32 can't build), `write_start.rs` (the
+  same-`root` move, delete, and trash starts, routing to the local disk or the volume engine), `local_start.rs` (the
+  local copy, move, delete, and trash starters and the `start_write_operation` lifecycle they share), `local_disk/` (the
+  host's own disk as the shared code needs it: errnos, a file's device and mode, the no-replace rename, mount and
+  filesystem questions, a volume over a local folder; natively forwards to `cmdr_local` / `libc` / `std::os::unix`, in
+  the browser build the answers of a host with none), `rt.rs` (the clocks, timers, and yields, over `cmdr_fs::rt`;
+  `host/DETAILS.md`), `handle.rs` (building an `Operations` and reaching its parts), `scope.rs` (`OpScope`, what one
+  operation reaches its engine through), `host/` (what the engine needs from the app: the runtime, the volumes, the
+  engine-wide events, and the optional seams, § "The engine's host"), `manager.rs` (registry + lane admission; what the
+  queue window asks in `manager/queue_api.rs`, its request answers in `manager/wire.rs`, reordering the line in
+  `manager/reorder.rs`, and a retained failure's way to start again in `manager/retry.rs`, § "Retained failures"),
+  `state.rs` (`WriteOperationState`, plus `state/settled_guard.rs`: the settle guard, `state/registry.rs`:
+  `WriteOperationRegistry` and its walks, and `state/controls.rs`: the by-id cancel / abort / pause / resume /
+  conflict-answer entry points, re-exported through `state`, and `state/activity.rs`: the one wait classifier, § "Naming
+  a wait"), `outage_slot.rs` (which volume the operation waits on to come back, and how patiently:
+  `src/transfer/DETAILS.md` § "Waiting out a volume that went away"), `status_cache.rs` (the status cache, the
+  busy-volumes set it derives, the external drag-out seam, and `get_operation_status`), `summary.rs` (what the queue row
+  says an operation acts on, § "What a row says it acts on"), `operation_intent.rs` (`OperationIntent`, `PauseGate`),
+  `sync_primitives.rs` (std's sync primitives, or Shuttle's under `--features shuttle`, § "Thread interleavings
+  (Shuttle)"), `human_wait.rs` (how long a person, or a volume that left, has kept the operation waiting),
   `metadata_losses.rs` (per-class counts of the metadata a destination couldn't keep, for the completion's note:
   `src/transfer/volume/DETAILS.md` § "Copies keep the source's metadata"), `mount_boundary.rs` (where a delete's walk
   stops: `src/delete/DETAILS.md` § "A mount is a wall"), `archive_edit/` (the zip-edit driver).
