@@ -271,6 +271,32 @@ mod tests {
         db_path
     }
 
+    /// The arena-memory bench measures a load with `heap_bytes_held`, and the
+    /// parallel load allocates its segments on rayon's workers and frees them on the
+    /// caller in the merge. A per-thread count saw only the frees and the merged
+    /// copy, so it reported a NEGATIVE arena on a real drive's index. What the load
+    /// hands back holds at least its entries.
+    #[test]
+    fn a_parallel_load_measures_at_least_the_entries_it_holds() {
+        let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let db_path = store_with_rows(dir.path(), PARALLEL_LOAD_THRESHOLD + 5_000);
+        let pool = ReadPool::new(db_path).unwrap();
+
+        let (index, held) = crate::test_support::heap_bytes_held(|| {
+            load_search_index(&pool, &AtomicBool::new(false)).expect("load index")
+        });
+
+        assert!(
+            LAST_LOAD_WORKERS.load(Ordering::Relaxed) > 1,
+            "the load must take the parallel path"
+        );
+        let entries = (index.len() * size_of::<cmdr_search::SearchEntry>()) as i64;
+        assert!(
+            held >= entries,
+            "the arena holds {held} B, under its {entries} B of entries"
+        );
+    }
+
     /// `index_of_id` is a binary search, so a load that returned rows out of order
     /// would answer wrong rather than slow. The parallel path merges per-range
     /// segments, which is exactly where the order could be lost.

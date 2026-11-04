@@ -496,7 +496,8 @@ fn process_rss_bytes() -> u64 {
 ///
 /// ❌ **Run this one ALONE** (`--exact search::bench::bench_arena_bytes`). The harness
 /// runs `#[test]`s in parallel inside one process, so a sibling bench holding its own
-/// arena lands in the same RSS reading. The heap figure is thread-local and unaffected.
+/// arena lands in the same RSS reading, and in the heap figure too: it counts the whole
+/// process, because the load builds its segments on rayon's workers.
 ///
 /// Point it at a SNAPSHOT of a real index rather than the live file if you're comparing
 /// two builds: the boot volume's index gains rows by the second, and a row count that
