@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::recents::{RecentEntry, RecentsFile};
 use crate::search::history::{filters_fingerprint, flag, normalize_query};
+use cmdr_recents::RecentItem;
 
 // Re-export the shared types so the frontend bindings see the same wire shape for both
 // consumers. Keeping these in `search::history` (rather than splitting into a third
@@ -50,7 +51,9 @@ impl RecentEntry for SelectionHistoryEntry {
     const LOG_TARGET: &'static str = "selection::history";
     const LOG_NAME: &'static str = "selection history";
     const STATE_FILE: crate::state_recovery::StateFile = crate::state_recovery::StateFile::SelectionHistory;
+}
 
+impl RecentItem for SelectionHistoryEntry {
     fn id(&self) -> &str {
         &self.id
     }

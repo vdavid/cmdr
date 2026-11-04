@@ -18,18 +18,20 @@ use crate::index_host::index;
 use cmdr_index::CoverageDimension;
 
 use super::coverage::{
-    AfterAnotherWalk, CoverageQuestion, UnreadableGround, arena_for_coverage, coverage_kind, coverage_of,
-    coverage_scopes, every_frontier_root_is_another_walks,
+    AfterAnotherWalk, CoverageQuestion, arena_for_coverage, coverage_kind, coverage_of, coverage_scopes,
+    every_frontier_root_is_another_walks,
 };
-use super::{CoveredHalf, Target, resolve_target, search_covered_half, target_on};
+use super::{CoveredHalf, Target, host_context, resolve_target, search_covered_half, target_on};
+use crate::search::context::{NameRules, SearchContext};
 use crate::search::excludes::ExcludeRules;
 use crate::search::live::{
-    self, CollectingSink, CoverageKind, LiveAnswer, LiveRun, ResultStream, RunOrigin, SearchEventSink, SearchPhase,
-    SearchRunCoverage, SearchRunError, WalkEnding, WalkJudge,
+    self, CollectingSink, CoverageFacts, CoverageKind, LiveAnswer, LiveRun, ResultStream, RunOrigin, RunSink,
+    SearchPhase, SearchRunError, UnresolvedScope, WalkEnding, WalkJudge,
 };
 use crate::search::matcher::{CompiledQuery, Evaluator};
+use crate::search::seam::SearchError;
 use crate::search::types::SearchQuery;
-use crate::search::volumes::{self, VolumeLoad};
+use crate::search::volumes::{self, LoadedVolume, VolumeLoad};
 
 /// What starting a live search hands back before any of it has happened.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
@@ -140,7 +142,7 @@ pub(crate) fn run_live_collected(
 
 /// A live search, start to terminal event. Long-lived and synchronous; call it
 /// on a thread of its own.
-pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &dyn SearchEventSink) {
+pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRun, sink: &dyn RunSink) {
     let mut stream = ResultStream::new(run, sink, &query);
     stream.announce(SearchPhase::ResolvingCoverage);
 
@@ -149,20 +151,9 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
     // the server by the back door. The scope comes back as not covered, the same
     // gap the index-only answer reports for it.
     if !target.can_be_indexed {
-        stream.finish(SearchRunCoverage {
-            walk: WalkEnding::NothingToWalk,
-            kind: CoverageKind::Live,
-            permission_denied: Vec::new(),
-            declined: Vec::new(),
-            still_covering: Vec::new(),
-            unresolved_scopes: Vec::new(),
+        stream.finish(CoverageFacts {
             uncovered_scopes: target.include_paths.clone(),
-            abandoned_ground: false,
-            abandoned_locations: 0,
-            failed_roots: Vec::new(),
-            capped: false,
-            target_volume_id: target.volume_id.clone(),
-            hidden_by_excludes: 0,
+            ..CoverageFacts::new(WalkEnding::NothingToWalk, CoverageKind::Live, target.volume_id.clone())
         });
         return;
     }
@@ -197,7 +188,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         // isn't (`matcher.rs`). Refusing the RUN rather than answering from the
         // index alone is the honest half — a confident-looking list that silently
         // skipped the unindexed ground is what this effort exists to remove.
-        let compiled = match CompiledQuery::compile(&query, Evaluator::LiveWalk) {
+        let compiled = match CompiledQuery::compile(&query, Evaluator::LiveWalk, &NameRules::host()) {
             Ok(compiled) => compiled,
             Err(e) => {
                 stream.fail(SearchRunError::Query, e.to_string());
@@ -274,56 +265,16 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         stream.add_indexed(half.entries, half.total, half.hidden_by_excludes);
     }
 
-    // 6. The rest, walked live.
-    // The scope paths the walk is about to answer for itself, in the canonical
-    // form both halves speak.
-    let walked_scopes: std::collections::HashSet<&String> =
-        question.frontier.iter().filter(|root| scopes.contains(root)).collect();
-    let kind = coverage_kind(&question.frontier, &scopes);
-    let report = |walk: WalkEnding,
-                  unreadable: UnreadableGround,
-                  still_covering: Vec<String>,
-                  capped: bool,
-                  abandoned_ground: bool,
-                  failed_roots: Vec<String>| SearchRunCoverage {
-        // Ground a walk gave up on reaches this two ways and BOTH have to count.
-        // The flag is what THIS walk gave up on; `unreadable.abandoned` is what any
-        // walk gave up on durably, which is precisely why the frontier stopped
-        // offering it and this run never went there. Without the second half a
-        // search over a wedged mount would report itself exhaustive.
-        abandoned_ground: abandoned_ground || !unreadable.abandoned.is_empty(),
-        // How much of the drive that is, in places rather than folders. Only the
-        // durable half has paths to count; a walk that gave up on ground it never
-        // recorded leaves this 0, and the note says the honest thing over it.
-        abandoned_locations: cmdr_fs::path_locations::location_count(&unreadable.abandoned),
-        failed_roots,
-        // A scope the INDEX couldn't resolve isn't a gap once the walk has been
-        // to it: the walk is the probe, and it just answered. Only a walk that
-        // ran to the end proves it, so anything short leaves the signal
-        // standing. Without this, the very case this milestone exists for — a
-        // folder too new to be indexed — would show "Cmdr doesn't cover this
-        // folder" over a complete list of its files.
-        unresolved_scopes: match walk {
-            WalkEnding::Completed => unresolved_scopes
-                .iter()
-                .filter(|scope| !walked_scopes.contains(&target.canonical_scope(scope)))
-                .cloned()
-                .collect(),
-            _ => unresolved_scopes.clone(),
-        },
-        // Only a volume no index can serve leaves a scope uncovered, and that run
-        // answered before reaching here.
-        uncovered_scopes: Vec::new(),
-        walk,
-        kind,
-        permission_denied: unreadable.permission_denied,
-        declined: unreadable.declined,
-        still_covering,
-        capped,
-        target_volume_id: target.volume_id.clone(),
-        // Stamped by the stream on the way out (`ResultStream::finish`), which is
-        // the only place that has seen BOTH halves' exclusion drops.
-        hidden_by_excludes: 0,
+    // 6. The rest, walked live. What every ending reports is built by the crate's
+    //    one report from these facts (`cmdr_search::run::CoverageFacts`).
+    let unresolved_scopes = unresolved_with_walk(unresolved_scopes, &target, &scopes, &question.frontier);
+    let facts = |walk: WalkEnding| CoverageFacts {
+        unresolved_scopes: unresolved_scopes.clone(),
+        ..CoverageFacts::new(
+            walk,
+            coverage_kind(&question.frontier, &scopes),
+            target.volume_id.clone(),
+        )
     };
 
     // Nothing left to walk, or nobody left waiting for it, or nothing to walk it
@@ -332,22 +283,24 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
     // stood one up on the way. `finish` relabels the ending when the run was
     // stopped.
     let Some((walk, still_covering, compiled)) = started else {
-        let coverage = report(
-            if unwalkable {
-                WalkEnding::Interrupted
-            } else {
-                WalkEnding::NothingToWalk
-            },
-            question.unreadable,
-            Vec::new(),
-            stream.capped(),
-            false,
-            Vec::new(),
-        );
-        stream.finish(coverage);
+        let walk = if unwalkable {
+            WalkEnding::Interrupted
+        } else {
+            WalkEnding::NothingToWalk
+        };
+        stream.finish(CoverageFacts {
+            unreadable: question.unreadable,
+            ..facts(walk)
+        });
         return;
     };
-    let excludes = ExcludeRules::from_query(&query, compiled.case_insensitive());
+    let excludes = match ExcludeRules::from_query(&query, compiled.case_insensitive(), NameRules::host().fold) {
+        Ok(excludes) => excludes,
+        Err(e) => {
+            stream.fail(SearchRunError::Query, e.to_string());
+            return;
+        }
+    };
 
     // The arena behind this search is out of date from here on. Marked at the
     // START, not on the first batch: a walk writes rows this run never sees — the
@@ -357,7 +310,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
     volumes::mark_walked_behind(&target.volume_id);
 
     let attempted_roots = question.frontier.len().saturating_sub(still_covering.len());
-    let home_dir = dirs::home_dir().map(|home| home.to_string_lossy().into_owned());
+    let home_dir = crate::search::host_home_dir();
     let judge = WalkJudge {
         compiled: &compiled,
         excludes: &excludes,
@@ -374,15 +327,46 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         WalkEnding::Cancelled => question.unreadable,
         _ => coverage_of(&target.volume_id, &scopes).unreadable,
     };
-    let coverage = report(
-        walked.ending,
+    stream.finish(CoverageFacts {
         unreadable,
         still_covering,
-        stream.capped(),
-        walked.abandoned_ground,
-        walked.failed_roots,
-    );
-    stream.finish(coverage);
+        walk_abandoned_ground: walked.abandoned_ground,
+        failed_roots: walked.failed_roots,
+        ..facts(walked.ending)
+    });
+}
+
+/// The index's unresolved scopes, each marked with whether this run's walk took
+/// it as a frontier root, in the canonical form both halves speak.
+///
+/// Paired against `scopes` (the query's include paths canonicalized once, in
+/// order, by `coverage_scopes`) rather than canonicalized again: a second
+/// `realpath` at the end of a run would cost a stalled mount its deadline over a
+/// scope the run already named.
+fn unresolved_with_walk(
+    unresolved: Vec<String>,
+    target: &Target,
+    scopes: &[String],
+    frontier: &[String],
+) -> Vec<UnresolvedScope> {
+    let canonical_of = |path: &str| {
+        target
+            .include_paths
+            .iter()
+            .position(|include| include == path)
+            .and_then(|i| scopes.get(i).cloned())
+            .unwrap_or_else(|| target.canonical_scope(path))
+    };
+    unresolved
+        .into_iter()
+        .map(|path| {
+            let canonical = canonical_of(&path);
+            UnresolvedScope {
+                walked: scopes.contains(&canonical) && frontier.contains(&canonical),
+                path,
+            }
+        })
+        .collect()
 }
 
 /// Everything a live run works out before it emits anything.
@@ -424,16 +408,20 @@ fn groundwork(
         VolumeLoad::NotIndexed => None,
         VolumeLoad::Failed(e) => {
             log::warn!("Live search: volume '{}' isn't searchable: {e}", target.volume_id);
-            return Err((
-                SearchRunError::IndexUnreadable,
-                "Cmdr can't read this drive's index. Re-indexing the drive fixes it.".to_string(),
-            ));
+            return Err((SearchRunError::IndexUnreadable, INDEX_UNREADABLE.to_string()));
         }
     };
 
     let half = match loaded.as_deref().filter(|_| !run.is_cancelled()) {
         Some(loaded) => {
-            Some(search_covered_half(query, target, loaded).map_err(|message| (SearchRunError::Query, message))?)
+            let weights = volumes::weights_for(&target.volume_id);
+            let home_dir = crate::search::host_home_dir();
+            Some(covered_half_for_run(
+                query,
+                target,
+                loaded,
+                &host_context(&weights, home_dir.as_deref()),
+            )?)
         }
         None => None,
     };
@@ -445,6 +433,28 @@ fn groundwork(
             .or_else(|| volumes::registry_mount_root(&target.volume_id)),
         question,
         half,
+    })
+}
+
+/// What a run says when the index won't open or a read from it fails.
+const INDEX_UNREADABLE: &str = "Cmdr can’t read this drive’s index. Re-indexing the drive fixes it.";
+
+/// The covered half as a live run takes it: the same pass `run_blocking` makes, its
+/// failure classified the way the run's error event reports it. A query the engine
+/// refuses is the user's to fix; a read the index couldn't make is the drive's, said
+/// in the words a person can act on, with the detail in the log.
+pub(super) fn covered_half_for_run(
+    query: &SearchQuery,
+    target: &Target,
+    loaded: &LoadedVolume,
+    ctx: &SearchContext<'_>,
+) -> Result<CoveredHalf, (SearchRunError, String)> {
+    search_covered_half(query, target, loaded, ctx).map_err(|error| match error {
+        SearchError::Query(error) => (SearchRunError::Query, error.to_string()),
+        SearchError::SourceUnreadable(error) => {
+            log::warn!("Live search: volume '{}': {error}", target.volume_id);
+            (SearchRunError::IndexUnreadable, INDEX_UNREADABLE.to_string())
+        }
     })
 }
 

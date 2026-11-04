@@ -9,11 +9,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use rayon::prelude::*;
 
-use super::{OptU64, SearchEntry, SearchIndex};
+use super::{ArenaBuilder, SearchIndex};
 use crate::index_host::index;
 use crate::pluralize::pluralize_with;
 use cmdr_index::ReadPool;
 use cmdr_index::store::{IndexStore, ROOT_ID};
+
+// The arena names its root by its own constant; this is where it has to agree with
+// the database's.
+const _: () = assert!(super::ARENA_ROOT_ID == ROOT_ID);
 
 /// Rows between cancellation checks during load.
 const CANCEL_CHECK_INTERVAL: usize = 100_000;
@@ -38,15 +42,6 @@ const PARALLEL_LOAD_THRESHOLD: usize = 50_000;
 static LAST_LOAD_WORKERS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
 // ── Index loading ────────────────────────────────────────────────────
-
-/// One worker's contiguous slice of the arena.
-///
-/// `name_offset` on these rows is relative to **this segment's** `names`, and gets
-/// rebased onto the merged arena in [`merge_segments`].
-struct Segment {
-    names: String,
-    entries: Vec<SearchEntry>,
-}
 
 /// How many rows to reserve for, without a full `COUNT(*)`.
 ///
@@ -78,13 +73,15 @@ fn load_range(
     hi: Option<i64>,
     reserve_rows: usize,
     cancel: &AtomicBool,
-) -> Result<Segment, String> {
+) -> Result<ArenaBuilder, String> {
     pool.with_conn(|conn: &rusqlite::Connection| {
         const AVG_NAME_BYTES: usize = 20;
         const NAMES_ARENA_CEILING: usize = 512 * 1024 * 1024; // 512 MiB
 
-        let mut names = String::with_capacity(reserve_rows.saturating_mul(AVG_NAME_BYTES).min(NAMES_ARENA_CEILING));
-        let mut entries = Vec::with_capacity(reserve_rows);
+        let mut segment = ArenaBuilder::with_capacity(
+            reserve_rows,
+            reserve_rows.saturating_mul(AVG_NAME_BYTES).min(NAMES_ARENA_CEILING),
+        );
 
         let sql = match hi {
             Some(_) => {
@@ -114,88 +111,23 @@ fn load_range(
             // Borrow directly from SQLite's internal buffer via ValueRef: zero heap allocations.
             let name_ref = row.get_ref(2).map_err(|e| format!("{e}"))?;
             let name_str = name_ref.as_str().map_err(|e| format!("{e}"))?;
-            let name_offset = names.len() as u32;
-            let name_len = name_str.len() as u16;
-            names.push_str(name_str);
             let is_directory: bool = row.get(3).map_err(|e| format!("{e}"))?;
             let logical_size: Option<u64> = row.get(4).map_err(|e| format!("{e}"))?;
             let modified_at: Option<u64> = row.get(5).map_err(|e| format!("{e}"))?;
-            entries.push(SearchEntry {
-                id,
-                parent_id,
-                name_offset,
-                name_len,
-                is_directory,
-                size: OptU64::new(logical_size),
-                modified_at: OptU64::new(modified_at),
-            });
+            segment.push(id, parent_id, name_str, is_directory, logical_size, modified_at);
             row_count += 1;
         }
 
-        Ok(Segment { names, entries })
+        Ok(segment)
     })?
-}
-
-/// Concatenate segments in range order, rebasing each one's `name_offset`.
-///
-/// ⚠️ **This is the load's memory peak**: the destination is reserved at full size
-/// while the segments still hold the same bytes, so a 320 MB arena transiently costs
-/// ~640 MB. It falls monotonically as each segment drops at the end of its iteration.
-/// Removing the peak entirely needs the mapped arena (GitHub #114), not a bigger loop.
-///
-/// The destination also reserves [`spare_rows`] of room past the rows it holds, which
-/// is what lets [`catch_up_search_index`] append without copying the arena.
-fn merge_segments(segments: Vec<Segment>) -> (String, Vec<SearchEntry>) {
-    let total_rows: usize = segments.iter().map(|s| s.entries.len()).sum();
-    let total_names: usize = segments.iter().map(|s| s.names.len()).sum();
-    let spare = spare_rows(total_rows);
-
-    let mut names = String::with_capacity(total_names + spare_name_bytes(spare, total_names, total_rows));
-    let mut entries = Vec::with_capacity(total_rows + spare);
-    for segment in segments {
-        append_segment(&mut names, &mut entries, segment);
-    }
-    debug_assert!(
-        entries.windows(2).all(|w| w[0].id < w[1].id),
-        "the arena must stay strictly ascending by id: index_of_id binary-searches it"
-    );
-    (names, entries)
-}
-
-/// Move a segment's rows onto the end of an arena, rebasing their name offsets.
-fn append_segment(names: &mut String, entries: &mut Vec<SearchEntry>, mut segment: Segment) {
-    let base = names.len() as u32;
-    names.push_str(&segment.names);
-    for entry in &mut segment.entries {
-        entry.name_offset += base;
-    }
-    entries.append(&mut segment.entries);
-}
-
-/// How many rows of room an arena keeps past the ones it holds: 1/128 of them, and
-/// never fewer than 64.
-///
-/// A catch-up appends the rows created since the arena was read, and a walk's rows
-/// plus a few minutes of background indexing are thousands, not millions. Room for
-/// 49,000 of them costs 2 MB of rows and about 1 MB of names on a 6.3 M-row boot
-/// index, where running out means reallocating the whole arena: a second copy of it,
-/// transiently. A small arena keeps little room because copying it is cheap.
-fn spare_rows(rows: usize) -> usize {
-    (rows / 128).max(64)
-}
-
-/// Name bytes to keep for `spare` rows, at the arena's own average name length.
-fn spare_name_bytes(spare: usize, name_bytes: usize, rows: usize) -> usize {
-    const FALLBACK_AVG_NAME_BYTES: usize = 20;
-    let average = name_bytes.checked_div(rows).unwrap_or(FALLBACK_AVG_NAME_BYTES);
-    spare.saturating_mul(average.max(1))
 }
 
 /// Append every row created since `index` was read: the rows with an id past its
 /// highest. Returns how many it appended.
 ///
 /// This is what keeps a warm arena honest after a walk wrote rows behind it,
-/// without the full read and arena-sized peak a rebuild costs.
+/// without the full read and arena-sized peak a rebuild costs. Where the rows go
+/// (in place, or one copy with fresh room) is [`SearchIndex::append_created`]'s call.
 ///
 /// **Why that is every created row.** Ids come from the volume writer's one counter,
 /// which only climbs within a process, so a row created after the arena's read has
@@ -207,53 +139,10 @@ fn spare_name_bytes(spare: usize, name_bytes: usize, rows: usize) -> usize {
 /// the arena read them, the same staleness background indexing leaves in any warm
 /// arena; `search/DETAILS.md` § "Decision 12" says why that is enough for a coverage
 /// answer.
-///
-/// **Where the rows go.** Into the arena itself when nobody else holds it and it has
-/// room ([`spare_rows`]), which is the normal case: no copy at all. Otherwise into
-/// ONE new arena sized for its rows plus the new ones plus fresh room: a search
-/// still reading the old one keeps it, and a full one grows once rather than
-/// doubling.
 pub(crate) fn catch_up_search_index(index: &mut Arc<SearchIndex>, pool: &ReadPool) -> Result<usize, String> {
-    let after = index.entries.last().map_or(0, |entry| entry.id);
+    let after = index.last_id().unwrap_or(0);
     let created = load_range(pool, after + 1, None, 0, &AtomicBool::new(false))?;
-    let rows = created.entries.len();
-    if rows == 0 {
-        return Ok(0);
-    }
-
-    match Arc::get_mut(index) {
-        Some(owned) if has_room(owned, &created) => append_segment(&mut owned.names, &mut owned.entries, created),
-        _ => *index = Arc::new(copy_with_room(index, created)),
-    }
-    debug_assert!(
-        index.entries.windows(2).all(|w| w[0].id < w[1].id),
-        "the arena must stay strictly ascending by id: index_of_id binary-searches it"
-    );
-    Ok(rows)
-}
-
-/// Whether a segment fits in the arena's spare capacity, rows and names both.
-fn has_room(index: &SearchIndex, segment: &Segment) -> bool {
-    index.entries.capacity() - index.entries.len() >= segment.entries.len()
-        && index.names.capacity() - index.names.len() >= segment.names.len()
-}
-
-/// A new arena holding `index`'s rows, then `created`'s, with fresh room past both.
-fn copy_with_room(index: &SearchIndex, created: Segment) -> SearchIndex {
-    let rows = index.entries.len() + created.entries.len();
-    let name_bytes = index.names.len() + created.names.len();
-    let spare = spare_rows(rows);
-
-    let mut names = String::with_capacity(name_bytes + spare_name_bytes(spare, name_bytes, rows));
-    let mut entries = Vec::with_capacity(rows + spare);
-    names.push_str(&index.names);
-    entries.extend_from_slice(&index.entries);
-    append_segment(&mut names, &mut entries, created);
-    SearchIndex {
-        names,
-        entries,
-        generation: index.generation,
-    }
+    Ok(SearchIndex::append_created(index, created))
 }
 
 /// Split `[min_id, max_id]` into at most `workers` contiguous rowid ranges.
@@ -317,7 +206,7 @@ pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<
     // `collect` on an indexed parallel iterator preserves order, which the merge
     // depends on: segment k holds a strictly lower rowid range than segment k+1, so
     // concatenating them in order keeps `entries` sorted by id.
-    let segments: Vec<Segment> = if ranges.len() == 1 {
+    let segments: Vec<ArenaBuilder> = if ranges.len() == 1 {
         vec![load_range(pool, ranges[0].0, ranges[0].1, estimate, cancel)?]
     } else {
         ranges
@@ -329,19 +218,15 @@ pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<
     #[cfg(test)]
     LAST_LOAD_WORKERS.store(ranges.len(), Ordering::Relaxed);
 
-    let (names, entries) = merge_segments(segments);
+    let index = ArenaBuilder::merge(segments, generation);
 
     log::debug!(
         "Search index loaded: {}, generation {generation}, {} worker(s), took {:?}",
-        pluralize_with(entries.len() as u64, "entry", "entries"),
+        pluralize_with(index.len() as u64, "entry", "entries"),
         ranges.len(),
         t.elapsed()
     );
-    Ok(SearchIndex {
-        names,
-        entries,
-        generation,
-    })
+    Ok(index)
 }
 
 #[cfg(test)]
@@ -386,6 +271,32 @@ mod tests {
         db_path
     }
 
+    /// The arena-memory bench measures a load with `heap_bytes_held`, and the
+    /// parallel load allocates its segments on rayon's workers and frees them on the
+    /// caller in the merge. A per-thread count saw only the frees and the merged
+    /// copy, so it reported a NEGATIVE arena on a real drive's index. What the load
+    /// hands back holds at least its entries.
+    #[test]
+    fn a_parallel_load_measures_at_least_the_entries_it_holds() {
+        let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let db_path = store_with_rows(dir.path(), PARALLEL_LOAD_THRESHOLD + 5_000);
+        let pool = ReadPool::new(db_path).unwrap();
+
+        let (index, held) = crate::test_support::heap_bytes_held(|| {
+            load_search_index(&pool, &AtomicBool::new(false)).expect("load index")
+        });
+
+        assert!(
+            LAST_LOAD_WORKERS.load(Ordering::Relaxed) > 1,
+            "the load must take the parallel path"
+        );
+        let entries = (index.len() * size_of::<cmdr_search::SearchEntry>()) as i64;
+        assert!(
+            held >= entries,
+            "the arena holds {held} B, under its {entries} B of entries"
+        );
+    }
+
     /// `index_of_id` is a binary search, so a load that returned rows out of order
     /// would answer wrong rather than slow. The parallel path merges per-range
     /// segments, which is exactly where the order could be lost.
@@ -398,13 +309,14 @@ mod tests {
         let index = load_search_index(&pool, &AtomicBool::new(false)).unwrap();
 
         assert!(
-            index.entries.windows(2).all(|w| w[0].id < w[1].id),
+            (1..index.len()).all(|i| index.id(i - 1) < index.id(i)),
             "the merged arena must stay strictly ascending by id"
         );
-        for entry in &index.entries {
+        for row in 0..index.len() {
+            let id = index.id(row);
             assert_eq!(
-                index.index_of_id(entry.id).map(|i| index.entries[i].id),
-                Some(entry.id),
+                index.index_of_id(id).map(|i| index.id(i)),
+                Some(id),
                 "every row must be findable by its own id"
             );
         }
@@ -424,33 +336,31 @@ mod tests {
         let parallel = load_search_index(&pool, &AtomicBool::new(false)).unwrap();
         // The same read, forced onto one range, is the reference.
         let reference = {
-            let segment = load_range(&pool, 1, None, 0, &AtomicBool::new(false)).unwrap();
-            let (names, entries) = merge_segments(vec![segment]);
-            SearchIndex {
-                names,
-                entries,
-                generation: 0,
-            }
+            load_range(&pool, 1, None, 0, &AtomicBool::new(false))
+                .unwrap()
+                .finish(0)
         };
 
         assert!(
             LAST_LOAD_WORKERS.load(Ordering::Relaxed) > 1,
             "the fixture must actually take the parallel path, or this test proves nothing"
         );
-        assert!(
-            parallel.entries.len() > rows,
-            "the fixture should be past the threshold"
-        );
-        assert_eq!(parallel.entries.len(), reference.entries.len());
-        for (a, b) in parallel.entries.iter().zip(reference.entries.iter()) {
-            assert_eq!(a.id, b.id);
-            assert_eq!(a.parent_id, b.parent_id);
-            assert_eq!(a.is_directory, b.is_directory);
-            assert_eq!(a.size.get(), b.size.get(), "size, sentinel and all, on id {}", a.id);
-            assert_eq!(a.modified_at.get(), b.modified_at.get(), "mtime on id {}", a.id);
+        assert!(parallel.len() > rows, "the fixture should be past the threshold");
+        assert_eq!(parallel.len(), reference.len());
+        for i in 0..parallel.len() {
+            let id = parallel.id(i);
+            assert_eq!(id, reference.id(i));
+            assert_eq!(parallel.parent_id(i), reference.parent_id(i));
+            assert_eq!(parallel.is_directory(i), reference.is_directory(i));
             assert_eq!(
-                parallel.name(a),
-                reference.name(b),
+                parallel.size(i),
+                reference.size(i),
+                "size, sentinel and all, on id {id}"
+            );
+            assert_eq!(parallel.modified_at(i), reference.modified_at(i), "mtime on id {id}");
+            assert_eq!(
+                parallel.name(i),
+                reference.name(i),
                 "the rebased name offset must still address the right bytes"
             );
         }
@@ -483,12 +393,13 @@ mod tests {
     /// offsets above all: the appended rows address a names buffer that grew under
     /// them.
     fn assert_same_rows(caught_up: &SearchIndex, fresh: &SearchIndex) {
-        assert_eq!(caught_up.entries.len(), fresh.entries.len());
-        for (a, b) in caught_up.entries.iter().zip(fresh.entries.iter()) {
-            assert_eq!(a.id, b.id);
-            assert_eq!(a.parent_id, b.parent_id);
-            assert_eq!(a.size.get(), b.size.get(), "size on id {}", a.id);
-            assert_eq!(caught_up.name(a), fresh.name(b), "name on id {}", a.id);
+        assert_eq!(caught_up.len(), fresh.len());
+        for i in 0..caught_up.len() {
+            let id = caught_up.id(i);
+            assert_eq!(id, fresh.id(i));
+            assert_eq!(caught_up.parent_id(i), fresh.parent_id(i));
+            assert_eq!(caught_up.size(i), fresh.size(i), "size on id {id}");
+            assert_eq!(caught_up.name(i), fresh.name(i), "name on id {id}");
         }
     }
 
@@ -498,7 +409,7 @@ mod tests {
         let db_path = store_with_rows(dir.path(), 500);
         let pool = ReadPool::new(db_path.clone()).unwrap();
         let mut arena = Arc::new(load_search_index(&pool, &AtomicBool::new(false)).unwrap());
-        let rows_at = arena.entries.as_ptr() as usize;
+        let rows_at = arena.rows_address();
 
         write_more_rows(&db_path, 500, 40);
         let appended = catch_up_search_index(&mut arena, &pool).unwrap();
@@ -506,7 +417,7 @@ mod tests {
         assert_eq!(appended, 40, "exactly the rows created since the read");
         assert_same_rows(&arena, &load_search_index(&pool, &AtomicBool::new(false)).unwrap());
         assert_eq!(
-            arena.entries.as_ptr() as usize,
+            arena.rows_address(),
             rows_at,
             "an arena with room takes the rows in place, no second copy"
         );
@@ -529,7 +440,7 @@ mod tests {
         write_more_rows(&db_path, 500, 40);
         catch_up_search_index(&mut arena, &pool).unwrap();
 
-        assert_eq!(reader.entries.len(), 501, "the reader's arena doesn't move under it");
+        assert_eq!(reader.len(), 501, "the reader's arena doesn't move under it");
         assert!(!Arc::ptr_eq(&arena, &reader), "the catch-up went into a copy");
         assert_same_rows(&arena, &load_search_index(&pool, &AtomicBool::new(false)).unwrap());
     }
@@ -542,57 +453,15 @@ mod tests {
         let mut arena = Arc::new(load_search_index(&pool, &AtomicBool::new(false)).unwrap());
 
         // More than the spare room a small arena keeps.
-        let past_the_room = spare_rows(arena.entries.len()) + 100;
+        let past_the_room = cmdr_search::arena::spare_rows(arena.len()) + 100;
         write_more_rows(&db_path, 500, past_the_room);
         catch_up_search_index(&mut arena, &pool).unwrap();
 
         assert_same_rows(&arena, &load_search_index(&pool, &AtomicBool::new(false)).unwrap());
         assert!(
-            arena.entries.capacity() - arena.entries.len() >= spare_rows(arena.entries.len()),
+            arena.spare_rows_left() >= cmdr_search::arena::spare_rows(arena.len()),
             "a grown arena keeps room for the next catch-up"
         );
-    }
-
-    /// A rebased offset is the one thing the merge can silently corrupt: every row
-    /// keeps its own `name_offset` until the segment it came from is concatenated, so
-    /// an off-by-one base shifts a whole segment's names by a few bytes and search
-    /// starts matching neighbours' names.
-    #[test]
-    fn merging_segments_rebases_every_name_offset() {
-        let segments = vec![
-            Segment {
-                names: "alpha".to_string(),
-                entries: vec![entry_named(1, 0, 5)],
-            },
-            Segment {
-                names: "beta".to_string(),
-                entries: vec![entry_named(2, 0, 4)],
-            },
-            Segment {
-                names: "gamma".to_string(),
-                entries: vec![entry_named(3, 0, 5)],
-            },
-        ];
-        let (names, entries) = merge_segments(segments);
-        let index = SearchIndex {
-            names,
-            entries,
-            generation: 0,
-        };
-        let read: Vec<&str> = index.entries.iter().map(|e| index.name(e)).collect();
-        assert_eq!(read, vec!["alpha", "beta", "gamma"]);
-    }
-
-    fn entry_named(id: i64, name_offset: u32, name_len: u16) -> SearchEntry {
-        SearchEntry {
-            id,
-            parent_id: ROOT_ID,
-            name_offset,
-            name_len,
-            is_directory: false,
-            size: OptU64::NONE,
-            modified_at: OptU64::NONE,
-        }
     }
 
     /// Ranges must tile the id space with no gap and no overlap, or the merge either
@@ -643,6 +512,6 @@ mod tests {
 
         // The arena is correct either way; the estimate only sizes the allocation.
         let index = load_search_index(&pool, &AtomicBool::new(false)).unwrap();
-        assert_eq!(index.entries.len(), 101, "root sentinel plus the 100 rows");
+        assert_eq!(index.len(), 101, "root sentinel plus the 100 rows");
     }
 }

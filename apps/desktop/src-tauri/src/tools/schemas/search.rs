@@ -32,11 +32,11 @@ pub fn search_schema() -> Value {
             },
             "modifiedAfter": {
                 "type": "string",
-                "description": "ISO date, for example \"2025-01-01\""
+                "description": "ISO date, for example \"2025-01-01\": files modified on or after the start of that day in the user's local time zone"
             },
             "modifiedBefore": {
                 "type": "string",
-                "description": "ISO date"
+                "description": "ISO date: files modified before the start of that day in the user's local time zone"
             },
             "type": {
                 "type": "string",

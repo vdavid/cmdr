@@ -1468,8 +1468,10 @@ dependencies = [
  "cmdr-nfs",
  "cmdr-operation-log",
  "cmdr-operations",
+ "cmdr-recents",
  "cmdr-restic",
  "cmdr-s3",
+ "cmdr-search",
  "cmdr-sftp",
  "cmdr-smb",
  "cmdr-update-trust",
@@ -1769,6 +1771,7 @@ dependencies = [
  "cmdr-menu",
  "cmdr-operation-log",
  "cmdr-operations",
+ "cmdr-search",
  "cmdr-viewer",
  "js-sys",
  "log",
@@ -1914,6 +1917,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmdr-recents"
+version = "0.0.0"
+
+[[package]]
 name = "cmdr-restic"
 version = "0.0.0"
 dependencies = [
@@ -1957,6 +1964,23 @@ dependencies = [
  "unicode-normalization",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "cmdr-search"
+version = "0.0.0"
+dependencies = [
+ "cmdr-fs",
+ "log",
+ "proptest",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "specta",
+ "time",
+ "tokio-util",
+ "unicode-normalization",
 ]
 
 [[package]]

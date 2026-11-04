@@ -8,7 +8,7 @@
 //! This pins the SHAPE (a fixed small slot per folder, nothing per folder on the heap) with
 //! a bound generous enough to survive allocator and load-factor changes, and tight enough
 //! that storing the path again blows straight through it. The search weight map carries
-//! the same guard (`apps/desktop/src-tauri/src/search/ranking/memory_tests.rs`).
+//! the same guard (`crates/cmdr-search/src/ranking/memory_tests.rs`).
 
 use super::table_from;
 use crate::indexing::test_support::heap_bytes_held;

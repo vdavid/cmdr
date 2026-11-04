@@ -82,7 +82,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle, volume_id: Option<Strin
         search::reset_backstop_timer();
         return Ok(PrepareResult {
             ready: true,
-            entry_count: v.index.entries.len() as u64,
+            entry_count: v.index.len() as u64,
             loading: false,
         });
     }
@@ -104,7 +104,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle, volume_id: Option<Strin
     tauri::async_runtime::spawn(async move {
         let for_task = loading_id.clone();
         match tokio::task::spawn_blocking(move || search::ensure_volume(&for_task)).await {
-            Ok(VolumeLoad::Loaded(v)) => emit_index_ready(&app_clone, &loading_id, v.index.entries.len() as u64),
+            Ok(VolumeLoad::Loaded(v)) => emit_index_ready(&app_clone, &loading_id, v.index.len() as u64),
             Ok(VolumeLoad::NotIndexed) => {
                 log::debug!("prepare_search_index: '{loading_id}' index not available yet")
             }

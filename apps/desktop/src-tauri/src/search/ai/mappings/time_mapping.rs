@@ -1,34 +1,43 @@
-use time::OffsetDateTime;
+use time::{Date, Month};
 
 use super::super::parser::{is_range, is_year};
+use super::local_days::{LocalDays, SystemZone};
 
 // ── Time mapping ─────────────────────────────────────────────────────
 
-/// Map a `time` enum value to a (modified_after, modified_before) timestamp range.
+/// Map a `time` enum value to a (modified_after, modified_before) timestamp range,
+/// on this machine's local calendar.
 ///
 /// Returns `(None, None)` for unrecognized values.
 pub fn time_to_range(t: &str) -> (Option<u64>, Option<u64>) {
-    let now = OffsetDateTime::now_utc();
+    time_to_range_in(t, &SystemZone)
+}
+
+/// [`time_to_range`] on a given calendar. Every boundary is a LOCAL midnight
+/// (`local_days.rs` says why).
+pub(crate) fn time_to_range_in(t: &str, days: &impl LocalDays) -> (Option<u64>, Option<u64>) {
+    let today = days.today();
+    let at = |date: Date| Some(days.midnight(date));
     match t {
-        "today" => (Some(start_of_today(now)), None),
-        "yesterday" => (Some(start_of_yesterday(now)), Some(start_of_today(now))),
-        "this_week" => (Some(monday_of_this_week(now)), None),
-        "last_week" => (Some(monday_of_last_week(now)), Some(monday_of_this_week(now))),
-        "this_month" => (Some(first_of_this_month(now)), None),
-        "last_month" => (Some(first_of_last_month(now)), Some(first_of_this_month(now))),
-        "this_quarter" => (Some(first_of_this_quarter(now)), None),
-        "last_quarter" => (Some(first_of_last_quarter(now)), Some(first_of_this_quarter(now))),
-        "this_year" => (Some(jan1(now, 0)), None),
-        "last_year" => (Some(jan1(now, -1)), Some(jan1(now, 0))),
-        "recent" => (Some(n_months_ago(now, 3)), None),
-        "last_3_months" => (Some(n_months_ago(now, 3)), None),
-        "last_6_months" => (Some(n_months_ago(now, 6)), None),
-        "old" => (None, Some(one_year_ago(now))),
+        "today" => (at(today), None),
+        "yesterday" => (at(today.previous_day().unwrap_or(today)), at(today)),
+        "this_week" => (at(monday_of_week(today)), None),
+        "last_week" => (at(days_before(monday_of_week(today), 7)), at(monday_of_week(today))),
+        "this_month" => (at(first_of_month(today)), None),
+        "last_month" => (at(first_of_last_month(today)), at(first_of_month(today))),
+        "this_quarter" => (at(first_of_quarter(today)), None),
+        "last_quarter" => (at(first_of_last_quarter(today)), at(first_of_quarter(today))),
+        "this_year" => (at(jan1(today, 0)), None),
+        "last_year" => (at(jan1(today, -1)), at(jan1(today, 0))),
+        "recent" => (at(n_months_ago(today, 3)), None),
+        "last_3_months" => (at(n_months_ago(today, 3)), None),
+        "last_6_months" => (at(n_months_ago(today, 6)), None),
+        "old" => (None, at(one_year_ago(today))),
         _ => {
             if is_year(t) {
-                year_range(t)
+                year_range(t, days)
             } else if is_range(t) {
-                parse_date_range(t)
+                parse_date_range(t, days)
             } else {
                 (None, None)
             }
@@ -36,95 +45,56 @@ pub fn time_to_range(t: &str) -> (Option<u64>, Option<u64>) {
     }
 }
 
-fn to_timestamp(dt: OffsetDateTime) -> u64 {
-    dt.unix_timestamp().max(0) as u64
+fn days_before(date: Date, days: i64) -> Date {
+    date.checked_sub(time::Duration::days(days)).unwrap_or(date)
 }
 
-fn start_of_today(now: OffsetDateTime) -> u64 {
-    let date = now.date();
-    to_timestamp(date.with_hms(0, 0, 0).expect("valid").assume_utc())
+fn monday_of_week(date: Date) -> Date {
+    let days_since_monday = date.weekday().number_from_monday() - 1; // Monday=1, Sunday=7
+    days_before(date, days_since_monday.into())
 }
 
-fn start_of_yesterday(now: OffsetDateTime) -> u64 {
-    let date = now.date().previous_day().unwrap_or(now.date());
-    to_timestamp(date.with_hms(0, 0, 0).expect("valid").assume_utc())
+fn first_of_month(date: Date) -> Date {
+    date.replace_day(1).unwrap_or(date)
 }
 
-fn monday_of_this_week(now: OffsetDateTime) -> u64 {
-    let date = now.date();
-    let weekday = date.weekday().number_from_monday(); // Monday=1, Sunday=7
-    let days_since_monday = weekday - 1;
-    let monday = date
-        .checked_sub(time::Duration::days(days_since_monday as i64))
-        .unwrap_or(date);
-    to_timestamp(monday.with_hms(0, 0, 0).expect("valid").assume_utc())
-}
-
-fn monday_of_last_week(now: OffsetDateTime) -> u64 {
-    let date = now.date();
-    let weekday = date.weekday().number_from_monday();
-    let days_since_monday = weekday - 1;
-    let this_monday = date
-        .checked_sub(time::Duration::days(days_since_monday as i64))
-        .unwrap_or(date);
-    let last_monday = this_monday.checked_sub(time::Duration::days(7)).unwrap_or(this_monday);
-    to_timestamp(last_monday.with_hms(0, 0, 0).expect("valid").assume_utc())
-}
-
-fn first_of_this_month(now: OffsetDateTime) -> u64 {
-    let date = now.date();
-    let first = date.replace_day(1).unwrap_or(date);
-    to_timestamp(first.with_hms(0, 0, 0).expect("valid").assume_utc())
-}
-
-fn first_of_last_month(now: OffsetDateTime) -> u64 {
-    let date = now.date();
-    let (year, month) = if date.month() == time::Month::January {
-        (date.year() - 1, time::Month::December)
+fn first_of_last_month(date: Date) -> Date {
+    let (year, month) = if date.month() == Month::January {
+        (date.year() - 1, Month::December)
     } else {
         (date.year(), date.month().previous())
     };
-    let first = time::Date::from_calendar_date(year, month, 1).unwrap_or(date);
-    to_timestamp(first.with_hms(0, 0, 0).expect("valid").assume_utc())
+    Date::from_calendar_date(year, month, 1).unwrap_or(date)
 }
 
-fn quarter_start_month(month: time::Month) -> time::Month {
+fn quarter_start_month(month: Month) -> Month {
     match month {
-        time::Month::January | time::Month::February | time::Month::March => time::Month::January,
-        time::Month::April | time::Month::May | time::Month::June => time::Month::April,
-        time::Month::July | time::Month::August | time::Month::September => time::Month::July,
-        time::Month::October | time::Month::November | time::Month::December => time::Month::October,
+        Month::January | Month::February | Month::March => Month::January,
+        Month::April | Month::May | Month::June => Month::April,
+        Month::July | Month::August | Month::September => Month::July,
+        Month::October | Month::November | Month::December => Month::October,
     }
 }
 
-fn first_of_this_quarter(now: OffsetDateTime) -> u64 {
-    let date = now.date();
-    let qm = quarter_start_month(date.month());
-    let first = time::Date::from_calendar_date(date.year(), qm, 1).unwrap_or(date);
-    to_timestamp(first.with_hms(0, 0, 0).expect("valid").assume_utc())
+fn first_of_quarter(date: Date) -> Date {
+    Date::from_calendar_date(date.year(), quarter_start_month(date.month()), 1).unwrap_or(date)
 }
 
-fn first_of_last_quarter(now: OffsetDateTime) -> u64 {
-    let date = now.date();
-    let qm = quarter_start_month(date.month());
-    let (year, month) = match qm {
-        time::Month::January => (date.year() - 1, time::Month::October),
-        time::Month::April => (date.year(), time::Month::January),
-        time::Month::July => (date.year(), time::Month::April),
-        time::Month::October => (date.year(), time::Month::July),
-        _ => unreachable!(),
+fn first_of_last_quarter(date: Date) -> Date {
+    let (year, month) = match quarter_start_month(date.month()) {
+        Month::January => (date.year() - 1, Month::October),
+        Month::April => (date.year(), Month::January),
+        Month::July => (date.year(), Month::April),
+        _ => (date.year(), Month::July),
     };
-    let first = time::Date::from_calendar_date(year, month, 1).unwrap_or(date);
-    to_timestamp(first.with_hms(0, 0, 0).expect("valid").assume_utc())
+    Date::from_calendar_date(year, month, 1).unwrap_or(date)
 }
 
-fn jan1(now: OffsetDateTime, year_offset: i32) -> u64 {
-    let first = time::Date::from_calendar_date(now.year() + year_offset, time::Month::January, 1).unwrap_or(now.date());
-    to_timestamp(first.with_hms(0, 0, 0).expect("valid").assume_utc())
+fn jan1(date: Date, year_offset: i32) -> Date {
+    Date::from_calendar_date(date.year() + year_offset, Month::January, 1).unwrap_or(date)
 }
 
-fn n_months_ago(now: OffsetDateTime, n: u8) -> u64 {
-    let date = now.date();
+fn n_months_ago(date: Date, n: u8) -> Date {
     let mut year = date.year();
     let mut month_num = date.month() as u8;
     if month_num <= n {
@@ -133,54 +103,44 @@ fn n_months_ago(now: OffsetDateTime, n: u8) -> u64 {
     } else {
         month_num -= n;
     }
-    let month = time::Month::try_from(month_num).unwrap_or(time::Month::January);
+    let month = Month::try_from(month_num).unwrap_or(Month::January);
     let day = date.day().min(days_in_month(year, month));
-    let target = time::Date::from_calendar_date(year, month, day).unwrap_or(date);
-    to_timestamp(target.with_hms(0, 0, 0).expect("valid").assume_utc())
+    Date::from_calendar_date(year, month, day).unwrap_or(date)
 }
 
-fn one_year_ago(now: OffsetDateTime) -> u64 {
-    let date = now.date();
-    let target = date.replace_year(date.year() - 1).unwrap_or(date);
-    to_timestamp(target.with_hms(0, 0, 0).expect("valid").assume_utc())
+fn one_year_ago(date: Date) -> Date {
+    date.replace_year(date.year() - 1).unwrap_or(date)
 }
 
-fn days_in_month(year: i32, month: time::Month) -> u8 {
+fn days_in_month(year: i32, month: Month) -> u8 {
     // Use the first of the next month minus one day trick
     let next_month = month.next();
-    let next_year = if next_month == time::Month::January {
-        year + 1
-    } else {
-        year
-    };
-    let next_first = time::Date::from_calendar_date(next_year, next_month, 1)
-        .unwrap_or(time::Date::from_calendar_date(year, month, 28).expect("valid"));
+    let next_year = if next_month == Month::January { year + 1 } else { year };
+    let next_first = Date::from_calendar_date(next_year, next_month, 1)
+        .unwrap_or(Date::from_calendar_date(year, month, 28).expect("valid"));
     let last_day = next_first
         .previous_day()
-        .unwrap_or(time::Date::from_calendar_date(year, month, 28).expect("valid"));
+        .unwrap_or(Date::from_calendar_date(year, month, 28).expect("valid"));
     last_day.day()
 }
 
-fn year_range(y: &str) -> (Option<u64>, Option<u64>) {
+fn year_range(y: &str, days: &impl LocalDays) -> (Option<u64>, Option<u64>) {
     let year: i32 = match y.parse() {
         Ok(v) => v,
         Err(_) => return (None, None),
     };
-    let start = match time::Date::from_calendar_date(year, time::Month::January, 1) {
+    let start = match Date::from_calendar_date(year, Month::January, 1) {
         Ok(d) => d,
         Err(_) => return (None, None),
     };
-    let end = match time::Date::from_calendar_date(year + 1, time::Month::January, 1) {
+    let end = match Date::from_calendar_date(year + 1, Month::January, 1) {
         Ok(d) => d,
         Err(_) => return (None, None),
     };
-    (
-        Some(to_timestamp(start.with_hms(0, 0, 0).expect("valid").assume_utc())),
-        Some(to_timestamp(end.with_hms(0, 0, 0).expect("valid").assume_utc())),
-    )
+    (Some(days.midnight(start)), Some(days.midnight(end)))
 }
 
-fn parse_date_range(r: &str) -> (Option<u64>, Option<u64>) {
+fn parse_date_range(r: &str, days: &impl LocalDays) -> (Option<u64>, Option<u64>) {
     // Try separators: "..", " to ", "–" (en-dash), "-"
     let parts: Option<(&str, &str)> = ["..", " to ", "\u{2013}"]
         .iter()
@@ -196,47 +156,43 @@ fn parse_date_range(r: &str) -> (Option<u64>, Option<u64>) {
         None => return (None, None),
     };
 
-    let start = parse_date_start(left);
-    let end = parse_date_end(right);
+    let start = parse_date_start(left).map(|date| days.midnight(date));
+    let end = parse_date_end(right).map(|date| days.midnight(date));
     (start, end)
 }
 
 /// Parse a date string as the start of a range. "2024" → Jan 1 2024, "2024-06" → Jun 1 2024.
-fn parse_date_start(s: &str) -> Option<u64> {
+fn parse_date_start(s: &str) -> Option<Date> {
     if is_year(s) {
         let year: i32 = s.parse().ok()?;
-        let date = time::Date::from_calendar_date(year, time::Month::January, 1).ok()?;
-        return Some(to_timestamp(date.with_hms(0, 0, 0).expect("valid").assume_utc()));
+        return Date::from_calendar_date(year, Month::January, 1).ok();
     }
     // YYYY-MM
     if let Some((y, m)) = s.split_once('-') {
         let year: i32 = y.parse().ok()?;
         let month: u8 = m.parse().ok()?;
-        let month = time::Month::try_from(month).ok()?;
-        let date = time::Date::from_calendar_date(year, month, 1).ok()?;
-        return Some(to_timestamp(date.with_hms(0, 0, 0).expect("valid").assume_utc()));
+        let month = Month::try_from(month).ok()?;
+        return Date::from_calendar_date(year, month, 1).ok();
     }
     None
 }
 
 /// Parse a date string as the end of a range. "2025" → Jan 1 2026, "2024-06" → Jul 1 2024.
-fn parse_date_end(s: &str) -> Option<u64> {
+fn parse_date_end(s: &str) -> Option<Date> {
     if is_year(s) {
         let year: i32 = s.parse().ok()?;
-        let date = time::Date::from_calendar_date(year + 1, time::Month::January, 1).ok()?;
-        return Some(to_timestamp(date.with_hms(0, 0, 0).expect("valid").assume_utc()));
+        return Date::from_calendar_date(year + 1, Month::January, 1).ok();
     }
     // YYYY-MM → first of next month
     if let Some((y, m)) = s.split_once('-') {
         let year: i32 = y.parse().ok()?;
         let month_num: u8 = m.parse().ok()?;
         let (next_year, next_month) = if month_num >= 12 {
-            (year + 1, time::Month::January)
+            (year + 1, Month::January)
         } else {
-            (year, time::Month::try_from(month_num + 1).ok()?)
+            (year, Month::try_from(month_num + 1).ok()?)
         };
-        let date = time::Date::from_calendar_date(next_year, next_month, 1).ok()?;
-        return Some(to_timestamp(date.with_hms(0, 0, 0).expect("valid").assume_utc()));
+        return Date::from_calendar_date(next_year, next_month, 1).ok();
     }
     None
 }
@@ -250,6 +206,24 @@ mod tests {
         let (after, before) = time_to_range("today");
         assert!(after.is_some());
         assert!(before.is_none());
+    }
+
+    /// "Today" is the user's day, so it starts at LOCAL midnight. Bites on any machine
+    /// whose zone isn't UTC (CI runs in UTC, where it passes either way; the fixed-zone
+    /// tests below pin the rule everywhere).
+    #[test]
+    fn today_starts_at_this_machines_local_midnight() {
+        use chrono::TimeZone;
+        let midnight = chrono::Local::now()
+            .date_naive()
+            .and_hms_opt(0, 0, 0)
+            .expect("valid time");
+        let expected = chrono::Local
+            .from_local_datetime(&midnight)
+            .earliest()
+            .expect("midnight exists locally")
+            .timestamp() as u64;
+        assert_eq!(time_to_range("today").0, Some(expected));
     }
 
     #[test]
@@ -287,6 +261,67 @@ mod tests {
         }
     }
 
+    use super::super::local_days::FixedZone;
+    use time::macros::{date, datetime};
+
+    fn ts(t: time::OffsetDateTime) -> u64 {
+        t.unix_timestamp() as u64
+    }
+
+    /// Stockholm in November: UTC+1. "Today" starts at 00:00 local, 23:00 UTC the day before.
+    fn stockholm_november() -> FixedZone {
+        FixedZone {
+            today: date!(2026 - 11 - 04),
+            offset_secs: 3_600,
+            switch_on: None,
+        }
+    }
+
+    #[test]
+    fn today_and_yesterday_start_at_local_midnight() {
+        let zone = stockholm_november();
+        assert_eq!(
+            time_to_range_in("today", &zone),
+            (Some(ts(datetime!(2026-11-03 23:00 UTC))), None)
+        );
+        assert_eq!(
+            time_to_range_in("yesterday", &zone),
+            (
+                Some(ts(datetime!(2026-11-02 23:00 UTC))),
+                Some(ts(datetime!(2026-11-03 23:00 UTC)))
+            )
+        );
+    }
+
+    /// A boundary on the far side of a DST change takes THAT day's offset: October 1 in
+    /// Stockholm was summer time (UTC+2), so last month started at 22:00 UTC.
+    #[test]
+    fn a_boundary_across_a_dst_change_uses_that_days_offset() {
+        let zone = FixedZone {
+            switch_on: Some((date!(2026 - 10 - 25), 3_600)),
+            offset_secs: 7_200,
+            ..stockholm_november()
+        };
+        assert_eq!(
+            time_to_range_in("last_month", &zone),
+            (
+                Some(ts(datetime!(2026-09-30 22:00 UTC))),
+                Some(ts(datetime!(2026-10-31 23:00 UTC)))
+            )
+        );
+    }
+
+    #[test]
+    fn a_year_range_is_local_too() {
+        assert_eq!(
+            time_to_range_in("2025", &stockholm_november()),
+            (
+                Some(ts(datetime!(2024-12-31 23:00 UTC))),
+                Some(ts(datetime!(2025-12-31 23:00 UTC)))
+            )
+        );
+    }
+
     #[test]
     fn time_year_range() {
         let (after, before) = time_to_range("2024");
@@ -313,7 +348,7 @@ mod tests {
     #[test]
     fn time_recent_is_about_three_months_ago() {
         let (after, _) = time_to_range("recent");
-        let now = OffsetDateTime::now_utc();
+        let now = time::OffsetDateTime::now_utc();
         let ts = after.unwrap();
         // Should be roughly 90 days ago (±5 days for month length variation)
         let days_ago = (now.unix_timestamp() as u64 - ts) / 86400;
@@ -335,7 +370,7 @@ mod tests {
         let (after, before) = time_to_range("last_6_months");
         assert!(after.is_some());
         assert!(before.is_none());
-        let now = OffsetDateTime::now_utc();
+        let now = time::OffsetDateTime::now_utc();
         let ts = after.unwrap();
         let days_ago = (now.unix_timestamp() as u64 - ts) / 86400;
         assert!(

@@ -33,7 +33,6 @@ pub(in crate::indexing) mod boot_tree_mounts;
 mod error;
 pub use error::ScanError;
 mod exclusions;
-pub use exclusions::SYSTEM_DIR_EXCLUDES;
 pub(in crate::indexing) use exclusions::*;
 
 mod heartbeat;

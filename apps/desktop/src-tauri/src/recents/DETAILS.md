@@ -12,6 +12,10 @@ lists, and nothing else:
 - `SCHEMA_VERSION`: defaulted to 1; each list versions its own file, so one can bump without touching the others.
 - `id()` / `set_id()`: the id the frontend removes by. `set_id` exists for one job: when a caller hands over an id the
   list already holds, the store assigns a fresh uuid so two rows can't share one.
+
+The last two, and `dedupe_key()` below, are `cmdr_recents::RecentItem`, a supertrait: the list rules live in
+`crates/cmdr-recents` so a browser host dedupes and caps exactly as the desktop does (`crates/cmdr-recents/DETAILS.md`).
+This module passes the uuid in as `add_to`'s `fresh_id`.
 - `dedupe_key()`: what makes two entries the same thing. Search and Selection build a canonical key out of mode, query,
   filters, and flags; Go to path uses the resolved path string.
 
@@ -67,6 +71,6 @@ Consumers construct their own `RecentsFile::new()` in tests rather than reaching
 interfere through process-global state.
 
 Collapsing the three copies onto this type gave all three lists coverage only some of them had: the zero-cap and
-`trim_to` cases (Go to path had neither), and, new to all three, that an add/remove/clear/cap-change actually reaches
+`trim_to` cases (Go to path had neither; now `crates/cmdr-recents/src/tests.rs`), and, new to all three, that an add/remove/clear/cap-change actually reaches
 disk, that a no-op remove and a cap that drops nothing skip the write, that `entries(limit)` truncates, that a write
 creates its parent dir, and that a second corruption keeps both set-aside copies.

@@ -1,8 +1,9 @@
 # Live-run reporting
 
-What a live search reports while it runs (`events.rs`: the event family plus the sink trait, so the run never touches
-Tauri) and how a caller that can't subscribe takes the same run as one answer (`collect.rs`). The run registry,
-`ResultStream`, and routing are `../CLAUDE.md`.
+What a live search reports while it runs (`events.rs`: the four event envelopes, and the sinks that map
+`cmdr_search::run`'s facts onto them) and how a caller that can't subscribe takes the same run as one answer
+(`collect.rs`). The run registry, `ResultStream`, the run-state data, and the terminal report are the crate's
+(`crates/cmdr-search/DETAILS.md` § "A live run's reporting"); routing is `../CLAUDE.md`.
 
 ## Must-knows
 

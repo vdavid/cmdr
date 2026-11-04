@@ -7,7 +7,8 @@ entries the same; this module owns everything else.
 ## Module map
 
 - **`mod.rs`**: the `RecentEntry` trait (filename, log identity, id, dedupe key, schema version), `RecentsFile<E>` (the
-  in-memory list + its two locks + the app-bound facade), and the pure list ops (`add_to`, `trim_to`, `remove_from`).
+  in-memory list + its two locks + the app-bound facade). The list rules (dedupe, cap, unique ids) are
+  `crates/cmdr-recents`', shared with the browser demo; `RecentEntry` requires its `RecentItem`.
 - **`persistence.rs`**: the `_schemaVersion` envelope, the durable temp+rename write, and the set-aside path for a file
   we can't read.
 

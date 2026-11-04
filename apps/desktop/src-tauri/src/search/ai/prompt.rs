@@ -62,7 +62,10 @@ Today: {TODAY}.";
 /// `current_type`: `Some(true)` = folders, `Some(false)` = files, `None` = both. Surfaced as a
 /// context line so the model knows the `folders` field is optional and what the user has now.
 pub fn build_classification_prompt(current_type: Option<bool>) -> String {
-    let today = time::OffsetDateTime::now_utc().date();
+    // The user's date, the same calendar the time mapping resolves "today" on: in
+    // UTC the model was handed yesterday's date between local and UTC midnight.
+    use super::mappings::{LocalDays, SystemZone};
+    let today = SystemZone.today();
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let today_str = today.format(&format).expect("date format always succeeds");
     let current_type_label = match current_type {

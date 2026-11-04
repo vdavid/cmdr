@@ -28,16 +28,16 @@
 //! second global allocator and fail to build.
 //!
 //! For parallel code, [`allocations_on_pool`] counts the allocations a dedicated rayon pool's
-//! threads make: the per-thread counter can't see work that runs on rayon's workers.
+//! threads make, so the rest of a parallel `cargo test` stays out of an event count.
 //!
 //! ❌ **Never let this become a no-op.** With no allocator installed, [`heap_bytes_held`] reports
 //! 0 for everything and every memory guard passes while measuring nothing. That's why
-//! `search/ranking/memory_tests.rs` asserts a non-zero measurement before it asserts a budget.
+//! `crates/cmdr-search/src/ranking/memory_tests.rs` asserts a non-zero measurement before it asserts a budget.
 
 use std::cell::Cell;
 use std::path::Path;
 use std::pin::Pin;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU64, AtomicUsize, Ordering};
 
 pub(crate) use cmdr_fs::testing::{TestDir, WedgedVolume, wait_until, wait_until_async, wait_until_async_while_moving};
 
@@ -359,13 +359,22 @@ impl Volume for CapabilityStub {
     }
 }
 
-// Live heap bytes accounted so far ON THIS THREAD. Thread-local rather than global so the
-// harness's other threads can allocate freely without polluting a measurement: a plain
-// `cargo test` runs `#[test]`s in parallel inside one process, where a global counter would be
-// pure noise. `const`-initialised and `Drop`-free, so reading it never lazily allocates and never
-// panics during thread teardown.
+/// Live heap bytes across the whole process, accounted only while a [`heap_bytes_held`]
+/// measurement is open ([`MEASUREMENTS_OPEN`]), so the rest of the suite pays one relaxed load per
+/// allocation and nothing else.
+///
+/// Process-wide rather than per-thread because the thing measured is often built on several
+/// threads: the arena's parallel load allocates its segments on rayon's workers and frees them on
+/// the caller in the merge, so a per-thread count saw only the frees and reported a NEGATIVE arena
+/// (`search::index::load`'s `a_parallel_load_measures_at_least_the_entries_it_holds`).
+static PROCESS_LIVE_BYTES: AtomicI64 = AtomicI64::new(0);
+
+/// How many [`heap_bytes_held`] measurements are running right now.
+static MEASUREMENTS_OPEN: AtomicUsize = AtomicUsize::new(0);
+
+// `const`-initialised and `Drop`-free, so reading it never lazily allocates and never panics
+// during thread teardown.
 thread_local! {
-    static LIVE_BYTES: Cell<i64> = const { Cell::new(0) };
     /// The allocation-event counter this thread reports into, if it belongs to a pool built by
     /// [`allocations_on_pool`]. `None` on every other thread, which then pays one TLS read per call.
     static ALLOC_EVENTS: Cell<Option<&'static AtomicU64>> = const { Cell::new(None) };
@@ -383,7 +392,7 @@ struct CountingAllocator;
 
 // SAFETY: every method forwards its arguments unchanged to `System`, whose `GlobalAlloc` impl is
 // sound, so the pointer/layout contract is exactly `System`'s. The only added work is a
-// thread-local counter bump on a `Drop`-free `Cell`, which never allocates and so can't re-enter
+// relaxed atomic load (plus an atomic add while a measurement is open), which never allocates and so can't re-enter
 // the allocator.
 unsafe impl std::alloc::GlobalAlloc for CountingAllocator {
     unsafe fn alloc(&self, layout: std::alloc::Layout) -> *mut u8 {
@@ -423,10 +432,12 @@ unsafe impl std::alloc::GlobalAlloc for CountingAllocator {
 #[global_allocator]
 static COUNTING_ALLOCATOR: CountingAllocator = CountingAllocator;
 
-/// Record an allocator event against the current thread, tolerating a thread whose TLS is already
-/// torn down (`try_with`), so instrumenting the allocator can never turn a teardown into a panic.
+/// Record an allocator event's bytes, but only while a measurement is open. Atomics only, so it
+/// never allocates and can't re-enter the allocator, on any thread, at any point of its life.
 fn account(bytes: i64) {
-    let _ = LIVE_BYTES.try_with(|live| live.set(live.get() + bytes));
+    if MEASUREMENTS_OPEN.load(Ordering::Relaxed) > 0 {
+        PROCESS_LIVE_BYTES.fetch_add(bytes, Ordering::Relaxed);
+    }
 }
 
 /// Record one allocation or reallocation against the counter of the pool this thread belongs to.
@@ -467,16 +478,21 @@ pub(crate) fn allocations_on_pool<R: Send>(threads: usize, body: impl FnOnce() -
     (out, events)
 }
 
-/// Run `body` and report the heap bytes its result STILL HOLDS on this thread, alongside the
-/// result itself.
+/// Run `body` and report the heap bytes its result STILL HOLDS, alongside the result itself,
+/// counting every thread `body` puts to work (rayon's workers included).
 ///
 /// The number is requested bytes (the `Layout` sizes), not the allocator's rounded-up block
 /// sizes, so it's a floor on real residency and is stable across allocators. Anything `body`
 /// allocated and freed nets out, which is the point: this answers "how big is the thing you just
 /// built", the question a resident-memory budget is written against.
+///
+/// ❗ Process-wide: another test allocating in the same process lands in the number. nextest
+/// runs each test in a process of its own; under a plain `cargo test`, run it alone (`--exact`).
 pub(crate) fn heap_bytes_held<R>(body: impl FnOnce() -> R) -> (R, i64) {
-    let before = LIVE_BYTES.with(Cell::get);
+    MEASUREMENTS_OPEN.fetch_add(1, Ordering::SeqCst);
+    let before = PROCESS_LIVE_BYTES.load(Ordering::SeqCst);
     let out = body();
-    let after = LIVE_BYTES.with(Cell::get);
+    let after = PROCESS_LIVE_BYTES.load(Ordering::SeqCst);
+    MEASUREMENTS_OPEN.fetch_sub(1, Ordering::SeqCst);
     (out, after - before)
 }

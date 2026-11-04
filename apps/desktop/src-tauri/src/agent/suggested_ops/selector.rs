@@ -18,6 +18,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::location::Location;
+use crate::search::context::NameRules;
 use crate::search::matcher::{Candidate, CompiledQuery, Evaluator};
 use crate::search::types::{PatternType, SearchQuery};
 
@@ -81,7 +82,7 @@ impl OpSelector {
         };
         // `Arena { entries: 0 }` never refuses a broad selector: the scope is one subtree the
         // agent named, and "everything in this folder" is a legitimate proposal.
-        CompiledQuery::compile(&query, Evaluator::Arena { entries: 0 })
+        CompiledQuery::compile(&query, Evaluator::Arena { entries: 0 }, &NameRules::host())
             .map_err(|e| SelectorRefusal::BadPattern { reason: e.to_string() })
     }
 

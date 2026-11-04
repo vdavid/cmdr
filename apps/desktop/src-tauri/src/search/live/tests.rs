@@ -8,23 +8,21 @@
 
 use std::path::PathBuf;
 use std::sync::mpsc::{SyncSender, sync_channel};
+use std::time::{Duration, Instant};
+
+use cmdr_search::run::BATCH_ROWS;
 
 use super::events::CollectorSearchEventSink;
 use super::*;
-use crate::search::types::PatternType;
+use crate::search::types::{PatternType, SearchQuery};
 
 // ── Fixtures ─────────────────────────────────────────────────────────
 
 /// A run built without the registry, so a test never supersedes another's.
-/// Registry behavior has its own tests, which take [`test_registry_lock`].
+/// Registry behavior has its own tests (`cmdr_search::run`'s, over a fresh
+/// `SearchRuns`); a test here that registers takes [`test_registry_lock`].
 fn run_for_test(volume_id: &str) -> Arc<LiveRun> {
-    Arc::new(LiveRun {
-        run_id: format!("run-{volume_id}"),
-        volume_id: volume_id.to_string(),
-        origin: RunOrigin::Dialog { order: 0 },
-        cancel: CancellationToken::new(),
-        superseded: AtomicBool::new(false),
-    })
+    LiveRun::detached(&format!("run-{volume_id}"), volume_id)
 }
 
 /// A plain substring query for `stem`, with the system-directory tier off unless
@@ -110,9 +108,18 @@ struct Judged {
 
 impl Judged {
     fn new(query: &SearchQuery) -> Self {
-        let compiled = CompiledQuery::compile(query, crate::search::matcher::Evaluator::LiveWalk)
-            .expect("the test queries all narrow something");
-        let excludes = ExcludeRules::from_query(query, compiled.case_insensitive());
+        let compiled = CompiledQuery::compile(
+            query,
+            crate::search::matcher::Evaluator::LiveWalk,
+            &crate::search::context::NameRules::host(),
+        )
+        .expect("the test queries all narrow something");
+        let excludes = ExcludeRules::from_query(
+            query,
+            compiled.case_insensitive(),
+            crate::search::context::NameRules::host().fold,
+        )
+        .expect("the test excludes compile");
         Self { compiled, excludes }
     }
 
@@ -150,22 +157,10 @@ fn drive(
         &mut stream,
         &WalkPulse::default(),
     );
-    let coverage = SearchRunCoverage {
-        walk: walked.ending,
-        kind: CoverageKind::Live,
-        permission_denied: Vec::new(),
-        declined: Vec::new(),
-        still_covering: Vec::new(),
-        unresolved_scopes: Vec::new(),
-        uncovered_scopes: Vec::new(),
-        abandoned_ground: walked.abandoned_ground,
-        abandoned_locations: 0,
-        failed_roots: Vec::new(),
-        capped: stream.capped(),
-        target_volume_id: run.volume_id.clone(),
-        hidden_by_excludes: 0,
-    };
-    stream.finish(coverage);
+    stream.finish(CoverageFacts {
+        walk_abandoned_ground: walked.abandoned_ground,
+        ..CoverageFacts::new(walked.ending, CoverageKind::Live, run.volume_id.clone())
+    });
     feeder.join().expect("the feeder thread");
     Driven {
         ending: walked.ending,
@@ -304,21 +299,11 @@ fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
         !paths.iter().any(|path| path.contains("after")),
         "and what came after is dropped: {paths:?}"
     );
-    stream.finish(SearchRunCoverage {
-        walk: ending,
-        kind: CoverageKind::Live,
-        permission_denied: Vec::new(),
-        declined: Vec::new(),
-        still_covering: Vec::new(),
-        unresolved_scopes: Vec::new(),
-        uncovered_scopes: Vec::new(),
-        abandoned_ground: false,
-        abandoned_locations: 0,
-        failed_roots: Vec::new(),
-        capped: false,
-        target_volume_id: "supersede-volume".to_string(),
-        hidden_by_excludes: 0,
-    });
+    stream.finish(CoverageFacts::new(
+        ending,
+        CoverageKind::Live,
+        "supersede-volume".to_string(),
+    ));
     assert!(
         sink.complete.lock_ignore_poison().is_empty(),
         "and a superseded run has no last word either"
@@ -525,21 +510,11 @@ fn progress_follows_the_walk_rather_than_the_batches_it_emits() {
 
     let mut stream = ResultStream::new(&run, sink.as_ref(), &q);
     pump(&rx, 1, SearchPhase::Walking, &judged.judge(), &mut stream, &pulse);
-    stream.finish(SearchRunCoverage {
-        walk: WalkEnding::Completed,
-        kind: CoverageKind::Live,
-        permission_denied: Vec::new(),
-        declined: Vec::new(),
-        still_covering: Vec::new(),
-        unresolved_scopes: Vec::new(),
-        uncovered_scopes: Vec::new(),
-        abandoned_ground: false,
-        abandoned_locations: 0,
-        failed_roots: Vec::new(),
-        capped: false,
-        target_volume_id: run.volume_id.clone(),
-        hidden_by_excludes: 0,
-    });
+    stream.finish(CoverageFacts::new(
+        WalkEnding::Completed,
+        CoverageKind::Live,
+        run.volume_id.clone(),
+    ));
 
     let progress = sink.progress.lock_ignore_poison();
     let last = progress.last().expect("at least one event");
@@ -596,21 +571,7 @@ fn cancelling_stops_the_run_promptly_and_ends_it_as_cancelled() {
     )
     .ending;
     let elapsed = started.elapsed();
-    stream.finish(SearchRunCoverage {
-        walk: ending,
-        kind: CoverageKind::Live,
-        permission_denied: Vec::new(),
-        declined: Vec::new(),
-        still_covering: Vec::new(),
-        unresolved_scopes: Vec::new(),
-        uncovered_scopes: Vec::new(),
-        abandoned_ground: false,
-        abandoned_locations: 0,
-        failed_roots: Vec::new(),
-        capped: false,
-        target_volume_id: run.volume_id.clone(),
-        hidden_by_excludes: 0,
-    });
+    stream.finish(CoverageFacts::new(ending, CoverageKind::Live, run.volume_id.clone()));
 
     assert_eq!(ending, WalkEnding::Cancelled);
     assert!(
@@ -769,33 +730,15 @@ fn a_stopped_run_stops_counting_as_well_as_showing() {
         .judge()
         .consume(vec![covered_file("/walked/report.pdf")], &mut stream);
 
-    assert_eq!(stream.match_count, 0, "a match found after the stop is not this run's");
+    assert_eq!(
+        stream.match_count(),
+        0,
+        "a match found after the stop is not this run's"
+    );
     assert!(sink.rows().is_empty());
     // Progress still moves: what the walk READ is true whoever asked for it, and
     // the terminal event reports it.
-    assert_eq!(stream.dirs_found, 0);
-}
-
-#[test]
-fn a_run_that_cannot_run_says_so_unless_nobody_is_listening() {
-    // The refusal path is the one that tells someone WHY they got nothing — "add a
-    // filename pattern" for a query too broad to walk with. It has to reach a live
-    // run, and it has to stay quiet for a superseded one, whose id the frontend
-    // dropped when it asked the next question.
-    let q = query("report");
-    let live_sink = CollectorSearchEventSink::default();
-    let listening = run_for_test("failing");
-    ResultStream::new(&listening, &live_sink, &q).fail(SearchRunError::Query, "Query too broad.".to_string());
-    let errors = live_sink.errors.lock_ignore_poison();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].error, SearchRunError::Query);
-    assert_eq!(errors[0].message, "Query too broad.");
-
-    let gone_sink = CollectorSearchEventSink::default();
-    let superseded = run_for_test("failing-superseded");
-    superseded.superseded.store(true, Ordering::Relaxed);
-    ResultStream::new(&superseded, &gone_sink, &q).fail(SearchRunError::Query, "Query too broad.".to_string());
-    assert!(gone_sink.errors.lock_ignore_poison().is_empty());
+    assert_eq!(stream.dirs_found(), 0);
 }
 
 // ── The wire ─────────────────────────────────────────────────────────
@@ -808,95 +751,10 @@ fn the_event_family_keeps_its_wire_names() {
     // out loud, on the side that emits them.
     use tauri_specta::Event;
 
-    assert_eq!(SearchProgressEvent::NAME, "search-progress");
-    assert_eq!(SearchCompleteEvent::NAME, "search-complete");
-    assert_eq!(SearchCancelledEvent::NAME, "search-cancelled");
-    assert_eq!(SearchErrorEvent::NAME, "search-error");
-}
-
-// ── The registry ─────────────────────────────────────────────────────
-
-#[test]
-fn cancelling_everything_stops_every_run_in_flight() {
-    // What a quitting app calls. It reaches an agent's run too: nobody's search
-    // outlives the process.
-    let _serialized = test_registry_lock();
-    let one = register("run-all-1", "volume-a", RunOrigin::Dialog { order: 5 });
-    let two = register("run-all-2", "volume-b", RunOrigin::Agent);
-    cancel_all_live_runs();
-    assert!(one.is_cancelled() && two.is_cancelled());
-    deregister("run-all-1");
-    deregister("run-all-2");
-}
-
-#[test]
-fn cancelling_a_run_nobody_registered_says_so_rather_than_pretending() {
-    let _serialized = test_registry_lock();
-    assert!(!cancel_live_run("a-run-that-never-was"));
-    let run = register("run-cancel-one", "volume-c", RunOrigin::Dialog { order: 6 });
-    assert!(cancel_live_run("run-cancel-one"));
-    assert!(run.is_cancelled());
-    deregister("run-cancel-one");
-}
-
-#[test]
-fn an_agent_run_and_the_dialog_stay_out_of_each_others_way() {
-    // Superseding exists because ONE dialog asks one question at a time. An MCP
-    // call is its own asker with its own caller waiting, so neither run may
-    // silence the other: a person typing mid-agent-search would otherwise watch
-    // their results stop arriving, and an agent's answer would come back empty
-    // because somebody touched the keyboard.
-    let _serialized = test_registry_lock();
-    let dialog = register("run-dialog", "volume-d", RunOrigin::Dialog { order: 7 });
-    let agent = register("run-agent", "volume-d", RunOrigin::Agent);
-    assert!(dialog.wants_events(), "an agent's search doesn't supersede the dialog");
-    assert!(agent.wants_events());
-
-    // And the dialog asking its next question supersedes only its own.
-    let refined = register("run-dialog-2", "volume-d", RunOrigin::Dialog { order: 8 });
-    assert!(!dialog.wants_events(), "the dialog's own previous run is superseded");
-    assert!(agent.wants_events(), "the agent's is not");
-    assert!(refined.wants_events());
-
-    deregister("run-dialog");
-    deregister("run-dialog-2");
-    deregister("run-agent");
-}
-
-#[test]
-fn a_dialog_run_that_registers_after_a_newer_one_is_the_one_silenced() {
-    // Two starts race from the frontend to here, and nothing orders their arrival:
-    // each builds its query and installs its listeners first, and commands run
-    // concurrently. If arrival decided, an earlier question reaching the registry
-    // last would silence the later one the dialog is watching, and the dialog would
-    // wait on a run that never reports.
-    let _serialized = test_registry_lock();
-    let later = register("run-order-later", "volume-f", RunOrigin::Dialog { order: 20 });
-    let earlier = register("run-order-earlier", "volume-f", RunOrigin::Dialog { order: 10 });
-    assert!(later.wants_events(), "the question asked later keeps reporting");
-    assert!(
-        !earlier.wants_events(),
-        "the earlier question, arriving late, starts out superseded"
-    );
-    deregister("run-order-later");
-    deregister("run-order-earlier");
-}
-
-#[test]
-fn closing_the_dialog_leaves_an_agents_search_running() {
-    // `release_search_index` means "nobody is watching the dialog any more",
-    // which says nothing about an MCP call still waiting on its answer.
-    let _serialized = test_registry_lock();
-    let dialog = register("run-close-dialog", "volume-e", RunOrigin::Dialog { order: 9 });
-    let agent = register("run-close-agent", "volume-e", RunOrigin::Agent);
-    cancel_dialog_runs_except(None);
-    assert!(dialog.is_cancelled());
-    assert!(
-        !agent.is_cancelled(),
-        "the agent's run is none of the dialog's business"
-    );
-    deregister("run-close-dialog");
-    deregister("run-close-agent");
+    assert_eq!(events::SearchProgressEvent::NAME, "search-progress");
+    assert_eq!(events::SearchCompleteEvent::NAME, "search-complete");
+    assert_eq!(events::SearchCancelledEvent::NAME, "search-cancelled");
+    assert_eq!(events::SearchErrorEvent::NAME, "search-error");
 }
 
 // ── What a walk says it's doing ──────────────────────────────────────

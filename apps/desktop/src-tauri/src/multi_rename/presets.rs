@@ -6,6 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::recents::{RecentEntry, RecentsFile};
+use cmdr_recents::RecentItem;
 
 use super::mask::fill_counter_defaults;
 use super::plan::MultiRenameSpec;
@@ -297,7 +298,9 @@ impl RecentEntry for LastSpec {
     const LOG_TARGET: &'static str = "multi_rename::presets";
     const LOG_NAME: &'static str = "multi-rename last settings";
     const STATE_FILE: crate::state_recovery::StateFile = crate::state_recovery::StateFile::MultiRenameLastSettings;
+}
 
+impl RecentItem for LastSpec {
     fn id(&self) -> &str {
         &self.id
     }

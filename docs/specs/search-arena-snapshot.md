@@ -306,9 +306,10 @@ build.
 
 ### M3. The accessor seam (`search/`)
 
-**Scope**: `search/index.rs`, `search/engine.rs`, `search/ranking.rs`, `search/matcher.rs`, `search/execute.rs`,
-`commands/search.rs`, `search/bench.rs`, and the tests that build `SearchIndex` literals (`search/ranking/tests.rs`,
-`search/execute/tests.rs`, `search/volumes/tests.rs`, `search/index/memory_tests.rs`).
+**Scope**: `crates/cmdr-search/src/arena.rs`, `crates/cmdr-search/src/engine.rs`, `crates/cmdr-search/src/ranking.rs`,
+`crates/cmdr-search/src/matcher.rs`, `search/execute.rs`, `commands/search.rs`, `search/bench.rs`, and the tests that
+build `SearchIndex` literals (`search/ranking/tests.rs`, `search/execute/tests.rs`, `search/volumes/tests.rs`,
+`search/index/memory_tests.rs`).
 
 **Intentions**: implement Contract B over the **existing heap backend only**, and migrate every caller to it. Behavior
 identical, M1's battery green throughout. The public `entries` / `names` fields disappear. This is the seam every other
@@ -325,7 +326,7 @@ mapped path.
 
 **Test plan**: M1's battery, unchanged, green. Existing search tests green with no assertion edits beyond construction.
 
-**DONE**: nothing outside `search/index.rs` knows how a row is stored.
+**DONE**: nothing outside `crates/cmdr-search/src/arena.rs` knows how a row is stored.
 
 ### M4. Mapped backend and overlay (`search/`)
 

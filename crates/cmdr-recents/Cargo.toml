@@ -1,0 +1,17 @@
+[package]
+name = "cmdr-recents"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+# No dependencies: the list rules are `Vec` work, and an entry's id comes from the
+# host (`add_to`'s `fresh_id`), so no RNG or clock crate is needed, and the crate
+# builds anywhere, a browser included.
+[dependencies]

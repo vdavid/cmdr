@@ -27,7 +27,7 @@ use crate::index_host::index;
 use cmdr_index::store::IndexStore;
 use cmdr_index::{CoverageToken, ROOT_VOLUME_ID, ReadPool};
 
-use super::index::{SearchIndex, catch_up_search_index, load_search_index, now_secs};
+use super::index::{SearchIndex, catch_up_search_index, load_search_index};
 
 mod weights;
 use weights::{load_weights, store_weights};
@@ -189,6 +189,20 @@ pub(crate) struct LoadedVolume {
 }
 
 impl LoadedVolume {
+    /// A volume built from an arena and a pool a test holds, outside the cache and
+    /// its load gates: the search goldens run over one of these.
+    #[cfg(test)]
+    pub(crate) fn for_test(index: SearchIndex, pool: ReadPool, mount_root: Option<String>) -> Self {
+        Self {
+            index: Arc::new(index),
+            pool: Arc::new(pool),
+            mount_root,
+            generation: 0,
+            coverage_token: CoverageToken::UNINDEXED,
+            read_started_at: std::time::Instant::now(),
+        }
+    }
+
     /// Whether this arena may serve a coverage answer taken at `answered_at` and
     /// carrying `tokens` (Decision 12).
     ///
@@ -401,30 +415,6 @@ pub(crate) fn registry_mount_root(volume_id: &str) -> Option<String> {
         .get(volume_id)
         .map(|v| v.root().to_string_lossy().into_owned())
         .and_then(usable_mount_root)
-}
-
-/// Whose namespace a volume's paths are in, which decides whether a scope path may
-/// go through `realpath` (`query::canonicalize_scope_path`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PathNamespace {
-    /// Read through `std::fs` (the boot disk, a local drive, a plain OS mount): the
-    /// index and the walk see the names `realpath` sees, and symlinks and firmlinks
-    /// (`/tmp` → `/private/tmp`) have to resolve for a scope to match.
-    Os,
-    /// Read through Cmdr's own client (SMB, MTP, ADB, …): the backend's names, which
-    /// an OS mount at the same path can spell differently.
-    Backend,
-}
-
-/// The namespace of the volume a search targets. An unregistered volume (the
-/// boot disk before the registry fills, an ejected drive) is `Os`: `realpath`
-/// either answers in the namespace it'll be read in or fails and keeps the
-/// literal.
-pub(crate) fn path_namespace(volume_id: &str) -> PathNamespace {
-    match crate::file_system::volume::manager::get_volume_manager().get(volume_id) {
-        Some(volume) if volume.backend_kind() != cmdr_fs::volume::BackendKind::Local => PathNamespace::Backend,
-        _ => PathNamespace::Os,
-    }
 }
 
 /// `/` and the empty string aren't mount roots: they're what an index with no
@@ -785,6 +775,14 @@ pub(crate) fn start_idle_timer() {
             break;
         }
     }));
+}
+
+/// Seconds since the Unix epoch, for the idle timer's activity stamps.
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
 }
 
 #[cfg(test)]

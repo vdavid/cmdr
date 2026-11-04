@@ -29,10 +29,7 @@ use std::time::Duration;
 use crate::ignore_poison::IgnorePoison;
 use crate::search::types::SearchResultEntry;
 
-use super::events::{
-    SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchEventSink, SearchProgressEvent,
-    SearchRunCoverage, SearchRunError,
-};
+use cmdr_search::run::{RunEnded, RunFailed, RunProgress, RunSink, SearchRunCoverage, SearchRunError};
 
 /// How a folded run ended, from the point of view of whoever was waiting.
 #[derive(Debug, Clone)]
@@ -119,20 +116,20 @@ impl CollectingSink {
     }
 }
 
-impl SearchEventSink for CollectingSink {
-    fn emit_progress(&self, event: SearchProgressEvent) {
+impl RunSink for CollectingSink {
+    fn progress(&self, event: RunProgress) {
         let mut fold = self.fold.lock_ignore_poison();
         fold.entries.extend(event.entries);
         fold.match_count = event.match_count;
         fold.dirs_found = event.dirs_found;
     }
 
-    fn emit_complete(&self, event: SearchCompleteEvent) {
+    fn complete(&self, event: RunEnded) {
         self.fold.lock_ignore_poison().match_count = event.match_count;
         self.settle(AnswerEnding::Settled(Box::new(event.coverage)));
     }
 
-    fn emit_cancelled(&self, event: SearchCancelledEvent) {
+    fn cancelled(&self, event: RunEnded) {
         // Settled, not still-walking: a cancelled run has stopped, and its
         // coverage says `Cancelled` so the caller knows the list is short. For an
         // agent's run the only thing that cancels is the app quitting.
@@ -140,7 +137,7 @@ impl SearchEventSink for CollectingSink {
         self.settle(AnswerEnding::Settled(Box::new(event.coverage)));
     }
 
-    fn emit_error(&self, event: SearchErrorEvent) {
+    fn failed(&self, event: RunFailed) {
         self.settle(AnswerEnding::Failed {
             error: event.error,
             message: event.message,

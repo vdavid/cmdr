@@ -134,6 +134,13 @@ cmdr-collation = { path = "../../../crates/cmdr-collation" }
 # Brief mode's column widths and the font metrics store behind them, shared with
 # the browser demo. The app keeps the store's on-disk cache (`font_metrics/`).
 cmdr-brief-columns = { path = "../../../crates/cmdr-brief-columns" }
+# The drive search's core (query model, matcher, ranking, the arena and its scan),
+# fed through its seam by `search/index_source.rs`; the app keeps routing, loading,
+# live runs, and history (`src/search/`).
+cmdr-search = { path = "../../../crates/cmdr-search" }
+# The recents-list rules (newest first, dedupe, cap) every host shares; the app keeps
+# each list's file, locks, and quarantine (`src/recents/`).
+cmdr-recents = { path = "../../../crates/cmdr-recents" }
 # What photos, videos, and music files say about themselves (EXIF, capture dates,
 # tags), read through any volume, for Multi-Rename's `[=source.field]` placeholders.
 cmdr-media-meta = { path = "../../../crates/cmdr-media-meta" }
@@ -506,6 +513,10 @@ cmdr-index = { path = "../../../crates/cmdr-index", features = ["testing"] }
 # `cmdr_archive::test_fixtures`.
 cmdr-archive = { path = "../../../crates/cmdr-archive", features = ["testing"] }
 cmdr-listing = { path = "../../../crates/cmdr-listing", features = ["testing"] }
+# `cmdr_search::testing`: the fixture arena, the synthetic one the benches scan, the
+# pure-engine wrapper the loader's tests search through, and the folder sizes the
+# source-equivalence test pairs with a `MemorySource`.
+cmdr-search = { path = "../../../crates/cmdr-search", features = ["testing"] }
 cmdr-viewer = { path = "../../../crates/cmdr-viewer", features = ["testing"] }
 # `cmdr_media_meta::test_fixtures`: real photos, songs, and movies for Multi-Rename's
 # end-to-end media test.

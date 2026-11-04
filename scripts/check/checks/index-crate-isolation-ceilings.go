@@ -554,6 +554,41 @@ var surfaceGuardedCrates = []struct {
 		// Measured 2026-11-04, at the extraction, and set to exactly what the crate
 		// exposes, with no headroom.
 		//
+		// The 32 root promises are the nine public modules plus the flat re-exports
+		// the host names: the arena and its builder, the name rules and the search
+		// context, the seam (its two traits, typed errors, `ResolvedScope`, and
+		// `search_covered`), and the wire types. The modules keep their app-side
+		// paths (`crate::search::matcher`, ...) through the host's re-export, and each
+		// item in them is `pub` only because the host's routing, live run, MCP
+		// tools, or tests reach it; the rest stays `pub(crate)`. The `testing`-gated
+		// fixtures count apart. Item-by-item: `crates/cmdr-search/DETAILS.md` §
+		// "The public surface is capped".
+		//
+		// Raised 2026-11-04 by one module (`run`) and its 18 items, when a live
+		// run's reporting joined the crate: the registry as a value (`SearchRuns`,
+		// `LiveRun`, `RunOrigin`), `ResultStream` and its sink (`RunSink` plus the
+		// three facts it hears), the five run-state DTOs, the terminal report's
+		// inputs (`CoverageFacts`, `UnreadableGround`, `UnresolvedScope`), and the
+		// two batch constants the host's pump and tests read. Each is a seam a second
+		// host (the browser demo) needs to say what a desktop run says without
+		// re-implementing it, so the wider surface is the better design.
+		//
+		// Raised 2026-11-04, `RootPromises` 33 -> 36, for ONE concept the search-crate
+		// plan names public: a source over rows held in memory (`MemorySource`, the
+		// `MemoryRow` it's built from, and `MemorySourceError`, why rows can't form a
+		// tree). The browser demo's host builds one from its in-memory volume; its
+		// module stays private, so the three are the whole promise.
+		Name: "cmdr-search",
+		Ceilings: surfaceCeilings{
+			RootPromises:   36,
+			PublicModules:  10,
+			SubsystemItems: 104,
+		},
+	},
+	{
+		// Measured 2026-11-04, at the extraction, and set to exactly what the crate
+		// exposes, with no headroom.
+		//
 		// Three root promises, the sort vocabulary a pane asks with: `SortColumn`,
 		// `SortOrder`, and `DirectorySortMode`. No methods, no public module. A new
 		// item here is vocabulary every sort site sees, so it's argued in
@@ -561,6 +596,22 @@ var surfaceGuardedCrates = []struct {
 		Name: "cmdr-sort",
 		Ceilings: surfaceCeilings{
 			RootPromises:   3,
+			PublicModules:  0,
+			SubsystemItems: 0,
+		},
+	},
+	{
+		// Measured 2026-11-04, at the extraction (#302), and set to exactly what the
+		// crate exposes, with no headroom.
+		//
+		// Five root promises, the rules of a most-recently-used list: the
+		// `RecentItem` trait an entry implements, and the four list verbs (`add_to`,
+		// `trim_to`, `remove_from`, `dedupe_keeping_newest`). No public module. A
+		// list's file and locks are the host's, so a persistence item here is a design
+		// change, argued in `crates/cmdr-recents/DETAILS.md` first.
+		Name: "cmdr-recents",
+		Ceilings: surfaceCeilings{
+			RootPromises:   5,
 			PublicModules:  0,
 			SubsystemItems: 0,
 		},

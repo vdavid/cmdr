@@ -8,23 +8,29 @@ use crate::search::{PatternType, SearchQuery, format_timestamp};
 use super::types::{TranslateDisplay, TranslatedQuery};
 
 use super::mappings::{
-    keywords_to_pattern, merge_keyword_and_type, parse_exclude_list, scope_to_paths, size_to_filter, time_to_range,
-    type_to_filter,
+    LocalDays, SystemZone, keywords_to_pattern, merge_keyword_and_type, parse_exclude_list, scope_to_paths,
+    size_to_filter, time_to_range, type_to_filter,
 };
 use super::parser::ParsedLlmResponse;
 
 // ── ISO date conversion ──────────────────────────────────────────────
 
-/// Converts an ISO date string (YYYY-MM-DD) to a unix timestamp (seconds since epoch).
+/// The instant an ISO date (YYYY-MM-DD) starts on the user's local calendar, in
+/// seconds since the Unix epoch. An MCP client's `modifiedAfter: "2025-01-01"` means
+/// the user's day, the same day the dialog's date filter and the AI's "today" mean
+/// (`mappings/local_days.rs`).
 pub fn iso_date_to_timestamp(date_str: &str) -> Result<u64, String> {
+    iso_date_to_timestamp_in(date_str, &SystemZone)
+}
+
+/// [`iso_date_to_timestamp`] on a given calendar.
+fn iso_date_to_timestamp_in(date_str: &str, days: &impl LocalDays) -> Result<u64, String> {
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let date = time::Date::parse(date_str, &format).map_err(|e| format!("Invalid date '{date_str}': {e}"))?;
-    let datetime = date.with_hms(0, 0, 0).expect("midnight is always valid");
-    let timestamp = datetime.assume_utc().unix_timestamp();
-    if timestamp < 0 {
+    if date.year() < 1970 {
         return Err(format!("Date '{date_str}' is before unix epoch"));
     }
-    Ok(timestamp as u64)
+    Ok(days.midnight(date))
 }
 
 // ── Assembly ─────────────────────────────────────────────────────────
@@ -393,22 +399,35 @@ mod tests {
 
     // ── ISO date conversion ──────────────────────────────────────────
 
-    #[test]
-    fn test_iso_date_to_timestamp() {
-        // 2025-01-01 00:00:00 UTC = 1735689600
-        let ts = iso_date_to_timestamp("2025-01-01").unwrap();
-        assert_eq!(ts, 1_735_689_600);
+    fn zone(offset_secs: i64) -> super::super::mappings::FixedZone {
+        super::super::mappings::FixedZone {
+            today: time::macros::date!(2026 - 11 - 04),
+            offset_secs,
+            switch_on: None,
+        }
     }
 
     #[test]
-    fn test_iso_date_to_timestamp_mid_year() {
-        // 2026-06-15 00:00:00 UTC = 1781481600
-        let ts = iso_date_to_timestamp("2026-06-15").unwrap();
-        assert_eq!(ts, 1_781_481_600);
+    fn an_iso_date_starts_at_the_users_local_midnight() {
+        // 2025-01-01 00:00 in Stockholm (UTC+1) is 2024-12-31 23:00 UTC.
+        assert_eq!(
+            iso_date_to_timestamp_in("2025-01-01", &zone(3_600)),
+            Ok(1_735_689_600 - 3_600)
+        );
+        // 2026-06-15 00:00 at UTC+2 (summer time).
+        assert_eq!(
+            iso_date_to_timestamp_in("2026-06-15", &zone(7_200)),
+            Ok(1_781_481_600 - 7_200)
+        );
+        // West of UTC the day starts later.
+        assert_eq!(
+            iso_date_to_timestamp_in("2025-01-01", &zone(-18_000)),
+            Ok(1_735_689_600 + 18_000)
+        );
     }
 
     #[test]
-    fn test_iso_date_to_timestamp_invalid() {
+    fn an_iso_date_that_isnt_a_calendar_date_is_refused() {
         assert!(iso_date_to_timestamp("not-a-date").is_err());
         assert!(iso_date_to_timestamp("2025-13-01").is_err());
         assert!(iso_date_to_timestamp("2025-01-32").is_err());
