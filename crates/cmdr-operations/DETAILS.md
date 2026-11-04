@@ -128,7 +128,8 @@ The full top-level inventory is here:
 - `lib.rs` (the `Operations` handle and its `Inner`, and the public list: the `pub use` lines, everything outside the
   crate may name; every submodule but `host` is private), `testing/` (`any(test, feature = "testing")`:
   `TestOperations`, an engine a test owns, in `engine.rs`; the Criterion bench's door in `bench.rs`; and what test cells
-  outside the crate reach beyond the public list), `local_start.rs` (the local copy, move, delete, and trash starters
+  outside the crate reach beyond the public list), `write_start.rs` (the same-`root` move, delete, and trash starts,
+  routing to the local disk or the volume engine), `local_start.rs` (the local copy, move, delete, and trash starters
   and the `start_write_operation` lifecycle they share), `local_disk/` (the host's own disk as the shared code needs it:
   errnos, a file's device and mode, the no-replace rename, mount and filesystem questions, a volume over a local folder;
   natively forwards to `cmdr_local` / `libc` / `std::os::unix`, in the browser build the answers of a host with none),
@@ -173,13 +174,13 @@ The full top-level inventory is here:
 - **The scan is four files, and only one of them knows what a write operation is.** `scan_walker.rs` holds the shared
   local-FS recursion (`WalkContext`, `walk_dir_recursive`, `walk_sources_with_per_path`, and the hardlink dedup): one
   descent, parameterized by callbacks, so the copy scan, the delete scan, and the dry run share a symlink stance, cancel
-  checkpoints, and the authoritative-listing fast path. It names no operation type. `scan.rs` turns a walk into totals
-  (`scan_sources`, `scan_subtree_with_oracle`). `scan_source_tracker.rs` is the per-TOP-LEVEL-source bookkeeping over a
-  flat result (`SourceItemTracker`, `FileVerdict`, `top_level_source_path`), which is what makes
-  `write-source-item-done` fire once per source rather than once per file. `scan_dry_run.rs` is the preview that writes
-  nothing. They're flat siblings rather than a `scan/` directory, matching `scan_preview.rs` / `scan_cache.rs` /
-  `scan_bridge.rs` / `scan_watchdog.rs` — and because `pub(super)` here means "visible to `cmdr-operations`", which a
-  directory would silently narrow.
+  checkpoints, and the authoritative-listing fast path. It names no operation type. `scan.rs` turns a local walk into
+  totals (`scan_sources`); `scan_oracle.rs` totals one subtree on any volume (`scan_subtree_with_oracle`).
+  `scan_source_tracker.rs` is the per-TOP-LEVEL-source bookkeeping over a flat result (`SourceItemTracker`,
+  `FileVerdict`, `top_level_source_path`), which is what makes `write-source-item-done` fire once per source rather than
+  once per file. `scan_dry_run.rs` is the preview that writes nothing. They're flat siblings rather than a `scan/`
+  directory, matching `scan_preview.rs` / `scan_cache.rs` / `scan_bridge.rs` / `scan_watchdog.rs` — and because
+  `pub(super)` here means "visible to `cmdr-operations`", which a directory would silently narrow.
 
   The one thing the walk carries for a caller that isn't a write operation: `WalkContext::online_only`, an
   `OnlineOnlyWatch` the delete confirmation's preview arms when its sources reach into a cloud drive. It answers whether
@@ -2710,15 +2711,22 @@ asks the index through `OperationIndex`.
 The demo's WASM engine links this crate (`crates/cmdr-listing-wasm`), so it builds for `wasm32-unknown-unknown`:
 `cmdr-local` and tokio's `fs` are host-only dependencies (`Cargo.toml`), the shared code reaches the host's disk only
 through `local_disk/` (the browser answers there are a host with none), and clocks go through `rt.rs`. The local-disk
-engine still COMPILES there but can't be reached: that host's `OperationVolumes::local_disk` is `None`
-(`host/DETAILS.md`), and `lib.rs` allows the dead code that leaves on that target. The leftover sweep's `block_on`
-shapes have browser twins (`in_flight_sweep.rs`): no persisted records there, and the arrival sweep awaits on the page's
-loop. The wasm lane (`desktop-rust-listing-wasm`) compiles it beside the listing engine (`browserBound` in
-`scripts/build-listing-wasm/main.go`). The boundary is enforced: `operations-local-disk-boundary`
-(`scripts/check/checks/operations-local-disk-boundary.go`) fails any `libc`, `cmdr_local`, `objc2`, `xattr`, `trash`,
-`dirs`, or `std::os::unix` in production code outside `local_disk/` and the local-engine trees it lists (test files and
-`#[cfg(test)]` modules are exempt). A new host-disk question goes into `local_disk/` (`posix.rs` holds the POSIX ones:
-`(dev, ino)`, `access(W_OK)`, BSD flags, mount points, xattrs, the home folder), each with its browser answer.
+engine's trees (the list in `operations-local-disk-boundary.go`) are NOT compiled there: each `mod` line carries
+`#[cfg(not(target_family = "wasm"))]`, so a browser path into them can't be written. What they shared lives outside
+them: the same-`root` move, delete, and trash starts (`write_start.rs`, which hand the local disk's case to
+`local_start.rs` behind one `cfg`), the trash routing's wire answer (`src/delete/trash_routing.rs`), the oracle subtree
+scan (`scan_oracle.rs`), an Overwrite's displaced entry and the no-replace rename (`displaced_entry.rs`), a conflict
+resolution's result (`conflict.rs`), and the mount table (`local_disk::mount_points`, so `mount_boundary.rs` is shared).
+Helpers in shared modules that only the local engine calls go unused there, which `lib.rs` allows on that target. The
+leftover sweep's `block_on` shapes have browser twins (`in_flight_sweep.rs`): no persisted records there, and the
+arrival sweep awaits on the page's loop. The wasm lane (`desktop-rust-listing-wasm`) compiles it beside the listing
+engine (`browserBound` in `scripts/build-listing-wasm/main.go`). The boundary is enforced:
+`operations-local-disk-boundary` (`scripts/check/checks/operations-local-disk-boundary.go`) fails any `libc`,
+`cmdr_local`, `objc2`, `xattr`, `trash`, `dirs`, or `std::os::unix` in production code outside `local_disk/` and the
+local-engine trees it lists (test files and `#[cfg(test)]` modules are exempt), and any listed tree whose `mod` line
+lacks the browser gate. A new host-disk question goes into `local_disk/` (`posix.rs` holds the POSIX ones: `(dev, ino)`,
+`access(W_OK)`, BSD flags, mount points, xattrs, the home folder), each with its browser answer. `walkdir` stays a
+dependency on every target: the archive edits compile in the browser too, and refuse there before any walk.
 
 ## Testing bar
 

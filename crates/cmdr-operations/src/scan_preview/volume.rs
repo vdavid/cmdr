@@ -9,9 +9,9 @@ use std::time::Duration;
 
 use super::super::Operations;
 use super::super::event_sinks::ScanPreviewEventSink;
-use super::super::scan::{SubtreeTotals, scan_subtree_with_oracle};
 use super::super::scan_bridge::{ScanCounts, ScanPause, forward_scan_progress};
 use super::super::scan_cache::ScanOutcome;
+use super::super::scan_oracle::{SubtreeTotals, scan_subtree_with_oracle};
 use super::super::scan_watchdog::{ScanTally, ScanWatchdog};
 use super::super::state::{CachedScanResult, ScanPreviewState};
 use super::super::transfer::volume::{PathRole, map_volume_error};

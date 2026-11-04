@@ -188,6 +188,33 @@ pub(crate) fn rename_error(err: &std::io::Error, from: &Path, to: &Path) -> Volu
     }
 }
 
+/// Every mount point in the OS mount table, or `None` when it can't be read
+/// (and with no local disk, which has no mount table).
+pub(crate) fn mount_points() -> Option<Vec<std::path::PathBuf>> {
+    #[cfg(target_os = "macos")]
+    {
+        cmdr_local::mount_table::enumerate_mounts().map(|mounts| {
+            mounts
+                .into_iter()
+                .map(|m| std::path::PathBuf::from(m.mount_point))
+                .collect()
+        })
+    }
+    #[cfg(target_os = "linux")]
+    {
+        cmdr_local::linux_mounts::parse_proc_mounts().map(|mounts| {
+            mounts
+                .into_iter()
+                .map(|m| std::path::PathBuf::from(m.mountpoint))
+                .collect()
+        })
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        None
+    }
+}
+
 /// Whether `path` sits on a network mount.
 pub(crate) fn is_on_network_mount(path: &Path) -> bool {
     #[cfg(not(target_family = "wasm"))]

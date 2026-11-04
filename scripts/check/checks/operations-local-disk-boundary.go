@@ -38,15 +38,9 @@ var operationsLocalDiskModules = []string{
 	"scan_walker.rs",
 	"cancellable.rs",
 	"scan_preview/local.rs",
-	"in_flight_sweep.rs",
-	"in_flight_sweep_surface.rs",
-	"unblocked_removal.rs",
 	"local_start.rs",
-	"scratch_dir.rs",
 	"overwrite.rs",
-	"overwrite_aside_park.rs",
 	"durability.rs",
-	"mount_boundary.rs",
 	"free_space.rs",
 }
 
@@ -71,6 +65,13 @@ func RunOperationsLocalDiskBoundary(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("found no Rust files in %s; update this check if the crate moved", operationsSrcDir)
 	}
 	violations, scanned := operationsBoundaryViolations(files)
+	if ungated := operationsBrowserGateViolations(files); len(ungated) > 0 {
+		return CheckResult{}, fmt.Errorf(
+			"found %d local-engine %s the browser build still compiles. Put `#[cfg(not(target_family = \"wasm\"))]` on its `mod` line, or split its shared half out first:\n%s",
+			len(ungated), Pluralize(len(ungated), "module", "modules"),
+			indentOutput(strings.Join(ungated, "\n")),
+		)
+	}
 	if len(violations) > 0 {
 		return CheckResult{}, fmt.Errorf(
 			"found %d host-OS %s outside `cmdr-operations`' local-disk modules. The browser build has no local disk, so ask through `local_disk/` (add the primitive there, with its browser answer), or, for a local-engine module, add it to `operationsLocalDiskModules` and gate it out of the browser build:\n%s",
@@ -135,6 +136,50 @@ func operationsBoundaryViolations(files map[string]string) ([]string, int) {
 		}
 	}
 	return violations, scanned
+}
+
+// operationsBrowserGate is a `cfg` that keeps a module out of the browser build: not wasm, or
+// one desktop OS.
+var operationsBrowserGate = regexp.MustCompile(`#\[cfg\((?:not\(target_family = "wasm"\)|target_os = "(?:macos|linux)")\)\]`)
+
+// operationsBrowserGateViolations answers each local-engine module (every entry in
+// `operationsLocalDiskModules` but `local_disk/`, whose browser answers are the point) whose
+// `mod` declaration lacks a browser gate in the attributes right above it.
+func operationsBrowserGateViolations(files map[string]string) []string {
+	var violations []string
+	for _, module := range operationsLocalDiskModules {
+		if module == "local_disk/" {
+			continue
+		}
+		trimmed := strings.TrimSuffix(strings.TrimSuffix(module, "/"), ".rs")
+		name := filepath.Base(trimmed)
+		parent := filepath.ToSlash(filepath.Dir(trimmed))
+		declarers := []string{"lib.rs"}
+		if parent != "." {
+			declarers = []string{parent + ".rs", parent + "/mod.rs"}
+		}
+		decl := regexp.MustCompile(`(?m)((?:^[ \t]*#\[[^\n]*\][ \t]*\n)*)^[ \t]*(?:pub(?:\([^)]*\))?\s+)?mod\s+` + regexp.QuoteMeta(name) + `\s*;`)
+		found, gated := false, false
+		for _, declarer := range declarers {
+			source, ok := files[declarer]
+			if !ok {
+				continue
+			}
+			if m := decl.FindStringSubmatch(stripRustLineComments(source)); m != nil {
+				found = true
+				gated = operationsBrowserGate.MatchString(m[1])
+				break
+			}
+		}
+		switch {
+		case !found:
+			violations = append(violations, fmt.Sprintf("%s: no `mod %s;` declares it (update `operationsLocalDiskModules`)", module, name))
+		case !gated:
+			violations = append(violations, fmt.Sprintf("%s: `mod %s;` has no browser gate", module, name))
+		}
+	}
+	sort.Strings(violations)
+	return violations
 }
 
 // operationsTestOnlyPaths finds the files a `#[cfg(test)] mod name;` declares, as `name.rs`

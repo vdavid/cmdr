@@ -30,3 +30,28 @@ func TestOperationsLocalDiskBoundary(t *testing.T) {
 		t.Errorf("scanned %d production files, want 3 (lib.rs, rename.rs, summary.rs)", scanned)
 	}
 }
+
+func TestOperationsBrowserGate(t *testing.T) {
+	files := map[string]string{}
+	// Every local-engine module declared and gated: nothing to report.
+	for _, module := range operationsLocalDiskModules {
+		if module == "local_disk/" {
+			continue
+		}
+		trimmed := strings.TrimSuffix(strings.TrimSuffix(module, "/"), ".rs")
+		declarer, name := "lib.rs", trimmed
+		if i := strings.LastIndex(trimmed, "/"); i >= 0 {
+			declarer, name = trimmed[:i]+"/mod.rs", trimmed[i+1:]
+		}
+		files[declarer] += "#[cfg(not(target_family = \"wasm\"))]\npub(super) mod " + name + ";\n"
+	}
+	if got := operationsBrowserGateViolations(files); len(got) != 0 {
+		t.Fatalf("a fully gated tree reported %v", got)
+	}
+	// Seen red: one gate dropped.
+	files["lib.rs"] = strings.Replace(files["lib.rs"], "#[cfg(not(target_family = \"wasm\"))]\npub(super) mod scan;\n", "pub(super) mod scan;\n", 1)
+	got := operationsBrowserGateViolations(files)
+	if len(got) != 1 || !strings.HasPrefix(got[0], "scan.rs:") {
+		t.Errorf("violations %v, want only scan.rs", got)
+	}
+}

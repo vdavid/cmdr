@@ -56,9 +56,11 @@ use super::types::{
 };
 use cmdr_fs::volume::Volume;
 
+#[cfg(not(target_family = "wasm"))]
 mod local;
 mod volume;
 
+#[cfg(not(target_family = "wasm"))]
 pub(super) use local::run_scan_preview;
 #[cfg(test)]
 pub(super) use volume::count_selected_links_as_links;
@@ -145,6 +147,16 @@ impl Operations {
                 .await;
             });
         } else {
+            #[cfg(target_family = "wasm")]
+            {
+                // No local disk here and no volume under the id: nothing to walk.
+                if watchdog.claim_outcome() {
+                    let path = sources.first().map(|p| p.display().to_string()).unwrap_or_default();
+                    let error = WriteOperationError::SourceNoLongerConnected { path };
+                    settle_failed_preview(self.stores().previews(), &*events, &watchdog, preview_id.clone(), error);
+                }
+            }
+            #[cfg(not(target_family = "wasm"))]
             // The same panic a bare `thread::spawn` raises when the OS refuses a
             // thread; the name is what's new.
             std::thread::Builder::new()

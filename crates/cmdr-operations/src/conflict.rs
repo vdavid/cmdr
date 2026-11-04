@@ -12,17 +12,33 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::durability::lookup_indexed_size;
 use super::event_sinks::OperationEventSink;
 use super::host::EngineHost;
 use super::look_alike::is_look_alike_clash;
-use super::overwrite::ResolvedDestination;
 use super::state::WriteOperationState;
 use super::types::{
     ConflictId, ConflictInfo, ConflictResolution, KnownSize, WriteConflictEvent, WriteConflictResolvedEvent,
     WriteOperationConfig, WriteOperationError,
 };
 use super::unique_name::find_unique_name;
+
+/// Result of applying a conflict resolution.
+#[derive(Debug)]
+pub(super) struct ResolvedDestination {
+    /// The path to write to
+    pub path: PathBuf,
+    /// Whether this is an overwrite that needs safe handling
+    pub needs_safe_overwrite: bool,
+}
+
+/// Looks up a directory's recursive size from the drive index. Returns `None`
+/// when the index doesn't cover the path (network mount, MTP, outside-scope
+/// path, indexer not yet initialised). The BE intentionally never *walks*
+/// the tree to compute this — `(unknown)` on the FE is the legitimate
+/// fallback when the cached value isn't available.
+fn lookup_indexed_size(host: &EngineHost, path: &Path) -> Option<KnownSize> {
+    host.index().recursive_size(path)
+}
 use cmdr_fs::log_private::LogPrivate;
 
 // ============================================================================

@@ -10,8 +10,11 @@
 //! volume-aware copy/move details.
 
 pub(super) mod checkpoint_stream;
+#[cfg(not(target_family = "wasm"))]
 pub(super) mod chunked_copy;
+#[cfg(not(target_family = "wasm"))]
 pub(super) mod copy;
+#[cfg(not(target_family = "wasm"))]
 pub(super) mod copy_strategy;
 pub(super) mod dest_name_index;
 mod interrupted_landing;
@@ -21,6 +24,7 @@ pub(super) mod leftover_cleanup;
 pub(super) mod linux_copy;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_copy;
+#[cfg(not(target_family = "wasm"))]
 pub(super) mod move_op;
 mod named_destination;
 pub(super) mod recovered_name;

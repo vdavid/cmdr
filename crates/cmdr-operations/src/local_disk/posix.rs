@@ -133,5 +133,12 @@ pub(crate) fn read_xattr(path: &Path, name: &str) -> std::io::Result<Option<Vec<
 
 /// The person's home folder (`None` in the browser build, which has none).
 pub(crate) fn home_dir() -> Option<PathBuf> {
-    dirs::home_dir()
+    #[cfg(not(target_family = "wasm"))]
+    {
+        dirs::home_dir()
+    }
+    #[cfg(target_family = "wasm")]
+    {
+        None
+    }
 }

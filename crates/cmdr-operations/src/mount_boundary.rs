@@ -62,7 +62,7 @@ pub(crate) fn mount_at_or_under<'a>(dirs: impl IntoIterator<Item = &'a Path>) ->
         .filter_map(|dir| dir.canonicalize().ok().map(|resolved| (dir, resolved)))
         .collect();
     let (first, _) = dirs.first()?;
-    let Some(mount_points) = mount_points() else {
+    let Some(mount_points) = crate::local_disk::mount_points() else {
         return Some(first.to_path_buf());
     };
     dirs.iter().find_map(|(dir, resolved)| {
@@ -70,24 +70,6 @@ pub(crate) fn mount_at_or_under<'a>(dirs: impl IntoIterator<Item = &'a Path>) ->
             .iter()
             .find_map(|mount| mount.strip_prefix(resolved).ok().map(|below| dir.join(below)))
     })
-}
-
-/// Every mount point in the OS mount table, or `None` when it can't be read.
-fn mount_points() -> Option<Vec<PathBuf>> {
-    #[cfg(target_os = "macos")]
-    {
-        cmdr_local::mount_table::enumerate_mounts()
-            .map(|mounts| mounts.into_iter().map(|m| PathBuf::from(m.mount_point)).collect())
-    }
-    #[cfg(target_os = "linux")]
-    {
-        cmdr_local::linux_mounts::parse_proc_mounts()
-            .map(|mounts| mounts.into_iter().map(|m| PathBuf::from(m.mountpoint)).collect())
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        None
-    }
 }
 
 /// Refuses an Overwrite that would remove the local folder `dest` while a drive

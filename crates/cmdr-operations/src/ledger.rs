@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 
 use cmdr_fs::volume::LandedModified;
 
-use super::overwrite::DisplacedEntry;
+use super::displaced_entry::DisplacedEntry;
 use super::types::RecoveredOriginal;
 
 /// One destination path this operation put on disk, with the identity a reversal

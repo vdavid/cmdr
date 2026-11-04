@@ -296,7 +296,7 @@ async fn rename_managed_inner(
                         let renamed = if force || from_syscall == to_syscall {
                             std::fs::rename(&from_syscall, &to_syscall)
                         } else {
-                            super::overwrite::rename_no_replace(&from_syscall, &to_syscall)
+                            super::displaced_entry::rename_no_replace(&from_syscall, &to_syscall)
                         };
                         // The two paths mean different things: `ENOENT` is the source
                         // that's gone, `EEXIST` the destination that isn't free. A

@@ -304,15 +304,6 @@ fn fsync_dir(dir: &Path) -> io::Result<()> {
     f.sync_all()
 }
 
-/// Looks up a directory's recursive size from the drive index. Returns `None`
-/// when the index doesn't cover the path (network mount, MTP, outside-scope
-/// path, indexer not yet initialised). The BE intentionally never *walks*
-/// the tree to compute this — `(unknown)` on the FE is the legitimate
-/// fallback when the cached value isn't available.
-pub(super) fn lookup_indexed_size(host: &super::host::EngineHost, path: &Path) -> Option<super::types::KnownSize> {
-    host.index().recursive_size(path)
-}
-
 /// Test seam: records every directory `fsync_dir` is asked to sync on this
 /// thread, and optionally answers for it, so a test can see which directories a
 /// flush reached and make one fail with a chosen errno. Production never installs

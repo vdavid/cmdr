@@ -13,6 +13,7 @@ use super::super::state::FileInfo;
 use super::*;
 use crate::host::testing::PANE_ORDER_LISTINGS;
 use crate::testing::TestOperations;
+use cmdr_fs::volume::CopyScanResult;
 use std::fs;
 use std::time::Instant;
 

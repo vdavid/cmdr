@@ -78,9 +78,8 @@ shuttle = { version = "0.9.9", optional = true }
 tokio-util = { version = "0.7.18", features = ["rt"] }
 # Operation and preview ids.
 uuid = { version = "1.29.0", features = ["v4", "v7"] }
-# The home directory a summary tildifies and a cloud trash lives under.
-dirs = "7"
-# Walking a local tree for the compress estimate.
+# Walking a local tree for the compress estimate and a copy into a zip (the archive
+# edits compile in the browser build too, where they refuse before any walk).
 walkdir = "2"
 # Fresh compression's writer. The features match the app's copy, so the graph
 # links one `zip`.
@@ -90,6 +89,9 @@ zip = { version = "9.2.0", default-features = false, features = ["deflate", "aes
 # `wasm32-unknown-unknown` engine) doesn't have. The local-engine modules that use
 # them are gated in `lib.rs`; `CLAUDE.md` § the local disk.
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
+# The home directory a summary tildifies and a cloud trash lives under
+# (`local_disk::home_dir`).
+dirs = "7"
 # The local disk backend the engine mints for local operations, its reader, and
 # `rename_local_exclusive`, the one no-replace rename.
 cmdr-local = { path = "../cmdr-local" }
