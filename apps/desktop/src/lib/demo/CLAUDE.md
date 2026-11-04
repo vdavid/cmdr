@@ -6,8 +6,9 @@ lands in a typed answer here; the listing commands go to the real listing engine
 
 - `boot.ts`: picks the frame's role. `backend.ts`: the page's one backend (answers, stores, engine, event fan-out).
   `webview.ts`: one frame's `__TAURI_INTERNALS__`, forwarding to the backend and holding its listeners.
-- `answers.ts` (app commands), `volumes.ts`, `plugins.ts` (in-memory `plugin:store`, path, app), `listing.ts` (loads and
-  routes to the WASM engine), `unanswered.ts` (`window.__cmdrDemo.unanswered`).
+- `answers.ts` (app commands), `writes.ts` (every write refused, typed), `volumes.ts`, `plugins.ts` (in-memory
+  `plugin:store`, path, app), `listing.ts` (loads and routes to the WASM engine), `unanswered.ts`
+  (`window.__cmdrDemo.unanswered`).
 - `demo-tree.ts` and `browser-shortcuts.ts`: PLACEHOLDER content David still decides.
 
 Run: `pnpm dev:demo` or `pnpm build:demo` (into `apps/desktop/build-demo/`, base `/demo`) in `apps/desktop`. Both build
@@ -29,6 +30,8 @@ the WASM engine first.
   An error branch is `refuse(command, typedError)`, never a thrown `Error`.
 - **No listing logic in TS.** The backend tries its TS tables first, then whatever `DemoListing.handles()` claims, so a
   TS answer for an engine command would silently shadow the real engine.
+- **The demo writes nothing, and says so.** The volume is `mountIsReadOnly`, so the app's own read-only alerts answer
+  F5–F8; a write that still arrives gets a typed refusal in `writes.ts`. ❌ Never a silent success (#929 tracks writes).
 - **No top-level `await`** in the boot path: WebKit can run an importer early, and Safari visitors run the demo.
 
 Adding an answer, the frame model, the seam, the placeholders, and decisions: `DETAILS.md`.

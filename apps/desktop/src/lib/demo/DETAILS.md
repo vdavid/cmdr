@@ -69,6 +69,8 @@ every window. The demo keeps that shape so secondary windows can come later with
   frame, styled as a window, and closing it removes the iframe (its `pagehide` detaches the webview). Verified by hand:
   an iframe of `/demo/settings` named `settings` renders Settings, and changing "Size colors" there recolors the main
   window's sizes through the fan-out (headless Chromium, 2026-11-04).
+- ❗ The production CSP (`apps/website/nginx-demo-security-headers.conf`) says `frame-src 'none'`, which blocks exactly
+  that iframe (seen under that CSP, 2026-11-04). Wiring windows means `frame-src 'self'` there.
 
 ## Framed by another page
 
@@ -80,10 +82,10 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
 
 ## Build and serve
 
-- `pnpm build:demo`: `pnpm -w build:listing-wasm` (the engine into `crates/cmdr-listing-wasm/pkg/`, gitignored), then
-  `CMDR_DEMO_BUILD=1 vite build` with SvelteKit `paths.base = '/demo'`, output in `apps/desktop/build-demo/`
-  (gitignored; eslint and oxfmt skip it). Never into `build/`: Tauri embeds that dir, and the adapter wipes its output
-  dir on every build.
+- `pnpm build:demo` (in `apps/desktop`, or at the repo root, which runs this one): `pnpm -w build:listing-wasm` (the
+  engine into `crates/cmdr-listing-wasm/pkg/`, gitignored), then `CMDR_DEMO_BUILD=1 vite build` with SvelteKit
+  `paths.base = '/demo'`, output in `apps/desktop/build-demo/` (gitignored; eslint and oxfmt skip it). Never into
+  `build/`: Tauri embeds that dir, and the adapter wipes its output dir on every build.
 - `pnpm dev:demo`: the same engine build, then the dev server under `/demo/`. Pass `CMDR_VITE_PORT` for a port other
   than 1420. The first load after a config change can sit on the spinner while Vite re-optimizes dependencies; reload.
 - `virtual:cmdr-listing-wasm` is an alias (demo builds only) to the engine's JS glue; `listing-wasm.d.ts` types the
@@ -91,8 +93,9 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
   dir, since SvelteKit's allow list doesn't reach `crates/` and the glue fetches its `.wasm` from there.
 - The static host needs an SPA fallback to `index.html` for paths under `/demo/`, as adapter-static's `fallback`
   assumes.
-- What's open: hosting it on the website (copying `build-demo/` into the website's deploy) and a Playwright smoke test
-  that boots the demo build in CI, so an IPC change can't silently break it.
+- Hosting on getcmdr.com, the demo's CSP, and the Playwright smoke (`apps/website/e2e/demo.spec.ts`: boots without a
+  page error, lists the home folder): `apps/website/DETAILS.md` § Browser demo. The CSP blocks off-origin fetches,
+  `eval` / `new Function`, and inline scripts added after the build, though the smoke's server sends no CSP.
 
 ## Answering a command
 
@@ -117,6 +120,18 @@ Answer as a fresh, personal-use Cmdr on a Mac with nothing extra would: no index
 demo can't ask it, so `getIcons` answers every id with the app's bundled generic folder or document
 (`static/icons/default-*.png`), through `$app/paths`' `asset()` so they resolve under `/demo`.
 
+## Writes
+
+- Decision: the demo volume is `mountIsReadOnly: true` (`volumes.ts`), so the app's own read-only handling answers every
+  write a visitor tries: F7 and F8 get "This is a read-only volume", F5 "… is read-only. You can copy files from it, but
+  not to it", and the volume chooser shows the lock (headless Chromium, 2026-11-04). Why: it's a seam the app already
+  has and words well, so the demo needs no copy of its own and no app change.
+- `writes.ts` is the backstop for a write that skips those gates (a drop, a clipboard paste, an agent): the typed
+  refusal a read-only disk gives (`parentNotWritable` for single-item mutations, `read_only_device` for transfers).
+  Never a pretend success, which would leave the pane showing a file that isn't there.
+- Not refused yet: multi-rename (`open_multi_rename` is unanswered, so its dialog fails to open) and tags (`toggle_tags`
+  has no error arm). Real file operations in the demo are #929.
+
 ## The listing seam
 
 - `listing.ts` (`startListingEngine`) imports the engine module, `await`s its `init()`, and builds one `DemoListing`
@@ -134,7 +149,9 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
 - `volumes.ts` answers `pathExists` and `statPathsKinds` from the same tree; `getSyncStatus` (nothing syncs) and
   `storedSpellings` (the demo volume stores every path as given) live there too.
 - Known gap: Brief mode's `get_brief_column_text_widths` isn't in the engine yet, so Brief columns stay at their
-  provisional width (the pane logs a warning and carries on).
+  provisional width (the pane logs a warning and carries on). It lives in the app crate today
+  (`src-tauri/src/font_metrics/`); once it moves into a Tauri-free crate the engine answers it, `has_font_metrics` flips
+  to `false` so the frontend sends `store_font_metrics` / `extend_font_metrics`, and no other TS changes.
 
 ## Placeholders David decides
 

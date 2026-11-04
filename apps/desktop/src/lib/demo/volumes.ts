@@ -21,7 +21,9 @@ function location(
     isEjectable: false,
     fsType: 'apfs',
     supportsTrash: false,
-    mountIsReadOnly: false,
+    // The demo writes nothing (file operations are #929): a read-only mount gets the app's own
+    // read-only handling for every write, the way a locked `.dmg` would.
+    mountIsReadOnly: true,
     isDiskImage: false,
     sharesDiskWithOthers: false,
     isCloudMount: false,
