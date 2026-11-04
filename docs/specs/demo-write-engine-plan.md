@@ -1,0 +1,438 @@
+# Demo write engine plan
+
+Issues: [#929](https://github.com/vdavid/cmdr/issues/929) (file operations in the browser demo through the real write
+engine), part of [#302](https://github.com/vdavid/cmdr/issues/302) round two, steps 3 and 4 (file operations, then the
+transfer queue window). Plan written 2026-11-04 against `49aad7f793`.
+
+**Goal.** In getcmdr.com/demo, F5 copy, F6 move, Shift+F6 rename, F7 new folder, F8 delete, and Cmd+Z undo run through
+`crates/cmdr-operations` and `crates/cmdr-operation-log` compiled into the demo's WASM engine, on the same
+`InMemoryVolume` the listing engine reads, and the transfer queue window opens on the same backend. The desktop build
+behaves byte-identically throughout.
+
+## Status and decisions for David
+
+David's calls (2026-11-04): yes to the local-disk facade in `cmdr-operations`; undo keeps the real `cmdr-operation-log`,
+with an LLVM clang in the toolchain (mise-managed, never brew, working locally, in CI, and in the website-demo image
+build) so SQLite compiles for `wasm32-unknown-unknown`.
+
+Open, with the plan's default in bold (each is cheap to flip before its milestone starts):
+
+1. **Toolchain pin location.** (a) **The Go build script pins `conda:clang@23.1.4` and `conda:llvm-tools@23.1.4`, runs
+   `mise install` for exactly those, and hands cargo their absolute paths** (`CC_wasm32_unknown_unknown`,
+   `AR_wasm32_unknown_unknown`), with a Renovate regex comment so updates still arrive. (b) A `MISE_ENV=wasm` config
+   file. ❌ Never `.mise.toml` `[tools]`: the conda env ships its own `cc`, `cpp`, `ar`, and `ld`, and on PATH it would
+   replace Apple's compiler for every native C build (bundled SQLite, `ring`, objc shims), which breaks
+   "byte-identical".
+2. **Crate name.** The WASM crate grows from listing to listing + writes + undo. (a) **Rename `cmdr-listing-wasm` to
+   `cmdr-demo-wasm` in the host milestone** (touches the build script, the check, CI filters, `website-demo-key.sh`,
+   docs). (b) Keep the name.
+3. **Trash in the demo.** `trash_files` is the desktop's OS trash (NSFileManager / freedesktop), which a browser has
+   none of. (a) **The demo volume reports no trash, so F8 takes the app's own permanent-delete path and confirm.** (b)
+   An in-memory Trash folder (a new `Volume` capability on `InMemoryVolume`; more work, more to keep honest).
+4. **Pacing.** An in-memory copy finishes in microseconds, so the progress dialog flashes and the queue window is always
+   empty. (a) **Answer the engine's existing `Pacing` seam with a modest per-file pace in the demo host only**, so
+   progress, pause, and the queue are visible. (b) Real speed. Every desktop build still answers `None`.
+5. **Archive edits** (copy into a zip, compress, move out of one) need a local working copy and a writer thread. **Out
+   of scope for the demo: they refuse with the typed answer a read-only route gives**, never a trap.
+
+## Spike result (the evidence the toolchain decision rests on)
+
+Verified 2026-11-04 on macOS 27 arm64 (and Linux aarch64 in `ubuntu:24.04` Docker), rustc from `rust-toolchain.toml`,
+`rusqlite` 0.41.1, `libsqlite3-sys` 0.39.0, `sqlite-wasm-rs` 0.5.5 (already in `Cargo.lock`):
+
+- **No precompiled option exists**: `sqlite-wasm-rs` 0.5.5 has one feature (`sqlite3mc`) and always compiles `sqlite3.c`
+  plus a small musl-derived libc shim with `cc`. Apple clang can't target wasm32.
+- **`mise exec conda:clang@23.1.4 conda:llvm-tools@23.1.4`** installs in about 7 s (macOS), lists `wasm32` in
+  `-print-targets`, compiles and archives a wasm object. Same on Linux (aarch64; conda-forge builds the same recipe for
+  x86_64). Sizes: macOS 479 MB + 292 MB, Linux 1.2 GB + 332 MB. No clang config file applies to the wasm target (`-v`
+  shows only the resource-dir include).
+- **The real `cmdr-operation-log` builds for wasm32** once `cmdr_fs::sqlite_util` is ungated for wasm (and `rusqlite`
+  added to `cmdr-fs`'s wasm deps): zero errors, `sqlite3_config` included.
+- **It runs in Node** (a throwaway `wasm-bindgen --target web` crate, removed after): rusqlite in-memory with a custom
+  collation (SQLite 3.53.0); `ensure_shared_page_cache` answers `TooLate` when a connection opened first (so it must
+  stay first on wasm too); `OperationLogStore::open` runs the whole migration ladder on a PATH
+  (`/demo/operation-log.db`, `sqlite-wasm-rs`'s default memory VFS); a second connection to the same path sees the
+  tables and rows; `PRAGMA journal_mode=WAL` quietly stays `delete` (no shm in memvfs); `new_operation_id()` (UUIDv7
+  through `uuid`'s `js` feature) returns a correct current-time id.
+- **What traps**: `OperationLogWriter::spawn` returns `Err(Io: operation not supported on this platform)` (no threads),
+  and `SystemTime::now()` (what `now_secs` reads) aborts with `RuntimeError: unreachable`.
+- **Size**: the spike module (SQLite + op log + `cmdr-fs`) was 1.2 MB after `wasm-bindgen`; today's listing module is
+  2.5 MB raw. Expect the combined engine around 5–6 MB raw; the host milestone measures it.
+- ❗ **Side effect to know**: installing the conda clang creates mise shims named `cc`, `cpp`, `clang`, `clang-cpp`, and
+  `llvm-ar` in `~/.local/share/mise/shims`, which sits ahead of `/usr/bin` on David's PATH. With no config naming the
+  tool they fall through to Apple's (`cc --version` in the repo still says Apple clang 21, verified). That's why option
+  1(b)/`.mise.toml` is dangerous: the moment any active config names `conda:clang`, every native build switches
+  compiler.
+
+## Loud rules (every milestone)
+
+- ❗ **Read first**: `crates/cmdr-operations/CLAUDE.md`, `src/host/CLAUDE.md` + `DETAILS.md`, `src/transfer/CLAUDE.md`,
+  `src/transfer/volume/CLAUDE.md`, `crates/cmdr-operation-log/CLAUDE.md`, `crates/cmdr-fs/CLAUDE.md` (and its DETAILS §
+  "The browser build"), `crates/cmdr-listing-wasm/CLAUDE.md` + `DETAILS.md`, `apps/desktop/src/lib/demo/CLAUDE.md`. Line
+  refs drift: trust the code, keep the intent.
+- ❗ **The desktop build is byte-identical in behavior.** Every wasm difference lives behind
+  `cfg(target_family = "wasm")` or a seam the desktop answers exactly as today. Natively, a seam is a re-export or a
+  one-line forward. ❌ No `cfg(test)`-only behavior; `any(test, feature = "testing")` as the crates already require.
+- ❗ **Data safety outranks the demo.** No conversion may weaken a stage-and-land, a rollback recheck, a ledger record,
+  or a conflict prompt on ANY target. A browser path that can't honor a guarantee refuses with a typed error.
+- ❗ **Characterize, then convert.** Pins of CURRENT behavior land as their own commit before the rewrite they guard,
+  and each timing-sensitive pin is seen RED once (break the code, watch it fail) before it counts.
+- ❌ **Two clocks, never conflated.** `std::time::Instant::now` → `rt::now()`; `tokio::time::Instant::now` →
+  `rt::time::now()`. Swapping them silently moves a site off (or onto) tokio's paused test clock: a `start_paused` cell
+  then passes vacuously or hangs.
+- ❌ **No ambient runtime on any target.** Spawns go through `host.runtime()` (already enforced); clocks and timers
+  through `cmdr_fs::rt` (enforced by the clippy bans this plan adds, the same list `crates/cmdr-listing/clippy.toml`
+  carries).
+- ❌ **No string matching** on errors (`error-string-match`, `cmdr/no-error-string-match`); a "no local disk here"
+  answer is a typed variant.
+- ❌ **No logic in TS for the demo** (`apps/desktop/src/lib/demo/CLAUDE.md`): every write answer comes from the engine;
+  no `if (demo)` in app code (`cmdr/demo-isolation`).
+- ❌ **No conda clang on PATH**, anywhere (rule 1 above): only absolute paths into `CC_wasm32_unknown_unknown` /
+  `AR_wasm32_unknown_unknown`.
+- ❌ **No milestone tags** in code, comments, test names, `reason` strings, or docs: run
+  `rg -n '\b(M[0-9]+[a-z]?|Milestone\s*[0-9]|Phase\s*[0-9])\b' <touched paths>` before reporting.
+- ❌ **Never translate** new strings; English plus an `@key` description. Any new UI copy is a draft for David.
+- **Gates per milestone**: `pnpm check --fast && pnpm check svelte-tests-related`, `pnpm check clippy`, the touched Rust
+  tests via `cargo nextest run`, the wasm lane (`pnpm check desktop-rust-listing-wasm`, renamed if decision 2 lands),
+  and from the host milestone on the website's demo Playwright smoke. Foreground commands only.
+
+## Survey of the current code (2026-11-04, `49aad7f793`)
+
+Method: `rg` over `crates/cmdr-operations/src` excluding `*_test.rs`, `*_tests.rs`, `tests/`, `testing/`; a few inline
+test modules still count (lower-bound noise of a few percent). Production: 250 files, about 89,800 lines (524 `.rs`
+files with tests). `cmdr-operation-log`: 27 files, about 7,900 lines.
+
+### What fails to COMPILE for wasm32 today
+
+- **First wall**: `tokio`'s `fs` feature (only `archive_edit/remote.rs` uses `tokio::fs`): "Only features
+  sync,macros,io-util,rt,time are supported on wasm".
+- **With host deps target-gated** (a throwaway edit: `cmdr-local` and tokio `fs` moved under
+  `cfg(not(target_family = "wasm"))`): 43 errors in 25 files. A floor: rustc stops at name resolution before type
+  checking, so type errors (a tokio `JoinSet::spawn_on` handed an `rt::Runtime`, `VolumeHost::runtime()` already
+  "expected `Handle`, found `Runtime`" in `host/mod.rs`) follow once those clear. Kinds: `std::os::unix` extensions
+  (`MetadataExt::dev`/`ino`, `PermissionsExt::mode`, `DirBuilderExt`, `OpenOptionsExt`, `symlink`), `libc` (errnos,
+  `statvfs`, `access`, `lstat`), and `cmdr_local` items. Heaviest: `durability.rs` (7),
+  `transfer/copy/folder_metadata.rs` (6), then `mount_boundary.rs`, `scan_walker.rs`, `scan_dry_run.rs`,
+  `move_op/source_sweep.rs`, `types/errors.rs`, `chunked_copy.rs` (2 each).
+- `cmdr-operation-log`: compiles once `cmdr_fs::sqlite_util` is ungated (spike).
+
+### Local-disk call sites (the facade's scope)
+
+- `cmdr_local::`: 24 hits in 20 files (about 15 production sites: `rename_local_exclusive` ×3, `LocalPosixVolume` ×5,
+  mount tables ×3, `filesystem_kind` ×2, `space`, `mutation::patch_listing_after_local_mutation`, `rename_volume_error`,
+  `linux_mounts` ×2).
+- `libc::`: 45 hits in 11 files: errno classification (`error_classification.rs`, `types/errors.rs`, `durability.rs`,
+  `validation.rs`), syscalls (`statvfs`, `statfs`, `access`, `lstat`, `geteuid`, `copy_file_range`, `posix_fallocate`).
+- `std::os::unix`: 34 hits in 19 files. `std::fs` on local paths: 410 hits in 68 files (most in the local engine:
+  `macos_copy.rs`, `chunked_copy.rs`, `linux_copy.rs`, `copy_strategy.rs`, `overwrite.rs`, `validation.rs`, `move_op/`,
+  `delete/walker.rs`, `cloud_trash.rs`).
+- OS integrations: `objc2` (`delete/trash.rs`), `trash` crate (Linux), `xattr` (2 files), `dirs::home_dir` (2 files),
+  `walkdir` (2 files), `tokio::fs` (1).
+- **The `"root"` literal**: 54 production hits. Most fill a default id (`unwrap_or("root")`), which is harmless. About
+  12 DECIDE "this is the local disk, take the `std::fs` engine": `rename.rs` (3), `rename/validity.rs`,
+  `rename/bulk.rs`, `rename/bulk/by_move.rs`, `local_start.rs` (`delete_files_start`), `create.rs:355`, and the four
+  archive-edit `settle_volume` sites. ❗ **The demo's volume id IS `"root"`** (`apps/desktop/src/lib/demo/demo-tree.ts`
+  `DEMO_VOLUME_ID`), so on wasm every one of those must answer "not the local disk", or a demo delete walks `std::fs`.
+  The desktop command layer decides the same thing (`write_ops.rs` `is_local`), but the demo host doesn't run it.
+- What routes the demo onto the volume engine already: `copy_between_volumes` takes the volume path unless both volumes
+  report `supports_local_fs_access()` (`InMemoryVolume` says no unless built `with_local_fs_access()`); rename and the
+  rename pre-flight check the same predicate beside their `"root"` test.
+
+### Clock and timer reads (what traps at RUNTIME in a browser)
+
+- `Instant::now`: 107 hits in 42 files; `.elapsed()`: 46 in 25 files (`volume_outage.rs` 13, `transfer_probe.rs` 7,
+  `progress.rs`, `retry.rs`, `scan_watchdog.rs`, `operation_intent.rs`, `human_wait.rs`, `volume_walker.rs`,
+  `conflict_slot.rs` 6 each, …). Both clocks occur; see the loud rule.
+- `tokio::time::`: 43 hits in 14 files (`copy_concurrent.rs` 6, `leftover_cleanup.rs` 6, `retry.rs` 5,
+  `operation_intent.rs` 5, `volume_outage.rs` 4, …). With no tokio runtime in the browser these panic ("no reactor").
+- `SystemTime::now`: `journal.rs`, `status_cache.rs`, `archive_edit/remote.rs`, `transfer/volume/cleanup.rs`,
+  `archive_edit/fresh_zip.rs`, and the log's `now_secs` (`cmdr-operation-log/src/lib.rs`). Plus `SystemTime` as a value
+  type in 13 files (fine).
+- `cmdr_fs::deadline`: 15 tokio spawn/time sites; the engine reaches it from `conflict_preflight.rs`
+  (`timeout_detached_within`, on the volume path) and `mutation_reply.rs` (app IPC helper; the demo host won't call it).
+- `cmdr-operation-log`: 2 `tokio::time` (retention tick, rollback pacing), 1 `SystemTime::now`.
+- `rt::` seam: 0 uses in either crate today.
+
+### Executors, threads, and blocking
+
+- `spawn_blocking`: 16 code sites in 15 files, all on `host.runtime()` except `delete/real_image.rs` (test-image
+  helper). In the browser `rt::Runtime::spawn_blocking` runs the closure INLINE. On the volume path only
+  `locked_sources.rs:367` (a local `LockedScan`) and the archive ones appear; the rest are local-engine bodies
+  (`local_start.rs`, `rename.rs` ×2, `bulk.rs`, `mount_boundary.rs`, `unblocked_removal.rs`) or the leftover sweep.
+- `block_on`: 3 code sites, all `in_flight_sweep.rs` (the leftover sweep, local ledger records). No `block_on` exists in
+  the browser runtime.
+- Named `std::thread::Builder` threads: 7 in the engine (`cancellable.rs` ×2, `in_flight_claim.rs` sweep,
+  `in_flight_log_writer.rs` ledger writer, `scan_preview.rs` local preview, `scan_preview/local.rs`, `fresh_zip.rs`)
+  plus the op log's writer (`writer.rs`). `cancellable::spawn_named` and the local scan preview `.expect` a thread (a
+  panic in the browser). `thread::sleep`: 9 in 7 files (local engine and archive pacing).
+- Blocking waits: `blocking_recv` ×6 (`conflict.rs`, `refused_name::ask_blocking`, `locked_sources::plan_locked_local`,
+  `queued_sources::kept_after_queue_local`, `archive_edit/conflicts.rs`, `fresh_zip.rs`), std `mpsc` (6 files),
+  `Condvar` (the pause gate in `operation_intent.rs` + `sync_primitives`). Every one sits on a LOCAL or ARCHIVE path:
+  the engine already keeps an `async` twin for the volume path (`ask_async`, `plan_locked` async, …).
+- The op log: one writer thread on a bounded `sync_channel`; `record_items` BLOCKS under backpressure;
+  `finalize_operation` and `flush_blocking` wait on a reply.
+- tokio task types: `JoinSet` in `transfer/volume/copy_concurrent.rs` (`spawn_on(&runtime)`), taken for 3+ sources when
+  `transfer_concurrency > 1`. `InMemoryVolume::max_concurrent_ops()` is 32, so a demo copy of three files takes it.
+  `tokio::task::yield_now` in `checkpoint_stream.rs` (with no runtime it wakes at once, so a long in-memory copy would
+  never yield to the page's event loop: no paint, no input until it ends).
+- The scan preview: `start_scan_preview` spawns on the runtime for `Some(volume)` and on a named thread for `None`
+  (local). The desktop's `scan_preview_source_volume` passes `None` for `"root"`; the demo host must pass the volume.
+
+### The listing side
+
+- `InMemoryVolume` keeps the trait's default no-op `notify_mutation`, so a write on it today patches no pane. Every
+  mutable backend patches through `cmdr_fs::volume::patch_mutation` (a `PatchSource`) into `VolumeHost::listings()`; the
+  demo needs the same, plus a `ListingHost` answered by the demo's `cmdr_listing::Listings` (the desktop's is
+  `listing_host/backends.rs::AppListings`; the engine's test one is `host::testing::PaneListings`).
+
+### The demo frontend
+
+- `lib/demo/writes.ts` refuses 11 write commands; `volumes.ts` reports `mountIsReadOnly: true`; `windows.ts`
+  `OPENABLE = {settings, shortcuts}`.
+- The desktop's write-facing commands the frontend calls (camelCase on the wire): `copyBetweenVolumes`,
+  `moveBetweenVolumes`, `moveFiles`, `deleteFiles`, `trashFiles`, `renameFile`, `checkRenamePermission`,
+  `checkRenameValidity`, `createDirectory`, `createFile`, `moveToTrash`, `startScanPreview`, `cancelScanPreview`,
+  `checkScanPreviewStatus`, `scanVolumeForConflicts`, `destinationWriteAccess`, `resolveWriteConflict`,
+  `continueWithoutGoneSources`, `answerLockedSources`, `cancelWriteOperation`; queue: `listOperations`,
+  `latestOperationProgress`, `getTransferTreeView`, `releaseTransferTree`, `cancelOperation(s)`,
+  `pause/resumeOperation`, `pause/resumeAll`, `moveQueuedOperation`, `placeQueuedOperation`, `dismissFailedOperation`,
+  `retryFailedOperation`, `dismissAllFailedOperations`; undo: `undoOperations`, `rollbackOperation`,
+  `getRecentOperationLogEntries`, `getOperationLogDetail`. The host milestone re-derives the exact set by driving the
+  demo and reading `window.__cmdrDemo.unanswered`, ❌ not from this list.
+
+## Milestones
+
+Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a day, L more.
+
+### 1. SQLite builds for the browser (S)
+
+- **Scope**: the toolchain (decision 1), `cmdr_fs::sqlite_util` for wasm, and a wasm compile of `cmdr-operation-log` in
+  the check lane.
+- **Intentions**:
+  - The Go build script (`scripts/build-listing-wasm/main.go`) installs and resolves the pinned conda clang and llvm-ar
+    through mise and passes ONLY `CC_wasm32_unknown_unknown` / `AR_wasm32_unknown_unknown` to cargo. Its tests pin that
+    it never touches PATH. Renovate tracks the pin (`docs/tooling/` has the Renovate notes).
+  - `cmdr-fs`: `rusqlite` joins the wasm deps with the same features; `sqlite_util` is ungated; its doc says the slab
+    must still be installed before the first open (the spike's `TooLate`).
+  - The check (`desktop-rust-listing-wasm`) also builds `cmdr-operation-log` for wasm32 (compile only for now).
+  - CI: every job that runs the wasm build (Desktop Rust's wasm step, `.github/actions/build-website-demo`,
+    `publish-website-demo`) gets the toolchain through the script itself; nothing adds it to `mise install`'s config.
+    Cache the conda installs (`~/.local/share/mise/installs/conda-*`) keyed on the pin: 1.5 GB on Linux.
+  - Docs: `crates/cmdr-listing-wasm/DETAILS.md` § The build, `crates/cmdr-fs/DETAILS.md` § The browser build, and a
+    one-line `AGENTS.md`-level pointer only if the toolchain needs one (prefer `scripts/` docs).
+- **Landmines**: conda's `cc`/`ar`/`ld` on PATH (rule above). `website-demo-key.sh` hashes `scripts/build-listing-wasm`,
+  so the image key changes (expected). The listing module now links SQLite (+ about 1 MB) once the engines merge; this
+  milestone doesn't link it yet.
+- **Test plan**: the Go script's unit tests (env built, PATH untouched); the wasm lane green; a native
+  `pnpm check clippy` and `cargo nextest run -p cmdr-fs -p cmdr-operation-log` unchanged; `cc --version` in the repo
+  still Apple's.
+- **DONE**: `cmdr-operation-log` compiles for wasm32 in CI on macOS and Linux runners; the desktop build is untouched.
+
+### 2. The runtime seam covers the write engine's needs (S–M)
+
+- **Scope**: `crates/cmdr-fs/src/rt/` and `crates/cmdr-fs/src/deadline/`.
+- **Intentions**: add what the survey found the write engine uses beyond the listing engine's ten sites:
+  - `rt::wall_now()` (natively `SystemTime::now()`, in the browser `web_time::SystemTime::now()`).
+  - `rt::JoinSet` (natively tokio's `JoinSet` re-exported with a `spawn_on(&Runtime)`; in the browser a small set over
+    `spawn_local` with the same `join_next`/`len`/`is_empty`/task-id surface `copy_concurrent.rs` reads). Read that
+    driver first: it relies on draining semantics (`transfer/volume/CLAUDE.md` "DRAINS, never aborts first").
+  - `rt::yield_now()` (natively `tokio::task::yield_now`; in the browser a `setTimeout(0)` macrotask yield, so the page
+    paints and takes input between chunks).
+  - `deadline`: route its spawns and timers through `rt` (natively identical).
+- **Landmines**: dropping tokio's `JoinSet` ABORTS its tasks, while a dropped `spawn_local` task runs on. The browser
+  set must abort on drop too (an abort flag each task checks at its next poll), or the plan must prove the driver never
+  drops a non-empty set. `yield_now` natively must stay exactly tokio's (a `setTimeout`-shaped yield natively would slow
+  every copy). `spawn_local` futures aren't `Send`-checked: keep the native signature's `Send` bounds so desktop code
+  can't regress.
+- **Test plan**: native unit tests for each wrapper (pure forwards); browser behavior through the Node smoke
+  (`smoke.mjs` gains a `rt` self-test export: a three-task `JoinSet` drain, a `yield_now` that lets a `setTimeout` fire,
+  `wall_now` within a second of `Date.now()`).
+- **DONE**: the seam has every primitive the write engine needs, each natively a re-export or one-line forward.
+
+### 3. Characterize what the conversions touch (M)
+
+- **Scope**: tests only, in `cmdr-operations` and `cmdr-operation-log`. No production change.
+- **Intentions**: pin CURRENT behavior so milestones 4–6 are provably byte-identical:
+  - **Routing table**: for each entry point (copy, move, delete, trash, rename, rename pre-flight, mkdir, mkfile, bulk
+    rename, scan preview), which engine runs (local `std::fs` vs volume) for volume id `"root"` with a local root,
+    `"root"` absent, and a non-local id. One table-driven cell file; it's what the facade must preserve natively and
+    flip only in the browser.
+  - **Clock-sensitive cells**: list the existing `start_paused` and timing cells over the sites milestone 4 converts
+    (outage waits, retry backoff, stall watchdog, scan watchdog, human-wait clock, leftover-cleanup dial, progress
+    cadence). Add a pin where a converted site has none, and see each RED once.
+  - **Op-log writer**: backpressure (`record_items` blocks at `CHANNEL_CAPACITY`), finalize outcome, a DB error dropping
+    exactly one row, ordering across `open`/`record`/`finalize`. These pin what an inline browser writer must match.
+  - **Concurrent copy drain**: the first-failure drain and the stop-work drain on `copy_concurrent.rs` (likely already
+    covered by `copy_concurrent_driver_tests.rs`; confirm and name them in the commit body).
+- **Landmines**: pin reality, not this plan. A pin that passes before and after a deliberate break isn't a pin.
+- **Test plan**: the new cells green natively; each timing pin shown red once (say how in the commit body).
+- **DONE**: one commit of pins; the commit body lists which existing cells cover which converted site.
+
+### 4. Every clock and timer goes through `cmdr_fs::rt` (M)
+
+- **Scope**: `cmdr-operations` and `cmdr-operation-log` (production and the test helpers they share).
+- **Intentions**: mechanical: `std` clock → `rt::now`/`rt::since`, tokio clock and timers → `rt::time::*`,
+  `SystemTime::now` → `rt::wall_now`, `JoinSet` → `rt::JoinSet`, `yield_now` → `rt::yield_now`. Add the clock bans from
+  `crates/cmdr-listing/clippy.toml` to both crates' `clippy.toml` (cmdr-operation-log has none today; it then needs the
+  root's general settings copied in, since clippy reads only the first file it finds). `lib.rs`'s `cfg(test)` lift stays
+  for spawns only; tests read clocks through `rt` too, or carry a reasoned allow.
+- **Landmines**: the two-clocks rule. `Instant` as a STORED type (`state.rs` `born`, outage records) changes nothing
+  natively (re-export), but a field typed `tokio::time::Instant` must stay on tokio's clock. Shuttle's
+  `sync_primitives.rs` swap is unaffected; don't touch it.
+- **Test plan**: the full `cargo nextest run -p cmdr-operations -p cmdr-operation-log`, the Shuttle lane
+  (`desktop-rust-shuttle`), clippy, and the Criterion bench's copy cases against the baseline
+  (`docs/notes/transfer-extraction-baseline.md`'s method): no change beyond noise.
+- **DONE**: zero direct clock or timer reads in either crate, enforced by clippy; natively identical.
+
+### 5. The local-disk facade (L, possibly two commits: the seam, then the gating)
+
+- **Scope**: `cmdr-operations` (a new `local_disk` module; name it after what it is) and the `"root"` decisions.
+- **Intentions**:
+  - One module owns "the local disk": the `cmdr-local` calls, the `libc` syscalls and errnos, the `std::os::unix`
+    metadata, the OS trash (`objc2` / `trash`), `xattr`, `dirs`, mount tables, `statvfs`. The rest of the engine asks it
+    and never reaches those crates itself. Natively it is today's code moved, not rewritten.
+  - **It answers "which volume ids are the local disk"** (`LocalDisk::serves(volume_id, host)` or similar): natively
+    exactly today's `volume_id == "root"` (plus the existing `supports_local_fs_access` checks where they stand); in the
+    browser, nothing is. The ~12 deciding `"root"` sites ask it; the default-id fills stay literal.
+  - In the browser it answers every local question with a typed "no local disk here" (pick or add ONE variant per error
+    family: `MutationError`, `WriteOperationError`; no prose), and the local engine bodies (`copy/`, `move_op/`,
+    `delete/walker.rs`, `chunked_copy.rs`, `macos_copy.rs`, `linux_copy.rs`, `copy_strategy.rs`, `scan.rs`,
+    `scan_dry_run.rs`, `cancellable.rs`, local scan preview, leftover sweep's local half) are `cfg`-gated out, so the
+    browser can't reach a thread or a `blocking_recv` even by mistake.
+  - `Cargo.toml`: `cmdr-local`, `libc`, `dirs`, `walkdir`, `xattr`, and tokio's `fs` move under
+    `cfg(not(target_family = "wasm"))` (the `testing` feature's `cmdr-local/testing` with them).
+  - Archive edits (decision 5): their entry points refuse in the browser with the routed-read-only answer.
+- **Landmines**:
+  - ❗ The facade's value is that the boundary is REAL: an `#[allow]`-sprinkled half-gate (some `libc` still in
+    `error_classification.rs`, say) defeats it. Errno classification can stay where it is if it reads
+    `io::Error::raw_os_error()` against constants the facade exports.
+  - Don't change WHICH engine a native call takes: milestone 3's routing table is the referee.
+  - `EVERY local write lands via overwrite::stage_and_land_file`: moving `overwrite.rs` behind the facade must keep that
+    the only door. `ledger.rs`'s local identity (`dev`, `ino`) moves with it; the volume identity (size) stays.
+  - `module-cycles` and `file-length` will notice; split by responsibility, not to satisfy the check.
+  - The public surface is capped (`DETAILS.md` § "The public surface is capped"); the facade is crate-private.
+- **Test plan**: milestone 3's routing table and the full native suite unchanged;
+  `cargo build -p cmdr-operations --target wasm32-unknown-unknown` green (added to the wasm lane); clippy for both
+  targets (`--target wasm32` lane: `cargo clippy -p cmdr-operations --target wasm32-unknown-unknown`).
+- **DONE**: `cmdr-operations` compiles for wasm32; natively identical; a grep finds `cmdr_local`, `libc`,
+  `std::os::unix`, `objc2`, `xattr`, `dirs` only inside the facade (and tests).
+
+### 6. Nothing on the browser's volume path needs a thread (M)
+
+- **Scope**: the remaining executor sites the browser can reach: the op log's writer and retention, the scan preview,
+  the in-flight ledger, the conflict pre-flight's deadline, `spawn_blocking` on the volume path.
+- **Intentions**:
+  - **The op log's writer gets an inline mode in the browser**: the message handling the thread loop runs becomes one
+    function both call; natively the thread and channel are untouched, in the browser each call runs it at once on the
+    caller (no channel, no backpressure to block on; finalize answers directly). Milestone 3's writer pins hold for
+    both.
+  - Retention (`spawn_retention`) takes `rt::Runtime`; its tick through `rt::time`.
+  - The ledger: the demo claims `claim_ledger(None)` (unpersisted). Confirm nothing in that path starts the ledger
+    writer or sweep threads; the `LedgerUnpersisted` report is expected and the demo host answers it quietly.
+  - Audit each remaining `spawn_blocking` the volume path reaches and document in `src/host/DETAILS.md` why running it
+    inline in the browser is sound (in-memory, instant, takes no lock an awaiting task holds). Expect only
+    `locked_sources.rs`'s scan; if it touches the local disk, it belongs behind the facade instead.
+  - `conflict_preflight.rs`'s deadline runs on `rt` (milestone 2).
+- **Landmines**: inline `spawn_blocking` plus a `std::sync::Mutex` held across the call site is a self-deadlock on one
+  thread; check every inline closure for locks the caller holds. `record_items` callers natively RELY on the block for
+  backpressure; inline in the browser there's no queue to bound, which is fine only because the writer is synchronous.
+- **Test plan**: native suites unchanged; a wasm-target integration export in the WASM crate that drives a real
+  `Operations` engine over an `InMemoryVolume` (copy 3 files, move, delete, rename, mkdir, a conflict answered Skip, a
+  cancel, journal rows read back) through the Node smoke. This is the first time the browser runs the engine.
+- **DONE**: the Node smoke drives every op kind through the real engine with zero traps.
+
+### 7. The demo host: writes in the WASM engine (L)
+
+- **Scope**: the WASM crate (renamed per decision 2), `cmdr-fs`'s `InMemoryVolume`, the build, the checks.
+- **Intentions**:
+  - `InMemoryVolume` patches listings: a builder option hands it a `VolumeHost` (or `ListingHost`), and its
+    `notify_mutation` then runs `patch_mutation` through a `PatchSource`, as every mutable backend does. Without the
+    option it stays a no-op, so every existing test is unchanged.
+  - One `ListingHost` over `cmdr_listing::Listings` for the demo. If the engine's `host::testing::PaneListings` and the
+    demo's would be the same code, put it once in `cmdr-listing` (a genuine boundary win); the desktop keeps
+    `AppListings` (it composes the index and badges).
+  - The host mirrors `apps/desktop/src-tauri/src/operations_host/`: `OperationVolumes` over the one volume (id `"root"`,
+    decision-free because the facade says it isn't local in the browser), `EngineEvents` and the per-op sinks emitting
+    the desktop's event names and payloads (`operations_host/wire.rs`, `sinks.rs`), the op log opened on
+    `/demo/operation-log.db` (memvfs; gone on reload, as the demo's state is), `Pacing` per decision 4, `NameOrder` from
+    the listing engine's collator.
+  - Commands by their Tauri names with camelCase args, answers and typed rejections exactly as the desktop's
+    (`commands/file_system/write_ops.rs`, `volume_copy.rs`, `operations.rs`, `commands/rename.rs`,
+    `commands/operation_log.rs`). Where a desktop command is local-only (`moveFiles`, `trashFiles`, `moveToTrash`), the
+    demo host answers it the way the desktop would for a non-local volume (the volume move; decision 3 for trash); say
+    so in `DETAILS.md` § "Where the demo differs from the app".
+  - `events_test.rs`-style pins for every new event's keys against `bindings.ts`.
+  - The Node smoke grows: each command, a conflict round trip, a cancel, an undo, and a `directory-diff` seen for each
+    mutation.
+- **Landmines**:
+  - ❗ Same wire or the frontend breaks silently (the listing crate's must-know). A drifted payload key shows up only in
+    the browser.
+  - The listing engine and the write engine must share ONE `InMemoryVolume` instance and ONE `Listings`; two would make
+    a copy invisible to the panes.
+  - `JsSink`'s `unsafe impl Send + Sync` soundness rests on no `atomics`; keep its `cfg` guard and reuse it.
+  - The size budget: measure raw and gzipped `.wasm`; report it in `DETAILS.md`.
+- **Test plan**: native tests of the host (commands, wire pins) with `cargo nextest`; the wasm lane's Node smoke.
+- **DONE**: from JS, every write command answers like the desktop's and the panes' listings change through
+  `directory-diff`.
+
+### 8. The demo frontend writes (M)
+
+- **Scope**: `apps/desktop/src/lib/demo/` and the website's demo e2e.
+- **Intentions**: delete `writes.ts` and its test; `volumes.ts` stops reporting `mountIsReadOnly`; the backend routes
+  the write commands to the engine (`DemoListing.handles()` or its renamed twin) and the write events through the
+  existing fan-out. Re-derive the command set from `window.__cmdrDemo.unanswered` while driving F5–F8, rename, and the
+  transfer dialog. Update `lib/demo/CLAUDE.md` + `DETAILS.md` (the "writes nothing, and says so" must-know becomes
+  "writes through the real engine, in memory, gone on reload").
+- **Landmines**: a TS answer for an engine command silently shadows the engine (the backend tries TS tables first).
+  `answers.ts` may already answer some write-adjacent commands (`destinationWriteAccess`, space queries) with read-only
+  values; each moves to the engine or to an honest TS fact. The demo can be framed: dialogs must work inside an iframe.
+- **Test plan**: vitest for the routing; the website's demo Playwright smoke (`apps/website/e2e/demo.spec.ts`) gains F7
+  new folder, F5 copy into the other pane, Shift+F6 rename, F6 move, a conflict prompt answered, F8 delete. A normal
+  `pnpm build` still has no `__cmdrDemo` in `build/`.
+- **DONE**: a visitor copies, moves, renames, creates, and deletes in the demo, and both panes update.
+
+### 9. Undo in the demo (S–M)
+
+- **Scope**: the host's undo commands and the frontend's Cmd+Z flow.
+- **Intentions**: `undoOperations`, `rollbackOperation`, `getRecentOperationLogEntries`, `getOperationLogDetail` run on
+  the real op log and rollback planner; the in-browser `RollbackRunner` is the engine's own executor. A copy, a move, a
+  rename, and a new folder undo; a permanent delete says it can't (the planner's typed answer).
+- **Landmines**: the planner FAILS SAFE (verify each item against its snapshot); an in-memory volume's identities must
+  satisfy `verify_snapshot` honestly, or every undo skips. Rollback pacing (`pace_between_items`) is a `Pacing` answer,
+  so decision 4 applies there too. Multi-op undo reverses newest first.
+- **Test plan**: Node smoke (each undoable op round-trips; a drifted item skips with its `SkipReason`), Playwright
+  (Cmd+Z after a copy and after a rename).
+- **DONE**: Cmd+Z undoes the last demo operation through the same planner the desktop uses.
+
+### 10. The transfer queue window (S)
+
+- **Scope**: `apps/desktop/src/lib/demo/windows.ts` and QA.
+- **Intentions**: add `queue` to `OPENABLE`; it runs on the same backend and events. QA with decision 4's pace:
+  progress, pause and resume (one and all), cancel, reorder, and the transfer tree view. Retained failures and Retry
+  can't happen on a healthy in-memory volume; cover them in the Node smoke with a failing volume option rather than
+  faking one in the demo.
+- **Landmines**: the queue window may call commands no milestone answered yet (`unanswered` tells); it opens as a
+  same-origin iframe of its route and must find the top frame's backend.
+- **Test plan**: `windows.test.ts`; a Playwright cell that opens the queue during a paced copy and pauses it.
+- **DONE**: the queue window opens in the demo and controls a running copy. Then the close-out: an adversarial
+  conformance review against the invariants below and a docs-audit pass over every commit body and touched `CLAUDE.md`.
+
+## Invariants (the conformance review checks these)
+
+1. Natively, every engine call takes the same path it took at `49aad7f793` (the routing table), and every timing cell
+   that passed then passes now on the same clock.
+2. No direct clock, timer, or ambient-runtime call in `cmdr-operations` or `cmdr-operation-log` outside `cmdr_fs::rt`,
+   enforced by clippy.
+3. Outside the local-disk facade, no `cmdr_local`, `libc`, `std::os::unix`, `objc2`, `xattr`, `trash`, or `dirs` in
+   `cmdr-operations` production code.
+4. In the browser, no reachable path starts a thread, calls `block_on`, or waits in `blocking_recv`; the local engine
+   isn't compiled in.
+5. Every write in the browser still stages and lands (`resolve_staging` on the volume path), journals through its
+   `OpScope` under the real volume id, and patches the panes through `notify_mutation`.
+6. A browser call the engine can't serve refuses with a typed error; nothing traps (`RuntimeError: unreachable`) in the
+   Node smoke or the Playwright smoke.
+7. The demo's wire (command names, args, answers, rejections, events) equals the desktop's, pinned against
+   `bindings.ts`.
+8. No conda toolchain binary on PATH in any script or CI job; only absolute paths in the wasm-target CC/AR variables.
+9. No demo code in a normal build, and no `if (demo)` in app code.
+10. Undo in the demo is the real planner, failing safe; nothing in TS decides what an undo does.
