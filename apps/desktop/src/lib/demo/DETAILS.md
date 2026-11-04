@@ -86,7 +86,8 @@ every window. The demo keeps that shape, so secondary windows share its state, a
 - Look: plain app tokens (`--color-bg-primary`, `--radius-window`, `--shadow-lg`, `--z-modal`), injected once as a
   `<style>` under `.cmdr-demo-window`. The only words are the window's own title and `ui.modalDialog.close` for the
   close button's label. It opens centered, sized to the window's width and height clamped to the viewport (fits at
-  960×600), and can't be dragged past an edge.
+  960×600), and can't be dragged past an edge. Both keep it under the menu bar (`--cmdr-demo-window-top`), as macOS
+  keeps windows under its own.
 - Verified in headless Chromium (2026-11-04): ⌘, opens Settings; Esc, ⌃W, and the close button close it, and the cursor
   keys move the main pane's cursor right after; dragging moves and clamps it; F3 on a file opens nothing; a "Size
   colors" change in Settings recolors the main window's sizes through the fan-out. Keyboard shortcuts opens from the

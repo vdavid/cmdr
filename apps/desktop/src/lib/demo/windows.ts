@@ -39,6 +39,11 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(value, max))
 }
 
+/** Where windows may start: under the demo's menu bar (`--cmdr-demo-window-top`), as macOS keeps them under its own. */
+function desktopTop(): number {
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cmdr-demo-window-top')) || 0
+}
+
 /** The panel's look, from the app's own tokens. Injected once, scoped to the demo's class names. */
 const STYLE = `
 .cmdr-demo-window {
@@ -149,7 +154,7 @@ export function createWindowHost(emit: Emit): WindowHost {
         const rect = panel.root.getBoundingClientRect()
         // The title bar stays reachable: never dragged past an edge.
         panel.root.style.left = `${String(clamp(event.clientX - dx, 0, window.innerWidth - rect.width))}px`
-        panel.root.style.top = `${String(clamp(event.clientY - dy, 0, window.innerHeight - bar.offsetHeight))}px`
+        panel.root.style.top = `${String(clamp(event.clientY - dy, desktopTop(), window.innerHeight - bar.offsetHeight))}px`
       }
       const up = () => {
         bar.removeEventListener('pointermove', move)
@@ -172,7 +177,8 @@ export function createWindowHost(emit: Emit): WindowHost {
     }
     const title = typeof options.title === 'string' ? options.title : ''
     const width = Math.min(Number(options.width) || 800, window.innerWidth - 2 * MARGIN)
-    const height = Math.min(Number(options.height) || 600, window.innerHeight - 2 * MARGIN)
+    const top = desktopTop()
+    const height = Math.min(Number(options.height) || 600, window.innerHeight - top - 2 * MARGIN)
 
     const root = document.createElement('div')
     root.className = 'cmdr-demo-window'
@@ -181,7 +187,7 @@ export function createWindowHost(emit: Emit): WindowHost {
     root.style.width = `${String(width)}px`
     root.style.height = `${String(height)}px`
     root.style.left = `${String(Math.round((window.innerWidth - width) / 2))}px`
-    root.style.top = `${String(Math.round((window.innerHeight - height) / 2))}px`
+    root.style.top = `${String(top + Math.round((window.innerHeight - top - height) / 2))}px`
 
     const bar = document.createElement('div')
     bar.className = 'cmdr-demo-window-bar'

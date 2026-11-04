@@ -139,6 +139,27 @@ describe('demo windows', () => {
     expect(panel.classList.contains('dragging')).toBe(false)
   })
 
+  it('opens and drags under the menu bar, as macOS keeps windows under its own', () => {
+    document.documentElement.style.setProperty('--cmdr-demo-window-top', '30px')
+    try {
+      const { open } = setup()
+      open('settings', { width: 400, height: 300 })
+      const [panel] = panels()
+      expect(parseFloat(panel.style.top)).toBe(30 + Math.round((window.innerHeight - 30 - 300) / 2))
+      const bar = panel.querySelector<HTMLElement>('.cmdr-demo-window-bar')
+      if (!bar) throw new Error('no title bar')
+      bar.setPointerCapture = () => undefined
+      const pointer = (type: string, y: number) =>
+        bar.dispatchEvent(new PointerEvent(type, { bubbles: true, button: 0, clientX: 10, clientY: y, pointerId: 1 }))
+      pointer('pointerdown', 10)
+      pointer('pointermove', -500)
+      expect(panel.style.top).toBe('30px')
+      pointer('pointerup', 0)
+    } finally {
+      document.documentElement.style.removeProperty('--cmdr-demo-window-top')
+    }
+  })
+
   it('treats window plumbing with no panel to act on as done', () => {
     const { call } = setup()
     expect(call('plugin:window|close', { label: 'nothing-open' })).toBeNull()
