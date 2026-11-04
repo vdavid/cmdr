@@ -935,3 +935,40 @@ async fn by_default_a_missing_folder_lists_empty() {
     let listed = volume.list_directory(Path::new("/nope"), None).await.expect("lists");
     assert!(listed.is_empty());
 }
+
+/// `canonicalize` resolves the volume's own symlinks the way `realpath` does: a link
+/// anywhere along the path, a relative target, a link to a link, `..` after a link,
+/// and `None` for a missing path or a loop (the caller keeps the literal then).
+#[test]
+fn canonicalize_resolves_links_like_realpath() {
+    let dir = |path: &str| FileEntry::new(String::new(), path.to_string(), true, false);
+    let link = |path: &str| FileEntry::new(String::new(), path.to_string(), true, true);
+    let volume = InMemoryVolume::with_entries(
+        "Mem",
+        vec![
+            dir("/real"),
+            dir("/real/inner"),
+            dir("/other"),
+            link("/abs"),
+            link("/real/rel"),
+            link("/hop"),
+            link("/loop-a"),
+            link("/loop-b"),
+        ],
+    )
+    .with_link_target(Path::new("/abs"), Path::new("/real"))
+    .with_link_target(Path::new("/real/rel"), Path::new("../other"))
+    .with_link_target(Path::new("/hop"), Path::new("/abs"))
+    .with_link_target(Path::new("/loop-a"), Path::new("/loop-b"))
+    .with_link_target(Path::new("/loop-b"), Path::new("/loop-a"));
+
+    let resolved = |path: &str| volume.canonicalize(Path::new(path));
+    assert_eq!(resolved("/real/inner"), Some(PathBuf::from("/real/inner")));
+    assert_eq!(resolved("/abs/inner"), Some(PathBuf::from("/real/inner")));
+    assert_eq!(resolved("/real/rel"), Some(PathBuf::from("/other")));
+    assert_eq!(resolved("/hop/inner/"), Some(PathBuf::from("/real/inner")));
+    assert_eq!(resolved("/abs/inner/.."), Some(PathBuf::from("/real")));
+    assert_eq!(resolved("/"), Some(PathBuf::from("/")));
+    assert_eq!(resolved("/abs/missing"), None);
+    assert_eq!(resolved("/loop-a"), None);
+}

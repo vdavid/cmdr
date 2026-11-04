@@ -239,7 +239,9 @@ through a local helper, a fully-qualified call inline in an expression, a `use` 
 - **`FileEntry`.** 11 of the ~70 `crate::file_system` references from the index are this type; it isn't skippable. Its
   constructor brings three more predicates with it (below).
 - **`InMemoryVolume`.** The one `Volume` impl that needs no host. It rides with the trait so a test in any crate can
-  build a volume without the app.
+  build a volume without the app. It also hosts the browser demo's one store, so it answers a host question a page can't
+  ask the OS: `canonicalize` is its `realpath` over its own symlinks (`in_memory/links.rs`; the demo's ⌘F scopes resolve
+  through it, `crates/cmdr-listing-wasm/DETAILS.md` § "Where the demo differs from the app").
 - **`ignore_poison`, `pluralize`, `thread_qos`, `thread_cpu`, `process_memory`.** Host primitives with 8–49 references
   from the index trees, none of which can sensibly be injected. `thread_qos` in particular is the property that kept
   indexing in-process at all: a `tokio::runtime::Handle` does nothing for thread scheduling class. `thread_cpu` reads

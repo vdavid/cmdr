@@ -262,9 +262,11 @@ over the page's one volume, with no index to load.
   trash route (nothing online-only here).
 - **No host work around writes**: no `~` expansion, no S3 cost pricing (`check_rename_validity` prices nothing), no
   analytics, no indexing priority, and `get_volume_space` answers the one volume's live space for every path.
-- **Search** (`search.rs`): recent searches last the session; no `realpath`, so a scope naming a symlinked folder is the
-  link itself and finds nothing inside; no AI (`getAiStatus` answers unavailable, so the dialog's AI mode stays off as
-  on a Mac with AI off); no importance weights, so ties rank by name and id alone.
+- **Search** (`search.rs`): recent searches last the session; a scope resolves its symlinks through
+  `InMemoryVolume::canonicalize` (the tree's `symlinkTarget`s, stored by `tree.rs`) where the desktop calls `realpath`,
+  with exact-case names, so a scope spelled in another case through a link stays the literal (still matched
+  case-insensitively, but as the link, a leaf); no AI (`getAiStatus` answers unavailable, so the dialog's AI mode stays
+  off as on a Mac with AI off); no importance weights, so ties rank by name and id alone.
 - **The viewer** (`viewer.rs`): every call runs inline, with none of the app's 2 s timeouts or stall watches (an
   in-memory read can't hang). No LineIndex upgrade, so a big file keeps its estimated row count; a search scans in 8 ms
   slices on the page's event loop instead of a thread; no watcher, so tail mode never sees a change.
