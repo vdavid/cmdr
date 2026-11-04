@@ -35,9 +35,9 @@ const fixtureRoot = (() => {
 const testFilePath = path.join(fixtureRoot, 'left', 'short-first-line.txt')
 const longLine = 'All work and no play makes the height map a dull boy. '.repeat(4).trim()
 const fileContent = `# T\n\n${`${longLine}\n`.repeat(120)}`
-// FullLoad line count: one line per newline, plus the trailing empty line
-// (the file ends with a newline).
-const lastLineSelector = `.line[data-row="${String(fileContent.split('\n').length - 1)}"]`
+// One row per newline: the file ends with one, and no empty row follows a final
+// newline, so the last row is the last line of text.
+const lastLineSelector = `.line[data-row="${String(fileContent.split('\n').length - 2)}"]`
 
 // Binary fixture with highly variable wrapped line heights, the shape the height
 // map must get right or the virtual scroll drifts (blank gaps, last line
@@ -65,8 +65,8 @@ const binaryContent: Buffer = (() => {
   }
   return Buffer.concat(rows.flatMap((r) => [r, Buffer.from([0x0a])]))
 })()
-// 300 newlines => content lines 0..299 plus a trailing empty line 300.
-const binaryLastLineSelector = `.line[data-row="300"]`
+// 300 newline-ended lines => rows 0..299, with no empty row after the final newline.
+const binaryLastLineSelector = `.line[data-row="299"]`
 
 /** Scrolls to a fraction of the file and reports whether rendered content fills
  *  down to the viewport bottom. With a drifting height map, mid-file scrolling
@@ -116,6 +116,19 @@ async function setWordWrap(viewer: TauriPage, on: boolean): Promise<void> {
   if ((await wrapBadgeVisible(viewer)) === on) return
   await pressWrapToggle(viewer)
   await expect.poll(() => wrapBadgeVisible(viewer), { timeout: waitBudget(3000) }).toBe(on)
+}
+
+/** Turns wrap back off from a `finally`, so the persisted setting returns to its
+ *  default for later specs even when an assertion above threw. ❗ A failure here
+ *  once left wrap on, and the drag-copy specs in `viewer.spec.ts` then copied an
+ *  empty string on Linux (their synthetic drag on a wrapped row). A cleanup error
+ *  must not hide the test's own failure, so it only logs. */
+async function restoreWordWrapOff(viewer: TauriPage): Promise<void> {
+  try {
+    await setWordWrap(viewer, false)
+  } catch (err) {
+    console.warn('Could not turn word wrap back off:', err)
+  }
 }
 
 /** Scrolls the viewer to the very bottom, then reports whether the last line of
@@ -170,11 +183,8 @@ test.describe('Viewer word-wrap scrolling', () => {
         await sleep(100)
         expect(await scrollToBottomAndCheckLastLineVisible(viewer)).toBe('visible')
       }
-
-      // Cleanup half 1: wrap back off so the persisted setting returns to its
-      // default for later specs.
-      await setWordWrap(viewer, false)
     } finally {
+      await restoreWordWrapOff(viewer)
       await closeScopedWindow(mainPage, viewer, label)
       fs.rmSync(testFilePath, { force: true })
     }
@@ -213,9 +223,8 @@ test.describe('Viewer word-wrap scrolling', () => {
         await sleep(100)
         expect(await scrollToBottomAndCheckLastLineVisible(viewer, binaryLastLineSelector)).toBe('visible')
       }
-
-      await setWordWrap(viewer, false)
     } finally {
+      await restoreWordWrapOff(viewer)
       await closeScopedWindow(mainPage, viewer, label)
       fs.rmSync(binaryFilePath, { force: true })
     }
