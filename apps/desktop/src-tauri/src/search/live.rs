@@ -131,6 +131,18 @@ impl LiveRun {
     pub(crate) fn cancel_token(&self) -> CancellationToken {
         self.cancel.clone()
     }
+
+    /// A dialog run outside the registry, so a test never supersedes another's.
+    #[cfg(test)]
+    pub(crate) fn detached_for_test(run_id: &str, volume_id: &str) -> Arc<Self> {
+        Arc::new(Self {
+            run_id: run_id.to_string(),
+            volume_id: volume_id.to_string(),
+            origin: RunOrigin::Dialog { order: 0 },
+            cancel: CancellationToken::new(),
+            superseded: AtomicBool::new(false),
+        })
+    }
 }
 
 /// Every run that hasn't reached its terminal state, keyed by run id.

@@ -29,8 +29,9 @@ use crate::search::live::{
 };
 use crate::search::matcher::{CompiledQuery, Evaluator};
 use crate::search::query;
+use crate::search::ranking::ImportanceWeights;
 use crate::search::types::SearchQuery;
-use crate::search::volumes::{self, VolumeLoad};
+use crate::search::volumes::{self, LoadedVolume, VolumeLoad};
 
 /// What starting a live search hands back before any of it has happened.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
@@ -434,9 +435,12 @@ fn groundwork(
     };
 
     let half = match loaded.as_deref().filter(|_| !run.is_cancelled()) {
-        Some(loaded) => {
-            Some(search_covered_half(query, target, loaded).map_err(|message| (SearchRunError::Query, message))?)
-        }
+        Some(loaded) => Some(covered_half_for_run(
+            query,
+            target,
+            loaded,
+            &volumes::weights_for(&target.volume_id),
+        )?),
         None => None,
     };
 
@@ -448,6 +452,17 @@ fn groundwork(
         question,
         half,
     })
+}
+
+/// The covered half as a live run takes it: the same pass `run_blocking` makes, its
+/// failure classified the way the run's error event reports it.
+pub(super) fn covered_half_for_run(
+    query: &SearchQuery,
+    target: &Target,
+    loaded: &LoadedVolume,
+    weights: &ImportanceWeights,
+) -> Result<CoveredHalf, (SearchRunError, String)> {
+    search_covered_half(query, target, loaded, weights).map_err(|message| (SearchRunError::Query, message))
 }
 
 /// Whether the index gave this run nothing at all: no rows, and no count.

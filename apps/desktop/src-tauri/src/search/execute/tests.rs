@@ -13,6 +13,7 @@ use crate::search::types::{PatternType, SearchResultEntry};
 use cmdr_index::ROOT_VOLUME_ID;
 
 mod adb_phone;
+mod goldens;
 mod live_drive;
 mod live_e2e;
 mod offline_volume;

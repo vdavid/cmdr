@@ -189,6 +189,20 @@ pub(crate) struct LoadedVolume {
 }
 
 impl LoadedVolume {
+    /// A volume built from an arena and a pool a test holds, outside the cache and
+    /// its load gates: the search goldens run over one of these.
+    #[cfg(test)]
+    pub(crate) fn for_test(index: SearchIndex, pool: ReadPool, mount_root: Option<String>) -> Self {
+        Self {
+            index: Arc::new(index),
+            pool: Arc::new(pool),
+            mount_root,
+            generation: 0,
+            coverage_token: CoverageToken::UNINDEXED,
+            read_started_at: std::time::Instant::now(),
+        }
+    }
+
     /// Whether this arena may serve a coverage answer taken at `answered_at` and
     /// carrying `tokens` (Decision 12).
     ///

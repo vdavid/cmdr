@@ -898,3 +898,26 @@ ranks tens of thousands of candidates):
 
 The blend coefficient is an unvalidated starting point (the importance weights themselves are too — see
 `crates/cmdr-index/src/importance/scorer/weights.rs`).
+
+## The goldens (`execute/tests/goldens.rs`)
+
+End-to-end answers pinned as JSON (`execute/tests/goldens/macos.json`, `linux.json`): a fixed corpus written into a
+real index through `IndexStore`, loaded by the production loader, and about 45 queries plus five live-run traces through
+ONE entry, `golden_run`, whose signature stays fixed while its body follows the code. They're the proof a refactor
+changed nothing; a moved golden is a bug, ❌ never a re-record, apart from a deliberate behavior change said in its
+commit.
+
+- **Hermetic**: the corpus sits under `/cmdr-golden` and `/Volumes/cmdr-golden-share`, which exist nowhere and live
+  under no `$HOME`, so `realpath` keeps them literal and the `~` substitution never fires. Weights go in as an argument.
+- **Id order**: root, then depth-first with each folder's children in byte order of their names, so an in-memory source
+  that assigns ids the same way can be required to agree on every `entry_id`.
+- **Per platform**: case folding and NFD normalization differ, so each platform has its own file. Record the Linux one
+  in the Linux check container (`scripts/check/checks/desktop-rust-linux-container.go` names the image), with
+  `CMDR_RECORD_SEARCH_GOLDENS=1`.
+- **They bite**: dropping the NFD step, reversing a tie-break, or double-counting an exclusion each moves goldens (seen
+  red, 2026-11-04).
+- **What they pinned that's worth knowing**: on macOS an NFC-spelled name (`Café`, as a browser or a newer API writes
+  it) is found by no typed pattern, because every pattern is NFD-normalized and the arena keeps names as stored
+  (`accented_folder` answers nothing).
+- **Speed**: the scan, allocation, and load numbers the extraction stays within:
+  `docs/notes/search-crate-baseline-2026-11-04.md`.

@@ -39,6 +39,7 @@ use cmdr_index::{ROOT_VOLUME_ID, ReadPool};
 
 use super::engine;
 use super::query;
+use super::ranking::ImportanceWeights;
 use super::types::{SearchQuery, SearchResult, SearchResultEntry, SearchSort};
 use super::volumes::{self, LoadedVolume, VolumeLoad};
 
@@ -175,7 +176,7 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
         }
     };
 
-    let half = search_covered_half(&query, &target, &loaded)?;
+    let half = search_covered_half(&query, &target, &loaded, &volumes::weights_for(&target.volume_id))?;
 
     Ok(SearchResult {
         entries: half.entries,
@@ -203,7 +204,12 @@ struct CoveredHalf {
 /// Run the engine over `loaded` and finish the result: resolve the scope to entry
 /// ids, fill directory sizes from `dir_stats`, apply the size post-filter, and cut
 /// the over-fetch back to `limit`.
-fn search_covered_half(query: &SearchQuery, target: &Target, loaded: &LoadedVolume) -> Result<CoveredHalf, String> {
+fn search_covered_half(
+    query: &SearchQuery,
+    target: &Target,
+    loaded: &LoadedVolume,
+    weights: &ImportanceWeights,
+) -> Result<CoveredHalf, String> {
     let mut vq = query.clone();
     let unresolved_scopes = if target.include_paths.is_empty() {
         vq.include_paths = None;
@@ -224,14 +230,13 @@ fn search_covered_half(query: &SearchQuery, target: &Target, loaded: &LoadedVolu
         resolution.unresolved
     };
 
-    let weights = volumes::weights_for(&target.volume_id);
     let prefix = loaded.mount_root.as_deref().unwrap_or("");
     let dir_sizes = dir_sizes_for(&vq, &loaded.pool)?;
     let engine::Ranked {
         mut entries,
         total_count: total,
         hidden_by_excludes,
-    } = engine::search_ranked(&loaded.index, &vq, &weights, prefix, dir_sizes.as_ref())?;
+    } = engine::search_ranked(&loaded.index, &vq, weights, prefix, dir_sizes.as_ref())?;
 
     if query.count_only {
         // The engine's total is already exact — directory size filters included, since
