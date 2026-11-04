@@ -14,13 +14,13 @@ use std::sync::{Arc, LazyLock, Mutex};
 use arc_swap::ArcSwap;
 use serde::Serialize;
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::content_kind::ViewerContentKind;
 use super::encoding::FileEncoding;
+use super::host::pulls::PreviewTemp;
 use super::log_view::ViewedBackend;
 use super::markdown_document::MarkdownDocument;
-use super::materialize::PreviewTemp;
 use super::origin::SourceOrigin;
 use super::row_text::RowText;
 use super::source::OpenedFile;

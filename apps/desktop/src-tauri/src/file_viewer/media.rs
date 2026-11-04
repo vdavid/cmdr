@@ -29,7 +29,7 @@ use std::time::Duration;
 
 use rand::RngExt;
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::content_kind::ViewerContentKind;
 use super::media_volume::VolumeMedia;
@@ -104,7 +104,8 @@ pub fn mint_deferred_token(source: Arc<dyn DeferredMedia>) -> String {
     mint(MediaSource::Deferred(source))
 }
 
-fn mint(source: MediaSource) -> String {
+/// Mints a token over whatever `source` names.
+pub fn mint(source: MediaSource) -> String {
     let bytes: [u8; 16] = rand::rng().random();
     let token = hex_encode(&bytes);
     MEDIA_TOKENS.lock_ignore_poison().insert(token.clone(), source);

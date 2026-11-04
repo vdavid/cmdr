@@ -8,11 +8,11 @@ use std::sync::Arc;
 use log::debug;
 
 use super::ViewerError;
-use super::materialize::map_volume_error;
+use super::host::host;
 use super::source::{OpenedFile, open_local};
+use super::volume_error::map_volume_error;
 use super::volume_source::{PositionedRead, open_on_volume, size_on_volume};
-use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
-use crate::file_system::volume::{Volume, VolumeError};
+use cmdr_fs::volume::{Volume, VolumeError};
 
 /// Where a session's file lives, so the session can open it again: a reload, or a file
 /// replaced under it, needs a fresh handle rather than the one it holds.
@@ -81,7 +81,8 @@ pub(super) fn open_for_viewer(requested: &Path, volume_id: &str) -> Result<Optio
 /// drops this. `None` under the same rules as [`open_for_viewer`], plus any volume whose
 /// paths `std::fs` already opens.
 pub(super) fn open_ranged_for_media(requested: &Path, volume_id: &str) -> Result<Option<VolumeOpen>, ViewerError> {
-    let os_visible = get_volume_manager()
+    let os_visible = host()
+        .volumes
         .get(volume_id)
         .is_none_or(|volume| volume.paths_are_os_visible());
     if os_visible {
@@ -95,10 +96,11 @@ fn open_through_volume(
     volume_id: &str,
     way: PositionedRead,
 ) -> Result<Option<VolumeOpen>, ViewerError> {
-    if path_routes_over_its_parent(requested) {
+    let host = host();
+    if host.volumes.routes_over_its_parent(requested) {
         return Ok(None);
     }
-    let Some(volume) = get_volume_manager().get(volume_id) else {
+    let Some(volume) = host.volumes.get(volume_id) else {
         return Ok(None);
     };
     let os_visible = volume.paths_are_os_visible();

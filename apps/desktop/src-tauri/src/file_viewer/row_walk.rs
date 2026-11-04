@@ -581,7 +581,7 @@ pub fn search_rows<S: RowSource>(
 ) -> Result<u64, ViewerError> {
     use std::sync::atomic::Ordering;
 
-    use crate::ignore_poison::IgnorePoison;
+    use cmdr_fs::ignore_poison::IgnorePoison;
 
     use super::search_matcher::{LineScan, scan_line_with_matcher};
 

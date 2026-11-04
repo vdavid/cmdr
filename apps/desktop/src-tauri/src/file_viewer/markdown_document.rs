@@ -8,9 +8,10 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
-use super::markdown_images::{ImageTarget, RemoteImage, VolumeImage, resolve_image_src};
+use super::host::host;
+use super::markdown_images::{ImageTarget, resolve_image_src};
 use super::markdown_render::ImageMarker;
 use super::media;
 
@@ -61,21 +62,22 @@ impl MarkdownDocument {
     pub(super) fn image_marker(&self, src: &str, volume_root: &Path) -> ImageMarker {
         let target = resolve_image_src(src, &self.path, volume_root);
         let mut images = self.images.lock_ignore_poison();
-        let token = |images: &mut HashMap<ImageTarget, String>, source: Arc<dyn media::DeferredMedia>| {
+        let token = |images: &mut HashMap<ImageTarget, String>, source: &dyn Fn() -> media::MediaSource| {
             images
                 .entry(target.clone())
-                .or_insert_with(|| media::mint_deferred_token(source))
+                .or_insert_with(|| media::mint(source()))
                 .clone()
         };
+        let host = host();
         match &target {
-            ImageTarget::Local(path) => {
-                let image = VolumeImage::new(path.clone(), self.volume_id.clone(), Arc::clone(&self.closed));
-                ImageMarker::Local(token(&mut images, Arc::new(image)))
-            }
-            ImageTarget::Remote(url) => {
-                let image = RemoteImage::new(url.clone(), Arc::clone(&self.remote_allowed), Arc::clone(&self.closed));
-                ImageMarker::Remote(token(&mut images, Arc::new(image)))
-            }
+            ImageTarget::Local(path) => ImageMarker::Local(token(&mut images, &|| {
+                host.images
+                    .on_volume(path.clone(), self.volume_id.clone(), Arc::clone(&self.closed))
+            })),
+            ImageTarget::Remote(url) => ImageMarker::Remote(token(&mut images, &|| {
+                host.images
+                    .on_the_web(url.clone(), Arc::clone(&self.remote_allowed), Arc::clone(&self.closed))
+            })),
             ImageTarget::Inline => ImageMarker::Inline,
             ImageTarget::Blocked => ImageMarker::Blocked,
         }

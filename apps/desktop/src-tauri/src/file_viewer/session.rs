@@ -9,16 +9,18 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, LazyLock, Mutex, RwLock};
+use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 
-use super::materialize::PreviewTemp;
+use super::host::pulls::PreviewTemp;
 use super::pending_open::PendingOpen;
-use crate::commands::file_system::expand_tilde;
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::tilde::expand_tilde;
 use log::debug;
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+
+use super::host::events::FileChange;
+use super::host::host;
 
 use super::byte_seek::ByteSeekBackend;
 use super::content_kind::ViewerContentKind;
@@ -45,22 +47,6 @@ use super::{
     FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget, TotalRows,
     ViewerError,
 };
-
-/// Process-wide AppHandle for emitting `viewer:file-changed:<sid>` events from
-/// background watcher threads. Set during app setup via [`init_app_handle`].
-static VIEWER_APP_HANDLE: LazyLock<RwLock<Option<AppHandle>>> = LazyLock::new(|| RwLock::new(None));
-
-/// Stash the AppHandle so the per-session watcher manager threads can emit
-/// `viewer:file-changed:<session_id>` events.
-pub fn init_app_handle(handle: AppHandle) {
-    if let Ok(mut guard) = VIEWER_APP_HANDLE.write() {
-        *guard = Some(handle);
-    }
-}
-
-fn app_handle() -> Option<AppHandle> {
-    VIEWER_APP_HANDLE.read().ok().and_then(|g| g.clone())
-}
 
 /// One row in the encoding dropdown.
 #[derive(Debug, Clone, Serialize, specta::Type)]
@@ -287,7 +273,7 @@ fn open_session_inner(
     let from_archive = cmdr_fs::archive_format::archive_boundary_candidate(Path::new(&expand_tilde(path)))
         .is_some_and(|(_, inner)| !inner.as_os_str().is_empty());
     let result = open_session_core(path, volume_id, force_text, rows, open, reuse);
-    super::analytics::emit_viewer_opened(&result, from_archive, force_text);
+    host().analytics.viewer_opened(&result, from_archive, force_text);
     result
 }
 
@@ -341,8 +327,7 @@ fn open_session_core(
     let temp = match (reuse, &on_volume) {
         (Some(temp), _) => Some(temp),
         (None, Some(_)) => None,
-        (None, None) => super::materialize::materialize_for_viewer(&requested, volume_id, open)?
-            .map(|file| Arc::new(PreviewTemp::new(file, requested.clone(), volume_id))),
+        (None, None) => host().pulls.pull_for_viewer(&requested, volume_id, open)?.map(Arc::new),
     };
     let file_path = temp
         .as_ref()
@@ -1578,29 +1563,8 @@ fn catch_up_after_subscribe(session_id: &str, path: &Path) {
     }
 }
 
-/// The `viewer:file-changed:<sid>` event's name and payload, which the viewer window
-/// listens for by that name (no typed binding).
-pub(super) fn file_changed_event(
-    session_id: &str,
-    kind: &'static str,
-    new_size: Option<u64>,
-) -> (String, serde_json::Value) {
-    let event = format!("viewer:file-changed:{}", session_id);
-    let payload = serde_json::json!({
-        "kind": kind,
-        "newSize": new_size,
-    });
-    (event, payload)
-}
-
-fn emit_file_changed(session_id: &str, kind: &'static str, new_size: Option<u64>) {
-    let Some(handle) = app_handle() else {
-        return;
-    };
-    let (event, payload) = file_changed_event(session_id, kind, new_size);
-    if let Err(e) = handle.emit(&event, payload) {
-        debug!("emit viewer:file-changed failed: {}", e);
-    }
+fn emit_file_changed(session_id: &str, change: FileChange) {
+    host().events.file_changed(session_id, change);
 }
 
 fn handle_watcher_event(session_id: &str, event: WatcherEvent) {
@@ -1610,7 +1574,7 @@ fn handle_watcher_event(session_id: &str, event: WatcherEvent) {
         }
         WatcherEvent::Grew(new_size) => {
             // Always tell the FE.
-            emit_file_changed(session_id, "grew", Some(new_size));
+            emit_file_changed(session_id, FileChange::Grew { new_size });
 
             // Look up session state to decide whether to queue or apply.
             let (queue, can_extend, is_tail) = {
@@ -1636,7 +1600,7 @@ fn handle_watcher_event(session_id: &str, event: WatcherEvent) {
             }
         }
         WatcherEvent::Shrunk | WatcherEvent::Replaced => {
-            emit_file_changed(session_id, "rotated", None);
+            emit_file_changed(session_id, FileChange::Rotated);
             // Best-effort reload; failure here surfaces on the next FE
             // interaction.
             let _ = reload(session_id);

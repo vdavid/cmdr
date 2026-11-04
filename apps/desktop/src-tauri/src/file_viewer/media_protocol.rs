@@ -35,8 +35,9 @@ use cmdr_fs::deadline::{StallWatch, blocking_typed_result_until_stalled};
 use tauri::http::{Request, Response, StatusCode, header};
 use tauri_specta::Event as _;
 
+use super::events::ViewerMediaLoad;
 use super::media::{DeferredMedia, MediaEntry, MediaSource, resolve_token};
-use super::media_volume::{MediaLoadStage, MediaReadFailure, ReadProgress, ReadWatch, ViewerMediaLoad, VolumeMedia};
+use super::media_volume::{MediaLoad, MediaLoadStage, MediaReadFailure, ReadProgress, ReadWatch, VolumeMedia};
 
 /// The scheme name registered with Tauri. The frontend builds URLs as
 /// `cmdr-media://localhost/<token>` (macOS/Linux origin shape).
@@ -323,7 +324,7 @@ pub(crate) async fn serve_volume(
     token: String,
     range_header: Option<String>,
     stall_limit: Duration,
-    mut emit: impl FnMut(ViewerMediaLoad) + Send,
+    mut emit: impl FnMut(MediaLoad) + Send,
 ) -> Response<Vec<u8>> {
     let range = match resolve_range(range_header.as_deref(), media.total_bytes()) {
         RangeOutcome::Unsatisfiable { total } => return unsatisfiable(total),
@@ -349,7 +350,7 @@ pub(crate) async fn serve_volume(
     )
     .await;
     let mut report = |stage| {
-        emit(ViewerMediaLoad {
+        emit(MediaLoad {
             token: token.clone(),
             stage,
             bytes_done: progress.done(),
@@ -405,9 +406,9 @@ pub fn handle_request(
     tauri::async_runtime::spawn(async move {
         let entry = match source {
             MediaSource::Volume(media) => {
-                let emit = move |load: ViewerMediaLoad| {
+                let emit = move |load: MediaLoad| {
                     // Best-effort: a window that closed mid-read has no one left to tell.
-                    let _ = load.emit_to(&app, window.as_str());
+                    let _ = ViewerMediaLoad::from(load).emit_to(&app, window.as_str());
                 };
                 responder.respond(serve_volume(media, token, range_header, VOLUME_STALL_LIMIT, emit).await);
                 return;

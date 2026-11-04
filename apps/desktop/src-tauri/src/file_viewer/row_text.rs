@@ -23,7 +23,7 @@ impl RowText {
     pub fn render(self, text: &str) -> Cow<'_, str> {
         match self {
             RowText::Raw => Cow::Borrowed(text),
-            RowText::LogDisplay => crate::redact::display_line(text),
+            RowText::LogDisplay => (super::host::host().log_display)(text),
         }
     }
 

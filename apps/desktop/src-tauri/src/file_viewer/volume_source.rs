@@ -17,10 +17,10 @@ use std::sync::{Arc, Mutex};
 use log::debug;
 
 use super::ViewerError;
-use super::materialize::map_volume_error;
 use super::source::{ByteSource, OpenedFile, file_name_of};
-use crate::file_system::volume::{Volume, VolumeError, VolumeRandomReader};
-use crate::ignore_poison::IgnorePoison;
+use super::volume_error::map_volume_error;
+use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::volume::{Volume, VolumeError, VolumeRandomReader};
 
 /// Bytes per cached block, and the smallest read the source asks the volume for.
 ///

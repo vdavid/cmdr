@@ -284,7 +284,7 @@ pub mod test_gate {
     use std::sync::{Condvar, Mutex};
     use std::time::{Duration, Instant};
 
-    use crate::ignore_poison::IgnorePoison;
+    use cmdr_fs::ignore_poison::IgnorePoison;
 
     /// How long a parked worker waits before proceeding anyway. Only reached
     /// when a test forgets to release; the worker then continues so the test

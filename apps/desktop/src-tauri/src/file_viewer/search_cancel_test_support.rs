@@ -11,8 +11,8 @@ use std::time::{Duration, Instant};
 
 use super::search_matcher::Matcher;
 use super::{FileViewerBackend, MAX_SEARCH_MATCHES, SearchMatch};
-use crate::ignore_poison::IgnorePoison;
 use crate::test_support::wait_until;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Asserts that `backend.search` stops on the cancel flag mid-scan, and stops promptly.
 ///

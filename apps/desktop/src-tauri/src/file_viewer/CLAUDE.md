@@ -5,8 +5,7 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 
 ## Module map
 
-- `mod.rs`: public API, constants, `ViewerError`. `session.rs`: text sessions (backend switching, cancellation,
-  encoding, drain-and-swap); `session_store.rs`: `ViewerSession` + `SESSIONS` (both open paths).
+- `mod.rs`: public API, `ViewerError`. `session.rs`: text sessions; `session_store.rs`: `ViewerSession` + `SESSIONS`.
 - `rows.rs` (the row rule), `row_walk.rs` (that rule read forward: `RowReader`,
   `collect_rows`, `search_rows`, and the row types), `range_read.rs` (range → UTF-8),
   `encoding.rs` (`FileEncoding` + detection), `full_load.rs` / `byte_seek.rs` / `line_index.rs` (the three backends),
@@ -16,10 +15,11 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 - Media (Image/PDF): `content_kind.rs` plus `media*.rs` (`media.rs`: the `cmdr-media://` token map).
   `DETAILS.md` § "Media rendering". Markdown: `markdown_*.rs`, where ammonia's allowlist is the XSS boundary
   (§ "Markdown rendering").
-- `materialize.rs` + `pending_open.rs`: pulling a file the OS can't open (routed, or on a phone) into a bounded temp,
-  with progress and cancel, reused by "Open with" (`open_with_extract.rs`). `DETAILS.md` § "Preview of a routed file".
+- `materialize.rs` + `pending_open.rs`: a bounded temp pull of a file the OS can't open, reused by "Open with"
+  (`open_with_extract.rs`). `DETAILS.md` § "Preview of a routed file".
 - `headless.rs`: backend picks with no session, for `inspect_file`. `DETAILS.md` § "Headless reads".
 - `analytics.rs`: `viewer_opened`; ❌ never a file name or extension.
+- Seams (`DETAILS.md` § "Host seams"): `host/` (`app_host.rs` answers), `worker.rs` (jobs), `bridge.rs` (async).
 
 ## Must-knows
 

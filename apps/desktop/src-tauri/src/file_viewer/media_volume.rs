@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ViewerError;
 use super::source::SharedSource;
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Past this, a file on a volume doesn't render: one whole-file request would hold it all
 /// in memory, here and again in the webview. A held reader falls through to the text and
@@ -28,12 +28,13 @@ pub(super) const MEDIA_ON_VOLUME_MAX_BYTES: u64 = 1024 * 1024 * 1024;
 /// and how often progress moves. Four of the source's blocks, so it's one round trip.
 const READ_CHUNK_BYTES: usize = 1024 * 1024;
 
-/// `viewer-media-load`: how a volume-served picture's or PDF's request is going. Emitted
-/// to the viewer window that asked, so it can show progress over an `<img>` that won't
-/// say, and tell a dead server from a damaged file (an `<embed>` says neither).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+/// How a volume-served picture's or PDF's request is going, for the window that asked,
+/// so it can show progress over an `<img>` that won't say, and tell a dead server from a
+/// damaged file (an `<embed>` says neither). The host carries it to the window: the app
+/// as the `viewer-media-load` event (`file_viewer/events.rs`, the same JSON as this).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ViewerMediaLoad {
+pub struct MediaLoad {
     /// The token the request came in on, so a window ignores news of a closed session.
     pub token: String,
     pub stage: MediaLoadStage,
@@ -159,7 +160,7 @@ pub(super) struct ReadWatch<F> {
     pub(super) last_emitted: Option<u64>,
 }
 
-impl<F: FnMut(ViewerMediaLoad)> StallWatch<MediaReadFailure> for ReadWatch<F> {
+impl<F: FnMut(MediaLoad)> StallWatch<MediaReadFailure> for ReadWatch<F> {
     fn idle_for(&self) -> Duration {
         rt::since(*self.progress.last_news.lock_ignore_poison())
     }
@@ -167,7 +168,7 @@ impl<F: FnMut(ViewerMediaLoad)> StallWatch<MediaReadFailure> for ReadWatch<F> {
     fn on_poll(&mut self) {
         let done = self.progress.done();
         if self.last_emitted != Some(done) {
-            (self.emit)(ViewerMediaLoad {
+            (self.emit)(MediaLoad {
                 token: self.token.clone(),
                 stage: MediaLoadStage::Reading,
                 bytes_done: done,

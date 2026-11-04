@@ -7,7 +7,7 @@
 //! still be one minified line, and serving that as a single 900 KB "line" would put
 //! the frontend's row cache and the other two backends' grids out of step.
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 #[cfg(test)]
 use std::path::Path;
 use std::sync::Mutex;

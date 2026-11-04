@@ -6,15 +6,19 @@
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
 pub(crate) mod analytics;
+mod app_host;
 mod bridge;
 mod byte_seek;
 pub mod content_kind;
 pub mod encoding;
+mod events;
 mod full_load;
 pub(crate) mod headless;
+pub mod host;
 mod line_index;
 mod log_view;
 mod markdown_document;
+mod markdown_image_fetch;
 mod markdown_images;
 mod markdown_links;
 mod markdown_render;
@@ -37,6 +41,7 @@ mod search_matcher;
 pub mod session;
 mod session_store;
 mod source;
+mod volume_error;
 mod volume_source;
 pub mod watcher;
 mod worker;
@@ -98,14 +103,18 @@ mod wire_characterization_test;
 #[cfg(test)]
 mod worker_test;
 
+pub use app_host::init_app_handle;
 pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
+pub use events::{ViewerMediaLoad, ViewerPullProgress};
 pub use markdown_links::MarkdownLink;
-pub use markdown_session::{MarkdownRender, allow_remote_images, render_markdown_session, resolve_markdown_link};
+pub use markdown_session::{
+    MarkdownRender, allow_remote_images, follow_markdown_link, render_markdown_session, resolve_markdown_link,
+};
 pub use materialize::init_materialize_dir;
-pub use media_volume::{MediaLoadStage, ViewerMediaLoad};
+pub use media_volume::{MediaLoad, MediaLoadStage};
 pub use open_with_extract::init_open_with_extract_dir;
-pub use pending_open::{AbandonReason, PendingOpen, ViewerPullProgress, begin_pending_open, end_pending_open};
+pub use pending_open::{AbandonReason, PendingOpen, PullProgress, begin_pending_open, end_pending_open};
 pub use range_read::RangeEnd;
 pub use row_text::RowText;
 pub use row_walk::{CHUNK_BUDGET_BYTES, ChunkEnd, TotalRows, ViewerRow};
@@ -113,9 +122,9 @@ pub use rows::SEGMENT_BYTES;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
     EncodingOptions, SaveProgress, SavedAs, SearchPollResult, ViewerSessionStatus, cancel_read, close_session,
-    close_session_for_window, get_bytes, get_encoding_options, get_lines, get_session_status, init_app_handle,
-    open_for_window, open_session, open_session_as_text, read_range, register_window_session, reload, search_cancel,
-    search_poll, search_start, set_encoding, set_tail_mode, write_range_to_file,
+    close_session_for_window, get_bytes, get_encoding_options, get_lines, get_session_status, open_for_window,
+    open_session, open_session_as_text, read_range, register_window_session, reload, search_cancel, search_poll,
+    search_start, set_encoding, set_tail_mode, write_range_to_file,
 };
 pub use session_store::{MediaDimensions, ViewerOpenResult};
 

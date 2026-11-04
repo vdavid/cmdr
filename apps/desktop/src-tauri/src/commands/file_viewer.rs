@@ -200,7 +200,7 @@ impl<F: FnMut(ViewerPullProgress)> StallWatch<ViewerError> for PullWatch<F> {
     }
 
     fn on_poll(&mut self) {
-        if let Some(progress) = self.open.pull_progress()
+        if let Some(progress) = self.open.pull_progress().map(ViewerPullProgress::from)
             && self.last_emitted != Some(progress)
         {
             (self.emit)(progress);
@@ -348,22 +348,8 @@ pub fn viewer_allow_remote_images(session_id: String) -> Result<(), ViewerError>
 /// act on (scroll, open the file in this window, or nothing). No file I/O: resolving is pure.
 #[tauri::command]
 #[specta::specta]
-pub fn viewer_follow_markdown_link(
-    app_handle: tauri::AppHandle,
-    session_id: String,
-    href: String,
-) -> Result<file_viewer::MarkdownLink, ViewerError> {
-    let link = file_viewer::resolve_markdown_link(&session_id, &href)?;
-    if let file_viewer::MarkdownLink::External { url } = &link {
-        use tauri_plugin_opener::OpenerExt;
-        app_handle
-            .opener()
-            .open_url(url, None::<&str>)
-            .map_err(|e| ViewerError::Io {
-                message: e.to_string().into(),
-            })?;
-    }
-    Ok(link)
+pub fn viewer_follow_markdown_link(session_id: String, href: String) -> Result<file_viewer::MarkdownLink, ViewerError> {
+    file_viewer::follow_markdown_link(&session_id, &href)
 }
 
 /// Reads at most 64 KiB of original file bytes for the binary and hex views.

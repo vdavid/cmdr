@@ -28,7 +28,8 @@ Frontend counterpart: `apps/desktop/src/routes/viewer/CLAUDE.md` for the viewer 
 - `media_session.rs`: the media-open path. `try_open_media` (classify through the session's open file + dispatch,
   called by `open_session` before it builds a text backend) and `open_media_session` (mint token, header-only
   dimensions, install a `MediaBackend` via `ViewerSession::new`)
-- `media_volume.rs`: a token's bytes on a volume: `VolumeMedia`, its chunked read, and the `viewer-media-load` event.
+- `media_volume.rs`: a token's bytes on a volume: `VolumeMedia`, its chunked read, and the `MediaLoad` progress fact
+  (the app's `viewer-media-load` event, `events.rs`).
   See § "Media on a volume"
 - `markdown_session.rs`, `markdown_document.rs`, `markdown_render.rs`, `markdown_images.rs`, `markdown_links.rs`: the
   formatted Markdown view, its per-session state, its sanitizer, its pictures, and its links. See § "Markdown rendering"
@@ -63,7 +64,31 @@ Frontend counterpart: `apps/desktop/src/routes/viewer/CLAUDE.md` for the viewer 
 - `headless.rs`: `open_text_backend(path, encoding, cancel) -> HeadlessBackend`, the backend pick with nothing around
   it, for callers that read a file the viewer's way without a window. See § "Headless reads".
 - `*_test.rs`: unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math, range reads,
-  cancellation, encoding detection, UTF-16 newline scanning, encoding-switch rebuild + drain-and-swap
+  cancellation, encoding detection, UTF-16 newline scanning, encoding-switch rebuild + drain-and-swap.
+  `wire_characterization_test.rs` pins every answer, error, and event payload as JSON.
+- `host/`, `app_host.rs`, `worker.rs`, `bridge.rs`, `events.rs`, `volume_error.rs`, `markdown_image_fetch.rs`: the
+  seams between the viewer core and the app. See § "Host seams"
+
+## Host seams
+
+The viewer core reaches nothing of the app's directly; everything app-shaped arrives through a seam, so the core can
+run under another host (the browser demo, #302; plan: `docs/specs/viewer-crate-plan.md`).
+
+- **`host/`, one trait per concern**, each with a `No*` default: `volumes` (the registered volume for an id, and
+  whether a path routes over its parent), `pulls` (a bounded temp copy, as a `PreviewTemp` whose removal the host owns),
+  `images` (a Markdown picture's `MediaSource`), `events` (a watched file changed), `analytics` (`viewer_opened`),
+  `opener` (a web or mail link). The log view's row transform is a plain `fn` field. `ViewerHost` bundles them.
+- **`app_host.rs`** is the app's answer: the volume manager, `materialize.rs`, `markdown_image_fetch.rs`,
+  `analytics.rs`, and, once `init_app_handle` installs it at startup, the Tauri events and opener. Before that (the
+  app's unit tests) the same host answers without the two that need a window.
+- **The app owns the event wire.** The core reports facts (`MediaLoad`, `PullProgress`, `FileChange`); `events.rs`
+  holds the `tauri_specta::Event` structs (`ViewerMediaLoad`, `ViewerPullProgress`) and `app_host.rs` builds the
+  `viewer:file-changed:<sid>` payload. Decision: no crate type may share an event's name, or specta would emit both into
+  `bindings.ts`. The facts serialize to the same JSON, which `wire_characterization_test.rs` pins.
+- **`worker.rs`**: every background job starts there (`spawn` returns a `Job` to `join`; `after(delay, job)`). Natively
+  one OS thread per job, as before: the jobs block on file reads, and one slow mount must not starve the rest.
+- **`bridge.rs`**: every `block_on` and fire-and-forget future the core needs (the volume reads and the reader's close).
+  Callers are blocking threads, never async tasks.
 
 ## Byte sources
 
@@ -243,8 +268,9 @@ option, like any text file. Files:
   can hold it without depending on `markdown_session.rs`, which depends on the store (`module-cycles`).
 - `markdown_render.rs`: pure `render_markdown(source, image)`: `pulldown-cmark` (tables, footnotes, strikethrough,
   task lists, heading attributes, GFM alerts) → HTML → `ammonia`.
-- `markdown_images.rs`: pure `resolve_image_src`, plus `VolumeImage` and `RemoteImage`, the two `DeferredMedia`
-  sources behind an image's token.
+- `markdown_images.rs`: pure `resolve_image_src`. The bytes come through the host (`host/images.rs`); the app's
+  answer is `markdown_image_fetch.rs`: `VolumeImage` and `RemoteImage`, the two `DeferredMedia` sources behind an
+  image's token.
 - `markdown_links.rs`: pure `resolve_link` (what a clicked `href` means, a typed `MarkdownLink`) and
   `resolve_relative`, the volume-confined relative-reference rule images and links share.
 

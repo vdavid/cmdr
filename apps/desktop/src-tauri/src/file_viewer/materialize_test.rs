@@ -7,10 +7,11 @@ use std::sync::{Arc, Mutex};
 
 use super::ViewerError;
 use super::materialize::{
-    PREVIEW_CAP_BYTES, extract_if_routed_with, init_materialize_dir, is_orphan_temp_name, map_volume_error,
-    materialize_for_inspect_with, materialize_for_viewer_with, reap_orphan_temps,
+    PREVIEW_CAP_BYTES, extract_if_routed_with, init_materialize_dir, is_orphan_temp_name, materialize_for_inspect_with,
+    materialize_for_viewer_with, reap_orphan_temps,
 };
 use super::session;
+use super::volume_error::map_volume_error;
 use crate::file_system::volume::RoutedKind;
 use crate::file_system::volume::VolumeError;
 
@@ -598,7 +599,7 @@ fn a_pull_reports_its_progress_against_the_declared_size() {
         .expect("a temp");
     assert_eq!(
         open.pull_progress(),
-        Some(super::ViewerPullProgress {
+        Some(super::PullProgress {
             bytes_done: PHONE_FILE_LEN as u64,
             bytes_total: Some(PHONE_FILE_LEN as u64),
         })

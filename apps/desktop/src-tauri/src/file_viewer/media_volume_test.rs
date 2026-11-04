@@ -15,7 +15,7 @@ use tauri::http::{Response, StatusCode, header};
 use super::content_kind::ViewerContentKind;
 use super::media::{self, MediaSource};
 use super::media_protocol::serve_volume;
-use super::media_volume::{MEDIA_ON_VOLUME_MAX_BYTES, MediaLoadStage, ViewerMediaLoad};
+use super::media_volume::{MEDIA_ON_VOLUME_MAX_BYTES, MediaLoad, MediaLoadStage};
 use super::session;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{ListingProgress, Volume, VolumeError, VolumeRandomReader};
@@ -250,7 +250,7 @@ fn volume_media(token: &str) -> Arc<super::media_volume::VolumeMedia> {
 }
 
 /// One `cmdr-media://` request against a session's token, and what it told the window.
-fn request(token: &str, range: Option<&str>, stall_limit: Duration) -> (Response<Vec<u8>>, Vec<ViewerMediaLoad>) {
+fn request(token: &str, range: Option<&str>, stall_limit: Duration) -> (Response<Vec<u8>>, Vec<MediaLoad>) {
     let heard = Arc::new(Mutex::new(Vec::new()));
     let heard_by_emit = Arc::clone(&heard);
     let response = tauri::async_runtime::block_on(serve_volume(
@@ -446,7 +446,7 @@ fn closing_the_session_stops_a_read_in_flight() {
         token.clone(),
         None,
         STALL_LIMIT,
-        move |load: ViewerMediaLoad| heard_by_emit.lock().unwrap().push(load),
+        move |load: MediaLoad| heard_by_emit.lock().unwrap().push(load),
     ));
     let reads_before_the_close = counters.ranged_reads.load(Ordering::SeqCst);
     crate::test_support::wait_until(Duration::from_secs(5), "the first read to arrive", || {

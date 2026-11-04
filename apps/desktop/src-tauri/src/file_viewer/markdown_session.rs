@@ -16,17 +16,18 @@ use std::sync::atomic::AtomicBool;
 
 use serde::Serialize;
 
-use crate::file_system::volume::manager::get_volume_manager;
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
+
+use super::host::host;
 
 use super::content_kind::{
     CLASSIFY_HEAD_LEN, MARKDOWN_RENDER_CAP_BYTES, ViewerContentKind, is_markdown_extension, is_renderable_markdown,
 };
 use super::encoding::{DETECT_HEAD_BYTES, FileEncoding, decode_line, detect_from_head};
+use super::host::pulls::PreviewTemp;
 use super::markdown_document::MarkdownDocument;
 use super::markdown_links::{MarkdownLink, resolve_link};
 use super::markdown_render::render_markdown;
-use super::materialize::PreviewTemp;
 use super::media_backend::MediaBackend;
 use super::origin::SourceOrigin;
 use super::row_text::RowText;
@@ -164,10 +165,23 @@ pub fn resolve_markdown_link(session_id: &str, href: &str) -> Result<MarkdownLin
     Ok(resolve_link(href, document.path(), &volume_root(document.volume_id())))
 }
 
+/// Follows a link clicked in a Markdown session's rendered view: a web or mail link opens
+/// through the host (the user's browser or mail app), so only `http`, `https`, and
+/// `mailto` ever leave the viewer; the rest comes back for the window to act on (scroll,
+/// open the file in this window, or nothing).
+pub fn follow_markdown_link(session_id: &str, href: &str) -> Result<MarkdownLink, ViewerError> {
+    let link = resolve_markdown_link(session_id, href)?;
+    if let MarkdownLink::External { url } = &link {
+        host().opener.open_url(url)?;
+    }
+    Ok(link)
+}
+
 /// The root of the volume a document lives on, which its relative references can't climb
 /// past. The local drive's `/` when the volume is gone.
 fn volume_root(volume_id: &str) -> PathBuf {
-    get_volume_manager()
+    host()
+        .volumes
         .get(volume_id)
         .map_or_else(|| PathBuf::from("/"), |volume| volume.root().to_path_buf())
 }

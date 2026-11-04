@@ -6,7 +6,7 @@
 //!
 //! - the pull loop (`materialize::stream_to_file`) records bytes after every chunk and
 //!   stops at the next chunk boundary once the open is abandoned;
-//! - the command's waiter reads the progress to emit [`ViewerPullProgress`] to the
+//! - the command's waiter reads the progress to emit [`PullProgress`] to the
 //!   window, and abandons the open when no bytes arrive for the stall limit;
 //! - the window-destroyed handler abandons the open of a window that went away.
 //!
@@ -22,16 +22,16 @@ use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 
 use cmdr_fs::rt::{self, Instant};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use super::ViewerError;
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
-/// `viewer-pull-progress`: how much of the file a viewer has pulled so far. Emitted to
-/// the viewer window that asked for the file, while its open pulls.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
+/// How much of the file an open has pulled so far. The host tells the window that asked:
+/// the app as the `viewer-pull-progress` event (`file_viewer/events.rs`, the same JSON).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ViewerPullProgress {
+pub struct PullProgress {
     pub bytes_done: u64,
     /// `None` when the source didn't say how big the file is.
     pub bytes_total: Option<u64>,
@@ -66,7 +66,7 @@ pub struct PendingOpen {
     fate: Mutex<Fate>,
     /// Mirrors `fate == Abandoned` so the pull loop checks it without the lock.
     abandoned: AtomicBool,
-    progress: Mutex<Option<ViewerPullProgress>>,
+    progress: Mutex<Option<PullProgress>>,
     /// The open's start, then the last time a pull recorded bytes.
     last_activity: Mutex<Instant>,
 }
@@ -89,7 +89,7 @@ impl PendingOpen {
 
     /// Records that the pull has `bytes_done` of the file, and that it's alive.
     pub(super) fn record_pull(&self, bytes_done: u64, bytes_total: Option<u64>) {
-        *self.progress.lock_ignore_poison() = Some(ViewerPullProgress {
+        *self.progress.lock_ignore_poison() = Some(PullProgress {
             bytes_done,
             bytes_total,
         });
@@ -97,7 +97,7 @@ impl PendingOpen {
     }
 
     /// The pull's latest progress, or `None` while nothing is being pulled.
-    pub fn pull_progress(&self) -> Option<ViewerPullProgress> {
+    pub fn pull_progress(&self) -> Option<PullProgress> {
         *self.progress.lock_ignore_poison()
     }
 

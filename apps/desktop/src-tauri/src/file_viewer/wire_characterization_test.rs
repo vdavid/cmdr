@@ -19,8 +19,10 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::encoding::FileEncoding;
-use super::media_volume::{MediaLoadStage, ViewerMediaLoad};
-use super::pending_open::ViewerPullProgress;
+use super::events::{ViewerMediaLoad, ViewerPullProgress};
+use super::host::events::FileChange;
+use super::media_volume::{MediaLoad, MediaLoadStage};
+use super::pending_open::PullProgress;
 use super::session::{self, SavedAs};
 use super::session_test_support::{create_test_dir, write_test_file};
 use super::{
@@ -333,34 +335,36 @@ fn saves_and_events_cross_in_these_shapes() {
         ],
         r##"[{"kind":"utf8"},{"kind":"sourceEncoding","encoding":"utf16Le"}]"##,
     );
-    let loads: Vec<ViewerMediaLoad> = [MediaLoadStage::Reading, MediaLoadStage::Done, MediaLoadStage::Failed]
+    // The viewer's facts and the app's events must cross as the same JSON: a browser host
+    // serializes the facts themselves.
+    let facts: Vec<MediaLoad> = [MediaLoadStage::Reading, MediaLoadStage::Done, MediaLoadStage::Failed]
         .into_iter()
-        .map(|stage| ViewerMediaLoad {
+        .map(|stage| MediaLoad {
             token: "t".into(),
             stage,
             bytes_done: 4,
             bytes_total: 9,
         })
         .collect();
-    pin(
-        &loads,
-        r##"[{"token":"<masked>","stage":"reading","bytesDone":4,"bytesTotal":9},{"token":"<masked>","stage":"done","bytesDone":4,"bytesTotal":9},{"token":"<masked>","stage":"failed","bytesDone":4,"bytesTotal":9}]"##,
-    );
-    pin(
-        [
-            ViewerPullProgress {
-                bytes_done: 1,
-                bytes_total: Some(2),
-            },
-            ViewerPullProgress {
-                bytes_done: 3,
-                bytes_total: None,
-            },
-        ],
-        r##"[{"bytesDone":1,"bytesTotal":2},{"bytesDone":3,"bytesTotal":null}]"##,
-    );
-    let (grew_name, grew) = session::file_changed_event("sid-1", "grew", Some(42));
-    let (rotated_name, rotated) = session::file_changed_event("sid-1", "rotated", None);
+    let loads: Vec<ViewerMediaLoad> = facts.iter().cloned().map(ViewerMediaLoad::from).collect();
+    let loads_json = r##"[{"token":"<masked>","stage":"reading","bytesDone":4,"bytesTotal":9},{"token":"<masked>","stage":"done","bytesDone":4,"bytesTotal":9},{"token":"<masked>","stage":"failed","bytesDone":4,"bytesTotal":9}]"##;
+    pin(&loads, loads_json);
+    pin(&facts, loads_json);
+    let pulls = [
+        PullProgress {
+            bytes_done: 1,
+            bytes_total: Some(2),
+        },
+        PullProgress {
+            bytes_done: 3,
+            bytes_total: None,
+        },
+    ];
+    let pulls_json = r##"[{"bytesDone":1,"bytesTotal":2},{"bytesDone":3,"bytesTotal":null}]"##;
+    pin(pulls.map(ViewerPullProgress::from), pulls_json);
+    pin(pulls, pulls_json);
+    let (grew_name, grew) = super::app_host::file_changed_event("sid-1", FileChange::Grew { new_size: 42 });
+    let (rotated_name, rotated) = super::app_host::file_changed_event("sid-1", FileChange::Rotated);
     assert_eq!(grew_name, "viewer:file-changed:sid-1");
     assert_eq!(rotated_name, "viewer:file-changed:sid-1");
     pin(

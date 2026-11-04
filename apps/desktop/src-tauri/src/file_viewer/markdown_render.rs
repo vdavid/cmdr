@@ -22,7 +22,7 @@ use std::sync::{Arc, Mutex};
 
 use pulldown_cmark::{CowStr, Event, Options, Parser, Tag, TagEnd, html};
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// What an image becomes in the rendered HTML.
 #[derive(Debug, Clone, PartialEq, Eq)]

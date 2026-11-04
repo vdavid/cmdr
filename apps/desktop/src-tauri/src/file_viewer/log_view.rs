@@ -1,5 +1,5 @@
 //! The debug log's view of a text session: every row shows a marked value as itself, its log
-//! markers gone (`crate::redact::display_line`), while the file on disk keeps them for the error
+//! markers gone (the host's `log_display`, the app's `redact::display_line`), while the file on disk keeps them for the error
 //! reporter. The view applies where rows leave a backend, so search columns, highlights, wrap,
 //! copy, and "save range" all work on the text the user sees; byte offsets stay the raw file's.
 

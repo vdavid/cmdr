@@ -108,7 +108,7 @@ mod remote {
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
-    use crate::file_viewer::markdown_images::RemoteImage;
+    use crate::file_viewer::markdown_image_fetch::RemoteImage;
     use crate::file_viewer::media::DeferredMedia as _;
 
     const PNG: &[u8] = b"\x89PNG\r\n\x1a\n and the rest";

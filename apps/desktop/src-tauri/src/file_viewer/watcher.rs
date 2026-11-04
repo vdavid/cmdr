@@ -37,7 +37,7 @@ use notify_debouncer_full::{
     notify::{RecommendedWatcher, RecursiveMode},
 };
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Debounce window for raw notify events. Matches the `file_system` watcher's
 /// rationale: 300 ms collapses a multi-write append into one event without

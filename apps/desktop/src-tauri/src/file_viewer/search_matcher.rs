@@ -36,7 +36,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use regex::{Regex, RegexBuilder};
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::row_text::RowText;
 use super::{MAX_SEARCH_MATCHES, SearchMatch};
