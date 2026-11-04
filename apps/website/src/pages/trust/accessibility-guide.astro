@@ -55,8 +55,10 @@ const toc = [
     <ul>
         <li>
             <strong>Every command works from the keyboard</strong>: most have a shortcut, the rest are in the command
-            palette, and you can add or change a shortcut for any of them in Settings &gt; Keyboard shortcuts. Help
-            &gt; Keyboard shortcuts lists them all in one window.
+            palette, and Help &gt; Keyboard shortcuts lists them all in one window. You can add or change the
+            shortcut of almost any command in Settings &gt; Keyboard shortcuts; a few find keys, like ⌘F, stay fixed.
+            In the main window, a shortcut needs a modifier key other than Shift alone, since plain letters and
+            digits, and Shift with a letter, type into the file list.
         </li>
         <li>
             <strong>Command palette</strong>: press ⌘⇧P (Command-Shift-P) and type to find any command by name.
@@ -69,6 +71,23 @@ const toc = [
         <li>
             <strong>Reach the notifications</strong>: press ⌃F6 (Control-F6) to move focus to the notifications and
             their buttons, like Undo. Arrow keys and Tab move between them, and Escape takes you back.
+        </li>
+        <li>
+            <strong>Quick filter</strong>: while you type a filter, Space, -, and * go into the pattern. Pause for a
+            moment, and they work as shortcuts again, so Space marks the files the filter left. An arrow key, Enter,
+            or Tab ends the typing right away. To give yourself more time, change Settings &gt; Advanced &gt; Quick
+            filter typing window.
+        </li>
+        <li><strong>Quick Look</strong>: ⇧Space (Shift-Space) opens it, even while a quick filter is on.</li>
+        <li>
+            <strong>Find in an Ask Cmdr chat</strong>: with focus in the Ask Cmdr panel, press ⌘F to search the
+            conversation. Enter or ⌘G goes to the next match, ⇧Enter or ⇧⌘G to the previous one, and Escape closes
+            the find bar and returns you to where you were.
+        </li>
+        <li>
+            <strong>Dialogs that open by themselves</strong>, like a question from a running copy, don't take the
+            keys you're typing elsewhere. Stop typing for a moment and the dialog's keys start working; press Tab to
+            reach a text field. Escape works right away.
         </li>
         <li>
             <strong>Undo a move to trash</strong> any time from Edit &gt; Undo move to trash, after its notification is
@@ -98,7 +117,8 @@ const toc = [
         <li>
             <strong>Works today</strong>: dialogs, Settings, and forms are built for screen readers, and dialogs keep
             and return focus correctly. The menu bar and context menus are native, so VoiceOver reads them like any
-            other app's. Notifications are read out without moving your focus.
+            other app's. Notifications are read out without moving your focus. A dialog that opens by itself says that
+            the keyboard waits until you stop typing, so a keystroke meant for something else can't answer it.
         </li>
         <li>
             <strong>The file list</strong>: as the cursor moves, VoiceOver reads the file's name, its
@@ -174,7 +194,8 @@ const toc = [
     <p>
         Notifications go away after a few seconds by default. To keep them up until you close them, turn on Settings
         &gt; Behavior &gt; Notifications &gt; "Keep notifications until I close them". A notification
-        also stays while your pointer or keyboard focus is on it.
+        also stays while your pointer or keyboard focus is on it. Missed a one-time tip? Each one has a switch in
+        Settings &gt; Advanced &gt; Hints and warnings: turn it off, and the tip shows again the next time it applies.
     </p>
 
     <h2 id="gaps">Known gaps</h2>

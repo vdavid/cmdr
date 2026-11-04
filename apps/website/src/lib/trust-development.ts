@@ -144,9 +144,8 @@ export const advisoryFixes: AdvisoryFix[] = [
  *   the same under `crates/cmdr-operations/src`.
  * - Frontend unit tests: `rg -c -g '*.test.ts' '^\s*it\(' apps/desktop/src`, summed, and the file count.
  * - End-to-end tests: `rg -c -g '*.spec.ts' '^\s*test(\.skip|\.only)?\(' apps/desktop/test/e2e-playwright`.
- * - `unsafe` blocks: `rg -c --type rust 'unsafe \{' apps crates`. The vendored copy is
- *   `crates/fsevent-stream`: the only crate with `unsafe` code that lacks `[lints] workspace = true`,
- *   so the `undocumented_unsafe_blocks` lint doesn't reach it.
+ * - `unsafe` blocks: `rg -c --type rust 'unsafe \{' apps crates`. Every crate with `unsafe` code
+ *   inherits the workspace lints, so `undocumented_unsafe_blocks` reaches all of them.
  * - Checks: the count in `scripts/check/CLAUDE.md`'s opening sentence.
  */
 export const codeCounts = {
@@ -156,7 +155,6 @@ export const codeCounts = {
   frontendTestFiles: 879,
   e2eTests: 371,
   unsafeBlocks: 469,
-  unsafeBlocksInVendoredCode: 39,
   checks: 135,
 }
 

@@ -753,7 +753,24 @@ export const roadmapSections: RoadmapSection[] = [
           {
             date: '(Oct 29)',
             title: 'Ukrainian',
-            description: 'The whole app and its native menus, in Ukrainian. Cmdr has 16 langs now.',
+            description: 'Full Ukrainian translation. Cmdr has 16 langs now.',
+            done: true,
+          },
+          {
+            date: '(Oct 31)',
+            title: 'Czech',
+            description: 'Czech translation, reviewed by a native speaker. Cmdr has 17 langs now.',
+            done: true,
+          },
+        ],
+      },
+      {
+        heading: 'Nov 2026',
+        milestones: [
+          {
+            date: '(Nov 2)',
+            title: 'AI agent tooling revamp',
+            description: 'The agent is much more capable with proper tooling.',
             done: true,
           },
         ],

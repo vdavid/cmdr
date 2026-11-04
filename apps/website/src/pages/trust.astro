@@ -453,8 +453,9 @@ const toc = [
     <ul>
         <li>
             An index of <strong>every file and folder name and path</strong> on each indexed drive, including network
-            shares. It lives in <code>~/Library/Caches/com.veszelovszki.cmdr/drive-index/</code>, so Time Machine
-            doesn't back it up, and Cmdr rebuilds it if it's deleted.
+            shares, and a score per folder for how much it seems to matter. Both live in
+            <code>~/Library/Caches/com.veszelovszki.cmdr/drive-index/</code>, so Time Machine doesn't back them up, and
+            Cmdr rebuilds them if they're deleted.
         </li>
         <li>
             When image search is on (off by default): each image's path, text read from it (OCR), tags, and
@@ -488,8 +489,8 @@ const toc = [
         </li>
     </ul>
     <p>
-        Time Machine backs up everything in <code>Application Support</code> (the index stays out, in
-        <code>Caches</code>). An encrypted backup disk keeps those copies encrypted too.
+        Time Machine backs up everything in <code>Application Support</code> (the index and folder scores stay
+        out, in <code>Caches</code>). An encrypted backup disk keeps those copies encrypted too.
     </p>
     <p>
         <strong>Passwords and API keys</strong> (for SMB, SFTP, WebDAV, S3, and cloud AI) and
@@ -547,8 +548,10 @@ const toc = [
             <code>source=Notarized Developer ID</code>.
         </li>
         <li>
-            <strong>Hardened runtime</strong> is on, and the released version {verifiedAgainst.version} has no
-            entitlements at all.
+            <strong>Hardened runtime</strong> is on, and the app in the released version {verifiedAgainst.version}
+            has no entitlements at all. The one exception is the optional Finder extension inside it, which carries
+            only the App Sandbox entitlement that macOS requires of an extension. It's signed with the same Developer
+            ID and hardened runtime.
         </li>
         <li>
             <strong>Code requirement</strong> for a PPPC profile (to grant Full Disk Access through MDM):
@@ -601,7 +604,9 @@ const toc = [
         2026-10-29 with <code>codesign -d --entitlements -</code>, <code>codesign -d -r-</code>,
         <code>spctl -a -vv</code>, and <code>stapler validate</code>. Both MDM profiles were applied on a Mac enrolled
         in Fleet on 2026-10-14 (0.52.0 from the <code>.pkg</code>, macOS 27.0.1,
-        <code>managed_policy/DETAILS.md</code> § Testing).
+        <code>managed_policy/DETAILS.md</code> § Testing). 0.59.0 is the first release that bundles the Finder
+        extension: re-read both the app and <code>Contents/PlugIns/*.appex</code> with the same commands once it's
+        built, and confirm the app's code requirement didn't change.
     </DevTodo>
 
     <h2 id="permissions">Sandbox and permissions</h2>
@@ -643,7 +648,8 @@ const toc = [
             signed with Cmdr's certificate) as a separate process, listening on <code>127.0.0.1</code> only.
         </li>
         <li>
-            The optional MCP server, which lets outside AI tools control Cmdr, is off by default. When on, it listens
+            The optional MCP server, which lets outside AI tools control Cmdr, is off by default. Anything sensitive
+            they start waits for the user to confirm in Cmdr, and they can't read inside files. When on, it listens
             on <code>127.0.0.1</code> only, and every request needs an access token. Cmdr creates a new random token
             each time it starts (unless the user sets a fixed one in the <code>CMDR_MCP_TOKEN</code> environment
             variable) and keeps it in a file only the user's account can read.
@@ -651,6 +657,14 @@ const toc = [
         <li>
             For Android phones over ADB, Cmdr can start the ADB server from the user's own Android tools, which
             listens on <code>127.0.0.1</code> port 5037.
+        </li>
+        <li>
+            Cmdr adds "Open in Cmdr" to the macOS Services menu for files and folders, and any app can call it. It only
+            opens the folder in a Cmdr tab with the cursor on the item; it never opens or runs a file.
+        </li>
+        <li>
+            Cmdr's <code>Info.plist</code> sets one environment variable, <code>MallocLargeCache=0</code>, which turns
+            off a macOS memory cache to keep Cmdr's memory use down.
         </li>
         <li>
             Cmdr opens no port that other machines can connect to: everything it listens on is <code>127.0.0.1</code>.
@@ -679,7 +693,7 @@ const toc = [
         </li>
     </ul>
     <p>
-        Nothing reaches a cloud AI service until the user turns on "Allow cloud AI" in Settings, which lists what each feature sends. The app's backend enforces this for every AI feature. Cmdr's own
+        Nothing reaches a cloud AI service until the user turns on "Allow cloud AI" in Settings, which lists what each feature sends. When that list grows, Cmdr turns cloud AI off until the user agrees to the new one. The app's backend enforces this for every AI feature. Cmdr's own
         on-device model needs no switch, because nothing leaves the Mac.
     </p>
     <p>With cloud AI, this is what reaches the provider:</p>
@@ -691,13 +705,18 @@ const toc = [
             GPS location), and text read from images. It can also read Cmdr's own state, its settings with anything
             that looks like a secret masked, and its recent logs with identifying details replaced. When Ask Cmdr is
             on, it also looks at folders that changed recently on its own and suggests what to do, sending the same
-            kinds of data; turn that off in Settings › AI. In a chat the user started, the assistant can work the app
-            and create folders, create files, and tag files right away. Copies, moves, deletes, renames, and anything
-            else sensitive wait for the user to confirm, and plans it prepares wait for approval.
+            kinds of data; turn that off in Settings › AI. In a chat the user started, the assistant can work the app,
+            connect a place the user saved, and create folders, create files, and tag files right away. Copies, moves,
+            deletes, renames, and anything else sensitive wait for the user to confirm, and plans it prepares wait for
+            approval. A password the user types into the chat to unlock an archive or a backup goes to the provider
+            with the message. Some contents never reach the provider, whatever anyone asks: SSH keys, cloud and tool
+            credentials, keychains, browser data, Mail, Messages, Notes, Cmdr's own data, and any file holding a
+            private key. Their names still can.
         </li>
         <li>
-            <strong>Folder name suggestions, select-by-description, and natural-language search</strong>: up to a few
-            hundred file and folder names from the current folder, plus that folder's path, or the search text.
+            <strong>Folder name suggestions, select-by-description, and natural-language search</strong>: up to 240 file
+            and folder names from the current folder (100 for name suggestions), plus that folder's path, or the search
+            text.
         </li>
     </ul>
     <p>
@@ -705,8 +724,10 @@ const toc = [
         framework, and searching images by description uses a model Cmdr downloads once and runs through Apple's Core
         ML. All of it runs on the Mac, and no image or text from it leaves the Mac. IT can turn AI off, allow only
         on-device AI, or limit which hosts cloud AI may reach (<a href="#mdm">central management</a>). The optional MCP
-        server, off by default, lets AI tools the user installs read what Cmdr shows them
-        (<a href="#permissions">details</a>).
+        server, off by default, lets AI tools the user installs work Cmdr much as Ask Cmdr does, with two limits: they
+        can't read inside files, and they can't write the assistant's notes. Copies, moves, deletes, and anything else
+        sensitive that they start wait for the user to confirm in Cmdr, and no setting in a release build turns that
+        off (<a href="#permissions">details</a>).
     </p>
 
     <h2 id="development">How Cmdr is built</h2>
@@ -719,7 +740,10 @@ const toc = [
         <li>
             The code that touches files, the network, and the system is Rust. {codeCounts.checks} automated checks,
             including about {fmt(Math.round(codeCounts.rustTests / 100) * 100)} Rust tests with deliberately hostile
-            cases, run during development and again on GitHub before each change lands.
+            cases, run during development and again on GitHub before each change lands. Every few days, CI also fuzzes
+            the parsers that read untrusted bytes, checks <code>unsafe</code> Rust with Miri, and runs the file
+            operation engine's thread races under Shuttle. Kani proves the Zip Slip guard and rollback's safety
+            decisions for every input up to a bound.
         </li>
         <li>
             Development is AI-assisted. One person owns every change; as a one-person company, there's no
@@ -886,12 +910,14 @@ const toc = [
                 </li>
                 <li>
                     <strong>Turning on cloud AI</strong>: file names and, when asked, parts of files go to the AI
-                    provider. Text inside a file can try to steer the assistant, which still can't change a file
-                    without the user's approval.
+                    provider. Text inside a file can try to steer the assistant. It still can't copy, move, delete, or
+                    rename anything without the user's confirmation; on its own it can only create an empty folder or
+                    file and change Finder tags, and a tag change can be undone.
                 </li>
                 <li>
                     <strong>Turning on the MCP server</strong>: AI tools on the same Mac that have its access token can
-                    then control Cmdr.
+                    then work Cmdr and see what it shows. They can't confirm a sensitive action; that still waits for
+                    the user.
                 </li>
                 <li>
                     <strong>Turning off updates</strong>, or holding Cmdr at a version: flaws that later releases fix

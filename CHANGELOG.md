@@ -5,6 +5,99 @@ This file holds all notable changes to Cmdr over time.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.59.0] - 2026-11-04
+
+My highlights this time:
+
+- A full revamp for the built-in agent's tooling. The agent has a lot better tools now to help you. OMG it's so much
+  nicer, you need to try it! AI chats also got real, usable search! (alpha version)
+- Czech language added (Huge thanks to Jiri Slovacek for the high-quality contribution!)
+- Copies to/from SMB shares keep Finder tags, comments, and custom icons.
+
+And 30+ bug fixes and ~15 improvements for memory use, speed, security, correctness, etc.
+
+### Added
+
+- Add Czech: the whole app and its native menus, reviewed by a native speaker (2988e1006, 1e28b01b1, 172395b37,
+  42c14fb62, 3042ecb13, f62199d97)
+- Add "Open in Cmdr" to the top of Finder's right-click menu, with an opt-in Finder extension (deff440f2, b80c9f680,
+  965701662, 2d1bf8997, 833330693)
+- Keep Finder tags, comments, custom icons, and resource forks on copies to and from SMB shares (0152be2e3, 1bd809ee1)
+- Roll back Finder color-tag changes from the operation log, whoever made them (6b722a28c, 2a71f2526)
+- Browse and copy out of zip files inside restic snapshots (8fcb2d3ab)
+- Let Ask Cmdr read Cmdr's own state, settings, and logs, with secrets masked (de36956cd)
+- Find text in the open Ask Cmdr chat with ⌘F (7282980e8)
+- Search past Ask Cmdr chats by relevance, with what matched, each chat's age, and a real title (0b8989448)
+- Bring back any dismissed hint in Settings > Advanced > Hints and warnings (914c83744)
+
+### Changed
+
+- Make anything sensitive an AI asks for wait for your yes: opening files, changing settings, ejecting, rolling back,
+  and clearing a Locked flag (3a28fc9d3, 5f3f71548, 40e259cef, b98f623e4, 239a7bd23, 4b558717e, 3ea9e7fc0, 9ed06ac2c)
+- Show both the friendly name and the raw value when Ask Cmdr asks to change a setting (004e9c64c, 31c63a84d)
+- Cut Ask Cmdr's prompt nearly in half (15,460 to 8,516 tokens): local models with a 32K window fit again (eeaed0c0f)
+- Make Ask Cmdr more reliable on smaller models, and stop it claiming it checked things it didn't (7ae02f99a, 02b3f7476,
+  689e7ac4f, 3cc31cf1b, 4c276ee0c, c054df57f, 4fa702483)
+- Say plainly when your AI plan doesn't include the model, or Groq's free tier is the limit (a0764f02c, a2cdb936d)
+- Speak MCP through the official SDK, supporting every spec revision through 2026-07-28 (4013e6319)
+- Use about 400 MiB less memory at search and listing peaks (61eaf0d21)
+- Read and change Finder tags on direct SMB shares about 6× faster, even with no mount (62fa8e53f)
+- Name a share by the server name you gave it, like "private on Home NAS" (3bdb18101)
+- Copy small files to Android phones faster (0813c452a)
+- Keep the folder importance weights out of Time Machine, saving about 180 MB per backup (c7657ba99, 3337c3232,
+  97cebb111)
+- Let Space, -, and * run their commands once you pause typing a quick filter (c5113c1a0)
+- Refuse shortcuts that can never fire in the main window, like a lone letter or Shift+letter (0c599b63f, 30c6a2af8)
+- Turn off autocorrect and word prediction in search fields (c7b2e97dc)
+
+### Fixed
+
+- Fix a keystroke typed elsewhere answering a question a running copy popped up, like clearing a Locked flag (c6beb9167,
+  67dbdac78)
+- Fix a force-quit during a copy possibly leaving an overwritten original under a temp name (8ee863bf3)
+- Fix a canceled transfer still walking the whole folder tree (461b74369)
+- Fix undoing a move onto an SMB share leaving the emptied folder behind (9c063e16a, d85b5202c)
+- Fix typed `.local` SMB servers not connecting when discovery hadn't found them (8119cb818)
+- Fix forgetting an SMB server leaving its saved passwords behind (de6bfccf4)
+- Fix a WebDAV folder behind some proxies listing itself as its own child (5c3ad915f)
+- Fix a phone sometimes opening twice when connected from two places at once (25e9c1779)
+- Fix Android files with odd names showing a row that points at another file (c6d1a8d5e)
+- Fix drive sizes and search going stale after a failed journal replay (9fee2716b)
+- Fix a relaunch after a build-heavy gap replaying changes for 15 minutes instead of rescanning in three (c7ec68cd4)
+- Fix a folder created during the first index reading 0 bytes (a8f0b2cfb)
+- Fix the drive badge and MCP state stalling while the index fills gaps or a mount is dead (812ef3815, a65535c54)
+- Fix rare file-watching hangs and missed change batches (c8f83b009, bef50469e, 96e1ae235, b34b58c06)
+- Fix a locked 7z inside a restic snapshot asking for the backup's password (23fe79eb5)
+- Fix a parked restic snapshot pane holding its index in memory (5f5274ef9)
+- Fix ⌘C over a PDF in the viewer copying nothing (e64ef139f, a058ecfc7)
+- Fix the viewer's tail, reload, and encoding changes silently not taking (2c02ca659)
+- Fix a window-sized focus ring when switching the viewer to text, Binary, or Hex (8a39952dc)
+- Fix opening a file Cmdr can't hand to another app giving no reason (208e0c3a2)
+- Fix ⇧Space typing into a quick filter instead of opening Quick Look (61d3ddccb)
+- Fix the mouse wheel doing nothing right on the pane divider (10b6bb4f6)
+- Fix Settings sidebar clicks doing nothing during a search (9313f0943, 66049095d)
+- Fix Ask Cmdr's tag tool clearing a whole selection on a malformed request, or saying OK when it tagged nothing
+  (1a15bdfd7, 7fd4e6b60)
+- Fix Ask Cmdr sometimes running phantom copies of a tool call (c861d25de)
+- Fix the "This chat is getting long" nudge firing at 3% (bd3e9154f)
+- Fix Escape and closing the rail not leaving Ask Cmdr's threads panel (781d444a7, 32225c587)
+- Fix free Mistral keys failing on every call (d8aeb29a2)
+- Fix AI clients failing to switch a pane to Servers in languages other than English (8c86aa7d8)
+
+### Security
+
+- Stop AI tools from reading SSH keys, credentials, browser data, mail, Cmdr's tokens, or any file holding a private
+  key: CVSS v4.0 5.9 (medium), Cmdr 0.42.0–0.58.0 (287388d52, d912e5db7, 093828fad)
+- Stop a malformed reply from a phone or camera from crashing Cmdr: CVSS v4.0 2.4 (low), Cmdr 0.5.0–0.58.0 (ea5fae4f4)
+
+### Non-app
+
+- Lead the landing page with product clips and real users' words (9409722ce, 9b855be89, f96617422, 2df04b16f, e17f80528,
+  a1d25e601)
+- Prove the Zip Slip guard and rollback's safety with Kani, check `unsafe` with Miri, explore races with Shuttle, and
+  require every fuzz property to catch a mutant (95c7c9e23, 941fb80ca, 7f2017926, a605ef5f7, 08e69da23, 4701c6860)
+- Make our FSEvents fork first-party, held to every house check (fbadc22be, 044f42c09)
+
 ## [0.58.0] - 2026-10-31
 
 About 50 bug fixes and small improvements, lots of them for phones, ejecting, and the drive index. Ukrainian lang added.

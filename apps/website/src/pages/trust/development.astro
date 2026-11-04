@@ -21,7 +21,6 @@ import {
 
 const repo = 'https://github.com/vdavid/cmdr'
 const fmt = (n: number) => n.toLocaleString('en-US')
-const ownUnsafe = codeCounts.unsafeBlocks - codeCounts.unsafeBlocksInVendoredCode
 // Rounded, because the counts come from a pattern match over the source (see the data module).
 const approx = (n: number) => fmt(Math.round(n / 100) * 100)
 const latestAdvisories = advisoryFixes.slice(0, 2)
@@ -144,9 +143,7 @@ const toc = [
         </li>
         <li>
             <strong><code>unsafe</code> Rust</strong>: {codeCounts.unsafeBlocks} blocks, mostly calls into macOS
-            frameworks. Each of the {ownUnsafe} in Cmdr's own code must carry a written safety reason, or the build
-            fails. The other {codeCounts.unsafeBlocksInVendoredCode} are in a vendored copy of a library that watches
-            for file changes.
+            frameworks. Each one must carry a written safety reason, or the build fails.
         </li>
         <li>
             <strong>Custom rules for mistakes that lints don't catch.</strong> Cmdr has {codeCounts.checks} checks in
@@ -215,6 +212,19 @@ const toc = [
         </li>
         <li>Property-based tests, which try many random inputs, for parts of the file index and the app.</li>
         <li>
+            Proofs (Kani) that check every input up to a size bound, for two safety decisions: the archive name check
+            that stops a file from extracting outside its folder (Zip Slip), and the rollback planner's choices about
+            what it may undo.
+        </li>
+        <li>
+            Thread interleaving tests (Shuttle) that explore many orderings of the threads in the file operation
+            engine, for races an ordinary test can't hit.
+        </li>
+        <li>
+            Each fuzz property, proof, and interleaving test has a recorded deliberate bug (a mutant) it must catch. If
+            a test stops failing on its mutant, the check fails, so a test can't pass without testing anything.
+        </li>
+        <li>
             About {approx(codeCounts.frontendTests)} user interface tests in {codeCounts.frontendTestFiles} files, and
             {codeCounts.e2eTests} end-to-end tests that drive the real app.
         </li>
@@ -234,7 +244,8 @@ const toc = [
             <strong>Before a change lands on the main branch, on GitHub</strong>: every change arrives as a pull
             request, and GitHub refuses to merge it until the checks for the parts it touches pass: lints and custom
             checks, unit and integration tests, and the end-to-end suite in Docker on Linux, plus the Rust lints and
-            tests on macOS when Rust code changed. Nobody can skip this, the maintainer included.
+            tests on macOS when Rust code changed, and a build of the Finder extension for both chip types, against
+            the oldest macOS version Cmdr supports, when it changed. Nobody can skip this, the maintainer included.
         </li>
         <li>
             <strong>Every day, on GitHub</strong>: the dependency vulnerability and license scans
@@ -245,7 +256,9 @@ const toc = [
             <strong>Every six days, on GitHub</strong>: <code>govulncheck</code> for the Go build scripts, an
             unused-dependency scan, and live tests against five AI providers' real APIs. Also fuzzing: random-input
             testing, 20 minutes each, of the parsers that read data from outside (Android phones, WebDAV, S3, and NFS
-            server responses, archives, PDFs, and image headers). The macOS lints of the release build and a bundle
+            server responses, archives, PDFs, and image headers), where each target checks real properties such as
+            round trips. Plus the Kani proofs, the Shuttle interleaving tests, the mutant check, and Miri, which runs
+            the tests of the pure-Rust <code>unsafe</code> code and reports undefined behavior. The macOS lints of the release build and a bundle
             size limit run on this schedule too, and before every release tag.
         </li>
         <li>
@@ -279,9 +292,8 @@ const toc = [
         <li>
             <strong>Vulnerability and license policy (<code>cargo-deny</code>)</strong>: any known vulnerability in a
             Rust crate that ships in the Mac app fails the check, at any depth. Licenses must be on an allowlist, and
-            crates may only come from crates.io or from this repository (no Git sources, no wildcard versions). Two advisories are ignored on
-            purpose, each with a written reason: one is in a test-only crate, and one (a timing issue in RSA) affects
-            only SFTP logins with an RSA key file.
+            crates may only come from crates.io or from this repository (no Git sources, no wildcard versions). One advisory is ignored on
+            purpose, with a written reason: a timing issue in RSA that affects only SFTP logins with an RSA key file.
         </li>
         <li>
             <strong>When the scans run</strong>: <code>cargo-deny</code> and <code>osv-scanner</code> run on the
@@ -335,12 +347,15 @@ const toc = [
         </li>
         <li>
             <strong>Where it builds</strong>: GitHub-hosted macOS machines, a fresh one per build. The machine image
-            is pinned, and the build stops if the macOS SDK isn't the expected one. Three builds run in parallel (Apple
-            Silicon, Intel, and universal). From tag to published release takes {releaseBuildMinutes.min}–{releaseBuildMinutes.max} minutes.
+            is pinned, and the build stops if the macOS SDK isn't the expected one. Two builds compile in
+            parallel (Apple Silicon and Intel), then three signed apps come out of them: one per chip and a universal
+            one. From tag to published release takes {releaseBuildMinutes.min}–{releaseBuildMinutes.max} minutes.
         </li>
         <li>
             <strong>Signing</strong>: each build is signed with Apple's Developer ID, notarized by Apple, and signed
-            again with a separate key for the updater. Each release publishes SHA-256 checksums. Details are on the
+            again with a separate key for the updater. The optional Finder extension is built in the same release jobs
+            and signed with the same Developer ID inside the app, so notarization covers it too. Each release publishes
+            SHA-256 checksums. Details are on the
             main page: <a href="/trust#signing">Signing, notarization, and updates</a>.
         </li>
         <li>
