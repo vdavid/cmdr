@@ -4,6 +4,10 @@
     "execute-command": "/opt/cmdr/infra/deploy-webhook/deploy-website.sh",
     "command-working-directory": "/opt/cmdr",
     "response-message": "Deployment triggered",
+    "pass-environment-to-command": [
+      { "source": "payload", "name": "demo_key", "envname": "DEMO_KEY" },
+      { "source": "payload", "name": "demo_image_digest", "envname": "DEMO_IMAGE_DIGEST" }
+    ],
     "trigger-rule": {
       "match": {
         "type": "payload-hmac-sha256",

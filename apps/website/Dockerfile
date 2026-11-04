@@ -1,7 +1,8 @@
-# The browser demo bundle (the builder stage below says where it comes from). A global ARG,
-# because `COPY --from` can't expand one.
-ARG DEMO_IMAGE=demo
-FROM ${DEMO_IMAGE} AS demo-bundle
+# The browser demo bundle, pinned by digest (the builder stage below says where it comes from). A
+# global ARG, because `COPY --from` can't expand one. The placeholder default names no image, so a
+# build that forgets the digest fails on the pull.
+ARG DEMO_IMAGE_DIGEST=0000000000000000000000000000000000000000000000000000000000000000
+FROM ghcr.io/vdavid/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST} AS demo-bundle
 
 # Build stage
 FROM node:26-alpine@sha256:143494b1da2945f061539253adc65e4f1569ddf07da2d384c022c791a9d90a4a AS builder
@@ -35,9 +36,9 @@ COPY CHANGELOG.md feature-status.json ./
 
 # The browser demo bundle, which the build copies into dist/demo/ (src/plugins/demo.ts). CI builds
 # it (Rust to WASM, then the desktop frontend) and publishes it as an image, so this box never
-# compiles Rust. The deploy passes `DEMO_IMAGE` (`ghcr.io/vdavid/cmdr-demo:<content key of this
-# checkout>`, from `scripts/website-demo-key.sh`); a local build passes a dir instead, with
-# `--build-context demo=apps/desktop/build-demo`. Neither: the build fails on pulling `demo`.
+# compiles Rust. The deploy passes `DEMO_IMAGE_DIGEST`, the digest CI pushed and signed into the
+# webhook payload (`infra/deploy-webhook/deploy-website.sh`); a local build passes a dir instead, with
+# `--build-context ghcr.io/vdavid/cmdr-demo=apps/desktop/build-demo`.
 # `CMDR_WEBSITE_DEMO=1` makes an empty bundle fail too, so a deploy never drops /demo/ silently.
 # `apps/website/DETAILS.md` § Browser demo.
 COPY --from=demo-bundle / ./apps/desktop/build-demo/
