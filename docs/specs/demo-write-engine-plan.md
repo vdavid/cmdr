@@ -100,8 +100,8 @@ Verified 2026-11-04 on macOS 27 arm64 (and Linux aarch64 in `ubuntu:24.04` Docke
   `rg -n '\b(M[0-9]+[a-z]?|Milestone\s*[0-9]|Phase\s*[0-9])\b' <touched paths>` before reporting.
 - ❌ **Never translate** new strings; English plus an `@key` description. Any new UI copy is a draft for David.
 - **Gates per milestone**: `pnpm check --fast && pnpm check svelte-tests-related`, `pnpm check clippy`, the touched Rust
-  tests via `cargo nextest run`, the wasm lane (`pnpm check desktop-rust-listing-wasm`), and from the host milestone on
-  the website's demo Playwright smoke. Foreground commands only.
+  tests via `cargo nextest run`, the wasm lane (`pnpm check desktop-rust-listing-wasm`), and from milestone 7b on the
+  website's demo Playwright smoke. Foreground commands only.
 
 ## Survey of the current code (2026-11-04, `49aad7f793`)
 
@@ -354,8 +354,11 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   - **Golden traces**: one per op kind (copy, move, delete, rename, mkdir, a conflict answered Skip, cancel plus
     rollback), on both the local and the volume engine, recording the events in order with their payloads (minus ids and
     timestamps, normalized), the journal rows, and the typed outcome. Run before and after every later conversion
-    milestone; a diff is a regression until explained. This is what "byte-identical" means operationally, beyond routing
-    and clocks.
+    milestone; a diff is a regression until explained. Format: JSON fixtures under
+    `crates/cmdr-operations/tests/golden/` (one file per op kind and engine), compared by a small helper; a
+    `CMDR_BLESS_GOLDEN=1` run rewrites them (no snapshot crate exists in the workspace, and none is added for this).
+    7b's Node smoke reads the volume-engine fixtures to compare the browser run. This is what "byte-identical" means
+    operationally, beyond routing and clocks.
   - **Routing table**: for each entry point (copy, move, delete, trash, rename, rename pre-flight, mkdir, mkfile, bulk
     rename, scan preview, and the four archive-edit `settle_volume` decisions: `copy_into.rs`, `driver.rs`,
     `fresh_compress.rs`, `move_out.rs`), which engine runs (local `std::fs` vs volume) for volume id `"root"` with a
@@ -382,9 +385,11 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 - **Scope**: `cmdr-operations` and `cmdr-operation-log` (production and the test helpers they share).
 - **Intentions**: mechanical: `std` clock → `rt::now`/`rt::since`, tokio clock and timers → `rt::time::*`,
   `SystemTime::now` → `rt::wall_now`, `JoinSet` → `rt::JoinSet`, `yield_now` → `rt::yield_now`. Add the clock bans from
-  `crates/cmdr-listing/clippy.toml` to both crates' `clippy.toml` (cmdr-operation-log has none today; it then needs the
-  root's general settings copied in, since clippy reads only the first file it finds). `lib.rs`'s `cfg(test)` lift stays
-  for spawns only; tests read clocks through `rt` too, or carry a reasoned allow.
+  `crates/cmdr-listing/clippy.toml` to both crates' existing `clippy.toml` (append; each already carries the root's
+  settings and its spawn bans). Tests: `cmdr-operations/src/lib.rs`'s
+  `cfg_attr(test, allow(clippy::disallowed_methods))` already lifts the whole lint for its tests (one lint can't be
+  lifted per path, so the clock bans are lifted there too, which is fine); `cmdr-operation-log` gets the same
+  `cfg(test)` lift, since it has none and its tests would hit the bans.
 - **Landmines**: the two-clocks rule. `Instant` as a STORED type (`state.rs` `born`, outage records) changes nothing
   natively (re-export), but a field typed `tokio::time::Instant` must stay on tokio's clock. Shuttle's
   `sync_primitives.rs` swap is unaffected; don't touch it.
@@ -395,15 +400,17 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 
 ### 5. The local disk as a typed capability (L, three commits, each green alone)
 
-What "the facade" means here, so its invariant is checkable: **the local-engine module trees** (`transfer/copy/`,
-`transfer/move_op/`, `chunked_copy.rs`, `macos_copy.rs`, `linux_copy.rs`, `copy_strategy.rs`, `delete/walker.rs`,
-`delete/trash.rs`, `cloud_trash.rs`, `scan.rs`, `scan_dry_run.rs`, `cancellable.rs`, `scan_preview/local.rs`, the
-leftover sweep's local half, `scratch_dir.rs`, `overwrite.rs`, `durability.rs`, `mount_boundary.rs`, `free_space.rs`)
-**plus one primitives module** (`local_disk/`, name it after what it is) holding what the shared code needs from the
-host OS: errno constants and classification, the `(dev, ino)` identity, `statvfs`, mount tables, `rename_no_replace`.
-Outside those, no `cmdr_local`, `libc`, `std::os::unix`, `objc2`, `xattr`, `trash`, or `dirs`. A Go check in the
-`index-crate-isolation` style enforces it (`scripts/check/checks/`, an allowlist of the module paths above), ❌ not a
-review grep.
+What "the facade" means here, so its invariant is checkable: **the local-engine module trees** (paths from
+`crates/cmdr-operations/src/`, a starting list that 5b's classification finalizes: `transfer/copy/`,
+`transfer/move_op/`, `transfer/chunked_copy.rs`, `transfer/macos_copy.rs`, `transfer/linux_copy.rs`,
+`transfer/copy_strategy.rs`, `delete/walker.rs`, `delete/trash.rs`, `delete/cloud_trash.rs`, `scan.rs`,
+`scan_dry_run.rs`, `scan_walker.rs`, `cancellable.rs`, `scan_preview/local.rs`, `in_flight_sweep.rs`,
+`in_flight_sweep_surface.rs`, `unblocked_removal.rs`, `local_start.rs`, `scratch_dir.rs`, `overwrite.rs`,
+`overwrite_aside_park.rs`, `durability.rs`, `mount_boundary.rs`, `free_space.rs`) **plus one primitives module**
+(`local_disk/`, name it after what it is) holding what the shared code needs from the host OS: errno constants and
+classification, the `(dev, ino)` identity, `statvfs`, mount tables, `rename_no_replace`. Outside those, no `cmdr_local`,
+`libc`, `std::os::unix`, `objc2`, `xattr`, `trash`, or `dirs`. A Go check in the `index-crate-isolation` style enforces
+it (`scripts/check/checks/`, an allowlist of the module paths above), ❌ not a review grep.
 
 #### 5a. The capability, the typed answer, and the routing table in both shapes
 
@@ -429,8 +436,15 @@ review grep.
 
 #### 5b. Code motion behind the boundary (pure, natively identical)
 
-- **Intentions**: move the host-OS primitives the shared code uses into `local_disk/`, so the Go check passes. ❌ No
-  logic change: moves and re-exports only, each module's tests travel with it.
+- **Intentions**: first CLASSIFY every module in the starting list as gated (local-only), split, or shared, and write
+  the table into the commit body. Several are MIXED today: shared and volume code imports from them, so gating them
+  whole would break the wasm build. Known: `scan_preview/volume.rs` uses
+  `scan::{SubtreeTotals, scan_subtree_with_oracle}`; `scope.rs` and `ledger.rs` use `overwrite::aside_park` and
+  `overwrite::DisplacedEntry`; `conflict.rs` uses `durability::lookup_indexed_size` and
+  `overwrite::ResolvedDestination`. Find the rest with `rg 'use (super|crate)::(…)::'` per module. Move each mixed
+  module's SHARED half (types, the oracle scan, `aside_park`, the indexed-size lookup) out to a shared home, and the
+  host-OS primitives the shared code uses into `local_disk/`, so the Go check passes and 5c can gate what's left whole.
+  ❌ No logic change: moves and re-exports only, each module's tests travel with it.
 - **Landmines**:
   - ❗ The boundary is only worth something if it's REAL: no `#[allow]`-sprinkled half-gate. Errno classification can
     stay where it is if it reads `io::Error::raw_os_error()` against constants `local_disk/` exports.
@@ -471,18 +485,11 @@ review grep.
 - **Landmines**: inline `spawn_blocking` plus a `std::sync::Mutex` held across the call site is a self-deadlock on one
   thread; check every inline closure for locks the caller holds. `record_items` callers natively RELY on the block for
   backpressure; inline in the browser there's no queue to bound, which is fine only because the writer is synchronous.
-- **Test plan**: native suites unchanged; a wasm-target integration export in the WASM crate that drives a real
-  `Operations` engine over an `InMemoryVolume` (copy 3 files, move, delete, rename, mkdir, a conflict answered Skip, a
-  cancel, journal rows read back) through the Node smoke. This is the first time the browser runs the engine.
-- ❗ **The demo image's inputs**: this is the first milestone whose wasm module links `cmdr-operations`,
-  `cmdr-operation-log`, and `cmdr-archive` (plus any other path dep they newly pull in; list them from
-  `cargo tree -p cmdr-listing-wasm --target wasm32-unknown-unknown -e normal --prefix none | rg '\(/'`). Add every one
-  to all three lists in the same commit: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
-  `scripts/check/checks/inputs.go`, and ci.yml's `website` filter. Otherwise an engine-only change keeps the image key,
-  `publish-website-demo` finds the old image "final", and getcmdr.com silently serves a stale write engine.
-  `TestWebsiteDemoInputsMatchTheImageKey` keeps the first two aligned; the filter is by hand.
-- **DONE**: the Node smoke drives every op kind through the real engine with zero traps, and the demo image's key covers
-  every crate the module links.
+- **Test plan**: native suites unchanged, plus the wasm build and clippy green. The end-to-end browser run needs a host
+  (`OperationVolumes`, `EngineEvents`, sinks, an op log), so it lands in 7b, ❌ not here; this milestone's audit is the
+  written classification of every reachable executor site in `src/host/DETAILS.md`.
+- **DONE**: nothing the browser can reach on the volume path starts a thread, calls `block_on`, or waits in
+  `blocking_recv`, by the written audit and the `cfg` gating.
 
 ### 7a. An in-memory volume patches the panes (S–M)
 
@@ -533,9 +540,17 @@ review grep.
     a copy invisible to the panes.
   - `JsSink`'s `unsafe impl Send + Sync` soundness rests on no `atomics`; keep its `cfg` guard and reuse it.
   - The size budget: measure raw and gzipped `.wasm`; report it in `DETAILS.md`.
-- **Test plan**: native tests of the host (commands, wire pins) with `cargo nextest`; the wasm lane's Node smoke, which
-  also replays milestone 3's volume-engine golden traces against the real `.wasm` and diffs them with the native ones
-  (invariant 13), and fails on any `RuntimeError` or unhandled rejection (invariant 6).
+- ❗ **The demo image's inputs**: this is the milestone whose wasm module first links `cmdr-operations`,
+  `cmdr-operation-log`, and `cmdr-archive` (plus any other path dep they newly pull in; list them from
+  `cargo tree -p cmdr-listing-wasm --target wasm32-unknown-unknown -e normal --prefix none | rg '\(/'`). Add every one
+  to all three lists in the same commit: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
+  `scripts/check/checks/inputs.go`, and ci.yml's `website` filter. Otherwise an engine-only change keeps the image key,
+  `publish-website-demo` finds the old image "final", and getcmdr.com silently serves a stale write engine.
+  `TestWebsiteDemoInputsMatchTheImageKey` keeps the first two aligned; the filter is by hand.
+- **Test plan**: native tests of the host (commands, wire pins) with `cargo nextest`; the end-to-end run 6 deferred here
+  (copy 3 files, move, delete, rename, mkdir, a conflict answered Skip, a cancel, journal rows read back); the wasm
+  lane's Node smoke, which also replays milestone 3's volume-engine golden traces against the real `.wasm` and diffs
+  them with the native ones (invariant 13), and fails on any `RuntimeError` or unhandled rejection (invariant 6).
 - **DONE**: from JS, every write command answers like the desktop's and the panes' listings change through
   `directory-diff`.
 
