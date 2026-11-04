@@ -34,6 +34,8 @@ use super::range_read::{
     read_range_streamed as stream_range,
 };
 use super::row_text::RowText;
+#[cfg(target_family = "wasm")]
+use super::row_walk::SearchScan;
 use super::search_matcher::{Matcher, SearchMode};
 use super::session_store::{
     BackendType, SearchState, SearchStatus, ViewerOpenResult, ViewerSession, ViewerSessionInit, generate_session_id,
@@ -726,6 +728,7 @@ impl Viewer {
 /// the worker's final status write must be under the same mutex critical section as
 /// the watchdog's so a watchdog-set `Cancelled` is sticky (see step 1.4 of the
 /// viewer-search plan).
+#[cfg(not(target_family = "wasm"))]
 fn spawn_search_worker(
     file: OpenedFile,
     encoding: FileEncoding,
@@ -742,7 +745,7 @@ fn spawn_search_worker(
     let watchdog_status = status.clone();
 
     worker::spawn(move || {
-        let watchdog_handle = start_search_watchdog(watchdog_cancel, watchdog_status);
+        let watchdog_handle = worker::spawn(move || run_search_watchdog(watchdog_cancel, watchdog_status));
 
         // Use ByteSeekBackend for streaming search (low memory, works on any file)
         let backend = match ByteSeekBackend::open_source(&file, encoding) {
@@ -764,6 +767,57 @@ fn spawn_search_worker(
         // Joining the watchdog is best-effort; it exits as soon as it sees a
         // non-Running status (which finalize_search_status just wrote).
         watchdog_handle.join();
+    });
+}
+
+/// How long one slice of a browser search may hold the page before it yields.
+#[cfg(target_family = "wasm")]
+const SEARCH_SLICE: Duration = Duration::from_millis(8);
+/// How many bytes a browser search scans between two clock reads.
+#[cfg(target_family = "wasm")]
+const SEARCH_STEP_BYTES: u64 = 256 * 1024;
+
+/// The browser's search: a slice at a time on the page's event loop, yielding a macrotask
+/// between slices so the page paints, takes input, and fires timers, and a cancel lands
+/// between rows. `search_poll` reads the same progress and matches as on desktop. No
+/// watchdog: nothing here can run past a cancel for longer than one row.
+#[cfg(target_family = "wasm")]
+fn spawn_search_worker(
+    file: OpenedFile,
+    encoding: FileEncoding,
+    matcher: Matcher,
+    cancel: Arc<AtomicBool>,
+    matches: Arc<Mutex<Vec<SearchMatch>>>,
+    bytes_scanned: Arc<Mutex<u64>>,
+    status: Arc<Mutex<SearchStatus>>,
+) {
+    let search = ByteSeekBackend::open_source(&file, encoding).and_then(|backend| backend.row_search());
+    let Ok(mut search) = search else {
+        finalize_search_status(&status, &cancel, /*errored=*/ true);
+        return;
+    };
+    worker::spawn_slices(move || {
+        let scan = SearchScan {
+            matcher: &matcher,
+            cancel: &cancel,
+            results: &matches,
+            progress: &bytes_scanned,
+        };
+        let started = cmdr_fs::rt::now();
+        while cmdr_fs::rt::since(started) < SEARCH_SLICE {
+            match search.step(&scan, SEARCH_STEP_BYTES) {
+                Ok(None) => {}
+                Ok(Some(_)) => {
+                    finalize_search_status(&status, &cancel, /*errored=*/ false);
+                    return false;
+                }
+                Err(_) => {
+                    finalize_search_status(&status, &cancel, /*errored=*/ true);
+                    return false;
+                }
+            }
+        }
+        true
     });
 }
 
@@ -794,31 +848,6 @@ pub(super) fn finalize_search_status(status: &Arc<Mutex<SearchStatus>>, cancel: 
             }
         }
     };
-}
-
-/// The search's watchdog, on a job of its own.
-#[cfg(not(target_family = "wasm"))]
-fn start_search_watchdog(cancel: Arc<AtomicBool>, status: Arc<Mutex<SearchStatus>>) -> WatchdogJob {
-    WatchdogJob(Some(worker::spawn(move || run_search_watchdog(cancel, status))))
-}
-
-/// None in the browser: a job there runs inline, so a watchdog started before the search
-/// would loop forever waiting for it, and a cancel can't interrupt a running search
-/// anyway. Demo files are small enough that a search runs to the end.
-#[cfg(target_family = "wasm")]
-fn start_search_watchdog(_cancel: Arc<AtomicBool>, _status: Arc<Mutex<SearchStatus>>) -> WatchdogJob {
-    WatchdogJob(None)
-}
-
-/// The search watchdog's job, when the host runs one.
-struct WatchdogJob(Option<worker::Job>);
-
-impl WatchdogJob {
-    fn join(self) {
-        if let Some(job) = self.0 {
-            job.join();
-        }
-    }
 }
 
 /// How often the search watchdog checks the worker's status and `cancel` flag.

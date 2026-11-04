@@ -16,7 +16,7 @@ use std::sync::atomic::AtomicBool;
 use log::debug;
 
 use super::encoding::FileEncoding;
-use super::row_walk::{self, RowReader, TotalRows, collect_rows, search_rows};
+use super::row_walk::{self, RowReader, RowSearch, TotalRows, collect_rows, search_rows};
 use super::rows::{FileSource, SEGMENT_BYTES};
 use super::search_matcher::Matcher;
 #[cfg(test)]
@@ -122,6 +122,16 @@ impl ByteSeekBackend {
         );
         let start = reader.seek(offset)?;
         Ok((reader, start))
+    }
+
+    /// A search over the whole file that runs a slice at a time (the browser's).
+    #[cfg_attr(
+        not(target_family = "wasm"),
+        allow(dead_code, reason = "the browser's search; native tests pin it")
+    )]
+    pub(super) fn row_search(&self) -> Result<RowSearch<FileSource>, ViewerError> {
+        let (reader, _) = self.reader_at(0)?;
+        Ok(RowSearch::new(reader))
     }
 
     /// The row index this backend calls the row at `offset`.

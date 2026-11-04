@@ -105,7 +105,7 @@ tree lists as a folder (as on disk).
 - **No writes**: the engine answers listing, Brief-width, and font-metrics commands only. Writes (copy, move, rename,
   create) are #929.
 - **The viewer** (`viewer.rs`): every call runs inline, with none of the app's 2 s timeouts or stall watches (an
-  in-memory read can't hang). No LineIndex upgrade, so a big file keeps its estimated row count; a search runs to the
-  end inside `viewer_search_start` and can't be cancelled midway; no watcher, so tail mode never sees a change.
+  in-memory read can't hang). No LineIndex upgrade, so a big file keeps its estimated row count; a search scans in 8 ms
+  slices on the page's event loop instead of a thread; no watcher, so tail mode never sees a change.
   `viewer_write_range_to_file` refuses with `destinationIsReadOnly`; web pictures in a Markdown document never load (the
   page reaches no network). Why each: `crates/cmdr-viewer/DETAILS.md` § "The browser build".

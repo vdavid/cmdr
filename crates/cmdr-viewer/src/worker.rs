@@ -29,6 +29,10 @@ pub(super) struct Job;
 impl Job {
     /// Waits for the job to finish. A job that panicked has nothing left to report: the
     /// panic already went to the log through the panic hook.
+    #[cfg_attr(
+        target_family = "wasm",
+        allow(dead_code, reason = "only the native search waits on a job (its watchdog)")
+    )]
     pub(super) fn join(self) {
         #[cfg(not(target_family = "wasm"))]
         let _ = self.0.join();
@@ -56,6 +60,18 @@ pub(super) fn after(delay: Duration, job: impl FnOnce() + Send + 'static) {
         std::thread::sleep(delay);
         job();
     });
+}
+
+/// Runs `slice` on the page's event loop until it answers `false`, yielding a macrotask
+/// between calls so the page paints, takes input, and fires timers: the browser's way to
+/// run a job too long for one call (a search). Each slice keeps itself short.
+#[cfg(target_family = "wasm")]
+pub(super) fn spawn_slices(mut slice: impl FnMut() -> bool + Send + 'static) {
+    drop(cmdr_fs::rt::Runtime::default().spawn(async move {
+        while slice() {
+            cmdr_fs::rt::task::yield_now().await;
+        }
+    }));
 }
 
 /// Runs `job` on the page's event loop once `delay` has passed.

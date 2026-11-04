@@ -107,8 +107,11 @@ clock read compiles there and then panics, which only a smoke run against the re
   timer (`cmdr_fs::rt`). So nothing may scan a whole big file inside one call: a session never upgrades ByteSeek to
   LineIndex there (no `isIndexing`, the row estimate stays), and an encoding switch past FullLoad stays on ByteSeek
   (`BACKGROUND_SCANS` in `session.rs`).
-- **No search watchdog**: started inline before the search, it would wait forever. A cancel can't interrupt a running
-  search there; demo files are small enough that a search runs to the end.
+- **A search runs in slices** (`worker::spawn_slices`, `row_walk::RowSearch`): about 8 ms of scanning, then a macrotask
+  yield, so the page paints and fires timers through a 120 MB file (about 3 s in Node). Its place, matches, and progress
+  carry over, so `search_poll` answers as on desktop, and a cancel lands between rows. No watchdog: nothing runs past a
+  cancel longer than one row (a single huge row is still scanned whole). Native search is unchanged (`search_rows` is
+  the same loop with no budget).
 - **The bridge polls once** (`bridge::poll_once`): an in-memory volume's unpaced read is ready on its first poll; one
   that isn't answers `VolumeError::NotSupported`, never a hang.
 - **No OS fallback** (`ViewerHost::local_files`, false in the demo): a volume's open error is the answer (never the

@@ -579,34 +579,114 @@ pub fn search_rows<S: RowSource>(
     results: &std::sync::Mutex<Vec<super::SearchMatch>>,
     progress: &std::sync::Mutex<u64>,
 ) -> Result<u64, ViewerError> {
+    let mut cursor = SearchCursor::default();
+    let scan = SearchScan {
+        matcher,
+        cancel,
+        results,
+        progress,
+    };
+    loop {
+        if let Some(scanned) = scan_rows(reader, &mut cursor, &scan, u64::MAX)? {
+            return Ok(scanned);
+        }
+    }
+}
+
+/// Where a scan is: the next row's number and how far it has read.
+#[derive(Default)]
+struct SearchCursor {
+    row_number: usize,
+    scanned: u64,
+}
+
+/// What a scan matches with and reports to.
+pub struct SearchScan<'a> {
+    pub matcher: &'a super::Matcher,
+    pub cancel: &'a std::sync::atomic::AtomicBool,
+    pub results: &'a std::sync::Mutex<Vec<super::SearchMatch>>,
+    pub progress: &'a std::sync::Mutex<u64>,
+}
+
+/// A search that runs a slice at a time: the browser's, where a page can't give one call
+/// the whole file (`DETAILS.md` § "The browser build"). Each [`step`](Self::step) scans
+/// rows until it has read about `budget` bytes, then hands back control with its place
+/// kept. Same walk, same matches, same progress as [`search_rows`].
+#[cfg_attr(
+    not(target_family = "wasm"),
+    allow(dead_code, reason = "the browser's search; native tests pin it")
+)]
+pub struct RowSearch<S: RowSource> {
+    reader: RowReader<S>,
+    cursor: SearchCursor,
+}
+
+#[cfg_attr(
+    not(target_family = "wasm"),
+    allow(dead_code, reason = "the browser's search; native tests pin it")
+)]
+impl<S: RowSource> RowSearch<S> {
+    /// A search from `reader`'s position.
+    pub fn new(reader: RowReader<S>) -> Self {
+        Self {
+            reader,
+            cursor: SearchCursor::default(),
+        }
+    }
+
+    /// Scans the next slice: `Some(scanned)` once the search is over (the end, the match
+    /// limit, or a cancel), `None` with more to scan. A single row longer than `budget`
+    /// is still scanned whole.
+    pub fn step(&mut self, scan: &SearchScan<'_>, budget: u64) -> Result<Option<u64>, ViewerError> {
+        scan_rows(&mut self.reader, &mut self.cursor, scan, budget)
+    }
+}
+
+/// The scan loop, from `cursor` on, until the search ends or `budget` bytes are read.
+fn scan_rows<S: RowSource>(
+    reader: &mut RowReader<S>,
+    cursor: &mut SearchCursor,
+    scan: &SearchScan<'_>,
+    budget: u64,
+) -> Result<Option<u64>, ViewerError> {
     use std::sync::atomic::Ordering;
 
     use cmdr_fs::ignore_poison::IgnorePoison;
 
     use super::search_matcher::{LineScan, scan_line_with_matcher};
 
-    let mut row_number = 0usize;
-    let mut scanned = 0u64;
+    let slice_start = cursor.scanned;
     loop {
-        if cancel.load(Ordering::Relaxed) {
+        if scan.cancel.load(Ordering::Relaxed) {
             break;
         }
         let Some((span, text)) = reader.next_row()? else { break };
-        match scan_line_with_matcher(matcher, &text, row_number, span.start, cancel, results) {
+        match scan_line_with_matcher(
+            scan.matcher,
+            &text,
+            cursor.row_number,
+            span.start,
+            scan.cancel,
+            scan.results,
+        ) {
             LineScan::HitLimit | LineScan::Cancelled => {
-                scanned = span.end;
+                cursor.scanned = span.end;
                 break;
             }
             LineScan::Done => {}
         }
-        scanned = span.end;
-        row_number += 1;
+        cursor.scanned = span.end;
+        cursor.row_number += 1;
         // Progress per row would lock 15 000 times on the reported file; once a segment
         // is often enough for a progress bar and cheap enough to ignore.
-        if row_number.is_multiple_of(64) {
-            *progress.lock_ignore_poison() = scanned;
+        if cursor.row_number.is_multiple_of(64) {
+            *scan.progress.lock_ignore_poison() = cursor.scanned;
+        }
+        if cursor.scanned - slice_start >= budget {
+            *scan.progress.lock_ignore_poison() = cursor.scanned;
+            return Ok(None);
         }
     }
-    *progress.lock_ignore_poison() = scanned;
-    Ok(scanned)
+    *scan.progress.lock_ignore_poison() = cursor.scanned;
+    Ok(Some(cursor.scanned))
 }

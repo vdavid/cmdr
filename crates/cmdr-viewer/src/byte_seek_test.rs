@@ -207,6 +207,51 @@ fn search_finds_matches() {
     assert_eq!(*progress.lock().unwrap(), backend.total_bytes());
 }
 
+/// The browser's search runs a slice at a time; however small the slices, it finds what
+/// the one-call search finds, reports the same progress, and stops at a cancel.
+#[test]
+fn a_search_in_slices_finds_what_one_call_finds() {
+    let dir = create_test_dir("search-slices");
+    let text: String = (0..500).map(|i| format!("row {i} has hello and héllo\n")).collect();
+    let file = write_test_file(&dir, "test.txt", &text);
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let matcher = literal_matcher("hello", false);
+    let cancel = AtomicBool::new(false);
+
+    let whole: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let whole_progress = Mutex::new(0);
+    let scanned = backend.search(&matcher, &cancel, &whole, &whole_progress).unwrap();
+
+    let sliced: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let sliced_progress = Mutex::new(0);
+    let scan = super::row_walk::SearchScan {
+        matcher: &matcher,
+        cancel: &cancel,
+        results: &sliced,
+        progress: &sliced_progress,
+    };
+    let mut search = backend.row_search().unwrap();
+    let mut slices = 0;
+    let sliced_scanned = loop {
+        slices += 1;
+        if let Some(done) = search.step(&scan, 1000).unwrap() {
+            break done;
+        }
+        assert!(*sliced_progress.lock().unwrap() > 0, "a slice reports its progress");
+    };
+    assert!(slices > 10, "slice count: {slices}");
+    assert_eq!(sliced_scanned, scanned);
+    assert_eq!(*sliced_progress.lock().unwrap(), *whole_progress.lock().unwrap());
+    assert_eq!(
+        format!("{:?}", sliced.lock().unwrap()),
+        format!("{:?}", whole.lock().unwrap())
+    );
+
+    let mut cancelled = backend.row_search().unwrap();
+    cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(cancelled.step(&scan, 1000).unwrap(), Some(0));
+}
+
 #[test]
 fn search_case_insensitive() {
     let dir = create_test_dir("search_case");
