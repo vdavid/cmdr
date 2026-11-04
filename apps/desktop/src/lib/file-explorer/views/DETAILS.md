@@ -540,6 +540,27 @@ costs the pane no column width and the measurer reserves none for it. ❌ Don't 
 Brief view is unaffected (it already renders `file.name` whole). The inline rename editor's column span shrinks in this
 mode (`.col-rename.no-ext-col`) so it doesn't bleed into the Size column now that the Ext track is gone.
 
+### Narrow panes drop the date, then Ext
+
+**Decision**: a Full pane too narrow for every column drops the date first, then Ext, Finder-style; icon and Size always
+stay. `fitFullListColumns` (`full-list-column-fit.ts`) decides from the pane's own scroller `clientWidth` (so the
+splitter counts, not just the window) and the measured `columnWidths`: a column stays while Name keeps
+`FULL_NAME_MIN_WIDTH` (120 px, about 18 characters) × the text scale. **Why**: at the 950 px minimum window with the
+splitter at its 25 % limit (~240 px pane), `icon 1fr ext size date` left Name 0 px wide.
+
+- A dropped Ext behaves exactly like `showExtensionInName`: `FullList`'s `extInName` (setting OR narrow) drives the
+  cells, the grid template, the header's split Name/Ext triggers, the rename span, and the row name's restic host. A
+  dropped date drops its cells, its header cell and chevron (the date sorts stay in the header's right-click popup), and
+  the date phrase from the row's accessible name.
+- ❌ Feed the fit the widths measured with the SETTING, never the fitted layout: a dropped Ext would measure `ext: 0`,
+  fit again, and flap. The measurer still measures Ext and date while they're hidden, so nothing waits when they return.
+- Thresholds follow live widths, so they move with content and text size. Measured in the demo build (2026-11-04, the
+  `~` demo folder): at 100 % Ext 28, Size 46, date 113 px, so the date drops below 379 px and Ext below 258 px; the 950
+  px window split 50/50 (475 px) keeps everything. At 150 % (icon 24, Size 65, date 161) a 475 px pane drops the date
+  and a 320 px one drops Ext too.
+- Unmeasured (`clientWidth` 0) keeps the full layout. Pinned by `full-list-column-fit.test.ts`,
+  `FullList.narrow-pane.test.ts`, and `FullListHeader.test.ts`.
+
 ## Gotchas
 
 **Gotcha**: The gutter that keeps the cursor and selection fills off the pane edges lives at a DIFFERENT level in each

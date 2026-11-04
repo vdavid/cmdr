@@ -65,6 +65,7 @@
         isHiddenRowDimmed,
     } from './full-list-utils'
     import { computeFullListColumnWidths, holdSizeColumnWidth } from './measure-column-widths'
+    import { fitFullListColumns } from './full-list-column-fit'
     import { nameKindOf } from '#lib/utils/file-extension.js'
     import { dateOf, displayedDateColumn } from '../displayed-date'
     import { buildDateTooltip } from '../selection/selection-info-utils'
@@ -394,17 +395,6 @@
      */
     const GIT_COLUMN_WIDTH = 28
 
-    const gridTemplate = $derived.by(() => {
-        const icon = `${String(iconColWidth)}px`
-        // The Ext column is dropped entirely when its content rides in the Name
-        // column (`showExtensionInName`); the measurer returns `ext: 0` to match.
-        const ext = showExtensionInName ? '' : `${String(columnWidths.ext)}px `
-        const size = `${String(columnWidths.size)}px`
-        const date = `${String(columnWidths.date)}px`
-        const git = gitColumnVisible ? `${String(GIT_COLUMN_WIDTH)}px ` : ''
-        return `${icon} 1fr ${git}${ext}${size} ${date}`
-    })
-
     // ==== Virtual scrolling state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
     // The header is a sibling ABOVE the scroll container, so the scroller's own
@@ -427,6 +417,38 @@
     let listClientWidth = $state(0)
     let listOffsetWidth = $state(0)
     const scrollbarWidth = $derived(Math.max(0, listOffsetWidth - listClientWidth))
+
+    /**
+     * Which optional columns fit THIS pane (`full-list-column-fit.ts`): a narrow
+     * pane drops the date, then Ext, so Name never collapses to 0 px. Fed the
+     * widths measured with the `showExtensionInName` SETTING, never the fitted
+     * layout, or a dropped Ext would measure 0 and fit again.
+     */
+    const columnFit = $derived(
+        fitFullListColumns({
+            rowAreaWidth: listClientWidth,
+            iconWidth: iconColWidth,
+            gitWidth: gitColumnVisible ? GIT_COLUMN_WIDTH : 0,
+            widths: columnWidths,
+            scale: getEffectiveScale(),
+        }),
+    )
+    const showDateColumn = $derived(columnFit.showDate)
+    /**
+     * Whether the extension rides in the Name column, so there's no Ext track: the
+     * `showExtensionInName` setting, or a pane too narrow for Ext. Everything the
+     * Ext track touches (cells, header, rename span, row name) reads this.
+     */
+    const extInName = $derived(showExtensionInName || !columnFit.showExt)
+
+    const gridTemplate = $derived.by(() => {
+        const icon = `${String(iconColWidth)}px`
+        const ext = extInName ? '' : `${String(columnWidths.ext)}px `
+        const size = `${String(columnWidths.size)}px`
+        const date = showDateColumn ? ` ${String(columnWidths.date)}px` : ''
+        const git = gitColumnVisible ? `${String(GIT_COLUMN_WIDTH)}px ` : ''
+        return `${icon} 1fr ${git}${ext}${size}${date}`
+    })
     /**
      * `.listbox-region`'s gutter sits ABOVE the spacer in the scroll content, so the
      * container's `scrollTop` runs `GUTTER_PX` ahead of the spacer's own offset. Every
@@ -790,7 +812,8 @@
         {sortOrder}
         {dateColumn}
         {dateFallbackNote}
-        {showExtensionInName}
+        showExtensionInName={extInName}
+        {showDateColumn}
         {gitColumnVisible}
         {skipTransition}
         {scrollbarWidth}
@@ -877,13 +900,13 @@
                                 syncStatus: syncStatusMap[file.path],
                                 isRestricted: fileIsRestricted,
                                 details: {
-                                    host: showExtensionInName ? undefined : file.resticMeta?.hostname,
+                                    host: extInName ? undefined : file.resticMeta?.hostname,
                                     size: rowSizeText({
                                         override: sizeOverride.override,
                                         triads: sizeTriads,
                                         dirState: dirSizeState,
                                     }),
-                                    date: { column: dateColumn, text: date.text },
+                                    date: showDateColumn ? { column: dateColumn, text: date.text } : undefined,
                                     gitStatus: gitStatus ? labelFor(gitStatus) : undefined,
                                 },
                             }),
@@ -927,7 +950,7 @@
                             <div
                                 class="col-rename"
                                 class:has-git={gitColumnVisible}
-                                class:no-ext-col={showExtensionInName}
+                                class:no-ext-col={extInName}
                                 use:holdRenameSlot
                             ></div>
                         {:else}
@@ -936,7 +959,7 @@
                                     class="col-name-text"
                                     class:is-hidden={rowIsHiddenDimmed}
                                     use:useShortenMiddle={{
-                                        text: getNameColumnText(file.name, nameKindOf(file), showExtensionInName),
+                                        text: getNameColumnText(file.name, nameKindOf(file), extInName),
                                         preferBreakAt: file.name.includes('/') ? '/' : '.',
                                         startRatio: 0.7,
                                         tooltipWhenTruncated: true,
@@ -963,7 +986,7 @@
                                     use:tooltip={gitStatus ? labelFor(gitStatus) : ''}
                                 ></span>
                             {/if}
-                            {#if !showExtensionInName}
+                            {#if !extInName}
                                 <span
                                     class="col-ext"
                                     class:is-hidden={rowIsHiddenDimmed}
@@ -1057,12 +1080,14 @@
                                 >
                             {/if}
                         </span>
-                        <!-- Every date the entry carries, built on hover only: a row renders far more often than anyone hovers it. -->
-                        <span class="col-date" use:tooltip={{ html: () => buildDateTooltip(file, formattedDate, dateColumn).html }}>
-                            {#each date.segments as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}
-                                        >{seg.text}</span
-                                    >{:else}{seg.text}{/if}{/each}
-                        </span>
+                        {#if showDateColumn}
+                            <!-- Every date the entry carries, built on hover only: a row renders far more often than anyone hovers it. -->
+                            <span class="col-date" use:tooltip={{ html: () => buildDateTooltip(file, formattedDate, dateColumn).html }}>
+                                {#each date.segments as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}
+                                            >{seg.text}</span
+                                        >{:else}{seg.text}{/if}{/each}
+                            </span>
+                        {/if}
                     </div>
                 {/each}
             </div>
