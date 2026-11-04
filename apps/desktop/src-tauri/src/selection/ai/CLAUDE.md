@@ -2,7 +2,7 @@
 
 Natural-language → glob/regex translation for the Selection dialog. Cloud-only: small local models can't reliably fit
 the folder sample plus the structured prompt. Parent: `../CLAUDE.md`. Sibling pattern:
-`apps/desktop/src-tauri/src/search/ai/CLAUDE.md` (same key-value prompt shape, narrower field set, no scope or
+`crates/cmdr-search/src/translate/CLAUDE.md` (same key-value prompt shape, narrower field set, no scope or
 system-dir exclusion).
 
 ## Module map

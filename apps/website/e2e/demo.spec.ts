@@ -42,6 +42,31 @@ test.describe('Browser demo', () => {
     expect(errors.map((error) => error.message)).toEqual([])
   })
 
+  // ⌘F runs the real search core in the WASM module (crates/cmdr-listing-wasm, `search.rs`) over the
+  // volume the panes list. Enter (Go to file) lands the pane's cursor on the found file.
+  test('finds a file with ⌘F and Enter lands the cursor on it', async ({ page }) => {
+    const errors = collectPageErrors(page)
+    await page.goto('/demo/')
+    const pane = page.locator('.file-pane').first()
+    await expect(pane.locator('.file-entry').nth(1)).toBeVisible({ timeout: 30_000 })
+    const dialog = page.getByRole('dialog')
+    // The demo reads ⌘ as Ctrl off a Mac, and focus takes a moment to land on a pane after boot.
+    let attempt = 0
+    await expect(async () => {
+      if (!(await dialog.isVisible())) await page.keyboard.press(attempt++ % 2 ? 'Control+f' : 'Meta+f')
+      await expect(dialog).toBeVisible({ timeout: 1_000 })
+    }).toPass({ timeout: 10_000 })
+
+    await page.keyboard.type('annual report')
+    await expect(dialog.getByText('Annual report.pdf')).toBeVisible()
+    await expect(dialog.getByText('1 of 1 result').first()).toBeVisible()
+    await page.keyboard.press('Enter')
+
+    await expect(dialog).toHaveCount(0)
+    await expect(pane.locator('.file-entry[data-filename="Annual report.pdf"]')).toHaveClass(/is-under-cursor/)
+    expect(errors.map((error) => error.message)).toEqual([])
+  })
+
   // File operations run through the real write engine in the WASM module (crates/cmdr-listing-wasm,
   // `operations_host/`), on the in-memory volume both panes list, so each lands in the other pane.
   test.describe('file operations', () => {

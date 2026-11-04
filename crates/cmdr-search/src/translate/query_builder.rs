@@ -3,13 +3,14 @@
 //! This is the orchestrator: it calls mapping functions from `mappings` to convert
 //! individual fields, then assembles the results into a complete `SearchQuery`.
 
-use crate::search::{PatternType, SearchQuery, format_timestamp};
+use crate::query::format_timestamp;
+use crate::types::{PatternType, SearchQuery};
 
 use super::types::{TranslateDisplay, TranslatedQuery};
 
 use super::mappings::{
-    LocalDays, SystemZone, keywords_to_pattern, merge_keyword_and_type, parse_exclude_list, scope_to_paths,
-    size_to_filter, time_to_range, type_to_filter,
+    LocalDays, keywords_to_pattern, merge_keyword_and_type, parse_exclude_list, scope_to_paths, size_to_filter,
+    time_to_range, type_to_filter,
 };
 use super::parser::ParsedLlmResponse;
 
@@ -18,13 +19,8 @@ use super::parser::ParsedLlmResponse;
 /// The instant an ISO date (YYYY-MM-DD) starts on the user's local calendar, in
 /// seconds since the Unix epoch. An MCP client's `modifiedAfter: "2025-01-01"` means
 /// the user's day, the same day the dialog's date filter and the AI's "today" mean
-/// (`mappings/local_days.rs`).
-pub fn iso_date_to_timestamp(date_str: &str) -> Result<u64, String> {
-    iso_date_to_timestamp_in(date_str, &SystemZone)
-}
-
-/// [`iso_date_to_timestamp`] on a given calendar.
-fn iso_date_to_timestamp_in(date_str: &str, days: &impl LocalDays) -> Result<u64, String> {
+/// (`mappings/local_days.rs`). `days` is the user's calendar, the host's.
+pub fn iso_date_to_timestamp(date_str: &str, days: &impl LocalDays) -> Result<u64, String> {
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let date = time::Date::parse(date_str, &format).map_err(|e| format!("Invalid date '{date_str}': {e}"))?;
     if date.year() < 1970 {
@@ -35,12 +31,18 @@ fn iso_date_to_timestamp_in(date_str: &str, days: &impl LocalDays) -> Result<u64
 
 // ── Assembly ─────────────────────────────────────────────────────────
 
-/// Build a `SearchQuery` from a parsed LLM response.
-pub fn build_search_query(parsed: &ParsedLlmResponse) -> SearchQuery {
+/// Build a `SearchQuery` from a parsed LLM response. `days` is the user's calendar
+/// (what "today" means) and `home` their home folder (what `downloads` and `~` mean),
+/// both the host's.
+pub fn build_search_query(parsed: &ParsedLlmResponse, days: &impl LocalDays, home: Option<&str>) -> SearchQuery {
     let type_filter = parsed.type_field.as_deref().and_then(type_to_filter);
-    let (time_after, time_before) = parsed.time.as_deref().map(time_to_range).unwrap_or_default();
+    let (time_after, time_before) = parsed
+        .time
+        .as_deref()
+        .map(|t| time_to_range(t, days))
+        .unwrap_or_default();
     let (size_min, size_max) = parsed.size.as_deref().map(size_to_filter).unwrap_or_default();
-    let scope = parsed.scope.as_deref().map(scope_to_paths);
+    let scope = parsed.scope.as_deref().map(|s| scope_to_paths(s, home));
     let exclude = parsed.exclude.as_deref().map(parse_exclude_list);
     let is_dir = parsed.folders.as_deref().map(|f| f == "yes");
 
@@ -182,7 +184,14 @@ pub fn build_translated_query(query: &SearchQuery) -> TranslatedQuery {
 
 #[cfg(test)]
 mod tests {
+    use super::super::mappings::FixedZone;
     use super::*;
+
+    /// The assembler on a fixed calendar and home, so every test reads the same on
+    /// any machine.
+    fn build_search_query(parsed: &ParsedLlmResponse) -> SearchQuery {
+        super::build_search_query(parsed, &zone(3_600), Some("/Users/test"))
+    }
 
     // ── Assembly ─────────────────────────────────────────────────────
 
@@ -397,10 +406,48 @@ mod tests {
         assert!(out.ends_with('\u{2026}'));
     }
 
+    // ── A whole translation, pinned ──────────────────────────────────
+
+    /// One model reply, start to finish, over a fixed "now" and home: every value the
+    /// mappings compute, so a change to any of them shows here.
+    #[test]
+    fn a_reply_translates_to_the_same_query_every_time() {
+        let reply = "keywords: invoice\ntype: documents\ntime: last_month\nsize: >2mb\nscope: downloads\nexclude: node_modules\nfolders: no\nlabel: Last month's invoices";
+        let parsed = super::super::parser::parse_llm_response(reply);
+        let query = build_search_query(&parsed);
+        let translated = serde_json::to_value(build_translated_query(&query)).expect("serializes");
+        let display = serde_json::to_value(build_translate_display(&parsed, &query)).expect("serializes");
+        assert_eq!(
+            translated,
+            serde_json::json!({
+                "namePattern": "(?is)invoice.*\\.(pdf|doc|docx|txt|odt|xls|xlsx)",
+                "patternType": "regex",
+                "minSize": 2_000_000,
+                "maxSize": null,
+                // 2026-10-01 and 2026-11-01 at 00:00, UTC+1.
+                "modifiedAfter": 1_790_809_200,
+                "modifiedBefore": 1_793_487_600,
+                "isDirectory": false,
+                "includePaths": ["/Users/test/Downloads"],
+                "excludeDirNames": ["node_modules"],
+                "caseSensitive": null,
+                "excludeSystemDirs": null,
+            })
+        );
+        assert_eq!(display["modifiedAfter"], "2026-09-30");
+        assert_eq!(display["modifiedBefore"], "2026-10-31");
+        assert_eq!(build_label(&parsed).as_deref(), Some("Last month's invoices"));
+        assert!(
+            query.name_pattern.as_deref().is_some_and(|p| p.contains("invoice")),
+            "{:?}",
+            query.name_pattern
+        );
+    }
+
     // ── ISO date conversion ──────────────────────────────────────────
 
-    fn zone(offset_secs: i64) -> super::super::mappings::FixedZone {
-        super::super::mappings::FixedZone {
+    fn zone(offset_secs: i64) -> FixedZone {
+        FixedZone {
             today: time::macros::date!(2026 - 11 - 04),
             offset_secs,
             switch_on: None,
@@ -411,25 +458,25 @@ mod tests {
     fn an_iso_date_starts_at_the_users_local_midnight() {
         // 2025-01-01 00:00 in Stockholm (UTC+1) is 2024-12-31 23:00 UTC.
         assert_eq!(
-            iso_date_to_timestamp_in("2025-01-01", &zone(3_600)),
+            iso_date_to_timestamp("2025-01-01", &zone(3_600)),
             Ok(1_735_689_600 - 3_600)
         );
         // 2026-06-15 00:00 at UTC+2 (summer time).
         assert_eq!(
-            iso_date_to_timestamp_in("2026-06-15", &zone(7_200)),
+            iso_date_to_timestamp("2026-06-15", &zone(7_200)),
             Ok(1_781_481_600 - 7_200)
         );
         // West of UTC the day starts later.
         assert_eq!(
-            iso_date_to_timestamp_in("2025-01-01", &zone(-18_000)),
+            iso_date_to_timestamp("2025-01-01", &zone(-18_000)),
             Ok(1_735_689_600 + 18_000)
         );
     }
 
     #[test]
     fn an_iso_date_that_isnt_a_calendar_date_is_refused() {
-        assert!(iso_date_to_timestamp("not-a-date").is_err());
-        assert!(iso_date_to_timestamp("2025-13-01").is_err());
-        assert!(iso_date_to_timestamp("2025-01-32").is_err());
+        assert!(iso_date_to_timestamp("not-a-date", &zone(0)).is_err());
+        assert!(iso_date_to_timestamp("2025-13-01", &zone(0)).is_err());
+        assert!(iso_date_to_timestamp("2025-01-32", &zone(0)).is_err());
     }
 }

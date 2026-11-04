@@ -295,8 +295,9 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
 - Gotcha: the unanswered fallback answers `null`, which is only right for a void command. A value command left
   unanswered gets a `null` the app's types say can't happen: `getRecentSearches` did, and the search dialog's render
   threw on it, so ⌘F flashed the dialog and its boundary closed it. Answer every value command the app asks for.
-- Search: `prepareSearchIndex` refuses (the app's own "index not available" path), with empty recent searches and
-  excludes and no cloud consent, until the index runs in the engine (`docs/specs/demo-index-plan.md`).
+- Search: ⌘F is the WASM engine's (`crates/cmdr-listing-wasm/DETAILS.md` § Search), so no TS table answers a search
+  command (`engine-commands.test.ts` pins it). TS answers only `cloudAiConsentStatus` (no consent), which with
+  `getAiStatus` unavailable keeps the dialog's AI mode off.
 
 ## Writes
 

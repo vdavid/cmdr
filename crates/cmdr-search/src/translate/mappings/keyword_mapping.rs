@@ -1,4 +1,4 @@
-use crate::search::PatternType;
+use crate::types::PatternType;
 
 use super::KNOWN_EXTENSIONS;
 use super::type_mapping::TypeFilter;

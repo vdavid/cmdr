@@ -23,14 +23,12 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   results. Trivially testable without mocks; the hot path is isolated from side effects.
 - **`types.rs` (data) separate from `query.rs` (operations)**: `types.rs` is imported by everything, so keeping it
   logic-free prevents circular dependencies and makes the data model easy to find.
-- **AI pipeline lives in `search::ai`, not `commands/`**: the parser, prompt, and query builder are search domain logic,
-  not IPC concerns; `commands/search.rs` stays a thin wrapper. AI-internal decisions live in `ai/CLAUDE.md`.
-- **The translation DTOs live with the code that fills them**: `TranslatedQuery` and `TranslateDisplay` are defined in
-  `ai/types.rs` and `pub use`d from `commands/search.rs`, so the IPC path callers import is unchanged while
-  `search::ai` no longer depends on `commands`. specta names a type by its struct identity, not its module, so
-  `bindings.ts` doesn't move either. Define a new translation DTO in `ai/types.rs` and re-export it, not the reverse:
-  the reverse is what made `commands::search ↔ search::ai ↔ query_builder` a cycle. The one remaining edge from
-  `search/` up into `commands/` is `expand_tilde` in `ai/mappings/size_scope_mapping.rs` (see `CLAUDE.md`).
+- **The AI pipeline is `cmdr_search::translate`, not `commands/`**: the parser, prompt, and query builder are search
+  domain logic with no I/O, so they live in the crate (`crates/cmdr-search/src/translate/CLAUDE.md`), and the
+  translation DTOs (`TranslatedQuery`, `TranslateDisplay`) with them, `pub use`d from `commands/search.rs` so the IPC
+  path is unchanged (specta names a type by its struct identity, so `bindings.ts` doesn't move either). `ai.rs` is
+  the host's half: `SystemZone` (this machine's calendar, through `chrono::Local`) and the home folder, passed in as
+  values. Nothing under `search/` reaches `commands/`.
 - **Add history only on "Open in pane"**: David's explicit call. The 1000-entry budget stays signal-rich when it tracks
   results worth acting on, not every keystroke-debounced filename search. The gate is a frontend convention, not
   Rust-enforced.
@@ -611,19 +609,14 @@ compiled query. The walk's half of the adapter is `live/walked.rs`.
 
 ## History store (`history.rs`)
 
-The list itself (persistence to `{app_data_dir}/search-history.json`, dedupe, cap, quarantine, locking) is
-`crate::recents`; see `apps/desktop/src-tauri/src/recents/DETAILS.md`. What lives here:
+The entry and its key are `crates/cmdr-search/DETAILS.md` § Recent searches; the list rules are `cmdr-recents`'; the
+file (persistence to `{app_data_dir}/search-history.json`, quarantine, locking) is `crate::recents`
+(`apps/desktop/src-tauri/src/recents/DETAILS.md`). What lives here:
 
-- **`RECENT_SEARCHES`**, the `RecentsFile<HistoryEntry>` static, plus the entry shape and its `RecentEntry` impl.
-- **Canonical dedupe key** (compare-time only, never persisted): `mode | normalized_query | filters | scope |
-  case_sensitive | exclude_system_dirs`. Same key = same search; the most recent copy wins (move-to-top). Six segments
-  against Selection's four, pinned by `key_carries_scope_and_exclude_system_dirs` in `history.rs`.
-- **Cap**: `search.recentSearches.maxCount` (`DEFAULT_MAX_COUNT` = 1000), resolved per call in `commands/search.rs`.
-  `apply_max_count` trims in-memory on live-apply; `0` clears and short-circuits future adds.
-- **Shared types**: `HistoryMode`, `HistoryFilters`, and the key-building helpers (`normalize_query`,
-  `filters_fingerprint`, `flag`) live here and `selection/` uses them one-way; the entry structs stay separate. Sharing
-  the helpers is what keeps a newly-added filter field from reaching one key and not the other. If the two mode sets ever
-  fork, copy the types rather than widening the re-export.
+- **`RECENT_SEARCHES`**, the `RecentsFile<HistoryEntry>` static, and the entry's `RecentEntry` impl (file name, log
+  target, schema version), plus the on-disk compatibility test.
+- **Cap**: `search.recentSearches.maxCount` (`DEFAULT_MAX_COUNT` = 1000, the crate's), resolved per call in
+  `commands/search.rs`. `apply_max_count` trims in-memory on live-apply; `0` clears and short-circuits future adds.
 
 ## AI backend resolution
 

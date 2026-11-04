@@ -28,9 +28,9 @@ const KNOWN_EXTENSIONS: &[&str] = &[
 // Re-exports
 pub(super) use keyword_mapping::parse_exclude_list;
 pub use keyword_mapping::{keywords_to_pattern, merge_keyword_and_type};
-#[cfg(test)]
-pub(super) use local_days::FixedZone;
-pub(super) use local_days::{LocalDays, SystemZone};
+#[cfg(any(test, feature = "testing"))]
+pub use local_days::FixedZone;
+pub use local_days::LocalDays;
 pub use size_scope_mapping::{scope_to_paths, size_to_filter};
 pub use time_mapping::time_to_range;
 pub use type_mapping::type_to_filter;

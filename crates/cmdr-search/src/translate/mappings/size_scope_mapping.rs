@@ -1,7 +1,5 @@
-use crate::commands::file_system::expand_tilde;
-
 use super::{GIB, KIB, MIB};
-use crate::search::parse_size;
+use crate::query::{expand_tilde, parse_size};
 
 // ── Size mapping ─────────────────────────────────────────────────────
 
@@ -27,30 +25,45 @@ pub struct ScopeResult {
     pub name_prefix: Option<&'static str>,
 }
 
-/// Map a `scope` enum value to search paths and optional name prefix.
-pub fn scope_to_paths(s: &str) -> ScopeResult {
-    let home = dirs::home_dir().unwrap_or_default();
+/// Map a `scope` enum value to search paths and optional name prefix. `home` is the
+/// user's home folder, the host's: with none, a named folder reads as relative and a
+/// `~` path stays as typed.
+pub fn scope_to_paths(s: &str, home: Option<&str>) -> ScopeResult {
+    let base = home.unwrap_or("");
     match s {
         "downloads" => ScopeResult {
-            paths: vec![home.join("Downloads").to_string_lossy().into_owned()],
+            paths: vec![join(base, "Downloads")],
             name_prefix: None,
         },
         "documents" => ScopeResult {
-            paths: vec![home.join("Documents").to_string_lossy().into_owned()],
+            paths: vec![join(base, "Documents")],
             name_prefix: None,
         },
         "desktop" => ScopeResult {
-            paths: vec![home.join("Desktop").to_string_lossy().into_owned()],
+            paths: vec![join(base, "Desktop")],
             name_prefix: None,
         },
         "dotfiles" => ScopeResult {
-            paths: vec![home.to_string_lossy().into_owned()],
+            paths: vec![base.to_string()],
             name_prefix: Some("."),
         },
         path => ScopeResult {
-            paths: vec![expand_tilde(path)],
+            paths: vec![expand_tilde(path, home).into_owned()],
             name_prefix: None,
         },
+    }
+}
+
+/// `home` joined with one folder name, the way `Path::join` does it (no doubled
+/// `/`, an empty home leaves the name alone), in `&str` work so it reads the same in
+/// a browser.
+fn join(home: &str, name: &str) -> String {
+    if home.is_empty() {
+        name.to_string()
+    } else if home.ends_with('/') {
+        format!("{home}{name}")
+    } else {
+        format!("{home}/{name}")
     }
 }
 
@@ -109,25 +122,32 @@ mod tests {
 
     // ── Scope mapping ────────────────────────────────────────────────
 
+    const HOME: Option<&str> = Some("/Users/test");
+
     #[test]
     fn scope_downloads() {
-        let result = scope_to_paths("downloads");
-        assert_eq!(result.paths.len(), 1);
-        assert!(result.paths[0].ends_with("Downloads"));
+        let result = scope_to_paths("downloads", HOME);
+        assert_eq!(result.paths, ["/Users/test/Downloads"]);
         assert!(result.name_prefix.is_none());
     }
 
     #[test]
     fn scope_dotfiles() {
-        let result = scope_to_paths("dotfiles");
+        let result = scope_to_paths("dotfiles", HOME);
+        assert_eq!(result.paths, ["/Users/test"]);
         assert_eq!(result.name_prefix, Some("."));
     }
 
     #[test]
     fn scope_literal_path() {
-        let result = scope_to_paths("~/projects");
-        assert_eq!(result.paths.len(), 1);
-        // Should have expanded tilde
-        assert!(!result.paths[0].starts_with('~'));
+        let result = scope_to_paths("~/projects", HOME);
+        assert_eq!(result.paths, ["/Users/test/projects"]);
+    }
+
+    #[test]
+    fn a_named_folder_joins_the_home_the_way_a_path_join_does() {
+        assert_eq!(scope_to_paths("documents", Some("/")).paths, ["/Documents"]);
+        assert_eq!(scope_to_paths("desktop", None).paths, ["Desktop"]);
+        assert_eq!(scope_to_paths("~/x", None).paths, ["~/x"]);
     }
 }

@@ -177,14 +177,8 @@ export const appAnswers: AnswerTable = {
     liveWatch: false,
   }),
 
-  // Search (⌘F) with no drive index: `prepareSearchIndex`'s refusal is the app's own "index not
-  // available" path, so the dialog opens with its inputs off. A stopgap until the index runs in
-  // the WASM engine (`docs/specs/demo-index-plan.md`), which then answers all of these.
-  prepareSearchIndex: () => refuse('prepareSearchIndex', 'The demo has no drive index'),
-  releaseSearchIndex: none,
-  getRecentSearches: empty,
-  // The real list lives in the desktop backend's search module; an empty one leaves the tooltip's heading.
-  getSystemDirExcludes: empty,
+  // Search (⌘F) is the WASM engine's (`crates/cmdr-listing-wasm/src/search.rs`); no cloud AI, so
+  // the AI mode stays off as on a Mac with AI off.
   cloudAiConsentStatus: () => ({
     accepted: false,
     currentVersion: 2,

@@ -1,6 +1,6 @@
 //! Key-value line parser for the selection LLM classification response.
 //!
-//! Same line-format as `crate::search::ai::parser` (one `key: value` per line, unknown
+//! Same line-format as `cmdr_search::translate`'s parser (one `key: value` per line, unknown
 //! keys ignored, blank values skipped). The fields are narrower: there's no
 //! `keywords` / `type` / `scope` / `folders` because Selection always runs in the
 //! current folder.

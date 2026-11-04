@@ -284,7 +284,8 @@ All under `apps/desktop/src-tauri/src/`.
   of each call. The promise is in `apps/desktop/src-tauri/src/agent/DETAILS.md` § The promise. See its
   `apps/desktop/src-tauri/src/agent/CLAUDE.md`
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
-- `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
+- `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + the host of AI query translation
+  (`apps/desktop/src-tauri/src/search/ai.rs`; the pipeline is `cmdr_search::translate`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
   itself runs in JS
 - `multi_rename/`: Multi-Rename Tool engine (Total Commander's masks, search & replace, diacritics), preview, apply
@@ -643,9 +644,9 @@ Whole-drive file search powered by the index DB. The search index lazy-loads all
 files), scans them with rayon in parallel, returns results by recency, and drops after an idle timeout. Backend: the
 Tauri-free core in `crates/cmdr-search/` (engine, matcher, ranking, arena, the seam, and a live run's reporting), hosted
 by `src-tauri/src/search/` (routing, the SQL-backed `IndexSource`, arena loading and lifecycle, the live walk, history),
-with AI query translation in `search/ai/`. The dialog is the first `query-ui` consumer; "Open in pane" hands off to a
-frontend-only virtual `search-results` volume (snapshot store, refcounted). Full detail:
-`src-tauri/src/search/CLAUDE.md` and `apps/desktop/src/lib/search/CLAUDE.md`.
+with AI query translation in `cmdr_search::translate` (hosted by `apps/desktop/src-tauri/src/search/ai.rs`). The dialog
+is the first `query-ui` consumer; "Open in pane" hands off to a frontend-only virtual `search-results` volume (snapshot
+store, refcounted). Full detail: `src-tauri/src/search/CLAUDE.md` and `apps/desktop/src/lib/search/CLAUDE.md`.
 
 ## Cross-cutting patterns
 

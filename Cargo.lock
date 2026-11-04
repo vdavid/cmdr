@@ -1771,6 +1771,7 @@ dependencies = [
  "cmdr-menu",
  "cmdr-operation-log",
  "cmdr-operations",
+ "cmdr-recents",
  "cmdr-search",
  "cmdr-viewer",
  "js-sys",
@@ -1971,6 +1972,7 @@ name = "cmdr-search"
 version = "0.0.0"
 dependencies = [
  "cmdr-fs",
+ "cmdr-recents",
  "log",
  "proptest",
  "rayon",

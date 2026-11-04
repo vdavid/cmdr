@@ -36,6 +36,10 @@ cmdr-collation = { path = "../cmdr-collation" }
 rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
 # The file viewer's core, over the same volume, answering the viewer's commands.
 cmdr-viewer = { path = "../cmdr-viewer" }
+# The drive search's core, over the same volume, answering ⌘F (`src/search.rs`), and the
+# recents-list rules its session list of recent searches follows.
+cmdr-search = { path = "../cmdr-search" }
+cmdr-recents = { path = "../cmdr-recents" }
 log = "0.4"
 # The wire shapes: every answer and event crosses as the same JSON Tauri sends.
 serde = { version = "1", features = ["derive"] }
@@ -47,10 +51,6 @@ wasm-bindgen = "0.2.126"
 wasm-bindgen-futures = "0.4.76"
 # `JSON.parse` / `JSON.stringify` at the boundary, and the event callback's `Function`.
 js-sys = "0.3.103"
-# The search core, run by the smoke test's self-test (`src/search_self_test.rs`) so the
-# real `.wasm` proves its scan and timing log don't trap. Browser-only until the demo's
-# ⌘F host links it natively too.
-cmdr-search = { path = "../cmdr-search" }
 
 [dev-dependencies]
 # The golden-trace scenarios the native engine blesses, replayed on the demo's

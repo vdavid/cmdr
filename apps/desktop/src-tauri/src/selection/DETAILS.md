@@ -34,7 +34,7 @@ See `ai/CLAUDE.md` for prompt design, parser tolerances, caveat/kind defaulting,
 - **Separate `selection-history.json` from `search-history.json`**: one file with a `kind` discriminator was rejected.
   The schemas already diverge (`scope` and `exclude_system_dirs` are irrelevant for Selection), and coupling two
   unrelated migrations forever didn't earn its keep. Two files cost nothing at runtime.
-- **Re-export `HistoryMode` and `HistoryFilters` from `search::history`**: the two pure data types are identical in
+- **Re-export `HistoryMode` and `HistoryFilters` from `cmdr_search::history`**: the two pure data types are identical in
   intent across consumers, and Selection builds its key with the same `normalize_query` / `filters_fingerprint` helpers,
   so a new filter field can't reach one key and not the other. The `SelectionHistoryEntry` struct stays separate so the
   on-disk schema doesn't bind Selection to Search's canonical-key shape. If Search's mode set or filter shape ever diverges, the re-export drops out

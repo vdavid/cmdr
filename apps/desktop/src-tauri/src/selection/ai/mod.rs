@@ -1,7 +1,7 @@
 //! AI-powered selection query translation pipeline.
 //!
 //! Maps natural-language intent into a glob or regex that the JS-side matcher uses
-//! to select files in the focused folder. Mirrors `crate::search::ai` in structure
+//! to select files in the focused folder. Mirrors `cmdr_search::translate` in structure
 //! but narrower: no scope, no system-dir excludes, no type/keyword/folders enums.
 //!
 //! The prompt receives a sampled folder listing so the model can ground the pattern

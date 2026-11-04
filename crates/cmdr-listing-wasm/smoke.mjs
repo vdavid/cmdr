@@ -157,13 +157,63 @@ try {
   // The runtime seam's browser half: task sets, aborts, macrotask yields, timers, the wall clock.
   const rtSummary = await glue.rtSelfTest(Date.now())
   console.log(`listing-wasm smoke: ${rtSummary}`)
-  // The search core: its scan's thread fallback and its timing log, on the real `.wasm`.
-  console.log(`listing-wasm smoke: ${glue.searchSelfTest()}`)
+  // ⌘F: the search core over the same volume, on the real `.wasm`, with `debug` logging on so
+  // the engine's timing log reads the page's clock and its scan's thread fallback runs inline.
+  console.log(`listing-wasm smoke: ${await smokeSearch()}`)
 
   console.log(`listing-wasm smoke: ${await smokeWrites(demo, { events: recent, waitFor })}`)
   console.log(`listing-wasm smoke: ${await smokeViewer(glue, fail)}`)
 } catch (error) {
   fail(error?.stack ?? String(error))
+}
+
+/** A glob, a scope, a folder-size filter, and a streaming run, each answered by the engine. */
+async function smokeSearch() {
+  const query = (over) => ({
+    namePattern: null,
+    patternType: 'glob',
+    minSize: null,
+    maxSize: null,
+    modifiedAfter: null,
+    modifiedBefore: null,
+    isDirectory: null,
+    includePaths: null,
+    excludeDirNames: null,
+    includePathIds: null,
+    countOnly: false,
+    limit: 30,
+    caseSensitive: null,
+    excludeSystemDirs: false,
+    sortBy: null,
+    ...over,
+  })
+  DemoListing.setLogLevel('debug')
+  try {
+    const prepared = await demo.invoke('prepare_search_index', { volumeId: null })
+    if (!prepared.ready) fail(`prepare_search_index answered ${JSON.stringify(prepared)}`)
+    const glob = await demo.invoke('search_files', { query: query({ namePattern: 'NOTES*' }) })
+    const names = glob.entries.map((e) => e.name).sort()
+    if (names.join() !== 'notes 10.txt,notes 9.txt') fail(`a glob found ${JSON.stringify(names)}`)
+    const scoped = await demo.invoke('search_files', {
+      query: query({ namePattern: '*', includePaths: ['/users/you/music'] }),
+    })
+    if (scoped.unresolvedScopes.length !== 0) fail(`a scope came back unresolved: ${JSON.stringify(scoped)}`)
+    const big = await demo.invoke('search_files', { query: query({ isDirectory: true, minSize: 1 }) })
+    if (!big.entries.some((e) => e.path === '/Users/you'))
+      fail(`a folder-size filter found ${JSON.stringify(big.entries)}`)
+    const start = await demo.invoke('search_files_streaming', {
+      query: query({ namePattern: 'notes*' }),
+      runId: 'smoke-1',
+      order: 1,
+    })
+    if (start.runId !== 'smoke-1') fail(`search_files_streaming answered ${JSON.stringify(start)}`)
+    const done = await waitFor('search-complete', (p) => p.runId === 'smoke-1', 2000)
+    if (done.matchCount !== 2 || done.coverage.walk !== 'nothingToWalk')
+      fail(`search-complete said ${JSON.stringify(done)}`)
+    return `search OK (${glob.entries.length} by glob, ${big.entries.length} folders by size, a streaming run)`
+  } finally {
+    DemoListing.setLogLevel('warn')
+  }
 }
 
 console.log(`listing-wasm smoke: OK (${events.length} events, ${DemoListing.commands().length} commands)`)

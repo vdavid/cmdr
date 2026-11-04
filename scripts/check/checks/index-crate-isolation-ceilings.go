@@ -374,10 +374,15 @@ var surfaceGuardedCrates = []struct {
 		// pass brings (Finder tags, packages macOS reports, #385). It folded
 		// `apply_tags` into `apply_row_facts`, so the packages pass cost a type
 		// rather than a 48th method, and the next such pass is one more variant.
+		//
+		// 39th-41st root promises, 2026-11-04: `SearchSortRow`, `SearchSortAnswer`,
+		// and `sort_search_rows`, a search-results pane's order. Both hosts answer
+		// `sort_search_results` (the desktop and the browser demo), and the order is
+		// this crate's comparator, so the rows and the one sort live beside it.
 		Name:       "cmdr-listing",
 		HandleType: "Listings",
 		Ceilings: surfaceCeilings{
-			RootPromises:   38,
+			RootPromises:   41,
 			HandleMethods:  47,
 			PublicModules:  1,
 			SubsystemItems: 20,
@@ -578,11 +583,24 @@ var surfaceGuardedCrates = []struct {
 		// `MemoryRow` it's built from, and `MemorySourceError`, why rows can't form a
 		// tree). The browser demo's host builds one from its in-memory volume; its
 		// module stays private, so the three are the whole promise.
+		//
+		// Raised 2026-11-04 by one module (`history`) and its eight items: a recent
+		// search (`HistoryEntry`, `HistoryMode`, `HistoryFilters`), the default cap,
+		// and the three canonical-key helpers the desktop's Selection history shares
+		// (`normalize_query`, `filters_fingerprint`, `flag`, plus `HistoryMode::as_str`).
+		// Both hosts keep a recents list with one dedupe key, so the key is the crate's.
+		//
+		// Raised 2026-11-04 by one module (`translate`) and its 13 flat re-exports,
+		// when the natural-language pipeline left the app: the prompt, the reply's
+		// parser and fallback, the assembler's five builders, the ISO date reader the
+		// MCP tool uses, the two DTOs, and `LocalDays` (the host's calendar). Its
+		// submodules stay private, so these are the whole promise; the host supplies
+		// the clock and zone, which is why the pipeline could leave the app at all.
 		Name: "cmdr-search",
 		Ceilings: surfaceCeilings{
-			RootPromises:   36,
-			PublicModules:  10,
-			SubsystemItems: 104,
+			RootPromises:   38,
+			PublicModules:  12,
+			SubsystemItems: 125,
 		},
 	},
 	{

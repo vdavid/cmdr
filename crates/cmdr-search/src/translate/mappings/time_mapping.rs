@@ -1,21 +1,16 @@
 use time::{Date, Month};
 
 use super::super::parser::{is_range, is_year};
-use super::local_days::{LocalDays, SystemZone};
+use super::local_days::LocalDays;
 
 // ── Time mapping ─────────────────────────────────────────────────────
 
 /// Map a `time` enum value to a (modified_after, modified_before) timestamp range,
-/// on this machine's local calendar.
+/// on the user's calendar `days`. Every boundary is a LOCAL midnight
+/// (`local_days.rs` says why).
 ///
 /// Returns `(None, None)` for unrecognized values.
-pub fn time_to_range(t: &str) -> (Option<u64>, Option<u64>) {
-    time_to_range_in(t, &SystemZone)
-}
-
-/// [`time_to_range`] on a given calendar. Every boundary is a LOCAL midnight
-/// (`local_days.rs` says why).
-pub(crate) fn time_to_range_in(t: &str, days: &impl LocalDays) -> (Option<u64>, Option<u64>) {
+pub fn time_to_range(t: &str, days: &impl LocalDays) -> (Option<u64>, Option<u64>) {
     let today = days.today();
     let at = |date: Date| Some(days.midnight(date));
     match t {
@@ -199,31 +194,23 @@ fn parse_date_end(s: &str) -> Option<Date> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
+    /// The mapping on a fixed calendar ([`stockholm_november`]), so every test reads
+    /// the same on any machine.
+    fn time_to_range(t: &str) -> (Option<u64>, Option<u64>) {
+        super::time_to_range(t, &stockholm_november())
+    }
+
+    /// The fixed calendar's "now": noon on its today, in UTC.
+    fn now_secs() -> u64 {
+        ts(datetime!(2026-11-04 12:00 UTC))
+    }
 
     #[test]
     fn time_today_has_start_no_end() {
         let (after, before) = time_to_range("today");
         assert!(after.is_some());
         assert!(before.is_none());
-    }
-
-    /// "Today" is the user's day, so it starts at LOCAL midnight. Bites on any machine
-    /// whose zone isn't UTC (CI runs in UTC, where it passes either way; the fixed-zone
-    /// tests below pin the rule everywhere).
-    #[test]
-    fn today_starts_at_this_machines_local_midnight() {
-        use chrono::TimeZone;
-        let midnight = chrono::Local::now()
-            .date_naive()
-            .and_hms_opt(0, 0, 0)
-            .expect("valid time");
-        let expected = chrono::Local
-            .from_local_datetime(&midnight)
-            .earliest()
-            .expect("midnight exists locally")
-            .timestamp() as u64;
-        assert_eq!(time_to_range("today").0, Some(expected));
     }
 
     #[test]
@@ -281,11 +268,11 @@ mod tests {
     fn today_and_yesterday_start_at_local_midnight() {
         let zone = stockholm_november();
         assert_eq!(
-            time_to_range_in("today", &zone),
+            super::time_to_range("today", &zone),
             (Some(ts(datetime!(2026-11-03 23:00 UTC))), None)
         );
         assert_eq!(
-            time_to_range_in("yesterday", &zone),
+            super::time_to_range("yesterday", &zone),
             (
                 Some(ts(datetime!(2026-11-02 23:00 UTC))),
                 Some(ts(datetime!(2026-11-03 23:00 UTC)))
@@ -303,7 +290,7 @@ mod tests {
             ..stockholm_november()
         };
         assert_eq!(
-            time_to_range_in("last_month", &zone),
+            super::time_to_range("last_month", &zone),
             (
                 Some(ts(datetime!(2026-09-30 22:00 UTC))),
                 Some(ts(datetime!(2026-10-31 23:00 UTC)))
@@ -314,7 +301,7 @@ mod tests {
     #[test]
     fn a_year_range_is_local_too() {
         assert_eq!(
-            time_to_range_in("2025", &stockholm_november()),
+            super::time_to_range("2025", &stockholm_november()),
             (
                 Some(ts(datetime!(2024-12-31 23:00 UTC))),
                 Some(ts(datetime!(2025-12-31 23:00 UTC)))
@@ -348,10 +335,9 @@ mod tests {
     #[test]
     fn time_recent_is_about_three_months_ago() {
         let (after, _) = time_to_range("recent");
-        let now = time::OffsetDateTime::now_utc();
         let ts = after.unwrap();
         // Should be roughly 90 days ago (±5 days for month length variation)
-        let days_ago = (now.unix_timestamp() as u64 - ts) / 86400;
+        let days_ago = (now_secs() - ts) / 86400;
         assert!(
             (85..=95).contains(&days_ago),
             "recent should be ~90 days ago, got {days_ago}"
@@ -370,9 +356,8 @@ mod tests {
         let (after, before) = time_to_range("last_6_months");
         assert!(after.is_some());
         assert!(before.is_none());
-        let now = time::OffsetDateTime::now_utc();
         let ts = after.unwrap();
-        let days_ago = (now.unix_timestamp() as u64 - ts) / 86400;
+        let days_ago = (now_secs() - ts) / 86400;
         assert!(
             (175..=190).contains(&days_ago),
             "last_6_months should be ~180 days ago, got {days_ago}"

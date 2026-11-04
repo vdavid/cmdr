@@ -13,12 +13,14 @@ pub mod arena;
 pub mod context;
 pub mod engine;
 pub mod excludes;
+pub mod history;
 pub mod matcher;
 mod memory;
 pub mod query;
 pub mod ranking;
 pub mod run;
 pub mod seam;
+pub mod translate;
 pub mod types;
 
 #[cfg(test)]

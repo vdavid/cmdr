@@ -60,6 +60,7 @@ mod quick_filter;
 mod refresh;
 mod reread;
 mod rt;
+mod search_rows;
 mod sorting;
 mod stall;
 mod stalled_on;
@@ -84,6 +85,7 @@ pub use reread::{ReadTicket, RefreshOutcome};
 // The sort vocabulary is `cmdr-sort`'s; re-exported so a host names a sort and
 // the comparator that applies it from one place.
 pub use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
+pub use search_rows::{SearchSortAnswer, SearchSortRow, sort_search_rows};
 pub use sorting::{EffectiveSort, SortableEntry, entry_comparator, sort_entries};
 pub use stalled_on::StalledOn;
 pub use stats::ListingStats;
