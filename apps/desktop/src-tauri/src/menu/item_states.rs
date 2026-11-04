@@ -130,6 +130,17 @@ pub(crate) fn apply_menu_item_states<R: Runtime>(menu_state: &MenuState<R>) {
     for (item, enabled) in verdicts {
         let _ = item.set_enabled(enabled);
     }
+    // The untracked command items answer to the same fold: About, Settings, the license, and the Zoom
+    // presets grey out under a dialog that refuses them, as their tracked twins on Linux always did.
+    let untracked: Vec<_> = menu_state
+        .untracked_items
+        .lock_ignore_poison()
+        .iter()
+        .map(|(id, item)| (item.clone(), menu_item_enabled(id, &inputs)))
+        .collect();
+    for (item, enabled) in untracked {
+        let _ = item.set_enabled(enabled);
+    }
 
     // The items held in their own `MenuState` fields, outside `items`, and the submenus greyed as a
     // whole: `cmdr_menu::enabled` decides each from the same inputs.

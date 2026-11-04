@@ -42,7 +42,8 @@ fn scenarios<'a>(dialog: &'a HashSet<String>, nothing: &'a HashSet<String>) -> [
 }
 
 /// A realistic dialog-gate answer: a sample of `BLOCKED_BY_DIALOGS`, with one command per kind of
-/// handle (a tracked item, an app-scoped item, close tab, pin tab, both check families, a sort column).
+/// handle (a tracked item, an app-scoped item, close tab, pin tab, both check families, a sort column,
+/// and the untracked rows: the app menu's and a Zoom preset).
 fn dialog_refusals() -> HashSet<String> {
     [
         "file.copy",
@@ -54,6 +55,11 @@ fn dialog_refusals() -> HashSet<String> {
         "view.setMode",
         "sort.byName",
         "nav.goToPath",
+        // The app menu's rows and a Zoom preset, which macOS builds untracked.
+        "app.settings",
+        "app.licenseKey",
+        "app.acknowledgements",
+        "view.zoom.set100",
     ]
     .iter()
     .map(|id| (*id).to_string())
@@ -120,14 +126,14 @@ fn assert_pinned(platform: Platform, pinned: &str) {
 
 /// Columns: `id command-or-- explorer other dialog fresh` (`scenarios`), 1 = enabled.
 const MACOS_STATES: &str = "\
-about app.about@app 1 1 1 1
-acknowledgements app.acknowledgements@app 1 1 1 1
-enter_license_key app.licenseKey@app 1 1 1 1
+about app.about@app 1 1 0 1
+acknowledgements app.acknowledgements@app 1 1 0 1
+enter_license_key app.licenseKey@app 1 1 0 1
 check_for_updates app.checkForUpdates@app 1 1 1 1
 changelog help.whatsNew@app 1 1 1 1
 open_onboarding cmdr.openOnboarding@app 1 1 1 1
 cli_install app.toggleCliCommand@app 1 1 1 1
-settings app.settings@app 1 1 1 1
+settings app.settings@app 1 1 0 1
 open nav.open@file 1 0 1 1
 file_view file.view@file 1 0 0 1
 edit file.edit@file 1 0 1 1
@@ -178,7 +184,7 @@ sort_ascending - 1 1 1 1
 sort_descending - 1 1 1 1
 submenu:menu.view.zoom - 1 1 1 1
 view_zoom_75 view.zoom.set75@app 1 1 1 1
-view_zoom_100 view.zoom.set100@app 1 1 1 1
+view_zoom_100 view.zoom.set100@app 1 1 0 1
 view_zoom_125 view.zoom.set125@app 1 1 1 1
 view_zoom_150 view.zoom.set150@app 1 1 1 1
 view_zoom_in view.zoom.in@app 1 1 1 1
@@ -243,8 +249,8 @@ edit_paste_move edit.pasteAsMove@file 1 0 0 1
 copy_path file.copyPath@file 1 0 1 1
 copy_filename file.copyFilename@file 1 0 1 1
 search_files search.open@file 1 0 1 1
-settings app.settings@app 1 1 1 1
-enter_license_key app.licenseKey@app 1 1 1 1
+settings app.settings@app 1 1 0 1
+enter_license_key app.licenseKey@app 1 1 0 1
 check_for_updates app.checkForUpdates@app 1 1 1 1
 changelog help.whatsNew@app 1 1 1 1
 select_all_files selection.selectAll@file 1 0 1 1
@@ -272,7 +278,7 @@ sort_ascending - 1 1 1 1
 sort_descending - 1 1 1 1
 submenu:menu.view.zoom - 1 1 1 1
 view_zoom_75 view.zoom.set75@app 1 1 1 1
-view_zoom_100 view.zoom.set100@app 1 1 1 1
+view_zoom_100 view.zoom.set100@app 1 1 0 1
 view_zoom_125 view.zoom.set125@app 1 1 1 1
 view_zoom_150 view.zoom.set150@app 1 1 1 1
 view_zoom_in view.zoom.in@app 1 1 1 1
@@ -305,7 +311,7 @@ prev_tab tab.prev@file 1 0 1 1
 pin_tab_menu tab.togglePin@file 1 0 0 1
 close_other_tabs tab.closeOthers@file 1 0 1 1
 about app.about@app 1 1 0 1
-acknowledgements app.acknowledgements@app 1 1 1 1
+acknowledgements app.acknowledgements@app 1 1 0 1
 help_shortcuts help.openShortcuts@app 1 1 1 1
 help_accessibility help.accessibility@app 1 1 1 1
 help_whats_new help.whatsNew@app 1 1 1 1

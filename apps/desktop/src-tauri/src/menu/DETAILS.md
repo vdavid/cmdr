@@ -608,6 +608,10 @@ and calls the recompute. **Decision/Why:** when each input wrote its items direc
 round-trip through Settings once re-offered Copy with a dialog still up, and every later input had to be "re-applied
 LAST". One derivation makes the order irrelevant.
 
+The untracked command items (macOS's app-menu rows, the Zoom presets) are written too, from `MenuState.untracked_items`:
+tracking decides whether a rebind reaches a row, never whether it greys (`crates/cmdr-menu/DETAILS.md` § The enabled
+fold).
+
 `commands_refused_over_dialog` is the frontend dialog gate's answer (`routes/(main)/DETAILS.md` § The dialog gate): every
 `BLOCKED_BY_DIALOGS` command while a dialog, an explorer overlay, or the command palette is up in the main window, pushed
 by `menu-dialog-gate.svelte.ts` through `set_commands_refused_over_dialog`. It greys an item out whichever window is in

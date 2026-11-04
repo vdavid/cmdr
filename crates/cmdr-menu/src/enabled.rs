@@ -4,11 +4,10 @@
 //! input in `MenuState` and hands this fold the lot, so no writer can undo another's verdict by
 //! running after it. The browser demo asks the same fold for every row it draws.
 //!
-//! Three kinds of row, because the desktop keeps three kinds of handle: the tracked items
-//! ([`menu_item_enabled`]), the explorer items it holds in their own fields (pin tab, show hidden,
-//! the view modes, [`FieldItem`]), and the two submenus it greys as a whole ([`submenu_enabled`]).
-//! An untracked item is never written, so it keeps what it was built with. [`entry_enabled`] is
-//! that rule over one `MENU_BAR` row.
+//! Three kinds of row, because the desktop keeps three kinds of handle: the command items, tracked
+//! or not ([`menu_item_enabled`]), the explorer items it holds in their own fields (pin tab, show
+//! hidden, the view modes, [`FieldItem`]), and the two submenus it greys as a whole
+//! ([`submenu_enabled`]). [`entry_enabled`] is that rule over one `MENU_BAR` row.
 
 use std::collections::HashSet;
 
@@ -94,9 +93,10 @@ pub fn submenu_enabled(role: SubmenuRole, inputs: &MenuItemInputs) -> bool {
 /// ours (a separator, or an OS-wired predefined item, which the OS greys).
 pub fn entry_enabled(entry: &EntryKind, inputs: &MenuItemInputs) -> Option<bool> {
     match entry {
+        // Tracking decides only whether a rebind can reach the row; every command row answers to the
+        // same fold, so an untracked one (the app menu's, a Zoom preset) greys out like the rest.
         EntryKind::Item(item) => Some(match item.tracking {
-            Tracking::Tracked => menu_item_enabled(item.id, inputs),
-            Tracking::Untracked => item.enabled,
+            Tracking::Tracked | Tracking::Untracked => menu_item_enabled(item.id, inputs),
             Tracking::PinTab => field_item_enabled(FieldItem::PinTab, inputs),
         }),
         EntryKind::Check(check) => Some(match check.role {

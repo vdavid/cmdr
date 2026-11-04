@@ -27,15 +27,15 @@ enabled state of every row (`bar_states_test.rs`), which before the move was onl
 
 ## The enabled fold
 
-`apply_menu_item_states` writes three kinds of handle, so the fold has three answers: `menu_item_enabled` for the
-tracked items, `field_item_enabled` for the explorer items the desktop holds in their own fields (pin tab, show hidden,
-the four view-mode checks), and `submenu_enabled` for the pane submenus and Sort by. An untracked row is never written,
-so it keeps what it was built with. `entry_enabled` is that rule over one row, which is what the demo and
-`bar_states_test.rs` read.
+`apply_menu_item_states` writes three kinds of handle, so the fold has three answers: `menu_item_enabled` for every
+command item, tracked or not, `field_item_enabled` for the explorer items the desktop holds in their own fields (pin
+tab, show hidden, the four view-mode checks), and `submenu_enabled` for the pane submenus and Sort by. `entry_enabled`
+is that rule over one row, which is what the demo and `bar_states_test.rs` read.
 
-⚠️ Known gap the table shows: macOS's untracked app-menu rows (About, Settings, the license, Acknowledgements) and the
-Zoom presets never grey, not even while the dialog gate refuses their command. On Linux About and Settings are tracked,
-so they do. Behavior pinned as it is; whether to track them is an open question.
+**Decision**: tracking decides only whether a rebind can reach a row, never whether it greys. **Why**: macOS builds the
+app menu's rows (About, Settings, the license, Acknowledgements) and the Zoom presets untracked, and while untracked
+meant "never written" they stayed live with a dialog refusing their command, so a click did nothing; the same rows on
+Linux, tracked, greyed. The desktop keeps their handles in `MenuState.untracked_items` for this alone.
 
 ## Accelerators
 

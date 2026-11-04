@@ -462,6 +462,10 @@ pub struct MenuState<R: Runtime> {
     pub commands_refused_over_dialog: Mutex<HashSet<String>>,
     /// Generic menu items keyed by menu item ID, for accelerator and enable/disable updates.
     pub items: Mutex<HashMap<String, MenuItemEntry<R>>>,
+    /// The `Tracking::Untracked` command items (macOS's app-menu rows, the Zoom presets), kept for
+    /// `apply_menu_item_states` alone: tracking decides whether a rebind reaches a row, never
+    /// whether it greys.
+    pub untracked_items: Mutex<Vec<(&'static str, MenuItem<R>)>>,
     /// What each rebound item's DISPLAY-only accelerator should say now, overriding the one
     /// `MENU_BAR` was built with. `Some` draws that combo, `None` draws nothing at all.
     ///
@@ -570,6 +574,7 @@ impl<R: Runtime> Default for MenuState<R> {
             undo_trash_available: AtomicBool::new(false),
             commands_refused_over_dialog: Mutex::new(HashSet::new()),
             items: Mutex::new(HashMap::new()),
+            untracked_items: Mutex::new(Vec::new()),
             display_accelerators: Mutex::new(HashMap::new()),
             sort_submenu: Mutex::new(None),
             requested_sort: Mutex::new(None),
@@ -660,6 +665,7 @@ impl<R: Runtime> MenuState<R> {
         *self.view_right_pane_submenu.lock_ignore_poison() = Some(items.view_right_pane_submenu);
         *self.pin_tab.lock_ignore_poison() = Some(items.pin_tab);
         *self.items.lock_ignore_poison() = items.items;
+        *self.untracked_items.lock_ignore_poison() = items.untracked_items;
         // The overrides described the bar being replaced, so they go with it. The frontend
         // re-pushes every custom shortcut after a rebuild (`MenuBarRebuilt`), which is what
         // puts back the real accelerators too.
@@ -699,6 +705,9 @@ pub struct MenuItems<R: Runtime> {
     pub pin_tab: MenuItem<R>,
     /// Generic menu items for accelerator updates, keyed by menu item ID.
     pub items: HashMap<String, MenuItemEntry<R>>,
+    /// The `Tracking::Untracked` command items, by menu id: no rebind reaches them, but their
+    /// enabled state follows the same fold as everyone's.
+    pub untracked_items: Vec<(&'static str, MenuItem<R>)>,
     /// Sort by submenu (disabled when not in explorer context)
     pub sort_submenu: Submenu<R>,
 }

@@ -40,6 +40,7 @@ pub fn build_menu<R: Runtime>(
         requested_sort,
         has_existing_license,
         items: HashMap::new(),
+        untracked: Vec::new(),
         show_hidden: None,
         left: PaneHandles::new(),
         right: PaneHandles::new(),
@@ -66,6 +67,7 @@ struct Builder<'a, R: Runtime> {
     requested_sort: Option<RequestedSort>,
     has_existing_license: bool,
     items: HashMap<String, MenuItemEntry<R>>,
+    untracked: Vec<(&'static str, MenuItem<R>)>,
     show_hidden: Option<CheckMenuItem<R>>,
     left: PaneHandles<R>,
     right: PaneHandles<R>,
@@ -118,7 +120,7 @@ impl<R: Runtime> Builder<'_, R> {
                         Tracking::Tracked => {
                             tracked.push((item.id, position, TrackedItem::Plain(built.clone()), label));
                         }
-                        Tracking::Untracked => {}
+                        Tracking::Untracked => self.untracked.push((item.id, built.clone())),
                         Tracking::PinTab => self.pin_tab = Some(built.clone()),
                     }
                     MenuItemKind::MenuItem(built)
@@ -218,6 +220,7 @@ impl<R: Runtime> Builder<'_, R> {
             view_right_pane_submenu: built(self.right.submenu, "Right pane submenu"),
             pin_tab: built(self.pin_tab, "Pin tab item"),
             items: self.items,
+            untracked_items: self.untracked,
             sort_submenu: built(self.sort_submenu, "Sort by submenu"),
         }
     }

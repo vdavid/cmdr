@@ -214,7 +214,8 @@ pub enum Tracking {
     /// whether it's enabled, and `update_menu_item_accelerator` swaps a custom shortcut onto it by
     /// removing it and reinserting a new item at that position.
     Tracked,
-    /// Nowhere. Nothing changes it after the build.
+    /// In `MenuState.untracked_items` only: `apply_menu_item_states` sets whether it's enabled, but
+    /// no custom shortcut is swapped onto it (macOS's app-menu rows, the Zoom presets).
     Untracked,
     /// In `MenuState.pin_tab`, whose label the frontend flips between Pin tab and Unpin tab.
     PinTab,
