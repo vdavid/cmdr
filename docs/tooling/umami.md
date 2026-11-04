@@ -30,20 +30,24 @@ ssh hetzner "docker exec umami-db psql -U umami -d umami -c \
 
 ## Gotchas
 
-- **CSP headers**: The nginx CSP in `apps/website/nginx.conf` must allow `anal.veszelovszki.com` in both `script-src`
-  (loads the script) and `connect-src` (sends events). Run `curl -sI https://getcmdr.com | grep content-security-policy`
-  to verify.
-- **`TRACKER_SCRIPT_NAME`**: Set to `mami` in the Umami `docker-compose.yml`. The script is served at `/mami` (no `.js`
-  extension: Umami uses the value literally as the path). Short names like `s` break the Umami API because Next.js
-  middleware matches any URL path containing the tracker name and rewrites it to serve the script. Keep the name
-  distinctive.
+- **First-party proxy, so the CSP needs nothing for Umami**: the site loads the tracker from `/u/mami` and posts events
+  to `/u/api/send`, both on getcmdr.com (`PUBLIC_UMAMI_HOST=/u`). Caddy's `getcmdr.com` block
+  (`hetzner/services/caddy/Caddyfile` in the `infra` repo) rewrites `/u/mami` to Umami's `/script.js` and strips `/u`
+  from everything else, so `'self'` in `apps/website/nginx-security-headers.conf` covers both. Don't add
+  `anal.veszelovszki.com` back. Verify with `curl -s -o /dev/null -w '%{http_code}\n' https://getcmdr.com/u/mami`
+  (expect 200; verified 2026-11-04 alongside the live CSP header).
+- **`TRACKER_SCRIPT_NAME` does nothing here**: it's a build-time variable, so the prebuilt image ignores it (and some
+  values blank the UI in v3). The obscured `/mami` name comes from the Caddy rewrite above.
 
 ## Changing Umami config
 
-Umami's `docker-compose.yml` and Caddy config live in the **`hetzner-server`** repo. **Never edit files directly on the
-server.** The process:
+Umami's `docker-compose.yml` lives in the `infra` repo (`~/projects-git/vdavid/infra`) at `hetzner/services/umami/`,
+whose `CLAUDE.md` covers upgrades and retention; the `/u/` proxy lives in `hetzner/services/caddy/Caddyfile`. The box
+deploys from that repo's checkout at `~/infra`. **Never edit files directly on the server.** The process:
 
-1. Edit the file in the local `hetzner-server` repo
-2. Commit and push
-3. On the server: `ssh hetzner "cd ~/hetzner-server && git pull"`
-4. Restart: `ssh hetzner "cd ~/hetzner-server/umami && docker compose down && docker compose up -d"`
+1. Edit the file in the local `infra` repo.
+2. Commit and push.
+3. On the server: `ssh hetzner "cd ~/infra && git pull"`.
+4. Restart Umami: `ssh hetzner "cd ~/infra/hetzner/services/umami && docker compose up -d"`. For a Caddyfile change, run
+   `docker compose restart caddy` in `~/infra/hetzner/services/caddy` instead (the infra repo's `hetzner/CLAUDE.md` says
+   why a reload isn't enough).
