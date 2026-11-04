@@ -43,6 +43,16 @@ testing = ["dep:tempfile", "dep:plist", "tokio/net", "tokio/io-util"]
 mimalloc = ["dep:mimalloc", "dep:libmimalloc-sys"]
 
 [dependencies]
+# The process-wide SQLite page-cache slab and the connection factories that
+# install it (`sqlite_util`). Every store in the app — the three index DBs plus
+# the agent's and the operation log's — shares that one slab, so the helpers have
+# to live in the crate all of them already depend on. `bundled` so the linked
+# SQLite is ours, `collation` for the index store's `name_folded` collation, and
+# `fallible_uint` for the app-side stores; the feature set has to be a superset of
+# every consumer's or Cargo unification silently drops one. In the browser build
+# rusqlite swaps in `sqlite-wasm-rs` by itself, which compiles `sqlite3.c` with the
+# pinned LLVM clang (`scripts/build-listing-wasm/toolchain.go`).
+rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
 # The digest half of every volume ID (`volume::ids`). Cryptographic on purpose:
 # an ID is identity, and a volume name is user-controlled, so a *chosen*
 # collision (name a USB stick so it steals another volume's index and saved
@@ -115,14 +125,6 @@ mimalloc = { version = "0.1", optional = true }
 # `siginfo_t`, `/proc/self/maps` on Linux) runs on both, and on macOS also Mach
 # `task_info`, the malloc-zone walk, and `pthread_set_qos_class_self_np`.
 libc = "0.2"
-# The process-wide SQLite page-cache slab and the connection factories that
-# install it (`sqlite_util`). Every store in the app — the three index DBs plus
-# the agent's and the operation log's — shares that one slab, so the helpers have
-# to live in the crate all of them already depend on. `bundled` so the linked
-# SQLite is ours, `collation` for the index store's `name_folded` collation, and
-# `fallible_uint` for the app-side stores; the feature set has to be a superset of
-# every consumer's or Cargo unification silently drops one.
-rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
 # uid/gid → name resolution for `FileEntry`'s owner and group columns.
 uzers = "0.12.2"
 # Reading the private File Provider domain-id extended attribute (`file_provider`),

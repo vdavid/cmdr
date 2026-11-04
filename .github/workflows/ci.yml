@@ -525,7 +525,13 @@ jobs:
 
       # The browser demo's listing engine: a wasm32 build plus a Node smoke run, the only
       # lane that sees a host-only dep or a `std` clock reach the engine. `wasm-bindgen-cli`
-      # installs into `~/.cargo/bin`, which rust-cache keeps.
+      # installs into `~/.cargo/bin`, which rust-cache keeps; the C toolchain that compiles
+      # SQLite for wasm32 comes from its own cache.
+      - name: Install the wasm C toolchain
+        uses: ./.github/actions/wasm-toolchain
+        with:
+          save-cache: ${{ env.SAVE_RUST_CACHE }}
+
       - name: Build the listing engine for wasm
         run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
 

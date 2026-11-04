@@ -112,10 +112,17 @@ The engines build for `wasm32-unknown-unknown` (`crates/cmdr-listing-wasm`, the 
 A browser has no host filesystem, user database, threads, or C toolchain, and the gates are as few and coarse as that
 allows:
 
-- **Host-only deps** sit in `Cargo.toml`'s `cfg(not(target_family = "wasm"))` table: `libc`, `rusqlite`, `uzers`,
-  `xattr`, `exacl`, and tokio's `rt-multi-thread`. `dirs` stays unconditional (it answers `None` there). The wasm table
-  adds `uuid`'s `js` randomness and `rt`'s browser half (`web-time`, `wasm-bindgen`, `wasm-bindgen-futures`).
-- **Two whole modules are host-only** (`lib.rs`): `mapped_file_faults` (mmap) and `sqlite_util`.
+- **Host-only deps** sit in `Cargo.toml`'s `cfg(not(target_family = "wasm"))` table: `libc`, `uzers`, `xattr`, `exacl`,
+  and tokio's `rt-multi-thread`. `dirs` stays unconditional (it answers `None` there). The wasm table adds `uuid`'s `js`
+  randomness and `rt`'s browser half (`web-time`, `wasm-bindgen`, `wasm-bindgen-futures`).
+- **One whole module is host-only** (`lib.rs`): `mapped_file_faults` (mmap).
+- **SQLite builds for the browser too**: `rusqlite` is an ordinary dependency, and on `wasm32-unknown-unknown` it links
+  `sqlite-wasm-rs`, which compiles `sqlite3.c` with the pinned conda LLVM clang the wasm build script installs
+  (`scripts/build-listing-wasm/toolchain.go`); Apple's clang can't target wasm32. `sqlite_util` is the same code there.
+  A path opens on `sqlite-wasm-rs`'s memory VFS (files keyed by path, shared between connections, gone on reload), and
+  `journal_mode=WAL` quietly stays `delete` (no shared memory). The slab still has to be installed before the first
+  connection, as natively: a connection opened first makes `ensure_shared_page_cache` answer `TooLate` (verified on
+  `sqlite-wasm-rs` 0.5.5, SQLite 3.53.0, a Node run of the real op-log store, 2026-11-04).
 - **The rest answer as "the platform can't hold this"**, the way the Linux branches already do for macOS-only classes:
   ACL, mode, and xattr reads find nothing, writes report `ClassOutcome::NotApplicable`, the umask is the `022` fallback,
   owners resolve to their numeric id, `open_parent_folder` opens nothing, and `Acl` wraps `Infallible`, so no code path
