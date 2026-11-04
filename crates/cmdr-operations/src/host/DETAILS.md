@@ -94,6 +94,16 @@ inside it names the app's accessor.
   `VolumeError::ReadOnly` on the instant one), whatever the caller. The frontend refuses the same writes in a routed
   pane; this is the backend's line for Ask Cmdr, MCP, and any later caller. `FakeVolumes::route` lets a test serve a
   prefix through a route (`routed_writes_tests.rs`).
+- **What the browser build can reach on the volume path needs no thread.** There `Runtime::spawn_blocking` runs its
+  closure INLINE (no pool), and nothing can `block_on` or wait in `blocking_recv`. Audited for the volume engine (copy,
+  move, delete, rename, create, the scan preview, undo): every `blocking_recv` and `Condvar` wait sits on a LOCAL or
+  archive path, each with an async twin the volume path uses (`refused_name::ask_async`,
+  `locked_sources::plan_locked_async`, `queued_sources`'s async half, the pause gate's `Notify`); the one
+  `spawn_blocking` the volume path calls, `locked_sources::plan_locked_on_volume`, runs only for a source with a
+  `local_path()` (none in the browser); the leftover sweep's `block_on`s have browser twins (`in_flight_sweep.rs`); the
+  conflict pre-flight's deadline is on `rt`; and the operation log's writer applies inline there
+  (`crates/cmdr-operation-log/src/writer.rs` module docs). The ledger runs unpersisted in the browser
+  (`claim_ledger(None)`), which starts no writer or sweep thread.
 - **Which id is the local disk is the host's answer** (`OperationVolumes::local_disk_id`, default `DEFAULT_VOLUME_ID`),
   and every branch that would run the `std::fs` engine on an id asks `local_disk(id)`, which hands out a `LocalDisk`
   capability only nothing else can build: the rename and its `lstat` pre-flight, the rename validity check, delete, bulk
