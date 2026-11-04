@@ -189,7 +189,7 @@ fn journal(db: &Path) -> Value {
                 })
             })
             .collect();
-        items.sort_by_key(|item| item.to_string());
+        items.sort_by_key(|item| sorted_keys(item).to_string());
         rows.push(json!({
             "kind": format!("{:?}", row.kind),
             "initiator": format!("{:?}", row.initiator),
@@ -215,7 +215,7 @@ fn trace(world: &impl World, answers: Vec<Value>, sinks: &[&TraceSink]) -> Value
         .iter()
         .map(|sink| {
             let mut items = sink.items.lock_ignore_poison().clone();
-            items.sort_by_key(|item| item.to_string());
+            items.sort_by_key(|item| sorted_keys(item).to_string());
             json!({
                 "ordered": sink.ordered.lock_ignore_poison().clone(),
                 "sourceItems": items,
@@ -228,14 +228,53 @@ fn trace(world: &impl World, answers: Vec<Value>, sinks: &[&TraceSink]) -> Value
     )
 }
 
-/// A trace as its fixture file spells it, so a fixture compares as text.
+/// A trace as its fixture file spells it, so a fixture compares as text. Keys
+/// are sorted here, ❌ never left to `serde_json::Map`: the workspace build
+/// turns on `preserve_order` (through `schemars`), where a map keeps insertion
+/// order, so the same trace would render two ways.
 pub fn render(trace: &Value) -> String {
-    serde_json::to_string_pretty(trace).expect("renders") + "\n"
+    serde_json::to_string_pretty(&sorted_keys(trace)).expect("renders") + "\n"
+}
+
+/// `value` with every object's keys in sorted order, at every depth.
+fn sorted_keys(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => {
+            let mut keys: Vec<&String> = map.keys().collect();
+            keys.sort();
+            Value::Object(keys.into_iter().map(|k| (k.clone(), sorted_keys(&map[k]))).collect())
+        }
+        Value::Array(items) => Value::Array(items.iter().map(sorted_keys).collect()),
+        other => other.clone(),
+    }
 }
 
 fn answer<T: Serialize, E: Serialize>(result: &Result<T, E>) -> Value {
     match result {
         Ok(value) => json!({ "ok": serde_json::to_value(value).expect("answers serialize") }),
         Err(error) => json!({ "err": serde_json::to_value(error).expect("errors serialize") }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Regression: the workspace build turns on `serde_json/preserve_order` (through
+    /// `schemars`), where an object keeps insertion order, so every fixture
+    /// "moved" in `pnpm check rust-tests` but not under `-p cmdr-operations`.
+    #[test]
+    fn a_trace_renders_its_keys_sorted_whatever_the_map_order() {
+        let mut inner = serde_json::Map::new();
+        inner.insert("zeta".into(), json!(1));
+        inner.insert("alpha".into(), json!(2));
+        let mut outer = serde_json::Map::new();
+        outer.insert("b".into(), json!([Value::Object(inner)]));
+        outer.insert("a".into(), json!(null));
+        let rendered = render(&Value::Object(outer));
+        assert_eq!(
+            rendered,
+            "{\n  \"a\": null,\n  \"b\": [\n    {\n      \"alpha\": 2,\n      \"zeta\": 1\n    }\n  ]\n}\n"
+        );
     }
 }
