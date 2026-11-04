@@ -71,20 +71,43 @@ Settled:
   off, and the setting hides. `Windows.Media.Ocr` can come back later as its own effort.
 - **Native window decorations on Windows** (as on Linux): no custom title bar fighting Snap Layouts.
 - **NSIS installer, per-user (`currentUser`), `embedBootstrapper` for WebView2.** MSI only if enterprise asks.
+- **D1. The path model** (David, 2026-11-04): every local path on Windows is an absolute forward-slash path whose first
+  component names its root: `C:/Users/ada` for a drive, `//server/share/x` for a UNC share. Each drive and UNC share is
+  its own volume, rooted at `C:/` or `//server/share/`. The drive letter is always uppercase. Backslashes exist only
+  inside the Windows local backend (`\\?\C:\…` for long paths) and in the one display formatter. Case sensitivity is a
+  per-volume property (`caseSensitive`), never inferred from the OS.
+  - Why: it's the rule `crates/cmdr-fs/src/volume/remote_paths.rs` already sets for remote volumes, that an app path
+    names its own volume. So the grammar becomes "a scheme URL, or a `/`-separated absolute path whose first component
+    is the root". Every existing `/` arithmetic in the frontend, the index, and `lib/path` stays correct; `lib/path`
+    only learns the two new root shapes; Win32 APIs accept `/` everywhere except the `\\?\` form.
+  - ❌ Rejected: a drive as a volume rooted at `/` with volume-relative paths (`/Users/ada` plus a volume id). Those are
+    exactly the bare paths `remote_paths.rs` forbids: a restored tab, favorite, drag, or go-to-path that loses the
+    volume hint resolves to the wrong disk. Also rejected: native `\` on the wire (touches ~110 frontend sites and every
+    Rust↔TS fixture) and MSYS-style `/c/Users` (unfamiliar, and pasted paths need translating).
+- **D2. MTP ships on Windows** (David, 2026-11-04), through `mtp-rs`'s WPD COM backend. `mtp-rs` picks it automatically
+  behind its high-level `mtp::` API, with no driver install (verified on a Pixel 9 Pro XL, per its README), and
+  `cmdr-mtp` uses only that API, never the USB-only `ptp::` layer. Windows' MTP driver can stall any call for 5–6
+  minutes after files change on the phone; that's a Windows quirk every app and library meets (File Explorer too), so
+  Cmdr shows it as a "the phone is busy" state with a timeout, never as a hang or an error. Task 56. The crates audit's
+  MTP note (WinUSB driver binding) predates this and is superseded.
+- **D4. Minimum Windows version** (David, 2026-11-04): Windows 10 22H2 and Windows 11, x86_64 first, ARM64 later. Drop
+  Windows 10 when WebView2 does (Microsoft promises WebView2 updates on 10 22H2 until at least 2028-10).
+  - Why: Windows 10 is 25.13% of Windows desktops (StatCounter, 2026-10; Windows 11 74.29%, the rest about 0.6%), and
+    Total Commander's audience likely skews to it. Code cost is a few fallbacks where Windows 11 has extras (EcoQoS
+    thread mode, Mica, 24H2 block-clone copies), plus a Windows 10 VM in each release's QA.
+  - Hard floor: Windows 7/8/8.1 are out. WebView2 stopped updating there in 2023-01, and Rust's tier-1
+    `x86_64-pc-windows-msvc` has required Windows 10 since 2024 (the Win7 target is tier 3, no prebuilt std). Total
+    Commander reaches Windows 95 only because it's a native Win32 app with no browser engine.
 
-Waiting on David (each blocks only the tasks that name it):
+Waiting on David:
 
-- **D1. The path model.** Recommendation: each drive and UNC share is its own volume, and paths on the IPC wire are
-  absolute forward-slash "Cmdr paths" (`C:/Users/ada`, `//server/share/x`), converted to `\` only inside the Windows
-  local backend and in one display formatter. Every existing `/` arithmetic in the frontend and index stays correct;
-  `lib/path` learns drive and UNC roots; volumes carry `caseSensitive`. The alternative (native `\` on the wire) touches
-  about 110 frontend sites and every Rust↔TS fixture.
-- **D2. MTP on Windows.** Windows binds phones to its WPD driver, so `mtp-rs`'s direct USB needs either a WinUSB driver
-  swap (unacceptable UX) or a WPD COM backend (L). Recommendation: no MTP in the first Windows release.
-- **D3. Code signing.** Azure Artifact Signing through Rymdskottkärra AB (EU org; individuals only qualify in the US and
-  Canada), about $9.99/month, GitHub OIDC so no signing secret lives in GitHub. Needs David to open the Azure account
-  and pass org validation. Unsigned isn't an option (Smart App Control blocks it).
-- **D4. Minimum Windows version.** Recommendation: Windows 10 22H2 and Windows 11, x86_64 first, ARM64 later.
+- **D3. Code signing.** Still open; unsigned isn't an option (SmartScreen's "Windows protected your PC", and Smart App
+  Control blocks it outright). Options as researched 2026-11-04 (details in #942):
+  - Microsoft Store with an MSIX package: free, Microsoft signs it. Needs MSIX packaging (Tauri has no native MSIX
+    bundler; Microsoft's `winapp` CLI has a Tauri guide), Store certification per release, Store-delivered updates.
+  - Azure Artifact Signing through Rymdskottkärra AB: $9.99/month ($119.88/year).
+  - An OV certificate (Certum about $99–249/year; Sectigo, which Total Commander uses).
+  - Since 2024, EV no longer buys instant SmartScreen reputation; OV and Artifact Signing build it the same way.
 
 ## Bugs the audits found on the way
 
@@ -258,8 +281,11 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
 55. [M] Windows. Windows QA pass on a real machine: an agent drives the checklist and fixes what it finds; David QAs
     look, feel, and timing-sensitive UI.
 
+56. [S] Windows. MTP via `mtp-rs`'s WPD backend (D2): Windows device arrival and removal for phones, the 5–6-minute
+    driver stall shown as a "the phone is busy" state with a timeout (a dropped future is safe, later calls queue behind
+    it, and a delete can still finish after we gave up), and a QA pass on a real phone. Needs 5.
+
 ### Later, not in the first Windows release
 
-- MTP over WPD (L, `cmdr-mtp`), per D2.
 - OCR via `Windows.Media.Ocr`, CLIP on ONNX Runtime + DirectML.
 - Explorer shell-extension verbs in Cmdr's own context menu (`IContextMenu`), preview handlers, Mica, ARM64 builds.

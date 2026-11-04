@@ -56,7 +56,7 @@ Read this before adding, wiping, or reorganizing a spec.
   [#284](https://github.com/vdavid/cmdr/issues/284)–[#287](https://github.com/vdavid/cmdr/issues/287).
 - `windows-port-plan.md`: **Cmdr has no Windows code, and platform code is scattered across ad hoc `cfg` patterns.**
   Platform seams, typed OS errors, file identity, backend-reported capabilities, and an N-platform release, each a win
-  on its own, then the Windows arms behind them. 55 sized tasks; evidence in `docs/notes/windows-port/`. Issue:
+  on its own, then the Windows arms behind them. 56 sized tasks; evidence in `docs/notes/windows-port/`. Issue:
   [#942](https://github.com/vdavid/cmdr/issues/942).
 - `dropbox-sync-status-linux.md`: **Cloud badges on Linux, which today are simply absent.** Holds the Dropbox socket
   protocol research and what a Linux arm needs. Issue: [#288](https://github.com/vdavid/cmdr/issues/288).
