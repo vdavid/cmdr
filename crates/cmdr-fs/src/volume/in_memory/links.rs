@@ -43,7 +43,7 @@ impl InMemoryVolume {
             ..FileEntry::new(name, normalized.display().to_string(), false, true)
         };
         Self::touch_parent_of(entries, &normalized);
-        let mut entry = InMemoryEntry::new(metadata, Some(Vec::new()));
+        let mut entry = InMemoryEntry::new(metadata, Some(super::InMemoryContent::bytes(Vec::new())));
         entry.link_target = Some(target.to_path_buf());
         entries.insert(normalized, entry);
     }

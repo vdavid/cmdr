@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::{InMemoryVolume, Volume};
+use cmdr_fs::volume::{InMemoryContent, InMemoryVolume, Volume};
 use serde::Deserialize;
 
 /// One volume's whole tree. Every parent folder is listed explicitly.
@@ -113,12 +113,27 @@ impl DemoTree {
             }
             entries.push(file_entry(entry, name, &dirs));
         }
-        Ok(Arc::new(
-            InMemoryVolume::with_entries(self.volume_id, entries)
-                .with_root(root)
-                .with_held_folders_only(),
-        ))
+        let mut volume = InMemoryVolume::with_entries(self.volume_id, entries)
+            .with_root(root)
+            .with_held_folders_only();
+        // Every file reads as many bytes as its listing says: generated ones,
+        // seeded from its path, so a copy moves real-sized data without the page
+        // holding gigabytes (`crates/cmdr-fs/src/volume/in_memory/device.rs`).
+        for entry in self.entries.iter().filter(|e| e.kind == DemoKind::File) {
+            if let Some(size) = entry.size {
+                volume = volume.with_content(&entry.path, InMemoryContent::synthetic(seed_of(&entry.path), size));
+            }
+        }
+        Ok(Arc::new(volume))
     }
+}
+
+/// A file's content seed: FNV-1a of its path, so the same tree always generates
+/// the same bytes.
+fn seed_of(path: &str) -> u64 {
+    path.bytes().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+        (hash ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3)
+    })
 }
 
 /// The row a listing shows for `entry`: the dates and size it gave, and the
