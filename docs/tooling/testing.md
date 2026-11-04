@@ -51,15 +51,17 @@ host's runtime) so a production deadline elapses in virtual time. Worked example
 
 ### `indexing::test_support::count_allocations` / `heap_bytes_held` (memory shape)
 
-Under `cfg(test)` this module installs a pass-through global allocator that counts allocations and live bytes per THREAD
-(parallel tests can't pollute each other). `count_allocations(|| …)` reports how many allocations a closure made;
-`heap_bytes_held(|| …)` reports the requested bytes its result still holds. Use them to pin a hot path's SHAPE against a
-generous bound ("this walk doesn't allocate per row"), never an exact number: the numbers move with buffer growth and
-allocator internals, the shape is the invariant. Worked examples: `media_index/scheduler/enrich_memory_tests.rs`.
+Under `cfg(test)` this module installs a pass-through global allocator. `count_allocations(|| …)` reports how many
+allocations a closure made on the calling THREAD (parallel tests can't pollute it); `heap_bytes_held(|| …)` reports the
+requested bytes its result still holds, counted PROCESS-wide while the measurement is open, so a result built on worker
+threads counts (nextest's one process per test keeps other tests out). The app (`test_support.rs`) and `cmdr-search`
+(`src/test_alloc.rs`) carry the same harness, one per test binary. Use them to pin a hot path's SHAPE against a generous
+bound ("this walk doesn't allocate per row"), never an exact number: the numbers move with buffer growth and allocator
+internals, the shape is the invariant. Worked examples: `media_index/scheduler/enrich_memory_tests.rs`.
 
-For PARALLEL code the per-thread counters see nothing (rayon's workers do the work), so the app crate's
-`crate::test_support::allocations_on_pool(threads, || …)` runs the closure on a fresh rayon pool and counts every
-allocation that pool's threads make, into a counter of its own. Worked example:
+For PARALLEL code the per-thread allocation count sees nothing (rayon's workers do the work), so the app crate's (and
+`cmdr-search`'s) `allocations_on_pool(threads, || …)` runs the closure on a fresh rayon pool and counts every allocation
+that pool's threads make, into a counter of its own. Worked example:
 `crates/cmdr-search/src/engine/tests/allocations.rs`.
 
 It lives in the indexing tree, not next to `wait_until`, because a `#[global_allocator]` is per BINARY: it has to sit in

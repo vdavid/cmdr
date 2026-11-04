@@ -404,11 +404,9 @@ possible milestone. This trap has fired three times in this effort. `tempfile` j
 `reserve_initializing_index_for_test` hands a `TempDir` back, so it's an optional normal dependency the feature turns
 on, not a dev-dependency.
 
-**Known gap for the move**: `crates/cmdr-search/src/ranking/memory_tests.rs` reads
-`indexing::test_support::heap_bytes_held`, and that module installs a `#[global_allocator]`, which is per binary and so
-can't be feature-gated (it would give every binary linking the index a second one). Today the two live in the same test
-binary. At the move they won't, and the app needs its own copy of the small counting harness. That's Decision 18's
-argument one level further out, not a new problem.
+**The counting allocator isn't shared**: `indexing::test_support` installs a `#[global_allocator]`, which is per binary
+and so can't be feature-gated (it would give every binary linking the index a second one). So the app and `cmdr-search`
+each carry their own copy of the small harness. That's Decision 18's argument one level further out, not a new problem.
 
 ## The other two subsystems
 
