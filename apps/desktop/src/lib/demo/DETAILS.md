@@ -221,6 +221,12 @@ Answer as a fresh, personal-use Cmdr on a Mac with nothing extra would: no index
 demo can't ask it, so `getIcons` answers every id with the app's bundled generic folder or document
 (`static/icons/default-*.png`), through `$app/paths`' `asset()` so they resolve under `/demo`.
 
+- Gotcha: the unanswered fallback answers `null`, which is only right for a void command. A value command left
+  unanswered gets a `null` the app's types say can't happen: `getRecentSearches` did, and the search dialog's render
+  threw on it, so ⌘F flashed the dialog and its boundary closed it. Answer every value command the app asks for.
+- Search: `prepareSearchIndex` refuses (the app's own "index not available" path), with empty recent searches and
+  excludes and no cloud consent, until the index runs in the engine (`docs/specs/demo-index-plan.md`).
+
 ## Writes
 
 - Decision: the demo volume is `mountIsReadOnly: true` (`volumes.ts`), so the app's own read-only handling answers every
