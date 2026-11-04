@@ -12,6 +12,7 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use cmdr_fs::entry::FileEntry;
@@ -30,6 +31,8 @@ use crate::events::EventSink;
 pub struct FolderSizes {
     volume: Arc<InMemoryVolume>,
     memo: Mutex<HashMap<PathBuf, Option<HeldAt>>>,
+    /// How many changes the volume has reported: the search's rebuild trigger.
+    changes: AtomicU64,
 }
 
 impl FolderSizes {
@@ -38,7 +41,14 @@ impl FolderSizes {
         Self {
             volume,
             memo: Mutex::new(HashMap::new()),
+            changes: AtomicU64::new(0),
         }
+    }
+
+    /// How many changes the volume has reported so far. A host holding anything
+    /// built from the tree (the search's arena) rebuilds when this moved.
+    pub fn changes(&self) -> u64 {
+        self.changes.load(Ordering::Acquire)
     }
 
     /// What the volume holds at each of `paths`, from the memo where it can,
@@ -72,6 +82,7 @@ impl FolderSizes {
     /// the panes hear the change, so their enrich reads fresh totals (the app's
     /// composer feeds its index first for the same reason).
     pub fn changed(&self, parent: &Path, change: &DirectoryChange) {
+        self.changes.fetch_add(1, Ordering::AcqRel);
         let mut memo = self.memo.lock_ignore_poison();
         let mut forget_subtree = |root: &Path| memo.retain(|path, _| !path.starts_with(root));
         match change {

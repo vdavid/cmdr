@@ -95,8 +95,9 @@ tree lists as a folder (as on disk).
   `.d.ts`, and a `package.json` saying `"type": "module"`.
 - `wasm-release` (root `Cargo.toml`): `opt-level = "s"`, fat LTO, one codegen unit, `panic = "abort"`, stripped. With
   the write engine, SQLite, and the operation log linked: 6.5 MB raw, 2.5 MB gzipped (`gzip -9`, 2026-11-04; the listing
-  engine alone was about 2.5 MB raw, ICU collation data most of it). `wasm-opt` isn't run (no binaryen in the
-  toolchain).
+  engine alone was about 2.5 MB raw, ICU collation data most of it). With the viewer and the search core (rayon among
+  it) too: 9,746,088 bytes raw, 3,538,186 gzipped (2026-11-04; rayon's own share unmeasured, the build being stripped).
+  `wasm-opt` isn't run (no binaryen in the toolchain).
 - **Every crate the module links is a demo image input**: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
   `scripts/check/checks/inputs.go`, and ci.yml's `website` filter each list them (the first two are kept aligned by
   `TestWebsiteDemoInputsMatchTheImageKey`, the filter by hand). A new path dep goes in all three, or an engine-only
@@ -106,13 +107,12 @@ tree lists as a folder (as on disk).
   module; the script reads the lockfile and `cargo install`s that version into `~/.cargo/bin` when it's missing.
 - The check: `desktop-rust-listing-wasm` runs the script with `-smoke -golden` into a temp dir, in CI's "Desktop (Rust)"
   job. The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, Brief column
-  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps. It also runs the
-  search core's self-test (`src/search_self_test.rs`, browser-only: a glob, a scope, and a folder-size filter over a
-  `cmdr_search::MemorySource`, with `debug` logging on), the proof that the scan's rayon fallback runs inline and its
-  timing log reads the page's clock; the demo's ⌘F host replaces it once it lands. Its write half (`smoke-writes.mjs`)
-  runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a delete, and the
-  journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe that fails past
-  a 50 ms hold. Any unhandled rejection fails the run.
+  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps. It also drives
+  ⌘F (a glob, a scope, a folder-size filter, and a streaming run to its `search-complete`) with `debug` logging on: the
+  proof that the scan's rayon fallback runs inline and its timing log reads the page's clock. Its write half
+  (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
+  delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
+  that fails past a 50 ms hold. Any unhandled rejection fails the run.
 - **The golden replay** (`-golden`, also in the check): `src/operations_host/golden_test.rs` runs every volume-engine
   scenario in `cmdr_operations::golden` on a real `Demo`'s host (its `DemoVolumes` with the fixtures' `src` and `dst`
   registered beside the page volume, its engine events, name order, and operation log) and compares the trace, as text,
@@ -179,6 +179,26 @@ store (`InMemoryVolume::subtree_totals`, counting the way `cmdr-index`'s aggrega
   a live index, and a fold is never behind.
 - **Physical size** is each file's `physical_size`, or its logical size where the store models none.
 
+## Search
+
+`search.rs`'s `DemoSearch` answers the search commands by their Tauri names (`SEARCH_COMMANDS`): the drive search's core
+over the page's one volume, with no index to load.
+
+- **The volume is the index**: a `cmdr_search::MemorySource` built from `InMemoryVolume::held_entries`, rebuilt when
+  `FolderSizes::changes` moved (every write the panes hear moves it first). A few thousand rows rebuild in well under a
+  millisecond, cheaper than any staleness rule. `prepare_search_index` answers `ready: true` on the first ask, and
+  `release_search_index` only stops dialog runs: the arena is tiny, so there's no idle drop.
+- **Folder sizes are the fold's** (`FoldSizes`, a `DirSizeSource` over `FolderSizes::held_at`), read per query: a size
+  filter and a results row read the numbers the panes and `get_dir_stats` show. ❌ Never a second rollup here.
+- **Name rules** (`DEMO_NAME_RULES`): a Mac's case rule and APFS fold (it presents as one), patterns left as typed (the
+  tree's names are NFC, so an NFD pattern would miss every accented one). Home is the tree's `home`, so rows read `~/…`.
+- **A live run covers everything at once**: `search_files_streaming` announces, hands the covered half to
+  `ResultStream`, and finishes with `CoverageFacts::new(NothingToWalk, Covered, ..)`, all before the command answers.
+  The page's sink defers every event a task (`listing.ts`), so the dialog has registered the run first. Payloads mirror
+  the app's `search/live/events.rs`; `search_test.rs` pins their keys against `bindings.ts`.
+- **Results order and recent searches**: `sort_search_results` is `cmdr_listing::sort_search_rows` on the panes'
+  collator; the recent list is `cmdr-recents`' rules over `cmdr_search::history`'s key, in memory.
+
 ## Where the demo differs from the app
 
 - **No `listing-progress`**: `InMemoryVolume` ignores its progress callback; an in-memory read is instant anyway.
@@ -198,6 +218,9 @@ store (`InMemoryVolume::subtree_totals`, counting the way `cmdr-index`'s aggrega
   trash route (nothing online-only here).
 - **No host work around writes**: no `~` expansion, no S3 cost pricing (`check_rename_validity` prices nothing), no
   analytics, no indexing priority, and `get_volume_space` answers the one volume's live space for every path.
+- **Search** (`search.rs`): recent searches last the session; no `realpath`, so a scope naming a symlinked folder is the
+  link itself and finds nothing inside; no AI (`getAiStatus` answers unavailable, so the dialog's AI mode stays off as
+  on a Mac with AI off); no importance weights, so ties rank by name and id alone.
 - **The viewer** (`viewer.rs`): every call runs inline, with none of the app's 2 s timeouts or stall watches (an
   in-memory read can't hang). No LineIndex upgrade, so a big file keeps its estimated row count; a search scans in 8 ms
   slices on the page's event loop instead of a thread; no watcher, so tail mode never sees a change.

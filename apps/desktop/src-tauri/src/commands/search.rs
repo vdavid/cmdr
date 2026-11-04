@@ -10,8 +10,11 @@ use genai::chat::ChatOptions;
 
 use crate::ai::AiTranslateError;
 use crate::search::{self, ParsedScope, SearchQuery, SearchResult, VolumeLoad};
-use cmdr_fs::volume::SupportedDates;
-use cmdr_listing::{DirectorySortMode, EffectiveSort, SortColumn, SortOrder, SortableEntry, entry_comparator};
+use cmdr_listing::{DirectorySortMode, SortColumn, SortOrder};
+// The sort command's doc names the comparator `cmdr_listing::sort_search_rows` runs; its words
+// are on the wire (`bindings.ts`), so the link resolves through this doc-only import.
+#[cfg(doc)]
+use cmdr_listing::entry_comparator;
 
 use crate::search::ai;
 use crate::search::history::{DEFAULT_MAX_COUNT, HistoryEntry, RECENT_SEARCHES};
@@ -360,69 +363,9 @@ pub fn apply_recent_searches_max_count(app: tauri::AppHandle, max_count: u32) ->
     Ok(())
 }
 
-/// One search-results row, carrying only what ordering it needs.
-///
-/// A deliberate subset of `SearchResultEntry`: the path, parent path, and icon id
-/// decide nothing about order, and leaving them out keeps a full 10,000-row
-/// snapshot's round trip small. The frontend holds the rows and re-orders them by
-/// the index list this command answers with, so nothing is shipped back.
-#[derive(Debug, Clone, serde::Deserialize, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct SearchSortRow {
-    /// The file's own name (the last path component), which the Name and
-    /// Extension columns order by. Not the full path the pane DISPLAYS: a row's
-    /// name is its name everywhere else in the pane too (type-to-jump, the
-    /// context menu, the MCP rows), and one notion of it stays true here.
-    pub name: String,
-    pub is_directory: bool,
-    pub size: Option<u64>,
-    pub modified_at: Option<u64>,
-}
-
-impl SortableEntry for SearchSortRow {
-    fn name(&self) -> &str {
-        &self.name
-    }
-    fn is_directory(&self) -> bool {
-        self.is_directory
-    }
-    fn size(&self) -> Option<u64> {
-        self.size
-    }
-    fn modified_at(&self) -> Option<u64> {
-        self.modified_at
-    }
-    /// The index stores no creation time. Never read for ordering: search
-    /// results claim Modified only, so a Created sort resolves to Modified.
-    fn created_at(&self) -> Option<u64> {
-        None
-    }
-    /// Nor an added time, for the same reason.
-    fn added_at(&self) -> Option<u64> {
-        None
-    }
-    /// Nor a recursive size: the search never walked into the directories it
-    /// matched, which is also why the pane renders `<dir>` in their Size cell.
-    /// Both directories being "unknown" orders them by name among themselves.
-    fn recursive_size(&self) -> Option<u64> {
-        None
-    }
-    fn recursive_size_complete(&self) -> Option<bool> {
-        None
-    }
-}
-
-/// How a search-results pane's rows should render: `rows`' own indices in order,
-/// and the column that order follows.
-#[derive(Debug, Clone, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct SearchSortAnswer {
-    /// `rows`' indices, in the order they should render.
-    pub order: Vec<u32>,
-    /// The column the order follows: the requested one, or Modified for a date
-    /// the index doesn't store (every date but Modified).
-    pub effective_sort_by: SortColumn,
-}
+/// The rows and the answer are `cmdr-listing`'s, so the browser demo orders a results
+/// pane through the same code; re-exported here so the IPC path is unchanged.
+pub use cmdr_listing::{SearchSortAnswer, SearchSortRow};
 
 /// Orders a search-results pane's rows, answering with `rows`' own indices in the
 /// order they should render.
@@ -450,14 +393,7 @@ pub fn sort_search_results(
     dir_sort_mode: DirectorySortMode,
 ) -> SearchSortAnswer {
     let collator = crate::listing_host::listings().collator();
-    let sort = EffectiveSort::resolve(sort_by, sort_order, dir_sort_mode, SupportedDates::NONE);
-    let comparator = entry_comparator::<SearchSortRow>(collator, sort);
-    let mut order: Vec<u32> = (0..rows.len() as u32).collect();
-    order.sort_by(|a, b| comparator(&rows[*a as usize], &rows[*b as usize]));
-    SearchSortAnswer {
-        order,
-        effective_sort_by: sort.column(),
-    }
+    cmdr_listing::sort_search_rows(&rows, sort_by, sort_order, dir_sort_mode, &collator)
 }
 
 #[cfg(test)]

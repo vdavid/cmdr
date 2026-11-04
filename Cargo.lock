@@ -1771,6 +1771,7 @@ dependencies = [
  "cmdr-menu",
  "cmdr-operation-log",
  "cmdr-operations",
+ "cmdr-recents",
  "cmdr-search",
  "cmdr-viewer",
  "js-sys",

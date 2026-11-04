@@ -31,6 +31,7 @@ use crate::events::{DemoEvents, EventSink, ListingPathEvent};
 use crate::folder_sizes::FolderSizes;
 use crate::invoke::{answer, ok, parse};
 use crate::operations_host::DemoOperations;
+use crate::search::{DemoSearch, SEARCH_COMMANDS};
 use crate::tree::{DemoTree, TreeError};
 use crate::viewer::{DemoViewer, VIEWER_COMMANDS};
 
@@ -95,12 +96,15 @@ pub struct Demo {
     /// The file viewer over the same volume, so a file the listing shows (a copy's
     /// landed file too) is the file the viewer opens (`viewer.rs`).
     viewer: DemoViewer,
+    /// ⌘F over the same volume, sized by the same fold (`search.rs`).
+    search: Arc<DemoSearch>,
 }
 
 impl Demo {
     /// The engines over `tree`, reporting every event to `sink`.
     pub fn new(tree: DemoTree, sink: Arc<dyn EventSink>) -> Result<Self, TreeError> {
         let volume_id = tree.volume_id.clone();
+        let home = tree.home.clone();
         // Late-bound: the volume patches the panes, which list the volume.
         let panes = Arc::new(BackendListings::default());
         let capacity = tree.capacity_bytes().unwrap_or(DEVICE_CAPACITY_BYTES);
@@ -111,8 +115,9 @@ impl Demo {
                 .with_capacity(capacity)
                 .with_pane_patches(volume_id.clone(), Arc::clone(&panes) as _),
         );
-        // The drive index's stand-in, for the panes, the dialogs, and the status bar.
+        // The drive index's stand-in, for the panes, the dialogs, the status bar, and ⌘F.
         let sizes = Arc::new(FolderSizes::new(Arc::clone(&store)));
+        let searched = Arc::clone(&store);
         let volume: Arc<dyn Volume> = store;
         let viewer = DemoViewer::new(
             volume_id.clone(),
@@ -132,6 +137,14 @@ impl Demo {
         panes.attach_sizes(Arc::clone(&sizes), Arc::clone(&sink));
         listings.start_orphan_reaper();
         let volume_host = VolumeHost::builder().listings(panes).build();
+        let search = Arc::new(DemoSearch::new(
+            volume_id.clone(),
+            searched,
+            Arc::clone(&sizes),
+            Arc::clone(&sink),
+            home,
+            listings.collator(),
+        ));
         let operations = DemoOperations::new(volume_id, volume, volume_host, &listings, Arc::clone(&sizes) as _, sink);
         Ok(Self {
             listings,
@@ -140,6 +153,7 @@ impl Demo {
             operations,
             sizes,
             viewer,
+            search,
         })
     }
 
@@ -151,7 +165,10 @@ impl Demo {
 
     /// Whether [`Demo::invoke`] answers `command`.
     pub fn handles(command: &str) -> bool {
-        COMMANDS.contains(&command) || DemoOperations::handles(command) || DemoViewer::handles(command)
+        COMMANDS.contains(&command)
+            || DemoOperations::handles(command)
+            || DemoViewer::handles(command)
+            || DemoSearch::handles(command)
     }
 
     /// Every command [`Demo::invoke`] answers, by its Tauri name.
@@ -159,6 +176,7 @@ impl Demo {
         COMMANDS
             .iter()
             .chain(VIEWER_COMMANDS)
+            .chain(SEARCH_COMMANDS)
             .copied()
             .chain(DemoOperations::commands())
     }
@@ -361,6 +379,7 @@ impl Demo {
                 answer(compute_brief_column_text_widths(l, &self.fonts, &query).map_err(BriefColumnsIpcError::from))
             }
             _ if DemoViewer::handles(command) => self.viewer.invoke(command, args),
+            _ if DemoSearch::handles(command) => self.search.invoke(command, args),
             _ => Err(Value::String(format!("the browser demo doesn't answer `{command}`"))),
         }
     }

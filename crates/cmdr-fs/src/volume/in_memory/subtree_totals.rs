@@ -6,6 +6,7 @@
 use std::path::{Path, PathBuf};
 
 use super::InMemoryVolume;
+use crate::entry::FileEntry;
 use crate::ignore_poison::RwLockIgnorePoison;
 
 /// The totals of everything below one path, counted the way the drive index
@@ -41,6 +42,21 @@ pub enum HeldAt {
 }
 
 impl InMemoryVolume {
+    /// Every entry the store holds below its root, in no order, each carrying its
+    /// full path: one read of the whole tree, for a host that indexes it (the
+    /// browser demo's search builds its arena from this).
+    pub fn held_entries(&self) -> Vec<FileEntry> {
+        let entries = self.entries.read_ignore_poison();
+        entries
+            .iter()
+            .filter(|(path, _)| **path != self.root && path.as_path() != Path::new("/"))
+            .map(|(path, held)| FileEntry {
+                path: path.to_string_lossy().into_owned(),
+                ..held.metadata.clone()
+            })
+            .collect()
+    }
+
     /// What the store holds at each of `paths`, in one read of the store:
     /// `None` for a path it doesn't hold. O(entries × paths), so a caller
     /// batches its questions and memoizes the answers.

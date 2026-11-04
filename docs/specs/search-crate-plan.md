@@ -1,8 +1,10 @@
 # The drive search in its own crate
 
 Issue: [#302](https://github.com/vdavid/cmdr/issues/302) (the browser demo is the second host). Status: the early fixes
-and M0–M6 are done (2026-11-04); M7 is next. Process: `docs/guides/multi-agent-refactors.md` (characterize, then
-convert; fresh-eyes review rounds before executing).
+and M0–M7 are done (2026-11-04). M8 is partly done: the input lists and the demo differences are in; left are rayon's
+share of the `.wasm` (unmeasured: the release build is stripped and no `twiggy` is in the toolchain), CI's demo image,
+the conformance review against § Invariants, the docs-audit pass, and then the wipe. Process:
+`docs/guides/multi-agent-refactors.md` (characterize, then convert; fresh-eyes review rounds before executing).
 
 **Problem**: the ⌘F search engine (query model, matcher, excludes, ranking, the arena and its scan) lives in the app
 crate at `apps/desktop/src-tauri/src/search/`, braided with the index handle, `ReadPool` SQL, Tauri events, app statics,
@@ -484,6 +486,18 @@ The details for all three:
   screenshot for David.
 - **DONE**: ⌘F finds files by name, size, and date in `pnpm build:demo`; no TS search answer left; the demo's
   `unanswered` list stays empty.
+- **As landed** (2026-11-04): `crates/cmdr-listing-wasm/src/search.rs` (`DemoSearch`, 13 commands) with
+  `search_test.rs`; the arena comes from `InMemoryVolume::held_entries` and rebuilds when `FolderSizes::changes` moved
+  (the fold hears every change first). `sort_search_results` is `cmdr_listing::sort_search_rows` (the rows and the sort
+  moved there from `commands/search.rs`, so both hosts share them). The TS search answers are gone, and the demo now
+  answers `resolveLocation` (one volume), without which a result's Go to file toasted "Couldn't reach that location's
+  drive". `smoke.mjs` drives a glob, a scope, a folder-size filter, and a streaming run (it replaced the core's
+  self-test); `demo.spec.ts` runs ⌘F, a name, and Enter onto the file. Verified in headless Chromium on `pnpm dev:demo`:
+  results, the Folders and Size filters (sizes equal the panes'), Go to file, Show all in main window, and the AI mode
+  disabled as with AI off. Not done: replaying a slice of M0's goldens through the demo host (the goldens' corpus is the
+  app's; `source_equivalence.rs` already holds `MemorySource` to them). Symlinked-folder scopes find the link itself,
+  recorded in `crates/cmdr-listing-wasm/DETAILS.md` § "Where the demo differs from the app". The `.wasm` is 9,518 KiB
+  raw, 3,455 KiB gzipped (`gzip -9`), up from M4's 9,427 KiB.
 
 ### M8: close out (S)
 

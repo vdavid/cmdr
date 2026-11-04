@@ -15,7 +15,7 @@ function ask(name: string, payload: Record<string, unknown> = anyPayload): unkno
 
 describe('app answers', () => {
   it('answer every command they list without throwing, except the typed refusals', () => {
-    const refused = new Set(['openPath', 'prepareSearchIndex'])
+    const refused = new Set(['openPath'])
     for (const [name, answer] of Object.entries(appAnswers as Record<string, Handler>)) {
       if (refused.has(name)) expect(() => answer(anyPayload)).toThrow()
       else expect(() => answer(anyPayload)).not.toThrow()
@@ -52,14 +52,10 @@ describe('app answers', () => {
     }
   })
 
-  // Regression: unanswered, these fell back to `null`, and a `null` recent-search list made the
-  // search dialog's render throw, so ⌘F flashed the dialog and closed it as a crash.
-  it('answer the search dialog with no index, no recent searches, and no cloud AI consent', () => {
-    expect(ask('getRecentSearches')).toEqual([])
-    expect(ask('getSystemDirExcludes')).toEqual([])
+  // The search dialog's AI half: no cloud consent, so it stays in the AI-off state. Its search
+  // commands are the engine's (`engine-commands.test.ts`).
+  it('answer the search dialog with no cloud AI consent', () => {
     expect((ask('cloudAiConsentStatus') as { accepted: boolean }).accepted).toBe(false)
-    expect(() => ask('prepareSearchIndex')).toThrow()
-    expect(ask('releaseSearchIndex')).toBeNull()
   })
 
   it('volume index status names the asked volume', () => {

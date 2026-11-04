@@ -374,10 +374,15 @@ var surfaceGuardedCrates = []struct {
 		// pass brings (Finder tags, packages macOS reports, #385). It folded
 		// `apply_tags` into `apply_row_facts`, so the packages pass cost a type
 		// rather than a 48th method, and the next such pass is one more variant.
+		//
+		// 39th-41st root promises, 2026-11-04: `SearchSortRow`, `SearchSortAnswer`,
+		// and `sort_search_rows`, a search-results pane's order. Both hosts answer
+		// `sort_search_results` (the desktop and the browser demo), and the order is
+		// this crate's comparator, so the rows and the one sort live beside it.
 		Name:       "cmdr-listing",
 		HandleType: "Listings",
 		Ceilings: surfaceCeilings{
-			RootPromises:   38,
+			RootPromises:   41,
 			HandleMethods:  47,
 			PublicModules:  1,
 			SubsystemItems: 20,
