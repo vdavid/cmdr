@@ -97,6 +97,7 @@ impl FullLoadBackend {
                 byte_offset: span.start,
                 continues: span.continues,
                 line_number,
+                ends_at_newline: span.ends_at_newline(),
             });
             end_byte_offset = span.end;
         }
@@ -227,8 +228,8 @@ impl FileViewerBackend for FullLoadBackend {
             // ❗ Progress in SOURCE bytes, the units `total_bytes` is in, taken from the
             // NEXT row's offset rather than from this row's decoded length. Decoded
             // UTF-8 is about half the source on a UTF-16 file, so summing it stalled the
-            // frontend's progress bar near 50%; and adding a byte per delimiter counted
-            // one for the final empty row, pushing the total past the file's size.
+            // frontend's progress bar near 50%; and adding a byte per delimiter can count
+            // one past a last row with no newline, pushing the total past the file's size.
             scanned = self
                 .rows
                 .get(row_idx + 1)

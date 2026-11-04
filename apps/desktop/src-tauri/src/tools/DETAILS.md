@@ -713,9 +713,10 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   exist, on every backend, without leaning on `total_lines`. `window_from_chunk` (pure) joins with `\n`, strips one
   trailing `\r` per line (the backends keep it on CRLF files), cuts a line at `MAX_LINE_CHARS` (`linesCut`), stops at
   `MAX_WINDOW_CHARS` (`truncated`), and answers a past-the-end `startLine` with an empty, un-truncated window (the
-  exact backends clamp such a target to the last line; the shaper must not present that line as line 50). `totalLines`
-  counts the trailing empty line after a final newline, as the viewer's line numbers do, so "line 812" means the same
-  thing in both places.
+  exact backends clamp such a target to the last line; the shaper must not present that line as line 50). A window
+  reaching the end of a file that ends in a newline ends with that `\n`, read off the last row's `ends_at_newline`
+  (no empty row follows a final newline), and a chunk the private-key clean offset cut no longer counts as reaching
+  it. `totalLines` counts lines as the viewer's line numbers do, so "line 812" means the same thing in both places.
 - **`find`** (`find.rs`): `file_viewer::Matcher::build(query, SearchMode { use_regex, case_sensitive })` once per call
   at param time (a `MatcherBuildError`, invalid or cross-line regex, is `INVALID_PARAMS` carrying the matcher's own
   text), shared by every path through `TextAsk::Find(Arc<Matcher>)`. Per text row: `headless::open_scan_backend`

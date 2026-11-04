@@ -156,15 +156,15 @@ fn get_lines_row_target_rides_the_sampled_bytes_per_row() {
         .get_lines(&SeekTarget::Row(2), 2, &AtomicBool::new(false))
         .unwrap();
     assert_eq!(chunk2.byte_offset, 4);
-    // "c", then the empty row a file ending in a newline carries.
-    assert_eq!(chunk2.texts(), vec!["c", ""]);
+    // "c" is the last row: the file's final newline ends it and starts none.
+    assert_eq!(chunk2.texts(), vec!["c"]);
 
-    // Past the end still clamps to EOF, where only that final empty row is left.
+    // Past the end still clamps to the last row.
     let chunk3 = backend
         .get_lines(&SeekTarget::Row(50), 2, &AtomicBool::new(false))
         .unwrap();
-    assert_eq!(chunk3.byte_offset, 6);
-    assert_eq!(chunk3.texts(), vec![""]);
+    assert_eq!(chunk3.byte_offset, 4);
+    assert_eq!(chunk3.texts(), vec!["c"]);
 }
 
 #[test]
@@ -500,10 +500,9 @@ fn read_lines_with_mixed_scripts() {
         .get_lines(&SeekTarget::ByteOffset(0), 10, &AtomicBool::new(false))
         .unwrap();
 
-    // Five, not four: the file ends in a newline, so it carries a final empty row. That
-    // is the one answer all three backends now give, and what makes a whole-file copy
-    // byte-identical to the file.
-    assert_eq!(chunk.texts(), vec!["hello café", "漢字テスト", "🎉🦀🌍", "plain", ""]);
+    // Four: the file's final newline ends "plain" and starts no empty fifth row, the one
+    // answer all three backends give.
+    assert_eq!(chunk.texts(), vec!["hello café", "漢字テスト", "🎉🦀🌍", "plain"]);
 }
 
 #[test]

@@ -460,9 +460,15 @@ TRUE source offset just past the last row, and `ChunkEnd`, which says whether it
 - ❗ Deriving the next offset from decoded string lengths. Those are UTF-8 even when the file is UTF-16, and they carry
   no newline. Use `end_byte_offset`.
 
-**The trailing empty line**: a file ending in a newline has a final EMPTY row, in all three backends. FullLoad always
-did; ByteSeek and LineIndex stopped one byte earlier, so ⌘A then ⌘C on the same file gave two answers depending only on
-the file's size. FullLoad's answer wins because it is the one that makes a whole-file copy byte-identical to the file.
+**No row past a final newline**: `a\nb\n` is two rows and two lines in all three backends, the way `less` and editors
+count it, so the status bar's line count and the last gutter number agree with every other tool. The rule makes it so
+(`rows.rs`: no boundary sits at EOF, except clause 1's on an empty file, which keeps its one empty row). The final
+newline lives on as the last row's `ViewerRow::ends_at_newline`, a fact kept off the wire (`#[serde(skip)]`): it is what
+lets `range_read` hand a whole-file copy every byte. A walk off the end of the file (`RangeEnd::Eof`, or an explicit end
+past the last row) pays the last row's newline when it has one, and so does an explicit end AT the last row's end,
+because no row follows a final newline for a caret to sit on: ⌘A on a counted file sends exactly that end. All three
+backends give one answer for the same file whatever its size. The `inspect` AI tool's window shows the newline the same
+way, once it reaches the end of the file.
 
 **A BOM is not content.** The row GRID is absolute (a BOM must not shift one backend's rows against another's, since a
 reload or a tail escalation swaps backends under a live frontend row cache), but a file's first row starts past the BOM.
@@ -925,11 +931,13 @@ into `origin.rs`, `session_store.rs`, or `markdown_document.rs`; hand them the p
 - **`range_read` checks the cancel flag inside the per-line loop, not just between chunks**: the inner check fires every
   256 lines OR every 64 KB of emitted output, whichever first. Without the inner check, a 4096-line chunk of 4 KB/line
   files (16 MB) would be uninterruptible. Same lesson as `search_cancel`'s per-chunk progress reporting.
-- **CRLF: line readers keep `\r` AS PART of the returned line string.** All three backends (`byte_seek.rs:118`,
-  `full_load.rs:43`, `line_index.rs:172`) split only on `\n` and slice up to the `\n` byte; the `\r` stays with the
-  line. So `line.len()` already includes the `\r` for CRLF files, and `range_read`'s `chunk_end_offset += line.len()
-  - 1`accounts only for the single`\n`delimiter byte. No drift on LF or CRLF. Pinned by`read_range_full_load_crlf_preserves_carriage_returns`in`session_range_test.rs`. If a future change makes line readers strip `\r`, the byte-offset arithmetic in `range_read.rs`
-    needs the same change.
+- **CRLF: a row keeps its `\r` AS PART of its text.** Rows end only at `\n` (`rows.rs`), so a CRLF row's text ends in
+  `\r`, and `range_read`'s byte arithmetic counts it as text and pays only the `\n` as the delimiter. No drift on LF or
+  CRLF. Pinned by `read_range_full_load_crlf_preserves_carriage_returns` in `session_range_test.rs`. If rows ever drop
+  the `\r`, `range_read.rs` needs the same change. Search is the one reader that trims it: `scan_line_with_matcher`
+  drops a row's trailing `\r` before matching, so `e$` finds a CRLF line ending in `e` and a needle never matches the
+  terminator; columns are unchanged since only the end moves. Pinned by `search_answers_these_shapes_with_utf16_columns`
+  (`wire_characterization_test.rs`) and `a_crlf_rows_carriage_return_is_not_searched`.
 
 ## Performance targets
 

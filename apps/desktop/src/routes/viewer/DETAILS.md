@@ -378,6 +378,10 @@ logical coordinates, independent of which lines happen to be rendered.
   needs no case of its own: all three backends keep the `\r` inside the line text, so the delimiter is the single `\n`.
   With no line count yet (ByteSeek before its index) no line is known to be last, so every line reports a delimiter: one
   byte over on the whole file, against bands measured in megabytes.
+- **⌘A on a counted file ends at the last row's end**, and that reaches the end of the FILE: no backend serves an empty
+  row past a final newline, so the backend's `range_read` pays the last row's newline when the file has one (the row's
+  off-wire `ends_at_newline`, `crates/cmdr-viewer/DETAILS.md` § "Rows, not lines"). The estimate can't see that flag, so
+  on such a file it counts one byte under; harmless against the bands.
 - **What the copy toast says is MEASURED off the text that was written**, not taken from that estimate
   (`handleSilentCopy`). `selectionBytesFromFileSize` subtracts the unselected remainder from the known file size rather
   than rounding a near-whole-file selection up to it, so a selection stopping partway into the last row reports what it

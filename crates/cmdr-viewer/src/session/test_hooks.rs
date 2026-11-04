@@ -184,6 +184,7 @@ impl FileViewerBackend for ScriptedBackend {
                     byte_offset: (row * stride) as u64,
                     continues: false,
                     line_number: Some(row),
+                    ends_at_newline: true,
                 })
                 .collect(),
             first_row_number: start,

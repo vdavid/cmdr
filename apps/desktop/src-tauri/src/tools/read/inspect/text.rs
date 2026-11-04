@@ -16,7 +16,7 @@ use super::find::{KeyScan, find_hits_within, prescan_for_private_key};
 use super::{MAX_LINE_CHARS, MAX_WINDOW_CHARS, ReadFailure, TextAsk, TextContent, WindowOpts};
 use crate::file_viewer::encoding::FileEncoding;
 use crate::file_viewer::headless::{open_scan_backend, open_text_backend};
-use crate::file_viewer::{FileViewerBackend, LineChunk, SeekTarget};
+use crate::file_viewer::{ChunkEnd, FileViewerBackend, LineChunk, SeekTarget};
 use crate::search::format_size;
 use crate::tools::read::is_false;
 use crate::tools::sensitive::{Protected, refuse_private_key_text};
@@ -119,6 +119,11 @@ pub(super) fn window_within(
     let fetched = chunk.rows.len();
     let kept = rows_ending_by(&chunk, limit);
     chunk.rows.truncate(kept);
+    if kept < fetched {
+        // The cut chunk no longer reaches the end of the file, so its last row's newline
+        // isn't the file's final one to show.
+        chunk.end = ChunkEnd::CountReached;
+    }
     let mut window = window_from_chunk(&chunk, opts, MAX_WINDOW_CHARS, MAX_LINE_CHARS);
     if kept < fetched {
         window.truncated = true;
@@ -220,6 +225,12 @@ pub(crate) fn window_from_chunk(
         returned += 1;
         lines_cut |= cut;
         separator_owed = !row.continues;
+    }
+    // A window that reaches the end of a file ending in a newline carries that newline:
+    // no empty row follows it, so the last row's own flag is where the fact lives.
+    let reached_eof = returned == chunk.rows.len() && chunk.end == ChunkEnd::EndOfFile;
+    if reached_eof && chunk.rows.last().is_some_and(|row| row.ends_at_newline) {
+        content.push('\n');
     }
 
     TextWindow {

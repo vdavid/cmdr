@@ -172,7 +172,7 @@ fn a_session_reading_slowly(chunks: usize, per_chunk: Duration) -> (String, usiz
     });
     let session_id = file_viewer::app_viewer()
         .test_only_install_session(Box::new(backend), std::path::PathBuf::from("/scripted/slow.txt"));
-    (session_id, line_count * STRIDE - 1)
+    (session_id, line_count * STRIDE)
 }
 
 /// The `.cmdr-tmp.<read_id>` file a save writes before its rename, if it's there.

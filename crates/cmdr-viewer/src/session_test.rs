@@ -75,7 +75,7 @@ fn open_small_file_uses_full_load() {
     let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     assert_eq!(result.file_name, "test.txt");
     assert_eq!(result.total_bytes, 12);
-    assert_eq!(result.total_lines, Some(3));
+    assert_eq!(result.total_lines, Some(2));
     assert!(matches!(result.backend_type, BackendType::FullLoad));
     assert!(result.capabilities.supports_line_seek);
     assert!(result.capabilities.knows_total_lines);

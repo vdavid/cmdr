@@ -10,13 +10,19 @@
 //! when one of these holds:
 //!
 //! 1. `b == 0`, or
-//! 2. `b` is the start of a physical line (the offset just past a newline), or
+//! 2. `b` is the start of a physical line (the offset just past a newline) **below
+//!    EOF**, or
 //! 3. `b` is a multiple of [`SEGMENT_BYTES`] **below EOF** **and the window
 //!    `[b - SEGMENT_BYTES, b)` contains no newline**, snapped back to the nearest
 //!    character start.
 //!
 //! Then `row_start(offset)` is the greatest boundary `<= offset`, and
 //! `row_end(row_start)` is the least boundary `> row_start`, or EOF.
+//!
+//! **No boundary sits at EOF** except clause 1's on an empty file. In clause 2 that is
+//! what keeps a file ending in a newline from growing an empty row past it: `a\nb\n`
+//! has two rows, the way `less` and editors count its lines, and its final newline
+//! belongs to the last row (whose text drops it, as every row's text does).
 //!
 //! ❗ **"Below EOF" in clause 3 is load-bearing.** A multiple sitting exactly on EOF
 //! cannot start a row, because nothing follows it. Admitting it looks harmless and is,
@@ -377,13 +383,13 @@ impl<'a> Window<'a> {
         }
     }
 
-    /// Clause 2, looking back: the greatest line start `<= limit`.
+    /// Clause 2, looking back: the greatest line start `<= limit`, below EOF.
     fn last_line_start_at_or_below(&self, limit: u64) -> Option<u64> {
         self.newlines
             .iter()
             .rev()
             .map(|unit| unit + self.newline_len())
-            .find(|line_start| *line_start <= limit)
+            .find(|line_start| *line_start <= limit && *line_start < self.total_bytes)
     }
 
     /// Clause 2, looking forward: the least line start `> floor`.

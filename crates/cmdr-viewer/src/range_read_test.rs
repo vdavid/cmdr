@@ -62,8 +62,8 @@ fn streamed_read_hands_out_bounded_pieces() {
     )
     .unwrap();
 
-    // Every line plus its joining newline, minus the newline past the last line.
-    assert_eq!(total, line_count * (line_len + 1) - 1);
+    // Every line plus its newline: the scripted file ends in one, and `Eof` reaches it.
+    assert_eq!(total, line_count * (line_len + 1));
     assert!(
         max_piece <= chunk_bytes + line_len + 1,
         "peak piece was {} against a {chunk_bytes}-byte budget",
@@ -90,6 +90,7 @@ fn row_in(raw: &[u8], encoding: FileEncoding) -> ViewerRow {
         byte_offset: 0,
         continues: false,
         line_number: Some(0),
+        ends_at_newline: text.len() < raw.len(),
     }
 }
 

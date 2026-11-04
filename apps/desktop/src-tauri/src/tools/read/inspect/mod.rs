@@ -183,8 +183,8 @@ pub struct TextContent {
     /// `FileEncoding::label()`: "UTF-8", "UTF-16 LE", "Western (Windows-1252)", ...
     pub encoding: String,
     /// Known for a fully loaded file or a finished line index; absent on the ByteSeek
-    /// fallback and on a `find` over a large file (a scan builds no index). Counts the
-    /// trailing empty line after a final newline, as the viewer's line numbers do, so
+    /// fallback and on a `find` over a large file (a scan builds no index). Counts lines
+    /// as the viewer's line numbers do (a final newline starts no extra line), so
     /// "line 812" here is line 812 in the viewer.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_lines: Option<usize>,
