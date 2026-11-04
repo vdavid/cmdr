@@ -24,6 +24,12 @@ runs:
         cache-on-failure: true
         save-if: ${{ inputs.save-rust-cache }}
 
+    # SQLite compiles for wasm32 with a pinned LLVM clang (`scripts/build-listing-wasm/toolchain.go`).
+    - name: Install the wasm C toolchain
+      uses: ./.github/actions/wasm-toolchain
+      with:
+        save-cache: ${{ inputs.save-rust-cache }}
+
     - name: Cache pnpm
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
