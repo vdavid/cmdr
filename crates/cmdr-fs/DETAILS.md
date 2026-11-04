@@ -106,6 +106,29 @@ the next section.
   xattrs, and mode, for the copy-keeps-metadata cells; its `Drop` unlocks and strips ACLs so a Locked leftover can't
   fail the cleanup).
 
+## The browser build
+
+`cmdr-listing` builds for `wasm32-unknown-unknown` (`crates/cmdr-listing-wasm`, the website's demo), so this crate does
+too. A browser has no host filesystem, user database, threads, or C toolchain, and the gates are as few and coarse as
+that allows:
+
+- **Host-only deps** sit in `Cargo.toml`'s `cfg(not(target_family = "wasm"))` table: `libc`, `rusqlite`, `uzers`,
+  `xattr`, `exacl`, and tokio's `rt-multi-thread`. `dirs` stays unconditional (it answers `None` there). The wasm table
+  adds `uuid`'s `js` randomness and `web-time` for `InMemoryVolume`'s write clock.
+- **Two whole modules are host-only** (`lib.rs`): `mapped_file_faults` (mmap) and `sqlite_util`.
+- **The rest answer as "the platform can't hold this"**, the way the Linux branches already do for macOS-only classes:
+  ACL, mode, and xattr reads find nothing, writes report `ClassOutcome::NotApplicable`, the umask is the `022` fallback,
+  owners resolve to their numeric id, `open_parent_folder` opens nothing, and `Acl` wraps `Infallible`, so no code path
+  can hold one. Each gate sits on the one function that makes the syscall.
+- **The fallback runtime panics there** instead of building a runtime nobody drives (`volume/host/runtime.rs`); the
+  listing engine spawns through its own seam.
+- **`Path::is_absolute` is always `false` on that target** (it has no notion of a filesystem root). Code the browser
+  build runs checks a leading `/` instead (`crates/cmdr-listing-wasm/src/tree.rs`); `InMemoryVolume::normalize` gets the
+  right answer anyway, because joining a rooted path onto `/` replaces it.
+
+Desktop behavior is unchanged: each native path keeps its old body, a few moved into a gated helper of their own
+(`entry.rs`'s `user_name_of`, `blockers.rs`'s `open_host_parent_folder`).
+
 ## What counts as an extension (`file_extension`)
 
 One rule, everywhere a name is split at its extension: sorting by extension (`cmdr-listing`), the Ext column and "select

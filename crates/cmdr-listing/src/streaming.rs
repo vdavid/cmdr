@@ -260,8 +260,8 @@ impl Inner {
         // when filesystem I/O blocks (slow or stuck network drives). A read that goes
         // quiet reports the listing stalled and keeps it alive until the volume
         // answers again (`stall.rs`).
-        let total_start = std::time::Instant::now();
-        let read_start = std::time::Instant::now();
+        let total_start = crate::rt::Instant::now();
+        let read_start = crate::rt::Instant::now();
         let on_stalled = |stalled_on| events.stalled(&id, stalled_on);
         let on_progress: Arc<dyn Fn(ListingProgress) + Send + Sync> = {
             let events = Arc::clone(events);
@@ -323,7 +323,7 @@ impl Inner {
         // PANE sees that the volume doesn't hold (`pipeline.rs`). A routed volume has
         // no drive index (an archive's inner paths and a git snapshot's paths aren't
         // real FS paths), so enrich and verify are skipped.
-        let enrich_start = std::time::Instant::now();
+        let enrich_start = crate::rt::Instant::now();
         let read_by = ReadBy::Volume {
             volume: &volume,
             routed: is_routed,
@@ -350,7 +350,7 @@ impl Inner {
             dir_sort_mode,
         );
         benchmark::log_event("sort START");
-        let sort_start = std::time::Instant::now();
+        let sort_start = crate::rt::Instant::now();
         listing.sort_rows(&self.collator());
         let sort_ms = sort_start.elapsed().as_millis();
         benchmark::log_event("sort END");
@@ -361,7 +361,7 @@ impl Inner {
         // without this, a cancel arriving between a check and insert would leave a stale
         // entry (listDirectoryEnd would try to remove before the entry exists, then this
         // insert would add it permanently).
-        let cache_write_start = std::time::Instant::now();
+        let cache_write_start = crate::rt::Instant::now();
         let cached_path = listing.path.as_path().to_path_buf();
         // The row count comes off the listing's own map, so the number the frontend
         // sizes its scroller with is produced by the same filter every later fetch
@@ -388,7 +388,7 @@ impl Inner {
         // Whatever a subsystem keeps alive while a pane shows this directory: in
         // Cmdr the change watch first, then the git portal's per-repo watcher.
         // `host/observers.rs`.
-        let watcher_start_t = std::time::Instant::now();
+        let watcher_start_t = crate::rt::Instant::now();
         self.listing_opened(&OpenedListing {
             id: &id,
             volume_id,
@@ -409,7 +409,7 @@ impl Inner {
         let empty_at_volume_root = total_count == 0 && volume_root == path;
 
         // Emit completion event
-        let emit_t = std::time::Instant::now();
+        let emit_t = crate::rt::Instant::now();
         events.finished(
             &id,
             ListingEnd::Complete {

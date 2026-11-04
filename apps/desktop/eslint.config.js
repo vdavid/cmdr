@@ -148,6 +148,8 @@ export default tseslint.config(
     ignores: [
       'dist',
       'build',
+      // The browser demo's build output (`pnpm build:demo`)
+      'build-demo',
       '.svelte-kit',
       'node_modules',
       'src-tauri/target',

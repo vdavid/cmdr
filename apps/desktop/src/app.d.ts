@@ -12,6 +12,13 @@ declare global {
   const __CMDR_E2E_BUILD__: boolean
 
   /**
+   * Build-time flag injected by Vite's `define` (see `vite.config.js`): TRUE only in the browser demo
+   * build (`CMDR_DEMO_BUILD=1`, served at getcmdr.com/demo), where `src/lib/demo/` stands in for the
+   * Tauri backend. FALSE and dead-code-eliminated everywhere else.
+   */
+  const __CMDR_DEMO_BUILD__: boolean
+
+  /**
    * Dev-only label of which working tree this session runs against (worktree slug, "main", or
    * the worktree directory name), injected by Vite's `define` (see `vite.config.js`) from the
    * wrapper-set `CMDR_WORKTREE_LABEL`. Empty string in prod, E2E, and plain `vite dev`. The

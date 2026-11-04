@@ -119,7 +119,8 @@ Writing them:
   `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-local` (the local disk), `cmdr-media-meta`
   (EXIF, video dates, and media tags), `cmdr-operation-log` (the mutation journal and rollback planner),
   `cmdr-operations` (the write engine), `cmdr-update-trust` (the updater's trust check) carry no `tauri`, enforced by
-  `index-crate-isolation`; plus two dev CLIs and `fsevent-stream` (our FSEvents fork). Map: `docs/architecture.md`.
+  `index-crate-isolation`; plus `cmdr-listing-wasm` (the listing engine in a browser), two dev CLIs, and
+  `fsevent-stream` (our FSEvents fork). Map: `docs/architecture.md`.
 - `brand/`: brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/business/README.md` (pricing, licensing, product facts), `docs/specs/DETAILS.md` (big design docs; open work is
@@ -175,8 +176,7 @@ inventory). Desktop-specific test, MCP, and E2E mechanics live in `apps/desktop/
   declare fewer params than its type, silently binding the wrong slot. Use one object payload; opt out per-line with a
   reason. Enforced by `cmdr/no-confusable-callback-params`.
 - ❌ Never put real customer/user PII in this public (!) repo.
-- Tool versions are mise-managed (`.mise.toml`; if `go` / `node` isn't found, check that `~/.local/share/mise/shims` is
-  on `$PATH`),
+- Tool versions are mise-managed (`.mise.toml`).
 - Icons come from `unplugin-icons` + `@iconify-json/lucide` (see `docs/guides/icons.md`).
 
 ## Workflow
