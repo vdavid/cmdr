@@ -124,7 +124,9 @@ works in `.svelte` or `.svelte.ts` files at the top level of a component or `cre
 branches on `viewMode`: text uses the line pipeline; binary and hex use original bytes; `image` / `pdf` render
 `MediaImageView` / `MediaPdfView` from `media.mediaSrc` (`cmdr-media://localhost/<token>`, built ONLY via
 `mediaUrl(token)` in `media-view.ts`, the single source for the origin form). `openViewerSession` hands the result to
-`media.setFromOpenResult(result)`.
+`media.setFromOpenResult(result)`. `mediaUrl` asks Tauri's `convertFileSrc(token, 'cmdr-media')` for the webview's form
+of the scheme, so the browser demo answers with a `blob:` URL over the token's bytes (`lib/demo/webview.ts`), and Vitest
+answers macOS's form (`test-setup.ts`). `no-restricted-syntax` refuses a `cmdr-media://` literal anywhere else.
 
 - **Text-only paths are data-gated, not just hidden.** Every page `$effect` driving the line machinery early-returns
   unless `viewMode === 'text'`, `openViewerSession` skips the line/index/tail/encoding setup for media, and the window

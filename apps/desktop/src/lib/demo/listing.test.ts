@@ -29,6 +29,9 @@ vi.mock('virtual:cmdr-listing-wasm', () => ({
   },
 }))
 
+// The real contents fetch the repo's pictures, which a unit test has no server for.
+vi.mock('./demo-contents.js', () => ({ demoContents: () => Promise.resolve({}) }))
+
 import { DEMO_HOME, DEMO_ROOT, DEMO_VOLUME_ID } from './demo-tree.js'
 import { startListingEngine } from './listing.js'
 
@@ -59,7 +62,7 @@ describe('listing engine', () => {
   it('hands engine events on a task late, in order', async () => {
     vi.useFakeTimers()
     const heard: string[] = []
-    const handle = startListingEngine((event) => heard.push(event))
+    const handle = startListingEngine(({ name }) => heard.push(name))
     await handle.handles('x')
     engine.onEvent?.('listing-opening', { listingId: 'l1' })
     engine.onEvent?.('listing-complete', { listingId: 'l1' })

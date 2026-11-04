@@ -17,10 +17,19 @@ export interface ListingEngineHandle {
   invoke(cmd: string, payload: Payload): Promise<unknown>
   /** Frees the viewer sessions (and media tokens) of the window `label`, once it closed. */
   closeViewerWindow(label: string): void
+  /** A viewer media token's bytes for the window `label`, or `undefined` (an unknown token, or no engine yet). */
+  mediaBody(token: string, label: string): { mime: string; bytes: Uint8Array } | undefined
 }
 
-/** Where the engine's events go: a Tauri event name, its payload, and the window label an `emit_to` names. */
-export type ListingEventSink = (event: string, payload: unknown, target?: string) => void
+/** One engine event: its Tauri name, its payload, and the window label an `emit_to` names. */
+export interface EngineEvent {
+  name: string
+  payload: unknown
+  target?: string
+}
+
+/** Where the engine's events go. */
+export type ListingEventSink = (event: EngineEvent) => void
 
 /** The engine's view of a path: `~` expanded (it has no home folder), no trailing slash. */
 function expandPaths(payload: Payload): Payload {
@@ -39,20 +48,23 @@ function expandPaths(payload: Payload): Payload {
  * before the listing's first event, as Rust's spawned read guarantees.
  */
 export function startListingEngine(sink: ListingEventSink): ListingEngineHandle {
+  // Set once the engine loads: a media URL is built synchronously, long after any open needed it.
+  let engine: { mediaBody(token: string, label: string): { mime: string; bytes: Uint8Array } | undefined } | null = null
   const ready = (async () => {
     const wasm = await import('virtual:cmdr-listing-wasm')
     await wasm.default()
     const tree = { volumeId: DEMO_VOLUME_ID, root: DEMO_ROOT, entries: demoEntries }
-    const engine = new wasm.DemoListing(
+    const loadedEngine = new wasm.DemoListing(
       tree,
       (event, payload, target) => {
         setTimeout(() => {
-          sink(event, payload, target)
+          sink({ name: event, payload, target })
         }, 0)
       },
-      demoContents(),
+      await demoContents(),
     )
-    return { DemoListing: wasm.DemoListing, engine }
+    engine = loadedEngine
+    return { DemoListing: wasm.DemoListing, engine: loadedEngine }
   })().catch((error: unknown) => {
     // Once, loudly: without the engine every listing command shows up as unanswered.
     // eslint-disable-next-line no-console -- the demo's developer reads the devtools console
@@ -70,5 +82,6 @@ export function startListingEngine(sink: ListingEventSink): ListingEngineHandle 
     closeViewerWindow: (label) => {
       void ready.then((loaded) => loaded?.engine.closeViewerWindow(label))
     },
+    mediaBody: (token, label) => engine?.mediaBody(token, label),
   }
 }

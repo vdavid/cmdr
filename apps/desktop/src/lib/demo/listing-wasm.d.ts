@@ -19,6 +19,7 @@ declare module 'virtual:cmdr-listing-wasm' {
     constructor(
       tree: { volumeId: string; root: string; entries: readonly DemoTreeEntry[] },
       // `target` is the window label of an event the app sends with `emit_to`.
+      // eslint-disable-next-line cmdr/no-confusable-callback-params -- the glue's positional shape, fixed by `JsSink::call3` in `bindings.rs`; `listing.ts` wraps it in an object at once
       onEvent: (event: string, payload: unknown, target?: string) => void,
       // Real bytes for some files, by path.
       contents?: Readonly<Record<string, Uint8Array>>,

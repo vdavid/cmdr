@@ -31,18 +31,12 @@ export interface DemoBackend {
   emit(event: string, payload: unknown, target: EventTarget): void
   /** Attaches a webview to the event fan-out. Returns the detach. */
   attach(webview: DemoWebview): () => void
+  /** A `blob:` URL over a viewer media token's bytes, for the window `label`; `''` for a token that names nothing. */
+  mediaUrl(token: string, label: string): string
 }
 
 /** The engine's own notices, which no Tauri listener knows (`crates/cmdr-listing-wasm/src/viewer.rs`). */
 const DEMO_EVENT_PREFIX = 'demo://'
-
-/** What the page does for an engine notice: open a followed web link, or revoke a dropped token's URL. */
-function onEngineNotice(event: string, payload: unknown): void {
-  if (event === 'demo://open-url') {
-    const { url } = payload as { url: string }
-    window.open(url, '_blank', 'noopener')
-  }
-}
 
 function camelCase(snake: string): string {
   return snake.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())
@@ -50,6 +44,32 @@ function camelCase(snake: string): string {
 
 export function createDemoBackend(): DemoBackend {
   const webviews = new Set<DemoWebview>()
+  // One `blob:` URL per media token, made on the first ask and revoked when the engine drops the token.
+  const mediaUrls = new Map<string, string>()
+
+  /** What the page does for an engine notice: open a followed web link, or revoke a dropped token's URL. */
+  function onEngineNotice(event: string, payload: unknown): void {
+    if (event === 'demo://open-url') {
+      const { url } = payload as { url: string }
+      window.open(url, '_blank', 'noopener')
+    } else if (event === 'demo://media-token-dropped') {
+      const { token } = payload as { token: string }
+      const url = mediaUrls.get(token)
+      if (url !== undefined) URL.revokeObjectURL(url)
+      mediaUrls.delete(token)
+    }
+  }
+
+  function mediaUrl(token: string, label: string): string {
+    const known = mediaUrls.get(token)
+    if (known !== undefined) return known
+    const body = engine.mediaBody(token, label)
+    if (!body) return ''
+    // A copy the `Blob` owns: the engine's view of its memory may move.
+    const url = URL.createObjectURL(new Blob([body.bytes.slice()], { type: body.mime }))
+    mediaUrls.set(token, url)
+    return url
+  }
 
   function emit(event: string, payload: unknown, target: EventTarget): void {
     for (const webview of webviews) webview.deliver(event, payload, target)
@@ -57,12 +77,12 @@ export function createDemoBackend(): DemoBackend {
 
   const silent: AnswerTable = Object.fromEntries(silentCommands.map((name) => [name, () => undefined]))
   const answers = { ...silent, ...appAnswers, ...volumeAnswers, ...writeAnswers } as Record<string, Handler | undefined>
-  const engine: ListingEngineHandle = startListingEngine((event, payload, target) => {
-    if (event.startsWith(DEMO_EVENT_PREFIX)) {
-      onEngineNotice(event, payload)
+  const engine: ListingEngineHandle = startListingEngine(({ name, payload, target }) => {
+    if (name.startsWith(DEMO_EVENT_PREFIX)) {
+      onEngineNotice(name, payload)
       return
     }
-    emit(event, payload, target === undefined ? { kind: 'everyone' } : { kind: 'label', label: target })
+    emit(name, payload, target === undefined ? { kind: 'everyone' } : { kind: 'label', label: target })
   })
 
   // A closed viewer panel frees its sessions, as the app's window-destroyed hook does.
@@ -80,6 +100,7 @@ export function createDemoBackend(): DemoBackend {
   return {
     invoke,
     emit,
+    mediaUrl,
     attach(webview) {
       webviews.add(webview)
       return () => webviews.delete(webview)

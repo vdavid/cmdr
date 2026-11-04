@@ -8,6 +8,8 @@
 // one-line tweak after a live check), kind classification, and the
 // image fit/zoom math.
 
+import { convertFileSrc } from '@tauri-apps/api/core'
+
 import type { MediaDimensions, ViewerContentKind } from '#lib/ipc/bindings.js'
 import { formatInteger } from '#lib/intl/number-format.js'
 import { getMessage, tString } from '#lib/intl/messages.svelte.js'
@@ -15,12 +17,13 @@ import { getMessage, tString } from '#lib/intl/messages.svelte.js'
 /**
  * Builds the URL the `<img>` / `<embed>` loads for a media session.
  *
- * The origin form (`cmdr-media://localhost/<token>`) is the single source of
- * truth for the scheme URL. Keep it here so a live-verified tweak to the
- * authority/host shape is a one-line change.
+ * The one place a media URL is built: Tauri's `convertFileSrc` gives the
+ * webview's form of the `cmdr-media` scheme (`cmdr-media://localhost/<token>` on
+ * macOS), and a host with no scheme answers its own (the browser demo: a `blob:`
+ * URL over the token's bytes).
  */
 export function mediaUrl(token: string): string {
-  return `cmdr-media://localhost/${encodeURIComponent(token)}`
+  return convertFileSrc(token, 'cmdr-media')
 }
 
 /** Whether a kind has a rendered view (image / PDF / formatted Markdown) rather than only text. */
