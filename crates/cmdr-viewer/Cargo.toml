@@ -1,0 +1,67 @@
+[package]
+name = "cmdr-viewer"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# The shared test viewer (`testing.rs`) and the session test hooks, for a host's tests.
+testing = ["cmdr-fs/testing"]
+
+[dependencies]
+# The filesystem vocabulary (volumes, errors, the executor-and-clock seam, logging).
+cmdr-fs = { path = "../cmdr-fs" }
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+# The wire types' TypeScript schema, which the app exports into `bindings.ts`.
+specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
+# A session's backend, swapped without a write lock on the read path.
+arc-swap = "1.9.3"
+memchr = "2"
+encoding_rs = "0.8.44"
+regex = "1"
+# Markdown: the parser, and ammonia's allowlist as the XSS boundary.
+pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
+ammonia = "4.2.4"
+url = "2"
+urlencoding = "2"
+# Media tokens (128-bit, CSPRNG) and session ids.
+rand = "0.10"
+uuid = { version = "1.29.0", features = ["v4"] }
+# Header-only image dimensions. The app's feature set, so both builds read the same formats.
+image = { version = "0.25.10", default-features = false, features = [
+  "bmp",
+  "dds",
+  "exr",
+  "ff",
+  "gif",
+  "hdr",
+  "ico",
+  "jpeg",
+  "png",
+  "pnm",
+  "qoi",
+  "tga",
+  "tiff",
+  "webp",
+] }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+# Tail mode's watcher (`watcher.rs`), native only: a browser session is never watched.
+notify-debouncer-full = "0.7.0"
+
+[dev-dependencies]
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+tempfile = "3"
+proptest = "1.12.0"
+# `preserve_order`: the wire pins read answers back through `serde_json::Value`, which must
+# keep fields in the order Tauri sends them, as the app's build does.
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

@@ -1,0 +1,630 @@
+//! Tests for LineIndexBackend.
+
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::sync::atomic::AtomicBool;
+
+use super::line_index::LineIndexBackend;
+use super::search_cancel_test_support::{assert_search_stops_on_per_match_cancel, many_matches_corpus};
+use super::search_matcher::{Matcher, SearchMode};
+use super::{FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, SearchMatch, SeekTarget, ViewerError};
+use cmdr_fs::testing::TestDir;
+
+fn literal_matcher(query: &str, case_sensitive: bool) -> Matcher {
+    Matcher::build(
+        query,
+        SearchMode {
+            use_regex: false,
+            case_sensitive,
+        },
+    )
+    .expect("test query must build")
+}
+
+fn create_test_dir(name: &str) -> TestDir {
+    TestDir::new(&format!("viewer_lidx_{}", name))
+}
+
+fn write_test_file(dir: &Path, name: &str, content: &str) -> PathBuf {
+    let file = dir.join(name);
+    fs::write(&file, content).unwrap();
+    file
+}
+
+/// The IPC deadline flips a fetch's flag; a fetch that sees it stops reading rows
+/// rather than finishing for nobody.
+#[test]
+fn a_fetch_whose_flag_is_set_stops_with_cancelled() {
+    let dir = create_test_dir("fetch_cancelled");
+    let file = write_test_file(&dir, "test.txt", "line 1\nline 2\nline 3\n");
+
+    let backend = LineIndexBackend::open(&file, &AtomicBool::new(false)).unwrap();
+    let result = backend.get_lines(&SeekTarget::Row(0), 3, &AtomicBool::new(true));
+    assert!(matches!(result, Err(ViewerError::Cancelled)), "got {result:?}");
+}
+
+#[test]
+fn open_builds_index() {
+    let dir = create_test_dir("open");
+    let file = write_test_file(&dir, "test.txt", "line 1\nline 2\nline 3\n");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    assert_eq!(backend.total_lines(), Some(4)); // 3 lines + trailing empty
+    assert_eq!(backend.file_name(), "test.txt");
+    assert_eq!(backend.total_bytes(), 21);
+}
+
+#[test]
+fn open_not_found() {
+    let cancel = AtomicBool::new(false);
+    let result = LineIndexBackend::open(&PathBuf::from("/nonexistent_lidx_test.txt"), &cancel);
+    assert!(result.is_err());
+}
+
+#[test]
+fn open_directory_fails() {
+    let dir = create_test_dir("open_dir");
+    let cancel = AtomicBool::new(false);
+    let result = LineIndexBackend::open(&dir, &cancel);
+    assert!(result.is_err());
+}
+
+#[test]
+fn open_cancellation() {
+    let dir = create_test_dir("cancel");
+    // Create a file with enough lines to potentially hit the cancel check
+    let content = "line\n".repeat(1000);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let cancel = AtomicBool::new(true); // Pre-cancelled
+    let result = LineIndexBackend::open(&file, &cancel);
+    assert!(result.is_err());
+}
+
+#[test]
+fn get_lines_from_start() {
+    let dir = create_test_dir("lines_start");
+    let file = write_test_file(&dir, "test.txt", "alpha\nbeta\ngamma\ndelta\n");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(0), 3, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.texts(), vec!["alpha", "beta", "gamma"]);
+    assert_eq!(chunk.first_row_number, 0);
+    assert_eq!(chunk.total_rows, super::TotalRows::Exact(5));
+}
+
+#[test]
+fn get_lines_from_middle() {
+    let dir = create_test_dir("lines_mid");
+    let file = write_test_file(&dir, "test.txt", "a\nb\nc\nd\ne\nf\n");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(3), 2, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.texts(), vec!["d", "e"]);
+    assert_eq!(chunk.first_row_number, 3);
+}
+
+#[test]
+fn get_lines_past_end() {
+    let dir = create_test_dir("lines_end");
+    let file = write_test_file(&dir, "test.txt", "a\nb\nc\n");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(10), 5, &AtomicBool::new(false))
+        .unwrap();
+    // Should clamp to last line
+    assert_eq!(chunk.first_row_number, 3); // 4 lines (including trailing empty), last is index 3
+}
+
+#[test]
+fn get_lines_by_fraction() {
+    let dir = create_test_dir("fraction");
+    let content = "line 1\nline 2\nline 3\nline 4\nline 5\n";
+    let file = write_test_file(&dir, "test.txt", content);
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    // Fraction 0.0 = first line
+    let chunk = backend
+        .get_lines(&SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.first_row_number, 0);
+    assert_eq!(chunk.texts()[0], "line 1");
+}
+
+#[test]
+fn get_lines_no_trailing_newline() {
+    let dir = create_test_dir("no_trail");
+    let file = write_test_file(&dir, "test.txt", "a\nb\nc");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(0), 10, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.texts(), vec!["a", "b", "c"]);
+    assert_eq!(backend.total_lines(), Some(3));
+}
+
+#[test]
+fn sparse_index_checkpoints() {
+    let dir = create_test_dir("checkpoints");
+    // Create a file with more than INDEX_CHECKPOINT_INTERVAL lines
+    let line_count = INDEX_CHECKPOINT_INTERVAL * 3 + 50;
+    let content: String = (0..line_count).map(|i| format!("line {:06}\n", i)).collect();
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    // Should have total_lines correct
+    assert_eq!(backend.total_lines(), Some(line_count + 1)); // +1 for trailing empty
+
+    // Seek to a line past the first checkpoint
+    let target_line = INDEX_CHECKPOINT_INTERVAL + 10;
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(target_line), 3, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.first_row_number, target_line);
+    assert_eq!(chunk.texts()[0], format!("line {:06}", target_line));
+
+    // Seek to a line past the second checkpoint
+    let target_line2 = INDEX_CHECKPOINT_INTERVAL * 2 + 5;
+    let chunk2 = backend
+        .get_lines(&SeekTarget::Row(target_line2), 2, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk2.first_row_number, target_line2);
+    assert_eq!(chunk2.texts()[0], format!("line {:06}", target_line2));
+}
+
+#[test]
+fn search_finds_matches() {
+    let dir = create_test_dir("search");
+    let file = write_test_file(&dir, "test.txt", "hello world\nfoo bar\nhello again\n");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend
+        .search(&literal_matcher("hello", false), &cancel, &results, &progress)
+        .unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 2);
+    assert_eq!(matches[0].row, 0);
+    assert_eq!(matches[0].byte_offset, 0); // First line starts at byte 0
+    assert_eq!(matches[1].row, 2);
+    // "hello world\n" = 12 bytes, "foo bar\n" = 8 bytes → line 2 starts at byte 20
+    assert_eq!(matches[1].byte_offset, 20);
+}
+
+#[test]
+fn search_case_insensitive() {
+    let dir = create_test_dir("search_case");
+    let file = write_test_file(&dir, "test.txt", "Hello\nHELLO\nhello\n");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend
+        .search(&literal_matcher("hello", false), &cancel, &results, &progress)
+        .unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 3);
+}
+
+#[test]
+fn search_cancellation() {
+    let dir = create_test_dir("search_cancel");
+    let content = "hello world\n".repeat(10000);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(true);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend
+        .search(&literal_matcher("hello", false), &cancel, &results, &progress)
+        .unwrap();
+    let matches = results.lock().unwrap();
+
+    assert!(matches.len() < 10000);
+}
+
+#[test]
+fn capabilities_correct() {
+    let dir = create_test_dir("caps");
+    let file = write_test_file(&dir, "test.txt", "test\n");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+    let caps = backend.capabilities();
+
+    assert!(caps.supports_line_seek);
+    assert!(caps.supports_byte_seek);
+    assert!(caps.supports_fraction_seek);
+    assert!(caps.knows_total_lines);
+}
+
+#[test]
+fn empty_file() {
+    let dir = create_test_dir("empty");
+    let file = write_test_file(&dir, "test.txt", "");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    assert_eq!(backend.total_bytes(), 0);
+    assert_eq!(backend.total_lines(), Some(1)); // One empty line
+}
+
+// ─── Multi-byte UTF-8 tests ────────────────────────────────────────────
+
+#[test]
+fn line_count_with_multibyte_chars() {
+    let dir = create_test_dir("utf8_lines");
+    // Each line has different multi-byte widths
+    let file = write_test_file(&dir, "test.txt", "café\n漢字\n🦀🎉\nplain\n");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    // 4 lines + trailing empty = 5
+    assert_eq!(backend.total_lines(), Some(5));
+
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(0), 4, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.texts(), vec!["café", "漢字", "🦀🎉", "plain"]);
+}
+
+#[test]
+fn seek_line_after_multibyte_content() {
+    let dir = create_test_dir("utf8_seek");
+    // "café\n" = 6 bytes, "漢字\n" = 7 bytes, "plain\n" = 6 bytes
+    let file = write_test_file(&dir, "test.txt", "café\n漢字\nplain\n");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    // Seek to line 2 ("plain"): verifies byte offset tracking through multibyte lines
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(2), 1, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.first_row_number, 2);
+    assert_eq!(chunk.texts()[0], "plain");
+}
+
+#[test]
+fn search_emoji_utf16_column() {
+    let dir = create_test_dir("search_emoji");
+    // '🦀' = 4 bytes UTF-8, 2 UTF-16 code units
+    let file = write_test_file(&dir, "test.txt", "🦀rust is great\n");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend
+        .search(&literal_matcher("rust", false), &cancel, &results, &progress)
+        .unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4); // "rust" = 4 ASCII chars = 4 UTF-16 units
+}
+
+#[test]
+fn search_cjk_utf16_column() {
+    let dir = create_test_dir("search_cjk");
+    let file = write_test_file(&dir, "test.txt", "漢字test\n");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend
+        .search(&literal_matcher("test", false), &cancel, &results, &progress)
+        .unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 2); // 2 CJK chars = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4);
+}
+
+#[test]
+fn search_accented_char_utf16_column() {
+    let dir = create_test_dir("search_accent");
+    // 'é' = 2 bytes UTF-8, 1 UTF-16 code unit
+    let file = write_test_file(&dir, "test.txt", "café latte\n");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend
+        .search(&literal_matcher("latte", false), &cancel, &results, &progress)
+        .unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 5); // "café " = 5 chars = 5 UTF-16 code units
+    assert_eq!(matches[0].length, 5);
+}
+
+#[test]
+fn search_on_last_line_without_newline_utf16() {
+    let dir = create_test_dir("search_last_utf8");
+    // Last line has no trailing newline: exercises the leftover-handling code path
+    let file = write_test_file(&dir, "test.txt", "first\n🦀rust");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend
+        .search(&literal_matcher("rust", false), &cancel, &results, &progress)
+        .unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].row, 1);
+    assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4);
+}
+
+// ─── extend_to: tail-mode index extension ───────────────────────────────
+
+#[test]
+fn extend_to_matches_open_at_target_size() {
+    // Property check: extend_to(N) starting from a backend that opened at
+    // size S should yield the same total_lines and a get_lines(...) result
+    // equivalent to one from a fresh open at N.
+    let dir = create_test_dir("extend_match");
+    let initial = "alpha\nbeta\ngamma\n";
+    let appended = "delta\nepsilon\nzeta\n";
+    let path = write_test_file(&dir, "log.txt", initial);
+
+    let cancel = AtomicBool::new(false);
+    let small = LineIndexBackend::open(&path, &cancel).unwrap();
+    assert_eq!(small.total_lines(), Some(4));
+
+    // Append on disk, then call extend_to.
+    let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+    use std::io::Write;
+    f.write_all(appended.as_bytes()).unwrap();
+    drop(f);
+
+    let new_size = fs::metadata(&path).unwrap().len();
+    let extended = small.extend_to(new_size, &cancel).unwrap();
+    let fresh = LineIndexBackend::open(&path, &cancel).unwrap();
+
+    assert_eq!(extended.total_lines(), fresh.total_lines());
+    assert_eq!(extended.total_bytes(), fresh.total_bytes());
+
+    let ext_chunk = extended
+        .get_lines(&SeekTarget::Row(0), 10, &AtomicBool::new(false))
+        .unwrap();
+    let fresh_chunk = fresh
+        .get_lines(&SeekTarget::Row(0), 10, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(ext_chunk.texts(), fresh_chunk.texts());
+}
+
+#[test]
+fn extend_to_appends_checkpoints_past_interval() {
+    let dir = create_test_dir("extend_ckpt");
+    let initial: String = (0..(INDEX_CHECKPOINT_INTERVAL * 2))
+        .map(|i| format!("line {:06}\n", i))
+        .collect();
+    let path = write_test_file(&dir, "log.txt", &initial);
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&path, &cancel).unwrap();
+    let before_lines = backend.total_lines().unwrap();
+
+    let extra: String = (0..(INDEX_CHECKPOINT_INTERVAL * 2))
+        .map(|i| format!("more  {:06}\n", i))
+        .collect();
+    let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+    use std::io::Write;
+    f.write_all(extra.as_bytes()).unwrap();
+    drop(f);
+
+    let new_size = fs::metadata(&path).unwrap().len();
+    let extended = backend.extend_to(new_size, &cancel).unwrap();
+    assert_eq!(
+        extended.total_lines(),
+        Some(before_lines + INDEX_CHECKPOINT_INTERVAL * 2)
+    );
+
+    // Spot check: a line that lives past the original EOF is correctly seekable.
+    let target = INDEX_CHECKPOINT_INTERVAL * 2 + 5;
+    let chunk = extended
+        .get_lines(&SeekTarget::Row(target), 1, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.first_row_number, target);
+    assert_eq!(chunk.texts()[0], format!("more  {:06}", 5));
+}
+
+#[test]
+fn extend_to_observes_cancel() {
+    let dir = create_test_dir("extend_cancel");
+    // Create a fairly long appended range so the scanner has work to bail out of.
+    let initial = "x\n";
+    let path = write_test_file(&dir, "log.txt", initial);
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&path, &cancel).unwrap();
+
+    let extra: String = "abcdefg\n".repeat(50_000);
+    let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+    use std::io::Write;
+    f.write_all(extra.as_bytes()).unwrap();
+    drop(f);
+
+    let new_size = fs::metadata(&path).unwrap().len();
+    let pre_cancel = AtomicBool::new(true);
+    let result = backend.extend_to(new_size, &pre_cancel);
+    assert!(matches!(result, Err(ViewerError::Cancelled)));
+}
+
+// -- Property test: extend_to(N) ≡ open-at-N -------------------------------------
+
+use proptest::prelude::*;
+
+proptest! {
+    // Each case does real filesystem I/O (write + 4 `LineIndexBackend::open`s + an
+    // `extend_to` scan), so the default 256 cases can blow nextest's 8 s per-test
+    // budget under full-suite CPU contention. 48 cases still spreads across buffer
+    // sizes and split points enough to catch the counting-drift bug class.
+    #![proptest_config(ProptestConfig::with_cases(48))]
+
+    /// Plan property inventory (last row): given a random newline-rich buffer
+    /// and a split point N, fresh-open + `extend_to(N)` produces the same
+    /// `total_lines` and `total_bytes` as opening directly at size N. This
+    /// pins the contract that `extend_to` is a faithful continuation of the
+    /// initial scan, not a separate code path with different counting.
+    #[test]
+    fn extend_to_n_equals_open_at_n(
+        seed in proptest::collection::vec(
+            // Sample directly within the printable + newline range so the
+            // strategy doesn't have to reject the majority of random bytes
+            // (which trips proptest's local-reject cap).
+            prop_oneof![
+                Just(b'\n'),
+                (0x20u8..=0x7Eu8),
+            ],
+            16..2048,
+        ),
+        split_pct in 0u8..=100u8,
+    ) {
+        let dir = TestDir::new("lidx_proptest");
+        let split = (seed.len() * split_pct as usize) / 100;
+        let split = split.min(seed.len());
+
+        let full_path = dir.join("full.txt");
+        fs::write(&full_path, &seed).unwrap();
+        let partial_path = dir.join("partial.txt");
+        fs::write(&partial_path, &seed[..split]).unwrap();
+
+        let cancel = AtomicBool::new(false);
+        // Open directly at split size.
+        let direct = LineIndexBackend::open(&partial_path, &cancel).unwrap();
+        // Open at 0 (well, full file scanned), but extend_to to split.
+        // Easier: open full, then it covers `seed.len()` bytes; we want a
+        // baseline at split, so build it by opening the partial file (which
+        // is what direct does). Then make `extended`: open partial then
+        // extend_to `seed.len()` after writing the full buffer. We compare
+        // that extended against opening the full file directly.
+        let extended_open = LineIndexBackend::open(&partial_path, &cancel).unwrap();
+        // Make the file longer to extend_to.
+        fs::write(&partial_path, &seed).unwrap();
+        let new_total = fs::metadata(&partial_path).unwrap().len();
+        let extended = extended_open.extend_to(new_total, &cancel).unwrap();
+        let full = LineIndexBackend::open(&full_path, &cancel).unwrap();
+
+        prop_assert_eq!(
+            extended.total_bytes(),
+            full.total_bytes(),
+            "extend_to total_bytes must match direct open"
+        );
+        prop_assert_eq!(
+            extended.total_lines(),
+            full.total_lines(),
+            "extend_to total_lines must match direct open"
+        );
+        // Also: the direct partial open and the extended-from-partial differ
+        // by exactly the appended bytes.
+        let extra_bytes = (new_total - direct.total_bytes()) as i64;
+        prop_assert!(extra_bytes >= 0);
+
+        let _ = fs::remove_file(&full_path);
+        let _ = fs::remove_file(&partial_path);
+    }
+}
+
+// -- Per-match cancel timer -----------------------------------------------------
+
+#[test]
+fn test_per_match_cancel_observes_within_100ms() {
+    let dir = create_test_dir("per_match_cancel");
+    let path = write_test_file(&dir, "many_matches.txt", &many_matches_corpus());
+
+    let open_cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&path, &open_cancel).unwrap();
+    assert_search_stops_on_per_match_cancel(&backend, &literal_matcher("a", true));
+}
+
+/// Every fetch, search, and tail extend reads through the handle the scan opened, never
+/// a fresh `open` (#303). Unlinking the file after open proves it.
+#[test]
+fn fetches_searches_and_extends_read_through_the_handle_held_since_open() {
+    let dir = create_test_dir("held_handle");
+    let content: String = (0..2000).map(|i| format!("line {i}\n")).collect();
+    let file = write_test_file(&dir, "test.txt", &content);
+    let backend = LineIndexBackend::open(&file, &AtomicBool::new(false)).unwrap();
+    fs::remove_file(&file).unwrap();
+
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(1500), 10, &AtomicBool::new(false))
+        .expect("a fetch after the file is unlinked still reads the held handle");
+    assert_eq!(chunk.rows[0].text, "line 1500");
+
+    let results = Mutex::new(Vec::new());
+    backend
+        .search(
+            &literal_matcher("line 1999", true),
+            &AtomicBool::new(false),
+            &results,
+            &Mutex::new(0),
+        )
+        .expect("a search after the file is unlinked still reads the held handle");
+    assert_eq!(results.lock().unwrap().len(), 1);
+
+    let grown = backend.total_bytes() + 10;
+    backend
+        .extend_to(grown, &AtomicBool::new(false))
+        .expect("an extend after the file is unlinked still reads the held handle");
+}

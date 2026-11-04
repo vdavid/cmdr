@@ -4,9 +4,8 @@ Pull-tier docs for the viewer route (`routes/viewer/`): architecture, flows, and
 invariants and gotchas live in `CLAUDE.md`.
 
 The file viewer opens files in a separate Tauri window with virtual scrolling and text search. Backend counterpart:
-`apps/desktop/src-tauri/src/file_viewer/CLAUDE.md` for the three backend strategies (`FullLoad`, `ByteSeek`,
-`LineIndex`), session orchestration, and background search. Reusable FE primitives live at
-`apps/desktop/src/lib/file-viewer/CLAUDE.md`.
+`crates/cmdr-viewer/CLAUDE.md` for the three backend strategies (`FullLoad`, `ByteSeek`, `LineIndex`), session
+orchestration, and background search. Reusable FE primitives live at `apps/desktop/src/lib/file-viewer/CLAUDE.md`.
 
 ## Module map
 
@@ -72,7 +71,7 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 
 The viewer renders **rows**. A row ends at a newline or after `SEGMENT_BYTES` (20 000), whichever comes first, so no
 fetch costs more than a bounded read however long a line is. The rule, the wire shape, and the backend side of it:
-`src-tauri/src/file_viewer/DETAILS.md` § "Rows, not lines". What it means on this side:
+`crates/cmdr-viewer/DETAILS.md` § "Rows, not lines". What it means on this side:
 
 **The text coordinate is a row, everywhere.** `rowCache`, `visibleFrom` / `visibleTo`, `estimatedTotalRows()`, the
 selection's `(row, offset)` endpoints, `EOF_ROW`, the caret motions, and the search jump all count rows. A file whose
@@ -102,8 +101,7 @@ the rule in `ViewerRow.svelte`, and `ViewerRow.test.ts` fails if someone swaps i
 character between two rows of the same line. `rowMetrics` is the one place that decides a row's delimiter (0 when the
 row `continues`, 0 on the file's last row, 1 otherwise), and `describeSelectionForAt` sums row lengths with nothing
 between them. Assuming one per row over-counts a minified file by a byte every 20 000 — and those bytes pick the 10 MB
-confirm tier and the 100 MB refusal, which is invariant I3 (`src-tauri/src/file_viewer/DETAILS.md` § "The row
-invariants").
+confirm tier and the 100 MB refusal, which is invariant I3 (`crates/cmdr-viewer/DETAILS.md` § "The row invariants").
 
 Decision/Why: **WebKit's own soft wraps stay unmarked** (David's call). With word wrap on, only the segment break Cmdr
 made carries the marker. Marking soft breaks too would mean Cmdr doing its own wrapping instead of CSS, against the
@@ -153,17 +151,17 @@ branches on `viewMode`: text uses the line pipeline; binary and hex use original
   forced Text reopens the natural media session; Binary and Hex can return to the existing media session.
 
 **A picture or PDF on a volume takes its time after the open returns** (`mediaFromVolume`; backend:
-`src-tauri/src/file_viewer/DETAILS.md` § "Media on a volume"). The backend reads the bytes before the webview sees one,
-so the page follows `viewer-media-load` with a second `createViewerPull` (`mediaLoad`, via `followMediaLoad`): after a
-second `MediaStage.svelte` covers the still-mounted view with a `PullProgressPanel`, with progress and Cancel (closing
-the window stops the read). `arriving` holds `MediaPdfView`'s spinner past its timer, since PDFKit paints nothing until
+`crates/cmdr-viewer/DETAILS.md` § "Media on a volume"). The backend reads the bytes before the webview sees one, so the
+page follows `viewer-media-load` with a second `createViewerPull` (`mediaLoad`, via `followMediaLoad`): after a second
+`MediaStage.svelte` covers the still-mounted view with a `PullProgressPanel`, with progress and Cancel (closing the
+window stops the read). `arriving` holds `MediaPdfView`'s spinner past its timer, since PDFKit paints nothing until
 then. A `failed` report (the volume stopped answering or refused) shows `viewer.error.stoppedResponding` with Retry,
 which reopens through `reopenNatural` so the old session and token go. Why not the `<img>` `error` alone: it reads as a
 damaged file, and an `<embed>` has no error at all.
 
 ### Formatted Markdown
 
-A `markdown` session (backend: `src-tauri/src/file_viewer/DETAILS.md` § "Markdown rendering") is a media kind here:
+A `markdown` session (backend: `crates/cmdr-viewer/DETAILS.md` § "Markdown rendering") is a media kind here:
 `isMediaKind` includes it, so it opens in media mode, `0` returns to it, and "View as text" / "View formatted" reopen
 like an image's. `MediaMarkdownView` asks `viewerRenderMarkdown(sessionId)` for the backend-sanitized HTML, shows it via
 `{@html}`, then `wireImages` turns each `data-md-image` marker into a source or a placeholder:
@@ -201,7 +199,7 @@ never reaches the embed as a native `copy:` (unverified whether the embed takes 
 ### Links and history
 
 A click on a link hands its `href` to `createViewerNavigation.followLink`, which asks the backend where it goes
-(`viewerFollowMarkdownLink`; resolution rules: `src-tauri/src/file_viewer/DETAILS.md` § "Markdown rendering"):
+(`viewerFollowMarkdownLink`; resolution rules: `crates/cmdr-viewer/DETAILS.md` § "Markdown rendering"):
 
 - `external`: the backend already opened it in the user's browser or mail app. The viewer webview has no opener grant.
 - `anchor` (a `#heading`, a footnote, or a link to the document itself): `MediaMarkdownView.scrollToElement`, matched by
@@ -757,8 +755,8 @@ only: a media open ignores it.
 
 **Opening in the log view.** `{ logView: true }` adds `log=1`, and the page passes `rows: 'logDisplay'` to `viewerOpen`:
 the backend hides the log markers and shows each marked value as itself, so every row, search hit, copy, and save the
-page handles is already the shown text. Help > View debug log opens this way too
-(`apps/desktop/src-tauri/src/file_viewer/DETAILS.md` § "The debug log's view").
+page handles is already the shown text. Help > View debug log opens this way too (`crates/cmdr-viewer/DETAILS.md` § "The
+debug log's view").
 
 Tail mode is **not persisted** across sessions: it defaults off on every viewer open (unless the opener passed `tail=1`)
 and the user re-enables it per session. The viewer window has no `store:default` capability by security design (it

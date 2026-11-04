@@ -27,7 +27,7 @@ pub async fn media_index_thumbnail_token(path: String) -> Result<Option<String>,
 #[specta::specta]
 pub fn media_index_drop_thumbnail_tokens(tokens: Vec<String>) {
     for token in &tokens {
-        crate::file_viewer::media::drop_token(token);
+        crate::file_viewer::app_viewer().tokens().drop_token(token);
     }
 }
 
@@ -37,7 +37,8 @@ pub fn media_index_drop_thumbnail_tokens(tokens: Vec<String>) {
 /// local extension fast-path the viewer uses.
 fn mint_image_thumbnail_token(path: &str) -> Option<String> {
     use crate::file_viewer::content_kind::{CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, media_mime};
-    use crate::file_viewer::media::{self, MediaEntry};
+    use crate::file_viewer::media::MediaEntry;
+    let tokens = crate::file_viewer::app_viewer().tokens();
 
     let p = std::path::Path::new(path);
     let head = read_head_bytes(p, CLASSIFY_HEAD_LEN);
@@ -49,7 +50,7 @@ fn mint_image_thumbnail_token(path: &str) -> Option<String> {
     let mime = media_mime(&head, kind)
         .unwrap_or("application/octet-stream")
         .to_string();
-    Some(media::mint_token(MediaEntry {
+    Some(tokens.mint_token(MediaEntry {
         canonical_path: p.to_path_buf(),
         kind,
         mime,

@@ -50,7 +50,7 @@ use super::{ArchiveFailureKind, ViewerError};
 use crate::file_system::volume::RoutedKind;
 #[cfg(any(target_os = "macos", test))]
 use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
-use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 #[cfg(any(target_os = "macos", test))]
 use cmdr_fs::log_private::LogPrivate;
 

@@ -89,7 +89,7 @@ pub fn on_window_event(window: &Window, event: &tauri::WindowEvent) {
     if let tauri::WindowEvent::Destroyed = event
         && window.label().starts_with("viewer-")
     {
-        file_viewer::close_session_for_window(window.label());
+        file_viewer::app_viewer().close_session_for_window(window.label());
     }
 }
 

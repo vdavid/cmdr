@@ -1,7 +1,8 @@
 # Viewer
 
 The file viewer opens files in their own Tauri window, with virtual scrolling and text search. Backend:
-`apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`; FE primitives: `apps/desktop/src/lib/file-viewer/CLAUDE.md`.
+`crates/cmdr-viewer/CLAUDE.md` (its app host: `apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`); FE primitives:
+`apps/desktop/src/lib/file-viewer/CLAUDE.md`.
 
 ## Module map
 
@@ -13,8 +14,8 @@ Inventory: `DETAILS.md` § "Module map".
 
 Each is break-if-ignored; the named `DETAILS.md` section has the why.
 
-- **Every coordinate here is a ROW**: a long line is several (`src-tauri/src/file_viewer/CLAUDE.md`). `totalLines` is
-  the status bar's alone; the gutter number and the continuation marker ride on the row. ❌ Infer neither. The AT
+- **Every coordinate here is a ROW**: a long line is several (`crates/cmdr-viewer/CLAUDE.md`). `totalLines` is the
+  status bar's alone; the gutter number and the continuation marker ride on the row. ❌ Infer neither. The AT
   announcement names the gutter's LINE too, ❌ never a row. (§ "Rows, not lines")
 - **Composables take getter deps, ❌ never raw `$state`** (which loses reactivity); effects live on the page and
   delegate to `run*Effect()`. (§ Architecture)
