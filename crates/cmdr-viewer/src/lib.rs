@@ -22,6 +22,10 @@
 //! - `LineIndexBackend`: sparse line-offset index, O(lines/256) memory
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
+// Named only to switch on its browser backend for `rand`'s OS RNG.
+#[cfg(target_family = "wasm")]
+use getrandom as _;
+
 mod bridge;
 mod byte_seek;
 pub mod content_kind;
@@ -56,8 +60,11 @@ pub mod volume_error;
 pub mod volume_source;
 #[cfg(not(target_family = "wasm"))]
 pub mod watcher;
+mod watcher_event;
 mod worker;
 
+#[cfg(test)]
+mod bridge_test;
 #[cfg(test)]
 mod byte_seek_test;
 #[cfg(test)]

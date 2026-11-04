@@ -50,18 +50,7 @@ const DEBOUNCE_MS: u64 = 300;
 /// subscriber will pick up state on next read either way).
 const SUBSCRIPTION_CHANNEL_CAPACITY: usize = 64;
 
-/// Classified file-system event for a tailed file.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum WatcherEvent {
-    /// File size grew to `new_size` bytes.
-    Grew(u64),
-    /// File was truncated or shrunk.
-    Shrunk,
-    /// File was replaced (rename, atomic-write swap, inode change).
-    Replaced,
-    /// Metadata changed but the byte content did not (mtime, permissions).
-    MetadataOnly,
-}
+pub use super::watcher_event::WatcherEvent;
 
 /// Internal per-path bookkeeping shared by the manager and the debouncer
 /// callback. The `Mutex` here protects mutable per-path state (subscriber

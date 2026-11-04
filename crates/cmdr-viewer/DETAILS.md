@@ -97,6 +97,29 @@ one host: the desktop app (`apps/desktop/src-tauri/src/file_viewer/`) and the br
 - **`bridge.rs`**: every `block_on` and fire-and-forget future the core needs (the volume reads and the reader's close).
   Callers are blocking threads, never async tasks.
 
+## The browser build
+
+The crate compiles for `wasm32-unknown-unknown` (`desktop-rust-viewer-wasm` gates it). A page has one thread, no clock
+in `std`, and no local files, so the browser halves differ on purpose. A compile isn't proof: a thread spawn or a `std`
+clock read compiles there and then panics, which only a smoke run against the real `.wasm` catches.
+
+- **Jobs run inline** (`worker.rs`): `spawn` runs the job and hands back a finished `Job`; `after` waits on the page's
+  timer (`cmdr_fs::rt`). So nothing may scan a whole big file inside one call: a session never upgrades ByteSeek to
+  LineIndex there (no `isIndexing`, the row estimate stays), and an encoding switch past FullLoad stays on ByteSeek
+  (`BACKGROUND_SCANS` in `session.rs`).
+- **No search watchdog**: started inline before the search, it would wait forever. A cancel can't interrupt a running
+  search there; demo files are small enough that a search runs to the end.
+- **The bridge polls once** (`bridge::poll_once`): an in-memory volume's unpaced read is ready on its first poll; one
+  that isn't answers `VolumeError::NotSupported`, never a hang.
+- **No OS fallback** (`origin::HAS_OS_FALLBACK`): a volume's open error is the answer (never the `NotFound` an absent
+  local file would give, since `exists()` is always false there), a volume with no held reader reads through its
+  `read_range`, and a file no volume serves is `NotSupported`. A local file's positioned read is a typed refusal.
+- **No watcher**: `watcher.rs` is native-only (`WatcherEvent` lives in `watcher_event.rs` so sessions build without it).
+- **Markdown paths**: `url`'s path conversions don't exist there, so `markdown_links::text_urls` builds the same URLs
+  from the path's text; `markdown_links_test.rs` pins both pairs to the same answers.
+- **Randomness**: `rand`'s OS RNG reads `crypto.getRandomValues` through `getrandom`'s `wasm_js` feature, so a media
+  token keeps its 128-bit, 32-hex-character form.
+
 ## Byte sources
 
 A text session opens its file ONCE (`SourceOrigin::open` → `OpenedFile`) and every backend it builds reads through that

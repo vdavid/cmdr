@@ -24,6 +24,8 @@ model. A host builds one `Viewer` over its `host::ViewerHost`: the desktop app
   decoded lengths. `DETAILS.md` § "Rows, not lines".
 - **No app reach, no ambient runtime**: an app concern arrives through `host/`; a job starts in `worker.rs`, a future
   runs on the `Viewer`'s runtime via `bridge.rs`, a clock read goes through `cmdr_fs::rt`. `clippy.toml` bans the rest.
+- **It builds for `wasm32`**, where jobs run inline, the bridge polls once, and nothing falls back to the OS; a `cfg`
+  half must keep native behavior byte-identical. `DETAILS.md` § "The browser build".
 - **The FSEvents subscribe runs on the manager thread, NOT inline in `open_session`**. A test injecting watcher events
   calls `wait_for_watcher_subscribed()` first. `DETAILS.md` § "Gotchas (tail mode)".
 - **Drain-and-swap-under-lock** for the ByteSeek→LineIndex upgrade and the encoding rebuild: a mid-rebuild `Grew` queues

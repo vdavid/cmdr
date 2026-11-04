@@ -535,6 +535,11 @@ jobs:
       - name: Build the listing engine for wasm
         run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
 
+      # The file viewer's core compiles for the browser: the only lane that sees a host-only
+      # dep reach `cmdr-viewer` before the demo engine hosts it.
+      - name: Build the viewer core for wasm
+        run: ./scripts/check/check --check desktop-rust-viewer-wasm --ci
+
       # A broken intra-doc link is invisible to every other lane, because only
       # `cargo doc` resolves one. These steps are sequential, so this lane keeps
       # the shared, cached `target/` here; locally it gets a private one to stay

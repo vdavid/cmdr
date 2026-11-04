@@ -53,6 +53,10 @@ image = { version = "0.25.10", default-features = false, features = [
   "webp",
 ] }
 
+[target.'cfg(target_family = "wasm")'.dependencies]
+# `rand`'s OS RNG (the media tokens) reads the browser's `crypto.getRandomValues` there.
+getrandom = { version = "0.4.3", features = ["wasm_js"] }
+
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 # Tail mode's watcher (`watcher.rs`), native only: a browser session is never watched.
 notify-debouncer-full = "0.7.0"

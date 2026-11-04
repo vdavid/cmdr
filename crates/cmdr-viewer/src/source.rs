@@ -10,7 +10,6 @@
 //! disturb each other. `DETAILS.md` § "Byte sources".
 
 use std::fs::File;
-use std::os::unix::fs::FileExt;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -53,7 +52,7 @@ impl ByteSource for LocalFileSource {
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> Result<usize, ViewerError> {
         let mut filled = 0usize;
         while filled < buf.len() {
-            let read = self.file.read_at(&mut buf[filled..], offset + filled as u64)?;
+            let read = positioned_read(&self.file, &mut buf[filled..], offset + filled as u64)?;
             if read == 0 {
                 break;
             }
@@ -61,6 +60,19 @@ impl ByteSource for LocalFileSource {
         }
         Ok(filled)
     }
+}
+
+/// One `pread`: no cursor, so concurrent readers never disturb each other.
+#[cfg(unix)]
+fn positioned_read(file: &File, buf: &mut [u8], offset: u64) -> std::io::Result<usize> {
+    std::os::unix::fs::FileExt::read_at(file, buf, offset)
+}
+
+/// The browser has no local files (a session there reads through its volume, and
+/// `File::open` already refuses), so a positioned read is a typed refusal, never a panic.
+#[cfg(not(unix))]
+fn positioned_read(_file: &File, _buf: &mut [u8], _offset: u64) -> std::io::Result<usize> {
+    Err(std::io::ErrorKind::Unsupported.into())
 }
 
 /// An open source plus the two facts every backend needs at open.

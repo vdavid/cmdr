@@ -28,7 +28,7 @@ use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
 use super::markdown_session;
 use super::media_session;
-use super::origin::{SourceOrigin, open_for_viewer, open_ranged_for_media};
+use super::origin::{HAS_OS_FALLBACK, SourceOrigin, open_for_viewer, open_ranged_for_media};
 use super::range_read::{
     RangeEnd, RawSource, RowForm, STREAM_CHUNK_BYTES, Walked, read_range as do_read_range,
     read_range_streamed as stream_range,
@@ -39,11 +39,15 @@ use super::session_store::{
     BackendType, SearchState, SearchStatus, ViewerOpenResult, ViewerSession, ViewerSessionInit, generate_session_id,
 };
 use super::source::{OpenedFile, read_head};
-use super::watcher::{VIEWER_WATCHER_MANAGER, WatcherEvent};
+use super::volume_error::map_volume_error;
+#[cfg(not(target_family = "wasm"))]
+use super::watcher::VIEWER_WATCHER_MANAGER;
+use super::watcher_event::WatcherEvent;
 use super::{
     FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget, TotalRows,
     ViewerError,
 };
+use cmdr_fs::volume::VolumeError;
 
 /// One row in the encoding dropdown.
 #[derive(Debug, Clone, Serialize, specta::Type)]
@@ -159,6 +163,12 @@ const INDEXING_TIMEOUT_SECS: u64 = 5;
 /// 2.7 s at 100 Mbit/s), so it would only compete with the viewport's own reads for
 /// the link and the block cache before being cancelled.
 const VOLUME_INDEX_MAX_BYTES: u64 = 32 * 1024 * 1024;
+
+/// Whether this host scans a whole file in the background: the ByteSeek → LineIndex
+/// upgrade and the LineIndex rebuild after an encoding switch. Not in the browser, where a
+/// job runs inline (`worker.rs`) and a whole-file scan would freeze the page; a session
+/// there stays on ByteSeek with its estimated row count.
+const BACKGROUND_SCANS: bool = cfg!(not(target_family = "wasm"));
 
 impl Viewer {
     /// Opens a viewer session for the given file path.
@@ -338,6 +348,11 @@ impl Viewer {
         let (origin, opened, watchable) = match on_volume {
             Some(found) => (found.origin, found.opened, found.os_visible),
             None => {
+                // `exists()` is always false in the browser, so asking it would call every
+                // file there missing.
+                if !HAS_OS_FALLBACK {
+                    return Err(map_volume_error(VolumeError::NotSupported, None));
+                }
                 if !file_path.exists() {
                     return Err(ViewerError::NotFound { path: path.to_string() });
                 }
@@ -403,7 +418,7 @@ impl Viewer {
                 // Start with ByteSeek (instant), then upgrade to LineIndex in background,
                 // unless the file is on a volume and too big for the scan to finish.
                 let b = ByteSeekBackend::open_source(&opened, detected_encoding)?;
-                let index = !on_a_volume || file_size <= VOLUME_INDEX_MAX_BYTES;
+                let index = BACKGROUND_SCANS && (!on_a_volume || file_size <= VOLUME_INDEX_MAX_BYTES);
                 let upgrading = index.then(|| Arc::new(AtomicBool::new(false)));
                 (Box::new(b), BackendType::ByteSeek, upgrading)
             };
@@ -727,7 +742,7 @@ fn spawn_search_worker(
     let watchdog_status = status.clone();
 
     worker::spawn(move || {
-        let watchdog_handle = worker::spawn(move || run_search_watchdog(watchdog_cancel, watchdog_status));
+        let watchdog_handle = start_search_watchdog(watchdog_cancel, watchdog_status);
 
         // Use ByteSeekBackend for streaming search (low memory, works on any file)
         let backend = match ByteSeekBackend::open_source(&file, encoding) {
@@ -781,10 +796,37 @@ pub(super) fn finalize_search_status(status: &Arc<Mutex<SearchStatus>>, cancel: 
     };
 }
 
+/// The search's watchdog, on a job of its own.
+#[cfg(not(target_family = "wasm"))]
+fn start_search_watchdog(cancel: Arc<AtomicBool>, status: Arc<Mutex<SearchStatus>>) -> WatchdogJob {
+    WatchdogJob(Some(worker::spawn(move || run_search_watchdog(cancel, status))))
+}
+
+/// None in the browser: a job there runs inline, so a watchdog started before the search
+/// would loop forever waiting for it, and a cancel can't interrupt a running search
+/// anyway. Demo files are small enough that a search runs to the end.
+#[cfg(target_family = "wasm")]
+fn start_search_watchdog(_cancel: Arc<AtomicBool>, _status: Arc<Mutex<SearchStatus>>) -> WatchdogJob {
+    WatchdogJob(None)
+}
+
+/// The search watchdog's job, when the host runs one.
+struct WatchdogJob(Option<worker::Job>);
+
+impl WatchdogJob {
+    fn join(self) {
+        if let Some(job) = self.0 {
+            job.join();
+        }
+    }
+}
+
 /// How often the search watchdog checks the worker's status and `cancel` flag.
+#[cfg(not(target_family = "wasm"))]
 pub(super) const SEARCH_WATCHDOG_POLL: Duration = Duration::from_millis(250);
 /// How long the watchdog lets a worker ignore a set `cancel` flag before it
 /// writes `Cancelled` itself.
+#[cfg(not(target_family = "wasm"))]
 pub(super) const SEARCH_WATCHDOG_BUDGET: Duration = Duration::from_secs(1);
 
 /// Watchdog: polls the worker's `cancel` flag and forces the search status to
@@ -795,6 +837,7 @@ pub(super) const SEARCH_WATCHDOG_BUDGET: Duration = Duration::from_secs(1);
 /// The poll + budget pair keeps user-visible cancellation under 1.25 s (plus
 /// scheduling delay) in the worst case even for runaway-regex paths where the
 /// inner `iter.next()` call doesn't observe the per-match cancel.
+#[cfg(not(target_family = "wasm"))]
 pub(super) fn run_search_watchdog(cancel: Arc<AtomicBool>, status: Arc<Mutex<SearchStatus>>) {
     let mut cancel_seen_at: Option<cmdr_fs::rt::Instant> = None;
     loop {
@@ -1290,8 +1333,11 @@ impl Viewer {
                 session.backend.store(Arc::new(bs_box));
                 *session.backend_type.lock_ignore_poison() = BackendType::ByteSeek;
                 *session.encoding.lock_ignore_poison() = new_encoding;
-                *session.rebuilding.lock_ignore_poison() = Some(cancel.clone());
+                *session.rebuilding.lock_ignore_poison() = BACKGROUND_SCANS.then(|| cancel.clone());
             }
+        }
+        if !BACKGROUND_SCANS {
+            return Ok(());
         }
 
         let session_id_clone = session_id.to_string();
@@ -1515,6 +1561,12 @@ impl Viewer {
     /// subscription when `stop` flips (set by `close_session`) or when the upstream
     /// channel disconnects; the subscription's `Drop` then unregisters the path from
     /// the shared singleton.
+    /// A browser session is never watched: its volume is the page's memory, and a demo
+    /// write reaches the viewer on its next open.
+    #[cfg(target_family = "wasm")]
+    fn spawn_watcher_manager(&self, _session_id: String, _path: PathBuf, _stop: Arc<AtomicBool>) {}
+
+    #[cfg(not(target_family = "wasm"))]
     fn spawn_watcher_manager(&self, session_id: String, path: PathBuf, stop: Arc<AtomicBool>) {
         let viewer = self.clone();
         worker::spawn(move || {
@@ -1573,6 +1625,7 @@ impl Viewer {
     /// open-time EOF) makes this correct regardless of whether the ByteSeek →
     /// LineIndex upgrade has already stored: mid-upgrade it queues into
     /// `pending_grew` (drained by the swap), post-upgrade it tail-extends or emits.
+    #[cfg(not(target_family = "wasm"))]
     fn catch_up_after_subscribe(&self, session_id: &str, path: &Path) {
         let Ok(meta) = std::fs::metadata(path) else {
             return;

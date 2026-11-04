@@ -129,3 +129,43 @@ fn absolute_paths_files_and_other_schemes_are_not_followed() {
         assert_eq!(resolve(href), MarkdownLink::Blocked, "{href:?}");
     }
 }
+
+/// The browser builds a folder's URL and reads a joined URL's path from text (`url`'s
+/// path conversions don't exist there); each case must answer what `url`'s do natively.
+#[test]
+fn the_browser_url_conversions_answer_what_url_does() {
+    use super::markdown_links::text_urls;
+    // No `..` folder: a document's folder is the opened file's, never one with a `..` in it
+    // (`url` keeps such a segment literal; the browser's parse would fold it).
+    let folders = ["", "docs", "docs/sub dir", "a/b/c", "naïve/日本", "100%/#hash?q", "./x"];
+    let references = [
+        "x.md",
+        "../x.md",
+        "../../../../x.md",
+        "./a b.md",
+        "%2e%2e/x.md",
+        "sub/%20spaced.md#frag",
+        "//evil.host/x.md",
+        "//localhost/x.md",
+        "/abs.md",
+        "?q=1",
+        "file:///etc/passwd",
+        "caf%C3%A9.md",
+        "bad%FF.md",
+    ];
+    for folder in folders {
+        let ours = text_urls::folder_url(Path::new(folder)).expect("a folder URL");
+        let theirs = url::Url::from_directory_path(Path::new("/").join(folder)).expect("a folder URL");
+        for reference in references {
+            let (Ok(ours), Ok(theirs)) = (ours.join(reference), theirs.join(reference)) else {
+                panic!("{folder:?} + {reference:?} didn't join on one side");
+            };
+            // A non-UTF-8 path is the one place the two differ: the browser has none.
+            assert_eq!(
+                text_urls::url_path(&ours),
+                theirs.to_file_path().ok().filter(|path| path.to_str().is_some()),
+                "{folder:?} + {reference:?}"
+            );
+        }
+    }
+}

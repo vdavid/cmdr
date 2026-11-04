@@ -80,12 +80,21 @@ pub(super) struct VolumeOpen {
 /// the same `NotFound` the old path gives. The exception is a dead DFS link: the session
 /// is fine and already named the trouble, and a mount's answer could be a `NotFound`, which
 /// reads as "this file was deleted".
+/// Whether a file a volume doesn't open may still open through the OS (`std::fs`, or a
+/// temp pull). Not in the browser, which has no local files.
+pub(super) const HAS_OS_FALLBACK: bool = cfg!(not(target_family = "wasm"));
+
 pub(super) fn open_for_viewer(
     viewer: &Viewer,
     requested: &Path,
     volume_id: &str,
 ) -> Result<Option<VolumeOpen>, ViewerError> {
-    open_through_volume(viewer, requested, volume_id, PositionedRead::Held)
+    match open_through_volume(viewer, requested, volume_id, PositionedRead::Held)? {
+        // The browser's volume holds no handle; its unpaced `read_range` answers instead,
+        // since there's no local file or pull to fall back on.
+        None if !HAS_OS_FALLBACK => open_through_volume(viewer, requested, volume_id, PositionedRead::Ranged),
+        found => Ok(found),
+    }
 }
 
 /// Opens `requested` through `read_range`, for a volume the OS can't open and that holds
@@ -139,6 +148,9 @@ fn open_through_volume(
         Err(e @ (VolumeError::LinkTargetUnreachable(_) | VolumeError::LinkNeedsConsent(_))) => {
             Err(map_volume_error(e, None))
         }
+        // The browser has no usual way: its volume's answer is the answer, so a read
+        // error never turns into the `NotFound` an absent local file would give.
+        Err(e) if !HAS_OS_FALLBACK => Err(map_volume_error(e, None)),
         Err(e) => {
             debug!(
                 "viewer: {} doesn't open through its volume ({e}); opening it the usual way",

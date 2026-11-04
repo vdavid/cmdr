@@ -1999,6 +1999,7 @@ dependencies = [
  "arc-swap",
  "cmdr-fs",
  "encoding_rs",
+ "getrandom 0.4.3",
  "image",
  "log",
  "memchr",

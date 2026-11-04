@@ -92,9 +92,9 @@ fn external(url: &str) -> MarkdownLink {
 /// names the volume root itself or the document isn't under `volume_root`.
 pub(super) fn resolve_relative(reference: &str, document: &Path, volume_root: &Path) -> Option<RelativeTarget> {
     let folder = document.parent()?.strip_prefix(volume_root).ok()?;
-    let base = url::Url::from_directory_path(Path::new("/").join(folder)).ok()?;
+    let base = folder_url(folder)?;
     let joined = base.join(reference).ok().filter(|joined| joined.scheme() == "file")?;
-    let on_volume = joined.to_file_path().ok()?;
+    let on_volume = url_path(&joined)?;
     let relative = on_volume.strip_prefix("/").ok()?;
     if relative.as_os_str().is_empty() {
         return None;
@@ -103,6 +103,61 @@ pub(super) fn resolve_relative(reference: &str, document: &Path, volume_root: &P
         path: volume_root.join(relative),
         fragment: joined.fragment().map(decode),
     })
+}
+
+/// `folder` (relative to the volume root) as a `file:` directory URL.
+#[cfg(not(target_family = "wasm"))]
+fn folder_url(folder: &Path) -> Option<url::Url> {
+    url::Url::from_directory_path(Path::new("/").join(folder)).ok()
+}
+
+/// A `file:` URL's path, decoded.
+#[cfg(not(target_family = "wasm"))]
+fn url_path(url: &url::Url) -> Option<PathBuf> {
+    url.to_file_path().ok()
+}
+
+// `url`'s path conversions don't exist on `wasm32-unknown-unknown` (and `Path::is_absolute`
+// is always false there), so the browser builds the same URLs from the path's text. Native
+// tests pin both pairs to the same answers (`markdown_links_test.rs`).
+#[cfg(target_family = "wasm")]
+use self::text_urls::{folder_url, url_path};
+
+/// The browser's `folder_url` and `url_path`, built for native tests too so they compare
+/// them with `url`'s.
+#[cfg(any(test, target_family = "wasm"))]
+pub(super) mod text_urls {
+    use std::path::{Component, Path, PathBuf};
+
+    /// `folder` as a `file:` directory URL, each component percent-encoded.
+    pub(in super::super) fn folder_url(folder: &Path) -> Option<url::Url> {
+        let mut serialized = String::from("file://");
+        for component in folder.components() {
+            let text = match component {
+                Component::Normal(name) => name.to_str()?,
+                Component::ParentDir => "..",
+                Component::CurDir | Component::RootDir | Component::Prefix(_) => continue,
+            };
+            serialized.push('/');
+            serialized.push_str(&urlencoding::encode(text));
+        }
+        serialized.push('/');
+        url::Url::parse(&serialized).ok()
+    }
+
+    /// A `file:` URL's path, percent-decoded; `None` for a URL naming a host, or a path
+    /// that isn't UTF-8 (a browser path is always text).
+    pub(in super::super) fn url_path(url: &url::Url) -> Option<PathBuf> {
+        if url.host().is_some_and(|host| host != url::Host::Domain("localhost")) {
+            return None;
+        }
+        let mut path = String::new();
+        for segment in url.path_segments()? {
+            path.push('/');
+            path.push_str(&String::from_utf8(urlencoding::decode_binary(segment.as_bytes()).into_owned()).ok()?);
+        }
+        Some(PathBuf::from(path))
+    }
 }
 
 fn decode(escaped: &str) -> String {
