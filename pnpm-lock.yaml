@@ -371,6 +371,9 @@ importers:
       '@cyclonedx/cyclonedx-library':
         specifier: 10.3.0
         version: 10.3.0(ajv@8.20.0)(packageurl-js@2.0.1)(spdx-expression-parse@5.0.0)
+      '@eslint-community/regexpp':
+        specifier: 4.12.2
+        version: 4.12.2
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))
