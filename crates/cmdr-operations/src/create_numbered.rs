@@ -59,7 +59,8 @@ impl super::Operations {
         // `CreateFile` operation exactly like mkfile, without a bespoke recorder. It
         // journals under the REAL volume id (`"root"` for the local drive), so a write
         // onto SMB / MTP is captured too.
-        let descriptor = super::create::instant_descriptor(WriteOperationType::CreateFile, volume_id.as_deref(), stem);
+        let descriptor =
+            super::create::instant_descriptor(self.host(), WriteOperationType::CreateFile, volume_id.as_deref(), stem);
         let op_id = descriptor.operation_id.clone();
         // The op's own scope on the engine, which journals it: an instant op has no
         // state to carry one.

@@ -236,6 +236,13 @@ pub fn apply(archive_path: &Path, changeset: &Changeset, hooks: &dyn MutationHoo
     let temp_file = writer.finish().map_err(MutationError::Zip)?;
     cmdr_fs::durable::sync_file_data(&temp_file).map_err(MutationError::Io)?;
     let landed = carry_archive_metadata(archive_path, &temp_file);
+    #[cfg_attr(
+        target_family = "wasm",
+        allow(
+            clippy::drop_non_drop,
+            reason = "the browser build's `File` is a placeholder with no `Drop`; natively this closes the temp before the rename"
+        )
+    )]
     drop(temp_file);
 
     // The atomic swap: on one filesystem this is the single instant the archive

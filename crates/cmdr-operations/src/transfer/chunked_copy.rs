@@ -7,7 +7,6 @@
 
 use super::super::state::WriteOperationState;
 use std::io::{Read, Write};
-use std::os::unix::fs::OpenOptionsExt as _;
 use std::path::Path;
 #[cfg(test)]
 use std::sync::atomic::Ordering;
@@ -89,16 +88,15 @@ pub(crate) fn chunked_copy_with_metadata(
     // One `fstat` answers the size, the dates, the mode, and the flags.
     let src_meta = src_file.metadata().map_err(|e| read_error(e, "read source metadata"))?;
 
-    let mut dst_file = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .mode(0o600)
-        .open(dest)
-        .map_err(|e| WriteOperationError::WriteError {
-            path: dest.display().to_string(),
-            message: format!("Failed to create destination file: {}", e).into(),
-        })?;
+    let mut dst_file = crate::local_disk::with_mode(
+        std::fs::OpenOptions::new().write(true).create(true).truncate(true),
+        0o600,
+    )
+    .open(dest)
+    .map_err(|e| WriteOperationError::WriteError {
+        path: dest.display().to_string(),
+        message: format!("Failed to create destination file: {}", e).into(),
+    })?;
 
     let bytes = copy_data_chunked(
         &mut src_file,
@@ -167,10 +165,11 @@ pub(crate) fn chunked_copy_with_metadata(
 /// that dies can't wedge the suite.
 #[cfg(test)]
 pub(crate) mod chunk_park {
+    use crate::rt::Instant;
     use std::path::{Path, PathBuf};
     use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use std::sync::{Arc, Mutex};
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     use cmdr_fs::ignore_poison::IgnorePoison;
 

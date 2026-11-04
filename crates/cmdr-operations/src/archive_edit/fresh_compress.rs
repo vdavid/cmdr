@@ -31,7 +31,6 @@ use cmdr_fs::volume::{
     BackendKind, LaneKey, MutationEvent, StreamLength, StreamWriteProgress, Volume, VolumeError, VolumeReadStream,
     WriteMode,
 };
-use cmdr_local::LocalPosixVolume;
 use cmdr_operation_log::types::{ArchiveSubkind, ExecutionStatus, Initiator, OperationId};
 
 struct PausableSpoolStream {
@@ -98,11 +97,8 @@ pub(super) async fn start(
             (volume, lane)
         }
         None => (
-            Arc::new(LocalPosixVolume::local_folder(
-                "local",
-                PathBuf::from("/"),
-                engine.host().volume_host().clone(),
-            )) as Arc<dyn Volume>,
+            crate::local_disk::folder_volume("local", PathBuf::from("/"), engine.host().volume_host().clone())
+                as Arc<dyn Volume>,
             LaneKey::new(parent_volume_id.clone()),
         ),
     };
@@ -489,11 +485,11 @@ async fn produce_via_spool(
     let scratch = ScratchDir::new("cmdr-fresh-zip").map_err(|error| io_write_error(archive_path, error))?;
     let spool_path = PathBuf::from("archive.zip");
     let spool_full = scratch.path().join(&spool_path);
-    let spool_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
+    let spool_volume: Arc<dyn Volume> = crate::local_disk::folder_volume(
         "fresh-zip-spool",
         scratch.path().to_path_buf(),
         state.scope().host().volume_host().clone(),
-    ));
+    );
     let source_volumes = [&plan.source_volume];
     let mut outages = 0;
     let produced = loop {

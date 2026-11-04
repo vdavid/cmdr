@@ -1,0 +1,35 @@
+name: Install the wasm C toolchain
+description: >-
+  Restores, installs, and (on `main`) saves the pinned conda LLVM clang the browser build compiles SQLite with
+  (`scripts/build-listing-wasm/toolchain.go`), in its private mise home under `~/.cache/cmdr/wasm-toolchain/`. Never on
+  PATH: the build script hands cargo only absolute wasm-target `CC`/`AR` paths. Expects a checkout and mise.
+
+# Used by ci.yml's `desktop-rust` (its wasm step) and by `build-website-demo` (the `website-demo` and
+# `publish-website-demo` builds). About 1.5 GB on Linux, so it saves from `main` only, where the
+# per-repo 10 GB cache budget is managed; a PR restores main's entry. Keyed on the file that holds
+# the pins, so a Renovate bump makes a fresh entry.
+inputs:
+  save-cache:
+    description: Whether this run may save the toolchain cache (`main` only, like every Rust cache)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Restore the wasm toolchain
+      id: restore
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/cmdr/wasm-toolchain/data/installs
+        key:
+          wasm-toolchain-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-listing-wasm/toolchain.go') }}
+
+    - name: Install the wasm toolchain
+      shell: bash
+      run: ./scripts/build-listing-wasm.sh -toolchain-only
+
+    - name: Save the wasm toolchain
+      if: inputs.save-cache == 'true' && steps.restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/cmdr/wasm-toolchain/data/installs
+        key: ${{ steps.restore.outputs.cache-primary-key }}

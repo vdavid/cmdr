@@ -18,9 +18,23 @@ fn entry(path: &str, kind: DemoKind) -> DemoEntry {
 fn tree(entries: Vec<DemoEntry>) -> DemoTree {
     DemoTree {
         volume_id: "root".into(),
+        volume_name: None,
+        home: None,
         root: "/".into(),
         entries,
     }
+}
+
+/// With a home, the volume stands in for the computer's own disk, so a queue row
+/// reads `~`, as the desktop's does, never `root/Users/you`.
+#[test]
+fn a_home_makes_the_volume_stand_in_for_the_own_disk() {
+    let mut with_home = tree(vec![entry("/Users", DemoKind::Dir)]);
+    with_home.home = Some("/Users/you".into());
+    let volume = with_home.into_in_memory().expect("builds");
+    assert_eq!(volume.stands_in_for_own_disk(), Some(Path::new("/Users/you")));
+    let plain = tree(vec![]).into_in_memory().expect("builds");
+    assert_eq!(plain.stands_in_for_own_disk(), None);
 }
 
 async fn list(volume: &dyn Volume, path: &str) -> Vec<cmdr_fs::entry::FileEntry> {
@@ -100,4 +114,34 @@ fn relative_and_trailing_slash_paths_are_refused() {
         let refused = tree(vec![entry(bad, DemoKind::Dir)]).into_volume().err();
         assert_eq!(refused, Some(TreeError::BadPath(bad.into())), "{bad}");
     }
+}
+
+fn photo_tree() -> DemoTree {
+    let mut photo = entry("/photo.jpg", DemoKind::File);
+    photo.size = Some(200_000);
+    tree(vec![photo])
+}
+
+#[tokio::test]
+async fn a_file_reads_as_many_bytes_as_its_listing_says() {
+    let volume = photo_tree().into_volume().expect("a valid tree");
+    let mut stream = volume.open_read_stream(Path::new("/photo.jpg")).await.expect("opens");
+    let mut read = 0;
+    while let Some(chunk) = stream.next_chunk().await {
+        read += chunk.expect("reads").len();
+    }
+    assert_eq!(read, 200_000);
+
+    // The same tree generates the same bytes.
+    let again = photo_tree().into_volume().expect("a valid tree");
+    let first = volume
+        .read_range(Path::new("/photo.jpg"), 1_000, 64)
+        .await
+        .expect("reads");
+    let second = again
+        .read_range(Path::new("/photo.jpg"), 1_000, 64)
+        .await
+        .expect("reads");
+    assert_eq!(first, second);
+    assert_eq!(first.len(), 64);
 }

@@ -4,25 +4,31 @@
 //!
 //! The engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`:
 //! [`tree`] builds the volume, [`events`] turns engine facts into Tauri-shaped
-//! events, [`commands`] answers the commands, [`menu`] hosts the menu bar
-//! (`cmdr-menu`), and `bindings` (browser only) is the `wasm-bindgen` surface. Everything but `bindings` builds natively too, so
+//! events, [`commands`] answers the commands (handing the write, queue, and
+//! undo ones to [`operations_host`], the write engine's host), [`menu`] hosts
+//! the menu bar (`cmdr-menu`), and `bindings` (browser only) is the
+//! `wasm-bindgen` surface. Everything but `bindings` builds natively too, so
 //! the tests run on the host. `CLAUDE.md` has the must-knows, `DETAILS.md` the JS
 //! API and the build.
 #![warn(unused_crate_dependencies)]
 #![deny(missing_docs)]
 
+pub mod backend_listings;
 #[cfg(target_family = "wasm")]
 mod bindings;
 pub mod commands;
 pub mod events;
 pub mod menu;
+pub mod operations_host;
+#[cfg(target_family = "wasm")]
+mod rt_self_test;
 pub mod tree;
 
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod commands_test;
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod events_test;
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod menu_test;
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod tree_test;

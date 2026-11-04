@@ -1,0 +1,99 @@
+{
+  "answers": [
+    {
+      "ok": null
+    },
+    {
+      "err": {
+        "name": "c.txt",
+        "type": "alreadyExists"
+      }
+    },
+    {
+      "ok": "/New folder"
+    },
+    {
+      "err": {
+        "name": "New folder",
+        "type": "alreadyExists"
+      }
+    }
+  ],
+  "events": [],
+  "journal": [
+    {
+      "bytesTotal": 0,
+      "destVolume": null,
+      "initiator": "User",
+      "itemCount": 1,
+      "items": [
+        {
+          "dest": "renamed.txt",
+          "entryType": "File",
+          "outcome": "Done",
+          "rowRole": "RollbackUnit",
+          "size": 3,
+          "source": "a.txt"
+        }
+      ],
+      "itemsDone": 0,
+      "kind": "Rename",
+      "notRollbackable": null,
+      "reverses": false,
+      "rollback": "Rollbackable",
+      "sourceVolume": "src",
+      "status": "Done"
+    },
+    {
+      "bytesTotal": 0,
+      "destVolume": null,
+      "initiator": "User",
+      "itemCount": 1,
+      "items": [],
+      "itemsDone": 0,
+      "kind": "Rename",
+      "notRollbackable": null,
+      "reverses": false,
+      "rollback": "Rollbackable",
+      "sourceVolume": "src",
+      "status": "Failed"
+    },
+    {
+      "bytesTotal": 0,
+      "destVolume": null,
+      "initiator": "User",
+      "itemCount": 1,
+      "items": [
+        {
+          "dest": "New folder",
+          "entryType": "Dir",
+          "outcome": "Done",
+          "rowRole": "RollbackUnit",
+          "size": null,
+          "source": "New folder"
+        }
+      ],
+      "itemsDone": 0,
+      "kind": "CreateFolder",
+      "notRollbackable": null,
+      "reverses": false,
+      "rollback": "Rollbackable",
+      "sourceVolume": "src",
+      "status": "Done"
+    },
+    {
+      "bytesTotal": 0,
+      "destVolume": null,
+      "initiator": "User",
+      "itemCount": 1,
+      "items": [],
+      "itemsDone": 0,
+      "kind": "CreateFolder",
+      "notRollbackable": null,
+      "reverses": false,
+      "rollback": "Rollbackable",
+      "sourceVolume": "src",
+      "status": "Failed"
+    }
+  ]
+}

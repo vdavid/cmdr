@@ -7,6 +7,8 @@ import { readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { smokeWrites, writesTree } from './smoke-writes.mjs'
+
 const pkg = resolve(process.argv[2] ?? 'pkg')
 const glue = await import(pathToFileURL(join(pkg, 'cmdr_listing_wasm.js')).href)
 await glue.default({ module_or_path: await readFile(join(pkg, 'cmdr_listing_wasm_bg.wasm')) })
@@ -16,6 +18,8 @@ function fail(message) {
   console.error(`listing-wasm smoke: ${message}`)
   process.exit(1)
 }
+// A trap or a dropped promise in the engine must fail the run, not pass it quietly.
+process.on('unhandledRejection', (reason) => fail(`unhandled rejection: ${reason?.stack ?? reason}`))
 
 const tree = {
   volumeId: 'root',
@@ -27,15 +31,39 @@ const tree = {
     { path: '/Users/you/notes 10.txt', kind: 'file', size: 30, modifiedMs: 1_700_000_000_000 },
     { path: '/Users/you/notes 9.txt', kind: 'file', size: 20 },
     { path: '/Users/you/.zshrc', kind: 'file', size: 12 },
+    ...writesTree(),
   ],
 }
 
 const events = []
+const recent = []
+const waiters = new Set()
 let onEvent = () => {}
 const demo = new DemoListing(tree, (name, payload) => {
   events.push(name)
+  recent.push({ name, payload })
+  for (const waiter of waiters) waiter(name, payload)
   onEvent(name, payload)
 })
+
+/** Resolves with the first `name` event (already seen since the last reset, or next) that `match`es. */
+function waitFor(name, match, ms) {
+  const seen = recent.find((e) => e.name === name && match(e.payload))
+  if (seen) return Promise.resolve(seen.payload)
+  return new Promise((done, failed) => {
+    const waiter = (n, payload) => {
+      if (n !== name || !match(payload)) return
+      waiters.delete(waiter)
+      clearTimeout(timer)
+      done(payload)
+    }
+    const timer = setTimeout(() => {
+      waiters.delete(waiter)
+      failed(new Error(`no ${name} after ${ms} ms`))
+    }, ms)
+    waiters.add(waiter)
+  })
+}
 
 const completed = new Promise((done, failed) => {
   const timer = setTimeout(() => failed(new Error(`no listing-complete after 5 s: ${events.join(', ')}`)), 5000)
@@ -113,6 +141,11 @@ try {
   if (click?.kind !== 'emit' || click.payload?.commandId !== 'nav.goHome') {
     fail(`a Go > Home click came back as ${JSON.stringify(click)}`)
   }
+  // The runtime seam's browser half: task sets, aborts, macrotask yields, timers, the wall clock.
+  const rtSummary = await glue.rtSelfTest(Date.now())
+  console.log(`listing-wasm smoke: ${rtSummary}`)
+
+  console.log(`listing-wasm smoke: ${await smokeWrites(demo, { events: recent, waitFor })}`)
 } catch (error) {
   fail(error?.stack ?? String(error))
 }

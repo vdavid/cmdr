@@ -2068,6 +2068,18 @@ var AllChecks = []CheckDefinition{
 		Run: RunIndexCrateIsolation,
 	},
 	{
+		ID:          "operations-local-disk-boundary",
+		Nickname:    "local-disk-boundary",
+		DisplayName: "the write engine names the host OS only behind its local-disk boundary",
+		App:         AppCrates,
+		Tech:        "🦀 Rust",
+		IsFast:      true,
+		// The golden fixtures ride along only because `src/golden/` embeds them
+		// (`TestRustInputsCoverEveryEmbeddedFile`); the scan never reads them.
+		Inputs: inputs([]string{"crates/cmdr-operations/src/**", "crates/cmdr-operations/tests/golden/**"}),
+		Run:    RunOperationsLocalDiskBoundary,
+	},
+	{
 		ID:          "ci-coverage",
 		DisplayName: "CI coverage",
 		App:         AppOther,

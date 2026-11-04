@@ -10,7 +10,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 
 use cmdr_fs::volume::{DEFAULT_VOLUME_ID, LandedModified, NodeIdentity, Volume};
 use cmdr_operation_log::capture::FinalizeInputs;
@@ -82,7 +82,7 @@ pub(super) fn execution_status_from_error(err: Option<&WriteOperationError>) -> 
 /// Seconds since the Unix epoch — the journal's opaque clock (the store owns no
 /// clock, so callers supply the time).
 pub(super) fn now_secs() -> i64 {
-    SystemTime::now()
+    crate::rt::wall_now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
@@ -211,7 +211,7 @@ pub(super) fn record_trashed(
 ) {
     let dest_identity = in_trash
         .and_then(|path| std::fs::symlink_metadata(path).ok())
-        .and_then(|metadata| NodeIdentity::of(&metadata));
+        .and_then(|metadata| crate::local_disk::node_identity(&metadata));
     record_row(
         scope,
         entry_type,

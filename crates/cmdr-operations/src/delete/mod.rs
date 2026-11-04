@@ -9,16 +9,21 @@
 //! oracle-aware fast path, trash, and the volume-delete preview-reuse path.
 
 pub(crate) mod already_gone;
+#[cfg(not(target_family = "wasm"))]
 pub(crate) mod cloud_trash;
 mod outage;
+#[cfg(not(target_family = "wasm"))]
 pub(crate) mod trash;
+pub(crate) mod trash_routing;
 mod volume_scan;
 mod volume_start;
 mod volume_walker;
+#[cfg(not(target_family = "wasm"))]
 mod walker;
 
 #[cfg(any(test, feature = "testing"))]
 pub(crate) use volume_walker::delete_volume_files_with_progress_inner;
+#[cfg(not(target_family = "wasm"))]
 pub(crate) use walker::delete_files_with_progress_inner;
 
 /// The volume delete driver, reachable from the SMB integration suite, which

@@ -611,9 +611,12 @@ func attributeEndingAt(lines []string, end, indent int) (string, int) {
 }
 
 // isGateAttribute reports whether an attribute compiles its item only for tests,
-// tooling, or fuzzing.
+// tooling, or fuzzing. `golden` is `cmdr-operations`' golden-trace replay, which
+// only dev-dependencies turn on (so the wasm test build can reach it without
+// `testing`, whose `cmdr-local` wasm32 can't build).
 func isGateAttribute(attribute string) bool {
 	return strings.Contains(attribute, `feature = "testing"`) ||
+		strings.Contains(attribute, `feature = "golden"`) ||
 		strings.Contains(attribute, `feature = "tooling"`) ||
 		strings.Contains(attribute, `feature = "fuzzing"`) ||
 		strings.Contains(attribute, "cfg(test)")

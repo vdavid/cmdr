@@ -1,14 +1,21 @@
 // Command build-listing-wasm builds the browser demo's listing engine
 // (`crates/cmdr-listing-wasm`) into a `.wasm` plus its ES-module JS glue.
 //
-//  1. `cargo build` for `wasm32-unknown-unknown` with the size-tuned `wasm-release` profile.
+//  1. Installs the pinned LLVM clang that compiles SQLite for wasm32 into a private mise home
+//     (`toolchain.go`), then `cargo build` for `wasm32-unknown-unknown` with the size-tuned
+//     `wasm-release` profile, the crate plus `browserBound` (crates the browser build doesn't
+//     link yet but will, compiled here so a host-only dependency can't creep into them).
 //  2. Makes sure `wasm-bindgen` matches the `wasm-bindgen` crate in `Cargo.lock` exactly (the
 //     CLI refuses any other version), installing that pinned version when it doesn't.
 //  3. `wasm-bindgen --target web` into the out dir (default `crates/cmdr-listing-wasm/pkg/`,
 //     gitignored): `cmdr_listing_wasm.js`, `cmdr_listing_wasm_bg.wasm`, and their `.d.ts`.
 //  4. With `-smoke`, loads the result in Node and drives one listing (`smoke.mjs`).
+//  5. With `-golden`, builds the crate's wasm TEST target (the dev profile, so the shipped `.wasm`
+//     carries no scenarios) and runs it under Node with `wasm-bindgen-test-runner`: the volume
+//     engine's golden traces replayed on the demo's host against the fixtures the native engine
+//     blesses (`crates/cmdr-listing-wasm/src/operations_host/golden_test.rs`).
 //
-// Usage (from the wrapper): ./scripts/build-listing-wasm.sh [-out DIR] [-smoke]
+// Usage (from the wrapper): ./scripts/build-listing-wasm.sh [-out DIR] [-smoke] [-golden] | -toolchain-only
 package main
 
 import (
@@ -29,19 +36,32 @@ const (
 	outName    = "cmdr_listing_wasm"
 )
 
+// browserBound are workspace crates the browser engine is about to link (the write engine and its
+// operation log), built for wasm32 beside it so the wasm compile guards them already.
+var browserBound = []string{"cmdr-operation-log", "cmdr-operations"}
+
 func main() {
 	root := flag.String("root", ".", "the repo root")
 	out := flag.String("out", "", "where the .wasm and JS glue go (default crates/cmdr-listing-wasm/pkg)")
 	smoke := flag.Bool("smoke", false, "load the result in Node and drive one listing")
+	golden := flag.Bool("golden", false, "replay the golden traces as a wasm test build under Node")
+	toolchainOnly := flag.Bool("toolchain-only", false, "install the pinned wasm C toolchain and stop (CI warms its cache with this)")
 	flag.Parse()
 
-	if err := run(*root, *out, *smoke); err != nil {
+	if *toolchainOnly {
+		if err := installToolchainOnly(); err != nil {
+			fmt.Fprintf(os.Stderr, "build-listing-wasm: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if err := run(*root, *out, *smoke, *golden); err != nil {
 		fmt.Fprintf(os.Stderr, "build-listing-wasm: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(root, out string, smoke bool) error {
+func run(root, out string, smoke, golden bool) error {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return err
@@ -54,7 +74,20 @@ func run(root, out string, smoke bool) error {
 		return err
 	}
 
-	if err := command(root, "cargo", "build", "-p", crateName, "--target", wasmTarget, "--profile", profile); err != nil {
+	tcDir, err := toolchainDir()
+	if err != nil {
+		return err
+	}
+	tc, err := ensureToolchain(tcDir)
+	if err != nil {
+		return err
+	}
+	build := exec.Command("cargo", cargoBuildArgs()...)
+	build.Dir = root
+	build.Env = cargoEnv(os.Environ(), tc)
+	build.Stdout = os.Stdout
+	build.Stderr = os.Stderr
+	if err := build.Run(); err != nil {
 		return fmt.Errorf("cargo build: %w", err)
 	}
 
@@ -83,7 +116,52 @@ func run(root, out string, smoke bool) error {
 			return fmt.Errorf("smoke test: %w", err)
 		}
 	}
+	if golden {
+		return replayGolden(root, tc)
+	}
 	return nil
+}
+
+// replayGolden builds the crate's wasm test target and runs it under Node.
+func replayGolden(root string, tc wasmToolchain) error {
+	test := exec.Command("cargo", cargoGoldenArgs()...)
+	test.Dir = root
+	test.Env = append(cargoEnv(os.Environ(), tc), "CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner")
+	test.Stdout = os.Stdout
+	test.Stderr = os.Stderr
+	if err := test.Run(); err != nil {
+		return fmt.Errorf("golden replay: %w", err)
+	}
+	fmt.Println("listing-wasm golden: OK")
+	return nil
+}
+
+// cargoGoldenArgs builds and runs only the golden replay: the crate's other test modules are
+// native-only. `wasm-bindgen-test-runner` ships in the same `wasm-bindgen-cli` that
+// `ensureWasmBindgen` matched to `Cargo.lock`, so it pairs with the locked crate too.
+func cargoGoldenArgs() []string {
+	return []string{"test", "-p", crateName, "--lib", "--target", wasmTarget, "--", "golden_test"}
+}
+
+func installToolchainOnly() error {
+	dir, err := toolchainDir()
+	if err != nil {
+		return err
+	}
+	tc, err := ensureToolchain(dir)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("build-listing-wasm: wasm toolchain ready (%s, %s)\n", tc.clang, tc.ar)
+	return nil
+}
+
+func cargoBuildArgs() []string {
+	args := []string{"build", "-p", crateName}
+	for _, crate := range browserBound {
+		args = append(args, "-p", crate)
+	}
+	return append(args, "--target", wasmTarget, "--profile", profile)
 }
 
 // lockedVersion reads the one version of `name` that `Cargo.lock` resolves.

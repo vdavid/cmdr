@@ -34,11 +34,11 @@ pub type RetentionLimitsSource = Arc<dyn Fn() -> RetentionLimits + Send + Sync>;
 /// Spawn the retention loop on `runtime`: prune once at startup, then every
 /// [`RETENTION_INTERVAL`]. Non-fatal: a failed prune logs and the next tick
 /// retries.
-pub(super) fn spawn(runtime: &tokio::runtime::Handle, writer: OperationLogWriter, limits: RetentionLimitsSource) {
+pub(super) fn spawn(runtime: &cmdr_fs::rt::Runtime, writer: OperationLogWriter, limits: RetentionLimitsSource) {
     runtime.spawn(async move {
         loop {
             prune_now(&writer, limits());
-            tokio::time::sleep(RETENTION_INTERVAL).await;
+            crate::rt::time::sleep(RETENTION_INTERVAL).await;
         }
     });
 }

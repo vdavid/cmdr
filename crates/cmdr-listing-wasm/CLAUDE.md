@@ -9,14 +9,18 @@ The engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`. Not
   `commands.rs`: `Demo`, the listing commands by their Tauri names, plus Brief widths and font metrics
   (`cmdr-brief-columns`, memory only). `menu.rs`: `DemoMenu`, the menu-state pushes stored and the macOS bar drawn from
   `cmdr-menu`. `bindings.rs` (wasm only): the `wasm-bindgen` API.
-- `smoke.mjs`: loads the built module in Node and drives one listing. Build: `pnpm build:listing-wasm`.
+- `operations_host/`: the write engine's host (seams, sinks, `wire.rs` event names, `commands/` by domain), on the same
+  volume and `Listings` the listing engine uses. DETAILS § Writes.
+- `smoke.mjs` (+ `smoke-writes.mjs`): loads the built module in Node and drives a listing and every write. Build:
+  `pnpm build:listing-wasm`.
 
 ## Must-knows
 
 - **Same wire as the desktop, or the frontend breaks silently.** Command names, camelCase args, answers, rejections, and
   event payloads all mirror `commands/file_system/listing.rs`, `commands/font_metrics.rs`, `commands/menu_state.rs`, and
-  `listing_host/events.rs`. A change there needs one here; `events_test.rs` and `menu_test.rs` pin event keys against
-  `bindings.ts`.
+  `listing_host/events.rs` (writes: the desktop's `operations_host/` and its write commands). A change there needs one
+  here; `events_test.rs` and `menu_test.rs` pin event keys and names against `bindings.ts`.
+- **One volume, one `Listings`, shared by both engines**, or a copy lands unseen by the panes.
 - **Everything but `bindings.rs` builds natively**, so the tests run with `cargo nextest` like any crate. Keep JS types
   out of `commands.rs`, `events.rs`, and `tree.rs`.
 - **The runtime traps are browser-only**: `std::time::Instant::now` and `SystemTime::now` panic, `Path::is_absolute` is

@@ -1,0 +1,127 @@
+{
+  "answers": [
+    {
+      "ok": {
+        "operationId": "<volatile>",
+        "operationType": "copy"
+      }
+    }
+  ],
+  "events": [
+    {
+      "ordered": [
+        {
+          "event": "write-complete",
+          "payload": {
+            "alreadyGone": null,
+            "appearedDuringMove": null,
+            "bytesProcessed": 18,
+            "durabilityUnconfirmed": null,
+            "filesProcessed": 4,
+            "filesSkipped": 0,
+            "lockedKept": null,
+            "metadataLeftBehind": null,
+            "operationId": "<volatile>",
+            "operationType": "copy",
+            "refused": null,
+            "topLevelSkipped": {
+              "files": 0,
+              "folders": 0
+            }
+          }
+        },
+        {
+          "event": "write-settled",
+          "payload": {
+            "operationId": "<volatile>",
+            "operationType": "copy",
+            "volumeId": null
+          }
+        }
+      ],
+      "sourceItems": [
+        {
+          "operationId": "<volatile>",
+          "outcome": "done",
+          "sourcePath": "<tmp>/a.txt",
+          "sourceRemoved": false
+        },
+        {
+          "operationId": "<volatile>",
+          "outcome": "done",
+          "sourcePath": "<tmp>/b.txt",
+          "sourceRemoved": false
+        },
+        {
+          "operationId": "<volatile>",
+          "outcome": "done",
+          "sourcePath": "<tmp>/c.txt",
+          "sourceRemoved": false
+        },
+        {
+          "operationId": "<volatile>",
+          "outcome": "done",
+          "sourcePath": "<tmp>/docs",
+          "sourceRemoved": false
+        }
+      ]
+    }
+  ],
+  "journal": [
+    {
+      "bytesTotal": 18,
+      "destVolume": "root",
+      "initiator": "User",
+      "itemCount": 4,
+      "items": [
+        {
+          "dest": "a.txt",
+          "entryType": "File",
+          "outcome": "Done",
+          "rowRole": "RollbackUnit",
+          "size": 3,
+          "source": "a.txt"
+        },
+        {
+          "dest": "b.txt",
+          "entryType": "File",
+          "outcome": "Done",
+          "rowRole": "RollbackUnit",
+          "size": 4,
+          "source": "b.txt"
+        },
+        {
+          "dest": "c.txt",
+          "entryType": "File",
+          "outcome": "Done",
+          "rowRole": "RollbackUnit",
+          "size": 5,
+          "source": "c.txt"
+        },
+        {
+          "dest": "docs",
+          "entryType": "Dir",
+          "outcome": "Done",
+          "rowRole": "RollbackUnit",
+          "size": null,
+          "source": "docs"
+        },
+        {
+          "dest": "note.md",
+          "entryType": "File",
+          "outcome": "Done",
+          "rowRole": "RollbackUnit",
+          "size": 6,
+          "source": "note.md"
+        }
+      ],
+      "itemsDone": 4,
+      "kind": "Copy",
+      "notRollbackable": null,
+      "reverses": false,
+      "rollback": "Rollbackable",
+      "sourceVolume": "root",
+      "status": "Done"
+    }
+  ]
+}

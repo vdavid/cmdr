@@ -93,6 +93,7 @@ impl crate::Operations {
         }
 
         // Both local: delegate to the battle-tested move implementation
+        #[cfg(not(target_family = "wasm"))]
         if let Some((src_root, dest_root)) = super::native_roots(source_volume.as_ref(), dest_volume.as_ref()) {
             log::debug!(
                 "move_between_volumes: both volumes are local, delegating to native move (src={}, dest={})",

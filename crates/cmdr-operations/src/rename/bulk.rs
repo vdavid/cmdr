@@ -25,9 +25,9 @@ use super::super::types::{
     CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationError,
     WriteOperationStartResult, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
+use crate::local_disk::rename_exclusive as rename_local_exclusive;
 use cmdr_fs::twin_path;
 use cmdr_fs::volume::{LaneKey, Volume};
-use cmdr_local::rename_local_exclusive;
 use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind, OperationId};
 
 mod by_move;
@@ -135,7 +135,7 @@ impl crate::Operations {
         // `root` is the only backend that owns raw local paths here. Every mounted
         // volume, including a locally mounted removable drive, stays on its Volume
         // route so its listing and connection semantics remain authoritative.
-        let uses_local_paths = volume_id == "root";
+        let uses_local_paths = self.host().volumes().local_disk(&volume_id).is_some();
         let (lanes, volume_ids, settled_volume, rows) = if uses_local_paths {
             (vec![LaneKey::new("root")], Vec::new(), None, rows)
         } else {

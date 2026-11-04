@@ -134,8 +134,8 @@ impl PermissionRefusal {
     /// Reads a raw errno as one of the three answers above.
     pub fn from_errno(errno: Option<i32>) -> Self {
         match errno {
-            Some(libc::EACCES) => Self::FolderPermissions,
-            Some(libc::EPERM) => Self::SystemProtected,
+            Some(crate::local_disk::errno::EACCES) => Self::FolderPermissions,
+            Some(crate::local_disk::errno::EPERM) => Self::SystemProtected,
             _ => Self::Unclassified,
         }
     }

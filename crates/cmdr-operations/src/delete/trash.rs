@@ -6,7 +6,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Instant;
 
 use cmdr_operation_log::types::OperationId;
 
@@ -384,7 +383,7 @@ pub(crate) fn trash_files_with_progress(
     let mut items_done = 0usize;
     let mut bytes_done = 0u64;
     let mut errors: Vec<TrashItemError> = Vec::new();
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
 
     for (i, source) in sources.iter().enumerate() {
         // The cooperative boundary, between items. Trash hands a whole tree to
@@ -527,7 +526,7 @@ pub(crate) fn trash_files_with_progress(
         }
 
         // Emit throttled progress
-        if last_progress_time.elapsed() >= state.progress_interval {
+        if crate::rt::since(last_progress_time) >= state.progress_interval {
             let current_file = source.file_name().map(|n| n.to_string_lossy().to_string());
             state.emit_progress_via_sink(
                 events,
@@ -551,7 +550,7 @@ pub(crate) fn trash_files_with_progress(
                 bytes_done,
                 bytes_total,
             );
-            last_progress_time = Instant::now();
+            last_progress_time = crate::rt::now();
         }
     }
 
