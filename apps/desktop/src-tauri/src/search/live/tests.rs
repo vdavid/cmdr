@@ -109,9 +109,18 @@ struct Judged {
 
 impl Judged {
     fn new(query: &SearchQuery) -> Self {
-        let compiled = CompiledQuery::compile(query, crate::search::matcher::Evaluator::LiveWalk)
-            .expect("the test queries all narrow something");
-        let excludes = ExcludeRules::from_query(query, compiled.case_insensitive()).expect("the test excludes compile");
+        let compiled = CompiledQuery::compile(
+            query,
+            crate::search::matcher::Evaluator::LiveWalk,
+            &crate::search::context::NameRules::host(),
+        )
+        .expect("the test queries all narrow something");
+        let excludes = ExcludeRules::from_query(
+            query,
+            compiled.case_insensitive(),
+            crate::search::context::NameRules::host().fold,
+        )
+        .expect("the test excludes compile");
         Self { compiled, excludes }
     }
 

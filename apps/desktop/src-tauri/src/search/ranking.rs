@@ -32,6 +32,7 @@
 use cmdr_fs::path_hash::{PrehashedState, hash_path};
 use rayon::prelude::*;
 
+use super::context::NameRules;
 use super::index::SearchIndex;
 use super::types::{PatternType, SearchQuery};
 
@@ -76,21 +77,13 @@ const RANK_MIN_SPLIT: usize = 8_192;
 /// Only a plain glob substring (`report`, auto-wrapped to `*report*` for matching)
 /// has a meaningful exact-vs-prefix-vs-substring gradient. A wildcard glob
 /// (`report*`, `*.pdf`) or a regex has no such gradient, so it returns `""` and the
-/// whole result set stays in one match-quality band (ranked by recency alone). On
-/// macOS the stem is NFD-normalized to match the arena's NFD filenames — the same
+/// whole result set stays in one match-quality band (ranked by recency alone). Under
+/// `NameRules::nfd_patterns` (macOS) the stem is NFD-normalized to match the arena's NFD filenames — the same
 /// normalization the engine's matcher applies to the pattern.
-pub(crate) fn stem_for(query: &SearchQuery) -> String {
+pub(crate) fn stem_for(query: &SearchQuery, rules: &NameRules) -> String {
     match (&query.pattern_type, &query.name_pattern) {
         (PatternType::Glob, Some(p)) if !p.is_empty() && !p.contains('*') && !p.contains('?') => {
-            #[cfg(target_os = "macos")]
-            {
-                use unicode_normalization::UnicodeNormalization;
-                p.nfd().collect::<String>()
-            }
-            #[cfg(not(target_os = "macos"))]
-            {
-                p.clone()
-            }
+            rules.normalize_pattern(p).into_owned()
         }
         _ => String::new(),
     }

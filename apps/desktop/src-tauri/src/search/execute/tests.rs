@@ -5,6 +5,7 @@
 
 use super::coverage::coverage_kind;
 use super::*;
+use crate::search::context::SearchContext;
 use crate::search::engine;
 use crate::search::index::{ArenaBuilder, SearchIndex};
 use crate::search::live::CoverageKind;
@@ -64,9 +65,15 @@ fn plain_query(stem: &str) -> SearchQuery {
 }
 
 fn ranked(index: &SearchIndex, query: &SearchQuery, prefix: &str) -> Vec<SearchResultEntry> {
-    engine::search_ranked(index, query, &ImportanceWeights::empty(), prefix, None)
-        .expect("search_ranked")
-        .entries
+    engine::search_ranked(
+        index,
+        query,
+        &SearchContext::for_test(&ImportanceWeights::empty()),
+        prefix,
+        None,
+    )
+    .expect("search_ranked")
+    .entries
 }
 
 // ── The ranked slice `run_blocking` hands back ───────────────────────
@@ -167,7 +174,14 @@ fn count_only_returns_an_exact_total_and_no_rows() {
         entries: ranked,
         total_count: vtotal,
         ..
-    } = engine::search_ranked(&vol, &query, &ImportanceWeights::empty(), "", None).expect("search_ranked");
+    } = engine::search_ranked(
+        &vol,
+        &query,
+        &SearchContext::for_test(&ImportanceWeights::empty()),
+        "",
+        None,
+    )
+    .expect("search_ranked");
     assert!(ranked.is_empty(), "count-only returns no rows");
     assert_eq!(vtotal, 1, "and the total needs no correction pass");
 }

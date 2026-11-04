@@ -42,10 +42,11 @@
 use std::sync::atomic::AtomicBool;
 use std::time::Instant;
 
+use super::index::ARENA_ROOT_ID as ROOT_ID;
 use crate::pluralize::{pluralize, pluralize_with};
 use cmdr_index::ReadPool;
-use cmdr_index::store::ROOT_ID;
 
+use super::context::SearchContext;
 use super::engine::search_ranked;
 use super::index::{ArenaBuilder, SearchEntry, SearchIndex, load_search_index};
 use super::ranking::ImportanceWeights;
@@ -195,19 +196,37 @@ fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, patter
     let empty = ImportanceWeights::empty();
 
     let t = Instant::now();
-    let total = search_ranked(index, &query(pattern, pattern_type.clone(), true), &empty, "", None)
-        .expect("count-only search should succeed")
-        .total_count;
+    let total = search_ranked(
+        index,
+        &query(pattern, pattern_type.clone(), true),
+        &SearchContext::for_test(&empty),
+        "",
+        None,
+    )
+    .expect("count-only search should succeed")
+    .total_count;
     let scan = t.elapsed();
 
     let t = Instant::now();
-    let _ = search_ranked(index, &query(pattern, pattern_type.clone(), false), &empty, "", None)
-        .expect("unweighted search should succeed");
+    let _ = search_ranked(
+        index,
+        &query(pattern, pattern_type.clone(), false),
+        &SearchContext::for_test(&empty),
+        "",
+        None,
+    )
+    .expect("unweighted search should succeed");
     let unweighted = t.elapsed();
 
     let t = Instant::now();
-    let _ =
-        search_ranked(index, &query(pattern, pattern_type, false), weights, "", None).expect("search should succeed");
+    let _ = search_ranked(
+        index,
+        &query(pattern, pattern_type, false),
+        &SearchContext::for_test(weights),
+        "",
+        None,
+    )
+    .expect("search should succeed");
     let weighted = t.elapsed();
 
     eprintln!(
@@ -417,7 +436,7 @@ fn bench_arena_scan() {
         let mut total = 0;
         for _ in 0..repeats {
             let t = Instant::now();
-            total = search_ranked(&index, q, &empty, "", None)
+            total = search_ranked(&index, q, &SearchContext::for_test(&empty), "", None)
                 .expect("count-only search should succeed")
                 .total_count;
             runs.push(t.elapsed());
@@ -485,7 +504,7 @@ fn bench_query_allocations() {
     };
     let allocations = |q: &SearchQuery| {
         allocations_on_pool(rayon::current_num_threads(), || {
-            search_ranked(&index, q, &weights, "", None)
+            search_ranked(&index, q, &SearchContext::for_test(&weights), "", None)
                 .expect("search should succeed")
                 .total_count
         })
@@ -513,7 +532,8 @@ fn bench_query_allocations() {
         let mut runs: Vec<std::time::Duration> = (0..repeats)
             .map(|_| {
                 let t = Instant::now();
-                search_ranked(&index, &full, &weights, "", None).expect("search should succeed");
+                search_ranked(&index, &full, &SearchContext::for_test(&weights), "", None)
+                    .expect("search should succeed");
                 t.elapsed()
             })
             .collect();

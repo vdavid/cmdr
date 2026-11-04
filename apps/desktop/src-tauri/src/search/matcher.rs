@@ -15,11 +15,12 @@
 //! and neither gets to re-derive a rule. Two rules in particular are silent when
 //! they break, so they live here and nowhere else:
 //!
-//! - **Case folding.** The platform default (insensitive on macOS, sensitive on
-//!   Linux), overridable per query. The scope filter and the ranker read it back off
+//! - **Case folding.** The volume's default from its `NameRules` (insensitive on
+//!   macOS, sensitive on Linux), overridable per query. The scope filter and the ranker read it back off
 //!   the compiled query rather than recomputing it.
-//! - **NFD normalization.** APFS stores filenames decomposed, so the PATTERN is
-//!   NFD-normalized at compile time and candidate names are matched raw. Normalizing
+//! - **NFD normalization.** APFS stores filenames decomposed, so under
+//!   `NameRules::nfd_patterns` the PATTERN is NFD-normalized at compile time and
+//!   candidate names are matched raw. Normalizing
 //!   a candidate instead would make live results differ from indexed ones on every
 //!   accented filename, and would cost an allocation per entry besides
 //!   (`search/CLAUDE.md`: no stored `name_folded`).
@@ -41,13 +42,9 @@
 //!   that isn't in the arena; the live path applies the same policy against a walked
 //!   entry's own path instead.
 
-use std::borrow::Cow;
-use std::path::Path;
-
 use regex::{Regex, RegexBuilder};
 
-use cmdr_index::CoveredEntry;
-
+use super::context::NameRules;
 use super::query::glob_to_regex;
 use super::types::{PatternType, SearchQuery};
 
@@ -160,15 +157,15 @@ pub(crate) struct CompiledQuery {
 impl CompiledQuery {
     /// Compile `query` for `evaluator`, refusing a pattern that won't build and a
     /// query too broad for what it's about to be run against.
-    pub(crate) fn compile(query: &SearchQuery, evaluator: Evaluator) -> Result<Self, CompileError> {
+    pub(crate) fn compile(query: &SearchQuery, evaluator: Evaluator, rules: &NameRules) -> Result<Self, CompileError> {
         if !narrows(query) && refuses_broad_queries(evaluator) {
             return Err(CompileError::TooBroad);
         }
 
-        let case_insensitive = case_insensitive_for(query);
+        let case_insensitive = case_insensitive_for(query, rules);
         let pattern = match &query.name_pattern {
             Some(pattern) if !pattern.is_empty() => {
-                Some(compile_pattern(pattern, &query.pattern_type, case_insensitive)?)
+                Some(compile_pattern(pattern, &query.pattern_type, case_insensitive, rules)?)
             }
             _ => None,
         };
@@ -262,20 +259,20 @@ fn refuses_broad_queries(evaluator: Evaluator) -> bool {
     }
 }
 
-/// The platform case-folding default (insensitive on macOS, sensitive on Linux),
+/// The volume's case-folding default ([`NameRules::case_insensitive_by_default`]),
 /// with the query's own override winning.
-fn case_insensitive_for(query: &SearchQuery) -> bool {
+fn case_insensitive_for(query: &SearchQuery, rules: &NameRules) -> bool {
     match query.case_sensitive {
         Some(true) => false,
         Some(false) => true,
-        None => cfg!(target_os = "macos"),
+        None => rules.case_insensitive_by_default,
     }
 }
 
 /// Build the name-matching regex.
 ///
 /// A glob with no wildcard is wrapped in `*…*` so typing `tes` finds `test.rs`, the
-/// UX every file-search dialog has. On macOS the pattern is NFD-normalized first, so
+/// UX every file-search dialog has. Under [`NameRules::nfd_patterns`] (macOS) the pattern is NFD-normalized first, so
 /// it matches the decomposed names APFS stores without folding every candidate.
 ///
 /// The two pattern types get DIFFERENT `.` semantics, on purpose. `glob_to_regex`
@@ -284,12 +281,13 @@ fn case_insensitive_for(query: &SearchQuery) -> bool {
 /// to the builder untouched and keeps the standard rule, where `.` stops at a newline
 /// and `(?s)` is how an author asks for more; overriding that would make Cmdr's regex
 /// mode a dialect of its own.
-fn compile_pattern(pattern: &str, pattern_type: &PatternType, case_insensitive: bool) -> Result<Regex, CompileError> {
-    #[cfg(target_os = "macos")]
-    let pattern = {
-        use unicode_normalization::UnicodeNormalization;
-        pattern.nfd().collect::<String>()
-    };
+fn compile_pattern(
+    pattern: &str,
+    pattern_type: &PatternType,
+    case_insensitive: bool,
+    rules: &NameRules,
+) -> Result<Regex, CompileError> {
+    let pattern = rules.normalize_pattern(pattern);
     let regex_str = match pattern_type {
         PatternType::Glob => {
             let glob = if !pattern.contains('*') && !pattern.contains('?') {
@@ -305,41 +303,6 @@ fn compile_pattern(pattern: &str, pattern_type: &PatternType, case_insensitive: 
         .case_insensitive(case_insensitive)
         .build()
         .map_err(|e| CompileError::InvalidPattern(e.to_string()))
-}
-
-// ── The live-walk evaluator ──────────────────────────────────────────
-
-impl CompiledQuery {
-    /// Whether one entry a walk discovered satisfies every predicate.
-    ///
-    /// The size is the entry's OWN, before hardlink dedup, because that's what a
-    /// listing shows. The index stores the deduplicated size instead, so a 2nd+
-    /// hardlink to one file is sizeless there: a size bound keeps it in a live result
-    /// and drops it from an indexed one. Bounded, and the live answer is the truthful
-    /// one, so it stays.
-    pub(crate) fn matches_covered(&self, entry: &CoveredEntry) -> bool {
-        self.matches(&Candidate {
-            name: &covered_name(&entry.path),
-            is_directory: entry.is_directory,
-            size: entry.logical_size,
-            modified_at: entry.modified_at,
-        })
-    }
-}
-
-/// The name a walked entry matches under.
-///
-/// Byte-identical to the name the index would have stored for the same entry, lossy
-/// conversion and the nameless-path fallback included: the local walker derives its
-/// row name from the same path the same way (`indexing/scanner/insert_visitor.rs`),
-/// and the trait walk's row name is the listing's `name`, which is that path's last
-/// component. ❌ Don't "improve" this alone — a name derived two ways is the fork
-/// this module exists to prevent, and the RESULT ROW takes its name from here too
-/// (`live.rs::live_result_entry`), so a row can't be named differently from the
-/// name it matched under.
-pub(crate) fn covered_name(path: &Path) -> Cow<'_, str> {
-    path.file_name()
-        .map_or(Cow::Borrowed(""), |name| name.to_string_lossy())
 }
 
 #[cfg(test)]

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use super::*;
 use crate::search::index::{ArenaBuilder, arena_of};
+use crate::search::ranking::ImportanceWeights;
 
 mod allocations;
 mod count;

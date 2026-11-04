@@ -29,6 +29,7 @@ use cmdr_index::store::{DirStatsById, IndexStore, ROOT_ID};
 use serde_json::{Value, json};
 
 use super::*;
+use crate::search::context::{NameRules, SearchContext};
 use crate::search::index::load_search_index;
 use crate::search::live::events::CollectorSearchEventSink;
 use crate::search::live::{CoverageKind, LiveRun, ResultStream, SearchPhase, SearchRunCoverage, WalkEnding};
@@ -263,7 +264,24 @@ fn golden_run(
     loaded: &LoadedVolume,
     weights: &ImportanceWeights,
 ) -> Result<Value, String> {
-    let half = search_covered_half(query, target, loaded, weights)?;
+    golden_run_under(NameRules::host(), query, target, loaded, weights)
+}
+
+/// [`golden_run`] under given name rules, so one platform's goldens can be checked on
+/// another. No home folder: the corpus lives under none.
+fn golden_run_under(
+    rules: NameRules,
+    query: &SearchQuery,
+    target: &Target,
+    loaded: &LoadedVolume,
+    weights: &ImportanceWeights,
+) -> Result<Value, String> {
+    let ctx = SearchContext {
+        rules,
+        home_dir: None,
+        weights,
+    };
+    let half = search_covered_half(query, target, loaded, &ctx)?;
     Ok(json!({
         "entries": half.entries.iter().map(row_json).collect::<Vec<_>>(),
         "totalCount": half.total,
@@ -276,16 +294,22 @@ fn golden_run(
 /// the terminal report with nothing to walk. Pins the rows the events carried and
 /// the terminal event, ❌ not the batch splits (a flush interval drives those).
 fn golden_live_trace(
+    rules: NameRules,
     query: &SearchQuery,
     target: &Target,
     loaded: &LoadedVolume,
     weights: &ImportanceWeights,
 ) -> Value {
+    let ctx = SearchContext {
+        rules,
+        home_dir: None,
+        weights,
+    };
     let run = LiveRun::detached_for_test("golden-run", &target.volume_id);
     let sink = CollectorSearchEventSink::default();
     let mut stream = ResultStream::new(&run, &sink, query);
     stream.announce(SearchPhase::ResolvingCoverage);
-    match covered_half_for_run(query, target, loaded, weights) {
+    match covered_half_for_run(query, target, loaded, &ctx) {
         Ok(half) => {
             stream.add_indexed(half.entries, half.total, half.hidden_by_excludes);
             let capped = stream.capped();
@@ -633,13 +657,24 @@ fn target_for(volume: Volume, query: &SearchQuery) -> Target {
     }
 }
 
-fn golden_file() -> std::path::PathBuf {
-    let platform = if cfg!(target_os = "macos") { "macos" } else { "linux" };
+/// Where a platform's goldens live.
+fn golden_file(platform: &str) -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("src/search/execute/tests/goldens/{platform}.json"))
 }
 
-#[test]
-fn search_answers_match_the_goldens() {
+/// This build's platform, the one `NameRules::host()` answers for.
+fn host_platform() -> &'static str {
+    if cfg!(target_os = "macos") { "macos" } else { "linux" }
+}
+
+fn read_goldens(platform: &str) -> BTreeMap<String, Value> {
+    let text = std::fs::read_to_string(golden_file(platform)).expect("read the goldens");
+    serde_json::from_str(&text).expect("the goldens parse")
+}
+
+/// Every case's answer under `rules` (through [`golden_run`] for this machine's own
+/// rules, [`golden_run_under`] for another's), over freshly written corpora.
+fn answers_under(rules: NameRules) -> BTreeMap<String, Value> {
     let dir = tempfile::tempdir().expect("a temp dir for the golden indexes");
     let root = load(dir.path(), "index-root-golden.db", &root_corpus(), None);
     let share = load(dir.path(), "index-share-golden.db", &share_corpus(), Some(SHARE_ROOT));
@@ -652,29 +687,28 @@ fn search_answers_match_the_goldens() {
     let mut actual: BTreeMap<String, Value> = BTreeMap::new();
     for (name, v, query) in cases() {
         let (loaded, weights) = volume(v);
-        let answer = match golden_run(&query, &target_for(v, &query), loaded, weights) {
-            Ok(value) => value,
-            Err(message) => json!({ "error": message }),
+        let target = target_for(v, &query);
+        let answer = if rules == NameRules::host() {
+            golden_run(&query, &target, loaded, weights)
+        } else {
+            golden_run_under(rules, &query, &target, loaded, weights)
         };
-        actual.insert(name.to_string(), answer);
+        actual.insert(
+            name.to_string(),
+            answer.unwrap_or_else(|message| json!({ "error": message })),
+        );
     }
     for (name, v, query) in live_cases() {
         let (loaded, weights) = volume(v);
         actual.insert(
             name.to_string(),
-            golden_live_trace(&query, &target_for(v, &query), loaded, weights),
+            golden_live_trace(rules, &query, &target_for(v, &query), loaded, weights),
         );
     }
+    actual
+}
 
-    let path = golden_file();
-    if std::env::var_os("CMDR_RECORD_SEARCH_GOLDENS").is_some() {
-        let text = serde_json::to_string_pretty(&actual).expect("goldens serialize") + "\n";
-        std::fs::write(&path, text).expect("write the goldens");
-        return;
-    }
-    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-    let expected: BTreeMap<String, Value> = serde_json::from_str(&text).expect("the goldens parse");
-
+fn assert_same(expected: &BTreeMap<String, Value>, actual: &BTreeMap<String, Value>) {
     let mut moved = Vec::new();
     for name in expected
         .keys()
@@ -695,4 +729,29 @@ fn search_answers_match_the_goldens() {
         moved.len(),
         moved.join("\n")
     );
+}
+
+#[test]
+fn search_answers_match_the_goldens() {
+    let actual = answers_under(NameRules::host());
+    if std::env::var_os("CMDR_RECORD_SEARCH_GOLDENS").is_some() {
+        let text = serde_json::to_string_pretty(&actual).expect("goldens serialize") + "\n";
+        std::fs::write(golden_file(host_platform()), text).expect("write the goldens");
+        return;
+    }
+    assert_same(&read_goldens(host_platform()), &actual);
+}
+
+/// The other platform's goldens, answered here under that platform's name rules: the
+/// rules are a value, so a Mac's answers are checkable on Linux CI and the other way
+/// round. The corpus spells its scope paths exactly as stored, so the host index's own
+/// path fold (which the rules don't reach) resolves them the same either way.
+#[test]
+fn the_other_platforms_goldens_hold_under_its_rules() {
+    let (platform, rules) = if NameRules::host() == NameRules::MACOS {
+        ("linux", NameRules::LINUX)
+    } else {
+        ("macos", NameRules::MACOS)
+    };
+    assert_same(&read_goldens(platform), &answers_under(rules));
 }

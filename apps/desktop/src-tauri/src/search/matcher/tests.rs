@@ -5,9 +5,12 @@
 //! module existed. These tests pin the extracted unit directly, so a rule that breaks
 //! points at the rule rather than at a result count.
 
-use std::path::PathBuf;
-
 use super::*;
+
+/// Compile under this machine's own name rules, as the desktop does.
+fn compile(query: &SearchQuery, evaluator: Evaluator) -> Result<CompiledQuery, CompileError> {
+    CompiledQuery::compile(query, evaluator, &NameRules::host())
+}
 
 /// A query with every field at its default. Tests set only what they're about.
 fn query() -> SearchQuery {
@@ -61,7 +64,7 @@ fn dir(name: &str) -> Candidate<'_> {
 fn a_wildcard_free_glob_matches_a_substring() {
     let mut q = query();
     q.name_pattern = Some("ote".to_string());
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&file("notes.txt")));
     assert!(!compiled.matches(&file("report.pdf")));
@@ -71,7 +74,7 @@ fn a_wildcard_free_glob_matches_a_substring() {
 fn a_glob_with_a_wildcard_is_left_anchored_as_typed() {
     let mut q = query();
     q.name_pattern = Some("report*".to_string());
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&file("report.pdf")));
     // Not auto-wrapped, so a name that merely CONTAINS "report" is out.
@@ -82,7 +85,7 @@ fn a_glob_with_a_wildcard_is_left_anchored_as_typed() {
 fn a_question_mark_matches_exactly_one_character() {
     let mut q = query();
     q.name_pattern = Some("Q?-report.pdf".to_string());
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&file("Q1-report.pdf")));
     assert!(!compiled.matches(&file("Q12-report.pdf")));
@@ -93,7 +96,7 @@ fn a_regex_query_is_used_verbatim() {
     let mut q = query();
     q.name_pattern = Some(r"Q[1-4].*\.pdf".to_string());
     q.pattern_type = PatternType::Regex;
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&file("Q1-report.pdf")));
     assert!(!compiled.matches(&file("Q5-report.pdf")));
@@ -105,7 +108,7 @@ fn an_unbuildable_pattern_is_refused_with_the_reason() {
     q.name_pattern = Some("[unclosed".to_string());
     q.pattern_type = PatternType::Regex;
 
-    let err = CompiledQuery::compile(&q, SMALL_ARENA).unwrap_err();
+    let err = compile(&q, SMALL_ARENA).unwrap_err();
     assert!(matches!(err, CompileError::InvalidPattern(_)));
     // The sentence the IPC boundary carries; the frontend shows it as typed.
     assert!(err.to_string().starts_with("Invalid pattern: "));
@@ -117,7 +120,7 @@ fn an_empty_pattern_is_no_pattern_at_all() {
     // an empty pattern as no pattern too.
     let mut q = query();
     q.name_pattern = Some(String::new());
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&file("anything-at-all")));
     assert!(compiled.matches(&file(NEWLINE_NAME)));
@@ -134,29 +137,17 @@ fn a_newline_in_a_name_doesnt_hide_it_from_a_glob() {
     // `*` means "any characters", so it means that one too.
     let mut wildcard = query();
     wildcard.name_pattern = Some("*.txt".to_string());
-    assert!(
-        CompiledQuery::compile(&wildcard, SMALL_ARENA)
-            .unwrap()
-            .matches(&file(NEWLINE_NAME))
-    );
+    assert!(compile(&wildcard, SMALL_ARENA).unwrap().matches(&file(NEWLINE_NAME)));
 
     // And the plain-text query, which is a glob wrapped in `*…*`.
     let mut plain = query();
     plain.name_pattern = Some("ird".to_string());
-    assert!(
-        CompiledQuery::compile(&plain, SMALL_ARENA)
-            .unwrap()
-            .matches(&file(NEWLINE_NAME))
-    );
+    assert!(compile(&plain, SMALL_ARENA).unwrap().matches(&file(NEWLINE_NAME)));
 
     // `?` is one character, and a newline is a character.
     let mut single = query();
     single.name_pattern = Some("we?ird.txt".to_string());
-    assert!(
-        CompiledQuery::compile(&single, SMALL_ARENA)
-            .unwrap()
-            .matches(&file(NEWLINE_NAME))
-    );
+    assert!(compile(&single, SMALL_ARENA).unwrap().matches(&file(NEWLINE_NAME)));
 }
 
 #[test]
@@ -169,7 +160,7 @@ fn a_case_insensitive_accented_glob_still_crosses_a_newline() {
     let mut q = query();
     q.case_sensitive = Some(false); // explicit, so Linux and macOS agree
     q.name_pattern = Some("cafe\u{301}*".to_string()); // already NFD, likewise
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&file("CAFE\u{301}\nX.TXT")));
     // Still anchored at the start: case folding and the newline flag don't loosen it.
@@ -184,27 +175,19 @@ fn a_regex_query_keeps_standard_dot_semantics() {
     let mut strict = query();
     strict.name_pattern = Some(r"we.ird\.txt".to_string());
     strict.pattern_type = PatternType::Regex;
-    assert!(
-        !CompiledQuery::compile(&strict, SMALL_ARENA)
-            .unwrap()
-            .matches(&file(NEWLINE_NAME))
-    );
+    assert!(!compile(&strict, SMALL_ARENA).unwrap().matches(&file(NEWLINE_NAME)));
 
     let mut opted_in = query();
     opted_in.name_pattern = Some(r"(?s)we.ird\.txt".to_string());
     opted_in.pattern_type = PatternType::Regex;
-    assert!(
-        CompiledQuery::compile(&opted_in, SMALL_ARENA)
-            .unwrap()
-            .matches(&file(NEWLINE_NAME))
-    );
+    assert!(compile(&opted_in, SMALL_ARENA).unwrap().matches(&file(NEWLINE_NAME)));
 }
 
 // ── Case folding ─────────────────────────────────────────────────────
 
 #[test]
 fn the_platform_default_decides_case_folding() {
-    let compiled = CompiledQuery::compile(&query(), SMALL_ARENA).unwrap();
+    let compiled = compile(&query(), SMALL_ARENA).unwrap();
     assert_eq!(compiled.case_insensitive(), cfg!(target_os = "macos"));
 }
 
@@ -213,14 +196,14 @@ fn a_query_can_override_the_platform_default_both_ways() {
     let mut insensitive = query();
     insensitive.case_sensitive = Some(false);
     insensitive.name_pattern = Some("NOTES.*".to_string());
-    let compiled = CompiledQuery::compile(&insensitive, SMALL_ARENA).unwrap();
+    let compiled = compile(&insensitive, SMALL_ARENA).unwrap();
     assert!(compiled.case_insensitive());
     assert!(compiled.matches(&file("notes.txt")));
 
     let mut sensitive = query();
     sensitive.case_sensitive = Some(true);
     sensitive.name_pattern = Some("NOTES.*".to_string());
-    let compiled = CompiledQuery::compile(&sensitive, SMALL_ARENA).unwrap();
+    let compiled = compile(&sensitive, SMALL_ARENA).unwrap();
     assert!(!compiled.case_insensitive());
     assert!(!compiled.matches(&file("notes.txt")));
 }
@@ -244,7 +227,7 @@ const CAFE_NFD: &str = "cafe\u{301}.txt";
 fn a_composed_pattern_matches_the_decomposed_name_apfs_stores() {
     let mut q = query();
     q.name_pattern = Some(CAFE_NFC.to_string());
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&file(CAFE_NFD)));
 }
@@ -258,7 +241,7 @@ fn a_candidate_name_is_matched_raw_never_normalized() {
     // because it holds identically for an arena row and for a walked entry.
     let mut q = query();
     q.name_pattern = Some(CAFE_NFC.to_string());
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     assert!(!compiled.matches(&file(CAFE_NFC)));
 }
@@ -269,13 +252,13 @@ fn a_candidate_name_is_matched_raw_never_normalized() {
 fn a_type_filter_keeps_only_its_own_kind() {
     let mut dirs_only = query();
     dirs_only.is_directory = Some(true);
-    let compiled = CompiledQuery::compile(&dirs_only, SMALL_ARENA).unwrap();
+    let compiled = compile(&dirs_only, SMALL_ARENA).unwrap();
     assert!(compiled.matches(&dir("Documents")));
     assert!(!compiled.matches(&file("notes.txt")));
 
     let mut files_only = query();
     files_only.is_directory = Some(false);
-    let compiled = CompiledQuery::compile(&files_only, SMALL_ARENA).unwrap();
+    let compiled = compile(&files_only, SMALL_ARENA).unwrap();
     assert!(!compiled.matches(&dir("Documents")));
     assert!(compiled.matches(&file("notes.txt")));
 }
@@ -285,7 +268,7 @@ fn size_bounds_are_inclusive_at_both_ends() {
     let mut q = query();
     q.min_size = Some(500);
     q.max_size = Some(1_500);
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     let sized = |bytes| Candidate {
         name: "f",
@@ -310,19 +293,11 @@ fn a_file_with_no_size_fails_any_size_bound() {
 
     let mut min_only = query();
     min_only.min_size = Some(1);
-    assert!(
-        !CompiledQuery::compile(&min_only, SMALL_ARENA)
-            .unwrap()
-            .matches(&sizeless)
-    );
+    assert!(!compile(&min_only, SMALL_ARENA).unwrap().matches(&sizeless));
 
     let mut max_only = query();
     max_only.max_size = Some(1);
-    assert!(
-        !CompiledQuery::compile(&max_only, SMALL_ARENA)
-            .unwrap()
-            .matches(&sizeless)
-    );
+    assert!(!compile(&max_only, SMALL_ARENA).unwrap().matches(&sizeless));
 }
 
 #[test]
@@ -332,7 +307,7 @@ fn a_directory_ignores_size_bounds_entirely() {
     // them here would drop them before the only place that knows their size.
     let mut q = query();
     q.min_size = Some(1_000_000);
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     assert!(compiled.matches(&dir("Documents")));
 }
@@ -342,7 +317,7 @@ fn date_bounds_are_inclusive_at_both_ends() {
     let mut q = query();
     q.modified_after = Some(3_000);
     q.modified_before = Some(5_000);
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     let at = |ts| Candidate {
         name: "f",
@@ -367,24 +342,16 @@ fn an_entry_with_no_modified_time_fails_any_date_bound() {
 
     let mut after_only = query();
     after_only.modified_after = Some(1);
-    assert!(
-        !CompiledQuery::compile(&after_only, SMALL_ARENA)
-            .unwrap()
-            .matches(&undated)
-    );
+    assert!(!compile(&after_only, SMALL_ARENA).unwrap().matches(&undated));
 
     let mut before_only = query();
     before_only.modified_before = Some(1);
-    assert!(
-        !CompiledQuery::compile(&before_only, SMALL_ARENA)
-            .unwrap()
-            .matches(&undated)
-    );
+    assert!(!compile(&before_only, SMALL_ARENA).unwrap().matches(&undated));
 
     // A directory is exempt from SIZE bounds, not from date bounds.
     let mut dated = query();
     dated.modified_after = Some(1);
-    let compiled = CompiledQuery::compile(&dated, SMALL_ARENA).unwrap();
+    let compiled = compile(&dated, SMALL_ARENA).unwrap();
     assert!(!compiled.matches(&Candidate {
         modified_at: None,
         ..dir("Documents")
@@ -396,7 +363,7 @@ fn every_predicate_has_to_hold_at_once() {
     let mut q = query();
     q.name_pattern = Some("*.pdf".to_string());
     q.min_size = Some(1_500_000);
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
+    let compiled = compile(&q, SMALL_ARENA).unwrap();
 
     let pdf = |name, size| Candidate {
         name,
@@ -424,7 +391,7 @@ const NARROWINGS: [QueryEdit; 6] = [
 
 #[test]
 fn a_small_arena_serves_a_query_that_narrows_nothing() {
-    let compiled = CompiledQuery::compile(&query(), Evaluator::Arena { entries: 10 });
+    let compiled = compile(&query(), Evaluator::Arena { entries: 10 });
     assert!(compiled.is_ok());
 }
 
@@ -433,15 +400,12 @@ fn a_big_arena_refuses_a_query_that_narrows_nothing() {
     let at_ceiling = Evaluator::Arena {
         entries: ARENA_BROAD_QUERY_CEILING,
     };
-    assert!(CompiledQuery::compile(&query(), at_ceiling).is_ok());
+    assert!(compile(&query(), at_ceiling).is_ok());
 
     let over_ceiling = Evaluator::Arena {
         entries: ARENA_BROAD_QUERY_CEILING + 1,
     };
-    assert_eq!(
-        CompiledQuery::compile(&query(), over_ceiling).unwrap_err(),
-        CompileError::TooBroad
-    );
+    assert_eq!(compile(&query(), over_ceiling).unwrap_err(), CompileError::TooBroad);
 }
 
 #[test]
@@ -452,10 +416,7 @@ fn any_one_predicate_narrows_enough_for_a_big_arena() {
     for (label, narrow) in NARROWINGS {
         let mut q = query();
         narrow(&mut q);
-        assert!(
-            CompiledQuery::compile(&q, big).is_ok(),
-            "a {label} predicate should narrow enough"
-        );
+        assert!(compile(&q, big).is_ok(), "a {label} predicate should narrow enough");
     }
 }
 
@@ -466,7 +427,7 @@ fn an_empty_name_pattern_narrows_nothing() {
     let big = Evaluator::Arena {
         entries: ARENA_BROAD_QUERY_CEILING + 1,
     };
-    assert_eq!(CompiledQuery::compile(&q, big).unwrap_err(), CompileError::TooBroad);
+    assert_eq!(compile(&q, big).unwrap_err(), CompileError::TooBroad);
 }
 
 #[test]
@@ -474,7 +435,7 @@ fn a_live_walk_refuses_a_query_that_narrows_nothing() {
     // Unconditionally: there's no arena to weigh, and the ground a walk would read
     // is a filesystem of unknown size, over a network in the worst case.
     assert_eq!(
-        CompiledQuery::compile(&query(), Evaluator::LiveWalk).unwrap_err(),
+        compile(&query(), Evaluator::LiveWalk).unwrap_err(),
         CompileError::TooBroad
     );
 }
@@ -485,7 +446,7 @@ fn a_live_walk_serves_a_query_that_narrows_anything() {
         let mut q = query();
         narrow(&mut q);
         assert!(
-            CompiledQuery::compile(&q, Evaluator::LiveWalk).is_ok(),
+            compile(&q, Evaluator::LiveWalk).is_ok(),
             "a {label} predicate should narrow enough"
         );
     }
@@ -497,165 +458,6 @@ fn the_too_broad_sentence_names_what_would_fix_it() {
         CompileError::TooBroad.to_string(),
         "Query too broad. Add a filename pattern, size, date, or type filter to narrow results."
     );
-}
-
-// ── The two evaluators agree ─────────────────────────────────────────
-//
-// The milestone in one section: whatever the arena says about a row, a walk must say
-// about the same file. A disagreement here is a user searching the same drive twice
-// and getting two answers depending on whether it happened to be indexed.
-
-/// The walked shape of a file: what `Index::cover` emits for it.
-fn covered(path: &str, is_directory: bool, size: Option<u64>, modified_at: Option<u64>) -> CoveredEntry {
-    CoveredEntry {
-        path: PathBuf::from(path),
-        is_directory,
-        is_symlink: false,
-        logical_size: size,
-        physical_size: size,
-        modified_at,
-    }
-}
-
-/// One file, ready to be described both ways.
-struct BothWays {
-    path: &'static str,
-    is_directory: bool,
-    size: Option<u64>,
-    modified_at: Option<u64>,
-}
-
-impl BothWays {
-    fn file(path: &'static str, size: Option<u64>, modified_at: Option<u64>) -> Self {
-        Self {
-            path,
-            is_directory: false,
-            size,
-            modified_at,
-        }
-    }
-
-    fn dir(path: &'static str, modified_at: Option<u64>) -> Self {
-        Self {
-            path,
-            is_directory: true,
-            size: None,
-            modified_at,
-        }
-    }
-
-    /// What a row in the index carries. The name is the path's last component,
-    /// which is what the scanner stored.
-    fn as_arena_row(&self) -> Candidate<'_> {
-        Candidate {
-            name: self.path.rsplit('/').next().expect("a path has a last component"),
-            is_directory: self.is_directory,
-            size: self.size,
-            modified_at: self.modified_at,
-        }
-    }
-
-    /// What `Index::cover` emits for it.
-    fn as_walked_entry(&self) -> CoveredEntry {
-        covered(self.path, self.is_directory, self.size, self.modified_at)
-    }
-}
-
-#[test]
-fn a_walked_entry_and_its_arena_row_get_the_same_verdict() {
-    // One file, described both ways, against every kind of predicate.
-    let cases: [QueryEdit; 7] = [
-        ("plain glob", |q| q.name_pattern = Some("repo".to_string())),
-        ("wildcard glob", |q| q.name_pattern = Some("*.pdf".to_string())),
-        ("regex", |q| {
-            q.name_pattern = Some(r"^Q\d".to_string());
-            q.pattern_type = PatternType::Regex;
-        }),
-        ("dirs only", |q| q.is_directory = Some(true)),
-        ("files only", |q| q.is_directory = Some(false)),
-        ("size range", |q| {
-            q.min_size = Some(1_000);
-            q.max_size = Some(3_000_000);
-        }),
-        ("date range", |q| {
-            q.modified_after = Some(1_000);
-            q.modified_before = Some(9_000);
-        }),
-    ];
-    let files = [
-        BothWays::file("/Users/alice/Q1-report.pdf", Some(2_000_000), Some(6_000)),
-        BothWays::file("/Users/alice/notes.txt", Some(500), Some(5_000)),
-        BothWays::dir("/Users/alice/Documents", Some(1_500)),
-        BothWays::file("/Volumes/naspi/photos/holiday.jpg", None, None),
-        // The decomposed form APFS stores, which is what both walks read back.
-        BothWays::file("/Users/alice/cafe\u{301}.txt", Some(10), Some(10_000)),
-    ];
-
-    for (label, narrow) in cases {
-        let mut q = query();
-        narrow(&mut q);
-        let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
-        // Two evaluators that both reject everything would agree vacuously, so each
-        // predicate has to keep something as well as drop something.
-        let mut kept = 0;
-        let mut dropped = 0;
-        for f in &files {
-            let verdict = compiled.matches(&f.as_arena_row());
-            assert_eq!(
-                verdict,
-                compiled.matches_covered(&f.as_walked_entry()),
-                "{label} disagreed about {}",
-                f.path
-            );
-            if verdict { kept += 1 } else { dropped += 1 }
-        }
-        assert!(kept > 0 && dropped > 0, "{label} matched {kept} and dropped {dropped}");
-    }
-}
-
-#[cfg(target_os = "macos")]
-#[test]
-fn an_accented_name_matches_the_same_way_walked_or_indexed() {
-    // The case the whole module is here for: the pattern arrives composed, the
-    // filesystem hands back the decomposed name to walk and scanner alike.
-    let mut q = query();
-    q.name_pattern = Some(CAFE_NFC.to_string());
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
-
-    assert!(compiled.matches(&file(CAFE_NFD)));
-    assert!(compiled.matches_covered(&covered(&format!("/Users/alice/{CAFE_NFD}"), false, Some(10), Some(10))));
-}
-
-#[test]
-fn a_walked_entry_matches_on_its_own_name_not_its_path() {
-    let mut q = query();
-    q.name_pattern = Some("alice".to_string());
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
-
-    // "alice" is a directory on the way to the file, not part of its name.
-    assert!(!compiled.matches_covered(&covered("/Users/alice/notes.txt", false, Some(1), Some(1))));
-}
-
-#[test]
-fn a_path_with_no_last_component_yields_the_empty_name() {
-    // What the index would store for it too (`insert_visitor`'s `unwrap_or_default`).
-    assert_eq!(covered_name(Path::new("/")), "");
-    assert_eq!(covered_name(Path::new("")), "");
-    assert_eq!(covered_name(Path::new("/Users/alice/notes.txt")), "notes.txt");
-    // A trailing separator doesn't hide the name.
-    assert_eq!(covered_name(Path::new("/Users/alice/")), "alice");
-}
-
-#[test]
-fn a_walked_directory_ignores_size_bounds_just_as_an_arena_row_does() {
-    // A walk knows a directory's own size and the arena doesn't, so this is the one
-    // place the two could plausibly have been written differently. They aren't:
-    // directory sizes are `dir_stats`' business, after ranking (see the module doc).
-    let mut q = query();
-    q.min_size = Some(1_000_000);
-    let compiled = CompiledQuery::compile(&q, SMALL_ARENA).unwrap();
-
-    assert!(compiled.matches_covered(&covered("/Users/alice/Documents", true, Some(4_096), Some(1))));
 }
 
 #[test]

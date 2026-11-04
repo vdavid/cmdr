@@ -15,6 +15,10 @@ use crate::pluralize::pluralize_with;
 use cmdr_index::ReadPool;
 use cmdr_index::store::{IndexStore, ROOT_ID};
 
+// The arena names its root by its own constant; this is where it has to agree with
+// the database's.
+const _: () = assert!(super::ARENA_ROOT_ID == ROOT_ID);
+
 /// Rows between cancellation checks during load.
 const CANCEL_CHECK_INTERVAL: usize = 100_000;
 

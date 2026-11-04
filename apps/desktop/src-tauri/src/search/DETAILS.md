@@ -668,10 +668,13 @@ emits (`docs/specs/unindexed-search-plan.md` Decision 3). If those entries were 
 rules, the same query would answer differently depending on whether the drive happened to be indexed, which is the one
 thing that plan forbids. So both paths call `CompiledQuery::matches`, and the module owns the rules that break
 silently when duplicated: the case-folding resolution (the scope filter and the ranker read it back rather than
-deriving it again) and the NFD normalization of the pattern.
+deriving it again) and the NFD normalization of the pattern. Both come from the volume's `NameRules`
+(`context.rs`), a value the host passes in: `NameRules::host()` is the `cfg`-derived desktop answer, and `MACOS` /
+`LINUX` let a test run either platform's rules anywhere (`the_other_platforms_goldens_hold_under_its_rules`).
 
-It sits app-side rather than in `cmdr-index` because `index-crate-isolation` forbids the crate from depending on the
-app. That constraint is also why `Index::cover` hands back `CoveredEntry` batches instead of taking a match callback.
+It isn't in `cmdr-index` because `index-crate-isolation` forbids that crate from depending on the search side. That
+constraint is also why `Index::cover` hands back `CoveredEntry` batches instead of taking a match callback, and why the
+walk's half of the adapter (`live/walked.rs`: `matches_walked`, `covered_name`) sits beside `WalkJudge`.
 
 **What stays outside, and why:**
 

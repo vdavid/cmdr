@@ -42,13 +42,14 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::engine::{derive_icon_id, home_relative_parent};
 use super::excludes::ExcludeRules;
-use super::matcher::{CompiledQuery, covered_name};
+use super::matcher::CompiledQuery;
 use super::types::{SearchQuery, SearchResultEntry};
 use super::volumes;
 use cmdr_fs::path_hash::hash_path;
 
 pub(crate) mod collect;
 pub(crate) mod events;
+mod walked;
 
 pub(crate) use collect::{AnswerEnding, CollectingSink, LiveAnswer};
 pub(crate) use events::{
@@ -512,7 +513,7 @@ impl WalkJudge<'_> {
             return;
         }
         for entry in batch {
-            if !self.compiled.matches_covered(&entry) {
+            if !walked::matches_walked(self.compiled, &entry) {
                 continue;
             }
             let path = entry.path.to_string_lossy();
@@ -535,7 +536,7 @@ fn live_result_entry(entry: &CoveredEntry, path: &str, home_dir: Option<&str>) -
     // The name the matcher judged it under, not a second derivation of it: a row
     // shown under a different name than it matched by is the same silent fork
     // `matcher.rs` exists to prevent.
-    let name = covered_name(&entry.path).into_owned();
+    let name = walked::covered_name(&entry.path).into_owned();
     SearchResultEntry {
         icon_id: derive_icon_id(&name, entry.is_directory),
         name,

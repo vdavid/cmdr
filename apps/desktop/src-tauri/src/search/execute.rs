@@ -37,6 +37,7 @@ use crate::index_host::index;
 use cmdr_index::store::IndexStore;
 use cmdr_index::{ROOT_VOLUME_ID, ReadPool};
 
+use super::context::{NameRules, SearchContext};
 use super::engine;
 use super::query;
 use super::ranking::ImportanceWeights;
@@ -176,7 +177,9 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
         }
     };
 
-    let half = search_covered_half(&query, &target, &loaded, &volumes::weights_for(&target.volume_id))?;
+    let weights = volumes::weights_for(&target.volume_id);
+    let home_dir = super::host_home_dir();
+    let half = search_covered_half(&query, &target, &loaded, &host_context(&weights, home_dir.as_deref()))?;
 
     Ok(SearchResult {
         entries: half.entries,
@@ -208,7 +211,7 @@ fn search_covered_half(
     query: &SearchQuery,
     target: &Target,
     loaded: &LoadedVolume,
-    weights: &ImportanceWeights,
+    ctx: &SearchContext<'_>,
 ) -> Result<CoveredHalf, String> {
     let mut vq = query.clone();
     let unresolved_scopes = if target.include_paths.is_empty() {
@@ -236,7 +239,7 @@ fn search_covered_half(
         mut entries,
         total_count: total,
         hidden_by_excludes,
-    } = engine::search_ranked(&loaded.index, &vq, weights, prefix, dir_sizes.as_ref())?;
+    } = engine::search_ranked(&loaded.index, &vq, ctx, prefix, dir_sizes.as_ref())?;
 
     if query.count_only {
         // The engine's total is already exact — directory size filters included, since
@@ -254,6 +257,16 @@ fn search_covered_half(
         unresolved_scopes,
         hidden_by_excludes,
     })
+}
+
+/// What a desktop search runs under: this machine's name rules and home folder,
+/// and the volume's importance weights.
+fn host_context<'a>(weights: &'a ImportanceWeights, home_dir: Option<&'a str>) -> SearchContext<'a> {
+    SearchContext {
+        rules: NameRules::host(),
+        home_dir,
+        weights,
+    }
 }
 
 /// An empty result for a volume with no searchable index. The scope paths ride back as

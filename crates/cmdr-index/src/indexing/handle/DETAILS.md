@@ -178,8 +178,8 @@ the same folder depending on a source the model can't see. **`scan_skips(volume_
 
 Why no disposition fits: the policy is the scanner's and has to stay single-sourced, so copying `JUNK_BASENAMES` and the
 boot prefixes into the host is out; no existing method answers "would you have skipped this path"; and
-`SYSTEM_DIR_EXCLUDES` (the one exclusion list already promised) is search's default-hidden tier, which the scanner
-deliberately does NOT apply.
+`SYSTEM_DIR_EXCLUDES` (search's default-hidden tier, in `cmdr_fs::system_dirs`) is a list the scanner deliberately does
+NOT apply.
 
 ## A stopped volume's last scan: folded into `status`, no ceiling moved
 

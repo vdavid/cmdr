@@ -24,8 +24,7 @@ use std::sync::Arc;
 
 use regex::{Regex, RegexBuilder};
 
-use cmdr_index::store;
-
+use super::context::NameFold;
 use super::matcher::CompileError;
 use super::query::{SYSTEM_DIR_EXCLUDES, glob_to_regex};
 use super::types::SearchQuery;
@@ -51,6 +50,8 @@ pub(crate) struct ExcludeRules {
     path_prefixes: Arc<[String]>,
     /// Whether name matching folds case, taken from the compiled query.
     case_insensitive: bool,
+    /// The volume's name fold, under which a case-insensitive name is keyed.
+    name_fold: NameFold,
 }
 
 impl ExcludeRules {
@@ -59,7 +60,11 @@ impl ExcludeRules {
     ///
     /// A glob that won't compile is an error, ❌ never skipped: skipping it answers with
     /// the folders the user asked to hide.
-    pub(crate) fn from_query(query: &SearchQuery, case_insensitive: bool) -> Result<Self, CompileError> {
+    pub(crate) fn from_query(
+        query: &SearchQuery,
+        case_insensitive: bool,
+        name_fold: NameFold,
+    ) -> Result<Self, CompileError> {
         let mut exact_names = HashSet::new();
         let mut name_patterns = Vec::new();
         let mut path_prefixes = Vec::new();
@@ -81,7 +86,7 @@ impl ExcludeRules {
                         })?;
                     name_patterns.push(re);
                 } else {
-                    exact_names.insert(fold(pattern, case_insensitive));
+                    exact_names.insert(fold(pattern, case_insensitive, name_fold));
                 }
             }
         }
@@ -89,7 +94,7 @@ impl ExcludeRules {
         // The system/build/cache tier, on unless the query turns it off.
         if query.exclude_system_dirs != Some(false) {
             for &name in SYSTEM_DIR_EXCLUDES {
-                exact_names.insert(fold(name, case_insensitive));
+                exact_names.insert(fold(name, case_insensitive, name_fold));
             }
         }
 
@@ -98,6 +103,7 @@ impl ExcludeRules {
             name_patterns,
             path_prefixes: path_prefixes.into(),
             case_insensitive,
+            name_fold,
         })
     }
 
@@ -125,8 +131,8 @@ impl ExcludeRules {
     /// on the stack. Only a non-ASCII or over-long name pays [`fold`]'s `String`s.
     ///
     /// ❌ The insensitive branch goes through [`fold`] (or its ASCII shortcut),
-    /// never `normalize_for_comparison` alone: the set is KEYED through `fold`, and
-    /// off macOS that normalize is a no-op, so a raw lookup would compare an
+    /// never the volume's [`NameFold`] alone: the set is KEYED through `fold`, and
+    /// off macOS that fold is a no-op, so a raw lookup would compare an
     /// unfolded name against a lowercased key and match nothing with a capital in it.
     pub(crate) fn excludes_dir_name(&self, name: &str) -> bool {
         if !self.exact_names.is_empty() {
@@ -135,7 +141,7 @@ impl ExcludeRules {
             } else if let Some(excluded) = with_ascii_folded(name, |folded| self.exact_names.contains(folded)) {
                 excluded
             } else {
-                self.exact_names.contains(&fold(name, true))
+                self.exact_names.contains(&fold(name, true, self.name_fold))
             };
             if excluded {
                 return true;
@@ -189,16 +195,16 @@ impl ExcludeRules {
 
 /// One name in the alphabet the exact-name set is keyed on.
 ///
-/// ⚠️ The lowercase is EXPLICIT and not left to `normalize_for_comparison`,
-/// which is deliberately a no-op off macOS: two names differing in case are two
+/// ⚠️ The lowercase is EXPLICIT and not left to the volume's [`NameFold`], which is
+/// deliberately [`NameFold::Exact`] on Linux: two names differing in case are two
 /// different FILES there, so the index is right not to fold its keys. This is a
 /// user's filter, not an index key — the query said case-insensitive, and
 /// honoring that only on macOS is exactly the fork that makes a search exclude
 /// under one alphabet and match under another. The normalization still comes
-/// from the index, so macOS keeps folding NFD to the form APFS stores.
-fn fold(name: &str, case_insensitive: bool) -> String {
+/// from the volume's fold, so macOS keeps folding NFD to the form APFS stores.
+fn fold(name: &str, case_insensitive: bool, name_fold: NameFold) -> String {
     if case_insensitive {
-        store::normalize_for_comparison(name).to_lowercase()
+        name_fold.apply(name).to_lowercase()
     } else {
         name.to_string()
     }

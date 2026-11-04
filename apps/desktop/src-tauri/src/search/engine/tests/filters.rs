@@ -298,7 +298,14 @@ fn search_files_only() {
 fn ranked_with_dir_sizes(index: &SearchIndex, query: &SearchQuery, sizes: &[(i64, u64)], is_filter: bool) -> Ranked {
     let map: HashMap<i64, u64> = sizes.iter().copied().collect();
     let dir_sizes = DirSizes::new(map, is_filter);
-    search_ranked(index, query, &ImportanceWeights::empty(), "", Some(&dir_sizes)).expect("search_ranked")
+    search_ranked(
+        index,
+        query,
+        &SearchContext::for_test(&ImportanceWeights::empty()),
+        "",
+        Some(&dir_sizes),
+    )
+    .expect("search_ranked")
 }
 
 #[test]

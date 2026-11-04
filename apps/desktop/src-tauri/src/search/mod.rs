@@ -9,6 +9,7 @@
 pub mod ai;
 #[cfg(test)]
 mod bench;
+pub(crate) mod context;
 pub(crate) mod engine;
 pub(crate) mod excludes;
 pub(crate) mod execute;
@@ -49,6 +50,16 @@ pub(crate) use live::{
 
 // query.rs
 pub use query::SYSTEM_DIR_EXCLUDES;
-pub(crate) use query::{
-    format_size, format_timestamp, parse_scope, parse_size, summarize_query, summarize_query_for_diagnostics,
-};
+pub(crate) use query::{format_size, format_timestamp, parse_size, summarize_query, summarize_query_for_diagnostics};
+
+/// This machine's home folder, as the search core takes it: a value, so the core
+/// never reads it ambiently and a test can pass its own.
+pub(crate) fn host_home_dir() -> Option<String> {
+    dirs::home_dir().map(|home| home.to_string_lossy().into_owned())
+}
+
+/// Parse a scope string (`~/projects, !node_modules`) with `~` expanded against
+/// this machine's home folder.
+pub(crate) fn parse_scope(input: &str) -> ParsedScope {
+    query::parse_scope(input, host_home_dir().as_deref())
+}

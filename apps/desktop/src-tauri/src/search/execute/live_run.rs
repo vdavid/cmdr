@@ -21,7 +21,8 @@ use super::coverage::{
     AfterAnotherWalk, CoverageQuestion, UnreadableGround, arena_for_coverage, coverage_kind, coverage_of,
     coverage_scopes, every_frontier_root_is_another_walks,
 };
-use super::{CoveredHalf, Target, resolve_target, search_covered_half, target_on};
+use super::{CoveredHalf, Target, host_context, resolve_target, search_covered_half, target_on};
+use crate::search::context::{NameRules, SearchContext};
 use crate::search::excludes::ExcludeRules;
 use crate::search::live::{
     self, CollectingSink, CoverageKind, LiveAnswer, LiveRun, ResultStream, RunOrigin, SearchEventSink, SearchPhase,
@@ -29,7 +30,6 @@ use crate::search::live::{
 };
 use crate::search::matcher::{CompiledQuery, Evaluator};
 use crate::search::query;
-use crate::search::ranking::ImportanceWeights;
 use crate::search::types::SearchQuery;
 use crate::search::volumes::{self, LoadedVolume, VolumeLoad};
 
@@ -198,7 +198,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         // isn't (`matcher.rs`). Refusing the RUN rather than answering from the
         // index alone is the honest half — a confident-looking list that silently
         // skipped the unindexed ground is what this effort exists to remove.
-        let compiled = match CompiledQuery::compile(&query, Evaluator::LiveWalk) {
+        let compiled = match CompiledQuery::compile(&query, Evaluator::LiveWalk, &NameRules::host()) {
             Ok(compiled) => compiled,
             Err(e) => {
                 stream.fail(SearchRunError::Query, e.to_string());
@@ -345,7 +345,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         stream.finish(coverage);
         return;
     };
-    let excludes = match ExcludeRules::from_query(&query, compiled.case_insensitive()) {
+    let excludes = match ExcludeRules::from_query(&query, compiled.case_insensitive(), NameRules::host().fold) {
         Ok(excludes) => excludes,
         Err(e) => {
             stream.fail(SearchRunError::Query, e.to_string());
@@ -361,7 +361,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
     volumes::mark_walked_behind(&target.volume_id);
 
     let attempted_roots = question.frontier.len().saturating_sub(still_covering.len());
-    let home_dir = dirs::home_dir().map(|home| home.to_string_lossy().into_owned());
+    let home_dir = crate::search::host_home_dir();
     let judge = WalkJudge {
         compiled: &compiled,
         excludes: &excludes,
@@ -435,12 +435,16 @@ fn groundwork(
     };
 
     let half = match loaded.as_deref().filter(|_| !run.is_cancelled()) {
-        Some(loaded) => Some(covered_half_for_run(
-            query,
-            target,
-            loaded,
-            &volumes::weights_for(&target.volume_id),
-        )?),
+        Some(loaded) => {
+            let weights = volumes::weights_for(&target.volume_id);
+            let home_dir = crate::search::host_home_dir();
+            Some(covered_half_for_run(
+                query,
+                target,
+                loaded,
+                &host_context(&weights, home_dir.as_deref()),
+            )?)
+        }
         None => None,
     };
 
@@ -460,9 +464,9 @@ pub(super) fn covered_half_for_run(
     query: &SearchQuery,
     target: &Target,
     loaded: &LoadedVolume,
-    weights: &ImportanceWeights,
+    ctx: &SearchContext<'_>,
 ) -> Result<CoveredHalf, (SearchRunError, String)> {
-    search_covered_half(query, target, loaded, weights).map_err(|message| (SearchRunError::Query, message))
+    search_covered_half(query, target, loaded, ctx).map_err(|message| (SearchRunError::Query, message))
 }
 
 /// Whether the index gave this run nothing at all: no rows, and no count.

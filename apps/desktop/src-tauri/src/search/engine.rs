@@ -12,13 +12,12 @@ use std::sync::Arc;
 
 use rayon::prelude::*;
 
-use cmdr_index::store::ROOT_ID;
-
+use super::context::SearchContext;
 use super::excludes::ExcludeRules;
-use super::index::SearchIndex;
+use super::index::{ARENA_ROOT_ID, SearchIndex};
 use super::matcher::{Candidate, CompileError, CompiledQuery, Evaluator};
 use super::query::summarize_query_for_diagnostics;
-use super::ranking::{self, ImportanceWeights};
+use super::ranking;
 use super::types::{SearchQuery, SearchResultEntry, SearchSort};
 
 // ── Scope filter (pre-resolved for the hot loop) ─────────────────────
@@ -71,7 +70,7 @@ impl ScopeFilter {
                     found = true;
                     break;
                 }
-                if current_id == ROOT_ID || current_id == 0 {
+                if current_id == ARENA_ROOT_ID || current_id == 0 {
                     break;
                 }
                 match index.index_of_id(current_id) {
@@ -112,7 +111,7 @@ impl ScopeFilter {
         memo.walked.clear();
         let mut current_id = folder_id;
         let excluded = loop {
-            if current_id == ROOT_ID || current_id == 0 {
+            if current_id == ARENA_ROOT_ID || current_id == 0 {
                 break false;
             }
             if let Some(&known) = memo.by_folder.get(&current_id) {
@@ -170,6 +169,7 @@ enum ScopeVerdict {
 fn prepare_scope_filter(
     query: &SearchQuery,
     case_insensitive: bool,
+    ctx: &SearchContext<'_>,
     path_prefix: &str,
 ) -> Result<ScopeFilter, CompileError> {
     // Use pre-resolved include path IDs (resolved via SQLite before search())
@@ -190,7 +190,7 @@ fn prepare_scope_filter(
 
     Ok(ScopeFilter {
         include_ids,
-        excludes: ExcludeRules::from_query(query, case_insensitive)?,
+        excludes: ExcludeRules::from_query(query, case_insensitive, ctx.rules.fold)?,
         path_prefix: Arc::from(path_prefix),
     })
 }
@@ -212,9 +212,9 @@ const SCAN_CHUNK_ROWS: usize = 32_768;
 pub(crate) fn search(
     index: &SearchIndex,
     query: &SearchQuery,
-    weights: &ImportanceWeights,
+    weights: &ranking::ImportanceWeights,
 ) -> Result<super::types::SearchResult, String> {
-    let ranked = search_ranked(index, query, weights, "", None)?;
+    let ranked = search_ranked(index, query, &SearchContext::for_test(weights), "", None)?;
     Ok(super::types::SearchResult {
         entries: ranked.entries,
         total_count: ranked.total_count,
@@ -284,19 +284,19 @@ pub(crate) struct Ranked {
 pub(crate) fn search_ranked(
     index: &SearchIndex,
     query: &SearchQuery,
-    weights: &ImportanceWeights,
+    ctx: &SearchContext<'_>,
     path_prefix: &str,
     dir_sizes: Option<&DirSizes>,
 ) -> Result<Ranked, String> {
-    let t = std::time::Instant::now();
+    let t = cmdr_fs::rt::Instant::now();
 
     // The per-entry predicates, plus the broad-query guard this arena's size earns.
-    let compiled =
-        CompiledQuery::compile(query, Evaluator::Arena { entries: index.len() }).map_err(|e| e.to_string())?;
+    let compiled = CompiledQuery::compile(query, Evaluator::Arena { entries: index.len() }, &ctx.rules)
+        .map_err(|e| e.to_string())?;
     let case_insensitive = compiled.case_insensitive();
 
     // Pre-resolve scope filter
-    let scope_filter = prepare_scope_filter(query, case_insensitive, path_prefix).map_err(|e| e.to_string())?;
+    let scope_filter = prepare_scope_filter(query, case_insensitive, ctx, path_prefix).map_err(|e| e.to_string())?;
 
     // How many query-matching entries an exclusion rule dropped. Counted with a
     // relaxed atomic rather than a fold, because `collect()` preserves arena order
@@ -327,7 +327,7 @@ pub(crate) fn search_ranked(
                 let id = index.id(i);
 
                 // Skip root sentinel
-                if id == ROOT_ID {
+                if id == ARENA_ROOT_ID {
                     return false;
                 }
 
@@ -403,18 +403,17 @@ pub(crate) fn search_ranked(
     // the drive, not the best-ranked few reordered among themselves.
     let ranked = match query.sort_by {
         None | Some(SearchSort::Relevance) => {
-            let stem = ranking::stem_for(query);
-            ranking::rank_indices(index, &matching_indices, &stem, case_insensitive, weights, limit)
+            let stem = ranking::stem_for(query, &ctx.rules);
+            ranking::rank_indices(index, &matching_indices, &stem, case_insensitive, ctx.weights, limit)
         }
         Some(sort) => sort_indices(index, matching_indices.clone(), sort, dir_sizes, limit),
     };
 
     // Reconstruct paths and build result entries (prefixed into the volume's mount
     // space, so a non-root volume's mount-relative index paths become absolute).
-    let home_dir = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
     let entries: Vec<SearchResultEntry> = ranked
         .iter()
-        .map(|&idx| build_result_entry(index, idx, path_prefix, home_dir.as_deref()))
+        .map(|&idx| build_result_entry(index, idx, path_prefix, ctx.home_dir))
         .collect();
 
     log::debug!(
@@ -549,7 +548,7 @@ pub(crate) fn home_relative_parent(path: &str, home_dir: Option<&str>) -> String
 /// Reconstruct the full path for an entry by walking the parent_id chain
 /// in the in-memory index. O(depth) per entry.
 pub(crate) fn reconstruct_path_from_index(index: &SearchIndex, entry_id: i64) -> String {
-    if entry_id == ROOT_ID {
+    if entry_id == ARENA_ROOT_ID {
         return "/".to_string();
     }
 
@@ -557,7 +556,7 @@ pub(crate) fn reconstruct_path_from_index(index: &SearchIndex, entry_id: i64) ->
     let mut current_id = entry_id;
 
     loop {
-        if current_id == ROOT_ID || current_id == 0 {
+        if current_id == ARENA_ROOT_ID || current_id == 0 {
             break;
         }
         match index.index_of_id(current_id) {
@@ -588,7 +587,7 @@ pub(crate) fn reconstruct_path_from_index(index: &SearchIndex, entry_id: i64) ->
 /// `streamed_hash_matches_whole_path_hash`).
 pub(crate) fn hash_path_from_index(index: &SearchIndex, entry_id: i64) -> u64 {
     let mut hasher = cmdr_fs::path_hash::PathHasher::new();
-    if entry_id == ROOT_ID {
+    if entry_id == ARENA_ROOT_ID {
         hasher.write(b"/");
         return hasher.finish();
     }
@@ -604,7 +603,7 @@ pub(crate) fn hash_path_from_index(index: &SearchIndex, entry_id: i64) -> u64 {
     let mut depth = 0;
     let mut current_id = entry_id;
     loop {
-        if current_id == ROOT_ID || current_id == 0 {
+        if current_id == ARENA_ROOT_ID || current_id == 0 {
             break;
         }
         match index.index_of_id(current_id) {

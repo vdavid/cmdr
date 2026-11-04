@@ -27,7 +27,7 @@ use crate::index_host::index;
 use cmdr_index::store::IndexStore;
 use cmdr_index::{CoverageToken, ROOT_VOLUME_ID, ReadPool};
 
-use super::index::{SearchIndex, catch_up_search_index, load_search_index, now_secs};
+use super::index::{SearchIndex, catch_up_search_index, load_search_index};
 
 mod weights;
 use weights::{load_weights, store_weights};
@@ -775,6 +775,14 @@ pub(crate) fn start_idle_timer() {
             break;
         }
     }));
+}
+
+/// Seconds since the Unix epoch, for the idle timer's activity stamps.
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
 }
 
 #[cfg(test)]

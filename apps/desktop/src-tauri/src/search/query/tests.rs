@@ -417,33 +417,36 @@ fn canonicalize_scope_path_resolves_symlinks() {
 
 // ── parse_scope ─────────────────────────────────────────────────
 
+/// The home folder `~` expands to in these tests: a value, so they read the same on any machine.
+const HOME: &str = "/Users/tester";
+
 #[test]
 fn parse_scope_basic_include() {
-    let scope = parse_scope("~/projects");
-    let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+    let scope = parse_scope("~/projects", Some(HOME));
+    let home = HOME;
     assert_eq!(scope.include_paths, vec![format!("{home}/projects")]);
     assert!(scope.exclude_patterns.is_empty());
 }
 
 #[test]
 fn parse_scope_basic_exclude() {
-    let scope = parse_scope("!node_modules");
+    let scope = parse_scope("!node_modules", Some(HOME));
     assert!(scope.include_paths.is_empty());
     assert_eq!(scope.exclude_patterns, vec!["node_modules"]);
 }
 
 #[test]
 fn parse_scope_mixed() {
-    let scope = parse_scope("~/projects, !node_modules, !.git");
-    let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+    let scope = parse_scope("~/projects, !node_modules, !.git", Some(HOME));
+    let home = HOME;
     assert_eq!(scope.include_paths, vec![format!("{home}/projects")]);
     assert_eq!(scope.exclude_patterns, vec!["node_modules", ".git"]);
 }
 
 #[test]
 fn parse_scope_multiple_includes() {
-    let scope = parse_scope("~/projects, ~/Documents");
-    let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+    let scope = parse_scope("~/projects, ~/Documents", Some(HOME));
+    let home = HOME;
     assert_eq!(
         scope.include_paths,
         vec![format!("{home}/projects"), format!("{home}/Documents")]
@@ -452,53 +455,53 @@ fn parse_scope_multiple_includes() {
 
 #[test]
 fn parse_scope_quoted_commas_double() {
-    let scope = parse_scope("\"path,with,commas\"");
+    let scope = parse_scope("\"path,with,commas\"", Some(HOME));
     assert_eq!(scope.include_paths, vec!["path,with,commas"]);
 }
 
 #[test]
 fn parse_scope_quoted_commas_single() {
-    let scope = parse_scope("'path,with,commas'");
+    let scope = parse_scope("'path,with,commas'", Some(HOME));
     assert_eq!(scope.include_paths, vec!["path,with,commas"]);
 }
 
 #[test]
 fn parse_scope_backslash_escaped_commas() {
-    let scope = parse_scope("path\\,with\\,commas");
+    let scope = parse_scope("path\\,with\\,commas", Some(HOME));
     assert_eq!(scope.include_paths, vec!["path,with,commas"]);
 }
 
 #[test]
 fn parse_scope_empty_segments() {
-    let scope = parse_scope("~/projects, , !.git");
-    let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+    let scope = parse_scope("~/projects, , !.git", Some(HOME));
+    let home = HOME;
     assert_eq!(scope.include_paths, vec![format!("{home}/projects")]);
     assert_eq!(scope.exclude_patterns, vec![".git"]);
 }
 
 #[test]
 fn parse_scope_bare_exclude_wildcard() {
-    let scope = parse_scope("!.*");
+    let scope = parse_scope("!.*", Some(HOME));
     assert_eq!(scope.exclude_patterns, vec![".*"]);
 }
 
 #[test]
 fn parse_scope_absolute_exclude_path() {
-    let scope = parse_scope("!/Users/alice/Downloads");
+    let scope = parse_scope("!/Users/alice/Downloads", Some(HOME));
     assert_eq!(scope.exclude_patterns, vec!["/Users/alice/Downloads"]);
 }
 
 #[test]
 fn parse_scope_empty_input() {
-    let scope = parse_scope("");
+    let scope = parse_scope("", Some(HOME));
     assert!(scope.include_paths.is_empty());
     assert!(scope.exclude_patterns.is_empty());
 }
 
 #[test]
 fn parse_scope_whitespace_trimming() {
-    let scope = parse_scope("  ~/projects  ,  !node_modules  ");
-    let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+    let scope = parse_scope("  ~/projects  ,  !node_modules  ", Some(HOME));
+    let home = HOME;
     assert_eq!(scope.include_paths, vec![format!("{home}/projects")]);
     assert_eq!(scope.exclude_patterns, vec!["node_modules"]);
 }
@@ -614,7 +617,7 @@ mod scope_proptests {
         /// include/exclude entries is bounded by the segment count.
         #[test]
         fn parse_scope_never_overcounts(input in ".*") {
-            let scope = parse_scope(&input);
+            let scope = parse_scope(&input, Some(HOME));
             let segments = split_scope_segments(&input);
             prop_assert!(
                 scope.include_paths.len() + scope.exclude_patterns.len() <= segments.len(),

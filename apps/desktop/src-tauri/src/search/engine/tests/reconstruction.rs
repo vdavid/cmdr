@@ -57,11 +57,11 @@ fn streamed_hash_matches_whole_path_hash_past_the_inline_depth() {
     // A chain deeper than the names `hash_path_from_index` keeps on the stack, so the
     // part that spills to the heap has to land in the right order too.
     let mut builder = ArenaBuilder::new();
-    builder.push(ROOT_ID, 0, "", true, None, None);
+    builder.push(ARENA_ROOT_ID, 0, "", true, None, None);
     for depth in 0..100_i64 {
         builder.push(
-            ROOT_ID + 1 + depth,
-            ROOT_ID + depth,
+            ARENA_ROOT_ID + 1 + depth,
+            ARENA_ROOT_ID + depth,
             &format!("level-{depth}"),
             true,
             None,
@@ -70,7 +70,7 @@ fn streamed_hash_matches_whole_path_hash_past_the_inline_depth() {
     }
     let index = builder.finish(1);
     for depth in [1, 63, 64, 65, 100] {
-        let id = ROOT_ID + depth;
+        let id = ARENA_ROOT_ID + depth;
         let path = reconstruct_path_from_index(&index, id);
         assert_eq!(
             hash_path_from_index(&index, id),

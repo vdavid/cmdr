@@ -13,7 +13,7 @@ hold data/operations; `history.rs` owns recents; `ai/` translates NL (`ai/CLAUDE
   `indexing/` ONE WAY — ❌ no matcher, query, or search type inside `cmdr-index`.
 - **One matcher and one exclusion set, two evaluators** (arena scan = ancestor IDs, live walk = the entry's own PATH).
   ❌ Never re-derive case folding or NFD normalization elsewhere: that fork is how an unindexed drive answers
-  differently. ❌ Neither carries directory sizes or the include-root filter.
+  differently. Both are `NameRules` (`context.rs`), ❌ never a `cfg!`. ❌ Neither carries directory sizes or the include-root filter.
 - **The broad-query guard is per evaluator**: a refusing walk takes the whole RUN with it, ❌ never answering from the
   index alone.
 - **A stale root arena is SERVED**, refreshed in the background: ❌ never reload-on-mismatch. The ONE exception, an

@@ -86,7 +86,7 @@ pub fn leaf_name(path: &str) -> String {
 /// Whether a folder name is on the known-unimportant denylist: a set-membership
 /// check on the folded name against the project-wide system-dir exclude list
 /// (`node_modules`, `.git`, caches, build output), never a substring match.
-/// Reusing the indexer's `SYSTEM_DIR_EXCLUDES` keeps
+/// Reusing `cmdr_fs::system_dirs::SYSTEM_DIR_EXCLUDES` keeps
 /// importance and search agreeing on what counts as machine output.
 pub fn is_denylisted(name: &str) -> bool {
     // Every entry is ASCII, so for an ASCII name the ASCII fold IS the Unicode fold and
@@ -106,8 +106,12 @@ pub fn is_denylisted(name: &str) -> bool {
 /// classifies every folder on a volume, so folding the whole list per folder cost the
 /// walk one allocation per entry per folder — tens of millions on a NAS-sized volume,
 /// for a list that never changes.
-static DENYLIST_FOLDED: std::sync::LazyLock<Vec<String>> =
-    std::sync::LazyLock::new(|| crate::SYSTEM_DIR_EXCLUDES.iter().map(|d| d.to_lowercase()).collect());
+static DENYLIST_FOLDED: std::sync::LazyLock<Vec<String>> = std::sync::LazyLock::new(|| {
+    cmdr_fs::system_dirs::SYSTEM_DIR_EXCLUDES
+        .iter()
+        .map(|d| d.to_lowercase())
+        .collect()
+});
 
 /// Whether a folder is hidden or system-owned: a dotfile name, or a path that
 /// classifies as [`PathClass::SystemOrCache`]. A FLOOR override in the scorer.
@@ -541,7 +545,7 @@ fn scoring_policy_parts() -> Vec<&'static str> {
     parts.push("project_markers");
     parts.extend_from_slice(PROJECT_MARKERS);
     parts.push("denylist");
-    parts.extend_from_slice(crate::SYSTEM_DIR_EXCLUDES);
+    parts.extend_from_slice(cmdr_fs::system_dirs::SYSTEM_DIR_EXCLUDES);
     parts
 }
 

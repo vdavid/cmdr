@@ -8,11 +8,10 @@ use super::types::{PatternType, SearchQuery};
 
 // ── System directory exclusions ──────────────────────────────────────
 
-// Machine-output directory names (`node_modules`, `.git`, caches, build output) are
-// the INDEXER's policy, so the list lives with the scanner's exclusions and search
-// reads it from there. One list, so search and the importance scorer can't disagree
-// about what counts as machine output.
-pub use cmdr_index::SYSTEM_DIR_EXCLUDES;
+// Machine-output directory names (`node_modules`, `.git`, caches, build output): one
+// list in `cmdr-fs`, so search and the importance scorer can't disagree about what
+// counts as machine output.
+pub use cmdr_fs::system_dirs::SYSTEM_DIR_EXCLUDES;
 // ── Query summary ────────────────────────────────────────────────────
 
 /// Build a dense, human-readable summary of a `SearchQuery` for functional display.
@@ -97,12 +96,12 @@ pub(crate) fn summarize_query_for_diagnostics(query: &SearchQuery) -> String {
             };
             let chars = pattern.chars().count();
             if chars == pattern.len() {
-                format!("{mode}({})", crate::pluralize::pluralize(chars as u64, "char"))
+                format!("{mode}({})", cmdr_fs::pluralize::pluralize(chars as u64, "char"))
             } else {
                 format!(
                     "{mode}({}/{})",
-                    crate::pluralize::pluralize(chars as u64, "char"),
-                    crate::pluralize::pluralize(pattern.len() as u64, "byte")
+                    cmdr_fs::pluralize::pluralize(chars as u64, "char"),
+                    cmdr_fs::pluralize::pluralize(pattern.len() as u64, "byte")
                 )
             }
         }
@@ -250,9 +249,10 @@ pub(crate) fn glob_to_regex(glob: &str) -> String {
 /// - `~` expands to the user's home directory
 /// - `!` prefix means exclude
 /// - Quoted segments (single or double quotes) and backslash-escaped commas are supported
-pub(crate) fn parse_scope(input: &str) -> super::types::ParsedScope {
+///
+/// `home` is the absolute home folder `~` expands to; with `None` a `~` stays literal.
+pub(crate) fn parse_scope(input: &str, home: Option<&str>) -> super::types::ParsedScope {
     let segments = split_scope_segments(input);
-    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
 
     let mut include_paths = Vec::new();
     let mut exclude_patterns = Vec::new();
@@ -271,7 +271,7 @@ pub(crate) fn parse_scope(input: &str) -> super::types::ParsedScope {
 
         // Expand ~ prefix
         let expanded = if let Some(rest) = value.strip_prefix('~') {
-            if let Some(ref h) = home {
+            if let Some(h) = home {
                 format!("{h}{rest}")
             } else {
                 value.to_string()

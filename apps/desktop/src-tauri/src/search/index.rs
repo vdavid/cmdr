@@ -75,6 +75,11 @@ impl std::fmt::Debug for OptU64 {
     }
 }
 
+/// The arena's root sentinel id: the row every top-level entry's `parent_id` names.
+/// The index database's `ROOT_ID` is the same number, which the loader asserts at
+/// compile time.
+pub const ARENA_ROOT_ID: i64 = 1;
+
 // ── Search entry (in-memory representation) ──────────────────────────
 
 /// One row of the arena, 40 bytes. See [`OptU64`] before adding a field: the arena holds
@@ -409,13 +414,6 @@ fn spare_name_bytes(spare: usize, name_bytes: usize, rows: usize) -> usize {
     const FALLBACK_AVG_NAME_BYTES: usize = 20;
     let average = name_bytes.checked_div(rows).unwrap_or(FALLBACK_AVG_NAME_BYTES);
     spare.saturating_mul(average.max(1))
-}
-
-pub(crate) fn now_secs() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs()
 }
 
 #[cfg(test)]

@@ -59,6 +59,7 @@ pub mod rt;
 #[cfg(not(target_family = "wasm"))]
 pub mod sqlite_util;
 pub mod staging;
+pub mod system_dirs;
 pub mod tcc_paths;
 pub mod thread_cpu;
 pub mod thread_qos;
