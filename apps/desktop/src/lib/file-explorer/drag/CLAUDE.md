@@ -5,7 +5,8 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
 
 ## Module map
 
-- `drag-drop.ts`: mouse tracking, threshold detection, drag initiation; records self-drag identity at drag start.
+- `drag-drop.ts`: press tracking, threshold, drag start; records self-drag identity. `touch-hold.ts`: a held touch arms
+  it (DETAILS § Touch drags).
 - `drop-target-hit-testing.ts` / `drop-target-validation.ts` / `drop-operation.ts`: pure drop-target resolution,
   source/descendant blocking, and move-vs-copy resolution.
 - `drag-auto-scroll.ts`, `DragOverlay.svelte` + `drag-overlay.svelte.ts`, `drag-image-renderer.ts`: scroll bands, cursor

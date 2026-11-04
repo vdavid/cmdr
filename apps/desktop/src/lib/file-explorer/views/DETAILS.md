@@ -214,6 +214,10 @@ its old rows mounted until the replacement range lands, so an index alone is not
 listing followed quickly by row zero from the new one must remain two single taps. Otherwise the second tap can open the
 new listing's `..` row and immediately navigate back to its parent.
 
+A touch or pen held still on a row presses it as a mouse does: `row-activation.ts`'s `onPointerDown` hands the press to
+`../drag/touch-hold.ts`, which calls the view's own `handleMouseDown` (the `hold` dep) once the finger stays put, so the
+select and drag rules stay one code path. Why and how the touch drag then runs: `../drag/DETAILS.md` § Touch drags.
+
 **Key**: Data lives in the Rust listing cache (`cmdr-listing`). Frontend fetches visible ranges on-demand via
 `getFileRange(listingId, start, count, includeHidden)`.
 

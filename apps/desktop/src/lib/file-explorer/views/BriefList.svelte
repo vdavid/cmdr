@@ -686,6 +686,7 @@
     // A double-click (mouse) or double tap (touch, pen) opens the row (`row-activation.ts`).
     const rowActivation = createRowActivation({
         getListingId: () => listingId,
+        hold: handleMouseDown,
         activate: (index) => {
             cancelClickToRename()
             const entry = getEntryAt(index)
@@ -1101,7 +1102,7 @@
                                 data-drop-target-path={file.isDirectory ? file.path : undefined}
                                 use:tooltip={buildDirTooltip(file)}
                                 style="height: {rowHeight}px;"
-                                onpointerdown={rowActivation.onPointerDown}
+                                onpointerdown={(e: PointerEvent) => rowActivation.onPointerDown(e, globalIndex)}
                                 onmousedown={(e: MouseEvent) => {
                                     handleMouseDown(e, globalIndex)
                                 }}

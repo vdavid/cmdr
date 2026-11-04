@@ -1,11 +1,13 @@
 /**
  * Both views open a row through `row-activation.ts`: a mouse on `dblclick`, a
  * touch or pen on two quick taps even when no `dblclick` comes (Chrome's device
- * mode), and each exactly once.
+ * mode), and each exactly once. A touch held still presses the row as a mouse
+ * press does (`../drag/touch-hold.ts`).
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import type { FileEntry } from '../types'
+import type { FileEntry, SelectPayload } from '../types'
+import { TOUCH_HOLD_MS } from '../drag/touch-hold'
 import { fileEntry, mountFullList } from './test-full-list'
 import { mountBriefList } from './test-brief-list'
 
@@ -45,21 +47,21 @@ function dblclick(row: HTMLElement): void {
   row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, button: 0, detail: 2 }))
 }
 
+/** The props both views share that these specs set. */
+interface RowProps {
+  onNavigate?: (entry: FileEntry) => void
+  onSelect?: (args: SelectPayload) => void
+}
+
 const views = [
-  {
-    name: 'FullList',
-    mount: (onNavigate: (entry: FileEntry) => void) => mountFullList({ entries, props: { onNavigate } }),
-  },
-  {
-    name: 'BriefList',
-    mount: (onNavigate: (entry: FileEntry) => void) => mountBriefList({ entries, props: { onNavigate } }),
-  },
+  { name: 'FullList', mount: (props: RowProps) => mountFullList({ entries, props }) },
+  { name: 'BriefList', mount: (props: RowProps) => mountBriefList({ entries, props }) },
 ]
 
 describe.each(views)('$name row activation', ({ mount }) => {
   async function setup() {
     const opened: string[] = []
-    const list = await mount((entry) => opened.push(entry.name))
+    const list = await mount({ onNavigate: (entry) => opened.push(entry.name) })
     const row = list.rows().find((r) => r.dataset.filename === 'alpha')
     if (!row) throw new Error('no row rendered for alpha')
     return { opened, row }
@@ -89,6 +91,31 @@ describe.each(views)('$name row activation', ({ mount }) => {
     press(row, 'touch')
     click(row, 1)
     expect(opened).toEqual(['alpha'])
+  })
+
+  it('presses the row on a touch held still, as a mouse press does', async () => {
+    const selected: number[] = []
+    const list = await mount({ onSelect: ({ index }) => selected.push(index) })
+    const row = list.rows().find((r) => r.dataset.filename === 'alpha')
+    if (!row) throw new Error('no row rendered for alpha')
+    vi.useFakeTimers()
+    try {
+      row.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          pointerId: 9,
+          pointerType: 'touch',
+          isPrimary: true,
+        }),
+      )
+      vi.advanceTimersByTime(TOUCH_HOLD_MS)
+      // Lifted before the drag threshold: the row's mouse-release select.
+      document.dispatchEvent(new PointerEvent('pointerup', { pointerId: 9, pointerType: 'touch' }))
+      expect(selected).toEqual([0])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('opens once on a double tap that also brings a dblclick', async () => {
