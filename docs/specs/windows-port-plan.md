@@ -99,15 +99,22 @@ Settled:
     `x86_64-pc-windows-msvc` has required Windows 10 since 2024 (the Win7 target is tier 3, no prebuilt std). Total
     Commander reaches Windows 95 only because it's a native Win32 app with no browser engine.
 
-Waiting on David:
-
-- **D3. Code signing.** Still open; unsigned isn't an option (SmartScreen's "Windows protected your PC", and Smart App
-  Control blocks it outright). Options as researched 2026-11-04 (details in #942):
-  - Microsoft Store with an MSIX package: free, Microsoft signs it. Needs MSIX packaging (Tauri has no native MSIX
-    bundler; Microsoft's `winapp` CLI has a Tauri guide), Store certification per release, Store-delivered updates.
-  - Azure Artifact Signing through Rymdskottkärra AB: $9.99/month ($119.88/year).
-  - An OV certificate (Certum about $99–249/year; Sectigo, which Total Commander uses).
-  - Since 2024, EV no longer buys instant SmartScreen reputation; OV and Artifact Signing build it the same way.
+- **D3. Code signing and distribution** (David, 2026-11-04): Store first, a paid certificate only once Windows pays for
+  it.
+  1. **The Microsoft Store, as an MSIX package, is the primary Windows channel.** Microsoft signs it for free (the
+     company developer account is free too), so there's no SmartScreen warning and Smart App Control lets it run from
+     day one. The Store delivers updates, so the Store build turns Cmdr's own updater off. Slower hotfixes (Store
+     certification per release, hours to days) are accepted. MSIX also gives the package identity Windows 11's top-level
+     context menu needs.
+  2. **An unsigned "Run anyway" NSIS installer on the website**, built from the same release binaries, for people who
+     avoid the Store. The download page explains SmartScreen's "More info → Run anyway" step. Its updates travel the
+     Tauri updater, trusted by the minisign signature plus the Rust-side checks (task 33).
+  3. **Later, once Windows sales cover it**: Azure Artifact Signing through Rymdskottkärra AB ($9.99/month) signs the
+     direct download, which retires the "Run anyway" step.
+  - Why: the Store gives the highest OS trust at zero cost, and a signed direct download buys less trust than that for
+    $119.88/year (SmartScreen still warns until reputation builds). Total Commander's route, a Sectigo OV certificate
+    for its company (valid 2025-09-26 to 2028-09-25, read from `tcmd115801x64.exe`), costs more for the same trust as
+    Azure. Since 2024, EV no longer buys instant SmartScreen reputation either.
 
 ## Bugs the audits found on the way
 
@@ -267,15 +274,16 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
     `instance-id.ts` Windows data (Roaming) and cache (Local) dirs in lockstep with the Rust mirror.
 49. [S] Windows (taskbar progress is a win: Dock progress too). Shell integration: an "Open in Cmdr" Explorer verb,
     taskbar progress for long operations (`Window::set_progress_bar`), jump lists of recent folders.
-50. [S] Windows. `cmdr-update-trust` Authenticode check (`WinVerifyTrust` plus a pinned signer) for the Windows updater
-    artifact. Needs 33.
-51. [XS] Windows, David. Azure Artifact Signing account and org validation for Rymdskottkärra AB; an agent writes the
-    click-path. Needs D3.
-52. [M] Windows. Windows release build: `windows-latest` build and sign job, `signCommand` with OIDC `azure/login`,
-    minisign `.sig` in both signing modes, the `windows-x86_64` manifest row. David reviews the signing flow. Needs 6,
-    30, 51.
-53. [S] Windows. Release vetting and distribution: Authenticode verify in `vet-update-archives`, `deny.toml` triple,
-    third-party notices and SBOM, checksums, a winget manifest bump job. Needs 52.
+50. [S] Windows, later (D3 step 3). `cmdr-update-trust` Authenticode check (`WinVerifyTrust` plus a pinned signer) for
+    the signed direct download's updater artifact. Needs 33, 51.
+51. [XS] Windows, David, later (D3 step 3). Azure Artifact Signing account and org validation for Rymdskottkärra AB,
+    once Windows sales cover it; an agent writes the click-path. Then `signCommand` with OIDC `azure/login` in task 52's
+    job and an Authenticode verify in `vet-update-archives`.
+52. [M] Windows. Windows release build: a `windows-latest` job that builds once and packages twice, the MSIX (via
+    Microsoft's `winapp` CLI) and the unsigned NSIS installer, plus the minisign `.sig` for the NSIS updater artifact in
+    both signing modes and the `windows-x86_64` manifest row. Needs 6, 30.
+53. [S] Windows. Release vetting and distribution: `deny.toml` triple, third-party notices and SBOM, checksums for both
+    packages, and a winget manifest for the NSIS installer. Needs 52.
 54. [S] Windows. E2E smoke on `windows-latest`: `tauri-plugin-playwright` over TCP, three-way helpers, a Windows fixture
     root, a small spec subset. Needs the app to run on Windows (34–36).
 55. [M] Windows. Windows QA pass on a real machine: an agent drives the checklist and fixes what it finds; David QAs
@@ -284,6 +292,13 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
 56. [S] Windows. MTP via `mtp-rs`'s WPD backend (D2): Windows device arrival and removal for phones, the 5–6-minute
     driver stall shown as a "the phone is busy" state with a timeout (a dropped future is safe, later calls queue behind
     it, and a delete can still finish after we gave up), and a QA pass on a real phone. Needs 5.
+57. [S] Windows, partly David. Microsoft Store channel (D3 step 1): the company developer account and listing (David
+    opens the account and reviews the listing copy), Store submission automated from the release pipeline, the Store
+    build's own updater off, and a check of where MSIX redirects Cmdr's data and cache folders so the data dir, the
+    drive index, and "Delete all Cmdr data" all find them. Needs 52.
+58. [XS] Windows. The website's "Run anyway" download (D3 step 2): the unsigned NSIS installer on the download page with
+    a short explainer of SmartScreen's "More info → Run anyway" step, next to the Store link. David reviews the copy.
+    Needs 32, 52.
 
 ### Later, not in the first Windows release
 
