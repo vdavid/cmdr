@@ -368,9 +368,11 @@ nothing links to it, it's out of the sitemap, and it's `noindex` until David lau
   `.github/actions/build-website-demo`. The `website` filter includes the demo's inputs, so a change there re-runs the
   lane and redeploys.
 - **Serving** (`nginx.conf`): `/demo` redirects to `/demo/`; `/demo/_app/immutable/` is content-hashed (a year,
-  immutable, a real 404 when missing); anything else under `/demo/` is the file or, failing that, the app page, so a
-  deep link or reload boots the app. nginx's own mime table serves `.wasm` as `application/wasm` (verified in
-  `nginx:alpine` 1.31.6, `curl -I`, 2026-11-04).
+  immutable, and a bare 404 when missing: no body, the demo's headers, never the site's HTML 404 page, so the demo's
+  loader can tell a stale chunk name in an old tab from a real failure); anything else under `/demo/` is the file or,
+  failing that, the app page, so a deep link or reload boots the app. `website-docker-build` starts the built image and
+  probes the bare 404 (`websiteServingProbes` in `scripts/check/checks/website-docker.go`). nginx's own mime table
+  serves `.wasm` as `application/wasm` (verified in `nginx:alpine` 1.31.6, `curl -I`, 2026-11-04).
 - **Precompressed Brotli**: `pnpm build:demo` ends with `apps/desktop/scripts/precompress-demo.ts`, which writes a
   quality-11, 16 MiB-window `<file>.br` next to every `.wasm`, `.js`, and `.css` of 10 KiB or more under
   `_app/immutable/` (57 files, 21,571,685 → 5,034,366 bytes, about 20–40 s on a Mac, 2026-11-04). The engine `.wasm`

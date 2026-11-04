@@ -10,7 +10,7 @@
 //! entry's subtree and its ancestors, so a copy recounts the folders it touched
 //! and nothing else.
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -33,6 +33,8 @@ pub struct FolderSizes {
     memo: Mutex<HashMap<PathBuf, Option<HeldAt>>>,
     /// How many changes the volume has reported: the search's rebuild trigger.
     changes: AtomicU64,
+    /// The parents of the changes since the last `publish_moved`.
+    moved: Mutex<BTreeSet<PathBuf>>,
 }
 
 impl FolderSizes {
@@ -42,6 +44,7 @@ impl FolderSizes {
             volume,
             memo: Mutex::new(HashMap::new()),
             changes: AtomicU64::new(0),
+            moved: Mutex::new(BTreeSet::new()),
         }
     }
 
@@ -117,34 +120,61 @@ impl FolderSizes {
 }
 
 impl FolderSizes {
-    /// Tells every pane at or above `parent` what a change there moved, the
-    /// way the app's index-size worker does (`listing_index_sizes/`): the one
-    /// folder row on the way down to `parent` (none for the pane AT `parent`,
+    /// Notes that a change under `parent` moved sizes, for the next
+    /// [`publish_moved`](Self::publish_moved). Answers `true` for the first
+    /// note since the last publish: the caller schedules that publish then,
+    /// so a burst of changes (a long delete's one per file) goes out as one
+    /// event per pane, not one per change.
+    pub fn note_moved(&self, parent: &Path) -> bool {
+        let mut moved = self.moved.lock_ignore_poison();
+        let first = moved.is_empty();
+        moved.insert(parent.to_path_buf());
+        first
+    }
+
+    /// Tells every pane at or above a noted change what the changes moved,
+    /// the way the app's index-size worker does (`listing_index_sizes/`):
+    /// each folder row on the way down to a change (none for the pane AT it,
     /// which heard the change itself) written into the listing cache first,
-    /// then `listing-index-sizes-changed` with it and the pane's own folder
-    /// (the `..` row), so the rows, the status bar, and the `..` row move
-    /// with no re-read. Call AFTER the panes heard the change.
-    pub fn publish_moved(&self, listings: &Listings, sink: &dyn EventSink, volume_id: &str, parent: &Path) {
+    /// then one `listing-index-sizes-changed` with them and the pane's own
+    /// folder (the `..` row), so the rows, the status bar, and the `..` row
+    /// move with no re-read. Call AFTER the panes heard the changes.
+    pub fn publish_moved(&self, listings: &Listings, sink: &dyn EventSink, volume_id: &str) {
+        let parents = std::mem::take(&mut *self.moved.lock_ignore_poison());
+        if parents.is_empty() {
+            return;
+        }
         for open in listings.open_listing_paths(volume_id) {
-            let Ok(below) = parent.strip_prefix(&open) else {
-                continue;
-            };
-            let row = below.components().next().map(|first| open.join(first));
-            let own = open.to_string_lossy().into_owned();
-            let mut asked = vec![own];
-            if let Some(row) = &row {
-                asked.push(row.to_string_lossy().into_owned());
+            let mut touched = false;
+            let mut rows = BTreeSet::new();
+            for parent in &parents {
+                let Ok(below) = parent.strip_prefix(&open) else {
+                    continue;
+                };
+                touched = true;
+                if let Some(first) = below.components().next() {
+                    rows.insert(open.join(first));
+                }
             }
-            let mut stats = self.dir_stats(&asked);
-            let row_stats = if row.is_some() { stats.pop().flatten() } else { None };
-            let current_dir = stats.pop().flatten();
-            let folders: Vec<FolderReading> = row
-                .zip(row_stats)
-                .map(|(path, stats)| FolderReading {
-                    path: path.to_string_lossy().into_owned(),
-                    stats: Some(stats),
+            if !touched {
+                continue;
+            }
+            let rows: Vec<PathBuf> = rows.into_iter().collect();
+            let mut asked = vec![open.to_string_lossy().into_owned()];
+            asked.extend(rows.iter().map(|row| row.to_string_lossy().into_owned()));
+            let mut stats = self.dir_stats(&asked).into_iter();
+            let current_dir = stats.next().flatten();
+            // A row gone with the change (a deleted folder) reads `None`: the
+            // pane dropped it already, so there's nothing to tell.
+            let folders: Vec<FolderReading> = rows
+                .iter()
+                .zip(stats)
+                .filter_map(|(path, stats)| {
+                    Some(FolderReading {
+                        path: path.to_string_lossy().into_owned(),
+                        stats: Some(stats?),
+                    })
                 })
-                .into_iter()
                 .collect();
             let written: Vec<(String, IndexSizes)> = folders
                 .iter()

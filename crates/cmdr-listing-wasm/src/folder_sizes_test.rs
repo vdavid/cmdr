@@ -111,6 +111,20 @@ async fn settle(demo: &Demo, events: &Collector, started: Value) {
     let _ = demo;
 }
 
+/// Waits for `id` to hear that its row at `path` now holds `size` bytes: the
+/// size news goes out gathered, a moment after the change (`backend_listings.rs`).
+async fn heard_size(events: &Collector, id: &str, path: &str, size: u64) {
+    events
+        .wait_for("listing-index-sizes-changed", |p| {
+            p["listingId"] == id
+                && p["folders"].as_array().is_some_and(|rows| {
+                    rows.iter()
+                        .any(|r| r["path"] == path && r["stats"]["recursiveSize"] == size)
+                })
+        })
+        .await;
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn a_pane_shows_complete_folder_sizes() {
     let (demo, events) = demo();
@@ -142,7 +156,9 @@ async fn a_copy_and_a_delete_recount_every_pane_above_them() {
     )
     .await;
     settle(&demo, &events, copied).await;
-    // Two levels above the change, and three.
+    // Two levels above the change, and three, once the gathered size news went out.
+    heard_size(&events, "home", "/Users/you/Documents", 1_007).await;
+    heard_size(&events, "users", "/Users/you", 2_007).await;
     assert_eq!(size_of(&demo, "home", "Documents").await, 1_007);
     assert_eq!(size_of(&demo, "users", "you").await, 2_007);
 
@@ -153,6 +169,8 @@ async fn a_copy_and_a_delete_recount_every_pane_above_them() {
     )
     .await;
     settle(&demo, &events, deleted).await;
+    heard_size(&events, "home", "/Users/you/Documents", 1_000).await;
+    heard_size(&events, "users", "/Users/you", 2_000).await;
     assert_eq!(size_of(&demo, "home", "Documents").await, 1_000);
     assert_eq!(size_of(&demo, "users", "you").await, 2_000);
 }
@@ -263,6 +281,57 @@ async fn a_write_tells_each_pane_above_it_its_moved_row_and_its_own_total() {
     assert_eq!(deep["currentDir"]["recursiveDirCount"], 1);
     // Written into the cache before the event, so the status bar's re-read agrees.
     assert_eq!(row(&demo, "home", "Documents").await["recursiveDirCount"], 2);
+}
+
+/// A long delete tells a pane above it what moved a few times, not once per file: each
+/// event sent the page through the frontend's handler, and 1,200 of them at the end of a
+/// delete held it for about 45 ms (#956).
+#[tokio::test(flavor = "multi_thread")]
+async fn a_long_delete_tells_a_pane_above_it_in_a_few_coalesced_events() {
+    const FILES: usize = 300;
+    let mut entries = vec![
+        json!({ "path": "/Users", "kind": "dir" }),
+        json!({ "path": "/Users/you", "kind": "dir" }),
+        json!({ "path": "/Users/you/many", "kind": "dir" }),
+        json!({ "path": "/Users/you/keep.txt", "kind": "file", "size": 5 }),
+    ];
+    let sources: Vec<String> = (0..FILES).map(|i| format!("/Users/you/many/f{i}.txt")).collect();
+    entries.extend(
+        sources
+            .iter()
+            .map(|p| json!({ "path": p, "kind": "file", "size": 100 })),
+    );
+    let tree: DemoTree =
+        serde_json::from_value(json!({ "volumeId": "root", "root": "/", "entries": entries })).expect("tree parses");
+    let events = Arc::new(Collector::default());
+    let demo = Demo::new(tree, Arc::clone(&events) as _).expect("valid tree");
+    open(&demo, &events, "home", "/Users/you").await;
+
+    let deleted = call(
+        &demo,
+        "delete_files",
+        json!({ "sources": sources, "volumeId": "root", "initiator": "user" }),
+    )
+    .await;
+    settle(&demo, &events, deleted).await;
+    let of_home = |p: &Value| p["listingId"] == "home";
+    let emptied = |p: &Value| of_home(p) && p["folders"][0]["stats"]["recursiveFileCount"] == 0;
+    events.wait_for("listing-index-sizes-changed", emptied).await;
+
+    let heard = events
+        .0
+        .lock()
+        .expect("collector lock")
+        .iter()
+        .filter(|(name, p)| name == "listing-index-sizes-changed" && of_home(p))
+        .count();
+    assert!(heard <= 20, "{heard} size events for {FILES} deleted files");
+    let last = events
+        .last("listing-index-sizes-changed", of_home)
+        .expect("home heard it");
+    assert_eq!(last["folders"][0]["path"], "/Users/you/many");
+    assert_eq!(last["currentDir"]["recursiveSize"], 5);
+    assert_eq!(size_of(&demo, "home", "many").await, 0);
 }
 
 #[test]

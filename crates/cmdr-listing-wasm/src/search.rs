@@ -12,7 +12,7 @@
 //! by `cmdr-recents`' rules over `cmdr_search::history`'s key.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -244,8 +244,10 @@ impl DemoSearch {
         }
     }
 
-    /// One pass of the core over the volume: the `~` expansion is the only path work
-    /// (a page has no `realpath`), so a scope through a symlinked folder is unresolved.
+    /// One pass of the core over the volume. Each scope pairs as written with its
+    /// canonical form, as the desktop's `scope_pairs` does: `~` expanded, then the
+    /// volume's own symlinks resolved (`InMemoryVolume::canonicalize`, the page's
+    /// `realpath`), the literal kept where that fails, as `realpath`'s failure keeps it.
     fn covered_half(&self, query: &SearchQuery) -> Result<CoveredHalf, SearchError> {
         let rows = self.rows();
         let home = self.home.as_deref();
@@ -253,7 +255,14 @@ impl DemoSearch {
             .include_paths
             .iter()
             .flatten()
-            .map(|path| (path.clone(), query::expand_tilde(path, home).into_owned()))
+            .map(|path| {
+                let expanded = query::expand_tilde(path, home).into_owned();
+                let canonical = self
+                    .store
+                    .canonicalize(Path::new(&expanded))
+                    .map_or(expanded, |real| real.to_string_lossy().into_owned());
+                (path.clone(), canonical)
+            })
             .collect();
         let weights = ImportanceWeights::empty();
         let ctx = SearchContext {

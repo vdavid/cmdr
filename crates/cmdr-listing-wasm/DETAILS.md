@@ -140,7 +140,20 @@ tree lists as a folder (as on disk).
   proof that the scan's rayon fallback runs inline and its timing log reads the page's clock. Its write half
   (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
   delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
-  that fails past a 50 ms hold. Any unhandled rejection fails the run.
+  that fails past a 50 ms hold. The probe runs past the settle until the engine has sent nothing for 200 ms, so the
+  folder-size news that trails the delete is inside it. Any unhandled rejection fails the run.
+  - **The hold is the main thread's CPU time** between two ticks (`process.threadCpuUsage`), with wall time only
+    printed. Decision/Why: wall time failed under machine load (87 ms at a load average of 74–130 from parallel agents'
+    checks, 13–19 ms alone), since a descheduled process ages the wall clock but not its thread's CPU time. Measured
+    together, 2026-11-05 on Node 26.12 at load 85–92: CPU 16–20 ms across four runs while wall swung 16–104 ms. The
+    checker's contention verdict (`contention-verdict.go`) would only have rerun a red; this can't go red from load.
+  - **The runtime self-test's yield-cost probe** (`rt_self_test.rs`) can't use CPU time: the timer clamp it guards
+    against is idle time. So it measures yields against a yardstick in the same run: 10 rounds of 10 yields interleaved
+    with 10 rounds of 10 `setTimeout(0)` sleeps, the fastest round of each, and the yields must win by 4x. Decision/Why:
+    the old fixed budget (100 yields under 50 ms) went red at load 80–92 (57–167 ms); interleaving shares the load, and
+    the fastest round dodges a descheduling burst. Verified 2026-11-05 on Node 26.12 at load 62–78: the real yield won
+    by 22–55x over six runs, and the old timer-based yield fed in its place came in at about 1x (13.9 against 13.3 ms)
+    and failed.
 - **The golden replay** (`-golden`, also in the check): `src/operations_host/golden_test.rs` runs every volume-engine
   scenario in `cmdr_operations::golden` on a real `Demo`'s host (its `DemoVolumes` with the fixtures' `src` and `dst`
   registered beside the page volume, its engine events, name order, and operation log) and compares the trace, as text,
@@ -200,12 +213,19 @@ store (`InMemoryVolume::subtree_totals`, counting the way `cmdr-index`'s aggrega
   the fold counts, it keeps no leaf list.
 - **Changes compose ahead of the panes**, as the app's composer feeds its index first: `BackendListings` hands every
   `directory_changed` to `FolderSizes::changed` (which forgets the changed entry's subtree and its ancestors from the
-  memo), then to the panes, then `FolderSizes::publish_moved` tells every open listing AT or above the change what
-  moved, the app's index-size worker's way: the one folder row on the way down written into the cache by
-  `update_index_sizes` (the pane AT the change has none: it heard the change itself), then `listing-index-sizes-changed`
-  with that row and the listing's own folder (`currentDir`, the `..` row). That event is the only path the frontend has
-  for the `..` row and the status bar to move without a re-read. No cooldown and no hourglass: the app's worker batches
-  a live index, and a fold is never behind.
+  memo), then to the panes, then `FolderSizes::note_moved` gathers its parent. 50 ms after the first note
+  (`SIZES_GATHER` in `backend_listings.rs`, the write engine's progress cadence), `FolderSizes::publish_moved` tells
+  every open listing AT or above a gathered change what moved, the app's index-size worker's way: each folder row on the
+  way down written into the cache by `update_index_sizes` (the pane AT a change has none: it heard the change itself),
+  then ONE `listing-index-sizes-changed` with those rows and the listing's own folder (`currentDir`, the `..` row). That
+  event is the only path the frontend has for the `..` row and the status bar to move without a re-read. No hourglass,
+  and a short gather in place of the app's 2 s cooldown, since a fold is never behind.
+  - **Decision/Why: gathered, not one event per change.** A 1,200-file delete reported 1,200 removals, each its own
+    event per pane; the page took them through the frontend's handler back to back, a ~45 ms hold at the delete's end
+    (#956). Gathered, the smoke's long delete sends one. The app's worker doesn't have this burst: it already merges
+    index batches per listing behind its cooldown (`apps/desktop/src-tauri/src/listing_index_sizes/schedule.rs`), so the
+    fix is the demo's alone. A test waiting on a pane's row after a write waits for the event, not the settle
+    (`folder_sizes_test.rs`'s `heard_size`).
 - **Physical size** is each file's `physical_size`, or its logical size where the store models none.
 
 ## Search
@@ -247,9 +267,11 @@ over the page's one volume, with no index to load.
   trash route (nothing online-only here).
 - **No host work around writes**: no `~` expansion, no S3 cost pricing (`check_rename_validity` prices nothing), no
   analytics, no indexing priority, and `get_volume_space` answers the one volume's live space for every path.
-- **Search** (`search.rs`): recent searches last the session; no `realpath`, so a scope naming a symlinked folder is the
-  link itself and finds nothing inside; no AI (`getAiStatus` answers unavailable, so the dialog's AI mode stays off as
-  on a Mac with AI off); no importance weights, so ties rank by name and id alone.
+- **Search** (`search.rs`): recent searches last the session; a scope resolves its symlinks through
+  `InMemoryVolume::canonicalize` (the tree's `symlinkTarget`s, stored by `tree.rs`) where the desktop calls `realpath`,
+  with exact-case names, so a scope spelled in another case through a link stays the literal (still matched
+  case-insensitively, but as the link, a leaf); no AI (`getAiStatus` answers unavailable, so the dialog's AI mode stays
+  off as on a Mac with AI off); no importance weights, so ties rank by name and id alone.
 - **The viewer** (`viewer.rs`): every call runs inline, with none of the app's 2 s timeouts or stall watches (an
   in-memory read can't hang). No LineIndex upgrade, so a big file keeps its estimated row count; a search scans in 8 ms
   slices on the page's event loop instead of a thread; no watcher, so tail mode never sees a change.

@@ -149,10 +149,20 @@ async fn a_scope_resolves_through_the_fold_and_a_stranger_comes_back_unresolved(
     assert_eq!(elsewhere["entries"], json!([]));
     assert_eq!(elsewhere["unresolvedScopes"], json!(["/Volumes/naspi"]));
 
-    // No `realpath` in a page: a scope naming a symlinked folder is the link itself, a
-    // leaf (as the drive index stores one), so it finds the link and nothing under it.
+    // A scope naming a symlinked folder resolves through the link, as the desktop's
+    // `realpath` does (`InMemoryVolume::canonicalize`): it searches the folder the link
+    // points at, and the rows carry their real paths (#959).
     let through_link = search(&demo, json!({ "namePattern": "*", "includePaths": ["~/Shortcut"] })).await;
-    assert_eq!(paths(&through_link), ["/Users/you/Shortcut"]);
+    assert_eq!(
+        paths(&through_link),
+        [
+            "/Users/you/Documents",
+            "/Users/you/Documents/Report.pdf",
+            "/Users/you/Documents/Taxes",
+            "/Users/you/Documents/Taxes/report-2025.pdf",
+        ]
+    );
+    assert_eq!(through_link["unresolvedScopes"], json!([]));
 }
 
 #[tokio::test(flavor = "multi_thread")]

@@ -406,7 +406,7 @@ jobs:
   # ===========================================
   # The website deploys as a Docker image built on the server; per-push CI only
   # builds the site itself. This periodic full image build catches Dockerfile /
-  # .dockerignore drift before it breaks a real deploy.
+  # .dockerignore drift before it breaks a real deploy, then probes the built image's nginx.
   website-docker:
     name: Website Docker build
     runs-on: ubuntu-latest
