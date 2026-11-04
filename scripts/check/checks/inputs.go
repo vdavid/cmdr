@@ -183,6 +183,8 @@ var rustWorkspaceConfigInputs = []string{
 // demo's event drift guard reads the generated bindings (`cmdr-listing-wasm/src/events_test.rs`).
 // The app's menu tests read the menu bar's definition and ids from `cmdr-menu`
 // (`menu/menu_items_test.rs`, `menu/context_menu_icons_test.rs`, `menu/macos_appkit.rs`).
+// The space poller's band tests read the free-percent case list the TS formatter shares
+// (`space_poller/readout.rs`).
 //
 // A lane carries this whenever its own set covers the tree that does the
 // embedding, which is what `TestRustInputsCoverEveryEmbeddedFile` walks the whole
@@ -197,6 +199,7 @@ var rustEmbeddedInputs = []string{
 	"apps/desktop/src/lib/logging/bridge-redaction-cases.json",
 	"apps/desktop/src/lib/logging/log-markers.json",
 	"apps/desktop/src/lib/units/drive-figure-cases.json",
+	"apps/desktop/src/lib/units/free-percent-cases.json",
 	"apps/desktop/src-tauri/resources/security-advisories.json",
 	"apps/desktop/src-tauri/tauri.conf.json",
 	"apps/desktop/src-tauri/updater-backup.pub",
