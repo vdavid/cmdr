@@ -181,6 +181,9 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   screen reader (`aria-label`). A click outside, or the page losing focus, closes it.
 - **Shared with the bar**: `menu-surfaces.ts` (an open menu and its submenus: drawing, placement, highlight, the walk),
   `menu-click.ts` (performing a pick), and `menu-bar-style.ts`'s `MENU_SURFACE_STYLE`, injected once per document.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-04): right-clicking `Documents` draws the folder menu
+  named by its header, with the live shortcuts (F5, ⌥⌘C) and no OS-filled group; ↓ lands on Selection, hovering it opens
+  the submenu beside it, and Selection > Select all selects the whole pane; no page error.
 
 ## Traffic lights
 
