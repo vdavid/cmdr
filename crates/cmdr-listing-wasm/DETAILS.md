@@ -90,7 +90,7 @@ tree lists as a folder (as on disk).
 - `pnpm build:listing-wasm` (`scripts/build-listing-wasm.sh [-out DIR] [-smoke] [-golden]`, a Go program):
   `cargo build -p cmdr-listing-wasm --target wasm32-unknown-unknown --profile wasm-release` (plus the crates the browser
   build is about to link, `browserBound` in `main.go`, so a host-only dep can't creep into them first), then
-  `wasm-bindgen --target web`.
+  `wasm-bindgen --target web`, then `wasm-opt` (below).
 - **The C toolchain**: `cmdr-fs` links SQLite (`rusqlite`, which in the browser swaps in `sqlite-wasm-rs` and compiles
   `sqlite3.c` with `cc`). Apple's clang can't target wasm32, and `sqlite-wasm-rs` 0.5.5 has no precompiled option, so
   the script installs conda-forge's LLVM clang and llvm-ar (pinned in `scripts/build-listing-wasm/toolchain.go`,
@@ -108,8 +108,24 @@ tree lists as a folder (as on disk).
   it) too: 9,836,769 bytes raw, 3,565,021 gzipped. Rayon (with `crossbeam`) is about 27 KB of the 7.5 MB of code, about
   0.4%, and the search core about 120 KB (code naming each, after fat LTO; verified 2026-11-04 with an unstripped build,
   `CARGO_PROFILE_WASM_RELEASE_STRIP=false pnpm build:listing-wasm`, then the toolchain's own
-  `llvm-nm -S -C --defined-only` over `target/wasm32-unknown-unknown/wasm-release/cmdr_listing_wasm.wasm`). `wasm-opt`
-  isn't run (no binaryen in the toolchain).
+  `llvm-nm -S -C --defined-only` over `target/wasm32-unknown-unknown/wasm-release/cmdr_listing_wasm.wasm`).
+- **`wasm-opt -O1 --duplicate-function-elimination`** runs on the bindgen output in place (binaryen pinned in
+  `.mise.toml`; `wasmOptArgs` in `main.go`, with rustc's default wasm32 feature set so it validates what rustc emits).
+  ❌ Don't switch it to `-Oz` or `-Os`: they shrink the raw file most but compress worse, and the page downloads the
+  compressed bytes. Measured on the same engine build (binaryen 133, rustc 1.99.1, `gzip -9`, `brotli -q 11`,
+  2026-11-04), raw / gzip / brotli in bytes:
+  - No `wasm-opt`: 9,840,785 / 3,565,560 / 2,581,959.
+  - `-Oz` (8 s): 8,913,278 / 3,622,720 / 2,657,221, so 75 KB more over the wire. `-Oz --converge` (17 s): 8,907,860 /
+    3,608,262 / 2,648,169.
+  - `-Os` (7 s): 8,970,378 / 3,618,853 / 2,660,197. `-O2`: 9,079,077 / 3,635,131 / 2,667,136. `-O3`: 9,047,078 /
+    3,623,800 / 2,651,647.
+  - `-O1`: 9,381,874 / 3,542,793 / 2,577,048.
+  - **`-O1 --duplicate-function-elimination` (1 s, shipped): 9,358,817 / 3,540,069 / 2,571,369**, smaller on all three
+    (raw −4.9%, brotli −10 KB).
+  - Node's `WebAssembly.compile` took 7–9 ms for every variant (lazy tiers), so the raw size buys no startup time
+    either. What the page actually receives is the precompressed Brotli file (`apps/website/DETAILS.md` § Browser demo).
+    The smoke tests run on the optimized module; the golden replay runs on the dev-profile test build, which `wasm-opt`
+    never touches.
 - **Every crate the module links is a demo image input**: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
   `scripts/check/checks/inputs.go`, and ci.yml's `website` filter each list them (the first two are kept aligned by
   `TestWebsiteDemoInputsMatchTheImageKey`, the filter by hand). A new path dep goes in all three, or an engine-only

@@ -48,6 +48,7 @@ paths=(
   Cargo.toml
   Cargo.lock
   rust-toolchain.toml
+  .mise.toml
 )
 
 git ls-tree -r "$rev" -- "${paths[@]}" | grep -Ev '/(CLAUDE|DETAILS)\.md$' | git hash-object --stdin

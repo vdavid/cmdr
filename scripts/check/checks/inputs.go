@@ -385,6 +385,7 @@ var websiteDemoInputs = []string{
 	"Cargo.toml",
 	"Cargo.lock",
 	"rust-toolchain.toml",
+	".mise.toml",
 }
 
 // apiServerInputs mirrors ci.yml's `api-server` filter.
