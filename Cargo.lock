@@ -1970,6 +1970,7 @@ name = "cmdr-search"
 version = "0.0.0"
 dependencies = [
  "cmdr-fs",
+ "cmdr-recents",
  "log",
  "proptest",
  "rayon",

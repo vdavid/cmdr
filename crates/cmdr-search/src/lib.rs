@@ -13,6 +13,7 @@ pub mod arena;
 pub mod context;
 pub mod engine;
 pub mod excludes;
+pub mod history;
 pub mod matcher;
 mod memory;
 pub mod query;

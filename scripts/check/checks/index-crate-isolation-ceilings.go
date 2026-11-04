@@ -578,11 +578,17 @@ var surfaceGuardedCrates = []struct {
 		// `MemoryRow` it's built from, and `MemorySourceError`, why rows can't form a
 		// tree). The browser demo's host builds one from its in-memory volume; its
 		// module stays private, so the three are the whole promise.
+		//
+		// Raised 2026-11-04 by one module (`history`) and its eight items: a recent
+		// search (`HistoryEntry`, `HistoryMode`, `HistoryFilters`), the default cap,
+		// and the three canonical-key helpers the desktop's Selection history shares
+		// (`normalize_query`, `filters_fingerprint`, `flag`, plus `HistoryMode::as_str`).
+		// Both hosts keep a recents list with one dedupe key, so the key is the crate's.
 		Name: "cmdr-search",
 		Ceilings: surfaceCeilings{
-			RootPromises:   36,
-			PublicModules:  10,
-			SubsystemItems: 104,
+			RootPromises:   37,
+			PublicModules:  11,
+			SubsystemItems: 112,
 		},
 	},
 	{

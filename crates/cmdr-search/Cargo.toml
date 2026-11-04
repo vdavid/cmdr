@@ -21,6 +21,8 @@ testing = []
 # (the browser-safe clock). No app crate and no `cmdr-index`: the desktop and the
 # browser demo both host this, and `cmdr-index` doesn't build for `wasm32`.
 cmdr-fs = { path = "../cmdr-fs" }
+# The list rules a recent search follows (`history`), the same every host keeps.
+cmdr-recents = { path = "../cmdr-recents" }
 log = "0.4"
 # The scan's one parallelism (`par_chunks`); it runs inline on a thread-less target.
 rayon = "1.11.0"

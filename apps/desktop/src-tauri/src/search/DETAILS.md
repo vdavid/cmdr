@@ -609,19 +609,14 @@ compiled query. The walk's half of the adapter is `live/walked.rs`.
 
 ## History store (`history.rs`)
 
-The list itself (persistence to `{app_data_dir}/search-history.json`, dedupe, cap, quarantine, locking) is
-`crate::recents`; see `apps/desktop/src-tauri/src/recents/DETAILS.md`. What lives here:
+The entry and its key are `crates/cmdr-search/DETAILS.md` § Recent searches; the list rules are `cmdr-recents`'; the
+file (persistence to `{app_data_dir}/search-history.json`, quarantine, locking) is `crate::recents`
+(`apps/desktop/src-tauri/src/recents/DETAILS.md`). What lives here:
 
-- **`RECENT_SEARCHES`**, the `RecentsFile<HistoryEntry>` static, plus the entry shape and its `RecentEntry` impl.
-- **Canonical dedupe key** (compare-time only, never persisted): `mode | normalized_query | filters | scope |
-  case_sensitive | exclude_system_dirs`. Same key = same search; the most recent copy wins (move-to-top). Six segments
-  against Selection's four, pinned by `key_carries_scope_and_exclude_system_dirs` in `history.rs`.
-- **Cap**: `search.recentSearches.maxCount` (`DEFAULT_MAX_COUNT` = 1000), resolved per call in `commands/search.rs`.
-  `apply_max_count` trims in-memory on live-apply; `0` clears and short-circuits future adds.
-- **Shared types**: `HistoryMode`, `HistoryFilters`, and the key-building helpers (`normalize_query`,
-  `filters_fingerprint`, `flag`) live here and `selection/` uses them one-way; the entry structs stay separate. Sharing
-  the helpers is what keeps a newly-added filter field from reaching one key and not the other. If the two mode sets ever
-  fork, copy the types rather than widening the re-export.
+- **`RECENT_SEARCHES`**, the `RecentsFile<HistoryEntry>` static, and the entry's `RecentEntry` impl (file name, log
+  target, schema version), plus the on-disk compatibility test.
+- **Cap**: `search.recentSearches.maxCount` (`DEFAULT_MAX_COUNT` = 1000, the crate's), resolved per call in
+  `commands/search.rs`. `apply_max_count` trims in-memory on live-apply; `0` clears and short-circuits future adds.
 
 ## AI backend resolution
 

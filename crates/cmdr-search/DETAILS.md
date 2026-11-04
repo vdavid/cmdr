@@ -49,6 +49,21 @@ duplicate, an unlisted parent, a file as a parent) rather than guessing.
   use `testing::FolderSizes`.
 - **Its arena never catches up** (generation 0): a host rebuilds it when its tree changed.
 
+## Recent searches (`history.rs`)
+
+`HistoryEntry` is what the dialog records on "Open in pane", and its `RecentItem` impl is the key `cmdr-recents`' list
+rules dedupe on, so every host's list (the desktop's file, the browser demo's session list) dedupes alike.
+
+- **The canonical key** (compare-time only, never persisted):
+  `mode | normalized_query | filters | scope | case_sensitive | exclude_system_dirs`. Same key = same search; the newest
+  copy wins. Six segments against the desktop Selection dialog's four, pinned by
+  `key_carries_scope_and_exclude_system_dirs`.
+- **Shared with Selection**: `HistoryMode`, `HistoryFilters`, and the key helpers (`normalize_query`,
+  `filters_fingerprint`, `flag`); the entry structs stay separate. Sharing the helpers is what keeps a newly-added
+  filter field from reaching one key and not the other. If the two mode sets ever fork, copy the types rather than
+  widening the share.
+- **Ids are the host's**: `cmdr_recents::add_to` takes a `fresh_id` minter, because minting reads an RNG or a clock.
+
 ## The public surface is capped
 
 `index-crate-isolation` pins the surface at extraction (2026-11-04): 32 root promises (the nine modules plus the flat
@@ -67,6 +82,8 @@ re-exports), nine public modules, 86 items inside them. An item is `pub` only be
 - **A live run's reporting** (raised 2026-11-04 to 33 / 10 / 104, when it joined the crate): `run::*`, the registry
   value, `ResultStream` and its `RunSink` facts, the run-state DTOs, the terminal report's inputs, and `BATCH_ROWS` /
   `BATCH_INTERVAL` (the host's pump and tests). § "A live run's reporting".
+- **A recent search** (raised 2026-11-04 to 37 / 11 / 112): `history::*`, the entry, its cap, and the key helpers the
+  desktop's Selection history shares. § "Recent searches".
 - **A source over rows in memory** (raised 2026-11-04 to 36 root promises): `MemorySource`, `MemoryRow`, and
   `MemorySourceError`, from a private module. The browser demo's host builds one from its tree. § "Rows held in memory".
 

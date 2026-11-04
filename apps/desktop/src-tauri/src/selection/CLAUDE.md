@@ -8,7 +8,7 @@ module owns only the persistent history store and the AI translation pipeline. I
 
 - **`mod.rs`**: re-exports the public surface.
 - **`history.rs`**: `SelectionHistoryEntry` plus its canonical key, over `crate::recents` (which owns the file, dedupe,
-  cap, and quarantine). Re-exports `HistoryMode` and `HistoryFilters` from `crate::search::history` so both consumers
+  cap, and quarantine). Re-exports `HistoryMode` and `HistoryFilters` from `cmdr_search::history` so both consumers
   share one mode/filter shape, and reuses its key-building helpers.
 - **`ai/`**: NL → glob/regex translation, cloud-only. See `ai/CLAUDE.md`.
 
@@ -33,7 +33,7 @@ module owns only the persistent history store and the AI translation pipeline. I
 
 ## Coupling (all one-way; nothing depends on `selection`)
 
-- `crate::search::history`: re-exports `HistoryMode` / `HistoryFilters` and the canonical-key helpers.
+- `cmdr_search::history`: re-exports `HistoryMode` / `HistoryFilters` and the canonical-key helpers.
 - `crate::recents`: the persisted-list machinery behind `RECENT_SELECTIONS`.
 - `crate::ai::manager` + `crate::ai::client`: backend resolution and chat completion (mirrors `commands::search`).
 

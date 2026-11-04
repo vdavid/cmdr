@@ -40,6 +40,7 @@ paths=(
   apps/desktop/test/e2e-shared/media-fixtures
   crates/cmdr-sort
   crates/cmdr-search
+  crates/cmdr-recents
   vendor
   scripts/build-listing-wasm.sh
   scripts/build-listing-wasm
