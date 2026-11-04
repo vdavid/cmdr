@@ -32,7 +32,9 @@ use super::*;
 use crate::search::context::{NameRules, SearchContext};
 use crate::search::index::load_search_index;
 use crate::search::live::events::CollectorSearchEventSink;
-use crate::search::live::{CoverageKind, LiveRun, ResultStream, SearchPhase, SearchRunCoverage, WalkEnding};
+use crate::search::live::{
+    CoverageFacts, CoverageKind, LiveRun, ResultStream, SearchPhase, UnresolvedScope, WalkEnding,
+};
 use crate::search::types::SearchSort;
 
 use super::super::live_run::covered_half_for_run;
@@ -308,28 +310,25 @@ fn golden_live_trace(
         home_dir: None,
         weights,
     };
-    let run = LiveRun::detached_for_test("golden-run", &target.volume_id);
+    let run = LiveRun::detached("golden-run", &target.volume_id);
     let sink = CollectorSearchEventSink::default();
     let mut stream = ResultStream::new(&run, &sink, query);
     stream.announce(SearchPhase::ResolvingCoverage);
     match covered_half_for_run(query, target, loaded, &ctx) {
         Ok(half) => {
             stream.add_indexed(half.entries, half.total, half.hidden_by_excludes);
-            let capped = stream.capped();
-            stream.finish(SearchRunCoverage {
-                walk: WalkEnding::NothingToWalk,
-                kind: CoverageKind::Covered,
-                permission_denied: Vec::new(),
-                declined: Vec::new(),
-                still_covering: Vec::new(),
-                unresolved_scopes: half.unresolved_scopes,
-                uncovered_scopes: Vec::new(),
-                abandoned_ground: false,
-                abandoned_locations: 0,
-                failed_roots: Vec::new(),
-                capped,
-                target_volume_id: target.volume_id.clone(),
-                hidden_by_excludes: 0,
+            // The same report a desktop run with nothing to walk ends on.
+            stream.finish(CoverageFacts {
+                unresolved_scopes: half
+                    .unresolved_scopes
+                    .into_iter()
+                    .map(|path| UnresolvedScope { path, walked: false })
+                    .collect(),
+                ..CoverageFacts::new(
+                    WalkEnding::NothingToWalk,
+                    CoverageKind::Covered,
+                    target.volume_id.clone(),
+                )
             });
         }
         Err((error, message)) => stream.fail(error, message),

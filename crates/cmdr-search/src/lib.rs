@@ -16,6 +16,7 @@ pub mod excludes;
 pub mod matcher;
 pub mod query;
 pub mod ranking;
+pub mod run;
 pub mod seam;
 pub mod types;
 

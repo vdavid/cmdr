@@ -7,7 +7,7 @@ search can silently omit a drive. Scope routes the volume (or the caller placed 
 `on_volume`); unscoped means boot volume.
 
 `execute.rs` routes index/live search over `execute/coverage.rs`; `index_source.rs` answers the seam from SQL;
-`index/load.rs` reads arenas; `volumes.rs` caches them; `live.rs` owns runs and `ResultStream` (`live/CLAUDE.md`);
+`index/load.rs` reads arenas; `volumes.rs` caches them; `live.rs` holds the one run registry and pumps the walk into the crate's `ResultStream` (`live/CLAUDE.md`);
 `history.rs` owns recents; `ai/` translates NL (`ai/CLAUDE.md`).
 
 ## Must-knows

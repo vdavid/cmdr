@@ -43,8 +43,33 @@ re-exports), nine public modules, 86 items inside them. An item is `pub` only be
 - **The host's loader and weights**: `arena::*`, `ranking::ImportanceWeights` and its map verbs.
 - **The host's tests and benches**: `engine::{search_ranked, Ranked, DirSizes, reconstruct_path_from_index}`; the
   `testing`-gated fixtures and wrappers count apart.
+- **A live run's reporting** (raised 2026-11-04 to 33 / 10 / 104, when it joined the crate): `run::*`, the registry
+  value, `ResultStream` and its `RunSink` facts, the run-state DTOs, the terminal report's inputs, and `BATCH_ROWS` /
+  `BATCH_INTERVAL` (the host's pump and tests). § "A live run's reporting".
 
 Raise a ceiling only when the wider surface is genuinely better, said in the commit and here.
+
+## A live run's reporting (`run.rs`)
+
+A live search answers over time, so its reporting is a seam of its own. The crate owns what a run SAYS; the host owns
+what it walks (desktop: `cmdr-index`'s cover walk, pumped by `apps/desktop/src-tauri/src/search/live.rs`).
+
+- **`SearchRuns`** is the registry as a value: register (a `RunOrigin::Dialog { order }` supersedes every dialog run of
+  a smaller or equal order, and a late-arriving earlier one starts superseded; an `Agent` run neither supersedes nor is
+  superseded), cancel one, cancel all, and `cancel_dialog_runs_except`. The host holds one per process. Superseding is
+  not cancelling: a superseded run stops reporting and its walk keeps filling the index (Decision 11).
+- **`ResultStream`** batches (at most `BATCH_ROWS` rows per progress fact, at most `BATCH_INTERVAL` between them),
+  dedupes the walk against the index half by path hash, caps rows while the count keeps rising, sums both halves'
+  exclusion drops, and keeps the run's last phase so the terminal fact repeats what the run WAS doing. Its clock is
+  `cmdr_fs::rt`.
+- **`RunSink`** hears four facts (`RunProgress`, `RunEnded` for complete or cancelled, `RunFailed`). They carry the
+  event payloads field for field; the host's envelopes (desktop's four `tauri_specta::Event` structs) wrap them, so no
+  crate type shares an event's name and `bindings.ts` names the same types.
+- **`CoverageFacts` → `SearchRunCoverage`** is the one terminal report, built inside `ResultStream::finish` for every
+  ending: the abandoned-ground fold (this walk's flag OR the index's durable `abandoned` list), `abandoned_locations`
+  (places, grouped by parent), the three unreadable lists kept apart, and the unresolved-scope rule (only a `Completed`
+  walk clears a scope it took as a frontier root). A cancelled run is relabeled `Cancelled` after the report is built.
+  ❌ No separate "fully covered" report: that run is `CoverageFacts::new(NothingToWalk, Covered, ..)`.
 
 ## The arena row (`arena.rs`)
 

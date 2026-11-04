@@ -13,38 +13,15 @@ use crate::index_host::index;
 use cmdr_index::{CoverageDimension, CoverageToken};
 
 use super::Target;
-use crate::search::live::CoverageKind;
+use crate::search::live::{CoverageKind, UnreadableGround};
 use crate::search::volumes::{self, VolumeLoad};
 
-/// Directories nothing is going to walk, split by WHOSE refusal it was: the three
-/// are different sentences on screen, and only the first is one the user can act
-/// on (`crates/cmdr-index`'s `UnreadableCause`).
-#[derive(Default)]
-pub(super) struct UnreadableGround {
-    /// A walk tried and the OS refused.
-    pub(super) permission_denied: Vec<String>,
-    /// No walk will read it: a NAS snapshot tree.
-    pub(super) declined: Vec<String>,
-    /// A walk tried and gave up (a wedged mount, a vanished directory). Cmdr comes
-    /// back to it on a backoff, so it's neither the user's to fix nor permanent.
-    pub(super) abandoned: Vec<String>,
-}
-
-impl UnreadableGround {
-    /// Fold one scope's answer in.
-    fn extend(&mut self, map: &cmdr_index::CoverageMap) {
-        self.permission_denied.extend(map.permission_denied.iter().cloned());
-        self.declined.extend(map.declined.iter().cloned());
-        self.abandoned.extend(map.abandoned.iter().cloned());
-    }
-
-    /// One order, no duplicates, however many scopes contributed.
-    fn settle(&mut self) {
-        for list in [&mut self.permission_denied, &mut self.declined, &mut self.abandoned] {
-            list.sort_unstable();
-            list.dedup();
-        }
-    }
+/// Fold one scope's coverage answer into what nothing is going to walk, keeping
+/// the index's three causes apart (`crates/cmdr-index`'s `UnreadableCause`).
+fn fold_unreadable(ground: &mut UnreadableGround, map: &cmdr_index::CoverageMap) {
+    ground.permission_denied.extend(map.permission_denied.iter().cloned());
+    ground.declined.extend(map.declined.iter().cloned());
+    ground.abandoned.extend(map.abandoned.iter().cloned());
 }
 
 /// A coverage answer over a query's scopes, merged.
@@ -86,7 +63,7 @@ pub(super) fn coverage_of(volume_id: &str, scopes: &[String]) -> CoverageQuestio
     for scope in scopes {
         match index().coverage(volume_id, scope, CoverageDimension::Listing) {
             Ok(map) => {
-                question.unreadable.extend(&map);
+                fold_unreadable(&mut question.unreadable, &map);
                 question.frontier.extend(map.frontier);
                 question.being_walked.extend(map.being_walked);
                 question.walk_pulse += map.walk_pulse;

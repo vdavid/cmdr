@@ -444,8 +444,9 @@ All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-arc
   measured) and each column's widest name over a pane's rows. Hosted by the app (`font_metrics/`, which persists the
   store) and the browser demo. See `crates/cmdr-brief-columns/CLAUDE.md`
 - `crates/cmdr-search/`: the drive search's core (⌘F): the query model, the one matcher and exclusion set, ranking, and
-  the in-memory arena it scans, fed through a narrow seam (`SearchRows`, `DirSizeSource`) asked per query, never per
-  row. Hosted by the app (`src-tauri/src/search/`, answering from the drive index). See `crates/cmdr-search/CLAUDE.md`
+  the in-memory arena it scans, a live run's reporting (registry, result stream, terminal report), fed through a narrow
+  seam (`SearchRows`, `DirSizeSource`) asked per query, never per row. Hosted by the app (`src-tauri/src/search/`,
+  answering from the drive index). See `crates/cmdr-search/CLAUDE.md`
 - `crates/cmdr-menu/`: the menu bar as data: both platforms' rows, the item ids and their commands, the enabled-state
   fold, and what a click asks for. The desktop's `menu/` builds native menus from it; the browser demo draws the macOS
   bar from it through `cmdr-listing-wasm`. See `crates/cmdr-menu/CLAUDE.md`
@@ -631,9 +632,9 @@ All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-arc
 
 Whole-drive file search powered by the index DB. The search index lazy-loads all entries into memory (~600 MB for 5M
 files), scans them with rayon in parallel, returns results by recency, and drops after an idle timeout. Backend: the
-Tauri-free core in `crates/cmdr-search/` (engine, matcher, ranking, arena, and the seam), hosted by
-`src-tauri/src/search/` (routing, the SQL-backed `IndexSource`, arena loading and lifecycle, live runs, history), with
-AI query translation in `search/ai/`. The dialog is the first `query-ui` consumer; "Open in pane" hands off to a
+Tauri-free core in `crates/cmdr-search/` (engine, matcher, ranking, arena, the seam, and a live run's reporting), hosted
+by `src-tauri/src/search/` (routing, the SQL-backed `IndexSource`, arena loading and lifecycle, the live walk, history),
+with AI query translation in `search/ai/`. The dialog is the first `query-ui` consumer; "Open in pane" hands off to a
 frontend-only virtual `search-results` volume (snapshot store, refcounted). Full detail:
 `src-tauri/src/search/CLAUDE.md` and `apps/desktop/src/lib/search/CLAUDE.md`.
 

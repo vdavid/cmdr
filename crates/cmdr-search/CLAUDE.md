@@ -8,7 +8,8 @@ the in-memory arena it scans. Tauri-free and `cmdr-index`-free; Cmdr hosts it fr
 - **seam.rs** (the host's door: `SearchRows`, `DirSizeSource`, `search_covered`, typed errors, `ResolvedScope`),
   **context.rs** (`NameRules`, `SearchContext`), **arena.rs** (`SearchIndex`, `ArenaBuilder`, `OptU64`).
 - **engine.rs** (the scan, scope filter, sort, path reconstruction), **matcher.rs**, **excludes.rs**, **ranking.rs**,
-  **query.rs** (scope parsing, scope paths, summaries), **types.rs** (wire types), **testing.rs** (fixtures).
+  **query.rs** (scope parsing, scope paths, summaries), **types.rs** (wire types), **run.rs** (a live run's registry,
+  `ResultStream`, and the one terminal report), **testing.rs** (fixtures).
 
 ## Must-knows
 
@@ -26,6 +27,8 @@ the in-memory arena it scans. Tauri-free and `cmdr-index`-free; Cmdr hosts it fr
   (`ArenaBuilder::push` debug-asserts; fixtures go through `testing::arena_of`, which sorts).
 - **A `SearchEntry` is 40 bytes and stays 40.** `size` / `modified_at` are `OptU64`: ❌ never `Option<u64>`, ❌ never
   compare the sentinel, ❌ never collapse `None` into `0` (a NULL size is a hardlink-deduped row).
+- **Every live run ends through `ResultStream::finish(CoverageFacts)`**, ❌ never a hand-built `SearchRunCoverage`: the
+  abandoned-ground fold and the unresolved-scope rule live in that one report. Superseding a run ≠ cancelling it.
 - **Gate test scaffolding on `any(test, feature = "testing")`**: the host's tests use it.
 
 The seam, the arena, the compiled query, ranking and its costs, and the capped surface: `DETAILS.md`. Read it before any

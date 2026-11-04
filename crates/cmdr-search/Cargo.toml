@@ -32,6 +32,10 @@ serde = { version = "1", features = ["derive"] }
 specta = { version = "=2.0.0-rc.24", features = ["derive"] }
 # `format_timestamp` formats a given value; nothing here reads a clock.
 time = { version = "0.3", features = ["formatting", "macros"] }
+# `CancellationToken`, the one cancellation primitive every layer speaks: a live
+# run carries the token that stops its walk. `default-features = false` keeps it to
+# `tokio_util::sync`, as `cmdr-fs` and `cmdr-listing` take it.
+tokio-util = { version = "0.7.18", default-features = false }
 unicode-normalization = "0.1"
 
 [dev-dependencies]

@@ -535,11 +535,20 @@ var surfaceGuardedCrates = []struct {
 		// tools, or tests reach it; the rest stays `pub(crate)`. The `testing`-gated
 		// fixtures count apart. Item-by-item: `crates/cmdr-search/DETAILS.md` §
 		// "The public surface is capped".
+		//
+		// Raised 2026-11-04 by one module (`run`) and its 18 items, when a live
+		// run's reporting joined the crate: the registry as a value (`SearchRuns`,
+		// `LiveRun`, `RunOrigin`), `ResultStream` and its sink (`RunSink` plus the
+		// three facts it hears), the five run-state DTOs, the terminal report's
+		// inputs (`CoverageFacts`, `UnreadableGround`, `UnresolvedScope`), and the
+		// two batch constants the host's pump and tests read. Each is a seam a second
+		// host (the browser demo) needs to say what a desktop run says without
+		// re-implementing it, so the wider surface is the better design.
 		Name: "cmdr-search",
 		Ceilings: surfaceCeilings{
-			RootPromises:   32,
-			PublicModules:  9,
-			SubsystemItems: 86,
+			RootPromises:   33,
+			PublicModules:  10,
+			SubsystemItems: 104,
 		},
 	},
 }

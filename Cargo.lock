@@ -1968,6 +1968,7 @@ dependencies = [
  "serde_json",
  "specta",
  "time",
+ "tokio-util",
  "unicode-normalization",
 ]
 
