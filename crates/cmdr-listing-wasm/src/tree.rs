@@ -86,6 +86,12 @@ fn secs(ms: Option<u64>) -> Option<u64> {
 impl DemoTree {
     /// The tree as an in-memory volume, after checking every path has its parent.
     pub fn into_volume(self) -> Result<Arc<dyn Volume>, TreeError> {
+        Ok(Arc::new(self.into_in_memory()?))
+    }
+
+    /// [`Self::into_volume`], before it's shared, so a host can add the device
+    /// options (bandwidth, yielding, capacity, pane patches).
+    pub fn into_in_memory(self) -> Result<InMemoryVolume, TreeError> {
         let root = PathBuf::from(&self.root);
         let dirs: HashSet<&str> = self
             .entries
@@ -124,7 +130,7 @@ impl DemoTree {
                 volume = volume.with_content(&entry.path, InMemoryContent::synthetic(seed_of(&entry.path), size));
             }
         }
-        Ok(Arc::new(volume))
+        Ok(volume)
     }
 }
 

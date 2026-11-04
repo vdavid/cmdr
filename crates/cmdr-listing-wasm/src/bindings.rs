@@ -6,7 +6,7 @@ use std::sync::Arc;
 use serde_json::Value;
 use wasm_bindgen::prelude::*;
 
-use crate::commands::{COMMANDS, Demo};
+use crate::commands::Demo;
 use crate::events::EventSink;
 use crate::tree::DemoTree;
 
@@ -102,7 +102,7 @@ impl DemoListing {
 
     /// The Tauri command names [`invoke`](Self::invoke) answers.
     pub fn commands() -> Vec<String> {
-        COMMANDS.iter().map(|c| (*c).to_string()).collect()
+        Demo::commands().map(str::to_string).collect()
     }
 
     /// Whether [`invoke`](Self::invoke) answers `command`.

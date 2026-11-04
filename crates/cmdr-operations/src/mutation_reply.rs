@@ -133,11 +133,9 @@ where
             // already running on that same runtime, so its continuation belongs
             // there too. A host-runtime spawn would split the two, and would put
             // the paused-clock tests' continuation on a clock they don't drive.
-            #[allow(
-                clippy::disallowed_methods,
-                reason = "the continuation of `race_detached`'s ambient spawn; see the comment above"
-            )]
-            tokio::spawn(async move {
+            // `spawn_ambient` is `tokio::spawn` natively and the page's loop in the
+            // browser build, where `race_detached` spawned the work too.
+            drop(cmdr_fs::rt::spawn_ambient(async move {
                 let result = flatten_join(handle.await);
                 match &result {
                     Ok(_) => log::info!(target: "write_ops", "a mutation past its deadline landed: {settled_id}"),
@@ -146,7 +144,7 @@ where
                     }
                 }
                 on_settled(settled_id, result);
-            });
+            }));
             Ok(Replied::StillRunning { pending_id })
         }
     }

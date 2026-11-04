@@ -844,10 +844,9 @@ impl Volume for InMemoryVolume {
                         expected_length: StreamLength::Known(size),
                     }) == std::ops::ControlFlow::Break(())
                     {
-                        return Err(VolumeError::IoError {
-                            message: "Operation cancelled".into(),
-                            raw_os_error: None,
-                        });
+                        // `Cancelled`, as every real backend answers a stopped stream:
+                        // an `IoError` here made a cancelled copy end in `write-error`.
+                        return Err(VolumeError::Cancelled("Operation cancelled".into()));
                     }
                 }
 

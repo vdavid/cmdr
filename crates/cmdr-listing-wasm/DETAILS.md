@@ -77,13 +77,43 @@ tree lists as a folder (as on disk).
   it from its own cache (`.github/actions/wasm-toolchain`, saved from `main` only).
 - Output: `crates/cmdr-listing-wasm/pkg/` (gitignored): `cmdr_listing_wasm.js`, `cmdr_listing_wasm_bg.wasm`, their
   `.d.ts`, and a `package.json` saying `"type": "module"`.
-- `wasm-release` (root `Cargo.toml`): `opt-level = "s"`, fat LTO, one codegen unit, `panic = "abort"`, stripped. About 2
-  MB raw (2026-11-04); ICU collation data is most of it. `wasm-opt` isn't run (no binaryen in the toolchain).
+- `wasm-release` (root `Cargo.toml`): `opt-level = "s"`, fat LTO, one codegen unit, `panic = "abort"`, stripped. With
+  the write engine, SQLite, and the operation log linked: 6.5 MB raw, 2.5 MB gzipped (`gzip -9`, 2026-11-04; the listing
+  engine alone was about 2.5 MB raw, ICU collation data most of it). `wasm-opt` isn't run (no binaryen in the
+  toolchain).
+- **Every crate the module links is a demo image input**: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
+  `scripts/check/checks/inputs.go`, and ci.yml's `website` filter each list them (the first two are kept aligned by
+  `TestWebsiteDemoInputsMatchTheImageKey`, the filter by hand). A new path dep goes in all three, or an engine-only
+  change keeps the old image key and getcmdr.com serves a stale engine. List them with
+  `cargo tree -p cmdr-listing-wasm --target wasm32-unknown-unknown -e normal --prefix none | rg '\(/'`.
 - The `wasm-bindgen` CLI has to be the exact version of the `wasm-bindgen` crate in `Cargo.lock`, or it refuses the
   module; the script reads the lockfile and `cargo install`s that version into `~/.cargo/bin` when it's missing.
 - The check: `desktop-rust-listing-wasm` runs the script with `-smoke` into a temp dir, in CI's "Desktop (Rust)" job.
   The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, Brief column
-  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps.
+  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps. Its write half
+  (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
+  delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
+  that fails past a 50 ms hold. Any unhandled rejection fails the run.
+
+## Writes
+
+`operations_host/` is the write engine's host, mirroring the desktop's `operations_host/`: `volumes.rs`
+(`OperationVolumes` over the one volume; `local_disk_id` is `None`, so the demo's `root` takes the volume engine for
+every op), `events.rs` (`EngineEvents`), `sinks.rs` (the per-op and per-preview sinks; a failure is retained for the
+queue before its `write-error`, as the desktop's terminal effects order it), `wire.rs` (every event name, pinned against
+`bindings.ts` by `events_test.rs`), and `commands/` by domain (`transfers.rs`, `instant.rs`, `queue.rs`, `history.rs`).
+`Demo` routes a command to it when `DemoOperations::handles` claims it.
+
+- **One volume, one `Listings`**: `Demo::new` builds the `InMemoryVolume` once, hands it to both engines, and gives it
+  pane patches through `backend_listings.rs`'s late-bound `BackendListings` (the volume needs its listing host before
+  the engine that lists it exists). The write engine's `VolumeHost` carries the same host, and its `NameOrder` is the
+  listing engine's collator.
+- **The device**: `with_bandwidth(5 MiB/s)` (a 10 MB copy takes about two seconds, slow enough to watch and pause in the
+  queue), `with_yielding(8 ms)` (the page never waits long on engine work), and `with_capacity` at the disk size the
+  volume list shows, so free space is live. `Pacing` stays the engine's default `None`.
+- **The journal** is the real `cmdr-operation-log` on `/demo/operation-log.db` (SQLite's in-memory VFS, gone on reload
+  like the volume; the writer applies inline, `cmdr-operation-log`'s browser build). The ledger is claimed unpersisted;
+  its `LedgerUnpersisted` report stays quiet. Natively (tests) the log is a scratch file in the temp dir.
 
 ## Where the demo differs from the app
 
@@ -95,5 +125,9 @@ tree lists as a folder (as on disk).
   the page measures again. No `timeout` kind either: the desktop's two-second cap on `get_brief_column_text_widths`
   guards a write-locked cache, which a page's one thread can't be waiting on.
 - **Owners show as empty, permissions are fixed**, and nothing reads tags, packages, index sizes, or git status.
-- **No writes**: the engine answers listing, Brief-width, and font-metrics commands only. Writes (copy, move, rename,
-  create) are #929.
+- **No local disk**: `move_files` (the desktop's same-`root` move) runs as a volume move on `root`, the dialog's
+  `previewId` carried in its config; `trash_files` and `move_to_trash` refuse typed (`trash_not_supported`), as a volume
+  without a Trash does, and F8 takes the app's permanent-delete confirm. `trash_routing_for_paths` answers the plain
+  trash route (nothing online-only here).
+- **No host work around writes**: no `~` expansion, no S3 cost pricing (`check_rename_validity` prices nothing), no
+  analytics, no indexing priority, and `get_volume_space` answers the one volume's live space for every path.

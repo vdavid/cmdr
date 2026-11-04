@@ -11,7 +11,7 @@
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::OnceLock;
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::host::listings::ListingHost;
@@ -19,32 +19,46 @@ use cmdr_fs::volume::{DirectoryChange, SupportedDates};
 
 use cmdr_listing::{DirectorySortMode, EffectiveSort, Listings, SortColumn, SortOrder, sort_entries};
 
-/// `listings` as the [`ListingHost`] a backend reports its writes to.
-pub fn backend_listings(listings: &Listings) -> Arc<dyn ListingHost> {
-    Arc::new(BackendListings {
-        listings: listings.clone(),
-    })
+/// The listing engine as the [`ListingHost`] a backend reports its writes to.
+/// Late-bound: the volume needs its listing host before the engine that lists it
+/// exists, so the demo builds this first and [`attach`](Self::attach)es the engine
+/// once it does. Before that (and on a host that never attaches one) every
+/// question answers "no pane", every change goes nowhere.
+#[derive(Default)]
+pub struct BackendListings {
+    listings: OnceLock<Listings>,
 }
 
-struct BackendListings {
-    listings: Listings,
+impl BackendListings {
+    /// Starts answering for `listings`. A second call is ignored: one engine per page.
+    pub fn attach(&self, listings: &Listings) {
+        let _ = self.listings.set(listings.clone());
+    }
 }
 
 impl ListingHost for BackendListings {
     fn directory_changed(&self, volume_id: &str, parent_path: &Path, change: DirectoryChange) {
-        self.listings.directory_changed(volume_id, parent_path, change);
+        if let Some(listings) = self.listings.get() {
+            listings.directory_changed(volume_id, parent_path, change);
+        }
     }
 
     fn authoritative_listing(&self, volume_id: &str, path: &Path) -> Option<Vec<FileEntry>> {
-        self.listings.authoritative_listing(volume_id, path)
+        self.listings.get()?.authoritative_listing(volume_id, path)
     }
 
     fn volumes_with_open_listings(&self, volume_id_prefix: &str) -> Vec<String> {
-        self.listings.volume_ids_with_listings(volume_id_prefix)
+        self.listings
+            .get()
+            .map(|l| l.volume_ids_with_listings(volume_id_prefix))
+            .unwrap_or_default()
     }
 
     fn open_listing_paths(&self, volume_id: &str) -> Vec<PathBuf> {
-        self.listings.open_listing_paths(volume_id)
+        self.listings
+            .get()
+            .map(|l| l.open_listing_paths(volume_id))
+            .unwrap_or_default()
     }
 
     fn refresh_archive_listings<'a>(
@@ -52,12 +66,19 @@ impl ListingHost for BackendListings {
         volume_id: &'a str,
         archive_path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(async move { self.listings.refresh_archive_listings(volume_id, archive_path).await })
+        Box::pin(async move {
+            if let Some(listings) = self.listings.get() {
+                listings.refresh_archive_listings(volume_id, archive_path).await;
+            }
+        })
     }
 
     fn sort_listing(&self, entries: &mut [FileEntry]) {
+        let Some(listings) = self.listings.get() else {
+            return;
+        };
         sort_entries(
-            &self.listings.collator(),
+            &listings.collator(),
             entries,
             // A name sort reads no date, so no volume's dates change it.
             EffectiveSort::resolve(

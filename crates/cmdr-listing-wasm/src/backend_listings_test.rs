@@ -7,7 +7,15 @@ use cmdr_fs::volume::{InMemoryVolume, Volume};
 
 use cmdr_listing::testing::{TestEngine, TestListing};
 
-use super::backend_listings;
+use std::sync::Arc;
+
+use super::BackendListings;
+
+fn backend_listings(engine: &cmdr_listing::Listings) -> Arc<BackendListings> {
+    let host = Arc::new(BackendListings::default());
+    host.attach(engine);
+    host
+}
 
 fn names_after(listing: &cmdr_listing::testing::TestListingGuard) -> Vec<String> {
     let mut names = listing.entry_names();

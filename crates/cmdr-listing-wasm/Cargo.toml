@@ -23,6 +23,14 @@ cmdr-fs = { path = "../cmdr-fs" }
 # Brief mode's column widths and the font metrics the page measures for them,
 # the same code the desktop's commands run.
 cmdr-brief-columns = { path = "../cmdr-brief-columns" }
+# The write engine and its journal, on the same volume the listing engine reads
+# (`src/operations_host/`), sorting names with the panes' collator.
+cmdr-operations = { path = "../cmdr-operations" }
+cmdr-operation-log = { path = "../cmdr-operation-log" }
+cmdr-collation = { path = "../cmdr-collation" }
+# The operation log's read connection type (`commands/history.rs`), the version
+# `cmdr-operation-log` links.
+rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
 log = "0.4"
 # The wire shapes: every answer and event crosses as the same JSON Tauri sends.
 serde = { version = "1", features = ["derive"] }
@@ -38,5 +46,7 @@ js-sys = "0.3.103"
 [dev-dependencies]
 # The listing engine's fixtures (`TestEngine`, `TestListing`) for the backend-listings cells.
 cmdr-listing = { path = "../cmdr-listing", features = ["testing"] }
+# `wait_until_async`, the write cells' one way to wait on an event.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # The shim's tests run natively, on a real runtime, against the same engine.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
