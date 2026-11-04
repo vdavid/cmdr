@@ -42,9 +42,6 @@ Read this before adding, wiping, or reorganizing a spec.
 - `search-arena-snapshot.md`: **Opening search waits ~1 s on every reopen past the idle window, and seconds on a
   session's first open.** Map a journaled columnar arena in place. Issue:
   [#114](https://github.com/vdavid/cmdr/issues/114).
-- `search-crate-plan.md`: **The ⌘F search core lives in the app crate, so it can't be tested without the app and an
-  index database, and the browser demo can't run it.** A Tauri-free `crates/cmdr-search` fed through a per-query source
-  seam (index-backed on desktop, in-memory in the demo). Issue: [#302](https://github.com/vdavid/cmdr/issues/302).
 - `swap-scan-plan.md`: **A rescan of a completed local index takes ~15 minutes; a fresh parallel scan takes two.** Build
   a fresh index beside the live one and swap it in atomically. Issues:
   [#242](https://github.com/vdavid/cmdr/issues/242), [#243](https://github.com/vdavid/cmdr/issues/243).

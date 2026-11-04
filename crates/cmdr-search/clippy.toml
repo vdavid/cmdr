@@ -21,6 +21,9 @@ disallowed-methods = [
   { path = "std::time::Instant::elapsed", reason = "use `cmdr_fs::rt::since(start)`: `std`'s clock panics in the browser build" },
   { path = "std::time::SystemTime::now", reason = "the core reads no wall clock; a date the search needs arrives as a value" },
   { path = "time::OffsetDateTime::now_utc", reason = "the core reads no wall clock; a date the search needs arrives as a value" },
+  # Exists only when a crate in the build turns on `time`'s `local-offset` feature (feature
+  # unification can), so `allow-invalid` keeps the ban armed without warning when it doesn't.
+  { path = "time::OffsetDateTime::now_local", reason = "the core knows no zone; the user's calendar arrives as a `translate::LocalDays`", allow-invalid = true },
   { path = "dirs::home_dir", reason = "the home folder is the host's: it arrives as `SearchContext::home_dir`" },
   { path = "std::thread::spawn", reason = "the core spawns nothing; rayon's `par_chunks` is its one parallelism" },
 ]

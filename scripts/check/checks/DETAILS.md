@@ -2240,20 +2240,19 @@ and the `#[cfg(any(test, feature = "testing"))]` the `cmdr-fs` host stubs need),
 doubles as production code.
 
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
-  scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —
-  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-mtp`, `cmdr-adb`,
-  `cmdr-git` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its `cargo metadata` tree, plus a per-bucket
-  public-surface ceiling on all of them except `cmdr-fs`, which is permanently uncapped: it's shared vocabulary whose
-  job is to be named from everywhere. An item whose attributes gate it on `cfg(test)` or the `testing`, `tooling`, or
-  `fuzzing` feature (`isGated`; a gate on the enclosing `impl` block, and one above a wrapped multi-line attribute,
-  count too) counts as a gated door, never as public API, so a fuzz entry point doesn't eat a crate's ceiling. See
-  `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in
-  `index-crate-isolation.go` for the backend ones, and why raising any of them needs David's say-so),
-  operations-local-disk-boundary (`cmdr-operations` names `libc`, `cmdr_local`, `objc2`, `xattr`, `trash`, `dirs`, or
-  `std::os::unix` only in `local_disk/` and the local-engine trees `operationsLocalDiskModules` lists, since the crate
-  builds for the browser demo, which has no local disk; test files and `#[cfg(test)]` modules are exempt),
-  nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects a live test, so a per-test cap
-  or `test-group` can't be silently detached by a module move; it lists the workspace's tests with
+  scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate, each one
+  `guardedIndexCrates` in `index-crate-isolation.go` names, reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its
+  `cargo metadata` tree, plus a per-bucket public-surface ceiling on all of them except `cmdr-fs`, which is permanently
+  uncapped: it's shared vocabulary whose job is to be named from everywhere. An item whose attributes gate it on
+  `cfg(test)` or the `testing`, `tooling`, or `fuzzing` feature (`isGated`; a gate on the enclosing `impl` block, and
+  one above a wrapped multi-line attribute, count too) counts as a gated door, never as public API, so a fuzz entry
+  point doesn't eat a crate's ceiling. See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number
+  means, the crate's own entry in `index-crate-isolation.go` for the backend ones, and why raising any of them needs
+  David's say-so), operations-local-disk-boundary (`cmdr-operations` names `libc`, `cmdr_local`, `objc2`, `xattr`,
+  `trash`, `dirs`, or `std::os::unix` only in `local_disk/` and the local-engine trees `operationsLocalDiskModules`
+  lists, since the crate builds for the browser demo, which has no local disk; test files and `#[cfg(test)]` modules are
+  exempt), nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects a live test, so a
+  per-test cap or `test-group` can't be silently detached by a module move; it lists the workspace's tests with
   `cargo nextest list --run-ignored all` and names where a stale atom's leaf went. It judges the HOST platform, so a
   filter for a macOS-only test looks deleted on the Linux lane: those carry
   `# allowed-unmatched-nextest-filter: macos-only, <why>`, which excuses the filter everywhere except the platform it

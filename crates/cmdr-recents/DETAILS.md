@@ -6,8 +6,8 @@ The list rules have five users: four desktop features (search, selection, Go to 
 and last settings) and the browser demo, which keeps recent searches for the session. Inside any one of them, the others
 would depend on that feature (Go to path on search, say), and no shared crate is about lists (`cmdr-fs` is filesystem
 vocabulary). So the rules are a crate of their own, Tauri-free and dependency-free, and one dedupe and cap rule holds on
-every host: a recent search dedupes in the demo exactly as on a Mac (`docs/specs/search-crate-plan.md`, the M6
-decision).
+every host: a recent search dedupes in the demo exactly as on a Mac. ❌ Never inside `cmdr-search`: Go to path and
+multi-rename would then depend on search.
 
 ## The edge
 

@@ -33,5 +33,6 @@ the in-memory arena it scans. Tauri-free and `cmdr-index`-free; Cmdr hosts it fr
   abandoned-ground fold and the unresolved-scope rule live in that one report. Superseding a run ≠ cancelling it.
 - **Gate test scaffolding on `any(test, feature = "testing")`**: the host's tests use it.
 
-The seam, the arena, the compiled query, ranking and its costs, and the capped surface: `DETAILS.md`. Read it before any
-non-trivial work here: editing, planning, reorganizing, or advising.
+Why a crate, the invariants, the registered behavior changes, the seam, the arena, the compiled query, ranking and its
+costs, and the capped surface: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing,
+or advising.

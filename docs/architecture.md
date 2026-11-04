@@ -452,8 +452,8 @@ the app, and neither do `cmdr-listing-wasm` and the two dev CLIs; `index-crate-i
 - `crates/cmdr-search/`: the drive search's core (⌘F): the query model, the one matcher and exclusion set, ranking, and
   the in-memory arena it scans, a live run's reporting (registry, result stream, terminal report), fed through a narrow
   seam (`SearchRows`, `DirSizeSource`) asked per query, never per row. Hosted by the app (`src-tauri/src/search/`,
-  answering from the drive index); `MemorySource` answers from rows in memory, proven identical. See
-  `crates/cmdr-search/CLAUDE.md`
+  answering from the drive index) and the browser demo (`cmdr-listing-wasm`'s `search.rs`, through `MemorySource`, which
+  answers from rows in memory, proven identical). See `crates/cmdr-search/CLAUDE.md`
 - `crates/cmdr-recents/`: the rules of a most-recently-used list (newest first, dedupe, cap, unique ids), pure `Vec`
   work every recents list keeps; the app's `src-tauri/src/recents/` persists each one. See
   `crates/cmdr-recents/CLAUDE.md`
@@ -644,9 +644,10 @@ Whole-drive file search powered by the index DB. The search index lazy-loads all
 files), scans them with rayon in parallel, returns results by recency, and drops after an idle timeout. Backend: the
 Tauri-free core in `crates/cmdr-search/` (engine, matcher, ranking, arena, the seam, and a live run's reporting), hosted
 by `src-tauri/src/search/` (routing, the SQL-backed `IndexSource`, arena loading and lifecycle, the live walk, history),
-with AI query translation in `cmdr_search::translate` (hosted by `apps/desktop/src-tauri/src/search/ai.rs`). The dialog
-is the first `query-ui` consumer; "Open in pane" hands off to a frontend-only virtual `search-results` volume (snapshot
-store, refcounted). Full detail: `src-tauri/src/search/CLAUDE.md` and `apps/desktop/src/lib/search/CLAUDE.md`.
+with AI query translation in `cmdr_search::translate` (hosted by `apps/desktop/src-tauri/src/search/ai.rs`). The browser
+demo runs the same core over its in-memory tree (`crates/cmdr-listing-wasm/DETAILS.md` § Search). The dialog is the
+first `query-ui` consumer; "Open in pane" hands off to a frontend-only virtual `search-results` volume (snapshot store,
+refcounted). Full detail: `src-tauri/src/search/CLAUDE.md` and `apps/desktop/src/lib/search/CLAUDE.md`.
 
 ## Cross-cutting patterns
 

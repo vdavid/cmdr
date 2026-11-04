@@ -5,8 +5,8 @@
 //! through the production loader, and every case enters through ONE function,
 //! [`golden_run`], whose signature stays fixed while its body follows the code. So
 //! the proof isn't rewritten by the change it proves. A golden that moves is a bug,
-//! ❌ never a re-record, except the deliberate behavior changes the search-crate
-//! plan registers (`docs/specs/search-crate-plan.md` § "Deliberate behavior changes").
+//! ❌ never a re-record, except the deliberate behavior changes the crate registers
+//! (`crates/cmdr-search/DETAILS.md` § "Deliberate behavior changes").
 //!
 //! - **Hermetic**: the corpus sits under `/cmdr-golden` and `/Volumes/cmdr-golden-share`,
 //!   paths that exist nowhere and live under no `$HOME`, so `realpath` keeps them

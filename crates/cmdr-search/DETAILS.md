@@ -1,8 +1,68 @@
 # cmdr-search details
 
 The drive search's core. The host side (routing one volume per search, loading and caching arenas, live runs over
-unindexed ground, history, AI translation) is `apps/desktop/src-tauri/src/search/DETAILS.md`. Why this is a crate, and
-the milestones that built it: `docs/specs/search-crate-plan.md`.
+unindexed ground, history, AI translation) is `apps/desktop/src-tauri/src/search/DETAILS.md`. Extracted under
+[#302](https://github.com/vdavid/cmdr/issues/302) (`docs/specs/search-crate-plan.md`, now retired).
+
+## Why a crate
+
+The search core lived in the app crate, braided with the index handle, SQL, Tauri events, app statics, the home folder,
+and `cfg!(target_os)`. As a crate: (1) desktop tests the core over an in-memory source with no SQLite, the purity rules
+are a compiler-enforced boundary, and the platform name rules are a value (macOS rules testable on Linux CI); (2) the
+browser demo runs the real search over its in-memory tree (`crates/cmdr-listing-wasm/DETAILS.md` § Search).
+
+- **The name**: it's the drive search (file names over a volume). Media and OCR search stay in `cmdr-index`'s
+  `media_index` read API, which this crate doesn't touch.
+- **Decision: the index-backed source stays in the app** (`apps/desktop/src-tauri/src/search/index_source.rs`, the
+  `listing_host/` pattern): it's SQL, threads, and the app's arena lifecycle, and the demo's rows come from its own
+  tree, held identical by `source_equivalence.rs`.
+- **Decision: the recent-list rules are their own crate**, never in here: `crates/cmdr-recents/DETAILS.md`.
+- **Moved types keep their `bindings.ts` names**: specta names a type by its struct, not its module, and `specta` is
+  pinned to the app's exact pre-release (two in one graph and the `Type` impls stop satisfying `tauri-specta`).
+
+## The invariants
+
+Each is what a review of this crate checks first.
+
+1. Desktop answers, order, counts, honesty fields, and events match the host's goldens
+   (`apps/desktop/src-tauri/src/search/execute/tests/goldens.rs`); a moved golden is a bug, except a change registered
+   below.
+2. No `tauri`, `tauri-specta`, `cmdr`, or `cmdr-index` in the tree (`index-crate-isolation`); the crate builds for
+   `wasm32-unknown-unknown` (`desktop-rust-listing-wasm` links and smoke-runs it).
+3. The scan runs over a concrete arena inside the crate; every source call is per query, never per row.
+4. One matcher, one exclusion set, one `NameRules` per run: no case folding or normalization derived outside it.
+5. No statics, and no ambient clock, zone, home, platform, or runtime (`clippy.toml` bans the reads; `NameRules::host()`
+   is the one `cfg`, and it's the host's to call).
+6. `SearchEntry` is 40 bytes, the arena is id-sorted with no id map, and `OptU64` is the only read of size and date.
+7. Every source read error fails the search as `SourceUnreadable` (a live run's `IndexUnreadable`); a scope is a typed
+   `ResolvedScope`, never a sentinel id.
+8. The browser demo answers every search command through the crate; its TS answers none.
+9. One folder-size truth per host (desktop's `dir_stats`, the demo's fold); search never rolls up sizes of its own.
+10. One recent-list rule and one history key for every host and every history feature.
+
+## Deliberate behavior changes
+
+The extraction changed desktop behavior in exactly these places, each a red-first commit; the goldens pin the result.
+
+1. **`home_relative_parent` matches home on a `/` boundary**: a bare prefix strip turned `/Users/david/x` into `~id/x`
+   for a home of `/Users/dav`.
+2. **Days are local**: "today", every AI time range, the MCP `modifiedAfter` / `modifiedBefore` dates, the AI's date
+   chips, and the dialog's own date filter start at the user's local midnight, never UTC's (`translate::LocalDays`).
+3. **A bad exclusion glob is a `Query` error naming it**, never silently dropped.
+4. **A failed folder-size fill, size-range read, or scope resolution fails the search**, never a sizeless row, "no
+   filter", or an "unresolved" scope; a live run reports it as `IndexUnreadable` with conversational copy.
+
+## Performance across the crate edge
+
+- **Nothing hot crosses it**: the scan's chunk closure, `CompiledQuery::matches`, and the arena accessors all sit inside
+  this crate, and release runs thin LTO. The accessors keep `#[inline]` anyway, for the mapped-arena facade (#114).
+- **The load is the one per-row crossing**: the host's SQL loader pushes about six million rows into `ArenaBuilder`, so
+  `push` is `#[inline]` (the dev and `e2e` profiles run without LTO). The extraction measured the scan, allocations, and
+  load within noise of the baseline: `docs/notes/search-crate-baseline-2026-11-04.md`.
+- **In the browser, rayon runs inline**: rayon-core's `default_global_registry` falls back to a one-thread pool on the
+  calling thread when threads are unsupported (rayon-core 1.13.0 `registry.rs`, read 2026-11-04), so `par_chunks` runs
+  on the page's thread; `smoke.mjs` proves it doesn't trap. Its size cost: `crates/cmdr-listing-wasm/DETAILS.md` § The
+  build.
 
 ## The seam (`seam.rs`)
 

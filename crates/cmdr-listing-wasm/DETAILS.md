@@ -105,8 +105,11 @@ tree lists as a folder (as on disk).
 - `wasm-release` (root `Cargo.toml`): `opt-level = "s"`, fat LTO, one codegen unit, `panic = "abort"`, stripped. With
   the write engine, SQLite, and the operation log linked: 6.5 MB raw, 2.5 MB gzipped (`gzip -9`, 2026-11-04; the listing
   engine alone was about 2.5 MB raw, ICU collation data most of it). With the viewer and the search core (rayon among
-  it) too: 9,746,088 bytes raw, 3,538,186 gzipped (2026-11-04; rayon's own share unmeasured, the build being stripped).
-  `wasm-opt` isn't run (no binaryen in the toolchain).
+  it) too: 9,836,769 bytes raw, 3,565,021 gzipped. Rayon (with `crossbeam`) is about 27 KB of the 7.5 MB of code, about
+  0.4%, and the search core about 120 KB (code naming each, after fat LTO; verified 2026-11-04 with an unstripped build,
+  `CARGO_PROFILE_WASM_RELEASE_STRIP=false pnpm build:listing-wasm`, then the toolchain's own
+  `llvm-nm -S -C --defined-only` over `target/wasm32-unknown-unknown/wasm-release/cmdr_listing_wasm.wasm`). `wasm-opt`
+  isn't run (no binaryen in the toolchain).
 - **Every crate the module links is a demo image input**: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
   `scripts/check/checks/inputs.go`, and ci.yml's `website` filter each list them (the first two are kept aligned by
   `TestWebsiteDemoInputsMatchTheImageKey`, the filter by hand). A new path dep goes in all three, or an engine-only
