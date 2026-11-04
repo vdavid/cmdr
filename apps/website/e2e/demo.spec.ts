@@ -175,8 +175,8 @@ test.describe('Browser demo', () => {
 
     test('a copy onto a full disk stays in the queue, and Retry lands it once there is room', async ({ page }) => {
       const errors = collectPageErrors(page)
-      // `?free=1000` leaves 1 kB on the disk, too little for `notes.md` (4.82 kB).
-      await openDemo(page, '?free=1000')
+      // `?free=100` leaves 100 bytes on the disk, too little for `notes.md` (its 372 real bytes).
+      await openDemo(page, '?free=100')
       await page.keyboard.press('End')
       await page.keyboard.press('F5')
       await page.getByRole('button', { name: /^Background\b/ }).click()
