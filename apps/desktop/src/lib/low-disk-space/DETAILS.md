@@ -50,7 +50,8 @@ drains. That stream already flows for the boot volume: the poller's permanent `l
 computed on the frontend from `available / total` (mirroring the backend's `free_percent`, including the
 `total == 0 → 100` guard), so no pre-baked percent crosses the IPC boundary. `figures.ts` (`lowSpaceFigures`) writes
 both figures for the toast and the macOS notification: the free space scaled to the drive exactly as the status bar
-writes it, and the percent to a tenth in the active locale. While the toast is up, the poller also emits on that tenth
+writes it, and the percent to at least a tenth in the active locale (`formatFreePercent(percent, 1)`, so below 1% free
+it reads hundredths and a sliver never reads "0.0"). While the toast is up, the poller also emits on that figure
 (`toast_up` in `space_poller/mod.rs`). The listener is unsubscribed on destroy, with a `disposed` guard for the case
 where the toast is dismissed before the async `listen` resolves.
 

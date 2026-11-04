@@ -23,6 +23,12 @@ describe('lowSpaceFigures', () => {
     expect(lowSpaceFigures(42_000_000_000, 1_000_000_000_000).percentText).toBe('4,2')
   })
 
+  it('never rounds a sliver of free space down to nothing', () => {
+    _setLocaleForTests('en-US')
+    // 0.04% free: one decimal would read "0.0", a full disk.
+    expect(lowSpaceFigures(400_000_000, 1_000_000_000_000).percentText).toBe('0.04')
+  })
+
   it('reads an unknown total as nothing to warn about', () => {
     _setLocaleForTests('en-US')
     expect(lowSpaceFigures(0, 0).percentText).toBe('100.0')

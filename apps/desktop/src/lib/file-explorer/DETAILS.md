@@ -461,12 +461,16 @@ MB card reads "3.20 MB of 7.50 MB", a 1 TB SSD "261 GB of 926 GB", a 4 TB drive 
 full "2.3 GB", then "800 MB". **Why**: the readout used two decimals of the friendliest unit at every size, so a busy 1
 TB disk changed its text (and repainted both status bars) every 10 MB, every 2–3 s under a build, which was most of the
 GPU helper's idle work (measured 2026-09-23, dev build). A change smaller than a pixel of the bar is one the user can't
-act on. The bar itself stays at whole percent (coarser than a pixel at any pane width over 100 px). The 1000 is a fixed
-reference, not the pane's measured width: a factor-of-ten precision ladder barely moves with the width, and a fixed
-number keeps the backend's emit gate (`space_poller/readout.rs`) a pure function with nothing to report from the
-webview. Both sides test against `/units/drive-figure-cases.json`. Storage with no ceiling keeps two decimals: no drive
-size to scale by. Two things are in the catalog that look like they belong in code, both because they vary by language:
-the `%` sign is a separate literal from `{percentText}` (German, French, and Swedish write `10 %`), and
+act on. **The free percent is banded and truncated** (`formatFreePercent`, `/units/free-percent.ts`): whole numbers from
+5% to 95% free, a tenth within 5 of an end, a hundredth within 1, never rounded up into the next band, and "100%" or
+"0%" only at exactly empty or full. **Why**: a 995 GB drive with 4 GB used read "(100%)", claiming an empty disk. The
+bar's meter carries that sentence as `aria-valuetext`, since its whole-percent `aria-valuenow` has the same flaw. The
+bar itself stays at whole percent (coarser than a pixel at any pane width over 100 px). The 1000 is a fixed reference,
+not the pane's measured width: a factor-of-ten precision ladder barely moves with the width, and a fixed number keeps
+the backend's emit gate (`space_poller/readout.rs`) a pure function with nothing to report from the webview. Both sides
+test against `/units/drive-figure-cases.json`. Storage with no ceiling keeps two decimals: no drive size to scale by.
+Two things are in the catalog that look like they belong in code, both because they vary by language: the `%` sign is a
+separate literal from `{percentText}` (German, French, and Swedish write `10 %`), and
 `fileExplorer.diskSpace.barTooltip` is a select whose only translatable content is the punctuation joining the size line
 to the notes after it (Chinese ends a sentence with `。`). `getDiskUsageLevel` returns a typed `severity` band, not an
 English label: the tooltip branches on the band, and the copy is only ever rendered.

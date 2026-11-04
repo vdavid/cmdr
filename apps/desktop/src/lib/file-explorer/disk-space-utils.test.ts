@@ -136,6 +136,20 @@ describe('formatDiskSpaceStatus', () => {
     const result = formatDiskSpaceStatus(space, 'binary')
     expect(result).toBe('1000 bytes of 1000 bytes free (100%)')
   })
+
+  it('never claims an empty disk while space is in use', () => {
+    // 99.6% free used to round to "(100%)".
+    expect(formatDiskSpaceStatus(createSpace(1000, 996), 'binary')).toBe('996 bytes of 1000 bytes free (99.60%)')
+    expect(formatDiskSpaceStatus(createSpace(1000, 978), 'binary')).toBe('978 bytes of 1000 bytes free (97.8%)')
+  })
+
+  it('never claims a full disk while space is free', () => {
+    expect(formatDiskSpaceStatus(createSpace(100_000, 1), 'binary')).toBe('1 byte of 97.7 KiB free (0.01%)')
+  })
+
+  it('reads an unknown total as nothing free', () => {
+    expect(formatDiskSpaceStatus(createSpace(0, 0), 'binary')).toBe('0 bytes of 0 bytes free (0%)')
+  })
 })
 
 describe('formatDiskSpaceShort', () => {
@@ -168,7 +182,7 @@ describe('formatBarTooltip', () => {
   it('includes red warning when space is low', () => {
     const space = createSpace(1000, 20) // 98% used, 2% free
     expect(formatBarTooltip(space, 'binary')).toBe(
-      '20 bytes of 1000 bytes free (2%). This bar is red to indicate that the volume is low on space.',
+      '20 bytes of 1000 bytes free (2.0%). This bar is red to indicate that the volume is low on space.',
     )
   })
 
@@ -212,11 +226,10 @@ describe('formatBarTooltip', () => {
 
   it('reports the same percentage the status bar does, even where the two roundings diverge', () => {
     // 60.5% used / 39.5% free. Rounding the USED half and subtracting gives 39;
-    // rounding the free half gives 40. The tooltip used to do the former and the
-    // status bar the latter, so the same volume read two ways at once.
+    // rounding the free half would give 40. Both surfaces truncate the FREE half, so they agree.
     const space = createSpace(1000, 395)
     expect(formatBarTooltip(space, 'binary')).toBe(formatDiskSpaceStatus(space, 'binary'))
-    expect(formatBarTooltip(space, 'binary')).toBe('395 bytes of 1000 bytes free (40%)')
+    expect(formatBarTooltip(space, 'binary')).toBe('395 bytes of 1000 bytes free (39%)')
   })
 })
 
