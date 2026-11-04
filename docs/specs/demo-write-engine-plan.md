@@ -252,7 +252,13 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   - The check (`desktop-rust-listing-wasm`) also builds `cmdr-operation-log` for wasm32 (compile only for now).
   - CI: every job that runs the wasm build (Desktop Rust's wasm step, `.github/actions/build-website-demo`,
     `publish-website-demo`) gets the toolchain through the script itself; nothing adds it to `mise install`'s config.
-    Cache `~/.cache/cmdr/wasm-toolchain/` keyed on the pin: about 1.5 GB on Linux.
+    Cache `~/.cache/cmdr/wasm-toolchain/` keyed on the pin (about 1.5 GB on Linux), restored in BOTH places that build
+    wasm: the `desktop-rust` job's wasm step and `.github/actions/build-website-demo` (which `publish-website-demo` runs
+    only on its rebuild path). It counts against GitHub's 10 GB per-repo cache beside the Rust caches (`desktop-rust`
+    alone is about 1.8 GB): check eviction pressure (`gh cache list`) before and after, and prefer caching only the
+    `installs/` subdir if the download cache isn't needed for a restore.
+  - The website-demo IMAGE (`apps/website/demo-image.Dockerfile`, `FROM scratch`) only copies the built bundle, so no
+    Docker-side toolchain work exists; "the image build" means the CI jobs above.
   - Docs: `crates/cmdr-listing-wasm/DETAILS.md` § The build, `crates/cmdr-fs/DETAILS.md` § The browser build, and a
     one-line `AGENTS.md`-level pointer only if the toolchain needs one (prefer `scripts/` docs).
 - **Landmines**: conda's `cc`/`ar`/`ld` on PATH or its shims in the default mise data dir (decision 1).
@@ -260,8 +266,11 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   links SQLite (+ about 1 MB) once the engines merge; this milestone doesn't link it yet.
 - **Test plan**: the Go script's unit tests (env built, PATH untouched); the wasm lane green; a native
   `pnpm check clippy` and `cargo nextest run -p cmdr-fs -p cmdr-operation-log` unchanged; after a build, `which cc` is
-  still `/usr/bin/cc` and `~/.local/share/mise/shims` holds no `cc`, `clang`, or `llvm-ar`.
-- **DONE**: `cmdr-operation-log` compiles for wasm32 in CI on macOS and Linux runners; the desktop build is untouched.
+  still `/usr/bin/cc` and `~/.local/share/mise/shims` holds no `cc`, `clang`, or `llvm-ar`. ❗ The spike proved Linux
+  aarch64 only; CI's `ubuntu-latest` is x86_64, so the first CI run of this milestone is what proves the conda package
+  has the wasm32 target there (`clang -print-targets` in the step log).
+- **DONE**: `cmdr-operation-log` compiles for wasm32 in Linux CI (x86_64) and locally on macOS (no CI job runs the wasm
+  lane on macOS; `macos-lane.yml` has no wasm step); the desktop build is untouched.
 
 ### 2. The runtime seam covers the write engine's needs (S–M)
 
@@ -276,8 +285,14 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
     paints and takes input between chunks).
   - `deadline`: route its spawns and timers through `rt` (natively identical).
   - `InMemoryVolume`: the chunk delay sleeps through `rt::time::sleep`, and a new `with_bandwidth(bytes_per_sec)`
-    builder option models a device's speed on its read stream (each chunk waits its share of the second), for the demo
-    (decision 3). Off unless set, so every existing cell is unchanged.
+    builder option models ONE device's speed, for the demo (decision 3). **A volume-wide budget** (one token bucket the
+    volume owns, which every read stream draws its chunks from), ❌ not a per-stream rate: `transfer_concurrency` takes
+    `max_concurrent_ops()` (32 here), so a three-file copy runs three streams, and per-stream pacing would show three
+    times the device's speed. A shared budget is how one disk behaves (several readers split its throughput), and it
+    keeps the engine's real concurrent driver in play, so the demo runs the same path a desktop volume copy of three or
+    more files does. (Chosen over `max_concurrent_ops = 1`, which would be simpler and drop the browser `JoinSet`, but
+    would model the device by changing which driver runs.) Off unless set, so every existing cell is unchanged. Two
+    copies at once can't double it either way: both sides share the volume's one lane, so the second queues.
   - `crates/cmdr-fs/clippy.toml`: the root's general settings plus the clock bans from
     `crates/cmdr-listing/clippy.toml`; `rt/` keeps its module-level allow. Existing direct reads elsewhere in `cmdr-fs`
     either move to `rt` (if a browser path can reach them) or carry a reasoned allow (host-only modules).
@@ -287,23 +302,29 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   every copy). `spawn_local` futures aren't `Send`-checked: keep the native signature's `Send` bounds so desktop code
   can't regress. The bandwidth sleep must sit where cancel and pause still reach it (the engine's `CheckpointStream`
   wraps the source stream, so a pending sleep is dropped on cancel like any read); ❌ never a busy wait.
-- **Test plan**: native unit tests for each wrapper (pure forwards); a paused-clock cell for `with_bandwidth` (a 1 MB
-  file at 1 MB/s takes one virtual second, and a cancel mid-file stops it); browser behavior through the Node smoke
-  (`smoke.mjs` gains a `rt` self-test export: a three-task `JoinSet` drain, a `yield_now` that lets a `setTimeout` fire,
-  `wall_now` within a second of `Date.now()`).
+- **Test plan**: native unit tests for each wrapper (pure forwards); paused-clock cells for `with_bandwidth` (a 1 MB
+  file at 1 MB/s takes one virtual second; three 1 MB files read at once take three; a cancel mid-file stops it);
+  browser behavior through the Node smoke (`smoke.mjs` gains a `rt` self-test export: a three-task `JoinSet` drain, a
+  `yield_now` that lets a `setTimeout` fire, `wall_now` within a second of `Date.now()`).
 - **DONE**: the seam has every primitive the write engine needs, each natively a re-export or one-line forward.
 
 ### 3. Characterize what the conversions touch (M)
 
 - **Scope**: tests only, in `cmdr-operations` and `cmdr-operation-log`. No production change.
 - **Intentions**: pin CURRENT behavior so milestones 4–6 are provably byte-identical:
+  - **Golden traces**: one per op kind (copy, move, delete, rename, mkdir, a conflict answered Skip, cancel plus
+    rollback), on both the local and the volume engine, recording the events in order with their payloads (minus ids and
+    timestamps, normalized), the journal rows, and the typed outcome. Run before and after every later conversion
+    milestone; a diff is a regression until explained. This is what "byte-identical" means operationally, beyond routing
+    and clocks.
   - **Routing table**: for each entry point (copy, move, delete, trash, rename, rename pre-flight, mkdir, mkfile, bulk
-    rename, scan preview), which engine runs (local `std::fs` vs volume) for volume id `"root"` with a local root,
-    `"root"` absent, and a non-local id. One table-driven cell file. Each cell asserts an OBSERVABLE that tells the
-    engines apart (the bytes land in a tempdir versus inside the `InMemoryVolume` registered under that id), ❌ never
-    just "it succeeded", which passes on both. The commit body shows each cell going red with the routing deliberately
-    flipped. Milestone 5 extends the same table with the demo host's shape (no local-disk id), so both shapes run
-    natively.
+    rename, scan preview, and the four archive-edit `settle_volume` decisions: `copy_into.rs`, `driver.rs`,
+    `fresh_compress.rs`, `move_out.rs`), which engine runs (local `std::fs` vs volume) for volume id `"root"` with a
+    local root, `"root"` absent, and a non-local id. One table-driven cell file. Each cell asserts an OBSERVABLE that
+    tells the engines apart (the bytes land in a tempdir versus inside the `InMemoryVolume` registered under that id),
+    ❌ never just "it succeeded", which passes on both. The commit body shows each cell going red with the routing
+    deliberately flipped. Milestone 5a extends the same table with the demo host's shape (no local-disk id), so both
+    shapes run natively.
   - **Clock-sensitive cells**: list the existing `start_paused` and timing cells over the sites milestone 4 converts
     (outage waits, retry backoff, stall watchdog, scan watchdog, human-wait clock, leftover-cleanup dial, progress
     cadence). Add a pin where a converted site has none, and see each RED once.
@@ -326,48 +347,69 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 - **Landmines**: the two-clocks rule. `Instant` as a STORED type (`state.rs` `born`, outage records) changes nothing
   natively (re-export), but a field typed `tokio::time::Instant` must stay on tokio's clock. Shuttle's
   `sync_primitives.rs` swap is unaffected; don't touch it.
-- **Test plan**: the full `cargo nextest run -p cmdr-operations -p cmdr-operation-log`, the Shuttle lane
-  (`desktop-rust-shuttle`), clippy, and the Criterion bench's copy cases against the baseline
+- **Test plan**: the golden traces unchanged, the full `cargo nextest run -p cmdr-operations -p cmdr-operation-log`, the
+  Shuttle lane (`desktop-rust-shuttle`), clippy, and the Criterion bench's copy cases against the baseline
   (`docs/notes/transfer-extraction-baseline.md`'s method): no change beyond noise.
 - **DONE**: zero direct clock or timer reads in either crate, enforced by clippy; natively identical.
 
-### 5. The local-disk facade (L, possibly two commits: the seam, then the gating)
+### 5. The local disk as a typed capability (L, three commits, each green alone)
 
-- **Scope**: `cmdr-operations` (a new `local_disk` module; name it after what it is) and the `"root"` decisions.
+What "the facade" means here, so its invariant is checkable: **the local-engine module trees** (`transfer/copy/`,
+`transfer/move_op/`, `chunked_copy.rs`, `macos_copy.rs`, `linux_copy.rs`, `copy_strategy.rs`, `delete/walker.rs`,
+`delete/trash.rs`, `cloud_trash.rs`, `scan.rs`, `scan_dry_run.rs`, `cancellable.rs`, `scan_preview/local.rs`, the
+leftover sweep's local half, `scratch_dir.rs`, `overwrite.rs`, `durability.rs`, `mount_boundary.rs`, `free_space.rs`)
+**plus one primitives module** (`local_disk/`, name it after what it is) holding what the shared code needs from the
+host OS: errno constants and classification, the `(dev, ino)` identity, `statvfs`, mount tables, `rename_no_replace`.
+Outside those, no `cmdr_local`, `libc`, `std::os::unix`, `objc2`, `xattr`, `trash`, or `dirs`. A Go check in the
+`index-crate-isolation` style enforces it (`scripts/check/checks/`, an allowlist of the module paths above), ❌ not a
+review grep.
+
+#### 5a. The capability, the typed answer, and the routing table in both shapes
+
 - **Intentions**:
-  - One module owns "the local disk": the `cmdr-local` calls, the `libc` syscalls and errnos, the `std::os::unix`
-    metadata, the OS trash (`objc2` / `trash`), `xattr`, `dirs`, mount tables, `statvfs`. The rest of the engine asks it
-    and never reaches those crates itself. Natively it is today's code moved, not rewritten.
-  - **"Which volume id is the local disk" is a HOST answer** (decision 5): a value on `EngineHost` (or
-    `OperationVolumes`), set through `Operations::builder`, `Some("root")` by default (what the desktop and every
-    existing test get, so natively nothing changes) and `None` from the demo host. The ~12 deciding `"root"` sites ask
-    it (through the facade); the default-id fills stay literal. Because it's a value, milestone 3's routing table runs
-    natively in BOTH shapes: with `None`, a `"root"` `InMemoryVolume` takes the volume engine for every entry point.
-  - With no local disk, every local question answers a typed "no local disk here" (pick or add ONE variant per error
-    family: `MutationError`, `WriteOperationError`; no prose). Separately, and as belt and braces, the local engine
-    bodies (`copy/`, `move_op/`, `delete/walker.rs`, `chunked_copy.rs`, `macos_copy.rs`, `linux_copy.rs`,
-    `copy_strategy.rs`, `scan.rs`, `scan_dry_run.rs`, `cancellable.rs`, local scan preview, leftover sweep's local half,
-    `scratch_dir.rs`) are `cfg`-gated out of the wasm build, so the browser can't reach a thread or a `blocking_recv`
-    even if a host answer were wrong.
-  - `Cargo.toml`: `cmdr-local`, `libc`, `dirs`, `walkdir`, `xattr`, and tokio's `fs` move under
-    `cfg(not(target_family = "wasm"))` (the `testing` feature's `cmdr-local/testing` with them).
-  - Archive edits (decision 4): their entry points refuse with the routed-read-only answer when the host has no local
-    disk, BEFORE `ScratchDir::new` (whose `std::env::temp_dir()` panics in the browser).
+  - `OperationVolumes::local_disk(&self, volume_id) -> Option<LocalDisk<'_>>` (the per-concern seam split
+    `crates/cmdr-listing/src/host/volumes.rs` models). `LocalDisk` is a small type you can only get from that call;
+    every local-engine entry point takes `&LocalDisk`, so "run the local engine on a volume that isn't the local disk"
+    is unrepresentable natively too (`AGENTS.md`: prefer a type to a ❌ rule). The default answer is today's
+    `volume_id == "root"` (plus the existing `supports_local_fs_access` checks where they stand), so the desktop and
+    every existing test change nothing; the demo host answers `None` (decision 5).
+  - The ~12 deciding `"root"` sites become `match volumes.local_disk(id)`; the default-id fills stay literal.
+  - **The refusal** when a local-only path is asked with no local disk (in practice only a local-only command reaching
+    the demo, since the routing sends everything else to the volume engine): reuse an existing variant ONLY if the
+    frontend's copy for it is honest in the demo. Candidates:
+    `MutationError::Volume { error: VolumeError::NotSupported }` for instant ops; for transfers, check what
+    `WriteOperationError` maps a volume `NotSupported` to and read its FE copy. If neither reads honestly ("this volume
+    can't do that" is honest; "is read-only" is not), add ONE variant per family (`NoLocalDisk`), with English copy plus
+    an `@key` description, its `bindings.ts` regen, and the FE mapping in the same commit; David reviews the copy later;
+    ❌ never translate it. Archive edits keep the routed read-only answer (decision 4), refused BEFORE `ScratchDir::new`
+    (whose `std::env::temp_dir()` panics in the browser).
+- **Test plan**: milestone 3's routing table gains the no-local-disk shape: every entry point (archive edits included)
+  on the volume engine or refused, each cell red once with the answer flipped. The golden traces unchanged.
+
+#### 5b. Code motion behind the boundary (pure, natively identical)
+
+- **Intentions**: move the host-OS primitives the shared code uses into `local_disk/`, so the Go check passes. ❌ No
+  logic change: moves and re-exports only, each module's tests travel with it.
 - **Landmines**:
-  - ❗ The facade's value is that the boundary is REAL: an `#[allow]`-sprinkled half-gate (some `libc` still in
-    `error_classification.rs`, say) defeats it. Errno classification can stay where it is if it reads
-    `io::Error::raw_os_error()` against constants the facade exports.
-  - Don't change WHICH engine a native call takes: milestone 3's routing table is the referee.
-  - `EVERY local write lands via overwrite::stage_and_land_file`: moving `overwrite.rs` behind the facade must keep that
-    the only door. `ledger.rs`'s local identity (`dev`, `ino`) moves with it; the volume identity (size) stays.
-  - `module-cycles` and `file-length` will notice; split by responsibility, not to satisfy the check.
-  - The public surface is capped (`DETAILS.md` § "The public surface is capped"); the facade is crate-private.
-- **Test plan**: milestone 3's routing table and the full native suite unchanged, plus the table's no-local-disk shape
-  (every entry point on the volume engine, archive edits refused, each cell red once with the answer flipped);
-  `cargo build -p cmdr-operations --target wasm32-unknown-unknown` green (added to the wasm lane); clippy for both
-  targets (`--target wasm32` lane: `cargo clippy -p cmdr-operations --target wasm32-unknown-unknown`).
-- **DONE**: `cmdr-operations` compiles for wasm32; natively identical; a grep finds `cmdr_local`, `libc`,
-  `std::os::unix`, `objc2`, `xattr`, `dirs` only inside the facade (and tests).
+  - ❗ The boundary is only worth something if it's REAL: no `#[allow]`-sprinkled half-gate. Errno classification can
+    stay where it is if it reads `io::Error::raw_os_error()` against constants `local_disk/` exports.
+  - `EVERY local write lands via overwrite::stage_and_land_file` must stay the only door. `ledger.rs`'s local identity
+    (`dev`, `ino`) comes from `local_disk/`; the volume identity (size) stays where it is.
+  - `module-cycles` and `file-length` will notice; split by responsibility, not to satisfy the check. The public surface
+    is capped (`DETAILS.md` § "The public surface is capped"); all of this is crate-private.
+- **Test plan**: the full native suite, the golden traces, and the routing table unchanged; the new Go check green.
+
+#### 5c. The wasm build
+
+- **Intentions**: `cfg(not(target_family = "wasm"))` on the local-engine trees and `local_disk/`'s OS half (belt and
+  braces: the browser can't reach a thread or a `blocking_recv` even if a host answer were wrong); `Cargo.toml` moves
+  `cmdr-local`, `libc`, `dirs`, `walkdir`, `xattr`, and tokio's `fs` under that `cfg` (the `testing` feature's
+  `cmdr-local/testing` with them). The wasm lane adds `cargo build` and
+  `cargo clippy -p cmdr-operations --target wasm32-unknown-unknown`.
+- **Landmines**: `LocalDisk` itself stays defined on wasm (so the seam's signature is target-independent); only its
+  constructor's OS-backed half is gated. Expect the type errors the survey's floor hid (`JoinSet::spawn_on`,
+  `VolumeHost::runtime()`); they're milestone 2's seam, wired here.
+- **DONE**: `cmdr-operations` compiles and lints for wasm32; natively identical; the Go check enforces the boundary.
 
 ### 6. Nothing on the browser's volume path needs a thread (M)
 
@@ -391,25 +433,43 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 - **Test plan**: native suites unchanged; a wasm-target integration export in the WASM crate that drives a real
   `Operations` engine over an `InMemoryVolume` (copy 3 files, move, delete, rename, mkdir, a conflict answered Skip, a
   cancel, journal rows read back) through the Node smoke. This is the first time the browser runs the engine.
-- **DONE**: the Node smoke drives every op kind through the real engine with zero traps.
+- ❗ **The demo image's inputs**: this is the first milestone whose wasm module links `cmdr-operations`,
+  `cmdr-operation-log`, and `cmdr-archive` (plus any other path dep they newly pull in; list them from
+  `cargo tree -p cmdr-listing-wasm --target wasm32-unknown-unknown -e normal --prefix none | rg '\(/'`). Add every one
+  to all three lists in the same commit: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
+  `scripts/check/checks/inputs.go`, and ci.yml's `website` filter. Otherwise an engine-only change keeps the image key,
+  `publish-website-demo` finds the old image "final", and getcmdr.com silently serves a stale write engine.
+  `TestWebsiteDemoInputsMatchTheImageKey` keeps the first two aligned; the filter is by hand.
+- **DONE**: the Node smoke drives every op kind through the real engine with zero traps, and the demo image's key covers
+  every crate the module links.
 
-### 7. The demo host: writes in the WASM engine (L)
+### 7a. An in-memory volume patches the panes (S–M)
 
-- **Scope**: the WASM crate (`cmdr-listing-wasm`; the rename is decision 6, later), `cmdr-fs`'s `InMemoryVolume`, the
-  build, the checks.
+- **Scope**: `cmdr-fs`'s `InMemoryVolume` and `cmdr-listing`; natively testable, landable alone.
 - **Intentions**:
-  - `InMemoryVolume` patches listings: a builder option hands it a `VolumeHost` (or `ListingHost`), and its
-    `notify_mutation` then runs `patch_mutation` through a `PatchSource`, as every mutable backend does. Without the
-    option it stays a no-op, so every existing test is unchanged.
-  - One `ListingHost` over `cmdr_listing::Listings` for the demo. If the engine's `host::testing::PaneListings` and the
-    demo's would be the same code, put it once in `cmdr-listing` (a genuine boundary win); the desktop keeps
-    `AppListings` (it composes the index and badges).
-  - The host mirrors `apps/desktop/src-tauri/src/operations_host/`: the builder's local-disk id `None` (decision 5),
-    `OperationVolumes` over the one volume (id `"root"`), `EngineEvents` and the per-op sinks emitting the desktop's
-    event names and payloads (`operations_host/wire.rs`, `sinks.rs`), the op log opened on `/demo/operation-log.db`
-    (memvfs; gone on reload, as the demo's state is), `NameOrder` from the listing engine's collator, and `Pacing` left
-    at its default `None`. The demo's `InMemoryVolume` is built `with_bandwidth(…)` (decision 3; pick a rate that makes
-    a 10 MB copy take a couple of seconds, and say it in `DETAILS.md`).
+  - A builder option hands `InMemoryVolume` a `VolumeHost` (or `ListingHost`), and its `notify_mutation` then runs
+    `patch_mutation` through a `PatchSource`, as every mutable backend does. Without the option it stays a no-op, so
+    every existing cell is unchanged.
+  - One `ListingHost` over `cmdr_listing::Listings`. If the engine's `host::testing::PaneListings` and the demo's would
+    be the same code, put it once in `cmdr-listing` (a genuine boundary win); the desktop keeps `AppListings` (it
+    composes the index and badges).
+- **Test plan**: native cells: a create, delete, rename, and modify on a patched `InMemoryVolume` each reach a listing
+  open on `Listings` as the matching `directory-diff` change; an unpatched volume stays silent.
+- **DONE**: a write on an in-memory volume updates an open listing natively.
+
+### 7b. The demo host: writes in the WASM engine (L)
+
+- **Scope**: `cmdr-listing-wasm` (the rename is decision 6, later), its build and checks, and the demo image's inputs.
+- **Intentions**:
+  - **Its own module tree, mirroring `apps/desktop/src-tauri/src/operations_host/`** (`operations_host/` in the wasm
+    crate: `volumes.rs`, `events.rs`, `sinks.rs`, `wire.rs`, `commands/` by domain), ❌ not a growing `commands.rs`. The
+    listing half's `commands.rs` stays the listing commands.
+  - The host: `OperationVolumes` over the one volume (id `"root"`, `local_disk` → `None`, decision 5), `EngineEvents`
+    and the per-op sinks emitting the desktop's event names and payloads (`operations_host/wire.rs`, `sinks.rs`), the op
+    log opened on `/demo/operation-log.db` (memvfs; gone on reload, as the demo's state is), `NameOrder` from the
+    listing engine's collator, and `Pacing` left at its default `None`. The demo's `InMemoryVolume` is built
+    `with_bandwidth(…)` (decision 3; pick a rate that makes a 10 MB copy take a couple of seconds, and say it in
+    `DETAILS.md`).
   - Commands by their Tauri names with camelCase args, answers and typed rejections exactly as the desktop's
     (`commands/file_system/write_ops.rs`, `volume_copy.rs`, `operations.rs`, `commands/rename.rs`,
     `commands/operation_log.rs`). Where a desktop command is local-only (`moveFiles`, `trashFiles`, `moveToTrash`), the
@@ -482,8 +542,9 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
    that passed then passes now on the same clock.
 2. No direct clock, timer, or ambient-runtime call in `cmdr-operations` or `cmdr-operation-log` outside `cmdr_fs::rt`,
    enforced by clippy.
-3. Outside the local-disk facade, no `cmdr_local`, `libc`, `std::os::unix`, `objc2`, `xattr`, `trash`, or `dirs` in
-   `cmdr-operations` production code.
+3. Outside the local-engine module trees and `local_disk/`, no `cmdr_local`, `libc`, `std::os::unix`, `objc2`, `xattr`,
+   `trash`, or `dirs` in `cmdr-operations` production code, enforced by a Go check; and no local-engine entry point is
+   callable without a `LocalDisk`.
 4. In the browser, no reachable path starts a thread, calls `block_on`, or waits in `blocking_recv`; the local engine
    isn't compiled in.
 5. Every write in the browser still stages and lands (`resolve_staging` on the volume path), journals through its
@@ -497,4 +558,9 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 9. No demo code in a normal build, and no `if (demo)` in app code.
 10. Undo in the demo is the real planner, failing safe; nothing in TS decides what an undo does.
 11. `Pacing`, its desktop answers, and E2E timing are unchanged; demo throughput is `InMemoryVolume`'s bandwidth alone.
-12. "Which id is the local disk" is a host value (`Some("root")` by default), and the routing table pins both shapes.
+12. "Which id is the local disk" is the host's typed answer (`OperationVolumes::local_disk`, `"root"` by default), and
+    the routing table pins both shapes.
+13. The golden traces (events with payloads, journal rows, typed outcomes per op kind) are identical before and after
+    every conversion milestone.
+14. The demo image's content key, `websiteDemoInputs`, and ci.yml's `website` filter cover every crate the wasm module
+    links.
