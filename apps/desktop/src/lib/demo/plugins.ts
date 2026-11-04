@@ -10,8 +10,10 @@ import { DEMO_HOME } from './demo-tree.js'
 /** What a fresh demo starts with, per store file. Only keys an actor would have set (sparse, like the app). */
 const seeds: Record<string, Record<string, unknown>> = {
   'settings.json': {
-    // Skip the first-run wizard: a visitor came to try the panes.
+    // A user who just finished today's wizard (`startup-gates.ts::completeOnboardingWizard` writes
+    // both): a visitor came to try the panes, and there's no newer onboarding to point them at.
     'onboarding.completed': true,
+    'onboarding.upgradeNudgeShown': true,
     // The demo shows Cmdr in its own color. "System default" stays in Settings and picks the
     // virtual Mac's accent, the blue `getAccentColor` answers.
     'appearance.appColor': 'cmdr-gold',

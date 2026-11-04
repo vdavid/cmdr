@@ -166,6 +166,16 @@ export async function resolveOnboardingMount(ctx: StartupGatesContext): Promise<
 }
 
 /**
+ * Records a finished wizard: someone who walked through it has seen every current option, so the
+ * upgrade nudge (meant for people who onboarded before it) is spent too. Without this, a fresh
+ * install's second launch said "We've added new onboarding options".
+ */
+export async function completeOnboardingWizard(): Promise<void> {
+  setSetting('onboarding.upgradeNudgeShown', true)
+  await notifyOnboardingComplete()
+}
+
+/**
  * Fires the one-time `info` toast pointing existing users at the new
  * `Cmdr > Onboarding…` menu item (and the matching palette entry on Linux).
  * Persists `onboarding.upgradeNudgeShown: true` after firing so the toast
