@@ -6,7 +6,7 @@
 //! Viewer file watcher: shared `notify-debouncer-full` singleton with one
 //! `Subscription` per `ViewerSession`.
 //!
-//! Mirrors the structural pattern of [`crate::file_system::watcher`] (one
+//! Mirrors the structural pattern of the app's `file_system::watcher` (one
 //! debouncer per process, registrations stored in a `HashMap`, drop-driven
 //! unregistration). Tailored for single-file watches: each subscription owns a
 //! channel that receives `WatcherEvent`s coalesced and classified from the raw

@@ -246,7 +246,7 @@ impl Viewer {
         self.test_only_install_viewed_session(backend, path, RowText::Raw)
     }
 
-    /// [`test_only_install_session`] with a row view, for the read paths under the debug log's.
+    /// [`Self::test_only_install_session`] with a row view, for the read paths under the debug log's.
     #[cfg(any(test, feature = "testing"))]
     pub fn test_only_install_viewed_session(
         &self,

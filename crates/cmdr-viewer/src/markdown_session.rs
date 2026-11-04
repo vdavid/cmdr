@@ -5,7 +5,7 @@
 //! fields, so the frontend's media branch shows it, and "View as text" reopens it as a
 //! plain text session. Unlike a media session it keeps the file it opened, on whatever
 //! volume (local, a share over smb2, a pulled temp), because the render reads through
-//! it: [`render_markdown_session`] reads the whole document, renders it, and sanitizes
+//! it: [`Viewer::render_markdown_session`] reads the whole document, renders it, and sanitizes
 //! it (`markdown_render.rs`), minting a deferred `cmdr-media://` token per image
 //! (`markdown_images.rs`). The open stays as quick as any other; the render is its own
 //! call, and the images load after it.
@@ -68,7 +68,7 @@ pub(super) struct MarkdownOpen {
 }
 
 /// Opens a Markdown session over a file [`is_markdown`] accepted. No read beyond the
-/// head the classification took: the render is [`render_markdown_session`].
+/// head the classification took: the render is [`Viewer::render_markdown_session`].
 pub(super) fn open_markdown_session(viewer: &Viewer, open: MarkdownOpen) -> ViewerOpenResult {
     let file_size = open.opened.total_bytes;
     let file_name = open.opened.file_name.clone();

@@ -3,12 +3,12 @@
 //! An `Image` / `Pdf`, on any volume, opens as a *media session*: no text
 //! backend, a minted `cmdr-media://` capability token, and best-effort header-only image
 //! dimensions. The bytes are served by the `cmdr-media://` scheme handler
-//! ([`super::media_protocol`]); this module only sets up the session and the token. Text
+//! (the app's `file_viewer/media_protocol.rs`, over [`super::media_serve`]); this module only sets up the session and the token. Text
 //! opens (FullLoad / ByteSeek / LineIndex, search, encoding, tail) stay in
 //! [`super::session`]; both build on [`super::session_store`] (the `ViewerSession` type and
 //! its constructor).
 //!
-//! [`try_open_media`] is the single entry point [`super::session::open_session`] calls
+//! [`try_open_media`] is the single entry point [`Viewer::open_session`](super::viewer::Viewer::open_session) calls
 //! before it builds a text backend: it classifies the file and, for a media kind, opens
 //! the media session and returns the result; otherwise it returns `None` and the caller
 //! falls through to the text path.

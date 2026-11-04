@@ -967,7 +967,7 @@ impl Viewer {
     ///
     /// The whole range lands in memory here, which is why the copy dialogs cap what the
     /// clipboard path will read; `write_range_to_file` streams instead. Locking and
-    /// cancellation plumbing: [`with_registered_read`].
+    /// cancellation plumbing: [`Self::with_registered_read`].
     pub fn read_range(
         &self,
         session_id: &str,
