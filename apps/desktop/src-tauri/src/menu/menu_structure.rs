@@ -2,7 +2,7 @@
 //! network host, the viewer's right-click menu) and the viewer-window menu,
 //! plus the `ContextMenuShortcuts` / `context_item` vocabulary every popup here
 //! shares. The file context menu is `file_context_menu.rs`; the main menu bar is
-//! `menu_bar.rs`.
+//! `cmdr_menu::bar`.
 
 use std::collections::HashMap;
 
@@ -180,7 +180,7 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(
 ///
 /// They replace what the Predefined items used to carry, so the printed chords don't move: ⌘C /
 /// ⌘A on macOS, Ctrl+C / Ctrl+A on Linux. ❗ `Cmd` binds to SUPER on GTK (muda maps it to META),
-/// which is why this splits per platform rather than sharing one string; `menu_bar.rs`'s header
+/// which is why this splits per platform rather than sharing one string; `cmdr_menu::bar`'s header
 /// has the full story.
 #[cfg(target_os = "macos")]
 const VIEWER_COPY_ACCELERATOR: &str = "Cmd+C";

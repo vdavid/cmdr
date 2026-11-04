@@ -17,18 +17,19 @@ use crate::ignore_poison::IgnorePoison;
 use crate::volume_broadcast::VolumeContextActionKind;
 use crate::window_events::{QueueRowMenuAction, ViewerEditActionKind, ViewerHistoryDirection};
 
+use cmdr_menu::click::{BarClick, bar_click};
+use cmdr_menu::spec::{Pane, Platform};
+
 use super::{
     CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_ALL_VOLUMES_ID, EJECT_VOLUME_ID,
     FAVORITES_ADD_CONTEXT_ID, FUNCTION_KEY_BAR_HIDE_ID, MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID,
     MEDIA_INDEX_INCLUDE_FOLDER_ID, MEDIA_INDEX_REMOVE_FOLDER_ID, MediaIndexFolderChoice, MediaIndexFolderExclusion,
     MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_EDIT_ID, NETWORK_HOST_FORGET_SECRET_ID,
     NETWORK_HOST_FORGET_SERVER_ID, SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID, SHOW_SEARCH_RESULT_IN_FOLDER_ID,
-    SORT_ASCENDING_ID, SORT_BY_ADDED_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
-    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
-    TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
-    VIEW_SET_MODE_COMMAND_ID, VIEW_SHOW_HIDDEN_COMMAND_ID, VIEWER_CONTEXT_COPY_ID, VIEWER_CONTEXT_SELECT_ALL_ID,
-    VIEWER_EDIT_COPY_ID, VIEWER_EDIT_CUT_ID, VIEWER_EDIT_PASTE_ID, VIEWER_GO_BACK_ID, VIEWER_GO_FORWARD_ID,
-    VIEWER_SELECT_ALL_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
+    SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_SET_MODE_COMMAND_ID,
+    VIEW_SHOW_HIDDEN_COMMAND_ID, VIEWER_CONTEXT_COPY_ID, VIEWER_CONTEXT_SELECT_ALL_ID, VIEWER_EDIT_COPY_ID,
+    VIEWER_EDIT_CUT_ID, VIEWER_EDIT_PASTE_ID, VIEWER_GO_BACK_ID, VIEWER_GO_FORWARD_ID, VIEWER_SELECT_ALL_ID,
+    VIEWER_WORD_WRAP_ID, ViewModeChanged, menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -283,43 +284,29 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         }
         return;
     }
-    if id == VIEW_MODE_FULL_LEFT_ID
-        || id == VIEW_MODE_BRIEF_LEFT_ID
-        || id == VIEW_MODE_FULL_RIGHT_ID
-        || id == VIEW_MODE_BRIEF_RIGHT_ID
-    {
+    // What the bar's own rows ask for comes off the row (`cmdr_menu::click`), the same answer the
+    // browser demo's bar gets.
+    let bar = bar_click(id, Platform::current());
+    if let Some(BarClick::ViewMode { pane, mode }) = bar {
         // Per-pane view mode click. Sync the affected pane's pair (the muda click
         // already toggled the clicked item, so unchecking the sibling is enough),
         // store the new mode in MenuState, and notify the frontend with the target
         // pane so it can update without changing focus.
-        let (pane, mode_str) = match id {
-            VIEW_MODE_FULL_LEFT_ID => ("left", "full"),
-            VIEW_MODE_BRIEF_LEFT_ID => ("left", "brief"),
-            VIEW_MODE_FULL_RIGHT_ID => ("right", "full"),
-            VIEW_MODE_BRIEF_RIGHT_ID => ("right", "brief"),
-            _ => unreachable!(),
-        };
         let menu_state = app.state::<MenuState<tauri::Wry>>();
         if menu_state.refuses_over_dialog(VIEW_SET_MODE_COMMAND_ID) {
             // Re-sync every check from the stored modes, which undoes muda's toggle.
             let _ = super::view_mode_items::sync_view_mode_check_states(&menu_state);
             return;
         }
-        let new_mode = if mode_str == "full" {
-            ViewMode::Full
-        } else {
-            ViewMode::Brief
-        };
-        if pane == "left" {
-            *menu_state.view_mode_left.lock_ignore_poison() = new_mode;
-        } else {
-            *menu_state.view_mode_right.lock_ignore_poison() = new_mode;
+        match pane {
+            Pane::Left => *menu_state.view_mode_left.lock_ignore_poison() = mode,
+            Pane::Right => *menu_state.view_mode_right.lock_ignore_poison() = mode,
         }
         let _ = super::view_mode_items::sync_view_mode_check_states(&menu_state);
         use tauri_specta::Event as _;
         let _ = ViewModeChanged {
-            mode: mode_str.to_string(),
-            pane: pane.to_string(),
+            mode: mode.wire().to_string(),
+            pane: pane.wire().to_string(),
         }
         .emit_to(app, "main");
         return;
@@ -489,49 +476,13 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     // They're check items, and muda has already toggled the clicked one by now. Put every check
     // back on the stored request first: the check moves when the frontend's sort lands and it
     // re-pushes (`update_sort_menu`), and a sort the frontend refuses (over a dialog) leaves it be.
-    let is_sort_item = [
-        SORT_BY_NAME_ID,
-        SORT_BY_EXTENSION_ID,
-        SORT_BY_SIZE_ID,
-        SORT_BY_MODIFIED_ID,
-        SORT_BY_CREATED_ID,
-        SORT_BY_ADDED_ID,
-        SORT_ASCENDING_ID,
-        SORT_DESCENDING_ID,
-    ]
-    .contains(&id);
-    if is_sort_item {
+    if let Some(BarClick::Sort(check)) = bar {
         super::sync_sort_check_states(&app.state::<MenuState<tauri::Wry>>());
-    }
-    if id == SORT_BY_NAME_ID
-        || id == SORT_BY_EXTENSION_ID
-        || id == SORT_BY_SIZE_ID
-        || id == SORT_BY_MODIFIED_ID
-        || id == SORT_BY_CREATED_ID
-        || id == SORT_BY_ADDED_ID
-    {
-        let column = match id {
-            SORT_BY_NAME_ID => "name",
-            SORT_BY_EXTENSION_ID => "extension",
-            SORT_BY_SIZE_ID => "size",
-            SORT_BY_MODIFIED_ID => "modified",
-            SORT_BY_CREATED_ID => "created",
-            _ => "added",
-        };
+        let (action, value) = check.wire();
         use tauri_specta::Event as _;
         let _ = MenuSort {
-            action: "sortBy".to_string(),
-            value: column.to_string(),
-        }
-        .emit_to(app, "main");
-        return;
-    }
-    if id == SORT_ASCENDING_ID || id == SORT_DESCENDING_ID {
-        let order = if id == SORT_ASCENDING_ID { "asc" } else { "desc" };
-        use tauri_specta::Event as _;
-        let _ = MenuSort {
-            action: "sortOrder".to_string(),
-            value: order.to_string(),
+            action: action.to_string(),
+            value: value.to_string(),
         }
         .emit_to(app, "main");
         return;

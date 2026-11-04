@@ -10,16 +10,23 @@ use crate::intl::{menu_t, menu_t_with};
 /// width.
 pub(super) const COPY_FILENAME_MAX_CHARS: usize = 50;
 
-/// The macOS app menu's title, and the viewer bar's.
-///
-/// Deliberately NOT a catalog key: macOS names the app menu after the
-/// application, and the application is called `Cmdr` (the `productName` in
-/// `tauri.conf.json`, and the spelling the brand uses everywhere). Translating
-/// it would make the one item every macOS user navigates by unrecognizable, and
-/// it would earn a `sameAsSourceJustification` in all nine locales for nothing.
-///
-/// Only macOS has an app menu: Linux puts About under Help and Settings under Edit.
-pub(crate) const APP_MENU_TITLE: &str = "Cmdr";
+pub(crate) use cmdr_menu::bar::APP_MENU_TITLE;
+use cmdr_menu::labels::{LabelText, same_kind_label, undo_trash_label};
+pub use cmdr_menu::labels::{SameKindTarget, TrashUndoTarget};
+
+/// A `cmdr_menu` label in the language the native side speaks.
+fn resolve(label: &LabelText) -> String {
+    let args: Vec<(&str, &str)> = label
+        .args
+        .iter()
+        .map(|(token, value)| (*token, value.as_str()))
+        .collect();
+    if args.is_empty() {
+        menu_t(label.key)
+    } else {
+        menu_t_with(label.key, &args)
+    }
+}
 
 /// The Tab menu / tab context-menu label, which flips with the tab's state.
 ///
@@ -27,77 +34,21 @@ pub(crate) const APP_MENU_TITLE: &str = "Cmdr";
 /// frontend pushes it onto the menu-bar item through `update_pin_tab_label`), so
 /// the two can't drift into different words for one command.
 pub fn pin_tab_label(is_pinned: bool) -> String {
-    menu_t(if is_pinned {
-        "menu.tab.unpinTab"
-    } else {
-        "menu.tab.pinTab"
-    })
+    resolve(&cmdr_menu::labels::pin_tab_label(is_pinned))
 }
 
-/// What "Select all of the same kind" would select right now, as the focused pane's cursor row
-/// decides it (`pane/select-same-kind.ts`'s `SameKindTarget`, wire-identical).
-///
-/// `None` rather than a fourth variant covers the row that implies no kind at all: the `..` row,
-/// an empty listing, a cursor entry still resolving. The item then falls back to its neutral
-/// label, which is also what the bar is built with.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
-#[serde(tag = "kind", rename_all = "camelCase")]
-pub enum SameKindTarget {
-    /// The cursor is on a folder: every folder, whatever its name.
-    AllFolders,
-    /// The cursor is on a file with an extension: every file carrying it. Lowercased, no dot.
-    SameExtension { extension: String },
-    /// The cursor is on an extension-less file: every other one.
-    NoExtension,
-}
-
-/// The "Select all of the same kind" label, which says what the command would do right now.
-///
-/// Shared by the two surfaces that draw it (the menu bar's item, rewritten on cursor moves by
-/// `update_select_same_kind_menu`, and the right-click Selection submenu, which composes it fresh
-/// at popup time), so neither can drift into different words for one command.
+/// The "Select all of the same kind" label (`cmdr_menu::labels::same_kind_label`), resolved here.
 ///
 /// ❗ Rendered HERE, from a typed payload, ❌ never as a literal the frontend composes: the menu's
 /// words come from `menu_t` in the language the NATIVE side speaks (`menu/CLAUDE.md`).
 pub fn same_kind_menu_label(target: Option<&SameKindTarget>) -> String {
-    match target {
-        None => menu_t("menu.select.sameKind"),
-        Some(SameKindTarget::AllFolders) => menu_t("menu.select.allFolders"),
-        Some(SameKindTarget::NoExtension) => menu_t("menu.select.noExtension"),
-        Some(SameKindTarget::SameExtension { extension }) => {
-            menu_t_with("menu.select.sameExtension", &[("extension", extension)])
-        }
-    }
+    resolve(&same_kind_label(target))
 }
 
-/// What Edit > Undo move to trash would put back right now: the newest trash this session, as
-/// the frontend remembers it (`file-operations/delete/trash-undo.ts`'s `TrashUndoTarget`,
-/// wire-identical). `None` is "nothing to undo", which also greys the item out.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
-#[serde(tag = "kind", rename_all = "camelCase")]
-pub enum TrashUndoTarget {
-    /// One file or folder, named.
-    One { name: String },
-    /// Two or more, counted. Formatted by the frontend, which owns number formatting.
-    Many {
-        #[serde(rename = "countText")]
-        count_text: String,
-    },
-}
-
-/// The Edit > Undo move to trash label, which names what it would put back.
-///
-/// ❗ Rendered HERE, from a typed payload, ❌ never as a literal the frontend composes, for the
-/// same reason as [`same_kind_menu_label`]. `menu_t` has no plurals, so the counted form only
-/// ever carries 2 or more, and its catalog description tells translators so.
+/// The Edit > Undo move to trash label (`cmdr_menu::labels::undo_trash_label`), resolved here, for
+/// the same reason as [`same_kind_menu_label`].
 pub fn undo_trash_menu_label(target: Option<&TrashUndoTarget>) -> String {
-    match target {
-        None => menu_t("menu.edit.undoTrash"),
-        Some(TrashUndoTarget::One { name }) => menu_t_with("menu.edit.undoTrashOne", &[("name", name)]),
-        Some(TrashUndoTarget::Many { count_text }) => {
-            menu_t_with("menu.edit.undoTrashMany", &[("countText", count_text)])
-        }
-    }
+    resolve(&undo_trash_label(target))
 }
 
 /// Which word a volume row's detach control uses.

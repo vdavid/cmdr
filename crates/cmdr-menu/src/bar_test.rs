@@ -1,18 +1,17 @@
-//! Pins the menu bar each platform builds (`menu_bar.rs`), on every host.
+//! Pins the menu bar each platform builds (`bar.rs`), on every host.
 //!
 //! A real `muda::Menu` can't be built in a unit test (it panics off the main thread), so these read
-//! the spec `menu_bar_builder.rs` consumes. `render` writes one line per row, so a change to either
-//! bar shows up here as a diff to review.
+//! the spec the desktop's `menu_bar_builder.rs` consumes. `render` writes one line per row, so a
+//! change to either bar shows up here as a diff to review. What muda makes of the accelerator
+//! strings (that they parse, and that no two collide) is pinned beside the builder, in the
+//! desktop's `menu/accelerators.rs`.
 
 use std::collections::HashSet;
 
-use super::MENU_BAR;
-use crate::menu::ViewMode;
-use crate::menu::menu_items::APP_MENU_TITLE;
-use crate::menu::menu_spec::SortCheck;
-use crate::menu::menu_spec::{
-    CheckRole, EntryKind, ItemSpec, Label, Pane, Platform, Predefined, SubmenuRole, SubmenuSpec, Tracking,
-    display_accelerator_label,
+use super::{APP_MENU_TITLE, MENU_BAR, every_entry, registered_accelerators};
+use crate::spec::{
+    CheckRole, EntryKind, ItemSpec, Label, Pane, Platform, Predefined, SortCheck, SubmenuRole, SubmenuSpec, Tracking,
+    ViewMode, display_accelerator_label,
 };
 
 const PLATFORMS: [Platform; 2] = [Platform::MacOs, Platform::Linux];
@@ -404,25 +403,6 @@ fn no_linux_accelerator_holds_the_super_key() {
     }
 }
 
-/// Two items on one chord: the menu fires whichever registered last, and the other one's label
-/// lies. The likeliest source is a Linux bar where a `⌘X` turned into `Ctrl+X` beside an existing
-/// `⌃X`, so this compares what muda parses rather than the strings.
-#[test]
-fn no_two_items_share_an_accelerator() {
-    for platform in PLATFORMS {
-        let mut seen: Vec<(muda::accelerator::Accelerator, &str)> = Vec::new();
-        for (id, accelerator) in registered_accelerators(platform) {
-            let parsed: muda::accelerator::Accelerator = accelerator
-                .parse()
-                .expect("the bar's accelerators parse (`accelerators.rs` pins it)");
-            if let Some((_, taken_by)) = seen.iter().find(|(other, _)| *other == parsed) {
-                panic!("`{id}` and `{taken_by}` both register `{accelerator}` on {platform:?}");
-            }
-            seen.push((parsed, id));
-        }
-    }
-}
-
 /// `MenuState.items` is keyed by ID, so a second item with an ID already taken would silently
 /// replace the first one's registration.
 #[test]
@@ -511,35 +491,6 @@ fn render_entries(spec: &SubmenuSpec, platform: Platform, indent: &str, out: &mu
             render_entries(nested, platform, &format!("{indent}    "), out);
         }
     }
-}
-
-/// Every row `platform` builds, nested ones included, in build order.
-fn every_entry(platform: Platform) -> Vec<&'static EntryKind> {
-    fn walk(spec: &'static SubmenuSpec, platform: Platform, out: &mut Vec<&'static EntryKind>) {
-        for entry in spec.entries_on(platform) {
-            out.push(entry);
-            if let EntryKind::Submenu(nested) = entry {
-                walk(nested, platform, out);
-            }
-        }
-    }
-    let mut out = Vec::new();
-    for bar_menu in MENU_BAR.iter().filter(|bar_menu| bar_menu.is_on(platform)) {
-        walk(&bar_menu.submenu, platform, &mut out);
-    }
-    out
-}
-
-/// Every accelerator `platform`'s bar registers, with the ID of the item it sits on.
-fn registered_accelerators(platform: Platform) -> Vec<(&'static str, &'static str)> {
-    every_entry(platform)
-        .into_iter()
-        .filter_map(|entry| match entry {
-            EntryKind::Item(item) => Some((item.id, item.accelerator.on(platform)?)),
-            EntryKind::Check(check) => Some((check.id, check.accelerator.on(platform)?)),
-            _ => None,
-        })
-        .collect()
 }
 
 /// The catalog key, or both keys joined by `|` for a label that depends on the license.

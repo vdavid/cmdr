@@ -165,7 +165,7 @@ Three sources of a non-constant label, all generic — ❌ `resolveCommand` carr
   the same kind).
 
 **Rust's menu labels are a SEPARATE mechanism, and stay that way.** Native menus never read `Command.name`: they resolve
-through Rust's own `menu_t` catalog, and `Label::License` (`src-tauri/src/menu/menu_spec.rs`) is a second, independently
+through Rust's own `menu_t` catalog, and `Label::License` (`crates/cmdr-menu/src/spec.rs`) is a second, independently
 maintained dynamic-label path that happens to track the same license state. Generalizing the frontend's naming, as
 `nameKey` thunks and `displayName` just did, fixed nothing on that side. Keeping them separate is deliberate
 (`docs/specs/select-same-kind.md` § Not in scope); the duality is documented rather than merged.
@@ -195,10 +195,11 @@ maintained dynamic-label path that happens to track the same license state. Gene
    otherwise).
 6. Pin its English in `command-registry.parity.test.ts` (`EXPECTED_NAMES`, plus `EXPECTED_DESCRIPTIONS` when it has a
    description). The test asserts every registry command appears there, so a new command fails it until pinned.
-7. For a native menu item: add the id const and both map directions in `src-tauri/src/menu/command_map.rs`, add its row
-   to `menu/menu_bar.rs` for the menu bar (rows are tracked by default, which is what lets accelerator rebinding reach
-   them; update the pinned bar in `menu/menu_bar_test.rs` alongside) or build it in `menu/menu_structure.rs` for the
-   right-click menu, and add the id to `menuCommands` in `shortcuts-store.ts`. `rust-command-id-drift.test.ts` fails if
+7. For a native menu item: add the id const and both map directions in `crates/cmdr-menu/src/ids.rs`, add its row to
+   `crates/cmdr-menu/src/bar.rs` for the menu bar (rows are tracked by default, which is what lets accelerator rebinding
+   reach them; update the pinned bar in `crates/cmdr-menu/src/bar_test.rs` and its enabled states in
+   `crates/cmdr-menu/src/bar_states_test.rs` alongside) or build it in `menu/menu_structure.rs` for the right-click
+   menu, and add the id to `menuCommands` in `shortcuts-store.ts`. `rust-command-id-drift.test.ts` fails if
    `menu_id_to_command` emits an unknown id, or if `menuCommands` and the reverse map disagree.
 
 ## Fuzzy search

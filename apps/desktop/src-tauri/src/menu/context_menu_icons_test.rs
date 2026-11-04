@@ -20,7 +20,7 @@ fn every_icon_names_an_item_the_context_menu_builds() {
     let ids: HashSet<&str> = FILE_CONTEXT_ICONS.iter().map(|&(id, _)| id).collect();
     for id in ids {
         // The constant's NAME, since that's what the builder call spells.
-        let name = constant_named(id).expect("every context-menu icon id is a `command_map.rs` constant");
+        let name = constant_named(id).expect("every context-menu icon id is a `cmdr_menu::ids` constant");
         assert!(
             source.contains(&name),
             "`file_context_menu.rs` builds no item with `{name}`, so its icon never lands"
@@ -230,11 +230,13 @@ fn share_is_one_run_in_its_submenu_pointing_at_each_offered_service() {
     assert_eq!(described(image_runs(&info)), expected);
 }
 
-/// The `command_map.rs` constant whose value is `value`.
+/// The `cmdr-menu` `ids.rs` constant whose value is `value`.
 fn constant_named(value: &str) -> Option<String> {
-    include_str!("command_map.rs").lines().find_map(|line| {
-        let rest = line.trim().strip_prefix("pub const ")?;
-        let (name, rest) = rest.split_once(": &str = \"")?;
-        (rest.strip_suffix("\";")? == value).then(|| name.to_string())
-    })
+    include_str!("../../../../../crates/cmdr-menu/src/ids.rs")
+        .lines()
+        .find_map(|line| {
+            let rest = line.trim().strip_prefix("pub const ")?;
+            let (name, rest) = rest.split_once(": &str = \"")?;
+            (rest.strip_suffix("\";")? == value).then(|| name.to_string())
+        })
 }

@@ -194,7 +194,10 @@ fn test_truncate_for_menu_label_max_smaller_than_extension() {
 #[test]
 fn menu_labels_use_the_ellipsis_character() {
     const SOURCES: [(&str, &str); 4] = [
-        ("menu_bar.rs", include_str!("menu_bar.rs")),
+        (
+            "cmdr-menu bar.rs",
+            include_str!("../../../../../crates/cmdr-menu/src/bar.rs"),
+        ),
         ("menu_structure.rs", include_str!("menu_structure.rs")),
         ("file_context_menu.rs", include_str!("file_context_menu.rs")),
         ("open_with.rs", include_str!("open_with.rs")),

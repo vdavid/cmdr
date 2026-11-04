@@ -1,17 +1,15 @@
 //! Pins every menu-bar row's enabled state and command, on both platforms, under the input sets
 //! that matter: the explorer in front, another window in front, a dialog up, and a fresh launch.
 //!
-//! `apply_menu_item_states` writes three kinds of handle: the tracked items (`menu_item_enabled`),
-//! the ones held in their own `MenuState` fields (pin tab, show hidden, the view modes, and their
-//! pane submenus: `explorer_item_enabled`), and Sort by as a whole. An untracked item is never
-//! written, so it keeps what it was built with. `verdict` walks that rule over `MENU_BAR`, so the
-//! table below is the bar a user sees.
+//! Pinned in the desktop app before the bar and its fold moved here, and moved verbatim, so the
+//! tables are the bar a user saw then: `entry_enabled` applies the same handle rule the desktop's
+//! `apply_menu_item_states` does.
 
 use std::collections::HashSet;
 
 use super::*;
-use crate::menu::menu_bar::MENU_BAR;
-use crate::menu::menu_spec::{CheckRole, EntryKind, Platform, SubmenuRole, SubmenuSpec, Tracking};
+use crate::bar::every_entry;
+use crate::spec::{EntryKind, Platform};
 
 /// The four input sets, in the table's column order.
 fn scenarios<'a>(dialog: &'a HashSet<String>, nothing: &'a HashSet<String>) -> [MenuItemInputs<'a>; 4] {
@@ -62,33 +60,6 @@ fn dialog_refusals() -> HashSet<String> {
     .collect()
 }
 
-/// Whether `entry` is enabled under `inputs`, or `None` for a row with no state of ours (a
-/// separator, or an OS-wired predefined item).
-fn verdict(entry: &EntryKind, inputs: &MenuItemInputs) -> Option<bool> {
-    match entry {
-        EntryKind::Item(item) => Some(match item.tracking {
-            Tracking::Tracked => menu_item_enabled(item.id, inputs),
-            Tracking::Untracked => item.enabled,
-            Tracking::PinTab => {
-                let command = menu_id_to_command(PIN_TAB_MENU_ID).map_or("", |(command_id, _)| command_id);
-                explorer_item_enabled(command, inputs)
-            }
-        }),
-        EntryKind::Check(check) => Some(match check.role {
-            CheckRole::ShowHiddenFiles => explorer_item_enabled(VIEW_SHOW_HIDDEN_COMMAND_ID, inputs),
-            CheckRole::ViewMode(..) => explorer_item_enabled(VIEW_SET_MODE_COMMAND_ID, inputs),
-            CheckRole::Sort(_) if check.tracked => menu_item_enabled(check.id, inputs),
-            CheckRole::Sort(_) => true,
-        }),
-        EntryKind::Submenu(nested) => Some(match nested.role {
-            SubmenuRole::Plain => true,
-            SubmenuRole::SortBy => inputs.explorer_menu_active,
-            SubmenuRole::Pane(_) => explorer_item_enabled(VIEW_SET_MODE_COMMAND_ID, inputs),
-        }),
-        EntryKind::Separator | EntryKind::Predefined(..) => None,
-    }
-}
-
 fn row_name(entry: &EntryKind) -> String {
     match entry {
         EntryKind::Item(item) => item.id.to_string(),
@@ -120,22 +91,10 @@ fn render(platform: Platform) -> String {
     let nothing = HashSet::new();
     let inputs = scenarios(&refusals, &nothing);
     let mut out = String::new();
-    fn walk(spec: &'static SubmenuSpec, platform: Platform, rows: &mut Vec<&'static EntryKind>) {
-        for entry in spec.entries_on(platform) {
-            rows.push(entry);
-            if let EntryKind::Submenu(nested) = entry {
-                walk(nested, platform, rows);
-            }
-        }
-    }
-    let mut rows = Vec::new();
-    for bar_menu in MENU_BAR.iter().filter(|bar_menu| bar_menu.is_on(platform)) {
-        walk(&bar_menu.submenu, platform, &mut rows);
-    }
-    for entry in rows {
+    for entry in every_entry(platform) {
         let verdicts: Vec<&str> = inputs
             .iter()
-            .filter_map(|inputs| verdict(entry, inputs))
+            .filter_map(|inputs| entry_enabled(entry, inputs))
             .map(|enabled| if enabled { "1" } else { "0" })
             .collect();
         if verdicts.is_empty() {

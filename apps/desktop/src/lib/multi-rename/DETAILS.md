@@ -195,9 +195,9 @@
     `physicalKeyCombo` names a letter by `code` while ⌘ / ⌃ is held (`lib/shortcuts/DETAILS.md` § Key capture). Verified
     in unit and component tests with US-layout events; a real keypress in the running app isn't verified (the MCP driver
     sends synthetic events).
-  - None of U/G/N/P/I/F/E/R/W/X with ⌘⌥ is a Cmdr command or a native menu accelerator (`menu_bar.rs` holds ⌘⌥
-    C/O/T/V/Q/L/A, the registry adds H, macOS takes ⌘⌥D for the Dock and ⌘⌥M for minimize-all; checked 2026-10-22), so
-    no menu command needs claiming. B, J, K, S, and Y are still free.
+  - None of U/G/N/P/I/F/E/R/W/X with ⌘⌥ is a Cmdr command or a native menu accelerator (`crates/cmdr-menu/src/bar.rs`
+    holds ⌘⌥ C/O/T/V/Q/L/A, the registry adds H, macOS takes ⌘⌥D for the Dock and ⌘⌥M for minimize-all; checked
+    2026-10-22), so no menu command needs claiming. B, J, K, S, and Y are still free.
   - Letter case's and the whole-name toggles' keys show as a dim `ShortcutChip` (`commandId`, not clickable: the keys
     can't be rebound) beside the option, `aria-hidden`: decoration for sighted users, the same keys listed in the Help
     window. A search chip shows its key in its tooltip.

@@ -1,7 +1,7 @@
-//! Tests for menu-item enable-state rules (`item_states.rs`).
+//! Tests for menu-item enable-state rules (`enabled.rs`).
 
 use super::*;
-use crate::menu::{EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID};
+use crate::ids::{EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, OPEN_TERMINAL_HERE_ID};
 
 #[test]
 fn every_gated_item_is_a_real_file_scoped_menu_item() {
@@ -40,7 +40,7 @@ fn inputs(refused: &HashSet<String>) -> MenuItemInputs<'_> {
 /// Like macOS's own Edit > Undo: present always, greyed out while there's nothing to undo.
 #[test]
 fn undo_move_to_trash_is_live_only_while_a_trash_waits_to_be_undone() {
-    use crate::menu::UNDO_TRASH_ID;
+    use crate::ids::UNDO_TRASH_ID;
     let nothing = refusing(&[]);
     assert!(menu_item_enabled(UNDO_TRASH_ID, &inputs(&nothing)));
     let nothing_to_undo = MenuItemInputs {
@@ -56,7 +56,7 @@ fn undo_move_to_trash_is_live_only_while_a_trash_waits_to_be_undone() {
 
 #[test]
 fn an_item_greys_out_while_the_dialog_gate_refuses_its_command() {
-    use crate::menu::{ABOUT_ID, SERVERS_CONNECT_ID};
+    use crate::ids::{ABOUT_ID, SERVERS_CONNECT_ID};
     let nothing = refusing(&[]);
     assert!(menu_item_enabled(SERVERS_CONNECT_ID, &inputs(&nothing)));
     assert!(!menu_item_enabled(
@@ -70,7 +70,7 @@ fn an_item_greys_out_while_the_dialog_gate_refuses_its_command() {
 
 #[test]
 fn an_app_item_stays_enabled_outside_the_explorer_and_a_file_item_does_not() {
-    use crate::menu::{SERVERS_CONNECT_ID, SETTINGS_ID};
+    use crate::ids::{SERVERS_CONNECT_ID, SETTINGS_ID};
     let nothing = refusing(&[]);
     let settings_in_front = MenuItemInputs {
         explorer_menu_active: false,

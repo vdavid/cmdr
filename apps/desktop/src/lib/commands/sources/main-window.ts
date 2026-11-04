@@ -178,7 +178,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewZoomIn.label',
     scope: 'Main window',
     // Both fire from the webview's own keydown: `+` is what Shift+= types, `=` the
-    // unshifted key. The menu row spells it `Cmd+Equal` (`menu/menu_bar.rs`), because
+    // unshifted key. The menu row spells it `Cmd+Equal` (`crates/cmdr-menu/src/bar.rs`), because
     // muda parses an accelerator into a PHYSICAL key and has no `Plus` token, so
     // `Cmd+Plus` registered nothing at all and Zoom in showed no key.
     shortcuts: ['⌘+', '⌘='],

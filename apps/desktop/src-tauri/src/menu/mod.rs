@@ -3,13 +3,13 @@
 //! ## File layout
 //!
 //! - `mod.rs` (this file): shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `MenuContext`,
-//!   `NetworkHostMenuContext`, `CommandScope`, `ViewMode`).
-//! - `command_map.rs`: all menu item ID constants plus the ID ↔ command-registry mapping
-//!   (`menu_id_to_command` and `command_id_to_menu_id`), glob-re-exported from `mod.rs`.
-//! - `menu_bar.rs`: the menu bar for both platforms, one row per item (`MENU_BAR`), written in the
-//!   words `menu_spec.rs` defines. `menu_bar_builder.rs` builds it for the running platform
-//!   (`build_menu`), and `mnemonics.rs` allocates the Linux underline letters.
-//! - `menu_items.rs`: small shared pieces: `APP_MENU_TITLE`, the live labels (`pin_tab_label`,
+//!   `NetworkHostMenuContext`).
+//! - The bar as data lives in `cmdr-menu` (`crates/cmdr-menu/CLAUDE.md`): the item ids and the
+//!   command map (glob-re-exported here), `MENU_BAR` and its vocabulary (reachable here as
+//!   `menu_bar` / `menu_spec`), the enabled-state fold, and what a click asks for.
+//!   `menu_bar_builder.rs` builds it for the running platform (`build_menu`), and `mnemonics.rs`
+//!   allocates the Linux underline letters.
+//! - `menu_items.rs`: the live labels resolved in the native language (`pin_tab_label`,
 //!   `same_kind_menu_label`, `undo_trash_menu_label`, `detach_label`), and `truncate_for_menu_label`.
 //! - `file_context_menu.rs`: the file context menu (the one a right-click on a row opens), plus
 //!   `ContextMenuPaneFacts` / `ContextMenuResult`. Its macOS `FileContextInfo` is `context_menu_facts.rs`'s.
@@ -19,16 +19,17 @@
 //! - `queue_row_menu.rs`: a queue row's right-click menu in the operation queue window, built from
 //!   the entries the window lists (`QueueRowMenuEntry`); a pick goes back as `QueueRowContextAction`.
 //! - `item_states.rs`: `apply_menu_item_states` (the single writer of every main-menu item's
-//!   enabled state), `set_menu_context`, and the macOS app-menu-bar swap between main and viewer.
+//!   enabled state, over `cmdr_menu::enabled`), `set_menu_context`, and the macOS app-menu-bar swap
+//!   between main and viewer.
 //! - `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher wired into the Tauri
 //!   builder, plus the macOS post-construction helpers it shares a platform with
 //!   (`cleanup_macos_menus`, `set_macos_menu_icons`, and the responder-chain edit actions).
-//! - `accelerators.rs`: `frontend_shortcut_to_menu_text` (frontend glyphs → Tauri accelerator
-//!   strings), `frontend_shortcut_to_accelerator` (the same, floored to combos the menu bar may
-//!   register), and `update_menu_item_accelerator` (swapping one on a live item).
+//! - `accelerators.rs`: `frontend_shortcut_to_menu_text` / `frontend_shortcut_to_accelerator` (the
+//!   crate's conversions for this platform), and `update_menu_item_accelerator` (swapping one on a
+//!   live item).
 //! - `view_mode_items.rs`: keeping the per-pane view-mode items in step, via a full
 //!   `rebuild_view_mode_items` or a cheap `sync_view_mode_check_states`.
-//! - `sort_checks.rs`: View > Sort by's checkmarks, following the focused pane's requested sort.
+//! - `sort_checks.rs`: writes View > Sort by's checkmarks from the crate's `sort_check_states`.
 //! - `macos_appkit.rs`: the objc2 passes that fix the built menu bar up (`cleanup_macos_menus`,
 //!   `set_macos_menu_icons`), plus the `MENU_BAR_ICONS` table.
 //! - `display_accelerators.rs` (macOS): the third such pass, drawing the shortcuts a menu item can
@@ -50,7 +51,6 @@
 //!   items' fallback bitmaps.
 
 mod accelerators;
-mod command_map;
 #[cfg(target_os = "macos")]
 pub mod context_menu_facts;
 mod context_menu_header;
@@ -75,11 +75,9 @@ mod queue_row_menu;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_appkit;
 mod media_index_items;
-mod menu_bar;
 mod menu_bar_builder;
 mod menu_handlers;
 mod menu_items;
-mod menu_spec;
 mod menu_structure;
 mod mnemonics;
 #[cfg(target_os = "macos")]
@@ -100,6 +98,10 @@ mod view_mode_items;
 
 use std::collections::{HashMap, HashSet};
 
+// The bar as data, under the names the rest of this module has always used for it.
+use cmdr_menu::bar as menu_bar;
+use cmdr_menu::spec as menu_spec;
+
 use self::menu_spec::{Platform, display_accelerator_label};
 use crate::ignore_poison::IgnorePoison as _;
 #[cfg(target_os = "macos")]
@@ -113,11 +115,13 @@ use tauri::{
 
 // Re-export the public API consumed from outside the menu module.
 // All menu item ID constants and the ID ↔ command-registry mapping functions live in
-// `command_map`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
+// `cmdr_menu::ids`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
 pub use accelerators::{
     frontend_shortcut_to_accelerator, frontend_shortcut_to_menu_text, update_menu_item_accelerator,
 };
-pub use command_map::*;
+pub use cmdr_menu::ids::*;
+pub use cmdr_menu::sort::RequestedSort;
+pub use cmdr_menu::spec::ViewMode;
 #[cfg(target_os = "macos")]
 pub use context_menu_header::lend_context_menu_header;
 pub use context_menu_header::{ContextMenuTarget, ContextMenuTargetFacts};
@@ -155,7 +159,6 @@ pub use queue_row_menu::{QueueRowMenuEntry, build_queue_row_context_menu};
 pub use rebuild::rebuild_menu_bar;
 #[cfg(target_os = "macos")]
 pub use services_context::lend_services_menu;
-pub use sort_checks::RequestedSort;
 pub(crate) use sort_checks::sync_sort_check_states;
 #[cfg(target_os = "macos")]
 pub use tag_row::lend_tag_row;
@@ -219,23 +222,6 @@ pub struct MediaIndexFolderExclusion {
 pub struct MediaIndexFolderChoice {
     pub folder: String,
     pub chosen: bool,
-}
-
-/// Whether a command requires the main window to be focused.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CommandScope {
-    /// Always emit regardless of window focus (Settings, About, Command palette, etc.)
-    App,
-    /// Only emit when the main window is focused (file operations, navigation, etc.)
-    FileScoped,
-}
-
-/// View mode type that matches the frontend type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum ViewMode {
-    Full,
-    #[default]
-    Brief,
 }
 
 /// Which app-level menu is currently installed on macOS.
@@ -453,7 +439,7 @@ pub struct MenuState<R: Runtime> {
     pub view_mode_left: Mutex<ViewMode>,
     pub view_mode_right: Mutex<ViewMode>,
     /// Cached view-mode shortcuts. Frontend pushes updates via `update_menu_accelerator`.
-    /// Defaults are the left pane's accelerators in `menu_bar.rs` on this platform
+    /// Defaults are the left pane's accelerators in `cmdr_menu::bar` on this platform
     /// (`menu_bar::spec_accelerator`): Cmd+1 / Cmd+2 on macOS, Ctrl+1 / Ctrl+2 on Linux.
     pub view_mode_full_accel: Mutex<Option<String>>,
     pub view_mode_brief_accel: Mutex<Option<String>>,
@@ -573,8 +559,12 @@ impl<R: Runtime> Default for MenuState<R> {
             view_mode_active_pane: Mutex::new("left".to_string()),
             view_mode_left: Mutex::new(ViewMode::Brief),
             view_mode_right: Mutex::new(ViewMode::Brief),
-            view_mode_full_accel: Mutex::new(menu_bar::spec_accelerator(VIEW_MODE_FULL_LEFT_ID).map(String::from)),
-            view_mode_brief_accel: Mutex::new(menu_bar::spec_accelerator(VIEW_MODE_BRIEF_LEFT_ID).map(String::from)),
+            view_mode_full_accel: Mutex::new(
+                menu_bar::spec_accelerator(VIEW_MODE_FULL_LEFT_ID, Platform::current()).map(String::from),
+            ),
+            view_mode_brief_accel: Mutex::new(
+                menu_bar::spec_accelerator(VIEW_MODE_BRIEF_LEFT_ID, Platform::current()).map(String::from),
+            ),
             pin_tab: Mutex::new(None),
             reopen_closed_tab_enabled: AtomicBool::new(false),
             undo_trash_available: AtomicBool::new(false),
@@ -633,7 +623,7 @@ impl<R: Runtime> MenuState<R> {
     pub fn set_item_label(&self, menu_id: &str, label: String) -> Result<(), String> {
         let shortcut = match self.display_accelerators.lock_ignore_poison().get(menu_id) {
             Some(rebound) => rebound.clone(),
-            None => menu_bar::spec_display_accelerator(menu_id).map(str::to_string),
+            None => menu_bar::spec_display_accelerator(menu_id, Platform::current()).map(str::to_string),
         };
         let built = match shortcut {
             Some(shortcut) => display_accelerator_label(&label, &shortcut, Platform::current()),

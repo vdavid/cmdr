@@ -10,18 +10,16 @@ window focus context.
 ## File layout
 
 - `mod.rs`: shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `MenuContext`,
-  `NetworkHostMenuContext`, `CommandScope`, `ViewMode`), re-exports of the public API exposed by the
-  submodules below, plus a glob re-export of `command_map` so the menu IDs and mapping functions
-  stay reachable at `crate::menu::…`.
-- `command_map.rs`: the menu item ID constants (all `*_ID`) and the ID mapping functions
-  (`menu_id_to_command`, `command_id_to_menu_id`).
-- `menu_bar.rs`: `MENU_BAR`, the menu bar for both platforms as data, one row per item with every platform difference
-  marked on its row, plus `SHOW_IN_FILE_MANAGER_KEY`, the per-platform LABEL key the file context menu shares
-  ("Show in Finder" / "Show in file manager"). `menu_bar_test.rs` pins both bars as text. Why it's data: the menu-bar
-  Decision under "Key decisions".
-- `menu_spec.rs`: the words `MENU_BAR` is written in (`item`, `check`, `submenu`, `macos_only`, `both`, `macos`,
-  `split`, …) and `Platform` / `PerPlatform`, where a platform difference resolves. No `cfg`, so both bars exist on
-  every host.
+  `NetworkHostMenuContext`), re-exports of the public API exposed by the submodules below, plus a glob re-export of
+  `cmdr_menu::ids` so the menu IDs and mapping functions stay reachable at `crate::menu::…`, and `cmdr_menu::bar` /
+  `cmdr_menu::spec` under their old names `menu_bar` / `menu_spec`.
+- **The bar as data is `cmdr-menu`** (`crates/cmdr-menu/CLAUDE.md`): the item ids and command map (`ids.rs`),
+  `MENU_BAR` with every platform difference marked on its row (`bar.rs`, pinned as text by `bar_test.rs`), the words it's
+  written in (`spec.rs`, no `cfg`, so both bars exist on every host), the enabled-state fold (`enabled.rs`, every row
+  pinned by `bar_states_test.rs`), what a click asks for (`click.rs`), the Sort by checks (`sort.rs`), the live label
+  keys (`labels.rs`), and the accelerator conversion (`accelerators.rs`). Why a crate: the browser demo draws the same
+  bar (`apps/desktop/src/lib/demo/DETAILS.md`). Why it's data: the menu-bar Decision under "Key
+  decisions".
 - `menu_bar_builder.rs`: `build_menu`, which builds `MENU_BAR` for `Platform::current()`, allocates the mnemonics,
   registers the tracked items, and hands back `MenuItems`.
 - `display_accelerators.rs` (macOS): `set_display_accelerators`, the pass that draws a shortcut the bar can't register
@@ -50,20 +48,22 @@ window focus context.
 - `install.rs`: `at_startup`, the single call `lib.rs` makes in `setup`: pin the UI language, build the bar,
   run the macOS AppKit passes, and place the `MenuState` everything else mutates. Order inside is load-bearing.
 - `item_states.rs`: `apply_menu_item_states` (the one writer of every menu item's enabled state, derived from stored
-  inputs through the pure `menu_item_enabled` plus `viewer_text_edit_enabled` for the viewer bar's Cut / Paste),
+  inputs through the crate's pure `menu_item_enabled` / `field_item_enabled` / `submenu_enabled`, plus
+  `viewer_text_edit_enabled` for the viewer bar's Cut / Paste),
   `note_viewer_search_focus` (which viewer's search box holds focus), `set_menu_context` (records which window's menu
   the explorer items answer to), and the macOS-only `swap_to_main_menu` / `swap_to_viewer_menu` (the app-level menu-bar
   swap). They're called from `commands::menu_state::activate_window_menu` and the other menu-state IPC commands.
-- `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher, plus the macOS
+- `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher (a bar row's view-mode and sort lanes come
+  from `cmdr_menu::click::bar_click`), plus the macOS
   post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` and
   `send_native_edit_action` over the pure `native_edit_selector_for` (the actual objc2 FFI lives in `macos_appkit.rs`)
   and `focused_viewer_label` / `viewer_edit_action_for`, which route the viewer bar's own items to the viewer in front.
-- `accelerators.rs`: `frontend_shortcut_to_accelerator` (frontend glyphs to Tauri accelerator
-  strings) and `update_menu_item_accelerator` (swapping one on a live item).
+- `accelerators.rs`: `frontend_shortcut_to_accelerator` / `frontend_shortcut_to_menu_text` (the crate's conversion for
+  this platform), `update_menu_item_accelerator` (swapping one on a live item), and the muda-parsing tests.
 - `view_mode_items.rs`: `rebuild_view_mode_items` (full remove/recreate/reinsert when the active pane
   or a shortcut moved) and `sync_view_mode_check_states` (the cheap check-state-only path).
-- `sort_checks.rs`: View > Sort by's checkmarks: `RequestedSort`, `SortCheck::is_on`, and `sync_sort_check_states` (the `SortCheck` enum itself is spec vocabulary, in `menu_spec.rs`). See "View
-  > Sort by checkmarks".
+- `sort_checks.rs`: `sync_sort_check_states`, writing View > Sort by's checkmarks from `cmdr_menu::sort`
+  (`RequestedSort`, `SortCheck::is_on`, `sort_check_states`). See "View > Sort by checkmarks".
 - `macos_appkit.rs`: the two passes that reach past Tauri into AppKit once the bar is built:
   `cleanup_macos_menus` (removes system-injected Edit items, registers the Help menu) and
   `set_macos_menu_icons` (SF Symbol icons via objc2 FFI) with its `MENU_BAR_ICONS` table.
@@ -172,7 +172,7 @@ a per-submenu uniqueness puzzle on top of translating. So `mnemonics::Mnemonics`
 translated labels, in menu order: word-initial letters first (what people scan for), then any other letter or digit,
 then no marker at all if everything is taken (which costs one keystroke and nothing else). The menu bar's own titles get
 one allocator; each submenu gets its own. The builder runs every label through it on both platforms (a no-op on macOS),
-so no row in `menu_bar.rs` names a mnemonic, and a new item can't get one on one platform and not the other.
+so no row in `cmdr_menu::bar` names a mnemonic, and a new item can't get one on one platform and not the other.
 
 ## Key concepts
 
@@ -294,7 +294,7 @@ Shared state managed via `tauri::State<MenuState<Wry>>`. Holds:
   `view_mode_full_accel`, `view_mode_brief_accel`) used by `rebuild_view_mode_items` to
   attach the keyboard accelerator only to the currently-active pane's pair. The two accels start as the left pane's
   spec accelerators on this platform (`menu_bar::spec_accelerator`), so a rebuild can't put a macOS chord on Linux.
-- `items: HashMap<String, MenuItemEntry>` for every `Tracking::Tracked` row in `menu_bar.rs` (plus the tracked check
+- `items: HashMap<String, MenuItemEntry>` for every `Tracking::Tracked` row in `cmdr_menu::bar` (plus the tracked check
   rows, Sort by's four bound columns), the items that need accelerator updates and enable/disable. `MenuItemEntry.item`
   is a `TrackedItem`, plain or check, so a rebind recreates the same kind.
 - `requested_sort`: the focused pane's requested sort, which View > Sort by checks ("View > Sort by checkmarks").
@@ -321,7 +321,7 @@ one on all three item kinds (`tauri-2.12.2/src/menu/normal.rs:110`, `check.rs:11
 own (`muda-0.20.0/src/items/normal.rs:165`) — read from the vendored sources, 2026-10-13. So the machinery this section
 describes is probably reducible to one call per item, and an in-place set would ALSO keep the item's SF Symbol and its
 attributed title instead of destroying and restoring them (see "Display-only accelerators"). Nobody has tried it; it's
-its own change, gated on the `menu_bar_test.rs` snapshot plus a live rebind on both platforms. ❗ Whatever replaces
+its own change, gated on the `cmdr-menu`'s `bar_test.rs` snapshot plus a live rebind on both platforms. ❗ Whatever replaces
 this must keep parsing what it emits: `set_accelerator` swallows a string muda can't parse exactly the way
 `MenuItem::new` does (`accelerator.and_then(|s| s.as_ref().parse().ok())`).
 
@@ -376,7 +376,7 @@ bug.
 
 **Two ways the glyph reaches the user.** `ItemSpec::display_accelerator` carries ONE string for both platforms, set by
 `menu_spec::displayed_item`, which pairs it with `NONE` so a row can't register and display a shortcut at once
-(`menu_bar_test.rs` pins that too). `display_accelerator_label` is where they part:
+(`cmdr-menu`'s `bar_test.rs` pins that too). `display_accelerator_label` is where they part:
 
 - **Linux** spells it into the label (`Invert selection (⇧8)`). GTK offers no other hook. The mnemonic is allocated on
   the bare label first, so no underline lands inside the parens.
@@ -385,7 +385,7 @@ bug.
   while the label keeps its own color. The font attribute is load-bearing — an attributed title with no
   `NSFontAttributeName` falls back to the system face, not the menu font.
 
-The two blocks in the `menu_bar_test.rs` snapshot diverge for this submenu because of this, and that's correct.
+The two blocks in the `cmdr-menu`'s `bar_test.rs` snapshot diverge for this submenu because of this, and that's correct.
 
 **Placing the tab stop.** AppKit lays a menu out as `widest label + gap + widest key equivalent` and right-aligns the
 key equivalents against the content's right edge. `tab_stop_for` reproduces that, measuring the labels (from muda's own
@@ -619,7 +619,7 @@ exception: it greys out only while the main window is in front, because anywhere
   `handle_menu_event` runs, and they emit their own events (`settings-changed`, `view-mode-changed`), so the frontend
   can't untoggle them and show hidden never passes the dispatch core. `handle_menu_event` checks
   `MenuState::refuses_over_dialog` and puts the check back. Their commands are named by the `*_COMMAND_ID` consts in
-  `command_map.rs`, pinned by `rust-command-id-drift.test.ts`.
+  `cmdr_menu::ids`, pinned by `rust-command-id-drift.test.ts`.
 - **Lock order:** the recompute copies the refused set before taking any item lock, because `handle_menu_event` holds a
   check item's lock while it reads the set. The viewer block reads `viewer_search_focus` and drops that lock before
   taking the two item locks, for the same reason.
@@ -677,7 +677,7 @@ matches the whole group as one contiguous run rather than each title on its own:
 the seven color titles in order or nothing, because the header line carries the bare filename and a folder named `Red`
 puts a `Red` item above the real one.
 
-This is why every top-level menu in `menu_bar.rs` carries an ID from `command_map.rs`, which the macOS
+This is why every top-level menu in `cmdr_menu::bar` carries an ID from `cmdr_menu::ids`, which the macOS
 bar builds it with (Linux looks nothing up, so it builds its menus without one). Two IDs are shared
 with the viewer menu bar (`menu_structure.rs`): `EDIT_MENU_ID` and `HELP_MENU_ID`, because
 `cleanup_macos_menus` runs against whichever bar is installed. Only one bar is ever installed at a time,
@@ -1085,7 +1085,7 @@ freed when `show_file_context_menu` returned (0.20 holds an `Rc` to it).
 
 ## Platform differences
 
-Every difference is marked on its row in `menu_bar.rs`, and `menu_bar_test.rs` spells out each bar in full.
+Every difference is marked on its row in `cmdr_menu::bar`, and `cmdr-menu`'s `bar_test.rs` spells out each bar in full.
 
 - **App menu**: macOS has a dedicated "cmdr" menu with About, License, and Settings. Linux has none: About sits under
   Help, Settings and License under Edit.
@@ -1214,7 +1214,7 @@ The **Zoom** submenu holds the text-size presets (75/100/125/150 %) plus Zoom in
 Zoom out (`Cmd+Minus`) / 100 % (`Cmd+0`). Items are `App`-scoped so the keyboard accelerators fire in any focused window.
 Linux skips the in/out accelerators because GTK intercepts `Cmd+Plus` / `Cmd+Minus` at the toolkit level; the JS
 shortcut dispatch path covers Linux.
-macOS adds: cmdr (app menu), Window. `menu_bar.rs` has the full item list.
+macOS adds: cmdr (app menu), Window. `cmdr_menu::bar` has the full item list.
 
 Viewer windows get a minimal menu: File (Close), Edit (clipboard), View (Word wrap), Go (Back, Forward), and on
 macOS also Window and Help. On Linux it's a per-window menu; on macOS it's installed app-level on viewer
@@ -1237,8 +1237,8 @@ focus-gain (see "Per-window menu activation" above).
 **Decision**: Accelerator updates via remove/recreate/reinsert instead of in-place mutation.
 **Why**: it is what the code does, and `MenuState` tracks both the `Submenu` reference and the positional index for every updatable item to make it possible. ⚠️ The reason recorded for it — that Tauri's menu API has no `set_accelerator()` — is false, and the simplification it blocks is described under "Accelerator sync". Read that before extending this machinery.
 
-**Decision**: one menu bar for both platforms, written as data (`menu_bar.rs`) and built by one generic builder (`menu_bar_builder.rs`), with every platform difference marked on the row it changes: `macos_only` / `linux_only` rows and menus, `macos(…)` / `split(…)` / `cmd_or_ctrl!(…)` accelerators, per-platform label keys, and top-level IDs that reach macOS alone.
-**Why**: per-platform builders write each item's ID, label, and accelerator twice, so a new item is two edits in lockstep and a drift between them goes unnoticed. As data, a new item is one row, its registration position is its index among the rows its submenu shows, and the table carries no `cfg`, so `menu_bar_test.rs` pins BOTH bars as text on any host. That's the only way to check the Linux bar on a Mac (a real `muda::Menu` panics off the main thread), and the snapshot doubles as the review surface: a menu change reads as a diff of the bar. Sort by, Zoom, and the pane view-mode submenus are rows too, so nothing about the bar lives in a helper.
+**Decision**: one menu bar for both platforms, written as data (`cmdr_menu::bar`) and built by one generic builder (`menu_bar_builder.rs`), with every platform difference marked on the row it changes: `macos_only` / `linux_only` rows and menus, `macos(…)` / `split(…)` / `cmd_or_ctrl!(…)` accelerators, per-platform label keys, and top-level IDs that reach macOS alone.
+**Why**: per-platform builders write each item's ID, label, and accelerator twice, so a new item is two edits in lockstep and a drift between them goes unnoticed. As data, a new item is one row, its registration position is its index among the rows its submenu shows, and the table carries no `cfg`, so `cmdr-menu`'s `bar_test.rs` pins BOTH bars as text on any host. That's the only way to check the Linux bar on a Mac (a real `muda::Menu` panics off the main thread), and the snapshot doubles as the review surface: a menu change reads as a diff of the bar. Sort by, Zoom, and the pane view-mode submenus are rows too, so nothing about the bar lives in a helper.
 
 A few asymmetries look accidental, and each is one row edit away: macOS keeps About and Settings out of `MenuState.items` while Linux tracks them, the Help menu's separator sits after `Keyboard shortcuts` and `Accessibility guide` on macOS but after the About group on Linux, and Duplicate's `Cmd+D` is macOS-only.
 

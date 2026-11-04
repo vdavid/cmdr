@@ -1,6 +1,6 @@
-//! The native menu bar on both platforms: every menu, item, separator, and accelerator, in display
-//! order. `menu_bar_builder.rs` builds it for the running platform, and `menu_spec.rs` defines the
-//! words it's written in.
+//! The menu bar on both platforms: every menu, item, separator, and accelerator, in display order.
+//! The desktop's `menu_bar_builder.rs` builds it into native menus for the running platform, the
+//! browser demo renders the macOS one, and `spec.rs` defines the words it's written in.
 //!
 //! A row's position in its submenu is the position the builder registers it at for accelerator
 //! sync, so adding or moving a row can't desync the two. A new item is one row here.
@@ -13,30 +13,24 @@
 //!   there), so the frontend's keydown dispatch handles them.
 //! - `cmd_or_ctrl!(…)` accelerators: ⌘ on macOS, the same chord on Ctrl on Linux.
 //! - `split(…)` accelerators and `Label::PerPlatformKey` labels, spelled per platform.
-//! - Top-level menu IDs, which reach macOS alone (`menu_spec::menu`).
-//! - GTK `&` mnemonics on Linux, allocated per submenu from the translated labels
-//!   (`mnemonics.rs`), so no row names one.
+//! - Top-level menu IDs, which reach macOS alone (`spec::menu`).
+//! - GTK `&` mnemonics on Linux, allocated per submenu from the translated labels (the desktop's
+//!   `menu/mnemonics.rs`), so no row names one.
 //!
 //! ❗ Every accelerator here is a string muda parses, and a token it doesn't know is DISCARDED
 //! rather than reported (`tauri::menu::MenuItem::new` is `.parse().ok()`), so the item comes up
 //! with no key at all and nothing says a word. muda's modifier vocabulary is `OPTION`/`ALT`,
 //! `CONTROL`/`CTRL`, `COMMAND`/`CMD`/`SUPER`, `SHIFT` (`muda-0.20.0/src/accelerator/mod.rs:249`): ❌
 //! never `Opt`, which cost Copy path and Show in Finder their accelerators in every release until
-//! 2026-09-16. `accelerators.rs` guards its own output with a real parse.
+//! 2026-09-16. The desktop's `menu/accelerators.rs` tests parse every string here with muda.
 //!
 //! ❗ A ⌘ chord is `cmd_or_ctrl!`, ❌ never a `Cmd+…` string on Linux: muda maps `"CMD"` to
 //! `Modifiers::META`, which GTK binds and prints as the Super key (#284). `both` and `split` refuse
-//! one at compile time, and `menu_bar_test.rs` pins it. Users got Ctrl regardless, because the
+//! one at compile time, and `bar_test.rs` pins it. Users got Ctrl regardless, because the
 //! frontend keydown layer accepts `metaKey || ctrlKey`; it was the label (and the Super binding)
 //! that was wrong.
 
-use super::menu_spec::SortCheck::{self, Column, Order};
-use super::menu_spec::{
-    Accelerator, BarMenu, CheckRole, Entry, EntryKind, Label, NONE, Pane, PerPlatform, Platform, Predefined, SEPARATOR,
-    SubmenuRole, SubmenuSpec, both, check, cmd_or_ctrl, displayed_item, item, labeled_item, linux_only, macos,
-    macos_menu, macos_only, menu, predefined, split, submenu,
-};
-use super::{
+use crate::ids::{
     ABOUT_ID, ACKNOWLEDGEMENTS_ID, APP_MENU_ID, ASK_CMDR_ID, CALCULATE_FOLDER_SIZES_ID, CHANGELOG_ID,
     CHECK_FOR_UPDATES_ID, CLI_INSTALL_ID, CLONE_PANE_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID,
     COMPARE_DIRECTORIES_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID,
@@ -53,7 +47,14 @@ use super::{
     SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID,
     SWITCH_PANE_ID, TAB_MENU_ID, UNDO_TRASH_ID, VIEW_MENU_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
     VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID, VIEW_ZOOM_125_ID,
-    VIEW_ZOOM_150_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID, ViewMode, WINDOW_MENU_ID,
+    VIEW_ZOOM_150_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID, WINDOW_MENU_ID,
+};
+use crate::spec::SortCheck::{self, Column, Order};
+use crate::spec::ViewMode;
+use crate::spec::{
+    Accelerator, BarMenu, CheckRole, Entry, EntryKind, Label, NONE, Pane, PerPlatform, Platform, Predefined, SEPARATOR,
+    SubmenuRole, SubmenuSpec, both, check, cmd_or_ctrl, displayed_item, item, labeled_item, linux_only, macos,
+    macos_menu, macos_only, menu, predefined, split, submenu,
 };
 use cmdr_listing::{SortColumn, SortOrder};
 
@@ -65,57 +66,95 @@ const fn sort_check(id: &'static str, key: &'static str, accelerator: Accelerato
 /// "Copy path", matching Finder's "Copy as Pathname". Must stay in sync with the `file.copyPath`
 /// default in `src/lib/commands/sources/file-list.ts` (`⌘⌥C`), which is what the frontend
 /// dispatcher listens for. The file context menu uses it too.
-pub(crate) const COPY_PATH_ACCELERATOR: Accelerator = cmd_or_ctrl!("Alt+C");
+pub const COPY_PATH_ACCELERATOR: Accelerator = cmd_or_ctrl!("Alt+C");
 
 /// "Show in Finder" / "Show in file manager", here and in the file context menu.
 ///
 /// Two catalog keys rather than one with a platform token: "Finder" is Apple's app name and stays
 /// English everywhere, while the Linux wording names a generic kind of program, so the two don't
 /// have the same shape in every language.
-pub(crate) const SHOW_IN_FILE_MANAGER_KEY: PerPlatform<&str> = PerPlatform {
+pub const SHOW_IN_FILE_MANAGER_KEY: PerPlatform<&str> = PerPlatform {
     macos: "menu.file.showInFinder",
     linux: "menu.file.showInFileManager",
 };
-pub(crate) const SHOW_IN_FILE_MANAGER_ACCELERATOR: Accelerator = split("Alt+Cmd+O", "Alt+Ctrl+O");
+pub const SHOW_IN_FILE_MANAGER_ACCELERATOR: Accelerator = split("Alt+Cmd+O", "Alt+Ctrl+O");
 
-/// The display-only shortcut `MENU_BAR` gives `menu_id` on this platform, if any.
+/// The display-only shortcut `MENU_BAR` gives `menu_id` on `platform`, if any.
 ///
-/// The spec is the fallback answer, so it's what [`super::MenuState::set_item_label`] composes a rewritten
-/// label with while the user hasn't rebound the command. `MenuState.display_accelerators` overrides
-/// it once they have; ❗ read that FIRST, or a rebind's glyph reverts on the next label change.
-pub(crate) fn spec_display_accelerator(menu_id: &str) -> Option<&'static str> {
-    match spec_entry(menu_id)? {
+/// The spec is the fallback answer, so it's what the desktop's `MenuState::set_item_label` composes
+/// a rewritten label with while the user hasn't rebound the command. A host's record of a rebind
+/// overrides it once they have; ❗ read that FIRST, or a rebind's glyph reverts on the next label
+/// change.
+pub fn spec_display_accelerator(menu_id: &str, platform: Platform) -> Option<&'static str> {
+    match spec_entry(menu_id, platform)? {
         EntryKind::Item(item) => item.display_accelerator,
         _ => None,
     }
 }
 
-/// The accelerator `MENU_BAR` registers `menu_id` with on this platform, if any. `MenuState` seeds
-/// the view-mode pair's from it, so a rebuild can't put back a chord the bar never had.
-pub(crate) fn spec_accelerator(menu_id: &str) -> Option<&'static str> {
-    match spec_entry(menu_id)? {
-        EntryKind::Item(item) => item.accelerator.current(),
-        EntryKind::Check(check) => check.accelerator.current(),
+/// The accelerator `MENU_BAR` registers `menu_id` with on `platform`, if any. The desktop seeds the
+/// view-mode pair's from it, so a rebuild can't put back a chord the bar never had.
+pub fn spec_accelerator(menu_id: &str, platform: Platform) -> Option<&'static str> {
+    match spec_entry(menu_id, platform)? {
+        EntryKind::Item(item) => item.accelerator.on(platform),
+        EntryKind::Check(check) => check.accelerator.on(platform),
         _ => None,
     }
 }
 
-/// The item or check `MENU_BAR` builds as `menu_id` on this platform, nested ones included.
-fn spec_entry(menu_id: &str) -> Option<&'static EntryKind> {
-    fn in_submenu(spec: &'static SubmenuSpec, menu_id: &str) -> Option<&'static EntryKind> {
-        spec.entries_on(Platform::current()).find_map(|entry| match entry {
-            EntryKind::Item(item) if item.id == menu_id => Some(entry),
-            EntryKind::Check(check) if check.id == menu_id => Some(entry),
-            EntryKind::Submenu(nested) => in_submenu(nested, menu_id),
+/// The item or check `MENU_BAR` builds as `menu_id` on `platform`, nested ones included.
+pub fn spec_entry(menu_id: &str, platform: Platform) -> Option<&'static EntryKind> {
+    every_entry(platform).into_iter().find(|entry| match entry {
+        EntryKind::Item(item) => item.id == menu_id,
+        EntryKind::Check(check) => check.id == menu_id,
+        _ => false,
+    })
+}
+
+/// Every row `platform` builds, nested ones included, in build order: a submenu's row, then its
+/// own rows, then the row after it.
+pub fn every_entry(platform: Platform) -> Vec<&'static EntryKind> {
+    fn walk(spec: &'static SubmenuSpec, platform: Platform, out: &mut Vec<&'static EntryKind>) {
+        for entry in spec.entries_on(platform) {
+            out.push(entry);
+            if let EntryKind::Submenu(nested) = entry {
+                walk(nested, platform, out);
+            }
+        }
+    }
+    let mut out = Vec::new();
+    for bar_menu in menus_on(platform) {
+        walk(&bar_menu.submenu, platform, &mut out);
+    }
+    out
+}
+
+/// Every accelerator `platform`'s bar registers, with the ID of the item it sits on.
+pub fn registered_accelerators(platform: Platform) -> Vec<(&'static str, &'static str)> {
+    every_entry(platform)
+        .into_iter()
+        .filter_map(|entry| match entry {
+            EntryKind::Item(item) => Some((item.id, item.accelerator.on(platform)?)),
+            EntryKind::Check(check) => Some((check.id, check.accelerator.on(platform)?)),
             _ => None,
         })
-    }
-
-    MENU_BAR
-        .iter()
-        .filter(|bar_menu| bar_menu.is_on(Platform::current()))
-        .find_map(|bar_menu| in_submenu(&bar_menu.submenu, menu_id))
+        .collect()
 }
+
+/// The top-level menus `platform`'s bar holds, in order.
+pub fn menus_on(platform: Platform) -> impl Iterator<Item = &'static BarMenu> {
+    MENU_BAR.iter().filter(move |bar_menu| bar_menu.is_on(platform))
+}
+
+/// The macOS app menu's title, and the viewer bar's.
+///
+/// Deliberately NOT a catalog key: macOS names the app menu after the application, and the
+/// application is called `Cmdr` (the `productName` in `tauri.conf.json`, and the spelling the brand
+/// uses everywhere). Translating it would make the one item every macOS user navigates by
+/// unrecognizable, and it would earn a `sameAsSourceJustification` in every locale for nothing.
+///
+/// Only macOS has an app menu: Linux puts About under Help and Settings under Edit.
+pub const APP_MENU_TITLE: &str = "Cmdr";
 
 // The items the macOS app menu holds, which Linux spreads over Edit and Help.
 const ABOUT: Entry = item(ABOUT_ID, "menu.app.about", NONE);
@@ -128,7 +167,7 @@ const CHECK_FOR_UPDATES: Entry = item(CHECK_FOR_UPDATES_ID, "menu.app.checkForUp
 const CHANGELOG: Entry = item(CHANGELOG_ID, "menu.app.changelog", NONE);
 const SETTINGS: Entry = item(SETTINGS_ID, "menu.app.settings", cmd_or_ctrl!(","));
 
-pub(crate) const MENU_BAR: &[BarMenu] = &[
+pub const MENU_BAR: &[BarMenu] = &[
     macos_menu(
         APP_MENU_ID,
         Label::AppName,
@@ -497,5 +536,5 @@ pub(crate) const MENU_BAR: &[BarMenu] = &[
 ];
 
 #[cfg(test)]
-#[path = "menu_bar_test.rs"]
-mod menu_bar_test;
+#[path = "bar_test.rs"]
+mod bar_test;

@@ -1,0 +1,24 @@
+[package]
+name = "cmdr-menu"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[dependencies]
+# `SortColumn` and `SortOrder`, which View > Sort by's rows stand for. Every host of
+# this crate already links the listing engine.
+cmdr-listing = { path = "../cmdr-listing" }
+# The wire shapes a host deserializes from the frontend's pushes (the requested
+# sort, the two live-label targets).
+serde = { version = "1", features = ["derive"] }
+# `RequestedSort` crosses IPC in a typed command. Pinned to the EXACT version the app
+# uses: two `specta` crates in one graph would make the `Type` impl stop satisfying
+# `tauri-specta`.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }

@@ -11,13 +11,13 @@
  *
  * Mechanism: parse the Rust/Svelte source files for their command-id string
  * literals rather than maintaining a hand-copied list (which would itself drift).
- * Three emit sites: `menu/command_map.rs`'s `menu_id_to_command` (the menu bar and
+ * Three emit sites: `crates/cmdr-menu/src/ids.rs`'s `menu_id_to_command` (the menu bar and
  * the right-click menus), `dock/menu/rows.rs`'s `DockCommand::command_id` (the Dock
  * tile menu, which builds its own `NSMenu` and so never passes through
- * `command_map`), and `LicenseSection.svelte` (the only cross-window
+ * `cmdr_menu::ids`), and `LicenseSection.svelte` (the only cross-window
  * `execute-command` emit).
  *
- * Cross-pointers: `src-tauri/src/menu/command_map.rs` § `menu_id_to_command`,
+ * Cross-pointers: `crates/cmdr-menu/src/ids.rs` § `menu_id_to_command`,
  * `src-tauri/src/dock/menu/rows.rs` § `command_id`, and `LicenseSection.svelte` §
  * the `emitTo('main', 'execute-command', …)` call all carry a comment pointing
  * back here.
@@ -35,11 +35,11 @@ const desktopRoot = path.resolve(here, '../../..')
 
 /** Command ids `menu_id_to_command` maps menu items to (the `Some(("id", …))` literals). */
 function menuEmittedCommandIds(): string[] {
-  const source = readFileSync(path.join(desktopRoot, 'src-tauri/src/menu/command_map.rs'), 'utf8')
+  const source = readFileSync(path.join(desktopRoot, '../../crates/cmdr-menu/src/ids.rs'), 'utf8')
   // Isolate the `menu_id_to_command` body so we don't also scan the reverse map
   // or the unit tests (which list the same ids and would mask a drift).
   const fnStart = source.indexOf('pub fn menu_id_to_command(')
-  expect(fnStart, 'menu_id_to_command not found in menu/command_map.rs').toBeGreaterThan(-1)
+  expect(fnStart, 'menu_id_to_command not found in crates/cmdr-menu/src/ids.rs').toBeGreaterThan(-1)
   const fnEnd = source.indexOf('pub fn command_id_to_menu_id(', fnStart)
   expect(fnEnd, 'command_id_to_menu_id not found after menu_id_to_command').toBeGreaterThan(fnStart)
   const body = source.slice(fnStart, fnEnd)
@@ -90,12 +90,12 @@ function crossWindowEmittedCommandIds(): string[] {
 }
 
 /**
- * Command ids named by a `pub const …_COMMAND_ID` in `command_map.rs`: the check items' commands, which
+ * Command ids named by a `pub const …_COMMAND_ID` in `crates/cmdr-menu/src/ids.rs`: the check items' commands, which
  * `handle_menu_event` reads to revert a click the dialog gate refuses. A typo there would silently let that
  * click through behind a dialog.
  */
 function checkItemCommandIds(): string[] {
-  const source = readFileSync(path.join(desktopRoot, 'src-tauri/src/menu/command_map.rs'), 'utf8')
+  const source = readFileSync(path.join(desktopRoot, '../../crates/cmdr-menu/src/ids.rs'), 'utf8')
   const ids: string[] = []
   const re = /pub const [A-Z_]+_COMMAND_ID: &str = "([^"]+)";/g
   let match: RegExpExecArray | null
@@ -147,9 +147,9 @@ describe('Rust↔FE command-id drift', () => {
 
 /** Command ids in `command_id_to_menu_id` (the accelerator-sync reverse map). */
 function menuAcceleratorCommandIds(): string[] {
-  const source = readFileSync(path.join(desktopRoot, 'src-tauri/src/menu/command_map.rs'), 'utf8')
+  const source = readFileSync(path.join(desktopRoot, '../../crates/cmdr-menu/src/ids.rs'), 'utf8')
   const fnStart = source.indexOf('pub fn command_id_to_menu_id(')
-  expect(fnStart, 'command_id_to_menu_id not found in menu/command_map.rs').toBeGreaterThan(-1)
+  expect(fnStart, 'command_id_to_menu_id not found in crates/cmdr-menu/src/ids.rs').toBeGreaterThan(-1)
   // The function ends at the first closing brace at column 0 after the match arms.
   const fnEnd = source.indexOf('\n}', fnStart)
   const body = source.slice(fnStart, fnEnd)

@@ -644,8 +644,8 @@ The rail's toggle lives in four places, and a miss fails silently (no error, jus
 nothing):
 
 - The frontend command registry, plus `COMMAND_IDS`, plus the `askCmdr.toggle` handler.
-- Rust `command_map.rs`.
-- Its row in the View menu in `menu/menu_bar.rs`.
+- Rust `crates/cmdr-menu/src/ids.rs`.
+- Its row in the View menu in `crates/cmdr-menu/src/bar.rs`.
 - `shortcuts-store.ts` `menuCommands`.
 
 The default is `⌘⌥A`, registered **Command-then-Option**: `⌥⌘`-order strings are native-menu-only, so writing the

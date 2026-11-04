@@ -4,9 +4,9 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
 
 ## Module map
 
-`menu_bar.rs` holds both bars as data (vocabulary: `menu_spec.rs`; builder: `menu_bar_builder.rs`),
-`file_context_menu.rs` the file right-click menu, `menu_structure.rs` the smaller context menus plus the viewer menu,
-`macos_appkit.rs` the objc2 boundary every right-click extra crosses. One line per file: DETAILS § File layout.
+The bar as data is `crates/cmdr-menu/CLAUDE.md`; `menu_bar_builder.rs` builds it. `file_context_menu.rs`: the file
+right-click menu. `menu_structure.rs`: the smaller context menus and the viewer menu. `macos_appkit.rs`: the objc2
+boundary. One line per file: DETAILS § File layout.
 
 ## Must-knows
 
@@ -35,8 +35,8 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
   window, or ⌘A and the clipboard die there; all four of the VIEWER bar's are Custom too, on their own `VIEWER_*` ids —
   Copy / Select all emit `ViewerEditAction` to the viewer in front (a native selector would grab its status bar), while
   Cut / Paste forward the selector to its search box, ❗ Predefined off macOS or ⌘X / ⌘V die there.
-- **Enabled state has ONE writer, `apply_menu_item_states`**: store a new input and add it to `menu_item_enabled`, ❌
-  never a direct `set_enabled`. The viewer bar's Cut / Paste are in there too, following its search box
+- **Enabled state has ONE writer, `apply_menu_item_states`**: store a new input and add it to the crate's
+  `MenuItemInputs` / `menu_item_enabled`, ❌ never a direct `set_enabled`. The viewer bar's Cut / Paste are in there too, following its search box
   (`viewer_search_focus`). Greying is chrome — the real guard is `main_window.is_focused()` in `on_menu_event`;
   accelerators fire even when items look off.
 - **macOS swaps ONE app-level bar on focus-gain (`activate_window_menu`)**; Linux uses per-window menus, and

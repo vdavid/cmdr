@@ -399,12 +399,12 @@ All under `apps/desktop/src-tauri/src/`.
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
 `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-http`, `cmdr-listing`,
-`cmdr-collation`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-operation-log`, `cmdr-operations`, and
-`cmdr-update-trust` carry no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against
-the `cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-`cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-listing`, `cmdr-collation`,
-`cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`, and `cmdr-operations` at the numbers their audits landed on.
-The two dev CLIs and the vendored fork are ordinary members.
+`cmdr-collation`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-menu`, `cmdr-operation-log`,
+`cmdr-operations`, and `cmdr-update-trust` carry no `tauri` dependency and no reach into the app;
+`index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`,
+`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`,
+`cmdr-listing`, `cmdr-collation`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`, and `cmdr-operations` at the
+numbers their audits landed on. The two dev CLIs and the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -443,6 +443,9 @@ The two dev CLIs and the vendored fork are ordinary members.
 - `crates/cmdr-brief-columns/`: Brief mode's column widths: the font metrics store (per-code-point widths the frontend
   measured) and each column's widest name over a pane's rows. Hosted by the app (`font_metrics/`, which persists the
   store) and the browser demo. See `crates/cmdr-brief-columns/CLAUDE.md`
+- `crates/cmdr-menu/`: the menu bar as data: both platforms' rows, the item ids and their commands, the enabled-state
+  fold, and what a click asks for. The desktop's `menu/` builds native menus from it; the browser demo draws the macOS
+  bar from it through `cmdr-listing-wasm`. See `crates/cmdr-menu/CLAUDE.md`
 - `crates/cmdr-local/`: the local disk: `LocalPosixVolume` (the `Volume` over a `std::fs` root), the `std::fs` reader
   the watcher reads through too, `rename_local_exclusive` (the one no-replace rename), local volume space with the
   live-space memo, and the mount probes (`filesystem_kind`, the macOS mount table and `statfs`, Linux's `/proc/mounts`).

@@ -117,7 +117,7 @@ Writing them:
   `cmdr-nfs`, `cmdr-s3`, `cmdr-sftp`, and `cmdr-webdav` (those servers), `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB
   phones), `cmdr-git` (repos, the `.git` portal), `cmdr-restic` (restic backups), `cmdr-http` (proxy routing),
   `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-brief-columns` (Brief mode's column widths),
-  `cmdr-local` (the local disk), `cmdr-media-meta` (EXIF, video dates, and media tags), `cmdr-operation-log` (the
+  `cmdr-local` (the local disk), `cmdr-media-meta` (media tags), `cmdr-menu` (menu bar data), `cmdr-operation-log` (the
   mutation journal and rollback planner), `cmdr-operations` (the write engine), `cmdr-update-trust` (the updater's trust
   check) carry no `tauri`, enforced by `index-crate-isolation`; plus `cmdr-listing-wasm` (the listing engine in a
   browser), two dev CLIs, and `fsevent-stream` (our FSEvents fork). Map: `docs/architecture.md`.

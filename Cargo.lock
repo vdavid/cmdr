@@ -1465,6 +1465,7 @@ dependencies = [
  "cmdr-listing",
  "cmdr-local",
  "cmdr-media-meta",
+ "cmdr-menu",
  "cmdr-mtp",
  "cmdr-nfs",
  "cmdr-operation-log",
@@ -1803,6 +1804,15 @@ dependencies = [
  "serde_json",
  "specta",
  "tokio",
+]
+
+[[package]]
+name = "cmdr-menu"
+version = "0.0.0"
+dependencies = [
+ "cmdr-listing",
+ "serde",
+ "specta",
 ]
 
 [[package]]

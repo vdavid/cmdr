@@ -718,7 +718,7 @@ mod tests {
         for (name, source) in sources {
             for constant in constructed_id_constants(source) {
                 let value = values.get(constant.as_str()).unwrap_or_else(|| {
-                    panic!("`{constant}`, passed to a menu builder in {name}, is no constant in `command_map.rs`")
+                    panic!("`{constant}`, passed to a menu builder in {name}, is no constant in `cmdr_menu::ids`")
                 });
                 built.insert(value.clone());
             }
@@ -731,9 +731,9 @@ mod tests {
         built
     }
 
-    /// Every `pub const SOMETHING: &str = "…";` in `command_map.rs`, as name → value.
+    /// Every `pub const SOMETHING: &str = "…";` in `cmdr-menu`'s `ids.rs`, as name → value.
     fn menu_id_constants() -> HashMap<String, String> {
-        include_str!("command_map.rs")
+        include_str!("../../../../../crates/cmdr-menu/src/ids.rs")
             .lines()
             .filter_map(|line| {
                 let rest = line.trim().strip_prefix("pub const ")?;

@@ -13,6 +13,7 @@ members = [
   "crates/cmdr-listing-wasm",
   "crates/cmdr-local",
   "crates/cmdr-media-meta",
+  "crates/cmdr-menu",
   "crates/cmdr-mtp",
   "crates/cmdr-nfs",
   "crates/cmdr-operation-log",

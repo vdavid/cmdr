@@ -29,10 +29,6 @@
       "lines": 886,
       "reason": "TODO: `setup()` wires every OS observer as a `#[cfg]` pair (accent color, reduce transparency, Liquid Glass tint, text size); moving those pairs into one `os_appearance::observe(app)` helper beside `system_events.rs` would bring the file back under 800 and give them one home."
     },
-    "apps/desktop/src-tauri/src/menu/command_map.rs": {
-      "lines": 805,
-      "reason": "The menu-id registry: every bar and context-menu item id, the id-to-command table, and its inverse, in one place on purpose. A new item is one id plus one table row, and the round-trip tests over both tables need them side by side; splitting ids from the mapping would make every item two edits in two files."
-    },
     "apps/desktop/src-tauri/src/menu/menu_handlers.rs": {
       "lines": 969,
       "reason": "TODO: three things share this file and only one of them is the dispatcher the module map names. Move the six macOS post-construction wrappers (`cleanup_macos_menus`, `set_macos_menu_icons`, `set_display_accelerators`, and their three `*_from_command` main-thread hops, lines 34-110) to `macos_passes.rs`: they hold no routing logic at all, just the `run_on_main_thread` hop onto `macos_appkit.rs` and `display_accelerators.rs`, and they only live here because that is where the AppKit seam used to be. Move the native-edit lane (`NativeEditSelector`, `native_edit_selector_for`, `send_native_edit_action`, lines 111-186, plus the `native_edit_selector_tests` module) to `native_edit.rs`, which gives both bars' id-to-selector table one named home next to the `objc2` call that consumes it. That leaves roughly 650 lines: `handle_menu_event` with its per-family branches and the small routing helpers each one reads (`focused_viewer_label`, `viewer_edit_action_for`, `volume_row_action`) plus their tests, which do belong together because the branch order between them is the contract."
@@ -265,10 +261,6 @@
       "lines": 1108,
       "reason": "TODO: the admission state machine is still buried under code that never touches its lock (the wire types already live in `manager/wire.rs`, and reordering in `manager/reorder.rs`). Move the two RAII guards (`ManagedTaskGuard`, `InstantTaskGuard`, about 85 lines), the retained-failure block (`FAILURE_CAPACITY`, `record_failure`, `dismiss_failure`, `dismiss_all_failures`, about 110 lines, whose out-of-band lifetime is the one piece of manager state that outlives a record), and the thin free-function facade at the bottom (`list_operations` through `dismiss_all_failed_operations`, about 95 lines) into children of the existing `manager/` directory. That leaves roughly 750 lines: `ManagerInner`, `OpRecord`, and the `spawn_managed` / `run_admission_pass` / `on_settled` / `free_and_remove` / `cancel_if_queued` machinery that genuinely has to share one `Mutex`."
     },
-    "crates/cmdr-operations/src/types.rs": {
-      "lines": 800,
-      "reason": "TODO: the engine's wire vocabulary in one file, crossing 800 by the `WriteOperationType::Tag` arm. Move the scan-preview types (`ScanPreviewPurpose`, `ScanPreviewStartResult`, `ScanPreviewRefusal`, `ScanPreviewTotals`, about 80 lines) into `types/scan_preview.rs` and the conflict answers (`ConflictResolution`, `ConflictId`, `ConflictResolutionOutcome`, `LockedSourcesAnswerOutcome`, `SourcesGoneAnswerOutcome`, about 130 lines) into `types/conflict.rs`, leaving the operation, phase, lifecycle, and config types here."
-    },
     "crates/cmdr-operations/src/overwrite.rs": {
       "lines": 800,
       "reason": "TODO: two concerns share the file. Move `DisplacedEntry` (its `restore`, `keep_as_recovered_sibling`, and `discard`) and `displace_with_directory`, about 190 lines, into `overwrite/displaced.rs`, the local twin of `transfer/volume/displaced_destination.rs`. What stays is the staged landing (`stage_and_land_file`, `safe_overwrite_dir`, `rename_no_replace`) and the aside-record bookkeeping they share."
@@ -304,6 +296,10 @@
     "crates/cmdr-operations/src/transfer/volume/strategy_test_support.rs": {
       "lines": 1245,
       "reason": "TODO: split it, because it is 13 unrelated `Volume` / `VolumeReadStream` doubles serving nine suites and the seams show in who reads what. `RecursiveDeleteVolume` and `UndeletableSource` (lines 371-502, ~130 lines) have no `strategy_*` consumer at all; their readers are `cleanup_tests.rs`, `conflict_tests.rs`, and `move_failure_tests.rs`, so they belong in a `cleanup_test_support.rs`. The auto-yield cluster `ReleasingStream` + `ReleasingSource` + `AutoYieldTuningGuard` + `YieldingSource` + `NeverPendingYieldSource` (lines 765-1129, ~365 lines) is read only by `strategy_yield_tests.rs`, `strategy_dest_yield_tests.rs`, and `copy_wedge_test_support.rs`, and should join the existing `strategy_dest_yield_test_support.rs` or get its own `strategy_yield_test_support.rs`. `FlakyDest` (~125 lines) pairs with `strategy_retry_tests.rs`. That leaves the abort and stale-handle doubles (`SlowChunkedStream`, `SlowSource`, `FailOnceStaleDest`, `WedgedThenWorkingDest`, `WedgedOpenSource`, `TierOneWitnessDest`) at ~500 lines here. The header comment still claims four suites, so the file has outgrown its own description, and note that a `_test_support.rs` name gets the 800-line budget, not the 1,200-line test one."
+    },
+    "crates/cmdr-operations/src/types.rs": {
+      "lines": 800,
+      "reason": "TODO: the engine's wire vocabulary in one file, crossing 800 by the `WriteOperationType::Tag` arm. Move the scan-preview types (`ScanPreviewPurpose`, `ScanPreviewStartResult`, `ScanPreviewRefusal`, `ScanPreviewTotals`, about 80 lines) into `types/scan_preview.rs` and the conflict answers (`ConflictResolution`, `ConflictId`, `ConflictResolutionOutcome`, `LockedSourcesAnswerOutcome`, `SourcesGoneAnswerOutcome`, about 130 lines) into `types/conflict.rs`, leaving the operation, phase, lifecycle, and config types here."
     },
     "crates/cmdr-operations/src/types/errors.rs": {
       "lines": 819,
