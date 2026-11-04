@@ -24,7 +24,7 @@ vi.mock('./listing.js', () => ({
 }))
 
 import { createDemoBackend, type DemoWebview, type EventTarget } from './backend.js'
-import { DEMO_VOLUME_ID } from './demo-tree.js'
+import { DEMO_HOME, DEMO_VOLUME_ID } from './demo-tree.js'
 
 function fakeWebview(label: string) {
   const heard: [string, unknown, EventTarget][] = []
@@ -116,5 +116,19 @@ describe('demo backend', () => {
     await backend.invoke('close_child_window', { label: 'viewer-9' })
     expect(engine.closedWindows).toContain('viewer-9')
     document.querySelector('.cmdr-demo-window')?.remove()
+  })
+
+  it('opens a demo file in the viewer on Enter, and keeps the refusal for a folder', async () => {
+    const backend = createDemoBackend()
+    const main = fakeWebview('main')
+    backend.attach(main.webview)
+
+    expect(await backend.invoke('open_path', { path: '~/notes.md', volumeId: 'root' })).toBeNull()
+    expect(main.heard).toEqual([
+      ['open-file-viewer', { path: `${DEMO_HOME}/notes.md` }, { kind: 'label', label: 'main' }],
+    ])
+    await expect(backend.invoke('open_path', { path: `${DEMO_HOME}/Music`, volumeId: 'root' })).rejects.toMatchObject({
+      type: 'unsupported',
+    })
   })
 })

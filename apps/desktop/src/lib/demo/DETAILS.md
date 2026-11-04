@@ -160,7 +160,9 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
 5. Value command: add an entry to `appAnswers` (app state) or `volumeAnswers` (volumes, paths, and the tree), keyed by
    its bindings (camelCase) name. The answer is the `ok` value (`RawAnswer<K>`); a `typedError` command's error branch
    is `refuse('openPath', { type: 'unsupported' })`, typed against that command's error, which `invoke` rejects with as
-   it does for a Rust `Err`. Opening a file uses exactly that: the app's own refusal for a platform with no opener.
+   it does for a Rust `Err`. Opening a folder or package uses exactly that: the app's own refusal for a platform with no
+   opener. Opening a demo FILE (Enter) is the backend's: it sends `open-file-viewer` to the main window, so the demo's
+   default app is Cmdr's own viewer.
 6. Commands outside the bindings (generic `<R: Runtime>` ones called through raw `invoke`, see `lib/ipc/DETAILS.md`) go
    in `rawAnswers`, keyed by their snake_case wire name, typed by hand against the wrapper's return type.
 7. Plugin commands (`plugin:<name>|<command>`) go in `plugins.ts`, or in `webview.ts`'s `windowAnswer` when they're

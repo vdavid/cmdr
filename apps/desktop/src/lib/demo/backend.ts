@@ -9,7 +9,8 @@ import { appAnswers, rawAnswers, silentCommands } from './answers.js'
 import { startListingEngine, type ListingEngineHandle } from './listing.js'
 import { pluginHandler } from './plugins.js'
 import { noteUnanswered } from './unanswered.js'
-import { volumeAnswers } from './volumes.js'
+import { demoEntries } from './demo-tree.js'
+import { demoPath, volumeAnswers } from './volumes.js'
 import { createWindowHost } from './windows.js'
 import { writeAnswers } from './writes.js'
 
@@ -37,6 +38,9 @@ export interface DemoBackend {
 
 /** The engine's own notices, which no Tauri listener knows (`crates/cmdr-listing-wasm/src/viewer.rs`). */
 const DEMO_EVENT_PREFIX = 'demo://'
+
+/** Every file in the demo tree: what Enter opens in the viewer. */
+const demoFiles = new Set(demoEntries.filter((entry) => entry.kind === 'file').map((entry) => entry.path))
 
 function camelCase(snake: string): string {
   return snake.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())
@@ -90,7 +94,17 @@ export function createDemoBackend(): DemoBackend {
     engine.closeViewerWindow(label)
   })
 
+  // The demo's "default app" for a file is Cmdr's own viewer: Enter opens it, through the event the
+  // main window already answers (`open-file-viewer`). A folder or package keeps `openPath`'s refusal.
+  function openInViewer(payload: Payload): boolean {
+    const path = demoPath(String(payload.path))
+    if (!demoFiles.has(path)) return false
+    emit('open-file-viewer', { path }, { kind: 'label', label: 'main' })
+    return true
+  }
+
   async function invoke(cmd: string, payload: Payload): Promise<unknown> {
+    if (cmd === 'open_path' && openInViewer(payload)) return null
     const handler = windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
     if (handler) return handler(payload)
     if (await engine.handles(cmd)) return engine.invoke(cmd, payload)
