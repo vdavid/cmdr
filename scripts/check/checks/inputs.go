@@ -375,6 +375,7 @@ var websiteDemoInputs = []string{
 	"brand/screenshots/**",
 	"apps/desktop/test/e2e-shared/media-fixtures/**",
 	"crates/cmdr-sort/**",
+	"crates/cmdr-search/**",
 	"vendor/**",
 	"scripts/build-listing-wasm.sh",
 	"scripts/build-listing-wasm/**",

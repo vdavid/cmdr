@@ -1,7 +1,7 @@
 # The drive search in its own crate
 
 Issue: [#302](https://github.com/vdavid/cmdr/issues/302) (the browser demo is the second host). Status: the early fixes
-and M0–M3 are done (2026-11-04, M3 on `worktree-agent-ad4d51f7315be2933`); M4 waits for the demo batch. Process:
+and M0–M4 are done (2026-11-04), plus M6's pure list (`crates/cmdr-recents`); M5 and M7 are next. Process:
 `docs/guides/multi-agent-refactors.md` (characterize, then convert; fresh-eyes review rounds before executing).
 
 **Problem**: the ⌘F search engine (query model, matcher, excludes, ranking, the arena and its scan) lives in the app
@@ -376,9 +376,10 @@ The details for all three:
   `browserBound` once the write-engine branch, which introduces that list, has landed). Link it into `cmdr-listing-wasm`
   behind a minimal call so `smoke.mjs` runs one query in Node.
 - **Where the differential test lives**: in the app, because `IndexSource` is app-only:
-  `apps/desktop/src-tauri/src/search/source_equivalence_test.rs`, reusing M0's corpus writer and `golden_run`. It needs
-  `MemorySource` from the crate's `testing` feature, enabled in the app's `[dev-dependencies]` the way `cmdr-listing`'s
-  is (`cmdr-search = { path = ..., features = ["testing"] }`). `MemorySource` itself is public (the demo uses it); the
+  `apps/desktop/src-tauri/src/search/execute/tests/source_equivalence.rs`, beside the goldens so `Target` and the corpus
+  stay private, reusing M0's corpus writer and `golden_run_under`. It needs `MemorySource` from the crate's `testing`
+  feature, enabled in the app's `[dev-dependencies]` the way `cmdr-listing`'s is
+  (`cmdr-search = { path = ..., features = ["testing"] }`). `MemorySource` itself is public (the demo uses it); the
   feature carries the corpus helpers.
 - **Intentions**: the equivalence test is what lets the demo say "the real search": same core, rows from another source,
   proven identical.
@@ -390,6 +391,13 @@ The details for all three:
   then panics in the browser: the smoke has to execute the timing log path (`log` level at debug in the smoke).
 - **Test plan**: the differential test natively; the smoke runs a glob and a scoped query against the real `.wasm`.
 - **DONE**: differential test green; the wasm lane builds `cmdr-search`; the smoke answers a query.
+- **As landed** (2026-11-04): `MemorySource` (`crates/cmdr-search/src/memory.rs`) plus `testing::FolderSizes`; the
+  equivalence test checks identical arenas and every golden query under both rules, plus three respelled scopes under
+  the host's rules only (the index folds with the rules it was written under, so the other platform's respelling differs
+  by design). Seen red with the child order reversed and with the fold dropped. The wasm lane needs no `browserBound`
+  entry: `cmdr-listing-wasm` links `cmdr-search` (browser-only, until M7 hosts it natively too) for
+  `src/search_self_test.rs`, which `smoke.mjs` runs with `debug` logging on. The three demo-image input lists name
+  `crates/cmdr-search`. The `.wasm` is 9,427 KiB raw with it linked.
 
 ### M5: the AI translation pipeline joins the crate (M, can run beside M3/M4 after M2)
 
@@ -487,13 +495,13 @@ waits for the demo branches and the fold.
 - **The write-engine and viewer branches** (`worktree-agent-a683f589da8b16ef6` and descendants, including
   `worktree-agent-aff43f5d181de5ed9`): own `cmdr-listing-wasm`'s `commands.rs` / `lib.rs` / `Cargo.toml` routing,
   `browserBound` in `scripts/build-listing-wasm/main.go`, `lib/demo/answers.ts`, and the in-memory volume's mutation
-  hook (M7's rebuild trigger). M4's wasm-lane edit and all of M7 start after they land; ❌ never in parallel against the
-  same files. `cmdr-viewer` brings `regex` into the wasm graph, so the search core adds little beyond its own code.
+  hook (M7's rebuild trigger). Landed as #949, before M4's wasm-lane edit; all of M7 builds on them. `cmdr-viewer`
+  brings `regex` into the wasm graph, so the search core adds little beyond its own code.
 - **`cmdr-listing-wasm` itself**: M7 adds a module and commands; its `COMMANDS` routing and `smoke.mjs` are shared with
   every demo branch. Batch the landing.
 - **The three demo-image input lists** must stay equal: `scripts/website-demo-key.sh`'s `paths`, `websiteDemoInputs` in
   `scripts/check/checks/inputs.go`, and `.github/workflows/ci.yml`'s `website` filter. M4 adds `crates/cmdr-search` to
-  all three, batched with the other demo crates (`docs/guides/multi-agent-refactors.md` § batch landing).
+  all three, batched with the other demo crates (`docs/guides/multi-agent-refactors.md` § batch landing). Done in M4.
 - **The NAS scope-spelling fix** (`worktree-search-nfd-scope`, landed as #948): scope paths of a backend volume skip
   `realpath` (`PathNamespace`), and live runs report `failed_roots`. Merged into this branch after M2: the namespace
   rides on `Target` and reaches the seam through `index_source::scope_pairs`. It is NOT the NFC-name pattern bug M0's

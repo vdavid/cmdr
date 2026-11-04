@@ -145,6 +145,8 @@ try {
   // The runtime seam's browser half: task sets, aborts, macrotask yields, timers, the wall clock.
   const rtSummary = await glue.rtSelfTest(Date.now())
   console.log(`listing-wasm smoke: ${rtSummary}`)
+  // The search core: its scan's thread fallback and its timing log, on the real `.wasm`.
+  console.log(`listing-wasm smoke: ${glue.searchSelfTest()}`)
 
   console.log(`listing-wasm smoke: ${await smokeWrites(demo, { events: recent, waitFor })}`)
   console.log(`listing-wasm smoke: ${await smokeViewer(glue, fail)}`)

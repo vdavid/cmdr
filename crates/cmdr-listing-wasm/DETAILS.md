@@ -106,10 +106,13 @@ tree lists as a folder (as on disk).
   module; the script reads the lockfile and `cargo install`s that version into `~/.cargo/bin` when it's missing.
 - The check: `desktop-rust-listing-wasm` runs the script with `-smoke -golden` into a temp dir, in CI's "Desktop (Rust)"
   job. The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, Brief column
-  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps. Its write half
-  (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
-  delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
-  that fails past a 50 ms hold. Any unhandled rejection fails the run.
+  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps. It also runs the
+  search core's self-test (`src/search_self_test.rs`, browser-only: a glob, a scope, and a folder-size filter over a
+  `cmdr_search::MemorySource`, with `debug` logging on), the proof that the scan's rayon fallback runs inline and its
+  timing log reads the page's clock; the demo's ⌘F host replaces it once it lands. Its write half (`smoke-writes.mjs`)
+  runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a delete, and the
+  journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe that fails past
+  a 50 ms hold. Any unhandled rejection fails the run.
 - **The golden replay** (`-golden`, also in the check): `src/operations_host/golden_test.rs` runs every volume-engine
   scenario in `cmdr_operations::golden` on a real `Demo`'s host (its `DemoVolumes` with the fixtures' `src` and `dst`
   registered beside the page volume, its engine events, name order, and operation log) and compares the trace, as text,

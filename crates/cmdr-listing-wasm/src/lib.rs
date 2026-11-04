@@ -24,6 +24,8 @@ pub mod menu;
 pub mod operations_host;
 #[cfg(target_family = "wasm")]
 mod rt_self_test;
+#[cfg(target_family = "wasm")]
+mod search_self_test;
 pub mod tree;
 pub mod viewer;
 

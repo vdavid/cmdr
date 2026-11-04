@@ -47,6 +47,10 @@ wasm-bindgen = "0.2.126"
 wasm-bindgen-futures = "0.4.76"
 # `JSON.parse` / `JSON.stringify` at the boundary, and the event callback's `Function`.
 js-sys = "0.3.103"
+# The search core, run by the smoke test's self-test (`src/search_self_test.rs`) so the
+# real `.wasm` proves its scan and timing log don't trap. Browser-only until the demo's
+# ⌘F host links it natively too.
+cmdr-search = { path = "../cmdr-search" }
 
 [dev-dependencies]
 # The golden-trace scenarios the native engine blesses, replayed on the demo's
