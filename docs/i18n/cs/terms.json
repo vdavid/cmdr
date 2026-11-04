@@ -2874,6 +2874,23 @@
     "confidence": "high",
     "sources": "MS (native → nativní)"
   },
+  "tamper": {
+    "chosen": "zasahovat do",
+    "accept": ["zasahuj", "zasahov", "zásah", "manipul"],
+    "forms": "someone tampering with the connection → někdo, kdo zasahuje do připojení; with traffic → někdo, kdo zasahuje do provozu; with updates → někdo manipuluje s aktualizacemi",
+    "avoid": [
+      {
+        "form": "úmyslně poškodit",
+        "why": "MS terminology's legal register; reads as damage, not someone meddling with traffic in flight"
+      },
+      {
+        "form": "falšovat",
+        "why": "MS terminology; fits forged documents, and the catalog already says zasahovat do (4 keys)"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "catalog (errors.shareList.signatureInvalid, errors.write.replySignatureRefused.suggestion, securityNotices.smbSignatureRefused.body, servers.paneState.guestSessionRefusedHint; securityNotices.updateNotGenuine.body for manipulovat s); MS terminology (tamper → úmyslně poškodit / falšovat, avoided); macOS cs has no hit"
+  },
   "time-ago": {
     "chosen": "před",
     "accept": ["před"],

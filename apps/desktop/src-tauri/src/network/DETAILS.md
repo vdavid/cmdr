@@ -843,6 +843,12 @@ fallback notice").
 with its own sentence: repeating can't help, and nothing on this path can ask (`crates/cmdr-smb/DETAILS.md` § "Signing in
 through a link").
 
+**A connection whose security didn't check out is `NegotiationInvalid` or `EncryptionUnavailable`** (smb2 0.41), which
+drop the button too, each with its own sentence: smb2 closed a connection whose negotiation the server didn't confirm
+(`ErrorKind::NegotiateValidationFailed`, SMB 3.0 / 3.0.2; possible tampering), or the share requires encryption the
+connection agreed on no cipher for (`Error::EncryptionUnavailable`, read by variant since `EncryptionRequired` shares
+its `Unsupported` kind). Repeating gets the same negotiation. The kernel mount stays, and it checks its own negotiation.
+
 **The reason rides along so the notice can drop that button.** `UpgradeFailure::ShareNotOnServer` (the server answering
 `STATUS_BAD_NETWORK_NAME` at TreeConnect) is the one failure here that repeating cannot fix: the same identity asking
 the same server for the same share gets the same answer. Every other variant is a condition that can pass on its own,

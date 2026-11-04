@@ -13686,7 +13686,9 @@ export type NegotiatedSummaryDto = {
   server_guid_hex: string
   signing_required: boolean
   capabilities_bits: number
-  gmac_negotiated: boolean
+  // The algorithm the connection's sessions sign with (on SMB 3.1.1, the server's pick).
+  signing_algorithm: string
+  // The negotiated cipher, `Aes128Ccm` on SMB 3.0 and 3.0.2 when the server can encrypt.
   cipher: string | null
   compression_supported: boolean
 }
@@ -18082,6 +18084,25 @@ export type ShareListError =
       // Diagnostic detail, for logs.
       message: string
     }
+  /**
+   *  The server didn't confirm the negotiation the connection ran on (SMB 3.0 and 3.0.2 check it
+   *  after sign-in), so smb2 closed the connection. A possible sign of tampering, like
+   *  [`Self::SignatureInvalid`], so ❌ never a fallback to another client.
+   */
+  | {
+      type: 'negotiation_invalid'
+      // Diagnostic detail, for logs.
+      message: string
+    }
+  /**
+   *  The server only accepts encrypted connections, and this one agreed on no way to encrypt.
+   *  ❌ Never a fallback to another client: the CLI fallback lists as a guest, unencrypted.
+   */
+  | {
+      type: 'encryption_unavailable'
+      // Diagnostic detail, for logs.
+      message: string
+    }
   // The exchange broke down in a way none of the other variants describes.
   | {
       type: 'protocol_error'
@@ -20261,6 +20282,18 @@ export type UpgradeFailure =
    *  system connection.
    */
   | 'otherServerNotAllowed'
+  /**
+   *  The server didn't confirm the negotiation the connection ran on (SMB 3.0 and 3.0.2
+   *  check it after sign-in), so smb2 closed it. A misbehaving server or someone tampering
+   *  with the connection; repeating isn't offered, and the share stays on the system
+   *  connection, which checks the negotiation on its own.
+   */
+  | 'negotiationInvalid'
+  /**
+   *  The share or server only accepts encrypted connections, and this one agreed on no way
+   *  to encrypt. Repeating gets the same negotiation, so it isn't offered.
+   */
+  | 'encryptionUnavailable'
 
 /**
  *  Where a "Connect directly" left the volume.

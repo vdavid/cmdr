@@ -290,6 +290,31 @@ fn a_missing_share_is_read_as_such_and_its_look_alikes_are_not() {
     }
 }
 
+/// The two answers smb2 0.41 gives about the connection's own security: neither is a blip a
+/// retry gets past, so neither may read as `Unexpected`, which offers one.
+#[test]
+fn a_connection_whose_security_does_not_check_out_says_why() {
+    let cases: Vec<(&str, smb2::Error, UpgradeFailure)> = vec![
+        (
+            "the server didn't confirm the negotiation",
+            smb2::Error::NegotiateValidationFailed {
+                reason: "the server answered a different dialect".to_string(),
+            },
+            UpgradeFailure::NegotiationInvalid,
+        ),
+        (
+            "the share requires encryption the connection didn't negotiate",
+            smb2::Error::EncryptionUnavailable {
+                share: Some("archive".to_string()),
+            },
+            UpgradeFailure::EncryptionUnavailable,
+        ),
+    ];
+    for (what, error, expected) in &cases {
+        assert_eq!(UpgradeFailure::from_smb_error(error), *expected, "{what}");
+    }
+}
+
 // ── A connection this Mac refused ──────────────────────────────────
 
 /// A dial that failed the way smb2 reports a TCP connect that got nowhere: one

@@ -2441,6 +2441,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "Сервер «{server}» не подтвердил параметры безопасности, согласованные с Cmdr, поэтому Cmdr закрыл соединение. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение. Если это повторяется, проверьте сеть и настройки сервера.",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "Сервер «{server}» принимает только зашифрованные подключения, но не смог договориться с Cmdr о способе шифрования. Проверьте настройки шифрования SMB на сервере.",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "Что-то пошло не так при запросе общих папок у сервера «{server}». Попробуйте еще раз чуть позже.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

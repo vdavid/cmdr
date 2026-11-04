@@ -36,7 +36,11 @@ Here, because the answer is yes:
   even though its own enum has no auth variant. A named login answered with a guest session (`GuestSessionRefused`, smb2
   0.31) counts as auth: it's how a Samba server set to `map to guest = bad user` answers a wrong password. A reply
   refused for its signature (`SignatureInvalid`) is ❌ not auth, and becomes `ShareListError::SignatureInvalid` /
-  `VolumeError::SignatureInvalid`, never the `ProtocolError` that sends a listing down the CLI fallback.
+  `VolumeError::SignatureInvalid`, never the `ProtocolError` that sends a listing down the CLI fallback. The same goes
+  for a negotiation the server didn't confirm (`NegotiateValidationFailed`, smb2 0.41:
+  `ShareListError::NegotiationInvalid`) and a server requiring encryption the connection has no cipher for
+  (`Error::EncryptionUnavailable`, by variant: `ShareListError::EncryptionUnavailable`). Both are connect-time answers;
+  on a volume they arrive only through a rebuilt session, as an `IoError` the reconnect backoff retries.
 - Every smb2 error on the main session passes ONE funnel, `SmbVolumeInner::note_smb_error` (called by
   `handle_smb_result`, the streaming-read producer, the random reader, and the copy scan's stat pipeline), which calls
   `session::report_security_refusal` to tell the host's `security_refusal` seam about a refused signature. A refused

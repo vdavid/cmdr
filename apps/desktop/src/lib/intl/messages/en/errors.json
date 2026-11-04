@@ -3798,6 +3798,24 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
   },
+  "errors.shareList.negotiationInvalid": "“{server}” didn’t confirm the security settings it agreed on with Cmdr, so Cmdr closed the connection. A misbehaving server can cause this, and so can someone tampering with the connection. If it keeps happening, check your network and the server’s settings.",
+  "@errors.shareList.negotiationInvalid": {
+    "description": "Shown when the server didn't confirm the connection's security settings (the SMB version and options both sides agreed on at the start), so Cmdr closed the connection rather than trust it. The innocent cause is a misbehaving server; the serious one is someone tampering with traffic. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, two or three short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
+  },
+  "errors.shareList.encryptionUnavailable": "“{server}” only accepts encrypted connections, but it didn’t agree on a way to encrypt one with Cmdr. Check the server’s SMB encryption settings.",
+  "@errors.shareList.encryptionUnavailable": {
+    "description": "Shown when the server only accepts encrypted connections, but the server and Cmdr didn't agree on an encryption method, so the connection couldn't go on. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
+  },
   "errors.shareList.protocolError": "Something went wrong while asking “{server}” for its shares. Try again in a moment.",
   "@errors.shareList.protocolError": {
     "description": "The catch-all shown when nothing more specific applies. Keep it short and general rather than guessing at a reason; the technical reason is written to the log. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",

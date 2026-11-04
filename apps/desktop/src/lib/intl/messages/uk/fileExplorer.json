@@ -2179,6 +2179,22 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "Сервер «{server}» не підтвердив параметри безпеки, узгоджені з Cmdr, тому Cmdr залишається на системному підʼєднанні. Причиною може бути сервер, що працює зі збоями, а може й хтось, хто втручається в підʼєднання.",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "7ea7c4f"
+  },
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "Сервер «{server}» приймає лише зашифровані підʼєднання й не домовився з Cmdr про спосіб шифрування, тому Cmdr залишається на системному підʼєднанні.",
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "a731300"
+  },
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "Не вдалося підʼєднатися напряму до спільної папки <shareName>{share}</shareName>: сервер не підтвердив параметри безпеки, узгоджені з Cmdr. Причиною може бути сервер, що працює зі збоями, а може й хтось, хто втручається в підʼєднання. Ви й далі підʼєднані через системне мережеве SMB-підʼєднання macOS, а воно значно повільніше.",
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "758e268"
+  },
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Не вдалося підʼєднатися напряму до спільної папки <shareName>{share}</shareName>: вона приймає лише зашифровані підʼєднання, а сервер не домовився з Cmdr про спосіб шифрування. Ви й далі підʼєднані через системне мережеве SMB-підʼєднання macOS, а воно значно повільніше.",
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "23dd607"
+  },
   "fileExplorer.smbLinkConsent.title": "Увійти на інший сервер?",
   "@fileExplorer.smbLinkConsent.title": {
     "sourceHash": "91458ea"

@@ -81,6 +81,19 @@ pub enum ShareListError {
         /// Diagnostic detail, for logs.
         message: String,
     },
+    /// The server didn't confirm the negotiation the connection ran on (SMB 3.0 and 3.0.2 check it
+    /// after sign-in), so smb2 closed the connection. A possible sign of tampering, like
+    /// [`Self::SignatureInvalid`], so ❌ never a fallback to another client.
+    NegotiationInvalid {
+        /// Diagnostic detail, for logs.
+        message: String,
+    },
+    /// The server only accepts encrypted connections, and this one agreed on no way to encrypt.
+    /// ❌ Never a fallback to another client: the CLI fallback lists as a guest, unencrypted.
+    EncryptionUnavailable {
+        /// Diagnostic detail, for logs.
+        message: String,
+    },
     /// The exchange broke down in a way none of the other variants describes.
     ProtocolError {
         /// Diagnostic detail, for logs.
@@ -110,6 +123,8 @@ impl std::fmt::Display for ShareListError {
             Self::SigningRequired { message } => write!(f, "SMB signing required: {}", message),
             Self::AuthFailed { message } => write!(f, "Authentication failed: {}", message),
             Self::SignatureInvalid { message } => write!(f, "Reply refused for its signature: {}", message),
+            Self::NegotiationInvalid { message } => write!(f, "Negotiation not confirmed: {}", message),
+            Self::EncryptionUnavailable { message } => write!(f, "Encryption unavailable: {}", message),
             Self::ProtocolError { message } => write!(f, "Protocol error: {}", message),
             Self::ResolutionFailed { message } => write!(f, "Resolution failed: {}", message),
             Self::MissingDependency { message, .. } => write!(f, "Missing dependency: {}", message),
