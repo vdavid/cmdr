@@ -20,8 +20,9 @@ export const MENU_BAR_STYLE = `
   padding: 0 10px;
   box-sizing: border-box;
   background: var(--color-bg-glass);
-  -webkit-backdrop-filter: var(--glass-backdrop);
-  backdrop-filter: var(--glass-backdrop);
+  /* No backdrop-filter on the bar: it sits at the page's top edge with nothing behind it to blur,
+     and the blur mixes in the transparency past two edges at its corners, which then show through
+     as dark notches (most visibly in the home page's framed hero). The menus keep theirs. */
   border-bottom: 0.5px solid var(--color-border-glass);
   color: var(--color-text-primary);
   font-family: var(--font-system);
