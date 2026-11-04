@@ -20,16 +20,17 @@ media/OCR search stays in `cmdr-index`'s `media_index` read API, which this crat
 ## Loud rules
 
 - ❌ **Desktop behavior stays byte-identical.** Same results, same order, same counts, same honesty fields, same events,
-  same log lines (shape). M0's goldens prove it; a golden change in M1–M5 is a bug, never a re-record.
+  same log lines (shape). M0's goldens prove it; a golden change in M1–M6 is a bug, never a re-record. The one
+  deliberate exception is M1's `fill_dir_sizes` error path.
 - ❌ **`bindings.ts` doesn't change.** specta names a type by its struct identity, not its module, so moved types keep
   their names. Regenerate and `git diff --exit-code apps/desktop/src/lib/ipc/bindings.ts` on every milestone. Specta
   stays pinned `=2.0.0-rc.24` (one specta in the graph, or the `Type` impls stop satisfying `tauri-specta`).
 - ❌ **The seam is per query, never per row.** The scan runs over a concrete `SearchIndex` inside the crate. No
   `dyn Iterator` of rows, no trait call in the scan loop: that loses `par_chunks` and the per-chunk regex clones (§
   Perf).
-- ❌ **No `cmdr-index` dependency in the core.** `cmdr-index` doesn't build for `wasm32` (that's
-  `docs/specs/demo-index-plan.md` M1, on its own branch), and the core must. What the core borrows from it today
-  (`ROOT_ID`, `SYSTEM_DIR_EXCLUDES`, `normalize_for_comparison`, `CoveredEntry`) moves or gets an adapter (M1).
+- ❌ **No `cmdr-index` dependency in the core.** `cmdr-index` doesn't build for `wasm32`, and the core must. What the
+  core borrows from it today (`ROOT_ID`, `SYSTEM_DIR_EXCLUDES`, `normalize_for_comparison`, `CoveredEntry`) moves or
+  gets an adapter (M1).
 - ❌ **No `tauri`, `tauri-specta`, or `cmdr`** in the crate's tree: add it to `index-crate-isolation`'s
   `guardedIndexCrates` and give it a capped public surface in `index-crate-isolation-ceilings.go`. Ceilings only
   tighten.
@@ -132,12 +133,12 @@ an in-memory source answers from a tree.
 - **`SearchRows`** (trait): `fn arena(&self) -> &SearchIndex`, `fn path_prefix(&self) -> &str` (mount root, empty for
   root), `fn resolve_scope(&self, include_paths: &[String]) -> ScopeResolution` (ids plus a typed `unresolved` list;
   empty ids means whole volume, today's rule).
-- **`DirSizeSource`** (trait): `fn in_range(&self, min, max) -> Result<DirSizeAnswer, SourceError>` and
-  `fn of(&self, ids: &[i64]) -> Vec<Option<u64>>`. `DirSizeAnswer` is `Known(map)` or `NotTracked`. `NotTracked` behaves
-  exactly like live-walked ground today (a directory passes a size bound untouched: `search/DETAILS.md` Accepted
-  difference 5), and a read error still fails the search (❌ never "no map").
+- **`DirSizeSource`** (trait): `fn in_range(&self, min, max) -> Result<HashMap<i64, u64>, SourceError>` and
+  `fn of(&self, ids: &[i64]) -> Result<Vec<Option<u64>>, SourceError>`. Both fail loudly: a read error fails the search
+  (❌ never "no map", which the engine reads as "no filter"). There is no "sizes not tracked" answer: every host has
+  real folder sizes (desktop's `dir_stats`, the demo's in-memory fold), so ❌ don't add one.
 - **Why two traits**: they read different tables (`entries` vs `dir_stats`) and, in the demo, come from different
-  producers (the tree now, the demo's index once `demo-index-plan.md` lands its sizes). A host composes them.
+  producers (rows from the tree, sizes from the folder-size fold the panes already show). A host composes them.
 - **`SearchContext`**: `NameRules`, `home_dir: Option<String>`, and `&ImportanceWeights`. `NameRules` carries the
   default case rule, whether a pattern is NFD-normalized, and the exclusion/scope fold. `NameRules::host()` is the
   `cfg`-derived desktop answer, so desktop is byte-identical; tests can name `NameRules::MACOS` or `LINUX` on any CI.
@@ -149,7 +150,8 @@ an in-memory source answers from a tree.
   SAME fold the index's `resolve_component` uses. Desktop tests use it to test the core with no database; the demo uses
   it over `InMemoryVolume`.
 - **The index-backed source stays in the app** (`search/` becomes the host, the `listing_host/` pattern): `IndexSource`
-  wraps `LoadedVolume` (pool, mount root, arena) and answers through the existing SQL. Alternative for David below.
+  wraps `LoadedVolume` (pool, mount root, arena) and answers through the existing SQL (David, 2026-11-04: it's SQL,
+  threads, and the app's arena lifecycle, and the demo's rows come from its tree, proven identical by M4).
 
 ### Perf (reasoned with numbers; M0 records the baseline, M2 re-measures)
 
@@ -205,7 +207,9 @@ an in-memory source answers from a tree.
   `SYSTEM_DIR_EXCLUDES` moves to `cmdr-fs` (`cmdr-index`'s `importance/classify.rs` and the app read it there, and
   `cmdr-index` drops the root re-export, which tightens its ceiling); `normalize_for_comparison` from
   `cmdr_fs::name_fold`; `matches_covered` and `covered_name` move to the live-walk code (`live.rs`) as an adapter
-  building a `Candidate`.
+  building a `Candidate`. Fix `execute.rs::fill_dir_sizes`, which swallows a `dir_stats` read error today (`let _ =`
+  plus `if let Ok`) and ships directory rows with no size and no log line: through `DirSizeSource::of`, a read error
+  fails the search, exactly as `dir_sizes_for` already does (invariant 7).
 - **Intentions**: after M1, the future crate's files compile with only `cmdr-fs`, `regex`, `rayon`,
   `unicode-normalization`, `serde`, `specta`, `time`, and `log` in their imports. M2 is then pure relocation.
 - **Landmines**: `NameRules::host()` must reproduce today's `cfg` answer exactly, including the fold being a no-op off
@@ -213,10 +217,12 @@ an in-memory source answers from a tree.
   `cfg(target_os = "macos")` in `cmdr-fs`, so the browser would get the identity fold: that's what `NameRules` replaces
   in the core. Contract B touches `ranking/tests.rs`'s literal arenas and `bench.rs`. Moving `SYSTEM_DIR_EXCLUDES`
   changes `cmdr-index`'s public surface: run `index-crate-isolation` and commit its rewrite. `include_path_ids` stays a
-  `SearchQuery` field (it's on the wire; changing it is a `bindings.ts` diff).
+  `SearchQuery` field (it's on the wire; changing it is a `bindings.ts` diff). The `fill_dir_sizes` fix is the plan's
+  ONE deliberate behavior change, and only on an error path no golden covers; keep it its own commit.
 - **Test plan**: M0's goldens unchanged; existing suites green; one new test runs the macOS-only goldens under
-  `NameRules::MACOS` on Linux.
-- **DONE**: goldens byte-identical; `bindings.ts` unchanged; the core files' imports are the list above.
+  `NameRules::MACOS` on Linux; a failing fill (a `DirSizeSource` fake that errors) fails the search, seen red first.
+- **DONE**: goldens byte-identical; `bindings.ts` unchanged; the core files' imports are the list above; no swallowed
+  size read left.
 
 ### M2: extract `crates/cmdr-search` (M–L, mostly moves)
 
@@ -266,10 +272,10 @@ an in-memory source answers from a tree.
 ### M4: `MemorySource` and the wasm32 build (M)
 
 - **Scope**: `MemorySource` in the crate. A differential test feeds M0's corpus to both `IndexSource` and `MemorySource`
-  and requires identical answers on every query that doesn't size-filter directories (those differ by design while
-  `MemorySource` answers `NotTracked`, and get their own expectation). Build the crate for `wasm32-unknown-unknown` in
-  the build script's wasm lane (add it to `browserBound` once the write-engine branch, which introduces that list, has
-  landed). Link it into `cmdr-listing-wasm` behind a minimal call so `smoke.mjs` runs one query in Node.
+  (with a test `DirSizeSource` over the corpus's own `dir_stats` rows) and requires identical answers on every query,
+  directory size filters and `sortBy: size` included. Build the crate for `wasm32-unknown-unknown` in the build script's
+  wasm lane (add it to `browserBound` once the write-engine branch, which introduces that list, has landed). Link it
+  into `cmdr-listing-wasm` behind a minimal call so `smoke.mjs` runs one query in Node.
 - **Intentions**: the equivalence test is what lets the demo say "the real search": same core, rows from another source,
   proven identical.
 - **Landmines**: scope resolution in `MemorySource` must fold names the way `IndexStore::resolve_component` does
@@ -282,32 +288,60 @@ an in-memory source answers from a tree.
 
 ### M5: the AI translation pipeline joins the crate (M, can run beside M3/M4 after M2)
 
+- **Gate**: do it only if the boundary is clean (David, 2026-11-04). First step: list every import `ai/` makes outside
+  itself. If anything beyond `expand_tilde`, the specta DTOs, and a clock read turns up (settings, a provider, app
+  state), stop and report instead of threading it through; review rounds weigh in before execution.
 - **Scope**: `ai/`'s prompt, parser, query builder, mappings, and `TranslatedQuery` / `TranslateDisplay` move into the
   crate as a `translate` module. `expand_tilde` becomes the context's `home_dir`; any date math takes "now" as a
   parameter. Backend resolution, keys, and the `translate_search_query` command stay in the app.
 - **Intentions**: it's search domain logic with no I/O, and today the one upward edge from `search/` into `commands/`
   (`search/DETAILS.md`). The demo doesn't use it (no model in a browser; the demo's AI answers already say unavailable),
-  so this is a desktop-only win and can ship later or never.
+  so this is a desktop-only win.
 - **Landmines**: the `(?is)` prefix rule lives in `keyword_mapping::merge_keyword_and_type` alone (`search/DETAILS.md` §
   The compiled query); keep it single-sourced. The property tests named in `apps/desktop/src-tauri/Cargo.toml` (parser,
   glob→regex) move with it.
 - **Test plan**: `ai/` tests move unchanged; one translation golden over a fixed "now".
 - **DONE**: no `crate::commands` edge left under `search/`; `bindings.ts` unchanged.
 
-### M6: ⌘F in the demo (M–L, after M3, M4, and the write-engine + viewer branches land)
+### M6: recent searches go Tauri-free (S–M, after M2, beside M3–M5)
+
+- **Scope**: split `crate::recents` (used by search, selection, Go to path, and multi-rename) into its pure list (the
+  `RecentEntry` trait and the add/move-to-top, cap, remove, clear, and max-count ops: `add_to`, `trim_to`,
+  `remove_from`) and its persistence (`RecentsFile`'s JSON file, quarantine, locking, `AppHandle` paths). The pure list
+  goes to a Tauri-free home; `HistoryEntry`, `HistoryMode`, `HistoryFilters`, the key helpers (`normalize_query`,
+  `filters_fingerprint`, `flag`), and their `RecentEntry` impl move into `cmdr-search`'s `history` module.
+  `selection/history.rs` keeps importing the helpers one way, now from the crate. The app keeps `RECENT_SEARCHES` and
+  file persistence; the demo keeps an in-memory list for the session (David, 2026-11-04).
+- **Intentions**: one dedupe key and one list rule for both hosts, so a recent search dedupes in the demo exactly as on
+  a Mac. A desktop win too: four features' list rules become testable without a file or an app.
+- **Landmines**: pick the pure list's home by its users: four app features, so a tiny Tauri-free crate (or a module in
+  an existing shared crate if a reviewer finds a natural one), ❌ never inside `cmdr-search` where Go to path and
+  multi-rename would depend on search. Entry ids: if minting one reads a clock or an RNG, it's a host parameter (the
+  browser panics on `SystemTime::now`). The six-segment key is pinned by `key_carries_scope_and_exclude_system_dirs`; it
+  moves with the helpers. The on-disk format of all four files is unchanged: their existing load tests stay green.
+- **Test plan**: `recents` and the four features' history tests unchanged; a new crate test drives the pure list.
+- **DONE**: no Tauri in the list logic; all four histories load the same files; `bindings.ts` unchanged.
+
+### M7: ⌘F in the demo (M–L, after M3, M4, M6, the write-engine + viewer branches, and the folder-size fold land)
 
 - **Scope**: a `search.rs` host in `crates/cmdr-listing-wasm` (with `search_test.rs`), the demo's third engine beside
   listing and viewer. It builds a `MemorySource` from the demo's `InMemoryVolume` and rebuilds it when the volume's
   write generation moved (a few thousand rows: cheaper than any staleness policy). It answers `prepare_search_index`
   (`ready: true` on first ask), `search_files`, `search_files_streaming` (through `search_fully_covered`, events by
   their Tauri names), `cancel_search`, `release_search_index`, `parse_search_scope`, `get_system_dir_excludes`,
-  `sort_search_results` (on the demo's own listing collator), and the recent-search commands (in memory, David's call
-  below). `translate_search_query` keeps the demo's typed "AI unavailable" answer. Delete every TS search answer in
-  `apps/desktop/src/lib/demo/`. `NameRules` for the demo: case-insensitive by default (it presents as a Mac), patterns
-  left in the form typed, because the tree's names are the browser's NFC strings and an NFD pattern would miss every
-  accented name. Home is the demo tree's home, so result rows read `~/…`.
-- **Intentions**: the dialog behaves as on a fully indexed Mac. Directory size filters behave as on walked ground until
-  the demo's index provides a `DirSizeSource` (`docs/specs/demo-index-plan.md` M3), then exactly as on desktop.
+  `sort_search_results` (on the demo's own listing collator), and the recent-search commands (M6's list, in memory for
+  the session). Its `DirSizeSource` is the demo's in-memory folder-size fold (`worktree-agent-a03dc8ea1594f1b12`, in
+  progress: it already feeds `cmdr_listing::IndexSizes` and implements `cmdr_operations`' `OperationIndex`), so a size
+  filter reads the same numbers the panes show. `translate_search_query` keeps the demo's typed "AI unavailable" answer.
+  Delete every TS search answer in `apps/desktop/src/lib/demo/`. `NameRules` for the demo: case-insensitive by default
+  (it presents as a Mac), patterns left in the form typed, because the tree's names are the browser's NFC strings and an
+  NFD pattern would miss every accented name. Home is the demo tree's home, so result rows read `~/…`.
+- **Intentions**: the dialog behaves as on a fully indexed Mac, directory size filters included. No temporary
+  difference.
+- **Landmines (sizes)**: the fold must be ONE fold for panes, operations, and search: ❌ never a second size rollup in
+  the search host. Its answer must keep `dir_stats`' meaning (`recursive_logical_size`: a hardlinked inode's bytes
+  counted once, symlinks not followed); if the fold's rule differs anywhere, the fold is what gets fixed, in its own
+  crate, with a test. A write moves the sizes: read them per query (the fold is current), never cached in the arena.
 - **Landmines**: events must arrive after the command resolves (`apps/desktop/src/lib/demo/DETAILS.md` § The listing
   seam's one-task delay), or the dialog drops a run it hasn't registered. Event payload keys must match `bindings.ts`:
   pin them the way `events_test.rs` pins listing events. A scope outside the demo tree must come back in
@@ -320,31 +354,32 @@ an in-memory source answers from a tree.
 - **DONE**: ⌘F finds files by name, size, and date in `pnpm build:demo`; no TS search answer left; the demo's
   `unanswered` list stays empty.
 
-### M7: close out (S)
+### M8: close out (S)
 
-- **Scope**: the three demo-image input lists (below) name `crates/cmdr-search`; `crates/cmdr-listing-wasm/DETAILS.md` §
-  "Where the demo differs from the app" gains the search differences (no recent-search persistence if so decided, no
-  dir-size filter until the demo index, no symlink canonicalization, no AI); wasm size before and after in that doc;
-  wipe this spec per `docs/specs/DETAILS.md` § "Wiping a shipped spec".
+- **Scope**: the three demo-image input lists (below) name `crates/cmdr-search` (and the pure recents crate, if M6 made
+  one); `crates/cmdr-listing-wasm/DETAILS.md` § "Where the demo differs from the app" gains the search differences
+  (recent searches last one session, no symlink canonicalization, no AI); wasm size before and after in that doc; wipe
+  this spec per `docs/specs/DETAILS.md` § "Wiping a shipped spec".
 - **DONE**: CI publishes a demo image with ⌘F; the adversarial conformance review (against the invariants below) and the
   docs-audit agent pass.
 
-Total: L–XL, seven milestone agents (M5 optional). M0 can start now. M1–M2 touch only the app's `search/`, `cmdr-fs`
-(one constant), and `cmdr-index` (one re-export), so they run in parallel with the demo branches. M6 waits for them.
+Total: L–XL, eight milestone agents (M5 gated on a clean boundary). M0 can start now. M1–M2 touch only the app's
+`search/`, `cmdr-fs` (one constant), and `cmdr-index` (one re-export), so they run in parallel with the demo branches.
+M3–M6 can run side by side after M2 (separate worktrees; M6 touches `recents/` and three other features' histories). M7
+waits for the demo branches and the fold.
 
 ## Collisions with in-flight work (branches as of 2026-11-04)
 
-- **`docs/specs/demo-index-plan.md`** (`worktree-agent-a43dfdf2a2a31af7a`, not landed): its M5 is this plan's M1–M2 in
-  one step, and its M6 is this plan's M6 but over the browser's SQLite index. This plan replaces both and decouples
-  them: ⌘F in the demo no longer waits for the index to run in wasm (its M1–M4, XL). When that index lands, it plugs in
-  as the demo's `DirSizeSource`. The two plans need one reconciliation edit before either executes. The same branch's
-  stopgap (`answers.ts` refusing `prepareSearchIndex`, also on `worktree-agent-a28ab52ef2f8b33b1`) is what M6 deletes.
+- **The demo's folder-size fold** (`worktree-agent-a03dc8ea1594f1b12`, in progress): M7's `DirSizeSource`. M7 builds on
+  it after it lands; if its type or crate moves before then, follow it rather than wrapping a copy.
+- **The ⌘F stopgap** (`answers.ts` refusing `prepareSearchIndex` so the dialog opens in its "index not available" state,
+  on `worktree-agent-a28ab52ef2f8b33b1`): M7 deletes it.
 - **The write-engine and viewer branches** (`worktree-agent-a683f589da8b16ef6` and descendants, including
   `worktree-agent-aff43f5d181de5ed9`): own `cmdr-listing-wasm`'s `commands.rs` / `lib.rs` / `Cargo.toml` routing,
   `browserBound` in `scripts/build-listing-wasm/main.go`, `lib/demo/answers.ts`, and the in-memory volume's mutation
-  hook (M6's rebuild trigger). M4's wasm-lane edit and all of M6 start after they land; ❌ never in parallel against the
+  hook (M7's rebuild trigger). M4's wasm-lane edit and all of M7 start after they land; ❌ never in parallel against the
   same files. `cmdr-viewer` brings `regex` into the wasm graph, so the search core adds little beyond its own code.
-- **`cmdr-listing-wasm` itself**: M6 adds a module and commands; its `COMMANDS` routing and `smoke.mjs` are shared with
+- **`cmdr-listing-wasm` itself**: M7 adds a module and commands; its `COMMANDS` routing and `smoke.mjs` are shared with
   every demo branch. Batch the landing.
 - **The three demo-image input lists** must stay equal: `scripts/website-demo-key.sh`'s `paths`, `websiteDemoInputs` in
   `scripts/check/checks/inputs.go`, and `.github/workflows/ci.yml`'s `website` filter. M4 adds `crates/cmdr-search` to
@@ -353,22 +388,16 @@ Total: L–XL, seven milestone agents (M5 optional). M0 can start now. M1–M2 t
   so that spec's scope list (`search/index.rs`, `engine.rs`, ...) moves to `crates/cmdr-search/src/`. Update its paths
   in M2.
 
-## For David
+## Decisions (David, 2026-11-04)
 
-1. **The index-backed source's home**: (a) stays in the app (`search/` becomes the host, like `listing_host/`),
-   recommended: it's SQL plus threads plus the app's arena lifecycle, and the demo's rows come from the tree, proven
-   identical by M4; or (b) moves into the crate behind an `index` feature, so the demo could later search the wasm
-   index's rows instead. (b) costs a feature-gated `cmdr-index` dependency for no answer the tree can't give.
-2. **Recent searches in the demo**: (a) kept in memory for the session through the same dedupe key, which means moving
-   `history.rs`'s key helpers (shared with `selection/`) into a Tauri-free home; or (b) the demo answers an empty list
-   and ignores adds, recorded as a demo difference. Recommended (b) for now: the dropdown is a minor surface.
-3. **Directory size filters in the demo before its index lands**: they behave as on a walked folder (folders pass a size
-   bound untouched). Fine as a temporary difference, or should M6 wait for the demo index's sizes?
-4. **M5 (AI pipeline into the crate)**: a desktop-only tidy-up. Do it, or leave `ai/` in the app?
-5. Spotted while surveying, not fixed: `execute.rs::fill_dir_sizes` drops a `dir_stats` read error silently (`let _ =`
-   plus `if let Ok`), so a directory row ships with no size and nothing logs. Harmless to answers (the size filter is
-   applied earlier and fails loudly), but it's the "silently dropped" pattern the Rust rules discourage. A `log::warn!`
-   would be the fix.
+David's framing: every step is a genuine architectural win, never a demo-only shim.
+
+1. **The index-backed source stays in the app** (`search/` becomes the host, like `listing_host/`).
+2. **Recent searches in the demo work for the session**: the list rules and history keys go Tauri-free (M6).
+3. **No temporary difference for directory size filters**: the demo's `DirSizeSource` is the same folder-size fold its
+   panes and operations read (M7).
+4. **M5 runs if the AI pipeline's boundary is clean** (its gate); review rounds weigh in.
+5. **`fill_dir_sizes` stops swallowing its read error** in M1: the search fails, matching invariant 7.
 
 ## Invariants
 
@@ -378,5 +407,7 @@ Total: L–XL, seven milestone agents (M5 optional). M0 can start now. M1–M2 t
 4. One matcher, one exclusion set, one `NameRules` per run: no case-folding or normalization rule derived outside it.
 5. The core holds no statics and reads no ambient clock, home, platform, or runtime.
 6. `SearchEntry` is 40 bytes, the arena is id-sorted with no id map, and `OptU64` is the only read of size and date.
-7. A directory size read error fails the search; `NotTracked` is a typed answer, never a swallowed error.
+7. A directory size read error fails the search, in the range read and the row fill alike; nothing swallows one.
 8. The browser demo answers every search command through the crate; TS answers none.
+9. One folder-size truth per host: desktop's `dir_stats`, the demo's fold. Search never rolls up sizes of its own.
+10. One recent-list rule and one history key for every host and every history feature.
