@@ -551,3 +551,64 @@ fn a_recorded_dest_identity_round_trips_through_the_journal() {
     let identities: Vec<_> = units.iter().map(|u| (u.seq, u.dest_identity)).collect();
     assert_eq!(identities, vec![(1, None), (0, Some(landed))]);
 }
+
+fn open_copy(writer: &OperationLogWriter, op_id: &str) {
+    writer
+        .open_operation(OpenOperation {
+            op_id: op_id.into(),
+            kind: OpKind::Copy,
+            initiator: Initiator::User,
+            source_volume_id: Some("vol-1".to_string()),
+            dest_volume_id: Some("vol-1".to_string()),
+            item_count: 0,
+            started_at: 100,
+            rolls_back_op_id: None,
+            execution_status: ExecutionStatus::Running,
+        })
+        .expect("open");
+}
+
+fn finalize_done(writer: &OperationLogWriter, op_id: &str) -> FinalizeOutcome {
+    writer
+        .finalize_operation(FinalizeOperation {
+            op_id: op_id.to_string(),
+            execution_status: ExecutionStatus::Done,
+            rollback_state: RollbackState::Rollbackable,
+            not_rollbackable_reason: None,
+            archive_subkind: None,
+            search_coverage: SearchCoverage::Full,
+            search_coverage_reason: None,
+            ended_at: 200,
+            item_count: None,
+            items_done: 0,
+            bytes_total: 0,
+            dev_summary: None,
+        })
+        .expect("finalize")
+}
+
+/// Far more batches than the channel holds all land, in order: under
+/// backpressure a caller waits, ❌ never drops a row. (Pins what any other way of
+/// running the writer, like the browser build's inline one, must keep.)
+#[test]
+fn batches_past_the_channel_capacity_all_land_in_order() {
+    let (_store, writer, dir) = fresh();
+    open_copy(&writer, "op-many");
+    let batches = CHANNEL_CAPACITY * 3;
+    for seq in 0..batches {
+        writer
+            .record_items(
+                "op-many",
+                vec![file_item(seq as i64, "/src", &format!("f{seq}"), "/dst")],
+            )
+            .expect("record");
+    }
+    // Finalize is the barrier: every earlier record is committed when it answers.
+    let outcome = finalize_done(&writer, "op-many");
+    assert_eq!(outcome.rollback_unit_rows, batches as u64);
+
+    let conn = crate::store::open_read_connection(&operation_log_db_path(dir.path())).expect("read conn");
+    let items = read_operation_items(&conn, "op-many", u32::MAX).expect("items");
+    let seqs: Vec<i64> = items.iter().map(|i| i.seq).collect();
+    assert_eq!(seqs, (0..batches as i64).collect::<Vec<_>>());
+}

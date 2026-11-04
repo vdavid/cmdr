@@ -95,6 +95,8 @@ mod overwrite;
 // The engine half of "paste clipboard content as a file"; its only caller is macOS.
 #[cfg(target_os = "macos")]
 mod create_numbered;
+#[cfg(test)]
+mod golden_trace_tests;
 mod locked_sources;
 mod locked_sources_slot;
 mod queued_sources;
@@ -107,6 +109,8 @@ mod routed_writes;
 #[cfg(test)]
 mod routed_writes_tests;
 mod routing;
+#[cfg(test)]
+mod routing_table_tests;
 mod scan;
 mod scan_bridge;
 mod scan_cache;
