@@ -419,6 +419,26 @@
     const scrollbarWidth = $derived(Math.max(0, listOffsetWidth - listClientWidth))
 
     /**
+     * The widths the narrow-pane fit reads: `columnWidths` LATCHED so a scroll never
+     * pops a column. The width effect below copies `columnWidths` in until the visible
+     * range first moves under a measuring key, then freezes it; a new key (navigation,
+     * a setting, a refresh) or a pane resize re-latches. So a scroll from short
+     * extensions to long ones widens the Ext track but can't drop the date mid-scroll.
+     */
+    let fitWidths = $state({ ext: 60, size: 115, date: 80 })
+    /** The measuring key and visible range `fitWidths` was latched under, and whether it froze. */
+    let fitLatch = { key: '', first: -1, last: -1, frozen: false }
+
+    // A pane resize is the user asking for a re-fit: re-latch from what's on screen now.
+    $effect(() => {
+        dependOn(listClientWidth)
+        untrack(() => {
+            fitWidths = columnWidths
+            fitLatch = { ...fitLatch, first: firstVisibleGlobalIndex, last: lastVisibleGlobalIndex, frozen: false }
+        })
+    })
+
+    /**
      * Which optional columns fit THIS pane (`full-list-column-fit.ts`): a narrow
      * pane drops the date, then Ext, so Name never collapses to 0 px. Fed the
      * widths measured with the `showExtensionInName` SETTING, never the fitted
@@ -429,7 +449,7 @@
             rowAreaWidth: listClientWidth,
             iconWidth: iconColWidth,
             gitWidth: gitColumnVisible ? GIT_COLUMN_WIDTH : 0,
-            widths: columnWidths,
+            widths: fitWidths,
             scale: getEffectiveScale(),
         }),
     )
@@ -537,12 +557,10 @@
         // flapping and re-running the 300 ms grid transition over every row. ❌ Don't key it on
         // `softRefreshTick`: a home folder takes a directory diff every few seconds, and each one
         // let the column shrink only for the next index update to grow it back.
-        const rowsKey = [
+        const measureKey = [
             listingId,
             includeHidden,
             cacheGeneration,
-            first,
-            last,
             sizeDisplayMode,
             sizeFormatOpts.unit,
             sizeFormatOpts.format,
@@ -553,10 +571,20 @@
             showExtensionInName,
             scale,
         ].join('|')
+        const rowsKey = `${measureKey}|${String(first)}|${String(last)}`
         const previous = untrack(() => columnWidths)
         const next = holdSizeColumnWidth({ previous, next: measured, sameRows: rowsKey === widthsRowsKey })
         widthsRowsKey = rowsKey
         if (next !== previous) columnWidths = next
+
+        // Latch the fit's widths (see `fitWidths`): follow along until the visible range
+        // first moves under this key, then hold still until the key changes or the pane resizes.
+        if (measureKey !== fitLatch.key) {
+            fitLatch = { key: measureKey, first, last, frozen: false }
+        } else if (first !== fitLatch.first || last !== fitLatch.last) {
+            fitLatch.frozen = true
+        }
+        if (!fitLatch.frozen) fitWidths = next
     })
 
     /** The entry at a UI index (`..` included). Called by the host pane. */

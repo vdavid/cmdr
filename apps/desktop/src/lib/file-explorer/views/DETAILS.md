@@ -554,10 +554,17 @@ splitter at its 25 % limit (~240 px pane), `icon 1fr ext size date` left Name 0 
   the date phrase from the row's accessible name.
 - ❌ Feed the fit the widths measured with the SETTING, never the fitted layout: a dropped Ext would measure `ext: 0`,
   fit again, and flap. The measurer still measures Ext and date while they're hidden, so nothing waits when they return.
-- Thresholds follow live widths, so they move with content and text size. Measured in the demo build (2026-11-04, the
-  `~` demo folder): at 100 % Ext 28, Size 46, date 113 px, so the date drops below 379 px and Ext below 258 px; the 950
-  px window split 50/50 (475 px) keeps everything. At 150 % (icon 24, Size 65, date 161) a 475 px pane drops the date
-  and a 320 px one drops Ext too.
+- **A scroll never pops a column**: the fit reads `fitWidths`, `columnWidths` latched per measuring key (listing,
+  generation, every measuring setting, scale). It follows along until the visible range first moves under that key, then
+  freezes; a new key or a pane resize re-latches. **Why**: the tracks shrink-wrap the rows on screen, so scrolling from
+  folders to `.controller` files widens Ext, and a pane near a threshold dropped the date mid-scroll. Following until
+  the first move (rather than latching the first measurement) lets a navigation's retained rows hand over to the fresh
+  ones. Pinned by `FullList.narrow-pane-scroll.test.ts`.
+- Thresholds follow the latched widths, so they move with content and text size. The Ext floor (`MIN_EXT_WIDTH`, 28 px)
+  scales with text size like the measured text (`measure-column-widths.scale.test.ts`). Measured in the demo build
+  (2026-11-04, the `~` demo folder): at 100 % Ext 28, Size 46, date 113 px, so the date drops below 379 px and Ext below
+  258 px; the 950 px window split 50/50 (475 px) keeps everything. At 150 % (icon 24, Size 65, date 161) a 475 px pane
+  drops the date and a 320 px one drops Ext too.
 - Unmeasured (`clientWidth` 0) keeps the full layout. Pinned by `full-list-column-fit.test.ts`,
   `FullList.narrow-pane.test.ts`, and `FullListHeader.test.ts`.
 
