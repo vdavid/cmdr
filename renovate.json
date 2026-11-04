@@ -48,6 +48,11 @@
       "groupName": "wasm toolchain"
     },
     {
+      "description": "binaryen (the demo build's `wasm-opt`, pinned in `.mise.toml` as `aqua:WebAssembly/binaryen`) tags its releases `version_133`, while the pin is the bare `133`. Without this, the tag never parses as a version and the pin silently goes stale.",
+      "matchPackageNames": ["/binaryen/"],
+      "extractVersion": "^version_(?<version>\\d+)$"
+    },
+    {
       "description": "The check runner's Go analyzers land on their own, for the same reason the linters below do: an analyzer bump re-flags tracked source across every Go module, which is noise to review mixed in with dependency changes. `go.uber.org/nilaway` publishes no tags, so its pseudo-version pin gets no PRs; move it by hand when it matters.",
       "matchDepTypes": ["go-check-tool"],
       "groupName": "Go check tools"
