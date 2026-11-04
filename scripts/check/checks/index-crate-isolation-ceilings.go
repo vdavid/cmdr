@@ -419,6 +419,34 @@ var surfaceGuardedCrates = []struct {
 		},
 	},
 	{
+		// Measured 2026-11-04, once the browser demo hosts the crate (#302), and set to
+		// exactly what it exposes, with no headroom. The surface is the app's
+		// `file_viewer/` before the move, kept so every `crate::file_viewer::…` path in
+		// the app stands (`file_viewer/mod.rs` re-exports the core):
+		//
+		// - 55 root promises: the IPC wire types `bindings.ts` exports (open, rows,
+		//   status, search, encodings, Markdown, media facts, `ViewerError`), the
+		//   backend trait and seek types `tools/read/inspect` drives headless, and
+		//   `Viewer` itself.
+		// - 28 `Viewer` methods: one per viewer command in `commands/file_viewer.rs`
+		//   (the demo's `viewer.rs` answers the same names), plus the window
+		//   registry, the pending opens, and `tokens` for the thumbnails.
+		// - 21 public modules and their 135 items: the host seams (`host/`, six
+		//   traits), the media and Markdown modules the app's scheme handler,
+		//   thumbnails, and Markdown image fetches reach, `headless` for inspect,
+		//   and the native-only `watcher`.
+		//
+		// Trimming the modules to facades is open work, ❌ not a reason to raise these.
+		Name:       "cmdr-viewer",
+		HandleType: "Viewer",
+		Ceilings: surfaceCeilings{
+			RootPromises:   55,
+			HandleMethods:  28,
+			PublicModules:  21,
+			SubsystemItems: 135,
+		},
+	},
+	{
 		// Measured 2026-10-16, at the extraction, and set to exactly what the crate
 		// exposes, with no headroom (David approved the rule in the #415 plan).
 		//
