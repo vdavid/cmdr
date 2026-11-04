@@ -38,14 +38,14 @@ const navLinks = [
         </div>
 
         <!-- Desktop navigation -->
-        <div class="hidden items-center gap-8 md:flex">
+        <div class="hidden items-center gap-8 lg:flex">
             {
                 navLinks.map((link) => (
                     <a
                         href={link.href}
                         target={link.external ? '_blank' : undefined}
                         rel={link.external ? 'noopener noreferrer' : undefined}
-                        class="text-sm text-text-secondary transition-colors duration-200 hover:text-text-primary"
+                        class="text-sm whitespace-nowrap text-text-secondary transition-colors duration-200 hover:text-text-primary"
                     >
                         {link.label}
                         {link.external && (
@@ -92,7 +92,7 @@ const navLinks = [
         </div>
 
         <!-- Theme toggle + hamburger (mobile) -->
-        <div class="flex items-center md:hidden">
+        <div class="flex items-center lg:hidden">
             <ThemeToggle />
             <button
                 type="button"
@@ -123,7 +123,7 @@ const navLinks = [
     </nav>
 
     <!-- Mobile menu -->
-    <div id="mobile-menu" class="mobile-menu md:hidden" inert role="navigation" aria-label="Mobile navigation">
+    <div id="mobile-menu" class="mobile-menu lg:hidden" inert role="navigation" aria-label="Mobile navigation">
         <div class="mobile-menu__content">
             {
                 navLinks.map((link) => (
@@ -159,7 +159,7 @@ const navLinks = [
     </div>
 
     <!-- Newsletter slide-open panel (desktop) -->
-    <div id="newsletter-panel" class="newsletter-panel hidden md:block" aria-hidden="true">
+    <div id="newsletter-panel" class="newsletter-panel hidden lg:block" aria-hidden="true">
         <div class="mx-auto flex max-w-2xl flex-col items-center gap-3 px-6 py-5">
             <p class="text-sm text-text-secondary">
                 How cool that you want to hear about Cmdr news! No spam, promise. ❤️
