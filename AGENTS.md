@@ -119,8 +119,8 @@ Writing them:
   `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-sort` (sort vocabulary),
   `cmdr-brief-columns` (Brief mode's column widths), `cmdr-local` (the local disk), `cmdr-media-meta` (media tags),
   `cmdr-menu` (menu bar data), `cmdr-operation-log` (mutation journal, rollback planner), `cmdr-operations` (the write
-  engine), `cmdr-update-trust` (the updater's trust check) carry no `tauri`, enforced by `index-crate-isolation`; plus
-  `cmdr-listing-wasm` (the listing engine in a browser), two dev CLIs, and `fsevent-stream` (our FSEvents fork). Map:
+  engine), `cmdr-update-trust` (the updater's trust check), `cmdr-listing-wasm` (the listing engine in a browser), and
+  two dev CLIs carry no `tauri`, enforced by `index-crate-isolation`; plus `fsevent-stream` (our FSEvents fork). Map:
   `docs/architecture.md`.
 - `brand/`: brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),

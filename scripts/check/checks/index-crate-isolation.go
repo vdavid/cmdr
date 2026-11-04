@@ -37,6 +37,10 @@ import (
 // guardedIndexCrates are the crates whose dependency trees must stay app-free.
 var guardedIndexCrates = []string{
 	"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav", "cmdr-mtp", "cmdr-s3", "cmdr-nfs", "cmdr-adb", "cmdr-git", "cmdr-http", "cmdr-listing", "cmdr-update-trust", "cmdr-collation", "cmdr-local", "cmdr-media-meta", "cmdr-operation-log", "cmdr-operations", "cmdr-restic", "cmdr-brief-columns", "cmdr-menu", "cmdr-sort",
+	// Not libraries the app links, but app-free by design all the same: the browser demo
+	// has no Tauri to reach, and the two dev CLIs read the index and the journal straight
+	// off disk. A `tauri` creeping into any of them is the same erosion.
+	"cmdr-listing-wasm", "index-query", "operation-log-dump",
 }
 
 // forbiddenForIndexCrates are the packages that must not appear in a guarded
