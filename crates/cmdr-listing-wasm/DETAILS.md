@@ -147,8 +147,13 @@ tree lists as a folder (as on disk).
     checks, 13–19 ms alone), since a descheduled process ages the wall clock but not its thread's CPU time. Measured
     together, 2026-11-05 on Node 26.12 at load 85–92: CPU 16–20 ms across four runs while wall swung 16–104 ms. The
     checker's contention verdict (`contention-verdict.go`) would only have rerun a red; this can't go red from load.
-  - The runtime self-test's yield-cost probe (`rt_self_test.rs`, 100 yields under 50 ms) is still wall time: a timer
-    clamp it guards against is idle time, which CPU time can't see. It went red twice at load 85–92 (57 and 167 ms).
+  - **The runtime self-test's yield-cost probe** (`rt_self_test.rs`) can't use CPU time: the timer clamp it guards
+    against is idle time. So it measures yields against a yardstick in the same run: 10 rounds of 10 yields interleaved
+    with 10 rounds of 10 `setTimeout(0)` sleeps, the fastest round of each, and the yields must win by 4x. Decision/Why:
+    the old fixed budget (100 yields under 50 ms) went red at load 80–92 (57–167 ms); interleaving shares the load, and
+    the fastest round dodges a descheduling burst. Verified 2026-11-05 on Node 26.12 at load 62–78: the real yield won
+    by 22–55x over six runs, and the old timer-based yield fed in its place came in at about 1x (13.9 against 13.3 ms)
+    and failed.
 - **The golden replay** (`-golden`, also in the check): `src/operations_host/golden_test.rs` runs every volume-engine
   scenario in `cmdr_operations::golden` on a real `Demo`'s host (its `DemoVolumes` with the fixtures' `src` and `dst`
   registered beside the page volume, its engine events, name order, and operation log) and compares the trace, as text,
