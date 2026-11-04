@@ -15,14 +15,14 @@ paths (`crate::file_system::volume::VolumeError`); other crates use `cmdr_fs::�
 
 ## Must-knows
 
-- **`#![deny(missing_docs)]` holds here**, and several types reach `bindings.ts` through `specta::Type`, which is why
-  `Cargo.toml` pins `specta` to the app's exact version.
+- **`#![deny(missing_docs)]` holds here**; `specta` is pinned to the app's exact version for `bindings.ts`.
+- **It builds for `wasm32` too**: host-OS deps go under `cfg(not(target_family = "wasm"))`. DETAILS § The browser build.
 - **`Volume::capabilities()` is a PURE FOLD of the trait's predicates, published over IPC.** ❌ Never override it: add a
   predicate instead (`src/volume/capabilities.rs`).
 - **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes
   stale after a copy. DETAILS § What the app kept.
 - **❌ Never gate BEHAVIOR on `cfg(test)` here; use `any(test, feature = "testing")`.** `cfg(test)` is off in a
-  consumer's test build, so production behavior runs inside their suite and surfaces as someone else's flake.
+  consumer's test build, so production behavior leaks into their suite.
 - **`InMemoryVolume` is the oracle for the `Volume` contracts data safety leans on**, and LIES on request so a defense
   against a hostile backend is testable. ❌ Never relax a contract to green a test. Cross-backend promises live in
   `volume::conformance`.
@@ -39,7 +39,7 @@ paths (`crate::file_system::volume::VolumeError`); other crates use `cmdr_fs::�
   every word, and `FileEntry.git_meta` / `restic_meta` state FACTS, ❌ never a sentence. DETAILS § The one place prose
   is produced here.
 - **A test needing a real removable volume uses `testing::disk_images` (macOS), ❌ never its own `hdiutil` or `diskutil`
-  call**, a physical disk, or a new FAT/exFAT image: its runner is the guarded one. DETAILS § "`testing::disk_images`".
+  call**, a physical disk, or a new image. DETAILS § "`testing::disk_images`".
 - **Log a user value as `LogPrivate`, a path-carrying error as `LogError(&e)`.** ❌ Never a `String` of either, and ❌
   no marking `Display`. DETAILS § "Marked log values".
 - **The global allocator is decided here** (`process_memory/allocator.rs`: system on macOS, mimalloc on Linux or with

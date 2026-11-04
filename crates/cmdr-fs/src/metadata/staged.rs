@@ -66,6 +66,23 @@ pub fn apply_staged(item: StagedItem<'_>, carried: &CarriedMetadata, times: Stag
     }
 }
 
+// The browser build has no host filesystem to put xattrs or a mode on
+// (`DETAILS.md` § "The browser build").
+#[cfg(target_family = "wasm")]
+fn write_xattrs(_item: StagedItem<'_>, carried: &CarriedMetadata) -> ClassOutcome {
+    if carried.xattrs.is_empty() {
+        ClassOutcome::Absent
+    } else {
+        ClassOutcome::NotApplicable
+    }
+}
+
+#[cfg(target_family = "wasm")]
+fn write_mode(_item: StagedItem<'_>, _mode: u32) -> ClassOutcome {
+    ClassOutcome::NotApplicable
+}
+
+#[cfg(not(target_family = "wasm"))]
 fn write_xattrs(item: StagedItem<'_>, carried: &CarriedMetadata) -> ClassOutcome {
     use xattr::FileExt as _;
     if carried.xattrs.is_empty() {
@@ -87,6 +104,7 @@ fn write_xattrs(item: StagedItem<'_>, carried: &CarriedMetadata) -> ClassOutcome
     outcome
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn write_mode(item: StagedItem<'_>, mode: u32) -> ClassOutcome {
     use std::os::unix::fs::PermissionsExt as _;
     let permissions = std::fs::Permissions::from_mode(mode);
@@ -201,6 +219,10 @@ fn refusal(e: &std::io::Error) -> ClassOutcome {
 
 /// The outcome that says more about what the copy lost: a refusal outranks a
 /// class the destination can't hold, which outranks a kept one.
+#[cfg_attr(
+    target_family = "wasm",
+    allow(dead_code, reason = "the browser build writes no xattrs")
+)]
 fn worse(a: ClassOutcome, b: ClassOutcome) -> ClassOutcome {
     use ClassOutcome::{Kept, NotApplicable, Refused};
     match (a, b) {

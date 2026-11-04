@@ -62,6 +62,7 @@ fn umask() -> u32 {
 /// Makes one throwaway folder with mode `0777` in the temp dir and reads what
 /// the umask left of it. A process's umask never changes under it, so once is
 /// enough.
+#[cfg(not(target_family = "wasm"))]
 fn probe_umask() -> u32 {
     use std::os::unix::fs::{DirBuilderExt as _, PermissionsExt as _};
 
@@ -82,6 +83,12 @@ fn probe_umask() -> u32 {
             FALLBACK_UMASK
         }
     }
+}
+
+/// The browser build has no process umask to probe.
+#[cfg(target_family = "wasm")]
+fn probe_umask() -> u32 {
+    FALLBACK_UMASK
 }
 
 #[cfg(test)]

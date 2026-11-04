@@ -6,11 +6,11 @@
 //! walk. The helpers that patch these records are `mutate.rs`, the diff they
 //! queue is `diff_emitter.rs`, and the orphan reaper is `orphan_reaper.rs`.
 
+use crate::rt::Instant;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLockReadGuard};
-use std::time::Instant;
 
 use crate::Inner;
 use crate::diff_emitter::{CacheWrite, Publish};

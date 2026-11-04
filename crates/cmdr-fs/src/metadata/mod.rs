@@ -44,6 +44,7 @@ mod staged;
 
 use std::path::Path;
 
+#[cfg(not(target_family = "wasm"))]
 use crate::log_private::LogPrivate;
 
 pub use blockers::{
@@ -169,8 +170,14 @@ impl MetadataReport {
 }
 
 /// An ACL as the helper carries it: opaque entries, read and written whole.
+#[cfg(not(target_family = "wasm"))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Acl(Vec<exacl::AclEntry>);
+
+/// The browser build reads no ACLs, so it can never hold one.
+#[cfg(target_family = "wasm")]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Acl(std::convert::Infallible);
 
 /// The metadata that goes on an item only after its landing rename, because on
 /// the staged item it would refuse that rename or a later one.
@@ -273,6 +280,7 @@ pub fn apply_landed(path: &Path, set: &LandedMetadata) -> MetadataReport {
 
 /// `chmod` by path. Only ever a folder, which isn't a link, so following one
 /// can't reach anywhere else.
+#[cfg(not(target_family = "wasm"))]
 fn write_mode(path: &Path, mode: u32) -> ClassOutcome {
     use std::os::unix::fs::PermissionsExt as _;
     match std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode)) {
@@ -282,6 +290,23 @@ fn write_mode(path: &Path, mode: u32) -> ClassOutcome {
             ClassOutcome::Refused
         }
     }
+}
+
+// The browser build has no host filesystem: no mode or ACL to read or write
+// (`DETAILS.md` § "The browser build").
+#[cfg(target_family = "wasm")]
+fn write_mode(_path: &Path, _mode: u32) -> ClassOutcome {
+    ClassOutcome::NotApplicable
+}
+
+#[cfg(target_family = "wasm")]
+fn read_acl(_path: &Path) -> Option<Acl> {
+    None
+}
+
+#[cfg(target_family = "wasm")]
+fn write_acl(_path: &Path, acl: &Acl) -> ClassOutcome {
+    match acl.0 {}
 }
 
 #[cfg(target_os = "macos")]
@@ -296,7 +321,7 @@ fn read_acl(path: &Path) -> Option<Acl> {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_family = "wasm")))]
 fn read_acl(path: &Path) -> Option<Acl> {
     match exacl::getfacl(path, None) {
         // A named user or group, or a default ACL, is what makes it more than the mode.
@@ -315,6 +340,7 @@ fn read_acl(path: &Path) -> Option<Acl> {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn write_acl(path: &Path, acl: &Acl) -> ClassOutcome {
     #[cfg(target_os = "macos")]
     let written = exacl::setfacl(&[path], &acl.0, exacl::AclOption::SYMLINK_ACL);

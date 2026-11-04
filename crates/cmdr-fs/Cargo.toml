@@ -43,10 +43,6 @@ testing = ["dep:tempfile", "dep:plist", "tokio/net", "tokio/io-util"]
 mimalloc = ["dep:mimalloc", "dep:libmimalloc-sys"]
 
 [dependencies]
-# Every Unix this crate builds on: the mapped-file fault recovery (`mmap`,
-# `siginfo_t`, `/proc/self/maps` on Linux) runs on both, and on macOS also Mach
-# `task_info`, the malloc-zone walk, and `pthread_set_qos_class_self_np`.
-libc = "0.2"
 # The digest half of every volume ID (`volume::ids`). Cryptographic on purpose:
 # an ID is identity, and a volume name is user-controlled, so a *chosen*
 # collision (name a USB stick so it steals another volume's index and saved
@@ -62,14 +58,6 @@ serde_json = "1"
 # transitively.
 specta = { version = "=2.0.0-rc.24", features = ["derive"] }
 log = "0.4"
-# The process-wide SQLite page-cache slab and the connection factories that
-# install it (`sqlite_util`). Every store in the app — the three index DBs plus
-# the agent's and the operation log's — shares that one slab, so the helpers have
-# to live in the crate all of them already depend on. `bundled` so the linked
-# SQLite is ours, `collation` for the index store's `name_folded` collation, and
-# `fallible_uint` for the app-side stores; the feature set has to be a superset of
-# every consumer's or Cargo unification silently drops one.
-rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
 # `name_fold`: the one "same name, spelled another way" key (NFC + lowercase) and the
 # NFC spelling of a new name. A share name arrives decomposed from macOS `statfs` and
 # composed from mDNS and the server, so without the fold one share gets two volume
@@ -77,15 +65,8 @@ rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uin
 # Same version the app and the SMB backend pin.
 unicode-normalization = "0.1"
 # Standard-location resolution for the special-system-folder icon classifier.
+# Builds for the browser too, where every resolver answers `None`.
 dirs = "7"
-# uid/gid → name resolution for `FileEntry`'s owner and group columns.
-uzers = "0.12.2"
-# Reading the private File Provider domain-id extended attribute (`file_provider`),
-# the marker that tells a cloud provider's tree from an ordinary folder.
-xattr = "1"
-# ACLs for `metadata`: the post-landing half reads and writes them, and the removal
-# helpers strip a `deny delete` one. Every OS: Linux carries POSIX ACLs through it.
-exacl = "0.13"
 # The unique suffix every staged scratch name ends in (`staging`). A caller can
 # also supply one, so the type is part of the mint API rather than an internal
 # detail: a safe-overwrite gives its temp and its aside the same UUID.
@@ -96,15 +77,16 @@ uuid = { version = "1.29.0", features = ["v4"] }
 unicode-segmentation = "1.13.3"
 # `rt` for the runtime seam: `volume::host` hands backends a `tokio::runtime::Handle`
 # the app injects, because a backend's watcher threads have no ambient runtime to
-# inherit and `tokio::spawn` panics there. `rt-multi-thread` builds the fallback that
-# keeps benches, tools, and tests working with a detached host. `time` is
+# inherit and `tokio::spawn` panics there. `rt-multi-thread` (native only, below)
+# builds the fallback that keeps benches, tools, and tests working with a detached
+# host. `time` is
 # `wait_until_async`'s: it polls on tokio's clock, so a `start_paused` runtime
 # auto-advances through the wait instead of burning wall-clock. `sync` is
 # `ChannelReadStream`'s: the bounded chunk channel every network backend's read
 # path is built on. `macros` is `host::activity`'s `select!`, declared here rather
 # than borrowed from a consumer: every backend crate happened to enable it, so
 # `cargo check -p <a new one>` was the first build to find it missing.
-tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
 # `testing` only: `TestDir` wraps a `tempfile::TempDir` and hands it back to its
 # caller. ❌ Don't "clean this up" into a dev-dependency: a dev-dependency isn't
 # linkable when ANOTHER crate compiles this one as a library, so `TestDir` would
@@ -124,6 +106,41 @@ futures-util = "0.3"
 # which the app's `main.rs` installs). Optional here for the `mimalloc` feature,
 # and a plain dependency on Linux below, where it's the default.
 mimalloc = { version = "0.1", optional = true }
+
+# Everything that needs a host OS, which the browser build (`wasm32-unknown-unknown`,
+# for `crates/cmdr-listing-wasm`) doesn't have. The modules using them are gated in
+# `lib.rs`; `DETAILS.md` § "The browser build".
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+# Every Unix this crate builds on: the mapped-file fault recovery (`mmap`,
+# `siginfo_t`, `/proc/self/maps` on Linux) runs on both, and on macOS also Mach
+# `task_info`, the malloc-zone walk, and `pthread_set_qos_class_self_np`.
+libc = "0.2"
+# The process-wide SQLite page-cache slab and the connection factories that
+# install it (`sqlite_util`). Every store in the app — the three index DBs plus
+# the agent's and the operation log's — shares that one slab, so the helpers have
+# to live in the crate all of them already depend on. `bundled` so the linked
+# SQLite is ours, `collation` for the index store's `name_folded` collation, and
+# `fallible_uint` for the app-side stores; the feature set has to be a superset of
+# every consumer's or Cargo unification silently drops one.
+rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
+# uid/gid → name resolution for `FileEntry`'s owner and group columns.
+uzers = "0.12.2"
+# Reading the private File Provider domain-id extended attribute (`file_provider`),
+# the marker that tells a cloud provider's tree from an ordinary folder.
+xattr = "1"
+# ACLs for `metadata`: the post-landing half reads and writes them, and the removal
+# helpers strip a `deny delete` one. Every OS: Linux carries POSIX ACLs through it.
+exacl = "0.13"
+# The fallback runtime's worker pool (`volume::host`). A browser has no threads.
+tokio = { version = "1", features = ["rt-multi-thread"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+# A browser's randomness source (`crypto.getRandomValues`) for the scratch-name
+# UUIDs; without it `uuid` refuses to compile for `wasm32-unknown-unknown`.
+uuid = { version = "1.29.0", features = ["js"] }
+# The page's wall clock for `InMemoryVolume`'s write timestamps: `std`'s
+# `SystemTime::now` panics on `wasm32-unknown-unknown`.
+web-time = "1.1.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Linux keeps mimalloc without the feature: glibc malloc's per-thread arenas are

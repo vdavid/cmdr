@@ -59,6 +59,7 @@ mod pipeline;
 mod quick_filter;
 mod refresh;
 mod reread;
+mod rt;
 mod sorting;
 mod stall;
 mod stalled_on;
@@ -88,13 +89,13 @@ pub use stats::ListingStats;
 pub use streaming::ListingRequest;
 pub use visible_rows::VisibleRows;
 
+use crate::rt::Instant;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, RwLock, Weak};
-use std::time::Instant;
 
-use tokio::runtime::Handle;
+use crate::rt::Runtime;
 
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 
@@ -130,7 +131,7 @@ pub(crate) struct Inner {
     /// The runtime every spawn goes to. ❌ Never `tokio::spawn` in the engine:
     /// it INHERITS an ambient runtime, and a watcher's OS thread has none, so it
     /// panics there.
-    runtime: Handle,
+    runtime: Runtime,
     /// Rows a pane sees that no volume holds, in the order the host added them.
     overlays: Vec<Arc<dyn ListingOverlay>>,
     /// Who hears every open and close, in the order the host added them.
