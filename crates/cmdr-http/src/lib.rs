@@ -40,9 +40,50 @@ pub(crate) trait SystemProxies: Send + Sync {
 /// redirect policy, and decoders on top. ❌ Never call `reqwest::Client::builder()` directly:
 /// the workspace `clippy.toml` refuses it outside this crate.
 pub fn client_builder() -> reqwest::ClientBuilder {
+    builder_with(process_env(), Arc::new(system::MacSystem))
+}
+
+/// The `*_PROXY` variables, read on first use: a running process's environment doesn't change.
+fn process_env() -> Arc<EnvProxies> {
     static ENV: OnceLock<Arc<EnvProxies>> = OnceLock::new();
-    let env = ENV.get_or_init(|| Arc::new(EnvProxies::from_process())).clone();
-    builder_with(env, Arc::new(system::MacSystem))
+    ENV.get_or_init(|| Arc::new(EnvProxies::from_process())).clone()
+}
+
+/// Runs the PAC file macOS would use for `url`, once, on a background thread, so the process's
+/// slow first evaluation happens before a request waits on it. Call it at launch with the host
+/// the first requests go to. A request to that host arriving meanwhile waits for this answer
+/// rather than running the PAC again. Does nothing when no PAC applies (no PAC configured, a
+/// local host, or an environment variable decides first), and nothing off macOS.
+pub fn warm_up_pac(url: &str) {
+    #[cfg(target_os = "macos")]
+    {
+        let Some(url) = as_asked(url) else { return };
+        let env = process_env();
+        let spawned = std::thread::Builder::new()
+            .name(String::from("cmdr-http-pac-warm-up"))
+            .spawn(move || {
+                // The answer lands in the PAC cache; the route itself is nobody's to act on.
+                let _ = route::decide(&url, &env, &system::WarmingSystem);
+            });
+        if spawned.is_err() {
+            log::debug!(target: "cmdr_http", "couldn't start the PAC warm-up; the first request runs it instead");
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = url;
+}
+
+/// `url` the way reqwest's `Proxy::custom` asks about it: `scheme://host[:port]`, no path or
+/// query. The PAC cache is keyed on this, so a warm-up under any other form would miss it.
+#[cfg_attr(
+    not(any(target_os = "macos", test)),
+    allow(dead_code, reason = "only the macOS warm-up asks")
+)]
+fn as_asked(url: &str) -> Option<Url> {
+    let url = Url::parse(url).ok()?;
+    let host = url.host_str()?;
+    let port = url.port().map(|port| format!(":{port}")).unwrap_or_default();
+    Url::parse(&format!("{}://{host}{port}", url.scheme())).ok()
 }
 
 /// [`client_builder`] with its two inputs injected, so a test can route without touching the

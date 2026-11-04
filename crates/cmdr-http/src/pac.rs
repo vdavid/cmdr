@@ -24,6 +24,11 @@ use crate::entries::{Entry, Pac, PacSource};
 /// How long the asking thread waits for a PAC answer before going direct, the way macOS does
 /// when a PAC can't be run. Covers fetching the file, which CFNetwork does itself.
 pub(crate) const TIMEOUT: Duration = Duration::from_secs(3);
+/// The launch warm-up's budget ([`crate::warm_up_pac`]): a process's first evaluation is the
+/// cold one (0.2–2 s on a busy Mac, CFNetwork trying TLS twice on an `http://` PAC URL first),
+/// and paying it here, off any request, keeps a loaded Mac from missing [`TIMEOUT`] and going
+/// direct for [`FAILURE_TTL`] (#810). A request arriving meanwhile waits for this answer.
+pub(crate) const WARM_UP_TIMEOUT: Duration = Duration::from_secs(10);
 /// The budget for a test cell that wants the PAC's ANSWER, ❌ not one about [`TIMEOUT`]: each
 /// test process pays CFNetwork's cold first evaluation (0.2–2 s on a busy Mac, then about
 /// 1 ms warm), so under load `TIMEOUT` tripped and the walk went direct (#754). Past it, the
@@ -90,8 +95,14 @@ impl MacPac {
     }
 }
 
-impl Pac for MacPac {
-    fn evaluate(&self, source: &PacSource, url: &Url) -> Option<Vec<Entry>> {
+impl MacPac {
+    /// This evaluator with its own cache and turn, but `budget` in place of its timeout for a
+    /// miss. A request asking meanwhile waits for that turn and then reads the answer.
+    pub(crate) fn with_budget(&self, budget: Duration) -> Budgeted<'_> {
+        Budgeted { pac: self, budget }
+    }
+
+    fn evaluate_within(&self, source: &PacSource, url: &Url, timeout: Duration) -> Option<Vec<Entry>> {
         let key = (source.clone(), url.as_str().to_string());
         if let Some(answer) = self.cached(&key) {
             return answer;
@@ -102,13 +113,31 @@ impl Pac for MacPac {
         }
         #[cfg(test)]
         self.evaluations.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        let answer = evaluate_on_own_thread(source.clone(), url.as_str().to_string(), self.timeout);
+        let answer = evaluate_on_own_thread(source.clone(), url.as_str().to_string(), timeout);
         if answer.is_none() {
             // allowed-log-private: cmdr-http can't depend on cmdr-fs, and a keyed `host="…"` is redacted exactly
             log::warn!(target: "cmdr_http", "couldn't run the PAC file for host={:?}, so it goes direct", url.host_str().unwrap_or_default());
         }
         self.store(key, answer.clone());
         answer
+    }
+}
+
+impl Pac for MacPac {
+    fn evaluate(&self, source: &PacSource, url: &Url) -> Option<Vec<Entry>> {
+        self.evaluate_within(source, url, self.timeout)
+    }
+}
+
+/// A [`MacPac`] whose misses get a budget of their own: the launch warm-up's.
+pub(crate) struct Budgeted<'a> {
+    pac: &'a MacPac,
+    budget: Duration,
+}
+
+impl Pac for Budgeted<'_> {
+    fn evaluate(&self, source: &PacSource, url: &Url) -> Option<Vec<Entry>> {
+        self.pac.evaluate_within(source, url, self.budget)
     }
 }
 

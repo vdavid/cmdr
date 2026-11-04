@@ -112,9 +112,32 @@ test-only `evaluations` count.
 Two of those connections are TLS: for an `http://` PAC URL, CFNetwork sends a TLS ClientHello on two connections first,
 and only the third asks `GET /proxy.pac` in plain HTTP (verified on macOS 27.0, a loopback server logging each
 connection's first bytes, 2026-10-29). A process's FIRST evaluation is the slow one: 0.2–2 s on a busy Mac, then about 1
-ms for the next host (same probe). So a PAC on a loaded Mac can miss `TIMEOUT` once per launch and go direct for
-`FAILURE_TTL`; a nextest process pays that cold start every time, which is why answer-expecting cells take the test-only
-`ANSWER_BUDGET` (#754).
+ms for the next host (same probe). A nextest process pays that cold start every time, which is why answer-expecting
+cells take the test-only `ANSWER_BUDGET` (#754).
+
+### Launch warm-up
+
+Left alone, a PAC on a loaded Mac could miss `TIMEOUT` on that cold first evaluation and send the launch's first
+requests direct for `FAILURE_TTL`, past a proxy that should have covered them (#810). So the app calls
+`warm_up_pac("https://api.getcmdr.com")` right after the logger starts:
+
+- A `cmdr-http-pac-warm-up` thread runs `route::decide` for that URL with `WarmingSystem`, which is `MacSystem` with the
+  PAC miss given `WARM_UP_TIMEOUT` (10 s) through `MacPac::with_budget`. Same cache, same turn: only the budget differs.
+  No PAC, a local host, or an env var deciding first → nothing runs, at the cost of one 15 µs lookup.
+- **A request arriving meanwhile joins it**: it blocks on the turn, then reads the cached answer, so it can wait up to
+  `WARM_UP_TIMEOUT` + 1 s instead of `TIMEOUT` + 1 s, once, and only while the PAC is genuinely slow
+  (`pac_test.rs::a_request_during_the_warm_up_joins_it`).
+- **The URL is reduced to `scheme://host[:port]`** (`as_asked`), the exact form reqwest's `Proxy::custom` asks with
+  (reqwest 0.13.5 `Custom::call`), or the warm-up would fill a cache key no request reads
+  (`lib_test.rs::the_pac_warm_up_asks_about_a_url_exactly_as_reqwest_does`).
+- A warm-up that fails is cached as any failure (`FAILURE_TTL`): a PAC that can't answer in 10 s wouldn't in 3 either.
+- Other hosts gain too: the cold cost is per process, so their first evaluation is the warm ~1 ms one.
+
+**Unverified: whether sleep/wake or a network change makes the next evaluation cold again.** Plausible for a network
+change (CFNetwork likely drops the fetched PAC file and refetches, TLS attempts included), less so for wake. Not probed:
+it needs a real Wi-Fi switch or sleep cycle with the loopback probe above, timing the first evaluation after. If it
+turns out cold, warm up again on `NSWorkspaceDidWakeNotification` and on a `SCDynamicStore` network-change key. Until
+then, the worst case after such an event is one host going direct for `FAILURE_TTL`.
 
 ❗ The two `Execute…` functions are declared in `pac.rs` with raw pointers rather than taken from `objc2-cf-network`
 0.3.2: its `CFProxyAutoConfigurationResultCallback` types the proxy list as `NonNull`, and CFNetwork passes null when

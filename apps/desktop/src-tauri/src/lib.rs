@@ -309,6 +309,11 @@ pub fn run() {
             logging::startup::init();
             claim.log(); // what the claim found, now that a logger can record it
 
+            // With a PAC file configured, run its slow first evaluation now, in the background,
+            // so the launch's first requests (heartbeat, license, update check) don't miss its
+            // budget and go direct (#810). No request goes to the host; a no-op without a PAC.
+            cmdr_http::warm_up_pac("https://api.getcmdr.com");
+
             // Everything the index needs from this app, in one place. Must run before anything
             // can start background work, and AFTER the instance lock: building the index moves a
             // drive index an older build left in the data dir, which is only safe while no other
