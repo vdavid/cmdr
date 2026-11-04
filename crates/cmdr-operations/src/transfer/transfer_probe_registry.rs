@@ -4,7 +4,6 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU8, AtomicU64};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
@@ -101,7 +100,7 @@ pub(in crate::transfer) fn register_operation(
         ends,
         source_inbound_rate: AtomicU64::new(NO_INBOUND_RATE),
         state,
-        started: Instant::now(),
+        started: crate::rt::now(),
     });
     probes.insert(operation_id, Arc::clone(&probe));
     spawn_watchdog(&runtime, Arc::downgrade(&probes), operation_id.to_owned());

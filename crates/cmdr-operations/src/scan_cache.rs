@@ -351,8 +351,9 @@ mod cache_binding_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rt::Instant;
     use std::path::{Path, PathBuf};
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     // ---- expired_scan_result_ids (TTL safety net) ----
 

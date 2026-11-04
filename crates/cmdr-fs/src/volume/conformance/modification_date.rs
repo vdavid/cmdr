@@ -181,7 +181,7 @@ pub async fn assert_read_stream_reports_the_listed_date(volume: &dyn Volume, pat
         .unwrap_or_else(|e| panic!("fixture precondition: {} must be stattable, got {e:?}", path.display()))
         .modified_at
         .unwrap_or_else(|| panic!("fixture precondition: {} must list a modification date", path.display()));
-    let now = SystemTime::now()
+    let now = crate::rt::wall_now()
         .duration_since(UNIX_EPOCH)
         .expect("the clock is past 1970")
         .as_secs();

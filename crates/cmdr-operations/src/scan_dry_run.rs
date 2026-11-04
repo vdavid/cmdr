@@ -6,11 +6,12 @@
 //! the whole entry point: it answers `Ok(true)` when the caller must stop
 //! because the dry run has spoken for the operation.
 
+use crate::rt::Instant;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::cancellable::run_cancellable_scoped;
 use super::conflict::{calculate_dest_path, create_conflict_info, sample_conflicts};
@@ -80,7 +81,7 @@ fn dry_run_scan_internal(
     let mut files_found = 0usize;
     let mut bytes_found = 0u64;
     let mut conflicts = Vec::new();
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
     let mut visited = HashSet::new();
     // The same sidecar rule the operation's own walk applies, so the preview
     // counts what the copy will write (`scan_walker.rs`, `WalkContext::sidecars`).
@@ -209,10 +210,7 @@ fn dry_run_scan_recursive(
 
         // Scan contents
         let entries = fs::read_dir(path).with_path(path)?;
-        let device = {
-            use std::os::unix::fs::MetadataExt;
-            metadata.dev()
-        };
+        let device = crate::local_disk::device_of(&metadata);
 
         for entry in entries.flatten() {
             if sidecars.is_sidecar(path, device, &entry.file_name()) {
@@ -242,7 +240,7 @@ fn dry_run_scan_recursive(
     }
 
     // Emit progress periodically
-    if last_progress_time.elapsed() >= *progress_interval {
+    if crate::rt::since(*last_progress_time) >= *progress_interval {
         events.emit_scan_progress(ScanProgressEvent {
             operation_id: operation_id.to_string(),
             operation_type,
@@ -251,7 +249,7 @@ fn dry_run_scan_recursive(
             conflicts_found: conflicts.len(),
             current_path: path.file_name().map(|n| n.to_string_lossy().to_string()),
         });
-        *last_progress_time = Instant::now();
+        *last_progress_time = crate::rt::now();
     }
 
     Ok(())

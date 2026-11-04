@@ -131,7 +131,9 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr-search", Kind: KindApp, Glob: "crates/cmdr-search/**"},
 	{Pkg: "cmdr-sftp", Kind: KindApp, Glob: "crates/cmdr-sftp/**"},
 	{Pkg: "cmdr-smb", Kind: KindApp, Glob: "crates/cmdr-smb/**"},
+	{Pkg: "cmdr-sort", Kind: KindApp, Glob: "crates/cmdr-sort/**"},
 	{Pkg: "cmdr-update-trust", Kind: KindApp, Glob: "crates/cmdr-update-trust/**"},
+	{Pkg: "cmdr-viewer", Kind: KindApp, Glob: "crates/cmdr-viewer/**"},
 	{Pkg: "cmdr-webdav", Kind: KindApp, Glob: "crates/cmdr-webdav/**"},
 	{Pkg: "index-query", Kind: KindTool, Glob: "crates/index-query/**"},
 	{Pkg: "operation-log-dump", Kind: KindTool, Glob: "crates/operation-log-dump/**"},
@@ -183,6 +185,8 @@ var rustWorkspaceConfigInputs = []string{
 // demo's event drift guard reads the generated bindings (`cmdr-listing-wasm/src/events_test.rs`).
 // The app's menu tests read the menu bar's definition and ids from `cmdr-menu`
 // (`menu/menu_items_test.rs`, `menu/context_menu_icons_test.rs`, `menu/macos_appkit.rs`).
+// The space poller's band tests read the free-percent case list the TS formatter shares
+// (`space_poller/readout.rs`).
 //
 // A lane carries this whenever its own set covers the tree that does the
 // embedding, which is what `TestRustInputsCoverEveryEmbeddedFile` walks the whole
@@ -197,6 +201,7 @@ var rustEmbeddedInputs = []string{
 	"apps/desktop/src/lib/logging/bridge-redaction-cases.json",
 	"apps/desktop/src/lib/logging/log-markers.json",
 	"apps/desktop/src/lib/units/drive-figure-cases.json",
+	"apps/desktop/src/lib/units/free-percent-cases.json",
 	"apps/desktop/src-tauri/resources/security-advisories.json",
 	"apps/desktop/src-tauri/tauri.conf.json",
 	"apps/desktop/src-tauri/updater-backup.pub",
@@ -363,6 +368,13 @@ var websiteDemoInputs = []string{
 	"crates/cmdr-collation/**",
 	"crates/cmdr-brief-columns/**",
 	"crates/cmdr-menu/**",
+	"crates/cmdr-operations/**",
+	"crates/cmdr-operation-log/**",
+	"crates/cmdr-archive/**",
+	"crates/cmdr-viewer/**",
+	"brand/screenshots/**",
+	"apps/desktop/test/e2e-shared/media-fixtures/**",
+	"crates/cmdr-sort/**",
 	"vendor/**",
 	"scripts/build-listing-wasm.sh",
 	"scripts/build-listing-wasm/**",

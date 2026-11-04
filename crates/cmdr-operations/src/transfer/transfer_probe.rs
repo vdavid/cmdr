@@ -21,11 +21,12 @@
 //! misses and every call is a no-op, which is what the unit tests and the
 //! local-FS path rely on.
 
+use crate::rt::Instant;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use tokio_util::sync::CancellationToken;
 
@@ -228,7 +229,7 @@ impl TaskProbe {
     /// Record a phase transition. One relaxed store plus a timestamp; safe to
     /// call on any path, including per-chunk.
     pub(super) fn set_phase(&self, phase: TaskPhase) {
-        let now_ms = u64::try_from(self.started.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let now_ms = u64::try_from(crate::rt::since(self.started).as_millis()).unwrap_or(u64::MAX);
         self.phase.store(phase as u8, Ordering::Relaxed);
         self.phase_since_ms.store(now_ms, Ordering::Relaxed);
     }
@@ -259,7 +260,7 @@ impl TaskProbe {
         // reads this task as having just moved and re-seeds from there.
         self.watchdog_last_bytes.store(u64::MAX, Ordering::Relaxed);
         self.still_since_ms.store(
-            u64::try_from(self.started.elapsed().as_millis()).unwrap_or(u64::MAX),
+            u64::try_from(crate::rt::since(self.started).as_millis()).unwrap_or(u64::MAX),
             Ordering::Relaxed,
         );
         token
@@ -279,7 +280,7 @@ impl TaskProbe {
     fn render(&self) -> String {
         let phase = TaskPhase::from_u8(self.phase.load(Ordering::Relaxed));
         let since_ms = self.phase_since_ms.load(Ordering::Relaxed);
-        let now_ms = u64::try_from(self.started.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let now_ms = u64::try_from(crate::rt::since(self.started).as_millis()).unwrap_or(u64::MAX);
         let total = self.total_bytes.load(Ordering::Relaxed);
         let stall_aborts = self.stall_aborts.load(Ordering::Relaxed);
         // allowed-log-private: a dump row is log text, and the dump only ever reaches a log macro
@@ -415,7 +416,9 @@ impl OperationProbe {
             source: source.as_ref().to_path_buf(),
             dest: dest.as_ref().to_path_buf(),
             phase: AtomicU8::new(TaskPhase::Spawned as u8),
-            phase_since_ms: AtomicU64::new(u64::try_from(self.started.elapsed().as_millis()).unwrap_or(u64::MAX)),
+            phase_since_ms: AtomicU64::new(
+                u64::try_from(crate::rt::since(self.started).as_millis()).unwrap_or(u64::MAX),
+            ),
             bytes_done: AtomicU64::new(0),
             total_bytes: AtomicU64::new(0),
             retries: AtomicU64::new(0),
@@ -825,7 +828,7 @@ impl OperationProbe {
             "transfer probe ({reason}): op={op} elapsed={elapsed}s bytes_done={bytes} files_total={files} \
              driver={driver}({detail}) intent={intent} paused={paused} in_flight={in_flight}/{concurrency}{walkers}{inbound}",
             op = self.operation_id,
-            elapsed = self.started.elapsed().as_secs(),
+            elapsed = crate::rt::since(self.started).as_secs(),
             bytes = self.bytes_done(),
             files = self.total_files,
             driver = driver.label(),
@@ -971,16 +974,16 @@ impl WatchdogState {
 /// Spawns the watchdog on the operation's runtime. It holds the probe table
 /// weakly, a background loop that must not keep a dropped engine alive, and
 /// ends at the first tick after the operation's guard removed it.
-fn spawn_watchdog(runtime: &tokio::runtime::Handle, probes: Weak<Probes>, operation_id: String) {
+fn spawn_watchdog(runtime: &cmdr_fs::rt::Runtime, probes: Weak<Probes>, operation_id: String) {
     runtime.spawn(async move {
         let mut watchdog = WatchdogState::new();
-        let started = Instant::now();
+        let started = crate::rt::now();
         loop {
-            tokio::time::sleep(STALL_TICK).await;
+            crate::rt::time::sleep(STALL_TICK).await;
             let Some(probe) = probes.upgrade().and_then(|probes| probes.get(&operation_id)) else {
                 return; // operation finished (its guard removed it), or its engine is gone
             };
-            probe.watchdog_step(&mut watchdog, started.elapsed());
+            probe.watchdog_step(&mut watchdog, crate::rt::since(started));
         }
     });
 }

@@ -3,8 +3,8 @@
 //! keeps them across a watcher re-stat.
 
 use super::caching_test::{insert_test_listing, make_entry};
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::testing::{TestEngine, TestListingGuard};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 fn cached(listing: &TestListingGuard, path: &str) -> (bool, String) {
     listing.with_listing(|cached| {

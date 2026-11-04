@@ -13,10 +13,12 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
 - `OperationLogDialog.svelte`: the dialog. Lazily fetches an operation's item rows on first expand and caches them for
   the dialog's lifetime (except a read that threw, which the next expand retries), holds the pending rollback question,
   and renders per-row refusal notices.
-- `operation-log-labels.ts`: pure, no I/O. Summary formatting (ICU plural over `kind` + `itemCount`), the four enum
-  label mappings, and `rollbackRefusalNotice`. `rollbackConfirmVariant` is NOT here: it lives in
-  `#lib/file-operations/reversal-wording.ts` with the type it returns, so `queue/` and `#lib/status-corner/` (which name
-  the running reversal off the same variant) can reach it without depending on this module, which depends on that one.
+- `operation-log-labels.ts`: pure, no I/O. Summary formatting (ICU plural over `kind` + a count: the planned
+  `itemCount`, or for a canceled or stopped operation the `itemsDone` it got to, wrapped in "then canceled (N planned)",
+  since the planned count there claimed a whole copy that never happened), the four enum label mappings, and
+  `rollbackRefusalNotice`. `rollbackConfirmVariant` is NOT here: it lives in `#lib/file-operations/reversal-wording.ts`
+  with the type it returns, so `queue/` and `#lib/status-corner/` (which name the running reversal off the same variant)
+  can reach it without depending on this module, which depends on that one.
 - `RollbackControls.svelte`: the Pause / Resume and Cancel a row carries while its reversal runs. One per rolling-back
   row, binding a session to the ROW'S `inverseOpId`, and reporting the reversal's end (`onEnded`) so the row re-reads.
 - `rollback-refusal.ts`: `RollbackRefusalFailure` / `throwRollbackRefusal` / `asRollbackRefusal`, the three-line

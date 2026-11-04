@@ -220,9 +220,9 @@ decision, and the line it's drawn on is **authorship, not notation**. Which is w
   isn't an author, so the reasoning that protects a person's own regex doesn't reach them; they take the flags a
   filename matcher needs. `keyword_mapping::merge_keyword_and_type` is the single place that prefixes them, so ❌
   `type_mapping`'s `TypeFilter.pattern` entries carry no inline flags of their own.
-- **The file viewer takes a third position: it REFUSES.** `file_viewer/search_matcher.rs` rejects a pattern that would
-  need to cross a newline with a typed `MultilineNotSupported`, because its streaming model is line-at-a-time. Different
-  problem (file CONTENTS, not names), already explicit in its own code.
+- **The file viewer takes a third position: it REFUSES.** `crates/cmdr-viewer/src/search_matcher.rs` rejects a pattern
+  that would need to cross a newline with a typed `MultilineNotSupported`, because its streaming model is
+  line-at-a-time. Different problem (file CONTENTS, not names), already explicit in its own code.
 
 **The broad-query guard is per evaluator.** An arena's cost is known before the scan, so a query with no narrowing
 predicate is refused only above `ARENA_BROAD_QUERY_CEILING` rows; below it, "show me everything, by recency" is a fair

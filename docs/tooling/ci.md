@@ -120,10 +120,13 @@ silent** (a warning, not a red job):
 - **`desktop-rust`** (per push): `Swatinem/rust-cache` (SHA-pinned; `workflows-hardening` requires the pin) caches
   `target/` + cargo registry/index/git deps, keyed on Cargo.lock + rustc. An unchanged-deps push recompiles only the
   `cmdr` crate (~16 → ~7 min). The entry is named by `shared-key: desktop-rust` (the same key rust-cache derives from
-  the job ID), so `desktop-rust-fixtures` restores it too, never saving, and the repo keeps one Linux Rust entry.
-  Neither job has a "Free disk space" step: the runner's root disk is 145 GB with 86 GB free at the start, and a cold
-  run of each peaked at ~80 GB used with 68 GB free (sampled every 5 s, PR #593, 2026-10-20). The step dates from
-  runners with ~14 GB free, where the SMB build plus the fixture images overflowed the disk. Both jobs end on `df -h /`.
+  the job ID), so `desktop-rust-fixtures` restores it too, never saving, and the repo keeps one Linux Rust entry. Both
+  jobs reclaim disk only on a small runner, through the `free-disk-if-small` action (`.github/actions/`): it removes the
+  unused preinstalled SDKs when `/` starts under 60 GB free, and logs the free space before and after. Most runners have
+  a 145 GB root disk with 86 GB free at the start, where a cold run of each peaked at ~80 GB used (sampled every 5 s, PR
+  #593, 2026-10-20) and an unconditional reclaim cost ~1.5 min for nothing. But the `ubuntu-latest` fleet isn't uniform:
+  a runner with a 72 GB disk (`/dev/nvme0n1p1`, image 20261101.64.1) ran `cargo test --no-run` out of space mid-link
+  (run 41839837176, 2026-11-04). Both jobs end on `df -h /`.
 - **The Rust caches save from `main` only** (`desktop-rust` and `desktop-rust-macos`; `SAVE_RUST_CACHE` at the top of
   `ci.yml`, which also gates the E2E target cache below). PR runs restore `main`'s entry and save nothing. When every PR
   saved its own ~1.7 GB entry, the repo sat at ~12 GB, LRU evicted entries within minutes, and nearly every PR run built

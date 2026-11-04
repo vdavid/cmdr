@@ -17,11 +17,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::caching::DirectoryChange;
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::testing::{StaticOverlay, TestEngine, TestListing, TestListingGuard, request};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::testing::{unique_test_id, wait_until_async};
 use cmdr_fs::volume::InMemoryVolume;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 fn entry(name: &str) -> FileEntry {
     FileEntry::new(name.to_string(), format!("/{name}"), false, false)

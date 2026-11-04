@@ -24,8 +24,8 @@ getAppLogger('feature')
 tailed (`{ tail: true }`): it starts at the end and follows new lines live. It also asks for the log view
 (`{ logView: true }`, the viewer's `log=1` URL param, `RowText::LogDisplay` on the backend): the viewer hides the log
 markers the file keeps for error reports and shows each marked value as itself, with search, copy, and save working on
-that shown text (`apps/desktop/src-tauri/src/file_viewer/log_view.rs`). A missing path produces an informational toast;
-a rejected IPC/window call produces a retry toast and a diagnostic log. Path selection lives in
+that shown text (`crates/cmdr-viewer/src/log_view.rs`). A missing path produces an informational toast; a rejected
+IPC/window call produces a retry toast and a diagnostic log. Path selection lives in
 `apps/desktop/src-tauri/src/logging/DETAILS.md`.
 
 ## Crashes SvelteKit catches

@@ -411,6 +411,20 @@ var AllChecks = []CheckDefinition{
 		Run:    RunDesktopRustListingWasm,
 	},
 	{
+		ID:          "desktop-rust-viewer-wasm",
+		CpuWeight:   8,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "viewer-wasm",
+		DisplayName: "viewer core builds as wasm",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   []string{"desktop-rust-clippy"},
+		// Every crate the build compiles is a workspace member, so the shared Rust set
+		// covers them.
+		Inputs: inputs(rustCompileInputs),
+		Run:    RunDesktopRustViewerWasm,
+	},
+	{
 		ID:          "desktop-security-advisories",
 		Nickname:    "security-advisories",
 		DisplayName: "security advisory list is valid",
@@ -2066,6 +2080,18 @@ var AllChecks = []CheckDefinition{
 			[]string{"Cargo.toml", "Cargo.lock", "apps/desktop/src-tauri/Cargo.toml", "crates/**"},
 		),
 		Run: RunIndexCrateIsolation,
+	},
+	{
+		ID:          "operations-local-disk-boundary",
+		Nickname:    "local-disk-boundary",
+		DisplayName: "the write engine names the host OS only behind its local-disk boundary",
+		App:         AppCrates,
+		Tech:        "🦀 Rust",
+		IsFast:      true,
+		// The golden fixtures ride along only because `src/golden/` embeds them
+		// (`TestRustInputsCoverEveryEmbeddedFile`); the scan never reads them.
+		Inputs: inputs([]string{"crates/cmdr-operations/src/**", "crates/cmdr-operations/tests/golden/**"}),
+		Run:    RunOperationsLocalDiskBoundary,
 	},
 	{
 		ID:          "ci-coverage",

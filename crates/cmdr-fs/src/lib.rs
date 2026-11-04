@@ -17,6 +17,15 @@
 //! crate's own contract, not the workspace's.
 #![warn(unused_crate_dependencies)]
 #![deny(missing_docs)]
+// `clippy.toml` refuses direct clock and timer reads (the browser build traps on
+// them); a test drives paused tokio clocks and real ones of its own, as a host does.
+#![cfg_attr(
+    test,
+    allow(
+        clippy::disallowed_methods,
+        reason = "tests drive their own clocks and timers, as a host would"
+    )
+)]
 
 pub mod apple_double;
 pub mod archive_format;
@@ -42,8 +51,8 @@ pub mod log_error;
 pub mod log_json;
 pub mod log_private;
 pub mod log_rollup;
-// The browser build (`wasm32`, `crates/cmdr-listing-wasm`) maps no files and
-// opens no SQLite, so these two are host-only. `DETAILS.md` § "The browser build".
+// The browser build (`wasm32`, `crates/cmdr-listing-wasm`) maps no files, so
+// this one is host-only. `DETAILS.md` § "The browser build".
 #[cfg(not(target_family = "wasm"))]
 pub mod mapped_file_faults;
 pub mod metadata;
@@ -56,7 +65,6 @@ pub mod process_memory;
 pub mod restic_meta;
 pub mod restic_view;
 pub mod rt;
-#[cfg(not(target_family = "wasm"))]
 pub mod sqlite_util;
 pub mod staging;
 pub mod system_dirs;

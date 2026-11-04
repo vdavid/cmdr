@@ -1,5 +1,6 @@
 //! Fresh compression coordinator shutdown and stage-validation tests.
 
+use cmdr_local::LocalPosixVolume;
 use std::ops::ControlFlow;
 
 use super::*;

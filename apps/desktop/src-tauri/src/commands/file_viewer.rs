@@ -114,7 +114,7 @@ struct OpenRequest {
 /// only ever gives up on an open that went quiet.
 async fn open_viewer(app_handle: tauri::AppHandle, request: OpenRequest) -> Result<ViewerOpenResult, ViewerError> {
     let window_label = request.window_label.clone();
-    let open = file_viewer::begin_pending_open(&window_label);
+    let open = file_viewer::app_viewer().begin_pending_open(&window_label);
     let expanded = crate::commands::file_system::expand_tilde(&request.path);
     let result = if file_viewer::materialize::open_may_materialize(std::path::Path::new(&expanded), &request.volume_id)
     {
@@ -144,7 +144,7 @@ async fn open_viewer(app_handle: tauri::AppHandle, request: OpenRequest) -> Resu
         }
         result
     };
-    file_viewer::end_pending_open(&window_label, &open);
+    file_viewer::app_viewer().end_pending_open(&window_label, &open);
     result
 }
 
@@ -175,7 +175,7 @@ async fn open_pulling(
 
 impl OpenRequest {
     fn open(&self, open: &PendingOpen) -> Result<ViewerOpenResult, ViewerError> {
-        file_viewer::open_for_window(
+        file_viewer::app_viewer().open_for_window(
             &self.path,
             &self.volume_id,
             &self.window_label,
@@ -200,7 +200,7 @@ impl<F: FnMut(ViewerPullProgress)> StallWatch<ViewerError> for PullWatch<F> {
     }
 
     fn on_poll(&mut self) {
-        if let Some(progress) = self.open.pull_progress()
+        if let Some(progress) = self.open.pull_progress().map(ViewerPullProgress::from)
             && self.last_emitted != Some(progress)
         {
             (self.emit)(progress);
@@ -269,7 +269,7 @@ pub async fn viewer_get_lines(
     );
 
     let result = get_lines_within(VIEWER_TIMEOUT, move |cancel| {
-        file_viewer::get_lines(&session_id, target, count, cancel)
+        file_viewer::app_viewer().get_lines(&session_id, target, count, cancel)
     })
     .await?;
 
@@ -329,7 +329,7 @@ pub async fn viewer_render_markdown(session_id: String) -> Result<file_viewer::M
         |message| ViewerError::Io {
             message: message.into(),
         },
-        move || file_viewer::render_markdown_session(&session_id),
+        move || file_viewer::app_viewer().render_markdown_session(&session_id),
     )
     .await
 }
@@ -339,7 +339,7 @@ pub async fn viewer_render_markdown(session_id: String) -> Result<file_viewer::M
 #[tauri::command]
 #[specta::specta]
 pub fn viewer_allow_remote_images(session_id: String) -> Result<(), ViewerError> {
-    file_viewer::allow_remote_images(&session_id)
+    file_viewer::app_viewer().allow_remote_images(&session_id)
 }
 
 /// Follows a link clicked in a Markdown session's rendered view. A web or mail link opens in
@@ -348,22 +348,8 @@ pub fn viewer_allow_remote_images(session_id: String) -> Result<(), ViewerError>
 /// act on (scroll, open the file in this window, or nothing). No file I/O: resolving is pure.
 #[tauri::command]
 #[specta::specta]
-pub fn viewer_follow_markdown_link(
-    app_handle: tauri::AppHandle,
-    session_id: String,
-    href: String,
-) -> Result<file_viewer::MarkdownLink, ViewerError> {
-    let link = file_viewer::resolve_markdown_link(&session_id, &href)?;
-    if let file_viewer::MarkdownLink::External { url } = &link {
-        use tauri_plugin_opener::OpenerExt;
-        app_handle
-            .opener()
-            .open_url(url, None::<&str>)
-            .map_err(|e| ViewerError::Io {
-                message: e.to_string().into(),
-            })?;
-    }
-    Ok(link)
+pub fn viewer_follow_markdown_link(session_id: String, href: String) -> Result<file_viewer::MarkdownLink, ViewerError> {
+    file_viewer::app_viewer().follow_markdown_link(&session_id, &href)
 }
 
 /// Reads at most 64 KiB of original file bytes for the binary and hex views.
@@ -376,7 +362,7 @@ pub async fn viewer_get_bytes(session_id: String, offset: u64, count: usize) -> 
         |message| ViewerError::Io {
             message: message.into(),
         },
-        move || file_viewer::get_bytes(&session_id, offset, count),
+        move || file_viewer::app_viewer().get_bytes(&session_id, offset, count),
     )
     .await
 }
@@ -395,35 +381,45 @@ pub fn viewer_search_start(session_id: String, query: String, mode: SearchMode) 
     if query.is_empty() {
         return Err("Search query cannot be empty".to_string());
     }
-    file_viewer::search_start(&session_id, query, mode).map_err(|e| e.to_string())
+    file_viewer::app_viewer()
+        .search_start(&session_id, query, mode)
+        .map_err(|e| e.to_string())
 }
 
 /// Polls search progress and new matches since `since_index`.
 #[tauri::command]
 #[specta::specta]
 pub fn viewer_search_poll(session_id: String, since_index: usize) -> Result<SearchPollResult, String> {
-    file_viewer::search_poll(&session_id, since_index).map_err(|e| e.to_string())
+    file_viewer::app_viewer()
+        .search_poll(&session_id, since_index)
+        .map_err(|e| e.to_string())
 }
 
 /// Cancels an ongoing search.
 #[tauri::command]
 #[specta::specta]
 pub fn viewer_search_cancel(session_id: String) -> Result<(), String> {
-    file_viewer::search_cancel(&session_id).map_err(|e| e.to_string())
+    file_viewer::app_viewer()
+        .search_cancel(&session_id)
+        .map_err(|e| e.to_string())
 }
 
 /// Gets the current status of a viewer session (backend type, indexing state).
 #[tauri::command]
 #[specta::specta]
 pub fn viewer_get_status(session_id: String) -> Result<ViewerSessionStatus, String> {
-    file_viewer::get_session_status(&session_id).map_err(|e| e.to_string())
+    file_viewer::app_viewer()
+        .get_session_status(&session_id)
+        .map_err(|e| e.to_string())
 }
 
 /// Closes a viewer session and frees resources.
 #[tauri::command]
 #[specta::specta]
 pub fn viewer_close(session_id: String) -> Result<(), String> {
-    file_viewer::close_session(&session_id).map_err(|e| e.to_string())
+    file_viewer::app_viewer()
+        .close_session(&session_id)
+        .map_err(|e| e.to_string())
 }
 
 /// Reads a logical range of the file (`anchor` to `focus`) and returns the bytes as a
@@ -445,7 +441,7 @@ pub async fn viewer_read_range(
 ) -> Result<String, ViewerError> {
     match tokio::time::timeout(
         READ_RANGE_TIMEOUT,
-        tokio::task::spawn_blocking(move || file_viewer::read_range(&session_id, read_id, anchor, focus)),
+        tokio::task::spawn_blocking(move || file_viewer::app_viewer().read_range(&session_id, read_id, anchor, focus)),
     )
     .await
     {
@@ -463,7 +459,7 @@ pub async fn viewer_read_range(
 #[tauri::command]
 #[specta::specta]
 pub fn viewer_cancel_read(session_id: String, read_id: u64) -> Result<(), ViewerError> {
-    file_viewer::cancel_read(&session_id, read_id)
+    file_viewer::app_viewer().cancel_read(&session_id, read_id)
 }
 
 /// Streams a logical range to `dest_path` and writes it atomically (temp+rename). Used
@@ -523,7 +519,7 @@ async fn write_range_watched(
             message: message.into(),
         },
         move || {
-            file_viewer::write_range_to_file(
+            file_viewer::app_viewer().write_range_to_file(
                 &session_id,
                 read_id,
                 anchor,
@@ -573,7 +569,7 @@ impl StallWatch<ViewerError> for SaveWatch {
         // the rename, removes its temp file instead of renaming it, and answers
         // `Cancelled` to nobody. A write the OS never returns from can't see the flag at
         // all, so its `.cmdr-tmp-` file stays until that write gives up.
-        let _ = file_viewer::cancel_read(&self.session_id, self.read_id);
+        let _ = file_viewer::app_viewer().cancel_read(&self.session_id, self.read_id);
         // `TimedOut`, not `StoppedResponding`: that one means "the source stopped
         // sending the file", which says the wrong thing about a save's destination, and
         // the FE already words this variant for the save ("that took too long").
@@ -587,7 +583,9 @@ impl StallWatch<ViewerError> for SaveWatch {
 #[tauri::command]
 #[specta::specta]
 pub fn viewer_get_encoding_options(session_id: String) -> Result<EncodingOptions, String> {
-    file_viewer::get_encoding_options(&session_id).map_err(|e| e.to_string())
+    file_viewer::app_viewer()
+        .get_encoding_options(&session_id)
+        .map_err(|e| e.to_string())
 }
 
 /// Runs a filesystem-touching viewer op off the IPC handler thread (`spawn_blocking`)
@@ -618,7 +616,7 @@ where
 #[tauri::command]
 #[specta::specta]
 pub async fn viewer_set_encoding(session_id: String, encoding: FileEncoding) -> Result<(), ViewerError> {
-    blocking_viewer_op(move || file_viewer::set_encoding(&session_id, encoding)).await
+    blocking_viewer_op(move || file_viewer::app_viewer().set_encoding(&session_id, encoding)).await
 }
 
 /// Toggles tail mode for a viewer session. When enabled, the backend extends its line index
@@ -629,7 +627,7 @@ pub async fn viewer_set_encoding(session_id: String, encoding: FileEncoding) -> 
 #[tauri::command]
 #[specta::specta]
 pub async fn viewer_set_tail_mode(session_id: String, enabled: bool) -> Result<(), ViewerError> {
-    blocking_viewer_op(move || file_viewer::set_tail_mode(&session_id, enabled)).await
+    blocking_viewer_op(move || file_viewer::app_viewer().set_tail_mode(&session_id, enabled)).await
 }
 
 /// Reopens the viewer's backend against the file on disk under the session's current
@@ -637,7 +635,7 @@ pub async fn viewer_set_tail_mode(session_id: String, enabled: bool) -> Result<(
 #[tauri::command]
 #[specta::specta]
 pub async fn viewer_reload(session_id: String) -> Result<(), ViewerError> {
-    blocking_viewer_op(move || file_viewer::reload(&session_id)).await
+    blocking_viewer_op(move || file_viewer::app_viewer().reload(&session_id)).await
 }
 
 /// Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).

@@ -1,9 +1,8 @@
 import { tString } from '#lib/intl/messages.svelte.js'
-import { formatInteger } from '#lib/intl/number-format.js'
 import { joinSentences } from '#lib/intl/sentence-join.js'
 import type { SpaceInfo } from '#lib/ipc/bindings.js'
 import type { FileSizeFormat } from '#lib/settings/types.js'
-import { formatDriveFigure, formatFileSizeWithFormat } from '#lib/units/index.js'
+import { formatDriveFigure, formatFileSizeWithFormat, formatFreePercent } from '#lib/units/index.js'
 
 /** The bounded half of `SpaceInfo`: the only shape a percentage means anything on. */
 export type BoundedSpaceInfo = Extract<SpaceInfo, { kind: 'bounded' }>
@@ -54,10 +53,14 @@ export function getUsageBar(space: SpaceInfo): (DiskUsageLevel & { usedPercent: 
   return { usedPercent, ...getDiskUsageLevel(usedPercent) }
 }
 
-/** Free percentage (0–100), clamped, as the catalog's preformatted string param. */
+/**
+ * Free percentage as the catalog's preformatted string param, banded and truncated by
+ * `formatFreePercent` so a nearly empty drive never reads "100". An unknown total (0) reads as
+ * nothing free, as the backend's emit gate does.
+ */
 function freePercentText(space: BoundedSpaceInfo): string {
-  const freePercent = Math.max(0, Math.min(100, Math.round((space.availableBytes / space.totalBytes) * 100)))
-  return formatInteger(freePercent)
+  const percent = space.totalBytes > 0 ? (space.availableBytes * 100) / space.totalBytes : 0
+  return formatFreePercent(percent)
 }
 
 /**

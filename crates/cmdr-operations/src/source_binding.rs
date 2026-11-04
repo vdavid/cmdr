@@ -115,23 +115,9 @@ impl SourceFingerprint {
                     .map(|time| time.as_nanos()),
             }
         };
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::MetadataExt;
-            Some(Self::Local {
-                device: metadata.dev(),
-                inode: metadata.ino(),
-                content,
-            })
-        }
-        #[cfg(not(unix))]
-        {
-            Some(Self::Local {
-                device: 0,
-                inode: 0,
-                content,
-            })
-        }
+        // Off unix there's no identity to read, so every entry shares `(0, 0)`.
+        let (device, inode) = crate::local_disk::file_id(&metadata).unwrap_or((0, 0));
+        Some(Self::Local { device, inode, content })
     }
 
     /// Reads a remote source's identity now, through the volume that owns it.

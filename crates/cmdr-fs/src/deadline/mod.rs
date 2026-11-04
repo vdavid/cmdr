@@ -1,9 +1,12 @@
 //! Deadlines, timeouts, and budgets for blocking work. The app's IPC commands wrap their I/O in these, and so
 //! do the subsystems under the IPC layer (network, reveal, write operations), so one timeout policy covers both.
 //!
-//! Every helper spawns on the AMBIENT runtime (`tokio::spawn`, `spawn_blocking`) by design: its callers are
-//! already inside one (an IPC command, an operation's task), and the detached work must run on that same runtime
-//! to its own end. A caller outside a runtime gets tokio's panic, the same as a bare `tokio::spawn`.
+//! Every helper spawns on the AMBIENT runtime (`crate::rt::spawn_ambient`, `spawn_blocking`) by design: its callers
+//! are already inside one (an IPC command, an operation's task), and the detached work must run on that same runtime
+//! to its own end. A caller outside a runtime gets tokio's panic, the same as a bare `tokio::spawn`. Clocks and
+//! timers go through `crate::rt`, so the future-racing helpers (`timeout_detached_typed`, `race_detached`,
+//! `Deadline`) run in the browser build too, on the page's event loop; the `spawn_blocking` ones are host-only
+//! in practice (the browser has no blocking pool, and no browser path calls them).
 
 #[cfg(test)]
 mod budget_tests;
@@ -75,7 +78,7 @@ pub async fn blocking_with_timeout<T: Send + 'static>(
     fallback: T,
     f: impl FnOnce() -> T + Send + 'static,
 ) -> T {
-    match tokio::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
+    match crate::rt::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
         Ok(Ok(result)) => result,
         _ => fallback, // Timeout or JoinError
     }
@@ -88,7 +91,7 @@ pub async fn blocking_with_timeout_flag<T: Send + Serialize + specta::Type + 'st
     fallback: T,
     f: impl FnOnce() -> T + Send + 'static,
 ) -> TimedOut<T> {
-    match tokio::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
+    match crate::rt::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
         Ok(Ok(result)) => TimedOut {
             data: result,
             timed_out: false,
@@ -116,7 +119,7 @@ where
     T: Send + 'static,
     E: Send + 'static,
 {
-    match tokio::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
+    match crate::rt::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
         Ok(Ok(result)) => result,
         Ok(Err(join_err)) => Err(on_join_failure(join_err.to_string())),
         Err(_) => Err(on_timeout()),
@@ -160,8 +163,7 @@ where
     E: Send + 'static,
 {
     let mut handle = tokio::task::spawn_blocking(f);
-    let mut poll = tokio::time::interval(STALL_POLL_INTERVAL);
-    poll.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    let mut poll = crate::rt::time::interval_delayed(STALL_POLL_INTERVAL);
     // The select borrows the handle rather than owning it, so returning early drops
     // only the borrow: the blocking task stays detached and runs to its own end.
     let joined = loop {
@@ -257,7 +259,7 @@ impl BlockingBudget {
 /// Hand each leg [`Deadline::remaining`]; a leg that starts with nothing left
 /// doesn't start at all ([`timeout_detached_within`]).
 pub struct Deadline {
-    started: tokio::time::Instant,
+    started: crate::rt::time::Instant,
     total: Duration,
 }
 
@@ -265,14 +267,14 @@ impl Deadline {
     /// A deadline worth `total`, starting now.
     pub fn new(total: Duration) -> Self {
         Self {
-            started: tokio::time::Instant::now(),
+            started: crate::rt::time::now(),
             total,
         }
     }
 
     /// How long the command has run so far.
     pub fn elapsed(&self) -> Duration {
-        self.started.elapsed()
+        crate::rt::time::now().saturating_duration_since(self.started)
     }
 
     /// The whole budget this deadline was minted with.
@@ -297,7 +299,7 @@ impl Deadline {
     /// split holds however many legs ran first.
     pub fn fraction(&self, divisor: u32) -> Self {
         Self {
-            started: tokio::time::Instant::now(),
+            started: crate::rt::time::now(),
             total: self.remaining().min(self.total / divisor),
         }
     }
@@ -351,7 +353,7 @@ where
     T: Send + 'static,
     E: Send + 'static,
 {
-    match tokio::time::timeout(timeout_duration, tokio::spawn(fut)).await {
+    match crate::rt::time::timeout(timeout_duration, crate::rt::spawn_ambient(fut)).await {
         Ok(Ok(result)) => result,
         Ok(Err(join_err)) => Err(on_join_failure(join_err.to_string())),
         Err(_) => Err(on_timeout()),
@@ -361,10 +363,10 @@ where
 /// What [`race_detached`] came back with.
 pub enum Raced<T> {
     /// The work ended inside the deadline. `Err` only when its task panicked.
-    Answered(Result<T, tokio::task::JoinError>),
+    Answered(Result<T, crate::rt::JoinError>),
     /// The deadline passed first. The work runs on in its own task, and the
     /// handle is how the caller hears how it ended.
-    StillRunning(tokio::task::JoinHandle<T>),
+    StillRunning(crate::rt::JoinHandle<T>),
 }
 
 /// [`timeout_detached_typed`] for work whose END still matters after the
@@ -377,8 +379,8 @@ pub async fn race_detached<T: Send + 'static>(
     timeout_duration: Duration,
     fut: impl Future<Output = T> + Send + 'static,
 ) -> Raced<T> {
-    let mut handle = tokio::spawn(fut);
-    match tokio::time::timeout(timeout_duration, &mut handle).await {
+    let mut handle = crate::rt::spawn_ambient(fut);
+    match crate::rt::time::timeout(timeout_duration, &mut handle).await {
         Ok(joined) => Raced::Answered(joined),
         Err(_) => Raced::StillRunning(handle),
     }

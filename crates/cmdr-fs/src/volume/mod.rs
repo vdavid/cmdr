@@ -1589,6 +1589,15 @@ pub trait Volume: Send + Sync {
         None
     }
 
+    /// The home folder, for a volume that stands in for the computer's own disk
+    /// without being backed by it (the browser demo's one volume): a path label
+    /// then reads as the desktop words its own disk's, `~/Documents` and
+    /// `/Applications` rather than `<volume name>/…`. `None` for every real
+    /// backend; the local disk is recognized by its `local_path` instead.
+    fn stands_in_for_own_disk(&self) -> Option<&Path> {
+        None
+    }
+
     /// The one local FILE this volume presents as a folder: an archive whose
     /// `.zip` (or tar, 7z) sits on a local filesystem. `None` for every other
     /// backend, and for an archive on a remote parent (direct SMB, MTP) or inside
@@ -2386,7 +2395,7 @@ pub use share_link::{ShareLink, ShareLinkExpiry};
 pub use supported_dates::SupportedDates;
 // The app-path schemes live beside the translation they feed; re-exported here
 // so callers keep `volume::sftp_app_root` and friends.
-pub use in_memory::InMemoryVolume;
+pub use in_memory::{HeldAt, InMemoryContent, InMemoryVolume, SubtreeTotals};
 pub use locked_container::LockedContainer;
 pub use mkdir_all::{LeadsTo, MadeDirectories, MakesDirectories};
 pub use node_identity::NodeIdentity;

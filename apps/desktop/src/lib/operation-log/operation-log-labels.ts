@@ -5,7 +5,7 @@
  *
  * Every one of them comes from a TYPED enum field, never a display string the
  * backend rendered: the per-operation summary
- * ("Moved 214 items") is formatted here from `kind` + `itemCount` via an ICU
+ * ("Moved 214 items") is formatted here from `kind` + a count via an ICU
  * plural key, so it localizes per viewer and shows a thousands separator. Status,
  * kind, initiator, and item-outcome labels map their enum to a catalog key with
  * an exhaustive switch (a new variant is a compile error until it's mapped).
@@ -18,6 +18,7 @@ import type {
   OpKind,
   ArchiveSubkind,
   ExecutionStatus,
+  OperationRow,
   RollbackRefusal,
   RollbackState,
 } from '#lib/ipc/bindings.js'
@@ -57,13 +58,37 @@ function summaryKey(kind: OpKind, subkind: ArchiveSubkind | null): MessageKey {
   }
 }
 
+/** The journal facts a summary is made of, all typed fields of `OperationRow`. */
+export type SummaryFacts = Pick<OperationRow, 'kind' | 'archiveSubkind' | 'itemCount' | 'itemsDone' | 'executionStatus'>
+
 /**
  * The one-line summary of an operation ("Moved 214 items"), formatted from the
- * typed `kind` (+ archive subkind) and `itemCount`. The plural form and the
+ * typed `kind` (+ archive subkind) and a count. The plural form and the
  * thousands separator both follow the active locale.
+ *
+ * An operation that ended early (canceled, or stopped on a problem) counts what it
+ * got done (`itemsDone`) and says it ended early, with the plan beside it: "Copied
+ * 30 items, then canceled (1,200 planned)". Reading the planned `itemCount` there
+ * claimed a whole copy that never happened. A finished or still-running one counts
+ * its plan.
  */
-export function operationSummary(kind: OpKind, subkind: ArchiveSubkind | null, itemCount: number): string {
-  return tString(summaryKey(kind, subkind), { count: itemCount, countText: formatInteger(itemCount) })
+export function operationSummary(op: SummaryFacts): string {
+  const counted = (count: number) =>
+    tString(summaryKey(op.kind, op.archiveSubkind), { count, countText: formatInteger(count) })
+  switch (op.executionStatus) {
+    case 'queued':
+    case 'running':
+    case 'done':
+      return counted(op.itemCount)
+    case 'canceled':
+    case 'failed': {
+      const key = op.executionStatus === 'canceled' ? 'operationLog.summary.canceled' : 'operationLog.summary.stopped'
+      return tString(key, {
+        summary: counted(Math.min(op.itemsDone, op.itemCount)),
+        plannedText: formatInteger(op.itemCount),
+      })
+    }
+  }
 }
 
 /**

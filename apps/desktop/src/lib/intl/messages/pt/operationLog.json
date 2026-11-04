@@ -59,6 +59,14 @@
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "operationLog.summary.canceled": "{summary}, até o cancelamento (total previsto: {plannedText})",
+  "@operationLog.summary.canceled": {
+    "sourceHash": "9a27d89"
+  },
+  "operationLog.summary.stopped": "{summary}, até parar (total previsto: {plannedText})",
+  "@operationLog.summary.stopped": {
+    "sourceHash": "8bf635d"
+  },
   "operationLog.summary.copy": "{count, plural, one {Copiou {countText} item} many {Copiou {countText} itens} other {Copiou {countText} itens}}",
   "@operationLog.summary.copy": {
     "sourceHash": "c296979"

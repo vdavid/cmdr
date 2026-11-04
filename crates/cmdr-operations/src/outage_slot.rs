@@ -211,7 +211,7 @@ impl Drop for OutageSlotGuard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Instant;
+    use crate::rt::Instant;
 
     fn slot() -> (Arc<OutageSlot>, Arc<HumanWaitClock>) {
         let clock = HumanWaitClock::shared();

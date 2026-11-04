@@ -5,7 +5,6 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Instant;
 
 use super::super::Operations;
 use super::super::error_classification::classify_io_error;
@@ -65,7 +64,7 @@ pub(crate) fn run_scan_preview(
     // hardlink context. See `walk_dir_recursive`.
     let mut total_bytes = 0u64;
     let mut dedup_bytes = 0u64;
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
     let mut visited = HashSet::new();
     // Shared across sources so hardlinks crossing source roots count once,
     // matching `indexing/scanner.rs`'s dir_stats aggregation policy.

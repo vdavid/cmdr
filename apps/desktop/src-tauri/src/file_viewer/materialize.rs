@@ -49,14 +49,15 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{LazyLock, RwLock};
 
-use crate::file_system::volume::{Volume, VolumeError};
-use crate::ignore_poison::RwLockIgnorePoison;
+use crate::file_system::volume::Volume;
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 
+use super::ViewerError;
+use super::host::pulls::{PreviewTemp, TempRemoval};
 use super::pending_open::PendingOpen;
-use super::{ArchiveFailureKind, ViewerError};
+use super::volume_error::map_volume_error;
 use crate::file_system::volume::RoutedKind;
 use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
-use cmdr_fs::error_detail::ErrorDetail;
 
 /// Max bytes to materialize for a single preview. Above this the open is refused
 /// (typed) before any extraction, which doubles as the zip-bomb guard.
@@ -92,38 +93,29 @@ pub(crate) struct MaterializedFile {
     pub(crate) cleanup_dir: PathBuf,
 }
 
-/// A viewer's temp copy of one file, shared by every session that previews it.
-///
-/// A view switch ("View as text", or back to the image) opens a second session for the
-/// same window before the first one closes, so both hold this through an `Arc`, and the
-/// subdir goes when the LAST of them drops it. It remembers which file it copies, so a
-/// switch reuses it only for the same path on the same volume.
-#[derive(Debug)]
-pub(crate) struct PreviewTemp {
-    pub(crate) temp_file: PathBuf,
-    cleanup_dir: PathBuf,
-    source_path: PathBuf,
-    volume_id: String,
-}
-
-impl PreviewTemp {
-    /// Takes ownership of `materialized`, the copy of `source_path` on `volume_id`.
-    pub(crate) fn new(materialized: MaterializedFile, source_path: PathBuf, volume_id: &str) -> Self {
-        Self {
-            temp_file: materialized.temp_file,
+/// The viewer's temp copy of `materialized`, a copy of `source_path` on `volume_id`,
+/// which takes ownership of the subdir: it goes when the last session holding the copy
+/// drops it.
+pub(crate) fn preview_temp(materialized: MaterializedFile, source_path: PathBuf, volume_id: &str) -> PreviewTemp {
+    PreviewTemp::new(
+        materialized.temp_file,
+        source_path,
+        volume_id,
+        Box::new(RemoveSubdir {
             cleanup_dir: materialized.cleanup_dir,
-            source_path,
-            volume_id: volume_id.to_string(),
-        }
-    }
-
-    /// Whether this is a copy of `source_path` on `volume_id`, still on disk.
-    pub(crate) fn is_copy_of(&self, source_path: &Path, volume_id: &str) -> bool {
-        self.source_path == source_path && self.volume_id == volume_id && self.temp_file.exists()
-    }
+        }),
+    )
 }
 
-impl Drop for PreviewTemp {
+/// Removes a pull's `.cmdr-viewer-<uuid>/` subdir when the copy's last holder drops it.
+#[derive(Debug)]
+struct RemoveSubdir {
+    cleanup_dir: PathBuf,
+}
+
+impl TempRemoval for RemoveSubdir {}
+
+impl Drop for RemoveSubdir {
     fn drop(&mut self) {
         if let Err(e) = std::fs::remove_dir_all(&self.cleanup_dir) {
             log::debug!(
@@ -278,7 +270,7 @@ pub(super) fn materialize_markdown_image(
     cancel: &AtomicBool,
 ) -> Result<Option<PreviewTemp>, ViewerError> {
     let pulled = materialize_with(requested, volume_id, &materialize_dir(), cap, open, Some(cancel))?;
-    Ok(pulled.map(|file| PreviewTemp::new(file, requested.to_path_buf(), volume_id)))
+    Ok(pulled.map(|file| preview_temp(file, requested.to_path_buf(), volume_id)))
 }
 
 /// A temp holding `bytes` as `name`, for bytes no volume serves (a downloaded image):
@@ -292,7 +284,7 @@ pub(super) fn write_preview_temp(name: &str, bytes: &[u8], source: &Path) -> Res
         let _ = std::fs::remove_dir_all(&cleanup_dir);
         return Err(e.into());
     }
-    Ok(PreviewTemp::new(
+    Ok(preview_temp(
         MaterializedFile { temp_file, cleanup_dir },
         source.to_path_buf(),
         "",
@@ -601,38 +593,5 @@ fn temp_basename(entry_name: &str) -> String {
         "preview".to_string()
     } else {
         candidate.to_string()
-    }
-}
-
-/// Maps a `VolumeError` from a materializing read into a typed `ViewerError`.
-/// Path-shaped errors keep their twins whatever the source; the rest depend on it.
-///
-/// The archive family has its own frontend copy under `ViewerError::Archive`, which
-/// the FE renders without inspecting the typed failure or message string. The typed
-/// failure preserves `NotSupported` for non-UI consumers. A portal read and a plain
-/// pull have no such family — a repository (git or restic) that can't be opened
-/// or a phone that dropped mid-read is a fault, not a kind of file — so they stay a plain `Io`.
-pub(super) fn map_volume_error(err: VolumeError, routed: Option<RoutedKind>) -> ViewerError {
-    match err {
-        VolumeError::NotFound(path) => ViewerError::NotFound { path },
-        VolumeError::IsADirectory(_) => ViewerError::IsDirectory,
-        // Whichever route read it: a zip in cold storage is as unreadable as a
-        // file there, and the fix is the same restore.
-        VolumeError::ColdStorage(_) => ViewerError::ColdStorage,
-        VolumeError::LinkTargetUnreachable(_) => ViewerError::LinkTargetUnreachable,
-        VolumeError::LinkNeedsConsent(_) => ViewerError::LinkNeedsConsent,
-        other => match routed {
-            Some(RoutedKind::Archive | RoutedKind::ArchiveInSnapshot) => ViewerError::Archive {
-                failure: match other {
-                    VolumeError::NotSupported => ArchiveFailureKind::Unsupported,
-                    VolumeError::NeedsPassword { .. } => ArchiveFailureKind::NeedsPassword,
-                    _ => ArchiveFailureKind::Unreadable,
-                },
-                message: ErrorDetail::of(other),
-            },
-            Some(RoutedKind::GitPortal | RoutedKind::Restic) | None => ViewerError::Io {
-                message: ErrorDetail::of(other),
-            },
-        },
     }
 }

@@ -1,0 +1,1542 @@
+//! Tests for ViewerSession orchestrator.
+
+use std::fs;
+use std::path::Path;
+use std::sync::atomic::AtomicBool;
+use std::thread;
+use std::time::Duration;
+
+use super::session;
+use super::session_store::{BackendType, SearchStatus};
+use super::session_test_support::{create_test_dir, write_test_file};
+use super::{FULL_LOAD_THRESHOLD, FileEncoding, MAX_SEARCH_MATCHES, SearchMode, ViewerError};
+use crate::session_test_support::viewer;
+use cmdr_fs::testing::wait_until;
+
+/// Default mode for existing tests: literal, case-sensitive (matches pre-mode behaviour
+/// for ASCII queries). Tests that exercise case-insensitivity should pass an explicit
+/// `SearchMode { case_sensitive: false, .. }`.
+fn literal_mode() -> SearchMode {
+    SearchMode {
+        use_regex: false,
+        case_sensitive: true,
+    }
+}
+
+/// How long a test waits for a background worker to park at its gate. Generous
+/// on purpose: it's a stuck-thread backstop, not a timing assumption, so a
+/// loaded CI runner never trips it. Blowing it means the worker never spawned.
+const GATE_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Append to a file the way a real tail-mode writer does, and return the new size.
+///
+/// Use this, never `fs::write` with the whole grown content, for any write to a
+/// file that an open session is watching. `fs::write` is `File::create`
+/// (`O_TRUNC`) + `write_all`, so it drops the file to 0 bytes mid-call. A
+/// background upgrade or rebuild scan that lands in that window indexes an
+/// empty file and swaps in a 0-byte backend, and the real watcher would see a
+/// spurious `Shrunk`. Appending only ever grows the file, so neither can happen
+/// whatever the scheduler does.
+fn append_test_file(file: &Path, extra: &str) -> u64 {
+    use std::io::Write;
+    let mut handle = fs::OpenOptions::new()
+        .append(true)
+        .open(file)
+        .expect("test file must exist to append to");
+    handle.write_all(extra.as_bytes()).expect("append must succeed");
+    handle.flush().expect("append flush must succeed");
+    fs::metadata(file).expect("appended file must stat").len()
+}
+
+/// Wait until a freshly-opened session's watcher subscribe has landed, so
+/// `test_only_emit` reliably reaches a subscriber. The subscribe runs on a
+/// background thread off `open_session`'s critical path (see
+/// `spawn_watcher_manager`), so tests that inject synthetic watcher events must
+/// sync on it instead of assuming the watcher is live the moment open returns.
+/// Each test runs in its own nextest process, so `watch_count() > 0` reflects
+/// only the session(s) opened in this test.
+fn wait_for_watcher_subscribed() {
+    wait_until(Duration::from_secs(2), "the watcher subscribe to land", || {
+        super::watcher::VIEWER_WATCHER_MANAGER.watch_count() > 0
+    });
+}
+
+/// Whether the background ByteSeek → LineIndex upgrade (or an encoding rebuild) has settled.
+fn upgraded_to_line_index(sid: &str) -> bool {
+    let status = viewer().get_session_status(sid).expect("session status");
+    matches!(status.backend_type, BackendType::LineIndex) && !status.is_indexing
+}
+
+#[test]
+fn open_small_file_uses_full_load() {
+    let dir = create_test_dir("small");
+    let file = write_test_file(&dir, "test.txt", "hello\nworld\n");
+
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    assert_eq!(result.file_name, "test.txt");
+    assert_eq!(result.total_bytes, 12);
+    assert_eq!(result.total_lines, Some(3));
+    assert!(matches!(result.backend_type, BackendType::FullLoad));
+    assert!(result.capabilities.supports_line_seek);
+    assert!(result.capabilities.knows_total_lines);
+
+    // Initial lines should be populated
+    assert!(!result.initial_lines.rows.is_empty());
+    assert_eq!(result.initial_lines.first_row_number, 0);
+
+    // Cleanup session
+    viewer().close_session(&result.session_id).unwrap();
+}
+
+#[test]
+fn raw_bytes_preserve_controls_and_high_bytes_across_offsets() {
+    let dir = create_test_dir("raw_bytes");
+    let file = dir.join("sample.bin");
+    fs::write(&file, [0, b'\n', 0x80, 0xff, b'A']).unwrap();
+    let opened = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+
+    assert_eq!(viewer().get_bytes(&opened.session_id, 0, 3).unwrap(), [0, b'\n', 0x80]);
+    assert_eq!(viewer().get_bytes(&opened.session_id, 3, 10).unwrap(), [0xff, b'A']);
+    assert!(viewer().get_bytes(&opened.session_id, 5, 10).unwrap().is_empty());
+    assert_eq!(viewer().get_bytes(&opened.session_id, 0, usize::MAX).unwrap().len(), 5);
+
+    viewer().close_session(&opened.session_id).unwrap();
+}
+
+#[test]
+fn open_large_file_uses_byte_seek() {
+    let dir = create_test_dir("large");
+    // Create a file larger than FULL_LOAD_THRESHOLD
+    let line = "x".repeat(100) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 100;
+    let content: String = line.repeat(line_count);
+    let file = write_test_file(&dir, "big.txt", &content);
+
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    assert!(result.total_bytes > FULL_LOAD_THRESHOLD);
+    assert!(matches!(result.backend_type, BackendType::ByteSeek));
+    assert!(!result.capabilities.supports_line_seek);
+    assert!(!result.capabilities.knows_total_lines);
+
+    // Should still have initial lines
+    assert!(!result.initial_lines.rows.is_empty());
+
+    viewer().close_session(&result.session_id).unwrap();
+}
+
+#[test]
+fn open_not_found() {
+    let result = viewer().open_session("/nonexistent_session_test.txt", "root");
+    assert!(result.is_err());
+}
+
+#[test]
+fn open_directory_fails() {
+    let dir = create_test_dir("dir_fail");
+    let result = viewer().open_session(dir.to_str().unwrap(), "root");
+    assert!(result.is_err());
+}
+
+#[test]
+fn get_lines_after_open() {
+    let dir = create_test_dir("get_lines");
+    let file = write_test_file(&dir, "test.txt", "a\nb\nc\nd\ne\n");
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+
+    let chunk = viewer()
+        .get_lines(
+            &open_result.session_id,
+            super::SeekTarget::Row(2),
+            3,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    assert_eq!(chunk.first_row_number, 2);
+    assert_eq!(chunk.texts(), vec!["c", "d", "e"]);
+
+    viewer().close_session(&open_result.session_id).unwrap();
+}
+
+#[test]
+fn get_lines_invalid_session() {
+    let result = viewer().get_lines(
+        "nonexistent-session-id",
+        super::SeekTarget::Row(0),
+        10,
+        &AtomicBool::new(false),
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn close_session_cleans_up() {
+    let dir = create_test_dir("close");
+    let file = write_test_file(&dir, "test.txt", "test\n");
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = open_result.session_id.clone();
+
+    // Session should work
+    assert!(
+        viewer()
+            .get_lines(&sid, super::SeekTarget::Row(0), 1, &AtomicBool::new(false))
+            .is_ok()
+    );
+
+    // Close it
+    viewer().close_session(&sid).unwrap();
+
+    // Now it should fail
+    assert!(
+        viewer()
+            .get_lines(&sid, super::SeekTarget::Row(0), 1, &AtomicBool::new(false))
+            .is_err()
+    );
+}
+
+#[test]
+fn search_start_and_poll() {
+    let dir = create_test_dir("search");
+    let file = write_test_file(&dir, "test.txt", "hello world\nfoo bar\nhello again\n");
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = &open_result.session_id;
+
+    // Start search
+    viewer().search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+
+    wait_until(Duration::from_secs(1), "the search to complete", || {
+        let poll = viewer().search_poll(sid, 0).expect("search poll");
+        if !matches!(poll.status, SearchStatus::Done) {
+            return false;
+        }
+        assert_eq!(poll.new_matches.len(), 2);
+        assert_eq!(poll.total_match_count, 2);
+        true
+    });
+
+    viewer().close_session(sid).unwrap();
+}
+
+#[test]
+fn search_cancel_works() {
+    let dir = create_test_dir("search_cancel");
+    let content = "hello world\n".repeat(100000);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = &open_result.session_id;
+
+    // Held before its scan, so the cancel below lands on a running search. ❌ Not
+    // "cancel immediately": the whole file searches in milliseconds, and a loaded
+    // CI runner kept this thread off the CPU (or behind the upgrade's `SESSIONS`
+    // lock) that long, so the search sometimes ended `Done` first.
+    session::test_gate::SEARCH_PRE_SCAN.arm();
+    viewer().search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+    session::test_gate::SEARCH_PRE_SCAN.wait_until_reached(Duration::from_secs(5));
+
+    // The cancel flag is set synchronously; the search thread sees it on its
+    // next iteration and exits, writing the final `SearchStatus::Cancelled` to
+    // the shared status mutex.
+    viewer().search_cancel(sid).unwrap();
+    session::test_gate::SEARCH_PRE_SCAN.release();
+
+    // Wait for the thread to observe the cancel and transition to Cancelled.
+    // We accept Running (thread still in flight) along the way.
+    wait_until(Duration::from_secs(2), "the search to transition to Cancelled", || {
+        let poll = viewer().search_poll(sid, 0).expect("search poll");
+        if matches!(poll.status, SearchStatus::Cancelled) {
+            return true;
+        }
+        assert!(
+            matches!(poll.status, SearchStatus::Running),
+            "expected Running or Cancelled while cancellation propagates, got {:?}",
+            poll.status
+        );
+        false
+    });
+
+    viewer().close_session(sid).unwrap();
+}
+
+#[test]
+fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
+    // Pins the full `Running → Cancelled` transition contract:
+    // 1. Cancelling a running search must surface as `Cancelled` on poll (not silently flip to Idle,
+    //    which would erase the user-visible "search was cancelled" signal).
+    // 2. Starting a fresh search after a cancel resets the observable status: the new search either
+    //    reports `Running` while in flight or `Done` if it finishes between calls.
+    let dir = create_test_dir("search_cancel_transition");
+    // Large enough to keep the thread busy long enough for the cancel to
+    // race the loop body (the inner loop checks the flag per chunk).
+    let content = "hello world\n".repeat(200_000);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = &open_result.session_id;
+
+    viewer().search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+    viewer().search_cancel(sid).unwrap();
+
+    wait_until(Duration::from_secs(2), "poll to observe Cancelled", || {
+        matches!(
+            viewer().search_poll(sid, 0).expect("search poll").status,
+            SearchStatus::Cancelled
+        )
+    });
+
+    // Starting a fresh search must reset the observable status.
+    viewer().search_start(sid, "world".to_string(), literal_mode()).unwrap();
+    let poll_after_restart = viewer().search_poll(sid, 0).unwrap();
+    assert!(
+        matches!(poll_after_restart.status, SearchStatus::Running | SearchStatus::Done),
+        "fresh search_start must clear the Cancelled state; got {:?}",
+        poll_after_restart.status
+    );
+
+    viewer().close_session(sid).unwrap();
+}
+
+#[test]
+fn search_poll_no_active_search() {
+    let dir = create_test_dir("poll_idle");
+    let file = write_test_file(&dir, "test.txt", "test\n");
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = &open_result.session_id;
+
+    let poll = viewer().search_poll(sid, 0).unwrap();
+    assert!(matches!(poll.status, SearchStatus::Idle));
+
+    viewer().close_session(sid).unwrap();
+}
+
+#[test]
+fn tilde_expansion() {
+    // open_session should handle ~ paths
+    let result = viewer().open_session("~/nonexistent_file_tilde_test.txt", "root");
+    // Should get NotFound rather than a panic/crash
+    assert!(result.is_err());
+}
+
+#[test]
+fn large_file_upgrades_to_line_index() {
+    let dir = create_test_dir("upgrade");
+    // Create a file larger than FULL_LOAD_THRESHOLD (1 MB) with known lines.
+    // Each line is ~115 bytes ("line 00000000 " + 100 x's + "\n").
+    let padding = "x".repeat(100);
+    let line_count = (FULL_LOAD_THRESHOLD as usize / 100) + 200;
+    let content: String = (0..line_count)
+        .map(|i| format!("line {:08} {}\n", i, padding))
+        .collect();
+    let file = write_test_file(&dir, "upgrade.txt", &content);
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = &open_result.session_id;
+
+    // Initially ByteSeek
+    assert!(matches!(open_result.backend_type, BackendType::ByteSeek));
+
+    wait_until(
+        Duration::from_secs(3),
+        "the background upgrade to LineIndex to finish",
+        || upgraded_to_line_index(sid),
+    );
+
+    // On LineIndex a `Line` target lands on exactly that line, so the chunk reports it back.
+    let chunk = viewer()
+        .get_lines(sid, super::SeekTarget::Row(10), 3, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.first_row_number, 10);
+    assert_eq!(chunk.texts().len(), 3);
+    assert!(chunk.texts()[0].starts_with("line 00000010 "));
+
+    viewer().close_session(sid).unwrap();
+}
+
+#[test]
+fn multiple_sessions() {
+    let dir = create_test_dir("multi");
+    let file1 = write_test_file(&dir, "a.txt", "file a\n");
+    let file2 = write_test_file(&dir, "b.txt", "file b\n");
+
+    let res1 = viewer().open_session(file1.to_str().unwrap(), "root").unwrap();
+    let res2 = viewer().open_session(file2.to_str().unwrap(), "root").unwrap();
+
+    assert_ne!(res1.session_id, res2.session_id);
+    assert_eq!(res1.file_name, "a.txt");
+    assert_eq!(res2.file_name, "b.txt");
+
+    // Both should work independently
+    let chunk1 = viewer()
+        .get_lines(&res1.session_id, super::SeekTarget::Row(0), 1, &AtomicBool::new(false))
+        .unwrap();
+    let chunk2 = viewer()
+        .get_lines(&res2.session_id, super::SeekTarget::Row(0), 1, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk1.texts()[0], "file a");
+    assert_eq!(chunk2.texts()[0], "file b");
+
+    viewer().close_session(&res1.session_id).unwrap();
+    viewer().close_session(&res2.session_id).unwrap();
+}
+
+#[test]
+fn search_poll_reports_match_limit() {
+    let dir = create_test_dir("search_limit");
+    // "a" appears twice per line ("aa"), need enough lines to exceed the cap
+    let content = "aa\n".repeat(MAX_SEARCH_MATCHES + 1000);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = &open_result.session_id;
+
+    viewer().search_start(sid, "a".to_string(), literal_mode()).unwrap();
+
+    wait_until(Duration::from_secs(2), "the search to complete", || {
+        let poll = viewer().search_poll(sid, 0).expect("search poll");
+        if !matches!(poll.status, SearchStatus::Done) {
+            return false;
+        }
+        assert_eq!(poll.new_matches.len(), MAX_SEARCH_MATCHES);
+        assert_eq!(poll.total_match_count, MAX_SEARCH_MATCHES);
+        assert!(poll.match_limit_reached);
+        // Should have stopped early (not scanned the whole file)
+        assert!(poll.bytes_scanned < poll.total_bytes);
+        true
+    });
+
+    viewer().close_session(sid).unwrap();
+}
+
+#[test]
+fn search_poll_incremental_delivery() {
+    let dir = create_test_dir("search_incremental");
+    let file = write_test_file(&dir, "test.txt", "aaa\nbbb\naaa\nbbb\naaa\n");
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = &open_result.session_id;
+
+    viewer().search_start(sid, "aaa".to_string(), literal_mode()).unwrap();
+
+    wait_until(Duration::from_secs(1), "the search to finish", || {
+        matches!(
+            viewer().search_poll(sid, 0).expect("search poll").status,
+            SearchStatus::Done
+        )
+    });
+
+    // since_index=0 returns all 3 matches
+    let poll_all = viewer().search_poll(sid, 0).unwrap();
+    assert_eq!(poll_all.new_matches.len(), 3);
+    assert_eq!(poll_all.total_match_count, 3);
+
+    // since_index=2 returns only the last match
+    let poll_delta = viewer().search_poll(sid, 2).unwrap();
+    assert_eq!(poll_delta.new_matches.len(), 1);
+    assert_eq!(poll_delta.total_match_count, 3);
+    assert_eq!(poll_delta.new_matches[0].row, 4); // 5th line (0-indexed)
+
+    // since_index=3 (caught up) returns no new matches
+    let poll_none = viewer().search_poll(sid, 3).unwrap();
+    assert_eq!(poll_none.new_matches.len(), 0);
+    assert_eq!(poll_none.total_match_count, 3);
+
+    viewer().close_session(sid).unwrap();
+}
+
+// ─── Step 1.2: per-match cancellation ──────────────────────────────────────────────
+
+#[test]
+fn search_pre_cancelled_starts_and_finishes_quickly() {
+    // Setting the cancel flag before search_start completes should produce a
+    // Cancelled status within a short wall-clock budget.
+    let dir = create_test_dir("search_pre_cancel");
+    // ~50 MB file, plenty of matches per line.
+    let line_with_a: String = "a".repeat(1_000) + "\n";
+    let content: String = line_with_a.repeat(50_000);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = &open_result.session_id;
+
+    viewer().search_start(sid, "a".to_string(), literal_mode()).unwrap();
+    viewer().search_cancel(sid).unwrap();
+
+    wait_until(
+        Duration::from_millis(1_500),
+        "the search to reach a terminal status after the cancel",
+        || {
+            matches!(
+                viewer().search_poll(sid, 0).expect("search poll").status,
+                SearchStatus::Cancelled | SearchStatus::Done
+            )
+        },
+    );
+
+    viewer().close_session(sid).unwrap();
+}
+
+// ─── Step 1.4: watchdog protocol ───────────────────────────────────────────────────
+
+#[test]
+fn test_worker_done_after_watchdog_cancelled_is_sticky() {
+    // Simulate the race the round-3 review caught: the watchdog has already
+    // written `Cancelled`, then the worker tries to write its natural verdict.
+    // The conditional in `finalize_search_status` must keep `Cancelled`.
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Cancelled));
+    let cancel = Arc::new(AtomicBool::new(true));
+
+    session::finalize_search_status(&status, &cancel, /* errored */ false);
+    assert!(
+        matches!(*status.lock().unwrap(), SearchStatus::Cancelled),
+        "finalize must keep Cancelled when the watchdog already wrote it"
+    );
+
+    // Same race, errored worker.
+    session::finalize_search_status(&status, &cancel, /* errored */ true);
+    assert!(
+        matches!(*status.lock().unwrap(), SearchStatus::Cancelled),
+        "finalize must keep Cancelled even when the worker errored"
+    );
+}
+
+#[test]
+fn test_finalize_writes_done_when_worker_finishes_naturally() {
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Running));
+    let cancel = Arc::new(AtomicBool::new(false));
+
+    session::finalize_search_status(&status, &cancel, false);
+    assert!(matches!(*status.lock().unwrap(), SearchStatus::Done));
+}
+
+#[test]
+fn test_finalize_writes_cancelled_when_cancel_observed() {
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Running));
+    let cancel = Arc::new(AtomicBool::new(true));
+
+    session::finalize_search_status(&status, &cancel, false);
+    assert!(matches!(*status.lock().unwrap(), SearchStatus::Cancelled));
+}
+
+#[test]
+fn test_watchdog_forces_cancel_when_worker_ignores_flag() {
+    // Spawn `run_search_watchdog` against a fake worker that never observes
+    // the cancel flag (it just keeps the status at `Running`). The watchdog
+    // must wait out its budget, then transition the status to `Cancelled`.
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Running));
+    let cancel = Arc::new(AtomicBool::new(false));
+
+    let watchdog_status = status.clone();
+    let watchdog_cancel = cancel.clone();
+    let handle = thread::spawn(move || session::run_search_watchdog(watchdog_cancel, watchdog_status));
+
+    // No delay needed: the watchdog's first poll is a 250 ms tick away, and the status stays
+    // `Running` for the whole test, so it always reads a running worker before it reads this flag.
+    cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+
+    let start = std::time::Instant::now();
+    handle.join().unwrap();
+    let elapsed = start.elapsed();
+
+    assert!(
+        matches!(*status.lock().unwrap(), SearchStatus::Cancelled),
+        "watchdog must write Cancelled"
+    );
+    // The flag is seen on the first poll at the latest, then the budget runs out, so the ideal
+    // is one poll plus the budget (1.25 s). Each of those five sleeps overshoots on a loaded
+    // machine: a 3-core CI runner took 1.63 s. The slack absorbs that and still fails a watchdog
+    // that waits a whole extra budget or never fires.
+    const SCHEDULING_SLACK: Duration = Duration::from_millis(750);
+    assert!(
+        elapsed >= session::SEARCH_WATCHDOG_BUDGET,
+        "watchdog must give the worker its full budget first, fired after {elapsed:?}"
+    );
+    let ceiling = session::SEARCH_WATCHDOG_POLL + session::SEARCH_WATCHDOG_BUDGET + SCHEDULING_SLACK;
+    assert!(
+        elapsed < ceiling,
+        "watchdog took too long: {elapsed:?} (ceiling {ceiling:?})"
+    );
+}
+
+#[test]
+fn test_watchdog_exits_when_worker_finishes_first() {
+    // The watchdog must not write Cancelled if the worker reaches Done first
+    // (with no cancel signalled).
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    let status = Arc::new(Mutex::new(SearchStatus::Running));
+    let cancel = Arc::new(AtomicBool::new(false));
+
+    let watchdog_status = status.clone();
+    let watchdog_cancel = cancel.clone();
+    let handle = thread::spawn(move || session::run_search_watchdog(watchdog_cancel, watchdog_status));
+
+    // The watchdog's first poll is a 250 ms tick away, so `Done` is in place before it looks.
+    *status.lock().unwrap() = SearchStatus::Done;
+
+    handle.join().unwrap();
+    assert!(
+        matches!(*status.lock().unwrap(), SearchStatus::Done),
+        "watchdog must not clobber Done"
+    );
+}
+
+#[test]
+fn test_new_search_after_watchdog_cancelled_starts_clean() {
+    // After a Cancelled verdict, starting a fresh search must reset the status.
+    let dir = create_test_dir("watchdog_reset");
+    let file = write_test_file(&dir, "test.txt", "hello\nworld\n");
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = &open_result.session_id;
+
+    viewer().search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+    viewer().search_cancel(sid).unwrap();
+
+    wait_until(Duration::from_secs(2), "poll to observe Cancelled", || {
+        matches!(
+            viewer().search_poll(sid, 0).expect("search poll").status,
+            SearchStatus::Cancelled
+        )
+    });
+
+    // Fresh search must clear the Cancelled state.
+    viewer().search_start(sid, "world".to_string(), literal_mode()).unwrap();
+    let poll = viewer().search_poll(sid, 0).unwrap();
+    assert!(
+        matches!(poll.status, SearchStatus::Running | SearchStatus::Done),
+        "fresh search after Cancelled must start clean, got {:?}",
+        poll.status
+    );
+
+    viewer().close_session(sid).unwrap();
+}
+
+// ─── Step 1.5: invalid query surface ──────────────────────────────────────────────
+
+#[test]
+fn test_invalid_regex_surfaces_as_invalid_query_status() {
+    let dir = create_test_dir("invalid_regex");
+    let file = write_test_file(&dir, "test.txt", "hello\n");
+    let sid = viewer()
+        .open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
+
+    let mode = SearchMode {
+        use_regex: true,
+        case_sensitive: true,
+    };
+    // `(unclosed` is invalid syntax.
+    viewer().search_start(&sid, "(unclosed".to_string(), mode).unwrap();
+
+    let poll = viewer().search_poll(&sid, 0).unwrap();
+    match poll.status {
+        SearchStatus::InvalidQuery { message } => {
+            assert!(!message.is_empty(), "invalid-query message must be non-empty");
+        }
+        other => panic!("expected InvalidQuery, got {:?}", other),
+    }
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn test_multiline_regex_surfaces_as_invalid_query_status() {
+    let dir = create_test_dir("multiline_regex");
+    let file = write_test_file(&dir, "test.txt", "hello\n");
+    let sid = viewer()
+        .open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
+
+    let mode = SearchMode {
+        use_regex: true,
+        case_sensitive: true,
+    };
+    viewer().search_start(&sid, "(?s).".to_string(), mode).unwrap();
+
+    let poll = viewer().search_poll(&sid, 0).unwrap();
+    assert!(
+        matches!(poll.status, SearchStatus::InvalidQuery { .. }),
+        "expected InvalidQuery, got {:?}",
+        poll.status
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn test_regex_search_returns_matches() {
+    let dir = create_test_dir("regex_search");
+    let file = write_test_file(&dir, "test.txt", "a123\nb456\nc789\n");
+    let sid = viewer()
+        .open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
+
+    let mode = SearchMode {
+        use_regex: true,
+        case_sensitive: true,
+    };
+    viewer().search_start(&sid, r"\d+".to_string(), mode).unwrap();
+
+    wait_until(Duration::from_secs(2), "the regex search to complete", || {
+        let poll = viewer().search_poll(&sid, 0).expect("search poll");
+        if !matches!(poll.status, SearchStatus::Done) {
+            return false;
+        }
+        assert_eq!(poll.total_match_count, 3);
+        true
+    });
+
+    viewer().close_session(&sid).unwrap();
+}
+
+// -- Encoding-switch tests --------------------------------------------------------
+
+fn encode_utf16_le(s: &str) -> Vec<u8> {
+    let mut out = Vec::new();
+    for ch in s.encode_utf16() {
+        out.extend_from_slice(&ch.to_le_bytes());
+    }
+    out
+}
+
+#[test]
+fn get_encoding_options_returns_detected_and_all() {
+    let dir = create_test_dir("enc_options");
+    // UTF-8 with high-bit Latin-1 (Windows-1252-detectable).
+    let file = dir.join("latin1.txt");
+    fs::write(&file, b"caf\xE9\n").unwrap();
+
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let opts = viewer().get_encoding_options(&result.session_id).unwrap();
+    assert_eq!(opts.detected, FileEncoding::Windows1252);
+    assert_eq!(opts.current, FileEncoding::Windows1252);
+    assert!(opts.all.len() >= 8, "expected all 8 encodings, got {}", opts.all.len());
+    assert!(opts.all.iter().any(|c| c.encoding == FileEncoding::Utf8));
+    assert!(opts.all.iter().any(|c| c.encoding == FileEncoding::Utf16Le));
+
+    viewer().close_session(&result.session_id).unwrap();
+}
+
+#[test]
+fn set_encoding_full_load_swaps_decoder() {
+    let dir = create_test_dir("enc_full_load_swap");
+    // 0xE9 = 'é' in Windows-1252 / 'í' in Mac Roman / lone 0xE9 in UTF-8 is U+FFFD.
+    let file = dir.join("bytes.txt");
+    fs::write(&file, b"caf\xE9\n").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    assert!(matches!(result.backend_type, BackendType::FullLoad));
+
+    // Currently Windows-1252 (detected): line should decode as "café".
+    let chunk = viewer()
+        .get_lines(
+            &result.session_id,
+            super::SeekTarget::Row(0),
+            1,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    assert_eq!(chunk.texts()[0], "café");
+
+    // Force UTF-8: the high byte becomes U+FFFD.
+    viewer().set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
+    let chunk = viewer()
+        .get_lines(
+            &result.session_id,
+            super::SeekTarget::Row(0),
+            1,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    assert_eq!(chunk.texts()[0], "caf\u{FFFD}");
+
+    viewer().close_session(&result.session_id).unwrap();
+}
+
+#[test]
+fn set_encoding_large_file_utf8_to_utf16_rebuilds_under_new_encoding() {
+    let dir = create_test_dir("enc_large_utf16_rebuild");
+    // Build a > 1 MB file in UTF-16 LE so the backend ends up as ByteSeek + LineIndex.
+    let line_utf16 = encode_utf16_le("hello world\n");
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line_utf16.len()) + 200;
+    let mut bytes = Vec::with_capacity(line_utf16.len() * line_count);
+    for _ in 0..line_count {
+        bytes.extend_from_slice(&line_utf16);
+    }
+    let file = dir.join("big-utf16.txt");
+    fs::write(&file, &bytes).unwrap();
+
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    // Detector should already pick UTF-16 LE via parity. Decode of line 0 = "hello world".
+    let initial = result.initial_lines.texts();
+    assert!(
+        initial.iter().any(|l| l == "hello world"),
+        "expected 'hello world' lines, got {:?}",
+        initial.iter().take(3).collect::<Vec<_>>()
+    );
+
+    // Force UTF-8: each "hello world" line becomes a garbled string (every other byte 0x00),
+    // but the backend doesn't crash and `get_lines` still returns content.
+    viewer().set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
+    // The rebuild runs on a background thread; the encoding it reports must never wobble
+    // while it does.
+    wait_until(Duration::from_secs(8), "the background rebuild to complete", || {
+        let opts = viewer()
+            .get_encoding_options(&result.session_id)
+            .expect("encoding options");
+        assert_eq!(opts.current, FileEncoding::Utf8);
+        !viewer().test_only_rebuilding_active(&result.session_id)
+    });
+
+    viewer().close_session(&result.session_id).unwrap();
+}
+
+#[test]
+fn test_append_during_encoding_rebuild_not_dropped() {
+    // The drain-and-swap protocol: a watcher Grew(eof) event queued in
+    // session.pending_grew during the rebuild must be picked up by the rebuild
+    // thread's swap critical section, so the final LineIndex covers the new EOF
+    // (not just the pre-rebuild EOF).
+    //
+    // We simulate the watcher by calling test_only_push_pending_grew directly
+    // (the real watcher has its own tests).
+    let dir = create_test_dir("enc_append_during_rebuild");
+    // Start with a > 1 MB Windows-1252 file.
+    let line = "x".repeat(80) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 200;
+    let content: String = line.repeat(line_count);
+    let file = dir.join("big.txt");
+    fs::write(&file, &content).unwrap();
+    let original_size = fs::metadata(&file).unwrap().len();
+
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    // Wait for the initial ByteSeek -> LineIndex upgrade to finish so the
+    // pending_grew queue only exercises the rebuild's drain, not the
+    // upgrade's. (Otherwise the upgrade could drain our queued EOF before
+    // the rebuild ever sees it.)
+    wait_until(
+        Duration::from_secs(8),
+        "the initial upgrade to LineIndex to finish",
+        || upgraded_to_line_index(&result.session_id),
+    );
+
+    // Park the rebuild with its scan already done, so the 10 KB we append next
+    // is invisible to the rebuilt index and can only arrive via the drain.
+    session::test_gate::REBUILD_PRE_DRAIN.arm();
+    // Force a non-instant encoding swap (UTF-8 -> UTF-16 LE) so the rebuild runs.
+    viewer()
+        .set_encoding(&result.session_id, FileEncoding::Utf16Le)
+        .unwrap();
+    session::test_gate::REBUILD_PRE_DRAIN.wait_until_reached(GATE_TIMEOUT);
+
+    // Even byte count, so the appended block stays whole UTF-16 code units.
+    let suffix = "y".repeat(9_999) + "\n";
+    let new_size = append_test_file(&file, &suffix);
+    assert!(new_size > original_size);
+
+    // Queue the new EOF; the rebuild's drain-and-swap protocol must observe it.
+    viewer().test_only_push_pending_grew(&result.session_id, new_size);
+    session::test_gate::REBUILD_PRE_DRAIN.release();
+
+    wait_until(Duration::from_secs(10), "the rebuild to finish", || {
+        !viewer().test_only_rebuilding_active(&result.session_id)
+    });
+
+    // The final backend should cover the FULL new_size (not the pre-append size).
+    // We can't read total_bytes directly from outside; use get_lines with a Fraction
+    // target near 1.0 — the chunk's `total_bytes` field reflects the backend's
+    // current total.
+    let chunk = viewer()
+        .get_lines(
+            &result.session_id,
+            super::SeekTarget::Fraction(0.0),
+            1,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    assert_eq!(
+        chunk.total_bytes, new_size,
+        "rebuild must absorb the queued append (drain-and-swap protocol)"
+    );
+
+    viewer().close_session(&result.session_id).unwrap();
+}
+
+// ─── Tail mode + reload + watcher wiring ─────────────────
+
+#[test]
+fn tail_mode_toggle_persists_on_session() {
+    let dir = create_test_dir("tail_toggle");
+    let file = write_test_file(&dir, "log.txt", "hello\n");
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    assert!(!viewer().test_only_tail_mode(&sid));
+    viewer().set_tail_mode(&sid, true).unwrap();
+    assert!(viewer().test_only_tail_mode(&sid));
+    viewer().set_tail_mode(&sid, false).unwrap();
+    assert!(!viewer().test_only_tail_mode(&sid));
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn reload_replaces_backend_against_current_disk_contents() {
+    let dir = create_test_dir("reload");
+    let file = write_test_file(&dir, "log.txt", "first\n");
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    // Overwrite the file out of band: same path, fully replaced content.
+    fs::write(&file, "first\nsecond\nthird\n").unwrap();
+
+    viewer().reload(&sid).unwrap();
+    let status = viewer().get_session_status(&sid).unwrap();
+    assert!(status.total_lines.is_some());
+    let chunk = viewer()
+        .get_lines(&sid, super::SeekTarget::Row(1), 2, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(chunk.texts(), vec!["second", "third"]);
+
+    viewer().close_session(&sid).unwrap();
+}
+
+/// The reload toast words a deleted file apart from a slow disk or a refused read,
+/// so the kind must survive to the frontend (#153).
+#[test]
+fn reload_of_a_deleted_file_answers_not_found() {
+    let dir = create_test_dir("reload_deleted");
+    let file = write_test_file(&dir, "log.txt", "first\n");
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    fs::remove_file(&file).unwrap();
+
+    let err = viewer().reload(&sid).unwrap_err();
+    assert!(matches!(err, ViewerError::NotFound { .. }), "got {err:?}");
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn set_tail_mode_enabling_catches_up_existing_growth() {
+    let dir = create_test_dir("tail_catchup");
+    // Use a file just over FULL_LOAD_THRESHOLD so we land on ByteSeek and
+    // then upgrade to LineIndex. We use ByteSeek's extend_to which simply
+    // updates total_bytes; the catch-up check still proves the path is wired.
+    let initial: String = "a\n".repeat((FULL_LOAD_THRESHOLD as usize / 2) + 1);
+    let file = write_test_file(&dir, "log.txt", &initial);
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+    let original_bytes = result.total_bytes;
+
+    // Grow on disk while tail is off.
+    {
+        use std::io::Write;
+        let mut f = fs::OpenOptions::new().append(true).open(&file).unwrap();
+        f.write_all(b"extra-bytes-extra-bytes-extra-bytes-\n").unwrap();
+    }
+    let on_disk = fs::metadata(&file).unwrap().len();
+    assert!(on_disk > original_bytes);
+
+    viewer().set_tail_mode(&sid, true).unwrap();
+
+    // The catch-up runs in the background; the backend's total_bytes snaps to
+    // the on-disk size once it lands (ByteSeek's extend_to updates the size
+    // field; LineIndex re-indexes through the same path).
+    wait_until(
+        Duration::from_secs(3),
+        "the tail catch-up to reach the on-disk size",
+        || {
+            viewer()
+                .get_lines(&sid, super::SeekTarget::Fraction(0.99), 2, &AtomicBool::new(false))
+                .expect("get lines")
+                .total_bytes
+                >= on_disk
+        },
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+// Regression (#153): the catch-up stat ran inline, so on a stalled network mount the
+// command hit its 2 s timeout, the switch flipped back off, and the backend stayed in
+// tail mode. The flag must land and the call return whatever the stat does.
+#[test]
+fn set_tail_mode_returns_while_the_catch_up_check_is_still_waiting_on_the_file() {
+    let dir = create_test_dir("tail_catchup_stalled");
+    let file = write_test_file(&dir, "log.txt", "hello\n");
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    session::test_gate::TAIL_CATCH_UP.arm();
+    let (done_tx, done_rx) = std::sync::mpsc::channel();
+    let sid_for_call = sid.clone();
+    thread::spawn(move || {
+        let _ = done_tx.send(viewer().set_tail_mode(&sid_for_call, true));
+    });
+
+    session::test_gate::TAIL_CATCH_UP.wait_until_reached(Duration::from_secs(3));
+    let returned = done_rx.recv_timeout(Duration::from_secs(2));
+    // Let the parked catch-up finish before asserting, so a failure doesn't strand it.
+    session::test_gate::TAIL_CATCH_UP.release();
+
+    assert!(
+        matches!(returned, Ok(Ok(()))),
+        "set_tail_mode should return while the stat is parked, got {returned:?}"
+    );
+    assert!(viewer().test_only_tail_mode(&sid));
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
+    // Integration-style test for the watcher → session pipeline. We exercise
+    // the full handler stack (handle_watcher_event → apply_tail_extend →
+    // backend.extend_to_boxed → ArcSwap::store), but inject the WatcherEvent
+    // directly via the watcher's test-only hook instead of waiting on the
+    // macOS FSEvents debouncer. Reasons: (1) FSEvents latency is variable
+    // (~1–3 s) and the 8 s nextest cap leaves no margin for a real-FS test
+    // to also wait for the background ByteSeek → LineIndex upgrade; (2) the
+    // watcher's own tests already cover the FS-event path end-to-end against
+    // tempfile.
+    let dir = create_test_dir("tail_int");
+    let line = "x".repeat(120) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 100;
+    let initial: String = line.repeat(line_count);
+    let path = write_test_file(&dir, "tail-int.log", &initial);
+
+    let result = viewer().open_session(path.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+    let original_bytes = result.total_bytes;
+    // Sync on the background subscribe before mutating, so the catch-up re-stat
+    // stays a no-op and the explicit emit below is the driver under test.
+    wait_for_watcher_subscribed();
+
+    // Wait for the background ByteSeek → LineIndex upgrade to finish so
+    // we're testing the post-upgrade fast path (extend an existing
+    // LineIndex), not the upgrade-queue interaction (already covered by
+    // `test_append_during_upgrade_not_dropped`).
+    wait_until(Duration::from_secs(3), "the upgrade thread to complete", || {
+        upgraded_to_line_index(&sid)
+    });
+
+    // Switch on tail mode now (before the watcher fires).
+    viewer().set_tail_mode(&sid, true).unwrap();
+
+    // Append to disk first so extend_to has something to scan.
+    {
+        use std::io::Write;
+        let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+        f.write_all(b"second line at the end\n").unwrap();
+    }
+    let want_size = fs::metadata(&path).unwrap().len();
+    assert!(want_size > original_bytes);
+
+    // Drive the watcher → session handler directly via the test-only emit
+    // hook on the watcher singleton, then poll until apply_tail_extend has
+    // moved the backend's view forward.
+    let sent = super::watcher::test_only_emit(
+        &fs::canonicalize(&path).unwrap(),
+        super::watcher::WatcherEvent::Grew(want_size),
+    );
+    assert!(sent > 0, "test_only_emit should have found a subscriber");
+
+    let description = format!("the tail-mode handler to extend the backend to a total of {want_size}");
+    wait_until(Duration::from_secs(3), &description, || {
+        viewer()
+            .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+            .expect("get lines")
+            .total_bytes
+            >= want_size
+    });
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn tail_mode_on_a_full_load_file_reopens_it_to_take_in_the_append() {
+    // FullLoad can't extend in place, so a small file (a fresh `cmdr.log`) must
+    // reopen on growth; without that, tail mode does nothing below 1 MB.
+    let dir = create_test_dir("tail_full_load");
+    let path = write_test_file(&dir, "small.log", "first line\nsecond line\n");
+
+    let result = viewer().open_session(path.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+    assert!(matches!(result.backend_type, BackendType::FullLoad));
+    wait_for_watcher_subscribed();
+    viewer().set_tail_mode(&sid, true).unwrap();
+
+    {
+        use std::io::Write;
+        let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+        f.write_all(b"appended while tailing\n").unwrap();
+    }
+    let want_size = fs::metadata(&path).unwrap().len();
+    let sent = super::watcher::test_only_emit(
+        &fs::canonicalize(&path).unwrap(),
+        super::watcher::WatcherEvent::Grew(want_size),
+    );
+    assert!(sent > 0, "test_only_emit should have found a subscriber");
+
+    wait_until(
+        Duration::from_secs(3),
+        "the tail-mode handler to reopen the FullLoad file",
+        || {
+            viewer()
+                .get_lines(&sid, super::SeekTarget::Row(2), 1, &AtomicBool::new(false))
+                .expect("get lines")
+                .texts()
+                == vec!["appended while tailing"]
+        },
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+// ─── Audit fix coverage ────────────────────────────────────────────────────────────
+
+#[test]
+fn test_tail_extend_during_encoding_rebuild_discards_stale_extend() {
+    // The round-3 audit caught: `apply_tail_extend` snapshots the backend, runs
+    // a multi-second `extend_to_boxed`, then stores. If an encoding rebuild
+    // installs a new backend during the extend, the tail's store would clobber
+    // it. The fix uses `Arc::ptr_eq` between the snapshot and the live backend
+    // before storing; on mismatch, the extend is discarded and the EOF is
+    // re-queued.
+    //
+    // We script the timing with `test_only_run_tail_extend_with_swap`: it
+    // snapshots, runs a `swap_callback` (we use it to call `reload`, which
+    // installs a brand-new backend), then runs `extend_to_boxed`, then runs
+    // the same ptr-eq check the production code uses. Returns `false` if the
+    // stale extend was discarded — that's the assertion.
+    let dir = create_test_dir("tail_clobber_race");
+    let initial: String = "x\n".repeat((FULL_LOAD_THRESHOLD as usize / 2) + 1);
+    let file = write_test_file(&dir, "race.log", &initial);
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    // Grow the file so apply_tail_extend has something to extend to.
+    {
+        use std::io::Write;
+        let mut f = fs::OpenOptions::new().append(true).open(&file).unwrap();
+        f.write_all(b"appended\n").unwrap();
+    }
+    let new_size = fs::metadata(&file).unwrap().len();
+
+    let sid_for_swap = sid.clone();
+    let stored = viewer().test_only_run_tail_extend_with_swap(&sid, new_size, move || {
+        // While the watcher's extend is in flight, a "rebuild" installs a
+        // brand-new backend via reload(). The tail's stale extend must NOT
+        // clobber it.
+        viewer().reload(&sid_for_swap).unwrap();
+    });
+    assert!(
+        !stored,
+        "stale extend must be discarded after a swap installs a fresh backend"
+    );
+
+    // The EOF should be re-queued so a follow-up FS event still catches up.
+    let queued = viewer().test_only_pending_grew(&sid);
+    assert!(
+        matches!(queued, Some(eof) if eof >= new_size),
+        "discarded extend must re-queue the EOF; got {:?}",
+        queued
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn test_append_during_upgrade_not_dropped() {
+    // A watcher Grew event arriving while the ByteSeek -> LineIndex upgrade is
+    // mid-scan queues into `pending_grew`. The upgrade thread's drain-and-swap
+    // critical section reads-and-clears the queue and extends the new
+    // LineIndex to the queued EOF. So the final backend covers the full file,
+    // not just the pre-upgrade EOF.
+    //
+    // We script timing with the `UPGRADE_PRE_DRAIN` gate: the upgrade thread
+    // parks with its scan already finished, so the append we make while it's
+    // held is invisible to the fresh LineIndex. The only way it can reach the
+    // final backend is the drain picking our queued EOF up and extending.
+    let dir = create_test_dir("append_during_upgrade");
+    session::test_gate::UPGRADE_PRE_DRAIN.arm();
+
+    // ~2 MB file -> ByteSeek + upgrade.
+    let line = "x".repeat(80) + "\n";
+    let line_count = (2 * FULL_LOAD_THRESHOLD as usize) / line.len();
+    let content = line.repeat(line_count);
+    let file = write_test_file(&dir, "upgrade.log", &content);
+    let original_size = fs::metadata(&file).unwrap().len();
+
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    // Block until the upgrade thread is parked with its scan complete.
+    session::test_gate::UPGRADE_PRE_DRAIN.wait_until_reached(GATE_TIMEOUT);
+
+    // Append 500 KB. The scanned backend can't know about these bytes.
+    let suffix: String = ("y".repeat(80) + "\n").repeat(6400);
+    let new_size = append_test_file(&file, &suffix);
+    assert!(new_size > original_size);
+
+    // Queue the EOF the way the real watcher would, then let the swap run.
+    viewer().test_only_push_pending_grew(&sid, new_size);
+    session::test_gate::UPGRADE_PRE_DRAIN.release();
+
+    wait_until(Duration::from_secs(15), "the upgrade thread to drain and swap", || {
+        upgraded_to_line_index(&sid)
+    });
+
+    let chunk = viewer()
+        .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(
+        chunk.total_bytes, new_size,
+        "upgrade drain must absorb the queued append"
+    );
+    assert!(
+        chunk.total_rows.is_exact() && chunk.total_rows.rows() > line_count,
+        "total_rows must cover the appended block; got {:?}",
+        chunk.total_rows,
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn test_append_between_drain_and_swap_not_dropped() {
+    // Variant where multiple appends queue during the upgrade. Two watcher
+    // events must coalesce to the later EOF, and the drain must land on that
+    // one. Same `UPGRADE_PRE_DRAIN` gate: both appends happen after the scan,
+    // so only the drain can carry them onto the final backend.
+    let dir = create_test_dir("append_between_drain_swap");
+    session::test_gate::UPGRADE_PRE_DRAIN.arm();
+
+    let line = "z".repeat(80) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 1000;
+    let content = line.repeat(line_count);
+    let file = write_test_file(&dir, "race.log", &content);
+
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    // Hold the upgrade at the gate so both EOFs are provably queued after the
+    // scan and before the swap.
+    session::test_gate::UPGRADE_PRE_DRAIN.wait_until_reached(GATE_TIMEOUT);
+
+    // Two consecutive queued EOFs: simulates two watcher events the
+    // production code must coalesce into the final one.
+    let mid_size = append_test_file(&file, "first-append\n");
+    viewer().test_only_push_pending_grew(&sid, mid_size);
+
+    let final_size = append_test_file(&file, "second-append-bigger\n");
+    viewer().test_only_push_pending_grew(&sid, final_size);
+
+    // The queue must still be intact and coalesced to the later EOF: nothing
+    // may have drained it while we were setting up.
+    assert_eq!(
+        viewer().test_only_pending_grew(&sid),
+        Some(final_size),
+        "both EOFs must still be queued, coalesced, when the swap is released"
+    );
+    session::test_gate::UPGRADE_PRE_DRAIN.release();
+
+    wait_until(Duration::from_secs(15), "the upgrade thread to drain and swap", || {
+        upgraded_to_line_index(&sid)
+    });
+
+    let chunk = viewer()
+        .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+        .unwrap();
+    assert_eq!(
+        chunk.total_bytes, final_size,
+        "coalesced queue must land on the final backend"
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn test_session_emits_file_changed_on_append() {
+    // We can't easily intercept Tauri events from a unit test without an
+    // AppHandle, so we verify the observable side of the same code path: an
+    // append with tail-on flips through `apply_tail_extend` and advances
+    // total_bytes on the active backend. We use a > 1 MB file so the
+    // backend is ByteSeek (or LineIndex after upgrade), both of which
+    // support `extend_to_boxed`. FullLoad declines extension and would only
+    // surface via the FE reload toast.
+    let dir = create_test_dir("emit_on_append");
+    let line = "a\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 100;
+    let initial: String = line.repeat(line_count);
+    let file = write_test_file(&dir, "emit.log", &initial);
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+    // Sync on the background subscribe before mutating the file, so the
+    // catch-up re-stat stays a no-op and the explicit emit below is the driver.
+    wait_for_watcher_subscribed();
+    viewer().set_tail_mode(&sid, true).unwrap();
+
+    let new_size = append_test_file(&file, "extra-line-content\n");
+
+    let canonical = fs::canonicalize(&file).unwrap();
+    let sent = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Grew(new_size));
+    assert!(sent > 0, "test_only_emit must reach the session's subscriber");
+
+    let total_bytes = || {
+        viewer()
+            .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+            .expect("get lines")
+            .total_bytes
+    };
+    wait_until(
+        Duration::from_secs(8),
+        "the tail-on watcher event to advance backend total_bytes",
+        || total_bytes() >= new_size,
+    );
+    assert_eq!(
+        total_bytes(),
+        new_size,
+        "tail-on watcher event must advance backend total_bytes to exactly the new size"
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn test_session_tail_mode_off_does_not_extend_index() {
+    // With tail mode OFF: a Grew event must NOT change total_lines on the
+    // active backend. The FE still gets the `viewer:file-changed` event and
+    // renders its reload toast; only `reload()` actually re-indexes.
+    let dir = create_test_dir("tail_off_no_extend");
+    let initial = "a\nb\nc\n";
+    let file = write_test_file(&dir, "tailoff.log", initial);
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+    wait_for_watcher_subscribed();
+    assert!(!viewer().test_only_tail_mode(&sid));
+
+    let original_lines = viewer().get_session_status(&sid).unwrap().total_lines;
+
+    let new_size = append_test_file(&file, "d\ne\nf\n");
+
+    let canonical = fs::canonicalize(&file).unwrap();
+    super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Grew(new_size));
+
+    // allowed-test-sleep: negative assertion. With tail mode off the manager's only reaction to a
+    // Grew event is a Tauri emit, which no test can observe, so there is nothing to wait on; the
+    // window is what gives "total_lines never moved" its meaning
+    thread::sleep(Duration::from_millis(400));
+    let after_lines = viewer().get_session_status(&sid).unwrap().total_lines;
+    assert_eq!(
+        original_lines, after_lines,
+        "tail-off watcher events must not extend the line index"
+    );
+
+    // After explicit reload, the backend reflects the new content.
+    viewer().reload(&sid).unwrap();
+    let reloaded_lines = viewer().get_session_status(&sid).unwrap().total_lines;
+    assert!(
+        reloaded_lines.unwrap_or(0) > after_lines.unwrap_or(0),
+        "reload must surface the new content"
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn test_session_rotation_reopens_backend() {
+    // A `Replaced` event triggers an internal reload, which installs a fresh
+    // backend. Observable via total_bytes: post-rotation it matches the new
+    // file size.
+    let dir = create_test_dir("rotation");
+    fs::write(dir.join("rot.log"), b"old content\n").unwrap();
+    let file = dir.join("rot.log");
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+    let original_bytes = result.total_bytes;
+    wait_for_watcher_subscribed();
+
+    // Replace the file with a longer one.
+    let new_path = dir.join("rot.log.new");
+    fs::write(&new_path, b"NEW: longer content goes here\n").unwrap();
+    fs::rename(&new_path, &file).unwrap();
+    let new_size = fs::metadata(&file).unwrap().len();
+    assert!(new_size != original_bytes);
+
+    // Drive the rotation via the watcher's test-only emit hook.
+    let canonical = fs::canonicalize(&file).unwrap();
+    super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::Replaced);
+
+    wait_until(
+        Duration::from_secs(3),
+        "the rotation to reopen against the new bytes",
+        || {
+            viewer()
+                .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+                .expect("get lines")
+                .total_bytes
+                == new_size
+        },
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn test_session_close_stops_watcher() {
+    // `close_session` flips `watcher_stop`; the manager thread observes it on
+    // its next 200 ms poll cycle and exits, dropping the
+    // `ViewerSubscription`. The subscription's `Drop` unregisters the path
+    // from the shared singleton.
+    let dir = create_test_dir("close_stops_watcher");
+    let file = write_test_file(&dir, "tmp.log", "hi\n");
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    wait_for_watcher_subscribed();
+    let canonical = fs::canonicalize(&file).unwrap();
+    // The subscription is alive: a test-only emit reaches it.
+    let sent_before = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly);
+    assert!(sent_before > 0, "manager thread should be subscribed before close");
+
+    viewer().close_session(&sid).unwrap();
+
+    // Give the manager thread ~300 ms to observe `watcher_stop` and drop its
+    // subscription. After that, no subscribers should remain for the path.
+    wait_until(
+        Duration::from_secs(2),
+        "close_session to drop the watcher subscription",
+        || super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly) == 0,
+    );
+}
+
+#[test]
+fn test_set_encoding_during_rebuild_serialization() {
+    // Two `set_encoding` calls in rapid succession: the first one is cancelled
+    // by the second's `prev_cancel.store(true)`. Only the final encoding ends
+    // up on the session, and only one rebuild ever succeeds in storing.
+    let dir = create_test_dir("enc_serialize");
+    let line = "x".repeat(100) + "\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 200;
+    let content = line.repeat(line_count);
+    let file = write_test_file(&dir, "rebuild.txt", &content);
+
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    // Wait for the initial upgrade so we test the rebuild path, not the
+    // upgrade path.
+    wait_until(
+        Duration::from_secs(8),
+        "the initial upgrade to LineIndex to finish",
+        || upgraded_to_line_index(&sid),
+    );
+
+    // Park the next rebuild so the first set_encoding is provably superseded
+    // by the second BEFORE its scan starts.
+    session::test_gate::REBUILD_PRE_SCAN.arm();
+    let stores_before = session::test_gate::rebuild_store_count();
+    let exits_before = session::test_gate::rebuild_exit_count();
+
+    // First call: its rebuild thread parks at the gate.
+    viewer().set_encoding(&sid, FileEncoding::Utf16Le).unwrap();
+    session::test_gate::REBUILD_PRE_SCAN.wait_until_reached(GATE_TIMEOUT);
+    // Second call lands while the first is held; it cancels the in-flight
+    // rebuild and installs its own. The gate is one-shot, so this rebuild
+    // runs straight through.
+    viewer().set_encoding(&sid, FileEncoding::Utf16Be).unwrap();
+    // Release the superseded thread; it must notice it's no longer the owner
+    // and bail instead of storing its stale backend.
+    session::test_gate::REBUILD_PRE_SCAN.release();
+
+    // Wait for BOTH rebuild threads to exit, not just for `rebuilding` to
+    // clear. The winner clears that flag while the superseded thread is still
+    // running, so asserting earlier would race right past a late stale store.
+    wait_until(Duration::from_secs(15), "both rebuild threads to finish", || {
+        session::test_gate::rebuild_exit_count() >= exits_before + 2
+    });
+    assert_eq!(
+        session::test_gate::rebuild_exit_count(),
+        exits_before + 2,
+        "exactly two rebuild threads may run"
+    );
+    assert!(!viewer().test_only_rebuilding_active(&sid), "rebuild must settle");
+
+    assert_eq!(
+        session::test_gate::rebuild_store_count(),
+        stores_before + 1,
+        "exactly one rebuild may store: the superseded one must discard its backend"
+    );
+
+    let opts = viewer().get_encoding_options(&sid).unwrap();
+    assert_eq!(
+        opts.current,
+        FileEncoding::Utf16Be,
+        "only the latest set_encoding call must win"
+    );
+
+    viewer().close_session(&sid).unwrap();
+}
+
+#[test]
+fn test_set_encoding_ascii_compatible_is_instant() {
+    // For ASCII-newline-compatible encodings with the same BOM (UTF-8 ->
+    // Windows-1252), `set_encoding` should NOT trigger a LineIndex rebuild.
+    // The instrumentation counter on `LineIndexBackend::open_with_encoding`
+    // pins this contract.
+    let dir = create_test_dir("instant_swap");
+    let line = "abcd\n";
+    let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 500;
+    let content = line.repeat(line_count);
+    let file = write_test_file(&dir, "instant.txt", &content);
+
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+
+    // Wait for the initial upgrade so we count from a stable baseline.
+    wait_until(
+        Duration::from_secs(8),
+        "the initial upgrade to LineIndex to finish",
+        || upgraded_to_line_index(&sid),
+    );
+    let baseline = super::line_index::test_only_open_call_count();
+
+    // UTF-8 -> Windows-1252: same byte layout (no BOM, ASCII-compatible).
+    viewer().set_encoding(&sid, FileEncoding::Windows1252).unwrap();
+
+    wait_until(Duration::from_secs(3), "any in-flight rebuild to settle", || {
+        !viewer().test_only_rebuilding_active(&sid)
+    });
+
+    let post = super::line_index::test_only_open_call_count();
+    assert_eq!(
+        post, baseline,
+        "instant swap must NOT re-open LineIndex (baseline={}, post={})",
+        baseline, post
+    );
+
+    let opts = viewer().get_encoding_options(&sid).unwrap();
+    assert_eq!(opts.current, FileEncoding::Windows1252);
+
+    viewer().close_session(&sid).unwrap();
+}

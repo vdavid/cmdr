@@ -189,7 +189,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/text_editor.rs`: which app F4 opens a file in: the text editors LaunchServices lists, the stored choice
   (the system default, a bundle id, or a picked `.app`), and the fallback when that app is gone. Rationale: the module's
   own docs
-- `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
+- `file_viewer/`: the app's host for the file viewer (its seams, `cmdr-media://`, "Open with", the pull-to-temp); the
+  core (three backends, search, Markdown, media tokens) is `crates/cmdr-viewer`
 - `network/`: SMB's app-side half: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting,
   Keychain, the auto-upgrade passes, and the frontend's connection events. The backend under it is `crates/cmdr-smb/`
 - `saved_servers/`: the servers and shares the user saved: the hub's listing, an add without a dial, an edit (in place
@@ -399,12 +400,13 @@ All under `apps/desktop/src-tauri/src/`.
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
 `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-http`, `cmdr-listing`,
-`cmdr-collation`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-menu`, `cmdr-operation-log`,
-`cmdr-operations`, `cmdr-search`, and `cmdr-update-trust` carry no `tauri` dependency and no reach into the app;
-`index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`,
-`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`,
-`cmdr-listing`, `cmdr-collation`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`, `cmdr-operations`, and
-`cmdr-search` at the numbers their audits landed on. The two dev CLIs and the vendored fork are ordinary members.
+`cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-menu`, `cmdr-operation-log`,
+`cmdr-operations`, `cmdr-search`, and `cmdr-update-trust` carry no `tauri` dependency and no reach into the app, and
+neither do `cmdr-listing-wasm` and the two dev CLIs; `index-crate-isolation` enforces that against the `cargo metadata`
+graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`,
+`cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-listing`, `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`,
+`cmdr-local`, `cmdr-operation-log`, `cmdr-operations`, and `cmdr-search` at the numbers their audits landed on. The
+vendored fork is an ordinary member.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -440,6 +442,9 @@ All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-arc
 - `crates/cmdr-collation/`: how two file names rank (`NameCollator`, ICU4X Unicode collation with numeric ordering, and
   the prebuilt `NameKey` a bulk sort compares). Below the listing engine, which re-exports it, so anything that orders
   names sorts the way a pane does without depending on the listing. See `crates/cmdr-collation/CLAUDE.md`
+- `crates/cmdr-sort/`: what a pane asks to sort by (`SortColumn`, `SortOrder`, `DirectorySortMode`), vocabulary only.
+  Below the listing engine, which re-exports it beside the comparator, so the menu names a sort without linking the
+  engine. See `crates/cmdr-sort/CLAUDE.md`
 - `crates/cmdr-brief-columns/`: Brief mode's column widths: the font metrics store (per-code-point widths the frontend
   measured) and each column's widest name over a pane's rows. Hosted by the app (`font_metrics/`, which persists the
   store) and the browser demo. See `crates/cmdr-brief-columns/CLAUDE.md`

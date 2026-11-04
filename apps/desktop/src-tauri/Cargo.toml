@@ -125,6 +125,8 @@ cmdr-operations = { path = "../../../crates/cmdr-operations" }
 # The directory listing engine: every pane's listing, its cache, sort, and diffs,
 # behind one handle (`listing_host::listings()`) the app answers seams for.
 cmdr-listing = { path = "../../../crates/cmdr-listing" }
+# The file viewer's core; this crate hosts it (`src/file_viewer/`).
+cmdr-viewer = { path = "../../../crates/cmdr-viewer" }
 # The file-name collator the panes sort with. The write engine names it from
 # here rather than through `cmdr-listing`'s re-export, so it never needs the
 # listing engine for one type.
@@ -235,14 +237,6 @@ tower-http = { version = "0.7", features = ["cors"] }
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 memchr = "2"
-# File-viewer encoding decoder (UTF-16, Windows-1252, ISO-8859-1, Mac Roman, US-ASCII).
-# Pinned 2026-05-28 against crates.io v0.8.35 (released 2024-10-24, well past 14-day gate).
-# Apache-2.0 OR MIT.
-encoding_rs = "0.8.44"
-# Lock-free atomic Arc swap used by the file viewer to replace the active backend
-# (ByteSeek/LineIndex) without taking a write lock on the read path. Already pulled
-# in transitively; declaring it makes the dependency explicit.
-arc-swap = "1.9.3"
 walkdir = "2"
 # Drive indexing: SQLite store and macOS FSEvents watcher (the parallel directory
 # walker is now the in-tree `indexing::scanner::walker`, not a dependency)
@@ -335,10 +329,6 @@ plist = "1.10.3"
 # render the same changelog, and for the viewer's rendered Markdown view. `html` only: the default
 # `getopts` feature is the crate's own CLI.
 pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
-# Sanitizes the HTML the viewer renders from an untrusted Markdown file (READMEs carry raw `<img>`,
-# `<details>`, `<a>`): an allowlist of tags and attributes, so no script, handler, form, or frame
-# reaches the viewer's webview. Also hands back the parsed DOM, where the image sources get rewritten.
-ammonia = "4.2.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # The custom updater's trust check: unpacking the release tarball and requiring Cmdr's Developer
@@ -520,9 +510,11 @@ cmdr-index = { path = "../../../crates/cmdr-index", features = ["testing"] }
 # `cmdr_archive::test_fixtures`.
 cmdr-archive = { path = "../../../crates/cmdr-archive", features = ["testing"] }
 cmdr-listing = { path = "../../../crates/cmdr-listing", features = ["testing"] }
-# `cmdr_search::testing`: the fixture arena, the synthetic one the benches scan, and
-# the pure-engine wrapper the loader's tests search through.
+# `cmdr_search::testing`: the fixture arena, the synthetic one the benches scan, the
+# pure-engine wrapper the loader's tests search through, and the folder sizes the
+# source-equivalence test pairs with a `MemorySource`.
 cmdr-search = { path = "../../../crates/cmdr-search", features = ["testing"] }
+cmdr-viewer = { path = "../../../crates/cmdr-viewer", features = ["testing"] }
 # `cmdr_media_meta::test_fixtures`: real photos, songs, and movies for Multi-Rename's
 # end-to-end media test.
 cmdr-media-meta = { path = "../../../crates/cmdr-media-meta", features = ["testing"] }

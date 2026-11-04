@@ -1,5 +1,7 @@
+import { flushSync } from 'svelte'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { installMenuBar, labelText, type MenuBarHandle } from './menu-bar.js'
+import { _setCatalogForTests, setLocale } from '#lib/intl/messages.svelte.js'
+import { installMenuBar, labelText, type MenuBarHandle } from './menu-bar.svelte.js'
 import type { BarMenu, MenuClick } from './menu-engine.js'
 
 // A fake engine with the real one's shapes (`menu-engine.ts`), so the test pins what this file
@@ -190,5 +192,22 @@ describe('demo menu bar', () => {
       'Select all with extension *.pdf',
     )
     expect(labelText({ text: 'Cmdr' })).toBe('Cmdr')
+  })
+
+  it('redraws the closed strip in the new language at once, as the rest of the UI does', async () => {
+    _setCatalogForTests('hu', { 'menu.bar.view': 'Nézet', 'ui.menuBar.label': 'Menüsor' })
+    try {
+      setup()
+      await Promise.resolve()
+      expect(titles().map((t) => t.textContent)).toEqual(['Cmdr', 'View'])
+      await setLocale('hu')
+      flushSync()
+      expect(titles().map((t) => t.textContent)).toEqual(['Cmdr', 'Nézet'])
+      expect(document.querySelector('.cmdr-demo-menubar')?.getAttribute('aria-label')).toBe('Menüsor')
+      expect(rows()).toHaveLength(0)
+    } finally {
+      await setLocale(null)
+      _setCatalogForTests('hu', null)
+    }
   })
 })

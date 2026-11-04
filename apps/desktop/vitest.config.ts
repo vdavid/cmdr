@@ -4,10 +4,12 @@ import Icons from 'unplugin-icons/vite'
 import path from 'path'
 import { svelteOptions } from './vite.config.js'
 import { localeCatalogs } from './scripts/vite-locale-catalogs.ts'
+import { demoVoidCommands } from './scripts/vite-demo-void-commands.ts'
 
 export default defineConfig({
   // `localeCatalogs`: the app's message catalogs (`virtual:cmdr-catalog/*`, the manifest).
-  plugins: [localeCatalogs(), Icons({ compiler: 'svelte' }), svelte(svelteOptions)],
+  // `demoVoidCommands`: the browser demo's void commands, for its unanswered-command tests.
+  plugins: [localeCatalogs(), demoVoidCommands(), Icons({ compiler: 'svelte' }), svelte(svelteOptions)],
   // Bake the E2E build's instruments in (TRUE) so the capture-mode unit tests in
   // `messages.svelte.test.ts` can exercise `window.__cmdrI18nCapture`. In a real
   // build this constant comes from `vite.config.js`'s `define` (TRUE only in E2E

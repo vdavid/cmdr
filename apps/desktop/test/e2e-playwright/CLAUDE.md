@@ -26,8 +26,9 @@ Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcod
   `expectedLeftPaneEntries(fixtureRoot)`. DETAILS § "Fixture-churn readiness".
 - **To focus a pane, click its `.file-pane` and read `.is-focused` back**, ❌ never `pane.switch` or `cmdr://state`'s
   `focused:`. DETAILS § "Claiming a pane's focus".
-- **The global `afterEach` fails a spec that leaks UI or dirties `left/` or `right/`**; ❌ don't relax it. Restore with
-  `restoreFixtureTree`, after `drainOperations()` in the SAME hook.
+- **The global `afterEach` fails a spec that leaks UI, dirties `left/` or `right/`, or leaves the divider off center**;
+  ❌ don't relax it. Restore with `restoreFixtureTree`, after `drainOperations()` in the SAME hook; re-center with
+  `pane.resetDivider`.
 - **"STOPPED ANSWERING" means read up**: an earlier test killed the app. DETAILS § "The dead-app circuit breaker".
 - **The harness walls the app off from your machine** (Downloads, `tauri-plugin-store`, clipboard, locale). A new store
   needs the redirect too. DETAILS § "The locale pin".

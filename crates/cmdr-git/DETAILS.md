@@ -340,7 +340,8 @@ listing.
   `scan_for_copy` and streams with `open_read_stream`; the viewer and the agent's `inspect_file` stream one blob to a
   bounded temp and open that. All three ask the host's routing whether a path is served here, ❌ never this crate
   directly, so an archive and a snapshot travel the same seam. The app-side halves are
-  `crates/cmdr-operations/DETAILS.md` § "Routing a transfer" and `file_viewer/DETAILS.md` § "Preview of a routed file".
+  `crates/cmdr-operations/DETAILS.md` § "Routing a transfer" and `apps/desktop/src-tauri/src/file_viewer/DETAILS.md` §
+  "Preview of a routed file".
 - **A MOVE out of a snapshot is refused by the host, not here.** Every mutation stays at the trait default, so this
   volume simply has no delete; the app refuses the move before it copies anything, rather than copying and then failing
   the half it can never do.

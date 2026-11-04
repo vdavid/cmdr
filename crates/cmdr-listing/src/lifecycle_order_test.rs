@@ -16,11 +16,11 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::testing::{Heard, RecordingObserver, TestEngine, TestListing, TestListingGuard, request};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::testing::unique_test_id;
 use cmdr_fs::volume::{InMemoryVolume, ListingProgress, ListingWatch, Volume, VolumeError};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 /// An engine whose observer records every open and close, serving an empty
 /// in-memory volume under `volume_id`.

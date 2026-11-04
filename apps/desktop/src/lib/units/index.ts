@@ -60,6 +60,8 @@ export {
   formatDriveFigure,
 } from './byte-size'
 
+export { formatFreePercent } from './free-percent'
+
 export { type Seconds, seconds, formatDuration, formatMilliseconds, formatFilesPerSecond } from './duration'
 
 /**

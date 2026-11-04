@@ -36,7 +36,11 @@ import (
 
 // guardedIndexCrates are the crates whose dependency trees must stay app-free.
 var guardedIndexCrates = []string{
-	"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav", "cmdr-mtp", "cmdr-s3", "cmdr-nfs", "cmdr-adb", "cmdr-git", "cmdr-http", "cmdr-listing", "cmdr-update-trust", "cmdr-collation", "cmdr-local", "cmdr-media-meta", "cmdr-operation-log", "cmdr-operations", "cmdr-restic", "cmdr-brief-columns", "cmdr-menu", "cmdr-search",
+	"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav", "cmdr-mtp", "cmdr-s3", "cmdr-nfs", "cmdr-adb", "cmdr-git", "cmdr-http", "cmdr-listing", "cmdr-update-trust", "cmdr-collation", "cmdr-local", "cmdr-media-meta", "cmdr-operation-log", "cmdr-operations", "cmdr-restic", "cmdr-brief-columns", "cmdr-menu", "cmdr-viewer", "cmdr-sort", "cmdr-search",
+	// Not libraries the app links, but app-free by design all the same: the browser demo
+	// has no Tauri to reach, and the two dev CLIs read the index and the journal straight
+	// off disk. A `tauri` creeping into any of them is the same erosion.
+	"cmdr-listing-wasm", "index-query", "operation-log-dump",
 }
 
 // forbiddenForIndexCrates are the packages that must not appear in a guarded
@@ -611,9 +615,12 @@ func attributeEndingAt(lines []string, end, indent int) (string, int) {
 }
 
 // isGateAttribute reports whether an attribute compiles its item only for tests,
-// tooling, or fuzzing.
+// tooling, or fuzzing. `golden` is `cmdr-operations`' golden-trace replay, which
+// only dev-dependencies turn on (so the wasm test build can reach it without
+// `testing`, whose `cmdr-local` wasm32 can't build).
 func isGateAttribute(attribute string) bool {
 	return strings.Contains(attribute, `feature = "testing"`) ||
+		strings.Contains(attribute, `feature = "golden"`) ||
 		strings.Contains(attribute, `feature = "tooling"`) ||
 		strings.Contains(attribute, `feature = "fuzzing"`) ||
 		strings.Contains(attribute, "cfg(test)")

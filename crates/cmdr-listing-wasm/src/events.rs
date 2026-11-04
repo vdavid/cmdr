@@ -24,6 +24,13 @@ use serde::Serialize;
 pub trait EventSink: Send + Sync {
     /// One event: its Tauri name (`"listing-complete"`) and its JSON payload.
     fn emit(&self, event: &str, payload: serde_json::Value);
+
+    /// One event for one window only, as Tauri's `emit_to(label)` sends it (the viewer's
+    /// `viewer-media-load`). A sink with no windows hears it as any other event.
+    fn emit_to(&self, window_label: &str, event: &str, payload: serde_json::Value) {
+        let _ = window_label;
+        self.emit(event, payload);
+    }
 }
 
 #[derive(Serialize)]

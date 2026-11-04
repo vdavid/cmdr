@@ -39,7 +39,7 @@ use std::path::Path;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crate::event_sinks::OperationEventSink;
 use crate::state::WriteOperationState;
@@ -175,7 +175,7 @@ impl LeafProgressLedger {
             ledger: Self::silent(state),
             file_name: None,
             node: None,
-            last_emit: Arc::new(Mutex::new(Instant::now())),
+            last_emit: Arc::new(Mutex::new(crate::rt::now())),
         })
     }
 
@@ -191,7 +191,7 @@ impl LeafProgressLedger {
     pub(in crate::transfer) fn for_source(
         self: &Arc<Self>,
         source: &Path,
-        last_emit: Arc<Mutex<Instant>>,
+        last_emit: Arc<Mutex<crate::rt::Instant>>,
     ) -> Arc<SourceProgress> {
         Arc::new(SourceProgress {
             ledger: Arc::clone(self),
@@ -312,7 +312,7 @@ pub(in crate::transfer) struct SourceProgress {
     node: Option<NodeId>,
     /// This source's throttle clock. Shared with its siblings or private to it,
     /// as [`LeafProgressLedger::for_source`] describes.
-    last_emit: Arc<Mutex<Instant>>,
+    last_emit: Arc<Mutex<crate::rt::Instant>>,
 }
 
 impl SourceProgress {
@@ -450,7 +450,7 @@ impl LeafProgress {
             ledger.snapshot(&mut totals)
         };
         self.row.complete();
-        *self.source.last_emit.lock_ignore_poison() = Instant::now();
+        *self.source.last_emit.lock_ignore_poison() = crate::rt::now();
         ledger.emit(self.source.file_name.clone(), snapshot);
     }
 
@@ -491,10 +491,10 @@ impl Drop for LeafProgress {
 /// ([`LeafProgressLedger::emit`]).
 fn try_emit_throttled(source: &SourceProgress, snapshot: Snapshot) -> bool {
     let mut last = source.last_emit.lock_ignore_poison();
-    if last.elapsed() < source.ledger.progress_interval {
+    if crate::rt::since(*last) < source.ledger.progress_interval {
         return false;
     }
-    *last = Instant::now();
+    *last = crate::rt::now();
     drop(last);
     source.ledger.emit(source.file_name.clone(), snapshot);
     true
@@ -576,7 +576,7 @@ impl ObservedProgress {
         Arc::new(Self {
             source: ledger.for_source(
                 Path::new("/src/item"),
-                Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1))),
+                Arc::new(Mutex::new(crate::rt::now() - Duration::from_secs(1))),
             ),
             bytes,
             files,
@@ -615,7 +615,7 @@ mod tests {
         ledger.reseed_finished(seed);
         ledger.for_source(
             Path::new("/src/item"),
-            Arc::new(Mutex::new(Instant::now() - Duration::from_secs(1))),
+            Arc::new(Mutex::new(crate::rt::now() - Duration::from_secs(1))),
         )
     }
 

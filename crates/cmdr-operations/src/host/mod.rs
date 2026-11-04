@@ -47,10 +47,10 @@ mod volumes;
 use std::path::Path;
 use std::sync::Arc;
 
+use cmdr_fs::rt::Runtime as Handle;
 use cmdr_fs::volume::Volume;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::listings::ListingHost;
-use tokio::runtime::Handle;
 
 pub use error_report::{AsideAttempt, OperationErrorReport, TreeFailure};
 #[cfg(any(test, feature = "testing"))]

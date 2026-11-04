@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 
 use cmdr_fs::volume::LandedModified;
 
-use super::overwrite::DisplacedEntry;
+use super::displaced_entry::DisplacedEntry;
 use super::types::RecoveredOriginal;
 
 /// One destination path this operation put on disk, with the identity a reversal
@@ -169,19 +169,7 @@ impl WrittenIdentity {
     /// The node id of an entry the caller already stat'd. `None` off Unix, where
     /// there is none to read.
     pub(crate) fn node_of_stat(meta: &Metadata) -> Option<NodeId> {
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::MetadataExt;
-            Some(NodeId {
-                dev: meta.dev(),
-                ino: meta.ino(),
-            })
-        }
-        #[cfg(not(unix))]
-        {
-            let _ = meta;
-            None
-        }
+        crate::local_disk::file_id(meta).map(|(dev, ino)| NodeId { dev, ino })
     }
 
     /// The size this entry was recorded with, for the journal row that mirrors

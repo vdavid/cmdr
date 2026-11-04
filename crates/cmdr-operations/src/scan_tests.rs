@@ -13,7 +13,9 @@ use super::super::state::FileInfo;
 use super::*;
 use crate::host::testing::PANE_ORDER_LISTINGS;
 use crate::testing::TestOperations;
+use cmdr_fs::volume::CopyScanResult;
 use std::fs;
+use std::time::Instant;
 
 fn make_file_info(path: &str, source_root: &str) -> FileInfo {
     FileInfo {

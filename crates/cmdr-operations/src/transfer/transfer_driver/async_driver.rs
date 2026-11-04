@@ -4,8 +4,8 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use super::super::staged_write::Replaces;
+use crate::rt::Instant;
 use std::sync::Arc;
-use std::time::Instant;
 
 use crate::event_sinks::OperationEventSink;
 use crate::state::{OperationIntent, WriteOperationState};
@@ -88,7 +88,7 @@ where
     let mut bytes_done = 0u64;
     let mut files_skipped = 0usize;
     let mut bytes_skipped = 0u64;
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
     // The verdicts this driver decides: a whole source skipped, or a source the
     // closure failed on. Its rows in the tree, and its `write-source-item-done`
     // when the caller asked for those. Neither one feeds back into the loop.
@@ -121,10 +121,10 @@ where
                 .skip_ledger
                 .as_ref()
                 .map(|ledger| (ledger, ledger.credit_skipped_source(bytes_accounted)));
-            if last_progress_time.elapsed() < state.progress_interval {
+            if crate::rt::since(*last_progress_time) < state.progress_interval {
                 return;
             }
-            *last_progress_time = Instant::now();
+            *last_progress_time = crate::rt::now();
             let file_name = source.file_name().map(|n| n.to_string_lossy().to_string());
             match credited {
                 Some((ledger, snapshot)) => ledger.emit(file_name, snapshot),
@@ -323,7 +323,7 @@ where
                 // rename-merge sets it `true`: its `transfer_one` does a bare
                 // `rename` with no streaming, so this is its ONLY Copying event.
                 if config.emit_per_source_milestone {
-                    last_progress_time = Instant::now();
+                    last_progress_time = crate::rt::now();
                     emit_progress_and_status(
                         events,
                         state,

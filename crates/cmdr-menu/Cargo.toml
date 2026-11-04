@@ -12,9 +12,9 @@ publish = false
 workspace = true
 
 [dependencies]
-# `SortColumn` and `SortOrder`, which View > Sort by's rows stand for. Every host of
-# this crate already links the listing engine.
-cmdr-listing = { path = "../cmdr-listing" }
+# `SortColumn` and `SortOrder`, which View > Sort by's rows stand for. The
+# vocabulary crate, not the listing engine, so the menu links no engine.
+cmdr-sort = { path = "../cmdr-sort" }
 # The wire shapes a host deserializes from the frontend's pushes (the requested
 # sort, the two live-label targets).
 serde = { version = "1", features = ["derive"] }

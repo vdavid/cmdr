@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { browserSafeShortcuts } from './browser-shortcuts.js'
 import { DEMO_HOME } from './demo-tree.js'
-import { pluginHandler } from './plugins.js'
+import { customShortcuts, pluginHandler } from './plugins.js'
 
 /** Calls one plugin command, failing the test when the demo doesn't answer it. */
 function call(cmd: string, payload: Record<string, unknown> = {}): unknown {
@@ -32,6 +32,17 @@ describe('in-memory store plugin', () => {
     for (const [id, combos] of Object.entries(browserSafeShortcuts)) {
       expect(call('plugin:store|get', { rid, key: `shortcut:${id}` })).toEqual([combos, true])
     }
+  })
+
+  it('reads the custom shortcuts back the way the viewer window asks for them', () => {
+    // Regression: `get_restricted_window_shortcuts` (the viewer's one shortcut read) went unanswered.
+    const rid = load('shortcuts.json')
+    call('plugin:store|set', { rid, key: 'shortcut:viewer.close', value: ['⌃W'] })
+    call('plugin:store|set', { rid, key: 'not-a-shortcut', value: ['x'] })
+    const read = customShortcuts()
+    expect(read['viewer.close']).toEqual(['⌃W'])
+    expect(read).not.toHaveProperty('not-a-shortcut')
+    for (const id of Object.keys(browserSafeShortcuts)) expect(read).toHaveProperty(id)
   })
 
   it('answers get with [value, exists], so a missing key reads as absent', () => {
@@ -97,5 +108,31 @@ describe('path and app plugins', () => {
 
   it('knows no other plugin command', () => {
     expect(pluginHandler('plugin:dialog|open')).toBeUndefined()
+  })
+})
+
+describe('opener plugin', () => {
+  it('opens a web or email link in a new browser tab, cut off from this page', () => {
+    const opened = vi.spyOn(window, 'open').mockImplementation(() => null)
+    try {
+      for (const url of ['https://github.com/vdavid/cmdr', 'http://example.com/', 'mailto:hello@getcmdr.com']) {
+        expect(call('plugin:opener|open_url', { url })).toBeNull()
+        expect(opened).toHaveBeenLastCalledWith(url, '_blank', 'noopener,noreferrer')
+      }
+    } finally {
+      opened.mockRestore()
+    }
+  })
+
+  it('refuses any other scheme, as the plugin refuses a URL its scope disallows', () => {
+    const opened = vi.spyOn(window, 'open').mockImplementation(() => null)
+    try {
+      for (const url of ['javascript:alert(1)', 'file:///etc/passwd', 'x-apple.systempreferences:', 'not a url']) {
+        expect(() => call('plugin:opener|open_url', { url })).toThrow()
+      }
+      expect(opened).not.toHaveBeenCalled()
+    } finally {
+      opened.mockRestore()
+    }
   })
 })

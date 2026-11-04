@@ -1,0 +1,35 @@
+# Clippy reads the FIRST `clippy.toml` it finds walking up from this package's
+# manifest directory, and never merges, so this file replaces the workspace root's
+# for `cmdr-fs`. It carries the root's general settings below; the root's
+# `disallowed-methods` / `disallowed-types` name `tauri`, `objc2_app_kit`, and
+# `reqwest`, none of which this crate can reach (`index-crate-isolation`), so they
+# have nothing to guard here.
+
+# Complexity threshold of 15 matches ESLint's complexity rule for consistency across Rust and TypeScript
+cognitive-complexity-threshold = 15
+
+# Tests legitimately `.unwrap()` everywhere; this exempts unwraps inside `#[test]` fns. Helper fns in
+# `#[cfg(test)] mod`s aren't covered, so those use the sanctioned `.expect("…")` form.
+allow-unwrap-in-tests = true
+
+# The clock and the timers go through `crate::rt`: `std`'s clock panics on `wasm32-unknown-unknown`,
+# which takes tokio's timer with it, and this crate builds for the browser demo, so a direct call
+# compiles there and traps only at runtime (`InMemoryVolume`'s timings, the scan clocks, and
+# `deadline` all run in the demo). Same list as `crates/cmdr-listing/clippy.toml`, minus its spawn
+# bans: this crate's ambient spawns are deliberate (`deadline`, the fallback runtime) and documented
+# where they sit. A host-only module (a network backend's session, macOS probes) carries a reasoned
+# `#[allow]` instead. `lib.rs` lifts these under `cfg(test)`.
+# ❗ METHOD bans, not `disallowed-types`: natively `rt::Instant` IS `std::time::Instant`, so a type
+# ban would fire on every use of the seam itself.
+disallowed-methods = [
+  { path = "std::time::Instant::now", reason = "read the clock through `crate::rt::now()`: `std`'s panics in the browser build" },
+  { path = "std::time::Instant::elapsed", reason = "use `crate::rt::since(start)`: `std`'s clock panics in the browser build" },
+  { path = "std::time::SystemTime::now", reason = "use `crate::rt::wall_now()`: `std`'s wall clock panics in the browser build" },
+  { path = "tokio::time::Instant::now", reason = "read tokio's clock through `crate::rt::time::now()`: it panics in the browser build" },
+  { path = "tokio::time::Instant::elapsed", reason = "use `crate::rt::time::now() - start`: tokio's clock panics in the browser build" },
+  { path = "tokio::time::sleep", reason = "sleep through `crate::rt::time::sleep`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::sleep_until", reason = "sleep through `crate::rt::time::sleep_until`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::timeout", reason = "time out through `crate::rt::time::timeout`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::timeout_at", reason = "time out through `crate::rt::time::timeout_at`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::interval", reason = "tick with `crate::rt::time::interval_delayed`: tokio's timer panics in the browser build" },
+]

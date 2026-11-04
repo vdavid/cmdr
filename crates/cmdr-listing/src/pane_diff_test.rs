@@ -11,10 +11,10 @@
 //! is an answer, not a race lost to the 50 ms timer.
 
 use super::diff::{DiffChange, DiffChangeType};
-use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use super::sorting_test_support::sort_entries;
 use super::testing::{TestEngine, TestListing, TestListingGuard, pending_changes, publish_replacement};
 use cmdr_fs::entry::{FileEntry, TagRef};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 const DIR: &str = "/test/pane-diff";
 

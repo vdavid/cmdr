@@ -30,9 +30,23 @@
       "autoReplaceStringTemplate": "{{{depName}}}@{{{newValue}}}",
       "datasourceTemplate": "go",
       "depTypeTemplate": "go-check-tool"
+    },
+    {
+      "description": "The browser build's LLVM clang (compiles SQLite for wasm32) is pinned as `conda:<tool>@<version>` constants in the wasm build script, each under a `// renovate: datasource=conda depName=conda-forge/<tool>` comment, and installed into a private mise home, never `.mise.toml` (the conda env ships its own `cc`/`ar`/`ld`; `scripts/build-listing-wasm/toolchain.go` says why). No manager reads Go constants, so this one does.",
+      "customType": "regex",
+      "managerFilePatterns": ["scripts/build-listing-wasm/toolchain.go"],
+      "matchStrings": [
+        "// renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*\\w+\\s*=\\s*\"conda:[^@\"]+@(?<currentValue>[^\"]+)\""
+      ],
+      "depTypeTemplate": "wasm-toolchain"
     }
   ],
   "packageRules": [
+    {
+      "description": "The wasm toolchain's clang and llvm-tools move together: `TestBothToolsArePinnedToOneLLVMRelease` fails a PR that bumps only one.",
+      "matchDepTypes": ["wasm-toolchain"],
+      "groupName": "wasm toolchain"
+    },
     {
       "description": "The check runner's Go analyzers land on their own, for the same reason the linters below do: an analyzer bump re-flags tracked source across every Go module, which is noise to review mixed in with dependency changes. `go.uber.org/nilaway` publishes no tags, so its pseudo-version pin gets no PRs; move it by hand when it matters.",
       "matchDepTypes": ["go-check-tool"],

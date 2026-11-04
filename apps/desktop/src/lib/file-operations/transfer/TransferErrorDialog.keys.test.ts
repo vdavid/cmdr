@@ -157,6 +157,8 @@ describe('TransferErrorDialog keys', () => {
       // Reporting is a side trip, not an answer to the stop: no letter, so a stray
       // keystroke can never open the report dialog over the decision.
       ['Send error report…', undefined, null],
+      // A shortfall offers both: Retry once space is freed, Copy anyway to skip the check.
+      ['Retry', 'R', 'R'],
       ['Copy anyway', 'A', 'A'],
       ['Close', 'C', 'C Enter'],
     ])

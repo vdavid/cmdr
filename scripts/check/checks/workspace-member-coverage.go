@@ -122,6 +122,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-tests-linux":       "`--workspace` computed for `linux`, since cargo runs in a container",
 	"desktop-rust-clippy-linux":      "`--workspace` computed for `linux`, since cargo runs in a container",
 	"desktop-rust-listing-wasm":      "`-p cmdr-listing-wasm` for `wasm32-unknown-unknown` (plus `cmdr-listing` and `cmdr-fs` under it), its own triple and profile; a targeted browser build, not a sweep",
+	"desktop-rust-viewer-wasm":       "`-p cmdr-viewer` for `wasm32-unknown-unknown` (plus `cmdr-fs` under it), its own triple and profile; a targeted browser build, not a sweep",
 	"desktop-bindings-fresh":         "hashes every member's sources and manifest to decide whether to regenerate; the regen itself is `--workspace` via `pnpm bindings:regen`",
 	// Not coverage lanes: a handful of named tests against a live endpoint, each
 	// self-skipping without its key. They reach the app crate on purpose and nothing else.
@@ -147,6 +148,7 @@ var rustMetaChecks = map[string]string{
 	"desktop-rust-property-mutant-records": "it reads the mutant records and checks each `find` still occurs in the file it names; it compiles nothing and sweeps no member",
 	"workspace-member-coverage":            "this check; it reads the member list and the registry, not the sources",
 	"index-crate-isolation":                "it reads the `cargo metadata` graph and counts `cmdr-index`'s public surface; both are about two named crates, not a sweep",
+	"operations-local-disk-boundary":       "it pins one named crate's module boundary (`cmdr-operations`' local-disk modules), not a sweep",
 	"desktop-shipped-locales-fresh":        "it regenerates ONE file in the app crate from the message-catalog dirs and diffs it; the inputs are catalog directories, not workspace sources",
 	"desktop-native-strings-fresh":         "same shape as shipped-locales-fresh: it regenerates ONE file in the app crate from the message catalogs and diffs it, so its inputs are catalog files, not workspace sources",
 	"desktop-macos-framework-floor":        "it reads a BUILT binary's Mach-O load commands, which is the linked whole rather than any member's sources; every member that contributes a framework link is in it by construction",

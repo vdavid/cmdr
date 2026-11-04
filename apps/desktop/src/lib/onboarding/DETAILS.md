@@ -131,7 +131,9 @@ the first launch after they update past the wizard revamp:
 
 The toast fires from `resolveOnboardingMount()`'s two wizard-skipping branches (so it only runs when the wizard is NOT
 mounting; no need for an extra `onboardingShowing` check). It writes `onboarding.upgradeNudgeShown = true` synchronously
-after firing, so it never appears again on the same machine.
+after firing, so it never appears again on the same machine. Finishing the wizard writes it too
+(`completeOnboardingWizard()`): someone who just walked through it has seen every option, and a fresh install once got
+"We've added new onboarding options" on its second launch.
 
 The toast is suppressed under `isE2eRun()` so it doesn't leak into Playwright's first-spec-of-the-run state (each E2E
 shard gets its own fresh data dir, so the nudge would otherwise fire once per shard launch and trip the fixture safety
@@ -558,7 +560,8 @@ is now the literal character, and the folder-size placeholder is passed in as `{
 Because `<SettingSwitch>` writes via `setSetting()` on every flip, the toggles take effect the moment the user clicks
 them; the wizard doesn't need its own persist queue. The footer's single primary button (`Start using Cmdr`, registered
 via `setFooterOverride()`) just bumps `finishRequestTick`; the wizard shell's `onComplete` callback then runs
-`notifyOnboardingComplete()` (which flips `isOnboarded: true`) and closes the sheet.
+`completeOnboardingWizard()` in `startup-gates.ts` (which spends the upgrade nudge and flips `isOnboarded: true` via
+`notifyOnboardingComplete()`) and closes the sheet.
 
 `updates.autoCheck` live-apply runs through `applyAutoCheckEnabled(enabled)` in `updates/updater.svelte.ts`: the
 poll-loop interval handle lives at module scope so the listener can start/stop it in place and fire one immediate

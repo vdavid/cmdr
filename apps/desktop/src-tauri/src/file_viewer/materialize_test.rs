@@ -7,12 +7,13 @@ use std::sync::{Arc, Mutex};
 
 use super::ViewerError;
 use super::materialize::{
-    PREVIEW_CAP_BYTES, extract_if_routed_with, init_materialize_dir, is_orphan_temp_name, map_volume_error,
-    materialize_for_inspect_with, materialize_for_viewer_with, reap_orphan_temps,
+    PREVIEW_CAP_BYTES, extract_if_routed_with, init_materialize_dir, is_orphan_temp_name, materialize_for_inspect_with,
+    materialize_for_viewer_with, reap_orphan_temps,
 };
-use super::session;
+use super::volume_error::map_volume_error;
 use crate::file_system::volume::RoutedKind;
 use crate::file_system::volume::VolumeError;
+use crate::file_viewer::app_viewer as viewer;
 
 /// Serializes the tests that drive `open_session` (they share the process-wide extract
 /// dir set by `init_materialize_dir`).
@@ -169,7 +170,9 @@ fn text_file_in_zip_round_trips_and_temp_is_deleted_on_close() {
     build_zip(&zip, &[("notes.txt", content)]);
 
     let inner = zip.join("notes.txt");
-    let result = session::open_session(inner.to_str().expect("utf8 path"), "root").expect("open preview");
+    let result = viewer()
+        .open_session(inner.to_str().expect("utf8 path"), "root")
+        .expect("open preview");
 
     // The viewer shows the entry's basename, not the uuid temp name.
     assert_eq!(result.file_name, "notes.txt");
@@ -194,7 +197,7 @@ fn text_file_in_zip_round_trips_and_temp_is_deleted_on_close() {
     );
 
     // Closing the session deletes the temp subdir (both close paths funnel here).
-    session::close_session(&result.session_id).expect("close");
+    viewer().close_session(&result.session_id).expect("close");
     let after: Vec<_> = std::fs::read_dir(extract.path())
         .expect("read extract dir")
         .flatten()
@@ -219,7 +222,9 @@ fn image_in_zip_opens_as_media_and_temp_is_deleted_on_close() {
     build_zip(&zip, &[("logo.png", png)]);
 
     let inner = zip.join("logo.png");
-    let result = session::open_session(inner.to_str().expect("utf8 path"), "root").expect("open image preview");
+    let result = viewer()
+        .open_session(inner.to_str().expect("utf8 path"), "root")
+        .expect("open image preview");
 
     // The extracted image renders inline (media session): a media token, right title.
     assert!(
@@ -234,7 +239,7 @@ fn image_in_zip_opens_as_media_and_temp_is_deleted_on_close() {
     assert_eq!(result.file_name, "logo.png");
 
     // Closing deletes the extracted temp (the media session inherited the cleanup).
-    session::close_session(&result.session_id).expect("close");
+    viewer().close_session(&result.session_id).expect("close");
     let after: Vec<_> = std::fs::read_dir(extract.path())
         .expect("read extract dir")
         .flatten()
@@ -276,7 +281,9 @@ fn a_file_on_a_volume_the_os_cant_open_is_pulled_into_a_temp_and_its_lines_read(
     init_materialize_dir(extract.to_path_buf());
     let path = a_volume_the_os_cant_open("viewer-pull-cell", b"first line\nsecond line\n");
 
-    let opened = session::open_session(&path, "viewer-pull-cell").expect("the file opens");
+    let opened = viewer()
+        .open_session(&path, "viewer-pull-cell")
+        .expect("the file opens");
     assert_eq!(opened.file_name, "notes.txt");
     assert_eq!(opened.initial_lines.rows[0].text, "first line");
     assert_eq!(opened.initial_lines.rows[1].text, "second line");
@@ -286,7 +293,7 @@ fn a_file_on_a_volume_the_os_cant_open_is_pulled_into_a_temp_and_its_lines_read(
         .collect();
     assert_eq!(subdirs.len(), 1, "one temp subdir expected, found {subdirs:?}");
 
-    session::close_session(&opened.session_id).expect("close");
+    viewer().close_session(&opened.session_id).expect("close");
     let after: Vec<_> = std::fs::read_dir(&extract)
         .expect("read extract dir")
         .flatten()
@@ -517,11 +524,11 @@ fn closing_the_window_mid_pull_stops_reading_and_leaves_no_temp() {
     let (path, chunks_served, stream_dropped) = a_slow_phone("viewer-close-mid-pull-cell");
     let window = "viewer-close-mid-pull";
 
-    let open = super::begin_pending_open(window);
+    let open = viewer().begin_pending_open(window);
     let opener = {
         let open = Arc::clone(&open);
         std::thread::spawn(move || {
-            session::open_for_window(
+            viewer().open_for_window(
                 &path,
                 "viewer-close-mid-pull-cell",
                 window,
@@ -537,9 +544,9 @@ fn closing_the_window_mid_pull_stops_reading_and_leaves_no_temp() {
         || chunks_served.load(Ordering::SeqCst) >= 2,
     );
 
-    session::close_session_for_window(window);
+    viewer().close_session_for_window(window);
     let outcome = opener.join().expect("the opener thread");
-    super::end_pending_open(window, &open);
+    viewer().end_pending_open(window, &open);
 
     assert!(
         matches!(outcome, Err(ViewerError::Cancelled)),
@@ -598,7 +605,7 @@ fn a_pull_reports_its_progress_against_the_declared_size() {
         .expect("a temp");
     assert_eq!(
         open.pull_progress(),
-        Some(super::ViewerPullProgress {
+        Some(super::PullProgress {
             bytes_done: PHONE_FILE_LEN as u64,
             bytes_total: Some(PHONE_FILE_LEN as u64),
         })
@@ -625,15 +632,16 @@ fn switching_the_view_mode_reuses_the_windows_temp_and_reads_nothing_from_the_ph
     let (path, chunks_served, _) = a_slow_phone("viewer-mode-switch-cell");
     let window = "viewer-mode-switch";
 
-    let first = session::open_for_window(
-        &path,
-        "viewer-mode-switch-cell",
-        window,
-        false,
-        super::RowText::Raw,
-        &super::PendingOpen::new(),
-    )
-    .expect("the first open");
+    let first = viewer()
+        .open_for_window(
+            &path,
+            "viewer-mode-switch-cell",
+            window,
+            false,
+            super::RowText::Raw,
+            &super::PendingOpen::new(),
+        )
+        .expect("the first open");
     let after_first = chunks_served.load(Ordering::SeqCst);
     assert_eq!(
         after_first,
@@ -641,15 +649,16 @@ fn switching_the_view_mode_reuses_the_windows_temp_and_reads_nothing_from_the_ph
         "the first open pulls the whole file"
     );
 
-    let second = session::open_for_window(
-        &path,
-        "viewer-mode-switch-cell",
-        window,
-        true,
-        super::RowText::Raw,
-        &super::PendingOpen::new(),
-    )
-    .expect("the view-as-text open");
+    let second = viewer()
+        .open_for_window(
+            &path,
+            "viewer-mode-switch-cell",
+            window,
+            true,
+            super::RowText::Raw,
+            &super::PendingOpen::new(),
+        )
+        .expect("the view-as-text open");
     assert_eq!(
         chunks_served.load(Ordering::SeqCst),
         after_first,
@@ -657,19 +666,24 @@ fn switching_the_view_mode_reuses_the_windows_temp_and_reads_nothing_from_the_ph
     );
 
     // The frontend closes the old session once it has swapped to the new one.
-    session::close_session(&first.session_id).expect("close the first session");
-    let lines = session::get_lines(
-        &second.session_id,
-        super::SeekTarget::Row(0),
-        1,
-        &AtomicBool::new(false),
-    )
-    .expect("the new session still reads its file");
+    viewer()
+        .close_session(&first.session_id)
+        .expect("close the first session");
+    let lines = viewer()
+        .get_lines(
+            &second.session_id,
+            super::SeekTarget::Row(0),
+            1,
+            &AtomicBool::new(false),
+        )
+        .expect("the new session still reads its file");
     assert!(lines.texts()[0].starts_with('x'));
     let temps = temps_in(&extract);
     assert_eq!(temps.len(), 1, "one temp, shared rather than copied, found {temps:?}");
 
-    session::close_session(&second.session_id).expect("close the second session");
+    viewer()
+        .close_session(&second.session_id)
+        .expect("close the second session");
     let left = temps_in(&extract);
     assert!(
         left.is_empty(),
@@ -686,40 +700,47 @@ fn another_window_on_the_same_file_pulls_its_own_copy() {
     init_materialize_dir(extract.to_path_buf());
     let (path, chunks_served, _) = a_slow_phone("viewer-two-windows-cell");
 
-    let first = session::open_for_window(
-        &path,
-        "viewer-two-windows-cell",
-        "viewer-window-one",
-        false,
-        super::RowText::Raw,
-        &super::PendingOpen::new(),
-    )
-    .expect("the first window's open");
+    let first = viewer()
+        .open_for_window(
+            &path,
+            "viewer-two-windows-cell",
+            "viewer-window-one",
+            false,
+            super::RowText::Raw,
+            &super::PendingOpen::new(),
+        )
+        .expect("the first window's open");
     let after_first = chunks_served.load(Ordering::SeqCst);
-    let second = session::open_for_window(
-        &path,
-        "viewer-two-windows-cell",
-        "viewer-window-two",
-        false,
-        super::RowText::Raw,
-        &super::PendingOpen::new(),
-    )
-    .expect("the second window's open");
+    let second = viewer()
+        .open_for_window(
+            &path,
+            "viewer-two-windows-cell",
+            "viewer-window-two",
+            false,
+            super::RowText::Raw,
+            &super::PendingOpen::new(),
+        )
+        .expect("the second window's open");
     assert_eq!(
         chunks_served.load(Ordering::SeqCst),
         after_first * 2,
         "a second window pulls its own copy"
     );
 
-    session::close_session(&first.session_id).expect("close the first window's session");
-    session::get_lines(
-        &second.session_id,
-        super::SeekTarget::Row(0),
-        1,
-        &AtomicBool::new(false),
-    )
-    .expect("the second window still reads");
-    session::close_session(&second.session_id).expect("close the second window's session");
+    viewer()
+        .close_session(&first.session_id)
+        .expect("close the first window's session");
+    viewer()
+        .get_lines(
+            &second.session_id,
+            super::SeekTarget::Row(0),
+            1,
+            &AtomicBool::new(false),
+        )
+        .expect("the second window still reads");
+    viewer()
+        .close_session(&second.session_id)
+        .expect("close the second window's session");
     let left = temps_in(&extract);
     assert!(left.is_empty(), "both temps go, found {left:?}");
 }

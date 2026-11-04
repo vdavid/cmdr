@@ -15,7 +15,7 @@ function ask(name: string, payload: Record<string, unknown> = anyPayload): unkno
 
 describe('app answers', () => {
   it('answer every command they list without throwing, except the typed refusals', () => {
-    const refused = new Set(['openPath'])
+    const refused = new Set(['openPath', 'prepareSearchIndex'])
     for (const [name, answer] of Object.entries(appAnswers as Record<string, Handler>)) {
       if (refused.has(name)) expect(() => answer(anyPayload)).toThrow()
       else expect(() => answer(anyPayload)).not.toThrow()
@@ -27,6 +27,7 @@ describe('app answers', () => {
     expect((ask('getManagedPolicy') as { updates: unknown }).updates).toEqual({ kind: 'disabled' })
     expect((ask('getIndexStatus') as { initialized: boolean }).initialized).toBe(false)
     expect((ask('getAiRuntimeStatus') as { serverRunning: boolean }).serverRunning).toBe(false)
+    expect(ask('getAiStatus')).toBe('unavailable')
   })
 
   it('answer every icon with the bundled generic folder or document', () => {
@@ -51,8 +52,17 @@ describe('app answers', () => {
     }
   })
 
-  it('volume stats count one entry per asked path', () => {
-    expect(ask('getDirStatsBatch', { paths: ['/a', '/b', '/c'] })).toEqual([null, null, null])
+  // Regression: unanswered, these fell back to `null`, and a `null` recent-search list made the
+  // search dialog's render throw, so ⌘F flashed the dialog and closed it as a crash.
+  it('answer the search dialog with no index, no recent searches, and no cloud AI consent', () => {
+    expect(ask('getRecentSearches')).toEqual([])
+    expect(ask('getSystemDirExcludes')).toEqual([])
+    expect((ask('cloudAiConsentStatus') as { accepted: boolean }).accepted).toBe(false)
+    expect(() => ask('prepareSearchIndex')).toThrow()
+    expect(ask('releaseSearchIndex')).toBeNull()
+  })
+
+  it('volume index status names the asked volume', () => {
     expect((ask('getVolumeIndexStatusById', { volumeId: 'root' }) as { volumeId: string }).volumeId).toBe('root')
   })
 })

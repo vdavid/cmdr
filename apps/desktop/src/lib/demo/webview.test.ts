@@ -13,12 +13,13 @@ function fakeBackend(answer: unknown = 'from backend') {
   const invoked: [string, unknown][] = []
   const emitted: [string, unknown, unknown][] = []
   let attached: DemoWebview | undefined
-  const backend: Pick<DemoBackend, 'invoke' | 'emit' | 'attach'> = {
+  const backend: Pick<DemoBackend, 'invoke' | 'emit' | 'attach' | 'mediaUrl'> = {
     invoke: (cmd, payload) => {
       invoked.push([cmd, payload])
       return Promise.resolve(answer)
     },
     emit: (event, payload, target) => emitted.push([event, payload, target]),
+    mediaUrl: (token, label) => `blob:${label}/${token}`,
     attach: (webview) => {
       attached = webview
       return () => {
@@ -34,6 +35,14 @@ afterEach(() => {
 })
 
 describe('demo webview', () => {
+  it("answers convertFileSrc with a blob: URL for the viewer's media and macOS's form for the rest", async () => {
+    const fake = fakeBackend()
+    installWebview(fake.backend, 'viewer-1')
+    const { convertFileSrc } = await import('@tauri-apps/api/core')
+    expect(convertFileSrc('tok', 'cmdr-media')).toBe('blob:viewer-1/tok')
+    expect(convertFileSrc('/a b.png')).toBe('asset://localhost/%2Fa%20b.png')
+  })
+
   it('forwards a command to the backend over a JSON wire', async () => {
     const answer = { rows: [1, 2] }
     const fake = fakeBackend(answer)

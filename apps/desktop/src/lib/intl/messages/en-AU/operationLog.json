@@ -3,6 +3,10 @@
   "@operationLog.summary.trash": {
     "sourceHash": "34b4457"
   },
+  "operationLog.summary.canceled": "{summary}, then cancelled ({plannedText} planned)",
+  "@operationLog.summary.canceled": {
+    "sourceHash": "9a27d89"
+  },
   "operationLog.status.canceled": "Cancelled",
   "@operationLog.status.canceled": {
     "sourceHash": "13ca2ee"

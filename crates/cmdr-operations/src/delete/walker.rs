@@ -4,7 +4,6 @@
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Instant;
 
 use super::super::error_classification::IoResultExt;
 use super::super::event_sinks::OperationEventSink;
@@ -82,7 +81,7 @@ pub(crate) fn delete_files_with_progress_inner(
     // Phase 2: Delete files first (deepest first)
     let mut files_done = 0;
     let mut bytes_done = 0u64;
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
 
     // Emit initial Deleting-phase event with totals. Important when reusing a
     // cached preview: no scanning events were emitted by the BE, so the FE
@@ -186,7 +185,7 @@ pub(crate) fn delete_files_with_progress_inner(
         }
 
         // Emit progress
-        if last_progress_time.elapsed() >= state.progress_interval {
+        if crate::rt::since(last_progress_time) >= state.progress_interval {
             let current_file = file_info.path.file_name().map(|n| n.to_string_lossy().to_string());
             state.emit_progress_via_sink(
                 events,
@@ -210,7 +209,7 @@ pub(crate) fn delete_files_with_progress_inner(
                 bytes_done,
                 scan_result.dedup_bytes,
             );
-            last_progress_time = Instant::now();
+            last_progress_time = crate::rt::now();
         }
     }
 

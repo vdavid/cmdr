@@ -10,7 +10,7 @@
 //! Which column and which direction is `sorting_test`; the directory-vs-file
 //! policy is `sorting_dir_mode_test`.
 
-use super::sorting::DirectorySortMode;
+use cmdr_sort::DirectorySortMode;
 use std::sync::Arc;
 
 use super::sorting::{entry_comparator, sort_entries};

@@ -126,7 +126,7 @@ impl OperationLog {
     /// Prune by age and size now and on a slow timer, on `runtime`, with the
     /// limits `limits` reads fresh each tick. Does nothing until [`Self::open`]
     /// succeeded.
-    pub fn spawn_retention(&self, runtime: &tokio::runtime::Handle, limits: RetentionLimitsSource) {
+    pub fn spawn_retention(&self, runtime: &cmdr_fs::rt::Runtime, limits: RetentionLimitsSource) {
         if let Some(writer) = self.writer() {
             retention::spawn(runtime, writer, limits);
         }

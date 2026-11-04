@@ -92,6 +92,20 @@
     "screenshot": "operation-log-more-pages.png"
   },
 
+  "operationLog.summary.canceled": "{summary}, then canceled ({plannedText} planned)",
+  "@operationLog.summary.canceled": {
+    "description": "One-line summary of an operation the person canceled partway, in the Operation log list. summary is the operation's own summary counting only what it got done (for example \"Copied 30 items\"); plannedText is how many items it was going to handle, formatted with the locale's thousands separator. Full example: \"Copied 30 items, then canceled (1,200 planned)\".",
+    "placeholders": { "summary": {}, "plannedText": {} },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
+  },
+  "operationLog.summary.stopped": "{summary}, then stopped ({plannedText} planned)",
+  "@operationLog.summary.stopped": {
+    "description": "One-line summary of an operation that stopped partway because of a problem (a full disk, a missing file), in the Operation log list. summary is the operation's own summary counting only what it got done (for example \"Moved 1 item\"); plannedText is how many items it was going to handle, formatted with the locale's thousands separator. Avoid the word for \"failed\".",
+    "placeholders": { "summary": {}, "plannedText": {} },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
+  },
   "operationLog.summary.copy": "{count, plural, one {Copied {countText} item} other {Copied {countText} items}}",
   "@operationLog.summary.copy": {
     "description": "One-line summary of a copy operation. count is the number of items copied; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",

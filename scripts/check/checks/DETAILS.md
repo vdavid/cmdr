@@ -2245,6 +2245,9 @@ doubles as production code.
   count too) counts as a gated door, never as public API, so a fuzz entry point doesn't eat a crate's ceiling. See
   `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in
   `index-crate-isolation.go` for the backend ones, and why raising any of them needs David's say-so),
+  operations-local-disk-boundary (`cmdr-operations` names `libc`, `cmdr_local`, `objc2`, `xattr`, `trash`, `dirs`, or
+  `std::os::unix` only in `local_disk/` and the local-engine trees `operationsLocalDiskModules` lists, since the crate
+  builds for the browser demo, which has no local disk; test files and `#[cfg(test)]` modules are exempt),
   nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects a live test, so a per-test cap
   or `test-group` can't be silently detached by a module move; it lists the workspace's tests with
   `cargo nextest list --run-ignored all` and names where a stale atom's leaf went. It judges the HOST platform, so a
