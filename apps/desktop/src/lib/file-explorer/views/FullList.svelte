@@ -951,7 +951,9 @@
                         data-filename={file.name}
                         data-drop-target-path={file.isDirectory ? file.path : undefined}
                         style="height: {rowHeight}px; grid-template-columns: {gridTemplate};"
-                        onpointerdown={(e: PointerEvent) => rowActivation.onPointerDown(e, globalIndex)}
+                        onpointerdown={(e: PointerEvent) => {
+                            rowActivation.onPointerDown(e, globalIndex)
+                        }}
                         onmousedown={(e: MouseEvent) => {
                             handleMouseDown(e, globalIndex)
                         }}

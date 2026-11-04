@@ -1102,7 +1102,9 @@
                                 data-drop-target-path={file.isDirectory ? file.path : undefined}
                                 use:tooltip={buildDirTooltip(file)}
                                 style="height: {rowHeight}px;"
-                                onpointerdown={(e: PointerEvent) => rowActivation.onPointerDown(e, globalIndex)}
+                                onpointerdown={(e: PointerEvent) => {
+                                    rowActivation.onPointerDown(e, globalIndex)
+                                }}
                                 onmousedown={(e: MouseEvent) => {
                                     handleMouseDown(e, globalIndex)
                                 }}
