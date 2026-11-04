@@ -17,6 +17,8 @@ mod live_drive;
 mod live_e2e;
 mod offline_volume;
 mod server_scope;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod smb_share;
 mod stalled_walk;
 
 // ── Synthetic index builder ──────────────────────────────────────────
