@@ -143,7 +143,7 @@ cmdr-media-meta = { path = "../../../crates/cmdr-media-meta" }
 # and what a click asks for, shared with the browser demo. `menu/` builds the
 # native menus from it.
 cmdr-menu = { path = "../../../crates/cmdr-menu" }
-tauri ={ version = "2", features = ["macos-private-api"] }
+tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
 tauri-plugin-mcp-bridge = "0.13"
 tauri-plugin-store = "2"
