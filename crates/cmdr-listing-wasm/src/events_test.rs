@@ -25,7 +25,7 @@ static BINDINGS: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
 });
 
 /// The TS type `makeEvent<T>('event')` names for `event`.
-fn ts_type_of_event(event: &str) -> &'static str {
+pub(crate) fn ts_type_of_event(event: &str) -> &'static str {
     let needle = format!(">('{event}')");
     let line = BINDINGS
         .lines()
@@ -37,7 +37,7 @@ fn ts_type_of_event(event: &str) -> &'static str {
 }
 
 /// The top-level keys of `export type <name> = { ... }`.
-fn ts_keys(name: &str) -> BTreeSet<String> {
+pub(crate) fn ts_keys(name: &str) -> BTreeSet<String> {
     let header = format!("export type {name} = {{");
     let mut lines = BINDINGS.lines().skip_while(|l| *l != header);
     assert!(lines.next().is_some(), "`bindings.ts` has no `{name}` object type");

@@ -4,8 +4,8 @@
 //!
 //! The engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`:
 //! [`tree`] builds the volume, [`events`] turns engine facts into Tauri-shaped
-//! events, [`commands`] answers the commands, and `bindings` (browser only) is
-//! the `wasm-bindgen` surface. Everything but `bindings` builds natively too, so
+//! events, [`commands`] answers the commands, [`menu`] hosts the menu bar
+//! (`cmdr-menu`), and `bindings` (browser only) is the `wasm-bindgen` surface. Everything but `bindings` builds natively too, so
 //! the tests run on the host. `CLAUDE.md` has the must-knows, `DETAILS.md` the JS
 //! API and the build.
 #![warn(unused_crate_dependencies)]
@@ -15,11 +15,14 @@
 mod bindings;
 pub mod commands;
 pub mod events;
+pub mod menu;
 pub mod tree;
 
 #[cfg(test)]
 mod commands_test;
 #[cfg(test)]
 mod events_test;
+#[cfg(test)]
+mod menu_test;
 #[cfg(test)]
 mod tree_test;

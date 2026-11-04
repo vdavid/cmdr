@@ -23,6 +23,9 @@ cmdr-fs = { path = "../cmdr-fs" }
 # Brief mode's column widths and the font metrics the page measures for them,
 # the same code the desktop's commands run.
 cmdr-brief-columns = { path = "../cmdr-brief-columns" }
+# The menu bar as data, its enabled fold, and what a click asks for: the demo
+# draws the same macOS bar the desktop builds (`src/menu.rs`).
+cmdr-menu = { path = "../cmdr-menu" }
 log = "0.4"
 # The wire shapes: every answer and event crosses as the same JSON Tauri sends.
 serde = { version = "1", features = ["derive"] }

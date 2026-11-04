@@ -102,6 +102,17 @@ try {
   } catch (error) {
     if (error?.type !== 'gone') fail(`a missing listing rejected with ${JSON.stringify(error)}`)
   }
+
+  // The menu bar: a push lands, the bar draws it, and a click names its event.
+  const menu = new glue.DemoMenuBar()
+  menu.invoke('update_menu_accelerator', { commandId: 'tab.new', shortcut: '⌃T' })
+  const tab = menu.bar().find((m) => m.id === 'menu_tab')
+  const newTab = tab?.rows.find((row) => row.id === 'new_tab')
+  if (newTab?.shortcut !== '⌃T') fail(`the Tab menu's New tab came back as ${JSON.stringify(newTab)}`)
+  const click = menu.click('go_home')
+  if (click?.kind !== 'emit' || click.payload?.commandId !== 'nav.goHome') {
+    fail(`a Go > Home click came back as ${JSON.stringify(click)}`)
+  }
 } catch (error) {
   fail(error?.stack ?? String(error))
 }

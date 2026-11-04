@@ -54,6 +54,15 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
   `extend_font_metrics`, `has_font_metrics`), answered by `cmdr-brief-columns`, the code the desktop's commands run. The
   page measures its own fonts with the Canvas API and stores them, as the desktop's frontend does.
 - `DemoListing.setLogLevel(level)`: the engine's `log` lines on the console, `"warn"` by default.
+- `new DemoMenuBar()`: the menu bar (`menu.rs`). `DemoMenuBar.handles(command)` and `menu.invoke(command, args)` take
+  the desktop's menu-state pushes by their Tauri names (`activate_window_menu`, `set_commands_refused_over_dialog`,
+  `update_menu_accelerator`, `update_sort_menu`, `update_view_mode_menu`, and the rest of `MENU_COMMANDS`) and store
+  them, as `commands/menu_state.rs` stores them in `MenuState`. `menu.bar()` answers the macOS bar as it stands:
+  `[{ id, title, rows }]`, each row `item` / `check` / `submenu` / `system` / `separator` with its label (a catalog key
+  plus tokens, or the app menu's literal `Cmdr`), its shortcut in a Mac's glyphs, and its enabled and checked state, all
+  from `cmdr-menu`. `menu.click(id)` answers what the click sends: `{ kind: "emit", event, payload }`
+  (`execute-command`, `settings-changed`, `view-mode-changed`, `menu-sort`, the payloads `handle_menu_event` emits),
+  `nativeEdit`, `closeFocusedWindow`, or `nothing` for a greyed or OS row.
 
 The volume is built `with_held_folders_only()`, so a folder the tree doesn't hold ends in the typed `notFound`
 `listing-error` a disk's missing folder does (and a file, `NotADirectory`). The tree: dates are JS milliseconds and
@@ -85,5 +94,7 @@ tree lists as a folder (as on disk).
   the page measures again. No `timeout` kind either: the desktop's two-second cap on `get_brief_column_text_widths`
   guards a write-locked cache, which a page's one thread can't be waiting on.
 - **Owners show as empty, permissions are fixed**, and nothing reads tags, packages, index sizes, or git status.
+- **The menu bar is the macOS one** whatever the visitor's OS, and its OS rows (Services, Hide, Quit, Undo, Minimize)
+  are drawn greyed: a page has no OS to hand them to.
 - **No writes**: the engine answers listing, Brief-width, and font-metrics commands only. Writes (copy, move, rename,
   create) are #929.

@@ -7,14 +7,16 @@ The engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`. Not
 
 - `tree.rs`: the page's JSON tree into an `InMemoryVolume`. `events.rs`: engine facts into Tauri-named events.
   `commands.rs`: `Demo`, the listing commands by their Tauri names, plus Brief widths and font metrics
-  (`cmdr-brief-columns`, memory only). `bindings.rs` (wasm only): the `wasm-bindgen` API.
+  (`cmdr-brief-columns`, memory only). `menu.rs`: `DemoMenu`, the menu-state pushes stored and the macOS bar drawn from
+  `cmdr-menu`. `bindings.rs` (wasm only): the `wasm-bindgen` API.
 - `smoke.mjs`: loads the built module in Node and drives one listing. Build: `pnpm build:listing-wasm`.
 
 ## Must-knows
 
 - **Same wire as the desktop, or the frontend breaks silently.** Command names, camelCase args, answers, rejections, and
-  event payloads all mirror `commands/file_system/listing.rs`, `commands/font_metrics.rs`, and `listing_host/events.rs`.
-  A change there needs one here; `events_test.rs` pins every event's keys against `bindings.ts`.
+  event payloads all mirror `commands/file_system/listing.rs`, `commands/font_metrics.rs`, `commands/menu_state.rs`, and
+  `listing_host/events.rs`. A change there needs one here; `events_test.rs` and `menu_test.rs` pin event keys against
+  `bindings.ts`.
 - **Everything but `bindings.rs` builds natively**, so the tests run with `cargo nextest` like any crate. Keep JS types
   out of `commands.rs`, `events.rs`, and `tree.rs`.
 - **The runtime traps are browser-only**: `std::time::Instant::now` and `SystemTime::now` panic, `Path::is_absolute` is

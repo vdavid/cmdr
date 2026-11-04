@@ -8,6 +8,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::commands::{COMMANDS, Demo};
 use crate::events::EventSink;
+use crate::menu::DemoMenu;
 use crate::tree::DemoTree;
 
 #[wasm_bindgen]
@@ -131,6 +132,53 @@ impl DemoListing {
         let level: log::LevelFilter = level.parse().map_err(|_| JsError::new("unknown log level"))?;
         log::set_max_level(level);
         Ok(())
+    }
+}
+
+/// The macOS menu bar over the menu-state commands the app pushes (`menu.rs`).
+#[wasm_bindgen]
+pub struct DemoMenuBar {
+    menu: DemoMenu,
+}
+
+#[wasm_bindgen]
+impl DemoMenuBar {
+    /// A bar as a fresh app builds it.
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> DemoMenuBar {
+        DemoMenuBar { menu: DemoMenu::new() }
+    }
+
+    /// Whether [`invoke`](Self::invoke) answers `command`.
+    pub fn handles(command: &str) -> bool {
+        DemoMenu::handles(command)
+    }
+
+    /// Stores one menu-state push like Tauri's `invoke(command, args)`: returns its answer
+    /// (`null`), throws its error.
+    pub fn invoke(&self, command: &str, args: JsValue) -> Result<JsValue, JsValue> {
+        let args = from_js(&args).map_err(JsValue::from)?;
+        match self.menu.invoke(command, args) {
+            Ok(answer) => Ok(to_js(&answer)),
+            Err(error) => Err(to_js(&error)),
+        }
+    }
+
+    /// The bar as it stands: `[{ id, title, rows }]`, every row with its words, shortcut, and state.
+    pub fn bar(&self) -> JsValue {
+        serde_json::to_value(self.menu.bar()).map_or(JsValue::NULL, |bar| to_js(&bar))
+    }
+
+    /// What a click on `menu_id` asks the page to do: `{ kind: "emit", event, payload }`,
+    /// `{ kind: "nativeEdit", action }`, `{ kind: "closeFocusedWindow" }`, or `{ kind: "nothing" }`.
+    pub fn click(&self, menu_id: &str) -> JsValue {
+        serde_json::to_value(self.menu.click(menu_id)).map_or(JsValue::NULL, |click| to_js(&click))
+    }
+}
+
+impl Default for DemoMenuBar {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
