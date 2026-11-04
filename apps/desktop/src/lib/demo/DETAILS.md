@@ -219,7 +219,8 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
 7. Plugin commands (`plugin:<name>|<command>`) go in `plugins.ts`, or in `webview.ts`'s `windowAnswer` when they're
    about the calling window.
 
-Answer as a fresh, personal-use Cmdr on a Mac with nothing extra would: no index, no AI, no network hosts, no updater
+Answer as a fresh, personal-use Cmdr on a Mac with nothing extra would: no index (folder sizes are real anyway, from the
+engine's fold: `crates/cmdr-listing-wasm/DETAILS.md` § Folder sizes), no AI, no network hosts, no updater
 (`getManagedPolicy` says updates are disabled), no tags or custom folder icons. Icons: macOS draws the live ones and the
 demo can't ask it, so `getIcons` answers every id with the app's bundled generic folder or document
 (`static/icons/default-*.png`), through `$app/paths`' `asset()` so they resolve under `/demo`.

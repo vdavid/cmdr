@@ -52,8 +52,7 @@ describe('app answers', () => {
     }
   })
 
-  it('volume stats count one entry per asked path', () => {
-    expect(ask('getDirStatsBatch', { paths: ['/a', '/b', '/c'] })).toEqual([null, null, null])
+  it('volume index status names the asked volume', () => {
     expect((ask('getVolumeIndexStatusById', { volumeId: 'root' }) as { volumeId: string }).volumeId).toBe('root')
   })
 })

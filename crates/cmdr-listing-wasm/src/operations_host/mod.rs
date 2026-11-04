@@ -27,7 +27,7 @@ use cmdr_fs::volume::Volume;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_listing::Listings;
 use cmdr_operation_log::OperationLog;
-use cmdr_operations::host::NameOrder;
+use cmdr_operations::host::{NameOrder, OperationIndex};
 use cmdr_operations::{OperationEventSink, Operations};
 
 use crate::events::EventSink;
@@ -50,13 +50,14 @@ pub struct DemoOperations {
 
 impl DemoOperations {
     /// The write engine over `volume` (filed under `volume_id`), on `volume_host`
-    /// (which carries the panes), sorting names as `listings` does, and
-    /// journaling into a fresh operation log.
+    /// (which carries the panes), sorting names as `listings` does, sizing
+    /// folders through `index`, and journaling into a fresh operation log.
     pub(crate) fn new(
         volume_id: String,
         volume: Arc<dyn Volume>,
         volume_host: VolumeHost,
         listings: &Listings,
+        index: Arc<dyn OperationIndex>,
         sink: Arc<dyn EventSink>,
     ) -> Self {
         let volumes = Arc::new(volumes::DemoVolumes::new(volume_id.clone(), Arc::clone(&volume)));
@@ -74,6 +75,7 @@ impl DemoOperations {
         let engine = Operations::builder(volumes, events)
             .volume_host(volume_host)
             .operation_log(log)
+            .index(index)
             .name_order(Arc::new(PaneNameOrder {
                 listings: listings.clone(),
             }))

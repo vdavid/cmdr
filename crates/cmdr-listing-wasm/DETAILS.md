@@ -141,6 +141,24 @@ command to it when `DemoOperations::handles` claims it.
   applies inline, `cmdr-operation-log`'s browser build). The ledger is claimed unpersisted; its `LedgerUnpersisted`
   report stays quiet. Natively (tests) the log is a scratch file in the temp dir.
 
+## Folder sizes
+
+`folder_sizes.rs`'s `FolderSizes` stands in for the drive index, with no `cmdr-index` in the build: a fold over the
+store (`InMemoryVolume::subtree_totals`, counting the way `cmdr-index`'s aggregator does), complete and never stale.
+
+- **Decision: the existing seams, no new one.** The app's index already reaches both engines through one trait each:
+  `cmdr_listing::host::ListingIndex` (`enrich` fills pane rows on every read, insert, and `refresh_index_sizes`) and
+  `cmdr_operations::host::OperationIndex` (dialog sizes, progress totals). `FolderSizes` implements both, and the
+  `get_dir_stats` / `get_dir_stats_batch` commands (the status bar, selection info, the `..` row) read it too. A third
+  "folder size source" trait would duplicate `ListingIndex::enrich`. `search_leaves` stays downgraded (`IndexAbsent`):
+  the fold counts, it keeps no leaf list.
+- **Changes compose ahead of the panes**, as the app's composer feeds its index first: `BackendListings` hands every
+  `directory_changed` to `FolderSizes::changed` (which forgets the changed entry's subtree and its ancestors from the
+  memo), then to the panes, then calls `refresh_index_sizes` on every open listing strictly ABOVE the change, whose
+  folder row moved. The engine publishes moved rows as `directory-diff` modifies; no `listing-index-sizes-changed` (that
+  event is the app's index worker batching a live index, with its cooldown and hourglass, which a fold doesn't need).
+- **Physical size** is each file's `physical_size`, or its logical size where the store models none.
+
 ## Where the demo differs from the app
 
 - **No `listing-progress`**: `InMemoryVolume` ignores its progress callback; an in-memory read is instant anyway.
@@ -150,7 +168,8 @@ command to it when `DemoOperations::handles` claims it.
 - **Font metrics live in memory only**: the desktop persists each size to `font-metrics/{font_id}.bin`, so a reload of
   the page measures again. No `timeout` kind either: the desktop's two-second cap on `get_brief_column_text_widths`
   guards a write-locked cache, which a page's one thread can't be waiting on.
-- **Owners show as empty, permissions are fixed**, and nothing reads tags, packages, index sizes, or git status.
+- **Owners show as empty, permissions are fixed**, and nothing reads tags, packages, or git status. Folder sizes come
+  from a fold, never an index (§ Folder sizes).
 - **The menu bar is the macOS one** whatever the visitor's OS, and its OS rows (Services, Hide, Quit, Undo, Minimize)
   are drawn greyed: a page has no OS to hand them to.
 - **No local disk**: `move_files` (the desktop's same-`root` move) runs as a volume move on `root`, the dialog's

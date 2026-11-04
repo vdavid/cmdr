@@ -29,6 +29,7 @@ use cmdr_fs::volume::host::VolumeHost;
 
 use crate::backend_listings::BackendListings;
 use crate::events::{DemoEvents, EventSink, ListingPathEvent};
+use crate::folder_sizes::FolderSizes;
 use crate::operations_host::DemoOperations;
 use crate::tree::{DemoTree, TreeError};
 
@@ -53,6 +54,10 @@ pub const COMMANDS: &[&str] = &[
     "refresh_listing",
     "get_listing_stats",
     "refresh_listing_index_sizes",
+    // The drive index's folder stats (`commands/indexing.rs` in the app), off
+    // the volume's fold: the status bar, selection info, and the `..` row.
+    "get_dir_stats",
+    "get_dir_stats_batch",
     // Brief mode's column widths (`commands/font_metrics.rs` and `listing.rs` in the
     // app). The page measures its own fonts and stores them, as the desktop's does.
     "store_font_metrics",
@@ -84,6 +89,8 @@ pub struct Demo {
     /// counterpart, so a reload measures again.
     fonts: Arc<FontMetricsStore>,
     operations: DemoOperations,
+    /// Folder sizes off the volume, the drive index's stand-in.
+    sizes: Arc<FolderSizes>,
 }
 
 impl Demo {
@@ -92,28 +99,35 @@ impl Demo {
         let volume_id = tree.volume_id.clone();
         // Late-bound: the volume patches the panes, which list the volume.
         let panes = Arc::new(BackendListings::default());
-        let volume: Arc<dyn Volume> = Arc::new(
+        let store = Arc::new(
             tree.into_in_memory()?
                 .with_bandwidth(DEVICE_BYTES_PER_SEC)
                 .with_yielding(DEVICE_SLICE)
                 .with_capacity(DEVICE_CAPACITY_BYTES)
                 .with_pane_patches(volume_id.clone(), Arc::clone(&panes) as _),
         );
+        // The drive index's stand-in, for the panes, the dialogs, and the status bar.
+        let sizes = Arc::new(FolderSizes::new(Arc::clone(&store)));
+        let volume: Arc<dyn Volume> = store;
         let events = Arc::new(DemoEvents::new(Arc::clone(&sink)));
         let volumes = Arc::new(OneVolume {
             volume_id: volume_id.clone(),
             volume: Arc::clone(&volume),
         });
-        let listings = Listings::builder(volumes, Arc::clone(&events) as _).build();
+        let listings = Listings::builder(volumes, Arc::clone(&events) as _)
+            .index(Arc::clone(&sizes) as _)
+            .build();
         panes.attach(&listings);
+        panes.attach_sizes(Arc::clone(&sizes));
         listings.start_orphan_reaper();
         let volume_host = VolumeHost::builder().listings(panes).build();
-        let operations = DemoOperations::new(volume_id, volume, volume_host, &listings, sink);
+        let operations = DemoOperations::new(volume_id, volume, volume_host, &listings, Arc::clone(&sizes) as _, sink);
         Ok(Self {
             listings,
             events,
             fonts: Arc::new(FontMetricsStore::new()),
             operations,
+            sizes,
         })
     }
 
@@ -292,6 +306,14 @@ impl Demo {
                 l.refresh_index_sizes(&ListingId::new(a.listing_id));
                 Ok(Value::Null)
             }
+            "get_dir_stats" => {
+                let a: PathArgs = parse(command, args)?;
+                ok(self.sizes.dir_stats(&[a.path]).pop().flatten())
+            }
+            "get_dir_stats_batch" => {
+                let a: PathsArgs = parse(command, args)?;
+                ok(self.sizes.dir_stats(&a.paths))
+            }
             "store_font_metrics" => {
                 let a: FontWidthsArgs = parse(command, args)?;
                 answer(widths_from_parallel(a.code_points, a.widths).map(|widths| {
@@ -421,6 +443,16 @@ struct StartArgs {
 #[serde(rename_all = "camelCase")]
 struct IdArgs {
     listing_id: String,
+}
+
+#[derive(Deserialize)]
+struct PathArgs {
+    path: String,
+}
+
+#[derive(Deserialize)]
+struct PathsArgs {
+    paths: Vec<String>,
 }
 
 #[derive(Deserialize)]

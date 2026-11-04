@@ -11,13 +11,15 @@
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::host::listings::ListingHost;
 use cmdr_fs::volume::{DirectoryChange, SupportedDates};
 
 use cmdr_listing::{DirectorySortMode, EffectiveSort, Listings, SortColumn, SortOrder, sort_entries};
+
+use crate::folder_sizes::FolderSizes;
 
 /// The listing engine as the [`ListingHost`] a backend reports its writes to.
 /// Late-bound: the volume needs its listing host before the engine that lists it
@@ -27,6 +29,7 @@ use cmdr_listing::{DirectorySortMode, EffectiveSort, Listings, SortColumn, SortO
 #[derive(Default)]
 pub struct BackendListings {
     listings: OnceLock<Listings>,
+    sizes: OnceLock<Arc<FolderSizes>>,
 }
 
 impl BackendListings {
@@ -34,12 +37,39 @@ impl BackendListings {
     pub fn attach(&self, listings: &Listings) {
         let _ = self.listings.set(listings.clone());
     }
+
+    /// Feeds every change to `sizes` ahead of the panes, and refreshes the
+    /// folder rows of every pane above the change. A second call is ignored.
+    pub fn attach_sizes(&self, sizes: Arc<FolderSizes>) {
+        let _ = self.sizes.set(sizes);
+    }
+
+    /// Re-asks the sizes of every pane strictly ABOVE `parent_path`: one of its
+    /// folder rows holds the change. The pane AT `parent_path` heard the change
+    /// itself, and its rows' own subtrees didn't move.
+    fn refresh_panes_above(listings: &Listings, volume_id: &str, parent_path: &Path) {
+        for open in listings.open_listing_paths(volume_id) {
+            if open.as_path() == parent_path || !parent_path.starts_with(&open) {
+                continue;
+            }
+            for id in listings.listings_for_path_on_volume(volume_id, &open) {
+                listings.refresh_index_sizes(&id);
+            }
+        }
+    }
 }
 
 impl ListingHost for BackendListings {
     fn directory_changed(&self, volume_id: &str, parent_path: &Path, change: DirectoryChange) {
+        let sizes = self.sizes.get();
+        if let Some(sizes) = sizes {
+            sizes.changed(parent_path, &change);
+        }
         if let Some(listings) = self.listings.get() {
             listings.directory_changed(volume_id, parent_path, change);
+            if sizes.is_some() {
+                Self::refresh_panes_above(listings, volume_id, parent_path);
+            }
         }
     }
 

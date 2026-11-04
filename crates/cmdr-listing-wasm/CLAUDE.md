@@ -8,7 +8,8 @@ The engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`. Not
 - `tree.rs`: the page's JSON tree into an `InMemoryVolume`. `events.rs`: engine facts into Tauri-named events.
   `commands.rs`: `Demo`, the listing commands by their Tauri names, plus Brief widths and font metrics
   (`cmdr-brief-columns`, memory only). `menu.rs`: `DemoMenu`, the menu-state pushes stored and the macOS bar drawn from
-  `cmdr-menu`. `bindings.rs` (wasm only): the `wasm-bindgen` API.
+  `cmdr-menu`. `folder_sizes.rs`: the drive index's stand-in, a fold over the volume behind both engines' index seams
+  (DETAILS § Folder sizes). `bindings.rs` (wasm only): the `wasm-bindgen` API.
 - `operations_host/`: the write engine's host (seams, sinks, `wire.rs` event names, `commands/` by domain), on the same
   volume and `Listings` the listing engine uses. DETAILS § Writes.
 - `smoke.mjs` (+ `smoke-writes.mjs`): loads the built module in Node and drives a listing and every write. Build:
