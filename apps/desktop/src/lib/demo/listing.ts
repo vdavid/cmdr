@@ -42,6 +42,17 @@ function expandPaths(payload: Payload): Payload {
 }
 
 /**
+ * The free space the page's `?free=<bytes>` asks the disk to start with, so a visitor (or the E2E
+ * spec) can watch a copy fail on a full disk and Retry it after a delete. `undefined` (the default,
+ * or anything that isn't a whole number of bytes) gives the disk the size the volume list shows.
+ */
+export function freeBytesFromSearch(search: string): number | undefined {
+  const raw = new URLSearchParams(search).get('free')
+  if (raw === null || !/^\d{1,15}$/.test(raw)) return undefined
+  return Number(raw)
+}
+
+/**
  * Starts loading the engine and returns its handle at once. The WASM downloads while the app boots;
  * the first listing command waits for it. Events go to `sink` a task late, in order: the in-memory
  * read can finish inside `list_directory_start_streaming`, but the pane expects that command's answer
@@ -54,6 +65,7 @@ export function startListingEngine(sink: ListingEventSink): ListingEngineHandle 
       volumeId: DEMO_VOLUME_ID,
       volumeName: 'Macintosh HD',
       home: DEMO_HOME,
+      freeBytes: freeBytesFromSearch(window.location.search),
       root: DEMO_ROOT,
       entries: demoEntries,
     }

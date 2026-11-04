@@ -24,6 +24,13 @@ pub struct DemoTree {
     /// desktop's (`~/Documents`). `None` reads them as `<volume name>/…`.
     #[serde(default)]
     pub home: Option<String>,
+    /// How much room the disk has left beyond what `entries` hold, when the
+    /// page sets it (the `?free=` URL parameter, how a visitor or a test sees a
+    /// full disk). `None` makes the disk [`DEVICE_CAPACITY_BYTES`] big.
+    ///
+    /// [`DEVICE_CAPACITY_BYTES`]: crate::commands::DEVICE_CAPACITY_BYTES
+    #[serde(default)]
+    pub free_bytes: Option<u64>,
     /// Where the volume is mounted (`"/"`).
     pub root: String,
     /// Every file, folder, and symlink, by absolute path.
@@ -93,6 +100,19 @@ fn secs(ms: Option<u64>) -> Option<u64> {
 }
 
 impl DemoTree {
+    /// The disk's size under [`Self::free_bytes`]: what the files hold plus the
+    /// room left. `None` when the page didn't set it.
+    pub fn capacity_bytes(&self) -> Option<u64> {
+        let free = self.free_bytes?;
+        let stored: u64 = self
+            .entries
+            .iter()
+            .filter(|e| e.kind == DemoKind::File)
+            .filter_map(|e| e.size)
+            .sum();
+        Some(stored.saturating_add(free))
+    }
+
     /// The tree as an in-memory volume, after checking every path has its parent.
     pub fn into_volume(self) -> Result<Arc<dyn Volume>, TreeError> {
         Ok(Arc::new(self.into_in_memory()?))

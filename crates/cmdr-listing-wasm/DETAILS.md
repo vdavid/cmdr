@@ -133,9 +133,15 @@ command to it when `DemoOperations::handles` claims it.
   the engine that lists it exists). The write engine's `VolumeHost` carries the same host, and its `NameOrder` is the
   listing engine's collator.
 - **The device**: `with_bandwidth(5 MiB/s)` (its burst window keeps a page's late timers from eating the rate:
-  `crates/cmdr-fs/DETAILS.md` § Bandwidth), so a 120 MB file copies for about 23 s, long enough to watch and pause in
-  the queue, `with_yielding(8 ms)` (the page never waits long on engine work), and `with_capacity` at the disk size the
-  volume list shows, so free space is live. `Pacing` stays the engine's default `None`.
+  `crates/cmdr-fs/DETAILS.md` § Bandwidth), so `dataset.csv` (120 MB) copies in about 26 s end to end, long enough to
+  watch and pause in the queue, and the 1,200 photos (3.59 GB) would take about 11.5 min (verified in a
+  `pnpm build:demo` under headless Chromium 156: 5.2–5.3 MB/s sustained over 20 s of the photo copy, 2026-11-04),
+  `with_yielding(8 ms)` (the page never waits long on engine work), and `with_capacity` at the disk size the volume list
+  shows, so free space is live. `Pacing` stays the engine's default `None`.
+- **A full disk, on purpose**: the tree's `freeBytes` (the page's `?free=<bytes>`, `listing.ts`'s `freeBytesFromSearch`)
+  sizes the disk as what the files hold plus that much room. A copy that doesn't fit then fails the way a real disk does
+  (`StorageFull` → `destination_full`), and a backgrounded one stays in the queue as "Couldn't finish", whose Retry
+  lands it once a delete has made room. Pinned by `commands_test.rs`'s full-disk cell and the website demo spec.
 - **The journal** is the real `cmdr-operation-log` on `/demo/operation-log-<n>.db`, numbered per engine so the golden
   replay's engines in one module never share one (SQLite's in-memory VFS, gone on reload like the volume; the writer
   applies inline, `cmdr-operation-log`'s browser build). The ledger is claimed unpersisted; its `LedgerUnpersisted`

@@ -17,7 +17,15 @@ declare module 'virtual:cmdr-listing-wasm' {
 
   export class DemoListing {
     constructor(
-      tree: { volumeId: string; root: string; entries: readonly DemoTreeEntry[] },
+      tree: {
+        volumeId: string
+        volumeName?: string
+        home?: string
+        /** The disk's free space at boot, in bytes; omitted, the disk is the size the volume list shows. */
+        freeBytes?: number
+        root: string
+        entries: readonly DemoTreeEntry[]
+      },
       onEvent: (event: string, payload: unknown) => void,
     )
     static commands(): string[]

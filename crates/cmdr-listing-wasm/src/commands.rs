@@ -92,11 +92,12 @@ impl Demo {
         let volume_id = tree.volume_id.clone();
         // Late-bound: the volume patches the panes, which list the volume.
         let panes = Arc::new(BackendListings::default());
+        let capacity = tree.capacity_bytes().unwrap_or(DEVICE_CAPACITY_BYTES);
         let volume: Arc<dyn Volume> = Arc::new(
             tree.into_in_memory()?
                 .with_bandwidth(DEVICE_BYTES_PER_SEC)
                 .with_yielding(DEVICE_SLICE)
-                .with_capacity(DEVICE_CAPACITY_BYTES)
+                .with_capacity(capacity)
                 .with_pane_patches(volume_id.clone(), Arc::clone(&panes) as _),
         );
         let events = Arc::new(DemoEvents::new(Arc::clone(&sink)));

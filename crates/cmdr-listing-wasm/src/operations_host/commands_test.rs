@@ -343,6 +343,64 @@ async fn the_path_questions_see_every_write() {
     assert_eq!(echo, Value::Null, "a volume rooted at `/` has no root to echo");
 }
 
+/// The page's tree with only `free_bytes` of room left on the disk.
+fn demo_with_free_bytes(free_bytes: u64) -> (Demo, Arc<Collector>) {
+    let tree: DemoTree = serde_json::from_value(json!({
+        "volumeId": "root",
+        "root": "/",
+        "freeBytes": free_bytes,
+        "entries": [
+            { "path": "/Users", "kind": "dir" },
+            { "path": "/Users/you", "kind": "dir" },
+            { "path": "/Users/you/Documents", "kind": "dir" },
+            { "path": "/Users/you/a.txt", "kind": "file", "size": 1_000 },
+            { "path": "/Users/you/c.txt", "kind": "file", "size": 3_000 },
+        ],
+    }))
+    .expect("tree parses");
+    let events = Arc::new(Collector::default());
+    let demo = Demo::new(tree, Arc::clone(&events) as _).expect("valid tree");
+    (demo, events)
+}
+
+/// A copy onto a full disk fails, the queue keeps it with a Retry, and the Retry
+/// lands it once a delete has made room.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_copy_onto_a_full_disk_is_kept_for_retry_and_lands_once_there_is_room() {
+    let (demo, events) = demo_with_free_bytes(2_500);
+    let space = call(&demo, "get_volume_space", json!({ "path": "/" })).await;
+    assert_eq!(space["data"]["availableBytes"], 2_500, "{space}");
+
+    let op = copy(&demo, &["/Users/you/c.txt"], "/Users/you/Documents", "stop").await;
+    assert_eq!(events.settled(&op).await, "write-error");
+    let queue = call(&demo, "list_operations", json!({})).await;
+    let failed = queue
+        .as_array()
+        .expect("rows")
+        .iter()
+        .find(|row| row["operationId"] == op)
+        .unwrap_or_else(|| panic!("the failure stays in the queue: {queue}"));
+    assert_eq!(failed["canRetry"], true, "{failed}");
+
+    let deleted = call(
+        &demo,
+        "delete_files",
+        json!({ "sources": ["/Users/you/a.txt"], "volumeId": "root", "initiator": "user" }),
+    )
+    .await;
+    let deleted = deleted["operationId"].as_str().expect("id").to_string();
+    assert_eq!(events.settled(&deleted).await, "write-complete");
+
+    let retried = call(&demo, "retry_failed_operation", json!({ "operationId": op })).await;
+    let again = retried["operationId"]
+        .as_str()
+        .unwrap_or_else(|| panic!("a Retry starts the copy again: {retried}"))
+        .to_string();
+    assert_eq!(events.settled(&again).await, "write-complete");
+    open(&demo, &events, "docs", "/Users/you/Documents").await;
+    assert_eq!(names(&demo, "docs").await, ["c.txt"]);
+}
+
 #[test]
 fn every_write_command_is_routed_to_the_write_engine() {
     for command in Demo::commands() {

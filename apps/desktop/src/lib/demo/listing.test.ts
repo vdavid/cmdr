@@ -31,7 +31,7 @@ vi.mock('virtual:cmdr-listing-wasm', () => ({
 
 import { DEMO_HOME, DEMO_ROOT, DEMO_VOLUME_ID } from './demo-tree.js'
 import { _resetEngineModuleForTests } from './engine-module.js'
-import { startListingEngine } from './listing.js'
+import { freeBytesFromSearch, startListingEngine } from './listing.js'
 
 afterEach(() => {
   _resetEngineModuleForTests()
@@ -47,6 +47,14 @@ describe('listing engine', () => {
     expect(await handle.handles('list_directory_start_streaming')).toBe(true)
     expect(await handle.handles('get_volume_space')).toBe(false)
     expect(engine.tree).toMatchObject({ volumeId: DEMO_VOLUME_ID, root: DEMO_ROOT })
+  })
+
+  it('reads the disk free space from ?free=, ignoring anything but whole bytes', () => {
+    expect(freeBytesFromSearch('?free=1000000')).toBe(1_000_000)
+    expect(freeBytesFromSearch('?lang=hu&free=0')).toBe(0)
+    for (const search of ['', '?free=', '?free=1e6', '?free=-5', '?free=1.5', '?free=1234567890123456']) {
+      expect(freeBytesFromSearch(search)).toBeUndefined()
+    }
   })
 
   it('expands ~ in path and paths before the engine sees them', async () => {

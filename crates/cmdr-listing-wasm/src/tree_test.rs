@@ -20,6 +20,7 @@ fn tree(entries: Vec<DemoEntry>) -> DemoTree {
         volume_id: "root".into(),
         volume_name: None,
         home: None,
+        free_bytes: None,
         root: "/".into(),
         entries,
     }

@@ -108,7 +108,9 @@ every window. The demo keeps that shape, so secondary windows share its state, a
 
 - **What**: a strip at the top of the page (`menu-bar.ts`, first in `<body>`, so the app's flex column starts under it)
   that draws the macOS menu bar the desktop builds and sends what its items send. It sets `--cmdr-demo-window-top` on
-  `:root` to its height, for the demo chrome that sits on the main window.
+  `:root` to its height, for the demo chrome that sits on the main window. The app's status corner and top toast stack
+  sit against the page's top edge (the window's, on the desktop), so `menu-bar-style.ts` moves both down by it; without
+  that the bar covers the copy's progress chip and eats its click (the website spec's queue cell caught it).
 - **Decision**: the bar is the desktop's own, through WASM. `crates/cmdr-menu` holds the bar as data and the enabled
   fold; `cmdr-listing-wasm`'s `DemoMenuBar` stores the menu-state pushes the app already sends the native menu
   (`activate_window_menu`, `set_commands_refused_over_dialog`, `update_menu_accelerator`, `update_sort_menu`,

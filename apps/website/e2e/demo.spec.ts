@@ -71,14 +71,14 @@ test.describe('Browser demo', () => {
       }).toPass({ timeout: 10_000 })
     }
 
-    async function openDemo(page: Page) {
+    async function openDemo(page: Page, search = '') {
       // A secondary window is an iframe of its route (`/demo/queue`). nginx answers any path under
       // `/demo/` with the app page (the SPA fallback, `nginx.conf`); the static server here
       // doesn't, so this does what nginx does.
       await page.route(/\/demo\/(queue|settings|shortcuts)\/?$/, (route) =>
         route.fulfill({ path: new URL('../dist/demo/index.html', import.meta.url).pathname }),
       )
-      await page.goto('/demo/')
+      await page.goto(`/demo/${search}`)
       await expect(left(page).locator('.file-entry').nth(1)).toBeVisible({ timeout: 30_000 })
     }
 
@@ -170,6 +170,34 @@ test.describe('Browser demo', () => {
       await confirm.getByRole('button', { name: 'Roll back', exact: true }).click()
       await expect(page.getByText('Rolled back', { exact: true })).toBeVisible()
       await expect(row(right(page), 'notes')).toHaveCount(0)
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
+
+    test('a copy onto a full disk stays in the queue, and Retry lands it once there is room', async ({ page }) => {
+      const errors = collectPageErrors(page)
+      // `?free=1000` leaves 1 kB on the disk, too little for `notes.md` (4.82 kB).
+      await openDemo(page, '?free=1000')
+      await page.keyboard.press('End')
+      await page.keyboard.press('F5')
+      await page.getByRole('button', { name: /^Background\b/ }).click()
+      await expect(page.getByText('Couldn’t finish copying').first()).toBeVisible({ timeout: 10_000 })
+      await expect(row(right(page), 'notes')).toHaveCount(0)
+
+      // Make room: F8 on `Cmdr.dmg` (38 MB) in Downloads, the first file there.
+      await page.keyboard.press('Tab')
+      await page.keyboard.press('ArrowDown')
+      await pressUntil(page, 'F8', page.getByText('This volume doesn’t support trash.'))
+      await page.keyboard.press('Enter')
+      await expect(row(right(page), 'Cmdr')).toHaveCount(0)
+
+      // The queue kept the failed copy; its Retry lands it now.
+      await page.getByRole('button', { name: 'Show in operation queue' }).first().click()
+      const queue = page.frameLocator('.cmdr-demo-window iframe')
+      await expect(queue.getByText('Couldn’t finish', { exact: true })).toBeVisible({ timeout: 10_000 })
+      await expect(queue.getByText('The destination ran out of space before everything was written.')).toBeVisible()
+      await queue.getByRole('button', { name: /^Retry\b/ }).click()
+      await expect(row(right(page), 'notes')).toBeVisible()
+      await expect(queue.getByText('Couldn’t finish', { exact: true })).toHaveCount(0)
       expect(errors.map((error) => error.message)).toEqual([])
     })
   })
