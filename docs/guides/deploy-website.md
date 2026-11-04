@@ -9,17 +9,20 @@ The website (getcmdr.com) is automatically deployed when changes are pushed to t
    workspace files; the full list is `ci.yml`'s `website` filter).
 2. GitHub Actions runs the `website-demo` job (builds the demo) and then the `website` job (oxfmt, ESLint, typecheck,
    build with the demo, Playwright, Lighthouse)
-3. If all checks pass, the `deploy-website` job sends a webhook to the server
+3. If all checks pass, the `publish-website-demo` job pushes the demo bundle as the public image
+   `ghcr.io/vdavid/cmdr-demo:<content key>` (skipped when an image of the same sources exists), then the
+   `deploy-website` job sends a webhook to the server
 4. The server verifies the signature and runs the deploy script:
    - Pulls the latest code
-   - Rebuilds the Docker image: the `demo` stage builds the browser demo (Rust to WASM, then the desktop frontend;
-     cached when its sources didn't change), and the site stage fetches the live update manifest (`latest.json` of the
-     GitHub release marked "Latest") into the site. A failed fetch or demo build fails the build, and the old site stays
-     up
+   - Computes the demo's content key from its checkout (`scripts/website-demo-key.sh`) and rebuilds the Docker image
+     with that image as `DEMO_IMAGE`, so it only copies the demo and never compiles Rust. The site stage also fetches
+     the live update manifest (`latest.json` of the GitHub release marked "Latest") into the site. A failed fetch or a
+     missing demo image fails the build, and the old site stays up
    - Restarts the container
 
-The build runs with a fresh `DEPLOY_ID` build arg and never with `--no-cache`, which would also drop the demo's BuildKit
-cache mounts and rebuild its Rust from cold every deploy (`apps/website/DETAILS.md` § Browser demo).
+The `cmdr-demo` package must be public, since the server pulls anonymously. If GHCR creates it private on the first
+push, the publish job fails with a pointer to its settings page, and David sets its visibility to public once
+(`apps/website/DETAILS.md` § Browser demo).
 
 ## Server setup (one-time)
 
@@ -238,8 +241,8 @@ cd /opt/cmdr
 git fetch origin main && git reset --hard origin/main
 cd apps/website
 # Build first so the old container keeps serving during the build (avoids ~15s downtime).
-# A fresh DEPLOY_ID refetches the live manifest; `--no-cache` would rebuild the demo's Rust cold.
-docker compose build --build-arg DEPLOY_ID="manual-$(date +%s)"
+# The demo image for this checkout's sources, as the deploy script picks it
+docker compose build --no-cache --build-arg DEMO_IMAGE="ghcr.io/vdavid/cmdr-demo:$(../../scripts/website-demo-key.sh)"
 docker compose down
 docker compose up -d
 ```

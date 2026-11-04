@@ -332,19 +332,33 @@ nothing links to it, it's out of the sitemap, and it's `noindex` until David lau
   build fails the site build; without it, the site builds as always and the snippet is written empty.
 - **Decision: opt-in, not part of every `pnpm build`.** The demo needs Rust, the wasm32 target, `wasm-bindgen`, and Go,
   so building it on every website build would put that toolchain under the website checks, local dev, and Lighthouse.
-  The places that ship or test the site set the flag: the Dockerfile and CI's `website` job.
-- **Decision: the server builds it, in the Dockerfile's `demo` stage.** The deploy path stays single (the webhook,
-  `git reset`, `docker compose build`), with no artifact handoff from CI and no new secret. The stage installs the
-  toolchain `rust-toolchain.toml` pins (via checksum-pinned rustup, minimal profile, wasm32 only) and builds on BuildKit
-  cache mounts with two cargo jobs. Measured on an M-series Mac in Docker (2026-11-04): about 2 minutes cold (crates
-  plus `wasm-bindgen-cli`), seconds when the demo's sources are unchanged (the whole layer is cached). The Vite build
-  peaks around 1.7 GB RSS, which the 7.6 GB server has room for. That's why the deploy builds WITHOUT `--no-cache`,
-  which also drops cache mounts (measured: it recompiled all 245 crates); a per-deploy `DEPLOY_ID` build arg busts the
-  `builder` stage from the live-manifest fetch on, so `latest.json` is still fetched fresh every deploy.
+  The places that ship or test the site set the flag: the Dockerfile (on by default) and CI's `website` job.
+- **Decision: CI builds it, the server only copies it.** The Hetzner box also runs Caddy, Umami, Photato, and the
+  grocery apps, and the demo's Vite build alone peaks around 1.7 GB RSS (with 2.6 GB free and no swap, 2026-11-04), so a
+  Rust or Vite build there risks OOM-killing them. CI's `publish-website-demo` job pushes the bundle as a `FROM scratch`
+  image (`demo-image.Dockerfile`) to `ghcr.io/vdavid/cmdr-demo`, with `GITHUB_TOKEN` and `packages: write` (no new
+  secret), and `deploy-website` waits for it. The Dockerfile's `demo-bundle` stage is `FROM ${DEMO_IMAGE}`, which
+  `deploy-website.sh` sets; the deploy keeps its `--no-cache` and otherwise runs as before.
+- **Decision: the tag is a content key, not a commit SHA.** `scripts/website-demo-key.sh` hashes every demo source (git
+  tree entries only, so the server needs nothing but git) and CI and the deploy each compute it from their own checkout,
+  so a site is only ever built with the demo of its own sources, and never `:latest`. A commit SHA can't do that here:
+  the server deploys `origin/main`, which may already be newer than the run that fired the webhook, and a landed
+  commit's lanes usually skip (verified on its PR), so no run builds per SHA. With a key, any commit with the same demo
+  sources finds the image, and an unchanged demo skips the build. If `main` moved on to new demo sources whose image
+  isn't pushed yet, the build fails on the pull and the old site stays up until that commit's own deploy.
+- **The key's path list is load-bearing.** It must equal `websiteDemoInputs` (check runner) and be covered by ci.yml's
+  `website` filter, excluding the agent docs as the filter does; `TestWebsiteDemoInputsMatchTheImageKey` holds all three
+  together. A path hashed but not filtered would change the key on a commit that publishes no image.
+- **The image must be public**: the server pulls anonymously. GHCR may create the `cmdr-demo` package private on its
+  first push; then David sets it public once at github.com/users/vdavid/packages/container/cmdr-demo/settings. The
+  publish job checks an anonymous pull before the deploy fires and names that page when it fails.
+- **Local builds**: `CMDR_WEBSITE_DEMO=1 pnpm build` reads `apps/desktop/build-demo/` directly. A local Docker build
+  passes that dir with `--build-context demo=apps/desktop/build-demo` (what `website-docker-build` does; without a local
+  demo it uses an empty dir and `CMDR_WEBSITE_DEMO=0`).
 - **CI**: the `website-demo` job builds it on the bare runner (the `website` job runs inside the Playwright image, which
-  has no Rust) and hands it over as an artifact. The `website` filter includes the demo's inputs (the desktop frontend,
-  the four crates the engine compiles, the WASM build script, the Cargo workspace files), so a change there re-runs the
-  lane and redeploys. The check runner's `websiteDemoInputs` mirrors that list.
+  has no Rust) and hands it over as an artifact, which `publish-website-demo` reuses when it exists. Both build through
+  `.github/actions/build-website-demo`. The `website` filter includes the demo's inputs, so a change there re-runs the
+  lane and redeploys.
 - **Serving** (`nginx.conf`): `/demo` redirects to `/demo/`; `/demo/_app/immutable/` is content-hashed (a year,
   immutable, a real 404 when missing); anything else under `/demo/` is the file or, failing that, the app page, so a
   deep link or reload boots the app. nginx's own mime table serves `.wasm` as `application/wasm` (verified in
@@ -352,7 +366,9 @@ nothing links to it, it's out of the sitemap, and it's `noindex` until David lau
 - **Headers**: `nginx-demo-security-headers.conf` replaces the site's CSP for `/demo/` only, sharing the rest via
   `nginx-security-headers-base.conf`. The policy and why each part is there are in that file's header. Verified in the
   built image with Chromium (2026-11-04): no CSP violation on boot, `WebAssembly.instantiate` allowed under `/demo/` and
-  refused under the site's own policy. It also sends `X-Robots-Tag: noindex, nofollow`.
+  refused under the site's own policy. It also sends `X-Robots-Tag: noindex, nofollow`. `frame-src 'self'` because the
+  demo's secondary windows (Settings) are same-origin iframes of `/demo/<route>`; `frame-ancestors 'self'` lets our own
+  pages embed the demo.
 - **Smoke test**: `e2e/demo.spec.ts`, against `dist/` like every website E2E (so it runs without nginx's headers; the
   CSP is verified by hand as above). It skips locally when `dist/demo/` isn't built and fails in CI when it's missing.
 - **Other dist checks skip `dist/demo/`**: `.htmlvalidateignore` (the desktop's `app.html` conventions differ) and

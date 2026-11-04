@@ -337,14 +337,19 @@ var websiteInputs = []string{
 
 // websiteDemoInputs are what the browser demo at /demo/ builds from (`pnpm build:demo`: the
 // listing engine for wasm32, then the desktop frontend's demo build), for the website checks that
-// see the demo: the Docker build always builds it, and the E2E tests it when dist/ holds it.
+// see the demo (the Docker build and the E2E, when a local demo is built). It must equal the path
+// list `scripts/website-demo-key.sh` hashes into the demo image's tag, which
+// `TestWebsiteDemoInputsMatchTheImageKey` enforces.
 var websiteDemoInputs = []string{
 	"package.json",
+	"pnpm-lock.yaml",
+	"feature-status.json",
 	"apps/desktop/src/**",
 	"apps/desktop/static/**",
 	"apps/desktop/package.json",
 	"apps/desktop/vite.config.js",
 	"apps/desktop/tsconfig.json",
+	"apps/website/demo-image.Dockerfile",
 	"crates/cmdr-listing-wasm/**",
 	"crates/cmdr-listing/**",
 	"crates/cmdr-fs/**",
@@ -352,6 +357,7 @@ var websiteDemoInputs = []string{
 	"vendor/**",
 	"scripts/build-listing-wasm.sh",
 	"scripts/build-listing-wasm/**",
+	"scripts/website-demo-key.sh",
 	"Cargo.toml",
 	"Cargo.lock",
 	"rust-toolchain.toml",
@@ -478,7 +484,8 @@ var goTestsInputs = inputs(
 	rustWorkspaceConfigInputs,
 	rustEmbeddedInputs,
 	treeGlobs(frontendSourceRoots...),
-	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, s3ComposeRel, s3StartRel, nfsComposeRel, nfsStartRel, smbComposeRel},
+	// ci.yml: `TestWebsiteDemoInputsMatchTheImageKey` reads its `website` filter.
+	[]string{"apps/desktop/package.json", ".github/workflows/ci.yml", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, s3ComposeRel, s3StartRel, nfsComposeRel, nfsStartRel, smbComposeRel},
 )
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks

@@ -1,0 +1,41 @@
+name: Build the browser demo
+description: >-
+  Builds the browser demo the website publishes at /demo/ (`pnpm build:demo`: the listing engine to WASM, then the
+  desktop frontend's demo build) into `apps/desktop/build-demo/`. Expects a checkout and mise's tools installed.
+
+# Shared by ci.yml's `website-demo` (which tests it in the website lane) and `publish-website-demo`
+# (which pushes it as the image the deploy copies). `apps/website/DETAILS.md` § Browser demo.
+inputs:
+  save-rust-cache:
+    description: Whether this run may save the Rust cache (`main` only, like every Rust lane)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Keep only the pinned Rust toolchain
+      uses: ./.github/actions/pinned-rust-toolchain
+
+    # Its own small entry (four crates for wasm32, plus `wasm-bindgen-cli` in `~/.cargo/bin`),
+    # not `desktop-rust`'s ~1.8 GB native tree it would never use.
+    - name: Cache Rust build
+      uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      with:
+        shared-key: website-demo
+        cache-on-failure: true
+        save-if: ${{ inputs.save-rust-cache }}
+
+    - name: Cache pnpm
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.pnpm-store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile --filter @cmdr/desktop
+
+    - name: Build the browser demo
+      shell: bash
+      run: pnpm build:demo
