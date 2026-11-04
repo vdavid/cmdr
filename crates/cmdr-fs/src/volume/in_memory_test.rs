@@ -898,3 +898,40 @@ async fn xattrs_keep_the_shared_contract() {
     volume.create_file(Path::new("/plain.txt"), b"x").await.unwrap();
     conformance::assert_xattrs_keep_their_promises(&volume, Path::new("/plain.txt"), Path::new("/gone.txt")).await;
 }
+
+#[tokio::test]
+async fn held_folders_only_lists_a_missing_folder_or_a_file_the_way_a_disk_does() {
+    let entries = vec![
+        FileEntry::new("docs".to_string(), "/docs".to_string(), true, false),
+        FileEntry::new("a.txt".to_string(), "/docs/a.txt".to_string(), false, false),
+    ];
+    let volume = InMemoryVolume::with_entries("Test", entries).with_held_folders_only();
+
+    assert_eq!(
+        volume.list_directory(Path::new("/"), None).await.expect("root").len(),
+        1
+    );
+    assert_eq!(
+        volume
+            .list_directory(Path::new("/docs"), None)
+            .await
+            .expect("docs")
+            .len(),
+        1
+    );
+    assert!(matches!(
+        volume.list_directory(Path::new("/nope"), None).await,
+        Err(VolumeError::NotFound(_))
+    ));
+    assert!(matches!(
+        volume.list_directory(Path::new("/docs/a.txt"), None).await,
+        Err(VolumeError::NotADirectory(_))
+    ));
+}
+
+#[tokio::test]
+async fn by_default_a_missing_folder_lists_empty() {
+    let volume = InMemoryVolume::new("Test");
+    let listed = volume.list_directory(Path::new("/nope"), None).await.expect("lists");
+    assert!(listed.is_empty());
+}

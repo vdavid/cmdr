@@ -1086,6 +1086,10 @@ Everything above is what the double gets RIGHT unconditionally. On top of that i
 named ways, so a caller's defense against a hostile backend is testable rather than assumed. Each is test-only, and each
 models something a real backend genuinely does:
 
+- **`with_held_folders_only()`** is the one knob that makes the double STRICTER, not hostile: a listing of a folder it
+  doesn't hold answers `NotFound` (a file, `NotADirectory`), as a disk does, where the default lists it empty. The
+  browser demo turns it on (`crates/cmdr-listing-wasm/src/tree.rs`); tests leave it off because most build files without
+  their parent folders.
 - **`with_delete_failing()`** — `delete` returns an `IoError` instead of removing the entry. A backend that can't remove
   a path (a permission, a lock, a dead session).
 - **`set_stat_failing(path)`** — `is_directory` and `get_metadata` (so `entry_kind` too) FAIL for that path rather than

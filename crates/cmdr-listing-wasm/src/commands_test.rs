@@ -219,38 +219,42 @@ async fn a_missing_listing_rejects_with_the_typed_error() {
     assert_eq!(refused, Err(json!({ "type": "gone", "listingId": "gone" })));
 }
 
-/// Pins a difference from a real disk, which answers `NotFound`:
-/// `InMemoryVolume` lists a folder it doesn't hold as empty, so the pane shows
-/// an empty folder. `DETAILS.md` § "Where the demo differs".
+/// A folder the tree doesn't hold ends in the same typed `notFound` a disk's
+/// missing folder does.
 #[tokio::test(flavor = "multi_thread")]
-async fn a_missing_folder_lists_empty() {
+async fn a_missing_folder_ends_in_not_found() {
     let (demo, events) = demo();
-    let done = open(&demo, &events, "pane-3", "/nope").await;
-    assert_eq!(done["totalCount"], 0);
+    let error = open_failing(&demo, &events, "pane-3", "root", "/nope").await;
+    assert_eq!(error["error"]["reason"]["reason"], "notFound", "{error}");
 }
 
-/// A volume id nothing serves ends the listing in a typed `listing-error`.
+/// A volume id nothing serves ends in a typed `listing-error` too.
 #[tokio::test(flavor = "multi_thread")]
 async fn an_unknown_volume_ends_in_a_typed_listing_error() {
     let (demo, events) = demo();
+    let error = open_failing(&demo, &events, "pane-4", "usb", "/").await;
+    assert_eq!(error["error"]["reason"]["reason"], "notFound", "{error}");
+}
+
+/// Starts a listing that should fail and waits for its `listing-error`.
+async fn open_failing(demo: &Demo, events: &Collector, id: &str, volume_id: &str, path: &str) -> Value {
     call(
-        &demo,
+        demo,
         "list_directory_start_streaming",
         json!({
-            "volumeId": "usb", "path": "/", "includeHidden": false,
-            "sortBy": "name", "sortOrder": "ascending", "listingId": "pane-4",
+            "volumeId": volume_id, "path": path, "includeHidden": false,
+            "sortBy": "name", "sortOrder": "ascending", "listingId": id,
         }),
     )
     .await;
     for _ in 0..500 {
-        if let Some(error) = events.payload("pane-4", "listing-error") {
-            assert_eq!(error["error"]["reason"]["reason"], "notFound", "{error}");
-            return;
+        if let Some(error) = events.payload(id, "listing-error") {
+            return error;
         }
         // allowed-test-sleep: polls for the engine's own background task, with a hard cap.
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
-    panic!("no listing-error: {:?}", events.names_for("pane-4"));
+    panic!("no listing-error: {:?}", events.names_for(id));
 }
 
 #[tokio::test]
