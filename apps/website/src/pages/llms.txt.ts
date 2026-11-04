@@ -36,7 +36,7 @@ Current version: ${version}
 
 ## Features
 
-- **Live full-disk index**: Indexes your entire drive once in about 4 minutes. Then stays current forever, even across restarts.
+- **Live full-disk index**: Indexes your entire drive once in 2–4 minutes. Then stays current forever, even across restarts.
 - **Blazing fast**: Built in Rust. Opens a 100k-file folder in 4 seconds with icons, sizes, and dates.
 - **Keyboard-first**: Navigate, select, copy, move without touching your mouse. Two panes, tabs, command palette.
 - **Smart search** (rough around the edges): Find files by describing them: "that PDF contract from last month" or "screenshots with error messages."
