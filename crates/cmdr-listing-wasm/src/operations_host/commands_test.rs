@@ -257,6 +257,39 @@ async fn undo_reverses_a_copy() {
     assert_eq!(names(&demo, "docs").await, ["b.txt"]);
 }
 
+/// A rename on the demo volume undoes through the planner, dated or not: the
+/// rename journals the size and mtime its one `get_metadata` probe read, so the
+/// planner has something to verify.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_rename_undoes() {
+    let (demo, events) = demo();
+    open(&demo, &events, "home", "/Users/you").await;
+    for (from, to) in [("dated.txt", "dated2.txt"), ("a.txt", "a2.txt"), ("Documents", "Docs")] {
+        let renamed = call(
+            &demo,
+            "rename_file",
+            json!({
+                "from": format!("/Users/you/{from}"), "to": format!("/Users/you/{to}"),
+                "force": false, "volumeId": "root", "initiator": "user",
+            }),
+        )
+        .await;
+        assert_eq!(renamed["type"], "done", "{renamed}");
+        let log = call(
+            &demo,
+            "get_recent_operation_log_entries",
+            json!({ "limit": 1, "offset": 0 }),
+        )
+        .await;
+        let report = call(&demo, "undo_operations", json!({ "operationIds": [log[0]["opId"]] })).await;
+        assert_eq!(report["restored"], 1, "{from}: {report}");
+    }
+    assert_eq!(
+        names(&demo, "home").await,
+        ["Documents", "a.txt", "b.txt", "big.bin", "c.txt", "dated.txt"]
+    );
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn the_trash_refuses_typed_as_on_a_volume_without_one() {
     let (demo, events) = demo();

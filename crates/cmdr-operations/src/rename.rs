@@ -203,11 +203,11 @@ async fn rename_managed_inner(
     }
     let descriptor = rename_descriptor(&from, &to, &volume_id, on_local_disk);
     // Journal the rename as a single-item op under the REAL volume id. Snapshot the
-    // source kind BEFORE the closure moves `from`/`to` and the rename fires: local
-    // reads size + mtime for free from `symlink_metadata`; a volume probes only the
-    // kind (dir vs file) for the row's `entry_type` — one metadata call for a
-    // single-item op, since size/mtime aren't cheaply available on MTP (recorded
-    // `None`, acceptable for a record).
+    // source BEFORE the closure moves `from`/`to` and the rename fires: local reads
+    // size + mtime from `symlink_metadata`; a volume asks `get_metadata` once (the
+    // one probe this op makes, where `is_directory` used to be) for the kind, size,
+    // and mtime. The planner verifies an undo against that size and mtime, so
+    // without them every volume rename's undo skipped as unverifiable.
     let op_id = descriptor.operation_id.clone();
     // Cloned so the record after the op (which moves `volume_id` into the closure)
     // still has the id.
@@ -217,17 +217,19 @@ async fn rename_managed_inner(
     } else {
         None
     };
-    let volume_is_dir = if on_local_disk {
-        false
+    let volume_snapshot = if on_local_disk {
+        None
     } else {
         match manager.get(&volume_id) {
-            // Truthful-enough default, unlike the copy/move/delete probes: this
-            // value only labels the journal row's entry type for the undo
-            // history. It reaches no destructive branch, so a mislabeled undo
-            // entry is the whole cost of getting it wrong.
-            // allowed-probe-unwrap: labels an undo-history row only; reaches no destructive branch
-            Some(v) => v.is_directory(&from).await.unwrap_or(false),
-            None => false,
+            // A failed probe journals no kind, size, or mtime: the row reads as a
+            // file and its undo skips as unverifiable, the fail-safe answer. It
+            // reaches no destructive branch.
+            Some(v) => v.get_metadata(&from).await.ok().map(|entry| VolumeSnapshot {
+                is_dir: entry.is_directory,
+                size: entry.size.map(|s| s as i64),
+                mtime: entry.modified_at.map(|m| m as i64),
+            }),
+            None => None,
         }
     };
     // The op's own scope on the engine, which journals it: an instant op has no
@@ -242,7 +244,7 @@ async fn rename_managed_inner(
         None,
         1,
     );
-    let journal_snapshot = Some((from.clone(), to.clone(), local_meta, volume_is_dir));
+    let journal_snapshot = Some((from.clone(), to.clone(), local_meta, volume_snapshot));
 
     let result = engine
         .manager()
@@ -330,11 +332,15 @@ async fn rename_managed_inner(
     // Journal the rename as a single-item op: source → dest, one row (the whole
     // subtree moves by one rename). Rollbackable iff unchanged (rechecked at
     // rollback time).
-    if let Some((from_path, to_path, meta, volume_is_dir)) = journal_snapshot {
+    if let Some((from_path, to_path, meta, volume_snapshot)) = journal_snapshot {
         use cmdr_operation_log::types::{EntryType, ExecutionStatus, ItemOutcome, OpKind};
         match &result {
             Ok(()) => {
-                let is_dir = meta.as_ref().map(|m| m.is_dir()).unwrap_or(volume_is_dir);
+                let (is_dir, size, mtime) = match (&meta, &volume_snapshot) {
+                    (Some(m), _) => (m.is_dir(), Some(m.len() as i64), super::journal::mtime_secs(m)),
+                    (None, Some(v)) => (v.is_dir, v.size, v.mtime),
+                    (None, None) => (false, None, None),
+                };
                 let entry_type = if is_dir { EntryType::Dir } else { EntryType::File };
                 super::journal::record_volume_leaf(
                     &scope,
@@ -342,8 +348,8 @@ async fn rename_managed_inner(
                     &journal_volume_id,
                     &from_path,
                     Some((&journal_volume_id, &to_path)),
-                    meta.as_ref().map(|m| m.len() as i64),
-                    meta.as_ref().and_then(super::journal::mtime_secs),
+                    size,
+                    mtime,
                     false,
                     ItemOutcome::Done,
                 );
@@ -353,6 +359,14 @@ async fn rename_managed_inner(
         }
     }
     (result, InstantTarget::Volume)
+}
+
+/// What a volume rename's one `get_metadata` probe read about its source, for
+/// the journal row the undo verifies against.
+struct VolumeSnapshot {
+    is_dir: bool,
+    size: Option<i64>,
+    mtime: Option<i64>,
 }
 
 /// Starts the background move a rename that copies runs as

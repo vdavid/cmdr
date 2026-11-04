@@ -32,7 +32,7 @@
           "entryType": "File",
           "outcome": "Done",
           "rowRole": "RollbackUnit",
-          "size": null,
+          "size": 3,
           "source": "a.txt"
         }
       ],

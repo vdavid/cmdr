@@ -71,7 +71,9 @@ Pre-flight scans reuse cached listings when the source volume reports `WatchCove
   Leftovers carry a KIND (❌ only a `temp` goes on sight); ❌ only the installed engine's `claim_ledger` opens the
   ledger. § "What the sweep does with each kind".
 - **Every mutation journals through its `OpScope`**; a VOLUME op passes its REAL volume id. Bulk rename journals each
-  hop as it lands: ❌ never batch to the end, nor put a rotation temp in `in_flight_temps` (its sweep DELETES it).
+  hop as it lands: ❌ never batch to the end, nor put a rotation temp in `in_flight_temps` (its sweep DELETES it). A
+  single rename journals its source's size and mtime on every volume (one `get_metadata` probe off the local disk), or
+  the planner can't verify the undo and skips it as `unverifiablePrecondition`.
 - **A transfer carries both volumes as typed sides** (`transfer_sides.rs`), captured at start: a vanished drive can't be
   named later. A drive that LEFT is the mount table's answer, ❌ never an errno.
 - **Free space: `free_space.rs`**, `statvfs` first, slow NSURL only on a shortfall; a shortfall is the person's call
