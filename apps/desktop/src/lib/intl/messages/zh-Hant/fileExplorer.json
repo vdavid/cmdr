@@ -2189,7 +2189,7 @@
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
     "sourceHash": "758e268"
   },
-  "fileExplorer.network.osMountFallback.encryptionUnavailable": "無法直接連線到 <shareName>{share}</shareName>，因為它只接受加密的連線，而伺服器沒有和 Cmdr 協商出加密的方式。你仍然連著，但用的是 macOS 內建的 SMB 網路連線，慢上許多。",
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "無法直接連線到 <shareName>{share}</shareName>，因為這個共享資料夾只接受加密的連線，而伺服器沒有和 Cmdr 協商出加密的方式。你仍然連著，但用的是 macOS 內建的 SMB 網路連線，慢上許多。",
   "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
     "sourceHash": "23dd607"
   },
