@@ -1579,15 +1579,26 @@ fn catch_up_after_subscribe(session_id: &str, path: &Path) {
     }
 }
 
-fn emit_file_changed(session_id: &str, kind: &'static str, new_size: Option<u64>) {
-    let Some(handle) = app_handle() else {
-        return;
-    };
+/// The `viewer:file-changed:<sid>` event's name and payload, which the viewer window
+/// listens for by that name (no typed binding).
+pub(super) fn file_changed_event(
+    session_id: &str,
+    kind: &'static str,
+    new_size: Option<u64>,
+) -> (String, serde_json::Value) {
     let event = format!("viewer:file-changed:{}", session_id);
     let payload = serde_json::json!({
         "kind": kind,
         "newSize": new_size,
     });
+    (event, payload)
+}
+
+fn emit_file_changed(session_id: &str, kind: &'static str, new_size: Option<u64>) {
+    let Some(handle) = app_handle() else {
+        return;
+    };
+    let (event, payload) = file_changed_event(session_id, kind, new_size);
     if let Err(e) = handle.emit(&event, payload) {
         debug!("emit viewer:file-changed failed: {}", e);
     }

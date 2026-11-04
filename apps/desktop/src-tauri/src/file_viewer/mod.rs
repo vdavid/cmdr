@@ -91,6 +91,8 @@ mod session_test_support;
 mod volume_source_test;
 #[cfg(test)]
 mod watcher_test;
+#[cfg(test)]
+mod wire_characterization_test;
 
 pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
