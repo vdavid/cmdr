@@ -138,14 +138,31 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
     `origin.rs`) into the crate-bound error module.
   - `media_protocol.rs` split: the pure `media_serve` beside the token map; the Tauri shell stays.
   - The sync-over-async bridge in `volume_source.rs` / `markdown_images.rs` behind one function (natively
-    `tauri::async_runtime::block_on`'s exact behavior; see landmines).
+    `tauri::async_runtime::block_on`'s exact behavior; see landmines). `HeldReader::drop`'s
+    `tauri::async_runtime::spawn` (the reader's async close) goes through `cmdr_fs::rt` on the host's runtime
+    (`spawn_local` in the browser).
+  - A Markdown document's local image: `VolumeImage::fetch` (`markdown_images.rs`) pulls it to a temp through
+    `materialize_markdown_image` and serves it as a path-based `MediaEntry`. That becomes a host call returning a
+    `MediaSource`: the app keeps today's pull for every volume (moving SMB and the rest to positioned reads is a
+    behavior change that needs David), and the browser host answers `MediaSource::Volume(VolumeMedia)` over the
+    in-memory volume.
+  - The viewer as a value (Decision 1, decided): a `Viewer` owns the session table, the window map, the pending opens,
+    and the host. The media token table is its OWN shared value (`MediaTokens`), because thumbnails mint and drop tokens
+    outside any viewer session (`commands/media_index/thumbnail.rs`) and the one scheme handler serves both. The
+    `Viewer` holds an `Arc<MediaTokens>`; the app keeps one process-wide instance of each in managed state, reachable
+    from every call site that reaches a static today: `commands/file_viewer.rs`, `app_lifecycle.rs`
+    (`close_session_for_window` on `Destroyed`), the scheme closure in `tauri_builder.rs`, `thumbnail.rs`, `lib.rs`'s
+    three `init_*`, `tools/read/inspect/*` (headless calls need no instance; check each), and the tests in
+    `adb/volume_wiring_test.rs` and `commands/file_viewer_test.rs`. List them fresh by `codegraph_callers` before
+    starting.
   - The `tauri_specta::Event` derives moved to app-side wrappers.
   - `PreviewTemp`: the crate-bound session holds a handle type the crate defines; creating and deleting the temp stays
     with `materialize.rs`.
   - Logic in `commands/file_viewer.rs` that is more than a pass-through (window registration, `open_may_materialize`
     gating, `follow_markdown_link`'s external branch) moves under `file_viewer/` so both hosts share it.
 - **Intentions**: make the move in milestone 3 a pure `git mv` plus import edits. A reviewer reads this milestone's diff
-  as "same behavior, new seams". Decide the static-vs-value question (Decision 1) here, before the move.
+  as "same behavior, new seams". The value conversion is its own commit inside this milestone, after the seams, so its
+  diff reads as call-site plumbing only.
 - **Landmines**:
   - `tauri::async_runtime::block_on` is `Runtime::block_on` on Tauri's global runtime; a `Handle::block_on` replacement
     behaves the same on a multi-thread runtime from a non-async thread, and both panic inside an async context. Every
@@ -186,7 +203,10 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
 
 - **Scope**: `cargo build -p cmdr-viewer --target wasm32-unknown-unknown`, with:
   - `LocalFileSource` / `open_local` and the watcher behind `cfg(not(target_family = "wasm"))`; a wasm session whose
-    origin is local is a typed error, never a panic.
+    origin is local is a typed error, never a panic. Gate the local fallback in `open_session_core` BEFORE its
+    `file_path.exists()` check: when `open_through_volume` answers `Ok(None)` (a volume open error falls back there,
+    `origin.rs`), the browser would otherwise report every such file as `NotFound`, since `exists()` is always false
+    there. The browser answers the volume's own typed error instead; pin it in the smoke.
   - The worker module's and the bridge's browser halves. The bridge: poll the future once and answer a typed error if
     it's pending (a page can't block); in-memory volumes are always ready.
   - `rand`'s `getrandom` backend for the browser (or mint tokens through a source that already works there, keeping the
@@ -230,9 +250,18 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
   - Contents cross JS → wasm as bytes, not JSON numbers (a `Uint8Array` per file, or one buffer plus offsets); a JSON
     array of numbers would multiply the boot cost.
   - Window close must reach `close_session_for_window`, or sessions and tokens leak for the life of the page.
+  - The demo's media is `mediaFromVolume: true` (the session reads through `SourceOrigin::Volume`), so the page shows
+    the progress panel until `viewer-media-load` says `Done` (`routes/viewer/+page.svelte`). ❌ Don't fake `false`. The
+    media body call runs the crate's volume serve loop without the `StallWatch` / `blocking_typed_result_until_stalled`
+    wrapper and emits `ViewerMediaLoad` through the host event seam.
+  - `EventSink::emit(event, payload)` (`events.rs`) has no target, but `ViewerMediaLoad` (and `ViewerPullProgress`) go
+    `emit_to(window label)` on desktop. Give the sink an optional label, mapped to the page's `EventTarget`
+    (`lib/demo/backend.ts`), so only the asking viewer panel hears it.
 - **Test plan**: native tests of the module (`cargo nextest run -p cmdr-listing-wasm`); `smoke.mjs` opens a text file,
   walks rows, searches (start, poll to done), switches encoding, reads hex bytes, renders Markdown and follows a
-  relative link, opens an image and a PDF and fetches their bodies, and closes by window label.
+  relative link, loads a Markdown document's local image through its token, opens an image and a PDF and fetches their
+  bodies (hearing `viewer-media-load` `Done` for the right label), answers a volume read error with its typed error (not
+  `NotFound`), and closes by window label.
 - **DONE**: the smoke drives every listed command against the real `.wasm` in Node; the wire tests pass.
 
 ### 6. The viewer window in the demo: text, Markdown, hex
@@ -274,8 +303,9 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
     viewer's own unit tests may need mocked.
   - `blob:` URLs minted in the top frame are usable in a same-origin iframe; verify in Safari, Chrome, and Firefox,
     including each one's built-in PDF rendering inside an `<embed>` in an iframe.
-  - `viewer-media-load` is a volume-media progress event the frontend follows only when `mediaFromVolume` is true;
-    decide whether the demo answers `mediaFromVolume: false` (the bytes are in memory) and pin it.
+  - The panel waits for `viewer-media-load` `Done` (milestone 5 emits it, `mediaFromVolume` stays true); the `blob:`
+    must exist before the `<img>` / `<embed>` asks, so `convertFileSrc` fetches the body synchronously and the load
+    event follows it.
 - **Test plan**: Vitest for `mediaUrl` (string equality with the old form on macOS) and the demo's `convertFileSrc`; the
   desktop viewer media E2E; the demo build in all three browsers with an image, an SVG, and a PDF.
 - **DONE**: images and PDFs render in the demo viewer, and the desktop media path is unchanged.
@@ -317,6 +347,9 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
 - **Website CSP** (`nginx-demo-security-headers.conf`): coordinate with whoever owns the website demo work.
 
 ## Decisions for David
+
+David took every recommendation below on 2026-11-04: the viewer as a value, `cmdr-viewer`, (a) for the contents, Enter
+opens the viewer for every file, and the engine rename waits until all three efforts land.
 
 1. **Session table**: (a) the viewer becomes a value (`Viewer`, owning its sessions, tokens, and host), like
    `cmdr-listing`'s "the host is a value, never a static" (recommended: the ideal end state, test-isolated, one engine
