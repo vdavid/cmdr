@@ -20,9 +20,9 @@ A local-FS walker (`walkdir` + `fs::remove_file`), a volume walker (every backen
   `Failed` source-item event.
 - **`cloud_trash.rs`**: `routing_for_selection()` behind the `trash_routing_for_paths` command, plus `is_online_only`
   (the one `SF_DATALESS` read). DETAILS § "A trash of online-only cloud content becomes a delete".
-- **`volume_start.rs`**: a volume delete's managed lifecycle (its body is `async`). DETAILS § "The volume delete's own
+- **`volume_start.rs`**: a volume delete's managed lifecycle (an `async` body). DETAILS § "The volume delete's own
   lifecycle".
-- **`already_gone.rs`**: an item already gone counts as done, ❌ never `SourceNotFound`. DETAILS § "An item that's
+- **`already_gone.rs`**: an already-gone item counts as done, ❌ never `SourceNotFound`. DETAILS § "An item that's
   already gone is done".
 
 ## Must-knows

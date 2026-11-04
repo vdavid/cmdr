@@ -27,6 +27,7 @@ describe('app answers', () => {
     expect((ask('getManagedPolicy') as { updates: unknown }).updates).toEqual({ kind: 'disabled' })
     expect((ask('getIndexStatus') as { initialized: boolean }).initialized).toBe(false)
     expect((ask('getAiRuntimeStatus') as { serverRunning: boolean }).serverRunning).toBe(false)
+    expect(ask('getAiStatus')).toBe('unavailable')
   })
 
   it('answer every icon with the bundled generic folder or document', () => {

@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 import { existsSync } from 'node:fs'
 
 // The browser demo at /demo/ (issue #302): the real desktop frontend on a fake backend, copied into
@@ -40,6 +40,166 @@ test.describe('Browser demo', () => {
     // More than one row, so the `..` row alone doesn't count as a listing.
     await expect(page.locator('.file-pane').first().locator('.file-entry').nth(1)).toBeVisible({ timeout: 30_000 })
     expect(errors.map((error) => error.message)).toEqual([])
+  })
+
+  // File operations run through the real write engine in the WASM module (crates/cmdr-listing-wasm,
+  // `operations_host/`), on the in-memory volume both panes list, so each lands in the other pane.
+  test.describe('file operations', () => {
+    const left = (page: Page) => page.locator('.file-pane').nth(0)
+    const right = (page: Page) => page.locator('.file-pane').nth(1)
+    const row = (pane: ReturnType<typeof left>, name: string) =>
+      pane.locator('.file-entry').filter({ hasText: new RegExp(`^\\s*${name}\\b`) })
+
+    /** Waits for the transfer dialog, then confirms it with Enter, as a keyboard user does. */
+    async function confirmTransfer(page: Page, verb: 'Copy' | 'Move') {
+      await expect(page.getByText(new RegExp(`^${verb} \\d+ files?$`))).toBeVisible()
+      await page.keyboard.press('Enter')
+    }
+
+    /**
+     * Presses `key` until `opened` shows. Right after a dialog closes, focus takes a moment to land
+     * back on a pane, and a key pressed before that goes nowhere, as in the app. A `⌘` shortcut
+     * tries Meta and then Control: the demo reads ⌘ as Ctrl off a Mac, and the emulated device
+     * isn't one, while the host running the browser may be.
+     */
+    async function pressUntil(page: Page, key: string, opened: Locator) {
+      const keys = key.startsWith('Meta+') ? [key, key.replace('Meta+', 'Control+')] : [key]
+      let attempt = 0
+      await expect(async () => {
+        if (!(await opened.isVisible())) await page.keyboard.press(keys[attempt++ % keys.length])
+        await expect(opened).toBeVisible({ timeout: 1_000 })
+      }).toPass({ timeout: 10_000 })
+    }
+
+    async function openDemo(page: Page, search = '') {
+      // A secondary window is an iframe of its route (`/demo/queue`). nginx answers any path under
+      // `/demo/` with the app page (the SPA fallback, `nginx.conf`); the static server here
+      // doesn't, so this does what nginx does.
+      await page.route(/\/demo\/(queue|settings|shortcuts)\/?$/, (route) =>
+        route.fulfill({ path: new URL('../dist/demo/index.html', import.meta.url).pathname }),
+      )
+      await page.goto(`/demo/${search}`)
+      await expect(left(page).locator('.file-entry').nth(1)).toBeVisible({ timeout: 30_000 })
+    }
+
+    test('new folder, copy, a conflict answered Skip, rename, move, and delete', async ({ page }) => {
+      const errors = collectPageErrors(page)
+      await openDemo(page)
+
+      // F7 in the home folder.
+      await page.keyboard.press('F7')
+      await page.keyboard.type('Work')
+      await page.keyboard.press('Enter')
+      await expect(row(left(page), 'Work')).toBeVisible()
+
+      // F5 the last file into Downloads (the right pane).
+      await page.keyboard.press('End')
+      await page.keyboard.press('F5')
+      await confirmTransfer(page, 'Copy')
+      await expect(row(right(page), 'notes')).toBeVisible()
+
+      // Again: the dialog sees the clash; Ask later, then Skip at the prompt.
+      await pressUntil(page, 'F5', page.getByText('1 file already exists'))
+      await confirmTransfer(page, 'Copy')
+      await expect(page.getByText('File already exists')).toBeVisible()
+      await page
+        .getByRole('button', { name: /^Skip\b/ })
+        .first()
+        .click()
+      await expect(page.getByText('File already exists')).toBeHidden()
+
+      // Shift+F6 renames in place.
+      await page.keyboard.press('Shift+F6')
+      await page.keyboard.type('journal')
+      await page.keyboard.press('Enter')
+      await expect(row(left(page), 'journal')).toBeVisible()
+
+      // F6 moves it to Downloads.
+      await page.keyboard.press('F6')
+      await confirmTransfer(page, 'Move')
+      await expect(row(right(page), 'journal')).toBeVisible()
+      await expect(row(left(page), 'journal')).toHaveCount(0)
+
+      // F8 on Work: no Trash on this volume, so the app's permanent-delete confirm.
+      // Folders sort first, so with `journal` gone the last row is `Work`.
+      await page.keyboard.press('End')
+      await pressUntil(page, 'F8', page.getByText('This volume doesn’t support trash.'))
+      await page.keyboard.press('Enter')
+      await expect(row(left(page), 'Work')).toHaveCount(0)
+
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
+
+    test('the operation queue pauses a running copy', async ({ page }) => {
+      const errors = collectPageErrors(page)
+      await openDemo(page)
+      // `dataset.csv` (120 MB) copies at the demo device's pace, so it's still running.
+      await page.keyboard.press('Tab')
+      await page.keyboard.press('ArrowDown')
+      await page.keyboard.press('ArrowDown')
+      await page.keyboard.press('F5')
+      await confirmTransfer(page, 'Copy')
+      await page.getByRole('button', { name: /^Background\b/ }).click()
+      // The status corner's progress opens the queue, as in the app.
+      await page.getByRole('button', { name: /Open the operation queue/ }).click()
+      const queue = page.frameLocator('.cmdr-demo-window iframe')
+      await expect(queue.getByText('Running', { exact: true })).toBeVisible({ timeout: 10_000 })
+      await queue
+        .getByRole('button', { name: /^Pause\b/ })
+        .first()
+        .click()
+      await expect(queue.getByText('Paused', { exact: true })).toBeVisible()
+      await queue
+        .getByRole('button', { name: /^Resume\b/ })
+        .first()
+        .click()
+      await expect(queue.getByText('Running', { exact: true })).toBeVisible()
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
+
+    test('the operation log rolls a copy back', async ({ page }) => {
+      const errors = collectPageErrors(page)
+      await openDemo(page)
+      await page.keyboard.press('End')
+      await page.keyboard.press('F5')
+      await confirmTransfer(page, 'Copy')
+      await expect(row(right(page), 'notes')).toBeVisible()
+      await pressUntil(page, 'Meta+Alt+l', page.getByText('Operation log', { exact: true }))
+      await page.getByRole('button', { name: 'Roll back', exact: true }).click()
+      const confirm = page.locator('[role=dialog], [role=alertdialog]').filter({ hasText: 'Roll this operation back?' })
+      await confirm.getByRole('button', { name: 'Roll back', exact: true }).click()
+      await expect(page.getByText('Rolled back', { exact: true })).toBeVisible()
+      await expect(row(right(page), 'notes')).toHaveCount(0)
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
+
+    test('a copy onto a full disk stays in the queue, and Retry lands it once there is room', async ({ page }) => {
+      const errors = collectPageErrors(page)
+      // `?free=1000` leaves 1 kB on the disk, too little for `notes.md` (4.82 kB).
+      await openDemo(page, '?free=1000')
+      await page.keyboard.press('End')
+      await page.keyboard.press('F5')
+      await page.getByRole('button', { name: /^Background\b/ }).click()
+      await expect(page.getByText('Couldn’t finish copying').first()).toBeVisible({ timeout: 10_000 })
+      await expect(row(right(page), 'notes')).toHaveCount(0)
+
+      // Make room: F8 on `Cmdr.dmg` (38 MB) in Downloads, the first file there.
+      await page.keyboard.press('Tab')
+      await page.keyboard.press('ArrowDown')
+      await pressUntil(page, 'F8', page.getByText('This volume doesn’t support trash.'))
+      await page.keyboard.press('Enter')
+      await expect(row(right(page), 'Cmdr')).toHaveCount(0)
+
+      // The queue kept the failed copy; its Retry lands it now.
+      await page.getByRole('button', { name: 'Show in operation queue' }).first().click()
+      const queue = page.frameLocator('.cmdr-demo-window iframe')
+      await expect(queue.getByText('Couldn’t finish', { exact: true })).toBeVisible({ timeout: 10_000 })
+      await expect(queue.getByText('The destination ran out of space before everything was written.')).toBeVisible()
+      await queue.getByRole('button', { name: /^Retry\b/ }).click()
+      await expect(row(right(page), 'notes')).toBeVisible()
+      await expect(queue.getByText('Couldn’t finish', { exact: true })).toHaveCount(0)
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
   })
 })
 

@@ -37,7 +37,7 @@ fn rename_descriptor_marks_only_nonroot_volumes_busy() {
     let to = Path::new("/parent/new.txt");
 
     // Root → no busy volume (root is never ejectable), no lane, from→to summary.
-    let root = rename_descriptor(from, to, "root");
+    let root = rename_descriptor(from, to, "root", true);
     assert!(root.volume_ids.is_empty(), "root marks nothing busy");
     assert!(root.lanes.is_empty(), "instant ops never reserve a lane");
     assert_eq!(root.operation_type, WriteOperationType::Rename);
@@ -45,7 +45,7 @@ fn rename_descriptor_marks_only_nonroot_volumes_busy() {
     assert_eq!(root.summary.destination.as_deref(), Some("new.txt"));
 
     // A real volume → marked busy for the op's duration.
-    let device = rename_descriptor(from, to, "usb-42");
+    let device = rename_descriptor(from, to, "usb-42", false);
     assert_eq!(device.volume_ids, vec!["usb-42".to_string()]);
     assert!(device.lanes.is_empty());
 }

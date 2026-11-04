@@ -195,7 +195,7 @@ fn archive_quarantine(_state: &WriteOperationState, _source_volume: &Arc<dyn Vol
 
 #[cfg(target_os = "macos")]
 fn read_quarantine(archive: &Path) -> Option<Vec<u8>> {
-    match xattr::get(archive, QUARANTINE_XATTR) {
+    match crate::local_disk::read_xattr(archive, QUARANTINE_XATTR) {
         Ok(value) => value,
         Err(e) => {
             log::debug!(

@@ -966,12 +966,13 @@ describe('getErrorDisplayMeta', () => {
       category: 'needs_action',
       retryHint: true,
     },
+    // Retry: once the person frees up space, the same copy is the way out.
     {
       error: { type: 'insufficient_space', required: 1, available: 0, volumeName: null },
       category: 'needs_action',
-      retryHint: false,
+      retryHint: true,
     },
-    { error: { type: 'destination_full', path: '/p' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'destination_full', path: '/p' }, category: 'needs_action', retryHint: true },
     // No Retry: the delete stopped at someone else's file on purpose.
     {
       error: { type: 'changed_while_disconnected', path: '/p', volumeName: 'NAS' },

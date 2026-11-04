@@ -30,7 +30,6 @@ use cmdr_archive::mutator::{self, MutationError};
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{LaneKey, Volume, VolumeError};
-use cmdr_local::LocalPosixVolume;
 use cmdr_operation_log::types::{ArchiveSubkind, ExecutionStatus, OperationId};
 
 impl crate::Operations {
@@ -269,11 +268,11 @@ async fn materialize_sources(
             message: cmdr_fs::error_detail::ErrorDetail::from_io(&e),
         })
     })?;
-    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
+    let dest_volume: Arc<dyn Volume> = crate::local_disk::folder_volume(
         "archive-source-pull",
         scratch.path().to_path_buf(),
         state.scope().host().volume_host().clone(),
-    ));
+    );
 
     let mut absolute = Vec::with_capacity(source_paths.len());
     for src in source_paths {

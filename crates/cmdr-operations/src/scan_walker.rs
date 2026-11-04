@@ -8,12 +8,13 @@
 //! `scan.rs` is what turns a walk into a `ScanResult`; `scan_dry_run.rs` turns
 //! one into a conflict preview.
 
+use crate::rt::Instant;
 use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use cmdr_fs::apple_double::SidecarRule;
 use cmdr_fs::log_private::LogPrivate;
@@ -239,10 +240,7 @@ pub(super) fn walk_dir_recursive<E>(
     (ctx.park_while_paused)();
 
     let metadata = fs::symlink_metadata(path).map_err(|e| (ctx.on_io_error)(path, e))?;
-    let device = {
-        use std::os::unix::fs::MetadataExt;
-        metadata.dev()
-    };
+    let device = crate::local_disk::device_of(&metadata);
 
     if metadata.is_symlink() {
         // Symlinks contribute their own (tiny) target-string length, never
@@ -339,14 +337,14 @@ pub(super) fn walk_dir_recursive<E>(
         log::debug!("scan: skipping special file: {}", LogPrivate::path(path));
     }
 
-    if last_progress_time.elapsed() >= ctx.progress_interval {
+    if crate::rt::since(*last_progress_time) >= ctx.progress_interval {
         let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
         let current_dir = path.parent().map(|p| p.display().to_string());
         // Report the dedup'd running total: the scan-phase bar compares this
         // against the index's inode-dedup'd estimate, so reporting the raw
         // write footprint would overshoot 100% on hardlink-heavy trees.
         (ctx.on_progress)(files.len(), dirs.len(), *dedup_bytes, current_file, current_dir);
-        *last_progress_time = Instant::now();
+        *last_progress_time = crate::rt::now();
     }
 
     Ok(())
@@ -450,11 +448,11 @@ fn walk_cached_entries<E>(
         }
     }
 
-    if last_progress_time.elapsed() >= ctx.progress_interval {
+    if crate::rt::since(*last_progress_time) >= ctx.progress_interval {
         let current_dir = Some(parent_path.display().to_string());
         // Dedup'd running total — see the matching note in `walk_dir_recursive`.
         (ctx.on_progress)(files.len(), dirs.len(), *dedup_bytes, None, current_dir);
-        *last_progress_time = Instant::now();
+        *last_progress_time = crate::rt::now();
     }
 
     Ok(())

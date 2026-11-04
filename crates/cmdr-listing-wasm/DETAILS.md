@@ -40,7 +40,7 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
 - `default(init?)`: the glue's initializer. In a page `await init()` fetches `cmdr_listing_wasm_bg.wasm` next to the
   glue; Node passes `{ module_or_path: bytes }`.
 - `new DemoListing(tree, onEvent)`: `tree` is
-  `{ volumeId, root, entries: [{ path, kind: "file" | "dir" | "symlink", size?, modifiedMs?, createdMs?, symlinkTarget? }] }`,
+  `{ volumeId, volumeName?, home?, root, entries: [{ path, kind: "file" | "dir" | "symlink", size?, modifiedMs?, createdMs?, symlinkTarget? }] }`,
   every parent folder listed. Throws on a bad tree (a relative path, a duplicate, a missing parent).
   `onEvent(name: string, payload: unknown)` hears every event by its Tauri name: `listing-opening`, `listing-progress`,
   `listing-read-complete`, `listing-complete`, `listing-error`, `listing-cancelled`, `listing-stalled`,
@@ -71,18 +71,81 @@ tree lists as a folder (as on disk).
 
 ## The build
 
-- `pnpm build:listing-wasm` (`scripts/build-listing-wasm.sh [-out DIR] [-smoke]`, a Go program):
-  `cargo build -p cmdr-listing-wasm --target wasm32-unknown-unknown --profile wasm-release`, then
+- `pnpm build:listing-wasm` (`scripts/build-listing-wasm.sh [-out DIR] [-smoke] [-golden]`, a Go program):
+  `cargo build -p cmdr-listing-wasm --target wasm32-unknown-unknown --profile wasm-release` (plus the crates the browser
+  build is about to link, `browserBound` in `main.go`, so a host-only dep can't creep into them first), then
   `wasm-bindgen --target web`.
+- **The C toolchain**: `cmdr-fs` links SQLite (`rusqlite`, which in the browser swaps in `sqlite-wasm-rs` and compiles
+  `sqlite3.c` with `cc`). Apple's clang can't target wasm32, and `sqlite-wasm-rs` 0.5.5 has no precompiled option, so
+  the script installs conda-forge's LLVM clang and llvm-ar (pinned in `scripts/build-listing-wasm/toolchain.go`,
+  Renovate-tracked) with mise into a PRIVATE home, `~/.cache/cmdr/wasm-toolchain/` (`CMDR_WASM_TOOLCHAIN_DIR`
+  overrides), and hands cargo only `CC_wasm32_unknown_unknown` / `AR_wasm32_unknown_unknown` as absolute paths. ❗ Never
+  on PATH and never in the default mise home: the conda env ships its own `cc`, `cpp`, `ar`, and `ld`, and their mise
+  shims would sit ahead of `/usr/bin`, one `mise use` away from switching every native C build (verified on macOS 27 and
+  Linux aarch64, mise 2026.10.25, 2026-11-04). First build downloads about 770 MB (macOS) or 1.5 GB (Linux); CI restores
+  it from its own cache (`.github/actions/wasm-toolchain`, saved from `main` only).
 - Output: `crates/cmdr-listing-wasm/pkg/` (gitignored): `cmdr_listing_wasm.js`, `cmdr_listing_wasm_bg.wasm`, their
   `.d.ts`, and a `package.json` saying `"type": "module"`.
-- `wasm-release` (root `Cargo.toml`): `opt-level = "s"`, fat LTO, one codegen unit, `panic = "abort"`, stripped. About 2
-  MB raw (2026-11-04); ICU collation data is most of it. `wasm-opt` isn't run (no binaryen in the toolchain).
+- `wasm-release` (root `Cargo.toml`): `opt-level = "s"`, fat LTO, one codegen unit, `panic = "abort"`, stripped. With
+  the write engine, SQLite, and the operation log linked: 6.5 MB raw, 2.5 MB gzipped (`gzip -9`, 2026-11-04; the listing
+  engine alone was about 2.5 MB raw, ICU collation data most of it). `wasm-opt` isn't run (no binaryen in the
+  toolchain).
+- **Every crate the module links is a demo image input**: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
+  `scripts/check/checks/inputs.go`, and ci.yml's `website` filter each list them (the first two are kept aligned by
+  `TestWebsiteDemoInputsMatchTheImageKey`, the filter by hand). A new path dep goes in all three, or an engine-only
+  change keeps the old image key and getcmdr.com serves a stale engine. List them with
+  `cargo tree -p cmdr-listing-wasm --target wasm32-unknown-unknown -e normal --prefix none | rg '\(/'`.
 - The `wasm-bindgen` CLI has to be the exact version of the `wasm-bindgen` crate in `Cargo.lock`, or it refuses the
   module; the script reads the lockfile and `cargo install`s that version into `~/.cargo/bin` when it's missing.
-- The check: `desktop-rust-listing-wasm` runs the script with `-smoke` into a temp dir, in CI's "Desktop (Rust)" job.
-  The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, Brief column
-  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps.
+- The check: `desktop-rust-listing-wasm` runs the script with `-smoke -golden` into a temp dir, in CI's "Desktop (Rust)"
+  job. The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, Brief column
+  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps. Its write half
+  (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
+  delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
+  that fails past a 50 ms hold. Any unhandled rejection fails the run.
+- **The golden replay** (`-golden`, also in the check): `src/operations_host/golden_test.rs` runs every volume-engine
+  scenario in `cmdr_operations::golden` on a real `Demo`'s host (its `DemoVolumes` with the fixtures' `src` and `dst`
+  registered beside the page volume, its engine events, name order, and operation log) and compares the trace, as text,
+  with the fixture the native engine blesses (`crates/cmdr-operations/tests/golden/`, embedded via `VOLUME_GOLDENS`). It
+  runs natively under `cargo nextest`, and the script builds the crate's wasm TEST target (dev profile) and runs it
+  under Node with `wasm-bindgen-test-runner` (from the same lock-matched `wasm-bindgen-cli`), so the browser runtime's
+  `JoinSet` ordering, inline op-log writer, and inline `spawn_blocking` must produce the native traces (plan invariant
+  13). Why a test build: the shipped `.wasm` carries no scenarios (`golden` is a dev-dependency feature). The other test
+  modules are `not(target_family = "wasm")`, with their dev-deps under a native-only target table: threaded tokio,
+  `tempfile`, and `tokio/net` don't build for wasm32. Cost: about 33 s for the first wasm test build, about 1 s warm
+  (the whole check ran 4 s warm, 2026-11-04). Shown red by perturbing one fixture's size (2026-11-04).
+
+## Writes
+
+`operations_host/` is the write engine's host, mirroring the desktop's `operations_host/`: `volumes.rs`
+(`OperationVolumes` over the page's volumes by id, one in the page, more in the golden replay; `local_disk_id` is
+`None`, so the demo's `root` takes the volume engine for every op), `events.rs` (`EngineEvents`), `sinks.rs` (the per-op
+and per-preview sinks; a failure is retained for the queue before its `write-error`, as the desktop's terminal effects
+order it), `wire.rs` (every event name, pinned against `bindings.ts` by `events_test.rs`), and `commands/` by domain
+(`transfers.rs`, `instant.rs`, `queue.rs`, `history.rs`, and `paths.rs`: the dialogs' `path_exists`,
+`destination_exists`, `destination_root_echo`, and `stat_paths_kinds`, answered from the live volume). The volume is
+named after the tree's `volumeName` (`Macintosh HD`), and its `home` makes it stand in for the computer's own disk
+(`Volume::stands_in_for_own_disk`), so a transfer's summary reads `~/Documents` as the desktop's does. `Demo` routes a
+command to it when `DemoOperations::handles` claims it.
+
+- **One volume, one `Listings`**: `Demo::new` builds the `InMemoryVolume` once, hands it to both engines, and gives it
+  pane patches through `backend_listings.rs`'s late-bound `BackendListings` (the volume needs its listing host before
+  the engine that lists it exists). The write engine's `VolumeHost` carries the same host, and its `NameOrder` is the
+  listing engine's collator.
+- **The device**: `with_bandwidth(5 MiB/s)` (its burst window keeps a page's late timers from eating the rate:
+  `crates/cmdr-fs/DETAILS.md` § Bandwidth), so `dataset.csv` (120 MB) copies in about 26 s end to end, long enough to
+  watch and pause in the queue, and the 1,200 photos (3.59 GB) would take about 11.5 min (verified in a
+  `pnpm build:demo` under headless Chromium 156: 5.2–5.3 MB/s sustained over 20 s of the photo copy, 2026-11-04),
+  `with_yielding(8 ms)` (the page never waits long on engine work), and `with_capacity` at the disk size the volume list
+  shows, so free space is live. `Pacing` stays the engine's default `None`.
+- **A full disk, on purpose**: the tree's `freeBytes` (the page's `?free=<bytes>`, `listing.ts`'s `freeBytesFromSearch`)
+  sizes the disk as what the files hold plus that much room. A copy that doesn't fit then fails the way a real disk does
+  (`StorageFull` → `destination_full`), and a backgrounded one stays in the queue as "Couldn't finish", whose Retry
+  lands it once a delete has made room. Pinned by `commands_test.rs`'s full-disk cell and the website demo spec.
+- **The journal** is the real `cmdr-operation-log` on `/demo/operation-log-<n>.db`, numbered per engine so the golden
+  replay's engines in one module never share one (SQLite's in-memory VFS, gone on reload like the volume; the writer
+  applies inline, `cmdr-operation-log`'s browser build). The ledger is claimed unpersisted; its `LedgerUnpersisted`
+  report stays quiet. Natively (tests) the log is a scratch file in the temp dir.
 
 ## Where the demo differs from the app
 
@@ -96,5 +159,9 @@ tree lists as a folder (as on disk).
 - **Owners show as empty, permissions are fixed**, and nothing reads tags, packages, index sizes, or git status.
 - **The menu bar is the macOS one** whatever the visitor's OS, and its OS rows (Services, Hide, Quit, Undo, Minimize)
   are drawn greyed: a page has no OS to hand them to.
-- **No writes**: the engine answers listing, Brief-width, and font-metrics commands only. Writes (copy, move, rename,
-  create) are #929.
+- **No local disk**: `move_files` (the desktop's same-`root` move) runs as a volume move on `root`, the dialog's
+  `previewId` carried in its config; `trash_files` and `move_to_trash` refuse typed (`trash_not_supported`), as a volume
+  without a Trash does, and F8 takes the app's permanent-delete confirm. `trash_routing_for_paths` answers the plain
+  trash route (nothing online-only here).
+- **No host work around writes**: no `~` expansion, no S3 cost pricing (`check_rename_validity` prices nothing), no
+  analytics, no indexing priority, and `get_volume_space` answers the one volume's live space for every path.

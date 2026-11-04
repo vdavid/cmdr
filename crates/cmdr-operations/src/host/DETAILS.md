@@ -53,6 +53,11 @@ inside it names the app's accessor.
   The crate `clippy.toml` refuses `tokio::spawn`, `tokio::task::spawn{,_blocking}`, and `std::thread::spawn` (a thread
   the engine owns is a named `std::thread::Builder` one). A helper with no engine in reach takes the `Handle` as a
   parameter, and a test calling one directly passes its own (`Handle::current()`).
+- **Clocks, timers, and yields go through `crate::rt`** (`src/rt.rs`, over `cmdr_fs::rt`), and `clippy.toml` refuses the
+  direct `std` / tokio calls, because the engine also runs in the browser demo, where `std`'s clock and tokio's timer
+  trap. Natively each is the same call under another name. ❗ Two clocks: `rt::now` / `rt::since` are `std`'s,
+  `rt::time::*` tokio's (which `start_paused` cells drive); a site keeps the clock it had. `crates/cmdr-fs/DETAILS.md` §
+  "The browser build".
 - **One documented exception: `mutation_reply.rs`'s late-settle continuation stays ambient.** `reply_or_hand_off` is a
   free function the app's IPC commands call with no engine, and it waits out `cmdr_fs::deadline::race_detached`'s own
   ambient spawn (that crate's documented exception), so the work and the task waiting it out share the caller's runtime;
@@ -89,6 +94,26 @@ inside it names the app's accessor.
   `VolumeError::ReadOnly` on the instant one), whatever the caller. The frontend refuses the same writes in a routed
   pane; this is the backend's line for Ask Cmdr, MCP, and any later caller. `FakeVolumes::route` lets a test serve a
   prefix through a route (`routed_writes_tests.rs`).
+- **What the browser build can reach on the volume path needs no thread.** There `Runtime::spawn_blocking` runs its
+  closure INLINE (no pool), and nothing can `block_on` or wait in `blocking_recv`. Audited for the volume engine (copy,
+  move, delete, rename, create, the scan preview, undo): every `blocking_recv` and `Condvar` wait sits on a LOCAL or
+  archive path, each with an async twin the volume path uses (`refused_name::ask_async`,
+  `locked_sources::plan_locked_async`, `queued_sources`'s async half, the pause gate's `Notify`); the one
+  `spawn_blocking` the volume path calls, `locked_sources::plan_locked_on_volume`, runs only for a source with a
+  `local_path()` (none in the browser); the leftover sweep's `block_on`s have browser twins (`in_flight_sweep.rs`); the
+  conflict pre-flight's deadline is on `rt`; and the operation log's writer applies inline there
+  (`crates/cmdr-operation-log/src/writer.rs` module docs). The ledger runs unpersisted in the browser
+  (`claim_ledger(None)`), which starts no writer or sweep thread.
+- **Which id is the local disk is the host's answer** (`OperationVolumes::local_disk_id`, default `DEFAULT_VOLUME_ID`),
+  and every branch that would run the `std::fs` engine on an id asks `local_disk(id)`, which hands out a `LocalDisk`
+  capability only nothing else can build: the rename and its `lstat` pre-flight, the rename validity check, delete, bulk
+  rename and rename-as-move, the busy-volume descriptors, and the scan preview's "no volume means local" shortcut. The
+  local-only commands guard on it too: `move_files_start` becomes a volume move on `root`, and `trash_files_start`
+  refuses `TrashNotSupported`, as a share without a Trash does. **Why a host answer and not `cfg`**: the browser demo's
+  one volume is called `root` (the frontend reads that id as "the local disk" in many places), so the engine has to be
+  TOLD there is no local disk; and as a value, both host shapes run natively in `routing_table_tests.rs`. Copy, move,
+  and the instant creates were already decided by the volume's own predicates (`native_roots`,
+  `supports_local_fs_access`), so the no-local-disk cells for them pass on either answer.
 - **Engine-wide facts go through `EngineEvents`**: operations changed, busy volumes changed, a transfer started /
   finished on volumes (indexing priority), leftovers the sweep kept (a move's staging folder, or an unfinished landing
   kept under a ` (recovered)` name), an instant mutation settled (analytics, as an `InstantMutationFact` of categories

@@ -189,7 +189,7 @@ pub async fn wait_until_volume_free(activity: &dyn UserActivity, volume_id: &str
         // Nothing in flight, so the volume goes free on its own at a known instant.
         // Sleep straight to it, but stay awake to a lease taken in the meantime.
         tokio::select! {
-            () = tokio::time::sleep(remaining) => {}
+            () = crate::rt::time::sleep(remaining) => {}
             () = moved.changed() => {}
         }
     }

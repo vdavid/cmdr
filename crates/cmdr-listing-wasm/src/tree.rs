@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::{InMemoryVolume, Volume};
+use cmdr_fs::volume::{InMemoryContent, InMemoryVolume, Volume};
 use serde::Deserialize;
 
 /// One volume's whole tree. Every parent folder is listed explicitly.
@@ -15,6 +15,22 @@ use serde::Deserialize;
 pub struct DemoTree {
     /// The id panes list it under (`"root"` is the app's main volume).
     pub volume_id: String,
+    /// The name people read it by (`"Macintosh HD"`), as a transfer's summary words
+    /// its ends; the id when the page gives none.
+    #[serde(default)]
+    pub volume_name: Option<String>,
+    /// The visitor's home folder (`"/Users/you"`): the volume then stands in for
+    /// the computer's own disk, so a transfer's summary words its ends as the
+    /// desktop's (`~/Documents`). `None` reads them as `<volume name>/…`.
+    #[serde(default)]
+    pub home: Option<String>,
+    /// How much room the disk has left beyond what `entries` hold, when the
+    /// page sets it (the `?free=` URL parameter, how a visitor or a test sees a
+    /// full disk). `None` makes the disk [`DEVICE_CAPACITY_BYTES`] big.
+    ///
+    /// [`DEVICE_CAPACITY_BYTES`]: crate::commands::DEVICE_CAPACITY_BYTES
+    #[serde(default)]
+    pub free_bytes: Option<u64>,
     /// Where the volume is mounted (`"/"`).
     pub root: String,
     /// Every file, folder, and symlink, by absolute path.
@@ -84,8 +100,27 @@ fn secs(ms: Option<u64>) -> Option<u64> {
 }
 
 impl DemoTree {
+    /// The disk's size under [`Self::free_bytes`]: what the files hold plus the
+    /// room left. `None` when the page didn't set it.
+    pub fn capacity_bytes(&self) -> Option<u64> {
+        let free = self.free_bytes?;
+        let stored: u64 = self
+            .entries
+            .iter()
+            .filter(|e| e.kind == DemoKind::File)
+            .filter_map(|e| e.size)
+            .sum();
+        Some(stored.saturating_add(free))
+    }
+
     /// The tree as an in-memory volume, after checking every path has its parent.
     pub fn into_volume(self) -> Result<Arc<dyn Volume>, TreeError> {
+        Ok(Arc::new(self.into_in_memory()?))
+    }
+
+    /// [`Self::into_volume`], before it's shared, so a host can add the device
+    /// options (bandwidth, yielding, capacity, pane patches).
+    pub fn into_in_memory(self) -> Result<InMemoryVolume, TreeError> {
         let root = PathBuf::from(&self.root);
         let dirs: HashSet<&str> = self
             .entries
@@ -113,12 +148,31 @@ impl DemoTree {
             }
             entries.push(file_entry(entry, name, &dirs));
         }
-        Ok(Arc::new(
-            InMemoryVolume::with_entries(self.volume_id, entries)
-                .with_root(root)
-                .with_held_folders_only(),
-        ))
+        let name = self.volume_name.unwrap_or(self.volume_id);
+        let mut volume = InMemoryVolume::with_entries(name, entries)
+            .with_root(root)
+            .with_held_folders_only();
+        if let Some(home) = self.home {
+            volume = volume.standing_in_for_own_disk(home);
+        }
+        // Every file reads as many bytes as its listing says: generated ones,
+        // seeded from its path, so a copy moves real-sized data without the page
+        // holding gigabytes (`crates/cmdr-fs/src/volume/in_memory/device.rs`).
+        for entry in self.entries.iter().filter(|e| e.kind == DemoKind::File) {
+            if let Some(size) = entry.size {
+                volume = volume.with_content(&entry.path, InMemoryContent::synthetic(seed_of(&entry.path), size));
+            }
+        }
+        Ok(volume)
     }
+}
+
+/// A file's content seed: FNV-1a of its path, so the same tree always generates
+/// the same bytes.
+fn seed_of(path: &str) -> u64 {
+    path.bytes().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+        (hash ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3)
+    })
 }
 
 /// The row a listing shows for `entry`: the dates and size it gave, and the

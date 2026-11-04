@@ -27,29 +27,25 @@ describe('demoPath', () => {
 })
 
 describe('volume answers', () => {
-  it('lists the main volume and the favorites, all read-only', () => {
-    const { data } = ask('listVolumes') as { data: { id: string; category: string; mountIsReadOnly: boolean }[] }
+  it('lists the main volume and the favorites, all writable and without a Trash', () => {
+    const { data } = ask('listVolumes') as {
+      data: { id: string; category: string; mountIsReadOnly: boolean; supportsTrash: boolean }[]
+    }
     expect(data.find((v) => v.category === 'main_volume')?.id).toBe(DEMO_VOLUME_ID)
     expect(data.filter((v) => v.category === 'favorite').length).toBeGreaterThan(0)
-    // The demo writes nothing; the read-only mount is how the app learns it (`writes.ts`).
-    expect(data.every((v) => v.mountIsReadOnly)).toBe(true)
+    // Writes go to the real engine; F8 takes the permanent-delete confirm.
+    expect(data.every((v) => !v.mountIsReadOnly && !v.supportsTrash)).toBe(true)
+  })
+
+  it('leaves the path questions to the engine, which sees every write', () => {
+    expect(volumeAnswers.pathExists).toBeUndefined()
+    expect(volumeAnswers.statPathsKinds).toBeUndefined()
   })
 
   it('answers the default volume and resolves any path to the main one', () => {
     expect(ask('getDefaultVolumeId')).toBe(DEMO_VOLUME_ID)
     expect(ask('getE2eStartPath')).toBeNull()
     expect((ask('resolvePathVolume', { path: '/' }) as { volume: { id: string } }).volume.id).toBe(DEMO_VOLUME_ID)
-  })
-
-  it('knows which paths exist, ~ and trailing slashes included', () => {
-    expect(ask('pathExists', { path: '~/Documents/' })).toEqual({ data: true, timedOut: false })
-    expect(ask('pathExists', { path: '/' })).toEqual({ data: true, timedOut: false })
-    expect(ask('pathExists', { path: '~/Nope' })).toEqual({ data: false, timedOut: false })
-  })
-
-  it('tells folders from files, and unknown paths as null', () => {
-    const paths = ['~/Documents', '~/notes.md', '~/missing.txt']
-    expect(ask('statPathsKinds', { paths })).toEqual({ data: [true, false, null], timedOut: false })
   })
 
   it('reports nothing syncing and every path stored as given', () => {

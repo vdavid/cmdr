@@ -75,9 +75,11 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   `get_all_windows`, `close`, `destroy`, `set_focus`, `set_effects`, plus Cmdr's `close_child_window` and
   `raise_child_window`, work against those panels. Opening one that's already open raises it, through the app's own
   `getByLabel` + `raiseChildWindow` path.
-- Only `settings` and `shortcuts` open (`OPENABLE`). Every other label (`viewer-*`, `queue`, `debug`) gets Tauri's
-  refusal: the creation promise rejects with a string, which reaches the opener as `tauri://error`, so the app's own
-  failure handling runs and no panel appears. They need backends the demo doesn't have yet.
+- `settings`, `shortcuts`, and `queue` open (`OPENABLE`); the queue runs on the write engine's commands and events
+  (`list_operations`, `operations-changed`, pause, resume, cancel, reorder, the tree view). Every other label
+  (`viewer-*`, `debug`) gets Tauri's refusal: the creation promise rejects with a string, which reaches the opener as
+  `tauri://error`, so the app's own failure handling runs and no panel appears. They need backends the demo doesn't have
+  yet.
 - Keys: Esc is the window's own (Settings calls `close_child_window`); ⌘W is the native menu's Close Window, which the
   browser keeps for its tab, so the panel takes ⌃W, the demo's browser-safe stand-in for ⌘W (`browser-shortcuts.ts`).
 - Focus: a native window keeps its focused element while another window is key, but a page has one focus, so the host
@@ -106,7 +108,9 @@ every window. The demo keeps that shape, so secondary windows share its state, a
 
 - **What**: a strip at the top of the page (`menu-bar.ts`, first in `<body>`, so the app's flex column starts under it)
   that draws the macOS menu bar the desktop builds and sends what its items send. It sets `--cmdr-demo-window-top` on
-  `:root` to its height, for the demo chrome that sits on the main window.
+  `:root` to its height, for the demo chrome that sits on the main window. The app's status corner and top toast stack
+  sit against the page's top edge (the window's, on the desktop), so `menu-bar-style.ts` moves both down by it; without
+  that the bar covers the copy's progress chip and eats its click (the website spec's queue cell caught it).
 - **Decision**: the bar is the desktop's own, through WASM. `crates/cmdr-menu` holds the bar as data and the enabled
   fold; `cmdr-listing-wasm`'s `DemoMenuBar` stores the menu-state pushes the app already sends the native menu
   (`activate_window_menu`, `set_commands_refused_over_dialog`, `update_menu_accelerator`, `update_sort_menu`,
@@ -187,10 +191,11 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
 
 - One colocated `*.test.ts` per module. They pin what breaks the demo silently: the tree's parents and its 1,200 photos
   (the engine refuses a bad tree at boot), the browser-safe map (real command ids, the canonical combo vocabulary, no
-  clash in an overlapping scope, no browser-reserved combo left), every write refused, the backend's routing order (TS
-  tables, then `handles()`, then `unanswered`), the webview's JSON wire and event targets, the window panels'
-  open/close/raise/refuse/zoom, the traffic lights' actions and key-window state, the Cmdr gold seed, and the boot role
-  pick. The lights' look is QA'd against AppKit's renders in a real browser (§ Traffic lights).
+  clash in an overlapping scope, no browser-reserved combo left), no TS answer for an engine command
+  (`engine-commands.test.ts`), the backend's routing order (TS tables, then `handles()`, then `unanswered`), the
+  webview's JSON wire and event targets, the window panels' open/close/raise/refuse/zoom, the traffic lights' actions
+  and key-window state, the Cmdr gold seed, and the boot role pick. The lights' look is QA'd against AppKit's renders in
+  a real browser (§ Traffic lights).
 - vitest aliases `#lib/demo/boot.js` to `boot-absent.ts`, `$app/paths` to `apps/desktop/src/test-app-paths-shim.ts`, and
   `virtual:cmdr-listing-wasm` to `apps/desktop/src/test-listing-wasm-shim.ts`; `listing.test.ts` mocks the last with a
   fake engine. `test-setup.ts` stubs `@tauri-apps/api/event` app-wide, so `webview.test.ts` unmocks it to test the real
@@ -223,15 +228,19 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
 
 ## Writes
 
-- Decision: the demo volume is `mountIsReadOnly: true` (`volumes.ts`), so the app's own read-only handling answers every
-  write a visitor tries: F7 and F8 get "This is a read-only volume", F5 "… is read-only. You can copy files from it, but
-  not to it", and the volume chooser shows the lock (headless Chromium, 2026-11-04). Why: it's a seam the app already
-  has and words well, so the demo needs no copy of its own and no app change.
-- `writes.ts` is the backstop for a write that skips those gates (a drop, a clipboard paste, an agent): the typed
-  refusal a read-only disk gives (`parentNotWritable` for single-item mutations, `read_only_device` for transfers).
-  Never a pretend success, which would leave the pane showing a file that isn't there.
-- Not refused yet: multi-rename (`open_multi_rename` is unanswered, so its dialog fails to open) and tags (`toggle_tags`
-  has no error arm). Real file operations in the demo are #929.
+- Every write, queue, path, and undo command goes to the real write engine in the WASM module
+  (`crates/cmdr-listing-wasm/DETAILS.md` § Writes), on the same in-memory volume the panes list, so a copy lands in the
+  other pane through `directory-diff`, the queue window controls it, and the operation log rolls it back. Gone on
+  reload, like the rest of the demo's state. Verified in headless Chromium (2026-11-04): F7, F5, a conflict answered
+  Skip, Shift+F6, F6, F8, the queue's pause and resume, and a roll back (`apps/website/e2e/demo.spec.ts`).
+- The volume is writable and has no Trash (`volumes.ts`: `mountIsReadOnly: false`, `supportsTrash: false`, as the
+  engine's `Volume::has_trash` answers), so F8 takes the app's permanent-delete confirm, as on a network share.
+- `listing.ts` expands `~` in every path argument (`path`, `paths`, `parentPath`, `sources`, `sourcePaths`, `destPath`,
+  `destination`, `from`, `to`, `dir`), as the desktop's commands do for `root`: the dialogs name the home folder `~`.
+- TS answers only what isn't the engine's: `estimateOperationCost` is `[]` (only an S3 transfer has a bill).
+- There's no ⌘Z for an operation in the app either: undo is the operation log's Roll back (⌘⌥L).
+- Not answered yet: multi-rename (`open_multi_rename`, so its dialog fails to open), tags (`toggle_tags`), and the new
+  folder dialog's AI name suggestions (`get_ai_status`).
 
 ## The listing seam
 
@@ -239,8 +248,7 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
   over `demoEntries` (`{ volumeId, root, entries }`, the shape `crates/cmdr-listing-wasm/src/tree.rs` reads). Loading
   starts at boot, so the `.wasm` downloads while the app starts; the first listing command waits for it.
 - Routing: the backend tries its TS tables first, then `DemoMenuBar.handles(cmd)`, then `DemoListing.handles(cmd)`, then
-  `unanswered`. So a new engine command (#929) needs no TS change, and a TS answer for an engine command would shadow
-  it.
+  `unanswered`. So a new engine command needs no TS change, and a TS answer for an engine command would shadow it.
 - `demo.invoke(cmd, args)` takes the Tauri (snake_case) name and the camelCase IPC args, and resolves or rejects exactly
   as `invoke` does. `listing.ts` expands `~` in `path` / `paths` first (`demoPath`): the engine has no home folder.
 - Engine events (`onEvent(name, payload)`, Tauri names) go to the backend's fan-out a task late, in order. Why the
@@ -248,8 +256,8 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
   answer before the listing's first event, as Rust's spawned read guarantees.
 - A failed engine load logs once (`[demo] the listing engine did not load`) and every listing command then lands in
   `unanswered`.
-- `volumes.ts` answers `pathExists` and `statPathsKinds` from the same tree; `getSyncStatus` (nothing syncs) and
-  `storedSpellings` (the demo volume stores every path as given) live there too.
+- The engine answers `path_exists`, `destination_exists`, and `stat_paths_kinds` from the live volume; `volumes.ts`
+  keeps `getSyncStatus` (nothing syncs) and `storedSpellings` (the demo volume stores every path as given).
 - Brief mode's column widths come from the engine too (`cmdr-brief-columns`): it answers `has_font_metrics`, the
   frontend measures and sends `store_font_metrics` / `extend_font_metrics` as on desktop, and
   `get_brief_column_text_widths` shrink-wraps each column. So the demo has no TS answer for any of the four. Verified in

@@ -12,9 +12,10 @@ import { createMainWindowLights, createTrafficLights, type TrafficLights } from 
 
 /**
  * The windows that open. Settings and Keyboard shortcuts run on the stores and answers the demo
- * has; the viewer and the queue need backends the demo doesn't have yet, so they're refused.
+ * has, the transfer queue on the write engine; the viewer needs a backend the demo doesn't have
+ * yet, so it's refused.
  */
-const OPENABLE = new Set(['settings', 'shortcuts'])
+const OPENABLE = new Set(['settings', 'shortcuts', 'queue'])
 
 /** Room the panel leaves around itself inside the viewport, in CSS pixels. */
 const MARGIN = 16

@@ -7,7 +7,7 @@
 //! nanoseconds undercounts the process 24-fold there.
 
 use std::ffi::CStr;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::{CpuSnapshot, TaskCounters, ThreadSample, WakeupCounters};
 
@@ -22,7 +22,7 @@ const PROC_PIDTHREADID64INFO: libc::c_int = 15;
 const THREAD_ID_HEADROOM: usize = 32;
 
 pub(super) fn take_snapshot() -> Option<CpuSnapshot> {
-    let taken_at = Instant::now();
+    let taken_at = crate::rt::now();
     let pid = std::process::id() as libc::c_int;
     let task = query_task_info(pid);
     let ids = list_thread_ids(pid, task.map_or(0, |t| t.pti_threadnum.max(0) as usize))?;

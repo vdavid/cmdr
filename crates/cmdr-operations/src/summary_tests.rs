@@ -37,6 +37,19 @@ fn a_path_on_a_volume_reads_as_its_name_then_the_path_inside_it() {
     assert_eq!(location_on("Phone", Path::new("/"), Path::new("/DCIM")), "Phone/DCIM");
 }
 
+/// The browser demo's one volume is "Macintosh HD" without being backed by a disk;
+/// its labels read as the desktop's own disk's, never `root/Users/you`.
+#[test]
+fn a_volume_standing_in_for_the_own_disk_reads_like_it() {
+    use cmdr_fs::volume::InMemoryVolume;
+    let disk = InMemoryVolume::new("Macintosh HD").standing_in_for_own_disk("/Users/you");
+    assert_eq!(volume_location(&disk, Path::new("/Users/you")), "~");
+    assert_eq!(volume_location(&disk, Path::new("/Users/you/Documents")), "~/Documents");
+    assert_eq!(volume_location(&disk, Path::new("/Applications")), "/Applications");
+    let phone = InMemoryVolume::new("Phone");
+    assert_eq!(volume_location(&phone, Path::new("/DCIM")), "Phone/DCIM");
+}
+
 #[test]
 fn items_name_the_first_sources_and_count_all_of_them() {
     let sources: Vec<PathBuf> = (0..25).map(|i| PathBuf::from(format!("/a/item-{i}"))).collect();

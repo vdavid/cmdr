@@ -26,5 +26,20 @@ disallowed-methods = [
   { path = "tokio::task::spawn", reason = "spawn on the engine's runtime (`host.runtime().spawn`), never whichever one is ambient" },
   { path = "tokio::task::spawn_blocking", reason = "use the engine's blocking pool (`host.runtime().spawn_blocking`), never whichever one is ambient" },
   { path = "std::thread::spawn", reason = "a thread the engine owns is a NAMED `std::thread::Builder` one; blocking work goes to the host runtime's blocking pool" },
-  { path = "libc::sync", reason = "flush the files this operation wrote (`durability.rs`), never every mounted volume" },
+  { path = "libc::sync", reason = "flush the files this operation wrote (`durability.rs`), never every mounted volume", allow-invalid = true },
+  # The clock and the timers go through `cmdr_fs::rt` (`crate::rt` here): `std`'s clock panics on
+  # `wasm32-unknown-unknown`, which takes tokio's timer with it, and this crate runs in the browser
+  # demo. Same list as `crates/cmdr-listing/clippy.toml`. ❗ METHOD bans, not `disallowed-types`:
+  # natively `rt::Instant` IS `std::time::Instant`, so a type ban would fire on the seam itself.
+  { path = "std::time::Instant::now", reason = "read the clock through `crate::rt::now()`: `std`'s panics in the browser build" },
+  { path = "std::time::Instant::elapsed", reason = "use `crate::rt::since(start)`: `std`'s clock panics in the browser build" },
+  { path = "std::time::SystemTime::now", reason = "use `crate::rt::wall_now()`: `std`'s wall clock panics in the browser build" },
+  { path = "tokio::time::Instant::now", reason = "read tokio's clock through `crate::rt::time::now()`: it panics in the browser build" },
+  { path = "tokio::time::Instant::elapsed", reason = "use `crate::rt::time::now() - start`: tokio's clock panics in the browser build" },
+  { path = "tokio::time::sleep", reason = "sleep through `crate::rt::time::sleep`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::sleep_until", reason = "sleep through `crate::rt::time::sleep_until`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::timeout", reason = "time out through `crate::rt::time::timeout`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::timeout_at", reason = "time out through `crate::rt::time::timeout_at`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::interval", reason = "tick with `crate::rt::time::interval_delayed`: tokio's timer panics in the browser build" },
+  { path = "tokio::task::yield_now", reason = "yield through `crate::rt::task::yield_now`: tokio's never reaches the page's event loop" },
 ]

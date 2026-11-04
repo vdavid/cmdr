@@ -6,11 +6,11 @@ use std::path::Path;
 use std::sync::Arc;
 
 use super::Outcome;
+use crate::local_disk::rename_exclusive as rename_local_exclusive;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{RemovalRefusal, remove_file_clearing_blockers};
 use cmdr_fs::volume::{Volume, VolumeError};
-use cmdr_local::rename_local_exclusive;
 
 /// Which filesystem answers a record's paths, and the four primitives the rules
 /// need from it.

@@ -17,8 +17,8 @@ use super::edit_error::EditError;
 use super::fresh_zip::{FreshZipEntry, FreshZipSource, RemoteZipFeeder, remote_source_bridge};
 use super::outage_wait::read_through_outages;
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::rt::Runtime as Handle;
 use cmdr_fs::volume::{EntryKind, Volume, VolumeError};
-use tokio::runtime::Handle;
 
 pub(super) struct RemoteFeed {
     pub(super) path: PathBuf,

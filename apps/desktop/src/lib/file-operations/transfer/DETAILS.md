@@ -947,12 +947,14 @@ replace couldn't be saved, so the file stays; `transfer-error-messages.ts`).
 
 `insufficient_space` is a question, not a verdict: its `required` is an upper bound (files already at the destination
 can make a copy need less, and the backend only looks at them on a local disk), so the copy is worded "may not have
-enough space" and the error dialog offers **Copy anyway** beside Close. The click runs
-`dialog-state.handleTransferErrorCopyAnyway`, which starts the failed copy's birth context again (`retryPropsFrom`,
-fresh preview, same conflict policy) with `spaceShortfall: 'proceed'`, settling the failed one like a close. The field
-rides `TransferProgressPropsData` → `TransferProgressDialog` → `TransferDispatchConfig` → `copyBetweenVolumes`, and the
-backend then skips its free-space check (`SpaceShortfall` in `crates/cmdr-operations/DETAILS.md` § "The free-space
-pre-flight"). A destination that really fills up still stops the copy, as `destination_full`.
+enough space" and the error dialog offers **Copy anyway** beside Retry and Close (Retry, because freeing up space is
+what the suggestion asks for, and then the same copy is the way out; `destination_full` offers Retry for the same
+reason, in the dialog and on a retained queue row). The click runs `dialog-state.handleTransferErrorCopyAnyway`, which
+starts the failed copy's birth context again (`retryPropsFrom`, fresh preview, same conflict policy) with
+`spaceShortfall: 'proceed'`, settling the failed one like a close. The field rides `TransferProgressPropsData` →
+`TransferProgressDialog` → `TransferDispatchConfig` → `copyBetweenVolumes`, and the backend then skips its free-space
+check (`SpaceShortfall` in `crates/cmdr-operations/DETAILS.md` § "The free-space pre-flight"). A destination that really
+fills up still stops the copy, as `destination_full`.
 
 Close stays primary, so Enter takes the safe way out. The button appears only for a `copy` with a birth context: an
 adopted operation (queue window) and a retained failure have nothing to start again, and the suggestion text never names

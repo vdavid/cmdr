@@ -5,7 +5,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Instant;
 
 use super::super::event_sinks::OperationEventSink;
 use super::super::state::WriteOperationState;
@@ -230,7 +229,7 @@ pub(super) async fn delete_volume_files_with_progress_probed(
     // `scan.rs::walk_dir_recursive`). Empty for backends without inode info.
     let mut seen_inodes: std::collections::HashSet<u64> = std::collections::HashSet::new();
     let tracker = Arc::new(VolumeScanTracker::new(state.progress_interval));
-    let mut last_scan_emit = Instant::now();
+    let mut last_scan_emit = crate::rt::now();
 
     if let Some(scan) = cached_scan.as_ref() {
         log::debug!(
@@ -346,7 +345,7 @@ pub(super) async fn delete_volume_files_with_progress_probed(
             // emit per interval so the FE dialog shows movement during the
             // entry-list build. Without this the user sees "Scanning…" frozen
             // until the actual delete phase starts.
-            if last_scan_emit.elapsed() >= state.progress_interval {
+            if crate::rt::since(last_scan_emit) >= state.progress_interval {
                 let files_done = tracker.files_so_far.load(Ordering::Relaxed);
                 let dirs_done = tracker.dirs_so_far.load(Ordering::Relaxed);
                 let bytes_done = tracker.bytes_so_far.load(Ordering::Relaxed);
@@ -373,7 +372,7 @@ pub(super) async fn delete_volume_files_with_progress_probed(
                     bytes_done,
                     0,
                 );
-                last_scan_emit = Instant::now();
+                last_scan_emit = crate::rt::now();
             }
         }
     } else {
@@ -462,7 +461,7 @@ pub(super) async fn delete_volume_files_with_progress_probed(
     // We process files first, then dirs in reverse order.
     let mut files_done = 0;
     let mut bytes_done = 0u64;
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
     let mut countdown = SourceCountdown::new(sources, &entries);
 
     // Delete files: one at a time, or in the backend's own batches
@@ -491,7 +490,7 @@ pub(super) async fn delete_volume_files_with_progress_probed(
         // gone. Reuses the copy throttle knob (`set_test_throttle` exposes a
         // generic per-step throttle). Zero-cost outside E2E.
         if let Some(pause) = state.scope().host().pacing().copy_throttle() {
-            tokio::time::sleep(pause).await;
+            crate::rt::time::sleep(pause).await;
         }
 
         let results = match batch_size {
@@ -565,7 +564,7 @@ pub(super) async fn delete_volume_files_with_progress_probed(
             return Err(failure);
         }
 
-        if last_progress_time.elapsed() >= state.progress_interval
+        if crate::rt::since(last_progress_time) >= state.progress_interval
             && let Some(entry) = batch.last()
         {
             let current_file = entry.path.file_name().map(|n| n.to_string_lossy().to_string());
@@ -591,7 +590,7 @@ pub(super) async fn delete_volume_files_with_progress_probed(
                 bytes_done,
                 total_bytes,
             );
-            last_progress_time = Instant::now();
+            last_progress_time = crate::rt::now();
         }
     }
 

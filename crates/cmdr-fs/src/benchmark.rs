@@ -21,9 +21,8 @@ static EPOCH_NANOS: AtomicU64 = AtomicU64::new(0);
 
 /// Get current time as nanos since process start (approximation)
 fn now_nanos() -> u64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
+    crate::rt::wall_now()
+        .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_nanos() as u64)
         .unwrap_or(0)
 }

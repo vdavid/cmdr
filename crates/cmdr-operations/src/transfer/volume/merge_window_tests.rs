@@ -27,6 +27,7 @@ use super::tests::{make_state, make_volumes};
 use super::*;
 use crate::event_sinks::CollectorEventSink;
 use crate::testing::TestOperations;
+use std::time::Instant;
 
 use crate::outage_slot::OutagePolicy;
 use crate::types::{
