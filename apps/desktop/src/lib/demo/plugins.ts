@@ -83,6 +83,21 @@ const handlers: Partial<Record<string, PluginHandler>> = {
   'plugin:app|tauri_version': () => '2',
 }
 
+/**
+ * The custom shortcuts `shortcuts.json` holds, by command id: what the desktop's
+ * `get_restricted_window_shortcuts` reads off disk for a window that can't open the
+ * store (the viewer). Only `shortcut:*` keys with a list, and only its strings.
+ */
+export function customShortcuts(): Record<string, string[]> {
+  const entries = stores.get(storeFor('shortcuts.json'))?.entries ?? new Map<string, unknown>()
+  const custom: Record<string, string[]> = {}
+  for (const [key, value] of entries) {
+    if (!key.startsWith('shortcut:') || !Array.isArray(value)) continue
+    custom[key.slice('shortcut:'.length)] = value.filter((combo): combo is string => typeof combo === 'string')
+  }
+  return custom
+}
+
 /** The backend's answer for a plugin command, or `undefined` for one it doesn't know. */
 export function pluginHandler(cmd: string): PluginHandler | undefined {
   return handlers[cmd]
