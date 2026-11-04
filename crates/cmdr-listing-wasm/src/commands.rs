@@ -8,6 +8,7 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 use cmdr_brief_columns::{
     BriefColumnsIpcError, BriefColumnsQuery, FontMetrics, FontMetricsError, FontMetricsStore,
@@ -24,7 +25,11 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use cmdr_fs::volume::host::VolumeHost;
+
+use crate::backend_listings::BackendListings;
 use crate::events::{DemoEvents, EventSink, ListingPathEvent};
+use crate::operations_host::DemoOperations;
 use crate::tree::{DemoTree, TreeError};
 
 /// Every command [`Demo::invoke`] answers, by its Tauri name.
@@ -56,7 +61,21 @@ pub const COMMANDS: &[&str] = &[
     "get_brief_column_text_widths",
 ];
 
-/// One engine over one in-memory volume: what the demo page talks to.
+/// How fast the demo's one device streams, slow enough to watch a copy's
+/// progress and pause it in the queue (`DETAILS.md` § Writes has the measured rate).
+pub const DEVICE_BYTES_PER_SEC: u64 = 5 * 1024 * 1024;
+
+/// How long engine work holds the page before it breathes (invariant: no
+/// stretch past about 50 ms; `smoke.mjs` probes it).
+pub const DEVICE_SLICE: Duration = Duration::from_millis(8);
+
+/// The device's size, the same disk the volume list shows: free space is what
+/// the files leave of it, live.
+pub const DEVICE_CAPACITY_BYTES: u64 = 994_662_584_320;
+
+/// One engine over one in-memory volume: what the demo page talks to. The
+/// listing engine and the write engine share the volume and the panes, so a
+/// write reaches the listings through `directory-diff`.
 #[derive(Clone)]
 pub struct Demo {
     listings: Listings,
@@ -64,31 +83,55 @@ pub struct Demo {
     /// The page's measured fonts, in memory only: the desktop's disk cache has no
     /// counterpart, so a reload measures again.
     fonts: Arc<FontMetricsStore>,
+    operations: DemoOperations,
 }
 
 impl Demo {
-    /// An engine listing `tree`, reporting every event to `sink`.
+    /// The engines over `tree`, reporting every event to `sink`.
     pub fn new(tree: DemoTree, sink: Arc<dyn EventSink>) -> Result<Self, TreeError> {
         let volume_id = tree.volume_id.clone();
-        let volume = tree.into_volume()?;
-        let events = Arc::new(DemoEvents::new(sink));
-        let volumes = Arc::new(OneVolume { volume_id, volume });
+        // Late-bound: the volume patches the panes, which list the volume.
+        let panes = Arc::new(BackendListings::default());
+        let volume: Arc<dyn Volume> = Arc::new(
+            tree.into_in_memory()?
+                .with_bandwidth(DEVICE_BYTES_PER_SEC)
+                .with_yielding(DEVICE_SLICE)
+                .with_capacity(DEVICE_CAPACITY_BYTES)
+                .with_pane_patches(volume_id.clone(), Arc::clone(&panes) as _),
+        );
+        let events = Arc::new(DemoEvents::new(Arc::clone(&sink)));
+        let volumes = Arc::new(OneVolume {
+            volume_id: volume_id.clone(),
+            volume: Arc::clone(&volume),
+        });
         let listings = Listings::builder(volumes, Arc::clone(&events) as _).build();
+        panes.attach(&listings);
         listings.start_orphan_reaper();
+        let volume_host = VolumeHost::builder().listings(panes).build();
+        let operations = DemoOperations::new(volume_id, volume, volume_host, &listings, sink);
         Ok(Self {
             listings,
             events,
             fonts: Arc::new(FontMetricsStore::new()),
+            operations,
         })
     }
 
     /// Whether [`Demo::invoke`] answers `command`.
     pub fn handles(command: &str) -> bool {
-        COMMANDS.contains(&command)
+        COMMANDS.contains(&command) || DemoOperations::handles(command)
+    }
+
+    /// Every command [`Demo::invoke`] answers, by its Tauri name.
+    pub fn commands() -> impl Iterator<Item = &'static str> {
+        COMMANDS.iter().copied().chain(DemoOperations::commands())
     }
 
     /// Runs `command` with Tauri-style `args` (camelCase keys).
     pub async fn invoke(&self, command: &str, args: Value) -> Result<Value, Value> {
+        if DemoOperations::handles(command) {
+            return self.operations.invoke(command, args).await;
+        }
         let l = &self.listings;
         match command {
             "list_directory_start_streaming" => {
@@ -292,15 +335,15 @@ impl Demo {
     }
 }
 
-fn parse<T: DeserializeOwned>(command: &str, args: Value) -> Result<T, Value> {
+pub(crate) fn parse<T: DeserializeOwned>(command: &str, args: Value) -> Result<T, Value> {
     serde_json::from_value(args).map_err(|e| Value::String(format!("invalid args for command `{command}`: {e}")))
 }
 
-fn ok(answer: impl Serialize) -> Result<Value, Value> {
+pub(crate) fn ok(answer: impl Serialize) -> Result<Value, Value> {
     serde_json::to_value(answer).map_err(|e| Value::String(e.to_string()))
 }
 
-fn answer<T: Serialize, E: Serialize>(result: Result<T, E>) -> Result<Value, Value> {
+pub(crate) fn answer<T: Serialize, E: Serialize>(result: Result<T, E>) -> Result<Value, Value> {
     match result {
         Ok(answer) => ok(answer),
         Err(error) => Err(ok(error)?),

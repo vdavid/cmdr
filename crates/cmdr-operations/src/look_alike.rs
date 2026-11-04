@@ -227,7 +227,7 @@ impl<'v> ListedFolders<'v> {
     /// `dir`'s entries, read off the volume. A `dir` that isn't there holds
     /// nothing.
     async fn read(&self, dir: &Path) -> Result<Vec<FileEntry>, VolumeError> {
-        let start = std::time::Instant::now();
+        let start = crate::rt::now();
         let entries = match self.volume.list_directory(dir, None).await {
             Ok(entries) => entries,
             Err(VolumeError::NotFound(_)) => Vec::new(),
@@ -238,7 +238,7 @@ impl<'v> ListedFolders<'v> {
             "listed {} ({} entries) in {} ms",
             LogPrivate::dir_path(dir),
             entries.len(),
-            start.elapsed().as_millis()
+            crate::rt::since(start).as_millis()
         );
         Ok(entries)
     }

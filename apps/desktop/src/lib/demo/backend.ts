@@ -12,7 +12,6 @@ import { pluginHandler } from './plugins.js'
 import { noteUnanswered } from './unanswered.js'
 import { volumeAnswers } from './volumes.js'
 import { createWindowHost, type WindowHost } from './windows.js'
-import { writeAnswers } from './writes.js'
 
 type Handler = (payload: Payload) => unknown
 
@@ -50,7 +49,7 @@ export function createDemoBackend(): DemoBackend {
   }
 
   const silent: AnswerTable = Object.fromEntries(silentCommands.map((name) => [name, () => undefined]))
-  const answers = { ...silent, ...appAnswers, ...volumeAnswers, ...writeAnswers } as Record<string, Handler | undefined>
+  const answers = { ...silent, ...appAnswers, ...volumeAnswers } as Record<string, Handler | undefined>
   const engine: ListingEngineHandle = startListingEngine((event, payload) => {
     emit(event, payload, { kind: 'everyone' })
   })

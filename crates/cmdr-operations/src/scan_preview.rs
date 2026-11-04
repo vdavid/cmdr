@@ -93,6 +93,16 @@ impl Operations {
     ) -> ScanPreviewStartResult {
         let preview_id = Uuid::new_v4().to_string();
         let preview_id_clone = preview_id.clone();
+        // `None` means "walk the local disk". A host with no local disk (the browser
+        // demo) walks the volume its id names instead.
+        let source_volume = source_volume.or_else(|| {
+            let volumes = self.host().volumes();
+            volumes
+                .local_disk(&source_volume_id)
+                .is_none()
+                .then(|| volumes.get(&source_volume_id))
+                .flatten()
+        });
 
         let state = Arc::new(ScanPreviewState {
             cancelled: AtomicBool::new(false),

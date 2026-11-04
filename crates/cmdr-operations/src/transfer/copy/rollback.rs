@@ -1,7 +1,5 @@
 //! Tracked rollback: removes the files a copy created, emitting reverse progress.
 
-use std::time::Instant;
-
 use crate::event_sinks::OperationEventSink;
 use crate::ledger::CopyTransaction;
 use crate::reversal::{ReversalTally, drained, remove_local_dir_if_empty, remove_local_file};
@@ -38,7 +36,7 @@ pub(super) fn rollback_with_progress(
 ) -> ReversalTally {
     let files_to_process = transaction.created_files().len();
     let mut tally = ReversalTally::default();
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
 
     // Emit initial rollback phase event (same values as cancellation point)
     let emit = |current_file: Option<String>, files_left: usize, bytes_left: u64| {
@@ -83,7 +81,7 @@ pub(super) fn rollback_with_progress(
 
         // Throttled progress events with decreasing values. The counters advance
         // for every entry the reversal walked past, removed or not.
-        if last_progress_time.elapsed() >= wind_down.progress_interval() {
+        if crate::rt::since(last_progress_time) >= wind_down.progress_interval() {
             let (files_left, bytes_left) =
                 drained(files_at_cancel, bytes_at_cancel, tally.processed(), files_to_process);
             let current_file_name = entry
@@ -92,7 +90,7 @@ pub(super) fn rollback_with_progress(
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
             emit(Some(current_file_name), files_left, bytes_left);
-            last_progress_time = Instant::now();
+            last_progress_time = crate::rt::now();
         }
 
         // E2E-only, like the copy loop's throttle: the host's rollback pace.

@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 #[cfg(target_os = "macos")]
 use super::super::macos_copy::copy_symlink;
@@ -528,7 +528,7 @@ pub(in crate::transfer) fn copy_single_item(
                     path: source_for_symlink.display().to_string(),
                     message: format!("Failed to read symlink: {}", e).into(),
                 })?;
-                std::os::unix::fs::symlink(&link_target, target).map_err(|e| WriteOperationError::IoError {
+                crate::local_disk::symlink(&link_target, target).map_err(|e| WriteOperationError::IoError {
                     path: target.display().to_string(),
                     message: format!("Failed to create symlink: {}", e).into(),
                 })?;
@@ -664,7 +664,7 @@ pub(in crate::transfer) fn copy_single_item(
         // Create progress callback for intra-file progress reporting on network filesystems
         let base_bytes_done = *bytes_done;
         let current_file_name = file_name.to_string_lossy().to_string();
-        let last_emit_time = std::cell::Cell::new(Instant::now());
+        let last_emit_time = std::cell::Cell::new(crate::rt::now());
 
         // Mid-file progress credits raw chunk bytes against the write-footprint
         // denominator: a copy writes every byte (including hardlink dupes), so
@@ -672,7 +672,7 @@ pub(in crate::transfer) fn copy_single_item(
         let progress_cb: ChunkedCopyProgressFn = &|chunk_bytes: u64, _total: u64| {
             // The row's live bytes: one atomic store, ❌ never the tree's lock.
             row.bytes().store(chunk_bytes, std::sync::atomic::Ordering::Relaxed);
-            if last_emit_time.get().elapsed() >= *progress_interval {
+            if crate::rt::since(last_emit_time.get()) >= *progress_interval {
                 let effective_bytes_done = base_bytes_done + chunk_bytes;
                 log::debug!(
                     "copy: emitting chunked progress op={} files={}/{} bytes={}/{}",
@@ -704,7 +704,7 @@ pub(in crate::transfer) fn copy_single_item(
                     effective_bytes_done,
                     bytes_total,
                 );
-                last_emit_time.set(Instant::now());
+                last_emit_time.set(crate::rt::now());
             }
         };
 

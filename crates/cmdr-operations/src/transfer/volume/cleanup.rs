@@ -12,7 +12,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, UNIX_EPOCH};
 
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::in_flight_temps;
@@ -31,10 +31,10 @@ use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_fs::rt::Runtime as Handle;
 use cmdr_fs::volume::{ConnectionState, EntryKind, Volume, VolumeError};
 use cmdr_operation_log::rollback::ItemResult;
 use cmdr_operation_log::types::SkipReason;
-use tokio::runtime::Handle;
 
 use cmdr_fs::staging::STAGING_TEMP_MARKER as TEMP_INFIX;
 
@@ -88,7 +88,7 @@ pub(super) async fn volume_rollback_with_progress(
     let paths_to_process = copied_paths.len();
     let runtime = wind_down.runtime();
     let mut tally = ReversalTally::default();
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
 
     let emit = |current_file: Option<String>, files_left: usize, bytes_left: u64| {
         wind_down.report(
@@ -132,7 +132,7 @@ pub(super) async fn volume_rollback_with_progress(
 
         // Throttled progress events with decreasing values. The counters advance
         // for every entry the reversal walked past, removed or not.
-        if last_progress_time.elapsed() >= wind_down.progress_interval() {
+        if crate::rt::since(last_progress_time) >= wind_down.progress_interval() {
             let (files_left, bytes_left) =
                 drained(files_at_cancel, bytes_at_cancel, tally.processed(), paths_to_process);
             let current_file_name = entry
@@ -141,12 +141,12 @@ pub(super) async fn volume_rollback_with_progress(
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
             emit(Some(current_file_name), files_left, bytes_left);
-            last_progress_time = Instant::now();
+            last_progress_time = crate::rt::now();
         }
 
         // E2E-only, like the local reversal's: the host's rollback pace.
         if let Some(pause) = wind_down.pace() {
-            tokio::time::sleep(pause).await;
+            crate::rt::time::sleep(pause).await;
         }
     }
 
@@ -320,13 +320,13 @@ async fn remove_what_a_live_destination_takes(
         "clean_abandoned_staged_writes: removing {} staged partial(s) the stopped tasks left",
         temps.len()
     );
-    let deadline = tokio::time::Instant::now() + state.cleanup_policy.inline_budget;
+    let deadline = crate::rt::time::now() + state.cleanup_policy.inline_budget;
     for temp in temps {
         if !volume.connection_state().is_none_or(ConnectionState::is_live) {
             left.out.push(temp);
             continue;
         }
-        match tokio::time::timeout_at(deadline, volume.delete(&temp)).await {
+        match crate::rt::time::timeout_at(deadline, volume.delete(&temp)).await {
             // Already gone counts as removed: the end state this wants already
             // holds, and reporting it would send the user hunting for a file
             // that isn't there.
@@ -399,7 +399,7 @@ pub(super) async fn reap_stale_transfer_temps(
         }
     };
 
-    let now_secs = SystemTime::now()
+    let now_secs = crate::rt::wall_now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);

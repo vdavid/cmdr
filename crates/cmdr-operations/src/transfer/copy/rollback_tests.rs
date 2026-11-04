@@ -12,6 +12,7 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
+use std::time::Instant;
 
 /// Drive a reversal over an already-recorded ledger, plus the one directory the
 /// copy created. Returns the frames it emitted and what it reported.

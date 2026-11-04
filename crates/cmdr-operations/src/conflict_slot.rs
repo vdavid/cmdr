@@ -264,8 +264,9 @@ enum Refused {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rt::Instant;
     use crate::test_support::placeholder_conflict;
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     /// Arms `slot` and hands back the clash's id. These tests are about the
     /// arbitration, so the question itself is a placeholder; the one test that

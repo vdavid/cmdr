@@ -12,7 +12,7 @@ use cmdr_fs::entry::FileEntry;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::cancellable::run_cancellable_scoped;
 use super::event_sinks::OperationEventSink;
@@ -276,7 +276,7 @@ fn scan_sources_internal(
     // footprint (each inode once). See `walk_dir_recursive`.
     let mut total_bytes = 0u64;
     let mut dedup_bytes = 0u64;
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
     let mut visited = HashSet::new();
     // Shared across all sources in this scan so a file hardlinked between
     // separate source roots still only contributes its bytes once, matching

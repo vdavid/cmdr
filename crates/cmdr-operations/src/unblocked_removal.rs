@@ -16,8 +16,8 @@ use std::sync::Arc;
 
 use cmdr_fs::metadata::{ParentOpening, Unblock, open_parent_folder};
 
+use cmdr_fs::rt::Runtime as Handle;
 use cmdr_fs::volume::{Volume, VolumeError};
-use tokio::runtime::Handle;
 
 /// What the item a reversal removes is: it decides `Volume::delete` or
 /// `Volume::delete_directory`, so a folder's removal never reaches a file of

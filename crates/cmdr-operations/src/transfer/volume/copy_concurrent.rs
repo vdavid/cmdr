@@ -31,13 +31,15 @@
 //!
 //! Semantics, the cancel-drain contract, and the merge invariant: `DETAILS.md`.
 
+use crate::rt::Instant;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use tokio::task::{Id as TaskId, JoinError, JoinSet};
+use crate::rt::task::{Id as TaskId, JoinSet};
+use cmdr_fs::rt::JoinError;
 
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::host::OperationErrorReport;
@@ -157,14 +159,14 @@ struct ConcurrentDriver<'a> {
     /// driver, even one dropped mid-run.
     in_flight: JoinSet<CopyTaskOutput>,
     /// The engine's runtime, which every task spawns on (`src/host/CLAUDE.md`).
-    runtime: tokio::runtime::Handle,
+    runtime: cmdr_fs::rt::Runtime,
     /// The sources still to prepare, in the order the user selected them.
     sources: std::iter::Enumerate<std::slice::Iter<'a, PathBuf>>,
     /// Set once the driver has SEEN its work stop (`state.stop_work`: the
     /// user's cancel or rollback, or its own first failure): from then on it
     /// stops waiting indefinitely for its tasks and gives them a bounded window
     /// to stop. See `copy.rs::CANCEL_DRAIN_DEADLINE`.
-    drain_deadline: Option<tokio::time::Instant>,
+    drain_deadline: Option<crate::rt::time::Instant>,
     /// Whether that window is the hard-abort tier's short one rather than the
     /// cooperative cancel's. Latched, so the abort re-arms the deadline once.
     drain_shortened: bool,
@@ -374,10 +376,10 @@ impl<'a> ConcurrentDriver<'a> {
                          cutting the drain short (to {shortened:?})",
                         self.in_flight.len(),
                     );
-                    self.drain_deadline = Some(tokio::time::Instant::now() + shortened);
+                    self.drain_deadline = Some(crate::rt::time::now() + shortened);
                     return AwaitStep::Rearmed;
                 }
-                result = tokio::time::timeout_at(deadline, self.in_flight.join_next_with_id()) => match result {
+                result = crate::rt::time::timeout_at(deadline, self.in_flight.join_next_with_id()) => match result {
                     Ok(next) => next,
                     Err(_) => {
                         let operation_id = operation_id.into();
@@ -431,7 +433,7 @@ impl<'a> ConcurrentDriver<'a> {
                                  {tasks} in-flight task(s); winding them down (up to {window:?})",
                             ),
                         }
-                        self.drain_deadline = Some(tokio::time::Instant::now() + window);
+                        self.drain_deadline = Some(crate::rt::time::now() + window);
                         return AwaitStep::Rearmed;
                     }
                     next = self.in_flight.join_next_with_id() => next,
@@ -496,9 +498,9 @@ impl<'a> ConcurrentDriver<'a> {
             return;
         }
         self.in_flight.abort_all();
-        let grace = tokio::time::Instant::now() + ABORTED_TASKS_GRACE;
+        let grace = crate::rt::time::now() + ABORTED_TASKS_GRACE;
         loop {
-            match tokio::time::timeout_at(grace, self.in_flight.join_next_with_id()).await {
+            match crate::rt::time::timeout_at(grace, self.in_flight.join_next_with_id()).await {
                 Ok(Some(joined)) => self.settled.record_joined(&self.ctx, joined),
                 Ok(None) => return,
                 Err(_) => {
@@ -666,7 +668,7 @@ impl Settlements {
         // Through the ledger, ❌ never a hand-built event: the other tasks are
         // still streaming, so only the ledger's ordered emit keeps this one from
         // landing behind (or under) theirs.
-        *ctx.last_progress_mutex.lock_ignore_poison() = Instant::now();
+        *ctx.last_progress_mutex.lock_ignore_poison() = crate::rt::now();
         ctx.leaf_ledger.emit(file_name_done, ctx.leaf_ledger.current());
     }
 

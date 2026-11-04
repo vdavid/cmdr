@@ -112,10 +112,17 @@ The engines build for `wasm32-unknown-unknown` (`crates/cmdr-listing-wasm`, the 
 A browser has no host filesystem, user database, threads, or C toolchain, and the gates are as few and coarse as that
 allows:
 
-- **Host-only deps** sit in `Cargo.toml`'s `cfg(not(target_family = "wasm"))` table: `libc`, `rusqlite`, `uzers`,
-  `xattr`, `exacl`, and tokio's `rt-multi-thread`. `dirs` stays unconditional (it answers `None` there). The wasm table
-  adds `uuid`'s `js` randomness and `rt`'s browser half (`web-time`, `wasm-bindgen`, `wasm-bindgen-futures`).
-- **Two whole modules are host-only** (`lib.rs`): `mapped_file_faults` (mmap) and `sqlite_util`.
+- **Host-only deps** sit in `Cargo.toml`'s `cfg(not(target_family = "wasm"))` table: `libc`, `uzers`, `xattr`, `exacl`,
+  and tokio's `rt-multi-thread`. `dirs` stays unconditional (it answers `None` there). The wasm table adds `uuid`'s `js`
+  randomness and `rt`'s browser half (`web-time`, `wasm-bindgen`, `wasm-bindgen-futures`).
+- **One whole module is host-only** (`lib.rs`): `mapped_file_faults` (mmap).
+- **SQLite builds for the browser too**: `rusqlite` is an ordinary dependency, and on `wasm32-unknown-unknown` it links
+  `sqlite-wasm-rs`, which compiles `sqlite3.c` with the pinned conda LLVM clang the wasm build script installs
+  (`scripts/build-listing-wasm/toolchain.go`); Apple's clang can't target wasm32. `sqlite_util` is the same code there.
+  A path opens on `sqlite-wasm-rs`'s memory VFS (files keyed by path, shared between connections, gone on reload), and
+  `journal_mode=WAL` quietly stays `delete` (no shared memory). The slab still has to be installed before the first
+  connection, as natively: a connection opened first makes `ensure_shared_page_cache` answer `TooLate` (verified on
+  `sqlite-wasm-rs` 0.5.5, SQLite 3.53.0, a Node run of the real op-log store, 2026-11-04).
 - **The rest answer as "the platform can't hold this"**, the way the Linux branches already do for macOS-only classes:
   ACL, mode, and xattr reads find nothing, writes report `ClassOutcome::NotApplicable`, the umask is the `022` fallback,
   owners resolve to their numeric id, `open_parent_folder` opens nothing, and `Acl` wraps `Infallible`, so no code path
@@ -136,7 +143,18 @@ allows:
   ambient-runtime lookup (`Instant::now` / `elapsed` on both clocks, `SystemTime::now`,
   `tokio::time::{sleep, sleep_until, timeout, interval}`, `Handle::current`), and `rt/` opts out with one `#[allow]`.
   Method bans, not `disallowed-types`: natively `rt::Instant` and `rt::Runtime` ARE the `std` and tokio types, so a type
-  ban would fire on the seam itself. `desktop-rust-listing-wasm`'s smoke test backs it at runtime.
+  ban would fire on the seam itself. `desktop-rust-listing-wasm`'s smoke test backs it at runtime. This crate's own
+  `clippy.toml` carries the clock half of that list (not the spawn bans: `deadline` and the fallback runtime spawn on
+  the ambient runtime by design), because `InMemoryVolume`, the scan clocks, and `deadline` run in the browser too;
+  `testing/` opts out with a reasoned module-level `#[allow]`, and `lib.rs` lifts the bans for its own tests.
+- **What else `rt` carries for the write engine**: `rt::wall_now()` (`std`'s `SystemTime`, re-based from the page's
+  clock in the browser), `rt::spawn_ambient` (`tokio::spawn` natively, the page's loop in the browser; only for
+  `deadline`'s ambient design), `rt::task::{JoinSet, Id, AbortHandle, yield_now}` (tokio's natively; in the browser a
+  set over `spawn_local` that, like tokio's, aborts what's left when dropped, and a `setTimeout(0)` macrotask yield so
+  the page paints and fires timers, which tokio's microtask-shaped yield with no runtime would starve), and
+  `rt::time::{timeout_at, interval_delayed, Interval, Elapsed}`. In the browser `JoinError::is_panic` is always `false`:
+  `panic = "abort"` ends the module first. `smoke.mjs` runs `rtSelfTest` (`src/rt_self_test.rs`) against the real
+  `.wasm`: join order, abort, drop-aborts, a yield that lets a timer fire, `timeout_at`, the interval, the wall clock.
 - **`Path::is_absolute` is always `false` on that target** (it has no notion of a filesystem root). Code the browser
   build runs checks a leading `/` instead (`crates/cmdr-listing-wasm/src/tree.rs`); `InMemoryVolume::normalize` gets the
   right answer anyway, because joining a rooted path onto `/` replaces it.
@@ -1131,6 +1149,36 @@ models something a real backend genuinely does:
 A fault the caller wants to arm on a call COUNT rather than on a path belongs one layer up, in the app's `FaultyVolume`
 wrapper (`crates/cmdr-operations/src/transfer/volume/faulty_volume_test_support.rs`): it wraps any volume and fails the
 Nth call to a named operation. ❌ Don't grow this list with fault shapes that aren't about what a real backend does.
+
+## `InMemoryVolume` as one device (the browser demo)
+
+The demo runs the real engines over one `InMemoryVolume`, which by default is a store of bytes that answers at memory
+speed and never waits. Four opt-in knobs make it model a device (`src/volume/in_memory/device.rs`); every one is off
+unless set, so a test that only cares about bytes sees the store it always did:
+
+- **Content** (`InMemoryContent`, `with_content`): a file holds real bytes or a synthetic descriptor, "`len` bytes
+  generated from `seed`". Generated bytes are a pure function of `(seed, offset)` (splitmix64 in counter mode), so a
+  positioned read anywhere answers what a stream would there, and 1,200 demo photos cost a few bytes each. A write keeps
+  a descriptor when every byte it was handed is one's: word 0 is `mix(seed)` and `mix` is a bijection, so the writer
+  recovers the seed from the bytes and checks every later chunk against it (`ContentSink`). No side channel crosses from
+  the reader to the writer, and ❗ one changed byte stores real bytes from the start, so an edited file never comes back
+  generated. A file built from a listing alone (no content) still reads as empty.
+- **Bandwidth** (`with_bandwidth`): ONE budget the whole volume shares: each chunk books the next slot on the device's
+  timeline, so three concurrent readers each get a third of the rate, as on one disk (a per-stream rate would show three
+  times the device's speed, since the copy runs `max_concurrent_ops()` streams). A reader straight back for its next
+  chunk continues the timeline within a few milliseconds of slack, or timer lateness would accrue per chunk.
+- **Yielding** (`with_yielding`): every call and streamed chunk hands the thread back once a slice has passed since the
+  last time (`rt::task::yield_now`, a macrotask in the browser), like a device waiting on I/O. That's what keeps the
+  page painting and Cancel clickable during a 1,200-file delete.
+- **Pane patches** (`with_pane_patches(volume_id, listings)`, `src/volume/in_memory/panes.rs`): every create, delete,
+  rename, and streamed write then patches the listings through the shared patcher (`patching.rs`), as SFTP and S3 do,
+  and `notify_mutation` (the engine's own reports) goes there too. The demo hands it its listing engine
+  (`crates/cmdr-listing-wasm/src/backend_listings.rs`). Without it nothing is patched, as before.
+- **Capacity** (`with_capacity`): free space is the total minus what the files hold, read live, and a write that
+  wouldn't fit is refused `StorageFull` before it reads a byte.
+
+❗ Positioned reads (`read_range`, so the viewer's random access) are never paced: the viewer bridges sync-over-async on
+an in-memory volume by polling once. These knobs model a device; ❌ they never relax a `Volume` contract.
 
 ## `process_memory`: the allocators, their accountants, and the one reader that spans them
 

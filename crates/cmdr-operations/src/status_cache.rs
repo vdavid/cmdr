@@ -108,7 +108,7 @@ impl StatusCache {
     /// ejectable volume in the list is marked "busy" until the op unregisters, so
     /// the volume picker can disable Eject for it (see [`Self::busy_volume_ids`]).
     pub(super) fn register(&self, operation_id: &str, operation_type: WriteOperationType, volume_ids: Vec<String>) {
-        let now = std::time::SystemTime::now()
+        let now = crate::rt::wall_now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0);

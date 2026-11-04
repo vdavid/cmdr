@@ -1764,11 +1764,15 @@ name = "cmdr-listing-wasm"
 version = "0.0.0"
 dependencies = [
  "cmdr-brief-columns",
+ "cmdr-collation",
  "cmdr-fs",
  "cmdr-listing",
  "cmdr-menu",
+ "cmdr-operation-log",
+ "cmdr-operations",
  "js-sys",
  "log",
+ "rusqlite",
  "serde",
  "serde_json",
  "tokio",
@@ -1860,7 +1864,6 @@ dependencies = [
  "serde",
  "specta",
  "tempfile",
- "tokio",
  "unicode-normalization",
  "uuid",
 ]

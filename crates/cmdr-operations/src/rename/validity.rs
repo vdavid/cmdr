@@ -178,8 +178,8 @@ impl crate::Operations {
         // Check for conflict: does a sibling with this name already exist?
         let old_path = PathBuf::from(&dir).join(&old_name);
 
-        if volume_id != "root" {
-            // Non-local volume: use Volume trait for conflict detection
+        if self.host().volumes().local_disk(&volume_id).is_none() {
+            // Not the local disk: use Volume trait for conflict detection
             let conflict_info = check_sibling_conflict_via_volume(self.host(), &volume_id, &old_path, &new_path).await;
             let (by_move, move_to_price) = match rename_by_move(self.host(), &volume_id, &old_path).await {
                 Some((by_move, facts)) => (Some(by_move), facts),
@@ -290,17 +290,14 @@ fn check_sibling_conflict(old_path: &Path, new_path: &Path) -> (bool, bool, Opti
 
 /// Whether two `symlink_metadata` results name one local file (same device and
 /// inode), which is how a case-only rename on a case-insensitive volume shows up.
-#[cfg(unix)]
+///
+/// Without an inode to compare (off unix), two paths never count as one file, so a
+/// case-only rename is indistinguishable from a conflict there.
 pub fn same_local_file(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
-    use std::os::unix::fs::MetadataExt;
-    left.dev() == right.dev() && left.ino() == right.ino()
-}
-
-/// Without an inode to compare, two paths never count as one file, so a case-only
-/// rename is indistinguishable from a conflict here.
-#[cfg(not(unix))]
-pub fn same_local_file(_left: &std::fs::Metadata, _right: &std::fs::Metadata) -> bool {
-    false
+    matches!(
+        (crate::local_disk::file_id(left), crate::local_disk::file_id(right)),
+        (Some(left), Some(right)) if left == right
+    )
 }
 
 /// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's

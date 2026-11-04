@@ -13,11 +13,11 @@
 //!
 //! Semantics, flows, and decisions: `../DETAILS.md` § "Volume copy + move".
 
+use crate::rt::Instant;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Instant;
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
@@ -331,7 +331,7 @@ pub async fn move_volumes_with_progress(
             // its whole subtree streams one file at a time. Same width as the
             // copy driver's, and the same number the in-flight table declares.
             let file_window = super::merge_ctx::FileWindow::new(concurrency);
-            let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
+            let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(crate::rt::now()));
             let leaf_ledger = Arc::clone(&leaf_ledger);
             let deep_skipped_files = Arc::clone(&deep_skipped_files);
             let left_in_source = Arc::clone(&left_in_source);

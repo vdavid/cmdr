@@ -289,15 +289,10 @@ fn folded(path: &Path) -> String {
 
 /// `path`'s `(dev, ino)`, following symlinks the way [`crate::validation::is_same_file`] does;
 /// `None` when it doesn't exist (or off unix).
-#[cfg(unix)]
 fn file_id(path: &Path) -> Option<(u64, u64)> {
-    use std::os::unix::fs::MetadataExt;
-    fs::metadata(path).ok().map(|meta| (meta.dev(), meta.ino()))
-}
-
-#[cfg(not(unix))]
-fn file_id(_path: &Path) -> Option<(u64, u64)> {
-    None
+    fs::metadata(path)
+        .ok()
+        .and_then(|meta| crate::local_disk::file_id(&meta))
 }
 
 /// Refuses per-source names on a route that can't honour them: an archive

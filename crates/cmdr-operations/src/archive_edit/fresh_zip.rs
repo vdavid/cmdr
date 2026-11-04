@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use tokio::runtime::Handle;
+use cmdr_fs::rt::Runtime as Handle;
 use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::CancellationToken;
 use zip::write::SimpleFileOptions;
@@ -438,7 +438,7 @@ fn produce(
         }
         // A source with no mtime is dated now; the helper owns the ZIP convention
         // (local DOS time plus the exact UTC second), shared with the mutator.
-        let modified = entry.modified.unwrap_or_else(std::time::SystemTime::now);
+        let modified = entry.modified.unwrap_or_else(crate::rt::wall_now);
         let options = cmdr_archive::mutator::with_entry_mtime(options, modified);
         if entry.is_directory {
             zip.add_directory(entry.name.trim_end_matches('/'), options.clone())

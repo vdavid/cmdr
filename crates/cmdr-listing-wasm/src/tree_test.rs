@@ -18,6 +18,7 @@ fn entry(path: &str, kind: DemoKind) -> DemoEntry {
 fn tree(entries: Vec<DemoEntry>) -> DemoTree {
     DemoTree {
         volume_id: "root".into(),
+        volume_name: None,
         root: "/".into(),
         entries,
     }
@@ -100,4 +101,34 @@ fn relative_and_trailing_slash_paths_are_refused() {
         let refused = tree(vec![entry(bad, DemoKind::Dir)]).into_volume().err();
         assert_eq!(refused, Some(TreeError::BadPath(bad.into())), "{bad}");
     }
+}
+
+fn photo_tree() -> DemoTree {
+    let mut photo = entry("/photo.jpg", DemoKind::File);
+    photo.size = Some(200_000);
+    tree(vec![photo])
+}
+
+#[tokio::test]
+async fn a_file_reads_as_many_bytes_as_its_listing_says() {
+    let volume = photo_tree().into_volume().expect("a valid tree");
+    let mut stream = volume.open_read_stream(Path::new("/photo.jpg")).await.expect("opens");
+    let mut read = 0;
+    while let Some(chunk) = stream.next_chunk().await {
+        read += chunk.expect("reads").len();
+    }
+    assert_eq!(read, 200_000);
+
+    // The same tree generates the same bytes.
+    let again = photo_tree().into_volume().expect("a valid tree");
+    let first = volume
+        .read_range(Path::new("/photo.jpg"), 1_000, 64)
+        .await
+        .expect("reads");
+    let second = again
+        .read_range(Path::new("/photo.jpg"), 1_000, 64)
+        .await
+        .expect("reads");
+    assert_eq!(first, second);
+    assert_eq!(first.len(), 64);
 }

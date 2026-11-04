@@ -473,7 +473,7 @@ pub async fn execute_rollback(
             // deferred-dir phase below removes empty leftovers, so slowing it would
             // buy a spec dead time rather than a window.
             if let Some(pace) = runner.pace_between_items() {
-                tokio::time::sleep(pace).await;
+                crate::rt::time::sleep(pace).await;
             }
             // Park here, BEFORE the item is verified — never between "verified
             // unchanged" and the act, where a ten-minute pause would leave a stale

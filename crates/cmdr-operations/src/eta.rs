@@ -56,7 +56,8 @@
 //! Reading a filling reversal as a draining one reports a finish it has barely
 //! started, then grows the estimate as it progresses.
 
-use std::time::{Duration, Instant};
+use crate::rt::Instant;
+use std::time::Duration;
 
 use super::types::{ProgressAxis, WriteOperationPhase};
 

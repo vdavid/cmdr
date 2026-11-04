@@ -7,10 +7,29 @@
 #![warn(unused_crate_dependencies)]
 #![warn(unreachable_pub)]
 #![deny(missing_docs)]
+// The browser build (`wasm32`, the demo's engine) compiles the local-disk engine but
+// can't reach it: its host has no local disk (`OperationVolumes::local_disk`), and
+// the unix-only callers of the local helpers aren't there. What that leaves unused
+// on that target is expected, not rot.
+#![cfg_attr(
+    target_family = "wasm",
+    allow(
+        dead_code,
+        unused_imports,
+        unused_qualifications,
+        reason = "the local-disk engine is compiled but unreachable in the browser build, and there `rt::Instant` and `rt::time::Instant` are one type"
+    )
+)]
 // The internals `testing` re-exports for a host's test cells are `pub` so it can;
 // without the feature nothing reaches them, so only a `testing` build (every lint
 // lane's, through the dev-dependencies) can say which `pub` is truly unreachable.
-#![cfg_attr(not(feature = "testing"), allow(unreachable_pub))]
+#![cfg_attr(
+    not(feature = "testing"),
+    allow(
+        unreachable_pub,
+        reason = "only a `testing` build can tell which `pub` is truly unreachable"
+    )
+)]
 // `clippy.toml` refuses an ambient spawn and a global `sync(2)` in the engine; a
 // test drives the engine from threads and tasks of its own, as a host does.
 #![cfg_attr(
@@ -78,6 +97,7 @@ mod in_flight_temps;
 mod journal;
 mod journal_search;
 mod leaf_validation;
+mod local_disk;
 // The local-filesystem copy, move, delete, and trash starters.
 mod ledger;
 mod local_start;
@@ -95,6 +115,8 @@ mod overwrite;
 // The engine half of "paste clipboard content as a file"; its only caller is macOS.
 #[cfg(target_os = "macos")]
 mod create_numbered;
+#[cfg(test)]
+mod golden_trace_tests;
 mod locked_sources;
 mod locked_sources_slot;
 mod queued_sources;
@@ -107,6 +129,9 @@ mod routed_writes;
 #[cfg(test)]
 mod routed_writes_tests;
 mod routing;
+#[cfg(test)]
+mod routing_table_tests;
+mod rt;
 mod scan;
 mod scan_bridge;
 mod scan_cache;

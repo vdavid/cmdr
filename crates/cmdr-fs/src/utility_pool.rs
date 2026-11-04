@@ -41,7 +41,7 @@
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crate::ignore_poison::IgnorePoison;
 use crate::thread_qos::{QosClass, set_current_thread_qos};
@@ -131,13 +131,13 @@ impl UtilityPool {
     /// took itself off the idle list and should exit.
     fn next_job(&self, handoff: &Arc<Handoff>) -> Option<Job> {
         self.idle.lock_ignore_poison().push_back(Arc::clone(handoff));
-        let deadline = Instant::now() + self.keep_alive;
+        let deadline = crate::rt::now() + self.keep_alive;
         let mut slot = handoff.job.lock_ignore_poison();
         loop {
             if let Some(job) = slot.take() {
                 return Some(job);
             }
-            let now = Instant::now();
+            let now = crate::rt::now();
             if now >= deadline {
                 break;
             }

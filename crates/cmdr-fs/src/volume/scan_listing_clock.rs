@@ -17,10 +17,10 @@
 //! ❗ Pause only around waits the backend controls. Wrapping a device round trip
 //! in a pause would hide exactly the wedge the timeout exists to catch.
 
+use crate::rt::time::Instant;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tokio::time::Instant;
 
 /// One listing's running-time stopwatch, pausable from inside the backend.
 /// Cheap to clone; clones share the same clock.
@@ -52,7 +52,7 @@ impl ScanListingClock {
     pub fn start() -> Self {
         Self {
             inner: Arc::new(Mutex::new(ClockState {
-                started: Instant::now(),
+                started: crate::rt::time::now(),
                 paused_total: Duration::ZERO,
                 open_pauses: 0,
                 paused_since: None,
@@ -64,7 +64,7 @@ impl ScanListingClock {
     /// still open).
     pub fn active(&self) -> Duration {
         let state = self.lock();
-        let now = Instant::now();
+        let now = crate::rt::time::now();
         let open = state.paused_since.map_or(Duration::ZERO, |since| now - since);
         (now - state.started).saturating_sub(state.paused_total + open)
     }
@@ -73,7 +73,7 @@ impl ScanListingClock {
     pub fn pause(&self) -> ScanListingClockPause {
         let mut state = self.lock();
         if state.open_pauses == 0 {
-            state.paused_since = Some(Instant::now());
+            state.paused_since = Some(crate::rt::time::now());
         }
         state.open_pauses += 1;
         ScanListingClockPause { clock: self.clone() }
@@ -107,7 +107,7 @@ impl Drop for ScanListingClockPause {
         if state.open_pauses == 0
             && let Some(since) = state.paused_since.take()
         {
-            state.paused_total += Instant::now() - since;
+            state.paused_total += crate::rt::time::now() - since;
         }
     }
 }

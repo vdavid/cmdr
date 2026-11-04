@@ -7,7 +7,6 @@ use std::ops::ControlFlow;
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Instant;
 
 use super::super::super::host::Announced;
 use super::super::super::state::WriteOperationState;
@@ -81,7 +80,7 @@ pub(super) async fn try_server_side_copy(
     // step and never reads as `streaming 0/0`.
     set_task_phase(TaskPhase::CopyingOnServer);
     set_task_bytes(0, 0);
-    let started = Instant::now();
+    let started = crate::rt::now();
     // ❌ Never the single-shot answer: only whole-publish holds for a copy.
     let staging = resolve_staging(staging, dest_volume.publishes_writes_whole());
     let staged = StagedWrite::begin(state, &**dest_volume, announced_dest, staging);
@@ -118,7 +117,7 @@ pub(super) async fn try_server_side_copy(
             "try_server_side_copy: {} answered for {} after {:?}: done, size {bytes}",
             LogPrivate::volume(dest_volume.name()),
             LogPrivate::file_path(dest_path),
-            started.elapsed(),
+            crate::rt::since(started),
             bytes = written.bytes,
         ),
         Err(e) => log::debug!(
@@ -126,7 +125,7 @@ pub(super) async fn try_server_side_copy(
             "try_server_side_copy: {} answered for {} after {:?}: {}",
             LogPrivate::volume(dest_volume.name()),
             LogPrivate::file_path(dest_path),
-            started.elapsed(),
+            crate::rt::since(started),
             LogError(e),
         ),
     }
@@ -168,7 +167,7 @@ pub(super) async fn try_server_side_copy(
                 target: "copy",
                 "try_server_side_copy: cleared the stage for {} after {:?}; streaming it instead",
                 LogPrivate::file_path(dest_path),
-                started.elapsed(),
+                crate::rt::since(started),
             );
             Ok(ServerSideCopy::Streams)
         }

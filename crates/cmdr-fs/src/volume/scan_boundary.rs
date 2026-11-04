@@ -198,7 +198,7 @@ impl<'a> ScanBoundary<'a> {
             return std::future::pending().await;
         }
         while !self.stop.should_stop().await {
-            tokio::time::sleep(STOP_POLL).await;
+            crate::rt::time::sleep(STOP_POLL).await;
         }
     }
 

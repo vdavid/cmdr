@@ -85,7 +85,7 @@ pub(crate) fn volume_items(
 
 /// A path on this Mac as a person reads it: the home folder as `~`.
 pub(crate) fn local_location(path: &Path) -> String {
-    tildify(path, dirs::home_dir().as_deref())
+    tildify(path, crate::local_disk::home_dir().as_deref())
 }
 
 /// A path on `volume` as a person reads it: `<volume name>/<path inside it>`,

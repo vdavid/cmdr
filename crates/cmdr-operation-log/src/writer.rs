@@ -28,10 +28,19 @@
 //! `rollback_unit` gap to `not_rollbackable(journal_incomplete)` or a
 //! `search_only` gap to `search_coverage = top_level_only`. This writer
 //! provides the counts; it does not itself compute eligibility (that's the capture layer and rollback engine).
+//!
+//! ## The browser build
+//!
+//! A page has no thread to put the writer on, so there (`wasm32`) the handle holds
+//! the write connection itself and applies each message INLINE, on the caller, in
+//! the same function the thread's loop runs ([`apply_message`]). Nothing queues, so
+//! nothing can back up: a reply is already there when the caller reads it, and
+//! the order is the call order, as the channel's is.
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
+#[cfg(not(target_family = "wasm"))]
 use std::thread;
 
 use rusqlite::Connection;
@@ -48,6 +57,7 @@ use cmdr_fs::volume::NodeIdentity;
 /// Bounded channel capacity. Large enough that a burst of per-item records never
 /// blocks a real op in practice (the writer drains far faster than file I/O
 /// produces items); the bound is the backpressure backstop, not a hot path.
+#[cfg(not(target_family = "wasm"))]
 const CHANNEL_CAPACITY: usize = 1024;
 
 /// The header of an operation, known when it opens. The subkind and terminal
@@ -228,8 +238,14 @@ enum WriteMessage {
 /// A cloneable handle to the operation-log writer thread.
 #[derive(Clone)]
 pub struct OperationLogWriter {
+    #[cfg(not(target_family = "wasm"))]
     sender: mpsc::SyncSender<WriteMessage>,
+    #[cfg(not(target_family = "wasm"))]
     thread_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
+    /// The browser build's write connection, applied to inline; `None` once shut
+    /// down (as a gone thread is).
+    #[cfg(target_family = "wasm")]
+    inline: Arc<Mutex<Option<Connection>>>,
     db_path: PathBuf,
 }
 
@@ -241,14 +257,23 @@ impl OperationLogWriter {
     /// either way.
     pub fn spawn(db_path: &Path) -> Result<Self, OperationLogStoreError> {
         let conn = open_write_connection(db_path)?;
-        let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(CHANNEL_CAPACITY);
-        let handle = thread::Builder::new()
-            .name("operation-log-writer".into())
-            .spawn(move || writer_loop(conn, receiver))
-            .map_err(OperationLogStoreError::Io)?;
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(CHANNEL_CAPACITY);
+            let handle = thread::Builder::new()
+                .name("operation-log-writer".into())
+                .spawn(move || writer_loop(conn, receiver))
+                .map_err(OperationLogStoreError::Io)?;
+            Ok(Self {
+                sender,
+                thread_handle: Arc::new(Mutex::new(Some(handle))),
+                db_path: db_path.to_path_buf(),
+            })
+        }
+        // The browser build's writer: the connection, applied to inline (module docs).
+        #[cfg(target_family = "wasm")]
         Ok(Self {
-            sender,
-            thread_handle: Arc::new(Mutex::new(Some(handle))),
+            inline: Arc::new(Mutex::new(Some(conn))),
             db_path: db_path.to_path_buf(),
         })
     }
@@ -338,16 +363,37 @@ impl OperationLogWriter {
         Ok(())
     }
 
-    /// Shut the writer down and join its thread. Idempotent.
+    /// Shut the writer down and join its thread (in the browser build, close its
+    /// connection). Idempotent.
     pub fn shutdown(&self) {
-        let _ = self.sender.send(WriteMessage::Shutdown);
-        if let Some(handle) = self.thread_handle.lock_ignore_poison().take() {
-            let _ = handle.join();
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let _ = self.sender.send(WriteMessage::Shutdown);
+            if let Some(handle) = self.thread_handle.lock_ignore_poison().take() {
+                let _ = handle.join();
+            }
         }
+        // Already shut is the only refusal, and the answer is the same.
+        #[cfg(target_family = "wasm")]
+        let _ = self.send(WriteMessage::Shutdown);
     }
 
+    #[cfg(not(target_family = "wasm"))]
     fn send(&self, msg: WriteMessage) -> Result<(), OperationLogStoreError> {
         self.sender.send(msg).map_err(|_| writer_gone(mpsc::RecvError))
+    }
+
+    /// Applies `msg` now, on the caller (the browser build has no thread).
+    #[cfg(target_family = "wasm")]
+    fn send(&self, msg: WriteMessage) -> Result<(), OperationLogStoreError> {
+        let mut inline = self.inline.lock_ignore_poison();
+        let Some(conn) = inline.as_mut() else {
+            return Err(writer_gone(mpsc::RecvError));
+        };
+        if apply_message(conn, msg).is_break() {
+            inline.take();
+        }
+        Ok(())
     }
 }
 
@@ -360,53 +406,64 @@ fn writer_gone(_: mpsc::RecvError) -> OperationLogStoreError {
 
 /// The writer thread's main loop: own the write connection, apply each message,
 /// exit on `Shutdown` or channel close.
+#[cfg(not(target_family = "wasm"))]
 fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
     while let Ok(msg) = receiver.recv() {
-        match msg {
-            WriteMessage::OpenOperation(open) => {
-                if let Err(e) = apply_open(&conn, &open) {
-                    log::warn!(target: "operation_log", "open_operation({}) failed: {e}", open.op_id);
-                }
-            }
-            WriteMessage::RecordItems { op_id, items } => apply_record_items(&mut conn, &op_id, &items),
-            WriteMessage::FinalizeOperation { finalize, reply } => {
-                let outcome = apply_finalize(&conn, &finalize).unwrap_or_else(|e| {
-                    log::warn!(target: "operation_log", "finalize_operation({}) failed: {e}", finalize.op_id);
-                    FinalizeOutcome {
-                        rollback_unit_rows: 0,
-                        search_only_rows: 0,
-                    }
-                });
-                let _ = reply.send(outcome);
-            }
-            WriteMessage::SetRollbackState {
-                op_id,
-                state,
-                reason,
-                reply,
-            } => {
-                if let Err(e) = apply_set_rollback_state(&conn, &op_id, state, reason) {
-                    log::warn!(target: "operation_log", "set_rollback_state({op_id}) failed: {e}");
-                }
-                let _ = reply.send(());
-            }
-            WriteMessage::SetItemOutcomes { op_id, updates, reply } => {
-                if let Err(e) = apply_set_item_outcomes(&mut conn, &op_id, &updates) {
-                    log::warn!(target: "operation_log", "set_item_outcomes({op_id}) failed: {e}");
-                }
-                let _ = reply.send(());
-            }
-            WriteMessage::Prune(request) => {
-                if let Err(e) = handle_prune(&mut conn, &request) {
-                    log::warn!(target: "operation_log", "prune failed: {e}");
-                }
-            }
-            WriteMessage::Flush(done) => {
-                let _ = done.send(());
-            }
-            WriteMessage::Shutdown => break,
+        if apply_message(&mut conn, msg).is_break() {
+            break;
         }
     }
+}
+
+/// Applies one message to the write connection: what the writer thread does with
+/// each (and the browser build's inline writer, with each call). `Break` is
+/// `Shutdown`.
+fn apply_message(conn: &mut Connection, msg: WriteMessage) -> std::ops::ControlFlow<()> {
+    match msg {
+        WriteMessage::OpenOperation(open) => {
+            if let Err(e) = apply_open(conn, &open) {
+                log::warn!(target: "operation_log", "open_operation({}) failed: {e}", open.op_id);
+            }
+        }
+        WriteMessage::RecordItems { op_id, items } => apply_record_items(conn, &op_id, &items),
+        WriteMessage::FinalizeOperation { finalize, reply } => {
+            let outcome = apply_finalize(conn, &finalize).unwrap_or_else(|e| {
+                log::warn!(target: "operation_log", "finalize_operation({}) failed: {e}", finalize.op_id);
+                FinalizeOutcome {
+                    rollback_unit_rows: 0,
+                    search_only_rows: 0,
+                }
+            });
+            let _ = reply.send(outcome);
+        }
+        WriteMessage::SetRollbackState {
+            op_id,
+            state,
+            reason,
+            reply,
+        } => {
+            if let Err(e) = apply_set_rollback_state(conn, &op_id, state, reason) {
+                log::warn!(target: "operation_log", "set_rollback_state({op_id}) failed: {e}");
+            }
+            let _ = reply.send(());
+        }
+        WriteMessage::SetItemOutcomes { op_id, updates, reply } => {
+            if let Err(e) = apply_set_item_outcomes(conn, &op_id, &updates) {
+                log::warn!(target: "operation_log", "set_item_outcomes({op_id}) failed: {e}");
+            }
+            let _ = reply.send(());
+        }
+        WriteMessage::Prune(request) => {
+            if let Err(e) = handle_prune(conn, &request) {
+                log::warn!(target: "operation_log", "prune failed: {e}");
+            }
+        }
+        WriteMessage::Flush(done) => {
+            let _ = done.send(());
+        }
+        WriteMessage::Shutdown => return std::ops::ControlFlow::Break(()),
+    }
+    std::ops::ControlFlow::Continue(())
 }
 
 /// Insert the operation header. `rollback_state` opens as `not_rollbackable`

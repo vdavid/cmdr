@@ -58,6 +58,20 @@ describe('listing engine', () => {
     ])
   })
 
+  it('expands ~ in every write path argument, as the desktop does for root', async () => {
+    const handle = startListingEngine(() => undefined)
+    await handle.invoke('create_directory', { parentPath: '~', name: 'Work', volumeId: 'root' })
+    await handle.invoke('copy_between_volumes', { sourcePaths: ['~/a.txt'], destPath: '~/Documents' })
+    await handle.invoke('move_files', { sources: ['~/a.txt'], destination: '~/b' })
+    await handle.invoke('rename_file', { from: '~/a.txt', to: '~/z.txt' })
+    expect(engine.invoked.slice(-4)).toEqual([
+      ['create_directory', { parentPath: DEMO_HOME, name: 'Work', volumeId: 'root' }],
+      ['copy_between_volumes', { sourcePaths: [`${DEMO_HOME}/a.txt`], destPath: `${DEMO_HOME}/Documents` }],
+      ['move_files', { sources: [`${DEMO_HOME}/a.txt`], destination: `${DEMO_HOME}/b` }],
+      ['rename_file', { from: `${DEMO_HOME}/a.txt`, to: `${DEMO_HOME}/z.txt` }],
+    ])
+  })
+
   it('hands engine events on a task late, in order', async () => {
     vi.useFakeTimers()
     const heard: string[] = []
