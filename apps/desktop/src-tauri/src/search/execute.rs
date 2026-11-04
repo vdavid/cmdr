@@ -220,7 +220,7 @@ fn search_covered_half(
         Vec::new()
     } else {
         let resolution =
-            query::resolve_include_scope(&target.include_paths, &loaded.pool, loaded.mount_root.as_deref());
+            query::resolve_include_scope(&target.include_paths, &loaded.pool, loaded.mount_root.as_deref())?;
         // Empty ids ⇒ a mount-root ("whole volume") scope: drop the restriction
         // entirely (routing already scoped to this volume). Otherwise apply it.
         if resolution.include_ids.is_empty() {

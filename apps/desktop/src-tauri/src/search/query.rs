@@ -410,7 +410,15 @@ pub(crate) struct ScopeResolution {
 /// - **An unresolvable path** (outside the mount root, or a folder not in the index)
 ///   goes to `unresolved` for honest reporting. If NONE of the non-whole-volume
 ///   paths resolve, `include_ids` is `[i64::MIN]` so the engine matches nothing.
-pub(crate) fn resolve_include_scope(paths: &[String], pool: &ReadPool, mount_root: Option<&str>) -> ScopeResolution {
+///
+/// ❌ A lookup that can't be READ is an error, never "unresolved": that reads as a
+/// typo, and a pool that hands out no connection would otherwise answer with nothing
+/// at all.
+pub(crate) fn resolve_include_scope(
+    paths: &[String],
+    pool: &ReadPool,
+    mount_root: Option<&str>,
+) -> Result<ScopeResolution, String> {
     let mut whole_volume = false;
     let mut unresolved: Vec<String> = Vec::new();
     // (original path, index-relative path) for the subpaths that need a DB lookup.
@@ -429,43 +437,40 @@ pub(crate) fn resolve_include_scope(paths: &[String], pool: &ReadPool, mount_roo
     if whole_volume {
         // The whole volume is in scope, so every subpath is already covered - no
         // include restriction and nothing to report as unresolved.
-        return ScopeResolution {
+        return Ok(ScopeResolution {
             include_ids: Vec::new(),
             unresolved: Vec::new(),
-        };
+        });
     }
 
     let mut include_ids: Vec<i64> = Vec::new();
-    let _ = pool.with_conn(|conn| {
+    pool.with_conn(|conn| {
         for (original, index_path) in &to_resolve {
-            match store::resolve_path(conn, index_path) {
-                Ok(Some(id)) => include_ids.push(id),
-                Ok(None) => {
+            match store::resolve_path(conn, index_path)
+                .map_err(|e| format!("Couldn't resolve the search scope: {e}"))?
+            {
+                Some(id) => include_ids.push(id),
+                None => {
                     log::debug!(
                         "search: include path not found in index: {index_path}",
                         index_path = cmdr_fs::log_private::LogPrivate::dir_path(index_path)
                     );
                     unresolved.push(original.clone());
                 }
-                Err(e) => {
-                    log::warn!(
-                        "search: failed to resolve include path {index_path}: {e}",
-                        index_path = cmdr_fs::log_private::LogPrivate::dir_path(index_path)
-                    );
-                    unresolved.push(original.clone());
-                }
             }
         }
-    });
+        Ok::<(), String>(())
+    })
+    .map_err(|e| format!("Couldn't resolve the search scope: {e}"))??;
 
     if include_ids.is_empty() {
         // Nothing resolved (all typos / not in this index): match nothing.
         include_ids.push(i64::MIN);
     }
-    ScopeResolution {
+    Ok(ScopeResolution {
         include_ids,
         unresolved,
-    }
+    })
 }
 
 #[cfg(test)]

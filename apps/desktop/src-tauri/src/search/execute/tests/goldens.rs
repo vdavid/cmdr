@@ -785,3 +785,11 @@ fn a_folder_size_that_cant_be_read_fails_the_search() {
         "folders with no size, answered as if sized: {answer:?}"
     );
 }
+
+#[test]
+fn a_scope_that_cant_be_resolved_fails_the_search() {
+    let (_dir, loaded) = broken_root("ALTER TABLE entries RENAME TO entries_gone;");
+    let query = scoped(named("report"), &["/cmdr-golden/Docs"]);
+    let answer = golden_run(&query, &target_for(Volume::Root, &query), &loaded, &root_weights());
+    assert!(answer.is_err(), "an unreadable scope, answered as a typo: {answer:?}");
+}

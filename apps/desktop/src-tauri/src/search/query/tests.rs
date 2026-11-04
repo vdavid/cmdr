@@ -542,7 +542,7 @@ fn scope_at_volume_root_searches_whole_volume() {
     let (_dir, pool) = mount_rooted_pool();
     // The mount root itself strips to "/" ⇒ whole volume ⇒ NO include restriction
     // (empty ids), not `[i64::MIN]` (which would match nothing — the live bug).
-    let r = resolve_include_scope(&[TEST_MOUNT.to_string()], &pool, Some(TEST_MOUNT));
+    let r = resolve_include_scope(&[TEST_MOUNT.to_string()], &pool, Some(TEST_MOUNT)).expect("the scope resolves");
     assert!(
         r.include_ids.is_empty(),
         "volume-root scope ⇒ no restriction (whole volume)"
@@ -554,7 +554,7 @@ fn scope_at_volume_root_searches_whole_volume() {
 fn scope_subpath_resolves_to_its_index_id() {
     let (_dir, pool) = mount_rooted_pool();
     let scope = format!("{TEST_MOUNT}/photos");
-    let r = resolve_include_scope(&[scope], &pool, Some(TEST_MOUNT));
+    let r = resolve_include_scope(&[scope], &pool, Some(TEST_MOUNT)).expect("the scope resolves");
     // `/Volumes/cmdr-test-nas/photos` → strip mount → `/photos` → resolves.
     assert_eq!(r.include_ids.len(), 1);
     assert_ne!(r.include_ids[0], i64::MIN);
@@ -565,7 +565,7 @@ fn scope_subpath_resolves_to_its_index_id() {
 fn scope_path_not_in_index_is_reported_unresolved() {
     let (_dir, pool) = mount_rooted_pool();
     let scope = format!("{TEST_MOUNT}/does-not-exist");
-    let r = resolve_include_scope(std::slice::from_ref(&scope), &pool, Some(TEST_MOUNT));
+    let r = resolve_include_scope(std::slice::from_ref(&scope), &pool, Some(TEST_MOUNT)).expect("the scope resolves");
     // Nothing resolved ⇒ match nothing AND surface the path honestly.
     assert_eq!(r.include_ids, vec![i64::MIN]);
     assert_eq!(r.unresolved, vec![scope]);
@@ -575,7 +575,8 @@ fn scope_path_not_in_index_is_reported_unresolved() {
 fn scope_outside_mount_root_is_unresolved() {
     let (_dir, pool) = mount_rooted_pool();
     // A path not under the volume's mount root can't map into its index.
-    let r = resolve_include_scope(&["/Volumes/other/x".to_string()], &pool, Some(TEST_MOUNT));
+    let r =
+        resolve_include_scope(&["/Volumes/other/x".to_string()], &pool, Some(TEST_MOUNT)).expect("the scope resolves");
     assert_eq!(r.include_ids, vec![i64::MIN]);
     assert_eq!(r.unresolved, vec!["/Volumes/other/x".to_string()]);
 }
