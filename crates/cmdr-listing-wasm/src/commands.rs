@@ -118,7 +118,7 @@ impl Demo {
             .index(Arc::clone(&sizes) as _)
             .build();
         panes.attach(&listings);
-        panes.attach_sizes(Arc::clone(&sizes));
+        panes.attach_sizes(Arc::clone(&sizes), Arc::clone(&sink));
         listings.start_orphan_reaper();
         let volume_host = VolumeHost::builder().listings(panes).build();
         let operations = DemoOperations::new(volume_id, volume, volume_host, &listings, Arc::clone(&sizes) as _, sink);

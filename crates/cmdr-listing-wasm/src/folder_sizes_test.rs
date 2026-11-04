@@ -221,3 +221,73 @@ fn enrich_writes_only_folders_that_are_not_symlinks() {
     assert_eq!(entries[1].recursive_size, None);
     assert_eq!(entries[2].recursive_size, None);
 }
+
+impl Collector {
+    fn last(&self, event: &str, matches: impl Fn(&Value) -> bool) -> Option<Value> {
+        let events = self.0.lock().expect("collector lock");
+        events
+            .iter()
+            .rev()
+            .find(|(name, p)| name == event && matches(p))
+            .map(|(_, p)| p.clone())
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_write_tells_each_pane_above_it_its_moved_row_and_its_own_total() {
+    let (demo, events) = demo();
+    open(&demo, &events, "home", "/Users/you").await;
+    open(&demo, &events, "deep", "/Users/you/Documents/Deep").await;
+    let made = call(
+        &demo,
+        "create_directory",
+        json!({ "volumeId": "root", "parentPath": "/Users/you/Documents/Deep", "name": "New", "initiator": "user" }),
+    )
+    .await;
+    assert_eq!(made["type"], "done", "{made}");
+    let of = |id: &'static str| move |p: &Value| p["listingId"] == id;
+    events.wait_for("listing-index-sizes-changed", of("home")).await;
+    let home = events
+        .last("listing-index-sizes-changed", of("home"))
+        .expect("home heard it");
+    assert_eq!(home["full"], false);
+    assert_eq!(home["folders"][0]["path"], "/Users/you/Documents");
+    assert_eq!(home["folders"][0]["stats"]["recursiveDirCount"], 2);
+    assert_eq!(home["currentDirChanged"], true);
+    assert_eq!(home["currentDir"]["recursiveDirCount"], 3);
+    // The pane AT the change heard the new row itself: only its own total moved.
+    let deep = events
+        .last("listing-index-sizes-changed", of("deep"))
+        .expect("deep heard it");
+    assert_eq!(deep["folders"], json!([]));
+    assert_eq!(deep["currentDir"]["recursiveDirCount"], 1);
+    // Written into the cache before the event, so the status bar's re-read agrees.
+    assert_eq!(row(&demo, "home", "Documents").await["recursiveDirCount"], 2);
+}
+
+#[test]
+fn the_sizes_event_carries_exactly_the_bindings_keys() {
+    use crate::events_test::ts_type_of_event;
+    use crate::folder_sizes::{FolderReading, LISTING_INDEX_SIZES_CHANGED, ListingIndexSizesChanged};
+    assert_eq!(
+        ts_type_of_event(LISTING_INDEX_SIZES_CHANGED),
+        "ListingIndexSizesChanged"
+    );
+    let folders = [FolderReading {
+        path: "/a".into(),
+        stats: None,
+    }];
+    let event = ListingIndexSizesChanged {
+        listing_id: "l",
+        full: false,
+        folders: &folders,
+        current_dir_changed: false,
+        current_dir: None,
+    };
+    let keys = |v: &Value| -> std::collections::BTreeSet<String> {
+        v.as_object().expect("an object").keys().cloned().collect()
+    };
+    let value = serde_json::to_value(&event).expect("serializes");
+    assert_eq!(keys(&value["folders"][0]), ts_keys("FolderSizes"));
+    assert_eq!(keys(&value), ts_keys("ListingIndexSizesChanged"));
+}

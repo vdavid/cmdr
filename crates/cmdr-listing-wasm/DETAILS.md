@@ -154,9 +154,12 @@ store (`InMemoryVolume::subtree_totals`, counting the way `cmdr-index`'s aggrega
   the fold counts, it keeps no leaf list.
 - **Changes compose ahead of the panes**, as the app's composer feeds its index first: `BackendListings` hands every
   `directory_changed` to `FolderSizes::changed` (which forgets the changed entry's subtree and its ancestors from the
-  memo), then to the panes, then calls `refresh_index_sizes` on every open listing strictly ABOVE the change, whose
-  folder row moved. The engine publishes moved rows as `directory-diff` modifies; no `listing-index-sizes-changed` (that
-  event is the app's index worker batching a live index, with its cooldown and hourglass, which a fold doesn't need).
+  memo), then to the panes, then `FolderSizes::publish_moved` tells every open listing AT or above the change what
+  moved, the app's index-size worker's way: the one folder row on the way down written into the cache by
+  `update_index_sizes` (the pane AT the change has none: it heard the change itself), then `listing-index-sizes-changed`
+  with that row and the listing's own folder (`currentDir`, the `..` row). That event is the only path the frontend has
+  for the `..` row and the status bar to move without a re-read. No cooldown and no hourglass: the app's worker batches
+  a live index, and a fold is never behind.
 - **Physical size** is each file's `physical_size`, or its logical size where the store models none.
 
 ## Where the demo differs from the app

@@ -18,10 +18,13 @@ use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::{DirectoryChange, HeldAt, InMemoryVolume, SubtreeTotals};
 use cmdr_listing::host::ListingIndex;
+use cmdr_listing::{IndexSizes, Listings};
 use cmdr_operation_log::types::SearchCoverageReason;
 use cmdr_operations::KnownSize;
 use cmdr_operations::host::{BufferedLeaves, ExpectedTotals, OperationIndex};
 use serde::Serialize;
+
+use crate::events::EventSink;
 
 /// The fold over one in-memory volume, memoized per path.
 pub struct FolderSizes {
@@ -102,6 +105,81 @@ impl FolderSizes {
     }
 }
 
+impl FolderSizes {
+    /// Tells every pane at or above `parent` what a change there moved, the
+    /// way the app's index-size worker does (`listing_index_sizes/`): the one
+    /// folder row on the way down to `parent` (none for the pane AT `parent`,
+    /// which heard the change itself) written into the listing cache first,
+    /// then `listing-index-sizes-changed` with it and the pane's own folder
+    /// (the `..` row), so the rows, the status bar, and the `..` row move
+    /// with no re-read. Call AFTER the panes heard the change.
+    pub fn publish_moved(&self, listings: &Listings, sink: &dyn EventSink, volume_id: &str, parent: &Path) {
+        for open in listings.open_listing_paths(volume_id) {
+            let Ok(below) = parent.strip_prefix(&open) else {
+                continue;
+            };
+            let row = below.components().next().map(|first| open.join(first));
+            let own = open.to_string_lossy().into_owned();
+            let mut asked = vec![own];
+            if let Some(row) = &row {
+                asked.push(row.to_string_lossy().into_owned());
+            }
+            let mut stats = self.dir_stats(&asked);
+            let row_stats = if row.is_some() { stats.pop().flatten() } else { None };
+            let current_dir = stats.pop().flatten();
+            let folders: Vec<FolderReading> = row
+                .zip(row_stats)
+                .map(|(path, stats)| FolderReading {
+                    path: path.to_string_lossy().into_owned(),
+                    stats: Some(stats),
+                })
+                .into_iter()
+                .collect();
+            let written: Vec<(String, IndexSizes)> = folders
+                .iter()
+                .filter_map(|f| Some((f.path.clone(), f.stats.as_ref()?.index_sizes())))
+                .collect();
+            for id in listings.listings_for_path_on_volume(volume_id, &open) {
+                // Into the cache BEFORE the event, so the status bar's re-read sees it.
+                let _ = listings.update_index_sizes(&id, &written);
+                let event = ListingIndexSizesChanged {
+                    listing_id: id.as_str(),
+                    full: false,
+                    folders: &folders,
+                    current_dir_changed: current_dir.is_some(),
+                    current_dir: current_dir.as_ref(),
+                };
+                if let Ok(payload) = serde_json::to_value(&event) {
+                    sink.emit(LISTING_INDEX_SIZES_CHANGED, payload);
+                }
+            }
+        }
+    }
+}
+
+/// The event the app's index-size worker sends (`listing_index_sizes/mod.rs`).
+pub(crate) const LISTING_INDEX_SIZES_CHANGED: &str = "listing-index-sizes-changed";
+
+/// `ListingIndexSizesChanged` as the app sends it; `folder_sizes_test.rs` pins
+/// the keys against `bindings.ts`.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ListingIndexSizesChanged<'a> {
+    pub(crate) listing_id: &'a str,
+    pub(crate) full: bool,
+    pub(crate) folders: &'a [FolderReading],
+    pub(crate) current_dir_changed: bool,
+    pub(crate) current_dir: Option<&'a DirStats>,
+}
+
+/// One folder row's reading: the app's `FolderSizes` wire type.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct FolderReading {
+    pub(crate) path: String,
+    pub(crate) stats: Option<DirStats>,
+}
+
 /// `DirStats` as the app's `get_dir_stats` sends it (`cmdr-index`'s type);
 /// `folder_sizes_test.rs` pins the keys against `bindings.ts`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -122,6 +200,19 @@ pub struct DirStats {
 }
 
 impl DirStats {
+    /// The same reading as a row's seven `recursive_*` fields.
+    fn index_sizes(&self) -> IndexSizes {
+        IndexSizes {
+            recursive_size: Some(self.recursive_size),
+            recursive_physical_size: Some(self.recursive_physical_size),
+            recursive_file_count: Some(self.recursive_file_count),
+            recursive_dir_count: Some(self.recursive_dir_count),
+            recursive_has_symlinks: Some(self.recursive_has_symlinks),
+            recursive_size_complete: Some(self.recursive_size_complete),
+            recursive_size_stale: Some(self.recursive_size_stale),
+        }
+    }
+
     fn of(path: String, totals: SubtreeTotals) -> Self {
         Self {
             path,
