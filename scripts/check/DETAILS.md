@@ -64,6 +64,9 @@ naming review (§ "The unrecognized-name log").
   stale binary. Waits out a warming worktree, skips the main-clone guard (a build writes nothing tracked), and `--fresh`
   forces the compile. It shares `EnsureE2EBinary` with the Playwright lane: `checks/DETAILS.md` § "The Playwright lane's
   binary is fingerprinted"
+- **`--print-rust-test-scope REF`**: Print the `CMDR_RUST_TEST_SCOPE` value for the change since git ref `REF` (`-`
+  reads the changed paths from stdin) as the only stdout line, the reasons on stderr, and exit. Never fails: any error
+  prints `all`. What it computes and how the Rust test lanes take it: `checks/DETAILS.md` § "The Rust test scope"
 - **`-h`, `--help`**: Show help message
 
 `--graph` honors the same selectors (positional or flag form), so `pnpm check rust --graph` graphs only the Rust checks.

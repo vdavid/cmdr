@@ -95,7 +95,7 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	lane, output, _, err := runNextestLane(ctx.RootDir, nextestRunOptions{RunIgnoredOnly: true},
 		fixtureIntegrationFilter(ctx.RootDir))
 	if lane == nil {
-		return CheckResult{}, err
+		return rustLaneNotRun(err)
 	}
 	defer lane.remove()
 	// Before the verdict branch, so a red run records WHICH tests went red
@@ -118,6 +118,7 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		count, _ = strconv.Atoi(matches[1])
 		message = fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))
 	}
+	message += lane.scope.note()
 
 	if flaky := ParseFlakyTests(output); len(flaky) > 0 {
 		return CheckResult{

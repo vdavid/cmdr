@@ -33,6 +33,9 @@ import (
 // a cell elsewhere can never drift into (or out of) the lane by its name alone.
 const WebdavNextcloudTestAtom = "volume::nextcloud_test::"
 
+// webdavNextcloudPackage is the crate `WebdavNextcloudTestAtom`'s cells live in.
+const webdavNextcloudPackage = "cmdr-webdav"
+
 // RunWebdavNextcloudTests runs the `cmdr-webdav` cells that need a real
 // Nextcloud.
 //
@@ -63,7 +66,7 @@ func RunWebdavNextcloudTests(ctx *CheckContext) (CheckResult, error) {
 	lane, output, _, err := runNextestLane(ctx.RootDir, nextestRunOptions{RunIgnoredOnly: true},
 		"test("+WebdavNextcloudTestAtom+")")
 	if lane == nil {
-		return CheckResult{}, err
+		return rustLaneNotRun(err)
 	}
 	defer lane.remove()
 	ctx.RecordTests(ParseNextestResults(output)...)
@@ -80,15 +83,16 @@ func RunWebdavNextcloudTests(ctx *CheckContext) (CheckResult, error) {
 	}
 	// ❗ Zero is a failure, not a pass. The filter is a module path, so a
 	// renamed or moved module selects nothing and nextest calls that a clean
-	// run — which would leave three unobserved claims looking observed.
-	if count == 0 {
+	// run — which would leave three unobserved claims looking observed. Unless
+	// the Rust test scope left `cmdr-webdav` out, where zero is the right answer.
+	if count == 0 && lane.scope.includes(webdavNextcloudPackage) {
 		return CheckResult{}, fmt.Errorf(
 			"the filter test(%s) selected no cell; the module moved or was renamed, and the sabre/dav claims in crates/cmdr-webdav/DETAILS.md would go unchecked",
 			WebdavNextcloudTestAtom,
 		)
 	}
 
-	result := Success(message)
+	result := Success(message + lane.scope.note())
 	result.Total = count
 	return result, nil
 }
