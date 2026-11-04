@@ -6,7 +6,8 @@ the in-memory arena it scans. Tauri-free and `cmdr-index`-free; Cmdr hosts it fr
 ## Module map
 
 - **seam.rs** (the host's door: `SearchRows`, `DirSizeSource`, `search_covered`, typed errors, `ResolvedScope`),
-  **context.rs** (`NameRules`, `SearchContext`), **arena.rs** (`SearchIndex`, `ArenaBuilder`, `OptU64`).
+  **context.rs** (`NameRules`, `SearchContext`), **arena.rs** (`SearchIndex`, `ArenaBuilder`, `OptU64`), **memory.rs**
+  (`MemorySource`, the seam over rows in memory, ids in one defined order).
 - **engine.rs** (the scan, scope filter, sort, path reconstruction), **matcher.rs**, **excludes.rs**, **ranking.rs**,
   **query.rs** (scope parsing, scope paths, summaries), **types.rs** (wire types), **run.rs** (a live run's registry,
   `ResultStream`, and the one terminal report), **testing.rs** (fixtures).

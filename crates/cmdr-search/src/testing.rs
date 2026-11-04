@@ -1,10 +1,33 @@
 //! Fixtures a host's tests and benches build arenas from: the hand-written fixture arena
 //! and a synthetic home-folder-shaped one. Gated on `any(test, feature = "testing")`.
 
+use std::collections::HashMap;
+
 use crate::arena::{ARENA_ROOT_ID as ROOT_ID, ArenaBuilder, SearchIndex};
 use crate::ranking::ImportanceWeights;
+use crate::seam::{DirSizeSource, SourceError};
 
 pub use crate::arena::{FixtureRow, arena_of};
+
+/// Folder sizes held in a map by entry id: the [`DirSizeSource`] a test pairs with a
+/// [`crate::MemorySource`]. A folder missing from the map has no size on record.
+#[derive(Debug, Default, Clone)]
+pub struct FolderSizes(pub HashMap<i64, u64>);
+
+impl DirSizeSource for FolderSizes {
+    fn in_range(&self, min: Option<u64>, max: Option<u64>) -> Result<HashMap<i64, u64>, SourceError> {
+        Ok(self
+            .0
+            .iter()
+            .filter(|&(_, &size)| min.is_none_or(|min| size >= min) && max.is_none_or(|max| size <= max))
+            .map(|(&id, &size)| (id, size))
+            .collect())
+    }
+
+    fn of(&self, ids: &[i64]) -> Result<Vec<Option<u64>>, SourceError> {
+        Ok(ids.iter().map(|id| self.0.get(id).copied()).collect())
+    }
+}
 
 /// Word pool for synthetic filenames. 20 words ⇒ a plain-word query matches
 /// roughly 1/20 of the files, the "a common word, lots of hits" shape that makes

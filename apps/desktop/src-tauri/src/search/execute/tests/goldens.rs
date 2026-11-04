@@ -40,7 +40,7 @@ use crate::search::types::SearchSort;
 use super::super::live_run::covered_half_for_run;
 
 /// The mount-rooted volume's mount root.
-const SHARE_ROOT: &str = "/Volumes/cmdr-golden-share";
+pub(super) const SHARE_ROOT: &str = "/Volumes/cmdr-golden-share";
 const SHARE_VOLUME_ID: &str = "smb-cmdr-golden-share";
 
 // ── The corpus ───────────────────────────────────────────────────────
@@ -48,11 +48,11 @@ const SHARE_VOLUME_ID: &str = "smb-cmdr-golden-share";
 /// One row of a corpus: its path below the index root, whether it's a folder, and
 /// its size and date (`None` is a NULL column: a hardlink-deduped size, an unknown
 /// date). A folder's size is its `dir_stats` row, summed from the files below it.
-struct Row {
-    path: &'static str,
-    is_directory: bool,
-    size: Option<u64>,
-    modified_at: Option<u64>,
+pub(super) struct Row {
+    pub(super) path: &'static str,
+    pub(super) is_directory: bool,
+    pub(super) size: Option<u64>,
+    pub(super) modified_at: Option<u64>,
 }
 
 const fn dir(path: &'static str, modified_at: u64) -> Row {
@@ -74,7 +74,7 @@ const fn file(path: &'static str, size: Option<u64>, modified_at: Option<u64>) -
 }
 
 /// The boot volume's tree. Every folder is listed before what it holds.
-fn root_corpus() -> Vec<Row> {
+pub(super) fn root_corpus() -> Vec<Row> {
     vec![
         dir("/cmdr-golden", 1_700_000_000),
         dir("/cmdr-golden/Archive", 978_307_200),
@@ -152,7 +152,7 @@ fn root_corpus() -> Vec<Row> {
 const UNSIZED_FOLDER: &str = "/cmdr-golden/unsized-folder";
 
 /// The share's tree, mount-relative as a non-root index stores it.
-fn share_corpus() -> Vec<Row> {
+pub(super) fn share_corpus() -> Vec<Row> {
     vec![
         dir("/papers", 1_705_000_000),
         dir("/papers/invoices paid", 1_700_000_000),
@@ -163,14 +163,14 @@ fn share_corpus() -> Vec<Row> {
     ]
 }
 
-fn root_weights() -> ImportanceWeights {
+pub(super) fn root_weights() -> ImportanceWeights {
     let mut weights = ImportanceWeights::empty();
     weights.insert("/cmdr-golden/Projects/cmdr", 0.9);
     weights.insert("/cmdr-golden/Docs", 0.4);
     weights
 }
 
-fn share_weights() -> ImportanceWeights {
+pub(super) fn share_weights() -> ImportanceWeights {
     let mut weights = ImportanceWeights::empty();
     weights.insert("/Volumes/cmdr-golden-share/papers", 0.6);
     weights
@@ -221,25 +221,38 @@ fn write_corpus(db_path: &Path, rows: &[Row]) {
     let mut ids: Vec<(i64, &str)> = Vec::new();
     insert(&conn, ROOT_ID, "", &children, &mut ids);
 
-    let stats: Vec<DirStatsById> = ids
-        .iter()
-        .filter_map(|&(id, path)| {
-            let row = rows.iter().find(|r| r.path == path)?;
-            (row.is_directory && path != UNSIZED_FOLDER).then(|| {
-                let below = format!("{path}/");
-                let files = rows.iter().filter(|r| !r.is_directory && r.path.starts_with(&below));
-                let (count, bytes) = files.fold((0, 0), |(n, b), r| (n + 1, b + r.size.unwrap_or(0)));
-                DirStatsById {
-                    entry_id: id,
-                    recursive_logical_size: bytes,
-                    recursive_physical_size: bytes,
-                    recursive_file_count: count,
-                    ..Default::default()
-                }
-            })
+    let stats: Vec<DirStatsById> = folder_sizes(rows)
+        .into_iter()
+        .map(|(path, count, bytes)| {
+            let id = ids
+                .iter()
+                .find(|&&(_, p)| p == path)
+                .expect("every folder was inserted")
+                .0;
+            DirStatsById {
+                entry_id: id,
+                recursive_logical_size: bytes,
+                recursive_physical_size: bytes,
+                recursive_file_count: count,
+                ..Default::default()
+            }
         })
         .collect();
     IndexStore::upsert_dir_stats_by_id(&conn, &stats).expect("write golden dir_stats");
+}
+
+/// Each folder's `dir_stats` row as `(path, file count, bytes)`: the files below it,
+/// summed. Every folder but [`UNSIZED_FOLDER`].
+pub(super) fn folder_sizes(rows: &[Row]) -> Vec<(&'static str, u64, u64)> {
+    rows.iter()
+        .filter(|row| row.is_directory && row.path != UNSIZED_FOLDER)
+        .map(|row| {
+            let below = format!("{}/", row.path);
+            let files = rows.iter().filter(|r| !r.is_directory && r.path.starts_with(&below));
+            let (count, bytes) = files.fold((0, 0), |(n, b), r| (n + 1, b + r.size.unwrap_or(0)));
+            (row.path, count, bytes)
+        })
+        .collect()
 }
 
 fn name_of(path: &str) -> &str {
@@ -247,7 +260,7 @@ fn name_of(path: &str) -> &str {
 }
 
 /// One corpus loaded the way production loads it: rows through `load_search_index`.
-fn load(dir: &Path, file_name: &str, rows: &[Row], mount_root: Option<&str>) -> LoadedVolume {
+pub(super) fn load(dir: &Path, file_name: &str, rows: &[Row], mount_root: Option<&str>) -> LoadedVolume {
     let db_path = dir.join(file_name);
     write_corpus(&db_path, rows);
     let pool = ReadPool::new(db_path).expect("a read pool over the golden index");
@@ -273,7 +286,7 @@ fn golden_run(
 /// [`golden_run`] under given name rules, so one platform's goldens can be checked on
 /// another, and with a home folder for the `~` cases (the rest pass `None`: the
 /// corpus lives under no real home).
-fn golden_run_under(
+pub(super) fn golden_run_under(
     rules: NameRules,
     home_dir: Option<&str>,
     query: &SearchQuery,
@@ -286,13 +299,19 @@ fn golden_run_under(
         home_dir,
         weights,
     };
-    let half = search_covered_half(query, target, loaded, &ctx).map_err(|e| e.to_string())?;
-    Ok(json!({
+    search_covered_half(query, target, loaded, &ctx)
+        .map(|half| half_json(&half))
+        .map_err(|e| e.to_string())
+}
+
+/// A covered half as a golden records it.
+pub(super) fn half_json(half: &CoveredHalf) -> Value {
+    json!({
         "entries": half.entries.iter().map(row_json).collect::<Vec<_>>(),
         "totalCount": half.total,
         "unresolvedScopes": half.unresolved_scopes,
         "hiddenByExcludes": half.hidden_by_excludes,
-    }))
+    })
 }
 
 /// A live run over ground the index covers whole: the covered half goes out, then
@@ -372,25 +391,25 @@ fn base() -> SearchQuery {
     }
 }
 
-fn named(pattern: &str) -> SearchQuery {
+pub(super) fn named(pattern: &str) -> SearchQuery {
     SearchQuery {
         name_pattern: Some(pattern.to_string()),
         ..base()
     }
 }
 
-fn scoped(mut query: SearchQuery, paths: &[&str]) -> SearchQuery {
+pub(super) fn scoped(mut query: SearchQuery, paths: &[&str]) -> SearchQuery {
     query.include_paths = Some(paths.iter().map(|p| p.to_string()).collect());
     query
 }
 
 #[derive(Clone, Copy)]
-enum Volume {
+pub(super) enum Volume {
     Root,
     Share,
 }
 
-fn cases() -> Vec<(&'static str, Volume, SearchQuery)> {
+pub(super) fn cases() -> Vec<(&'static str, Volume, SearchQuery)> {
     use Volume::{Root, Share};
     let regex = |p: &str| SearchQuery {
         pattern_type: PatternType::Regex,
@@ -649,7 +668,7 @@ fn live_cases() -> Vec<(&'static str, Volume, SearchQuery)> {
 
 /// The `~` cases: a home folder inside the corpus, so a `~` scope expands against
 /// it and result rows under it read `~/…`.
-fn home_cases() -> Vec<(&'static str, &'static str, SearchQuery)> {
+pub(super) fn home_cases() -> Vec<(&'static str, &'static str, SearchQuery)> {
     vec![
         (
             "home_tilde_scope",
@@ -666,7 +685,7 @@ fn home_cases() -> Vec<(&'static str, &'static str, SearchQuery)> {
     ]
 }
 
-fn target_for(volume: Volume, query: &SearchQuery) -> Target {
+pub(super) fn target_for(volume: Volume, query: &SearchQuery) -> Target {
     let include_paths = query.include_paths.clone().unwrap_or_default();
     Target {
         volume_id: match volume {
@@ -745,7 +764,7 @@ fn answers_under(rules: NameRules) -> BTreeMap<String, Value> {
     actual
 }
 
-fn assert_same(expected: &BTreeMap<String, Value>, actual: &BTreeMap<String, Value>) {
+pub(super) fn assert_same(expected: &BTreeMap<String, Value>, actual: &BTreeMap<String, Value>) {
     let mut moved = Vec::new();
     for name in expected
         .keys()

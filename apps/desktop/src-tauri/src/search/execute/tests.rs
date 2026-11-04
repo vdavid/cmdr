@@ -20,6 +20,7 @@ mod live_drive;
 mod live_e2e;
 mod offline_volume;
 mod server_scope;
+mod source_equivalence;
 mod stalled_walk;
 
 // ── Synthetic index builder ──────────────────────────────────────────

@@ -28,6 +28,27 @@ would be millions of virtual calls and, worse, a `dyn` iterator can't `par_chunk
   `the_host_rules_are_what_this_machine_always_answered`; `MACOS` and `LINUX` let any machine run either platform's
   rules (the host's goldens do, both ways).
 
+## Rows held in memory (`memory.rs`)
+
+`MemorySource` is the seam's second answer, with no database: rows a caller hands in (path below the volume root, kind,
+size, date), any order, every folder listed. It refuses rows that can't form a tree (`MemorySourceError`: malformed,
+duplicate, an unlisted parent, a file as a parent) rather than guessing.
+
+- **Ids follow one defined order**: `ARENA_ROOT_ID` for the root, then depth-first (a folder's whole subtree before its
+  next sibling), children by the byte order of their names. Every sort breaks ties on the id and each result row carries
+  it, so equal answers need equal ids. The desktop's goldens insert their corpus in this order, and
+  `apps/desktop/src-tauri/src/search/execute/tests/source_equivalence.rs` holds the two sources to identical arenas and
+  identical answers on every golden query, under both platforms' rules.
+- **A scope lookup folds through the volume's `NameRules`** (a `(parent id, folded name) → id` map built once), which
+  under `NameRules::host()` is the fold the drive index keys `name_folded` on. ❌ Never `normalize_for_comparison`
+  directly: its browser branch is the identity, which would disagree with a host that presents as a Mac. Two names one
+  fold makes equal: the first in byte order answers. Under the OTHER platform's rules a respelled scope differs from the
+  index on purpose (the index folds with the rules it was written under), so the equivalence test checks respellings
+  under the host's rules only.
+- **Folder sizes aren't its job**: a host pairs it with its own `DirSizeSource`, keyed by `MemorySource::id_of`. Tests
+  use `testing::FolderSizes`.
+- **Its arena never catches up** (generation 0): a host rebuilds it when its tree changed.
+
 ## The public surface is capped
 
 `index-crate-isolation` pins the surface at extraction (2026-11-04): 32 root promises (the nine modules plus the flat
@@ -46,6 +67,8 @@ re-exports), nine public modules, 86 items inside them. An item is `pub` only be
 - **A live run's reporting** (raised 2026-11-04 to 33 / 10 / 104, when it joined the crate): `run::*`, the registry
   value, `ResultStream` and its `RunSink` facts, the run-state DTOs, the terminal report's inputs, and `BATCH_ROWS` /
   `BATCH_INTERVAL` (the host's pump and tests). § "A live run's reporting".
+- **A source over rows in memory** (raised 2026-11-04 to 36 root promises): `MemorySource`, `MemoryRow`, and
+  `MemorySourceError`, from a private module. The browser demo's host builds one from its tree. § "Rows held in memory".
 
 Raise a ceiling only when the wider surface is genuinely better, said in the commit and here.
 

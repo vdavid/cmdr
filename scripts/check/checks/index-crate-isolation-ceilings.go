@@ -544,9 +544,15 @@ var surfaceGuardedCrates = []struct {
 		// two batch constants the host's pump and tests read. Each is a seam a second
 		// host (the browser demo) needs to say what a desktop run says without
 		// re-implementing it, so the wider surface is the better design.
+		//
+		// Raised 2026-11-04, `RootPromises` 33 -> 36, for ONE concept the search-crate
+		// plan names public: a source over rows held in memory (`MemorySource`, the
+		// `MemoryRow` it's built from, and `MemorySourceError`, why rows can't form a
+		// tree). The browser demo's host builds one from its in-memory volume; its
+		// module stays private, so the three are the whole promise.
 		Name: "cmdr-search",
 		Ceilings: surfaceCeilings{
-			RootPromises:   33,
+			RootPromises:   36,
 			PublicModules:  10,
 			SubsystemItems: 104,
 		},

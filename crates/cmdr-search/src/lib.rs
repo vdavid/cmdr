@@ -6,7 +6,7 @@
 //! how big a folder is. No database, no runtime, and no ambient platform, home, or
 //! clock: the name rules and the home folder arrive as a [`SearchContext`]. Hosted by
 //! the desktop app (`apps/desktop/src-tauri/src/search/`, answering from the drive
-//! index). `CLAUDE.md` has the must-knows.
+//! index), or over rows held in memory ([`MemorySource`]). `CLAUDE.md` has the must-knows.
 #![warn(unused_crate_dependencies)]
 
 pub mod arena;
@@ -14,6 +14,7 @@ pub mod context;
 pub mod engine;
 pub mod excludes;
 pub mod matcher;
+mod memory;
 pub mod query;
 pub mod ranking;
 pub mod run;
@@ -27,6 +28,7 @@ pub mod testing;
 
 pub use arena::{ARENA_ROOT_ID, ArenaBuilder, OptU64, SearchEntry, SearchIndex};
 pub use context::{NameFold, NameRules, SearchContext};
+pub use memory::{MemoryRow, MemorySource, MemorySourceError};
 pub use seam::{
     CoveredHalf, DirSizeSource, ResolvedScope, ScopeResolution, SearchError, SearchRows, SourceError, SourceRead,
     search_covered,
