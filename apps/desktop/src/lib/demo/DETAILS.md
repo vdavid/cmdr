@@ -89,9 +89,15 @@ every window. The demo keeps that shape so secondary windows can come later with
   960×600), and can't be dragged past an edge.
 - Verified in headless Chromium (2026-11-04): ⌘, opens Settings; Esc, ⌃W, and the close button close it, and the cursor
   keys move the main pane's cursor right after; dragging moves and clamps it; F3 on a file opens nothing; a "Size
-  colors" change in Settings recolors the main window's sizes through the fan-out.
-- ❗ The production CSP (`apps/website/nginx-demo-security-headers.conf`) says `frame-src 'none'`, which blocks these
-  iframes (seen under that CSP, 2026-11-04). Settings in production needs `frame-src 'self'` there.
+  colors" change in Settings recolors the main window's sizes through the fan-out. Keyboard shortcuts opens from the
+  command palette, closes with Esc, and its "Edit shortcuts" link opens Settings at that section as a second panel (a
+  child window opening another through the shared backend).
+- The production CSP (`apps/website/nginx-demo-security-headers.conf`) allows these iframes with `frame-src 'self'`;
+  under the earlier `frame-src 'none'` they were blocked (seen 2026-11-04), so keep it if that file is touched.
+- Known gap: clicking the main window while a panel is open moves DOM focus there but sends no `tauri://focus` /
+  `tauri://blur`, and the panel stays on top (on desktop, main would become key and come forward). Fixing it means
+  listening for `focusin` outside the panels and lowering them; nothing in the app reacts badly to the missing events
+  today.
 
 ## Framed by another page
 
