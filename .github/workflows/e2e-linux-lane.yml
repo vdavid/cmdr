@@ -1,0 +1,148 @@
+name: Linux E2E lane
+
+# The Playwright E2E lane on Linux, called by `ci.yml` (`desktop-e2e-linux`): the suite in
+# Docker. Its own file so an edit here reruns this lane alone (the `desktop` filter in `ci.yml`
+# lists it). The base image job it waits for stays in `ci.yml` (`e2e-base-image`): OpenSSF
+# Scorecard waives a job's `packages: write` only in a workflow it recognizes as packaging, which
+# `ci.yml` is and this file isn't. `docs/tooling/ci.md` § Lane files and § Build caching.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# The E2E Cargo + target cache saves from `main` only, like the Rust caches; a called workflow
+# doesn't inherit the caller's `env`, so this restates `ci.yml`'s `SAVE_RUST_CACHE`.
+env:
+  SAVE_RUST_CACHE: ${{ github.ref == 'refs/heads/main' }}
+
+jobs:
+  tests:
+    name: Playwright tests
+    runs-on: ubuntu-latest
+    # ~12 min warm build + ~8.5 min for 455 tests on a green run (a cold build is ~21
+    # min), so 40 leaves room for a slow runner while still cutting a runaway short.
+    timeout-minutes: 40
+    # The lane is gated ONLY on change detection (in `ci.yml`), not on the Rust or Svelte lanes:
+    # - Rust: independent. A Rust unit-test failure shouldn't skip e2e (and vice versa).
+    #   Gating them together hid a 4-day red-main streak in May 2026 where a flaky
+    #   accent-color unit test blocked e2e on PRs that touched neither path.
+    # - Svelte: dropped (June 2026) to cut the critical path. e2e's Docker build runs its OWN
+    #   frontend build (beforeBuildCommand), so it never consumed the Svelte lane's artifacts;
+    #   the gate was only a "don't spend e2e compute if svelte's quality checks are red"
+    #   optimization, and it forced e2e to wait ~4 min before starting. Now e2e starts at
+    #   t=0, the single biggest wall-clock win on the per-push path. Trade: e2e runs even
+    #   when svelte-check / eslint / svelte tests fail (rare); a genuine frontend BUILD error
+    #   still fails e2e's own build.
+    # `ci.yml`'s `e2e-base-image` is ~20 s when the registry has the image, so it barely moves
+    # the start.
+    permissions:
+      contents: read # check out the code
+      packages: read # pull the E2E base image
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # No "Free disk space" step: it cost ~1.6 min a run for room this job doesn't
+      # need. The runner's root disk is 145 GB, and every one of 109 runs
+      # (2026-10-12 to 2026-10-19, #557) showed 107–108 GB free AFTER the reclaim,
+      # which only ever removed preinstalled SDKs (tens of GB at most). This job
+      # peaks at roughly 15 GB: the base image, the cargo/target caches, and the
+      # fixture images. The `df` keeps the headroom visible in the log; if it
+      # ever runs tight, bring the reclaim back.
+      - name: Prepare Docker cache dirs
+        run: |
+          mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target
+          df -h /
+
+      # Restores main's entry on a PR (a PR can read its base branch's caches, never
+      # another PR's); `ci.yml`'s `warm-e2e-linux-cache` keeps that entry alive. Restore and
+      # save are split so only `main` saves (the save step after the ownership reclaim):
+      # a ~1.2 GB entry per PR kept the repo over its 10 GB ceiling and evicted
+      # everything into cold builds (2026-10-20, PR #593). Same switch as the Rust caches.
+      - name: Restore Cargo + target (via host bind mounts into Docker)
+        id: e2e-target-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            /tmp/cmdr-docker-cache/cargo
+            /tmp/cmdr-docker-cache/target
+          key: ${{ runner.os }}-docker-e2e-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-docker-e2e-
+
+      # `base-image` made sure the registry holds the base image (apt packages, Node,
+      # Rust; see Dockerfile.base), so the script below pulls it instead of building it.
+      - name: Log in to the container registry
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ github.token }}
+        run: docker login ghcr.io --username "$ACTOR" --password-stdin <<<"$TOKEN"
+
+      - name: Run E2E tests in Docker
+        run: ./scripts/e2e-linux.sh
+        working-directory: ./apps/desktop
+        env:
+          # Point Docker volumes at host paths so actions/cache can persist them
+          CARGO_VOLUME: /tmp/cmdr-docker-cache/cargo
+          TARGET_VOLUME: /tmp/cmdr-docker-cache/target
+          E2E_BASE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+
+      # The Docker build runs as root, so it writes the bind-mounted cache dirs
+      # as root. The actions/cache post-step then runs as the runner user and
+      # `tar` can't read root-owned files — so the save failed (warning only,
+      # never fatal) on EVERY run since this cache was added, and the next run
+      # always restored nothing → a fully cold ~10-min Tauri build every time.
+      # Hand ownership back so the post-step can pack the cache. `always()` so
+      # the build cache still saves when a test fails (the build succeeded).
+      - name: Reclaim cache dir ownership for the save step
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" /tmp/cmdr-docker-cache
+
+      # `main` only (`SAVE_RUST_CACHE`), and not on an exact hit, which has nothing new.
+      # The paths and key must match the restore step above and `warm-e2e-linux-cache`.
+      - name: Save Cargo + target
+        if: >-
+          !cancelled() && env.SAVE_RUST_CACHE == 'true' && steps.e2e-target-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            /tmp/cmdr-docker-cache/cargo
+            /tmp/cmdr-docker-cache/target
+          key: ${{ steps.e2e-target-cache.outputs.cache-primary-key }}
+
+      # ❗ The path is the Playwright `outputDir`, which for THIS lane is
+      # `./test-results` resolved against the config's own directory
+      # (`playwright.config.ts`), NOT the app root. Only the macOS lane overrides
+      # `CMDR_E2E_OUTPUT_DIR` (see `desktop-svelte-e2e-playwright.go`). Pointed at
+      # `apps/desktop/test-results/` this step matched nothing, so every failing run
+      # uploaded an empty artifact and the `error-context.md` page snapshots (the
+      # only evidence of what the UI actually looked like) were discarded. That's
+      # why the search-open-in-pane flake outlived two fix attempts.
+      # `if-no-files-found: error` keeps a future path drift loud instead of silent.
+      - name: Upload E2E screenshots on failure
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: e2e-screenshots
+          path: apps/desktop/test/e2e-playwright/test-results/
+          if-no-files-found: error
+          retention-days: 7
+
+      # Every app thread's stack, taken inside the container while the app is still
+      # alive: after a failed run, or once the run has gone on long enough to be a
+      # runaway (`dump_app_stacks` in `e2e-linux.sh`). Permanent on purpose: the drive
+      # index hang in GitHub issue #564 struck one run in two to seven and logged
+      # nothing at INFO, so a one-off diagnostic push can't be timed to catch the next
+      # hang of any kind; this way the run that hits it names the blocked call. It
+      # costs nothing on a green run. `warn`, since a failure before the app started
+      # leaves nothing to dump.
+      - name: Upload app thread stacks on failure
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: e2e-app-stacks
+          path: /tmp/cmdr-e2e-stacks/
+          if-no-files-found: warn
+          retention-days: 7

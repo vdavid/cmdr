@@ -32,9 +32,15 @@ concurrency:
 # run built cold (2026-10-20, PR #593). The `warm-rust-*` jobs keep `main`'s entries current.
 # The E2E lane's Cargo + target cache follows the same switch (`warm-e2e-linux-cache`).
 # Named so it doesn't start with `RUST` or `CARGO`: rust-cache hashes env vars with those
-# prefixes into its key.
+# prefixes into its key. The lane files restate it (a called workflow doesn't inherit `env`).
+#
+# `LIGHT_LANE_RUNNER` is the light lane's runner, the one switch that moves it to the
+# self-hosted `cmdr-light` runner. A fork PR never gets it, whatever this says: the `changes`
+# job's runner step hands a fork PR `ubuntu-latest` (a self-hosted runner must never run code
+# from outside the repo).
 env:
   SAVE_RUST_CACHE: ${{ github.ref == 'refs/heads/main' }}
+  LIGHT_LANE_RUNNER: ubuntu-latest
 
 jobs:
   # ===========================================
@@ -43,7 +49,8 @@ jobs:
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
-    # Every job here carries a `timeout-minutes` at roughly 2x its healthy run, because the
+    # Every job here and in the lane files carries a `timeout-minutes` (a job that calls a lane
+    # file can't; the lane's own jobs do) at roughly 2x its healthy run, because the
     # GitHub default is SIX HOURS and a job that stops making progress will happily spend
     # them. A single wedged E2E app once burned 136 minutes of runner on 223 tests that each
     # sat out their own timeout. These caps are the backstop, never the mechanism: a check
@@ -67,6 +74,8 @@ jobs:
       verified: ${{ steps.verified.outputs.verified }}
       same-tree: ${{ steps.same-tree.outputs.same-tree }}
       rust: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust || 'false' }}
+      rust-fixtures: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust-fixtures || 'false' }}
+      rust-macos: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust-macos || 'false' }}
       svelte: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.svelte || 'false' }}
       desktop: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.desktop || 'false' }}
       website: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.website || 'false' }}
@@ -75,8 +84,16 @@ jobs:
       scripts: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.scripts || 'false' }}
       finder-extension:
         ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.finder-extension || 'false' }}
+      termbase: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.termbase || 'false' }}
+      changelog: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.changelog || 'false' }}
+      # Pull requests only use the path filter (the light lane adds the content-based half); a
+      # push or dispatch that runs the light lane always runs Scorecard.
+      scorecard:
+        ${{ steps.verified.outputs.verified != 'true' && (steps.filter.outputs.scorecard == 'true' || github.event_name
+        != 'pull_request') && 'true' || 'false' }}
       website-changed: ${{ steps.filter.outputs.website }}
       playwright-image: ${{ steps.playwright-image.outputs.image }}
+      light-runner: ${{ steps.light-runner.outputs.runner }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -192,7 +209,29 @@ jobs:
             echo "The PR changes the tree ($base_tree to $head_tree), so hygiene runs."
           fi
 
-      # Filter design rules (the `ci-coverage` check validates the non-glob paths exist):
+      # The light lane's runner: `LIGHT_LANE_RUNNER` (top of file), except on a PR from a fork,
+      # which always gets `ubuntu-latest`. A self-hosted runner keeps state between jobs and sits
+      # on our own network, so code from outside the repo must never reach it. Pushes and
+      # dispatches come from the repo itself.
+      - name: Pick the light lane's runner
+        id: light-runner
+        env:
+          WANT: ${{ env.LIGHT_LANE_RUNNER }}
+          FROM_REPO:
+            ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
+            github.repository }}
+        run: |
+          if [[ "$FROM_REPO" == true ]]; then
+            runner="$WANT"
+          else
+            runner=ubuntu-latest
+            echo "A fork PR, so the light lane runs on ubuntu-latest."
+          fi
+          echo "runner=$runner" >>"$GITHUB_OUTPUT"
+          echo "Light lane runner: $runner"
+
+      # Filter design rules (`ci-coverage` validates the non-glob paths exist and enforces the
+      # lane-file and gated-check rules below; `docs/tooling/ci.md` § Change detection):
       # - A filter must cover every path its job's checks read, not just the obvious app dir.
       #   Example: `rust` includes both fixture-server dirs because the integration lane runs
       #   against those container configs; `svelte` includes `eslint-plugins/` and BOTH
@@ -201,13 +240,23 @@ jobs:
       #   ESLint covers them. Leaving `test/e2e-playwright/` out meant a change to those tests
       #   never ran the lane that runs them, so a red `svelte-tests` could only be caught by a
       #   push that happened to touch `src/` too.
+      # - Each lane's steps live in its own `<lane>-lane.yml`, and only that lane's filter lists
+      #   it, plus every composite action it uses, so a lane-file edit reruns that lane alone.
+      #   The three Rust lanes share their inputs through the `rust-inputs` anchor and add their
+      #   own lane file each.
       # - `.mise.toml` (toolchain versions) and this workflow file are in every filter:
       #   changing either can change any job's behavior, so everything reruns.
       # - `pnpm-lock.yaml` is in every Node-based filter so lockfile-only bumps
       #   (pnpm dedupe, transitive updates) still run the affected apps' checks.
+      # - The light lane's gated hygiene checks (`termbase`, `changelog`, `scorecard`) carry
+      #   their check's full input set as the check runner fingerprints it (`Inputs`,
+      #   `GlobalInputs`, and the runner files its `Run` reaches); `ci-coverage` fails when one
+      #   drifts. `scorecard` is the one deliberate narrowing: the check fingerprints the whole
+      #   repo, but Scorecard's file checks read only the paths below plus every file's content
+      #   for binaries and shell scripts, which the light lane checks on the PR's own files.
       # - `rust`, `svelte`, `desktop`, and `scripts` skip agent docs (`CLAUDE.md`, `DETAILS.md`): their
       #   jobs never read them, while every docs check and `analytics-event-catalog` (which reads one)
-      #   run in `hygiene` on every change. Other `.md` files stay in: the agent prompts
+      #   run in the light lane on every change. Other `.md` files stay in: the agent prompts
       #   (`src-tauri/src/agent/prompts/*.md`) and `CHANGELOG.md` compile into the app.
       - name: Detect file changes
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -215,7 +264,8 @@ jobs:
         with:
           predicate-quantifier: some-with-excludes
           filters: |
-            rust:
+            # What the three Rust lanes share; no job reads this output.
+            rust-inputs: &rust-inputs
               - 'apps/desktop/src-tauri/**'
               # Compiled in the macOS lane (`finder-extension-compile`).
               - 'apps/desktop/finder-extension/**'
@@ -241,12 +291,32 @@ jobs:
               - '.github/workflows/ci.yml'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
+            rust:
+              - *rust-inputs
+              - '.github/workflows/rust-lane.yml'
+              - '.github/actions/free-disk-if-small/**'
+              - '.github/actions/pinned-rust-toolchain/**'
+              - '.github/actions/tauri-linux-deps/**'
+              - '.github/actions/wasm-toolchain/**'
+            rust-fixtures:
+              - *rust-inputs
+              - '.github/workflows/rust-fixtures-lane.yml'
+              - '.github/actions/free-disk-if-small/**'
+              - '.github/actions/pinned-rust-toolchain/**'
+              - '.github/actions/tauri-linux-deps/**'
+            rust-macos:
+              - *rust-inputs
+              - '.github/workflows/macos-lane.yml'
+              - '.github/actions/pinned-rust-toolchain/**'
             # Gates the macOS lane's Finder extension compile, about a minute on a cold runner,
             # so it runs only when something it builds or runs changed (and on `run_all`).
             finder-extension:
               - 'apps/desktop/finder-extension/**'
               - 'scripts/check/checks/desktop-finder-extension-compile.go'
               - '.github/workflows/macos-lane.yml'
+              - '.github/actions/pinned-rust-toolchain/**'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
             svelte:
@@ -265,10 +335,11 @@ jobs:
               - 'pnpm-lock.yaml'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+              - '.github/workflows/svelte-lane.yml'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
             desktop:
-              # Gates the Linux E2E job, which builds the full app: frontend + the whole
+              # Gates the Linux E2E lane, which builds the full app: frontend + the whole
               # Rust workspace, so the Rust workspace inputs belong here too.
               - 'apps/desktop/**'
               - 'crates/**'
@@ -277,15 +348,22 @@ jobs:
               - 'rust-toolchain.toml'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+              - '.github/workflows/e2e-linux-lane.yml'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
             website:
               - 'apps/website/**'
+              # The site's ESLint config imports the shared rules.
+              - 'eslint-plugins/**'
               - '.dockerignore'
               - 'CHANGELOG.md'
               - 'pnpm-lock.yaml'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+              - '.github/workflows/website-lane.yml'
+              - '.github/actions/build-website-demo/**'
+              - '.github/actions/pinned-rust-toolchain/**'
+              - '.github/actions/wasm-toolchain/**'
               # The browser demo the site publishes at /demo/ (`website-demo` builds it), so a
               # change to the desktop frontend or the listing engine redeploys the site. Must
               # cover every path `scripts/website-demo-key.sh` hashes into the demo image's tag
@@ -324,15 +402,21 @@ jobs:
               - '!**/DETAILS.md'
             api-server:
               - 'apps/api-server/**'
+              # Its ESLint config imports the shared rules.
+              - 'eslint-plugins/**'
               - 'pnpm-lock.yaml'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+              - '.github/workflows/light-lane.yml'
+              - '.github/actions/light-cache/**'
             dashboard:
               - 'apps/analytics-dashboard/**'
               - 'eslint-plugins/**'
               - 'pnpm-lock.yaml'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+              - '.github/workflows/light-lane.yml'
+              - '.github/actions/light-cache/**'
             scripts:
               # `apps/desktop/scripts/` holds Go files the scripts-go-* checks scan
               # (see GetGoDirectories in scripts/check/checks/common.go).
@@ -340,8 +424,127 @@ jobs:
               - 'apps/desktop/scripts/**'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+              - '.github/workflows/light-lane.yml'
+              - '.github/actions/light-cache/**'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
+            # The light lane's gated hygiene checks. Each lists its check's fingerprint inputs
+            # (`ci-coverage` names any that's missing), plus the lane's own files.
+            termbase:
+              - 'docs/i18n/**'
+              - 'apps/desktop/src/lib/intl/messages/**'
+              - 'apps/desktop/scripts/i18n-*.ts'
+              - 'apps/desktop/scripts/i18n-termbase-baseline.json'
+              - 'scripts/check/checks/desktop-i18n-termbase.go'
+              - 'scripts/check/checks/desktop-i18n-term-consistency.go'
+              - 'scripts/check/checks/desktop-message-screenshots-fresh.go'
+              - 'scripts/check.sh'
+              - 'scripts/check/*.go'
+              - 'scripts/check/go.mod'
+              - 'scripts/check/go.sum'
+              - 'scripts/check/stack-lease/**'
+              - 'scripts/check/stacklease/**'
+              - 'scripts/check/checks/cache.go'
+              - 'scripts/check/checks/common.go'
+              - 'scripts/check/checks/fingerprint.go'
+              - 'scripts/check/checks/fixture-stacks.go'
+              - 'scripts/check/checks/inputs.go'
+              - 'scripts/check/checks/nfs_ports.go'
+              - 'scripts/check/checks/registry.go'
+              - 'scripts/check/checks/runner-sources.go'
+              - 'scripts/check/checks/s3_ports.go'
+              - 'scripts/check/checks/sftp_ports.go'
+              - 'scripts/check/checks/smb_ports.go'
+              - 'scripts/check/checks/test-log.go'
+              - 'scripts/check/checks/webdav_ports.go'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/light-lane.yml'
+              - '.github/actions/light-cache/**'
+            changelog:
+              - 'CHANGELOG.md'
+              - 'scripts/check/checks/changelog-commit-links.go'
+              - 'scripts/check.sh'
+              - 'scripts/check/*.go'
+              - 'scripts/check/go.mod'
+              - 'scripts/check/go.sum'
+              - 'scripts/check/stack-lease/**'
+              - 'scripts/check/stacklease/**'
+              - 'scripts/check/checks/cache.go'
+              - 'scripts/check/checks/common.go'
+              - 'scripts/check/checks/fingerprint.go'
+              - 'scripts/check/checks/fixture-stacks.go'
+              - 'scripts/check/checks/inputs.go'
+              - 'scripts/check/checks/nfs_ports.go'
+              - 'scripts/check/checks/registry.go'
+              - 'scripts/check/checks/runner-sources.go'
+              - 'scripts/check/checks/s3_ports.go'
+              - 'scripts/check/checks/sftp_ports.go'
+              - 'scripts/check/checks/smb_ports.go'
+              - 'scripts/check/checks/test-log.go'
+              - 'scripts/check/checks/webdav_ports.go'
+              - '.mise.toml'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/light-lane.yml'
+              - '.github/actions/light-cache/**'
+            # The paths OpenSSF Scorecard's file-based checks read (scorecard v5.5.0, `checks/raw/`),
+            # minus the content-based half the light lane looks for itself:
+            # - `.github/**`: Dangerous-Workflow, SAST, and Token-Permissions read
+            #   `.github/workflows/*`; Pinned-Dependencies reads their `uses:` and `run:` blocks;
+            #   Dependency-Update-Tool reads `.github/dependabot.yml` and `.github/renovate.json*`;
+            #   Security-Policy reads `.github/security.*`. It also covers this file, the lane
+            #   files, and the composite actions.
+            # - Pinned-Dependencies' container half reads `*Dockerfile*`, case-insensitively.
+            # - Dependency-Update-Tool: `renovate.json*` and `.renovaterc*` at the root.
+            # - License: a top-level `LICENSE`/`COPYING`/`COPYRIGHT`/`PATENT` file or folder, in any case.
+            # - Security-Policy: `security.*` at the root or in `docs/`, in any case (it also reads
+            #   `doc/`, which doesn't exist; a new policy there can't move a score that's at 10).
+            # - Fuzzing: the cargo-fuzz harness under `fuzz/`, what scores it 10. (ClusterFuzzLite's
+            #   `.clusterfuzzlite/Dockerfile` already matches the Dockerfile pattern.)
+            # - The check itself: its baseline, its runner files, and `GlobalInputs`.
+            scorecard:
+              - '.github/**'
+              - '**/*[Dd][Oo][Cc][Kk][Ee][Rr][Ff][Ii][Ll][Ee]*'
+              - 'renovate.json*'
+              - '.renovaterc*'
+              - '*[Ll][Ii][Cc][Ee][Nn][CcSs][Ee]*'
+              - '*[Ll][Ii][Cc][Ee][Nn][CcSs][Ee]*/**'
+              - '*[Cc][Oo][Pp][Yy][Ii][Nn][Gg]*'
+              - '*[Cc][Oo][Pp][Yy][Ii][Nn][Gg]*/**'
+              - '*[Cc][Oo][Pp][Yy][Rr][Ii][Gg][Hh][Tt]*'
+              - '*[Cc][Oo][Pp][Yy][Rr][Ii][Gg][Hh][Tt]*/**'
+              - '*[Pp][Aa][Tt][Ee][Nn][Tt]*'
+              - '*[Pp][Aa][Tt][Ee][Nn][Tt]*/**'
+              - '[Ss][Ee][Cc][Uu][Rr][Ii][Tt][Yy].*'
+              - 'docs/[Ss][Ee][Cc][Uu][Rr][Ii][Tt][Yy].*'
+              - 'fuzz/**'
+              - 'scripts/check/checks/scorecard-local-baseline.json'
+              - 'scripts/check/checks/scorecard-local.go'
+              - 'scripts/check/checks/tracked-tree.go'
+              - 'scripts/check/checks/tool-install.go'
+              - 'scripts/check/checks/allowlist.go'
+              - 'scripts/check/checks/go-version-single-source.go'
+              - 'scripts/check/checks/osv-scanner.go'
+              - 'scripts/check.sh'
+              - 'scripts/check/*.go'
+              - 'scripts/check/go.mod'
+              - 'scripts/check/go.sum'
+              - 'scripts/check/stack-lease/**'
+              - 'scripts/check/stacklease/**'
+              - 'scripts/check/checks/cache.go'
+              - 'scripts/check/checks/common.go'
+              - 'scripts/check/checks/fingerprint.go'
+              - 'scripts/check/checks/fixture-stacks.go'
+              - 'scripts/check/checks/inputs.go'
+              - 'scripts/check/checks/nfs_ports.go'
+              - 'scripts/check/checks/registry.go'
+              - 'scripts/check/checks/runner-sources.go'
+              - 'scripts/check/checks/s3_ports.go'
+              - 'scripts/check/checks/sftp_ports.go'
+              - 'scripts/check/checks/smb_ports.go'
+              - 'scripts/check/checks/test-log.go'
+              - 'scripts/check/checks/webdav_ports.go'
+              - '.mise.toml'
 
       # The Website job runs inside this image. Its visual baselines
       # (`apps/website/e2e/visual.spec.ts`) are pixel comparisons, so the renderer that verifies
@@ -374,315 +577,34 @@ jobs:
           echo "Website renderer: mcr.microsoft.com/playwright:v$version-noble"
 
   # ===========================================
-  # Desktop app - Rust backend
+  # The lanes
   # ===========================================
-  # The disk reclaim here and in `desktop-rust-fixtures` runs only on a small runner
-  # (`free-disk-if-small`). Most runners have a 145 GB root disk with 86 GB free at the start,
-  # where a cold run of each job peaked at ~80 GB used (sampled every 5 s, PR #593, 2026-10-20)
-  # and the ~1.5 min reclaim buys nothing. Some get a 72 GB disk, which ran out mid-link
-  # (run 41839837176, 2026-11-04). Each job ends by printing `df -h /`.
+  # Each lane's steps live in its own reusable `<lane>-lane.yml`, and only that lane's filter
+  # lists its file, so an edit to one lane's definition reruns that lane alone. These jobs keep
+  # the gate (`if:` on `changes`), the names `CI OK` and branch history know them by, and the
+  # permissions each lane may use (a called workflow can only narrow them).
+  # `docs/tooling/ci.md` § Lane files.
+
+  # Linux: the platform-blind scanners, clippy, the wasm builds, rustdoc, and the suite.
   desktop-rust:
     name: Desktop (Rust)
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
     needs: changes
     if: inputs.run_all || needs.changes.outputs.rust == 'true'
+    uses: ./.github/workflows/rust-lane.yml
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Free disk space on a small runner
-        uses: ./.github/actions/free-disk-if-small
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      # Caches the compiled `target/` dir plus the cargo registry/index/git deps,
-      # keyed on Cargo.lock + rustc. The old registry-only cache left the full
-      # ~1000-crate Tauri tree to recompile cold every run (~16 min); with target/
-      # cached, an unchanged-deps push recompiles only the `cmdr` crate. rust-cache
-      # prunes intelligently to stay under GitHub's 10 GB per-repo cache ceiling.
-      #
-      # `cache-on-failure` is load-bearing, not a nicety: the action's save step
-      # is `post-if: success() || CACHE_ON_FAILURE`, so by default one failing
-      # check means the whole job saves nothing, and every later run recompiles
-      # the Tauri tree from cold while still failing. A red job is exactly when
-      # the cache matters most, because that's the state you push fixes into.
-      #
-      # `shared-key` names the entry explicitly (it equals the job-ID key rust-cache would
-      # derive anyway), so `desktop-rust-fixtures` and `warm-rust-cache` use this same entry.
-      # Saved from `main` only (`SAVE_RUST_CACHE`, top of file). The toolchain step before it
-      # keeps the key stable across runner images (see the action).
-      - name: Keep only the pinned Rust toolchain
-        uses: ./.github/actions/pinned-rust-toolchain
-
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          shared-key: desktop-rust
-          cache-on-failure: true
-          save-if: ${{ env.SAVE_RUST_CACHE }}
-
-      - name: Install Tauri dependencies (Linux)
-        uses: ./.github/actions/tauri-linux-deps
-        timeout-minutes: 20
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      - name: Check rustfmt
-        run: ./scripts/check/check --check desktop-rust-rustfmt --ci
-
-      # Cheap static lints first, so a violation fails before the long compiles below.
-      # Member coverage leads: if a crate has fallen outside the lanes, every check
-      # after it is green over a smaller tree than anyone thinks.
-      - name: Check workspace member coverage
-        run: ./scripts/check/check --check workspace-member-coverage --ci
-
-      # The index crates' boundary: no tauri in their trees, and the public surface
-      # stays where the audit put it. Cheap (cargo metadata + a source walk), and a
-      # breach here makes every later green misleading about what's encapsulated.
-      - name: Check index-crate isolation
-        run: ./scripts/check/check --check index-crate-isolation --ci
-
-      # The write engine builds for the browser demo, which has no local disk, so
-      # only its local-engine modules and `local_disk/` may name the host OS.
-      - name: Check the write engine's local-disk boundary
-        run: ./scripts/check/check --check operations-local-disk-boundary --ci
-
-      # A dependency bump past a vendored fork's version makes cargo quietly resolve
-      # crates.io again, so the fix stops shipping with nothing but a build warning.
-      - name: Check vendored patches still apply
-        run: ./scripts/check/check --check desktop-rust-vendor-patch-applied --ci
-
-      # `fuzz/` sits outside the workspace with its own lockfile that nothing bumps, so
-      # a shared crate drifting there makes the fuzz lane test code the app doesn't ship.
-      - name: Check the fuzz lockfile is in step with the root one
-        run: ./scripts/check/check --check desktop-rust-fuzz-lock-in-step --ci
-
-      # The app reads the advisory list leniently (a broken one is "no advisory"), so a
-      # typo would silently drop a notice users should act on. Validate it before it ships.
-      - name: Check the security advisory list
-        run: ./scripts/check/check --check desktop-security-advisories --ci
-
-      - name: Check cfg-gate
-        run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
-
-      - name: Check log-error-macro
-        run: ./scripts/check/check --check desktop-rust-log-error-macro --ci
-
-      # The macOS deployment floor. Linux has no SDK, so this scans against the
-      # committed selector list a macOS run refreshes; it's the only gate between a
-      # too-new selector and an app that aborts on launch for everyone on an older Mac.
-      - name: Check macos-availability
-        run: ./scripts/check/check --check desktop-rust-macos-availability --ci
-
-      - name: Check sqlite-open-direct
-        run: ./scripts/check/check --check desktop-rust-sqlite-open-direct --ci
-
-      - name: Check prompt-lint
-        run: ./scripts/check/check --check desktop-prompt-lint --ci
-
-      - name: Check discarded-outcome
-        run: ./scripts/check/check --check desktop-rust-discarded-outcome --ci
-
-      - name: Check error-string-match
-        run: ./scripts/check/check --check desktop-rust-error-string-match --ci
-
-      - name: Check fixture-lane-coverage
-        run: ./scripts/check/check --check desktop-fixture-lane-coverage --ci
-
-      - name: Check lock-poison
-        run: ./scripts/check/check --check desktop-rust-lock-poison --ci
-
-      - name: Check tools-module-boundary
-        run: ./scripts/check/check --check tools-module-boundary --ci
-
-      - name: Check log-private-values
-        run: ./scripts/check/check --check desktop-rust-log-private-values --ci
-
-      - name: Check test-sleep
-        run: ./scripts/check/check --check desktop-rust-test-sleep --ci
-
-      - name: Check fixed-temp-dir
-        run: ./scripts/check/check --check desktop-rust-fixed-temp-dir --ci
-
-      - name: Check no-hand-rolled-fixture
-        run: ./scripts/check/check --check desktop-rust-no-hand-rolled-fixture --ci
-
-      - name: Check derive-default-justified
-        run: ./scripts/check/check --check desktop-rust-derive-default-justified --ci
-
-      - name: Check probe-unwrap-justified
-        run: ./scripts/check/check --check desktop-rust-probe-unwrap-justified --ci
-
-      - name: Check mtp-dropping-timeout
-        run: ./scripts/check/check --check desktop-rust-mtp-dropping-timeout --ci
-
-      - name: Check mtp-no-transport-reset
-        run: ./scripts/check/check --check desktop-rust-mtp-no-transport-reset --ci
-
-      - name: Check ipc-enum-camelcase
-        run: ./scripts/check/check --check desktop-rust-ipc-enum-camelcase --ci
-
-      - name: Check pluralize-noun
-        run: ./scripts/check/check --check desktop-pluralize-noun --ci
-
-      - name: Run jscpd
-        run: ./scripts/check/check --check desktop-rust-jscpd --ci
-
-      - name: Run cargo-machete
-        run: ./scripts/check/check --check desktop-rust-cargo-machete --ci
-
-      # Fails if THIRD-PARTY-NOTICES.md doesn't match the current lockfiles.
-      # Lives in this job for the cargo toolchain plus rust-cache, which keeps
-      # the `cargo install cargo-about` build out of every subsequent run.
-      - name: Check third-party notices
-        run: ./scripts/check/check --check desktop-third-party-notices --ci
-
-      - name: Run clippy
-        run: ./scripts/check/check --check desktop-rust-clippy --ci
-
-      # The browser demo's listing engine: a wasm32 build plus a Node smoke run, the only
-      # lane that sees a host-only dep or a `std` clock reach the engine. `wasm-bindgen-cli`
-      # installs into `~/.cargo/bin`, which rust-cache keeps; the C toolchain that compiles
-      # SQLite for wasm32 comes from its own cache.
-      - name: Install the wasm C toolchain
-        uses: ./.github/actions/wasm-toolchain
-        with:
-          save-cache: ${{ env.SAVE_RUST_CACHE }}
-
-      - name: Build the listing engine for wasm
-        run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
-
-      # The file viewer's core compiles for the browser: the only lane that sees a host-only
-      # dep reach `cmdr-viewer` before the demo engine hosts it.
-      - name: Build the viewer core for wasm
-        run: ./scripts/check/check --check desktop-rust-viewer-wasm --ci
-
-      # A broken intra-doc link is invisible to every other lane, because only
-      # `cargo doc` resolves one. These steps are sequential, so this lane keeps
-      # the shared, cached `target/` here; locally it gets a private one to stay
-      # off cargo's build-directory lock (see `desktop-rust-rustdoc.go`).
-      - name: Check rustdoc links
-        run: ./scripts/check/check --check desktop-rust-rustdoc --ci
-
-      # Rendered HTML nothing downstream reads, and caching it costs twice: ~200 MB of
-      # rust-cache payload, and eight `##[error]` annotations on every cold-cache run, in a
-      # log where each red line reads as a cause. `Swatinem/rust-cache` treats any dir under
-      # `target/` named `tests` as a cargo test profile, then walks its `target`/`trybuild`
-      # children without awaiting (`src/cleanup.ts`), so the rejection escapes its `try` and
-      # Node prints `ENOENT ... opendir '.../doc/cmdr_index/indexing/tests/target'`. This
-      # lane documents `cmdr_index::indexing::tests` because it runs `--all-features` and the
-      # module is `cfg(any(test, feature = "testing"))`. `always()`, so a failing step above
-      # still leaves a doc-free cache.
-      - name: Drop rustdoc HTML before it reaches the cache
-        if: always()
-        run: rm -rf target/doc
-
-      # Before the suite, because it says whether the suite is running under the
-      # caps and groups its config claims. A filter that selects nothing drops
-      # its tests back to the global cap and full parallelism, silently.
-      - name: Check nextest filter coverage
-        run: ./scripts/check/check --check nextest-filter-coverage --ci
-
-      - name: Run Rust tests
-        run: ./scripts/check/check --check desktop-rust-tests --ci
-
-      - name: Report disk usage
-        if: always()
-        run: df -h /
-
-  # ===========================================
-  # Desktop app - Rust against the Docker fixtures
-  # ===========================================
   # The fixture lanes (SMB, SFTP, WebDAV, S3, and NFS containers, plus a real Nextcloud) in their
-  # own job, so their ~10 min of container bring-up runs alongside `desktop-rust` instead of
-  # after it. Same filter and gate as `desktop-rust`; it restores that job's rust-cache entry
-  # by name and never saves, so the repo keeps one Linux Rust entry. Dependency-only, like
-  # every rust-cache entry: the workspace crates compile here once, with the same cargo flags
-  # as `desktop-rust-tests` (`HostCargoLaneArgs`).
+  # own lane, so their ~10 min of container bring-up runs alongside `desktop-rust` instead of
+  # after it.
   desktop-rust-fixtures:
     name: Desktop (Rust, fixtures)
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
     needs: changes
-    if: inputs.run_all || needs.changes.outputs.rust == 'true'
+    if: inputs.run_all || needs.changes.outputs.rust-fixtures == 'true'
+    uses: ./.github/workflows/rust-fixtures-lane.yml
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Free disk space on a small runner
-        uses: ./.github/actions/free-disk-if-small
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Keep only the pinned Rust toolchain
-        uses: ./.github/actions/pinned-rust-toolchain
-
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          shared-key: desktop-rust
-          save-if: false
-
-      - name: Install Tauri dependencies (Linux)
-        uses: ./.github/actions/tauri-linux-deps
-        timeout-minutes: 20
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      # Two host settings the NFS fixture needs, before its stack comes up:
-      # - `modprobe nfsd`: the fixture is the host kernel's own NFS server, and
-      #   Ubuntu builds `nfsd` as a module a container can't load.
-      # - `ip_unprivileged_port_start=600`: the client binds a source port in
-      #   600–1023 for the `/secure` export, which a non-root process on Linux
-      #   may only do below this sysctl. The cells reach `/secure` at the
-      #   container's own IP, where the bridge keeps the source port intact
-      #   (a published port rewrites it). `apps/desktop/test/nfs-servers/README.md`.
-      - name: Prepare the host for the NFS fixture
-        run: |
-          sudo modprobe nfsd
-          sudo sysctl -w net.ipv4.ip_unprivileged_port_start=600
-
-      - name: Run the Docker fixture integration tests (SMB, SFTP, WebDAV, S3, and NFS)
-        run: ./scripts/check/check --check desktop-rust-integration-tests --ci
-
-      # The sabre/dav cells, against a real Nextcloud. Slow-lane locally (a ~1 GB
-      # pull plus a self-install before the container listens, so a default
-      # `pnpm check` never pays for it), but CI is where "does a real server
-      # still answer this way" has to be asked: the three claims these cells pin
-      # are the only ones in `crates/cmdr-webdav` that no Apache fixture can
-      # reach. Measured 2026-09-02: ~1 min of container, seconds of tests, on a
-      # build the step above already warmed.
-      - name: Run the WebDAV cells against a real Nextcloud (sabre/dav)
-        run: ./scripts/check/check --check desktop-rust-webdav-nextcloud --ci
-
-      - name: Report disk usage
-        if: always()
-        run: |
-          df -h /
-          docker system df
-
-  # ===========================================
-  # Desktop app - Rust on macOS
-  # ===========================================
-  # Cmdr ships on macOS, but every other job here runs on ubuntu, so the code under
+  # Cmdr ships on macOS, but every other lane runs on ubuntu, so the code under
   # `cfg(target_os = "macos")` (FSEvents, AppKit, DiskArbitration, File Provider, TCC, the
   # `cmdr-fsevent-stream` member) was compiled, linted, and tested only on whichever Mac last ran
-  # `pnpm check`. This job asks the three questions Linux can't answer for that code: does it
+  # `pnpm check`. This lane asks the three questions Linux can't answer for that code: does it
   # lint clean, do its intra-doc links resolve, and do its tests pass. Everything platform-blind
   # (the static scanners, rustfmt, notices, jscpd) stays in `desktop-rust` alone. Last, it runs
   # module cycles, whose baseline is a macOS module graph (an ubuntu analysis drops the
@@ -700,7 +622,7 @@ jobs:
   # - The Docker fixture lanes: GitHub's macOS runners have no Docker.
   #
   # Required: in `ci-ok`'s `needs`, so a red macOS job fails the run and both release gates.
-  # `docs/tooling/ci.md` § macOS lane. The lane's steps live in `macos-lane.yml`.
+  # `docs/tooling/ci.md` § macOS lane.
   #
   # On `main` pushes the lane shares one job-level group across runs: one runs, the newest
   # waits, and a newer push replaces the waiting one, because each `main` commit checks a
@@ -710,7 +632,7 @@ jobs:
   desktop-rust-macos:
     name: Desktop (Rust, macOS)
     needs: changes
-    if: inputs.run_all || needs.changes.outputs.rust == 'true'
+    if: inputs.run_all || needs.changes.outputs.rust-macos == 'true'
     concurrency:
       group: macos-lane-${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main' || github.run_id }}
       cancel-in-progress: false
@@ -718,199 +640,14 @@ jobs:
     with:
       compile-finder-extension: ${{ inputs.run_all || needs.changes.outputs.finder-extension == 'true' }}
 
-  # ===========================================
-  # Desktop app - Svelte frontend
-  # ===========================================
+  # The desktop frontend: the Svelte checks, i18n, and Vitest, plus the type-aware ESLint passes
+  # in a parallel job.
   desktop-svelte:
     name: Desktop (Svelte)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
     needs: changes
     if: inputs.run_all || needs.changes.outputs.svelte == 'true'
+    uses: ./.github/workflows/svelte-lane.yml
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate SvelteKit types
-        run: pnpm exec svelte-kit sync
-        working-directory: ./apps/desktop
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      # ESLint runs in `desktop-svelte-eslint-typecheck`: its two type-aware passes run the full
-      # config over all of `eslint .`, a superset of the no-type-info rules.
-      - name: Run Stylelint
-        run: ./scripts/check/check --check desktop-svelte-stylelint --ci
-
-      - name: Check unused CSS
-        run: ./scripts/check/check --check desktop-svelte-css-unused --ci
-
-      - name: Check a11y contrast
-        run: ./scripts/check/check --check desktop-svelte-a11y-contrast --ci
-
-      - name: Check a11y coverage
-        run: ./scripts/check/check --check desktop-svelte-a11y-coverage --ci
-
-      - name: Check UI primitive coverage
-        run: ./scripts/check/check --check desktop-svelte-ui-primitive-coverage --ci
-
-      - name: Check dialog gallery coverage
-        run: ./scripts/check/check --check desktop-svelte-dialog-gallery-coverage --ci
-
-      - name: Check btn-restyle
-        run: ./scripts/check/check --check desktop-svelte-btn-restyle --ci
-
-      - name: Check bare polls
-        run: ./scripts/check/check --check desktop-svelte-bare-poll --ci
-
-      - name: Check IPC wrappers and commands have callers
-        run: ./scripts/check/check --check desktop-ipc-unused --ci
-
-      - name: Check E2E stale selectors
-        run: ./scripts/check/check --check desktop-svelte-e2e-stale-selector --ci
-
-      - name: Check Vite build target
-        run: ./scripts/check/check --check desktop-vite-build-target --ci
-
-      - name: Run svelte-check
-        run: ./scripts/check/check --check desktop-svelte-check --ci
-
-      - name: Check import cycles
-        run: ./scripts/check/check --check desktop-svelte-import-cycles --ci
-
-      - name: Run jscpd
-        run: ./scripts/check/check --check desktop-svelte-jscpd --ci
-
-      - name: Check message-keys freshness
-        run: ./scripts/check/check --check desktop-message-keys-fresh --ci
-
-      # These two live in the Svelte job, not the Rust one, even though both
-      # artifacts are Rust: what goes stale is a change under
-      # `apps/desktop/src/lib/intl/messages/` (a catalog directory added, or a
-      # `menu.*` label edited), which only the `svelte` filter sees. Both
-      # generators are dependency-light Node, so they run fine here.
-      - name: Check shipped-locales freshness
-        run: ./scripts/check/check --check desktop-shipped-locales-fresh --ci
-
-      - name: Check native-strings freshness
-        run: ./scripts/check/check --check desktop-native-strings-fresh --ci
-
-      - name: Check message-key naming
-        run: ./scripts/check/check --check desktop-message-key-naming --ci
-
-      # `desktop-message-keys-unused` runs in `hygiene`: it reads Rust too, which this job's
-      # filter doesn't watch.
-      - name: Check message screenshot couplings
-        run: ./scripts/check/check --check desktop-message-screenshots-fresh --ci
-
-      - name: Check i18n placeholder/tag parity
-        run: ./scripts/check/check --check desktop-i18n-parity --ci
-
-      - name: Check i18n ICU validity
-        run: ./scripts/check/check --check desktop-i18n-icu --ci
-
-      - name: Check i18n tag/param name collisions
-        run: ./scripts/check/check --check desktop-i18n-tag-param-collision --ci
-
-      - name: Check <Trans> snippet parity
-        run: ./scripts/check/check --check desktop-i18n-trans-snippet-parity --ci
-
-      - name: Check i18n plural-category coverage
-        run: ./scripts/check/check --check desktop-i18n-plural --ci
-
-      - name: Check i18n translation coverage
-        run: ./scripts/check/check --check desktop-i18n-coverage --ci
-
-      - name: Check accessible names still contain their visible label
-        run: ./scripts/check/check --check desktop-i18n-aria-label --ci
-
-      - name: Run Knip
-        run: ./scripts/check/check --check desktop-svelte-knip --ci
-
-      - name: Check type drift
-        run: ./scripts/check/check --check desktop-svelte-type-drift --ci
-
-      - name: Typecheck Linux E2E suite
-        run: ./scripts/check/check --check desktop-svelte-e2e-linux-typecheck --ci
-
-      - name: Run Svelte tests
-        run: ./scripts/check/check --check desktop-svelte-tests --ci
-
-  # ===========================================
-  # Desktop app - type-aware ESLint
-  # ===========================================
-  # The rules that need TypeScript's types (`no-unnecessary-condition`, `no-floating-promises`,
-  # `no-deprecated`, ...), plus every other rule: these two passes are the desktop's only ESLint
-  # job. They used to live only in the every-six-days slow workflow, where 25 errors sat on a
-  # green `main` (2026-10-21), one of them a real toast bug. Their own job, so the 2-4 min they
-  # take run beside `desktop-svelte` instead of lengthening it.
-  desktop-svelte-eslint-typecheck:
-    name: Desktop (Svelte, type-aware ESLint)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: changes
-    if: inputs.run_all || needs.changes.outputs.svelte == 'true'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # The type-aware config extends `$app/tsconfig`, which only `svelte-kit sync` generates.
-      - name: Generate SvelteKit types
-        run: pnpm exec svelte-kit sync
-        working-directory: ./apps/desktop
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      # Two passes, one projectService batch per file type, each far faster than one combined.
-      - name: Run type-aware ESLint (Svelte files)
-        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-svelte --ci
-
-      - name: Run type-aware ESLint (TypeScript files)
-        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-typescript --ci
-
-  # ===========================================
-  # Desktop app - the E2E base image
-  # ===========================================
   # The E2E lane's Docker base image (apt packages, Node, Rust: `Dockerfile.base`) lives in
   # GitHub's container registry, tagged by the hash of `Dockerfile.base`. This job builds and
   # pushes it only when the registry lacks the current tag (a `Dockerfile.base` edit, or a new
@@ -918,6 +655,9 @@ jobs:
   # which evicts under size pressure; the E2E job then rebuilt it inside its own 40-min cap,
   # and a slow apt mirror ran it out (2026-10-22). Here a build has its own long cap, and the
   # registry never evicts. `apps/desktop/test/e2e-linux/DETAILS.md` § CI base image.
+  # It stays here, not in `e2e-linux-lane.yml`: OpenSSF Scorecard waives a job's
+  # `packages: write` only in a workflow it recognizes as packaging, which this one is (its
+  # `docker push`), and the lane file would add a Token-Permissions finding.
   e2e-base-image:
     name: E2E base image
     runs-on: ubuntu-latest
@@ -946,142 +686,52 @@ jobs:
           E2E_BASE_REGISTRY: ghcr.io/${{ github.repository_owner }}
           E2E_BASE_PUSH: 'true'
 
-  # ===========================================
-  # Desktop app - Playwright E2E on Linux
-  # ===========================================
+  # The Playwright suite on Linux, in Docker, once the registry holds the base image. Gated only
+  # on change detection, never on the Rust or Svelte lanes (the lane file says why), so it
+  # starts at t=0: it's usually the critical path.
   desktop-e2e-linux:
     name: E2E tests (Playwright, Linux)
-    runs-on: ubuntu-latest
-    # ~12 min warm build + ~8.5 min for 455 tests on a green run (a cold build is ~21
-    # min), so 40 leaves room for a slow runner while still cutting a runaway short.
-    timeout-minutes: 40
-    # Gated ONLY on change detection — not on desktop-rust OR desktop-svelte:
-    # - desktop-rust: independent. A Rust unit-test failure shouldn't skip e2e
-    #   (and vice versa). Gating them together hid a 4-day red-main streak in
-    #   May 2026 where a flaky accent-color unit test blocked e2e on PRs that
-    #   touched neither path.
-    # - desktop-svelte: dropped (June 2026) to cut the critical path. e2e's
-    #   Docker build runs its OWN frontend build (beforeBuildCommand), so it
-    #   never consumed desktop-svelte's artifacts — the gate was only a "don't
-    #   spend e2e compute if svelte's quality checks are red" optimization, and
-    #   it forced e2e to wait ~4 min for desktop-svelte before starting. Now e2e
-    #   starts at t=0, the single biggest wall-clock win on the per-push path.
-    #   Trade: e2e runs even when svelte-check / eslint / svelte tests fail
-    #   (rare); a genuine frontend BUILD error still fails e2e's own build.
-    # `changes` always runs, so no always()/skip handling is needed here. `e2e-base-image` is
-    # ~20 s when the registry has the image, so it barely moves the start.
     needs: [changes, e2e-base-image]
     if: inputs.run_all || needs.changes.outputs.desktop == 'true'
     permissions:
       contents: read # check out the code
       packages: read # pull the E2E base image
+    uses: ./.github/workflows/e2e-linux-lane.yml
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+  # The browser demo build, then the site's checks, E2E, and Lighthouse inside the pinned
+  # Playwright image (`changes` resolves it, since `container:` can't read a step output).
+  website:
+    name: Website
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.website == 'true'
+    uses: ./.github/workflows/website-lane.yml
+    with:
+      playwright-image: ${{ needs.changes.outputs.playwright-image }}
+    secrets:
+      LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
-      # No "Free disk space" step: it cost ~1.6 min a run for room this job doesn't
-      # need. The runner's root disk is 145 GB, and every one of 109 runs
-      # (2026-10-12 to 2026-10-19, #557) showed 107–108 GB free AFTER the reclaim,
-      # which only ever removed preinstalled SDKs (tens of GB at most). This job
-      # peaks at roughly 15 GB: the base image, the cargo/target caches, and the
-      # fixture images. The `df` keeps the headroom visible in the log; if it
-      # ever runs tight, bring the reclaim back.
-      - name: Prepare Docker cache dirs
-        run: |
-          mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target
-          df -h /
-
-      # Restores main's entry on a PR (a PR can read its base branch's caches, never
-      # another PR's); `warm-e2e-linux-cache` below keeps that entry alive. Restore and
-      # save are split so only `main` saves (the save step after the ownership reclaim):
-      # a ~1.2 GB entry per PR kept the repo over its 10 GB ceiling and evicted
-      # everything into cold builds (2026-10-20, PR #593). Same switch as the Rust caches.
-      - name: Restore Cargo + target (via host bind mounts into Docker)
-        id: e2e-target-cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            /tmp/cmdr-docker-cache/cargo
-            /tmp/cmdr-docker-cache/target
-          key: ${{ runner.os }}-docker-e2e-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-docker-e2e-
-
-      # `e2e-base-image` made sure the registry holds the base image (apt packages, Node,
-      # Rust; see Dockerfile.base), so the script below pulls it instead of building it.
-      - name: Log in to the container registry
-        env:
-          ACTOR: ${{ github.actor }}
-          TOKEN: ${{ github.token }}
-        run: docker login ghcr.io --username "$ACTOR" --password-stdin <<<"$TOKEN"
-
-      - name: Run E2E tests in Docker
-        run: ./scripts/e2e-linux.sh
-        working-directory: ./apps/desktop
-        env:
-          # Point Docker volumes at host paths so actions/cache can persist them
-          CARGO_VOLUME: /tmp/cmdr-docker-cache/cargo
-          TARGET_VOLUME: /tmp/cmdr-docker-cache/target
-          E2E_BASE_REGISTRY: ghcr.io/${{ github.repository_owner }}
-
-      # The Docker build runs as root, so it writes the bind-mounted cache dirs
-      # as root. The actions/cache post-step then runs as the runner user and
-      # `tar` can't read root-owned files — so the save failed (warning only,
-      # never fatal) on EVERY run since this cache was added, and the next run
-      # always restored nothing → a fully cold ~10-min Tauri build every time.
-      # Hand ownership back so the post-step can pack the cache. `always()` so
-      # the build cache still saves when a test fails (the build succeeded).
-      - name: Reclaim cache dir ownership for the save step
-        if: always()
-        run: sudo chown -R "$(id -u):$(id -g)" /tmp/cmdr-docker-cache
-
-      # `main` only (`SAVE_RUST_CACHE`), and not on an exact hit, which has nothing new.
-      # The paths and key must match the restore step above and `warm-e2e-linux-cache`.
-      - name: Save Cargo + target
-        if: >-
-          !cancelled() && env.SAVE_RUST_CACHE == 'true' && steps.e2e-target-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            /tmp/cmdr-docker-cache/cargo
-            /tmp/cmdr-docker-cache/target
-          key: ${{ steps.e2e-target-cache.outputs.cache-primary-key }}
-
-      # ❗ The path is the Playwright `outputDir`, which for THIS lane is
-      # `./test-results` resolved against the config's own directory
-      # (`playwright.config.ts`), NOT the app root. Only the macOS lane overrides
-      # `CMDR_E2E_OUTPUT_DIR` (see `desktop-svelte-e2e-playwright.go`). Pointed at
-      # `apps/desktop/test-results/` this step matched nothing, so every failing run
-      # uploaded an empty artifact and the `error-context.md` page snapshots (the
-      # only evidence of what the UI actually looked like) were discarded. That's
-      # why the search-open-in-pane flake outlived two fix attempts.
-      # `if-no-files-found: error` keeps a future path drift loud instead of silent.
-      - name: Upload E2E screenshots on failure
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: failure()
-        with:
-          name: e2e-screenshots
-          path: apps/desktop/test/e2e-playwright/test-results/
-          if-no-files-found: error
-          retention-days: 7
-
-      # Every app thread's stack, taken inside the container while the app is still
-      # alive: after a failed run, or once the run has gone on long enough to be a
-      # runaway (`dump_app_stacks` in `e2e-linux.sh`). Permanent on purpose: the drive
-      # index hang in GitHub issue #564 struck one run in two to seven and logged
-      # nothing at INFO, so a one-off diagnostic push can't be timed to catch the next
-      # hang of any kind; this way the run that hits it names the blocked call. It
-      # costs nothing on a green run. `warn`, since a failure before the app started
-      # leaves nothing to dump.
-      - name: Upload app thread stacks on failure
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: failure()
-        with:
-          name: e2e-app-stacks
-          path: /tmp/cmdr-e2e-stacks/
-          if-no-files-found: warn
-          retention-days: 7
+  # Everything without Rust or a browser, on one runner: repo hygiene on every change (no path
+  # gate), and the Go checks, the API server, the dashboard, and the three slow hygiene checks per
+  # filter. It skips only on an already-verified push or PR and on a PR that changes no file (a
+  # record-only commit; see `changes`). The runner comes from `changes` (`LIGHT_LANE_RUNNER`,
+  # never self-hosted for a fork PR). `docs/tooling/ci.md` § The light lane.
+  light:
+    name: Light lane (hygiene, Go, API server, dashboard)
+    needs: changes
+    if: needs.changes.outputs.verified != 'true' && needs.changes.outputs.same-tree != 'true'
+    permissions:
+      contents: read # check out the code
+      pull-requests: read # list the PR's files for the Scorecard trigger
+    uses: ./.github/workflows/light-lane.yml
+    with:
+      runs-on: ${{ needs.changes.outputs.light-runner }}
+      full: ${{ inputs.run_all == true }}
+      scripts: ${{ needs.changes.outputs.scripts == 'true' }}
+      api-server: ${{ needs.changes.outputs.api-server == 'true' }}
+      dashboard: ${{ needs.changes.outputs.dashboard == 'true' }}
+      scorecard: ${{ needs.changes.outputs.scorecard == 'true' }}
+      termbase: ${{ needs.changes.outputs.termbase == 'true' }}
+      changelog: ${{ needs.changes.outputs.changelog == 'true' }}
 
   # ===========================================
   # Keep the E2E build cache warm on main
@@ -1095,7 +745,7 @@ jobs:
   # - Post-land, so `ci-ok` doesn't wait for it (exempt in `ciOKGateExempt`); a
   #   failure here costs the next PR a cold build, nothing more.
   # - Skips when the E2E lane itself runs on this push: that job saves the same keys.
-  # - The cache `path`s and keys MUST match `desktop-e2e-linux` byte for byte, or the
+  # - The cache `path`s and keys MUST match `e2e-linux-lane.yml` byte for byte, or the
   #   entries it saves are invisible to the lane (a cache's version hashes its paths).
   warm-e2e-linux-cache:
     name: Warm E2E build cache
@@ -1136,7 +786,7 @@ jobs:
             echo "warm=true" >>"$GITHUB_OUTPUT"
           fi
 
-      # From here on, the same cache steps as `desktop-e2e-linux` (see its comments).
+      # From here on, the same cache steps as the lane's `tests` job (see its comments).
       - name: Prepare Docker cache dirs
         if: steps.decide.outputs.warm == 'true'
         run: |
@@ -1180,7 +830,7 @@ jobs:
   # The Rust lanes save their caches from `main` only (`SAVE_RUST_CACHE`), and a verified `main`
   # push skips them, so without these jobs `main` would never hold an entry and every PR would
   # build cold. Same shape as `warm-e2e-linux-cache`: post-land, exempt from `ci-ok`
-  # (`ciOKGateExempt`), skipped when the Rust lanes run on this push (they save the same keys).
+  # (`ciOKGateExempt`), skipped when the lane that saves its entry runs on this push.
   # One job per entry, since a job can only drive one rust-cache step cleanly.
   # - Each restores its entry with the lane's exact `rust-cache` inputs and the same steps
   #   before it (rust-cache hashes the rustc version and `CARGO*`/`RUST*` env into the key). On
@@ -1210,7 +860,7 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      # Must match `desktop-rust`'s steps.
+      # Must match the lane's steps in `rust-lane.yml`.
       - name: Keep only the pinned Rust toolchain
         uses: ./.github/actions/pinned-rust-toolchain
 
@@ -1266,7 +916,7 @@ jobs:
     needs: changes
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
-      needs.changes.outputs.rust != 'true'
+      needs.changes.outputs.rust-macos != 'true'
 
     steps:
       - name: Checkout code
@@ -1321,6 +971,70 @@ jobs:
           fi
 
   # ===========================================
+  # Keep the light lane's caches warm on main
+  # ===========================================
+  # The light lane saves its caches (`node_modules`, the check tool, the Go caches) from `main`
+  # only, and a verified `main` push skips it, so this job fills `main`'s entries for every PR to
+  # restore. Same shape as `warm-rust-cache`: post-land, exempt from `ci-ok` (`ciOKGateExempt`),
+  # skipped when the lane runs on this push (it saves the same keys). On exact hits it only looks
+  # (~30 s); on a miss it does what the lane would: installs, builds the check tool, and runs the
+  # checks that `go install` their tools and fill the Go build cache. Same keys and paths as the
+  # lane, through the same `light-cache` action.
+  warm-light-cache:
+    name: Warm light lane caches
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
+      needs.changes.outputs.verified == 'true'
+    env:
+      GOFLAGS: -count=1 # as in the lane, so the Go build cache it saves holds no test results
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Restore the light lane caches
+        id: cache
+        uses: ./.github/actions/light-cache
+        with:
+          phase: restore
+          go: 'true'
+
+      - name: Install dependencies
+        if: steps.cache.outputs.node-modules-hit != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build check tool
+        if: steps.cache.outputs.check-tool-hit != 'true' || steps.cache.outputs.go-hit != 'true'
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      # A red check still installed its tool, so the save below still has what the lane needs.
+      - name: Install the Go tools and fill the Go build cache
+        if: steps.cache.outputs.go-hit != 'true'
+        continue-on-error: true
+        run: |
+          ./scripts/check/check --ci --check scripts-go-vet,scripts-go-staticcheck,scripts-go-ineffassign,scripts-go-misspell,scripts-go-gocyclo,scripts-go-nilaway,scripts-go-deadcode,scorecard-local
+
+      - name: Save the light lane caches
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/light-cache
+        with:
+          phase: save
+          go: 'true'
+          node-modules-hit: ${{ steps.cache.outputs.node-modules-hit }}
+          check-tool-hit: ${{ steps.cache.outputs.check-tool-hit }}
+          go-hit: ${{ steps.cache.outputs.go-hit }}
+
+  # ===========================================
   # Drop superseded build caches on main
   # ===========================================
   # A new `Cargo.lock` gives every big cache a new key, and the old entry (~1.3–1.9 GB) stays
@@ -1332,7 +1046,8 @@ jobs:
   # while a stale key can be the newer one (on 2026-10-22 a flipping toolchain hash saved one
   # after the live entry). A family is the key minus its trailing hash parts, for example
   # `v0-rust-desktop-rust-Linux-x64`. A PR whose lockfile is older still restores the kept
-  # entry through its restore-keys prefix.
+  # entry through its restore-keys prefix. The light lane's `light-*` entries (a new lockfile
+  # or Go sum makes a new key each) are families too.
   # Post-land, so exempt from `ci-ok` (`ciOKGateExempt`): a failure only leaves the old
   # entries to age out.
   prune-superseded-caches:
@@ -1347,15 +1062,17 @@ jobs:
         warm-e2e-linux-cache,
         warm-rust-cache,
         warm-rust-macos-cache,
-        website-demo,
+        website,
         publish-website-demo,
+        light,
+        warm-light-cache,
       ]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       actions: write # delete caches
 
     steps:
-      - name: Keep the most recently used main entry of each Rust and E2E cache family
+      - name: Keep the most recently used main entry of each Rust, E2E, and light lane cache family
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -1365,7 +1082,7 @@ jobs:
             --json id,key --jq '.[] | "\(.id) \(.key)"' >caches.txt
           while read -r id key; do
             case "$key" in
-              v0-rust-* | *-docker-e2e-*) ;;
+              v0-rust-* | *-docker-e2e-* | light-*) ;;
               *) continue ;;
             esac
             family=$(sed -E 's/(-[0-9a-f]{8,})+$//' <<<"$key")
@@ -1377,486 +1094,6 @@ jobs:
               echo "Keeping $key"
             fi
           done <caches.txt
-
-  # ===========================================
-  # Website
-  # ===========================================
-  # The browser demo the site publishes at /demo/: the listing engine built to WASM plus the
-  # desktop frontend's demo build (`pnpm build:demo`, `apps/website/DETAILS.md` § Browser demo).
-  # Its own job on the bare runner because `website` runs inside the Playwright image, which has
-  # no Rust toolchain; `website` takes the result as an artifact and builds the site around it, so
-  # its E2E tests the same /demo/ the deploy's Docker build produces from the same sources.
-  website-demo:
-    name: Website (demo build)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: changes
-    if: inputs.run_all || needs.changes.outputs.website == 'true'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Build the browser demo
-        uses: ./.github/actions/build-website-demo
-        with:
-          save-rust-cache: ${{ env.SAVE_RUST_CACHE }}
-
-      - name: Upload the browser demo
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: website-demo
-          path: apps/desktop/build-demo/
-          if-no-files-found: error
-          retention-days: 1
-
-  website:
-    name: Website
-    runs-on: ubuntu-latest
-    # Everything in this job runs inside the pinned Playwright image, so the E2E lane renders the
-    # visual baselines in the same environment that shot them (see the `Resolve the Playwright
-    # container image` step in `changes` for why, and `apps/website/DETAILS.md` § Visual baselines).
-    # The build steps ride along rather than running on the host: one toolchain per job is simpler
-    # than two, and the site the baselines are shot against is then built by the same Node.
-    container:
-      image: ${{ needs.changes.outputs.playwright-image }}
-    timeout-minutes: 20
-    needs: [changes, website-demo]
-    if: inputs.run_all || needs.changes.outputs.website == 'true'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      # The checkout is owned by the host runner's UID, but this job (alone among ci.yml's jobs)
-      # runs inside the pinned Playwright `container:`, whose process UID doesn't match. Git's
-      # dubious-ownership guard then refuses to read repo state, and `go build`'s VCS stamping
-      # fails with "error obtaining VCS status: exit status 128" before it ever reaches our code.
-      - name: Trust the checkout inside the container
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      - name: Sync Astro types
-        run: pnpm exec astro sync
-        working-directory: ./apps/website
-
-      - name: Run ESLint
-        run: ./scripts/check/check --check website-eslint --ci
-
-      - name: Check CSP connect-src covers every fetch
-        run: ./scripts/check/check --check website-csp-connect-src --ci
-
-      - name: Run typecheck
-        run: ./scripts/check/check --check website-typecheck --ci
-
-      # Where the site's build expects it (src/plugins/demo.ts), which then fails on a missing demo
-      # instead of publishing a site without /demo/.
-      - name: Download the browser demo
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: website-demo
-          path: apps/desktop/build-demo/
-
-      - name: Build website
-        run: ./scripts/check/check --check website-build --ci
-        env:
-          CMDR_WEBSITE_DEMO: '1'
-
-      - name: Run html-validate
-        run: ./scripts/check/check --check website-html-validate --ci
-
-      - name: Check for dead links
-        run: ./scripts/check/check --check website-dead-links --ci
-
-      - name: Check analytics injection
-        run: ./scripts/check/check --check website-analytics-injection --ci
-
-      # No browser install step: the container image ships the browsers this Playwright version
-      # pins, at `PLAYWRIGHT_BROWSERS_PATH`. Installing them again would download a build for
-      # whatever version npm resolved, which is how a render could quietly stop matching the image
-      # the baselines were shot in. If the two ever disagree, Playwright says so ("Executable
-      # doesn't exist at /ms-playwright/chromium-…") instead of rendering on the wrong Chromium.
-      - name: Run E2E tests
-        run: ./scripts/check/check --check website-e2e --ci
-
-      # A visual failure is unreadable without the images: `test-results/` carries the `-actual`,
-      # `-expected`, and `-diff` PNGs plus the retry traces.
-      - name: Upload Playwright results
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: failure()
-        with:
-          name: website-playwright-results
-          path: apps/website/test-results/
-          if-no-files-found: ignore
-          retention-days: 7
-
-      # Lighthouse hunts for a system Chrome, which this image doesn't carry: it ships the
-      # browsers Playwright pins, under `PLAYWRIGHT_BROWSERS_PATH`. Point it at that one rather
-      # than installing a second Chrome. (`chromium_headless_shell-*` deliberately doesn't match
-      # the glob; Lighthouse wants the full browser.)
-      #
-      # The build dir is `chrome-linux64` on amd64 (the runner) and `chrome-linux` on arm64
-      # (a local `docker run` on an Apple Silicon laptop), so the glob has to cover both
-      # (verified against `mcr.microsoft.com/playwright:v1.62.1-noble` on both arches,
-      # `docker run ... ls /ms-playwright/chromium-*/`, 2026-09-08).
-      - name: Point Lighthouse at the container's Chromium
-        # Bash arrays and `[[`: this container's default `run:` shell is `sh` (dash), which has
-        # neither, and silently ran this as a syntax error once the job got far enough to reach it.
-        shell: bash
-        run: |
-          shopt -s nullglob
-          chromes=("$PLAYWRIGHT_BROWSERS_PATH"/chromium-*/chrome-linux*/chrome)
-          if [[ ${#chromes[@]} -eq 0 || ! -x "${chromes[0]}" ]]; then
-            echo "No Chromium under $PLAYWRIGHT_BROWSERS_PATH; the image layout changed." >&2
-            ls -la "$PLAYWRIGHT_BROWSERS_PATH" >&2 || true
-            exit 1
-          fi
-          echo "CHROME_PATH=${chromes[0]}" >>"$GITHUB_ENV"
-
-      - name: Run Lighthouse CI
-        run: pnpm test:lighthouse
-        working-directory: ./apps/website
-        env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-
-      - name: Upload Lighthouse report
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: always()
-        with:
-          name: lighthouse-report
-          path: apps/website/.lighthouseci/
-          retention-days: 7
-
-  # ===========================================
-  # API server
-  # ===========================================
-  api-server:
-    name: API server
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: changes
-    if: inputs.run_all || needs.changes.outputs.api-server == 'true'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      - name: Generate Worker types
-        run: ./scripts/check/check --check api-server-worker-types --ci
-
-      - name: Run ESLint
-        run: ./scripts/check/check --check api-server-eslint --ci
-
-      - name: Run typecheck
-        run: ./scripts/check/check --check api-server-typecheck --ci
-
-      - name: Run tests
-        run: ./scripts/check/check --check api-server-tests --ci
-
-  # ===========================================
-  # Analytics dashboard
-  # ===========================================
-  dashboard:
-    name: Analytics dashboard
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: changes
-    if: inputs.run_all || needs.changes.outputs.dashboard == 'true'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      # The type-aware checks need `$app/tsconfig` (`node_modules/$app/tsconfig.json`), which the app's tsconfig extends.
-      # The `dashboard-svelte-kit-sync` check generates it locally; CI does it as a setup step so
-      # the checks below can run in any order.
-      - name: Generate SvelteKit types
-        run: pnpm exec svelte-kit sync
-        working-directory: ./apps/analytics-dashboard
-
-      - name: Run ESLint
-        run: ./scripts/check/check --check dashboard-eslint --ci
-
-      - name: Run Stylelint
-        run: ./scripts/check/check --check dashboard-stylelint --ci
-
-      - name: Run svelte-check
-        run: ./scripts/check/check --check dashboard-svelte-check --ci
-
-      - name: Check for import cycles
-        run: ./scripts/check/check --check dashboard-import-cycles --ci
-
-      - name: Run knip
-        run: ./scripts/check/check --check dashboard-knip --ci
-
-      - name: Run tests
-        run: ./scripts/check/check --check dashboard-tests --ci
-
-      - name: Build
-        run: ./scripts/check/check --check dashboard-build --ci
-
-  # ===========================================
-  # Repo hygiene (no path gate; skips only on an already-verified push or PR, or a PR that
-  # changes no file)
-  # ===========================================
-  # Catches what per-app filters can't: oxfmt formats the whole monorepo (docs,
-  # configs, workflows), so a docs-only commit must still run it — otherwise
-  # unformatted markdown lands on main and fails the next unrelated PR. Also the
-  # single home of changelog-commit-links (it was duplicated across three jobs)
-  # and the workflows/registry guards, which watch files no app filter covers.
-  hygiene:
-    name: Repo hygiene
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # Every run but an already-verified push or PR and a PR whose tree equals its base's (a
-    # record-only commit changes no file, so there's nothing to check; see `changes`).
-    needs: changes
-    if: needs.changes.outputs.verified != 'true' && needs.changes.outputs.same-tree != 'true'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0 # full history so changelog-commit-links can resolve historical SHAs
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      - name: Check oxfmt
-        run: ./scripts/check/check --check oxfmt --ci
-
-      - name: Check CHANGELOG commit links
-        run: ./scripts/check/check --check changelog-commit-links --ci
-
-      - name: Check CHANGELOG Security lines
-        run: ./scripts/check/check --check changelog-security --ci
-
-      - name: Check docs reachable from AGENTS.md
-        run: ./scripts/check/check --check docs-reachable --ci
-
-      - name: Check no dead links in docs
-        run: ./scripts/check/check --check docs-dead-links --ci
-
-      # Here, not in the website job: the map's patterns name files anywhere in the repo, so a rename
-      # outside `apps/website/` can break it.
-      - name: Check the trust page source map
-        run: ./scripts/check/check --check website-trust-sources --ci
-
-      - name: Check § pointers name real headings
-        run: ./scripts/check/check --check docs-section-refs --ci
-
-      - name: Check agent-doc table hygiene
-        run: ./scripts/check/check --check docs-table-hygiene --ci
-
-      - name: Check no path-shaped link text in docs
-        run: ./scripts/check/check --check docs-link-text --ci
-
-      - name: Check every CLAUDE.md has a sibling DETAILS.md
-        run: ./scripts/check/check --check claude-md-details-sibling --ci
-
-      - name: Check no source file is over the length limit
-        run: ./scripts/check/check --check file-length --ci
-
-      - name: Check no CLAUDE.md is over its word budget
-        run: ./scripts/check/check --check claude-md-length --ci
-
-      # Lives here rather than in the Svelte job: the guides it reads sit under
-      # `docs/i18n/`, which no app filter watches, so an app-gated job would skip it
-      # exactly when a guide edit is what broke a citation.
-      - name: Check translator guides cite real message keys
-        run: ./scripts/check/check --check desktop-i18n-doc-citations --ci
-
-      # Same reason: the termbase (`concepts.json`, `<tag>/terms.json`) lives under `docs/i18n/`.
-      - name: Check the translation termbase schema and coverage drift
-        run: ./scripts/check/check --check desktop-i18n-termbase --ci
-
-      # Same reason: each locale's `mechanics.json` lives under `docs/i18n/`.
-      - name: Check catalog values follow each locale's declared typography
-        run: ./scripts/check/check --check desktop-i18n-mechanics --ci
-
-      # Same reason: it reads the frontend AND the Rust app (`menu_t` is the only reference the
-      # native menu keys have), so the `svelte`-gated job would skip it on the Rust-only change
-      # that orphans a key. A sub-second Go scan, so every run can afford it.
-      - name: Check for unused message keys
-        run: ./scripts/check/check --check desktop-message-keys-unused --ci
-
-      # Here rather than in the Rust job: a record names any file, and its fuzz target, record,
-      # and input under `fuzz/` sit outside the `rust` filter, so a gated job would skip the
-      # edit that strands a record. The slow half that runs the mutants is in `slow-checks.yml`.
-      - name: Check every property has a mutant record that still applies
-        run: ./scripts/check/check --check desktop-rust-property-mutant-records --ci
-
-      - name: Check PostHog events match their catalog
-        run: ./scripts/check/check --check analytics-event-catalog --ci
-
-      # Lives here rather than in the dashboard job: its inputs span the desktop settings
-      # registry AND the dashboard manifest, so an app-gated job would skip it exactly when a
-      # desktop-only change is what made the manifest stale.
-      - name: Check the settings-defaults manifest matches the registry
-        run: ./scripts/check/check --check analytics-settings-defaults --ci
-
-      - name: Check .mise.toml is the only Go version
-        run: ./scripts/check/check --check go-version-single-source --ci
-
-      - name: Check the E2E image copies the pinned Rust
-        run: ./scripts/check/check --check e2e-rust-image-pin --ci
-
-      - name: Check workflow hardening
-        run: ./scripts/check/check --check workflows-hardening --ci
-
-      - name: Check workflow rustup pins
-        run: ./scripts/check/check --check workflows-rustup --ci
-
-      # `go install` of the pinned scorecard takes a minute or two; its version lives in the
-      # check file and the Go toolchain in `.mise.toml`, so either bump changes the key.
-      - name: Cache scorecard
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: node_modules/.cache/cmdr-go-tools/scorecard
-          key: ${{ runner.os }}-scorecard-${{ hashFiles('scripts/check/checks/scorecard-local.go', '.mise.toml') }}
-
-      - name: Check OpenSSF Scorecard's file-based checks
-        run: ./scripts/check/check --check scorecard-local --ci
-
-      - name: Check CI coverage of registry checks
-        run: ./scripts/check/check --check ci-coverage --ci
-
-  # ===========================================
-  # Scripts (Go checks)
-  # ===========================================
-  scripts:
-    name: Scripts (Go)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: changes
-    if: inputs.run_all || needs.changes.outputs.scripts == 'true'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      - name: Check gofmt
-        run: ./scripts/check/check --check scripts-go-gofmt --ci
-
-      - name: Run go vet
-        run: ./scripts/check/check --check scripts-go-vet --ci
-
-      - name: Run staticcheck
-        run: ./scripts/check/check --check scripts-go-staticcheck --ci
-
-      - name: Run ineffassign
-        run: ./scripts/check/check --check scripts-go-ineffassign --ci
-
-      - name: Run misspell
-        run: ./scripts/check/check --check scripts-go-misspell --ci
-
-      - name: Run gocyclo
-        run: ./scripts/check/check --check scripts-go-gocyclo --ci
-
-      - name: Run nilaway
-        run: ./scripts/check/check --check scripts-go-nilaway --ci
-
-      - name: Run deadcode
-        run: ./scripts/check/check --check scripts-go-deadcode --ci
-
-      - name: Run Go tests
-        run: ./scripts/check/check --check scripts-go-tests --ci
 
   # ===========================================
   # Website deployment
@@ -1885,7 +1122,7 @@ jobs:
       key: ${{ steps.image.outputs.key }}
       digest: ${{ steps.digest.outputs.digest }}
     # The deploy's own condition: it runs exactly when a deploy will.
-    needs: [changes, website-demo, website]
+    needs: [changes, website]
     if: >-
       github.ref == 'refs/heads/main' && !cancelled() && (github.event_name == 'push' || github.event_name ==
       'workflow_dispatch') && needs.changes.result == 'success' && (needs.website.result == 'success' ||
@@ -1918,25 +1155,25 @@ jobs:
             echo "${{ steps.image.outputs.ref }} already exists."
           fi
 
-      # This run's `website-demo` built it when the website lane ran; a verified landed commit
-      # skipped that lane, so it builds here.
+      # This run's website lane built it (its `demo` job) when the lane ran; a verified landed
+      # commit skipped that lane, so it builds here.
       - name: Download the browser demo
-        if: steps.existing.outputs.found != 'true' && needs.website-demo.result == 'success'
+        if: steps.existing.outputs.found != 'true' && needs.website.result == 'success'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: website-demo
           path: apps/desktop/build-demo/
 
       - name: Install mise
-        if: steps.existing.outputs.found != 'true' && needs.website-demo.result != 'success'
+        if: steps.existing.outputs.found != 'true' && needs.website.result != 'success'
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
 
       - name: Install tools with mise
-        if: steps.existing.outputs.found != 'true' && needs.website-demo.result != 'success'
+        if: steps.existing.outputs.found != 'true' && needs.website.result != 'success'
         run: mise install
 
       - name: Build the browser demo
-        if: steps.existing.outputs.found != 'true' && needs.website-demo.result != 'success'
+        if: steps.existing.outputs.found != 'true' && needs.website.result != 'success'
         uses: ./.github/actions/build-website-demo
         with:
           save-rust-cache: ${{ env.SAVE_RUST_CACHE }}
@@ -2029,6 +1266,7 @@ jobs:
   # - `needs` lists every job but the post-land ones (`deploy-website`, the `warm-*` cache jobs,
   #   and `prune-superseded-caches`; `ci-coverage` enforces it). `changes` belongs
   #   here too: when it fails, every lane is skipped, and the gate used to read that as green.
+  #   A lane's result is its whole lane file's: one red job inside makes the lane `failure`.
   # - `always()`, not `!cancelled()`, so a cancelled run reports red instead of skipped.
   # - Only `success` and `skipped` pass. A lane skipped by change detection is fine; `changes`
   #   itself never legitimately skips, so it must be `success`.
@@ -2048,15 +1286,10 @@ jobs:
         desktop-rust-fixtures,
         desktop-rust-macos,
         desktop-svelte,
-        desktop-svelte-eslint-typecheck,
         e2e-base-image,
         desktop-e2e-linux,
-        website-demo,
         website,
-        api-server,
-        dashboard,
-        scripts,
-        hygiene,
+        light,
       ]
     if: always()
     steps:

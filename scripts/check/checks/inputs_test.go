@@ -449,6 +449,7 @@ var realTreeReadingTests = map[string][]string{
 	"TestCommittedFrameworkVersionsMatchTheBundleFloor":        {"apps/desktop/src-tauri/tauri.conf.json", "scripts/check/checks/macos-framework-versions.json"},
 	"TestDiskImageLaneMatchesTheDiskImageNextestGroup":         {".config/nextest.toml"},
 	"TestEveryCheckGetsItsOwnRunnerSources":                    {"scripts/check/checks/registry.go"},
+	"TestGatedCheckFiltersCoverTheirChecks":                    {".github/workflows/ci.yml", "scripts/check/checks"},
 	"TestGlobalInputsCoverWhatNoCheckCanReach":                 {"scripts/check/checks"},
 	"TestGoCompileLanesReadOnlyGoSources":                      {"scripts", "apps/desktop/scripts"},
 	"TestGoTestsInputsCoverTheRealTreeItsTestsRead":            {"scripts/check/checks"},
