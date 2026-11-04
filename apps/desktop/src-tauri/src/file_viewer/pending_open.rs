@@ -19,8 +19,9 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
+use cmdr_fs::rt::{self, Instant};
 use serde::{Deserialize, Serialize};
 
 use super::ViewerError;
@@ -82,7 +83,7 @@ impl PendingOpen {
             fate: Mutex::new(Fate::Running),
             abandoned: AtomicBool::new(false),
             progress: Mutex::new(None),
-            last_activity: Mutex::new(Instant::now()),
+            last_activity: Mutex::new(rt::now()),
         }
     }
 
@@ -92,7 +93,7 @@ impl PendingOpen {
             bytes_done,
             bytes_total,
         });
-        *self.last_activity.lock_ignore_poison() = Instant::now();
+        *self.last_activity.lock_ignore_poison() = rt::now();
     }
 
     /// The pull's latest progress, or `None` while nothing is being pulled.
@@ -102,7 +103,7 @@ impl PendingOpen {
 
     /// How long since the open started or last recorded bytes.
     pub fn idle_for(&self) -> Duration {
-        self.last_activity.lock_ignore_poison().elapsed()
+        rt::since(*self.last_activity.lock_ignore_poison())
     }
 
     /// The error an abandoned open answers with, or `None` while someone still wants it.

@@ -6,6 +6,7 @@
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
 pub(crate) mod analytics;
+mod bridge;
 mod byte_seek;
 pub mod content_kind;
 pub mod encoding;
@@ -38,6 +39,7 @@ mod session_store;
 mod source;
 mod volume_source;
 pub mod watcher;
+mod worker;
 
 #[cfg(test)]
 mod analytics_test;

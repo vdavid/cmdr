@@ -9,9 +9,10 @@
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use cmdr_fs::deadline::StallWatch;
+use cmdr_fs::rt::{self, Instant};
 use serde::{Deserialize, Serialize};
 
 use super::ViewerError;
@@ -134,14 +135,14 @@ impl ReadProgress {
     pub(super) fn new() -> Self {
         Self {
             done: AtomicU64::new(0),
-            last_news: Mutex::new(Instant::now()),
+            last_news: Mutex::new(rt::now()),
             given_up: AtomicBool::new(false),
         }
     }
 
     fn note(&self, bytes: u64) {
         self.done.fetch_add(bytes, Ordering::SeqCst);
-        *self.last_news.lock_ignore_poison() = Instant::now();
+        *self.last_news.lock_ignore_poison() = rt::now();
     }
 
     pub(super) fn done(&self) -> u64 {
@@ -160,7 +161,7 @@ pub(super) struct ReadWatch<F> {
 
 impl<F: FnMut(ViewerMediaLoad)> StallWatch<MediaReadFailure> for ReadWatch<F> {
     fn idle_for(&self) -> Duration {
-        self.progress.last_news.lock_ignore_poison().elapsed()
+        rt::since(*self.progress.last_news.lock_ignore_poison())
     }
 
     fn on_poll(&mut self) {

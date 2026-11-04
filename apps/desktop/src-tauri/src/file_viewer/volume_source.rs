@@ -5,7 +5,7 @@
 //! a picture or PDF on any other server renders with no pull.
 //!
 //! The viewer core is sync and runs on blocking threads; each read bridges to the async
-//! volume with `tauri::async_runtime::block_on`, the same bridge `materialize.rs` uses.
+//! volume through `bridge.rs`.
 //! `DETAILS.md` § "Byte sources".
 
 use std::collections::VecDeque;
@@ -48,7 +48,7 @@ impl HeldReader {
 impl Drop for HeldReader {
     fn drop(&mut self) {
         if let Some(reader) = self.0.take() {
-            tauri::async_runtime::spawn(async move {
+            super::bridge::spawn_detached(async move {
                 if let Err(e) = reader.close().await {
                     debug!(
                         "viewer volume source: closing the reader failed: {e}",
@@ -117,7 +117,7 @@ fn open_reader(
     path: &Path,
     way: PositionedRead,
 ) -> Result<Box<dyn VolumeRandomReader>, VolumeError> {
-    tauri::async_runtime::block_on(async {
+    super::bridge::block_on(async {
         match way {
             PositionedRead::Held => volume.open_random_reader(path).await,
             PositionedRead::Ranged => {
@@ -178,7 +178,7 @@ impl VolumeSource {
     /// One positioned read, reopening once on an error: a handle may not survive the
     /// share reconnecting under it.
     fn read_span(&self, reader: &Arc<HeldReader>, offset: u64, len: usize) -> Result<Vec<u8>, ViewerError> {
-        match tauri::async_runtime::block_on(reader.get().read_at(offset, len)) {
+        match super::bridge::block_on(reader.get().read_at(offset, len)) {
             Ok(bytes) => Ok(bytes),
             Err(first) => {
                 debug!(
@@ -187,7 +187,7 @@ impl VolumeSource {
                     first = cmdr_fs::log_error::LogError(&first)
                 );
                 let fresh = self.reopen(reader)?;
-                tauri::async_runtime::block_on(fresh.get().read_at(offset, len)).map_err(|e| map_volume_error(e, None))
+                super::bridge::block_on(fresh.get().read_at(offset, len)).map_err(|e| map_volume_error(e, None))
             }
         }
     }
@@ -296,6 +296,6 @@ pub(super) fn open_on_volume(
 
 /// The file's size now, from the volume's stat.
 pub(super) fn size_on_volume(volume: &Arc<dyn Volume>, path: &Path) -> Result<u64, ViewerError> {
-    let entry = tauri::async_runtime::block_on(volume.get_metadata(path)).map_err(|e| map_volume_error(e, None))?;
+    let entry = super::bridge::block_on(volume.get_metadata(path)).map_err(|e| map_volume_error(e, None))?;
     Ok(entry.size.unwrap_or(0))
 }

@@ -3,13 +3,13 @@
 //! Opens a file, picks the right backend based on file size, and provides a session-based
 //! API for the frontend. Sessions are cached by ID and cleaned up on close.
 
+use super::worker;
 use cmdr_fs::log_error::LogError;
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, Mutex, RwLock};
-use std::thread;
 use std::time::Duration;
 
 use super::materialize::PreviewTemp;
@@ -498,8 +498,7 @@ fn open_session_core(
 
         // Spawn timeout thread that cancels indexing after INDEXING_TIMEOUT_SECS
         let session_id_for_timeout = session_id.clone();
-        thread::spawn(move || {
-            thread::sleep(Duration::from_secs(INDEXING_TIMEOUT_SECS));
+        worker::after(Duration::from_secs(INDEXING_TIMEOUT_SECS), move || {
             // If still indexing (flag not already set), cancel it
             if !cancel_for_timeout.load(Ordering::Relaxed) {
                 debug!(
@@ -528,7 +527,7 @@ fn open_session_core(
         // from the watcher's point of view; any append that arrives during the
         // window is queued in `pending_grew` and consumed by the swap.
         let encoding_for_upgrade = detected_encoding;
-        thread::spawn(move || {
+        worker::spawn(move || {
             match LineIndexBackend::open_source(&opened_for_indexer, encoding_for_upgrade, &cancel_for_indexer) {
                 Ok(new_backend) => {
                     // Test-only gate: park with the scan finished but the swap
@@ -734,15 +733,15 @@ fn spawn_search_worker(
     let watchdog_cancel = cancel.clone();
     let watchdog_status = status.clone();
 
-    thread::spawn(move || {
-        let watchdog_handle = thread::spawn(move || run_search_watchdog(watchdog_cancel, watchdog_status));
+    worker::spawn(move || {
+        let watchdog_handle = worker::spawn(move || run_search_watchdog(watchdog_cancel, watchdog_status));
 
         // Use ByteSeekBackend for streaming search (low memory, works on any file)
         let backend = match ByteSeekBackend::open_source(&file, encoding) {
             Ok(b) => b,
             Err(_) => {
                 finalize_search_status(&status, &cancel, /*errored=*/ true);
-                let _ = watchdog_handle.join();
+                watchdog_handle.join();
                 return;
             }
         };
@@ -756,7 +755,7 @@ fn spawn_search_worker(
         finalize_search_status(&status, &cancel, /*errored=*/ result.is_err());
         // Joining the watchdog is best-effort; it exits as soon as it sees a
         // non-Running status (which finalize_search_status just wrote).
-        let _ = watchdog_handle.join();
+        watchdog_handle.join();
     });
 }
 
@@ -804,17 +803,17 @@ pub(super) const SEARCH_WATCHDOG_BUDGET: Duration = Duration::from_secs(1);
 /// scheduling delay) in the worst case even for runaway-regex paths where the
 /// inner `iter.next()` call doesn't observe the per-match cancel.
 pub(super) fn run_search_watchdog(cancel: Arc<AtomicBool>, status: Arc<Mutex<SearchStatus>>) {
-    let mut cancel_seen_at: Option<std::time::Instant> = None;
+    let mut cancel_seen_at: Option<cmdr_fs::rt::Instant> = None;
     loop {
-        thread::sleep(SEARCH_WATCHDOG_POLL);
+        std::thread::sleep(SEARCH_WATCHDOG_POLL);
         // Cheap check first; bail out if the worker is done.
         let still_running = matches!(*status.lock_ignore_poison(), SearchStatus::Running);
         if !still_running {
             return;
         }
         if cancel.load(Ordering::Relaxed) {
-            let started = cancel_seen_at.get_or_insert_with(std::time::Instant::now);
-            if started.elapsed() >= SEARCH_WATCHDOG_BUDGET {
+            let started = *cancel_seen_at.get_or_insert_with(cmdr_fs::rt::now);
+            if cmdr_fs::rt::since(started) >= SEARCH_WATCHDOG_BUDGET {
                 let mut guard = status.lock_ignore_poison();
                 if matches!(*guard, SearchStatus::Running) {
                     *guard = SearchStatus::Cancelled;
@@ -1288,7 +1287,7 @@ pub fn set_encoding(session_id: &str, new_encoding: FileEncoding) -> Result<(), 
 
     let session_id_clone = session_id.to_string();
     let cancel_for_thread = cancel.clone();
-    thread::spawn(move || {
+    worker::spawn(move || {
         #[cfg(test)]
         let _exit_guard = RebuildExitGuard;
         #[cfg(test)]
@@ -1423,7 +1422,7 @@ pub fn set_tail_mode(session_id: &str, enabled: bool) -> Result<(), ViewerError>
     if enabled {
         let origin = session.origin.clone();
         let session_id = session_id.to_string();
-        thread::spawn(move || catch_up_on_tail_enable(&session_id, &origin));
+        worker::spawn(move || catch_up_on_tail_enable(&session_id, &origin));
     }
     Ok(())
 }
@@ -1506,7 +1505,7 @@ fn reopen_backend(
 /// channel disconnects; the subscription's `Drop` then unregisters the path from
 /// the shared singleton.
 fn spawn_watcher_manager(session_id: String, path: PathBuf, stop: Arc<AtomicBool>) {
-    thread::spawn(move || {
+    worker::spawn(move || {
         // `close_session` may have run before this thread got scheduled; skip
         // the blocking subscribe entirely in that case (nothing registered yet,
         // so nothing to unregister).

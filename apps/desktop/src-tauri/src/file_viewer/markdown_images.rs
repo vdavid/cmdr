@@ -202,7 +202,7 @@ impl DeferredMedia for RemoteImage {
             return None;
         }
         self.fetch.get_or_fetch(|watch| {
-            let downloaded = tauri::async_runtime::block_on(download(&self.url, IMAGE_CAP_BYTES, watch, &self.closed))
+            let downloaded = super::bridge::block_on(download(&self.url, IMAGE_CAP_BYTES, watch, &self.closed))
                 .inspect_err(|e| debug!(target: "cmdr_lib::file_viewer", "remote markdown image not fetched: {e}"))
                 .ok()?;
             let name = format!("image.{}", downloaded.ext);
