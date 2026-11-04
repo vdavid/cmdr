@@ -2186,6 +2186,174 @@
     "unresolvedScopes": [],
     "hiddenByExcludes": 0
   },
+  "home_bare_tilde_scope": {
+    "entries": [
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "~",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "~",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      }
+    ],
+    "totalCount": 2,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "home_only_prefixes_a_folder_name": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 5,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "home_parent_paths_unscoped": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "~",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "~",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 5,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "home_tilde_scope": {
+    "entries": [
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "~/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "~/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      }
+    ],
+    "totalCount": 2,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
   "limit_past_the_ceiling": {
     "entries": [
       {

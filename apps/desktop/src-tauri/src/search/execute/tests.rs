@@ -10,6 +10,7 @@ use crate::search::engine;
 use crate::search::index::{ArenaBuilder, SearchIndex};
 use crate::search::live::CoverageKind;
 use crate::search::ranking::ImportanceWeights;
+use crate::search::source::ResolvedScope;
 use crate::search::types::{PatternType, SearchResultEntry};
 use cmdr_index::ROOT_VOLUME_ID;
 
@@ -68,6 +69,7 @@ fn ranked(index: &SearchIndex, query: &SearchQuery, prefix: &str) -> Vec<SearchR
     engine::search_ranked(
         index,
         query,
+        &ResolvedScope::Whole,
         &SearchContext::for_test(&ImportanceWeights::empty()),
         prefix,
         None,
@@ -177,6 +179,7 @@ fn count_only_returns_an_exact_total_and_no_rows() {
     } = engine::search_ranked(
         &vol,
         &query,
+        &ResolvedScope::Whole,
         &SearchContext::for_test(&ImportanceWeights::empty()),
         "",
         None,

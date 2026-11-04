@@ -1,8 +1,7 @@
-//! Operations on search types: scope parsing, formatting, query summarization,
-//! directory size enrichment, and system directory exclusions.
+//! Operations on search types: scope parsing and scope paths, formatting, query
+//! summarization, and system directory exclusions.
 
-use cmdr_index::ReadPool;
-use cmdr_index::store;
+use std::borrow::Cow;
 
 use super::types::{PatternType, SearchQuery};
 
@@ -327,51 +326,31 @@ pub(crate) fn split_scope_segments(input: &str) -> Vec<String> {
     segments
 }
 
-// ── Include path resolution ──────────────────────────────────────────
+// ── Scope paths ──────────────────────────────────────────────────────
 
-/// Canonicalize a scope include path (resolve symlinks) so it matches the index's
-/// stored REAL paths, without wedging on a hung mount.
+/// Expand a leading `~` (`~` alone or `~/…`) against `home`, the first step of a
+/// scope path's pipeline (`~`, then the host's `realpath`, then the mount strip).
 ///
-/// The scanner walks the real filesystem, so the index stores canonical paths (on
-/// macOS `/tmp` is a symlink, recorded as `/private/tmp`), while panes and agents
-/// report the symlinked form (`scope:/tmp/x`). A literal prefix match then resolves
-/// nothing → silent empty results. We canonicalize each include path ONCE here (a
-/// handful of paths, off the hot per-entry scan loop) before the DB walk.
-///
-/// The tilde is expanded FIRST, and that half is load-bearing: a pane sitting in
-/// the home folder reports its path as `~`, and since the default scope became
-/// "the current folder" that string is the include path a plain search runs with.
-/// `realpath` doesn't expand it (it's a shell convention), so unexpanded it
-/// resolves to nothing in the index and to `/~` in a walk — an ordinary search
-/// from the home folder said "the index doesn't cover this folder" and then
-/// walked nothing. ❌ Don't move the expansion downstream: both halves of a live
-/// search take the scope through here.
-///
-/// `fs::canonicalize` issues `realpath`, which blocks indefinitely on a dead network
-/// mount, so it runs on a detached worker thread under a 2 s deadline (the sync
-/// analog of `blocking_with_timeout`; `resolve_include_paths` is sync). On timeout,
-/// an error, or a non-existent path we keep the literal — today's best-effort
-/// behavior, so an offline/unmounted-index scope still gets its literal match.
-pub(crate) fn canonicalize_scope_path(path: &str) -> String {
-    let path = &crate::commands::file_system::expand_tilde(path);
-    let owned = path.to_string();
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        let _ = tx.send(std::fs::canonicalize(&owned));
-    });
-    match rx.recv_timeout(std::time::Duration::from_secs(2)) {
-        Ok(Ok(canonical)) => canonical.to_string_lossy().into_owned(),
-        _ => path.to_string(),
+/// A pane sitting in the home folder reports its path as `~`, and since the default
+/// scope became "the current folder" that string is the include path a plain search
+/// runs with. `realpath` doesn't expand it (it's a shell convention), so unexpanded
+/// it resolves to nothing in the index and to `/~` in a walk. ❌ Don't move the
+/// expansion downstream. A `~` anywhere else is an ordinary character, and with no
+/// home the path comes back as it was.
+pub fn expand_tilde<'a>(path: &'a str, home: Option<&str>) -> Cow<'a, str> {
+    match home {
+        Some(home) if path == "~" || path.starts_with("~/") => Cow::Owned(path.replacen('~', home, 1)),
+        _ => Cow::Borrowed(path),
     }
 }
 
 /// Map an absolute scope path into a volume's index path space (mount-relative),
-/// so `store::resolve_path` — which walks component-by-component from the index
-/// `ROOT_ID` — hits. `root` (mount_root `None`) is already index-rooted, so the
-/// path passes through. A mount-rooted volume's index `ROOT_ID` is its mount root,
-/// so the mount prefix is stripped: `/Volumes/naspi/sub` → `/sub`, the mount root
-/// itself → `/`. A path outside the mount root yields `None` (don't mis-root it).
-fn to_index_relative(path: &str, mount_root: Option<&str>) -> Option<String> {
+/// so a source's path lookup, which walks component by component from the index
+/// root, hits. A `/`-rooted volume (`mount_root` `None`) passes the path through.
+/// A mount-rooted volume's index root is its mount root, so the mount prefix is
+/// stripped: `/Volumes/naspi/sub` → `/sub`, the mount root itself → `/`. A path
+/// outside the mount root yields `None` (don't mis-root it).
+pub(crate) fn to_index_relative(path: &str, mount_root: Option<&str>) -> Option<String> {
     let Some(root) = mount_root else {
         return Some(path.to_string());
     };
@@ -380,97 +359,6 @@ fn to_index_relative(path: &str, mount_root: Option<&str>) -> Option<String> {
     }
     let rest = path.strip_prefix(root)?;
     rest.starts_with('/').then(|| rest.to_string())
-}
-
-/// The outcome of resolving a volume's scope include paths against its index.
-pub(crate) struct ScopeResolution {
-    /// Entry IDs for the engine's ancestor-walk include filter. EMPTY means "no
-    /// restriction — search the whole volume" (the caller sets `include_path_ids` to
-    /// `None`); `[i64::MIN]` (an impossible id) means "restrict to nothing" so a
-    /// scope that resolved to zero real folders returns no results rather than
-    /// silently searching everything.
-    pub include_ids: Vec<i64>,
-    /// Original scope paths that routed to this volume but weren't found in its index
-    /// (a typo, a since-deleted folder, or a path outside the mount root). Surfaced
-    /// to the caller as an honest signal instead of a silent empty result.
-    pub unresolved: Vec<String>,
-}
-
-/// Resolve a volume's scope include paths to entry IDs against that volume's index.
-///
-/// Canonicalizes each path (symlink resolution, off the hot loop), maps it into the
-/// volume's index path space (mount-relative for a NAS/MTP volume via
-/// [`to_index_relative`]), and looks it up via the volume's pool. Three outcomes per
-/// path, and the whole result collapses accordingly:
-///
-/// - **The mount root itself** (`/Volumes/naspi`, stripped to `/`) means the WHOLE
-///   VOLUME — routing already scoped to this volume, so there's no sub-restriction.
-///   Any such path makes `include_ids` empty (no filter), regardless of the others.
-/// - **A resolvable subpath** contributes its entry id.
-/// - **An unresolvable path** (outside the mount root, or a folder not in the index)
-///   goes to `unresolved` for honest reporting. If NONE of the non-whole-volume
-///   paths resolve, `include_ids` is `[i64::MIN]` so the engine matches nothing.
-///
-/// ❌ A lookup that can't be READ is an error, never "unresolved": that reads as a
-/// typo, and a pool that hands out no connection would otherwise answer with nothing
-/// at all.
-pub(crate) fn resolve_include_scope(
-    paths: &[String],
-    pool: &ReadPool,
-    mount_root: Option<&str>,
-) -> Result<ScopeResolution, String> {
-    let mut whole_volume = false;
-    let mut unresolved: Vec<String> = Vec::new();
-    // (original path, index-relative path) for the subpaths that need a DB lookup.
-    let mut to_resolve: Vec<(String, String)> = Vec::new();
-
-    for original in paths {
-        // Canonicalize ONCE (resolve symlinks like /tmp -> /private/tmp) so the prefix
-        // walk matches the index's stored real paths. Off the hot scan loop.
-        match to_index_relative(&canonicalize_scope_path(original), mount_root) {
-            Some(index_path) if index_path == "/" => whole_volume = true,
-            Some(index_path) => to_resolve.push((original.clone(), index_path)),
-            None => unresolved.push(original.clone()), // outside this volume's mount root
-        }
-    }
-
-    if whole_volume {
-        // The whole volume is in scope, so every subpath is already covered - no
-        // include restriction and nothing to report as unresolved.
-        return Ok(ScopeResolution {
-            include_ids: Vec::new(),
-            unresolved: Vec::new(),
-        });
-    }
-
-    let mut include_ids: Vec<i64> = Vec::new();
-    pool.with_conn(|conn| {
-        for (original, index_path) in &to_resolve {
-            match store::resolve_path(conn, index_path)
-                .map_err(|e| format!("Couldn't resolve the search scope: {e}"))?
-            {
-                Some(id) => include_ids.push(id),
-                None => {
-                    log::debug!(
-                        "search: include path not found in index: {index_path}",
-                        index_path = cmdr_fs::log_private::LogPrivate::dir_path(index_path)
-                    );
-                    unresolved.push(original.clone());
-                }
-            }
-        }
-        Ok::<(), String>(())
-    })
-    .map_err(|e| format!("Couldn't resolve the search scope: {e}"))??;
-
-    if include_ids.is_empty() {
-        // Nothing resolved (all typos / not in this index): match nothing.
-        include_ids.push(i64::MIN);
-    }
-    Ok(ScopeResolution {
-        include_ids,
-        unresolved,
-    })
 }
 
 #[cfg(test)]

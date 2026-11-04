@@ -14,7 +14,6 @@ use cmdr_index::{CoverageDimension, CoverageToken};
 
 use super::Target;
 use crate::search::live::CoverageKind;
-use crate::search::query;
 use crate::search::volumes::{self, VolumeLoad};
 
 /// Directories nothing is going to walk, split by WHOSE refusal it was: the three
@@ -123,7 +122,7 @@ pub(super) fn coverage_scopes(target: &Target) -> Vec<String> {
     target
         .include_paths
         .iter()
-        .map(|path| query::canonicalize_scope_path(path))
+        .map(|path| crate::search::index_source::canonicalize_scope_path(path))
         .collect()
 }
 

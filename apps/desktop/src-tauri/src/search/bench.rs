@@ -50,6 +50,7 @@ use super::context::SearchContext;
 use super::engine::search_ranked;
 use super::index::{ArenaBuilder, SearchEntry, SearchIndex, load_search_index};
 use super::ranking::ImportanceWeights;
+use super::source::ResolvedScope;
 use super::types::{PatternType, SearchQuery};
 
 // ── Fixtures ─────────────────────────────────────────────────────────
@@ -199,6 +200,7 @@ fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, patter
     let total = search_ranked(
         index,
         &query(pattern, pattern_type.clone(), true),
+        &ResolvedScope::Whole,
         &SearchContext::for_test(&empty),
         "",
         None,
@@ -211,6 +213,7 @@ fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, patter
     let _ = search_ranked(
         index,
         &query(pattern, pattern_type.clone(), false),
+        &ResolvedScope::Whole,
         &SearchContext::for_test(&empty),
         "",
         None,
@@ -222,6 +225,7 @@ fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, patter
     let _ = search_ranked(
         index,
         &query(pattern, pattern_type, false),
+        &ResolvedScope::Whole,
         &SearchContext::for_test(weights),
         "",
         None,
@@ -436,9 +440,16 @@ fn bench_arena_scan() {
         let mut total = 0;
         for _ in 0..repeats {
             let t = Instant::now();
-            total = search_ranked(&index, q, &SearchContext::for_test(&empty), "", None)
-                .expect("count-only search should succeed")
-                .total_count;
+            total = search_ranked(
+                &index,
+                q,
+                &ResolvedScope::Whole,
+                &SearchContext::for_test(&empty),
+                "",
+                None,
+            )
+            .expect("count-only search should succeed")
+            .total_count;
             runs.push(t.elapsed());
         }
         runs.sort_unstable();
@@ -504,9 +515,16 @@ fn bench_query_allocations() {
     };
     let allocations = |q: &SearchQuery| {
         allocations_on_pool(rayon::current_num_threads(), || {
-            search_ranked(&index, q, &SearchContext::for_test(&weights), "", None)
-                .expect("search should succeed")
-                .total_count
+            search_ranked(
+                &index,
+                q,
+                &ResolvedScope::Whole,
+                &SearchContext::for_test(&weights),
+                "",
+                None,
+            )
+            .expect("search should succeed")
+            .total_count
         })
     };
     for (label, pattern) in [
@@ -532,8 +550,15 @@ fn bench_query_allocations() {
         let mut runs: Vec<std::time::Duration> = (0..repeats)
             .map(|_| {
                 let t = Instant::now();
-                search_ranked(&index, &full, &SearchContext::for_test(&weights), "", None)
-                    .expect("search should succeed");
+                search_ranked(
+                    &index,
+                    &full,
+                    &ResolvedScope::Whole,
+                    &SearchContext::for_test(&weights),
+                    "",
+                    None,
+                )
+                .expect("search should succeed");
                 t.elapsed()
             })
             .collect();

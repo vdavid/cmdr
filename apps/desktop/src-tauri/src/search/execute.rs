@@ -34,14 +34,13 @@
 //! `live::ResultStream` is insurance against a race rather than the mechanism.
 
 use crate::index_host::index;
-use cmdr_index::store::IndexStore;
-use cmdr_index::{ROOT_VOLUME_ID, ReadPool};
+use cmdr_index::ROOT_VOLUME_ID;
 
 use super::context::{NameRules, SearchContext};
-use super::engine;
-use super::query;
+use super::index_source::{IndexSource, scope_pairs};
 use super::ranking::ImportanceWeights;
-use super::types::{SearchQuery, SearchResult, SearchResultEntry, SearchSort};
+use super::source::{CoveredHalf, search_covered};
+use super::types::{SearchQuery, SearchResult};
 use super::volumes::{self, LoadedVolume, VolumeLoad};
 
 mod coverage;
@@ -191,72 +190,19 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
     })
 }
 
-/// What one volume's index can answer for a query, on its own.
-///
-/// The whole of a [`run_blocking`] result, and the covered half of a live run —
-/// the same pass either way, which is what keeps "indexed or not" a speed
-/// difference rather than a behavioral one.
-struct CoveredHalf {
-    entries: Vec<SearchResultEntry>,
-    total: u32,
-    unresolved_scopes: Vec<String>,
-    /// Matches the exclusion rules kept out of `total` (`engine::Ranked`).
-    hidden_by_excludes: u32,
-}
-
-/// Run the engine over `loaded` and finish the result: resolve the scope to entry
-/// ids, fill directory sizes from `dir_stats`, apply the size post-filter, and cut
-/// the over-fetch back to `limit`.
+/// Run one volume's search through the seam: the loaded volume answers as an
+/// [`IndexSource`], and the scope paths go in beside their canonical forms. The
+/// covered half of a live run is this same pass, which is what keeps "indexed or
+/// not" a speed difference rather than a behavioral one.
 fn search_covered_half(
     query: &SearchQuery,
     target: &Target,
     loaded: &LoadedVolume,
     ctx: &SearchContext<'_>,
 ) -> Result<CoveredHalf, String> {
-    let mut vq = query.clone();
-    let unresolved_scopes = if target.include_paths.is_empty() {
-        vq.include_paths = None;
-        vq.include_path_ids = None;
-        Vec::new()
-    } else {
-        let resolution =
-            query::resolve_include_scope(&target.include_paths, &loaded.pool, loaded.mount_root.as_deref())?;
-        // Empty ids ⇒ a mount-root ("whole volume") scope: drop the restriction
-        // entirely (routing already scoped to this volume). Otherwise apply it.
-        if resolution.include_ids.is_empty() {
-            vq.include_paths = None;
-            vq.include_path_ids = None;
-        } else {
-            vq.include_paths = Some(target.include_paths.clone());
-            vq.include_path_ids = Some(resolution.include_ids);
-        }
-        resolution.unresolved
-    };
-
-    let prefix = loaded.mount_root.as_deref().unwrap_or("");
-    let dir_sizes = dir_sizes_for(&vq, &loaded.pool)?;
-    let engine::Ranked {
-        mut entries,
-        total_count: total,
-        hidden_by_excludes,
-    } = engine::search_ranked(&loaded.index, &vq, ctx, prefix, dir_sizes.as_ref())?;
-
-    if query.count_only {
-        // The engine's total is already exact — directory size filters included, since
-        // `dir_sizes` applied them inside the scan — and count-only returns no rows.
-        entries.clear();
-    } else {
-        // The rows are the right rows; they just don't carry a directory's recursive
-        // size yet, because that isn't in the entries table.
-        fill_dir_sizes(&mut entries, &loaded.pool)?;
-    }
-
-    Ok(CoveredHalf {
-        entries,
-        total,
-        unresolved_scopes,
-        hidden_by_excludes,
-    })
+    let source = IndexSource(loaded);
+    let scope = scope_pairs(&target.include_paths, ctx.home_dir);
+    search_covered(&source, &source, query, &scope, ctx).map_err(|e| e.to_string())
 }
 
 /// What a desktop search runs under: this machine's name rules and home folder,
@@ -285,70 +231,6 @@ fn uncovered_result(target: Target) -> SearchResult {
         target_volume_id: target.volume_id,
         hidden_by_excludes: 0,
     }
-}
-
-/// Read the directory sizes this query needs BEFORE the engine ranks anything, or
-/// `None` when it needs none.
-///
-/// A directory's size lives in `dir_stats`, so the arena scan can't judge it. Doing
-/// it afterwards, over the ranked top-k, is what made `sizeMin: 50 GB` miss a 1.7 TB
-/// `~/Library`: it lost a recency-weighted ranking against hundreds of thousands of
-/// freshly-touched folders long before anything looked at its size. Handing the
-/// passing set in makes both the filter and `total_count` exact.
-///
-/// Built only for a query that filters or sorts directories by size, because it's a
-/// full scan of `dir_stats` (deliberately unindexed on size — see
-/// `IndexStore::dir_sizes_in_range`).
-fn dir_sizes_for(query: &SearchQuery, pool: &ReadPool) -> Result<Option<engine::DirSizes>, String> {
-    let dirs_included = query.is_directory != Some(false);
-    let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
-    let sorts_by_size = query.sort_by == Some(SearchSort::Size);
-    if !dirs_included || !(has_size_filter || sorts_by_size) {
-        return Ok(None);
-    }
-    // Without a size filter the range is unbounded, so this is every directory:
-    // the map is then a SORT KEY, and a directory missing from it is unknown-sized
-    // rather than filtered out.
-    let (min, max) = (query.min_size, query.max_size);
-    // ❌ Never fall back to `None` here. The engine reads a missing map as "no
-    // directory size filter to apply", so a failed read would answer with every
-    // matching directory regardless of size — a wrong answer wearing a right one's
-    // clothes. Failing is the honest outcome.
-    let rows = pool
-        .with_conn(|conn| IndexStore::dir_sizes_in_range(conn, min, max))
-        .map_err(|e| format!("Couldn't read directory sizes: {e}"))?
-        .map_err(|e| format!("Couldn't read directory sizes: {e}"))?;
-    Ok(Some(engine::DirSizes::new(rows.into_iter().collect(), has_size_filter)))
-}
-
-/// Fill directory entries' sizes from a volume's `dir_stats` (batch lookup by entry
-/// id). Files already carry their size from the entries table; only directories
-/// reach here sizeless.
-///
-/// ❌ A read that fails fails the search, never ships the rows sizeless: a folder
-/// with no size reads as "unknown" in the dialog, so a broken read would answer
-/// confidently and wrongly, the same trap [`dir_sizes_for`] refuses.
-fn fill_dir_sizes(entries: &mut [SearchResultEntry], pool: &ReadPool) -> Result<(), String> {
-    let dir_indices: Vec<usize> = entries
-        .iter()
-        .enumerate()
-        .filter(|(_, e)| e.is_directory)
-        .map(|(i, _)| i)
-        .collect();
-    if dir_indices.is_empty() {
-        return Ok(());
-    }
-    let entry_ids: Vec<i64> = dir_indices.iter().map(|&i| entries[i].entry_id).collect();
-    let stats_batch = pool
-        .with_conn(|conn| IndexStore::get_dir_stats_batch_by_ids(conn, &entry_ids))
-        .map_err(|e| format!("Couldn't read directory sizes: {e}"))?
-        .map_err(|e| format!("Couldn't read directory sizes: {e}"))?;
-    for (i, &idx) in dir_indices.iter().enumerate() {
-        if let Some(Some(stats)) = stats_batch.get(i) {
-            entries[idx].size = Some(stats.recursive_logical_size);
-        }
-    }
-    Ok(())
 }
 
 #[cfg(test)]

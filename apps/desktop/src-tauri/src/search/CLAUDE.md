@@ -4,8 +4,8 @@ In-memory filename search + AI query translation. **One volume per search, enfor
 ❌ no fan-out, the only way a search can silently omit a drive. Scope routes the volume (or the caller placed it: `run_live_collected`'s `on_volume`); unscoped means boot volume.
 
 `execute.rs` routes index/live search over `execute/coverage.rs`; `live.rs` owns runs and `ResultStream`
-(`live/CLAUDE.md`). `engine.rs` scans `index.rs`'s per-volume arena; matcher/excludes/ranking judge rows; types/query
-hold data/operations; `history.rs` owns recents; `ai/` translates NL (`ai/CLAUDE.md`).
+(`live/CLAUDE.md`). `source.rs` is the seam (`IndexSource` fills it); `engine.rs` scans `index.rs`'s arena; matcher/excludes/ranking judge rows; types/query
+hold data; `ai/` translates NL (`ai/CLAUDE.md`).
 
 ## Must-knows
 

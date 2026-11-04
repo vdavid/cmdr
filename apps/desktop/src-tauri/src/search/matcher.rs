@@ -32,8 +32,8 @@
 //! ## What is deliberately NOT here
 //!
 //! - **Directory size filters.** A directory's size lives in `dir_stats`, not in the
-//!   entries table, so it's written over the ranked results afterwards
-//!   (`execute.rs::fill_dir_sizes`, then `filter_dirs_by_size`). The size predicate
+//!   entries table, so it arrives through the source (`source.rs`: the passing set
+//!   before the scan, the returned folders' sizes after it). The size predicate
 //!   here applies to FILES only, exactly as the engine always has. One matcher does
 //!   not cover directory sizes, and over live-walked ground `dir_stats` is absent or
 //!   a lower bound by construction (Accepted difference 5).

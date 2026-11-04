@@ -29,7 +29,6 @@ use crate::search::live::{
     SearchRunCoverage, SearchRunError, WalkEnding, WalkJudge,
 };
 use crate::search::matcher::{CompiledQuery, Evaluator};
-use crate::search::query;
 use crate::search::types::SearchQuery;
 use crate::search::volumes::{self, LoadedVolume, VolumeLoad};
 
@@ -305,7 +304,7 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         unresolved_scopes: match walk {
             WalkEnding::Completed => unresolved_scopes
                 .iter()
-                .filter(|scope| !walked_scopes.contains(&query::canonicalize_scope_path(scope)))
+                .filter(|scope| !walked_scopes.contains(&crate::search::index_source::canonicalize_scope_path(scope)))
                 .cloned()
                 .collect(),
             _ => unresolved_scopes.clone(),

@@ -33,6 +33,7 @@ use crate::search::context::{NameRules, SearchContext};
 use crate::search::index::load_search_index;
 use crate::search::live::events::CollectorSearchEventSink;
 use crate::search::live::{CoverageKind, LiveRun, ResultStream, SearchPhase, SearchRunCoverage, WalkEnding};
+use crate::search::types::SearchSort;
 
 use super::super::live_run::covered_half_for_run;
 
@@ -264,13 +265,15 @@ fn golden_run(
     loaded: &LoadedVolume,
     weights: &ImportanceWeights,
 ) -> Result<Value, String> {
-    golden_run_under(NameRules::host(), query, target, loaded, weights)
+    golden_run_under(NameRules::host(), None, query, target, loaded, weights)
 }
 
 /// [`golden_run`] under given name rules, so one platform's goldens can be checked on
-/// another. No home folder: the corpus lives under none.
+/// another, and with a home folder for the `~` cases (the rest pass `None`: the
+/// corpus lives under no real home).
 fn golden_run_under(
     rules: NameRules,
+    home_dir: Option<&str>,
     query: &SearchQuery,
     target: &Target,
     loaded: &LoadedVolume,
@@ -278,7 +281,7 @@ fn golden_run_under(
 ) -> Result<Value, String> {
     let ctx = SearchContext {
         rules,
-        home_dir: None,
+        home_dir,
         weights,
     };
     let half = search_covered_half(query, target, loaded, &ctx)?;
@@ -644,6 +647,25 @@ fn live_cases() -> Vec<(&'static str, Volume, SearchQuery)> {
     ]
 }
 
+/// The `~` cases: a home folder inside the corpus, so a `~` scope expands against
+/// it and result rows under it read `~/…`.
+fn home_cases() -> Vec<(&'static str, &'static str, SearchQuery)> {
+    vec![
+        (
+            "home_tilde_scope",
+            "/cmdr-golden/Projects",
+            scoped(named("*.rs"), &["~/cmdr"]),
+        ),
+        (
+            "home_bare_tilde_scope",
+            "/cmdr-golden/Projects",
+            scoped(named("report"), &["~"]),
+        ),
+        ("home_parent_paths_unscoped", "/cmdr-golden/Projects", named("report")),
+        ("home_only_prefixes_a_folder_name", "/cmdr-golden/Pro", named("report")),
+    ]
+}
+
 fn target_for(volume: Volume, query: &SearchQuery) -> Target {
     let include_paths = query.include_paths.clone().unwrap_or_default();
     Target {
@@ -691,8 +713,17 @@ fn answers_under(rules: NameRules) -> BTreeMap<String, Value> {
         let answer = if rules == NameRules::host() {
             golden_run(&query, &target, loaded, weights)
         } else {
-            golden_run_under(rules, &query, &target, loaded, weights)
+            golden_run_under(rules, None, &query, &target, loaded, weights)
         };
+        actual.insert(
+            name.to_string(),
+            answer.unwrap_or_else(|message| json!({ "error": message })),
+        );
+    }
+    for (name, home, query) in home_cases() {
+        let (loaded, weights) = volume(Volume::Root);
+        let target = target_for(Volume::Root, &query);
+        let answer = golden_run_under(rules, Some(home), &query, &target, loaded, weights);
         actual.insert(
             name.to_string(),
             answer.unwrap_or_else(|message| json!({ "error": message })),

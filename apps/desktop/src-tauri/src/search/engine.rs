@@ -18,6 +18,7 @@ use super::index::{ARENA_ROOT_ID, SearchIndex};
 use super::matcher::{Candidate, CompileError, CompiledQuery, Evaluator};
 use super::query::summarize_query_for_diagnostics;
 use super::ranking;
+use super::source::ResolvedScope;
 use super::types::{SearchQuery, SearchResultEntry, SearchSort};
 
 // ── Scope filter (pre-resolved for the hot loop) ─────────────────────
@@ -161,31 +162,23 @@ enum ScopeVerdict {
     OutsideRoots,
 }
 
-/// Pre-resolve scope filter data from the query.
+/// Pre-resolve scope filter data from the resolved scope and the query's exclusions.
 ///
 /// `case_insensitive` comes from the compiled query rather than being derived again:
 /// excluding under a different alphabet than the pattern matched with is the kind of
 /// silent disagreement `matcher.rs` exists to prevent.
 fn prepare_scope_filter(
     query: &SearchQuery,
+    scope: &ResolvedScope,
     case_insensitive: bool,
     ctx: &SearchContext<'_>,
     path_prefix: &str,
 ) -> Result<ScopeFilter, CompileError> {
-    // Use pre-resolved include path IDs (resolved via SQLite before search())
-    let include_ids = if let Some(ref ids) = query.include_path_ids {
-        if ids.is_empty() {
-            None
-        } else {
-            Some(Arc::new(ids.iter().copied().collect::<HashSet<i64>>()))
-        }
-    } else if query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
-        // include_paths present but include_path_ids not set (this shouldn't happen).
-        // Resolve was expected to happen at the call site before search().
-        log::warn!("search: include_paths present but include_path_ids not pre-resolved; scope will be ignored");
-        None
-    } else {
-        None
+    let include_ids = match scope {
+        ResolvedScope::Whole => None,
+        ResolvedScope::Ids(ids) => Some(Arc::new(ids.iter().copied().collect::<HashSet<i64>>())),
+        // An include set holding no id admits no entry: every one is outside the roots.
+        ResolvedScope::Nothing => Some(Arc::new(HashSet::new())),
     };
 
     Ok(ScopeFilter {
@@ -214,7 +207,12 @@ pub(crate) fn search(
     query: &SearchQuery,
     weights: &ranking::ImportanceWeights,
 ) -> Result<super::types::SearchResult, String> {
-    let ranked = search_ranked(index, query, &SearchContext::for_test(weights), "", None)?;
+    let scope = match &query.include_path_ids {
+        Some(ids) if !ids.is_empty() => ResolvedScope::Ids(ids.clone()),
+        _ => ResolvedScope::Whole,
+    };
+    let ranked =
+        search_ranked(index, query, &scope, &SearchContext::for_test(weights), "", None).map_err(|e| e.to_string())?;
     Ok(super::types::SearchResult {
         entries: ranked.entries,
         total_count: ranked.total_count,
@@ -284,19 +282,19 @@ pub(crate) struct Ranked {
 pub(crate) fn search_ranked(
     index: &SearchIndex,
     query: &SearchQuery,
+    scope: &ResolvedScope,
     ctx: &SearchContext<'_>,
     path_prefix: &str,
     dir_sizes: Option<&DirSizes>,
-) -> Result<Ranked, String> {
+) -> Result<Ranked, CompileError> {
     let t = cmdr_fs::rt::Instant::now();
 
     // The per-entry predicates, plus the broad-query guard this arena's size earns.
-    let compiled = CompiledQuery::compile(query, Evaluator::Arena { entries: index.len() }, &ctx.rules)
-        .map_err(|e| e.to_string())?;
+    let compiled = CompiledQuery::compile(query, Evaluator::Arena { entries: index.len() }, &ctx.rules)?;
     let case_insensitive = compiled.case_insensitive();
 
     // Pre-resolve scope filter
-    let scope_filter = prepare_scope_filter(query, case_insensitive, ctx, path_prefix).map_err(|e| e.to_string())?;
+    let scope_filter = prepare_scope_filter(query, scope, case_insensitive, ctx, path_prefix)?;
 
     // How many query-matching entries an exclusion rule dropped. Counted with a
     // relaxed atomic rather than a fold, because `collect()` preserves arena order

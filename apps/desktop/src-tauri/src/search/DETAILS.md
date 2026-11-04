@@ -34,23 +34,23 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
 - **Add history only on "Open in pane"**: David's explicit call. The 1000-entry budget stays signal-rich when it tracks
   results worth acting on, not every keystroke-debounced filename search. The gate is a frontend convention, not
   Rust-enforced.
-- **Scope include-paths are canonicalized before the DB walk** (`resolve_include_paths` → `canonicalize_scope_path`):
+- **Scope include-paths are canonicalized before the DB walk** (`index_source::scope_pairs` →
+  `canonicalize_scope_path`):
   the scanner walks the real filesystem, so the index stores canonical paths (`/private/tmp/…`), while panes and agents
   report the symlinked form (`scope:/tmp/…`). Without resolving symlinks first, `store::resolve_path`'s literal
   component walk finds nothing → silent empty results. Canonicalization happens ONCE per include path (a handful),
   outside the hot per-entry scan, on a detached thread under a 2 s deadline (`realpath` blocks on a dead mount, and
-  `resolve_include_paths` is sync — the sync analog of `blocking_with_timeout`); a non-existent / timed-out path keeps
-  its literal so an offline-index scope still gets a best-effort match. Applies to `search`, `ai_search`, and the FE
-  search dialog — all route through the one `resolve_include_paths`.
+  the callers are sync — the sync analog of `blocking_with_timeout`); a non-existent / timed-out path keeps its
+  literal so an offline-index scope still gets a best-effort match. Applies to `search`, `ai_search`, and the FE search
+  dialog — all route through the one `scope_pairs`. The pipeline's order is `~` (`query::expand_tilde`, against the
+  search context's home), then `realpath` (the host's), then the mount strip (`source::resolve_scope`), because an
+  index-relative path can't be canonicalized.
 - **Count-only mode (`SearchQuery.count_only`) trades rows for an exact total, cheaply**: when set,
   `engine::search_ranked` computes `total_count` from the filtered matches but skips ranking, truncation, and per-row
   path materialization (the expensive parts) and returns no rows. The one wrinkle is directory size filters: directory
   sizes live in `dir_stats` (the volume's DB), not the in-memory index, so the pure engine can't size-filter
-  directories. So when a size filter is set AND directories aren't excluded (`is_directory != Some(false)`),
-  `search_ranked` hands the matching directories back in its ranked slice (with the total still counting every match,
-  files already size-filtered), and `run_blocking` fills their sizes via `fill_dir_sizes` then calls
-  `count_only_volume_total`, which subtracts the directories outside the filter. Net: an exact count in every case,
-  materializing only the matching directories (never the -- usually far larger -- file set), and never building rows.
+  directories by itself. The passing set arrives up front (§ Directory size filters), so the scan applies it like
+  any other filter and the count is exact in every case, with no rows built.
   The MCP `search` tool answers a count-only run with an empty `entries`, the number in `matchCount` and
   `matchCountHuman`, and the same typed coverage block every other run carries (`tools/actions/search/result.rs`); the
   dialog shows it as a prominent count instead of the list (`QueryResults` count-only branch).
@@ -280,11 +280,12 @@ A non-root volume's index `ROOT_ID` is its MOUNT ROOT, so it stores mount-relati
 
 - **Read side** — `engine::search_ranked` takes a `path_prefix` (the mount root, empty for root) and PREPENDS it to
   every reconstructed path, so a NAS result reports `/Volumes/naspi/sub/file` and opens in a pane.
-- **Scope side** — `query::resolve_include_scope` STRIPS the mount root from each include path before
-  `store::resolve_path` (which walks from `ROOT_ID`), with two special cases:
+- **Scope side** — `source::resolve_scope` STRIPS the mount root from each include path (`query::to_index_relative`)
+  before the source looks it up (`IndexSource` through `store::resolve_path`, which walks from `ROOT_ID`), with two
+  special cases:
   - **The mount root itself** (`/Volumes/naspi` → stripped to `/`) means the WHOLE VOLUME — routing already scoped to
-    this volume, so there's no sub-restriction. `run_blocking` then leaves `include_path_ids` `None` (search everything
-    in that volume). Without this, the empty strip resolved to nothing and every volume-root scope returned 0.
+    this volume, so there's no sub-restriction: `ResolvedScope::Whole`. Without this, the empty strip resolved to
+    nothing and every volume-root scope returned 0.
   - **A path not found in the volume's index** (a typo, a since-deleted folder, or one outside the mount root) is
     collected into `unresolved` and surfaces as `SearchResult::unresolved_scopes` (see Honesty below), instead of the
     engine silently matching nothing.
@@ -336,8 +337,9 @@ field:
 ### Directory size filters and `sortBy`
 
 A directory's size lives in `dir_stats`, not in the search arena, so the parallel scan can't judge it on its own. The
-answer is `engine::DirSizes`: `execute.rs::dir_sizes_for` reads the passing set (`IndexStore::dir_sizes_in_range`) BEFORE
-the engine runs and hands it in, so the scan filters directories on size like everything else.
+answer is `engine::DirSizes`: `source::dir_sizes_for` reads the passing set (`DirSizeSource::in_range`; on the desktop
+`IndexStore::dir_sizes_in_range`) BEFORE the engine runs and hands it in, so the scan filters directories on size like
+everything else.
 
 **Why the order matters.** Applying it afterwards, to the ranked top-k, answers from a recency-ordered sample instead of
 from the drive: `sizeMin: 50 GB` over a real machine returned four folders and missed a 1.7 TB `~/Library`, because a
@@ -440,7 +442,8 @@ the index alone and says nothing about reporting; `execute/live_run.rs` is the r
    ground needs ("nothing for you to do, Cmdr comes back to it") is a footnote under the two lists, not a third one
    beside them.
 2. **Load the arena** — after step 1, deliberately (below).
-3. **The covered half** — `search_covered_half`, the identical engine pass `run_blocking` runs. The frontier is exactly
+3. **The covered half** — `search_covered_half` (the seam's `source::search_covered` over an `IndexSource`), the
+   identical engine pass `run_blocking` runs. The frontier is exactly
    the ground the arena has nothing to say about, so an unfiltered pass over the scope IS the covered half; nothing
    enumerates covered subtrees.
 4. **Walk the rest** — `Index::cover(volume, frontier, Listing, token)`, called through the drive-release gate
@@ -679,7 +682,7 @@ walk's half of the adapter (`live/walked.rs`: `matches_walked`, `covered_name`) 
 **What stays outside, and why:**
 
 - **Directory size filters.** A directory's size isn't in the entries table; it's written over the ranked results from
-  `dir_stats` afterwards (`execute.rs::fill_dir_sizes`, then `filter_dirs_by_size`). So the matcher's size predicate is
+  `dir_stats` (`source::dir_sizes_for` before the scan, `fill_dir_sizes` after it). So the matcher's size predicate is
   files-only on both paths, and a directory passes a size filter untouched. Dropping directories in the matcher would
   drop them before the only place that knows their size.
 - **The scope filter.** Include roots are arena entry ids and the exclusion check is an ancestor walk through

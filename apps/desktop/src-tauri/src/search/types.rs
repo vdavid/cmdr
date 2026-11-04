@@ -33,8 +33,9 @@ pub struct SearchQuery {
     pub include_paths: Option<Vec<String>>,
     #[serde(default)]
     pub exclude_dir_names: Option<Vec<String>>,
-    /// Pre-resolved entry IDs for `include_paths`. Populated server-side
-    /// before calling `search()`. Not sent from the frontend/MCP.
+    /// Never sent from the frontend or MCP, and never read by a search: the scope
+    /// reaches the engine as a resolved `source::ResolvedScope`. Only the pure-engine
+    /// test wrapper (`engine::search`) reads it, as a fixture's shorthand.
     #[serde(skip)]
     pub include_path_ids: Option<Vec<i64>>,
     #[serde(default = "default_limit")]

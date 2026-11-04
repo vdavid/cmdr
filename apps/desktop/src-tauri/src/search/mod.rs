@@ -15,10 +15,12 @@ pub(crate) mod excludes;
 pub(crate) mod execute;
 pub mod history;
 pub(crate) mod index;
+pub(crate) mod index_source;
 pub(crate) mod live;
 pub(crate) mod matcher;
 pub(crate) mod query;
 pub(crate) mod ranking;
+pub(crate) mod source;
 pub(crate) mod types;
 pub(crate) mod volumes;
 

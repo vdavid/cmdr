@@ -1,4 +1,5 @@
 use super::*;
+use crate::search::source::ResolvedScope;
 use crate::search::types::PatternType;
 
 // ── Size filters ─────────────────────────────────────────────────
@@ -301,6 +302,7 @@ fn ranked_with_dir_sizes(index: &SearchIndex, query: &SearchQuery, sizes: &[(i64
     search_ranked(
         index,
         query,
+        &ResolvedScope::Whole,
         &SearchContext::for_test(&ImportanceWeights::empty()),
         "",
         Some(&dir_sizes),
