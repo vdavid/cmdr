@@ -167,6 +167,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, other {Cmdr không mở được những thư mục này, nên không có gì từ đó trong kết quả:}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "Có quyền truy cập toàn bộ đĩa, Cmdr sẽ tìm kiếm được cả trong những thư mục như vậy.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

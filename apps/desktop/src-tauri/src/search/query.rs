@@ -5,6 +5,7 @@ use cmdr_index::ReadPool;
 use cmdr_index::store;
 
 use super::types::{PatternType, SearchQuery};
+use super::volumes::PathNamespace;
 
 // ── System directory exclusions ──────────────────────────────────────
 
@@ -347,13 +348,28 @@ pub(crate) fn split_scope_segments(input: &str) -> Vec<String> {
 /// walked nothing. ❌ Don't move the expansion downstream: both halves of a live
 /// search take the scope through here.
 ///
+/// `realpath` runs only for a volume read through `std::fs`
+/// ([`PathNamespace::Os`]). A backend volume's paths are in ITS namespace, and the
+/// OS mount that may sit at the same mount point renames them: macOS smbfs hands
+/// back every name decomposed (NFD), while the server stores what it stores
+/// (a QNAP: NFC). Canonicalized, `Rymdskottkärra AB` reached the index lookup and
+/// the walk as `Rymdskottka\u{308}rra AB`, the server answered
+/// `STATUS_OBJECT_NAME_NOT_FOUND`, and every search of an accented NAS folder came
+/// back empty (verified on macOS 27 smbfs against a QNAP TS-464, `realpath` bytes
+/// `61 cc 88`, 2026-11-04). ❌ Don't fix that by normalizing to NFC: a server that
+/// stores NFD names breaks instead. A backend path came from the backend's own
+/// listing, so it's already in the form the backend answers to.
+///
 /// `fs::canonicalize` issues `realpath`, which blocks indefinitely on a dead network
 /// mount, so it runs on a detached worker thread under a 2 s deadline (the sync
 /// analog of `blocking_with_timeout`; `resolve_include_paths` is sync). On timeout,
 /// an error, or a non-existent path we keep the literal — today's best-effort
 /// behavior, so an offline/unmounted-index scope still gets its literal match.
-pub(crate) fn canonicalize_scope_path(path: &str) -> String {
+pub(crate) fn canonicalize_scope_path(path: &str, namespace: PathNamespace) -> String {
     let path = &crate::commands::file_system::expand_tilde(path);
+    if namespace == PathNamespace::Backend {
+        return path.to_string();
+    }
     let owned = path.to_string();
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
@@ -410,7 +426,12 @@ pub(crate) struct ScopeResolution {
 /// - **An unresolvable path** (outside the mount root, or a folder not in the index)
 ///   goes to `unresolved` for honest reporting. If NONE of the non-whole-volume
 ///   paths resolve, `include_ids` is `[i64::MIN]` so the engine matches nothing.
-pub(crate) fn resolve_include_scope(paths: &[String], pool: &ReadPool, mount_root: Option<&str>) -> ScopeResolution {
+pub(crate) fn resolve_include_scope(
+    paths: &[String],
+    namespace: PathNamespace,
+    pool: &ReadPool,
+    mount_root: Option<&str>,
+) -> ScopeResolution {
     let mut whole_volume = false;
     let mut unresolved: Vec<String> = Vec::new();
     // (original path, index-relative path) for the subpaths that need a DB lookup.
@@ -419,7 +440,7 @@ pub(crate) fn resolve_include_scope(paths: &[String], pool: &ReadPool, mount_roo
     for original in paths {
         // Canonicalize ONCE (resolve symlinks like /tmp -> /private/tmp) so the prefix
         // walk matches the index's stored real paths. Off the hot scan loop.
-        match to_index_relative(&canonicalize_scope_path(original), mount_root) {
+        match to_index_relative(&canonicalize_scope_path(original, namespace), mount_root) {
             Some(index_path) if index_path == "/" => whole_volume = true,
             Some(index_path) => to_resolve.push((original.clone(), index_path)),
             None => unresolved.push(original.clone()), // outside this volume's mount root

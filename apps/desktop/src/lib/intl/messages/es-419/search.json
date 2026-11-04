@@ -63,6 +63,10 @@
   "@search.coverage.denied": {
     "sourceHash": "a564c43"
   },
+  "search.coverage.failedRoots": "{count, plural, one {Cmdr no pudo abrir esta carpeta, así que no hay nada suyo en los resultados:} many {Cmdr no pudo abrir estas carpetas, así que no hay nada suyo en los resultados:} other {Cmdr no pudo abrir estas carpetas, así que no hay nada suyo en los resultados:}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "8bf6110"
+  },
   "search.coverage.toast.indexingOff": "La indexación de unidades está desactivada en Configuración, así que no se indexa nada. Actívala en Indexación > Indexación de unidades.",
   "@search.coverage.toast.indexingOff": {
     "sourceHash": "63e9d8d"

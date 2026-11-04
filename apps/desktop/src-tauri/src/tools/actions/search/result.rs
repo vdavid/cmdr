@@ -101,6 +101,9 @@ pub(crate) struct SearchCoverage {
     /// How many PLACES were given up on, ❌ never the raw folder count: a wedged
     /// mount marks thousands of directories and reads as a broken drive.
     pub abandoned_locations: u32,
+    /// Folders the walk set out to read and couldn't open, with the drive still
+    /// there. Nothing inside them was read: ❌ never "no matches" for these.
+    pub failed_roots: Vec<String>,
 }
 
 /// A search answer, whole.
@@ -209,6 +212,7 @@ fn shape_coverage(answer: &LiveAnswer) -> SearchCoverage {
     let unresolved_scopes = settled.map(|c| c.unresolved_scopes.clone()).unwrap_or_default();
     let uncovered_scopes = settled.map(|c| c.uncovered_scopes.clone()).unwrap_or_default();
     let abandoned_ground = settled.is_some_and(|c| c.abandoned_ground);
+    let failed_roots = settled.map(|c| c.failed_roots.clone()).unwrap_or_default();
     SearchCoverage {
         complete: walk_finished
             && permission_denied.is_empty()
@@ -216,6 +220,7 @@ fn shape_coverage(answer: &LiveAnswer) -> SearchCoverage {
             && still_covering.is_empty()
             && unresolved_scopes.is_empty()
             && uncovered_scopes.is_empty()
+            && failed_roots.is_empty()
             && !abandoned_ground,
         still_walking: matches!(answer.ending, AnswerEnding::StillWalking),
         folders_found: answer.dirs_found,
@@ -228,6 +233,7 @@ fn shape_coverage(answer: &LiveAnswer) -> SearchCoverage {
         uncovered_scopes,
         abandoned_ground,
         abandoned_locations: settled.map_or(0, |c| c.abandoned_locations),
+        failed_roots,
     }
 }
 
@@ -252,6 +258,12 @@ fn coverage_notes(answer: &LiveAnswer, system_dirs_excluded: bool) -> Vec<String
             notes.push(format!(
                 "Note: Cmdr couldn't resolve {}: a typo, or a folder nothing has walked yet.",
                 coverage.unresolved_scopes.join(", ")
+            ));
+        }
+        if !coverage.failed_roots.is_empty() {
+            notes.push(format!(
+                "Note: Cmdr couldn't open {}, so this search read nothing inside it and an empty list there means nothing. The drive answered, so it's that folder: check it with list_dir.",
+                coverage.failed_roots.join(", ")
             ));
         }
         if !coverage.permission_denied.is_empty() {

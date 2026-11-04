@@ -173,6 +173,11 @@ fn a_chain_running_through_a_file_row_is_declined() {
     let (entries, outcome) = drain(walk);
 
     assert_eq!(outcome.roots_covered, 0, "the walk declined the broken chain");
+    assert_eq!(
+        outcome.failed_roots,
+        [f.path("mixed/inner")],
+        "and names the root it declined"
+    );
     assert!(entries.is_empty());
     assert!(
         matches!(

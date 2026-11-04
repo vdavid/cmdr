@@ -23,6 +23,7 @@ hold data/operations; `history.rs` owns recents; `ai/` translates NL (`ai/CLAUDE
   `keep_run_id`), Escape, or quit — ❌ never the arena idle-drop, `RunOrigin::Dialog` only.
 - **Non-root indices are mount-relative**: PREFIX the mount root onto read paths, STRIP it from scopes. Mount root is
   `location::resolve::volume_root`'s (live registry first, else the `volume_path` meta), ❌ never assume the meta is set.
+  ❌ Never `realpath` a NAS scope (smbfs makes it NFD): `Target::canonical_scope`.
 - **Honesty is TYPED, diagnostics are structural**: `uncovered_scopes`, `unresolved_scopes`, and `SearchRunCoverage`.
   `summarize_query_for_diagnostics` logs the pattern's shape only, and scope roots / exclusions as keyed
   `path=` / `dir=` fields a report tokenizes; `summarize_query` stays literal for MCP `interpreted_query`. A resolved scope can't distinguish a typo from not-yet-walked ground.

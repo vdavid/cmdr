@@ -67,6 +67,18 @@ pub struct CoverOutcome {
     /// answer reads as an exhaustive one. Those directories are never marked
     /// listed, so the next search offers them again.
     pub abandoned_ground: bool,
+    /// Frontier roots the walk took and couldn't cover, as the frontier named
+    /// them, while the volume itself stayed there: the root wouldn't open (a name
+    /// the server doesn't have, a folder deleted since the coverage answer, a
+    /// listing refused outright), or its walk failed (`RootOutcome::Failed`).
+    ///
+    /// Not `roots_covered`, and ❌ not a reason to call the walk interrupted: the
+    /// volume answered, about this one root. A caller that counts these as "not
+    /// reached" tells the user the drive went away; one that ignores them says
+    /// "no matches" for a folder nothing read. ❌ Never the roots a disconnect
+    /// skipped, which nothing asked. They stay frontier, so the next search tries
+    /// them again.
+    pub failed_roots: Vec<String>,
 }
 
 impl CoverOutcome {
@@ -81,6 +93,7 @@ impl CoverOutcome {
             roots_covered: 0,
             cancelled,
             abandoned_ground: false,
+            failed_roots: Vec::new(),
         }
     }
 }
@@ -489,13 +502,7 @@ fn walk_roots(
     cancel: &CancellationToken,
     heartbeat: &WalkHeartbeat,
 ) -> CoverOutcome {
-    let mut outcome = CoverOutcome {
-        entries_found: 0,
-        dirs_found: 0,
-        roots_covered: 0,
-        cancelled: false,
-        abandoned_ground: false,
-    };
+    let mut outcome = CoverOutcome::nothing(false);
 
     for path in frontier {
         if cancel.is_cancelled() {
@@ -514,6 +521,7 @@ fn walk_roots(
                     LogPrivate::dir_path(path),
                     e = LogError(&e)
                 );
+                outcome.failed_roots.push(path.clone());
                 continue;
             }
             // A root this walk had to create is a row no index reader has ever
@@ -545,7 +553,7 @@ fn walk_roots(
                 outcome.cancelled = true;
                 break;
             }
-            RootOutcome::Failed => {}
+            RootOutcome::Failed => outcome.failed_roots.push(path.clone()),
             // The roots behind it are on that same volume and that same session, so
             // asking each of them buys a round trip that can't come back: up to
             // `LIST_TIMEOUT` (120 s) apiece, times a frontier of thousands.

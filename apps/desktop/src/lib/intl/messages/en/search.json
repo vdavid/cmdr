@@ -307,6 +307,15 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
+  "search.coverage.failedRoots": "{count, plural, one {Cmdr couldn’t open this folder, so nothing from it is in the results:} other {Cmdr couldn’t open these folders, so nothing from them is in the results:}}",
+  "@search.coverage.failedRoots": {
+    "description": "Note above the search results listing folders Cmdr tried to look through and couldn't open, while the drive itself was still reachable (for example, the network drive didn't recognize that folder name, or the folder was removed a moment ago). Their contents are missing from the results, so an empty list doesn't mean nothing matched. A list of the folder paths follows the colon. Searching again tries them again. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "count": "how many folders couldn't be opened, driving the singular/plural choice"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
   "search.coverage.deniedFullDiskAccess": "With full disk access, Cmdr can search folders like these.",
   "@search.coverage.deniedFullDiskAccess": {
     "description": "Line under the list of refused folders, shown only on macOS and only when Cmdr doesn't have Full Disk Access yet. It says what would open them, and the button below it (search.coverage.setUpFullDiskAccess) goes to the setup. 'Full disk access' is the macOS permission; use the system's own wording for it in your language.",

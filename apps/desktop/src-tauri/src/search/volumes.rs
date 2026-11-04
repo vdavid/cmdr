@@ -403,6 +403,30 @@ pub(crate) fn registry_mount_root(volume_id: &str) -> Option<String> {
         .and_then(usable_mount_root)
 }
 
+/// Whose namespace a volume's paths are in, which decides whether a scope path may
+/// go through `realpath` (`query::canonicalize_scope_path`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PathNamespace {
+    /// Read through `std::fs` (the boot disk, a local drive, a plain OS mount): the
+    /// index and the walk see the names `realpath` sees, and symlinks and firmlinks
+    /// (`/tmp` → `/private/tmp`) have to resolve for a scope to match.
+    Os,
+    /// Read through Cmdr's own client (SMB, MTP, ADB, …): the backend's names, which
+    /// an OS mount at the same path can spell differently.
+    Backend,
+}
+
+/// The namespace of the volume a search targets. An unregistered volume (the
+/// boot disk before the registry fills, an ejected drive) is `Os`: `realpath`
+/// either answers in the namespace it'll be read in or fails and keeps the
+/// literal.
+pub(crate) fn path_namespace(volume_id: &str) -> PathNamespace {
+    match crate::file_system::volume::manager::get_volume_manager().get(volume_id) {
+        Some(volume) if volume.backend_kind() != cmdr_fs::volume::BackendKind::Local => PathNamespace::Backend,
+        _ => PathNamespace::Os,
+    }
+}
+
 /// `/` and the empty string aren't mount roots: they're what an index with no
 /// `volume_path` meta, or the boot volume, reports.
 fn usable_mount_root(root: String) -> Option<String> {

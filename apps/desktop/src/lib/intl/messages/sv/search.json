@@ -167,6 +167,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, one {Cmdr kunde inte öppna den här mappen, så inget därifrån finns bland resultaten:} other {Cmdr kunde inte öppna de här mapparna, så inget därifrån finns bland resultaten:}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "Med full skivtillgång kan Cmdr söka i sådana mappar också.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

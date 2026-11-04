@@ -204,6 +204,7 @@ pub(super) fn search_watched(run_id: &str, scope: &str, pattern: &str, sink: &Co
         include_paths: vec![scope.to_string()],
         from_scope: true,
         can_be_indexed: true,
+        namespace: volumes::path_namespace(VOLUME_ID),
     };
     let run = live::register(run_id, VOLUME_ID, RunOrigin::Dialog { order: 1 });
     run_live_blocking(query, target, &run, sink);

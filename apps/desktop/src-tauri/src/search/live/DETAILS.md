@@ -78,6 +78,13 @@ App quit needs nothing beyond that — the process dies with the marks unwritten
 had reached inside it. `0` with the flag true is real (this run's own walk gave up on ground it recorded no path for)
 and the note has words for it. Why it stays a count rather than a fourth list of paths: `../DETAILS.md` § The shape.
 
+**A root the walk couldn't open is answered, not unreached** (`failed_roots`, off `CoverOutcome::failed_roots`): the
+volume was there and said no about that one folder (a name the server doesn't have, a folder gone since the coverage
+answer, a listing that failed outright). `ending_of` counts it with the covered roots, so the run can still end
+`Completed`; counted as unreached, the dialog said the drive had gone away over a NAS that was fine. The folder goes out
+as its own list with its own sentence ("Cmdr couldn't open this folder"), and a scope in it leaves
+`unresolved_scopes`, whose "press Enter" line would offer the walk that just ran. MCP's `complete` reads it too.
+
 
 ## What a live result carries, and what it can't
 
