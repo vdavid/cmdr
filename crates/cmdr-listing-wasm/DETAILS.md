@@ -141,6 +141,13 @@ tree lists as a folder (as on disk).
   (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
   delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
   that fails past a 50 ms hold. Any unhandled rejection fails the run.
+  - **The hold is the main thread's CPU time** between two ticks (`process.threadCpuUsage`), with wall time only
+    printed. Decision/Why: wall time failed under machine load (87 ms at a load average of 74–130 from parallel agents'
+    checks, 13–19 ms alone), since a descheduled process ages the wall clock but not its thread's CPU time. Measured
+    together, 2026-11-05 on Node 26.12 at load 85–92: CPU 16–20 ms across four runs while wall swung 16–104 ms. The
+    checker's contention verdict (`contention-verdict.go`) would only have rerun a red; this can't go red from load.
+  - The runtime self-test's yield-cost probe (`rt_self_test.rs`, 100 yields under 50 ms) is still wall time: a timer
+    clamp it guards against is idle time, which CPU time can't see. It went red twice at load 85–92 (57 and 167 ms).
 - **The golden replay** (`-golden`, also in the check): `src/operations_host/golden_test.rs` runs every volume-engine
   scenario in `cmdr_operations::golden` on a real `Demo`'s host (its `DemoVolumes` with the fixtures' `src` and `dst`
   registered beside the page volume, its engine events, name order, and operation log) and compares the trace, as text,

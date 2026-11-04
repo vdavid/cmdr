@@ -2,9 +2,10 @@
 // built module, on the page's one in-memory volume. A copy, a conflict answered Skip, a
 // cancel, a move, a delete, a rename, a new folder, an undo, the journal read back, a
 // `directory-diff` for the open pane after each, and a long delete that must keep handing
-// the page back (no gap between timer ticks past `MAX_GAP_MS`). Called from `smoke.mjs`.
+// the page back (no gap between timer ticks past `MAX_GAP_MS` of the main thread's CPU
+// time). Called from `smoke.mjs`.
 
-/** The longest the engine may hold the page between two timer ticks. */
+/** The longest the engine may hold the page between two timer ticks, in main-thread CPU time. */
 const MAX_GAP_MS = 50
 /** The files the long-task probe deletes in one go. */
 const MANY = 1_200
@@ -163,22 +164,52 @@ export async function smokeWrites(demo, bus) {
   expect('the home pane', home, ['Documents', 'many', 'New', 'big.bin', 'z.txt'])
 
   // A long delete keeps handing the page back.
-  let longest = 0
-  let last = performance.now()
-  let probing = true
-  const tick = () => {
-    const now = performance.now()
-    longest = Math.max(longest, now - last)
-    last = now
-    if (probing) setTimeout(tick, 0)
-  }
-  setTimeout(tick, 0)
+  const probe = holdProbe()
   const many = await demo.invoke('delete_files', { sources: ['/Users/w/many'], volumeId: 'root', initiator: 'user' })
   expect('the long delete', await settled(many.operationId), 'write-complete')
-  probing = false
-  if (longest > MAX_GAP_MS) throw new Error(`the delete held the page for ${Math.round(longest)} ms`)
+  const { longestCpuMs, longestWallMs } = probe.stop()
+  if (longestCpuMs > MAX_GAP_MS) {
+    throw new Error(
+      `the delete held the page for ${Math.round(longestCpuMs)} ms of CPU (${Math.round(longestWallMs)} ms wall)`,
+    )
+  }
 
   const space = await demo.invoke('get_volume_space', { path: '/' })
   expect('the space answer', space.data.kind, 'bounded')
-  return `writes OK (journal ${log.length} rows, longest hold ${Math.round(longest)} ms)`
+  const hold = `longest hold ${Math.round(longestCpuMs)} ms CPU, ${Math.round(longestWallMs)} ms wall`
+  return `writes OK (journal ${log.length} rows, ${hold})`
+}
+
+/**
+ * Measures the longest the page goes between two timer ticks, as the main thread's own CPU
+ * time (`process.threadCpuUsage`) beside wall time. Only the CPU figure gates: a loaded
+ * machine stretches wall time by descheduling the process, but can't add CPU time to the
+ * thread, so the gate fails only when the engine itself holds the page.
+ */
+function holdProbe() {
+  const cpuMs = () => {
+    const { user, system } = process.threadCpuUsage()
+    return (user + system) / 1000
+  }
+  let longestCpuMs = 0
+  let longestWallMs = 0
+  let lastCpu = cpuMs()
+  let lastWall = performance.now()
+  let probing = true
+  const tick = () => {
+    const cpu = cpuMs()
+    const wall = performance.now()
+    longestCpuMs = Math.max(longestCpuMs, cpu - lastCpu)
+    longestWallMs = Math.max(longestWallMs, wall - lastWall)
+    lastCpu = cpu
+    lastWall = wall
+    if (probing) setTimeout(tick, 0)
+  }
+  setTimeout(tick, 0)
+  return {
+    stop() {
+      probing = false
+      return { longestCpuMs, longestWallMs }
+    },
+  }
 }
