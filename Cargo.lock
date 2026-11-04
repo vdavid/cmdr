@@ -1747,6 +1747,7 @@ dependencies = [
  "cmdr-collation",
  "cmdr-fs",
  "cmdr-listing",
+ "cmdr-sort",
  "futures-util",
  "libc",
  "log",
@@ -1811,7 +1812,7 @@ dependencies = [
 name = "cmdr-menu"
 version = "0.0.0"
 dependencies = [
- "cmdr-listing",
+ "cmdr-sort",
  "serde",
  "specta",
 ]
@@ -1990,6 +1991,15 @@ dependencies = [
  "tokio-util",
  "unicode-normalization",
  "xattr",
+]
+
+[[package]]
+name = "cmdr-sort"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "specta",
 ]
 
 [[package]]

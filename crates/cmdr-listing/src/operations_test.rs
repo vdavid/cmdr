@@ -119,10 +119,10 @@ fn test_multiple_concurrent_streaming_states() {
 /// caches them in the listing cache, and returns the correct count.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_list_directory_start_with_volume_caches_entries() {
-    use crate::sorting::{DirectorySortMode, SortColumn, SortOrder};
     use crate::testing::{TestEngine, TestListingGuard};
     use cmdr_fs::entry::FileEntry;
     use cmdr_fs::volume::InMemoryVolume;
+    use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
     use std::path::PathBuf;
     use std::sync::Arc;
 
@@ -195,8 +195,8 @@ async fn test_list_directory_start_with_volume_caches_entries() {
 /// Tests that `list_directory_start_with_volume` returns an error for a nonexistent volume.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_list_directory_start_with_volume_unknown_volume() {
-    use crate::sorting::{DirectorySortMode, SortColumn, SortOrder};
     use crate::testing::TestEngine;
+    use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
     use std::path::PathBuf;
 
     let result = TestEngine::new()

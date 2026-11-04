@@ -399,12 +399,13 @@ All under `apps/desktop/src-tauri/src/`.
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
 `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-http`, `cmdr-listing`,
-`cmdr-collation`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-menu`, `cmdr-operation-log`,
+`cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-menu`, `cmdr-operation-log`,
 `cmdr-operations`, and `cmdr-update-trust` carry no `tauri` dependency and no reach into the app;
 `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`,
 `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`,
-`cmdr-listing`, `cmdr-collation`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`, and `cmdr-operations` at the
-numbers their audits landed on. The two dev CLIs and the vendored fork are ordinary members.
+`cmdr-listing`, `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`, and
+`cmdr-operations` at the numbers their audits landed on. The two dev CLIs, the browser demo's `cmdr-listing-wasm`, and
+the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -440,6 +441,9 @@ numbers their audits landed on. The two dev CLIs and the vendored fork are ordin
 - `crates/cmdr-collation/`: how two file names rank (`NameCollator`, ICU4X Unicode collation with numeric ordering, and
   the prebuilt `NameKey` a bulk sort compares). Below the listing engine, which re-exports it, so anything that orders
   names sorts the way a pane does without depending on the listing. See `crates/cmdr-collation/CLAUDE.md`
+- `crates/cmdr-sort/`: what a pane asks to sort by (`SortColumn`, `SortOrder`, `DirectorySortMode`), vocabulary only.
+  Below the listing engine, which re-exports it beside the comparator, so the menu names a sort without linking the
+  engine. See `crates/cmdr-sort/CLAUDE.md`
 - `crates/cmdr-brief-columns/`: Brief mode's column widths: the font metrics store (per-code-point widths the frontend
   measured) and each column's widest name over a pane's rows. Hosted by the app (`font_metrics/`, which persists the
   store) and the browser demo. See `crates/cmdr-brief-columns/CLAUDE.md`

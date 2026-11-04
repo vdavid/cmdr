@@ -10,7 +10,8 @@ Tauri-free; Cmdr hosts it from `apps/desktop/src-tauri/src/listing_host/`.
 - Read: **streaming.rs**, **stall.rs**, **pipeline.rs**, **reread.rs**, **refresh.rs**, **foreign_path.rs**. Cache:
   **cached_listing.rs**, **caching.rs** (lookups, change intake), **mutate.rs**, **authoritative.rs**,
   **operations.rs**. Rows: **visible_rows.rs**, **path_index.rs**, **quick_filter.rs**, **diff.rs**,
-  **diff_emitter.rs**. Sort: **sorting.rs** (names collate through `cmdr-collation`).
+  **diff_emitter.rs**. Sort: **sorting.rs** (names collate through `cmdr-collation`; the vocabulary is `cmdr-sort`'s,
+  re-exported).
 
 ## Must-knows
 

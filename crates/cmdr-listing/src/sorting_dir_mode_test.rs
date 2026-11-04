@@ -12,10 +12,10 @@
 //! The column-ordering suite is `sorting_test`; name order itself is
 //! `collation_test`.
 
-use super::sorting::DirectorySortMode;
 use super::sorting_test_support::{make_dir_with_recursive_size, make_entry, sort_entries};
 use super::{SortColumn, SortOrder};
 use cmdr_fs::entry::FileEntry;
+use cmdr_sort::DirectorySortMode;
 
 // ============================================================================
 // Directory sort mode tests

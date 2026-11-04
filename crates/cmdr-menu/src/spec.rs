@@ -4,7 +4,7 @@
 //! Linux bar on a Mac too. The desktop's `menu_bar_builder.rs` builds the one for
 //! [`Platform::current`]; the browser demo renders the macOS one.
 
-use cmdr_listing::{SortColumn, SortOrder};
+use cmdr_sort::{SortColumn, SortOrder};
 
 /// A pane's view mode, as the frontend names it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

@@ -18,12 +18,12 @@ use crate::Inner;
 use crate::cached_listing::CachedListing;
 #[cfg(test)]
 use crate::pipeline::ReadBy;
-use crate::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::visible_rows::VisibleRows;
 #[cfg(test)]
 use cmdr_fs::benchmark;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 // ============================================================================
 // Listing lifecycle

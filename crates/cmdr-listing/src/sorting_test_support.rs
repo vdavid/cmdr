@@ -10,7 +10,9 @@ use cmdr_fs::entry::FileEntry;
 
 use cmdr_fs::volume::SupportedDates;
 
-use super::sorting::{DirectorySortMode, EffectiveSort, SortColumn, SortOrder, SortableEntry};
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
+
+use super::sorting::{EffectiveSort, SortableEntry};
 use super::testing::collator_for;
 
 /// Creates a test entry with the given name and properties.

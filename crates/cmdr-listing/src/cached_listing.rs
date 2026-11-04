@@ -20,12 +20,13 @@ use crate::path_index::PathIndexCache;
 pub(crate) use crate::pipeline::OverlayRows;
 use crate::pipeline::{ListedDates, Prepared};
 use crate::reread::ReadGeneration;
-use crate::sorting::{DirectorySortMode, EffectiveSort, SortColumn, SortOrder, sort_entries};
+use crate::sorting::{EffectiveSort, sort_entries};
 use crate::visible_rows::{ScratchProjection, VisibleRows, VisibleRowsCache};
 use cmdr_collation::NameCollator;
 use cmdr_fs::entry::{FileEntry, TagRef};
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::SupportedDates;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 impl Inner {
     /// The cache under its read lock, with every listing in `ids` reconciled to

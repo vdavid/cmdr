@@ -2,64 +2,18 @@
 
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
-
 use cmdr_collation::{NameCollator, NameKey};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::file_extension::NameKind;
 use cmdr_fs::volume::SupportedDates;
+use cmdr_sort::{DirectorySortMode, SortColumn, SortOrder};
 
 // ============================================================================
 // Sorting configuration
 // ============================================================================
 
-/// Column to sort files by.
-// DEFAULT-OK: a preference default (by name), not a claim about anything on disk.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum SortColumn {
-    /// By name, in the reading language's collation.
-    #[default]
-    Name,
-    /// By extension.
-    Extension,
-    /// By size.
-    Size,
-    /// By last-modified time.
-    Modified,
-    /// By creation time.
-    Created,
-    /// By when the item was added to its folder (macOS APFS and HFS+ only).
-    Added,
-}
-
-/// Sort order (ascending or descending).
-// DEFAULT-OK: a preference default (ascending), not a claim about anything on disk.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum SortOrder {
-    /// Low to high.
-    #[default]
-    Ascending,
-    /// High to low.
-    Descending,
-}
-
-/// How to sort directories relative to the current sort column.
-// DEFAULT-OK: a preference default (dirs sort like files), not a claim about disk state.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum DirectorySortMode {
-    /// Directories sort by the same column as files (using recursive_size for Size column).
-    #[default]
-    LikeFiles,
-    /// Directories always sort by name, A→Z, regardless of the active sort column
-    /// and its direction. Only the Name column's arrow reverses them.
-    AlwaysByName,
-    /// Directories don't lead: they sort among the files by the same column ("Show
-    /// folders first" off). Size ranks a directory by its `recursive_size`.
-    MixedWithFiles,
-}
+// The vocabulary a pane asks with (`SortColumn`, `SortOrder`, `DirectorySortMode`)
+// is `cmdr-sort`'s, so a crate that only names a sort needn't link this engine.
 
 /// The sort a listing's rows are actually in: the pane's requested column, or
 /// Modified when the requested date is one the listed volume doesn't record.

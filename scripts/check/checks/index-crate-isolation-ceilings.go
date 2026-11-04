@@ -522,4 +522,19 @@ var surfaceGuardedCrates = []struct {
 			SubsystemItems: 0,
 		},
 	},
+	{
+		// Measured 2026-11-04, at the extraction, and set to exactly what the crate
+		// exposes, with no headroom.
+		//
+		// Three root promises, the sort vocabulary a pane asks with: `SortColumn`,
+		// `SortOrder`, and `DirectorySortMode`. No methods, no public module. A new
+		// item here is vocabulary every sort site sees, so it's argued in
+		// `crates/cmdr-sort/DETAILS.md` first.
+		Name: "cmdr-sort",
+		Ceilings: surfaceCeilings{
+			RootPromises:   3,
+			PublicModules:  0,
+			SubsystemItems: 0,
+		},
+	},
 }

@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::DirectoryDiffBatch;
 use crate::listing_id::ListingId;
-use crate::sorting::SortColumn;
+use cmdr_sort::SortColumn;
 
 /// How one streaming listing ended. Exactly one per listing the engine starts.
 #[derive(Debug)]
