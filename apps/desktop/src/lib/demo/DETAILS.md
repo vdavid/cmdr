@@ -47,7 +47,7 @@ app knows it runs in a browser.
 ## Backend and webviews
 
 Tauri's model is one Rust process and many webviews: every window's `invoke` reaches the same state, and `emit` reaches
-every window. The demo keeps that shape so secondary windows can come later without a rewrite.
+every window. The demo keeps that shape, so secondary windows share its state, as on desktop.
 
 - `backend.ts` (`createDemoBackend`): the answer tables, the in-memory stores (`plugins.ts`), the WASM engine, and the
   event fan-out. Exactly one per page, in the top frame, exposed as `window.__cmdrDemoBackend`.
@@ -92,8 +92,8 @@ every window. The demo keeps that shape so secondary windows can come later with
   colors" change in Settings recolors the main window's sizes through the fan-out. Keyboard shortcuts opens from the
   command palette, closes with Esc, and its "Edit shortcuts" link opens Settings at that section as a second panel (a
   child window opening another through the shared backend).
-- The production CSP (`apps/website/nginx-demo-security-headers.conf`) allows these iframes with `frame-src 'self'`;
-  under the earlier `frame-src 'none'` they were blocked (seen 2026-11-04), so keep it if that file is touched.
+- The production CSP (`apps/website/nginx-demo-security-headers.conf`) needs `frame-src 'self'` for the panels: any
+  stricter `frame-src` blocks their iframes.
 - Known gap: clicking the main window while a panel is open moves DOM focus there but sends no `tauri://focus` /
   `tauri://blur`, and the panel stays on top (on desktop, main would become key and come forward). Fixing it means
   listening for `focusin` outside the panels and lowering them; nothing in the app reacts badly to the missing events
@@ -165,7 +165,7 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
   over `demoEntries` (`{ volumeId, root, entries }`, the shape `crates/cmdr-listing-wasm/src/tree.rs` reads). Loading
   starts at boot, so the `.wasm` downloads while the app starts; the first listing command waits for it.
 - Routing: the backend tries its TS tables first, then `DemoListing.handles(cmd)`, then `unanswered`. So a new engine
-  command (file operations are coming) needs no TS change, and a TS answer for an engine command would shadow it.
+  command (#929) needs no TS change, and a TS answer for an engine command would shadow it.
 - `demo.invoke(cmd, args)` takes the Tauri (snake_case) name and the camelCase IPC args, and resolves or rejects exactly
   as `invoke` does. `listing.ts` expands `~` in `path` / `paths` first (`demoPath`): the engine has no home folder.
 - Engine events (`onEvent(name, payload)`, Tauri names) go to the backend's fan-out a task late, in order. Why the

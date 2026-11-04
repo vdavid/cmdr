@@ -338,7 +338,7 @@ nothing links to it, it's out of the sitemap, and it's `noindex` until David lau
   Rust or Vite build there risks OOM-killing them. CI's `publish-website-demo` job pushes the bundle as a `FROM scratch`
   image (`demo-image.Dockerfile`) to `ghcr.io/vdavid/cmdr-demo`, with `GITHUB_TOKEN` and `packages: write` (no new
   secret), and `deploy-website` waits for it. The Dockerfile's `demo-bundle` stage is `FROM ${DEMO_IMAGE}`, which
-  `deploy-website.sh` sets; the deploy keeps its `--no-cache` and otherwise runs as before.
+  `deploy-website.sh` sets; the deploy keeps `--no-cache`.
 - **Decision: the tag is a content key, not a commit SHA.** `scripts/website-demo-key.sh` hashes every demo source (git
   tree entries only, so the server needs nothing but git) and CI and the deploy each compute it from their own checkout,
   so a site is only ever built with the demo of its own sources, and never `:latest`. A commit SHA can't do that here:

@@ -85,5 +85,5 @@ tree lists as a folder (as on disk).
   the page measures again. No `timeout` kind either: the desktop's two-second cap on `get_brief_column_text_widths`
   guards a write-locked cache, which a page's one thread can't be waiting on.
 - **Owners show as empty, permissions are fixed**, and nothing reads tags, packages, index sizes, or git status.
-- **No writes**: the demo answers listing commands only. Copy, move, rename, and create would each need their own
-  extraction (#302).
+- **No writes**: the engine answers listing, Brief-width, and font-metrics commands only. Writes (copy, move, rename,
+  create) are #929.
