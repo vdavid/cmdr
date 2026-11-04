@@ -79,7 +79,7 @@ pub mod settings;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use tokio::runtime::Handle;
+use crate::rt::Runtime;
 
 use activity::UserActivity;
 use analytics::AnalyticsSink;
@@ -98,7 +98,7 @@ use settings::{BackendName, BackendSettings};
 /// hold one per volume instance without thinking about it.
 #[derive(Clone)]
 pub struct VolumeHost {
-    runtime: Option<Handle>,
+    runtime: Option<Runtime>,
     listings: Arc<dyn ListingHost>,
     events: Arc<dyn VolumeEventSink>,
     credentials: Arc<dyn CredentialStore>,
@@ -147,7 +147,7 @@ impl VolumeHost {
     /// The runtime background work spawns onto: whatever the host injected, or
     /// the shared fallback. See [`runtime`] for why a backend must never call
     /// `tokio::spawn` directly.
-    pub fn runtime(&self) -> Handle {
+    pub fn runtime(&self) -> Runtime {
         runtime::resolve(self.runtime.as_ref())
     }
 
@@ -244,7 +244,7 @@ impl VolumeHostBuilder {
     /// The tokio runtime background work spawns onto. Without it, backends fall
     /// back to a shared runtime this crate builds (see [`runtime`]).
     #[must_use]
-    pub fn runtime(mut self, handle: Handle) -> Self {
+    pub fn runtime(mut self, handle: Runtime) -> Self {
         self.host.runtime = Some(handle);
         self
     }

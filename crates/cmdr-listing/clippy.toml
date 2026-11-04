@@ -21,4 +21,22 @@ disallowed-methods = [
   { path = "tokio::task::spawn", reason = "spawn on the engine's runtime (`self.runtime.spawn`): a watcher's OS thread has no ambient one" },
   { path = "tokio::task::spawn_blocking", reason = "use the engine's runtime (`self.runtime.spawn_blocking`): a watcher's OS thread has no ambient one" },
   { path = "std::thread::spawn", reason = "the engine owns no threads; blocking work goes to the runtime's blocking pool" },
+  # The clock and the timers go through `cmdr_fs::rt` (named `crate::rt` here): `std`'s clock panics
+  # on `wasm32-unknown-unknown`, which takes tokio's timer with it, so a direct call compiles for the
+  # browser build and traps only at runtime. `crates/cmdr-listing/DETAILS.md` § "The browser build".
+  # ❗ These are METHOD bans, not `disallowed-types`: natively `rt::Instant` and `rt::Runtime` ARE
+  # `std::time::Instant` and `tokio::runtime::Handle` (re-exports resolve to the same type), so a type
+  # ban would fire on every use of the seam itself. Banning every way to READ the clock or reach an
+  # ambient runtime is what closes the hole.
+  { path = "std::time::Instant::now", reason = "read the clock through `crate::rt::now()`: `std`'s panics in the browser build" },
+  { path = "std::time::Instant::elapsed", reason = "use `crate::rt::since(start)`: `std`'s clock panics in the browser build" },
+  { path = "std::time::SystemTime::now", reason = "`std`'s wall clock panics in the browser build; add a `crate::rt` wrapper if the engine needs one" },
+  { path = "tokio::time::Instant::now", reason = "read tokio's clock through `crate::rt::time::now()`: it panics in the browser build" },
+  { path = "tokio::time::Instant::elapsed", reason = "use `crate::rt::time::now() - start`: tokio's clock panics in the browser build" },
+  { path = "tokio::time::sleep", reason = "sleep through `crate::rt::time::sleep`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::sleep_until", reason = "sleep through `crate::rt::time::sleep_until`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::timeout", reason = "time out through `crate::rt::time::timeout`: tokio's timer panics in the browser build" },
+  { path = "tokio::time::interval", reason = "tick with a `crate::rt::time::sleep` loop: tokio's timer panics in the browser build" },
+  { path = "tokio::runtime::Handle::current", reason = "spawn on the engine's runtime (`self.runtime`): an ambient one may not exist" },
+  { path = "tokio::runtime::Handle::try_current", reason = "spawn on the engine's runtime (`self.runtime`): an ambient one may not exist" },
 ]

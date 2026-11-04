@@ -41,6 +41,7 @@ node_modules/
 
 # Tauri/Vite build files
 build/
+build-demo/
 
 # Test results
 playwright-report/
@@ -52,6 +53,8 @@ coverage/
 
 # Rust build artifacts
 target/
+# The browser demo's listing engine, built by `scripts/build-listing-wasm.sh`
+crates/cmdr-listing-wasm/pkg/
 
 # Go-built binaries (one per tool dir, named after the dir by `go build`)
 scripts/check/check

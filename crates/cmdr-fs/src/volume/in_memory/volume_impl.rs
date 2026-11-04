@@ -124,6 +124,15 @@ impl Volume for InMemoryVolume {
             })?;
 
             let target_dir = self.normalize(path);
+            if self.held_folders_only && target_dir != self.root && target_dir != Path::new("/") {
+                match entries.get(&target_dir) {
+                    None => return Err(VolumeError::NotFound(target_dir.display().to_string())),
+                    Some(entry) if !entry.metadata.is_directory => {
+                        return Err(VolumeError::NotADirectory(target_dir.display().to_string()));
+                    }
+                    Some(_) => {}
+                }
+            }
 
             // Find all entries whose parent matches this directory
             let mut result: Vec<FileEntry> = entries

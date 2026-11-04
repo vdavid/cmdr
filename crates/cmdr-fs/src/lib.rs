@@ -42,6 +42,9 @@ pub mod log_error;
 pub mod log_json;
 pub mod log_private;
 pub mod log_rollup;
+// The browser build (`wasm32`, `crates/cmdr-listing-wasm`) maps no files and
+// opens no SQLite, so these two are host-only. `DETAILS.md` § "The browser build".
+#[cfg(not(target_family = "wasm"))]
 pub mod mapped_file_faults;
 pub mod metadata;
 pub mod name_fold;
@@ -52,6 +55,8 @@ pub mod process_cpu;
 pub mod process_memory;
 pub mod restic_meta;
 pub mod restic_view;
+pub mod rt;
+#[cfg(not(target_family = "wasm"))]
 pub mod sqlite_util;
 pub mod staging;
 pub mod tcc_paths;

@@ -50,6 +50,9 @@ type websitePageLink struct {
 	value string
 }
 
+// websiteDemoDir is where the site's build puts the browser demo, relative to `dist/`.
+const websiteDemoDir = "demo"
+
 // websiteLinkAttrs maps each element to the attribute holding the URL it loads or links to.
 var websiteLinkAttrs = map[string]string{"a": "href", "link": "href", "img": "src", "script": "src", "source": "src"}
 
@@ -58,6 +61,11 @@ func scanWebsiteDeadLinks(distDir string) (websiteDeadLinkScan, error) {
 	var links []websitePageLink
 
 	err := filepath.WalkDir(distDir, func(p string, d fs.DirEntry, err error) error {
+		// The browser demo (`src/plugins/demo.ts`) is the desktop frontend's build: Vite
+		// content-hashes its assets itself, and the desktop's checks own its markup.
+		if err == nil && d.IsDir() && p == filepath.Join(distDir, websiteDemoDir) {
+			return fs.SkipDir
+		}
 		if err != nil || d.IsDir() || !strings.HasSuffix(p, ".html") {
 			return err
 		}

@@ -48,8 +48,6 @@ zip = { version = "9.2.0", default-features = false, features = ["deflate", "aes
 # `ArchiveByteSource` rather than the `rc-zip-tokio` wrapper, whose only public
 # entry reader borrows its handle and decompresses on the async executor.
 rc-zip = { version = "5.4.1", features = ["deflate", "bzip2", "lzma", "zstd"] }
-# A `ReadAt` cursor over a local `File`, for the local byte source.
-positioned-io = "0.3.5"
 # The tar family and 7z, all pure-Rust and decode-only, driven as pull-model `Read`
 # decoders so a whole-file decompress streams in bounded chunks. `bzip2` defaults to
 # the pure-Rust `libbz2-rs-sys` backend; `ruzstd` is a pure-Rust zstd DECODER;
@@ -76,11 +74,22 @@ zeroize = "1.9.0"
 # broken-down local-free UTC fields before `zip::DateTime` can take them.
 chrono = "0.4"
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+# A `ReadAt` cursor over a local `File`, for the local byte source. The browser
+# build has no local files.
+positioned-io = "0.3.5"
+
 # A compress source's xattrs, read for the AppleDouble sidecar a zip carries
 # them in (`mutator::local_file_sidecar`), which is macOS-only: `__MACOSX` is a
 # Mac convention. Already in the graph through `cmdr-fs`.
 [target.'cfg(target_os = "macos")'.dependencies]
 xattr = "1"
+
+# The browser build (`crates/cmdr-listing-wasm`): `sevenz-rust2` compiles its
+# wasm helper module only with `compress`, and its AES needs the browser's
+# randomness (`aes256_wasm`). `crates/cmdr-fs/DETAILS.md` § "The browser build".
+[target.'cfg(target_family = "wasm")'.dependencies]
+sevenz-rust2 = { version = "0.24.2", default-features = false, features = ["compress", "aes256_wasm"] }
 
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and

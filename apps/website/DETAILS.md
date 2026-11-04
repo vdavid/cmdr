@@ -160,7 +160,8 @@ was deleted.)
   a 200 (search engines treat that as a soft 404, and a broken link looks fine).
 - **Security headers**: every `nginx.conf` location that serves content includes `nginx-security-headers.conf` (copied
   to `/etc/nginx/snippets/` by the Dockerfile), because nginx drops server-level `add_header`s in any location that sets
-  its own. It carries the only copy of the CSP. `connect-src` has to list every origin the site's JS fetches
+  its own. It carries the site's only copy of the CSP (`/demo/` has its own, § Browser demo), and pulls the headers both
+  share from `nginx-security-headers-base.conf`. `connect-src` has to list every origin the site's JS fetches
   (`api.getcmdr.com` for likes and `?r=` codes, remark42, Paddle): the browser blocks the rest before the request
   leaves, and nothing in dev shows it, since Astro's dev server and the Playwright E2E serve no CSP. The blog's like
   button shipped that way and never worked until the origin was added. Two guards: the `website-csp-connect-src` check
@@ -317,6 +318,68 @@ gives it browser globals.
   so a half-recorded set never breaks the build. The homepage E2E asserts every landing clip renders as a video, which
   catches a `clips.json` shape drift that would silently turn them all into placeholders; only `reach-network` and
   `reach-devices` may be placeholders while they wait to be recorded.
+
+## Browser demo
+
+`/demo/` serves the real desktop frontend on a fake backend, with the listing engine built to WASM (issue #302; the app
+side is `apps/desktop/src/lib/demo/CLAUDE.md`, the engine `crates/cmdr-listing-wasm/CLAUDE.md`). Unlaunched on purpose:
+nothing links to it, it's out of the sitemap, and it's `noindex` until David launches it.
+
+- **Build**: `pnpm build:demo` at the repo root (the WASM engine, then `apps/desktop`'s `build:demo` into
+  `apps/desktop/build-demo/`). Then `CMDR_WEBSITE_DEMO=1 pnpm build` here: `src/plugins/demo.ts` copies it into
+  `dist/demo/`, rewrites the page's `<title>` (placeholder copy) and adds a `noindex` meta, and writes
+  `nginx-generated/csp-demo-script-hashes.conf` (the page's inline-script hashes). With the flag set, a missing demo
+  build fails the site build; without it, the site builds as always and the snippet is written empty.
+- **Decision: opt-in, not part of every `pnpm build`.** The demo needs Rust, the wasm32 target, `wasm-bindgen`, and Go,
+  so building it on every website build would put that toolchain under the website checks, local dev, and Lighthouse.
+  The places that ship or test the site set the flag: the Dockerfile (on by default) and CI's `website` job.
+- **Decision: CI builds it, the server only copies it.** The Hetzner box also runs Caddy, Umami, Photato, and the
+  grocery apps, and the demo's Vite build alone peaks around 1.7 GB RSS (with 2.6 GB free and no swap, 2026-11-04), so a
+  Rust or Vite build there risks OOM-killing them. CI's `publish-website-demo` job pushes the bundle as a `FROM scratch`
+  image (`demo-image.Dockerfile`) to `ghcr.io/vdavid/cmdr-demo`, with `GITHUB_TOKEN` and `packages: write` (no new
+  secret), and `deploy-website` waits for it. The deploy keeps `--no-cache`.
+- **Decision: the build pins the image by digest; the content key only finds and checks it.** The Dockerfile's
+  `demo-bundle` stage is `FROM ghcr.io/vdavid/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST}` (a tag can be moved, and
+  Scorecard's Pinned-Dependencies accepts this `@sha256:${ARG}` form). `publish-website-demo` outputs the digest it
+  pushed or found, and `deploy-website` sends it, with the content key, in the HMAC-signed webhook payload (the
+  signature covers the whole body); `hooks.json` passes both to `deploy-website.sh` as `DEMO_IMAGE_DIGEST` and
+  `DEMO_KEY`. The script fails unless the payload's key equals `scripts/website-demo-key.sh` on its own checkout, so a
+  site is only ever built with the demo of its own sources. On a mismatch (`main` moved on to other demo sources since
+  that run), the old site stays up and the newer commit's run deploys.
+- **Decision: the tag is a content key, not a commit SHA.** `scripts/website-demo-key.sh` hashes every demo source (git
+  tree entries only, so the server needs nothing but git). A landed commit's lanes usually skip (verified on its PR), so
+  no run builds per SHA; with a key, any commit with the same demo sources finds the image, and an unchanged demo skips
+  the build.
+- **The key's path list is load-bearing.** It must equal `websiteDemoInputs` (check runner) and be covered by ci.yml's
+  `website` filter, excluding the agent docs as the filter does; `TestWebsiteDemoInputsMatchTheImageKey` holds all three
+  together. A path hashed but not filtered would change the key on a commit that publishes no image.
+- **The image must be public**: the server pulls anonymously. GHCR may create the `cmdr-demo` package private on its
+  first push; then David sets it public once at github.com/users/vdavid/packages/container/cmdr-demo/settings. The
+  publish job checks an anonymous pull before the deploy fires and names that page when it fails.
+- **Local builds**: `CMDR_WEBSITE_DEMO=1 pnpm build` reads `apps/desktop/build-demo/` directly. A local Docker build
+  passes that dir as a named build context for the placeholder ref the Dockerfile names without a digest:
+  `--build-context ghcr.io/vdavid/cmdr-demo@sha256:<64 zeros>=apps/desktop/build-demo` (what `website-docker-build`
+  does; without a local demo it uses an empty dir and `CMDR_WEBSITE_DEMO=0`).
+- **Changing the webhook**: the listener reads `hooks.json` only at start (no `-hotreload`), so a change to it takes a
+  `sudo systemctl restart deploy-webhook` on the server after it lands, then a redeploy (`workflow_dispatch`).
+- **CI**: the `website-demo` job builds it on the bare runner (the `website` job runs inside the Playwright image, which
+  has no Rust) and hands it over as an artifact, which `publish-website-demo` reuses when it exists. Both build through
+  `.github/actions/build-website-demo`. The `website` filter includes the demo's inputs, so a change there re-runs the
+  lane and redeploys.
+- **Serving** (`nginx.conf`): `/demo` redirects to `/demo/`; `/demo/_app/immutable/` is content-hashed (a year,
+  immutable, a real 404 when missing); anything else under `/demo/` is the file or, failing that, the app page, so a
+  deep link or reload boots the app. nginx's own mime table serves `.wasm` as `application/wasm` (verified in
+  `nginx:alpine` 1.31.6, `curl -I`, 2026-11-04).
+- **Headers**: `nginx-demo-security-headers.conf` replaces the site's CSP for `/demo/` only, sharing the rest via
+  `nginx-security-headers-base.conf`. The policy and why each part is there are in that file's header. Verified in the
+  built image with Chromium (2026-11-04): no CSP violation on boot, `WebAssembly.instantiate` allowed under `/demo/` and
+  refused under the site's own policy. It also sends `X-Robots-Tag: noindex, nofollow`. `frame-src 'self'` because the
+  demo's secondary windows (Settings) are same-origin iframes of `/demo/<route>`; `frame-ancestors 'self'` lets our own
+  pages embed the demo.
+- **Smoke test**: `e2e/demo.spec.ts`, against `dist/` like every website E2E (so it runs without nginx's headers; the
+  CSP is verified by hand as above). It skips locally when `dist/demo/` isn't built and fails in CI when it's missing.
+- **Other dist checks skip `dist/demo/`**: `.htmlvalidateignore` (the desktop's `app.html` conventions differ) and
+  `website-dead-links` (Vite hashes its own asset names, so the `?v=` rule doesn't apply).
 
 ## Typed linting
 

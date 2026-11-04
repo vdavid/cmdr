@@ -1,3 +1,9 @@
+# The browser demo bundle, pinned by digest (the builder stage below says where it comes from). A
+# global ARG, because `COPY --from` can't expand one. The placeholder default names no image, so a
+# build that forgets the digest fails on the pull.
+ARG DEMO_IMAGE_DIGEST=0000000000000000000000000000000000000000000000000000000000000000
+FROM ghcr.io/vdavid/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST} AS demo-bundle
+
 # Build stage
 FROM node:26-alpine@sha256:143494b1da2945f061539253adc65e4f1569ddf07da2d384c022c791a9d90a4a AS builder
 
@@ -28,6 +34,17 @@ RUN node apps/website/scripts/fetch-live-manifest.ts
 # changelog page and the feature-status page / badge labels respectively
 COPY CHANGELOG.md feature-status.json ./
 
+# The browser demo bundle, which the build copies into dist/demo/ (src/plugins/demo.ts). CI builds
+# it (Rust to WASM, then the desktop frontend) and publishes it as an image, so this box never
+# compiles Rust. The deploy passes `DEMO_IMAGE_DIGEST`, the digest CI pushed and signed into the
+# webhook payload (`infra/deploy-webhook/deploy-website.sh`); a local build passes a dir instead, with
+# `--build-context ghcr.io/vdavid/cmdr-demo=apps/desktop/build-demo`.
+# `CMDR_WEBSITE_DEMO=1` makes an empty bundle fail too, so a deploy never drops /demo/ silently.
+# `apps/website/DETAILS.md` § Browser demo.
+COPY --from=demo-bundle / ./apps/desktop/build-demo/
+ARG CMDR_WEBSITE_DEMO=1
+ENV CMDR_WEBSITE_DEMO=${CMDR_WEBSITE_DEMO}
+
 # Build static site
 WORKDIR /app/apps/website
 RUN pnpm run build
@@ -40,9 +57,12 @@ COPY --from=builder /app/apps/website/dist /usr/share/nginx/html
 
 # Copy nginx config
 COPY apps/website/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/website/nginx-security-headers-base.conf /etc/nginx/snippets/security-headers-base.conf
 COPY apps/website/nginx-security-headers.conf /etc/nginx/snippets/security-headers.conf
-# The inline-script hashes the build computed for the CSP (src/plugins/csp-hashes.ts)
+COPY apps/website/nginx-demo-security-headers.conf /etc/nginx/snippets/demo-security-headers.conf
+# The inline-script hashes the build computed for the CSPs (src/plugins/csp-hashes.ts, src/plugins/demo.ts)
 COPY --from=builder /app/apps/website/nginx-generated/csp-script-hashes.conf /etc/nginx/snippets/csp-script-hashes.conf
+COPY --from=builder /app/apps/website/nginx-generated/csp-demo-script-hashes.conf /etc/nginx/snippets/csp-demo-script-hashes.conf
 
 # The access log dir (see nginx.conf). Production bind-mounts a host dir over it; this keeps a plain
 # `docker run` writable too.

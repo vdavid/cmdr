@@ -12,10 +12,9 @@ use std::path::PathBuf;
 use tokio::time::Duration;
 
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::font_metrics::brief_columns::{
-    BriefColumnWidths, BriefColumnsError, BriefColumnsIpcError, compute_brief_column_text_widths,
-};
+use crate::font_metrics::brief_columns::compute_brief_column_text_widths;
 use crate::listing_index_sizes::count::{CountFolderSizesError, FolderSizeCountOutcome};
+use cmdr_brief_columns::{BriefColumnWidths, BriefColumnsError, BriefColumnsIpcError, BriefColumnsQuery};
 use cmdr_fs::deadline::{TimedOut, blocking_typed_result_with_timeout};
 use cmdr_fs::volume::WatchCoverage;
 
@@ -176,7 +175,7 @@ pub async fn get_file_range(
 /// Returns the widest filename's text-only width (in px) per Brief-mode column.
 ///
 /// Pure read path: takes a snapshot of the listing cache for `listing_id` and
-/// measures each column's widest filename with `font_metrics::calculate_max_width_with_suffixes`.
+/// measures each column's widest filename from the font store (`cmdr-brief-columns`).
 /// The FE applies chrome + clamp on top.
 ///
 /// Answers without waiting on measurement. A filename containing a code point
@@ -202,8 +201,14 @@ pub async fn get_brief_column_text_widths(
         BriefColumnsIpcError::timeout,
         |detail| BriefColumnsIpcError::from(BriefColumnsError::Other(detail)),
         move || {
-            compute_brief_column_text_widths(&listing_id, items_per_column, has_parent, &font_id, include_hidden)
-                .map_err(BriefColumnsIpcError::from)
+            compute_brief_column_text_widths(&BriefColumnsQuery {
+                listing_id,
+                items_per_column,
+                has_parent,
+                font_id,
+                include_hidden,
+            })
+            .map_err(BriefColumnsIpcError::from)
         },
     )
     .await

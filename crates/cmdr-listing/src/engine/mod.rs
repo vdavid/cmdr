@@ -12,12 +12,10 @@
 //! through `self`, never through the app's accessor: a method that asks for "the"
 //! engine works in the app and quietly reads the wrong one everywhere else.
 
+use crate::rt::Runtime;
 use std::collections::HashMap;
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, RwLock};
-use std::time::Instant;
-
-use tokio::runtime::Handle;
 
 use super::diff_emitter::DiffQueue;
 use super::host::{
@@ -68,7 +66,7 @@ pub struct ListingsBuilder {
     leases: Arc<dyn ForegroundLeases>,
     locale: Arc<dyn ReadingLocale>,
     mounts: Arc<dyn MountTable>,
-    runtime: Handle,
+    runtime: Runtime,
     overlays: Vec<Arc<dyn ListingOverlay>>,
     observers: Vec<Arc<dyn ListingObserver>>,
 }
@@ -82,7 +80,7 @@ impl ListingsBuilder {
             leases: Arc::new(NoLeases),
             locale: Arc::new(NoLocale),
             mounts: Arc::new(NoMountTable),
-            runtime: cmdr_fs::volume::host::VolumeHost::detached().runtime(),
+            runtime: crate::rt::default_runtime(),
             overlays: Vec::new(),
             observers: Vec::new(),
         }
@@ -127,8 +125,10 @@ impl ListingsBuilder {
     }
 
     /// Spawns the engine's background work onto `handle`, so the host keeps ONE
-    /// thread pool.
-    pub fn runtime(mut self, handle: Handle) -> Self {
+    /// thread pool. Native only: the browser build always runs on the page's
+    /// event loop (`cmdr_fs::rt`).
+    #[cfg(not(target_family = "wasm"))]
+    pub fn runtime(mut self, handle: tokio::runtime::Handle) -> Self {
         self.runtime = handle;
         self
     }
@@ -149,7 +149,7 @@ impl ListingsBuilder {
                 observers: self.observers,
                 scratch: ScratchSettings::new(ScratchVisibility::default()),
                 cache: RwLock::new(HashMap::new()),
-                epoch: Instant::now(),
+                epoch: crate::rt::now(),
                 streaming: RwLock::new(HashMap::new()),
                 diffs,
                 refresh_slots: RwLock::new(HashMap::new()),

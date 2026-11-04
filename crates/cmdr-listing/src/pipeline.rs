@@ -12,9 +12,9 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use crate::rt::Runtime;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{SupportedDates, Volume};
-use tokio::runtime::Handle;
 
 use crate::Inner;
 use crate::host::ListingOverlay;
@@ -243,7 +243,7 @@ impl Inner {
 /// repo's real `.git/` contents beats a pane showing a listing error because
 /// `gix` tripped over a damaged object.
 async fn gather(
-    runtime: &Handle,
+    runtime: &Runtime,
     overlays: Vec<Arc<dyn ListingOverlay>>,
     volume_id: String,
     volume: Arc<dyn Volume>,

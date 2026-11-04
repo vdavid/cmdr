@@ -121,6 +121,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-disk-images":       "`--workspace` via HostCargoLaneArgs, narrowed to the real-image test modules (`cmdr-fs`, `cmdr`, `cmdr-index`) and run ignored-only; a targeted macOS lane, not a sweep",
 	"desktop-rust-tests-linux":       "`--workspace` computed for `linux`, since cargo runs in a container",
 	"desktop-rust-clippy-linux":      "`--workspace` computed for `linux`, since cargo runs in a container",
+	"desktop-rust-listing-wasm":      "`-p cmdr-listing-wasm` for `wasm32-unknown-unknown` (plus `cmdr-listing` and `cmdr-fs` under it), its own triple and profile; a targeted browser build, not a sweep",
 	"desktop-bindings-fresh":         "hashes every member's sources and manifest to decide whether to regenerate; the regen itself is `--workspace` via `pnpm bindings:regen`",
 	// Not coverage lanes: a handful of named tests against a live endpoint, each
 	// self-skipping without its key. They reach the app crate on purpose and nothing else.

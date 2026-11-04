@@ -37,6 +37,7 @@ import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
 import noRawKeyMatch from './eslint-plugins/no-raw-key-match.js'
 import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
 import noRawArkImport from './eslint-plugins/no-raw-ark-import.js'
+import demoIsolation from './eslint-plugins/demo-isolation.js'
 import noRawLocaleFormat from './eslint-plugins/no-raw-locale-format.js'
 import noPrivateUnitFormat from './eslint-plugins/no-private-unit-format.js'
 import noRawUserFacingString from './eslint-plugins/no-raw-user-facing-string.js'
@@ -148,6 +149,8 @@ export default tseslint.config(
     ignores: [
       'dist',
       'build',
+      // The browser demo's build output (`pnpm build:demo`)
+      'build-demo',
       '.svelte-kit',
       'node_modules',
       'src-tauri/target',
@@ -314,6 +317,7 @@ export default tseslint.config(
           'no-raw-key-match': noRawKeyMatch,
           'no-raw-lucide-import': noRawLucideImport,
           'no-raw-ark-import': noRawArkImport,
+          'demo-isolation': demoIsolation,
           'no-raw-locale-format': noRawLocaleFormat,
           'no-private-unit-format': noPrivateUnitFormat,
           'no-raw-user-facing-string': noRawUserFacingString,
@@ -352,6 +356,9 @@ export default tseslint.config(
       // wrappers, never Ark directly. Allowlisted: everything under `lib/ui/`
       // plus the three sanctioned settings wrappers (see the rule).
       'cmdr/no-raw-ark-import': 'error',
+      // The browser demo stays out of app code: no `__CMDR_DEMO_BUILD__` branch, no `#lib/demo`
+      // import, outside `src/lib/demo/` and the boot import in `hooks.client.ts`.
+      'cmdr/demo-isolation': 'error',
       // One locale source, one formatting layer: feature code routes every
       // user-facing number/size/date through `#lib/intl` and the central format
       // utils, never a raw `.toLocaleString(...)` or a hand-built `Intl.*`

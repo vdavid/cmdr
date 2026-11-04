@@ -110,6 +110,7 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr", Kind: KindApp, Glob: "apps/desktop/src-tauri/**"},
 	{Pkg: "cmdr-adb", Kind: KindApp, Glob: "crates/cmdr-adb/**"},
 	{Pkg: "cmdr-archive", Kind: KindApp, Glob: "crates/cmdr-archive/**"},
+	{Pkg: "cmdr-brief-columns", Kind: KindApp, Glob: "crates/cmdr-brief-columns/**"},
 	{Pkg: "cmdr-collation", Kind: KindApp, Glob: "crates/cmdr-collation/**"},
 	{Pkg: "cmdr-fs", Kind: KindApp, Glob: "crates/cmdr-fs/**"},
 	{Pkg: "cmdr-fsevent-stream", Kind: KindApp, Glob: "crates/fsevent-stream/**"},
@@ -117,6 +118,7 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr-http", Kind: KindApp, Glob: "crates/cmdr-http/**"},
 	{Pkg: "cmdr-index", Kind: KindApp, Glob: "crates/cmdr-index/**"},
 	{Pkg: "cmdr-listing", Kind: KindApp, Glob: "crates/cmdr-listing/**"},
+	{Pkg: "cmdr-listing-wasm", Kind: KindApp, Glob: "crates/cmdr-listing-wasm/**"},
 	{Pkg: "cmdr-local", Kind: KindApp, Glob: "crates/cmdr-local/**"},
 	{Pkg: "cmdr-media-meta", Kind: KindApp, Glob: "crates/cmdr-media-meta/**"},
 	{Pkg: "cmdr-mtp", Kind: KindApp, Glob: "crates/cmdr-mtp/**"},
@@ -175,7 +177,8 @@ var rustWorkspaceConfigInputs = []string{
 // updater key (`updater/signature.rs` reads `updater-backup.pub`). The security
 // advisory module embeds the committed advisory list (`security_advisories/mod.rs`).
 // The frontend-bridge redaction test reads the marker vocabulary and the shared
-// case table the TS logger is tested against (`redact/fe_bridge_tests.rs`).
+// case table the TS logger is tested against (`redact/fe_bridge_tests.rs`). The browser
+// demo's event drift guard reads the generated bindings (`cmdr-listing-wasm/src/events_test.rs`).
 //
 // A lane carries this whenever its own set covers the tree that does the
 // embedding, which is what `TestRustInputsCoverEveryEmbeddedFile` walks the whole
@@ -186,6 +189,7 @@ var rustWorkspaceConfigInputs = []string{
 var rustEmbeddedInputs = []string{
 	"CHANGELOG.md",
 	"apps/desktop/src/lib/commands/command-ids.ts",
+	"apps/desktop/src/lib/ipc/bindings.ts",
 	"apps/desktop/src/lib/logging/bridge-redaction-cases.json",
 	"apps/desktop/src/lib/logging/log-markers.json",
 	"apps/desktop/src/lib/units/drive-figure-cases.json",
@@ -323,12 +327,42 @@ func desktopAppInputs() []string {
 	)
 }
 
-// websiteInputs mirrors ci.yml's `website` filter.
+// websiteInputs and websiteDemoInputs together mirror ci.yml's `website` filter.
 var websiteInputs = []string{
 	"apps/website/**",
 	".dockerignore",
 	"CHANGELOG.md",
+	"feature-status.json",
 	"pnpm-lock.yaml",
+}
+
+// websiteDemoInputs are what the browser demo at /demo/ builds from (`pnpm build:demo`: the
+// listing engine for wasm32, then the desktop frontend's demo build), for the website checks that
+// see the demo (the Docker build and the E2E, when a local demo is built). It must equal the path
+// list `scripts/website-demo-key.sh` hashes into the demo image's tag, which
+// `TestWebsiteDemoInputsMatchTheImageKey` enforces.
+var websiteDemoInputs = []string{
+	"package.json",
+	"pnpm-lock.yaml",
+	"feature-status.json",
+	"apps/desktop/src/**",
+	"apps/desktop/static/**",
+	"apps/desktop/package.json",
+	"apps/desktop/vite.config.js",
+	"apps/desktop/tsconfig.json",
+	"apps/website/demo-image.Dockerfile",
+	"crates/cmdr-listing-wasm/**",
+	"crates/cmdr-listing/**",
+	"crates/cmdr-fs/**",
+	"crates/cmdr-collation/**",
+	"crates/cmdr-brief-columns/**",
+	"vendor/**",
+	"scripts/build-listing-wasm.sh",
+	"scripts/build-listing-wasm/**",
+	"scripts/website-demo-key.sh",
+	"Cargo.toml",
+	"Cargo.lock",
+	"rust-toolchain.toml",
 }
 
 // apiServerInputs mirrors ci.yml's `api-server` filter.
@@ -452,7 +486,8 @@ var goTestsInputs = inputs(
 	rustWorkspaceConfigInputs,
 	rustEmbeddedInputs,
 	treeGlobs(frontendSourceRoots...),
-	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, s3ComposeRel, s3StartRel, nfsComposeRel, nfsStartRel, smbComposeRel},
+	// ci.yml: `TestWebsiteDemoInputsMatchTheImageKey` reads its `website` filter.
+	[]string{"apps/desktop/package.json", ".github/workflows/ci.yml", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, s3ComposeRel, s3StartRel, nfsComposeRel, nfsStartRel, smbComposeRel},
 )
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks

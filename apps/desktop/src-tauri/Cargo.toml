@@ -129,6 +129,9 @@ cmdr-listing = { path = "../../../crates/cmdr-listing" }
 # here rather than through `cmdr-listing`'s re-export, so it never needs the
 # listing engine for one type.
 cmdr-collation = { path = "../../../crates/cmdr-collation" }
+# Brief mode's column widths and the font metrics store behind them, shared with
+# the browser demo. The app keeps the store's on-disk cache (`font_metrics/`).
+cmdr-brief-columns = { path = "../../../crates/cmdr-brief-columns" }
 # What photos, videos, and music files say about themselves (EXIF, capture dates,
 # tags), read through any volume, for Multi-Rename's `[=source.field]` placeholders.
 cmdr-media-meta = { path = "../../../crates/cmdr-media-meta" }

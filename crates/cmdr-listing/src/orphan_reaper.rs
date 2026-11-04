@@ -122,7 +122,7 @@ impl Inner {
         let engine = self.downgrade();
         self.runtime.spawn(async move {
             loop {
-                tokio::time::sleep(REAPER_SWEEP_INTERVAL).await;
+                crate::rt::time::sleep(REAPER_SWEEP_INTERVAL).await;
                 // Upgraded only for the sweep: holding it across the sleep would keep
                 // the engine alive for as long as the loop runs.
                 let Some(engine) = engine.upgrade() else {

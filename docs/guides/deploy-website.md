@@ -4,14 +4,25 @@ The website (getcmdr.com) is automatically deployed when changes are pushed to t
 
 ## How it works
 
-1. Push to `main` (or merge a PR)
-2. GitHub Actions runs the `website` job (oxfmt, ESLint, typecheck, build, Playwright, Lighthouse)
-3. If all checks pass, the `deploy-website` job sends a webhook to the server
+1. Push to `main` (or merge a PR). A change to `apps/website/**` triggers it, and so does a change to what the browser
+   demo at `/demo/` builds from (the desktop frontend, the listing engine's crates, the WASM build script, the Cargo
+   workspace files; the full list is `ci.yml`'s `website` filter).
+2. GitHub Actions runs the `website-demo` job (builds the demo) and then the `website` job (oxfmt, ESLint, typecheck,
+   build with the demo, Playwright, Lighthouse)
+3. If all checks pass, the `publish-website-demo` job pushes the demo bundle as the public image
+   `ghcr.io/vdavid/cmdr-demo:<content key>` (skipped when an image of the same sources exists), then the
+   `deploy-website` job sends a webhook to the server, its signed payload carrying the image's digest and content key
 4. The server verifies the signature and runs the deploy script:
    - Pulls the latest code
-   - Rebuilds the Docker image, which fetches the live update manifest (`latest.json` of the GitHub release marked
-     "Latest") into the site; a failed fetch fails the build and the old site stays up
+   - Checks the payload's content key equals its checkout's (`scripts/website-demo-key.sh`), then rebuilds the Docker
+     image with the demo pinned by digest (`DEMO_IMAGE_DIGEST`), so it only copies the demo and never compiles Rust. The
+     site stage also fetches the live update manifest (`latest.json` of the GitHub release marked "Latest") into the
+     site. A key mismatch, a failed fetch, or a missing image fails the deploy, and the old site stays up
    - Restarts the container
+
+The `cmdr-demo` package must be public, since the server pulls anonymously. If GHCR creates it private on the first
+push, the publish job fails with a pointer to its settings page, and David sets its visibility to public once
+(`apps/website/DETAILS.md` § Browser demo).
 
 ## Server setup (one-time)
 
@@ -229,8 +240,10 @@ sudo -u deploy-cmdr -i
 cd /opt/cmdr
 git fetch origin main && git reset --hard origin/main
 cd apps/website
-# Build first so the old container keeps serving during the build (avoids ~15s downtime)
-docker compose build --no-cache
+# Build first so the old container keeps serving during the build (avoids ~15s downtime).
+# The demo image for this checkout's sources, pinned by its digest
+DIGEST=$(docker buildx imagetools inspect "ghcr.io/vdavid/cmdr-demo:$(../../scripts/website-demo-key.sh)" --format '{{.Manifest.Digest}}')
+docker compose build --no-cache --build-arg DEMO_IMAGE_DIGEST="${DIGEST#sha256:}"
 docker compose down
 docker compose up -d
 ```

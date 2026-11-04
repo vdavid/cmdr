@@ -1455,6 +1455,7 @@ dependencies = [
  "chrono",
  "cmdr-adb",
  "cmdr-archive",
+ "cmdr-brief-columns",
  "cmdr-collation",
  "cmdr-fs",
  "cmdr-fsevent-stream",
@@ -1608,6 +1609,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmdr-brief-columns"
+version = "0.0.0"
+dependencies = [
+ "cmdr-fs",
+ "cmdr-listing",
+ "log",
+ "serde",
+ "specta",
+]
+
+[[package]]
 name = "cmdr-collation"
 version = "0.0.0"
 dependencies = [
@@ -1639,6 +1651,9 @@ dependencies = [
  "unicode-segmentation",
  "uuid",
  "uzers",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-time",
  "xattr",
 ]
 
@@ -1741,6 +1756,22 @@ dependencies = [
  "tokio",
  "tokio-util",
  "uuid",
+]
+
+[[package]]
+name = "cmdr-listing-wasm"
+version = "0.0.0"
+dependencies = [
+ "cmdr-brief-columns",
+ "cmdr-fs",
+ "cmdr-listing",
+ "js-sys",
+ "log",
+ "serde",
+ "serde_json",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]

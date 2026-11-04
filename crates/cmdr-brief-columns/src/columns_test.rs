@@ -1,23 +1,54 @@
 //! Unit tests for `compute_brief_column_text_widths`.
 //!
-//! These tests insert a listing into the listing cache and seed `font_metrics`
-//! with deterministic per-codepoint widths so we can assert exact pixel sums.
-//! Each font ID gets a fixed width-per-char so the widest filename's width
-//! collapses to `width_per_char * name.chars().count()`.
+//! These tests insert a listing into one shared test engine and seed one shared
+//! `FontMetricsStore` with deterministic per-codepoint widths so we can assert
+//! exact pixel sums. Each font ID gets a fixed width-per-char so the widest
+//! filename's width collapses to `width_per_char * name.chars().count()`.
 //!
-//! Both globals are keyed per test: the listing id comes from `TestListing`, and
-//! the font id from `seed_font`'s own counter. `font_metrics::METRICS_CACHE` is
-//! process-global too, so a shared font id let one test's `store_metrics` change
-//! the width-per-char another test was mid-assertion on.
+//! Both are shared across the tests, so both are keyed per test: the listing id
+//! comes from `TestListing`, and the font id from `seed_font`'s own counter. A
+//! shared font id let one test's seed change the width-per-char another test was
+//! mid-assertion on.
 
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
-use super::brief_columns::{BriefColumnsError, compute_brief_column_text_widths};
+use crate::columns::{
+    BriefColumnWidths, BriefColumnsError, BriefColumnsErrorKind, BriefColumnsIpcError, BriefColumnsQuery,
+    tag_cluster_width,
+};
+use crate::metrics::{FontMetrics, FontMetricsStore};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::testing::unique_test_id;
-use cmdr_listing::testing::{TestListing, TestListingGuard};
+use cmdr_listing::testing::{TestEngine, TestListing, TestListingGuard};
 
-/// Seeds `font_metrics` with a uniform `width_per_char` for ASCII printable code
+static ENGINE: LazyLock<TestEngine> = LazyLock::new(TestEngine::new);
+static STORE: LazyLock<FontMetricsStore> = LazyLock::new(FontMetricsStore::new);
+
+/// The crate's entry point over the shared engine and store, in the positional
+/// shape the cases below were written against.
+fn compute_brief_column_text_widths(
+    listing_id: &str,
+    items_per_column: usize,
+    has_parent: bool,
+    font_id: &str,
+    include_hidden: bool,
+) -> Result<BriefColumnWidths, BriefColumnsError> {
+    let query = BriefColumnsQuery {
+        listing_id: listing_id.to_string(),
+        items_per_column,
+        has_parent,
+        font_id: font_id.to_string(),
+        include_hidden,
+    };
+    crate::columns::compute_brief_column_text_widths(&ENGINE, &STORE, &query)
+}
+
+fn store_metrics(font_id: String, widths: HashMap<u32, f32>) {
+    STORE.insert(font_id.clone(), FontMetrics::new(font_id, widths));
+}
+
+/// Seeds the store with a uniform `width_per_char` for ASCII printable code
 /// points, under a font id unique to this call, so any filename of length N
 /// measures to `N * width_per_char`. Returns the font id.
 fn seed_font(width_per_char: f32) -> String {
@@ -27,7 +58,7 @@ fn seed_font(width_per_char: f32) -> String {
     for cp in 0x20u32..=0x7Eu32 {
         widths.insert(cp, width_per_char);
     }
-    crate::font_metrics::store_metrics(font_id.clone(), widths).expect("store font metrics");
+    store_metrics(font_id.clone(), widths);
     font_id
 }
 
@@ -59,9 +90,50 @@ fn make_entry(name: &str) -> FileEntry {
 }
 
 fn insert_listing(tag: &str, entries: Vec<FileEntry>) -> TestListingGuard {
-    TestListing::new()
-        .entries(entries)
-        .insert(crate::listing_host::listings(), tag)
+    TestListing::new().entries(entries).insert(&ENGINE, tag)
+}
+
+// ============================================================================
+// Wire kinds and the tag-dot reservation
+// ============================================================================
+
+// The frontend decides retry-or-give-up from `kind` alone. If a variant ever loses
+// its own kind and collapses into `Other`, the FE silently stops retrying (or starts
+// retrying a caller bug forever) with nothing to notice it by.
+#[test]
+fn every_backend_variant_keeps_its_own_wire_kind() {
+    assert_eq!(
+        BriefColumnsIpcError::from(BriefColumnsError::FontMetricsNotReady).kind,
+        BriefColumnsErrorKind::FontMetricsNotReady
+    );
+    assert_eq!(
+        BriefColumnsIpcError::from(BriefColumnsError::InvalidItemsPerColumn).kind,
+        BriefColumnsErrorKind::InvalidItemsPerColumn
+    );
+    assert_eq!(
+        BriefColumnsIpcError::from(BriefColumnsError::ListingNotFound("listing-7".to_string())).kind,
+        BriefColumnsErrorKind::ListingNotFound
+    );
+    assert_eq!(
+        BriefColumnsIpcError::from(BriefColumnsError::Other("lock poisoned".to_string())).kind,
+        BriefColumnsErrorKind::Other
+    );
+    assert_eq!(BriefColumnsIpcError::timeout().kind, BriefColumnsErrorKind::Timeout);
+}
+
+// Mirrors `tagClusterWidthPx` in `tag-dots-utils.ts`; keep the two in sync.
+#[test]
+fn cluster_width_matches_fe_geometry() {
+    // No colored tags reserves nothing.
+    assert_eq!(tag_cluster_width(0), 0.0);
+    // gap(5) + dot(10) + (slots-1)*overlap(5).
+    assert_eq!(tag_cluster_width(1), 15.0);
+    assert_eq!(tag_cluster_width(2), 20.0);
+    assert_eq!(tag_cluster_width(3), 25.0);
+    // 4+ overflows: 3 slots + chip extra(8).
+    assert_eq!(tag_cluster_width(4), 33.0);
+    // Plateaus past the cap regardless of count.
+    assert_eq!(tag_cluster_width(42), tag_cluster_width(4));
 }
 
 // ============================================================================
@@ -304,7 +376,7 @@ fn an_unmeasured_size_answers_at_once_from_a_measured_one() {
     for cp in 0x20u32..=0x7Eu32 {
         widths.insert(cp, 1.0);
     }
-    crate::font_metrics::store_metrics(format!("{family}-400-10"), widths).expect("store font metrics");
+    store_metrics(format!("{family}-400-10"), widths);
     let listing = insert_listing("bc_scaled", vec![make_entry("abcd.txt")]);
 
     let exact = compute_brief_column_text_widths(listing.id(), 5, false, &format!("{family}-400-10"), false)

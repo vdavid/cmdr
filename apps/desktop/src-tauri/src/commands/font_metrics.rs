@@ -4,64 +4,19 @@
 //! width pairs and write a file, and a sync command would do that on the IPC
 //! handler thread.
 //!
-//! Widths cross the wire as two parallel arrays rather than a
-//! `Record<codePoint, width>`. The object form spends a quoted key per entry;
-//! the arrays are the same data at a fraction of the JSON.
+//! Widths cross the wire as two parallel arrays
+//! (`cmdr_brief_columns::widths_from_parallel`), and a write that doesn't land
+//! answers `cmdr_brief_columns::FontMetricsError`.
 
-use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::font_metrics;
+use cmdr_brief_columns::{FontMetricsError, widths_from_parallel};
 use cmdr_fs::deadline::blocking_typed_result_with_timeout;
 
 /// Writing the metrics file is a small serialize plus one `fs::write` to the
 /// app data dir; 5 s matches the write tier used elsewhere in `commands/`.
 const WRITE_TIMEOUT: Duration = Duration::from_secs(5);
-
-/// Why a metrics write didn't land.
-///
-/// ❌ Not prose: the frontend logs the variant and re-measures next time. A
-/// pane whose widths didn't persist renders at its provisional width, so
-/// nothing here has ever needed words.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum FontMetricsError {
-    /// The two parallel arrays didn't line up, which means a caller bug rather
-    /// than anything about the user's data. Carries both lengths so the log
-    /// says which side is short.
-    MismatchedWidths {
-        /// How many code points arrived.
-        code_points: usize,
-        /// How many widths arrived.
-        widths: usize,
-    },
-    /// Serializing or writing the metrics file didn't work.
-    CouldntPersist {
-        /// What the store reported, for the log.
-        detail: String,
-    },
-    /// The write didn't finish inside the command's wait.
-    TimedOut,
-    /// The blocking task panicked, so no answer is coming.
-    Unexpected {
-        /// What the runtime reported, for the log.
-        detail: String,
-    },
-}
-
-/// Zips the wire's parallel arrays into the map the cache stores.
-///
-/// A length mismatch means a caller bug, not user data, so it's rejected
-/// rather than silently truncated.
-fn zip_widths(code_points: Vec<u32>, widths: Vec<f32>) -> Result<HashMap<u32, f32>, FontMetricsError> {
-    if code_points.len() != widths.len() {
-        return Err(FontMetricsError::MismatchedWidths {
-            code_points: code_points.len(),
-            widths: widths.len(),
-        });
-    }
-    Ok(code_points.into_iter().zip(widths).collect())
-}
 
 /// Runs one metrics write under the shared deadline, in this family's vocabulary.
 async fn persist_metrics(f: impl FnOnce() -> Result<(), String> + Send + 'static) -> Result<(), FontMetricsError> {
@@ -88,7 +43,7 @@ pub async fn store_font_metrics<R: tauri::Runtime>(
     code_points: Vec<u32>,
     widths: Vec<f32>,
 ) -> Result<(), FontMetricsError> {
-    let widths = zip_widths(code_points, widths)?;
+    let widths = widths_from_parallel(code_points, widths)?;
     let count = widths.len();
     let logged_id = font_id.clone();
 
@@ -112,7 +67,7 @@ pub async fn extend_font_metrics<R: tauri::Runtime>(
     code_points: Vec<u32>,
     widths: Vec<f32>,
 ) -> Result<(), FontMetricsError> {
-    let widths = zip_widths(code_points, widths)?;
+    let widths = widths_from_parallel(code_points, widths)?;
 
     persist_metrics(move || font_metrics::extend_and_persist(&app, &font_id, widths)).await
 }

@@ -11,6 +11,11 @@
  * SvelteKit merges what this returns over its fallback, so it returns only the fields it overrides.
  */
 
+// First import, so in a demo build the fake backend is in place before any other module runs.
+// Every other build resolves it to an empty module (`vite.config.js`). Never a top-level
+// `await import()` instead: WebKit can run an importer before an awaiting module finishes, and
+// Safari visitors run the demo too. See `src/lib/demo/DETAILS.md`.
+import '#lib/demo/boot.js'
 import type { HandleClientError } from '@sveltejs/kit/hooks'
 import { logPageCrash } from '#lib/logging/uncaught-errors.js'
 

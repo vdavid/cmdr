@@ -182,6 +182,8 @@ Props: `file: FileEntry`, `syncStatus?: SyncStatus` (picks the sync badge's imag
 - Primary: `<img>` from `getCachedIcon(file.iconId)`.
 - Fallback (cache miss only): bundled macOS default folder/file icon (`static/icons/default-folder.png` /
   `default-file.png`, extracted from the system `GenericFolderIcon`/`GenericDocumentIcon`), chosen by `isFolderIcon`.
+  The URL goes through `$app/paths`' `asset()`, so it holds under any SvelteKit base (the browser demo serves at
+  `/demo`); vitest aliases `$app/paths` to `apps/desktop/src/test-app-paths-shim.ts`.
 - Symlink badge: the `link` glyph via `<Icon>` (size 10, `--color-accent-pop`, a mode-aware higher-contrast accent),
   bottom-right by default, moving to top-left when a sync badge is present.
 - Sync badge: 10×10px `<img>` at bottom-right; image and name come from `getSyncIconPath` / `getSyncStatusLabelKey`

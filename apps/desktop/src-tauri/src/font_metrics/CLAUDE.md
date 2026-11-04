@@ -1,55 +1,22 @@
 # Font metrics
 
-Binary font metrics cache and text width calculation for Brief mode column sizing. Rust can't access system fonts, so
-the frontend measures character widths via the Canvas API and ships them to Rust over IPC.
+The desktop's host for `cmdr-brief-columns` (the width math, the store, and the Brief column computation:
+`crates/cmdr-brief-columns/CLAUDE.md`). This module holds only what needs the app: the process-wide
+`FontMetricsStore` (`store()`) and its on-disk cache, one bincode2 file per font ID.
 
-`mod.rs` (plus `mod_test.rs`) holds the cache and the width math. `brief_columns.rs` (plus `brief_columns_test.rs`) sizes
-each Brief column from a cached listing's rows with `calculate_max_width_with_suffixes`, behind the
-`get_brief_column_text_widths` IPC.
-
-## Public API
-
-- **`store_and_persist(app, font_id, widths)`**: replace a font's entry (cache + `{font_id}.bin`) from the eager
-  measurement. Takes ownership of the map.
-- **`extend_and_persist(app, font_id, widths)`**: merge on-demand measured widths into an existing entry and rewrite
-  its file. Errors if the font isn't cached.
-- **`has_metrics(font_id)`**: is this font ID cached?
-- **`calculate_max_width_scaled_from_nearest(items, font_id)`**: the same widest-pair width for an unmeasured size, from
-  the nearest cached size of its family and weight scaled by the size ratio; reports no missing code points.
-- **`calculate_max_width_with_suffixes(items, font_id, missing)`**: widest of `(text, trailing-px-suffix)` pairs
-  (suffix `0.0` is the plain widest-string case; the Brief tag-dot reservation passes a per-row cluster width); `None`
-  if the font ID isn't cached. Records every unmeasured code point into `missing`. Primary width entry point
-  (`FontMetrics::calculate_text_width` is the per-string method used internally).
-- **`load_from_disk` / `init_font_metrics(app, font_id)`**: read `{font_id}.bin` (bincode2) under `~/…/font-metrics/`;
-  the latter is an idempotent startup load of one ID.
-- **`load_all_metrics_from_disk(app)`**: startup scan that pre-loads every `*.bin`, so user-customized text sizes are
-  warm on first paint.
-
-Cache: `METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>`. `FontMetrics` holds `version`, `font_id`,
-`widths`, `average_width`.
+- `mod.rs`: `store_and_persist`, `extend_and_persist`, `has_metrics`, and the startup loads (`init_font_metrics`,
+  `load_all_metrics_from_disk`, which pre-loads every `*.bin` so a customized text size is warm on first paint).
+- `brief_columns.rs`: `compute_brief_column_text_widths` over `listings()` and `store()`, plus the E2E failure hook
+  (`FAIL_NEXT_WIDTH_CALLS`, `playwright-e2e` only). The commands: `commands/font_metrics.rs` and
+  `get_brief_column_text_widths` in `commands/file_system/listing.rs`.
 
 ## Must-knows
 
-- **`average_width` is a one-paint stand-in, never a resting state.** An unmeasured code point is costed at the average
-  AND reported through `missing`, so the frontend measures it and calls `extend_font_metrics`; from the next query on
-  the width is exact. ❌ Don't drop the `missing` out-param to "simplify" a width call — that silently reinstates
-  permanently-approximate columns for every non-Latin filename. The frontend measures only a small eager set (Latin,
-  punctuation, symbols, common emoji), so this path is normal, not exceptional.
-- **Cache key is `"{family}-{weight}-{size}"`** (for example `"system-400-12"`) and MUST match the frontend's
-  `getCurrentFontId()`. No validation: a mismatch just returns `None`. Size varies with `appearance.textSize` × system
-  Accessibility text size, so several sizes can coexist in cache. If `getCurrentFontId()`'s format changes, width
-  calculation silently breaks. A size not yet measured borrows the nearest measured size of the same family and weight,
-  scaled (`calculate_max_width_scaled_from_nearest`), and the Brief answer says `approximate: true`, so the frontend
-  asks again once `ensureFontMetricsLoaded()` lands. Only with no size of that family cached does it surface as
-  `BriefColumnsError::FontMetricsNotReady` (wire kind `fontMetricsNotReady`), which waits on the measurement and
-  retries once.
-- **Both writes serialize under the lock, then write the file after releasing it.** That's what lets `extend` merge
-  into the cached map without cloning it out; a few thousand pairs is not a map you want to copy per call, and this
-  path used to clone it twice.
+- **Both writes serialize under the store's lock, then write the file after releasing it** (`extend_with` runs the
+  serializer). That's what lets an extend merge into the stored map without cloning it out.
+- **The file is `FontMetrics`' serde form**, pinned byte for byte by `the_disk_format_is_pinned`. A file that doesn't
+  decode is skipped silently and the size re-measured, so a format change would cost every user a re-measure, never an
+  error.
+- **The E2E hook fires only after the `items_per_column == 0` rejection would have**, as it did inside the computation.
 
-## Dependencies
-
-External: `bincode2`. Internal: `crate::config::resolved_app_data_dir`, `crate::ignore_poison`.
-
-Full details (decisions: Canvas-measure over Rust fonts, binary-over-JSON format, `RwLock`, the fill-in contract):
-`DETAILS.md`.
+Disk format and why binary: `DETAILS.md`.

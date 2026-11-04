@@ -52,7 +52,17 @@ export const svelteOptions = {
 // The adapter rimrafs this dir on every build, so it must never BE a mount point
 // (rmdir on a mount point is EBUSY) — pointing it INSIDE the container's
 // `.svelte-kit` volume satisfies both.
-const pagesDir = process.env.CMDR_FRONTEND_BUILD_DIR ?? 'build'
+// The browser demo build (`pnpm build:demo`, `CMDR_DEMO_BUILD=1`): the same frontend on the fake
+// backend in `src/lib/demo/`, served from getcmdr.com/demo, so it gets that base path and its own
+// output dir (never `build`, which Tauri embeds). Every other build gets `__CMDR_DEMO_BUILD__`
+// false and `#lib/demo/boot.js` aliased to an empty module (grep a bundle for `__cmdrDemo`). See
+// `src/lib/demo/DETAILS.md`.
+const demoBuild = process.env.CMDR_DEMO_BUILD === '1'
+
+const pagesDir = process.env.CMDR_FRONTEND_BUILD_DIR ?? (demoBuild ? 'build-demo' : 'build')
+
+// The demo's WASM listing engine (`pnpm build:listing-wasm`'s output, gitignored).
+const listingWasmDir = fileURLToPath(new URL('../../crates/cmdr-listing-wasm/pkg', import.meta.url))
 
 /**
  * Bakes the old-WebKit boot guard's translated strings into the app shell, and
@@ -142,12 +152,35 @@ export default defineConfig(async () => ({
       files: {
         appTemplate: generateAppTemplate(),
       },
+      paths: { base: demoBuild ? '/demo' : '' },
     }),
     ...(withFrontendSbom ? [frontendSbom()] : []),
   ],
 
+  // Outside the demo build, `hooks.client.ts`'s import of the demo backend resolves to an empty
+  // module, so none of `src/lib/demo/` reaches the graph. `boot.ts`'s own `__CMDR_DEMO_BUILD__`
+  // guard alone would leave any module-level demo data in the bundle.
+  // In the demo build, `listing.ts`'s `virtual:cmdr-listing-wasm` is the WASM listing engine's JS
+  // glue, built by `pnpm build:listing-wasm` (which `build:demo` and `dev:demo` run first).
+  resolve: {
+    alias: demoBuild
+      ? [
+          {
+            find: /^virtual:cmdr-listing-wasm$/,
+            replacement: join(listingWasmDir, 'cmdr_listing_wasm.js'),
+          },
+        ]
+      : [
+          {
+            find: /^#lib\/demo\/boot\.js$/,
+            replacement: fileURLToPath(new URL('./src/lib/demo/boot-absent.ts', import.meta.url)),
+          },
+        ],
+  },
+
   define: {
     __CMDR_E2E_BUILD__: JSON.stringify(e2eBuild),
+    __CMDR_DEMO_BUILD__: JSON.stringify(demoBuild),
     __CMDR_WORKTREE_LABEL__: JSON.stringify(worktreeLabel),
   },
 
@@ -189,5 +222,7 @@ export default defineConfig(async () => ({
     watch: {
       ignored: ['**/src-tauri/**'],
     },
+    // SvelteKit's allow list covers the app; the demo's engine fetches its `.wasm` from outside it.
+    fs: demoBuild ? { allow: [listingWasmDir] } : undefined,
   },
 }))
