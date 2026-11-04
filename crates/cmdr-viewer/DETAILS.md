@@ -460,9 +460,15 @@ TRUE source offset just past the last row, and `ChunkEnd`, which says whether it
 - ❗ Deriving the next offset from decoded string lengths. Those are UTF-8 even when the file is UTF-16, and they carry
   no newline. Use `end_byte_offset`.
 
-**The trailing empty line**: a file ending in a newline has a final EMPTY row, in all three backends. FullLoad always
-did; ByteSeek and LineIndex stopped one byte earlier, so ⌘A then ⌘C on the same file gave two answers depending only on
-the file's size. FullLoad's answer wins because it is the one that makes a whole-file copy byte-identical to the file.
+**No row past a final newline**: `a\nb\n` is two rows and two lines in all three backends, the way `less` and editors
+count it, so the status bar's line count and the last gutter number agree with every other tool. The rule makes it so
+(`rows.rs`: no boundary sits at EOF, except clause 1's on an empty file, which keeps its one empty row). The final
+newline lives on as the last row's `ViewerRow::ends_at_newline`, a fact kept off the wire (`#[serde(skip)]`): it is what
+lets `range_read` hand a whole-file copy every byte. A walk off the end of the file (`RangeEnd::Eof`, or an explicit end
+past the last row) pays the last row's newline when it has one, and so does an explicit end AT the last row's end,
+because no row follows a final newline for a caret to sit on: ⌘A on a counted file sends exactly that end. All three
+backends give one answer for the same file whatever its size. The `inspect` AI tool's window shows the newline the same
+way, once it reaches the end of the file.
 
 **A BOM is not content.** The row GRID is absolute (a BOM must not shift one backend's rows against another's, since a
 reload or a tail escalation swaps backends under a live frontend row cache), but a file's first row starts past the BOM.

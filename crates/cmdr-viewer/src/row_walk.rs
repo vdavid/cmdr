@@ -54,7 +54,8 @@ pub fn content_start(head: &[u8], encoding: FileEncoding) -> u64 {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NextBoundary {
     /// Clause 2: the byte just past a newline. The row it closes ended at the file's
-    /// own break, so its text stops one code unit short of it.
+    /// own break, so its text stops one code unit short of it. On the file's final
+    /// newline this is EOF itself, and no row starts there.
     LineStart(u64),
     /// Clause 3: a segment multiple, already snapped to a character start. The row it
     /// closes is one Cmdr ended itself, and keeps every byte as text.
@@ -151,6 +152,11 @@ impl RowSpan {
     pub fn text_bytes(&self) -> u64 {
         self.text_end - self.start
     }
+
+    /// The row ended at a newline the file holds: its span runs past its text.
+    pub fn ends_at_newline(&self) -> bool {
+        self.text_end < self.end
+    }
 }
 
 /// How many bytes a [`RowReader`] pulls per refill. Big enough that a file of short
@@ -240,12 +246,10 @@ impl<S: RowSource> RowReader<S> {
 
     /// Whether [`RowReader::next_span`] would return `None`: the walk has no row left.
     ///
-    /// ❗ ❌ Not `cursor == total_bytes`. On a file ending in a newline that is true one
-    /// row BEFORE the end, because the final empty row starts at that same offset. A
-    /// caller using the offset as its tell either stops a row early (losing the file's
-    /// last newline) or, having served that row, asks once more and is handed it again.
+    /// ❗ ❌ Not `cursor == total_bytes`. On an empty file that is true BEFORE its one
+    /// empty row has been served; a caller using the offset as its tell serves nothing.
     pub fn at_end(&self) -> bool {
-        self.finished || (self.cursor >= self.total_bytes && !self.at_line_start)
+        self.finished || (self.cursor >= self.total_bytes && self.cursor > self.content_start)
     }
 
     /// Absolute offset of the next row's first byte.
@@ -308,12 +312,11 @@ impl<S: RowSource> RowReader<S> {
         let start = self.cursor;
         if start >= self.total_bytes {
             self.finished = true;
-            // A file that ends with a newline has one more row after it: the empty one
-            // the cursor is sitting on. An empty file has exactly that row and nothing
-            // else. Both match what `FullLoadBackend` has always produced, and taking
-            // that answer for all three backends is what makes a whole-file copy carry
-            // the file's final newline whatever the file's size.
-            if self.at_line_start {
+            // An empty file (or one holding only its BOM) has exactly one row, an empty
+            // one, the way an editor opens it. A file ending in a newline has NO empty row
+            // past it: that newline ended its last row (`rows.rs`, "No boundary sits at
+            // EOF").
+            if start == self.content_start {
                 self.last_row_at = self.buf.len();
                 return Ok(Some(RowSpan {
                     start,
@@ -445,6 +448,13 @@ pub struct ViewerRow {
     /// gutter prints nothing there, the usual editor convention). An estimate on
     /// `ByteSeekBackend`, which has no line index; exact on the other two.
     pub line_number: Option<usize>,
+    /// The row ended at a newline the file holds, which its text leaves out. False on a
+    /// continuing row and on a last row the file ends without a newline. A copy that runs
+    /// to the end of the file pays the last row's newline only when this is true, which
+    /// is what keeps a whole-file copy byte-identical now that no empty row follows a
+    /// final newline. Not on the wire: the frontend reads `continues` alone.
+    #[serde(skip)]
+    pub ends_at_newline: bool,
 }
 
 /// Why a chunk holds the rows it holds.
@@ -538,6 +548,7 @@ pub fn collect_rows<S: RowSource>(
             byte_offset: span.start,
             continues: span.continues,
             line_number,
+            ends_at_newline: span.ends_at_newline(),
         });
         taken += span.text_bytes();
         end_byte_offset = span.end;

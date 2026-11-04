@@ -21,7 +21,8 @@ model. A host builds one `Viewer` over its `host::ViewerHost`: the desktop app
 
 - **Rows, not physical lines** (`rows.rs`); raw binary/hex reads use byte offsets. ❗ `continues: true` means CMDR ended
   that row, so ❌ never join it to the next with `\n`; walk by `ChunkEnd` + `end_byte_offset`, ❌ never row counts or
-  decoded lengths. `DETAILS.md` § "Rows, not lines".
+  decoded lengths. No row follows a final newline: a copy reaching the file's end pays it from the last row's off-wire
+  `ends_at_newline`, ❌ never from `!continues`. `DETAILS.md` § "Rows, not lines".
 - **No app reach, no ambient runtime**: an app concern arrives through `host/`; a job starts in `worker.rs`, a future
   runs on the `Viewer`'s runtime via `bridge.rs`, a clock read goes through `cmdr_fs::rt`. `clippy.toml` bans the rest.
 - **It builds for `wasm32`**, where jobs run inline, the bridge polls once, and nothing falls back to the OS; a `cfg`

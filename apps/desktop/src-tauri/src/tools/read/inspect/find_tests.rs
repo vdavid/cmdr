@@ -165,7 +165,7 @@ fn literal_hits_are_grouped_by_line_with_a_match_count_and_the_window_is_omitted
         hits.bytes_scanned, None,
         "only an incomplete scan reports where it stopped"
     );
-    assert_eq!(text.total_lines, Some(5), "known for a small file, find or not");
+    assert_eq!(text.total_lines, Some(4), "known for a small file, find or not");
     assert!(!text.line_numbers_approximate);
 }
 

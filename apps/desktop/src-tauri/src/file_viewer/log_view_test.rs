@@ -96,7 +96,8 @@ fn search_counts_columns_on_the_shown_text() {
 fn copy_and_save_take_the_shown_text() {
     let dir = TestDir::new("viewer_log_view_copy");
     let sid = open(&dir, RowText::LogDisplay);
-    let whole = format!("{SHOWN}\nplain line");
+    // To the end of the last row is to the end of the file, its final newline included.
+    let whole = format!("{SHOWN}\nplain line\n");
     assert_eq!(
         viewer().read_range(&sid, 1, row(0, 0), row(1, 10)).expect("copy"),
         whole

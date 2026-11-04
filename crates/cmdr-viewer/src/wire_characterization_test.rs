@@ -138,10 +138,12 @@ fn media_and_markdown_and_forced_text_open_with_these_answers() {
         &markdown,
         r##"{"sessionId":"<masked>","fileName":"README.md","totalBytes":41,"totalLines":0,"estimatedTotalRows":0,"backendType":"fullLoad","capabilities":{"supportsLineSeek":false,"supportsByteSeek":false,"supportsFractionSeek":false,"knowsTotalLines":true},"initialLines":{"rows":[],"firstRowNumber":0,"byteOffset":0,"endByteOffset":0,"end":"endOfFile","totalRows":{"kind":"exact","rows":0},"totalBytes":41},"isIndexing":false,"encoding":"utf8","kind":"markdown","mediaToken":null,"mediaDimensions":null,"mediaFromVolume":false}"##,
     );
+    // A file ending in a newline has as many rows as lines, like `less` and editors count
+    // them: no empty row past the final newline.
     let forced = open_as_text(&markdown_file);
     pin(
         &forced,
-        r##"{"sessionId":"<masked>","fileName":"README.md","totalBytes":41,"totalLines":4,"estimatedTotalRows":4,"backendType":"fullLoad","capabilities":{"supportsLineSeek":true,"supportsByteSeek":true,"supportsFractionSeek":true,"knowsTotalLines":true},"initialLines":{"rows":[{"text":"# Title","byteOffset":0,"continues":false,"lineNumber":0},{"text":"","byteOffset":8,"continues":false,"lineNumber":1},{"text":"See [the notes](notes.md#part).","byteOffset":9,"continues":false,"lineNumber":2},{"text":"","byteOffset":41,"continues":false,"lineNumber":3}],"firstRowNumber":0,"byteOffset":0,"endByteOffset":41,"end":"endOfFile","totalRows":{"kind":"exact","rows":4},"totalBytes":41},"isIndexing":false,"encoding":"utf8","kind":"text","mediaToken":null,"mediaDimensions":null,"mediaFromVolume":false}"##,
+        r##"{"sessionId":"<masked>","fileName":"README.md","totalBytes":41,"totalLines":3,"estimatedTotalRows":3,"backendType":"fullLoad","capabilities":{"supportsLineSeek":true,"supportsByteSeek":true,"supportsFractionSeek":true,"knowsTotalLines":true},"initialLines":{"rows":[{"text":"# Title","byteOffset":0,"continues":false,"lineNumber":0},{"text":"","byteOffset":8,"continues":false,"lineNumber":1},{"text":"See [the notes](notes.md#part).","byteOffset":9,"continues":false,"lineNumber":2}],"firstRowNumber":0,"byteOffset":0,"endByteOffset":41,"end":"endOfFile","totalRows":{"kind":"exact","rows":3},"totalBytes":41},"isIndexing":false,"encoding":"utf8","kind":"text","mediaToken":null,"mediaDimensions":null,"mediaFromVolume":false}"##,
     );
     for result in [image, pdf, markdown, forced] {
         viewer().close_session(&result.session_id).expect("close");
@@ -164,7 +166,7 @@ fn the_log_view_opens_with_this_answer() {
         .expect("opens");
     pin(
         &result,
-        r##"{"sessionId":"<masked>","fileName":"cmdr.log","totalBytes":16,"totalLines":2,"estimatedTotalRows":2,"backendType":"fullLoad","capabilities":{"supportsLineSeek":true,"supportsByteSeek":true,"supportsFractionSeek":true,"knowsTotalLines":true},"initialLines":{"rows":[{"text":"INFO plain line","byteOffset":0,"continues":false,"lineNumber":0},{"text":"","byteOffset":16,"continues":false,"lineNumber":1}],"firstRowNumber":0,"byteOffset":0,"endByteOffset":16,"end":"endOfFile","totalRows":{"kind":"exact","rows":2},"totalBytes":16},"isIndexing":false,"encoding":"utf8","kind":"text","mediaToken":null,"mediaDimensions":null,"mediaFromVolume":false}"##,
+        r##"{"sessionId":"<masked>","fileName":"cmdr.log","totalBytes":16,"totalLines":1,"estimatedTotalRows":1,"backendType":"fullLoad","capabilities":{"supportsLineSeek":true,"supportsByteSeek":true,"supportsFractionSeek":true,"knowsTotalLines":true},"initialLines":{"rows":[{"text":"INFO plain line","byteOffset":0,"continues":false,"lineNumber":0}],"firstRowNumber":0,"byteOffset":0,"endByteOffset":16,"end":"endOfFile","totalRows":{"kind":"exact","rows":1},"totalBytes":16},"isIndexing":false,"encoding":"utf8","kind":"text","mediaToken":null,"mediaDimensions":null,"mediaFromVolume":false}"##,
     );
     viewer().close_session(&result.session_id).expect("close");
 }

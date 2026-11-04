@@ -125,9 +125,11 @@ fn reference_boundaries(bytes: &[u8], encoding: FileEncoding, segment: u64) -> B
 
     let mut set = BTreeSet::new();
     set.insert(0u64);
+    // `line_start < total`: a file's final newline ends its last row and starts none, so
+    // no empty row follows it (the way `less` and editors count lines).
     for p in &newlines {
         let line_start = p + nl_len;
-        if line_start <= total {
+        if line_start < total {
             set.insert(line_start);
         }
     }
@@ -1061,9 +1063,9 @@ fn only_a_segment_break_marks_a_row_as_continuing() {
         let nl_len = reference_newline_len(case.encoding);
         for span in reader_rows(&case, TEST_SEGMENT) {
             if span.start == span.end {
-                // The empty row past a file's final newline ends nowhere.
-                assert!(!span.continues, "{}: the final empty row must not continue", case.name);
-                assert_eq!(span.text_end, span.end, "{}: the final empty row", case.name);
+                // An empty file's one row ends nowhere.
+                assert!(!span.continues, "{}: an empty file's row must not continue", case.name);
+                assert_eq!(span.text_end, span.end, "{}: an empty file's row", case.name);
                 continue;
             }
             let ended_at_newline = span.end >= nl_len
@@ -1175,21 +1177,28 @@ fn walking_a_newline_free_file_reads_a_bounded_number_of_bytes() {
     );
 }
 
-/// A file that ends with a newline has one more row after it, and an empty file has
-/// exactly one empty row. This is the answer all three backends take, so a whole-file
-/// copy carries the file's final newline whatever the file's size.
+/// A file that ends with a newline has no empty row past it: the newline ends its last
+/// row, as `less` and editors count lines. An empty file has exactly one empty row. The
+/// last row still says it ended at a newline, which is how a whole-file copy carries it.
 #[test]
-fn a_file_ending_in_a_newline_has_a_final_empty_row() {
+fn a_file_ending_in_a_newline_has_no_empty_row_past_it() {
     let bytes = b"alpha\nbeta\n".to_vec();
     let case = ascii_case("trailing-newline", bytes.clone());
     let rows = reader_rows(&case, TEST_SEGMENT);
-    assert_eq!(rows.len(), 3);
-    assert_eq!(rows[2].start, bytes.len() as u64);
-    assert_eq!(rows[2].text_bytes(), 0);
-    assert!(rows[2].starts_line);
+    assert_eq!(rows.len(), 2);
+    assert_eq!(rows[1].end, bytes.len() as u64);
+    assert_eq!(rows[1].text_bytes(), 4);
+    assert!(rows[1].ends_at_newline());
 
     let none = ascii_case("no-trailing-newline", b"alpha\nbeta".to_vec());
-    assert_eq!(reader_rows(&none, TEST_SEGMENT).len(), 2);
+    let rows = reader_rows(&none, TEST_SEGMENT);
+    assert_eq!(rows.len(), 2);
+    assert!(!rows[1].ends_at_newline());
+
+    let only_newline = ascii_case("only-a-newline", b"\n".to_vec());
+    let rows = reader_rows(&only_newline, TEST_SEGMENT);
+    assert_eq!(rows.len(), 1);
+    assert!(rows[0].ends_at_newline());
 
     let empty = ascii_case("empty", Vec::new());
     let rows = reader_rows(&empty, TEST_SEGMENT);
