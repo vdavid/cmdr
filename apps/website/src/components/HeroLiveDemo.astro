@@ -5,8 +5,8 @@
  * pointer on hover, with a soft accent glow under the cursor. Being same-origin, the pointer is
  * tracked inside the iframe too. Once the visitor clicks in, the window goes flat so it's usable.
  *
- * The app renders at a fixed desktop size (`DEMO_WIDTH` x `DEMO_HEIGHT`) and is scaled to fit, so it
- * lays out like a real window at every viewport width.
+ * The app renders at a fixed layout size (`--demo-w` x `--demo-h`: a desktop window, or a narrower
+ * one on phones) and is scaled to fit, so it lays out like a real window at every viewport width.
  */
 import tryItLive from '../assets/hero/try-it-live.svg?raw'
 ---
@@ -24,22 +24,25 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
 
     <div class="live-demo" data-live-demo>
         <div class="live-demo-viewport" data-live-demo-viewport>
-            <iframe
-                src="/demo/"
-                title="Cmdr, running live in your browser"
-                loading="eager"
-                data-live-demo-frame></iframe>
+            <!-- No `src` yet: the script loads the app once the page is idle, so it never weighs on
+                 the page's own load. -->
+            <iframe title="Cmdr, running live in your browser" data-src="/demo/" data-live-demo-frame></iframe>
         </div>
-        <!-- Touch screens get a view-only window that opens the full demo, since a live app here
-             would swallow the page's scroll gestures. -->
-        <a class="live-demo-tap" href="/demo/">Open the live demo</a>
     </div>
 </div>
 
 <style>
     .live-demo-anchor {
         position: relative;
-        margin-top: 3rem;
+        /* Room above the window for the "Try it live" lettering; phones need a bit more to clear
+           the copy above. */
+        margin-top: 4.5rem;
+    }
+
+    @media (min-width: 640px) {
+        .live-demo-anchor {
+            margin-top: 3rem;
+        }
     }
 
     @media (min-width: 1024px) {
@@ -142,17 +145,28 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
        it a fixed height too: with aspect-ratio, a set height drives the WIDTH, so the box keeps its
        old width when the page narrows and the app spills past the window's edge. */
     .live-demo-viewport {
+        /* The app's layout size, in CSS pixels; the script reads it to scale the app to the box.
+           Phones get a narrower, taller layout so its text stays legible. */
+        --demo-w: 1080;
+        --demo-h: 690;
         position: relative;
         overflow: hidden;
-        aspect-ratio: 1080 / 690;
+        aspect-ratio: var(--demo-w) / var(--demo-h);
+    }
+
+    @media (max-width: 639px) {
+        .live-demo-viewport {
+            --demo-w: 720;
+            --demo-h: 640;
+        }
     }
 
     .live-demo-viewport iframe {
         position: absolute;
         top: 0;
         left: 0;
-        width: 1080px;
-        height: 690px;
+        width: calc(var(--demo-w) * 1px);
+        height: calc(var(--demo-h) * 1px);
         border: 0;
         transform-origin: 0 0;
         transform: scale(var(--demo-scale, 0.5));
@@ -164,50 +178,34 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
         opacity: 1;
     }
 
-    .live-demo-tap {
-        display: none;
-    }
-
-    @media (pointer: coarse) {
-        .live-demo-viewport iframe {
-            pointer-events: none;
-        }
-
-        .live-demo-tap {
-            display: block;
-            position: absolute;
-            inset: 0;
-            z-index: 3;
-            /* The label is for screen readers; the window itself is the visible target. */
-            color: transparent;
-        }
-    }
-
-    /* "Try it live" note, sitting in the card's lower-left gap and pointing into the window. */
+    /* "Try it live" note, in three placements, and stepping aside while the app is in use:
+       - Stacked (below 1024 px): at the window's top-right, the copy being on the left. Only the
+         lettering sits above the window; the arrow, mirrored, loops down over the app.
+       - Beside the copy (1024 px up): above the window's top-left corner, arrow pointing in.
+       - Wide (1400 px up): in the card's lower-left gap, pointing up into the window. */
     .try-live-note {
-        display: none;
+        --lettering-tilt: -6deg;
+        pointer-events: none;
+        position: absolute;
+        right: 0.5rem;
+        bottom: calc(100% - 3.5rem);
+        z-index: 3;
+        width: 15rem;
+        height: 6rem;
         color: var(--color-accent-text);
+        transition: opacity 0.3s ease;
     }
 
-    @media (min-width: 1400px) and (pointer: fine) {
-        .try-live-note {
-            display: block;
-            pointer-events: none;
-            position: absolute;
-            right: calc(100% - 4rem);
-            bottom: -2.5rem;
-            z-index: 3;
-            width: 15rem;
-            height: 9rem;
-        }
+    .live-demo-anchor:has(.live-demo.is-engaged) .try-live-note {
+        opacity: 0;
     }
 
     .try-live-lettering {
         position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 9.5rem;
-        transform: rotate(-6deg);
+        top: 0;
+        right: 0;
+        width: 8rem;
+        transform: rotate(var(--lettering-tilt));
     }
 
     .try-live-lettering :global(svg) {
@@ -218,10 +216,58 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
 
     .try-live-arrow {
         position: absolute;
-        right: 0;
-        top: -1rem;
-        width: 9rem;
-        transform: rotate(-38deg);
+        top: 1.25rem;
+        right: 7rem;
+        width: 6.5rem;
+        transform: scaleX(-1) rotate(12deg);
+    }
+
+    @media (min-width: 1024px) {
+        .try-live-note {
+            right: auto;
+            bottom: calc(100% + 0.5rem - 30px);
+            left: 0.5rem;
+        }
+
+        .try-live-lettering {
+            right: auto;
+            left: 0;
+        }
+
+        .try-live-arrow {
+            right: auto;
+            left: 7.5rem;
+            transform: rotate(12deg);
+        }
+    }
+
+    @media (min-width: 1400px) {
+        .try-live-note {
+            right: calc(100% - 4rem);
+            bottom: calc(-2.5rem - 30px);
+            left: auto;
+            height: 9rem;
+        }
+
+        .try-live-lettering {
+            top: auto;
+            bottom: 0;
+            width: 9.5rem;
+        }
+
+        .try-live-arrow {
+            top: -1rem;
+            right: 0;
+            left: auto;
+            width: 9rem;
+            transform: rotate(-38deg);
+        }
+    }
+
+    @media (min-width: 1500px) {
+        .try-live-note {
+            bottom: -2.5rem;
+        }
     }
 
     /* Draw the arrow in once, after the text has settled. */
@@ -251,11 +297,11 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
     @keyframes note-in {
         from {
             opacity: 0;
-            transform: rotate(-6deg) translateY(6px);
+            transform: rotate(var(--lettering-tilt)) translateY(6px);
         }
         to {
             opacity: 1;
-            transform: rotate(-6deg);
+            transform: rotate(var(--lettering-tilt));
         }
     }
 
@@ -277,9 +323,6 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
 </style>
 
 <script>
-    /** The app's layout size inside the window; keep in sync with the iframe's CSS size and the box's aspect-ratio. */
-    const DEMO_WIDTH = 1080
-    const DEMO_HEIGHT = 690
     /** How far the window leans toward the pointer, either way, in degrees. */
     const MAX_LEAN_DEG = 2.5
 
@@ -290,8 +333,16 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
         if (!root || !viewport || !frame || root.dataset.ready) return
         root.dataset.ready = '1'
 
+        // The app's layout size comes from the CSS (`--demo-w` / `--demo-h`, which differ on phones).
+        const appSize = (): { width: number; height: number } => {
+            const style = getComputedStyle(viewport)
+            return {
+                width: Number(style.getPropertyValue('--demo-w')),
+                height: Number(style.getPropertyValue('--demo-h')),
+            }
+        }
         const fit = (): void => {
-            viewport.style.setProperty('--demo-scale', String(viewport.clientWidth / DEMO_WIDTH))
+            viewport.style.setProperty('--demo-scale', String(viewport.clientWidth / appSize().width))
         }
         new ResizeObserver(fit).observe(viewport)
         fit()
@@ -348,11 +399,14 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
 
         // Inside the app, coordinates are the iframe's own untransformed pixels, so they map exactly.
         const onFrameLoad = (): void => {
-            frame.classList.add('is-loaded')
             const doc = frame.contentDocument
-            if (!doc) return
+            // The empty frame's own `about:blank` load doesn't count.
+            if (!doc || !frame.contentWindow?.location.pathname.startsWith('/demo')) return
+            frame.removeEventListener('load', onFrameLoad)
+            frame.classList.add('is-loaded')
             doc.addEventListener('pointermove', (event) => {
-                aim(event.clientX / DEMO_WIDTH, event.clientY / DEMO_HEIGHT)
+                const { width, height } = appSize()
+                aim(event.clientX / width, event.clientY / height)
             })
             doc.documentElement.addEventListener('pointerleave', release)
             doc.addEventListener(
@@ -364,10 +418,22 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
                 { capture: true },
             )
         }
-        // The frame can finish loading before this script runs.
-        const loaded = frame.contentDocument?.readyState === 'complete' && frame.contentWindow?.location.pathname.startsWith('/demo')
-        if (loaded) onFrameLoad()
-        else frame.addEventListener('load', onFrameLoad, { once: true })
+        frame.addEventListener('load', onFrameLoad)
+
+        // Load the app after the page has loaded and the browser is idle, so the demo's bundle and
+        // WASM engine stay out of the page's own load (and its speed scores). Safari has no
+        // `requestIdleCallback`, so it gets a short timeout.
+        const start = (): void => {
+            if (frame.dataset.src) frame.src = frame.dataset.src
+        }
+        const whenIdle = (): void => {
+            // A typeof test, not `'requestIdleCallback' in window`: the minifier turns that string into
+            // a template literal after a `{`, which the analytics-injection guard reads as its bug.
+            if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(start, { timeout: 3000 })
+            else setTimeout(start, 300)
+        }
+        if (document.readyState === 'complete') whenIdle()
+        else window.addEventListener('load', whenIdle, { once: true })
     }
 
     setUpLiveDemo()

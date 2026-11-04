@@ -327,10 +327,12 @@ side is `apps/desktop/src/lib/demo/CLAUDE.md`, the engine `crates/cmdr-listing-w
 embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until David launches it as a page.
 
 - **The hero embed** (`src/components/HeroLiveDemo.astro`): a same-origin iframe of `/demo/` at a fixed desktop size,
-  scaled to fit a tilted window. Same-origin is load-bearing: the script reads pointer moves inside the frame (for the
-  glow and the lean) and catches the first `pointerdown` there. The app focuses its pane on boot, so the script hands
-  focus back to the page until the visitor clicks into the frame or tabs to it; otherwise Space and the arrows on the
-  home page would drive the app. Touch screens get it view-only, as a link to `/demo/`. The site CSP's
+  scaled to fit a tilted window. The iframe gets its `src` only after the page's `load` and an idle callback, so the
+  demo's bundle and WASM engine never count against the home page's own load or its Lighthouse scores. Same-origin is
+  load-bearing: the script reads pointer moves inside the frame (for the glow and the lean) and catches the first
+  `pointerdown` there. The app focuses its pane on boot, so the script hands focus back to the page until the visitor
+  clicks into the frame or tabs to it; otherwise Space and the arrows on the home page would drive the app. It's live on
+  phones too, with a narrower layout (`--demo-w` / `--demo-h`) so its text stays legible. The site CSP's
   `frame-src 'self'` (`nginx-security-headers.conf`) is what lets it load in production.
 - **Dev**: `pnpm dev` serves `/demo/` from `apps/desktop/build-demo/` (a dev-server middleware in `src/plugins/demo.ts`,
   file else app page, like nginx), so the hero is live locally once `pnpm build:demo` has run; without it, the window

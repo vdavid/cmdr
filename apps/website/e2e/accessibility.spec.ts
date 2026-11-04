@@ -56,7 +56,7 @@ for (const theme of ['light', 'dark'] as const) {
 
         // The home page's hero embeds the browser demo: that's the desktop app's markup, which the
         // desktop's own checks audit (`apps/desktop/src/lib/demo/CLAUDE.md`).
-        const results = await new AxeBuilder({ page }).exclude('iframe[src^="/demo"]').analyze()
+        const results = await new AxeBuilder({ page }).exclude('[data-live-demo-frame]').analyze()
 
         // Log violations for visibility
         for (const v of results.violations) {
