@@ -126,7 +126,9 @@ async fn a_pull_reports_its_progress_to_the_window_as_bytes_arrive() {
         .await
     };
     let opened = outcome.expect("the file opens");
-    file_viewer::close_session(&opened.session_id).expect("close");
+    file_viewer::app_viewer()
+        .close_session(&opened.session_id)
+        .expect("close");
 
     let heard = heard.lock_ignore_poison();
     assert!(!heard.is_empty(), "the window hears at least one progress report");
@@ -168,10 +170,8 @@ fn a_session_reading_slowly(chunks: usize, per_chunk: Duration) -> (String, usiz
         // stands in for a slow disk rather than synchronizing anything.
         std::thread::sleep(per_chunk);
     });
-    let session_id = file_viewer::session::test_only_install_session(
-        Box::new(backend),
-        std::path::PathBuf::from("/scripted/slow.txt"),
-    );
+    let session_id = file_viewer::app_viewer()
+        .test_only_install_session(Box::new(backend), std::path::PathBuf::from("/scripted/slow.txt"));
     (session_id, line_count * STRIDE - 1)
 }
 
@@ -212,13 +212,13 @@ async fn escape_during_a_watched_save_stops_it_and_leaves_no_temp() {
                 .and_then(|p| std::fs::metadata(p).ok())
                 .map_or(0, |m| m.len());
             observed.store(written, std::sync::atomic::Ordering::SeqCst);
-            file_viewer::cancel_read(sid, 1).expect("the session is open");
+            file_viewer::app_viewer()
+                .cancel_read(sid, 1)
+                .expect("the session is open");
         }
     });
-    let session_id = file_viewer::session::test_only_install_session(
-        Box::new(backend),
-        std::path::PathBuf::from("/scripted/cancelled.txt"),
-    );
+    let session_id = file_viewer::app_viewer()
+        .test_only_install_session(Box::new(backend), std::path::PathBuf::from("/scripted/cancelled.txt"));
     *session_holder.lock_ignore_poison() = Some(session_id.clone());
 
     let result = write_range_watched(
@@ -244,9 +244,9 @@ async fn escape_during_a_watched_save_stops_it_and_leaves_no_temp() {
         save_temp_file(dir.path()).is_none(),
         "a cancelled save must take its temp file with it"
     );
-    assert_eq!(file_viewer::session::active_read_count(&session_id), 0);
+    assert_eq!(file_viewer::app_viewer().active_read_count(&session_id), 0);
 
-    file_viewer::close_session(&session_id).expect("close");
+    file_viewer::app_viewer().close_session(&session_id).expect("close");
 }
 
 /// A save that keeps writing must run to its end, however long that is. The copy
@@ -279,7 +279,7 @@ async fn a_save_that_keeps_writing_runs_past_the_limit() {
         std::fs::metadata(&dest).expect("the destination exists").len(),
         total_bytes as u64
     );
-    file_viewer::close_session(&session_id).expect("close");
+    file_viewer::app_viewer().close_session(&session_id).expect("close");
 }
 
 /// A save that goes quiet for the limit gives up, and the work it detached stops
@@ -291,7 +291,7 @@ async fn a_save_that_goes_quiet_gives_up_and_leaves_no_temp() {
     // One fetch lands and is written (so the temp holds bytes, which is what makes the
     // cleanup below worth asserting), then the source goes quiet for far longer than
     // the limit.
-    let quiet_session = file_viewer::session::test_only_install_session(
+    let quiet_session = file_viewer::app_viewer().test_only_install_session(
         Box::new(file_viewer::session::ScriptedBackend::new(
             &"s".repeat(ROW_BYTES - 1),
             FETCH_ROWS * 2,
@@ -329,7 +329,7 @@ async fn a_save_that_goes_quiet_gives_up_and_leaves_no_temp() {
         save_temp_file(dir.path()).is_none()
     })
     .await;
-    file_viewer::close_session(&quiet_session).expect("close");
+    file_viewer::app_viewer().close_session(&quiet_session).expect("close");
 }
 
 #[tokio::test]

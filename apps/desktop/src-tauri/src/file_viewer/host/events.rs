@@ -16,6 +16,10 @@ pub enum FileChange {
 pub trait ViewerEvents: Send + Sync {
     /// The file `session_id` shows changed on disk.
     fn file_changed(&self, session_id: &str, change: FileChange);
+
+    /// The viewer dropped media `token` (its session closed, or a document re-rendered):
+    /// whatever the host made for it can go.
+    fn media_token_dropped(&self, token: &str);
 }
 
 /// Drops every report.
@@ -23,4 +27,6 @@ pub struct NoEvents;
 
 impl ViewerEvents for NoEvents {
     fn file_changed(&self, _session_id: &str, _change: FileChange) {}
+
+    fn media_token_dropped(&self, _token: &str) {}
 }

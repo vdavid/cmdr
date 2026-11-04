@@ -16,9 +16,8 @@
 //! (the link is recorded, so the ordinary close path frees the session). No
 //! interleaving leaves a session nobody owns.
 
-use std::collections::HashMap;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 
 use cmdr_fs::rt::{self, Instant};
@@ -146,43 +145,5 @@ impl PendingOpen {
                 Ok(())
             }
         }
-    }
-}
-
-/// The in-flight opens that belong to a window, by window label.
-static PENDING_OPENS: LazyLock<Mutex<HashMap<String, Arc<PendingOpen>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
-
-/// Starts watching an open for `window_label`, so closing that window abandons it. A
-/// newer open for the same window replaces (and abandons) an older one. An empty label
-/// has no window to close, so its open is watched but not registered.
-pub fn begin_pending_open(window_label: &str) -> Arc<PendingOpen> {
-    let open = Arc::new(PendingOpen::new());
-    if !window_label.is_empty()
-        && let Some(older) = PENDING_OPENS
-            .lock_ignore_poison()
-            .insert(window_label.to_string(), Arc::clone(&open))
-    {
-        older.abandon(AbandonReason::Cancelled);
-    }
-    open
-}
-
-/// Stops watching `open` for `window_label`, once its waiter is done with it. Leaves a
-/// newer open for the same window registered.
-pub fn end_pending_open(window_label: &str, open: &Arc<PendingOpen>) {
-    let mut opens = PENDING_OPENS.lock_ignore_poison();
-    if opens
-        .get(window_label)
-        .is_some_and(|current| Arc::ptr_eq(current, open))
-    {
-        opens.remove(window_label);
-    }
-}
-
-/// Abandons the in-flight open of a window that closed, if it has one.
-pub(super) fn abandon_pending_open_for_window(window_label: &str) {
-    let open = PENDING_OPENS.lock_ignore_poison().remove(window_label);
-    if let Some(open) = open {
-        open.abandon(AbandonReason::Cancelled);
     }
 }

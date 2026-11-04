@@ -33,8 +33,9 @@ use cmdr_fs::deadline::{StallWatch, blocking_typed_result_until_stalled};
 use tauri::http::{Request, Response, StatusCode, header};
 use tauri_specta::Event as _;
 
+use super::app_viewer;
 use super::events::ViewerMediaLoad;
-use super::media::{DeferredMedia, MediaEntry, MediaSource, resolve_token};
+use super::media::{DeferredMedia, MediaEntry, MediaSource};
 use super::media_serve::{MediaAnswer, VolumeRead, finish_volume_read, serve_entry};
 pub use super::media_serve::{RangeOutcome, ResolvedRange, parse_token_from_uri, resolve_range};
 use super::media_volume::{MediaLoad, MediaReadFailure, ReadProgress, ReadWatch, VolumeMedia};
@@ -228,7 +229,7 @@ pub fn handle_request(
         responder.respond(not_found());
         return;
     };
-    let Some(source) = resolve_token(&token) else {
+    let Some(source) = app_viewer().tokens().resolve_token(&token) else {
         // Unknown token: never existed or already dropped (session closed).
         responder.respond(not_found());
         return;

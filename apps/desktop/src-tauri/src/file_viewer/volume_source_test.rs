@@ -13,9 +13,10 @@ use cmdr_fs::entry::FileEntry;
 
 use super::source::ByteSource;
 use super::volume_source::{BLOCK_BYTES, PositionedRead, VolumeSource};
-use super::{SeekTarget, ViewerError, session};
+use super::{SeekTarget, ViewerError};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{ListingProgress, Volume, VolumeError, VolumeRandomReader};
+use crate::file_viewer::session_test_support::viewer;
 
 /// Every synthetic row is 15 digits plus a newline.
 const ROW_BYTES: u64 = 16;
@@ -178,7 +179,9 @@ fn row_number(text: &str) -> u64 {
 fn a_multi_gigabyte_file_on_a_share_opens_and_jumps_through_one_held_reader() {
     let (path, _share, state) = a_share("viewer-vsrc-5gib", FIVE_GIB, false);
 
-    let opened = session::open_session(&path, "viewer-vsrc-5gib").expect("a 5 GiB file on a share opens");
+    let opened = viewer()
+        .open_session(&path, "viewer-vsrc-5gib")
+        .expect("a 5 GiB file on a share opens");
     assert_eq!(opened.total_bytes, FIVE_GIB);
     assert_eq!(row_number(&opened.initial_lines.rows[0].text), 0);
     let after_open = state.bytes_read.load(Ordering::SeqCst);
@@ -186,13 +189,14 @@ fn a_multi_gigabyte_file_on_a_share_opens_and_jumps_through_one_held_reader() {
     let last_row = FIVE_GIB / ROW_BYTES - 1;
     for (fraction, near_row) in [(0.5, last_row / 2), (0.999, last_row * 999 / 1000), (0.0, 0)] {
         let before = state.bytes_read.load(Ordering::SeqCst);
-        let chunk = session::get_lines(
-            &opened.session_id,
-            SeekTarget::Fraction(fraction),
-            500,
-            &AtomicBool::new(false),
-        )
-        .expect("a jump reads");
+        let chunk = viewer()
+            .get_lines(
+                &opened.session_id,
+                SeekTarget::Fraction(fraction),
+                500,
+                &AtomicBool::new(false),
+            )
+            .expect("a jump reads");
         let first = row_number(&chunk.rows[0].text);
         assert!(
             first.abs_diff(near_row) <= 1,
@@ -214,7 +218,7 @@ fn a_multi_gigabyte_file_on_a_share_opens_and_jumps_through_one_held_reader() {
         after_open <= 2 * BLOCK_BYTES,
         "the open read {after_open} B, over the two-block budget"
     );
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
 }
 
 /// A scrollbar drag on a share with a 200 ms round trip: fetches fire every 100 ms,
@@ -223,7 +227,7 @@ fn a_multi_gigabyte_file_on_a_share_opens_and_jumps_through_one_held_reader() {
 #[test]
 fn a_scrollbar_drag_on_a_slow_share_answers_every_fetch_inside_the_deadline() {
     let (path, _share, state) = a_share("viewer-vsrc-drag", FIVE_GIB, true);
-    let opened = session::open_session(&path, "viewer-vsrc-drag").expect("opens");
+    let opened = viewer().open_session(&path, "viewer-vsrc-drag").expect("opens");
     state.latency_ms.store(200, Ordering::SeqCst);
 
     let fetches: Vec<_> = (0..10)
@@ -231,7 +235,7 @@ fn a_scrollbar_drag_on_a_slow_share_answers_every_fetch_inside_the_deadline() {
             let session_id = opened.session_id.clone();
             let handle = std::thread::spawn(move || {
                 let started = Instant::now();
-                let result = session::get_lines(
+                let result = viewer().get_lines(
                     &session_id,
                     SeekTarget::Fraction(f64::from(i) / 10.0 + 0.05),
                     500,
@@ -250,7 +254,7 @@ fn a_scrollbar_drag_on_a_slow_share_answers_every_fetch_inside_the_deadline() {
         assert!(took < FETCH_DEADLINE, "fetch {i} took {took:?}");
     }
     assert_eq!(state.opens.load(Ordering::SeqCst), 1);
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
 }
 
 /// A read that fails (the share reconnected under the held handle) reopens once and
@@ -258,7 +262,7 @@ fn a_scrollbar_drag_on_a_slow_share_answers_every_fetch_inside_the_deadline() {
 #[test]
 fn a_failed_read_reopens_the_handle_once() {
     let (_path, share, state) = a_share("viewer-vsrc-reopen", 4 * BLOCK_BYTES, false);
-    let (source, _) = VolumeSource::open(share.clone(), &share.file, PositionedRead::Held).unwrap();
+    let (source, _) = VolumeSource::open(share.clone(), &share.file, PositionedRead::Held, viewer().runtime()).unwrap();
     state.fail_next_read.store(true, Ordering::SeqCst);
 
     let mut buf = vec![0u8; 32];
@@ -273,7 +277,8 @@ fn a_failed_read_reopens_the_handle_once() {
 #[test]
 fn an_append_is_read_through_a_fresh_handle() {
     let (_path, share, state) = a_share("viewer-vsrc-grow", 100 * ROW_BYTES, false);
-    let (source, size) = VolumeSource::open(share.clone(), &share.file, PositionedRead::Held).unwrap();
+    let (source, size) =
+        VolumeSource::open(share.clone(), &share.file, PositionedRead::Held, viewer().runtime()).unwrap();
     assert_eq!(size, 100 * ROW_BYTES);
     state.size.store(200 * ROW_BYTES, Ordering::SeqCst);
 
@@ -288,7 +293,7 @@ fn an_append_is_read_through_a_fresh_handle() {
 #[test]
 fn rereading_nearby_bytes_costs_no_round_trip() {
     let (_path, share, state) = a_share("viewer-vsrc-cache", 64 * BLOCK_BYTES, false);
-    let (source, _) = VolumeSource::open(share.clone(), &share.file, PositionedRead::Held).unwrap();
+    let (source, _) = VolumeSource::open(share.clone(), &share.file, PositionedRead::Held, viewer().runtime()).unwrap();
 
     let mut buf = vec![0u8; 64 * 1024];
     source.read_at(10 * BLOCK_BYTES + 100, &mut buf).unwrap();
@@ -303,7 +308,7 @@ fn rereading_nearby_bytes_costs_no_round_trip() {
 fn a_missing_file_on_the_share_is_not_found() {
     let (_path, share, _state) = a_share("viewer-vsrc-missing", ROW_BYTES, false);
     let missing = share.root.join("nope.log");
-    let result = session::open_session(&missing.display().to_string(), "viewer-vsrc-missing");
+    let result = viewer().open_session(&missing.display().to_string(), "viewer-vsrc-missing");
     assert!(
         matches!(result, Err(ViewerError::NotFound { .. })),
         "got {:?}",
@@ -334,24 +339,27 @@ fn smb_integration_viewer_jumps_in_a_big_file_on_a_share() {
     let id = format!("viewer-vsrc-smb-{dir}");
     get_volume_manager().register(&id, Arc::clone(&volume) as Arc<dyn Volume>);
 
-    let opened = session::open_session(&share_path(&relative), &id).expect("opens through smb2");
+    let opened = viewer()
+        .open_session(&share_path(&relative), &id)
+        .expect("opens through smb2");
     assert_eq!(opened.total_bytes, size);
     let last_row = size / ROW_BYTES - 1;
     for (fraction, near_row) in [(0.5, last_row / 2), (0.999, last_row * 999 / 1000), (0.0, 0)] {
-        let chunk = session::get_lines(
-            &opened.session_id,
-            SeekTarget::Fraction(fraction),
-            500,
-            &AtomicBool::new(false),
-        )
-        .expect("a jump reads");
+        let chunk = viewer()
+            .get_lines(
+                &opened.session_id,
+                SeekTarget::Fraction(fraction),
+                500,
+                &AtomicBool::new(false),
+            )
+            .expect("a jump reads");
         let first = row_number(&chunk.rows[0].text);
         assert!(
             first.abs_diff(near_row) <= 1,
             "a jump to {fraction} landed on row {first}"
         );
     }
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
 
     get_volume_manager().unregister(&id);
     tauri::async_runtime::block_on(ensure_clean(&volume, &dir));

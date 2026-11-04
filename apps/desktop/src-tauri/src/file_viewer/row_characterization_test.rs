@@ -27,6 +27,7 @@ use super::range_read::{RangeEnd, read_range};
 use super::search_matcher::{Matcher, SearchMode};
 use super::session;
 use super::{CHUNK_BUDGET_BYTES, ChunkEnd, FileViewerBackend, SearchMatch, SeekTarget, TotalRows};
+use crate::file_viewer::session_test_support::viewer;
 use crate::pluralize::pluralize;
 use crate::test_support::TestDir;
 
@@ -585,21 +586,24 @@ fn save_as_writes_exactly_the_range_that_was_asked_for() {
     let dir = TestDir::new("viewer_char_save_as");
     let content = uniform_content();
     let file = fixture(&dir, "uniform.txt", content.as_bytes());
-    let sid = session::open_session(file.to_str().expect("fixture path is utf-8"), "root")
+    let sid = viewer()
+        .open_session(file.to_str().expect("fixture path is utf-8"), "root")
         .expect("session opens")
         .session_id;
 
     let dest = dir.join("saved.txt");
-    session::write_range_to_file(&sid, 1, at(2, 5), at(4, 4), &dest, &session::SaveProgress::new())
+    viewer()
+        .write_range_to_file(&sid, 1, at(2, 5), at(4, 4), &dest, &session::SaveProgress::new())
         .expect("save succeeds");
     assert_eq!(fs::read_to_string(&dest).expect("saved file reads"), &content[45..84]);
 
     let whole = dir.join("whole.txt");
-    session::write_range_to_file(&sid, 2, at(0, 0), RangeEnd::Eof, &whole, &session::SaveProgress::new())
+    viewer()
+        .write_range_to_file(&sid, 2, at(0, 0), RangeEnd::Eof, &whole, &session::SaveProgress::new())
         .expect("save succeeds");
     assert_eq!(fs::read_to_string(&whole).expect("saved file reads"), content);
 
-    session::close_session(&sid).expect("session closes");
+    viewer().close_session(&sid).expect("session closes");
 }
 
 // ---------------------------------------------------------------------------
@@ -743,16 +747,18 @@ fn saving_a_newline_free_file_writes_it_back_byte_for_byte() {
     let dir = TestDir::new("viewer_rows_save_newline_free");
     let content: String = (0..120_000).map(|i| char::from(b'0' + (i % 10) as u8)).collect();
     let file = fixture(&dir, "minified.json", content.as_bytes());
-    let sid = session::open_session(file.to_str().expect("fixture path is utf-8"), "root")
+    let sid = viewer()
+        .open_session(file.to_str().expect("fixture path is utf-8"), "root")
         .expect("session opens")
         .session_id;
 
     let dest = dir.join("saved.json");
-    session::write_range_to_file(&sid, 1, at(0, 0), RangeEnd::Eof, &dest, &session::SaveProgress::new())
+    viewer()
+        .write_range_to_file(&sid, 1, at(0, 0), RangeEnd::Eof, &dest, &session::SaveProgress::new())
         .expect("save succeeds");
     assert_eq!(fs::read_to_string(&dest).expect("saved file reads"), content);
 
-    session::close_session(&sid).expect("session closes");
+    viewer().close_session(&sid).expect("session closes");
 }
 
 /// `CHUNK_BUDGET_BYTES` bounds one answer, and the chunk SAYS it stopped early.

@@ -24,100 +24,107 @@ impl Drop for RebuildExitGuard {
     }
 }
 
-/// Test-only hook: simulates a watcher `Grew(eof)` event by writing into the session's
-/// `pending_grew` queue. Drives `test_append_during_encoding_rebuild_not_dropped`
-/// without standing up the (milestone-3) FS watcher.
-#[cfg(test)]
-pub fn test_only_push_pending_grew(session_id: &str, eof: u64) {
-    // Delegates to the production path on purpose. Re-implementing the
-    // coalescing here would mean the drain tests exercise a copy, and a bug in
-    // the real rule would sail straight past them (confirmed by mutation).
-    push_pending_grew(session_id, eof);
-}
-
-/// Test-only hook: reads the current `pending_grew` queue value.
-#[cfg(test)]
-#[allow(dead_code, reason = "consumed by session_test race-coverage tests")]
-pub fn test_only_pending_grew(session_id: &str) -> Option<u64> {
-    let sessions = SESSIONS.lock_ignore_poison();
-    sessions
-        .get(session_id)
-        .and_then(|s| *s.pending_grew.lock_ignore_poison())
-}
-
-/// Test-only hook: reads the rebuilding flag's strong-count parity (Some/None) to
-/// help tests block-poll for completion without sleeping.
-#[cfg(test)]
-pub fn test_only_rebuilding_active(session_id: &str) -> bool {
-    let sessions = SESSIONS.lock_ignore_poison();
-    sessions
-        .get(session_id)
-        .map(|s| s.rebuilding.lock_ignore_poison().is_some())
-        .unwrap_or(false)
-}
-
-/// Returns the count of currently-active reads. Test-only helper for asserting that
-/// a cancelled or completed read cleaned up its `active_reads` entry.
-#[cfg(test)]
-pub fn active_read_count(session_id: &str) -> usize {
-    let sessions = SESSIONS.lock_ignore_poison();
-    let Some(session) = sessions.get(session_id) else {
-        return 0;
-    };
-    session.active_reads.lock_ignore_poison().len()
-}
-
-/// Test-only helper: drives the race in `apply_tail_extend` deterministically.
-///
-/// Simulates the timing the round-3 audit caught:
-/// 1. The watcher thread takes a backend snapshot.
-/// 2. Before its long `extend_to_boxed` returns, a separate concurrent
-///    activity (encoding rebuild, upgrade) installs a brand-new backend.
-/// 3. The watcher's eventual `store` must NOT clobber the new backend.
-///
-/// We script this by snapshotting the backend, calling `swap_callback` (which
-/// the test uses to install a fresh backend via, e.g., `reload` or
-/// `set_encoding`), then calling `extend_to_boxed` on the snapshot, then
-/// running the same ptr-eq check the production code uses to decide
-/// store-vs-discard. Returns `true` if the store was applied (snapshot still
-/// current), `false` if the extend was discarded.
-#[cfg(test)]
-#[allow(dead_code, reason = "consumed by session_test tail-extend clobber-race test")]
-pub fn test_only_run_tail_extend_with_swap(session_id: &str, new_size: u64, swap_callback: impl FnOnce()) -> bool {
-    let dummy_cancel = AtomicBool::new(false);
-    let backend_snapshot = {
-        let sessions = SESSIONS.lock_ignore_poison();
-        let session = sessions.get(session_id).expect("session must exist");
-        session.backend.load_full()
-    };
-    // Trigger the racing swap (the test installs a new backend here).
-    swap_callback();
-
-    let extended = backend_snapshot
-        .extend_to_boxed(new_size, &dummy_cancel)
-        .expect("extend should succeed");
-
-    let sessions = SESSIONS.lock_ignore_poison();
-    let session = sessions.get(session_id).expect("session must exist");
-    let current = session.backend.load_full();
-    if Arc::ptr_eq(&current, &backend_snapshot) {
-        session.backend.store(Arc::new(extended));
-        true
-    } else {
-        coalesce_pending_grew(session, new_size);
-        false
+impl Viewer {
+    /// Test-only hook: simulates a watcher `Grew(eof)` event by writing into the session's
+    /// `pending_grew` queue. Drives `test_append_during_encoding_rebuild_not_dropped`
+    /// without standing up the (milestone-3) FS watcher.
+    #[cfg(test)]
+    pub fn test_only_push_pending_grew(&self, session_id: &str, eof: u64) {
+        // Delegates to the production path on purpose. Re-implementing the
+        // coalescing here would mean the drain tests exercise a copy, and a bug in
+        // the real rule would sail straight past them (confirmed by mutation).
+        self.push_pending_grew(session_id, eof);
     }
-}
 
-/// Test-only helper: returns the current tail-mode flag.
-#[cfg(test)]
-#[allow(dead_code, reason = "consumed by session_test::tail_mode_can_be_toggled")]
-pub fn test_only_tail_mode(session_id: &str) -> bool {
-    let sessions = SESSIONS.lock_ignore_poison();
-    sessions
-        .get(session_id)
-        .map(|s| s.tail_mode.load(Ordering::Relaxed))
-        .unwrap_or(false)
+    /// Test-only hook: reads the current `pending_grew` queue value.
+    #[cfg(test)]
+    #[allow(dead_code, reason = "consumed by session_test race-coverage tests")]
+    pub fn test_only_pending_grew(&self, session_id: &str) -> Option<u64> {
+        let sessions = self.sessions();
+        sessions
+            .get(session_id)
+            .and_then(|s| *s.pending_grew.lock_ignore_poison())
+    }
+
+    /// Test-only hook: reads the rebuilding flag's strong-count parity (Some/None) to
+    /// help tests block-poll for completion without sleeping.
+    #[cfg(test)]
+    pub fn test_only_rebuilding_active(&self, session_id: &str) -> bool {
+        let sessions = self.sessions();
+        sessions
+            .get(session_id)
+            .map(|s| s.rebuilding.lock_ignore_poison().is_some())
+            .unwrap_or(false)
+    }
+
+    /// Returns the count of currently-active reads. Test-only helper for asserting that
+    /// a cancelled or completed read cleaned up its `active_reads` entry.
+    #[cfg(test)]
+    pub fn active_read_count(&self, session_id: &str) -> usize {
+        let sessions = self.sessions();
+        let Some(session) = sessions.get(session_id) else {
+            return 0;
+        };
+        session.active_reads.lock_ignore_poison().len()
+    }
+
+    /// Test-only helper: drives the race in `apply_tail_extend` deterministically.
+    ///
+    /// Simulates the timing the round-3 audit caught:
+    /// 1. The watcher thread takes a backend snapshot.
+    /// 2. Before its long `extend_to_boxed` returns, a separate concurrent
+    ///    activity (encoding rebuild, upgrade) installs a brand-new backend.
+    /// 3. The watcher's eventual `store` must NOT clobber the new backend.
+    ///
+    /// We script this by snapshotting the backend, calling `swap_callback` (which
+    /// the test uses to install a fresh backend via, e.g., `reload` or
+    /// `set_encoding`), then calling `extend_to_boxed` on the snapshot, then
+    /// running the same ptr-eq check the production code uses to decide
+    /// store-vs-discard. Returns `true` if the store was applied (snapshot still
+    /// current), `false` if the extend was discarded.
+    #[cfg(test)]
+    #[allow(dead_code, reason = "consumed by session_test tail-extend clobber-race test")]
+    pub fn test_only_run_tail_extend_with_swap(
+        &self,
+        session_id: &str,
+        new_size: u64,
+        swap_callback: impl FnOnce(),
+    ) -> bool {
+        let dummy_cancel = AtomicBool::new(false);
+        let backend_snapshot = {
+            let sessions = self.sessions();
+            let session = sessions.get(session_id).expect("session must exist");
+            session.backend.load_full()
+        };
+        // Trigger the racing swap (the test installs a new backend here).
+        swap_callback();
+
+        let extended = backend_snapshot
+            .extend_to_boxed(new_size, &dummy_cancel)
+            .expect("extend should succeed");
+
+        let sessions = self.sessions();
+        let session = sessions.get(session_id).expect("session must exist");
+        let current = session.backend.load_full();
+        if Arc::ptr_eq(&current, &backend_snapshot) {
+            session.backend.store(Arc::new(extended));
+            true
+        } else {
+            coalesce_pending_grew(session, new_size);
+            false
+        }
+    }
+
+    /// Test-only helper: returns the current tail-mode flag.
+    #[cfg(test)]
+    #[allow(dead_code, reason = "consumed by session_test::tail_mode_can_be_toggled")]
+    pub fn test_only_tail_mode(&self, session_id: &str) -> bool {
+        let sessions = self.sessions();
+        sessions
+            .get(session_id)
+            .map(|s| s.tail_mode.load(Ordering::Relaxed))
+            .unwrap_or(false)
+    }
 }
 
 /// A stand-in backend that serves `line_count` copies of one line and runs a hook
@@ -228,37 +235,44 @@ impl FileViewerBackend for ScriptedBackend {
     }
 }
 
-/// Test-only hook: registers a session over `backend` and returns its id.
-///
-/// No watcher, no upgrade thread, and no file behind it: the session exists so the read
-/// paths (`read_range`, `write_range_to_file`) can run against a [`ScriptedBackend`].
-/// Close it with `close_session` like any other session.
-#[cfg(test)]
-pub fn test_only_install_session(backend: Box<dyn FileViewerBackend>, path: PathBuf) -> String {
-    test_only_install_viewed_session(backend, path, RowText::Raw)
-}
+impl Viewer {
+    /// Test-only hook: registers a session over `backend` and returns its id.
+    ///
+    /// No watcher, no upgrade thread, and no file behind it: the session exists so the read
+    /// paths (`read_range`, `write_range_to_file`) can run against a [`ScriptedBackend`].
+    /// Close it with `close_session` like any other session.
+    #[cfg(test)]
+    pub fn test_only_install_session(&self, backend: Box<dyn FileViewerBackend>, path: PathBuf) -> String {
+        self.test_only_install_viewed_session(backend, path, RowText::Raw)
+    }
 
-/// [`test_only_install_session`] with a row view, for the read paths under the debug log's.
-#[cfg(test)]
-pub fn test_only_install_viewed_session(backend: Box<dyn FileViewerBackend>, path: PathBuf, rows: RowText) -> String {
-    let session_id = generate_session_id();
-    let session = ViewerSession::new(ViewerSessionInit {
-        backend,
-        backend_type: BackendType::ByteSeek,
-        upgrading: None,
-        encoding: FileEncoding::Utf8,
-        detected_encoding: FileEncoding::Utf8,
-        watcher_stop: Arc::new(AtomicBool::new(false)),
-        origin: SourceOrigin::Local(path.clone()),
-        file: None,
-        path,
-        media_token: None,
-        temp: None,
-        markdown: None,
-        rows,
-    });
-    SESSIONS.lock_ignore_poison().insert(session_id.clone(), session);
-    session_id
+    /// [`test_only_install_session`] with a row view, for the read paths under the debug log's.
+    #[cfg(test)]
+    pub fn test_only_install_viewed_session(
+        &self,
+        backend: Box<dyn FileViewerBackend>,
+        path: PathBuf,
+        rows: RowText,
+    ) -> String {
+        let session_id = generate_session_id();
+        let session = ViewerSession::new(ViewerSessionInit {
+            backend,
+            backend_type: BackendType::ByteSeek,
+            upgrading: None,
+            encoding: FileEncoding::Utf8,
+            detected_encoding: FileEncoding::Utf8,
+            watcher_stop: Arc::new(AtomicBool::new(false)),
+            origin: SourceOrigin::Local(path.clone()),
+            file: None,
+            path,
+            media_token: None,
+            temp: None,
+            markdown: None,
+            rows: self.row_view(rows),
+        });
+        self.sessions().insert(session_id.clone(), session);
+        session_id
+    }
 }
 
 /// Test-only rendezvous that parks a background worker at a known point until

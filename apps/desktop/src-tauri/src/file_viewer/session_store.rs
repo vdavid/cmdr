@@ -1,6 +1,6 @@
 //! The viewer-session vocabulary and registry: the [`ViewerSession`] a window reads
-//! through, what an open returns ([`ViewerOpenResult`]), and the process-wide
-//! [`SESSIONS`] cache.
+//! through and what an open returns ([`ViewerOpenResult`]). The session table itself
+//! is the `Viewer`'s (`viewer.rs`).
 //!
 //! Both open paths build on this: text opens in [`super::session`] and media opens in
 //! [`super::media_session`]. Neither imports the other's vocabulary, so the open
@@ -9,7 +9,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{Arc, Mutex};
 
 use arc_swap::ArcSwap;
 use serde::Serialize;
@@ -22,7 +22,7 @@ use super::host::pulls::PreviewTemp;
 use super::log_view::ViewedBackend;
 use super::markdown_document::MarkdownDocument;
 use super::origin::SourceOrigin;
-use super::row_text::RowText;
+use super::row_text::RowView;
 use super::source::OpenedFile;
 use super::{BackendCapabilities, FileViewerBackend, LineChunk, SearchMatch, ViewerError};
 
@@ -170,7 +170,7 @@ pub(super) struct ViewerSession {
     /// opt-in), closed at `close_session`. `None` for every other session.
     pub(super) markdown: Option<Arc<MarkdownDocument>>,
     /// How rows leave this session: as decoded, or as the debug log shows them.
-    pub(super) rows: RowText,
+    pub(super) rows: RowView,
 }
 
 /// The fields that vary between a text open and a media open. Everything else on a
@@ -189,7 +189,7 @@ pub(super) struct ViewerSessionInit {
     pub(super) media_token: Option<String>,
     pub(super) temp: Option<Arc<PreviewTemp>>,
     pub(super) markdown: Option<Arc<MarkdownDocument>>,
-    pub(super) rows: RowText,
+    pub(super) rows: RowView,
 }
 
 impl ViewerSession {
@@ -222,10 +222,13 @@ impl ViewerSession {
     /// itself: the view wraps on read, so a swapped-in backend keeps it.
     pub(super) fn load_backend(&self) -> Arc<Box<dyn FileViewerBackend>> {
         let current = self.backend.load_full();
-        match self.rows {
-            RowText::Raw => current,
-            rows => Arc::new(Box::new(ViewedBackend { inner: current, rows })),
+        if self.rows.is_raw() {
+            return current;
         }
+        Arc::new(Box::new(ViewedBackend {
+            inner: current,
+            rows: self.rows,
+        }))
     }
 
     /// The session's open file, opening it on first use.
@@ -247,10 +250,6 @@ impl ViewerSession {
         Ok(opened)
     }
 }
-
-/// Global session cache.
-pub(super) static SESSIONS: LazyLock<Mutex<HashMap<String, ViewerSession>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Generates a unique session ID.
 pub(super) fn generate_session_id() -> String {

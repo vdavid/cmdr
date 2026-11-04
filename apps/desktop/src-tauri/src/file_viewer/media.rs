@@ -9,8 +9,8 @@
 //! token; the handler resolves token -> path. An unknown token is a 404, and there's no
 //! way to name an arbitrary file: the backend only ever exposes files it chose to.
 //!
-//! **Token lifetime == session lifetime.** [`drop_token`] is called from the single
-//! `session::close_session` choke point that frees `SESSIONS`, so both teardown paths
+//! **Token lifetime == session lifetime.** [`MediaTokens::drop_token`] is called from the single
+//! `Viewer::close_session` choke point that frees the session, so both teardown paths
 //! (the `viewer_close` IPC and the `WindowEvent::Destroyed` net) free the token too. A
 //! closed-window viewer must not leave a live token mapping a real path.
 //!
@@ -23,8 +23,8 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::Mutex;
-use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 
 use rand::RngExt;
@@ -82,48 +82,58 @@ impl MediaSource {
     }
 }
 
-/// Global token -> source map. A `Mutex` (not `RwLock`) because contention is trivial:
+/// The token -> source map. A `Mutex` (not `RwLock`) because contention is trivial:
 /// minting and dropping happen once per viewer open/close (or render), and resolution
-/// once per media request.
-static MEDIA_TOKENS: LazyLock<Mutex<HashMap<String, MediaSource>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
-
-/// Mints a fresh 128-bit CSPRNG token for `entry`, stores it, and returns the token
-/// string (32 lowercase hex chars). The randomness source is `rand`'s OS-backed RNG,
-/// matching the "no new RNG crate" constraint.
-pub fn mint_token(entry: MediaEntry) -> String {
-    mint(MediaSource::Ready(entry))
+/// once per media request. One table per host: the viewer mints into it, and so do the
+/// app's thumbnails, since the one `cmdr-media://` handler serves both.
+#[derive(Default)]
+pub struct MediaTokens {
+    tokens: Mutex<HashMap<String, MediaSource>>,
 }
 
-/// Mints a token over bytes a volume serves by position.
-pub fn mint_volume_token(media: Arc<VolumeMedia>) -> String {
-    mint(MediaSource::Volume(media))
-}
+impl MediaTokens {
+    pub fn new() -> Self {
+        Self::default()
+    }
 
-/// Mints a token over bytes the handler fetches on the first request.
-pub fn mint_deferred_token(source: Arc<dyn DeferredMedia>) -> String {
-    mint(MediaSource::Deferred(source))
-}
+    /// Mints a fresh 128-bit CSPRNG token for `entry`, stores it, and returns the token
+    /// string (32 lowercase hex chars). The randomness source is `rand`'s OS-backed RNG,
+    /// matching the "no new RNG crate" constraint.
+    pub fn mint_token(&self, entry: MediaEntry) -> String {
+        self.mint(MediaSource::Ready(entry))
+    }
 
-/// Mints a token over whatever `source` names.
-pub fn mint(source: MediaSource) -> String {
-    let bytes: [u8; 16] = rand::rng().random();
-    let token = hex_encode(&bytes);
-    MEDIA_TOKENS.lock_ignore_poison().insert(token.clone(), source);
-    token
-}
+    /// Mints a token over bytes a volume serves by position.
+    pub fn mint_volume_token(&self, media: Arc<VolumeMedia>) -> String {
+        self.mint(MediaSource::Volume(media))
+    }
 
-/// Resolves a token to its source, or `None` if the token is unknown (never existed or
-/// already dropped). The handler maps `None` to a 404.
-pub fn resolve_token(token: &str) -> Option<MediaSource> {
-    MEDIA_TOKENS.lock_ignore_poison().get(token).cloned()
-}
+    /// Mints a token over bytes the handler fetches on the first request.
+    pub fn mint_deferred_token(&self, source: Arc<dyn DeferredMedia>) -> String {
+        self.mint(MediaSource::Deferred(source))
+    }
 
-/// Drops the token for `token`, if present, and stops any volume read still running under
-/// it (its session is gone, so nobody is waiting). Idempotent.
-pub fn drop_token(token: &str) {
-    let dropped = MEDIA_TOKENS.lock_ignore_poison().remove(token);
-    if let Some(MediaSource::Volume(media)) = dropped {
-        media.close();
+    /// Mints a token over whatever `source` names.
+    pub fn mint(&self, source: MediaSource) -> String {
+        let bytes: [u8; 16] = rand::rng().random();
+        let token = hex_encode(&bytes);
+        self.tokens.lock_ignore_poison().insert(token.clone(), source);
+        token
+    }
+
+    /// Resolves a token to its source, or `None` if the token is unknown (never existed or
+    /// already dropped). The handler maps `None` to a 404.
+    pub fn resolve_token(&self, token: &str) -> Option<MediaSource> {
+        self.tokens.lock_ignore_poison().get(token).cloned()
+    }
+
+    /// Drops the token for `token`, if present, and stops any volume read still running
+    /// under it (its session is gone, so nobody is waiting). Idempotent.
+    pub fn drop_token(&self, token: &str) {
+        let dropped = self.tokens.lock_ignore_poison().remove(token);
+        if let Some(MediaSource::Volume(media)) = dropped {
+            media.close();
+        }
     }
 }
 
@@ -234,40 +244,44 @@ mod tests {
 
     #[test]
     fn mint_returns_32_hex_chars() {
-        let token = mint_token(entry());
+        let tokens = MediaTokens::new();
+        let token = tokens.mint_token(entry());
         assert_eq!(token.len(), 32, "128-bit token == 32 hex chars: {token}");
         assert!(token.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
-        drop_token(&token);
     }
 
     #[test]
     fn mint_then_resolve_roundtrips() {
-        let token = mint_token(entry());
-        let source = resolve_token(&token).expect("token resolves");
+        let tokens = MediaTokens::new();
+        let token = tokens.mint_token(entry());
+        let source = tokens.resolve_token(&token).expect("token resolves");
         let resolved = source.ready().expect("a minted entry is ready");
         assert_eq!(resolved.canonical_path, PathBuf::from("/tmp/x.png"));
         assert_eq!(resolved.mime, "image/png");
-        drop_token(&token);
     }
 
     #[test]
     fn tokens_are_unique_across_mints() {
-        let a = mint_token(entry());
-        let b = mint_token(entry());
+        let tokens = MediaTokens::new();
+        let a = tokens.mint_token(entry());
+        let b = tokens.mint_token(entry());
         assert_ne!(a, b, "two mints must not collide");
-        drop_token(&a);
-        drop_token(&b);
     }
 
     #[test]
     fn dropped_token_resolves_to_none() {
-        let token = mint_token(entry());
-        drop_token(&token);
-        assert!(resolve_token(&token).is_none(), "dropped token must be a miss");
+        let tokens = MediaTokens::new();
+        let token = tokens.mint_token(entry());
+        tokens.drop_token(&token);
+        assert!(tokens.resolve_token(&token).is_none(), "dropped token must be a miss");
     }
 
     #[test]
     fn unknown_token_resolves_to_none() {
-        assert!(resolve_token("deadbeefdeadbeefdeadbeefdeadbeef").is_none());
+        assert!(
+            MediaTokens::new()
+                .resolve_token("deadbeefdeadbeefdeadbeefdeadbeef")
+                .is_none()
+        );
     }
 }

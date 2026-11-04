@@ -1,11 +1,11 @@
-//! The desktop app's answers to the viewer's host seams (`host/`): the volume manager,
+//! The desktop app's viewer ([`app_viewer`]) and its answers to the host seams (`host/`): the volume manager,
 //! the materializer, the Markdown image fetches, analytics, and the Tauri events and
 //! opener a viewer window hears through.
 
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, LazyLock, OnceLock};
 
 use log::debug;
 use tauri::{AppHandle, Emitter};
@@ -13,40 +13,48 @@ use tauri::{AppHandle, Emitter};
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
 
+use super::host::ViewerHost;
 use super::host::analytics::ViewerAnalytics;
 use super::host::events::{FileChange, ViewerEvents};
 use super::host::images::DocumentImages;
-use super::host::opener::{LinkOpener, NoOpener};
+use super::host::opener::LinkOpener;
 use super::host::pulls::{PreviewTemp, ViewerPulls};
 use super::host::volumes::ViewerVolumes;
-use super::host::{ViewerHost, install_host};
 use super::markdown_image_fetch::{RemoteImage, VolumeImage};
 use super::media::MediaSource;
 use super::pending_open::PendingOpen;
+use super::viewer::Viewer;
 use super::{ViewerError, ViewerOpenResult, materialize};
 
-/// The app's host before any window exists: everything but the events and the opener,
-/// which need the app handle. What the app's unit tests run against.
-pub(super) fn app_host_without_windows() -> ViewerHost {
+/// The app's one viewer, over the app's host, on Tauri's runtime. Its tokens are the ones
+/// the `cmdr-media://` handler and the thumbnails share.
+pub fn app_viewer() -> &'static Viewer {
+    static VIEWER: LazyLock<Viewer> =
+        LazyLock::new(|| Viewer::new(app_host(), tauri::async_runtime::handle().inner().clone()));
+    &VIEWER
+}
+
+/// The window handle the viewer's events and the link opener reach the app through, set
+/// once at startup. Until then (the app's unit tests) both answer nothing.
+static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
+
+/// Gives the viewer the app handle. Called once at startup, before any window exists.
+pub fn init_app_handle(handle: AppHandle) {
+    if APP_HANDLE.set(handle).is_err() {
+        debug!("viewer: the app handle was already set");
+    }
+}
+
+fn app_host() -> ViewerHost {
     ViewerHost {
         volumes: Arc::new(AppVolumes),
         pulls: Arc::new(AppPulls),
         images: Arc::new(AppImages),
-        events: Arc::new(super::host::events::NoEvents),
+        events: Arc::new(AppEvents),
         analytics: Arc::new(AppAnalytics),
-        opener: Arc::new(NoOpener),
+        opener: Arc::new(AppOpener),
         log_display: display_line,
     }
-}
-
-/// Installs the app's full host, with `handle` for the viewer windows' events and the
-/// opener. Called once at startup.
-pub fn init_app_handle(handle: AppHandle) {
-    install_host(ViewerHost {
-        events: Arc::new(AppEvents { handle: handle.clone() }),
-        opener: Arc::new(AppOpener { handle }),
-        ..app_host_without_windows()
-    });
 }
 
 fn display_line(line: &str) -> Cow<'_, str> {
@@ -110,27 +118,33 @@ impl ViewerAnalytics for AppAnalytics {
     }
 }
 
-struct AppEvents {
-    handle: AppHandle,
-}
+struct AppEvents;
 
 impl ViewerEvents for AppEvents {
     fn file_changed(&self, session_id: &str, change: FileChange) {
+        let Some(handle) = APP_HANDLE.get() else {
+            return;
+        };
         let (event, payload) = file_changed_event(session_id, change);
-        if let Err(e) = self.handle.emit(&event, payload) {
+        if let Err(e) = handle.emit(&event, payload) {
             debug!("emit viewer:file-changed failed: {}", e);
         }
     }
+
+    /// The scheme handler resolves tokens per request, so a dropped one is already a 404;
+    /// nothing else holds on to it.
+    fn media_token_dropped(&self, _token: &str) {}
 }
 
-struct AppOpener {
-    handle: AppHandle,
-}
+struct AppOpener;
 
 impl LinkOpener for AppOpener {
     fn open_url(&self, url: &str) -> Result<(), ViewerError> {
         use tauri_plugin_opener::OpenerExt;
-        self.handle
+        let Some(handle) = APP_HANDLE.get() else {
+            return Ok(());
+        };
+        handle
             .opener()
             .open_url(url, None::<&str>)
             .map_err(|e| ViewerError::Io {

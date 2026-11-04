@@ -10,10 +10,12 @@ use std::sync::{Arc, Mutex};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
-use super::host::host;
+use super::host::events::ViewerEvents;
+use super::host::images::DocumentImages;
 use super::markdown_images::{ImageTarget, resolve_image_src};
 use super::markdown_render::ImageMarker;
-use super::media;
+use super::media::{MediaSource, MediaTokens};
+use super::viewer::Viewer;
 
 /// A Markdown session's document: where it lives, and the image tokens its render minted.
 pub(super) struct MarkdownDocument {
@@ -28,16 +30,24 @@ pub(super) struct MarkdownDocument {
     /// The tokens the last render minted, by what they point at, so a repeated image
     /// shares one token (and one pull).
     images: Mutex<HashMap<ImageTarget, String>>,
+    /// The viewer's pieces a document mints and drops through. Not the `Viewer` itself:
+    /// the viewer's session table holds this document, and a cycle would never drop.
+    tokens: Arc<MediaTokens>,
+    sources: Arc<dyn DocumentImages>,
+    events: Arc<dyn ViewerEvents>,
 }
 
 impl MarkdownDocument {
-    pub(super) fn new(path: PathBuf, volume_id: String) -> Self {
+    pub(super) fn new(viewer: &Viewer, path: PathBuf, volume_id: String) -> Self {
         Self {
             path,
             volume_id,
             closed: Arc::new(AtomicBool::new(false)),
             remote_allowed: Arc::new(AtomicBool::new(false)),
             images: Mutex::new(HashMap::new()),
+            tokens: Arc::clone(viewer.tokens()),
+            sources: Arc::clone(&viewer.host().images),
+            events: Arc::clone(&viewer.host().events),
         }
     }
 
@@ -62,20 +72,19 @@ impl MarkdownDocument {
     pub(super) fn image_marker(&self, src: &str, volume_root: &Path) -> ImageMarker {
         let target = resolve_image_src(src, &self.path, volume_root);
         let mut images = self.images.lock_ignore_poison();
-        let token = |images: &mut HashMap<ImageTarget, String>, source: &dyn Fn() -> media::MediaSource| {
+        let token = |images: &mut HashMap<ImageTarget, String>, source: &dyn Fn() -> MediaSource| {
             images
                 .entry(target.clone())
-                .or_insert_with(|| media::mint(source()))
+                .or_insert_with(|| self.tokens.mint(source()))
                 .clone()
         };
-        let host = host();
         match &target {
             ImageTarget::Local(path) => ImageMarker::Local(token(&mut images, &|| {
-                host.images
+                self.sources
                     .on_volume(path.clone(), self.volume_id.clone(), Arc::clone(&self.closed))
             })),
             ImageTarget::Remote(url) => ImageMarker::Remote(token(&mut images, &|| {
-                host.images
+                self.sources
                     .on_the_web(url.clone(), Arc::clone(&self.remote_allowed), Arc::clone(&self.closed))
             })),
             ImageTarget::Inline => ImageMarker::Inline,
@@ -93,7 +102,8 @@ impl MarkdownDocument {
     /// Drops every image token, so none outlives the render it came from.
     pub(super) fn drop_images(&self) {
         for (_, token) in self.images.lock_ignore_poison().drain() {
-            media::drop_token(&token);
+            self.tokens.drop_token(&token);
+            self.events.media_token_dropped(&token);
         }
     }
 

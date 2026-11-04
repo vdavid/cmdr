@@ -6,7 +6,7 @@
 //! ([`super::media_protocol`]); this module only sets up the session and the token. Text
 //! opens (FullLoad / ByteSeek / LineIndex, search, encoding, tail) stay in
 //! [`super::session`]; both build on [`super::session_store`] (the `ViewerSession` type and
-//! its `SESSIONS` cache).
+//! its constructor).
 //!
 //! [`try_open_media`] is the single entry point [`super::session::open_session`] calls
 //! before it builds a text backend: it classifies the file and, for a media kind, opens
@@ -17,8 +17,6 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use cmdr_fs::ignore_poison::IgnorePoison;
-
 use super::content_kind::{CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, media_mime};
 use super::encoding::FileEncoding;
 use super::host::pulls::PreviewTemp;
@@ -26,11 +24,12 @@ use super::media::{self, MediaEntry};
 use super::media_backend::MediaBackend;
 use super::media_volume::{MEDIA_ON_VOLUME_MAX_BYTES, VolumeMedia};
 use super::origin::SourceOrigin;
-use super::row_text::RowText;
+use super::row_text::RowView;
 use super::session_store::{
-    BackendType, MediaDimensions, SESSIONS, ViewerOpenResult, ViewerSession, ViewerSessionInit, generate_session_id,
+    BackendType, MediaDimensions, ViewerOpenResult, ViewerSession, ViewerSessionInit, generate_session_id,
 };
 use super::source::{OpenedFile, read_head};
+use super::viewer::Viewer;
 use super::{FileViewerBackend, LineChunk, ViewerError};
 
 /// One file to classify, through the handle the session opened.
@@ -47,7 +46,7 @@ pub(super) struct MediaOpen<'a> {
 /// Classifies the file by magic bytes, read through its open handle, and, if it's a media
 /// kind (`Image` / `Pdf`), opens a media session and returns its result. Returns `None`
 /// when the file should flow on through the text pipeline, so the caller can fall through.
-pub(super) fn try_open_media(file: MediaOpen<'_>) -> Option<Result<ViewerOpenResult, ViewerError>> {
+pub(super) fn try_open_media(viewer: &Viewer, file: MediaOpen<'_>) -> Option<Result<ViewerOpenResult, ViewerError>> {
     let on_a_volume = matches!(file.origin, SourceOrigin::Volume { .. });
     if on_a_volume && file.opened.total_bytes > MEDIA_ON_VOLUME_MAX_BYTES {
         return None;
@@ -55,13 +54,15 @@ pub(super) fn try_open_media(file: MediaOpen<'_>) -> Option<Result<ViewerOpenRes
     let head = read_head(file.opened.source.as_ref(), file.opened.total_bytes, CLASSIFY_HEAD_LEN).unwrap_or_default();
     let ext = file.requested.extension().and_then(|e| e.to_str());
     let kind = classify_viewer_content(&head, ext);
-    matches!(kind, ViewerContentKind::Image | ViewerContentKind::Pdf).then(|| open_media_session(file, &head, kind))
+    matches!(kind, ViewerContentKind::Image | ViewerContentKind::Pdf)
+        .then(|| open_media_session(viewer, file, &head, kind))
 }
 
 /// Opens a media (Image/PDF) session: no text backend, a minted `cmdr-media://` token,
 /// and best-effort header-only image dimensions. Creates a real `ViewerSession` (with a
 /// `MediaBackend` no-op) so close/teardown stays uniform with text sessions.
 fn open_media_session(
+    viewer: &Viewer,
     file: MediaOpen<'_>,
     head: &[u8],
     kind: ViewerContentKind,
@@ -82,9 +83,11 @@ fn open_media_session(
     // Mint the capability token. The FE builds the URL from this; the scheme handler
     // resolves it back to a path it opens, or to the session's handle on a volume.
     let media_token = if media_from_volume {
-        media::mint_volume_token(Arc::new(VolumeMedia::new(Arc::clone(&opened.source), file_size, mime)))
+        viewer
+            .tokens()
+            .mint_volume_token(Arc::new(VolumeMedia::new(Arc::clone(&opened.source), file_size, mime)))
     } else {
-        media::mint_token(MediaEntry {
+        viewer.tokens().mint_token(MediaEntry {
             canonical_path: file_path.to_path_buf(),
             kind,
             mime,
@@ -123,12 +126,12 @@ fn open_media_session(
         media_token: Some(media_token.clone()),
         temp,
         markdown: None,
-        rows: RowText::Raw,
+        rows: RowView::raw(),
     });
 
     // No watcher and no LineIndex upgrade for media: there's no text viewport to
     // tail-follow, and the bytes are re-read fresh per `cmdr-media://` request anyway.
-    SESSIONS.lock_ignore_poison().insert(session_id.clone(), session);
+    viewer.sessions().insert(session_id.clone(), session);
 
     let empty_initial = LineChunk {
         rows: Vec::new(),

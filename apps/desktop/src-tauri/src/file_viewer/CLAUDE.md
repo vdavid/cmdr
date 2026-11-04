@@ -5,7 +5,7 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 
 ## Module map
 
-- `mod.rs`: public API, `ViewerError`. `session.rs`: text sessions; `session_store.rs`: `ViewerSession` + `SESSIONS`.
+- `mod.rs`: public API, `ViewerError`. `viewer.rs`: `Viewer`, the value that owns it all. `session.rs`: text sessions.
 - `rows.rs` (the row rule), `row_walk.rs` (that rule read forward: `RowReader`,
   `collect_rows`, `search_rows`, and the row types), `range_read.rs` (range → UTF-8),
   `encoding.rs` (`FileEncoding` + detection), `full_load.rs` / `byte_seek.rs` / `line_index.rs` (the three backends),
@@ -32,7 +32,7 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   injecting watcher events calls `wait_for_watcher_subscribed()` first. `DETAILS.md` § "Gotchas (tail mode)".
 - **Drain-and-swap-under-lock** for the ByteSeek→LineIndex upgrade and the encoding rebuild: a mid-rebuild `Grew`
   queues into `session.pending_grew`; the tail extend discards a stale backend via `Arc::ptr_eq`.
-- **`SESSIONS` is freed on BOTH close paths**: the titlebar X never fires `viewer_close`, so
+- **A session is freed on BOTH close paths**: the titlebar X never fires `viewer_close`, so
   `app_lifecycle::on_window_event`'s `Destroyed` branch covers `viewer-*`. The `cmdr-media://` token drops at that same
   choke point, ❌ nowhere else.
 - **`search_cancel` must not null `session.search`**: the search thread writes `Cancelled` there, and nulling it first

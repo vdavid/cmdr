@@ -42,6 +42,7 @@ mod search_matcher;
 pub mod session;
 mod session_store;
 mod source;
+mod viewer;
 mod volume_error;
 mod volume_source;
 pub mod watcher;
@@ -96,7 +97,7 @@ mod session_range_test;
 #[cfg(test)]
 mod session_test;
 #[cfg(test)]
-mod session_test_support;
+pub(crate) mod session_test_support;
 #[cfg(test)]
 mod volume_source_test;
 #[cfg(test)]
@@ -106,30 +107,25 @@ mod wire_characterization_test;
 #[cfg(test)]
 mod worker_test;
 
-pub use app_host::init_app_handle;
+pub use app_host::{app_viewer, init_app_handle};
 pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
 pub use events::{ViewerMediaLoad, ViewerPullProgress};
 pub use markdown_links::MarkdownLink;
-pub use markdown_session::{
-    MarkdownRender, allow_remote_images, follow_markdown_link, render_markdown_session, resolve_markdown_link,
-};
+pub use markdown_session::MarkdownRender;
 pub use materialize::init_materialize_dir;
+pub use media::MediaTokens;
 pub use media_volume::{MediaLoad, MediaLoadStage};
 pub use open_with_extract::init_open_with_extract_dir;
-pub use pending_open::{AbandonReason, PendingOpen, PullProgress, begin_pending_open, end_pending_open};
+pub use pending_open::{AbandonReason, PendingOpen, PullProgress};
 pub use range_read::RangeEnd;
-pub use row_text::RowText;
+pub use row_text::{RowText, RowView};
 pub use row_walk::{CHUNK_BUDGET_BYTES, ChunkEnd, TotalRows, ViewerRow};
 pub use rows::SEGMENT_BYTES;
 pub use search_matcher::{Matcher, SearchMode};
-pub use session::{
-    EncodingOptions, SaveProgress, SavedAs, SearchPollResult, ViewerSessionStatus, cancel_read, close_session,
-    close_session_for_window, get_bytes, get_encoding_options, get_lines, get_session_status, open_for_window,
-    open_session, open_session_as_text, read_range, register_window_session, reload, search_cancel, search_poll,
-    search_start, set_encoding, set_tail_mode, write_range_to_file,
-};
+pub use session::{EncodingOptions, SaveProgress, SavedAs, SearchPollResult, ViewerSessionStatus};
 pub use session_store::{MediaDimensions, ViewerOpenResult};
+pub use viewer::Viewer;
 
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, write_plain};

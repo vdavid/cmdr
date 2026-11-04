@@ -38,7 +38,7 @@ use regex::{Regex, RegexBuilder};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
-use super::row_text::RowText;
+use super::row_text::RowView;
 use super::{MAX_SEARCH_MATCHES, SearchMatch};
 
 /// Maximum line length before `find_matches` switches to chunked scanning.
@@ -94,7 +94,7 @@ pub struct Matcher {
     pattern: Pattern,
     /// The text a row is matched as: what the session shows, so a match's column lands on the
     /// text the user sees.
-    rows: RowText,
+    rows: RowView,
 }
 
 #[derive(Debug)]
@@ -150,12 +150,12 @@ impl Matcher {
     fn new(pattern: Pattern) -> Self {
         Self {
             pattern,
-            rows: RowText::Raw,
+            rows: RowView::raw(),
         }
     }
 
     /// The same matcher, reading each row as `rows` shows it.
-    pub fn viewing(self, rows: RowText) -> Self {
+    pub fn viewing(self, rows: RowView) -> Self {
         Self { rows, ..self }
     }
 

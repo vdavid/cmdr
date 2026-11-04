@@ -10,6 +10,7 @@ use super::session;
 use super::session_store::{BackendType, SearchStatus};
 use super::session_test_support::{create_test_dir, write_test_file};
 use super::{FULL_LOAD_THRESHOLD, FileEncoding, MAX_SEARCH_MATCHES, SearchMode, ViewerError};
+use crate::file_viewer::session_test_support::viewer;
 use crate::test_support::wait_until;
 
 /// Default mode for existing tests: literal, case-sensitive (matches pre-mode behaviour
@@ -62,7 +63,7 @@ fn wait_for_watcher_subscribed() {
 
 /// Whether the background ByteSeek → LineIndex upgrade (or an encoding rebuild) has settled.
 fn upgraded_to_line_index(sid: &str) -> bool {
-    let status = session::get_session_status(sid).expect("session status");
+    let status = viewer().get_session_status(sid).expect("session status");
     matches!(status.backend_type, BackendType::LineIndex) && !status.is_indexing
 }
 
@@ -71,7 +72,7 @@ fn open_small_file_uses_full_load() {
     let dir = create_test_dir("small");
     let file = write_test_file(&dir, "test.txt", "hello\nworld\n");
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     assert_eq!(result.file_name, "test.txt");
     assert_eq!(result.total_bytes, 12);
     assert_eq!(result.total_lines, Some(3));
@@ -84,7 +85,7 @@ fn open_small_file_uses_full_load() {
     assert_eq!(result.initial_lines.first_row_number, 0);
 
     // Cleanup session
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
 }
 
 #[test]
@@ -92,14 +93,14 @@ fn raw_bytes_preserve_controls_and_high_bytes_across_offsets() {
     let dir = create_test_dir("raw_bytes");
     let file = dir.join("sample.bin");
     fs::write(&file, [0, b'\n', 0x80, 0xff, b'A']).unwrap();
-    let opened = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let opened = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
 
-    assert_eq!(session::get_bytes(&opened.session_id, 0, 3).unwrap(), [0, b'\n', 0x80]);
-    assert_eq!(session::get_bytes(&opened.session_id, 3, 10).unwrap(), [0xff, b'A']);
-    assert!(session::get_bytes(&opened.session_id, 5, 10).unwrap().is_empty());
-    assert_eq!(session::get_bytes(&opened.session_id, 0, usize::MAX).unwrap().len(), 5);
+    assert_eq!(viewer().get_bytes(&opened.session_id, 0, 3).unwrap(), [0, b'\n', 0x80]);
+    assert_eq!(viewer().get_bytes(&opened.session_id, 3, 10).unwrap(), [0xff, b'A']);
+    assert!(viewer().get_bytes(&opened.session_id, 5, 10).unwrap().is_empty());
+    assert_eq!(viewer().get_bytes(&opened.session_id, 0, usize::MAX).unwrap().len(), 5);
 
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
 }
 
 #[test]
@@ -111,7 +112,7 @@ fn open_large_file_uses_byte_seek() {
     let content: String = line.repeat(line_count);
     let file = write_test_file(&dir, "big.txt", &content);
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     assert!(result.total_bytes > FULL_LOAD_THRESHOLD);
     assert!(matches!(result.backend_type, BackendType::ByteSeek));
     assert!(!result.capabilities.supports_line_seek);
@@ -120,19 +121,19 @@ fn open_large_file_uses_byte_seek() {
     // Should still have initial lines
     assert!(!result.initial_lines.rows.is_empty());
 
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
 }
 
 #[test]
 fn open_not_found() {
-    let result = session::open_session("/nonexistent_session_test.txt", "root");
+    let result = viewer().open_session("/nonexistent_session_test.txt", "root");
     assert!(result.is_err());
 }
 
 #[test]
 fn open_directory_fails() {
     let dir = create_test_dir("dir_fail");
-    let result = session::open_session(dir.to_str().unwrap(), "root");
+    let result = viewer().open_session(dir.to_str().unwrap(), "root");
     assert!(result.is_err());
 }
 
@@ -141,24 +142,25 @@ fn get_lines_after_open() {
     let dir = create_test_dir("get_lines");
     let file = write_test_file(&dir, "test.txt", "a\nb\nc\nd\ne\n");
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
 
-    let chunk = session::get_lines(
-        &open_result.session_id,
-        super::SeekTarget::Row(2),
-        3,
-        &AtomicBool::new(false),
-    )
-    .unwrap();
+    let chunk = viewer()
+        .get_lines(
+            &open_result.session_id,
+            super::SeekTarget::Row(2),
+            3,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
     assert_eq!(chunk.first_row_number, 2);
     assert_eq!(chunk.texts(), vec!["c", "d", "e"]);
 
-    session::close_session(&open_result.session_id).unwrap();
+    viewer().close_session(&open_result.session_id).unwrap();
 }
 
 #[test]
 fn get_lines_invalid_session() {
-    let result = session::get_lines(
+    let result = viewer().get_lines(
         "nonexistent-session-id",
         super::SeekTarget::Row(0),
         10,
@@ -172,17 +174,25 @@ fn close_session_cleans_up() {
     let dir = create_test_dir("close");
     let file = write_test_file(&dir, "test.txt", "test\n");
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = open_result.session_id.clone();
 
     // Session should work
-    assert!(session::get_lines(&sid, super::SeekTarget::Row(0), 1, &AtomicBool::new(false)).is_ok());
+    assert!(
+        viewer()
+            .get_lines(&sid, super::SeekTarget::Row(0), 1, &AtomicBool::new(false))
+            .is_ok()
+    );
 
     // Close it
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 
     // Now it should fail
-    assert!(session::get_lines(&sid, super::SeekTarget::Row(0), 1, &AtomicBool::new(false)).is_err());
+    assert!(
+        viewer()
+            .get_lines(&sid, super::SeekTarget::Row(0), 1, &AtomicBool::new(false))
+            .is_err()
+    );
 }
 
 #[test]
@@ -190,14 +200,14 @@ fn search_start_and_poll() {
     let dir = create_test_dir("search");
     let file = write_test_file(&dir, "test.txt", "hello world\nfoo bar\nhello again\n");
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     // Start search
-    session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+    viewer().search_start(sid, "hello".to_string(), literal_mode()).unwrap();
 
     wait_until(Duration::from_secs(1), "the search to complete", || {
-        let poll = session::search_poll(sid, 0).expect("search poll");
+        let poll = viewer().search_poll(sid, 0).expect("search poll");
         if !matches!(poll.status, SearchStatus::Done) {
             return false;
         }
@@ -206,7 +216,7 @@ fn search_start_and_poll() {
         true
     });
 
-    session::close_session(sid).unwrap();
+    viewer().close_session(sid).unwrap();
 }
 
 #[test]
@@ -215,7 +225,7 @@ fn search_cancel_works() {
     let content = "hello world\n".repeat(100000);
     let file = write_test_file(&dir, "test.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     // Held before its scan, so the cancel below lands on a running search. ❌ Not
@@ -223,19 +233,19 @@ fn search_cancel_works() {
     // CI runner kept this thread off the CPU (or behind the upgrade's `SESSIONS`
     // lock) that long, so the search sometimes ended `Done` first.
     session::test_gate::SEARCH_PRE_SCAN.arm();
-    session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+    viewer().search_start(sid, "hello".to_string(), literal_mode()).unwrap();
     session::test_gate::SEARCH_PRE_SCAN.wait_until_reached(Duration::from_secs(5));
 
     // The cancel flag is set synchronously; the search thread sees it on its
     // next iteration and exits, writing the final `SearchStatus::Cancelled` to
     // the shared status mutex.
-    session::search_cancel(sid).unwrap();
+    viewer().search_cancel(sid).unwrap();
     session::test_gate::SEARCH_PRE_SCAN.release();
 
     // Wait for the thread to observe the cancel and transition to Cancelled.
     // We accept Running (thread still in flight) along the way.
     wait_until(Duration::from_secs(2), "the search to transition to Cancelled", || {
-        let poll = session::search_poll(sid, 0).expect("search poll");
+        let poll = viewer().search_poll(sid, 0).expect("search poll");
         if matches!(poll.status, SearchStatus::Cancelled) {
             return true;
         }
@@ -247,7 +257,7 @@ fn search_cancel_works() {
         false
     });
 
-    session::close_session(sid).unwrap();
+    viewer().close_session(sid).unwrap();
 }
 
 #[test]
@@ -263,29 +273,29 @@ fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
     let content = "hello world\n".repeat(200_000);
     let file = write_test_file(&dir, "test.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
-    session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
-    session::search_cancel(sid).unwrap();
+    viewer().search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+    viewer().search_cancel(sid).unwrap();
 
     wait_until(Duration::from_secs(2), "poll to observe Cancelled", || {
         matches!(
-            session::search_poll(sid, 0).expect("search poll").status,
+            viewer().search_poll(sid, 0).expect("search poll").status,
             SearchStatus::Cancelled
         )
     });
 
     // Starting a fresh search must reset the observable status.
-    session::search_start(sid, "world".to_string(), literal_mode()).unwrap();
-    let poll_after_restart = session::search_poll(sid, 0).unwrap();
+    viewer().search_start(sid, "world".to_string(), literal_mode()).unwrap();
+    let poll_after_restart = viewer().search_poll(sid, 0).unwrap();
     assert!(
         matches!(poll_after_restart.status, SearchStatus::Running | SearchStatus::Done),
         "fresh search_start must clear the Cancelled state; got {:?}",
         poll_after_restart.status
     );
 
-    session::close_session(sid).unwrap();
+    viewer().close_session(sid).unwrap();
 }
 
 #[test]
@@ -293,19 +303,19 @@ fn search_poll_no_active_search() {
     let dir = create_test_dir("poll_idle");
     let file = write_test_file(&dir, "test.txt", "test\n");
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
-    let poll = session::search_poll(sid, 0).unwrap();
+    let poll = viewer().search_poll(sid, 0).unwrap();
     assert!(matches!(poll.status, SearchStatus::Idle));
 
-    session::close_session(sid).unwrap();
+    viewer().close_session(sid).unwrap();
 }
 
 #[test]
 fn tilde_expansion() {
     // open_session should handle ~ paths
-    let result = session::open_session("~/nonexistent_file_tilde_test.txt", "root");
+    let result = viewer().open_session("~/nonexistent_file_tilde_test.txt", "root");
     // Should get NotFound rather than a panic/crash
     assert!(result.is_err());
 }
@@ -322,7 +332,7 @@ fn large_file_upgrades_to_line_index() {
         .collect();
     let file = write_test_file(&dir, "upgrade.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     // Initially ByteSeek
@@ -335,12 +345,14 @@ fn large_file_upgrades_to_line_index() {
     );
 
     // On LineIndex a `Line` target lands on exactly that line, so the chunk reports it back.
-    let chunk = session::get_lines(sid, super::SeekTarget::Row(10), 3, &AtomicBool::new(false)).unwrap();
+    let chunk = viewer()
+        .get_lines(sid, super::SeekTarget::Row(10), 3, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.first_row_number, 10);
     assert_eq!(chunk.texts().len(), 3);
     assert!(chunk.texts()[0].starts_with("line 00000010 "));
 
-    session::close_session(sid).unwrap();
+    viewer().close_session(sid).unwrap();
 }
 
 #[test]
@@ -349,21 +361,25 @@ fn multiple_sessions() {
     let file1 = write_test_file(&dir, "a.txt", "file a\n");
     let file2 = write_test_file(&dir, "b.txt", "file b\n");
 
-    let res1 = session::open_session(file1.to_str().unwrap(), "root").unwrap();
-    let res2 = session::open_session(file2.to_str().unwrap(), "root").unwrap();
+    let res1 = viewer().open_session(file1.to_str().unwrap(), "root").unwrap();
+    let res2 = viewer().open_session(file2.to_str().unwrap(), "root").unwrap();
 
     assert_ne!(res1.session_id, res2.session_id);
     assert_eq!(res1.file_name, "a.txt");
     assert_eq!(res2.file_name, "b.txt");
 
     // Both should work independently
-    let chunk1 = session::get_lines(&res1.session_id, super::SeekTarget::Row(0), 1, &AtomicBool::new(false)).unwrap();
-    let chunk2 = session::get_lines(&res2.session_id, super::SeekTarget::Row(0), 1, &AtomicBool::new(false)).unwrap();
+    let chunk1 = viewer()
+        .get_lines(&res1.session_id, super::SeekTarget::Row(0), 1, &AtomicBool::new(false))
+        .unwrap();
+    let chunk2 = viewer()
+        .get_lines(&res2.session_id, super::SeekTarget::Row(0), 1, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk1.texts()[0], "file a");
     assert_eq!(chunk2.texts()[0], "file b");
 
-    session::close_session(&res1.session_id).unwrap();
-    session::close_session(&res2.session_id).unwrap();
+    viewer().close_session(&res1.session_id).unwrap();
+    viewer().close_session(&res2.session_id).unwrap();
 }
 
 #[test]
@@ -373,13 +389,13 @@ fn search_poll_reports_match_limit() {
     let content = "aa\n".repeat(MAX_SEARCH_MATCHES + 1000);
     let file = write_test_file(&dir, "test.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
-    session::search_start(sid, "a".to_string(), literal_mode()).unwrap();
+    viewer().search_start(sid, "a".to_string(), literal_mode()).unwrap();
 
     wait_until(Duration::from_secs(2), "the search to complete", || {
-        let poll = session::search_poll(sid, 0).expect("search poll");
+        let poll = viewer().search_poll(sid, 0).expect("search poll");
         if !matches!(poll.status, SearchStatus::Done) {
             return false;
         }
@@ -391,7 +407,7 @@ fn search_poll_reports_match_limit() {
         true
     });
 
-    session::close_session(sid).unwrap();
+    viewer().close_session(sid).unwrap();
 }
 
 #[test]
@@ -399,35 +415,35 @@ fn search_poll_incremental_delivery() {
     let dir = create_test_dir("search_incremental");
     let file = write_test_file(&dir, "test.txt", "aaa\nbbb\naaa\nbbb\naaa\n");
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
-    session::search_start(sid, "aaa".to_string(), literal_mode()).unwrap();
+    viewer().search_start(sid, "aaa".to_string(), literal_mode()).unwrap();
 
     wait_until(Duration::from_secs(1), "the search to finish", || {
         matches!(
-            session::search_poll(sid, 0).expect("search poll").status,
+            viewer().search_poll(sid, 0).expect("search poll").status,
             SearchStatus::Done
         )
     });
 
     // since_index=0 returns all 3 matches
-    let poll_all = session::search_poll(sid, 0).unwrap();
+    let poll_all = viewer().search_poll(sid, 0).unwrap();
     assert_eq!(poll_all.new_matches.len(), 3);
     assert_eq!(poll_all.total_match_count, 3);
 
     // since_index=2 returns only the last match
-    let poll_delta = session::search_poll(sid, 2).unwrap();
+    let poll_delta = viewer().search_poll(sid, 2).unwrap();
     assert_eq!(poll_delta.new_matches.len(), 1);
     assert_eq!(poll_delta.total_match_count, 3);
     assert_eq!(poll_delta.new_matches[0].row, 4); // 5th line (0-indexed)
 
     // since_index=3 (caught up) returns no new matches
-    let poll_none = session::search_poll(sid, 3).unwrap();
+    let poll_none = viewer().search_poll(sid, 3).unwrap();
     assert_eq!(poll_none.new_matches.len(), 0);
     assert_eq!(poll_none.total_match_count, 3);
 
-    session::close_session(sid).unwrap();
+    viewer().close_session(sid).unwrap();
 }
 
 // ─── Step 1.2: per-match cancellation ──────────────────────────────────────────────
@@ -442,24 +458,24 @@ fn search_pre_cancelled_starts_and_finishes_quickly() {
     let content: String = line_with_a.repeat(50_000);
     let file = write_test_file(&dir, "test.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
-    session::search_start(sid, "a".to_string(), literal_mode()).unwrap();
-    session::search_cancel(sid).unwrap();
+    viewer().search_start(sid, "a".to_string(), literal_mode()).unwrap();
+    viewer().search_cancel(sid).unwrap();
 
     wait_until(
         Duration::from_millis(1_500),
         "the search to reach a terminal status after the cancel",
         || {
             matches!(
-                session::search_poll(sid, 0).expect("search poll").status,
+                viewer().search_poll(sid, 0).expect("search poll").status,
                 SearchStatus::Cancelled | SearchStatus::Done
             )
         },
     );
 
-    session::close_session(sid).unwrap();
+    viewer().close_session(sid).unwrap();
 }
 
 // ─── Step 1.4: watchdog protocol ───────────────────────────────────────────────────
@@ -585,29 +601,29 @@ fn test_new_search_after_watchdog_cancelled_starts_clean() {
     // After a Cancelled verdict, starting a fresh search must reset the status.
     let dir = create_test_dir("watchdog_reset");
     let file = write_test_file(&dir, "test.txt", "hello\nworld\n");
-    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let open_result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
-    session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
-    session::search_cancel(sid).unwrap();
+    viewer().search_start(sid, "hello".to_string(), literal_mode()).unwrap();
+    viewer().search_cancel(sid).unwrap();
 
     wait_until(Duration::from_secs(2), "poll to observe Cancelled", || {
         matches!(
-            session::search_poll(sid, 0).expect("search poll").status,
+            viewer().search_poll(sid, 0).expect("search poll").status,
             SearchStatus::Cancelled
         )
     });
 
     // Fresh search must clear the Cancelled state.
-    session::search_start(sid, "world".to_string(), literal_mode()).unwrap();
-    let poll = session::search_poll(sid, 0).unwrap();
+    viewer().search_start(sid, "world".to_string(), literal_mode()).unwrap();
+    let poll = viewer().search_poll(sid, 0).unwrap();
     assert!(
         matches!(poll.status, SearchStatus::Running | SearchStatus::Done),
         "fresh search after Cancelled must start clean, got {:?}",
         poll.status
     );
 
-    session::close_session(sid).unwrap();
+    viewer().close_session(sid).unwrap();
 }
 
 // ─── Step 1.5: invalid query surface ──────────────────────────────────────────────
@@ -616,7 +632,8 @@ fn test_new_search_after_watchdog_cancelled_starts_clean() {
 fn test_invalid_regex_surfaces_as_invalid_query_status() {
     let dir = create_test_dir("invalid_regex");
     let file = write_test_file(&dir, "test.txt", "hello\n");
-    let sid = session::open_session(file.to_str().unwrap(), "root")
+    let sid = viewer()
+        .open_session(file.to_str().unwrap(), "root")
         .unwrap()
         .session_id;
 
@@ -625,9 +642,9 @@ fn test_invalid_regex_surfaces_as_invalid_query_status() {
         case_sensitive: true,
     };
     // `(unclosed` is invalid syntax.
-    session::search_start(&sid, "(unclosed".to_string(), mode).unwrap();
+    viewer().search_start(&sid, "(unclosed".to_string(), mode).unwrap();
 
-    let poll = session::search_poll(&sid, 0).unwrap();
+    let poll = viewer().search_poll(&sid, 0).unwrap();
     match poll.status {
         SearchStatus::InvalidQuery { message } => {
             assert!(!message.is_empty(), "invalid-query message must be non-empty");
@@ -635,14 +652,15 @@ fn test_invalid_regex_surfaces_as_invalid_query_status() {
         other => panic!("expected InvalidQuery, got {:?}", other),
     }
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
 fn test_multiline_regex_surfaces_as_invalid_query_status() {
     let dir = create_test_dir("multiline_regex");
     let file = write_test_file(&dir, "test.txt", "hello\n");
-    let sid = session::open_session(file.to_str().unwrap(), "root")
+    let sid = viewer()
+        .open_session(file.to_str().unwrap(), "root")
         .unwrap()
         .session_id;
 
@@ -650,23 +668,24 @@ fn test_multiline_regex_surfaces_as_invalid_query_status() {
         use_regex: true,
         case_sensitive: true,
     };
-    session::search_start(&sid, "(?s).".to_string(), mode).unwrap();
+    viewer().search_start(&sid, "(?s).".to_string(), mode).unwrap();
 
-    let poll = session::search_poll(&sid, 0).unwrap();
+    let poll = viewer().search_poll(&sid, 0).unwrap();
     assert!(
         matches!(poll.status, SearchStatus::InvalidQuery { .. }),
         "expected InvalidQuery, got {:?}",
         poll.status
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
 fn test_regex_search_returns_matches() {
     let dir = create_test_dir("regex_search");
     let file = write_test_file(&dir, "test.txt", "a123\nb456\nc789\n");
-    let sid = session::open_session(file.to_str().unwrap(), "root")
+    let sid = viewer()
+        .open_session(file.to_str().unwrap(), "root")
         .unwrap()
         .session_id;
 
@@ -674,10 +693,10 @@ fn test_regex_search_returns_matches() {
         use_regex: true,
         case_sensitive: true,
     };
-    session::search_start(&sid, r"\d+".to_string(), mode).unwrap();
+    viewer().search_start(&sid, r"\d+".to_string(), mode).unwrap();
 
     wait_until(Duration::from_secs(2), "the regex search to complete", || {
-        let poll = session::search_poll(&sid, 0).expect("search poll");
+        let poll = viewer().search_poll(&sid, 0).expect("search poll");
         if !matches!(poll.status, SearchStatus::Done) {
             return false;
         }
@@ -685,7 +704,7 @@ fn test_regex_search_returns_matches() {
         true
     });
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 // -- Encoding-switch tests --------------------------------------------------------
@@ -705,15 +724,15 @@ fn get_encoding_options_returns_detected_and_all() {
     let file = dir.join("latin1.txt");
     fs::write(&file, b"caf\xE9\n").unwrap();
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
-    let opts = session::get_encoding_options(&result.session_id).unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
+    let opts = viewer().get_encoding_options(&result.session_id).unwrap();
     assert_eq!(opts.detected, FileEncoding::Windows1252);
     assert_eq!(opts.current, FileEncoding::Windows1252);
     assert!(opts.all.len() >= 8, "expected all 8 encodings, got {}", opts.all.len());
     assert!(opts.all.iter().any(|c| c.encoding == FileEncoding::Utf8));
     assert!(opts.all.iter().any(|c| c.encoding == FileEncoding::Utf16Le));
 
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
 }
 
 #[test]
@@ -722,31 +741,33 @@ fn set_encoding_full_load_swaps_decoder() {
     // 0xE9 = 'é' in Windows-1252 / 'í' in Mac Roman / lone 0xE9 in UTF-8 is U+FFFD.
     let file = dir.join("bytes.txt");
     fs::write(&file, b"caf\xE9\n").unwrap();
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     assert!(matches!(result.backend_type, BackendType::FullLoad));
 
     // Currently Windows-1252 (detected): line should decode as "café".
-    let chunk = session::get_lines(
-        &result.session_id,
-        super::SeekTarget::Row(0),
-        1,
-        &AtomicBool::new(false),
-    )
-    .unwrap();
+    let chunk = viewer()
+        .get_lines(
+            &result.session_id,
+            super::SeekTarget::Row(0),
+            1,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
     assert_eq!(chunk.texts()[0], "café");
 
     // Force UTF-8: the high byte becomes U+FFFD.
-    session::set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
-    let chunk = session::get_lines(
-        &result.session_id,
-        super::SeekTarget::Row(0),
-        1,
-        &AtomicBool::new(false),
-    )
-    .unwrap();
+    viewer().set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
+    let chunk = viewer()
+        .get_lines(
+            &result.session_id,
+            super::SeekTarget::Row(0),
+            1,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
     assert_eq!(chunk.texts()[0], "caf\u{FFFD}");
 
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
 }
 
 #[test]
@@ -762,7 +783,7 @@ fn set_encoding_large_file_utf8_to_utf16_rebuilds_under_new_encoding() {
     let file = dir.join("big-utf16.txt");
     fs::write(&file, &bytes).unwrap();
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     // Detector should already pick UTF-16 LE via parity. Decode of line 0 = "hello world".
     let initial = result.initial_lines.texts();
     assert!(
@@ -773,16 +794,18 @@ fn set_encoding_large_file_utf8_to_utf16_rebuilds_under_new_encoding() {
 
     // Force UTF-8: each "hello world" line becomes a garbled string (every other byte 0x00),
     // but the backend doesn't crash and `get_lines` still returns content.
-    session::set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
+    viewer().set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
     // The rebuild runs on a background thread; the encoding it reports must never wobble
     // while it does.
     wait_until(Duration::from_secs(8), "the background rebuild to complete", || {
-        let opts = session::get_encoding_options(&result.session_id).expect("encoding options");
+        let opts = viewer()
+            .get_encoding_options(&result.session_id)
+            .expect("encoding options");
         assert_eq!(opts.current, FileEncoding::Utf8);
-        !session::test_only_rebuilding_active(&result.session_id)
+        !viewer().test_only_rebuilding_active(&result.session_id)
     });
 
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
 }
 
 #[test]
@@ -803,7 +826,7 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     fs::write(&file, &content).unwrap();
     let original_size = fs::metadata(&file).unwrap().len();
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     // Wait for the initial ByteSeek -> LineIndex upgrade to finish so the
     // pending_grew queue only exercises the rebuild's drain, not the
     // upgrade's. (Otherwise the upgrade could drain our queued EOF before
@@ -818,7 +841,9 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     // is invisible to the rebuilt index and can only arrive via the drain.
     session::test_gate::REBUILD_PRE_DRAIN.arm();
     // Force a non-instant encoding swap (UTF-8 -> UTF-16 LE) so the rebuild runs.
-    session::set_encoding(&result.session_id, FileEncoding::Utf16Le).unwrap();
+    viewer()
+        .set_encoding(&result.session_id, FileEncoding::Utf16Le)
+        .unwrap();
     session::test_gate::REBUILD_PRE_DRAIN.wait_until_reached(GATE_TIMEOUT);
 
     // Even byte count, so the appended block stays whole UTF-16 code units.
@@ -827,30 +852,31 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     assert!(new_size > original_size);
 
     // Queue the new EOF; the rebuild's drain-and-swap protocol must observe it.
-    session::test_only_push_pending_grew(&result.session_id, new_size);
+    viewer().test_only_push_pending_grew(&result.session_id, new_size);
     session::test_gate::REBUILD_PRE_DRAIN.release();
 
     wait_until(Duration::from_secs(10), "the rebuild to finish", || {
-        !session::test_only_rebuilding_active(&result.session_id)
+        !viewer().test_only_rebuilding_active(&result.session_id)
     });
 
     // The final backend should cover the FULL new_size (not the pre-append size).
     // We can't read total_bytes directly from outside; use get_lines with a Fraction
     // target near 1.0 — the chunk's `total_bytes` field reflects the backend's
     // current total.
-    let chunk = session::get_lines(
-        &result.session_id,
-        super::SeekTarget::Fraction(0.0),
-        1,
-        &AtomicBool::new(false),
-    )
-    .unwrap();
+    let chunk = viewer()
+        .get_lines(
+            &result.session_id,
+            super::SeekTarget::Fraction(0.0),
+            1,
+            &AtomicBool::new(false),
+        )
+        .unwrap();
     assert_eq!(
         chunk.total_bytes, new_size,
         "rebuild must absorb the queued append (drain-and-swap protocol)"
     );
 
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
 }
 
 // ─── Tail mode + reload + watcher wiring (milestone 3) ─────────────────
@@ -859,35 +885,37 @@ fn test_append_during_encoding_rebuild_not_dropped() {
 fn tail_mode_toggle_persists_on_session() {
     let dir = create_test_dir("tail_toggle");
     let file = write_test_file(&dir, "log.txt", "hello\n");
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
-    assert!(!session::test_only_tail_mode(&sid));
-    session::set_tail_mode(&sid, true).unwrap();
-    assert!(session::test_only_tail_mode(&sid));
-    session::set_tail_mode(&sid, false).unwrap();
-    assert!(!session::test_only_tail_mode(&sid));
+    assert!(!viewer().test_only_tail_mode(&sid));
+    viewer().set_tail_mode(&sid, true).unwrap();
+    assert!(viewer().test_only_tail_mode(&sid));
+    viewer().set_tail_mode(&sid, false).unwrap();
+    assert!(!viewer().test_only_tail_mode(&sid));
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
 fn reload_replaces_backend_against_current_disk_contents() {
     let dir = create_test_dir("reload");
     let file = write_test_file(&dir, "log.txt", "first\n");
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Overwrite the file out of band: same path, fully replaced content.
     fs::write(&file, "first\nsecond\nthird\n").unwrap();
 
-    session::reload(&sid).unwrap();
-    let status = session::get_session_status(&sid).unwrap();
+    viewer().reload(&sid).unwrap();
+    let status = viewer().get_session_status(&sid).unwrap();
     assert!(status.total_lines.is_some());
-    let chunk = session::get_lines(&sid, super::SeekTarget::Row(1), 2, &AtomicBool::new(false)).unwrap();
+    let chunk = viewer()
+        .get_lines(&sid, super::SeekTarget::Row(1), 2, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.texts(), vec!["second", "third"]);
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 /// The reload toast words a deleted file apart from a slow disk or a refused read,
@@ -896,15 +924,15 @@ fn reload_replaces_backend_against_current_disk_contents() {
 fn reload_of_a_deleted_file_answers_not_found() {
     let dir = create_test_dir("reload_deleted");
     let file = write_test_file(&dir, "log.txt", "first\n");
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     fs::remove_file(&file).unwrap();
 
-    let err = session::reload(&sid).unwrap_err();
+    let err = viewer().reload(&sid).unwrap_err();
     assert!(matches!(err, ViewerError::NotFound { .. }), "got {err:?}");
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -915,7 +943,7 @@ fn set_tail_mode_enabling_catches_up_existing_growth() {
     // updates total_bytes; the catch-up check still proves the path is wired.
     let initial: String = "a\n".repeat((FULL_LOAD_THRESHOLD as usize / 2) + 1);
     let file = write_test_file(&dir, "log.txt", &initial);
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     let original_bytes = result.total_bytes;
 
@@ -928,7 +956,7 @@ fn set_tail_mode_enabling_catches_up_existing_growth() {
     let on_disk = fs::metadata(&file).unwrap().len();
     assert!(on_disk > original_bytes);
 
-    session::set_tail_mode(&sid, true).unwrap();
+    viewer().set_tail_mode(&sid, true).unwrap();
 
     // The catch-up runs in the background; the backend's total_bytes snaps to
     // the on-disk size once it lands (ByteSeek's extend_to updates the size
@@ -937,14 +965,15 @@ fn set_tail_mode_enabling_catches_up_existing_growth() {
         Duration::from_secs(3),
         "the tail catch-up to reach the on-disk size",
         || {
-            session::get_lines(&sid, super::SeekTarget::Fraction(0.99), 2, &AtomicBool::new(false))
+            viewer()
+                .get_lines(&sid, super::SeekTarget::Fraction(0.99), 2, &AtomicBool::new(false))
                 .expect("get lines")
                 .total_bytes
                 >= on_disk
         },
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 // Regression (#153): the catch-up stat ran inline, so on a stalled network mount the
@@ -954,14 +983,14 @@ fn set_tail_mode_enabling_catches_up_existing_growth() {
 fn set_tail_mode_returns_while_the_catch_up_check_is_still_waiting_on_the_file() {
     let dir = create_test_dir("tail_catchup_stalled");
     let file = write_test_file(&dir, "log.txt", "hello\n");
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     session::test_gate::TAIL_CATCH_UP.arm();
     let (done_tx, done_rx) = std::sync::mpsc::channel();
     let sid_for_call = sid.clone();
     thread::spawn(move || {
-        let _ = done_tx.send(session::set_tail_mode(&sid_for_call, true));
+        let _ = done_tx.send(viewer().set_tail_mode(&sid_for_call, true));
     });
 
     session::test_gate::TAIL_CATCH_UP.wait_until_reached(Duration::from_secs(3));
@@ -973,9 +1002,9 @@ fn set_tail_mode_returns_while_the_catch_up_check_is_still_waiting_on_the_file()
         matches!(returned, Ok(Ok(()))),
         "set_tail_mode should return while the stat is parked, got {returned:?}"
     );
-    assert!(session::test_only_tail_mode(&sid));
+    assert!(viewer().test_only_tail_mode(&sid));
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -995,7 +1024,7 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
     let initial: String = line.repeat(line_count);
     let path = write_test_file(&dir, "tail-int.log", &initial);
 
-    let result = session::open_session(path.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(path.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     let original_bytes = result.total_bytes;
     // Sync on the background subscribe before mutating, so the catch-up re-stat
@@ -1011,7 +1040,7 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
     });
 
     // Switch on tail mode now (before the watcher fires).
-    session::set_tail_mode(&sid, true).unwrap();
+    viewer().set_tail_mode(&sid, true).unwrap();
 
     // Append to disk first so extend_to has something to scan.
     {
@@ -1033,13 +1062,14 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
 
     let description = format!("the tail-mode handler to extend the backend to a total of {want_size}");
     wait_until(Duration::from_secs(3), &description, || {
-        session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+        viewer()
+            .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
             .expect("get lines")
             .total_bytes
             >= want_size
     });
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -1049,11 +1079,11 @@ fn tail_mode_on_a_full_load_file_reopens_it_to_take_in_the_append() {
     let dir = create_test_dir("tail_full_load");
     let path = write_test_file(&dir, "small.log", "first line\nsecond line\n");
 
-    let result = session::open_session(path.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(path.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     assert!(matches!(result.backend_type, BackendType::FullLoad));
     wait_for_watcher_subscribed();
-    session::set_tail_mode(&sid, true).unwrap();
+    viewer().set_tail_mode(&sid, true).unwrap();
 
     {
         use std::io::Write;
@@ -1071,14 +1101,15 @@ fn tail_mode_on_a_full_load_file_reopens_it_to_take_in_the_append() {
         Duration::from_secs(3),
         "the tail-mode handler to reopen the FullLoad file",
         || {
-            session::get_lines(&sid, super::SeekTarget::Row(2), 1, &AtomicBool::new(false))
+            viewer()
+                .get_lines(&sid, super::SeekTarget::Row(2), 1, &AtomicBool::new(false))
                 .expect("get lines")
                 .texts()
                 == vec!["appended while tailing"]
         },
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 // ─── Audit fix coverage ────────────────────────────────────────────────────────────
@@ -1100,7 +1131,7 @@ fn test_tail_extend_during_encoding_rebuild_discards_stale_extend() {
     let dir = create_test_dir("tail_clobber_race");
     let initial: String = "x\n".repeat((FULL_LOAD_THRESHOLD as usize / 2) + 1);
     let file = write_test_file(&dir, "race.log", &initial);
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Grow the file so apply_tail_extend has something to extend to.
@@ -1112,11 +1143,11 @@ fn test_tail_extend_during_encoding_rebuild_discards_stale_extend() {
     let new_size = fs::metadata(&file).unwrap().len();
 
     let sid_for_swap = sid.clone();
-    let stored = session::test_only_run_tail_extend_with_swap(&sid, new_size, move || {
+    let stored = viewer().test_only_run_tail_extend_with_swap(&sid, new_size, move || {
         // While the watcher's extend is in flight, a "rebuild" installs a
         // brand-new backend via reload(). The tail's stale extend must NOT
         // clobber it.
-        session::reload(&sid_for_swap).unwrap();
+        viewer().reload(&sid_for_swap).unwrap();
     });
     assert!(
         !stored,
@@ -1124,14 +1155,14 @@ fn test_tail_extend_during_encoding_rebuild_discards_stale_extend() {
     );
 
     // The EOF should be re-queued so a follow-up FS event still catches up.
-    let queued = session::test_only_pending_grew(&sid);
+    let queued = viewer().test_only_pending_grew(&sid);
     assert!(
         matches!(queued, Some(eof) if eof >= new_size),
         "discarded extend must re-queue the EOF; got {:?}",
         queued
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -1156,7 +1187,7 @@ fn test_append_during_upgrade_not_dropped() {
     let file = write_test_file(&dir, "upgrade.log", &content);
     let original_size = fs::metadata(&file).unwrap().len();
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Block until the upgrade thread is parked with its scan complete.
@@ -1168,14 +1199,16 @@ fn test_append_during_upgrade_not_dropped() {
     assert!(new_size > original_size);
 
     // Queue the EOF the way the real watcher would, then let the swap run.
-    session::test_only_push_pending_grew(&sid, new_size);
+    viewer().test_only_push_pending_grew(&sid, new_size);
     session::test_gate::UPGRADE_PRE_DRAIN.release();
 
     wait_until(Duration::from_secs(15), "the upgrade thread to drain and swap", || {
         upgraded_to_line_index(&sid)
     });
 
-    let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false)).unwrap();
+    let chunk = viewer()
+        .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(
         chunk.total_bytes, new_size,
         "upgrade drain must absorb the queued append"
@@ -1186,7 +1219,7 @@ fn test_append_during_upgrade_not_dropped() {
         chunk.total_rows,
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -1203,7 +1236,7 @@ fn test_append_between_drain_and_swap_not_dropped() {
     let content = line.repeat(line_count);
     let file = write_test_file(&dir, "race.log", &content);
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Hold the upgrade at the gate so both EOFs are provably queued after the
@@ -1213,15 +1246,15 @@ fn test_append_between_drain_and_swap_not_dropped() {
     // Two consecutive queued EOFs: simulates two watcher events the
     // production code must coalesce into the final one.
     let mid_size = append_test_file(&file, "first-append\n");
-    session::test_only_push_pending_grew(&sid, mid_size);
+    viewer().test_only_push_pending_grew(&sid, mid_size);
 
     let final_size = append_test_file(&file, "second-append-bigger\n");
-    session::test_only_push_pending_grew(&sid, final_size);
+    viewer().test_only_push_pending_grew(&sid, final_size);
 
     // The queue must still be intact and coalesced to the later EOF: nothing
     // may have drained it while we were setting up.
     assert_eq!(
-        session::test_only_pending_grew(&sid),
+        viewer().test_only_pending_grew(&sid),
         Some(final_size),
         "both EOFs must still be queued, coalesced, when the swap is released"
     );
@@ -1231,13 +1264,15 @@ fn test_append_between_drain_and_swap_not_dropped() {
         upgraded_to_line_index(&sid)
     });
 
-    let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false)).unwrap();
+    let chunk = viewer()
+        .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(
         chunk.total_bytes, final_size,
         "coalesced queue must land on the final backend"
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -1254,12 +1289,12 @@ fn test_session_emits_file_changed_on_append() {
     let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 100;
     let initial: String = line.repeat(line_count);
     let file = write_test_file(&dir, "emit.log", &initial);
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     // Sync on the background subscribe before mutating the file, so the
     // catch-up re-stat stays a no-op and the explicit emit below is the driver.
     wait_for_watcher_subscribed();
-    session::set_tail_mode(&sid, true).unwrap();
+    viewer().set_tail_mode(&sid, true).unwrap();
 
     let new_size = append_test_file(&file, "extra-line-content\n");
 
@@ -1268,7 +1303,8 @@ fn test_session_emits_file_changed_on_append() {
     assert!(sent > 0, "test_only_emit must reach the session's subscriber");
 
     let total_bytes = || {
-        session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+        viewer()
+            .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
             .expect("get lines")
             .total_bytes
     };
@@ -1283,7 +1319,7 @@ fn test_session_emits_file_changed_on_append() {
         "tail-on watcher event must advance backend total_bytes to exactly the new size"
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -1294,12 +1330,12 @@ fn test_session_tail_mode_off_does_not_extend_index() {
     let dir = create_test_dir("tail_off_no_extend");
     let initial = "a\nb\nc\n";
     let file = write_test_file(&dir, "tailoff.log", initial);
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     wait_for_watcher_subscribed();
-    assert!(!session::test_only_tail_mode(&sid));
+    assert!(!viewer().test_only_tail_mode(&sid));
 
-    let original_lines = session::get_session_status(&sid).unwrap().total_lines;
+    let original_lines = viewer().get_session_status(&sid).unwrap().total_lines;
 
     let new_size = append_test_file(&file, "d\ne\nf\n");
 
@@ -1310,21 +1346,21 @@ fn test_session_tail_mode_off_does_not_extend_index() {
     // Grew event is a Tauri emit, which no test can observe, so there is nothing to wait on; the
     // window is what gives "total_lines never moved" its meaning
     thread::sleep(Duration::from_millis(400));
-    let after_lines = session::get_session_status(&sid).unwrap().total_lines;
+    let after_lines = viewer().get_session_status(&sid).unwrap().total_lines;
     assert_eq!(
         original_lines, after_lines,
         "tail-off watcher events must not extend the line index"
     );
 
     // After explicit reload, the backend reflects the new content.
-    session::reload(&sid).unwrap();
-    let reloaded_lines = session::get_session_status(&sid).unwrap().total_lines;
+    viewer().reload(&sid).unwrap();
+    let reloaded_lines = viewer().get_session_status(&sid).unwrap().total_lines;
     assert!(
         reloaded_lines.unwrap_or(0) > after_lines.unwrap_or(0),
         "reload must surface the new content"
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -1335,7 +1371,7 @@ fn test_session_rotation_reopens_backend() {
     let dir = create_test_dir("rotation");
     fs::write(dir.join("rot.log"), b"old content\n").unwrap();
     let file = dir.join("rot.log");
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     let original_bytes = result.total_bytes;
     wait_for_watcher_subscribed();
@@ -1355,14 +1391,15 @@ fn test_session_rotation_reopens_backend() {
         Duration::from_secs(3),
         "the rotation to reopen against the new bytes",
         || {
-            session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+            viewer()
+                .get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
                 .expect("get lines")
                 .total_bytes
                 == new_size
         },
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -1373,7 +1410,7 @@ fn test_session_close_stops_watcher() {
     // from the shared singleton.
     let dir = create_test_dir("close_stops_watcher");
     let file = write_test_file(&dir, "tmp.log", "hi\n");
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     wait_for_watcher_subscribed();
@@ -1382,7 +1419,7 @@ fn test_session_close_stops_watcher() {
     let sent_before = super::watcher::test_only_emit(&canonical, super::watcher::WatcherEvent::MetadataOnly);
     assert!(sent_before > 0, "manager thread should be subscribed before close");
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 
     // Give the manager thread ~300 ms to observe `watcher_stop` and drop its
     // subscription. After that, no subscribers should remain for the path.
@@ -1404,7 +1441,7 @@ fn test_set_encoding_during_rebuild_serialization() {
     let content = line.repeat(line_count);
     let file = write_test_file(&dir, "rebuild.txt", &content);
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Wait for the initial upgrade so we test the rebuild path, not the
@@ -1422,12 +1459,12 @@ fn test_set_encoding_during_rebuild_serialization() {
     let exits_before = session::test_gate::rebuild_exit_count();
 
     // First call: its rebuild thread parks at the gate.
-    session::set_encoding(&sid, FileEncoding::Utf16Le).unwrap();
+    viewer().set_encoding(&sid, FileEncoding::Utf16Le).unwrap();
     session::test_gate::REBUILD_PRE_SCAN.wait_until_reached(GATE_TIMEOUT);
     // Second call lands while the first is held; it cancels the in-flight
     // rebuild and installs its own. The gate is one-shot, so this rebuild
     // runs straight through.
-    session::set_encoding(&sid, FileEncoding::Utf16Be).unwrap();
+    viewer().set_encoding(&sid, FileEncoding::Utf16Be).unwrap();
     // Release the superseded thread; it must notice it's no longer the owner
     // and bail instead of storing its stale backend.
     session::test_gate::REBUILD_PRE_SCAN.release();
@@ -1443,7 +1480,7 @@ fn test_set_encoding_during_rebuild_serialization() {
         exits_before + 2,
         "exactly two rebuild threads may run"
     );
-    assert!(!session::test_only_rebuilding_active(&sid), "rebuild must settle");
+    assert!(!viewer().test_only_rebuilding_active(&sid), "rebuild must settle");
 
     assert_eq!(
         session::test_gate::rebuild_store_count(),
@@ -1451,14 +1488,14 @@ fn test_set_encoding_during_rebuild_serialization() {
         "exactly one rebuild may store: the superseded one must discard its backend"
     );
 
-    let opts = session::get_encoding_options(&sid).unwrap();
+    let opts = viewer().get_encoding_options(&sid).unwrap();
     assert_eq!(
         opts.current,
         FileEncoding::Utf16Be,
         "only the latest set_encoding call must win"
     );
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 #[test]
@@ -1473,7 +1510,7 @@ fn test_set_encoding_ascii_compatible_is_instant() {
     let content = line.repeat(line_count);
     let file = write_test_file(&dir, "instant.txt", &content);
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Wait for the initial upgrade so we count from a stable baseline.
@@ -1485,10 +1522,10 @@ fn test_set_encoding_ascii_compatible_is_instant() {
     let baseline = super::line_index::test_only_open_call_count();
 
     // UTF-8 -> Windows-1252: same byte layout (no BOM, ASCII-compatible).
-    session::set_encoding(&sid, FileEncoding::Windows1252).unwrap();
+    viewer().set_encoding(&sid, FileEncoding::Windows1252).unwrap();
 
     wait_until(Duration::from_secs(3), "any in-flight rebuild to settle", || {
-        !session::test_only_rebuilding_active(&sid)
+        !viewer().test_only_rebuilding_active(&sid)
     });
 
     let post = super::line_index::test_only_open_call_count();
@@ -1498,10 +1535,10 @@ fn test_set_encoding_ascii_compatible_is_instant() {
         baseline, post
     );
 
-    let opts = session::get_encoding_options(&sid).unwrap();
+    let opts = viewer().get_encoding_options(&sid).unwrap();
     assert_eq!(opts.current, FileEncoding::Windows1252);
 
-    session::close_session(&sid).unwrap();
+    viewer().close_session(&sid).unwrap();
 }
 
 /// The viewer opens a file that lives in a repo's `.git` snapshot: the portal
@@ -1532,22 +1569,24 @@ fn opens_a_file_out_of_a_git_snapshot_and_reads_its_lines() {
     git::wiring::set_virtual_portal_enabled(true);
 
     let snapshot = dir.join(".git/branches/main/notes.txt");
-    let opened = session::open_session(snapshot.to_str().unwrap(), "root").expect("the snapshot file opens");
+    let opened = viewer()
+        .open_session(snapshot.to_str().unwrap(), "root")
+        .expect("the snapshot file opens");
     assert_eq!(opened.initial_lines.rows[0].text, "first line");
     assert_eq!(opened.initial_lines.rows[1].text, "second line");
     // The session is named for the path the user asked for, not for the temp.
     assert!(opened.file_name.ends_with("notes.txt"));
 
-    session::close_session(&opened.session_id).expect("close");
+    viewer().close_session(&opened.session_id).expect("close");
 
     // A directory in the snapshot is a directory, ❌ never an empty preview.
     assert!(matches!(
-        session::open_session(dir.join(".git/branches/main").to_str().unwrap(), "root"),
+        viewer().open_session(dir.join(".git/branches/main").to_str().unwrap(), "root"),
         Err(ViewerError::IsDirectory)
     ));
     // And a path that isn't in the snapshot is honestly missing.
     assert!(matches!(
-        session::open_session(dir.join(".git/branches/main/nope.txt").to_str().unwrap(), "root"),
+        viewer().open_session(dir.join(".git/branches/main/nope.txt").to_str().unwrap(), "root"),
         Err(ViewerError::NotFound { .. })
     ));
 
@@ -1579,10 +1618,12 @@ fn a_picture_in_a_restic_snapshot_renders_from_its_temp() {
     });
 
     let file = drive.backed_up.join("photo.heic");
-    let opened = session::open_session(file.to_str().unwrap(), &drive.volume_id).expect("the backed-up file opens");
+    let opened = viewer()
+        .open_session(file.to_str().unwrap(), &drive.volume_id)
+        .expect("the backed-up file opens");
     assert_eq!(opened.kind, crate::file_viewer::ViewerContentKind::Image);
     assert!(!opened.media_from_volume, "a temp is a local file");
-    session::close_session(&opened.session_id).expect("close");
+    viewer().close_session(&opened.session_id).expect("close");
 }
 
 /// The viewer opens a file inside a restic snapshot the same way: the view
@@ -1610,18 +1651,20 @@ fn opens_a_file_out_of_a_restic_snapshot_and_reads_its_lines() {
     });
 
     let file = drive.backed_up.join("notes.txt");
-    let opened = session::open_session(file.to_str().unwrap(), &drive.volume_id).expect("the backed-up file opens");
+    let opened = viewer()
+        .open_session(file.to_str().unwrap(), &drive.volume_id)
+        .expect("the backed-up file opens");
     assert_eq!(opened.initial_lines.rows[0].text, "first line");
     assert_eq!(opened.initial_lines.rows[1].text, "second line");
     assert!(opened.file_name.ends_with("notes.txt"));
-    session::close_session(&opened.session_id).expect("close");
+    viewer().close_session(&opened.session_id).expect("close");
 
     assert!(matches!(
-        session::open_session(drive.backed_up.to_str().unwrap(), &drive.volume_id),
+        viewer().open_session(drive.backed_up.to_str().unwrap(), &drive.volume_id),
         Err(ViewerError::IsDirectory)
     ));
     assert!(matches!(
-        session::open_session(drive.backed_up.join("nope.txt").to_str().unwrap(), &drive.volume_id),
+        viewer().open_session(drive.backed_up.join("nope.txt").to_str().unwrap(), &drive.volume_id),
         Err(ViewerError::NotFound { .. })
     ));
 }

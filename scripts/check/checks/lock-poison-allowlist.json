@@ -5,7 +5,6 @@
     "apps/desktop/src-tauri/src/drag_image_swap.rs": 3,
     "apps/desktop/src-tauri/src/error_reporter/breadcrumbs.rs": 3,
     "apps/desktop/src-tauri/src/error_reporter/mod.rs": 3,
-    "apps/desktop/src-tauri/src/file_viewer/session.rs": 3,
     "apps/desktop/src-tauri/src/mcp/auth.rs": 2,
     "apps/desktop/src-tauri/src/mcp/server.rs": 4,
     "apps/desktop/src-tauri/src/network/smb_cache.rs": 3,

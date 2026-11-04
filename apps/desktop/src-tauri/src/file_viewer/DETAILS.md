@@ -20,10 +20,10 @@ Frontend counterpart: `apps/desktop/src/routes/viewer/CLAUDE.md` for the viewer 
 - `session.rs`: text-session orchestration, backend switching, search state, per-read cancel registry (`active_reads`),
   encoding-switch (`set_encoding`), drain-and-swap-under-lock protocol via `pending_grew`, the `read_range`,
   `write_range_to_file` (with its `SaveProgress` reporter), `get_bytes` (bounded original bytes), and `cancel_read` entry points, plus the
-  `WINDOW_TO_SESSION` map. `close_session` is the single teardown choke point (drops the media token too)
+  window links, all as `Viewer` methods. `close_session` is the single teardown choke point (drops the media token too)
 - `session_store.rs`: the vocabulary both open paths build on. `ViewerSession` + its
   `ViewerSession::new(ViewerSessionInit)` constructor, the search state it holds (`SearchState`, `SearchStatus`),
-  `BackendType`, `ViewerOpenResult` + `MediaDimensions`, the `SESSIONS` cache, and `generate_session_id`. A sibling of
+  `BackendType`, `ViewerOpenResult` + `MediaDimensions`, and `generate_session_id` (the table is the `Viewer`'s). A sibling of
   `session.rs` rather than its child, so the open dispatcher can call `media_session` without a module cycle
 - `media_session.rs`: the media-open path. `try_open_media` (classify through the session's open file + dispatch,
   called by `open_session` before it builds a text backend) and `open_media_session` (mint token, header-only
@@ -78,9 +78,12 @@ run under another host (the browser demo, #302; plan: `docs/specs/viewer-crate-p
   whether a path routes over its parent), `pulls` (a bounded temp copy, as a `PreviewTemp` whose removal the host owns),
   `images` (a Markdown picture's `MediaSource`), `events` (a watched file changed), `analytics` (`viewer_opened`),
   `opener` (a web or mail link). The log view's row transform is a plain `fn` field. `ViewerHost` bundles them.
-- **`app_host.rs`** is the app's answer: the volume manager, `materialize.rs`, `markdown_image_fetch.rs`,
-  `analytics.rs`, and, once `init_app_handle` installs it at startup, the Tauri events and opener. Before that (the
-  app's unit tests) the same host answers without the two that need a window.
+- **`app_host.rs`** is the app's answer, and holds the app's one `Viewer` (`app_viewer()`, on Tauri's runtime): the
+  volume manager, `materialize.rs`, `markdown_image_fetch.rs`, `analytics.rs`, and the Tauri events and opener, which
+  reach a window through the app handle `init_app_handle` stores at startup. Before that (the app's unit tests) those
+  two answer nothing.
+- **The `Viewer` is a value** (`viewer.rs`, § "Key decisions"): every session call is a method on it, and a background
+  job holds a clone. The runtime it was handed is the only one the bridge uses.
 - **The app owns the event wire.** The core reports facts (`MediaLoad`, `PullProgress`, `FileChange`); `events.rs`
   holds the `tauri_specta::Event` structs (`ViewerMediaLoad`, `ViewerPullProgress`) and `app_host.rs` builds the
   `viewer:file-changed:<sid>` payload. Decision: no crate type may share an event's name, or specta would emit both into
@@ -162,7 +165,7 @@ The viewer renders images and PDFs inline instead of showing the binary warning,
   NULs are code-unit halves); otherwise a NUL, or C0 controls other than `\t` `\n` `\r` form feed and ESC above 5% of
   the head, means binary. The 5% line is `encoding::utf16_looks_like_text`'s, so the two heuristics agree. Used by the
   agent's `inspect_file`; the viewer doesn't consult it.
-- `media.rs`: the `cmdr-media://` capability-token registry. `mint_token(entry)` stores
+- `media.rs`: the `cmdr-media://` capability-token registry, `MediaTokens`. `mint_token(entry)` stores
   `token -> { canonical_path, kind, mime }` (128-bit CSPRNG via `rand`, 32 hex chars) and returns the token;
   `resolve_token` / `drop_token` round it out. `read_image_dimensions` reads header-only pixel dimensions best-effort
   (the `image` crate; `None` for HEIC/SVG/errors).
@@ -198,7 +201,7 @@ classification entirely and forces the text path for the "View as text" override
 the FE swaps to (no in-place upgrade).
 
 **Token lifetime == session lifetime.** `close_session` (the single choke point both teardown paths funnel through, the
-`viewer_close` IPC and the `WindowEvent::Destroyed` net via `close_session_for_window`) calls `media::drop_token`, so a
+`viewer_close` IPC and the `WindowEvent::Destroyed` net via `close_session_for_window`) calls `Viewer::drop_token`, so a
 closed-window viewer can't leave a live token mapping a real path. An unknown token is a 404, covering both
 never-existed and already-dropped.
 
@@ -232,7 +235,7 @@ A dead DFS link (`VolumeError::LinkTargetUnreachable`) is the one open refusal t
 
 - Reads 1 MiB at a time through the session's `VolumeSource` on a blocking thread, so the `Range` serving, the reopen-once-on-error, and the block cache are the text path's. Not verified which requests PDFKit makes over a custom scheme; both shapes are served and tested.
 - **No total deadline, a stall rule** (`VOLUME_STALL_LIMIT`, 45 s, the pull's number and reasons): a 200 MiB scan on a slow link may take minutes, and the local handler's 15 s total would kill it. Quiet for the limit answers 504 and the blocking task stops at its next chunk.
-- **A close stops it.** `media::drop_token` calls `VolumeMedia::close`, so a closed window costs at most the chunk on the wire, and a read stopped that way answers 404 and reports nothing.
+- **A close stops it.** `MediaTokens::drop_token` calls `VolumeMedia::close`, so a closed window costs at most the chunk on the wire, and a read stopped that way answers 404 and reports nothing.
 - **The window hears how it went** (`viewer-media-load`, `emit_to(webview label)`, tagged with the token): `Reading` on each poll with news, then `Done` or `Failed`. Why an event: `<img>` reports only `error`, which reads as a damaged file, and `<embed>` reports nothing. `ViewerOpenResult.media_from_volume` tells the window to follow it; a local path neither emits nor needs it. The frontend half: `apps/desktop/src/routes/viewer/DETAILS.md` § "Media rendering".
 
 Pinned by `media_volume_test.rs` with a test volume for both ways of reading (whole file and range, no stream needed, a hung server, a refused read, a close mid-read), and `../operations_host/backend_suites/viewer_media_integration_test.rs` against each live server, the fake ADB server, and the virtual MTP device.
@@ -1009,15 +1012,19 @@ wrapper returns `{ ok, error }` and the page matches on `error.kind`. The deadli
 (`blocking_typed_result_with_timeout`), so the frontend has ONE union to match rather than a typed error plus a separate
 timeout shape. Why every family owns its error type: `docs/guides/error-handling.md`.
 
-**Decision**: Session map (`SESSIONS`) is a global `LazyLock<Mutex<HashMap>>` rather than Tauri managed state.
-**Why**: Same reasoning as the AI manager. Viewer sessions need to be accessed from background threads (search, indexing) that don't have an `AppHandle`. A global makes the session cache accessible from any context without threading an `AppHandle` through every call chain.
+**Decision**: The viewer is a value (`viewer.rs`: `Viewer`, a cheap `Arc` handle owning the session table, the window
+map, the pending opens, the media tokens, its host, and its runtime), and the app holds one (`app_host::app_viewer()`).
+**Why**: a second host (the browser demo) needs its own sessions over its own volume, tests get a table nobody else
+writes, and every app concern arrives through the host instead of a static. Background jobs (search, indexing, the
+watcher) hold a `Viewer` clone. The media token table is its own shared value (`MediaTokens`), since the app's
+thumbnails mint into it too and the one scheme handler serves both.
 
 ## Gotchas
 
-- **SESSIONS is freed on both close paths.** The in-app close path fires the `viewer_close` IPC; the titlebar-X path
+- **A session is freed on both close paths.** The in-app close path fires the `viewer_close` IPC; the titlebar-X path
   (which never fires that IPC) is covered by a Rust `WindowEvent::Destroyed` branch in `app_lifecycle::on_window_event` for
-  `viewer-*` labels, which calls `session::close_session_for_window(label)`. The window→session link lives in a
-  `WINDOW_TO_SESSION` map populated at `viewer_open` time (the FE passes `getCurrentWindow().label`). `close_session`
+  `viewer-*` labels, which calls `app_viewer().close_session_for_window(label)`. The window→session link lives in the
+  `Viewer`'s window map, populated at `viewer_open` time (the FE passes `getCurrentWindow().label`). `close_session`
   also drops the matching map entry, so a normal IPC close doesn't leave a stale mapping. Without the window-event
   branch, titlebar-X-closed viewers leaked their `ViewerSession` (backend, line index, watcher thread) until app quit.
 - **LineIndex build is async**: `ViewerSession` upgrades backend when ready. Frontend sees backend type change via status query.

@@ -9,8 +9,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use super::content_kind::ViewerContentKind;
-use super::media;
-use super::session;
+use crate::file_viewer::session_test_support::viewer;
 use crate::test_support::TestDir;
 
 fn create_test_dir(name: &str) -> TestDir {
@@ -45,7 +44,7 @@ fn open_png_yields_image_session_with_token_and_dimensions() {
     let dir = create_test_dir("png");
     let file = write_bytes(&dir, "pixel.png", ONE_BY_ONE_PNG);
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
 
     assert_eq!(result.kind, ViewerContentKind::Image);
     assert_eq!(result.file_name, "pixel.png");
@@ -55,7 +54,7 @@ fn open_png_yields_image_session_with_token_and_dimensions() {
     assert!(!result.is_indexing);
     // A token was minted and resolves to this file with the PNG MIME.
     let token = result.media_token.clone().expect("image session mints a token");
-    let source = media::resolve_token(&token).expect("minted token resolves");
+    let source = viewer().tokens().resolve_token(&token).expect("minted token resolves");
     let entry = source.ready().expect("an image session's token is ready");
     assert_eq!(entry.kind, ViewerContentKind::Image);
     assert_eq!(entry.mime, "image/png");
@@ -64,9 +63,9 @@ fn open_png_yields_image_session_with_token_and_dimensions() {
     assert_eq!((dims.width, dims.height), (1, 1));
 
     // Closing drops the token (the single choke point).
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
     assert!(
-        media::resolve_token(&token).is_none(),
+        viewer().tokens().resolve_token(&token).is_none(),
         "close_session drops the media token"
     );
 }
@@ -76,18 +75,18 @@ fn open_pdf_yields_pdf_session_with_token_and_no_dimensions() {
     let dir = create_test_dir("pdf");
     let file = write_bytes(&dir, "doc.pdf", PDF_HEADER);
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
 
     assert_eq!(result.kind, ViewerContentKind::Pdf);
     let token = result.media_token.clone().expect("pdf session mints a token");
-    let source = media::resolve_token(&token).expect("minted token resolves");
+    let source = viewer().tokens().resolve_token(&token).expect("minted token resolves");
     let entry = source.ready().expect("a PDF session's token is ready");
     assert_eq!(entry.mime, "application/pdf");
     // PDFs carry no image dimensions.
     assert!(result.media_dimensions.is_none());
 
-    session::close_session(&result.session_id).unwrap();
-    assert!(media::resolve_token(&token).is_none());
+    viewer().close_session(&result.session_id).unwrap();
+    assert!(viewer().tokens().resolve_token(&token).is_none());
 }
 
 #[test]
@@ -95,7 +94,7 @@ fn open_text_file_falls_through_to_text_pipeline() {
     let dir = create_test_dir("text");
     let file = write_bytes(&dir, "notes.txt", b"hello\nworld\n");
 
-    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session(file.to_str().unwrap(), "root").unwrap();
 
     assert_eq!(result.kind, ViewerContentKind::Text);
     assert!(result.media_token.is_none());
@@ -103,7 +102,7 @@ fn open_text_file_falls_through_to_text_pipeline() {
     // The text pipeline populated real lines.
     assert!(!result.initial_lines.rows.is_empty());
 
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
 }
 
 #[test]
@@ -113,11 +112,11 @@ fn open_as_text_forces_text_for_a_media_file() {
 
     // The "View as text" override: a real PNG, opened as text, mints no token and
     // flows through the text pipeline (it shows the raw bytes).
-    let result = session::open_session_as_text(file.to_str().unwrap(), "root").unwrap();
+    let result = viewer().open_session_as_text(file.to_str().unwrap(), "root").unwrap();
 
     assert_eq!(result.kind, ViewerContentKind::Text);
     assert!(result.media_token.is_none());
     assert!(result.media_dimensions.is_none());
 
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
 }

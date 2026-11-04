@@ -8,7 +8,7 @@
 //! - [`volumes`]: which volume serves an id, and whether a path routes over its parent.
 //! - [`pulls`]: a bounded temp copy of a file the OS can't open.
 //! - [`images`]: where a rendered Markdown document's pictures come from.
-//! - [`events`]: what the viewer tells the window (a watched file changed).
+//! - [`events`]: what the viewer tells the window (a watched file changed, a token dropped).
 //! - [`analytics`]: the `viewer_opened` facts.
 //! - [`opener`]: a web or mail link clicked in a document.
 //!
@@ -22,9 +22,7 @@ pub mod pulls;
 pub mod volumes;
 
 use std::borrow::Cow;
-use std::sync::{Arc, LazyLock, RwLock};
-
-use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+use std::sync::Arc;
 
 /// How the debug log's view shows one row (`RowText::LogDisplay`): log markers hidden,
 /// each marked value as itself.
@@ -59,21 +57,6 @@ impl ViewerHost {
 }
 
 /// A row as the file stores it.
-fn as_stored(line: &str) -> Cow<'_, str> {
+pub(crate) fn as_stored(line: &str) -> Cow<'_, str> {
     Cow::Borrowed(line)
-}
-
-/// The installed host. Until the app installs its own (with the window handle, at startup),
-/// the app's host answers without one, which is what the app's unit tests run against.
-static HOST: LazyLock<RwLock<Arc<ViewerHost>>> =
-    LazyLock::new(|| RwLock::new(Arc::new(super::app_host::app_host_without_windows())));
-
-/// Replaces the host every later viewer call reaches.
-pub fn install_host(host: ViewerHost) {
-    *HOST.write_ignore_poison() = Arc::new(host);
-}
-
-/// The host the viewer reaches right now.
-pub(super) fn host() -> Arc<ViewerHost> {
-    Arc::clone(&HOST.read_ignore_poison())
 }

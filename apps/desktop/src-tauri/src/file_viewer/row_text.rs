@@ -3,6 +3,7 @@
 //! sits below both.
 
 use super::LineChunk;
+use super::host::{LogDisplay, as_stored};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -18,18 +19,39 @@ pub enum RowText {
     LogDisplay,
 }
 
-impl RowText {
+/// A [`RowText`] resolved against its host: what `LogDisplay` means comes from the host
+/// (`ViewerHost::log_display`, the app's log-marker reader).
+#[derive(Debug, Clone, Copy)]
+pub struct RowView {
+    rows: RowText,
+    log_display: LogDisplay,
+}
+
+impl RowView {
+    pub(super) fn new(rows: RowText, log_display: LogDisplay) -> Self {
+        Self { rows, log_display }
+    }
+
+    /// Rows as decoded, with no host to ask.
+    pub fn raw() -> Self {
+        Self::new(RowText::Raw, as_stored)
+    }
+
+    pub fn is_raw(&self) -> bool {
+        self.rows == RowText::Raw
+    }
+
     /// One row's text as this view shows it.
-    pub fn render(self, text: &str) -> Cow<'_, str> {
-        match self {
+    pub fn render<'a>(&self, text: &'a str) -> Cow<'a, str> {
+        match self.rows {
             RowText::Raw => Cow::Borrowed(text),
-            RowText::LogDisplay => (super::host::host().log_display)(text),
+            RowText::LogDisplay => (self.log_display)(text),
         }
     }
 
     /// Every row of `chunk` as this view shows it.
-    pub fn apply(self, chunk: &mut LineChunk) {
-        if self == RowText::Raw {
+    pub fn apply(&self, chunk: &mut LineChunk) {
+        if self.is_raw() {
             return;
         }
         for row in &mut chunk.rows {

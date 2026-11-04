@@ -20,6 +20,7 @@ use super::ViewerError;
 use super::source::{ByteSource, OpenedFile, file_name_of};
 use super::volume_error::map_volume_error;
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::rt::Runtime;
 use cmdr_fs::volume::{Volume, VolumeError, VolumeRandomReader};
 
 /// Bytes per cached block, and the smallest read the source asks the volume for.
@@ -37,18 +38,30 @@ const CACHED_BLOCKS: usize = 16;
 
 /// The volume's reader, closed on the async runtime once the last read holding it lets
 /// go (a reopen swaps in a new one while an older read may still be running).
-struct HeldReader(Option<Box<dyn VolumeRandomReader>>);
+struct HeldReader {
+    reader: Option<Box<dyn VolumeRandomReader>>,
+    /// Where the close runs: the session's own runtime, never an ambient one (the last
+    /// read may let go on a worker thread with none).
+    runtime: Runtime,
+}
 
 impl HeldReader {
+    fn new(reader: Box<dyn VolumeRandomReader>, runtime: &Runtime) -> Self {
+        Self {
+            reader: Some(reader),
+            runtime: runtime.clone(),
+        }
+    }
+
     fn get(&self) -> &dyn VolumeRandomReader {
-        self.0.as_deref().expect("the reader is only taken in Drop")
+        self.reader.as_deref().expect("the reader is only taken in Drop")
     }
 }
 
 impl Drop for HeldReader {
     fn drop(&mut self) {
-        if let Some(reader) = self.0.take() {
-            super::bridge::spawn_detached(async move {
+        if let Some(reader) = self.reader.take() {
+            super::bridge::spawn_detached(&self.runtime, async move {
                 if let Err(e) = reader.close().await {
                     debug!(
                         "viewer volume source: closing the reader failed: {e}",
@@ -116,8 +129,9 @@ fn open_reader(
     volume: &Arc<dyn Volume>,
     path: &Path,
     way: PositionedRead,
+    runtime: &Runtime,
 ) -> Result<Box<dyn VolumeRandomReader>, VolumeError> {
-    super::bridge::block_on(async {
+    super::bridge::block_on(runtime, async {
         match way {
             PositionedRead::Held => volume.open_random_reader(path).await,
             PositionedRead::Ranged => {
@@ -133,6 +147,7 @@ pub struct VolumeSource {
     volume: Arc<dyn Volume>,
     path: PathBuf,
     way: PositionedRead,
+    runtime: Runtime,
     reader: Mutex<Arc<HeldReader>>,
     /// Full blocks only, keyed by block index. A short block (the file's tail) is
     /// never cached, so an append is read fresh.
@@ -140,16 +155,23 @@ pub struct VolumeSource {
 }
 
 impl VolumeSource {
-    /// Opens `path` on `volume` and returns the source with the file's size.
-    pub fn open(volume: Arc<dyn Volume>, path: &Path, way: PositionedRead) -> Result<(Self, u64), VolumeError> {
-        let reader = open_reader(&volume, path, way)?;
+    /// Opens `path` on `volume` and returns the source with the file's size. Every read
+    /// bridges to the volume on `runtime`.
+    pub fn open(
+        volume: Arc<dyn Volume>,
+        path: &Path,
+        way: PositionedRead,
+        runtime: &Runtime,
+    ) -> Result<(Self, u64), VolumeError> {
+        let reader = open_reader(&volume, path, way, runtime)?;
         let size = reader.size();
         Ok((
             Self {
                 volume,
                 path: path.to_path_buf(),
                 way,
-                reader: Mutex::new(Arc::new(HeldReader(Some(reader)))),
+                runtime: runtime.clone(),
+                reader: Mutex::new(Arc::new(HeldReader::new(reader, runtime))),
                 cache: Mutex::new(VecDeque::new()),
             },
             size,
@@ -163,9 +185,10 @@ impl VolumeSource {
     /// A fresh reader in place of `stale`, unless a concurrent read already swapped one
     /// in. Drops the cache: the file a fresh open sees may differ.
     fn reopen(&self, stale: &Arc<HeldReader>) -> Result<Arc<HeldReader>, ViewerError> {
-        let fresh = open_reader(&self.volume, &self.path, self.way).map_err(|e| map_volume_error(e, None))?;
+        let fresh =
+            open_reader(&self.volume, &self.path, self.way, &self.runtime).map_err(|e| map_volume_error(e, None))?;
         // Held before the race check, so a reader that loses it still gets closed.
-        let fresh = Arc::new(HeldReader(Some(fresh)));
+        let fresh = Arc::new(HeldReader::new(fresh, &self.runtime));
         let mut slot = self.reader.lock_ignore_poison();
         if !Arc::ptr_eq(&slot, stale) {
             return Ok(Arc::clone(&slot));
@@ -178,7 +201,7 @@ impl VolumeSource {
     /// One positioned read, reopening once on an error: a handle may not survive the
     /// share reconnecting under it.
     fn read_span(&self, reader: &Arc<HeldReader>, offset: u64, len: usize) -> Result<Vec<u8>, ViewerError> {
-        match super::bridge::block_on(reader.get().read_at(offset, len)) {
+        match super::bridge::block_on(&self.runtime, reader.get().read_at(offset, len)) {
             Ok(bytes) => Ok(bytes),
             Err(first) => {
                 debug!(
@@ -187,7 +210,8 @@ impl VolumeSource {
                     first = cmdr_fs::log_error::LogError(&first)
                 );
                 let fresh = self.reopen(reader)?;
-                super::bridge::block_on(fresh.get().read_at(offset, len)).map_err(|e| map_volume_error(e, None))
+                super::bridge::block_on(&self.runtime, fresh.get().read_at(offset, len))
+                    .map_err(|e| map_volume_error(e, None))
             }
         }
     }
@@ -285,8 +309,9 @@ pub(super) fn open_on_volume(
     volume: &Arc<dyn Volume>,
     path: &Path,
     way: PositionedRead,
+    runtime: &Runtime,
 ) -> Result<OpenedFile, VolumeError> {
-    let (source, size) = VolumeSource::open(Arc::clone(volume), path, way)?;
+    let (source, size) = VolumeSource::open(Arc::clone(volume), path, way, runtime)?;
     Ok(OpenedFile {
         source: Arc::new(source),
         total_bytes: size,
@@ -295,7 +320,7 @@ pub(super) fn open_on_volume(
 }
 
 /// The file's size now, from the volume's stat.
-pub(super) fn size_on_volume(volume: &Arc<dyn Volume>, path: &Path) -> Result<u64, ViewerError> {
-    let entry = super::bridge::block_on(volume.get_metadata(path)).map_err(|e| map_volume_error(e, None))?;
+pub(super) fn size_on_volume(volume: &Arc<dyn Volume>, path: &Path, runtime: &Runtime) -> Result<u64, ViewerError> {
+    let entry = super::bridge::block_on(runtime, volume.get_metadata(path)).map_err(|e| map_volume_error(e, None))?;
     Ok(entry.size.unwrap_or(0))
 }

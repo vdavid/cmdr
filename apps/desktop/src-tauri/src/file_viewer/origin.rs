@@ -8,10 +8,11 @@ use std::sync::Arc;
 use log::debug;
 
 use super::ViewerError;
-use super::host::host;
 use super::source::{OpenedFile, open_local};
+use super::viewer::Viewer;
 use super::volume_error::map_volume_error;
 use super::volume_source::{PositionedRead, open_on_volume, size_on_volume};
+use cmdr_fs::rt::Runtime;
 use cmdr_fs::volume::{Volume, VolumeError};
 
 /// Where a session's file lives, so the session can open it again: a reload, or a file
@@ -25,6 +26,7 @@ pub enum SourceOrigin {
         volume: Arc<dyn Volume>,
         path: PathBuf,
         way: PositionedRead,
+        runtime: Runtime,
     },
 }
 
@@ -41,7 +43,12 @@ impl SourceOrigin {
     pub fn open_volume(&self) -> Result<OpenedFile, VolumeError> {
         match self {
             Self::Local(_) => Err(VolumeError::NotSupported),
-            Self::Volume { volume, path, way } => open_on_volume(volume, path, *way),
+            Self::Volume {
+                volume,
+                path,
+                way,
+                runtime,
+            } => open_on_volume(volume, path, *way, runtime),
         }
     }
 
@@ -49,7 +56,9 @@ impl SourceOrigin {
     pub fn current_size(&self) -> Result<u64, ViewerError> {
         match self {
             Self::Local(path) => Ok(std::fs::metadata(path)?.len()),
-            Self::Volume { volume, path, .. } => size_on_volume(volume, path),
+            Self::Volume {
+                volume, path, runtime, ..
+            } => size_on_volume(volume, path, runtime),
         }
     }
 }
@@ -71,8 +80,12 @@ pub(super) struct VolumeOpen {
 /// the same `NotFound` the old path gives. The exception is a dead DFS link: the session
 /// is fine and already named the trouble, and a mount's answer could be a `NotFound`, which
 /// reads as "this file was deleted".
-pub(super) fn open_for_viewer(requested: &Path, volume_id: &str) -> Result<Option<VolumeOpen>, ViewerError> {
-    open_through_volume(requested, volume_id, PositionedRead::Held)
+pub(super) fn open_for_viewer(
+    viewer: &Viewer,
+    requested: &Path,
+    volume_id: &str,
+) -> Result<Option<VolumeOpen>, ViewerError> {
+    open_through_volume(viewer, requested, volume_id, PositionedRead::Held)
 }
 
 /// Opens `requested` through `read_range`, for a volume the OS can't open and that holds
@@ -80,23 +93,29 @@ pub(super) fn open_for_viewer(requested: &Path, volume_id: &str) -> Result<Optio
 /// pull (`media_session.rs`). Text keeps its temp copy, so a caller that finds no media
 /// drops this. `None` under the same rules as [`open_for_viewer`], plus any volume whose
 /// paths `std::fs` already opens.
-pub(super) fn open_ranged_for_media(requested: &Path, volume_id: &str) -> Result<Option<VolumeOpen>, ViewerError> {
-    let os_visible = host()
+pub(super) fn open_ranged_for_media(
+    viewer: &Viewer,
+    requested: &Path,
+    volume_id: &str,
+) -> Result<Option<VolumeOpen>, ViewerError> {
+    let os_visible = viewer
+        .host()
         .volumes
         .get(volume_id)
         .is_none_or(|volume| volume.paths_are_os_visible());
     if os_visible {
         return Ok(None);
     }
-    open_through_volume(requested, volume_id, PositionedRead::Ranged)
+    open_through_volume(viewer, requested, volume_id, PositionedRead::Ranged)
 }
 
 fn open_through_volume(
+    viewer: &Viewer,
     requested: &Path,
     volume_id: &str,
     way: PositionedRead,
 ) -> Result<Option<VolumeOpen>, ViewerError> {
-    let host = host();
+    let host = viewer.host();
     if host.volumes.routes_over_its_parent(requested) {
         return Ok(None);
     }
@@ -108,6 +127,7 @@ fn open_through_volume(
         volume,
         path: requested.to_path_buf(),
         way,
+        runtime: viewer.runtime().clone(),
     };
     match origin.open_volume() {
         Ok(opened) => Ok(Some(VolumeOpen {

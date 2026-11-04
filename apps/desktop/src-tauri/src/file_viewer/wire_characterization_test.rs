@@ -25,10 +25,8 @@ use super::media_volume::{MediaLoad, MediaLoadStage};
 use super::pending_open::PullProgress;
 use super::session::{self, SavedAs};
 use super::session_test_support::{create_test_dir, write_test_file};
-use super::{
-    ArchiveFailureKind, PendingOpen, RowText, SearchMode, SeekTarget, ViewerError, ViewerOpenResult,
-    render_markdown_session, resolve_markdown_link,
-};
+use super::{ArchiveFailureKind, PendingOpen, RowText, SearchMode, SeekTarget, ViewerError, ViewerOpenResult};
+use crate::file_viewer::session_test_support::viewer;
 use crate::test_support::wait_until;
 
 /// Masks what's random per run: session ids, media tokens, and the tokens inside a
@@ -65,11 +63,15 @@ fn pin(actual: impl Serialize, expected: &str) {
 }
 
 fn open(path: &Path) -> ViewerOpenResult {
-    session::open_session(path.to_str().expect("utf-8 path"), "root").expect("opens")
+    viewer()
+        .open_session(path.to_str().expect("utf-8 path"), "root")
+        .expect("opens")
 }
 
 fn open_as_text(path: &Path) -> ViewerOpenResult {
-    session::open_session_as_text(path.to_str().expect("utf-8 path"), "root").expect("opens")
+    viewer()
+        .open_session_as_text(path.to_str().expect("utf-8 path"), "root")
+        .expect("opens")
 }
 
 fn write_bytes(dir: &Path, name: &str, bytes: &[u8]) -> std::path::PathBuf {
@@ -98,7 +100,7 @@ fn a_small_text_file_opens_with_this_answer() {
         &result,
         r##"{"sessionId":"<masked>","fileName":"notes.txt","totalBytes":23,"totalLines":3,"estimatedTotalRows":3,"backendType":"fullLoad","capabilities":{"supportsLineSeek":true,"supportsByteSeek":true,"supportsFractionSeek":true,"knowsTotalLines":true},"initialLines":{"rows":[{"text":"one\r","byteOffset":0,"continues":false,"lineNumber":0},{"text":"two 😀 two","byteOffset":5,"continues":false,"lineNumber":1},{"text":"three","byteOffset":18,"continues":false,"lineNumber":2}],"firstRowNumber":0,"byteOffset":0,"endByteOffset":23,"end":"endOfFile","totalRows":{"kind":"exact","rows":3},"totalBytes":23},"isIndexing":false,"encoding":"utf8","kind":"text","mediaToken":null,"mediaDimensions":null,"mediaFromVolume":false}"##,
     );
-    session::close_session(&result.session_id).expect("close");
+    viewer().close_session(&result.session_id).expect("close");
 }
 
 #[test]
@@ -116,7 +118,7 @@ fn a_large_text_file_opens_on_byte_seek_with_this_answer() {
         head,
         r##"{"sessionId":"<masked>","fileName":"big.log","totalBytes":1048730,"totalLines":null,"estimatedTotalRows":61690,"backendType":"byteSeek","capabilities":{"supportsLineSeek":false,"supportsByteSeek":true,"supportsFractionSeek":true,"knowsTotalLines":false},"initialLines":{"rows":[{"text":"0123456789abcdef","byteOffset":0,"continues":false,"lineNumber":0},{"text":"0123456789abcdef","byteOffset":17,"continues":false,"lineNumber":1}],"firstRowNumber":0,"byteOffset":0,"endByteOffset":3400,"end":"countReached","totalRows":{"kind":"estimated","rows":61690},"totalBytes":1048730},"isIndexing":true,"encoding":"utf8","kind":"text","mediaToken":null,"mediaDimensions":null,"mediaFromVolume":false}"##,
     );
-    session::close_session(&result.session_id).expect("close");
+    viewer().close_session(&result.session_id).expect("close");
 }
 
 #[test]
@@ -144,7 +146,7 @@ fn media_and_markdown_and_forced_text_open_with_these_answers() {
         r##"{"sessionId":"<masked>","fileName":"README.md","totalBytes":41,"totalLines":4,"estimatedTotalRows":4,"backendType":"fullLoad","capabilities":{"supportsLineSeek":true,"supportsByteSeek":true,"supportsFractionSeek":true,"knowsTotalLines":true},"initialLines":{"rows":[{"text":"# Title","byteOffset":0,"continues":false,"lineNumber":0},{"text":"","byteOffset":8,"continues":false,"lineNumber":1},{"text":"See [the notes](notes.md#part).","byteOffset":9,"continues":false,"lineNumber":2},{"text":"","byteOffset":41,"continues":false,"lineNumber":3}],"firstRowNumber":0,"byteOffset":0,"endByteOffset":41,"end":"endOfFile","totalRows":{"kind":"exact","rows":4},"totalBytes":41},"isIndexing":false,"encoding":"utf8","kind":"text","mediaToken":null,"mediaDimensions":null,"mediaFromVolume":false}"##,
     );
     for result in [image, pdf, markdown, forced] {
-        session::close_session(&result.session_id).expect("close");
+        viewer().close_session(&result.session_id).expect("close");
     }
 }
 
@@ -152,20 +154,21 @@ fn media_and_markdown_and_forced_text_open_with_these_answers() {
 fn the_log_view_opens_with_this_answer() {
     let dir = create_test_dir("wire_log");
     let file = write_test_file(&dir, "cmdr.log", "INFO plain line\n");
-    let result = session::open_for_window(
-        file.to_str().expect("utf-8 path"),
-        "root",
-        "",
-        false,
-        RowText::LogDisplay,
-        &PendingOpen::new(),
-    )
-    .expect("opens");
+    let result = viewer()
+        .open_for_window(
+            file.to_str().expect("utf-8 path"),
+            "root",
+            "",
+            false,
+            RowText::LogDisplay,
+            &PendingOpen::new(),
+        )
+        .expect("opens");
     pin(
         &result,
         r##"{"sessionId":"<masked>","fileName":"cmdr.log","totalBytes":16,"totalLines":2,"estimatedTotalRows":2,"backendType":"fullLoad","capabilities":{"supportsLineSeek":true,"supportsByteSeek":true,"supportsFractionSeek":true,"knowsTotalLines":true},"initialLines":{"rows":[{"text":"INFO plain line","byteOffset":0,"continues":false,"lineNumber":0},{"text":"","byteOffset":16,"continues":false,"lineNumber":1}],"firstRowNumber":0,"byteOffset":0,"endByteOffset":16,"end":"endOfFile","totalRows":{"kind":"exact","rows":2},"totalBytes":16},"isIndexing":false,"encoding":"utf8","kind":"text","mediaToken":null,"mediaDimensions":null,"mediaFromVolume":false}"##,
     );
-    session::close_session(&result.session_id).expect("close");
+    viewer().close_session(&result.session_id).expect("close");
 }
 
 #[test]
@@ -173,28 +176,32 @@ fn rows_bytes_status_and_encodings_answer_these_shapes() {
     let dir = create_test_dir("wire_rows");
     let result = open(&write_test_file(&dir, "notes.txt", TEXT));
     let sid = result.session_id.clone();
-    let chunk = session::get_lines(&sid, SeekTarget::Row(1), 5, &AtomicBool::new(false)).expect("rows");
+    let chunk = viewer()
+        .get_lines(&sid, SeekTarget::Row(1), 5, &AtomicBool::new(false))
+        .expect("rows");
     pin(
         &chunk,
         r##"{"rows":[{"text":"two 😀 two","byteOffset":5,"continues":false,"lineNumber":1},{"text":"three","byteOffset":18,"continues":false,"lineNumber":2}],"firstRowNumber":1,"byteOffset":5,"endByteOffset":23,"end":"endOfFile","totalRows":{"kind":"exact","rows":3},"totalBytes":23}"##,
     );
-    pin(session::get_bytes(&sid, 3, 4).expect("bytes"), r##"[13,10,116,119]"##);
+    pin(viewer().get_bytes(&sid, 3, 4).expect("bytes"), r##"[13,10,116,119]"##);
     pin(
-        session::get_session_status(&sid).expect("status"),
+        viewer().get_session_status(&sid).expect("status"),
         r##"{"backendType":"fullLoad","isIndexing":false,"totalRows":{"kind":"exact","rows":3},"totalLines":3}"##,
     );
     pin(
-        session::get_encoding_options(&sid).expect("options"),
+        viewer().get_encoding_options(&sid).expect("options"),
         r##"{"current":"utf8","detected":"utf8","all":[{"encoding":"utf8","label":"UTF-8","group":"unicode"},{"encoding":"utf8WithBom","label":"UTF-8 with BOM","group":"unicode"},{"encoding":"utf16Le","label":"UTF-16 LE","group":"unicode"},{"encoding":"utf16Be","label":"UTF-16 BE","group":"unicode"},{"encoding":"windows1252","label":"Western (Windows-1252)","group":"western"},{"encoding":"iso8859_1","label":"Western (ISO-8859-1)","group":"western"},{"encoding":"macRoman","label":"Western (Mac Roman)","group":"western"},{"encoding":"usAscii","label":"US-ASCII","group":"western"}]}"##,
     );
-    session::close_session(&sid).expect("close");
+    viewer().close_session(&sid).expect("close");
 }
 
 fn search_to_the_end(sid: &str, query: &str, mode: SearchMode) -> session::SearchPollResult {
-    session::search_start(sid, query.to_string(), mode).expect("search starts");
+    viewer()
+        .search_start(sid, query.to_string(), mode)
+        .expect("search starts");
     let mut last = None;
     wait_until(Duration::from_secs(5), "the search finishes", || {
-        let poll = session::search_poll(sid, 0).expect("poll");
+        let poll = viewer().search_poll(sid, 0).expect("poll");
         let done = !matches!(poll.status, super::session_store::SearchStatus::Running);
         last = Some(poll);
         done
@@ -236,12 +243,12 @@ fn search_answers_these_shapes_with_utf16_columns() {
         without_wording(search_to_the_end(&sid, "(", regex)),
         r##"{"status":{"status":"invalidQuery","message":"<the regex's message>"},"newMatches":[],"totalMatchCount":0,"totalBytes":23,"bytesScanned":0,"matchLimitReached":false}"##,
     );
-    session::search_cancel(&sid).expect("cancel");
+    viewer().search_cancel(&sid).expect("cancel");
     pin(
-        without_wording(session::search_poll(&sid, 0).expect("poll after cancel")),
+        without_wording(viewer().search_poll(&sid, 0).expect("poll after cancel")),
         r##"{"status":{"status":"invalidQuery","message":"<the regex's message>"},"newMatches":[],"totalMatchCount":0,"totalBytes":23,"bytesScanned":0,"matchLimitReached":false}"##,
     );
-    session::close_session(&sid).expect("close");
+    viewer().close_session(&sid).expect("close");
 }
 
 #[test]
@@ -256,11 +263,15 @@ fn a_markdown_session_renders_and_resolves_links_in_these_shapes() {
     let result = open(&file);
     let sid = result.session_id.clone();
     pin(
-        render_markdown_session(&sid).expect("renders"),
+        viewer().render_markdown_session(&sid).expect("renders"),
         r##"{"html":"<h1 id=\"md-title\">Title</h1>\n<p><img data-md-image=\"local:<masked>\" alt=\"pic\"> <img data-md-image=\"remote:<masked>\" alt=\"web\"></p>\n<p><a href=\"notes.md#part\" rel=\"noopener noreferrer\">notes</a> <a href=\"https://getcmdr.com\" rel=\"noopener noreferrer\">site</a> <a href=\"#md-title\" rel=\"noopener noreferrer\">top</a></p>\n\n","hasRemoteImages":true}"##,
     );
-    let mut file_link =
-        serde_json::to_value(resolve_markdown_link(&sid, "notes.md#part").expect("file link")).expect("serializes");
+    let mut file_link = serde_json::to_value(
+        viewer()
+            .resolve_markdown_link(&sid, "notes.md#part")
+            .expect("file link"),
+    )
+    .expect("serializes");
     let resolved = file_link["path"].as_str().expect("a path").to_string();
     let beside = dir.join("notes.md");
     assert_eq!(Path::new(&resolved), beside, "the link resolves beside the document");
@@ -270,18 +281,22 @@ fn a_markdown_session_renders_and_resolves_links_in_these_shapes() {
         r##"{"kind":"file","path":"<dir>/notes.md","elementId":"md-part"}"##,
     );
     pin(
-        resolve_markdown_link(&sid, "https://getcmdr.com").expect("external link"),
+        viewer()
+            .resolve_markdown_link(&sid, "https://getcmdr.com")
+            .expect("external link"),
         r##"{"kind":"external","url":"https://getcmdr.com/"}"##,
     );
     pin(
-        resolve_markdown_link(&sid, "#title").expect("anchor link"),
+        viewer().resolve_markdown_link(&sid, "#title").expect("anchor link"),
         r##"{"kind":"anchor","elementId":"title"}"##,
     );
     pin(
-        resolve_markdown_link(&sid, "/etc/passwd").expect("blocked link"),
+        viewer()
+            .resolve_markdown_link(&sid, "/etc/passwd")
+            .expect("blocked link"),
         r##"{"kind":"blocked"}"##,
     );
-    session::close_session(&sid).expect("close");
+    viewer().close_session(&sid).expect("close");
 }
 
 #[test]

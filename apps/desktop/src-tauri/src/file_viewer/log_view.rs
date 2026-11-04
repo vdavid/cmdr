@@ -3,7 +3,7 @@
 //! reporter. The view applies where rows leave a backend, so search columns, highlights, wrap,
 //! copy, and "save range" all work on the text the user sees; byte offsets stay the raw file's.
 
-use super::row_text::RowText;
+use super::row_text::RowView;
 use super::search_matcher::Matcher;
 use super::{
     BackendCapabilities, FileEncoding, FileViewerBackend, LineChunk, SearchMatch, SeekTarget, TotalRows, ViewerError,
@@ -11,12 +11,12 @@ use super::{
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 
-/// A backend whose rows come out through a [`RowText`]. The session wraps its current backend
+/// A backend whose rows come out through a [`RowView`]. The session wraps its current backend
 /// on every read (`ViewerSession::load_backend`), so a backend swap (the index upgrade, an
 /// encoding switch, a tail extend) keeps the view without any swap site knowing about it.
 pub(super) struct ViewedBackend {
     pub(super) inner: Arc<Box<dyn FileViewerBackend>>,
-    pub(super) rows: RowText,
+    pub(super) rows: RowView,
 }
 
 impl FileViewerBackend for ViewedBackend {
