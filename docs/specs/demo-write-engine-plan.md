@@ -29,7 +29,8 @@ Decided (2026-11-04, after review round 1):
    itself: a bandwidth property on its read stream, sleeping through `rt::time::sleep`, like a real slow disk. Verified:
    a demo copy streams (`InMemoryVolume` keeps `supports_copy_within() == false`, so `may_copy_on_server_from` says no
    and every file goes through `open_read_stream` → `write_from_stream`). A same-volume move is a rename (instant, as on
-   a real disk), and so is delete.
+   a real disk), and so is delete. Milestone 2b makes that bandwidth meaningful: demo files carry synthetic content, and
+   every in-memory call yields to the page like a device waiting on I/O.
 4. **Archive edits** (copy into a zip, compress, move out of one) refuse cleanly with the routed read-only answer,
    before anything touches a scratch dir.
 5. **"Which volume id is the local disk" is a HOST answer**, ❌ not `cfg`: natively `Some("root")`, the demo host
@@ -274,7 +275,7 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 
 ### 2. The runtime seam covers the write engine's needs (S–M)
 
-- **Scope**: `crates/cmdr-fs/src/rt/`, `crates/cmdr-fs/src/deadline/`, `InMemoryVolume`'s stream timing, and a new
+- **Scope**: `crates/cmdr-fs/src/rt/`, `crates/cmdr-fs/src/deadline/`, the in-memory chunk delay, and a new
   `crates/cmdr-fs/clippy.toml`.
 - **Intentions**: add what the survey found the write engine uses beyond the listing engine's ten sites:
   - `rt::wall_now()` (natively `SystemTime::now()`, in the browser `web_time::SystemTime::now()`).
@@ -284,15 +285,7 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   - `rt::yield_now()` (natively `tokio::task::yield_now`; in the browser a `setTimeout(0)` macrotask yield, so the page
     paints and takes input between chunks).
   - `deadline`: route its spawns and timers through `rt` (natively identical).
-  - `InMemoryVolume`: the chunk delay sleeps through `rt::time::sleep`, and a new `with_bandwidth(bytes_per_sec)`
-    builder option models ONE device's speed, for the demo (decision 3). **A volume-wide budget** (one token bucket the
-    volume owns, which every read stream draws its chunks from), ❌ not a per-stream rate: `transfer_concurrency` takes
-    `max_concurrent_ops()` (32 here), so a three-file copy runs three streams, and per-stream pacing would show three
-    times the device's speed. A shared budget is how one disk behaves (several readers split its throughput), and it
-    keeps the engine's real concurrent driver in play, so the demo runs the same path a desktop volume copy of three or
-    more files does. (Chosen over `max_concurrent_ops = 1`, which would be simpler and drop the browser `JoinSet`, but
-    would model the device by changing which driver runs.) Off unless set, so every existing cell is unchanged. Two
-    copies at once can't double it either way: both sides share the volume's one lane, so the second queues.
+  - `InMemoryVolume`'s chunk delay (the `with_read_chunk_delay` test hook) sleeps through `rt::time::sleep`.
   - `crates/cmdr-fs/clippy.toml`: the root's general settings plus the clock bans from
     `crates/cmdr-listing/clippy.toml`; `rt/` keeps its module-level allow. Existing direct reads elsewhere in `cmdr-fs`
     either move to `rt` (if a browser path can reach them) or carry a reasoned allow (host-only modules).
@@ -300,13 +293,59 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   set must abort on drop too (an abort flag each task checks at its next poll), or the plan must prove the driver never
   drops a non-empty set. `yield_now` natively must stay exactly tokio's (a `setTimeout`-shaped yield natively would slow
   every copy). `spawn_local` futures aren't `Send`-checked: keep the native signature's `Send` bounds so desktop code
-  can't regress. The bandwidth sleep must sit where cancel and pause still reach it (the engine's `CheckpointStream`
-  wraps the source stream, so a pending sleep is dropped on cancel like any read); ❌ never a busy wait.
-- **Test plan**: native unit tests for each wrapper (pure forwards); paused-clock cells for `with_bandwidth` (a 1 MB
-  file at 1 MB/s takes one virtual second; three 1 MB files read at once take three; a cancel mid-file stops it);
-  browser behavior through the Node smoke (`smoke.mjs` gains a `rt` self-test export: a three-task `JoinSet` drain, a
-  `yield_now` that lets a `setTimeout` fire, `wall_now` within a second of `Date.now()`).
+  can't regress.
+- **Test plan**: native unit tests for each wrapper (pure forwards); browser behavior through the Node smoke
+  (`smoke.mjs` gains a `rt` self-test export: a three-task `JoinSet` drain, a `yield_now` that lets a `setTimeout` fire,
+  `wall_now` within a second of `Date.now()`).
 - **DONE**: the seam has every primitive the write engine needs, each natively a re-export or one-line forward.
+
+### 2b. The in-memory volume models one device (M)
+
+- **Scope**: `crates/cmdr-fs/src/volume/in_memory*` and the demo tree's builder (`cmdr-listing-wasm/src/tree.rs`). Every
+  option here is off unless set, so every existing cell is unchanged; natively only tests and the demo turn them on.
+- **Why**: today the demo's files are metadata only (`InMemoryVolume::with_entries` stores `content: None`, and
+  `open_read_stream` streams `unwrap_or_default()`, so zero bytes). A copy of 1,200 photos would finish at once with
+  0-byte files and size mismatches, and every in-memory call returns without ever waiting, so a 1,200-item delete, scan,
+  move, or rollback runs as ONE JS task: the page freezes, Cancel can't be clicked, and every deferred event lands at
+  the end. Real bytes are impossible (about 3.6 GB against wasm32's 4 GB address space). Free space is faked in TS
+  (`lib/demo/answers.ts` answers `getVolumeSpace` with a constant 412 GB) while the engine's `get_space_info` says
+  `NotSupported`.
+- **Intentions**:
+  - **Synthetic content**: an entry can hold "N generated bytes from a seed" instead of bytes; its read stream generates
+    them chunk by chunk (cheap, deterministic, the size the listing says). Files a person WRITES store real bytes,
+    except that `write_from_stream` compares each incoming chunk against what a synthetic descriptor would generate at
+    that offset and, while every chunk matches, keeps the descriptor instead of the bytes (content- addressed, like a
+    deduplicating filesystem, so a copy of a synthetic file stays a descriptor with no side channel between the read and
+    write halves; one mismatched chunk and it falls back to real bytes from the start). The demo tree's builder gives
+    every file a descriptor (seeded from its path) unless the tree supplies real content.
+  - **Bandwidth**: `with_bandwidth(bytes_per_sec)` models ONE device's speed, for the demo (decision 3). **A volume-wide
+    budget** (one token bucket the volume owns, which every read stream draws its chunks from), ❌ not a per-stream
+    rate: `transfer_concurrency` takes `max_concurrent_ops()` (32 here), so a three-file copy runs three streams, and
+    per-stream pacing would show three times the device's speed. A shared budget is how one disk behaves (several
+    readers split its throughput), and it keeps the engine's real concurrent driver in play, so the demo runs the same
+    path a desktop volume copy of three or more files does. (Chosen over `max_concurrent_ops = 1`, which would be
+    simpler and drop the browser `JoinSet`, but would model the device by changing which driver runs.) Off unless set,
+    so every existing cell is unchanged. Two copies at once can't double it either way: both sides share the volume's
+    one lane, so the second queues.
+  - **Device-modeled yielding**: `with_yielding(slice)`: every volume call (list, stat, create, delete, rename, each
+    chunk) awaits `rt::yield_now()` once `slice` (about 8 ms of `rt::now()`) has passed since the volume last yielded,
+    like a real device whose every call waits on I/O. This lets the page paint, take input, and deliver events during a
+    long delete, scan, same-volume move, conflict scan, or rollback, all with zero engine change.
+  - **Live free space**: `with_capacity(total_bytes)` answers `get_space_info` as `total` minus the stored plus
+    synthetic bytes, computed live, so the copy's free-space pre-flight and a disk-full refusal (a Retry case for the
+    queue window) are real. The demo answers `getVolumeSpace` from the engine (the host milestone), and the TS constant
+    goes.
+- **Landmines**: the bandwidth sleep and the yield must sit where cancel and pause still reach them (the engine's
+  `CheckpointStream` wraps the source stream, so a pending sleep is dropped on cancel like any read); ❌ never a busy
+  wait. The content-addressed compare must never accept a chunk that differs (compare bytes, not a hash of a prefix), or
+  a person's edited file would silently become generated content. `InMemoryVolume` is the oracle for the `Volume`
+  contracts (`crates/cmdr-fs/CLAUDE.md`): these options model a device, ❌ they never relax a contract.
+- **Test plan**: paused-clock cells: a 1 MB file at 1 MB/s takes one virtual second; three 1 MB files read at once take
+  three; a cancel mid-file stops it; a synthetic file reads back its stated size and the same bytes twice; a copy of one
+  stays a descriptor (memory doesn't grow) and reads back identical; a modified chunk falls back to real bytes; free
+  space drops by a copy's size and a copy larger than it refuses. The Node smoke: a `setTimeout` fires during a
+  1,200-file delete, and a copied file's size equals the source's with a duration near size / bandwidth.
+- **DONE**: the demo volume behaves like one real, finite, slow-enough device, with no engine change.
 
 ### 3. Characterize what the conversions touch (M)
 
@@ -330,6 +369,8 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
     cadence). Add a pin where a converted site has none, and see each RED once.
   - **Op-log writer**: backpressure (`record_items` blocks at `CHANNEL_CAPACITY`), finalize outcome, a DB error dropping
     exactly one row, ordering across `open`/`record`/`finalize`. These pin what an inline browser writer must match.
+  - **Pacing's answers**: a cell in `apps/desktop/src-tauri/src/operations_host/` pinning what `pacing.rs` answers for
+    each `test_mode` setting (invariant 11), so nothing in this effort can move desktop or E2E timing unnoticed.
   - **Concurrent copy drain**: the first-failure drain and the stop-work drain on `copy_concurrent.rs` (likely already
     covered by `copy_concurrent_driver_tests.rs`; confirm and name them in the commit body).
 - **Landmines**: pin reality, not this plan. A pin that passes before and after a deliberate break isn't a pin.
@@ -477,6 +518,9 @@ review grep.
     without one refuses, decision 2); say so in `DETAILS.md` § "Where the demo differs from the app". ❗ `moveFiles`
     must consume the dialog's `preview_id` (root to root keeps the deep scan preview running, per the survey), or the
     preview leaks and the move re-walks.
+  - The demo volume is built `with_capacity(…)` and `with_yielding(…)` too (milestone 2b), and `getVolumeSpace` is
+    answered by the engine (the desktop's command shape), so `lib/demo/answers.ts`'s constant goes in the frontend
+    milestone.
   - The volume's `supportsTrash` (and every capability the frontend reads) comes from the engine's `Volume` answers
     (`has_trash()` false), ❌ not a TS constant.
   - `events_test.rs`-style pins for every new event's keys against `bindings.ts`.
@@ -489,19 +533,21 @@ review grep.
     a copy invisible to the panes.
   - `JsSink`'s `unsafe impl Send + Sync` soundness rests on no `atomics`; keep its `cfg` guard and reuse it.
   - The size budget: measure raw and gzipped `.wasm`; report it in `DETAILS.md`.
-- **Test plan**: native tests of the host (commands, wire pins) with `cargo nextest`; the wasm lane's Node smoke.
+- **Test plan**: native tests of the host (commands, wire pins) with `cargo nextest`; the wasm lane's Node smoke, which
+  also replays milestone 3's volume-engine golden traces against the real `.wasm` and diffs them with the native ones
+  (invariant 13), and fails on any `RuntimeError` or unhandled rejection (invariant 6).
 - **DONE**: from JS, every write command answers like the desktop's and the panes' listings change through
   `directory-diff`.
 
 ### 8. The demo frontend writes (M)
 
 - **Scope**: `apps/desktop/src/lib/demo/` and the website's demo e2e.
-- **Intentions**: delete `writes.ts` and its test; `volumes.ts` stops reporting `mountIsReadOnly` and stops hardcoding
-  `supportsTrash` (the engine answers it); F8 then takes the app's own permanent-delete confirm; the backend routes the
-  write commands to the engine (`DemoListing.handles()` or its renamed twin) and the write events through the existing
-  fan-out. Re-derive the command set from `window.__cmdrDemo.unanswered` while driving F5–F8, rename, and the transfer
-  dialog. Update `lib/demo/CLAUDE.md` + `DETAILS.md` (the "writes nothing, and says so" must-know becomes "writes
-  through the real engine, in memory, gone on reload").
+- **Intentions**: delete `writes.ts` and its test; drop `answers.ts`'s constant `getVolumeSpace`; `volumes.ts` stops
+  reporting `mountIsReadOnly` and stops hardcoding `supportsTrash` (the engine answers it); F8 then takes the app's own
+  permanent-delete confirm; the backend routes the write commands to the engine (`DemoListing.handles()` or its renamed
+  twin) and the write events through the existing fan-out. Re-derive the command set from `window.__cmdrDemo.unanswered`
+  while driving F5–F8, rename, and the transfer dialog. Update `lib/demo/CLAUDE.md` + `DETAILS.md` (the "writes nothing,
+  and says so" must-know becomes "writes through the real engine, in memory, gone on reload").
 - **Landmines**: a TS answer for an engine command silently shadows the engine (the backend tries TS tables first).
   `answers.ts` may already answer some write-adjacent commands (`destinationWriteAccess`, space queries) with read-only
   values; each moves to the engine or to an honest TS fact. The demo can be framed: dialogs must work inside an iframe.
@@ -538,29 +584,42 @@ review grep.
 
 ## Invariants (the conformance review checks these)
 
+Each names the mechanism that enforces it; one without a mechanism is a review item, not an invariant.
+
 1. Natively, every engine call takes the same path it took at `49aad7f793` (the routing table), and every timing cell
    that passed then passes now on the same clock.
-2. No direct clock, timer, or ambient-runtime call in `cmdr-operations` or `cmdr-operation-log` outside `cmdr_fs::rt`,
-   enforced by clippy.
+2. No direct clock, timer, or ambient-runtime call in `cmdr-operations`, `cmdr-operation-log`, or `cmdr-fs` outside
+   `cmdr_fs::rt`, enforced by clippy.
 3. Outside the local-engine module trees and `local_disk/`, no `cmdr_local`, `libc`, `std::os::unix`, `objc2`, `xattr`,
    `trash`, or `dirs` in `cmdr-operations` production code, enforced by a Go check; and no local-engine entry point is
-   callable without a `LocalDisk`.
+   callable without a `LocalDisk` (the type).
 4. In the browser, no reachable path starts a thread, calls `block_on`, or waits in `blocking_recv`; the local engine
-   isn't compiled in.
+   isn't compiled in (the `cfg` gating, plus invariant 6's trap detection).
 5. Every write in the browser still stages and lands (`resolve_staging` on the volume path), journals through its
-   `OpScope` under the real volume id, and patches the panes through `notify_mutation`.
-6. A browser call the engine can't serve refuses with a typed error; nothing traps (`RuntimeError: unreachable`) in the
-   Node smoke or the Playwright smoke.
-7. The demo's wire (command names, args, answers, rejections, events) equals the desktop's, pinned against
-   `bindings.ts`.
+   `OpScope` under the real volume id, and patches the panes through `notify_mutation` (invariant 13's browser traces).
+6. A browser call the engine can't serve refuses with a typed error; nothing traps. Mechanism: the Node smoke and the
+   Playwright smoke FAIL on any `RuntimeError`, `unhandledrejection`, or console error the run didn't expect.
+7. The demo's wire (command names, args, answers, rejections, events) equals the desktop's, pinned against `bindings.ts`
+   (`events_test.rs`-style pins) and by invariant 13.
 8. No conda toolchain binary on PATH or in the default mise data dir in any script or CI job; only the private
-   `MISE_DATA_DIR` and absolute paths in the wasm-target CC/AR variables.
-9. No demo code in a normal build, and no `if (demo)` in app code.
-10. Undo in the demo is the real planner, failing safe; nothing in TS decides what an undo does.
+   `MISE_DATA_DIR` and absolute paths in the wasm-target CC/AR variables (the build script's tests).
+9. No demo code in a normal build, and no `if (demo)` in app code (`cmdr/demo-isolation`, the `build/` grep).
+10. Undo in the demo is the real planner, failing safe; nothing in TS decides what an undo does. Mechanism:
+    `cmdr/demo-isolation` plus a vitest that fails if any `lib/demo` TS table answers an undo or operation-log command
+    (`undoOperations`, `rollbackOperation`, `getRecentOperationLogEntries`, `getOperationLogDetail`).
 11. `Pacing`, its desktop answers, and E2E timing are unchanged; demo throughput is `InMemoryVolume`'s bandwidth alone.
+    Mechanism: a test pinning `operations_host::pacing`'s answers per `test_mode` setting, landed with the
+    characterization.
 12. "Which id is the local disk" is the host's typed answer (`OperationVolumes::local_disk`, `"root"` by default), and
     the routing table pins both shapes.
 13. The golden traces (events with payloads, journal rows, typed outcomes per op kind) are identical before and after
-    every conversion milestone.
+    every conversion milestone natively, AND the volume-engine traces run through the Node smoke against the real
+    `.wasm` and match the native ones (catching browser `JoinSet` ordering, the inline op-log writer, and inline
+    `spawn_blocking` drift).
 14. The demo image's content key, `websiteDemoInputs`, and ci.yml's `website` filter cover every crate the wasm module
-    links.
+    links (`TestWebsiteDemoInputsMatchTheImageKey` for the first two).
+15. A copied file's size and bytes equal its source's, synthetic or real, and a synthetic copy stays a descriptor
+    (`InMemoryVolume` cells; the Node smoke's size check).
+16. No stretch of engine work holds the page thread longer than about 50 ms: every in-memory volume call yields once its
+    slice is spent. Mechanism: the Node smoke runs a 1,200-file delete, scan, and rollback with a `setTimeout` probe and
+    fails if the longest gap between probe ticks passes the bound.
