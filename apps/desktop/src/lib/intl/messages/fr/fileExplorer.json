@@ -2190,6 +2190,22 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} n’a pas confirmé les réglages de sécurité convenus avec Cmdr, donc Cmdr reste sur la connexion système. Un serveur qui fonctionne mal peut en être la cause, tout comme quelqu’un qui trafique la connexion.",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "7ea7c4f"
+  },
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} n’accepte que les connexions chiffrées et n’a convenu avec Cmdr d’aucune façon de chiffrer la connexion, donc Cmdr reste sur la connexion système.",
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "a731300"
+  },
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "Impossible de se connecter directement à <shareName>{share}</shareName>, car le serveur n’a pas confirmé les réglages de sécurité convenus avec Cmdr. Un serveur qui fonctionne mal peut en être la cause, tout comme quelqu’un qui trafique la connexion. Vous y avez toujours accès, mais via la connexion réseau SMB native de macOS, qui est bien plus lente.",
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "758e268"
+  },
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Impossible de se connecter directement à <shareName>{share}</shareName>, car ce partage n’accepte que les connexions chiffrées et le serveur n’a convenu avec Cmdr d’aucune façon de chiffrer la connexion. Vous y avez toujours accès, mais via la connexion réseau SMB native de macOS, qui est bien plus lente.",
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "23dd607"
+  },
   "fileExplorer.smbLinkConsent.title": "S’identifier sur un autre serveur ?",
   "@fileExplorer.smbLinkConsent.title": {
     "sourceHash": "91458ea"

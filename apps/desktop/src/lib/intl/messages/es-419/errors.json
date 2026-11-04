@@ -855,6 +855,8 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "a059f1c"
   },
+  "errors.shareList.negotiationInvalid": "“{server}” no confirmó la configuración de seguridad que acordó con Cmdr, así que Cmdr cerró la conexión. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión. Si sigue pasando, comprueba tu red y la configuración del servidor.",
+  "errors.shareList.encryptionUnavailable": "“{server}” solo acepta conexiones cifradas, pero no acordó con Cmdr una forma de cifrarlas. Comprueba la configuración de cifrado SMB del servidor.",
   "errors.shareList.protocolError": "Algo salió mal al pedirle a “{server}” sus recursos compartidos. Vuelve a intentarlo en un momento.",
   "@errors.shareList.protocolError": {
     "sourceHash": "a989d95"
@@ -894,5 +896,11 @@
   "errors.write.permissionDenied.suggestion.server": "El servidor lo rechazó para la cuenta con la que te conectaste. Revisa los permisos de la carpeta en el servidor o conéctate con una cuenta que tenga acceso.",
   "@errors.write.permissionDenied.suggestion.server": {
     "sourceHash": "444bdce"
+  },
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "d50499f"
+  },
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "9c705d8"
   }
 }

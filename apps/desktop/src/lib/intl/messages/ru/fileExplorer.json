@@ -2179,6 +2179,22 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "Сервер {server} не подтвердил параметры безопасности, согласованные с Cmdr, поэтому Cmdr продолжает использовать системное подключение. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение.",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "7ea7c4f"
+  },
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "Сервер {server} принимает только зашифрованные подключения и не смог договориться с Cmdr о способе шифрования, поэтому Cmdr продолжает использовать системное подключение.",
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "a731300"
+  },
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: сервер не подтвердил параметры безопасности, согласованные с Cmdr. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.",
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "758e268"
+  },
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: она принимает только зашифрованные подключения, а сервер не смог договориться с Cmdr о способе шифрования. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.",
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "23dd607"
+  },
   "fileExplorer.smbLinkConsent.title": "Войти на другой сервер?",
   "@fileExplorer.smbLinkConsent.title": {
     "sourceHash": "91458ea"

@@ -116,3 +116,7 @@ item once settled, and record the outcome in `terms.json` or `decisions.md`.
 - **`общий накопитель`** (`errors.listing.phoneRefused.suggestion`, `errors.write.permissionDenied.suggestion.phone`):
   Android's own `storage_internal` wording, against the storage ruling's `память телефона`. Confirm which a Russian
   phone owner expects.
+- **`к общей папке <shareName>{share}</shareName>`** (`fileExplorer.network.osMountFallback.negotiationInvalid`,
+  `…encryptionUnavailable`): the new keys put a type noun before the insert, as the placeholder rule asks; the older
+  siblings (`…message`, `…otherServerNotAllowed`, `…shareNotOnServer`) still write a bare
+  `к <shareName>{share}</shareName>`. Confirm, then realign the siblings.

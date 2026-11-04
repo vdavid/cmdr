@@ -2440,6 +2440,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "“{server}”没有确认和 Cmdr 商定好的安全设置，所以 Cmdr 关闭了连接。服务器运行不正常可能导致这种情况，有人篡改连接也可能导致。如果一直这样，请检查你的网络和服务器的设置。",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "“{server}”只接受加密连接，但没有和 Cmdr 商定加密方式。请检查服务器的 SMB 加密设置。",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "向“{server}”获取共享列表时出了点问题。请稍后重试。",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

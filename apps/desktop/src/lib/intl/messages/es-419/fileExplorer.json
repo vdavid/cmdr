@@ -494,5 +494,21 @@
   "fileExplorer.network.osMountFallback.otherServerNotAllowed": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque sus archivos están en otro servidor y Cmdr no inicia sesión allí por su cuenta. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "f0f7045"
+  },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} no confirmó la configuración de seguridad que acordó con Cmdr, así que Cmdr sigue usando la conexión del sistema. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión.",
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} solo acepta conexiones cifradas y no acordó con Cmdr una forma de cifrarlas, así que Cmdr sigue usando la conexión del sistema.",
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque el servidor no confirmó la configuración de seguridad que acordó con Cmdr. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque este recurso compartido solo acepta conexiones cifradas y el servidor no acordó con Cmdr una forma de cifrarlas. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "f02a0b5"
+  },
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "4a79619"
+  },
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "dfe0e0a"
+  },
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "3dccc05"
   }
 }

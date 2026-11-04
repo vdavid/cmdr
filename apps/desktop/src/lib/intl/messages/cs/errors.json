@@ -2441,6 +2441,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "Server „{server}“ nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl, takže Cmdr připojení ukončil. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení. Pokud se to opakuje, zkontrolujte svou síť a nastavení serveru.",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "Server „{server}“ přijímá jen šifrovaná připojení, ale nedohodl se s Cmdrem na způsobu, jak připojení zašifrovat. Zkontrolujte nastavení šifrování SMB na serveru.",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "Při zjišťování sdílených složek na serveru „{server}“ se něco pokazilo. Zkuste to za chvíli znovu.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

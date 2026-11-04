@@ -2184,6 +2184,22 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "Server „{server}“ nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl, takže Cmdr dál používá systémové připojení. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení.",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "7ea7c4f"
+  },
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "Server „{server}“ přijímá jen šifrovaná připojení a nedohodl se s Cmdrem na způsobu, jak připojení zašifrovat, takže Cmdr dál používá systémové připojení.",
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "a731300"
+  },
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože server nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.",
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "758e268"
+  },
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože tato sdílená složka přijímá jen šifrovaná připojení a server se s Cmdrem nedohodl na způsobu, jak připojení zašifrovat. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.",
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "23dd607"
+  },
   "fileExplorer.smbLinkConsent.title": "Přihlásit se k jinému serveru?",
   "@fileExplorer.smbLinkConsent.title": {
     "sourceHash": "91458ea"
