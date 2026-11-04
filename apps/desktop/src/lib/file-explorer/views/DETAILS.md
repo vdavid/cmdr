@@ -198,10 +198,19 @@ FilePane (parent)
 `BriefList` holds those three inline; `FullList` holds the same shape in `full-list-cache.svelte.ts` (`cache.entries` /
 `cache.range` / `cache.windowRows()`).
 
-Brief's manual double-click detector keys its previous click by both `listingId` and row index. A navigation can keep
-the component and its old rows mounted until the replacement range lands, so an index alone is not a row identity: row
-zero from the old listing followed quickly by row zero from the new one must remain two single clicks. Otherwise the
-second click can open the new listing's `..` row and immediately navigate back to its parent.
+Opening a row (`row-activation.ts`, shared by both views) splits by the pointer type of the row's last `pointerdown`. A
+mouse opens on `dblclick` only, so the OS's double-click speed decides. A touch or pen opens on the second of two clicks
+on the same row within 300 ms (Chrome's double-tap window), and drops a `dblclick` that follows, so the row opens once.
+**Why**: Chrome's DevTools device mode turns a double tap into two plain clicks with no `dblclick` (seen in Chrome's
+device mode, 2026-11-04; same report at github.com/Leaflet/Leaflet/issues/6777), while Playwright's touch taps do send
+one. The pointer type comes from `pointerdown`, not the `click`, because older WebKit delivers `click` as a plain
+`MouseEvent`. A click-timing detector that also ran for the mouse would open the row twice per double-click (`dblclick`
+follows the second click). Pinned by `row-activation.views.test.ts` and `apps/website/e2e/demo.spec.ts`.
+
+The double-tap detector keys its previous tap by both `listingId` and row index. A navigation can keep the component and
+its old rows mounted until the replacement range lands, so an index alone is not a row identity: row zero from the old
+listing followed quickly by row zero from the new one must remain two single taps. Otherwise the second tap can open the
+new listing's `..` row and immediately navigate back to its parent.
 
 **Key**: Data lives in the Rust listing cache (`cmdr-listing`). Frontend fetches visible ranges on-demand via
 `getFileRange(listingId, start, count, includeHidden)`.

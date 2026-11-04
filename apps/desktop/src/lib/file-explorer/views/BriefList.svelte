@@ -84,7 +84,7 @@
     import type { RenameState, RenameSessionId } from '../rename/rename-state.svelte'
     import type { RenameStepDirection } from '../rename/rename-step'
     import { formatByteSizeTiered } from '#lib/units/index.js'
-    import { isDoubleClick, type BriefListClick } from './brief-list-utils'
+    import { createRowActivation } from './row-activation'
     import { sortFallbackNote } from '../pane/sort-fallback'
 
     interface Props {
@@ -683,26 +683,15 @@
         }
     }
 
-    // Handle file click - for double-click detection
-    let lastClick: BriefListClick | undefined
-    const DOUBLE_CLICK_MS = 300
-
-    function handleClick(index: number) {
-        const current = { listingId, index, time: Date.now() }
-        if (isDoubleClick({ previous: lastClick, current, doubleClickMs: DOUBLE_CLICK_MS })) {
-            // Double click: cancel any pending click-to-rename
+    // A double-click (mouse) or double tap (touch, pen) opens the row (`row-activation.ts`).
+    const rowActivation = createRowActivation({
+        getListingId: () => listingId,
+        activate: (index) => {
             cancelClickToRename()
             const entry = getEntryAt(index)
             if (entry) onNavigate(entry)
-        }
-        lastClick = current
-    }
-
-    function handleDoubleClick(index: number) {
-        cancelClickToRename()
-        const entry = getEntryAt(index)
-        if (entry) onNavigate(entry)
-    }
+        },
+    })
 
     // Scroll to a specific index
     export function scrollToIndex(index: number) {
@@ -1112,14 +1101,15 @@
                                 data-drop-target-path={file.isDirectory ? file.path : undefined}
                                 use:tooltip={buildDirTooltip(file)}
                                 style="height: {rowHeight}px;"
+                                onpointerdown={rowActivation.onPointerDown}
                                 onmousedown={(e: MouseEvent) => {
                                     handleMouseDown(e, globalIndex)
                                 }}
                                 onclick={() => {
-                                    handleClick(globalIndex)
+                                    rowActivation.onClick(globalIndex)
                                 }}
                                 ondblclick={() => {
-                                    handleDoubleClick(globalIndex)
+                                    rowActivation.onDoubleClick(globalIndex)
                                 }}
                                 oncontextmenu={(e: MouseEvent) => {
                                     e.preventDefault()

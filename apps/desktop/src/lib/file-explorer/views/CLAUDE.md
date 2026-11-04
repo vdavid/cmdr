@@ -38,8 +38,9 @@ neighbors (the virtual window's edge would fake an end).
   trigger.
 - **Cold-context refreshes replace the visible window atomically.** Navigation, sort, hidden-file changes, and explicit
   refresh keep the old rows until the forced fetch lands; an epoch drops late rows from the previous listing, and
-  retained rows are paint-only (`getEntryAt` / `indexOfEntry` skip them, else Enter acts on the old folder). Brief's
-  click identity includes `listingId`, so clicks on retained and replacement rows never form a false double-click.
+  retained rows are paint-only (`getEntryAt` / `indexOfEntry` skip them, else Enter acts on the old folder).
+- **Rows open only through `row-activation.ts`** (mouse: `dblclick`; touch/pen: two quick clicks, as Chrome's device
+  mode sends no `dblclick`), exactly once. ❌ No per-view double-click logic.
 - **A row-asserting unit test mounts through `mountFullList()` / `mountBriefList()`** (`test-full-list.ts` /
   `test-brief-list.ts`): unmeasured, a view renders zero rows, so a negative assertion passes for free.
 - **Row chrome shared by both views lives in `src/app-file-list.css`**, and every selector there keeps a

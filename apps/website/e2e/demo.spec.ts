@@ -42,3 +42,52 @@ test.describe('Browser demo', () => {
     expect(errors.map((error) => error.message)).toEqual([])
   })
 })
+
+/** The first pane's first folder row (not `..`), once the listing has landed. */
+async function firstFolderRow(page: Page) {
+  await page.goto('/demo/')
+  const pane = page.locator('.file-pane').first()
+  await expect(pane.locator('.file-entry').nth(1)).toBeVisible({ timeout: 30_000 })
+  const name = await pane
+    .locator('.file-entry[data-drop-target-path]:not([data-filename=".."])')
+    .first()
+    .getAttribute('data-filename')
+  if (!name) throw new Error('the demo home folder has no folder to open')
+  return { pane, name, row: pane.locator(`.file-entry[data-filename="${name}"]`) }
+}
+
+test.describe('Browser demo on a touch screen', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 1280, height: 800 } })
+
+  test('opens a folder on a double tap', async ({ page }) => {
+    const { pane, name, row } = await firstFolderRow(page)
+    const box = await row.boundingBox()
+    if (!box) throw new Error('the folder row has no box')
+    await page.touchscreen.tap(box.x + 20, box.y + box.height / 2)
+    await page.touchscreen.tap(box.x + 20, box.y + box.height / 2)
+    await expect(pane.locator(`.file-entry[data-filename="${name}"]`)).toHaveCount(0)
+  })
+
+  // Chrome's DevTools device mode (and other touch browsers) turn a double tap into two plain
+  // clicks with no `dblclick` (Leaflet hit the same: github.com/Leaflet/Leaflet/issues/6777).
+  // This replays that event stream, since no Playwright input produces it.
+  test('opens a folder on a double tap that brings no dblclick', async ({ page }) => {
+    const { pane, name, row } = await firstFolderRow(page)
+    for (let tap = 0; tap < 2; tap++) {
+      await row.dispatchEvent('pointerdown', { pointerType: 'touch', isPrimary: true, button: 0 })
+      await row.dispatchEvent('pointerup', { pointerType: 'touch', isPrimary: true, button: 0 })
+      await row.dispatchEvent('mousedown', { button: 0, detail: 1 })
+      await row.dispatchEvent('mouseup', { button: 0, detail: 1 })
+      await row.dispatchEvent('click', { button: 0, detail: 1 })
+    }
+    await expect(pane.locator(`.file-entry[data-filename="${name}"]`)).toHaveCount(0)
+  })
+
+  test('moves the cursor on a single tap', async ({ page }) => {
+    const { row } = await firstFolderRow(page)
+    const box = await row.boundingBox()
+    if (!box) throw new Error('the folder row has no box')
+    await page.touchscreen.tap(box.x + 20, box.y + box.height / 2)
+    await expect(row).toHaveClass(/is-under-cursor/)
+  })
+})

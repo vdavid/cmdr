@@ -33,6 +33,7 @@
     import { markRunEdges } from './mark-run'
     import { createGitStatusColumn } from './full-list-git-column.svelte'
     import { planRowMouseDown } from './full-list-mouse'
+    import { createRowActivation } from './row-activation'
     import type { PressedPane } from '../pane/pressed-rows'
     import { formatSizeForDisplay, formatNumber } from '../selection/selection-info-utils'
     import { isVolumeAggregating, getWalkedGround } from '#lib/indexing/index-state.svelte.js'
@@ -656,11 +657,15 @@
         })
     }
 
-    function handleDoubleClick(actualIndex: number) {
-        cancelClickToRename()
-        const entry = cache.getEntryAt(actualIndex)
-        if (entry) onNavigate(entry)
-    }
+    // A double-click (mouse) or double tap (touch, pen) opens the row (`row-activation.ts`).
+    const rowActivation = createRowActivation({
+        getListingId: () => listingId,
+        activate: (actualIndex) => {
+            cancelClickToRename()
+            const entry = cache.getEntryAt(actualIndex)
+            if (entry) onNavigate(entry)
+        },
+    })
 
     // Exported for parent to call when arrow keys change cursor position
     export function scrollToIndex(index: number) {
@@ -894,11 +899,15 @@
                         data-filename={file.name}
                         data-drop-target-path={file.isDirectory ? file.path : undefined}
                         style="height: {rowHeight}px; grid-template-columns: {gridTemplate};"
+                        onpointerdown={rowActivation.onPointerDown}
                         onmousedown={(e: MouseEvent) => {
                             handleMouseDown(e, globalIndex)
                         }}
+                        onclick={() => {
+                            rowActivation.onClick(globalIndex)
+                        }}
                         ondblclick={() => {
-                            handleDoubleClick(globalIndex)
+                            rowActivation.onDoubleClick(globalIndex)
                         }}
                         oncontextmenu={(e: MouseEvent) => {
                             e.preventDefault()
