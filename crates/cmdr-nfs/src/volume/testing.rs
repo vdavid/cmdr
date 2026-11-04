@@ -91,19 +91,71 @@ pub fn app_path(volume: &NfsVolume, remote: &str) -> PathBuf {
     Path::new(volume.root()).join(remote)
 }
 
+/// What every scratch folder's name starts with, so a cell that reads the
+/// export's root can tell the seeded tree from other cells' working space.
+///
+/// ❗ The one prefix both sides use: [`scratch_dir`] names folders with it, and
+/// the root-listing cell leaves them out. The stack is shared by every worktree
+/// on the machine, so another run's cell can be mid-flight at the root at any
+/// moment, and a cell that panics or hits the nextest cap never reaches its
+/// cleanup. A root listing that counted them failed on whichever run happened to
+/// overlap.
+pub(crate) const SCRATCH_PREFIX: &str = "scratch-";
+
+/// How old a scratch folder has to be before [`scratch_dir`] treats it as left
+/// behind and removes it. Far past the slowest cell's nextest cap, so a live
+/// cell on another worktree never loses its folder mid-run.
+const STALE_SCRATCH_AFTER: std::time::Duration = std::time::Duration::from_secs(60 * 60);
+
 /// A fresh folder of the cell's own at the export's root, already created:
 /// every cell shares the one export, and `nextest` runs them side by side.
 /// `what` names the cell, so a mess left behind says whose it is.
+///
+/// Also sweeps scratch folders older than [`STALE_SCRATCH_AFTER`] first: a cell
+/// cleans up only when it passes, so a failed or killed one leaves its folder
+/// forever otherwise.
 pub async fn scratch_dir(volume: &NfsVolume, what: &str) -> PathBuf {
-    let nanos = std::time::SystemTime::now()
+    let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |since| since.as_nanos());
-    let dir = app_path(volume, &format!("/scratch-{what}-{}-{nanos}", std::process::id()));
+        .unwrap_or_default();
+    sweep_stale_scratch(volume, now).await;
+    let nanos = now.as_nanos();
+    let dir = app_path(
+        volume,
+        &format!("/{SCRATCH_PREFIX}{what}-{}-{nanos}", std::process::id()),
+    );
     volume
         .create_directory(&dir)
         .await
         .unwrap_or_else(|err| panic!("the scratch folder for {what} must be creatable: {err:?}"));
     dir
+}
+
+/// Removes every scratch folder at the export's root that was created more than
+/// [`STALE_SCRATCH_AFTER`] before `now`, best effort. Age comes from the name's
+/// own timestamp, which `scratch_dir` writes, so a clock on the server doesn't
+/// enter into it.
+async fn sweep_stale_scratch(volume: &NfsVolume, now: std::time::Duration) {
+    let root = app_path(volume, "/");
+    let Ok(entries) = volume.list_directory(&root, None).await else {
+        return;
+    };
+    for entry in entries {
+        let Some(created) = scratch_created_at(&entry.name) else {
+            continue;
+        };
+        if entry.is_directory && now.saturating_sub(created) > STALE_SCRATCH_AFTER {
+            clean_deep(volume, &root.join(&entry.name)).await;
+        }
+    }
+}
+
+/// When a scratch folder named `name` was made, read off its trailing
+/// timestamp. `None` for anything [`scratch_dir`] didn't name.
+fn scratch_created_at(name: &str) -> Option<std::time::Duration> {
+    let rest = name.strip_prefix(SCRATCH_PREFIX)?;
+    let nanos: u64 = rest.rsplit('-').next()?.parse().ok()?;
+    Some(std::time::Duration::from_nanos(nanos))
 }
 
 /// Removes `path` and everything under it, deepest first, best effort.
@@ -139,4 +191,22 @@ pub fn fixture_large_bytes_at(offset: u64, len: usize) -> Vec<u8> {
     out.drain(..skip);
     out.truncate(len);
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The sweep deletes by this answer, so anything it didn't name has to read
+    /// as `None`, a dashed cell name included.
+    #[test]
+    fn a_scratch_name_says_when_it_was_made_and_nothing_else_does() {
+        assert_eq!(
+            scratch_created_at("scratch-same-move-68917-1793805685163787000"),
+            Some(std::time::Duration::from_nanos(1_793_805_685_163_787_000))
+        );
+        assert_eq!(scratch_created_at("photos"), None);
+        assert_eq!(scratch_created_at("scratch-notes"), None);
+        assert_eq!(scratch_created_at("scratchpad-1793805685163787000"), None);
+    }
 }

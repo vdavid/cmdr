@@ -17,7 +17,13 @@ const SOURCE_DATE_SECS: u64 = 1_611_909_015;
 async fn the_seeded_root_lists_byte_exact_with_owners_dates_and_links() {
     let volume = connect_insecure().await;
     let entries = volume.list_directory(&app_path(&volume, "/"), None).await.unwrap();
-    let mut names: Vec<&str> = entries.iter().map(|entry| entry.name.as_str()).collect();
+    // Other cells' scratch folders live at this root too, from this run or any
+    // worktree's (`SCRATCH_PREFIX`): working space, not the seeded tree.
+    let mut names: Vec<&str> = entries
+        .iter()
+        .map(|entry| entry.name.as_str())
+        .filter(|name| !name.starts_with(SCRATCH_PREFIX))
+        .collect();
     names.sort_unstable();
     let mut expected = vec![
         "a file with spaces.txt",

@@ -50,6 +50,8 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   server as `Rymdskottka\u{308}rra AB` and every search of an accented NAS folder came back empty (verified on macOS 27
   smbfs against a QNAP TS-464, `realpath` bytes `61 cc 88`, 2026-11-04). ❌ Don't normalize to NFC instead: a server
   that stores NFD breaks the other way. A backend path came from that backend's own listing, so it's already right.
+  Pinned end to end against real Samba by `execute/tests/smb_share.rs` (the NFC scope finds its file; the NFD one lands
+  in `failed_roots`, since Samba matches name bytes and folds case only).
 - **Count-only mode (`SearchQuery.count_only`) trades rows for an exact total, cheaply**: when set,
   `engine::search_ranked` computes `total_count` from the filtered matches but skips ranking, truncation, and per-row
   path materialization (the expensive parts) and returns no rows. The one wrinkle is directory size filters: directory
