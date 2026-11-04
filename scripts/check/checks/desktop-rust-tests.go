@@ -31,7 +31,7 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	// mean "no colour".
 	lane, output, wall, err := runNextestLane(ctx.RootDir, nextestRunOptions{}, "")
 	if lane == nil {
-		return CheckResult{}, err
+		return rustLaneNotRun(err)
 	}
 	defer lane.remove()
 	// Before the verdict branch, so a red run records WHICH tests went red. Only the
@@ -71,6 +71,7 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 		count, _ = strconv.Atoi(matches[1])
 		message = fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))
 	}
+	message += lane.scope.note()
 
 	// A retry-rescued run still exits 0. Report it as a warning rather than a pass:
 	// the retry budget in `.config/nextest.toml` is a tolerance for real-FSEvents

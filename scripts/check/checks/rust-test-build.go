@@ -39,6 +39,9 @@ type nextestLane struct {
 	opts             nextestRunOptions
 	// exec runs `cargo <argv>` in rootDir; injected so the argv contract is testable.
 	exec func(argv []string) (string, error)
+	// scope narrows the main run to the crates a change can affect
+	// (`rust-test-scope.go`). The zero value runs everything.
+	scope RustTestScope
 }
 
 // buildNextestLane compiles the lane's tests with the same cargo question every host Rust
@@ -94,6 +97,11 @@ func (l *nextestLane) runArgv(profile, filter string) []string {
 	if l.opts.RunIgnoredOnly {
 		argv = append(argv, "--run-ignored", "only")
 	}
+	// A scoped run can legitimately select nothing: a fixture lane whose cells
+	// all live in crates the change can't reach. nextest calls that exit 4.
+	if l.scope.Narrowed {
+		argv = append(argv, "--no-tests", "warn")
+	}
 	if filter != "" {
 		argv = append(argv, "-E", filter)
 	}
@@ -137,16 +145,29 @@ func cargoExec(rootDir string) func(argv []string) (string, error) {
 
 // runNextestLane builds a lane and runs it, returning the build and run output together
 // (in that order, so the timing profile's "building and listing" split still holds) and how
-// long both took. A lane that couldn't be built comes back as a ready-to-return error with
-// a nil lane; otherwise the caller owns the lane and must `remove` it, and `err` is the
-// test run's own.
+// long both took. A lane that couldn't be built comes back as an error with a nil lane, for
+// the caller to hand to `rustLaneNotRun`; otherwise the caller owns the lane and must
+// `remove` it, and `err` is the test run's own.
+//
+// The main run honors `CMDR_RUST_TEST_SCOPE` (`rust-test-scope.go`): the scope's
+// `package(=…)` set is ANDed onto `filter`, and a scope that affects no crate comes back as
+// `errRustTestScopeSelectsNothing` before anything builds. The build itself never narrows.
+// Contention re-runs name the failed tests outright, so they need no scope.
 func runNextestLane(rootDir string, opts nextestRunOptions, filter string) (lane *nextestLane, output string, wall time.Duration, err error) {
 	started := time.Now()
+	scope, err := rustTestScopeFromEnv(rootDir)
+	if err != nil {
+		return nil, "", time.Since(started), err
+	}
+	if scope.selectsNothing() {
+		return nil, "", time.Since(started), errRustTestScopeSelectsNothing
+	}
 	lane, buildOutput, err := buildNextestLane(rootDir, opts)
 	if err != nil {
 		return nil, "", time.Since(started), fmt.Errorf("couldn't build the Rust tests (%w)\n%s",
 			err, indentOutput(trimRustTestProgress(buildOutput)))
 	}
-	runOutput, err := lane.run(filter)
+	lane.scope = scope
+	runOutput, err := lane.run(scopedNextestFilter(filter, scope))
 	return lane, buildOutput + runOutput, time.Since(started), err
 }
