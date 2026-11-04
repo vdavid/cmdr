@@ -49,5 +49,5 @@ deploys from that repo's checkout at `~/infra`. **Never edit files directly on t
 2. Commit and push.
 3. On the server: `ssh hetzner "cd ~/infra && git pull"`.
 4. Restart Umami: `ssh hetzner "cd ~/infra/hetzner/services/umami && docker compose up -d"`. For a Caddyfile change, run
-   `docker compose restart caddy` in `~/infra/hetzner/services/caddy` instead (the infra repo's `hetzner/CLAUDE.md` says
+   `docker compose restart caddy` in `~/infra/hetzner/services/caddy` instead (the infra repo's Hetzner host doc says
    why a reload isn't enough).

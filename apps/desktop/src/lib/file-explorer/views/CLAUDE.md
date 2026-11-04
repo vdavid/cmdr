@@ -16,8 +16,7 @@ marked set by global index, ❌ never from rendered neighbors (the virtual windo
 ## Must-knows
 
 - **Data lives in the Rust listing cache (`cmdr-listing`), ❌ never in Svelte `$state`.** The frontend fetches visible
-  ranges on demand (`getFileRange`); only the visible window enters reactivity. Loading 20k+ entries in causes 9+ second
-  freezes.
+  ranges (`getFileRange`); 20k+ entries in `$state` freeze the UI for 9+ seconds.
 - **`hasParent = true` makes UI indices 1-based**: index 0 is the `..` entry (not in backend cache), so
   `cache_index = ui_index - 1`. Forgetting it lands the cursor one row off.
 - **The renderer and the measurer are ONE contract; change both or neither.** `getDirSizeDisplayState`, `wordGitMeta`,
@@ -36,9 +35,9 @@ marked set by global index, ❌ never from rendered neighbors (the virtual windo
 - **Nothing visible in Brief mode may wait on the width IPC** (how the cursor went invisible in prod). ❌ Don't gate
   `is-under-cursor` on widths, fall back to `capPx`, infer readiness from `rawWidths.length`, or make `capPx` a fetch
   trigger.
-- **Cold-context refreshes replace the visible window atomically.** Navigation, sort, hidden-file changes, and explicit
-  refresh keep the old rows until the forced fetch lands; an epoch drops late rows from the previous listing, and
-  retained rows are paint-only (`getEntryAt` / `indexOfEntry` skip them, else Enter acts on the old folder).
+- **Cold-context refreshes replace the visible window atomically.** Navigation, sort, hidden files, and refresh keep the
+  old rows until the forced fetch lands; an epoch drops late rows, and retained rows are paint-only (`getEntryAt` /
+  `indexOfEntry` skip them, else Enter acts on the old folder).
 - **Rows open only through `row-activation.ts`** (mouse: `dblclick`; touch/pen: two quick clicks, as Chrome's device
   mode sends no `dblclick`), exactly once. ❌ No per-view double-click logic.
 - **A row-asserting unit test mounts through `mountFullList()` / `mountBriefList()`** (`test-full-list.ts` /
