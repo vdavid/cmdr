@@ -43,6 +43,17 @@ describe('displayPath', () => {
       expect(displayPath(text)).toBe(text)
     }
   })
+
+  // The word-start test is a callback, not a lookbehind (Safari 15 can't compile one), so pin its edges.
+  it('takes the key id out only where `s3://` starts a word', () => {
+    for (const text of ['ás3://k@h:1/b', '9s3://k@h:1/b', '+s3://k@h:1/b', '.s3://k@h:1/b', '-s3://k@h:1/b']) {
+      expect(displayPath(text)).toBe(text)
+    }
+    // A letter outside the BMP is two UTF-16 units, and still a letter.
+    expect(displayPath('\u{1D400}s3://k@h:1/b')).toBe('\u{1D400}s3://k@h:1/b')
+    expect(displayPath('a\uDC00s3://k@h:1/b')).toBe('a\uDC00s3://h:1/b')
+    expect(displayPath('(s3://k@h:1/b) /s3://k@h:1/c')).toBe('(s3://h:1/b) /s3://h:1/c')
+  })
 })
 
 describe('withoutPicks', () => {

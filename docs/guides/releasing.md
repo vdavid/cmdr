@@ -287,6 +287,14 @@ check.
    main clone: `git pull --ff-only origin main`. Nothing waits on `main` from here on: `release.sh` puts the release
    commit on top of whatever `origin/main` is when it runs, and its one CI run tests exactly that commit (§ The CI
    gate). A commit landing after this sync ships too, unlisted in the changelog unless you add it.
+   - **Then start the Catalina smoke test right away**, as a background command, so it finishes while steps 3–6 run. CI
+     has no Catalina runner, and Catalina breaks without any check failing (0.59.0 shipped a blank window there), so the
+     Catalina test Mac (`ssh air`) is the only gate for the macOS floor. Use the real-app recipe in
+     `docs/notes/system-requirements-and-es2025.md` § Testing the frontend on the Catalina Mac, built from the synced
+     `main`. It passes when the log shows `FE:` lines, both panes list a folder, and there's no "Nothing showed the main
+     window" line and no crash report. A failure gets fixed and landed like any bug, then `main` is synced again and the
+     smoke test re-run, all before step 7. If the Air doesn't answer, tell David and ask whether to release without it;
+     don't skip it silently.
 3. **Draft the CHANGELOG** from the git commits since the last release, per § Writing the CHANGELOG, and present the
    draft for review.
    - **Draft the Security section from both sources**: the fix commits since the last release (our own flaws and
@@ -330,13 +338,14 @@ check.
    `docs/guides/trust-page-review.md` (start with `./scripts/trust-review.sh`) and stamp `verifiedAgainst` with it;
    `release.sh` refuses to run while the stamp names another version. The edits ride the release commit, and David
    reviews them with the rest of the prep.
-7. **Offer to run the release script**, and wait for confirmation before running it. Run it as a background command (a
-   few minutes): it syncs `main`, runs the release-prep checks (§ Release prep checks that abort before tagging),
-   commits `chore(release): vX.Y.Z` (call it R) on a `release/vX.Y.Z` branch on top of `origin/main`, signs the tag on
-   R, pushes the branch, and starts R's full CI run and CodeQL on it. In `local` mode it pushes the tag right away, so
-   the build (about an hour) runs beside CI (25–40 min); in `ci` mode, whose tag push publishes on its own, it waits for
-   green CI first. Re-run it with the same version after any stop: it resumes. If it stops before tagging, fix what it
-   says and re-run; if CI goes red later, § The CI gate says what to do.
+7. **Offer to run the release script** once step 2's Catalina smoke test passed on the `main` you're releasing (or David
+   said to go without it), and wait for confirmation before running it. Run it as a background command (a few minutes):
+   it syncs `main`, runs the release-prep checks (§ Release prep checks that abort before tagging), commits
+   `chore(release): vX.Y.Z` (call it R) on a `release/vX.Y.Z` branch on top of `origin/main`, signs the tag on R, pushes
+   the branch, and starts R's full CI run and CodeQL on it. In `local` mode it pushes the tag right away, so the build
+   (about an hour) runs beside CI (25–40 min); in `ci` mode, whose tag push publishes on its own, it waits for green CI
+   first. Re-run it with the same version after any stop: it resumes. If it stops before tagging, fix what it says and
+   re-run; if CI goes red later, § The CI gate says what to do.
 8. **`local` mode: start `./scripts/release-finish.sh X.Y.Z` right after `release.sh`**, as a background command. It
    waits for the build and R's CI together, printing each job as it moves, and stops at the first red CI job (§ The CI
    gate: a flake gets its failed jobs re-run, a real failure aborts the release). Once both are green it requires the

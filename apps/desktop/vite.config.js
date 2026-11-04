@@ -15,6 +15,7 @@ import { listLocales } from './scripts/i18n-catalog-lib.ts'
 import { frontendSbom } from './scripts/vite-frontend-sbom.ts'
 import { localeCatalogs } from './scripts/vite-locale-catalogs.ts'
 import { demoVoidCommands } from './scripts/vite-demo-void-commands.ts'
+import { webkitRegexFloor } from './scripts/vite-webkit-regex-floor.ts'
 
 // Compiler warnings suppressed app-wide. The ONE list: `svelte-check` (the `svelte-check`
 // lane, which fails on any warning) and the Vite build both read this filter.
@@ -158,6 +159,9 @@ export default defineConfig(async () => ({
       paths: { base: demoBuild ? '/demo' : '' },
     }),
     ...(withFrontendSbom ? [frontendSbom()] : []),
+    // `build.target` can't lower a regex feature, so this fails the build on one Safari 15 can't
+    // compile (0.59.0's blank window on Catalina). See the plugin's header.
+    webkitRegexFloor(),
   ],
 
   // Outside the demo build, `hooks.client.ts`'s import of the demo backend resolves to an empty

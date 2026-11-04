@@ -8,7 +8,7 @@ launch boundary, the llama-server fetch, and the type-drift check.
 - **`tauri-wrapper.ts`**: what `pnpm dev` / `pnpm build` call. Resolves `CMDR_INSTANCE_ID`, reserves ephemeral ports
   (Vite + tauri-MCP bridge), writes the generated `tauri.instance.json` to `$TMPDIR`, exports env, spawns Tauri.
   Dev-only: `CMDR_VIRTUAL_MTP` appends `--features virtual-mtp` (`docs/tooling/virtual-mtp.md`)
-- **`instance-id.ts`**: the wrapper's pure instance-isolation helpers, covered by `instance-id.test.ts`
+- **`instance-id.ts`**: the wrapper's pure instance-isolation helpers
 - **`download-llama-server.go`**: build-time llama-server downloader, invoked from `src-tauri/build.rs`
 - **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`
 - **`gen-shipped-locales.ts`** (+ `-lib.ts`): the Rust locale resolver's tables: shipped catalogs with their CLDR
@@ -18,6 +18,7 @@ launch boundary, the llama-server fetch, and the type-drift check.
   `native-strings-fresh`
 - **`gen-boot-guard-lib.ts`**: the old-WebKit block screen's translated strings, spliced into the app shell by
   `vite.config.js` at config-load time (no CLI, nothing committed). `src/lib/utils/DETAILS.md` § Old-WebKit boot guard
+- **`vite-webkit-regex-floor.ts`**: fails the build on a regex Safari 15 can't compile
 - **`i18n-*.ts`**: catalog lib, locale checks, generators, key sync, `pnpm i18n:brief`, and the termbase/mechanics
   checks (`docs/i18n/termbase.md`)
 - **`gen-analytics-defaults.ts`** (+ `-lib.ts`): the per-version settings-defaults manifest the dashboard resolves
@@ -53,7 +54,6 @@ Wrapper architecture, decisions, instance-isolation reference: `DETAILS.md`, `do
 - **`download-llama-server.go` takes the binaries from the main clone in a worktree when `.version` matches**, as a
   COPY, ❌ never a symlink: the Linux-E2E container bind-mounts only the worktree, where such a symlink dangles. Signing
   is the `sign` subcommand, ❌ never the fetch. DETAILS § "The llama-server fetch".
-- **`--worktree` slug isn't validated against the directory name.** The wrapper sanitizes whatever slug you pass, so
-  isolation can be pinned from a non-worktree shell.
+- **`--worktree` slug isn't checked against the directory name**, so isolation can be pinned from any shell.
 - **`instance-id.ts` is stdlib-only** (`node:net`/`fs`/`os`/`path`/`child_process`), imported by `tauri-wrapper.ts` and
   the test. New helpers need a default-arg shape so existing wrapper code keeps working.
