@@ -20,6 +20,9 @@ crate-type = ["cdylib", "rlib"]
 # crate: this is the engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`.
 cmdr-listing = { path = "../cmdr-listing" }
 cmdr-fs = { path = "../cmdr-fs" }
+# Brief mode's column widths and the font metrics the page measures for them,
+# the same code the desktop's commands run.
+cmdr-brief-columns = { path = "../cmdr-brief-columns" }
 log = "0.4"
 # The wire shapes: every answer and event crosses as the same JSON Tauri sends.
 serde = { version = "1", features = ["derive"] }

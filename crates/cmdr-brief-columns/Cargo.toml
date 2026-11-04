@@ -1,0 +1,33 @@
+[package]
+name = "cmdr-brief-columns"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[dependencies]
+# The pane's rows (`Listings::with_rows`) a column is sized around, and the
+# entries they're made of. No app crate: the desktop and the browser demo
+# (`crates/cmdr-listing-wasm`) both host this.
+cmdr-listing = { path = "../cmdr-listing" }
+# `FileEntry`, the poison-tolerant lock, and `rt::Instant` (the browser-safe clock).
+cmdr-fs = { path = "../cmdr-fs" }
+log = "0.4"
+# The wire shapes, and `FontMetrics`' on-disk form (the app writes it with bincode2,
+# so its field order is the file format).
+serde = { version = "1", features = ["derive"] }
+# Pinned to the exact pre-release `cmdr-fs` and the app use: two `specta` crates in
+# one graph would make these `Type` impls stop satisfying `tauri-specta`, and the
+# app's command signatures collect them.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+
+[dev-dependencies]
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# An engine of the tests' own (`TestEngine`) to insert listings into.
+cmdr-listing = { path = "../cmdr-listing", features = ["testing"] }

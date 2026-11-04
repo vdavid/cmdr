@@ -116,11 +116,11 @@ Writing them:
   indexes), `cmdr-archive` (zip/tar/7z; the model a new backend crate copies), `cmdr-smb` (SMB and its protocol layer),
   `cmdr-nfs`, `cmdr-s3`, `cmdr-sftp`, and `cmdr-webdav` (those servers), `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB
   phones), `cmdr-git` (repos, the `.git` portal), `cmdr-restic` (restic backups), `cmdr-http` (proxy routing),
-  `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-local` (the local disk), `cmdr-media-meta`
-  (EXIF, video dates, and media tags), `cmdr-operation-log` (the mutation journal and rollback planner),
-  `cmdr-operations` (the write engine), `cmdr-update-trust` (the updater's trust check) carry no `tauri`, enforced by
-  `index-crate-isolation`; plus `cmdr-listing-wasm` (the listing engine in a browser), two dev CLIs, and
-  `fsevent-stream` (our FSEvents fork). Map: `docs/architecture.md`.
+  `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-brief-columns` (Brief mode's column widths),
+  `cmdr-local` (the local disk), `cmdr-media-meta` (EXIF, video dates, and media tags), `cmdr-operation-log` (the
+  mutation journal and rollback planner), `cmdr-operations` (the write engine), `cmdr-update-trust` (the updater's trust
+  check) carry no `tauri`, enforced by `index-crate-isolation`; plus `cmdr-listing-wasm` (the listing engine in a
+  browser), two dev CLIs, and `fsevent-stream` (our FSEvents fork). Map: `docs/architecture.md`.
 - `brand/`: brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/business/README.md` (pricing, licensing, product facts), `docs/specs/DETAILS.md` (big design docs; open work is

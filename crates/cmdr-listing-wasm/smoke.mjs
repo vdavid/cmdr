@@ -78,6 +78,24 @@ try {
   const refreshed = await demo.invoke('refresh_listing', { listingId: 'smoke-1', force: true })
   if (refreshed.timedOut !== false) fail(`refresh answered ${JSON.stringify(refreshed)}`)
 
+  // Brief mode's widths, from metrics the page measured. The computation reads the clock,
+  // so this is what catches a `std` `Instant` sneaking into it.
+  const fontId = 'system-400-12'
+  const codePoints = Array.from({ length: 0x7f - 0x20 }, (_, i) => 0x20 + i)
+  await demo.invoke('store_font_metrics', { fontId, codePoints, widths: codePoints.map(() => 2) })
+  if ((await demo.invoke('has_font_metrics', { fontId })) !== true) fail('stored metrics went missing')
+  const brief = await demo.invoke('get_brief_column_text_widths', {
+    listingId: 'smoke-1',
+    itemsPerColumn: 2,
+    hasParent: false,
+    fontId,
+    includeHidden: false,
+  })
+  // Columns of two: [Music, notes 9.txt] [notes 10.txt], 2 px per character.
+  if (JSON.stringify(brief.widths) !== '[22,24]' || brief.approximate !== false) {
+    fail(`Brief widths came back as ${JSON.stringify(brief)}`)
+  }
+
   try {
     await demo.invoke('get_file_range', { listingId: 'gone', start: 0, count: 1, includeHidden: false })
     fail('a missing listing resolved')

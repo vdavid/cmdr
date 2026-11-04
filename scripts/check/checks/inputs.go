@@ -110,6 +110,7 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr", Kind: KindApp, Glob: "apps/desktop/src-tauri/**"},
 	{Pkg: "cmdr-adb", Kind: KindApp, Glob: "crates/cmdr-adb/**"},
 	{Pkg: "cmdr-archive", Kind: KindApp, Glob: "crates/cmdr-archive/**"},
+	{Pkg: "cmdr-brief-columns", Kind: KindApp, Glob: "crates/cmdr-brief-columns/**"},
 	{Pkg: "cmdr-collation", Kind: KindApp, Glob: "crates/cmdr-collation/**"},
 	{Pkg: "cmdr-fs", Kind: KindApp, Glob: "crates/cmdr-fs/**"},
 	{Pkg: "cmdr-fsevent-stream", Kind: KindApp, Glob: "crates/fsevent-stream/**"},
