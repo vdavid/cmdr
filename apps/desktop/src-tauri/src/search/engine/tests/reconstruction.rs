@@ -95,6 +95,35 @@ fn streamed_hash_matches_whole_path_hash_past_the_inline_depth() {
     }
 }
 
+// ── The `~` parent path ──────────────────────────────────────────
+
+#[test]
+fn a_parent_under_home_reads_as_tilde() {
+    assert_eq!(home_relative_parent("/Users/dav/x/file.txt", Some("/Users/dav")), "~/x");
+    assert_eq!(home_relative_parent("/Users/dav/file.txt", Some("/Users/dav")), "~");
+}
+
+/// A home that is a mere string prefix of the parent isn't the parent's ancestor: with
+/// home `/Users/dav`, `/Users/david/x` belongs to someone else and must stay whole, not
+/// come back as `~id/x`.
+#[test]
+fn a_home_that_only_prefixes_the_name_is_not_an_ancestor() {
+    assert_eq!(
+        home_relative_parent("/Users/david/x/file.txt", Some("/Users/dav")),
+        "/Users/david/x"
+    );
+    assert_eq!(
+        home_relative_parent("/Users/david/file.txt", Some("/Users/dav")),
+        "/Users/david"
+    );
+}
+
+#[test]
+fn no_home_or_a_root_level_entry_keeps_the_literal_parent() {
+    assert_eq!(home_relative_parent("/Users/dav/x/file.txt", None), "/Users/dav/x");
+    assert_eq!(home_relative_parent("/file.txt", Some("/Users/dav")), "/");
+}
+
 // ── Icon ID derivation ───────────────────────────────────────────
 
 #[test]

@@ -532,8 +532,12 @@ pub(crate) fn home_relative_parent(path: &str, home_dir: Option<&str>) -> String
         Some(pos) => {
             let parent = &path[..pos];
             // Replace home dir prefix with ~ (a no-op for a prefixed non-root path,
-            // whose mount root is never the home dir).
-            match home_dir.and_then(|home| parent.strip_prefix(home)) {
+            // whose mount root is never the home dir). Only at a component
+            // boundary: home `/Users/dav` is no ancestor of `/Users/david`.
+            match home_dir
+                .and_then(|home| parent.strip_prefix(home))
+                .filter(|rest| rest.is_empty() || rest.starts_with('/'))
+            {
                 Some(rest) => format!("~{rest}"),
                 None => parent.to_string(),
             }
