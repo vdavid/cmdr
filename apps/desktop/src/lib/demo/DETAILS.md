@@ -64,13 +64,34 @@ every window. The demo keeps that shape so secondary windows can come later with
 - `boot.ts` picks the role: a frame whose parent holds `__cmdrDemoBackend` is a secondary window and installs only a
   webview, labeled by its `window.name`; any other frame (top, or framed by a page without a backend, or by a
   cross-origin page, where reading the parent throws) creates the backend and installs the `main` webview.
-- Opening a secondary window is not wired yet: `plugin:webview|create_webview_window` and friends land in `unanswered`.
-  The intended shape: the backend's answer adds a same-origin `<iframe name="<label>" src="<base><route>">` in the top
-  frame, styled as a window, and closing it removes the iframe (its `pagehide` detaches the webview). Verified by hand:
-  an iframe of `/demo/settings` named `settings` renders Settings, and changing "Size colors" there recolors the main
-  window's sizes through the fan-out (headless Chromium, 2026-11-04).
-- ❗ The production CSP (`apps/website/nginx-demo-security-headers.conf`) says `frame-src 'none'`, which blocks exactly
-  that iframe (seen under that CSP, 2026-11-04). Wiring windows means `frame-src 'self'` there.
+- A window-plugin question about ANOTHER window (main asking for Settings' size) carries that window's `label`, so the
+  webview forwards it to the backend instead of answering for itself.
+
+## Secondary windows
+
+- `windows.ts` (`createWindowHost`, owned by the backend) answers the app's window plumbing:
+  `plugin:webview|create_webview_window` opens an in-page panel (a draggable title bar with the window's own title and a
+  close button, around a same-origin `<iframe name="<label>">` of the route under the demo's base), and
+  `get_all_windows`, `close`, `destroy`, `set_focus`, `set_effects`, plus Cmdr's `close_child_window` and
+  `raise_child_window`, work against those panels. Opening one that's already open raises it, through the app's own
+  `getByLabel` + `raiseChildWindow` path.
+- Only `settings` and `shortcuts` open (`OPENABLE`). Every other label (`viewer-*`, `queue`, `debug`) gets Tauri's
+  refusal: the creation promise rejects with a string, which reaches the opener as `tauri://error`, so the app's own
+  failure handling runs and no panel appears. They need backends the demo doesn't have yet.
+- Keys: Esc is the window's own (Settings calls `close_child_window`); ⌘W is the native menu's Close Window, which the
+  browser keeps for its tab, so the panel takes ⌃W, the demo's browser-safe stand-in for ⌘W (`browser-shortcuts.ts`).
+- Focus: a native window keeps its focused element while another window is key, but a page has one focus, so the host
+  remembers what had focus in the main window when a panel took it and puts it back when the last panel closes. It also
+  sends `tauri://focus` / `tauri://blur` / `tauri://destroyed` to the windows involved, as Tauri does.
+- Look: plain app tokens (`--color-bg-primary`, `--radius-window`, `--shadow-lg`, `--z-modal`), injected once as a
+  `<style>` under `.cmdr-demo-window`. The only words are the window's own title and `ui.modalDialog.close` for the
+  close button's label. It opens centered, sized to the window's width and height clamped to the viewport (fits at
+  960×600), and can't be dragged past an edge.
+- Verified in headless Chromium (2026-11-04): ⌘, opens Settings; Esc, ⌃W, and the close button close it, and the cursor
+  keys move the main pane's cursor right after; dragging moves and clamps it; F3 on a file opens nothing; a "Size
+  colors" change in Settings recolors the main window's sizes through the fan-out.
+- ❗ The production CSP (`apps/website/nginx-demo-security-headers.conf`) says `frame-src 'none'`, which blocks these
+  iframes (seen under that CSP, 2026-11-04). Settings in production needs `frame-src 'self'` there.
 
 ## Framed by another page
 

@@ -10,6 +10,7 @@ import { startListingEngine, type ListingEngineHandle } from './listing.js'
 import { pluginHandler } from './plugins.js'
 import { noteUnanswered } from './unanswered.js'
 import { volumeAnswers } from './volumes.js'
+import { createWindowHost } from './windows.js'
 import { writeAnswers } from './writes.js'
 
 type Handler = (payload: Payload) => unknown
@@ -49,8 +50,10 @@ export function createDemoBackend(): DemoBackend {
     emit(event, payload, { kind: 'everyone' })
   })
 
+  const windows = createWindowHost(emit)
+
   async function invoke(cmd: string, payload: Payload): Promise<unknown> {
-    const handler = pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
+    const handler = windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
     if (handler) return handler(payload)
     if (await engine.handles(cmd)) return engine.invoke(cmd, payload)
     return noteUnanswered(cmd, payload)

@@ -40,6 +40,9 @@ function windowAnswer(cmd: string): (() => unknown) | undefined {
     'plugin:window|is_focused': () => document.hasFocus(),
     'plugin:window|is_visible': () => true,
     'plugin:window|title': () => document.title,
+    // A frame sits at its own origin; the panel around a secondary window is the page's business.
+    'plugin:window|outer_position': () => ({ x: 0, y: 0 }),
+    'plugin:window|inner_position': () => ({ x: 0, y: 0 }),
     // A window's frame is the page's to size and name, not the app's.
     'plugin:window|set_title': () => null,
     'plugin:window|set_min_size': () => null,
@@ -88,7 +91,9 @@ export function installWebview(backend: DemoBackend, label: string): void {
         return null
       }
     }
-    const own = windowAnswer(cmd)
+    // A question about ANOTHER window (main asking for the Settings window's size) goes to the
+    // backend, which knows the panels; only this frame can answer for itself.
+    const own = payload.label === undefined || payload.label === label ? windowAnswer(cmd) : undefined
     if (own) return own()
     return overTheWire(await backend.invoke(cmd, overTheWire(payload)))
   }

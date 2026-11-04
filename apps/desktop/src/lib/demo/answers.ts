@@ -76,6 +76,7 @@ export const silentCommands: readonly VoidCommand[] = [
   'updateLeftPaneState',
   'updateRightPaneState',
   'recordBreadcrumb',
+  'setChildWindowRect',
 ]
 
 export const appAnswers: AnswerTable = {
@@ -151,6 +152,8 @@ export const appAnswers: AnswerTable = {
   openPath: () => refuse('openPath', { type: 'unsupported' }),
   // No visit history to feed: the demo has no frecency store.
   recordVisit: none,
+  // A demo panel opens centered every time (`windows.ts`): no remembered rect.
+  getChildWindowRect: none,
   // No native menu to show the accelerator in.
   updateMenuAccelerator: none,
   // No Finder tags, packages, custom folder icons, or index-backed folder stats on the demo volume.

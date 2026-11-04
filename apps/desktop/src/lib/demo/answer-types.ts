@@ -36,6 +36,14 @@ type RefusalOf<K extends CommandName> =
  * as it does for a Rust `Err`, and the bindings hand it back as `{ status: 'error', error }`.
  */
 export function refuse<K extends CommandName>(_command: K, error: RefusalOf<K>): never {
+  return refuseWith(error)
+}
+
+/**
+ * The same for a command no binding types (a plugin command, a raw `invoke`): Tauri rejects those
+ * with a plain string, which is what the caller (`tauri://error` on a window handle) expects.
+ */
+export function refuseWith(error: unknown): never {
   // eslint-disable-next-line @typescript-eslint/only-throw-error -- the IPC wire carries the typed value, never an `Error`
   throw error
 }
