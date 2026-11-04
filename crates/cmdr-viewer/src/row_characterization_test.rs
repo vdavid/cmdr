@@ -181,7 +181,7 @@ fn fetching_by_line_number_works_on_the_two_backends_that_claim_to_support_it() 
 
 #[test]
 fn line_index_reports_the_target_rows_byte_offset_not_the_checkpoints() {
-    // FIXED in milestone 3 (was `bug_pinned_line_index_reports_the_checkpoints_byte_offset_not_the_lines`).
+    // FIXED (was `bug_pinned_line_index_reports_the_checkpoints_byte_offset_not_the_lines`).
     // `line_index.rs` used to return the CHECKPOINT's offset as `LineChunk.byte_offset`
     // while `first_row_number` was the target, and its own comment called it
     // "approximate". A 40-row file has exactly one checkpoint, so every fetch reported
@@ -204,7 +204,7 @@ fn line_index_reports_the_target_rows_byte_offset_not_the_checkpoints() {
 
 #[test]
 fn byte_seek_maps_a_row_target_through_the_bytes_per_row_it_sampled() {
-    // FIXED in milestone 3 (was `bug_pinned_byte_seek_estimates_a_line_target_at_80_bytes_a_line`).
+    // FIXED (was `bug_pinned_byte_seek_estimates_a_line_target_at_80_bytes_a_line`).
     // `SeekTarget::Row(n)` used to become `n * 80` bytes, which on a 20-byte-row file
     // overshoots fourfold: row 10 landed at byte 800, which is EOF, so the fetch came
     // back EMPTY carrying a row number the estimate had invented. It now divides by the
@@ -303,7 +303,7 @@ fn range_from_mid_row_to_eof_reaches_the_last_row_in_every_backend() {
     let content = uniform_content();
     let file = fixture(&dir, "uniform.txt", content.as_bytes());
 
-    // ❗ THE TRAILING-NEWLINE ANSWER, picked in milestone 3 and pinned for all three
+    // ❗ THE TRAILING-NEWLINE ANSWER, picked and pinned for all three
     // backends: a file ending in a newline has a final EMPTY row, so a read to `Eof`
     // carries that final newline. FullLoad already did this; the other two stopped one
     // byte earlier, which made the same gesture on the same file give two answers
@@ -331,7 +331,7 @@ fn selecting_the_whole_file_yields_every_byte_in_every_backend() {
 
 #[test]
 fn a_multi_row_range_on_byte_seek_returns_the_rows_that_were_asked_for() {
-    // FIXED in milestone 3 (was `bug_pinned_multi_line_range_on_byte_seek_returns_nothing`).
+    // FIXED (was `bug_pinned_multi_line_range_on_byte_seek_returns_nothing`).
     // `range_read` seeks its FIRST chunk by `SeekTarget::Row(start)`, which ByteSeek
     // used to answer with the 80-bytes-a-line estimate. On a 20-byte-row file that
     // landed four times too far in, so `first_row_number` came back past the range's end
@@ -351,7 +351,7 @@ fn a_multi_row_range_on_byte_seek_returns_the_rows_that_were_asked_for() {
 
 #[test]
 fn a_long_range_on_line_index_is_byte_exact_across_every_chunk_seam() {
-    // FIXED in milestone 3 (was `bug_pinned_a_long_range_on_line_index_duplicates_a_line_at_each_chunk_seam`).
+    // FIXED (was `bug_pinned_a_long_range_on_line_index_duplicates_a_line_at_each_chunk_seam`).
     // `range_read` fetches 4 096 rows at a time and seeks the next chunk by the byte
     // offset just past the last one. LineIndex used to round that offset down to its
     // previous checkpoint (one every 256 rows), so a range not starting on a checkpoint
@@ -532,7 +532,7 @@ fn a_utf16_file_without_a_bom_keeps_its_first_character_in_every_backend() {
 
 #[test]
 fn a_utf16_file_decodes_to_utf8_rows_past_its_bom_in_every_backend() {
-    // The BOM half is the FIX from milestone 3 (was
+    // The BOM half is a fix (was
     // `bug_pinned_byte_seek_shows_the_utf16_bom_as_a_character`): ByteSeek read from the
     // raw offset and `decode_line` uses `decode_without_bom_handling`, so the BOM
     // survived as a `U+FEFF` at the head of the first row, a zero-width character the
@@ -559,7 +559,7 @@ fn a_utf16_file_decodes_to_utf8_rows_past_its_bom_in_every_backend() {
 
 #[test]
 fn search_finds_a_needle_in_a_utf16_file_in_every_backend() {
-    // FIXED in milestone 3 (was `bug_pinned_search_finds_nothing_in_a_utf16_file_unless_it_is_full_loaded`).
+    // FIXED (was `bug_pinned_search_finds_nothing_in_a_utf16_file_unless_it_is_full_loaded`).
     // ByteSeek's and LineIndex's `search` each carried a copy of the same
     // `memchr(b'\n')` loop over RAW bytes, which is not how UTF-16 is framed: the spans
     // came out misaligned and the needle never matched, so ⌘F on a UTF-16 file over 1 MB
@@ -618,7 +618,7 @@ const NEWLINE_FREE_BYTES: usize = 3_000_000;
 
 #[test]
 fn red_first_fetch_of_a_newline_free_file_must_be_bounded() {
-    // ❗ RED until milestone 3. Don't delete it, and don't relax the bound.
+    // ❗ A red-first regression anchor. Don't delete it, and don't relax the bound.
     //
     // Why the assertion is structural rather than timed: a wall-clock budget flakes on a
     // loaded CI runner and says nothing about WHY a read was slow. The bytes a backend
@@ -626,8 +626,8 @@ fn red_first_fetch_of_a_newline_free_file_must_be_bounded() {
     // read), so a bounded answer is a necessary condition for a bounded read, it is
     // deterministic, and it is the exact quantity invariant I1 is written about. It is
     // not a sufficient condition: an implementation could return bounded rows while still
-    // scanning the file behind them. Catching THAT needs a seam this milestone doesn't
-    // add (an injectable reader on the two backends, or a peak-allocation counter beside
+    // scanning the file behind them. Catching THAT needs a seam the crate doesn't have
+    // yet (an injectable reader on the two backends, or a peak-allocation counter beside
     // `test_support::heap_bytes_held`, which measures RETAINED bytes and so nets a
     // transient whole-file buffer to zero).
     //
@@ -659,7 +659,7 @@ fn red_first_fetch_of_a_newline_free_file_must_be_bounded() {
 
 #[test]
 fn red_search_in_a_newline_free_file_must_be_bounded() {
-    // ❗ RED until milestone 3. Don't delete it, and don't relax the bound.
+    // ❗ A red-first regression anchor. Don't delete it, and don't relax the bound.
     //
     // The same structural argument as above, against the search path: `byte_seek.rs` and
     // `line_index.rs` both decode a newline-free file into ONE `String` and hand it to the
@@ -687,7 +687,7 @@ fn red_search_in_a_newline_free_file_must_be_bounded() {
 }
 
 // ---------------------------------------------------------------------------
-// What rows guarantee (milestone 3)
+// What rows guarantee
 // ---------------------------------------------------------------------------
 
 /// ❗ THE data-safety test for rows (spec landmine 1, invariant I3).
@@ -739,7 +739,7 @@ fn copying_across_a_segment_break_puts_no_newline_in_the_clipboard() {
     }
 }
 
-/// A save of a newline-free file is part of milestone 3's DONE, not a follow-up: the
+/// A save of a newline-free file is part of the row model, not a follow-up: the
 /// streaming sink appends a whole entry before testing its threshold, so it stayed
 /// unbounded until its entries became rows.
 #[test]

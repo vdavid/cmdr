@@ -816,7 +816,7 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     // (not just the pre-rebuild EOF).
     //
     // We simulate the watcher by calling test_only_push_pending_grew directly
-    // (the actual watcher lands in milestone 3).
+    // (the real watcher has its own tests).
     let dir = create_test_dir("enc_append_during_rebuild");
     // Start with a > 1 MB Windows-1252 file.
     let line = "x".repeat(80) + "\n";
@@ -879,7 +879,7 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     viewer().close_session(&result.session_id).unwrap();
 }
 
-// ─── Tail mode + reload + watcher wiring (milestone 3) ─────────────────
+// ─── Tail mode + reload + watcher wiring ─────────────────
 
 #[test]
 fn tail_mode_toggle_persists_on_session() {
