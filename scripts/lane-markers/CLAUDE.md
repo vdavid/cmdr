@@ -22,8 +22,8 @@ cache lookup.
 - **`CI OK` runs `verify`**: a lane skipped while its `if:` filter is on is red unless the plan verified it AND this job
   recomputes the same key AND finds the marker in a trusted scope.
 - **Unsupported glob syntax fails loudly** (braces, brackets, extglobs). Extend `match.go` against picomatch first.
-- ❌ Don't let `CI OK` read a lane's plan entry via `fromJSON(...)['x']`: it reads `toJSON(needs)`, and the parser would
-  take it for a job saving another lane's marker.
+- **Only a lane's own job reads its `.key`**; any other job reading it is refused as a misplaced marker save. A
+  prerequisite job may read a lane's `.verified`. `CI OK` reads `toJSON(needs)` and neither.
 - `go run . hash -files` (here) prints each lane's key and inputs at `HEAD`.
 
 Trust argument, store choice, the one risk and its guards, and the per-lane wiring: `DETAILS.md`.
