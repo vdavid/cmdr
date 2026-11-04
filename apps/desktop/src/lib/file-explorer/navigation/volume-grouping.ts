@@ -1,3 +1,4 @@
+import { asset } from '$app/paths'
 import { tString } from '#lib/intl/messages.svelte.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { deviceRowDefersToMtpTwin } from '#lib/adb/adb-volume-label.js'
@@ -92,10 +93,10 @@ function belongsInSwitcher(volume: VolumeInfo): boolean {
 export function getIconForVolume(volume: VolumeInfo | undefined): string | undefined {
   if (!volume) return undefined
   if (volume.category === 'cloud_drive') {
-    return '/icons/sync-online-only.svg'
+    return asset('icons/sync-online-only.svg')
   }
   if (volume.category === 'mobile_device') {
-    return '/icons/mobile-device.svg'
+    return asset('icons/mobile-device.svg')
   }
   if (volume.category === 'network' && !volume.icon) {
     return undefined // Will use placeholder

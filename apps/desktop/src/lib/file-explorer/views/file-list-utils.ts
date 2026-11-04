@@ -2,6 +2,7 @@
  * Shared utilities for BriefList and FullList components.
  */
 
+import { asset } from '$app/paths'
 import type { FileEntry, SyncStatus } from '../types'
 import {
   enrichPackages,
@@ -33,10 +34,10 @@ export function getPrefetchBufferSize(): number {
 export function getSyncIconPath(status: SyncStatus | undefined): string | undefined {
   if (!status) return undefined
   const iconMap: Record<SyncStatus, string | undefined> = {
-    synced: '/icons/sync-synced.svg',
-    online_only: '/icons/sync-online-only.svg',
-    uploading: '/icons/sync-uploading.svg',
-    downloading: '/icons/sync-downloading.svg',
+    synced: asset('icons/sync-synced.svg'),
+    online_only: asset('icons/sync-online-only.svg'),
+    uploading: asset('icons/sync-uploading.svg'),
+    downloading: asset('icons/sync-downloading.svg'),
     unknown: undefined,
   }
   return iconMap[status]

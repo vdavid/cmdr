@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { asset } from '$app/paths'
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import GlobalShortcutAnimation from '#lib/downloads/GlobalShortcutAnimation.svelte'
     import { tooltip } from '#lib/tooltip/tooltip.js'
@@ -20,7 +21,7 @@
         </div>
         <div class="cell" use:tooltip={NETWORK_USAGE}>
             <div class="illustration-host">
-                <img src="/icons/network-no-hosts.svg" alt="" />
+                <img src={asset('icons/network-no-hosts.svg')} alt="" />
             </div>
             <p class="caption">Empty network</p>
         </div>

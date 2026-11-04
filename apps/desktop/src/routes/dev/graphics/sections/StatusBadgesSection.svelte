@@ -1,10 +1,11 @@
 <script lang="ts">
+    import { asset } from '$app/paths'
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import GlyphGrid from '../GlyphGrid.svelte'
 
     interface Badge {
-        /** File stem under `/icons/`. */
-        id: string
+        /** File stem under `static/icons/` (typed, so `asset()` checks the file exists). */
+        id: 'sync-synced' | 'sync-uploading' | 'sync-downloading' | 'sync-online-only' | 'mobile-device'
         caption: string
         usage: string
     }
@@ -46,7 +47,7 @@
             at a 24px review size; in the app the sync badges overlay file icons at about 10px.
         {/snippet}
         {#snippet glyph(badge: Badge)}
-            <img src={`/icons/${badge.id}.svg`} alt="" width="24" height="24" />
+            <img src={asset(`icons/${badge.id}.svg`)} alt="" width="24" height="24" />
         {/snippet}
     </GlyphGrid>
 </SectionCard>

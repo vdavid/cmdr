@@ -47,6 +47,7 @@ import preferUiPrimitive from './eslint-plugins/prefer-ui-primitive.js'
 import keyHintViaButtonProp from './eslint-plugins/key-hint-via-button-prop.js'
 import dialogButtonsInFooter from './eslint-plugins/dialog-buttons-in-footer.js'
 import noTitleAttribute from './eslint-plugins/no-title-attribute.js'
+import noRootRelativeAsset from './eslint-plugins/no-root-relative-asset.js'
 import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
 import noRawWaitBudget from './eslint-plugins/no-raw-wait-budget.js'
 import noUnrenderedLogFields from './eslint-plugins/no-unrendered-log-fields.js'
@@ -327,6 +328,7 @@ export default tseslint.config(
           'key-hint-via-button-prop': keyHintViaButtonProp,
           'dialog-buttons-in-footer': dialogButtonsInFooter,
           'no-title-attribute': noTitleAttribute,
+          'no-root-relative-asset': noRootRelativeAsset,
           'no-unrendered-log-fields': noUnrenderedLogFields,
           'no-stringified-log-values': noStringifiedLogValues,
         },
@@ -437,6 +439,10 @@ export default tseslint.config(
       // the accessible name (`iframe`/`embed`/`object`) or a term's expansion
       // (`abbr`/`dfn`) are exempt inside the rule.
       'cmdr/no-title-attribute': 'error',
+      // A `static/` asset's URL goes through `asset()` from `$app/paths`, never a root-relative literal:
+      // the browser demo serves under `/demo`, where `/icons/x.svg` 404s (the Servers view's empty
+      // state did). Turned OFF for `*.test.ts` below (they assert the root-base output).
+      'cmdr/no-root-relative-asset': 'error',
       // Every property handed to a logger has to appear in that call's message.
       // The log bridge forwards only the rendered string (`FrontendLogEntry` is
       // level + category + message), so an unrendered field is discarded at the
@@ -518,6 +524,8 @@ export default tseslint.config(
       'no-restricted-properties': 'off',
       // Tests use literal copy for fixtures and assertions, on purpose.
       'cmdr/no-raw-user-facing-string': 'off',
+      // Tests assert the root-base output (`/icons/sync-synced.svg`) and mock icon URLs.
+      'cmdr/no-root-relative-asset': 'off',
       // Fixtures legitimately spell out `1024 * 1024` to build expected values.
       'cmdr/no-private-unit-format': 'off',
     },

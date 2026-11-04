@@ -24,6 +24,16 @@ TypeScript and may write `import.meta.env.DEV` directly.
 `import.meta.env.DEV` at build time, so the whole dev-only subtree leaves the prod bundle. A function call survives
 minification, so gating markup on `isDevBuild()` would ship the dialog gallery and the dev pages to users.
 
+## Static assets
+
+A `static/` file's URL is `asset('icons/x.svg')` from `$app/paths`, never `'/icons/x.svg'`. The app serves at the root
+(base `''`), so both spellings resolve there, but the browser demo serves under `/demo` (`lib/demo/CLAUDE.md`), where a
+root-relative path 404s: the Servers view's empty-state image did. `asset()` is typed against the files in `static/`, so
+a typo or a missing file fails `svelte-check`; a template-built name needs a union-typed part
+(`routes/dev/graphics/sections/StatusBadgesSection.svelte`). `cmdr/no-root-relative-asset` fails a literal whose first
+segment is a top-level `static/` entry, in script, markup, and Svelte `<style>` `url()`, outside tests. Vitest has no
+SvelteKit, so `$app/paths` resolves to `test-app-paths-shim.ts` (the root-base behavior).
+
 ## Glass material
 
 Every frosted-glass surface (menus, selects, popovers, toasts, tooltips) draws from the tokens in `app.css` §

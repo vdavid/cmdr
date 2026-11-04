@@ -9,6 +9,7 @@
      * `servers-hub-mcp.ts`); this file is the table, the cursor, and the keys.
      */
     import { onMount, onDestroy, untrack } from 'svelte'
+    import { asset } from '$app/paths'
     import { dependOn } from '#lib/utils/reactivity.js'
     import Button from '#lib/ui/Button.svelte'
     import Icon from '#lib/ui/Icon.svelte'
@@ -654,7 +655,7 @@
 
         {#if list.isKnown && !isSearching && rows.length === 0}
             <div class="empty-state" role="listitem">
-                <img class="empty-icon" src="/icons/network-no-hosts.svg" alt="" />
+                <img class="empty-icon" src={asset('icons/network-no-hosts.svg')} alt="" />
                 <div class="empty-title">{tString('servers.hub.emptyTitle')}</div>
                 <div class="empty-message">{tString('servers.hub.emptyMessage')}</div>
                 <Button variant="secondary" onclick={handleRefreshClick}

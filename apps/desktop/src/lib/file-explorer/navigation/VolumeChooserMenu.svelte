@@ -16,6 +16,7 @@
      * shortcut fields, reorder, and the one open path, `open-favorite.ts`.
      */
     import { onDestroy, untrack } from 'svelte'
+    import { asset } from '$app/paths'
     import { getVolumes, getVolumesTimedOut, isVolumesRefreshing, isVolumeRetryFailed, requestVolumeRefresh } from '#lib/stores/volume-store.svelte.js'
     import { isVolumeBusy, isVolumeEjecting } from '#lib/stores/volume-busy-store.svelte.js'
     import { isRestricted } from '#lib/stores/restricted-paths-store.svelte.js'
@@ -195,8 +196,8 @@
     }
 
     function rowIcon(volume: VolumeInfo, restricted: boolean): MenuIcon | undefined {
-        if (volume.category === 'cloud_drive') return { src: '/icons/sync-online-only.svg' }
-        if (volume.category === 'mobile_device') return { src: '/icons/mobile-device.svg' }
+        if (volume.category === 'cloud_drive') return { src: asset('icons/sync-online-only.svg') }
+        if (volume.category === 'mobile_device') return { src: asset('icons/mobile-device.svg') }
         if (volume.category === 'network') return { lucide: 'globe' }
         // TCC-denied paths: `NSWorkspace.iconForFile` returns a confusing "no access"
         // placeholder, so the generic Aqua folder icon stands in.

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte'
+    import { asset } from '$app/paths'
     import { getCachedStatus } from './licensing-store.svelte'
     import { openExternalUrl } from '#lib/tauri-commands/index.js'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
@@ -92,7 +93,7 @@
     {/snippet}
 
     <div class="about-content">
-        <img class="app-icon" src="/logo.svg" alt="" width="80" height="80" />
+        <img class="app-icon" src={asset('logo.svg')} alt="" width="80" height="80" />
 
         <p class="app-name">{tString('licensing.about.appName')}</p>
         <p class="app-tagline">{tString('licensing.about.tagline')}</p>
