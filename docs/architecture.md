@@ -290,7 +290,7 @@ All under `apps/desktop/src-tauri/src/`.
   `commands/go_to_path.rs`
 - `recents/`: The persisted recents list all three of those keep (dedupe, cap, durable JSON file, quarantine). A
   consumer supplies the entry type and its dedupe key. See `apps/desktop/src-tauri/src/recents/CLAUDE.md`
-- `font_metrics/`: Binary font metrics cache, per-directory width calculation
+- `font_metrics/`: the font metrics store's on-disk cache, hosting `cmdr-brief-columns` (Brief column widths)
 - `window_state/`: Main-window size/position persistence across launches (`.window-state.json`). Replaces
   `tauri-plugin-window-state`. Placement only; the frontend shows the window
 - `main_window_show.rs`: The backend's fallback that shows the main window when the frontend hasn't within 10 s (a
@@ -397,12 +397,12 @@ All under `apps/desktop/src-tauri/src/`.
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
 `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-http`, `cmdr-listing`,
-`cmdr-collation`, `cmdr-local`, `cmdr-media-meta`, `cmdr-operation-log`, `cmdr-operations`, and `cmdr-update-trust`
-carry no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against the
-`cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
+`cmdr-collation`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-operation-log`, `cmdr-operations`, and
+`cmdr-update-trust` carry no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against
+the `cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
 `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-listing`, `cmdr-collation`,
-`cmdr-local`, `cmdr-operation-log`, and `cmdr-operations` at the numbers their audits landed on. The two dev CLIs and
-the vendored fork are ordinary members.
+`cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`, and `cmdr-operations` at the numbers their audits landed on.
+The two dev CLIs and the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -438,6 +438,9 @@ the vendored fork are ordinary members.
 - `crates/cmdr-collation/`: how two file names rank (`NameCollator`, ICU4X Unicode collation with numeric ordering, and
   the prebuilt `NameKey` a bulk sort compares). Below the listing engine, which re-exports it, so anything that orders
   names sorts the way a pane does without depending on the listing. See `crates/cmdr-collation/CLAUDE.md`
+- `crates/cmdr-brief-columns/`: Brief mode's column widths: the font metrics store (per-code-point widths the frontend
+  measured) and each column's widest name over a pane's rows. Hosted by the app (`font_metrics/`, which persists the
+  store) and the browser demo. See `crates/cmdr-brief-columns/CLAUDE.md`
 - `crates/cmdr-local/`: the local disk: `LocalPosixVolume` (the `Volume` over a `std::fs` root), the `std::fs` reader
   the watcher reads through too, `rename_local_exclusive` (the one no-replace rename), local volume space with the
   live-space memo, and the mount probes (`filesystem_kind`, the macOS mount table and `statfs`, Linux's `/proc/mounts`).

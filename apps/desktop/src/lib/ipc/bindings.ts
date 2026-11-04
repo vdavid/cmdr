@@ -509,7 +509,7 @@ export const commands = {
    *  Returns the widest filename's text-only width (in px) per Brief-mode column.
    *
    *  Pure read path: takes a snapshot of the listing cache for `listing_id` and
-   *  measures each column's widest filename with `font_metrics::calculate_max_width_with_suffixes`.
+   *  measures each column's widest filename from the font store (`cmdr-brief-columns`).
    *  The FE applies chrome + clamp on top.
    *
    *  Answers without waiting on measurement. A filename containing a code point
@@ -6843,8 +6843,11 @@ export type BreadcrumbEvent =
  *  only extend a size that's stored.
  */
 export type BriefColumnWidths = {
+  // One text-only width per column, finite and non-negative.
   widths: number[]
+  // Code points costed at the average width, for the frontend to measure.
   missingCodePoints: number[]
+  // Whether the widths were borrowed from another size of the font, scaled.
   approximate: boolean
 }
 
@@ -6881,7 +6884,9 @@ export type BriefColumnsErrorKind =
  *  it carries listing IDs and OS text that change without notice.
  */
 export type BriefColumnsIpcError = {
+  // The classifier the frontend branches on.
   kind: BriefColumnsErrorKind
+  // Diagnostic text, for logs only.
   message: string
 }
 

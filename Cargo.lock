@@ -1455,6 +1455,7 @@ dependencies = [
  "chrono",
  "cmdr-adb",
  "cmdr-archive",
+ "cmdr-brief-columns",
  "cmdr-collation",
  "cmdr-fs",
  "cmdr-fsevent-stream",
@@ -1605,6 +1606,17 @@ dependencies = [
  "zeroize",
  "zip",
  "zstd",
+]
+
+[[package]]
+name = "cmdr-brief-columns"
+version = "0.0.0"
+dependencies = [
+ "cmdr-fs",
+ "cmdr-listing",
+ "log",
+ "serde",
+ "specta",
 ]
 
 [[package]]

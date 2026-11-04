@@ -400,6 +400,25 @@ var surfaceGuardedCrates = []struct {
 		},
 	},
 	{
+		// Measured 2026-11-04, at the extraction (#302), and set to exactly what the
+		// crate exposes, with no headroom.
+		//
+		// Ten root promises: the store (`FontMetricsStore`, `FontMetrics`), the wire
+		// zip and its error (`widths_from_parallel`, `FontMetricsError`), and the Brief
+		// query (`BriefColumnsQuery`, `compute_brief_column_text_widths`) with its
+		// answer and three error types. The handle is `FontMetricsStore`: `new`,
+		// `insert`, `extend_with`, `contains`. No public module. Item-by-item:
+		// `crates/cmdr-brief-columns/DETAILS.md` § "The public surface is capped".
+		Name:       "cmdr-brief-columns",
+		HandleType: "FontMetricsStore",
+		Ceilings: surfaceCeilings{
+			RootPromises:   10,
+			HandleMethods:  4,
+			PublicModules:  0,
+			SubsystemItems: 0,
+		},
+	},
+	{
 		// Measured 2026-10-16, at the extraction, and set to exactly what the crate
 		// exposes, with no headroom (David approved the rule in the #415 plan).
 		//

@@ -3,6 +3,7 @@ members = [
   "apps/desktop/src-tauri",
   "crates/cmdr-adb",
   "crates/cmdr-archive",
+  "crates/cmdr-brief-columns",
   "crates/cmdr-collation",
   "crates/cmdr-fs",
   "crates/cmdr-git",
