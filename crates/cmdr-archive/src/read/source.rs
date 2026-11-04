@@ -17,6 +17,7 @@ use std::io;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
+#[cfg(not(target_family = "wasm"))]
 use positioned_io::{RandomAccessFile, ReadAt, Size};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -55,13 +56,19 @@ impl<T: ArchiveByteSource + ?Sized> ArchiveByteSource for Arc<T> {
 /// A local-file archive source: a `pread` over the real file via
 /// `positioned-io`. Opened read-only; holds the file handle for the source's
 /// lifetime.
+///
+/// The browser build has no local files: there `open` answers `Unsupported`, so
+/// no value of this type can exist (`crates/cmdr-fs/DETAILS.md` § "The browser
+/// build").
 pub struct LocalFileSource {
+    #[cfg(not(target_family = "wasm"))]
     file: RandomAccessFile,
     size: u64,
 }
 
 impl LocalFileSource {
     /// Opens `path` read-only and records its size.
+    #[cfg(not(target_family = "wasm"))]
     pub fn open(path: &Path) -> io::Result<Self> {
         let file = RandomAccessFile::open(path)?;
         let size = file
@@ -69,14 +76,25 @@ impl LocalFileSource {
             .ok_or_else(|| io::Error::other("archive file has no known size"))?;
         Ok(Self { file, size })
     }
+
+    /// The browser build has no local files to open.
+    #[cfg(target_family = "wasm")]
+    pub fn open(_path: &Path) -> io::Result<Self> {
+        Err(io::ErrorKind::Unsupported.into())
+    }
 }
 
 impl ArchiveByteSource for LocalFileSource {
     fn size(&self) -> u64 {
         self.size
     }
+    #[cfg(not(target_family = "wasm"))]
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<usize> {
         self.file.read_at(offset, buf)
+    }
+    #[cfg(target_family = "wasm")]
+    fn read_at(&self, _offset: u64, _buf: &mut [u8]) -> io::Result<usize> {
+        Err(io::ErrorKind::Unsupported.into())
     }
 }
 
