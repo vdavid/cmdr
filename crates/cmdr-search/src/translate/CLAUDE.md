@@ -14,7 +14,7 @@ calendar (`LocalDays`) and home folder in. Parent: `../../CLAUDE.md`.
   `iso_date_to_timestamp`.
 - **`types.rs`**: the DTOs `TranslatedQuery` and `TranslateDisplay`, re-exported by the desktop's `commands/search.rs`.
 - **`mappings/`** (hub `mappings.rs`, with `KIB/MIB/GIB` and `KNOWN_EXTENSIONS`): type, time, size and scope, keyword.
-  `local_days.rs`: `LocalDays`, the host's calendar (`FixedZone` for tests).
+  `LocalDays` (the host's calendar, `FixedZone` for tests) lives at the crate root, `../local_days.rs`.
 
 ## Must-knows
 

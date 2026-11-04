@@ -85,7 +85,7 @@ use crate::file_viewer::encoding::detect_from_head;
 use crate::file_viewer::materialize::{MaterializedFile, extract_if_routed_for_inspect, materialize_for_inspect};
 use crate::file_viewer::media::read_image_dimensions;
 use crate::file_viewer::{ArchiveFailureKind, Matcher, ViewerError};
-use crate::search::{format_size, format_timestamp};
+use crate::search::{format_local_date, format_local_datetime, format_size};
 use crate::security_log::ContentTool;
 use crate::tools::sensitive::{self, PROTECTED_NOTE, Protected};
 use crate::tools::{ToolError, ToolResult, fit_to_result_budget, is_virtual_path};
@@ -228,10 +228,11 @@ pub struct InspectedFile {
     pub size_bytes: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size_human: Option<String>,
-    /// Last modified, RFC 3339 UTC seconds. Absent when the filesystem doesn't say.
+    /// Last modified, RFC 3339 seconds in the user's zone with its offset
+    /// (`2026-03-29T14:00:00+02:00`). Absent when the filesystem doesn't say.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modified: Option<String>,
-    /// The same instant as `YYYY-MM-DD`, so the model never does date arithmetic.
+    /// The same instant as `YYYY-MM-DD` on the user's calendar, so the model never does date arithmetic.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modified_human: Option<String>,
     /// MIME type guessed from the extension. Beside `content.kind` / `format` so a lying
@@ -615,16 +616,11 @@ fn modified_secs(meta: &std::fs::Metadata) -> Option<u64> {
         .map(|d| d.as_secs())
 }
 
-/// A timestamp as the model reads it: RFC 3339 UTC seconds, and its `YYYY-MM-DD` twin
-/// (`search::format_timestamp`, never a second formatter).
+/// A timestamp as the model reads it: RFC 3339 seconds in the user's zone with its
+/// offset, and its `YYYY-MM-DD` twin on the same calendar (`search::format_local_datetime`
+/// and `format_local_date`, never a second formatter).
 fn spoken_modified(secs: Option<u64>) -> (Option<String>, Option<String>) {
-    (
-        secs.and_then(|secs| {
-            chrono::DateTime::<chrono::Utc>::from_timestamp(secs as i64, 0)
-                .map(|t| t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
-        }),
-        secs.map(format_timestamp),
-    )
+    (secs.map(format_local_datetime), secs.map(format_local_date))
 }
 
 /// The typed status for a read that stopped short.

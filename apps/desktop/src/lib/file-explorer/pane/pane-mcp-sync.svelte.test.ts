@@ -493,7 +493,7 @@ describe('the displayed date', () => {
 })
 
 describe('the dates a row carries', () => {
-  it('mirrors created and added as ISO strings when the volume records them', async () => {
+  it('mirrors the raw seconds, which the backend renders in the local zone', async () => {
     getFileRange.mockResolvedValue([
       { ...entryAt(0), modifiedAt: 1_700_000_000, createdAt: 1_600_000_000, addedAt: 1_750_000_000 },
       entryAt(1),
@@ -504,8 +504,9 @@ describe('the dates a row carries', () => {
 
     const [dated, undated] = await sync.buildMcpFileList()
 
-    expect(dated.created).toBe(new Date(1_600_000_000 * 1000).toISOString())
-    expect(dated.added).toBe(new Date(1_750_000_000 * 1000).toISOString())
+    expect(dated.modified).toBe(1_700_000_000)
+    expect(dated.created).toBe(1_600_000_000)
+    expect(dated.added).toBe(1_750_000_000)
     expect(undated.created).toBeNull()
     expect(undated.added).toBeNull()
   })

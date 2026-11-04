@@ -49,8 +49,8 @@ pub struct ArchiveEntry {
     pub size: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size_human: Option<String>,
-    /// RFC 3339 UTC seconds, when the archive recorded one (a directory implied by a
-    /// deeper entry's path has none).
+    /// RFC 3339 seconds in the user's zone with its offset, when the archive recorded
+    /// one (a directory implied by a deeper entry's path has none).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modified: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

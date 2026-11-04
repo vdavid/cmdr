@@ -17,6 +17,7 @@ pub(crate) mod index;
 pub(crate) mod index_source;
 pub(crate) mod live;
 pub(crate) mod volumes;
+pub(crate) mod zone;
 
 // The core lives in `cmdr-search`; its modules keep their old paths here
 // (`crate::search::matcher`, …) so the host reads the same either way.
@@ -50,7 +51,8 @@ pub(crate) use live::{
 
 // query.rs
 pub use query::SYSTEM_DIR_EXCLUDES;
-pub(crate) use query::{format_size, format_timestamp, parse_size, summarize_query, summarize_query_for_diagnostics};
+pub(crate) use query::{format_size, parse_size, summarize_query_for_diagnostics};
+pub(crate) use zone::{format_local_date, format_local_datetime, summarize_query};
 
 /// This machine's home folder, as the search core takes it: a value, so the core
 /// never reads it ambiently and a test can pass its own.

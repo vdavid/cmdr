@@ -8,7 +8,9 @@ search can silently omit a drive. Scope routes the volume (or the caller placed 
 
 `execute.rs` routes index/live search over `execute/coverage.rs`; `index_source.rs` answers the seam from SQL;
 `index/load.rs` reads arenas; `volumes.rs` caches them; `live.rs` holds the one run registry and pumps the walk into the crate's `ResultStream` (`live/CLAUDE.md`);
-`history.rs` owns recents; `ai.rs` hands the crate's NL translation (`crates/cmdr-search/src/translate/CLAUDE.md`) this machine's calendar and home.
+`history.rs` owns recents; `zone.rs` is this machine's calendar (`SystemZone`) and the local date formatters every MCP
+date goes through; `ai.rs` hands the crate's NL translation (`crates/cmdr-search/src/translate/CLAUDE.md`) that
+calendar and the home folder.
 
 ## Must-knows
 

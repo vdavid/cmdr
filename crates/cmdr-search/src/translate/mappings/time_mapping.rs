@@ -1,13 +1,13 @@
 use time::{Date, Month};
 
 use super::super::parser::{is_range, is_year};
-use super::local_days::LocalDays;
+use crate::local_days::LocalDays;
 
 // ── Time mapping ─────────────────────────────────────────────────────
 
 /// Map a `time` enum value to a (modified_after, modified_before) timestamp range,
 /// on the user's calendar `days`. Every boundary is a LOCAL midnight
-/// (`local_days.rs` says why).
+/// (`crate::local_days` says why).
 ///
 /// Returns `(None, None)` for unrecognized values.
 pub fn time_to_range(t: &str, days: &impl LocalDays) -> (Option<u64>, Option<u64>) {
@@ -248,7 +248,7 @@ mod tests {
         }
     }
 
-    use super::super::local_days::FixedZone;
+    use crate::local_days::FixedZone;
     use time::macros::{date, datetime};
 
     fn ts(t: time::OffsetDateTime) -> u64 {

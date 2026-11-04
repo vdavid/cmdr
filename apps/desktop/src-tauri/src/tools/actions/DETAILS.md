@@ -156,7 +156,7 @@ which for a cloud drive named by its own `volumeId` is `root`. An answer for a v
 - **The uncertainty rides INSIDE `matchCountHuman`** (`≥ 1,240 matches` versus `1,240 matches`), because a flag a
   sibling field carries is a flag the model sheds the moment it restates the number. It is `≥` whenever `complete` is
   false or the cap was hit.
-- **`sizeHuman` / `modifiedHuman` come from `search::format_size` / `format_timestamp`**, the dialog's own pair.
+- **`sizeHuman` / `modifiedHuman` come from `search::format_size` / `format_local_date`**, the dialog's own pair.
   ❌ Never a second formatter. `iconId` is dropped: a model can't render an icon. An absent size stays absent, ❌ never
   `0` (a NULL logical size is a hardlink-deduped row).
 - **`notes` keeps the authored prose beside the typed flags**, because one line is genuinely actionable copy no flag

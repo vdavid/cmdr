@@ -31,14 +31,17 @@ pub struct PaneFileEntry {
     pub is_directory: bool,
     pub size: Option<u64>,
     pub recursive_size: Option<u64>,
-    pub modified: Option<String>,
-    /// When the item was made, ISO 8601, if its volume records it.
+    /// Last modified, seconds since the Unix epoch. Raw seconds rather than a string
+    /// so `cmdr://state` renders every date through the one formatter, in the user's
+    /// zone (`search::format_local_datetime`).
+    pub modified: Option<u64>,
+    /// When the item was made, seconds since the Unix epoch, if its volume records it.
     #[serde(default)]
-    pub created: Option<String>,
-    /// When the item landed in its folder (Finder's "Date Added"), ISO 8601, if its
-    /// volume records it.
+    pub created: Option<u64>,
+    /// When the item landed in its folder (Finder's "Date Added"), seconds since the
+    /// Unix epoch, if its volume records it.
     #[serde(default)]
-    pub added: Option<String>,
+    pub added: Option<u64>,
     /// `Some(true)` while this directory's recursive size can still move: a walk
     /// is on it, above it, or below it (the roll-up repairs ancestors), the
     /// volume is aggregating, or the indexer still has unprocessed writes for it.

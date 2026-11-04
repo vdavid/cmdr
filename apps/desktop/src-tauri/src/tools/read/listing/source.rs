@@ -105,7 +105,7 @@ fn offline_coverage(name: &str, as_of: Option<u64>) -> Coverage {
     let note = match as_of {
         Some(at) => format!(
             "{name} isn't connected, so this is its drive index as of {}, and can't see changes since. Connect it for a live answer.",
-            crate::search::format_timestamp(at)
+            crate::search::format_local_date(at)
         ),
         None => format!(
             "{name} isn't connected, so this is what its drive index holds, from a walk that never finished. Connect it for a live answer."
@@ -115,7 +115,7 @@ fn offline_coverage(name: &str, as_of: Option<u64>) -> Coverage {
         source: ListSource::OfflineIndex,
         index_status: "stale".to_string(),
         authoritative: false,
-        as_of: as_of.map(crate::search::format_timestamp),
+        as_of: as_of.map(crate::search::format_local_date),
         note: Some(note),
     }
 }

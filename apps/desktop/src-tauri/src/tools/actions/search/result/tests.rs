@@ -158,7 +158,7 @@ fn a_hit_carries_both_the_raw_number_and_the_spoken_one() {
     assert_eq!(hit.modified, Some(1_735_689_600));
     assert_eq!(
         hit.modified_human.as_deref(),
-        Some(format_timestamp(1_735_689_600).as_str())
+        Some(format_local_date(1_735_689_600).as_str())
     );
     assert_eq!(result.match_count_human, "1 match", "and never \"1 matches\"");
 

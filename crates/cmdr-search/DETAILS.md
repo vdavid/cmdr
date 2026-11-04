@@ -47,7 +47,9 @@ The extraction changed desktop behavior in exactly these places, each a red-firs
 1. **`home_relative_parent` matches home on a `/` boundary**: a bare prefix strip turned `/Users/david/x` into `~id/x`
    for a home of `/Users/dav`.
 2. **Days are local**: "today", every AI time range, the MCP `modifiedAfter` / `modifiedBefore` dates, the AI's date
-   chips, and the dialog's own date filter start at the user's local midnight, never UTC's (`translate::LocalDays`).
+   chips, and the dialog's own date filter start at the user's local midnight, never UTC's. Every date the app shows a
+   person or the model (`summarize_query`, `LocalDays::format_date` and `format_datetime`) reads on that same calendar
+   (`local_days.rs`).
 3. **A bad exclusion glob is a `Query` error naming it**, never silently dropped.
 4. **A failed folder-size fill, size-range read, or scope resolution fails the search**, never a sizeless row, "no
    filter", or an "unresolved" scope; a live run reports it as `IndexUnreadable` with conversational copy.
@@ -134,8 +136,8 @@ re-exports), nine public modules, 86 items inside them. An item is `pub` only be
   `matcher::{CompiledQuery, Candidate, Evaluator, CompileError}`,
   `excludes::ExcludeRules::{from_query, excludes_walked}`, `engine::{home_relative_parent, derive_icon_id}`.
 - **Routing, MCP, and IPC**: the wire types,
-  `query::{parse_scope, parse_size, format_size, format_timestamp, summarize_query, summarize_query_for_diagnostics}`,
-  `types::MAX_RESULT_ROWS`.
+  `query::{parse_scope, parse_size, format_size, summarize_query, summarize_query_for_diagnostics}`,
+  `translate::LocalDays` (with its `format_date` / `format_datetime`), `types::MAX_RESULT_ROWS`.
 - **The host's loader and weights**: `arena::*`, `ranking::ImportanceWeights` and its map verbs.
 - **The host's tests and benches**: `engine::{search_ranked, Ranked, DirSizes, reconstruct_path_from_index}`; the
   `testing`-gated fixtures and wrappers count apart.

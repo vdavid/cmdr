@@ -18,7 +18,7 @@ use super::parser::ParsedLlmResponse;
 /// The instant an ISO date (YYYY-MM-DD) starts on the user's local calendar, in
 /// seconds since the Unix epoch. An MCP client's `modifiedAfter: "2025-01-01"` means
 /// the user's day, the same day the dialog's date filter and the AI's "today" mean
-/// (`mappings/local_days.rs`). `days` is the user's calendar, the host's.
+/// (`crate::local_days`). `days` is the user's calendar, the host's.
 pub fn iso_date_to_timestamp(date_str: &str, days: &impl LocalDays) -> Result<u64, String> {
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let date = time::Date::parse(date_str, &format).map_err(|e| format!("Invalid date '{date_str}': {e}"))?;

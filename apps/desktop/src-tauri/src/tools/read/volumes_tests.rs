@@ -146,7 +146,8 @@ fn a_saved_share_with_an_index_on_disk_reads_stale_as_of_its_last_scan() {
 
     let json = wire(&map(&[row], &facts(vec![tailscale])).volumes[0]);
     assert_eq!(json["indexStatus"], "stale");
-    assert_eq!(json["asOf"], "2025-10-20");
+    // The date on the user's calendar: the 20th in UTC, the 21st in Stockholm.
+    assert_eq!(json["asOf"], format_local_date(1_761_000_000));
 }
 
 /// With no index on disk, nothing changes: `off`, no date to be as of.
