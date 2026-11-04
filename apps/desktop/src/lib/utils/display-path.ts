@@ -33,7 +33,7 @@ const PICK_AT_START = /^\u0000\d+(?=\/|$)/
  * ❌ No lookbehind for the "at a word start" half: Safari 15 (a Catalina Mac's newest)
  * can't compile one, and this module-level regex then stopped 0.59.0's whole frontend
  * from mounting there. `CONTINUES_A_WORD` checks the preceding character instead,
- * and the build's `webkitRegexFloor` plugin fails on any lookbehind that slips back in.
+ * and the build's `webkitFloor` plugin fails on any lookbehind that slips back in.
  */
 const S3_ACCOUNT = /s3:\/\/[A-Za-z0-9\-_.~+=]+@/g
 

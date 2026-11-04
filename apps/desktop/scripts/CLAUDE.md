@@ -18,7 +18,7 @@ launch boundary, the llama-server fetch, and the type-drift check.
   `native-strings-fresh`
 - **`gen-boot-guard-lib.ts`**: the old-WebKit block screen's translated strings, spliced into the app shell by
   `vite.config.js` at config-load time (no CLI, nothing committed). `src/lib/utils/DETAILS.md` § Old-WebKit boot guard
-- **`vite-webkit-regex-floor.ts`**: fails the build on a regex Safari 15 can't compile
+- **`vite-webkit-floor.ts`**: fails a build Safari 15.4 can't run (regex, API: `vite-webkit-*-floor.ts`)
 - **`i18n-*.ts`**: catalog lib, locale checks, generators, key sync, `pnpm i18n:brief`, and the termbase/mechanics
   checks (`docs/i18n/termbase.md`)
 - **`gen-analytics-defaults.ts`** (+ `-lib.ts`): the per-version settings-defaults manifest the dashboard resolves

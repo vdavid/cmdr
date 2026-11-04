@@ -21,6 +21,17 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
 }))
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+/** `Promise.withResolvers`, which the app's Safari 15.4 type floor leaves out (`src/webkit-floor.d.ts`). */
+function withResolvers<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
 const filtered = { accepted: true, totalCount: 2, newCursorIndex: 1, newSelectedIndices: [1], sequence: 5 }
 const added: DirectoryDiff = {
   listingId: 'listing',
@@ -142,7 +153,7 @@ describe('filter and watcher row-space ordering', () => {
   }
 
   it('applies a new-row diff only after the filter response establishes those rows', async () => {
-    const answer = Promise.withResolvers<typeof filtered>()
+    const answer = withResolvers<typeof filtered>()
     ipc.setListingNameFilter.mockReturnValue(answer.promise)
     const pane = wire()
     pane.ctl.append('p')
@@ -187,7 +198,7 @@ describe('filter and watcher row-space ordering', () => {
   })
 
   it('discards an old-row diff delivered while the filter response is pending', async () => {
-    const answer = Promise.withResolvers<typeof filtered>()
+    const answer = withResolvers<typeof filtered>()
     ipc.setListingNameFilter.mockReturnValue(answer.promise)
     const pane = wire()
     pane.ctl.append('p')
@@ -218,7 +229,7 @@ describe('filter and watcher row-space ordering', () => {
   })
 
   it('keeps processing watcher updates after a rejected filter IPC', async () => {
-    const answer = Promise.withResolvers<typeof filtered>()
+    const answer = withResolvers<typeof filtered>()
     ipc.setListingNameFilter.mockReturnValue(answer.promise)
     const pane = wire()
     pane.ctl.append('p')

@@ -5,7 +5,8 @@
   "extends": "$app/tsconfig",
   "compilerOptions": {
     "sourceMap": true,
-    "strict": true
+    "strict": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   // `test/fixtures/*.svelte` are components a unit test mounts (they'd fail
   // `a11y-coverage` under `src/lib`, which they aren't part of), so they belong to

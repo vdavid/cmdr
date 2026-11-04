@@ -70,6 +70,14 @@ still calls whatever the source calls. `crypto.randomUUID` (15 files), `Object.h
 the `:has()` selector all arrived in Safari 15.4. Nothing lowers those, so 15.4 is the hard floor below which the app
 genuinely cannot work.
 
+The same gap runs the other way: a function NEWER than 15.4 (`toSorted`, `Object.groupBy`, `Set.union`) ships as written
+and throws `TypeError` on Catalina, breaking just the feature that calls it, so a startup smoke test can miss it. Two
+guards hold the line. `apps/desktop/tsconfig.json` pins `lib` to ES2022, and `apps/desktop/src/webkit-floor.d.ts` adds
+back the ES2023 members Safari 15.4 has (`findLast`, `findLastIndex`), so the app's own code fails type-checking.
+`vite-webkit-api-floor.ts` in `apps/desktop/scripts/` scans every emitted client chunk, dependencies included, for
+unchecked calls to a curated list of newer JavaScript and DOM functions; a call inside a check that names the function
+passes. On adding it, the whole bundle passed with nothing to change (Vite 8.3.5 production build, 2026-11-04).
+
 **Beside the floors, ICU.** A staged Safari brings its own JavaScriptCore but keeps the OS's ICU, and some `Intl` APIs
 exist only on a newer ICU than Catalina's. So Safari 15.6.1 on Catalina still has no `Intl.ListFormat`, which crashed
 0.55.0's main window there (cmdr-reports#80). The app degrades rather than blocks on this; the ICU gates, the affected
@@ -81,9 +89,9 @@ the target can't parse, it emits `RegExp(`…`, `u`)` instead, silently, which t
 `apps/desktop/src/lib/utils/display-path.ts`, so on Catalina's Safari 15.6.1 the module graph threw
 `Invalid regular expression: invalid group specifier name` while evaluating, before the logger existed: no frontend log
 line at all, and the backend's 10 s fallback showed a blank window (verified on the Catalina test Mac, 10.15.8 and
-Safari 15.6.1, by loading the build in Safari with an error-reporting hook, 2026-11-04). `webkitRegexFloor` in
-`apps/desktop/scripts/vite-webkit-regex-floor.ts` now fails `vite build` on any lookbehind, `v` flag, inline modifier,
-or duplicate group name in the emitted client chunks, dependencies included.
+Safari 15.6.1, by loading the build in Safari with an error-reporting hook, 2026-11-04).
+`apps/desktop/scripts/vite-webkit-regex-floor.ts` (run by the `webkitFloor` plugin) now fails `vite build` on any
+lookbehind, `v` flag, inline modifier, or duplicate group name in the emitted client chunks, dependencies included.
 
 Together they're why the block screen is an inline ES5 `<script>` in `apps/desktop/src/app.html` that runs before the
 module boot script: a screen shipped inside the bundle is unreachable on exactly the Safari (13.x) that most needs it.
@@ -210,21 +218,23 @@ future reference when we consider adopting them.
 
 ### What's safe to adopt today
 
-Without bumping our floor: only `Set.union` and friends. They need only macOS 13.6.5+, which most current Macs have.
-Everything else needs macOS 14.7+, so adopting them means declaring that floor and updating the website.
+None of them, while the floor is Catalina's Safari 15.4. Even `Set.union` and friends need Safari 17, which a Catalina
+Mac never gets, and the ES2022 `lib` pin plus the bundle scan (§ The two floors old WebKit crosses) fail the check on
+any of them. Adopting them means raising the floor (below).
 
 ## Recommendation if we want to use the fancier ES2025 features
 
 1. Raise `minimumSystemVersion` in `tauri.conf.json` to `14.7` (or `15.0`), `build.target` in `vite.config.js` to the
    matching Safari, and the capability floor in `webkit-compat.ts` plus the `app.html` guard with them.
 2. Update website's download page system requirements to mention the version.
-3. Bump tsconfigs to `target: ES2025` so TypeScript knows these exist without manual `lib` overrides.
+3. Raise the `lib` pin in `apps/desktop/tsconfig.json` to match (and trim `src/webkit-floor.d.ts`), and drop the entries
+   the new Safari has from `API_LIST` in `apps/desktop/scripts/vite-webkit-api-floor.ts`.
 4. Adopt `using` / `Set.union` / iterator helpers selectively where they shorten code.
 5. For Linux: ask the alpha tester what distro they're on. Anything beyond `Set` methods needs WebKitGTK 2.46+, which
    Ubuntu 24.04 doesn't ship (24.04 has 2.44).
 
 If we'd rather keep the floor where it is, leave `build.target` on `safari15` and skip these features. Note that raising
-the floor takes all three numbers: the plist, `build.target`, and the capability floor.
+the floor takes all three numbers (the plist, `build.target`, and the capability floor) plus the two API guards.
 
 ## Other simplifications worth remembering for next time
 
