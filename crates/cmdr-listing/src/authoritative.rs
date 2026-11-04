@@ -1,9 +1,9 @@
 //! The fresh-listing oracle: a cached listing a walker may trust instead of
 //! reading the volume again.
 
+use crate::rt::Instant;
 use std::path::Path;
 use std::sync::atomic::Ordering;
-use std::time::Instant;
 
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::WatchCoverage;

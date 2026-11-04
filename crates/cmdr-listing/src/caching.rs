@@ -1,9 +1,9 @@
 //! Directory listing cache for on-demand virtual scrolling.
 
+use crate::rt::Instant;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::time::Instant;
 
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 

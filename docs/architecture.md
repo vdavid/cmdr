@@ -433,6 +433,10 @@ the vendored fork are ordinary members.
   reporting, the listing cache, sorting, pane row numbers, the quick filter, and the diffs that keep a pane current. One
   handle (`Listings`) that a host builds with explicit seams; Cmdr's host is `listing_host/`. See
   `crates/cmdr-listing/CLAUDE.md`
+- `crates/cmdr-listing-wasm/`: the listing engine's second host, built for the browser (`wasm32-unknown-unknown`,
+  `wasm-bindgen`) over an `InMemoryVolume`, answering the listing commands for the website's `/demo`. No app crate
+  depends on it; `pnpm build:listing-wasm` builds it and `desktop-rust-listing-wasm` keeps it building. See
+  `crates/cmdr-listing-wasm/CLAUDE.md`
 - `crates/cmdr-collation/`: how two file names rank (`NameCollator`, ICU4X Unicode collation with numeric ordering, and
   the prebuilt `NameKey` a bulk sort compares). Below the listing engine, which re-exports it, so anything that orders
   names sorts the way a pane does without depending on the listing. See `crates/cmdr-collation/CLAUDE.md`

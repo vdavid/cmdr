@@ -1702,6 +1702,7 @@ dependencies = [
  "unicode-segmentation",
  "uuid",
  "uzers",
+ "web-time",
  "xattr",
 ]
 
@@ -1806,6 +1807,24 @@ dependencies = [
  "tokio",
  "tokio-util",
  "uuid",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-time",
+]
+
+[[package]]
+name = "cmdr-listing-wasm"
+version = "0.0.0"
+dependencies = [
+ "cmdr-fs",
+ "cmdr-listing",
+ "js-sys",
+ "log",
+ "serde",
+ "serde_json",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]

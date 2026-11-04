@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{LazyLock, RwLock};
-use uzers::{get_group_by_gid, get_user_by_uid};
 
 /// Cache for uid→username resolution.
 static OWNER_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
@@ -24,9 +23,7 @@ pub fn get_owner_name(uid: u32) -> String {
         return name.clone();
     }
     // Cache miss, resolve and store
-    let name = get_user_by_uid(uid)
-        .map(|u| u.name().to_string_lossy().into_owned())
-        .unwrap_or_else(|| uid.to_string());
+    let name = user_name_of(uid).unwrap_or_else(|| uid.to_string());
     if let Ok(mut cache) = OWNER_CACHE.write() {
         cache.insert(uid, name.clone());
     }
@@ -40,13 +37,32 @@ pub fn get_group_name(gid: u32) -> String {
     {
         return name.clone();
     }
-    let name = get_group_by_gid(gid)
-        .map(|g| g.name().to_string_lossy().into_owned())
-        .unwrap_or_else(|| gid.to_string());
+    let name = group_name_of(gid).unwrap_or_else(|| gid.to_string());
     if let Ok(mut cache) = GROUP_CACHE.write() {
         cache.insert(gid, name.clone());
     }
     name
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn user_name_of(uid: u32) -> Option<String> {
+    uzers::get_user_by_uid(uid).map(|u| u.name().to_string_lossy().into_owned())
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn group_name_of(gid: u32) -> Option<String> {
+    uzers::get_group_by_gid(gid).map(|g| g.name().to_string_lossy().into_owned())
+}
+
+// The browser build has no user database, so owners show as their numeric id.
+#[cfg(target_family = "wasm")]
+fn user_name_of(_uid: u32) -> Option<String> {
+    None
+}
+
+#[cfg(target_family = "wasm")]
+fn group_name_of(_gid: u32) -> Option<String> {
+    None
 }
 
 /// Whether a name alone marks an entry hidden: a leading dot, the universal

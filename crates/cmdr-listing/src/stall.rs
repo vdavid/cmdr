@@ -15,10 +15,10 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use crate::rt::Runtime;
+use crate::rt::time::Instant;
 use futures_util::stream::{FuturesUnordered, StreamExt};
-use tokio::runtime::Handle;
 use tokio::sync::Notify;
-use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 
 use crate::foreign_path::{Listed, list_as_stored};
@@ -278,7 +278,7 @@ type AttemptFuture = Pin<Box<dyn Future<Output = (u64, Result<Listed, VolumeErro
 /// into a cycle (`module-cycles`).
 pub(crate) struct ListingRead<'a> {
     /// Where each read's task runs.
-    pub runtime: &'a Handle,
+    pub runtime: &'a Runtime,
     /// What a stalled folder is mounted on.
     pub mounts: &'a Arc<dyn MountTable>,
     /// The read went `stall_after` without a new entry, with what the folder lives on.
@@ -427,7 +427,7 @@ pub(crate) async fn read_until_answered(read: ListingRead<'_>, watch: &StallWatc
 
 async fn sleep_until_opt(at: Option<Instant>) {
     match at {
-        Some(at) => tokio::time::sleep_until(at).await,
+        Some(at) => crate::rt::time::sleep_until(at).await,
         None => std::future::pending().await,
     }
 }

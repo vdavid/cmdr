@@ -24,8 +24,8 @@
 //! (`commands/file_system/listing.rs`) a thin pass-through that just grabs the
 //! read lock and delegates here.
 
+use crate::rt::Instant;
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
 
 use nucleo_matcher::{
     Config, Matcher, Utf32Str,

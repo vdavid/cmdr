@@ -12,7 +12,7 @@ use std::ops::Deref;
 use std::sync::{Arc, Mutex, RwLock, RwLockWriteGuard};
 use std::time::Duration;
 
-use tokio::runtime::Handle;
+use crate::rt::Runtime;
 
 use crate::DirectoryDiffBatch;
 use crate::host::ListingEvents;
@@ -34,11 +34,11 @@ pub(crate) struct DiffQueue {
     /// Where a flush reports.
     events: Arc<dyn ListingEvents>,
     /// Where the flush timer runs.
-    runtime: Handle,
+    runtime: Runtime,
 }
 
 impl DiffQueue {
-    pub(crate) fn new(events: Arc<dyn ListingEvents>, runtime: Handle) -> Self {
+    pub(crate) fn new(events: Arc<dyn ListingEvents>, runtime: Runtime) -> Self {
         Self {
             pending: Mutex::new(HashMap::new()),
             events,
@@ -67,7 +67,7 @@ impl DiffQueue {
             // A strong handle: the task ends after one flush window.
             let queue = Arc::clone(self);
             self.runtime.spawn(async move {
-                tokio::time::sleep(Duration::from_millis(FLUSH_WINDOW_MS)).await;
+                crate::rt::time::sleep(Duration::from_millis(FLUSH_WINDOW_MS)).await;
                 queue.flush(&lid);
             });
         }

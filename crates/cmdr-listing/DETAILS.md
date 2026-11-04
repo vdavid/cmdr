@@ -604,6 +604,26 @@ argued for. Everything counted exists for a named caller:
 `testing` is gated behind the `testing` feature and counts apart: it's the host's test surface, never a promise to a
 shipped build.
 
+## The browser build
+
+The engine also builds for `wasm32-unknown-unknown`, hosted by `crates/cmdr-listing-wasm` for the website's demo. One
+crate-private module, `src/rt/`, is the whole difference: every spawn, sleep, timeout, and `Instant` in the engine goes
+through `crate::rt`.
+
+- **Natively, `rt` is re-exports**: `Runtime` is `tokio::runtime::Handle`, `rt::time` is `tokio::time`, `rt::Instant` is
+  `std::time::Instant`. The desktop compiles the same code, `start_paused` test clocks included.
+- **In the browser (`src/rt/wasm.rs`)**: `Runtime::spawn` is `wasm_bindgen_futures::spawn_local` behind a `oneshot`
+  `JoinHandle` (dropping it detaches, as tokio's does), `spawn_blocking` runs the closure inline, `Instant` is
+  `web-time`'s, and `sleep` is a `Send` `setTimeout` future (the 50 ms diff flush, the stall clock, the reaper tick).
+- **Why a seam and not a runtime**: `std::time::Instant::now` panics on that target, which takes tokio's whole time
+  driver with it, and a page has no thread to run a runtime on. The target decision and the options it beat:
+  `crates/cmdr-listing-wasm/DETAILS.md` § "Decision".
+- **What the gates cost**: `ListingsBuilder::runtime` exists natively only, the default runtime is `cmdr-fs`'s fallback
+  natively and the page's loop in the browser (`rt::default_runtime`), and the three wasm deps are under
+  `cfg(target_family = "wasm")` in `Cargo.toml`. Nothing else in the engine knows which target it's on.
+- **Guardrail**: a direct `tokio::time`, `tokio::runtime::Handle`, or `std::time::Instant` in engine code compiles on
+  both targets and panics only in the browser. `desktop-rust-listing-wasm`'s smoke test is what catches it.
+
 ## Decisions
 
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.
