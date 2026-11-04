@@ -9,20 +9,18 @@
 pub mod ai;
 #[cfg(test)]
 mod bench;
-pub(crate) mod context;
-pub(crate) mod engine;
-pub(crate) mod excludes;
+#[cfg(test)]
+mod diagnostics_tests;
 pub(crate) mod execute;
 pub mod history;
 pub(crate) mod index;
 pub(crate) mod index_source;
 pub(crate) mod live;
-pub(crate) mod matcher;
-pub(crate) mod query;
-pub(crate) mod ranking;
-pub(crate) mod source;
-pub(crate) mod types;
 pub(crate) mod volumes;
+
+// The core lives in `cmdr-search`; its modules keep their old paths here
+// (`crate::search::matcher`, …) so the host reads the same either way.
+pub(crate) use cmdr_search::{context, engine, excludes, matcher, query, ranking, seam, types};
 
 // Flat re-exports so consumers can `use crate::search::{SearchQuery, ...}`
 

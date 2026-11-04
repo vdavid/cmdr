@@ -29,7 +29,7 @@ use crate::search::live::{
     SearchRunCoverage, SearchRunError, WalkEnding, WalkJudge,
 };
 use crate::search::matcher::{CompiledQuery, Evaluator};
-use crate::search::source::SearchError;
+use crate::search::seam::SearchError;
 use crate::search::types::SearchQuery;
 use crate::search::volumes::{self, LoadedVolume, VolumeLoad};
 

@@ -39,7 +39,7 @@ use cmdr_index::ROOT_VOLUME_ID;
 use super::context::{NameRules, SearchContext};
 use super::index_source::{IndexSource, scope_pairs};
 use super::ranking::ImportanceWeights;
-use super::source::{CoveredHalf, SearchError, search_covered};
+use super::seam::{CoveredHalf, SearchError, search_covered};
 use super::types::{SearchQuery, SearchResult};
 use super::volumes::{self, LoadedVolume, VolumeLoad};
 

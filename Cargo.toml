@@ -20,6 +20,7 @@ members = [
   "crates/cmdr-operations",
   "crates/cmdr-restic",
   "crates/cmdr-s3",
+  "crates/cmdr-search",
   "crates/cmdr-sftp",
   "crates/cmdr-smb",
   "crates/cmdr-update-trust",

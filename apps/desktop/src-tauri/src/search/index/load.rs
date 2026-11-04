@@ -427,13 +427,13 @@ mod tests {
         let mut arena = Arc::new(load_search_index(&pool, &AtomicBool::new(false)).unwrap());
 
         // More than the spare room a small arena keeps.
-        let past_the_room = super::super::spare_rows(arena.len()) + 100;
+        let past_the_room = cmdr_search::arena::spare_rows(arena.len()) + 100;
         write_more_rows(&db_path, 500, past_the_room);
         catch_up_search_index(&mut arena, &pool).unwrap();
 
         assert_same_rows(&arena, &load_search_index(&pool, &AtomicBool::new(false)).unwrap());
         assert!(
-            arena.spare_rows_left() >= super::super::spare_rows(arena.len()),
+            arena.spare_rows_left() >= cmdr_search::arena::spare_rows(arena.len()),
             "a grown arena keeps room for the next catch-up"
         );
     }

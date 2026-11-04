@@ -1,5 +1,5 @@
 //! The desktop's source of search rows: a loaded volume's arena, answered from its
-//! index database. The seam it fills is `source.rs`; the path work only the host can
+//! index database. The seam it fills is `seam.rs`; the path work only the host can
 //! do (`realpath`) is here too.
 
 use std::collections::HashMap;
@@ -8,7 +8,7 @@ use cmdr_index::store::{self, IndexStore};
 
 use super::index::SearchIndex;
 use super::query::expand_tilde;
-use super::source::{DirSizeSource, SearchRows, SourceError, SourceRead};
+use super::seam::{DirSizeSource, SearchRows, SourceError, SourceRead};
 use super::volumes::LoadedVolume;
 
 /// A loaded volume as a search source: its arena, its mount root, and SQL over its

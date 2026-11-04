@@ -59,7 +59,8 @@ allocator internals, the shape is the invariant. Worked examples: `media_index/s
 
 For PARALLEL code the per-thread counters see nothing (rayon's workers do the work), so the app crate's
 `crate::test_support::allocations_on_pool(threads, || …)` runs the closure on a fresh rayon pool and counts every
-allocation that pool's threads make, into a counter of its own. Worked example: `search/engine/tests/allocations.rs`.
+allocation that pool's threads make, into a counter of its own. Worked example:
+`crates/cmdr-search/src/engine/tests/allocations.rs`.
 
 It lives in the indexing tree, not next to `wait_until`, because a `#[global_allocator]` is per BINARY: it has to sit in
 the crate whose test binary is measuring, and a shared crate would give the shipped app a second one. Rust memory
@@ -71,7 +72,7 @@ them with production figures.
 A dependency of `cmdr-lib` and `cmdr-index`. Use for pure functions where the input space is large enough that example
 tests miss edge cases: comparators, parsers, transforms, generators. State a property (round-trip, idempotence, "output
 is valid for the consumer"), let proptest fuzz inputs. Patterns to copy: `indexing/aggregator/tests.rs` (topological
-sort), `search/query.rs` (glob_to_regex + scope parsing), `indexing/store/tests/path_resolution.rs`
+sort), `crates/cmdr-search/src/query.rs` (glob_to_regex + scope parsing), `indexing/store/tests/path_resolution.rs`
 (platform_case_compare comparator laws). Keep properties **tight**: "function doesn't panic" is too weak.
 
 ### `cargo-fuzz` (fuzzing the parsers that read untrusted bytes)

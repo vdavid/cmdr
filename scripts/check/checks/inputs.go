@@ -128,6 +128,7 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr-operations", Kind: KindApp, Glob: "crates/cmdr-operations/**"},
 	{Pkg: "cmdr-restic", Kind: KindApp, Glob: "crates/cmdr-restic/**"},
 	{Pkg: "cmdr-s3", Kind: KindApp, Glob: "crates/cmdr-s3/**"},
+	{Pkg: "cmdr-search", Kind: KindApp, Glob: "crates/cmdr-search/**"},
 	{Pkg: "cmdr-sftp", Kind: KindApp, Glob: "crates/cmdr-sftp/**"},
 	{Pkg: "cmdr-smb", Kind: KindApp, Glob: "crates/cmdr-smb/**"},
 	{Pkg: "cmdr-update-trust", Kind: KindApp, Glob: "crates/cmdr-update-trust/**"},

@@ -10,7 +10,7 @@ use crate::search::engine;
 use crate::search::index::{ArenaBuilder, SearchIndex};
 use crate::search::live::CoverageKind;
 use crate::search::ranking::ImportanceWeights;
-use crate::search::source::ResolvedScope;
+use crate::search::seam::ResolvedScope;
 use crate::search::types::{PatternType, SearchResultEntry};
 use cmdr_index::ROOT_VOLUME_ID;
 

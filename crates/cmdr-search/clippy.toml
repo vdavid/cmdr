@@ -1,0 +1,26 @@
+# Clippy reads the FIRST `clippy.toml` it finds walking up from this package's
+# manifest directory, and never merges, so this file replaces the workspace root's
+# for `cmdr-search`. It carries the root's general settings below; the root's
+# `disallowed-methods` / `disallowed-types` name `tauri`, `objc2_app_kit`, and
+# `reqwest`, none of which this crate can reach (`index-crate-isolation`).
+
+# Complexity threshold of 15 matches ESLint's complexity rule for consistency across Rust and TypeScript
+cognitive-complexity-threshold = 15
+
+# Tests legitimately `.unwrap()` everywhere; this exempts unwraps inside `#[test]` fns. Helper fns in
+# `#[cfg(test)] mod`s aren't covered, so those use the sanctioned `.expect("…")` form.
+allow-unwrap-in-tests = true
+
+# The core reads nothing ambient: the clock through `cmdr_fs::rt` (`std`'s panics on
+# `wasm32-unknown-unknown`, so a direct call compiles for the browser and traps only at
+# runtime), the home folder and the name rules from the host's `SearchContext`, and no
+# thread of its own (rayon's `par_chunks` is the one parallelism). ❗ METHOD bans, not
+# type bans: natively `rt::Instant` IS `std::time::Instant`.
+disallowed-methods = [
+  { path = "std::time::Instant::now", reason = "read the clock through `cmdr_fs::rt::now()`: `std`'s panics in the browser build" },
+  { path = "std::time::Instant::elapsed", reason = "use `cmdr_fs::rt::since(start)`: `std`'s clock panics in the browser build" },
+  { path = "std::time::SystemTime::now", reason = "the core reads no wall clock; a date the search needs arrives as a value" },
+  { path = "time::OffsetDateTime::now_utc", reason = "the core reads no wall clock; a date the search needs arrives as a value" },
+  { path = "dirs::home_dir", reason = "the home folder is the host's: it arrives as `SearchContext::home_dir`" },
+  { path = "std::thread::spawn", reason = "the core spawns nothing; rayon's `par_chunks` is its one parallelism" },
+]

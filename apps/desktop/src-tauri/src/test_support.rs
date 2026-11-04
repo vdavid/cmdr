@@ -32,7 +32,7 @@
 //!
 //! ❌ **Never let this become a no-op.** With no allocator installed, [`heap_bytes_held`] reports
 //! 0 for everything and every memory guard passes while measuring nothing. That's why
-//! `search/ranking/memory_tests.rs` asserts a non-zero measurement before it asserts a budget.
+//! `crates/cmdr-search/src/ranking/memory_tests.rs` asserts a non-zero measurement before it asserts a budget.
 
 use std::cell::Cell;
 use std::path::Path;

@@ -115,8 +115,8 @@ Writing them:
 - `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file, media, and folder-importance
   indexes), `cmdr-archive` (zip/tar/7z; the model a new backend crate copies), `cmdr-smb` (SMB and its protocol layer),
   `cmdr-nfs`, `cmdr-s3`, `cmdr-sftp`, and `cmdr-webdav` (those servers), `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB
-  phones), `cmdr-git` (repos, the `.git` portal), `cmdr-restic` (restic backups), `cmdr-http` (proxy routing),
-  `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-brief-columns` (Brief mode's column widths),
+  phones), `cmdr-git` (repos, the `.git` portal), `cmdr-restic` (restic backups), `cmdr-search` (⌘F), `cmdr-http` (proxy
+  routing), `cmdr-listing` (pane listings), `cmdr-collation` (file-name order), `cmdr-brief-columns` (Brief columns),
   `cmdr-local` (the local disk), `cmdr-media-meta` (media tags), `cmdr-menu` (menu bar data), `cmdr-operation-log` (the
   mutation journal and rollback planner), `cmdr-operations` (the write engine), `cmdr-update-trust` (the updater's trust
   check) carry no `tauri`, enforced by `index-crate-isolation`; plus `cmdr-listing-wasm` (the listing engine in a

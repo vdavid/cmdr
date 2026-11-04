@@ -8,7 +8,7 @@ use cmdr_index::store::{IndexStore, ROOT_ID};
 
 use super::*;
 use crate::search::index::load_search_index;
-use crate::search::source::{ResolvedScope, resolve_scope};
+use crate::search::seam::{ResolvedScope, resolve_scope};
 use crate::test_support::TestDir;
 
 // ── canonicalize_scope_path ─────────────────────────────────────
@@ -82,7 +82,7 @@ fn mount_rooted_volume() -> (tempfile::TempDir, LoadedVolume) {
     (dir, LoadedVolume::for_test(index, pool, Some(TEST_MOUNT.to_string())))
 }
 
-fn resolved(loaded: &LoadedVolume, paths: &[&str]) -> crate::search::source::ScopeResolution {
+fn resolved(loaded: &LoadedVolume, paths: &[&str]) -> crate::search::seam::ScopeResolution {
     let paths: Vec<String> = paths.iter().map(|p| p.to_string()).collect();
     resolve_scope(&IndexSource(loaded), &scope_pairs(&paths, None)).expect("the scope resolves")
 }

@@ -522,4 +522,24 @@ var surfaceGuardedCrates = []struct {
 			SubsystemItems: 0,
 		},
 	},
+	{
+		// Measured 2026-11-04, at the extraction, and set to exactly what the crate
+		// exposes, with no headroom.
+		//
+		// The 32 root promises are the nine public modules plus the flat re-exports
+		// the host names: the arena and its builder, the name rules and the search
+		// context, the seam (its two traits, typed errors, `ResolvedScope`, and
+		// `search_covered`), and the wire types. The modules keep their app-side
+		// paths (`crate::search::matcher`, ...) through the host's re-export, and each
+		// item in them is `pub` only because the host's routing, live run, MCP
+		// tools, or tests reach it; the rest stays `pub(crate)`. The `testing`-gated
+		// fixtures count apart. Item-by-item: `crates/cmdr-search/DETAILS.md` §
+		// "The public surface is capped".
+		Name: "cmdr-search",
+		Ceilings: surfaceCeilings{
+			RootPromises:   32,
+			PublicModules:  9,
+			SubsystemItems: 86,
+		},
+	},
 }

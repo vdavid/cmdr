@@ -13,7 +13,7 @@
 //! save it either, since a dev-dependency's features unify with the normal ones for the same
 //! package in a workspace test build.
 //!
-//! **Consequence to carry into the crate move**: `search/ranking/memory_tests.rs` stays
+//! **Consequence to carry into the crate move**: `crates/cmdr-search/src/ranking/memory_tests.rs` stays
 //! app-side and reaches in here for [`heap_bytes_held`]. Once this code is a separate crate,
 //! the app's test binary no longer contains this allocator, so that test measures nothing
 //! unless the app grows its own copy. Duplicating ~80 lines of allocator forwarding is the

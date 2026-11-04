@@ -1472,6 +1472,7 @@ dependencies = [
  "cmdr-operations",
  "cmdr-restic",
  "cmdr-s3",
+ "cmdr-search",
  "cmdr-sftp",
  "cmdr-smb",
  "cmdr-update-trust",
@@ -1952,6 +1953,22 @@ dependencies = [
  "unicode-normalization",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "cmdr-search"
+version = "0.0.0"
+dependencies = [
+ "cmdr-fs",
+ "log",
+ "proptest",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "specta",
+ "time",
+ "unicode-normalization",
 ]
 
 [[package]]
