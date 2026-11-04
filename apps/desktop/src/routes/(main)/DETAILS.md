@@ -93,7 +93,11 @@ while the window is still hidden) but deliberately never shows it.
 **Show first, check after.** There used to be a paint gate _before_ the show, awaiting `waitForNextPaint` (a double
 `requestAnimationFrame`). That's gone: it cost a fixed second of startup and produced no usable signal. The check now
 runs after the show, where the window is visible and rAF isn't throttled, so its answer means something. If no frame
-lands within 1 s we re-show, because `makeKeyAndOrderFront:` re-invalidates the view.
+lands within 1 s we re-show, because `makeKeyAndOrderFront:` re-invalidates the view. Then it keeps waiting up to 10 s
+in total: a frame landing in that stretch is LATE, not stuck, and logs the real time to first frame at info; only no
+frame at all warns. Slow Macs make the late case routine: the 2015 MacBook Air on Catalina misses the 1 s deadline on
+every launch while both panes mount, then paints (0.59.0, 10.15.8, four of four launches, 2026-11-04), and a warning on
+every launch would hide a genuinely stuck window.
 
 The risk it guards is real but unreproduced: `show()` can land before the compositor presents a frame, and if nothing
 invalidates the view afterward the window sits blank until the user resizes it (observed once on a cold prod launch

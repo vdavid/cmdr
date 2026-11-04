@@ -1,6 +1,6 @@
 /**
- * Vite plugin: fails the build when the emitted JS holds a regular expression the oldest WebKit
- * Cmdr promises can't compile.
+ * Finds regular expressions in an emitted chunk that the oldest WebKit Cmdr promises can't
+ * compile. `webkitFloor` in `vite-webkit-floor.ts` runs it on every client chunk.
  *
  * ## Why the build target doesn't cover this
  *
@@ -21,7 +21,7 @@
  */
 
 import { RegExpParser, visitRegExpAST } from '@eslint-community/regexpp'
-import { parseSync, type Plugin } from 'vite'
+import { parseSync } from 'vite'
 
 /** Regex features Safari 15.6 (the newest WebKit a Catalina gets) can't compile, with the Safari that added each. */
 export const BEYOND_SAFARI_15 = {
@@ -97,6 +97,19 @@ function isRegExpConstructor(node: AstNode): boolean {
 
 /** Every constant regex in `code` (a whole emitted chunk) that Safari 15 can't compile. */
 export function findRegexBeyondSafari15(code: string): RegexFinding[] {
+  return findRegexInProgram(parseChunk(code))
+}
+
+/** Parses one emitted chunk, throwing rather than returning half an AST. */
+export function parseChunk(code: string): unknown {
+  const { program, errors } = parseSync('chunk.js', code, { sourceType: 'module' })
+  // A chunk that doesn't parse is the bundler's bug, and checking half an AST would read as a pass.
+  if (errors.length > 0) throw new Error(`couldn't parse an emitted chunk: ${errors[0]?.message ?? ''}`)
+  return program
+}
+
+/** Every constant regex in a parsed chunk that Safari 15 can't compile. */
+export function findRegexInProgram(program: unknown): RegexFinding[] {
   const findings: RegexFinding[] = []
   const check = (pattern: string, flags: string) => {
     const features = regexFeaturesBeyondSafari15(pattern, flags)
@@ -121,14 +134,11 @@ export function findRegexBeyondSafari15(code: string): RegexFinding[] {
       if (key !== 'type' && key !== 'start' && key !== 'end') visit(node[key])
     }
   }
-  const { program, errors } = parseSync('chunk.js', code, { sourceType: 'module' })
-  // A chunk that doesn't parse is the bundler's bug, and checking half an AST would read as a pass.
-  if (errors.length > 0) throw new Error(`couldn't parse an emitted chunk: ${errors[0]?.message ?? ''}`)
   visit(program)
   return findings
 }
 
-/** The build error: every offending regex, grouped by chunk, with what to do about it. */
+/** The build error's lines for the regex findings, grouped by chunk, with what to do about them. */
 export function describeFindings(byChunk: ReadonlyMap<string, readonly RegexFinding[]>): string {
   const lines = [
     'The bundle holds regular expressions that Safari 15 (the newest WebKit a macOS Catalina Mac gets) can’t compile.',
@@ -143,23 +153,4 @@ export function describeFindings(byChunk: ReadonlyMap<string, readonly RegexFind
     }
   }
   return lines.join('\n')
-}
-
-/** Fails `vite build` on any emitted regex beyond Safari 15. A no-op in `vite dev`. */
-export function webkitRegexFloor(): Plugin {
-  return {
-    name: 'cmdr-webkit-regex-floor',
-    apply: 'build',
-    // Only the client bundle reaches WebKit; SvelteKit's server build runs in Node at build time.
-    applyToEnvironment: (environment) => environment.name === 'client',
-    generateBundle(_options, bundle) {
-      const byChunk = new Map<string, RegexFinding[]>()
-      for (const output of Object.values(bundle)) {
-        if (output.type !== 'chunk') continue
-        const findings = findRegexBeyondSafari15(output.code)
-        if (findings.length > 0) byChunk.set(output.fileName, findings)
-      }
-      if (byChunk.size > 0) this.error(describeFindings(byChunk))
-    },
-  }
 }
