@@ -52,9 +52,6 @@
     "file-explorer/rename/rename-activation.ts": {
       "reason": "Depends on document event listeners and timers"
     },
-    "file-explorer/views/BriefList.svelte": {
-      "reason": "Logic tested in brief-list-utils.ts, component mounting heavy"
-    },
     "file-operations/mkdir/new-folder-operations.ts": {
       "reason": "Depends on FilePane refs and Tauri listen API"
     },

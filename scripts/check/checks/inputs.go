@@ -180,6 +180,8 @@ var rustWorkspaceConfigInputs = []string{
 // The frontend-bridge redaction test reads the marker vocabulary and the shared
 // case table the TS logger is tested against (`redact/fe_bridge_tests.rs`). The browser
 // demo's event drift guard reads the generated bindings (`cmdr-listing-wasm/src/events_test.rs`).
+// The app's menu tests read the menu bar's definition and ids from `cmdr-menu`
+// (`menu/menu_items_test.rs`, `menu/context_menu_icons_test.rs`, `menu/macos_appkit.rs`).
 //
 // A lane carries this whenever its own set covers the tree that does the
 // embedding, which is what `TestRustInputsCoverEveryEmbeddedFile` walks the whole
@@ -199,6 +201,8 @@ var rustEmbeddedInputs = []string{
 	"apps/desktop/src-tauri/updater-backup.pub",
 	"apps/website/public/mdm/**",
 	"apps/website/src/lib/trust-mdm.ts",
+	"crates/cmdr-menu/src/bar.rs",
+	"crates/cmdr-menu/src/ids.rs",
 }
 
 // rustScanInputs is what a Rust source scanner of the given jurisdiction reads:
