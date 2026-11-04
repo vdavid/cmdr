@@ -23,6 +23,7 @@ use std::sync::Arc;
 use std::sync::RwLock as StdRwLock;
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 
+mod apple_double;
 mod attributes;
 mod closing_reads;
 mod copy;
@@ -340,6 +341,9 @@ struct SmbVolumeInner {
     /// The streamed reads whose CLOSE is on its way, which a delete of the same
     /// path waits for (`closing_reads.rs`).
     closing_reads: Arc<closing_reads::ClosingReads>,
+    /// Whether this share keeps AppleDouble `._` files, and the ones a delete
+    /// took (`apple_double.rs`).
+    sidecars: apple_double::Sidecars,
     /// The connection the current `client` owns, readable without the client
     /// mutex, so the transfer watchdog can ask whether the server is still talking
     /// (`Volume::connection_liveness`) and how many bytes it has sent. Swapped in
@@ -421,6 +425,7 @@ impl SmbVolume {
                 link_paths: dfs_links::LinkPaths::default(),
                 link_watches: Arc::default(),
                 closing_reads: Arc::default(),
+                sidecars: apple_double::Sidecars::default(),
                 live_connection,
                 transfer,
                 active_mount_path: Arc::new(StdRwLock::new(mount_path)),
@@ -694,6 +699,8 @@ mod params_test {
 // SMB cells whose other half is the app's own machinery (the transfer pipeline,
 // the volume registry, the listing cache); see `DETAILS.md` § "Which side a test
 // lives on".
+#[cfg(test)]
+mod apple_double_integration_test;
 #[cfg(test)]
 mod attributes_integration_test;
 #[cfg(test)]
