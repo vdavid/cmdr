@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { smokeViewer } from './smoke-viewer.mjs'
 import { smokeWrites, writesTree } from './smoke-writes.mjs'
 
 const pkg = resolve(process.argv[2] ?? 'pkg')
@@ -146,6 +147,7 @@ try {
   console.log(`listing-wasm smoke: ${rtSummary}`)
 
   console.log(`listing-wasm smoke: ${await smokeWrites(demo, { events: recent, waitFor })}`)
+  console.log(`listing-wasm smoke: ${await smokeViewer(glue, fail)}`)
 } catch (error) {
   fail(error?.stack ?? String(error))
 }

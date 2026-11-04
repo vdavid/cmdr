@@ -53,7 +53,7 @@ describe('demo windows', () => {
 
   it('refuses the windows the demo has no backend for, and a second window with the same label', () => {
     const { open } = setup()
-    for (const label of ['viewer-123', 'debug']) {
+    for (const label of ['debug', 'viewer']) {
       expect(() => open(label)).toThrow()
     }
     expect(panels()).toHaveLength(0)
@@ -66,6 +66,22 @@ describe('demo windows', () => {
     const { open } = setup()
     open('queue')
     expect(panels()).toHaveLength(1)
+  })
+
+  it('opens several viewers by their `viewer-` labels, and each close frees that window', () => {
+    const closed: string[] = []
+    const host = createWindowHost(
+      () => {},
+      (label) => closed.push(label),
+    )
+    const call = (cmd: string, payload: Record<string, unknown>) => host.handler(cmd)?.(payload)
+    for (const label of ['viewer-1', 'viewer-2']) {
+      call('plugin:webview|create_webview_window', { options: { label, url: '/viewer?path=x', title: 'x' } })
+    }
+    expect(panels()).toHaveLength(2)
+    call('close_child_window', { label: 'viewer-1' })
+    call('plugin:window|destroy', { label: 'viewer-2' })
+    expect(closed).toEqual(['viewer-1', 'viewer-2'])
   })
 
   it('closes by any of the app paths, gives the main window its focus back, and says so', () => {

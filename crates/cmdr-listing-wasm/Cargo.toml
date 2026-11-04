@@ -34,6 +34,8 @@ cmdr-collation = { path = "../cmdr-collation" }
 # The operation log's read connection type (`commands/history.rs`), the version
 # `cmdr-operation-log` links.
 rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
+# The file viewer's core, over the same volume, answering the viewer's commands.
+cmdr-viewer = { path = "../cmdr-viewer" }
 log = "0.4"
 # The wire shapes: every answer and event crosses as the same JSON Tauri sends.
 serde = { version = "1", features = ["derive"] }
@@ -56,7 +58,8 @@ cmdr-operations = { path = "../cmdr-operations", features = ["golden"] }
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 # The listing engine's fixtures (`TestEngine`, `TestListing`) for the backend-listings cells.
 cmdr-listing = { path = "../cmdr-listing", features = ["testing"] }
-# `wait_until_async`, the write cells' one way to wait on an event.
+# `wait_until_async`, the write cells' one way to wait on an event, and
+# `wait_until`, for the viewer tests' native search thread.
 cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # The shim's tests run natively, on a real runtime, against the same engine.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

@@ -218,7 +218,7 @@ export function tauriCommandsMock(): Record<string, unknown> {
 
 /** The viewer's `mediaUrl`; a plain string is all the grid needs to render a tile. */
 export function mediaViewMock(): Record<string, unknown> {
-  return { mediaUrl: (token: string) => `cmdr-media://localhost/${token}` }
+  return { mediaUrl: (token: string) => `media://${token}` }
 }
 
 export function settingsMock(): Record<string, unknown> {

@@ -12,10 +12,10 @@ use tauri::http::StatusCode;
 
 use super::network_transfer_test_support::clean_deep;
 use crate::file_system::volume::manager::get_volume_manager;
+use crate::file_viewer::app_viewer as viewer;
 use crate::file_viewer::content_kind::ViewerContentKind;
-use crate::file_viewer::media::{self, MediaSource};
+use crate::file_viewer::media::MediaSource;
 use crate::file_viewer::media_protocol::serve_volume;
-use crate::file_viewer::session;
 
 /// Past one read chunk and one cached block, so reassembly is really exercised.
 const FILE_BYTES: usize = 3 * 1024 * 1024 + 123;
@@ -36,11 +36,13 @@ fn a_png() -> Vec<u8> {
 
 /// Opens `path` the way F3 does, and asks for it the way the webview does.
 fn renders(id: &str, path: &Path, bytes: &[u8], kind: ViewerContentKind, mime: &str) {
-    let opened = session::open_session(&path.display().to_string(), id).expect("the file opens");
+    let opened = viewer()
+        .open_session(&path.display().to_string(), id)
+        .expect("the file opens");
     assert_eq!(opened.kind, kind, "{}", path.display());
     assert!(opened.media_from_volume, "served from the volume, not a temp");
     let token = opened.media_token.clone().expect("a media token");
-    let Some(MediaSource::Volume(served)) = media::resolve_token(&token) else {
+    let Some(MediaSource::Volume(served)) = viewer().tokens().resolve_token(&token) else {
         panic!("a volume token");
     };
     let ask = |range: Option<&str>| {
@@ -65,10 +67,12 @@ fn renders(id: &str, path: &Path, bytes: &[u8], kind: ViewerContentKind, mime: &
         "every byte, by range"
     );
 
-    let raw = session::get_bytes(&opened.session_id, 0, 8).expect("Binary and Hex read it too");
+    let raw = viewer()
+        .get_bytes(&opened.session_id, 0, 8)
+        .expect("Binary and Hex read it too");
     assert_eq!(raw.as_slice(), &bytes[..8]);
 
-    session::close_session(&opened.session_id).expect("closes");
+    viewer().close_session(&opened.session_id).expect("closes");
 }
 
 /// The three files, each written to `dir` and viewed there.

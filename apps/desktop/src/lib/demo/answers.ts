@@ -98,6 +98,11 @@ export const appAnswers: AnswerTable = {
   getPathLimits: () => ({ maxNameBytes: 255, maxPathBytes: 1024 }),
   getIsolatedStorePath: none,
   whatsNewDevOverride: none,
+  // The viewer window's native-menu plumbing: a panel has no native menu to sync.
+  viewerSetupMenu: none,
+  viewerSetWordWrap: none,
+  viewerSetSearchInputFocused: none,
+  viewerSetHistoryState: none,
 
   // Permissions, license, and startup notices
   checkFullDiskAccess: on,

@@ -307,6 +307,9 @@ jobs:
               - 'crates/cmdr-operations/**'
               - 'crates/cmdr-operation-log/**'
               - 'crates/cmdr-archive/**'
+              - 'crates/cmdr-viewer/**'
+              - 'brand/screenshots/**'
+              - 'apps/desktop/test/e2e-shared/media-fixtures/**'
               - 'vendor/**'
               - 'scripts/build-listing-wasm.sh'
               - 'scripts/build-listing-wasm/**'
@@ -543,6 +546,11 @@ jobs:
 
       - name: Build the listing engine for wasm
         run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
+
+      # The file viewer's core compiles for the browser: the only lane that sees a host-only
+      # dep reach `cmdr-viewer` before the demo engine hosts it.
+      - name: Build the viewer core for wasm
+        run: ./scripts/check/check --check desktop-rust-viewer-wasm --ci
 
       # A broken intra-doc link is invisible to every other lane, because only
       # `cargo doc` resolves one. These steps are sequential, so this lane keeps

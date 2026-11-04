@@ -411,6 +411,20 @@ var AllChecks = []CheckDefinition{
 		Run:    RunDesktopRustListingWasm,
 	},
 	{
+		ID:          "desktop-rust-viewer-wasm",
+		CpuWeight:   8,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "viewer-wasm",
+		DisplayName: "viewer core builds as wasm",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   []string{"desktop-rust-clippy"},
+		// Every crate the build compiles is a workspace member, so the shared Rust set
+		// covers them.
+		Inputs: inputs(rustCompileInputs),
+		Run:    RunDesktopRustViewerWasm,
+	},
+	{
 		ID:          "desktop-security-advisories",
 		Nickname:    "security-advisories",
 		DisplayName: "security advisory list is valid",

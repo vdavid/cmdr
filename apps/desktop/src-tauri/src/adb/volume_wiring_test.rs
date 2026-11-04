@@ -364,7 +364,7 @@ async fn the_viewer_opens_a_text_file_on_a_dialed_phone() {
     // command runs it: on a blocking thread.
     let opened = tokio::task::spawn_blocking({
         let volume_id = volume_id.clone();
-        move || crate::file_viewer::open_session(&path, &volume_id)
+        move || crate::file_viewer::app_viewer().open_session(&path, &volume_id)
     })
     .await
     .expect("the open ran")
@@ -373,7 +373,9 @@ async fn the_viewer_opens_a_text_file_on_a_dialed_phone() {
     assert_eq!(opened.initial_lines.rows[0].text, "first line");
     assert_eq!(opened.initial_lines.rows[1].text, "second line");
 
-    crate::file_viewer::close_session(&opened.session_id).expect("close");
+    crate::file_viewer::app_viewer()
+        .close_session(&opened.session_id)
+        .expect("close");
     get_volume_manager().unregister(&volume_id);
     device_provider::forget_volume(SERIAL);
 }

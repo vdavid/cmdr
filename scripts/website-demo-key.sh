@@ -35,6 +35,9 @@ paths=(
   crates/cmdr-operations
   crates/cmdr-operation-log
   crates/cmdr-archive
+  crates/cmdr-viewer
+  brand/screenshots
+  apps/desktop/test/e2e-shared/media-fixtures
   vendor
   scripts/build-listing-wasm.sh
   scripts/build-listing-wasm

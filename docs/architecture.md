@@ -189,7 +189,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/text_editor.rs`: which app F4 opens a file in: the text editors LaunchServices lists, the stored choice
   (the system default, a bundle id, or a picked `.app`), and the fallback when that app is gone. Rationale: the module's
   own docs
-- `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
+- `file_viewer/`: the app's host for the file viewer (its seams, `cmdr-media://`, "Open with", the pull-to-temp); the
+  core (three backends, search, Markdown, media tokens) is `crates/cmdr-viewer`
 - `network/`: SMB's app-side half: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting,
   Keychain, the auto-upgrade passes, and the frontend's connection events. The backend under it is `crates/cmdr-smb/`
 - `saved_servers/`: the servers and shares the user saved: the hub's listing, an add without a dial, an edit (in place

@@ -24,6 +24,7 @@ pub mod operations_host;
 #[cfg(target_family = "wasm")]
 mod rt_self_test;
 pub mod tree;
+pub mod viewer;
 
 #[cfg(all(test, not(target_family = "wasm")))]
 mod commands_test;
@@ -35,3 +36,5 @@ mod folder_sizes_test;
 mod menu_test;
 #[cfg(all(test, not(target_family = "wasm")))]
 mod tree_test;
+#[cfg(all(test, not(target_family = "wasm")))]
+mod viewer_test;

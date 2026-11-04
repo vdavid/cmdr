@@ -1444,8 +1444,6 @@ dependencies = [
 name = "cmdr"
 version = "0.59.0"
 dependencies = [
- "ammonia",
- "arc-swap",
  "axum",
  "base64 0.23.1",
  "bincode2",
@@ -1475,6 +1473,7 @@ dependencies = [
  "cmdr-sftp",
  "cmdr-smb",
  "cmdr-update-trust",
+ "cmdr-viewer",
  "cmdr-webdav",
  "cocoon",
  "core-foundation 0.10.1",
@@ -1483,7 +1482,6 @@ dependencies = [
  "dirs 7.0.0",
  "dispatch2",
  "ed25519-dalek",
- "encoding_rs",
  "env_logger",
  "fern",
  "filetime",
@@ -1770,6 +1768,7 @@ dependencies = [
  "cmdr-menu",
  "cmdr-operation-log",
  "cmdr-operations",
+ "cmdr-viewer",
  "js-sys",
  "log",
  "rusqlite",
@@ -2006,6 +2005,33 @@ dependencies = [
  "security-framework",
  "tar",
  "tempfile",
+]
+
+[[package]]
+name = "cmdr-viewer"
+version = "0.0.0"
+dependencies = [
+ "ammonia",
+ "arc-swap",
+ "cmdr-fs",
+ "encoding_rs",
+ "getrandom 0.4.3",
+ "image",
+ "log",
+ "memchr",
+ "notify-debouncer-full",
+ "proptest",
+ "pulldown-cmark",
+ "rand 0.10.3",
+ "regex",
+ "serde",
+ "serde_json",
+ "specta",
+ "tempfile",
+ "tokio",
+ "url",
+ "urlencoding",
+ "uuid",
 ]
 
 [[package]]

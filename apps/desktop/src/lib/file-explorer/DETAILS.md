@@ -358,8 +358,8 @@ history gets `tooLargeInRepoHistory`, since "from inside the archive" would be w
 `open-with-not-on-this-mac` (the app's name), means no app launched: the row's volume hands out paths no other app can
 open (a phone, a server, a direct SMB share whose macOS mount went away). It becomes an info toast,
 `fileExplorer.openWith.notOnThisMac`, that points at the viewer's shortcut instead. Rust decides it in `launch_with`,
-because only the volume knows when a share's mount is gone. Backend side: `src-tauri/src/file_viewer/DETAILS.md` § "Open
-with on a routed file".
+because only the volume knows when a share's mount is gone. Backend side:
+`apps/desktop/src-tauri/src/file_viewer/DETAILS.md` § "Open with on a routed file".
 
 ## TCC-restricted treatment
 

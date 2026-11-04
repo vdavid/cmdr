@@ -32,6 +32,7 @@ use crate::events::{DemoEvents, EventSink, ListingPathEvent};
 use crate::folder_sizes::FolderSizes;
 use crate::operations_host::DemoOperations;
 use crate::tree::{DemoTree, TreeError};
+use crate::viewer::{DemoViewer, VIEWER_COMMANDS};
 
 /// Every command [`Demo::invoke`] answers, by its Tauri name.
 pub const COMMANDS: &[&str] = &[
@@ -68,7 +69,7 @@ pub const COMMANDS: &[&str] = &[
 
 /// How fast the demo's one device streams, slow enough to watch a copy's
 /// progress and pause it in the queue (`DETAILS.md` § Writes has the measured rate).
-pub const DEVICE_BYTES_PER_SEC: u64 = 5 * 1024 * 1024;
+pub const DEVICE_BYTES_PER_SEC: u64 = 40_000_000;
 
 /// How long engine work holds the page before it breathes (invariant: no
 /// stretch past about 50 ms; `smoke.mjs` probes it).
@@ -91,6 +92,9 @@ pub struct Demo {
     operations: DemoOperations,
     /// Folder sizes off the volume, the drive index's stand-in.
     sizes: Arc<FolderSizes>,
+    /// The file viewer over the same volume, so a file the listing shows (a copy's
+    /// landed file too) is the file the viewer opens (`viewer.rs`).
+    viewer: DemoViewer,
 }
 
 impl Demo {
@@ -110,6 +114,12 @@ impl Demo {
         // The drive index's stand-in, for the panes, the dialogs, and the status bar.
         let sizes = Arc::new(FolderSizes::new(Arc::clone(&store)));
         let volume: Arc<dyn Volume> = store;
+        let viewer = DemoViewer::new(
+            volume_id.clone(),
+            Arc::clone(&volume),
+            Arc::clone(&sink),
+            page_runtime(),
+        );
         let events = Arc::new(DemoEvents::new(Arc::clone(&sink)));
         let volumes = Arc::new(OneVolume {
             volume_id: volume_id.clone(),
@@ -129,6 +139,7 @@ impl Demo {
             fonts: Arc::new(FontMetricsStore::new()),
             operations,
             sizes,
+            viewer,
         })
     }
 
@@ -140,12 +151,21 @@ impl Demo {
 
     /// Whether [`Demo::invoke`] answers `command`.
     pub fn handles(command: &str) -> bool {
-        COMMANDS.contains(&command) || DemoOperations::handles(command)
+        COMMANDS.contains(&command) || DemoOperations::handles(command) || DemoViewer::handles(command)
     }
 
     /// Every command [`Demo::invoke`] answers, by its Tauri name.
     pub fn commands() -> impl Iterator<Item = &'static str> {
-        COMMANDS.iter().copied().chain(DemoOperations::commands())
+        COMMANDS
+            .iter()
+            .chain(VIEWER_COMMANDS)
+            .copied()
+            .chain(DemoOperations::commands())
+    }
+
+    /// The file viewer over the demo's volume.
+    pub fn viewer(&self) -> &DemoViewer {
+        &self.viewer
     }
 
     /// Runs `command` with Tauri-style `args` (camelCase keys).
@@ -340,6 +360,7 @@ impl Demo {
                 let query: BriefColumnsQuery = parse(command, args)?;
                 answer(compute_brief_column_text_widths(l, &self.fonts, &query).map_err(BriefColumnsIpcError::from))
             }
+            _ if DemoViewer::handles(command) => self.viewer.invoke(command, args),
             _ => Err(Value::String(format!("the browser demo doesn't answer `{command}`"))),
         }
     }
@@ -362,6 +383,15 @@ impl Demo {
             timed_out: false,
         }
     }
+}
+
+/// The runtime the viewer bridges on: the page's event loop in the browser, the caller's
+/// tokio runtime in native tests.
+fn page_runtime() -> cmdr_fs::rt::Runtime {
+    #[cfg(target_family = "wasm")]
+    return cmdr_fs::rt::Runtime::default();
+    #[cfg(not(target_family = "wasm"))]
+    cmdr_fs::rt::Runtime::current()
 }
 
 pub(crate) fn parse<T: DeserializeOwned>(command: &str, args: Value) -> Result<T, Value> {

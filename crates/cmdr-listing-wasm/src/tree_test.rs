@@ -17,6 +17,7 @@ fn entry(path: &str, kind: DemoKind) -> DemoEntry {
 
 fn tree(entries: Vec<DemoEntry>) -> DemoTree {
     DemoTree {
+        contents: Default::default(),
         volume_id: "root".into(),
         volume_name: None,
         home: None,

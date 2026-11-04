@@ -13,12 +13,12 @@ use cmdr_fs::entry::FileEntry;
 use tauri::http::{Response, StatusCode, header};
 
 use super::content_kind::ViewerContentKind;
-use super::media::{self, MediaSource};
+use super::media::MediaSource;
 use super::media_protocol::serve_volume;
-use super::media_volume::{MEDIA_ON_VOLUME_MAX_BYTES, MediaLoadStage, ViewerMediaLoad};
-use super::session;
+use super::media_volume::{MEDIA_ON_VOLUME_MAX_BYTES, MediaLoad, MediaLoadStage};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{ListingProgress, Volume, VolumeError, VolumeRandomReader};
+use crate::file_viewer::app_viewer as viewer;
 
 /// `ftypheic`: the bytes the issue was about. Nothing in the app decodes them.
 fn a_heic(len: usize) -> Vec<u8> {
@@ -210,10 +210,10 @@ fn a_volume_claiming(
 fn a_heic_on_a_share_opens_as_an_image() {
     let id = "viewer-media-heic";
     let (path, _bytes, _counters) = a_volume(id, "photo.HEIC", a_heic(2048), Reads::Held);
-    let result = session::open_session(&path, id).expect("opens");
+    let result = viewer().open_session(&path, id).expect("opens");
     assert_eq!(result.kind, ViewerContentKind::Image);
     assert!(result.media_token.is_some());
-    session::close_session(&result.session_id).unwrap();
+    viewer().close_session(&result.session_id).unwrap();
     get_volume_manager().unregister(id);
 }
 
@@ -224,7 +224,7 @@ fn a_file_behind_a_dead_link_says_so() {
     let id = "viewer-media-dead-link";
     let (path, _bytes, _counters) = a_volume(id, "photo.HEIC", a_heic(2048), Reads::DeadLink);
     assert!(matches!(
-        session::open_session(&path, id),
+        viewer().open_session(&path, id),
         Err(super::ViewerError::LinkTargetUnreachable)
     ));
     get_volume_manager().unregister(id);
@@ -243,14 +243,14 @@ fn a_png(len: usize) -> Vec<u8> {
 const STALL_LIMIT: Duration = Duration::from_secs(30);
 
 fn volume_media(token: &str) -> Arc<super::media_volume::VolumeMedia> {
-    match media::resolve_token(token).expect("the token resolves") {
+    match viewer().tokens().resolve_token(token).expect("the token resolves") {
         MediaSource::Volume(found) => found,
         _ => panic!("a file on a volume mints a volume token"),
     }
 }
 
 /// One `cmdr-media://` request against a session's token, and what it told the window.
-fn request(token: &str, range: Option<&str>, stall_limit: Duration) -> (Response<Vec<u8>>, Vec<ViewerMediaLoad>) {
+fn request(token: &str, range: Option<&str>, stall_limit: Duration) -> (Response<Vec<u8>>, Vec<MediaLoad>) {
     let heard = Arc::new(Mutex::new(Vec::new()));
     let heard_by_emit = Arc::clone(&heard);
     let response = tauri::async_runtime::block_on(serve_volume(
@@ -273,7 +273,7 @@ fn both_ways_of_reading_by_position_serve_the_whole_file_and_a_range() {
         ("viewer-media-ranged", Reads::Ranged),
     ] {
         let (path, bytes, _counters) = a_volume(id, "photo.png", a_png(3 * 1024 * 1024), reads);
-        let opened = session::open_session(&path, id).expect("opens");
+        let opened = viewer().open_session(&path, id).expect("opens");
         assert_eq!(opened.kind, ViewerContentKind::Image);
         assert!(opened.media_from_volume, "the window follows this request");
         let dimensions = opened.media_dimensions.expect("a PNG header reads through the volume");
@@ -301,8 +301,11 @@ fn both_ways_of_reading_by_position_serve_the_whole_file_and_a_range() {
         let (past_the_end, _) = request(&token, Some("bytes=99999999-"), STALL_LIMIT);
         assert_eq!(past_the_end.status(), StatusCode::RANGE_NOT_SATISFIABLE);
 
-        session::close_session(&opened.session_id).unwrap();
-        assert!(media::resolve_token(&token).is_none(), "closing drops the token");
+        viewer().close_session(&opened.session_id).unwrap();
+        assert!(
+            viewer().tokens().resolve_token(&token).is_none(),
+            "closing drops the token"
+        );
         get_volume_manager().unregister(id);
     }
 }
@@ -315,7 +318,7 @@ fn a_pdf_on_a_server_opens_with_no_pull_and_a_range_reads_only_its_blocks() {
     let mut pdf = b"%PDF-1.7\n".to_vec();
     pdf.resize(40 * 1024 * 1024, b' ');
     let (path, _bytes, counters) = a_volume(id, "scan.pdf", pdf, Reads::Ranged);
-    let opened = session::open_session(&path, id).expect("opens without a stream");
+    let opened = viewer().open_session(&path, id).expect("opens without a stream");
     assert_eq!(opened.kind, ViewerContentKind::Pdf);
     assert!(opened.media_dimensions.is_none());
     let token = opened.media_token.clone().expect("a token");
@@ -330,7 +333,7 @@ fn a_pdf_on_a_server_opens_with_no_pull_and_a_range_reads_only_its_blocks() {
     assert_eq!(part.body().len(), 100);
     assert_eq!(counters.ranged_reads.load(Ordering::SeqCst) - before, 1);
 
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
     get_volume_manager().unregister(id);
 }
 
@@ -342,10 +345,12 @@ fn raw_bytes_of_a_picture_on_a_volume_read_through_the_volume() {
         ("viewer-media-raw-ranged", Reads::Ranged),
     ] {
         let (path, bytes, _counters) = a_volume(id, "photo.heic", a_heic(4096), reads);
-        let opened = session::open_session(&path, id).expect("opens");
-        let raw = session::get_bytes(&opened.session_id, 8, 16).expect("reads through the volume");
+        let opened = viewer().open_session(&path, id).expect("opens");
+        let raw = viewer()
+            .get_bytes(&opened.session_id, 8, 16)
+            .expect("reads through the volume");
         assert_eq!(raw.as_slice(), &bytes[8..24]);
-        session::close_session(&opened.session_id).unwrap();
+        viewer().close_session(&opened.session_id).unwrap();
         get_volume_manager().unregister(id);
     }
 }
@@ -355,21 +360,21 @@ fn raw_bytes_of_a_picture_on_a_volume_read_through_the_volume() {
 fn view_as_text_and_svg_keep_their_rules_on_a_volume() {
     let id = "viewer-media-as-text";
     let (path, _bytes, _counters) = a_volume(id, "photo.heic", a_heic(4096), Reads::Held);
-    let opened = session::open_session_as_text(&path, id).expect("opens");
+    let opened = viewer().open_session_as_text(&path, id).expect("opens");
     assert_eq!(opened.kind, ViewerContentKind::Text);
     assert!(opened.media_token.is_none());
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
     get_volume_manager().unregister(id);
 
     let id = "viewer-media-svg";
     let svg = br#"<svg xmlns="http://www.w3.org/2000/svg"></svg>"#.to_vec();
     let (path, _bytes, _counters) = a_volume(id, "logo.svg", svg, Reads::Held);
-    let opened = session::open_session(&path, id).expect("opens");
+    let opened = viewer().open_session(&path, id).expect("opens");
     assert_eq!(opened.kind, ViewerContentKind::Image);
     let token = opened.media_token.clone().expect("a token");
     let (response, _) = request(&token, None, STALL_LIMIT);
     assert_eq!(response.headers().get(header::CONTENT_TYPE).unwrap(), "image/svg+xml");
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
     get_volume_manager().unregister(id);
 }
 
@@ -380,9 +385,9 @@ fn a_picture_past_the_memory_line_opens_as_text_on_a_held_reader() {
     let id = "viewer-media-too-big";
     let claimed = MEDIA_ON_VOLUME_MAX_BYTES + 1;
     let (path, _bytes, _counters) = a_volume_claiming(id, "huge.png", a_png(4096), claimed, Reads::Held);
-    let opened = session::open_session(&path, id).expect("opens");
+    let opened = viewer().open_session(&path, id).expect("opens");
     assert_eq!(opened.kind, ViewerContentKind::Text);
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
     get_volume_manager().unregister(id);
 }
 
@@ -392,7 +397,7 @@ fn a_picture_past_the_memory_line_opens_as_text_on_a_held_reader() {
 fn a_server_that_stops_answering_fails_the_request_on_the_stall_limit() {
     let id = "viewer-media-hung";
     let (path, _bytes, counters) = a_volume(id, "photo.png", a_png(3 * 1024 * 1024), Reads::Ranged);
-    let opened = session::open_session(&path, id).expect("opens");
+    let opened = viewer().open_session(&path, id).expect("opens");
     let token = opened.media_token.clone().expect("a token");
 
     counters.hold_reads.store(true, Ordering::SeqCst);
@@ -406,7 +411,7 @@ fn a_server_that_stops_answering_fails_the_request_on_the_stall_limit() {
     assert_eq!(retried.status(), StatusCode::PARTIAL_CONTENT, "a retry reads again");
     assert!(counters.ranged_reads.load(Ordering::SeqCst) > reads_when_it_gave_up);
 
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
     get_volume_manager().unregister(id);
 }
 
@@ -416,7 +421,7 @@ fn a_server_that_stops_answering_fails_the_request_on_the_stall_limit() {
 fn a_read_the_server_refuses_tells_the_window() {
     let id = "viewer-media-refused";
     let (path, _bytes, counters) = a_volume(id, "photo.png", a_png(3 * 1024 * 1024), Reads::Held);
-    let opened = session::open_session(&path, id).expect("opens");
+    let opened = viewer().open_session(&path, id).expect("opens");
     let token = opened.media_token.clone().expect("a token");
 
     counters.fail_reads.store(true, Ordering::SeqCst);
@@ -424,7 +429,7 @@ fn a_read_the_server_refuses_tells_the_window() {
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
     assert_eq!(heard.last().expect("told").stage, MediaLoadStage::Failed);
 
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
     get_volume_manager().unregister(id);
 }
 
@@ -434,7 +439,7 @@ fn a_read_the_server_refuses_tells_the_window() {
 fn closing_the_session_stops_a_read_in_flight() {
     let id = "viewer-media-closed";
     let (path, _bytes, counters) = a_volume(id, "photo.png", a_png(64 * 1024 * 1024), Reads::Ranged);
-    let opened = session::open_session(&path, id).expect("opens");
+    let opened = viewer().open_session(&path, id).expect("opens");
     let token = opened.media_token.clone().expect("a token");
     let media = volume_media(&token);
 
@@ -446,14 +451,14 @@ fn closing_the_session_stops_a_read_in_flight() {
         token.clone(),
         None,
         STALL_LIMIT,
-        move |load: ViewerMediaLoad| heard_by_emit.lock().unwrap().push(load),
+        move |load: MediaLoad| heard_by_emit.lock().unwrap().push(load),
     ));
     let reads_before_the_close = counters.ranged_reads.load(Ordering::SeqCst);
     crate::test_support::wait_until(Duration::from_secs(5), "the first read to arrive", || {
         counters.ranged_reads.load(Ordering::SeqCst) > reads_before_the_close
     });
 
-    session::close_session(&opened.session_id).unwrap();
+    viewer().close_session(&opened.session_id).unwrap();
     counters.hold_reads.store(false, Ordering::SeqCst);
     let response = tauri::async_runtime::block_on(in_flight).expect("the request answers");
 

@@ -101,6 +101,13 @@ export function installWebview(backend: Pick<DemoBackend, 'invoke' | 'emit' | 'a
 
   mockWindows(label)
   mockIPC((cmd, payload) => invoke(cmd, (payload ?? {}) as Payload))
+  // `convertFileSrc` as Tauri's macOS webview answers it, except the viewer's `cmdr-media`
+  // scheme, which the page can't register: a `blob:` URL over the token's bytes instead.
+  const tauri = (window as unknown as { __TAURI_INTERNALS__: Record<string, unknown> }).__TAURI_INTERNALS__
+  tauri.convertFileSrc = (filePath: string, protocol = 'asset') =>
+    protocol === 'cmdr-media'
+      ? backend.mediaUrl(filePath, label)
+      : `${protocol}://localhost/${encodeURIComponent(filePath)}`
   const detach = backend.attach({ label, deliver })
   // A secondary window's iframe going away is that window closing: stop sending it events.
   window.addEventListener('pagehide', detach)

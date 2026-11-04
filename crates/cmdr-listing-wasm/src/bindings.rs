@@ -1,6 +1,7 @@
 //! The JS API: what `wasm-bindgen` exports to the page. A thin shell over
 //! [`Demo`]: JSON in, JSON out, events to one callback.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde_json::Value;
@@ -80,6 +81,17 @@ impl EventSink for JsSink {
             log::warn!(target: "listing", "the `{event}` handler threw: {e:?}");
         }
     }
+
+    fn emit_to(&self, window_label: &str, event: &str, payload: Value) {
+        let payload = to_js(&payload);
+        let target = JsValue::from_str(window_label);
+        if let Err(e) = self
+            .0
+            .call3(&JsValue::NULL, &JsValue::from_str(event), &payload, &target)
+        {
+            log::warn!(target: "listing", "the `{event}` handler threw: {e:?}");
+        }
+    }
 }
 
 /// The real listing engine over an in-memory file tree.
@@ -93,10 +105,13 @@ impl DemoListing {
     /// Builds the engine over `tree` (`{ volumeId, root, entries: [...] }`),
     /// calling `onEvent(eventName, payload)` for every listing event, with the
     /// same names and payloads as Tauri's (`listing-complete`, `directory-diff`, ...).
+    /// A targeted event (`viewer-media-load`) adds a third argument, the window label it's
+    /// for. `contents`, when given, is `{ [path]: Uint8Array }`: real bytes for those files.
     #[wasm_bindgen(constructor)]
-    pub fn new(tree: JsValue, on_event: js_sys::Function) -> Result<DemoListing, JsError> {
-        let tree: DemoTree =
+    pub fn new(tree: JsValue, on_event: js_sys::Function, contents: JsValue) -> Result<DemoListing, JsError> {
+        let mut tree: DemoTree =
             serde_json::from_value(from_js(&tree)?).map_err(|e| JsError::new(&format!("demo tree: {e}")))?;
+        tree.contents = contents_from_js(&contents)?;
         let demo = Demo::new(tree, Arc::new(JsSink(on_event))).map_err(|e| JsError::new(&e.to_string()))?;
         Ok(DemoListing { demo })
     }
@@ -104,6 +119,29 @@ impl DemoListing {
     /// The Tauri command names [`invoke`](Self::invoke) answers.
     pub fn commands() -> Vec<String> {
         Demo::commands().map(str::to_string).collect()
+    }
+
+    /// The bytes behind a viewer media token, as `{ mime, bytes: Uint8Array }`, or
+    /// `undefined` for a token that names nothing. The window `windowLabel` hears
+    /// `viewer-media-load` `Done` for it, as the app's does.
+    #[wasm_bindgen(js_name = mediaBody)]
+    pub fn media_body(&self, token: &str, window_label: &str) -> JsValue {
+        let Some(body) = self.demo.viewer().media_body(token, window_label) else {
+            return JsValue::UNDEFINED;
+        };
+        let answer = js_sys::Object::new();
+        let bytes = js_sys::Uint8Array::from(body.bytes.as_slice());
+        // `Reflect::set` on a fresh plain object can't fail.
+        let _ = js_sys::Reflect::set(&answer, &JsValue::from_str("mime"), &JsValue::from_str(&body.mime));
+        let _ = js_sys::Reflect::set(&answer, &JsValue::from_str("bytes"), &bytes);
+        answer.into()
+    }
+
+    /// Frees every viewer session the window `windowLabel` holds, as the app does when
+    /// that window is destroyed.
+    #[wasm_bindgen(js_name = closeViewerWindow)]
+    pub fn close_viewer_window(&self, window_label: &str) {
+        self.demo.viewer().close_window(window_label);
     }
 
     /// Whether [`invoke`](Self::invoke) answers `command`.
@@ -191,6 +229,27 @@ fn from_js(value: &JsValue) -> Result<Value, JsError> {
     let json = js_sys::JSON::stringify(value).map_err(|_| JsError::new("arguments aren't JSON"))?;
     let json = json.as_string().unwrap_or_default();
     serde_json::from_str(&json).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// `{ [path]: Uint8Array }` as stored contents; `undefined` is none.
+fn contents_from_js(value: &JsValue) -> Result<HashMap<String, Vec<u8>>, JsError> {
+    let mut contents = HashMap::new();
+    if value.is_undefined() || value.is_null() {
+        return Ok(contents);
+    }
+    for pair in js_sys::Object::entries(&js_sys::Object::from(value.clone())).iter() {
+        let pair = js_sys::Array::from(&pair);
+        let path = pair
+            .get(0)
+            .as_string()
+            .ok_or_else(|| JsError::new("contents: a key isn't a path"))?;
+        let bytes = pair.get(1);
+        if !bytes.is_instance_of::<js_sys::Uint8Array>() {
+            return Err(JsError::new(&format!("contents: `{path}` isn't a Uint8Array")));
+        }
+        contents.insert(path, js_sys::Uint8Array::from(bytes).to_vec());
+    }
+    Ok(contents)
 }
 
 /// JSON as a JS value, through `JSON.parse`.

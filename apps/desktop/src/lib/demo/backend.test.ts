@@ -2,12 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 // A fake engine: claims two commands, one of which a TS table also answers, to pin the order.
 const engine = vi.hoisted(() => ({
-  sink: undefined as ((event: string, payload: unknown) => void) | undefined,
+  sink: undefined as ((event: { name: string; payload: unknown; target?: string }) => void) | undefined,
   calls: [] as string[],
+  closedWindows: [] as string[],
 }))
 
 vi.mock('./listing.js', () => ({
-  startListingEngine: (sink: (event: string, payload: unknown) => void) => {
+  startListingEngine: (sink: (event: { name: string; payload: unknown; target?: string }) => void) => {
     engine.sink = sink
     return {
       handles: (cmd: string) => Promise.resolve(cmd === 'get_file_range' || cmd === 'get_default_volume_id'),
@@ -15,6 +16,9 @@ vi.mock('./listing.js', () => ({
         engine.calls.push(cmd)
         return Promise.resolve(`engine:${cmd}`)
       },
+      closeViewerWindow: (label: string) => engine.closedWindows.push(label),
+      mediaBody: (token: string) =>
+        token === 'known' ? { mime: 'image/png', bytes: Uint8Array.from([1, 2, 3]) } : undefined,
     }
   },
 }))
@@ -34,7 +38,7 @@ vi.mock('./menu-engine.js', () => ({
 }))
 
 import { createDemoBackend, type DemoWebview, type EventTarget } from './backend.js'
-import { DEMO_VOLUME_ID } from './demo-tree.js'
+import { DEMO_HOME, DEMO_VOLUME_ID } from './demo-tree.js'
 
 function fakeWebview(label: string) {
   const heard: [string, unknown, EventTarget][] = []
@@ -83,7 +87,7 @@ describe('demo backend', () => {
     backend.attach(main.webview)
     const detach = backend.attach(settings.webview)
 
-    engine.sink?.('listing-complete', { listingId: 'l' })
+    engine.sink?.({ name: 'listing-complete', payload: { listingId: 'l' } })
     backend.emit('settings-changed', { key: 'k' }, { kind: 'label', label: 'settings' })
     expect(main.heard.map(([event]) => event)).toEqual(['listing-complete', 'settings-changed'])
     expect(settings.heard[1]).toEqual(['settings-changed', { key: 'k' }, { kind: 'label', label: 'settings' }])
@@ -92,5 +96,60 @@ describe('demo backend', () => {
     backend.emit('later', null, { kind: 'everyone' })
     expect(settings.heard).toHaveLength(2)
     expect(main.heard).toHaveLength(3)
+  })
+
+  it('sends an engine event with a target to that window only, and keeps its own notices', () => {
+    const backend = createDemoBackend()
+    const viewer = fakeWebview('viewer-1')
+    backend.attach(viewer.webview)
+    const opened = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+    engine.sink?.({ name: 'viewer-media-load', payload: { token: 't' }, target: 'viewer-1' })
+    engine.sink?.({ name: 'demo://open-url', payload: { url: 'https://getcmdr.com/' } })
+    engine.sink?.({ name: 'demo://media-token-dropped', payload: { token: 't' } })
+    expect(viewer.heard).toEqual([['viewer-media-load', { token: 't' }, { kind: 'label', label: 'viewer-1' }]])
+    expect(opened).toHaveBeenCalledWith('https://getcmdr.com/', '_blank', 'noopener')
+    opened.mockRestore()
+  })
+
+  it('makes one blob: URL per media token and revokes it when the engine drops the token', () => {
+    const backend = createDemoBackend()
+    const created = vi.spyOn(URL, 'createObjectURL').mockImplementation(() => 'blob:one')
+    const revoked = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+
+    expect(backend.mediaUrl('known', 'viewer-1')).toBe('blob:one')
+    expect(backend.mediaUrl('known', 'viewer-1')).toBe('blob:one')
+    expect(backend.mediaUrl('unknown', 'viewer-1')).toBe('')
+    expect(created).toHaveBeenCalledTimes(1)
+
+    engine.sink?.({ name: 'demo://media-token-dropped', payload: { token: 'known' } })
+    engine.sink?.({ name: 'demo://media-token-dropped', payload: { token: 'never-made' } })
+    expect(revoked.mock.calls).toEqual([['blob:one']])
+    created.mockRestore()
+    revoked.mockRestore()
+  })
+
+  it("frees a viewer window's sessions when its panel closes", async () => {
+    const backend = createDemoBackend()
+    await backend.invoke('plugin:webview|create_webview_window', {
+      options: { label: 'viewer-9', url: '/viewer?path=x', title: 'x' },
+    })
+    await backend.invoke('close_child_window', { label: 'viewer-9' })
+    expect(engine.closedWindows).toContain('viewer-9')
+    document.querySelector('.cmdr-demo-window')?.remove()
+  })
+
+  it('opens a demo file in the viewer on Enter, and keeps the refusal for a folder', async () => {
+    const backend = createDemoBackend()
+    const main = fakeWebview('main')
+    backend.attach(main.webview)
+
+    expect(await backend.invoke('open_path', { path: '~/notes.md', volumeId: 'root' })).toBeNull()
+    expect(main.heard).toEqual([
+      ['open-file-viewer', { path: `${DEMO_HOME}/notes.md` }, { kind: 'label', label: 'main' }],
+    ])
+    await expect(backend.invoke('open_path', { path: `${DEMO_HOME}/Music`, volumeId: 'root' })).rejects.toMatchObject({
+      type: 'unsupported',
+    })
   })
 })

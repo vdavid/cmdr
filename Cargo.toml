@@ -23,6 +23,7 @@ members = [
   "crates/cmdr-sftp",
   "crates/cmdr-smb",
   "crates/cmdr-update-trust",
+  "crates/cmdr-viewer",
   "crates/cmdr-webdav",
   "crates/fsevent-stream",
   "crates/index-query",

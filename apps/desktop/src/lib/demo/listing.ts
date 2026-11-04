@@ -5,6 +5,7 @@
  * `DETAILS.md` § The listing seam.
  */
 import type { Payload } from './answer-types.js'
+import { demoContents } from './demo-contents.js'
 import { DEMO_HOME, DEMO_ROOT, DEMO_VOLUME_ID, demoEntries } from './demo-tree.js'
 import { loadEngineModule } from './engine-module.js'
 import { demoPath } from './volumes.js'
@@ -15,10 +16,21 @@ export interface ListingEngineHandle {
   handles(cmd: string): Promise<boolean>
   /** Answers like `invoke`: resolves with the answer, rejects with the typed error value. */
   invoke(cmd: string, payload: Payload): Promise<unknown>
+  /** Frees the viewer sessions (and media tokens) of the window `label`, once it closed. */
+  closeViewerWindow(label: string): void
+  /** A viewer media token's bytes for the window `label`, or `undefined` (an unknown token, or no engine yet). */
+  mediaBody(token: string, label: string): { mime: string; bytes: Uint8Array } | undefined
 }
 
-/** Where the engine's events go: a Tauri event name and its payload. */
-export type ListingEventSink = (event: string, payload: unknown) => void
+/** One engine event: its Tauri name, its payload, and the window label an `emit_to` names. */
+export interface EngineEvent {
+  name: string
+  payload: unknown
+  target?: string
+}
+
+/** Where the engine's events go. */
+export type ListingEventSink = (event: EngineEvent) => void
 
 /**
  * Every argument that names a path on the demo volume, across the listing and write commands. The
@@ -59,8 +71,11 @@ export function freeBytesFromSearch(search: string): number | undefined {
  * before the listing's first event, as Rust's spawned read guarantees.
  */
 export function startListingEngine(sink: ListingEventSink): ListingEngineHandle {
-  const ready = loadEngineModule().then((wasm) => {
+  // Set once the engine loads: a media URL is built synchronously, long after any open needed it.
+  let engine: { mediaBody(token: string, label: string): { mime: string; bytes: Uint8Array } | undefined } | null = null
+  const ready = loadEngineModule().then(async (wasm) => {
     if (!wasm) return null
+    const contents = await demoContents()
     const tree = {
       volumeId: DEMO_VOLUME_ID,
       volumeName: 'Macintosh HD',
@@ -70,12 +85,17 @@ export function startListingEngine(sink: ListingEventSink): ListingEngineHandle 
       entries: demoEntries,
     }
     try {
-      const engine = new wasm.DemoListing(tree, (event, payload) => {
-        setTimeout(() => {
-          sink(event, payload)
-        }, 0)
-      })
-      return { DemoListing: wasm.DemoListing, engine }
+      const loadedEngine = new wasm.DemoListing(
+        tree,
+        (event, payload, target) => {
+          setTimeout(() => {
+            sink({ name: event, payload, target })
+          }, 0)
+        },
+        contents,
+      )
+      engine = loadedEngine
+      return { DemoListing: wasm.DemoListing, engine: loadedEngine }
     } catch (error) {
       // The engine refuses a bad tree at construction; every listing command is then unanswered.
       // eslint-disable-next-line no-console -- the demo's developer reads the devtools console
@@ -91,5 +111,9 @@ export function startListingEngine(sink: ListingEventSink): ListingEngineHandle 
       if (!loaded) throw new Error(`[demo] the listing engine did not load, so it can't answer ${cmd}`)
       return loaded.engine.invoke(cmd, expandPaths(payload))
     },
+    closeViewerWindow: (label) => {
+      void ready.then((loaded) => loaded?.engine.closeViewerWindow(label))
+    },
+    mediaBody: (token, label) => engine?.mediaBody(token, label),
   }
 }
