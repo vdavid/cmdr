@@ -129,18 +129,10 @@ fn the_detach_word_comes_off_the_volume_id() {
 /// new one can't slip in with `...`.
 #[test]
 fn menu_labels_use_the_ellipsis_character() {
-    const SOURCES: [(&str, &str); 6] = [
+    const SOURCES: [(&str, &str); 4] = [
         (
             "cmdr-menu bar.rs",
             include_str!("../../../../../crates/cmdr-menu/src/bar.rs"),
-        ),
-        (
-            "cmdr-menu context/file.rs",
-            include_str!("../../../../../crates/cmdr-menu/src/context/file.rs"),
-        ),
-        (
-            "cmdr-menu context/popups.rs",
-            include_str!("../../../../../crates/cmdr-menu/src/context/popups.rs"),
         ),
         ("menu_structure.rs", include_str!("menu_structure.rs")),
         ("file_context_menu.rs", include_str!("file_context_menu.rs")),

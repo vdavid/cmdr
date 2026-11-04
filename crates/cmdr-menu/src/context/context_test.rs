@@ -711,6 +711,21 @@ fn a_long_filename_is_truncated_in_the_middle() {
     assert_eq!(name.chars().count(), FILENAME_MAX_CHARS);
 }
 
+/// Menu labels end with the U+2026 ellipsis character, never three periods: macOS kerns `...`
+/// worse, and the desktop's SF Symbol pass finds an item by its title. The words live in the
+/// catalog (guarded there); this keeps watch over any literal written in the menus' own source.
+#[test]
+fn the_menus_write_no_three_period_ellipsis() {
+    for (name, source) in [
+        ("file.rs", include_str!("file.rs")),
+        ("popups.rs", include_str!("popups.rs")),
+    ] {
+        for (number, line) in source.lines().enumerate() {
+            assert!(!line.contains("...\""), "{name}:{} ends a label with `...`", number + 1);
+        }
+    }
+}
+
 // --- truncate_for_menu_label ---
 
 #[test]
