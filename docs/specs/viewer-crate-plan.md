@@ -190,6 +190,11 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
   - `tauri::async_runtime::block_on` is `Runtime::block_on` on Tauri's global runtime; a `Handle::block_on` replacement
     behaves the same on a multi-thread runtime from a non-async thread, and both panic inside an async context. Every
     caller today runs on a `spawn_blocking` or plain OS thread; keep it so, and say so in the bridge's doc comment.
+  - ❗ Never resolve an ambient runtime in the bridge (`Handle::current()`, `try_current`, or an `rt` call that does): a
+    `HeldReader` drops on a plain worker thread (a search, the tail catch-up) where there is none, and that panics. The
+    `Viewer` stores the runtime its host hands over at creation (the app: Tauri's, as `listing_host/` does) and the
+    bridge spawns and blocks on exactly that. The bridge's seam commit keeps `tauri::async_runtime` (the global, safe on
+    any thread) until the `Viewer` holds the handle.
   - The event structs keep their names (the event name derives from them) and serde shapes, and no crate type may share
     a name with one (specta would emit both into `bindings.ts`); `bindings.ts` zero diff is the gate.
   - `close_session` is the one choke point that drops `SESSIONS`, the media token, and the temp; the host seams must not
@@ -231,7 +236,17 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
     `origin.rs`), the browser would otherwise report every such file as `NotFound`, since `exists()` is always false
     there. The browser answers the volume's own typed error instead; pin it in the smoke.
   - The worker module's and the bridge's browser halves. The bridge: poll the future once and answer a typed error if
-    it's pending (a page can't block); in-memory volumes are always ready.
+    it's pending (a page can't block). That holds only for an UNPACED read: the write effort's `InMemoryVolume` gains
+    device pacing (`with_bandwidth` sleeps, `with_yielding` yields every 8 ms), so the viewer reads through its unpaced
+    positioned reader and media path (the write effort owns that API, see "Parallel efforts"), and the difference goes
+    under "Where the demo differs from the app".
+  - Browser jobs run inline, so nothing may scan a whole big file inside one call: in the browser a session never
+    upgrades ByteSeek to LineIndex (no `upgrading`, the estimate stays), and an encoding switch on a file past FullLoad
+    takes the ByteSeek path. A search does scan to the end inline, with no cancel; it stays bounded by the demo files'
+    sizes, which the smoke pins (a search on the largest demo file finishes under 200 ms). Chunking a search with
+    `yield_now` would need the scan to be async end to end; not worth it for a demo.
+  - The search watchdog is native-only (`cfg`), and `worker.rs` gets a test that `spawn` runs the job on another thread
+    natively.
   - `rand`'s `getrandom` backend for the browser (or mint tokens through a source that already works there, keeping the
     32-lowercase-hex, 128-bit format).
   - Remote Markdown images: native-only download; in the browser, the host refuses (the demo's CSP allows no network).
@@ -266,7 +281,16 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
   with typed refusals for `viewer_write_range_to_file`, `viewer_allow_remote_images`, and `viewer_set_tail_mode`
   (enabled); `close_session_for_window`; and a media body call (token in, MIME plus bytes out, from `media_serve`). The
   host serves the SAME `InMemoryVolume` the listing reads, so a file the write engine later changes is the file the
-  viewer shows. The tree JSON gains file contents; a file's size is its contents' length.
+  viewer shows. The contents come from the write effort's content model (stored real bytes per entry, or synthetic bytes
+  that are a pure function of seed and offset, so any positioned read works); this effort picks which demo files carry
+  real bytes from repo assets, and touches `tree.rs` only after the write effort's content-model commit is on this
+  branch (the lead merges it) or through the lead.
+- **Media tokens report their drops**: `MediaTokens` tells `host/events.rs` when a token drops (a session close, a
+  Markdown re-render, a link follow), so the browser host can revoke that token's `blob:` URL. The app's events host
+  ignores it.
+- **External links**: an opener seam (`host/opener.rs`); the app opens through `tauri_plugin_opener` as
+  `commands/file_viewer.rs` does today, the browser host through a JS callback the page passes
+  (`window.open(url, '_blank', 'noopener')`).
 - **Intentions**: "same wire as the desktop": answers, rejections, and camelCase args mirror `commands/file_viewer.rs`,
   pinned against `bindings.ts` the way `events_test.rs` pins the listing's events. Keep the viewer's surface in its own
   files so the menu and write efforts don't conflict on `commands.rs`.
@@ -287,7 +311,8 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
   walks rows, searches (start, poll to done), switches encoding, reads hex bytes, renders Markdown and follows a
   relative link, loads a Markdown document's local image through its token, opens an image and a PDF and fetches their
   bodies (hearing `viewer-media-load` `Done` for the right label), answers a volume read error with its typed error (not
-  `NotFound`), and closes by window label.
+  `NotFound`), mints two tokens that differ, hears one drop per minted token after closing by window label, follows an
+  external link through the opener callback, and searches the largest demo file within its budget.
 - **DONE**: the smoke drives every listed command against the real `.wasm` in Node; the wire tests pass.
 
 ### 6. The viewer window in the demo: text, Markdown, hex
@@ -304,8 +329,11 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
     (`browser-shortcuts.ts`) must cover the viewer frame too, through the same layer, not a viewer-only copy.
   - The viewer's clipboard and save paths: copy goes through whatever clipboard answer the main window uses; "Save
     selection" refuses typed, never a silent success.
-  - The viewer polls `viewer_get_status` for indexing; demo files are under the 1 MiB FullLoad line, so it never
-    indexes, but a typed answer must still arrive.
+  - The viewer polls `viewer_get_status` for indexing; the browser never indexes, but a typed answer must still arrive.
+  - **Demo events are delivered async** (`queueMicrotask` in `lib/demo/backend.ts` / `webview.ts`), as Tauri events
+    always are. A synchronous delivery during an `invoke` lands a `viewer-media-load` `Done` inside the `$derived`
+    `mediaSrc` (`viewer-media.svelte.ts`), and Svelte 5 throws `state_unsafe_mutation`. Pin it in Vitest, and tell the
+    lead when it lands so the write effort knows.
 - **Test plan**: Vitest for `windows.ts` (prefix allowlist, destroy closes sessions) and the routing; the demo build
   plus a scripted browser pass (agent-browser) with screenshots of each view in light and dark; `pnpm check --fast`,
   `svelte-tests-related`.
@@ -318,7 +346,9 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
   - `mediaUrl(token)` builds its URL through `convertFileSrc(token, 'cmdr-media')` (`@tauri-apps/api/core`), which
     yields exactly `cmdr-media://localhost/<encodeURIComponent(token)>` on macOS (and the right
     `http://cmdr-media.localhost/…` on Windows). The demo's `webview.ts` implements `convertFileSrc` for that protocol
-    as a `blob:` URL over the engine's media body, cached per token and revoked when the session closes.
+    as a `blob:` URL over the engine's media body, cached per token and revoked when the engine reports the token
+    dropped (a Vitest pin: mints and revokes balance after a close).
+  - A lint (or a check) refusing the `cmdr-media://` literal outside `media-view.ts`, so `mediaUrl` stays the only way.
   - The demo CSP (`apps/website/nginx-demo-security-headers.conf`) gains `blob:` in `object-src` for the PDF `<embed>`
     (it's `'none'` today; `img-src` already allows `blob:`).
   - Demo contents: images and a PDF (Decision 3).
@@ -360,8 +390,12 @@ and three `cfg(unix)`-only std calls that break a wasm32 compile.
 - **`cmdr-listing-wasm`**: the menu crate (step 2), the write engine (step 3), and this plan all add commands, deps,
   smoke steps, and `DETAILS.md` rows. Each effort keeps its surface in its own module, with one registration line in
   `commands.rs` / `bindings.rs`; conflicts get resolved once in the batch land.
-- **`InMemoryVolume`** (`cmdr-fs`): this plan adds `open_random_reader`; the write engine changes contents. The viewer
-  reads through the same volume, so a demo write followed by F3 shows the new bytes: a test worth adding once both land.
+- **`InMemoryVolume`** (`cmdr-fs`), decided by the lead: the write effort owns its content model and pacing. It offers
+  stored real bytes per entry, synthetic content whose bytes are a pure function of (seed, offset), unpaced positioned
+  reads (`open_random_reader`), and an unpaced path for the viewer's media serve. This effort consumes that API (and
+  adds `open_random_reader` only if the write effort hasn't yet, in its shape), and owns which demo files get real
+  stored bytes. The viewer reads through the same volume, so a demo write followed by F3 shows the new bytes: a test
+  worth adding once both land.
 - **`website-demo-key.sh`, `inputs.go` `websiteDemoInputs`, ci.yml `website` filter**: every effort appends crate paths
   to the same lists. Trivial conflicts; the test that ties them together catches a miss.
 - **`lib/demo/windows.ts`**: step 4 adds `queue`, this plan `viewer-*`. **`lib/demo/answers.ts`**: this plan changes
@@ -399,10 +433,16 @@ opens the viewer for every file, and the engine rename waits until all three eff
 - The crate has no `tauri`, `tauri_specta`, or `cmdr_lib` in its dependency graph (`index-crate-isolation`).
 - Every background job in the crate goes through the worker module; every clock read through `cmdr_fs::rt`; clippy bans
   the rest.
-- Natively, the same OS threads run the same jobs with the same sleeps and timeouts as before.
-- `close_session` stays the one choke point freeing a session, its media token, and its temp; both close paths (IPC and
-  window destroyed) reach it in both hosts, and the demo also revokes the token's `blob:` URL there.
-- A media URL is built only by `mediaUrl(token)`; a token is 128-bit, unguessable, and session-scoped in both hosts.
+- Natively, the same OS threads run the same jobs with the same sleeps and timeouts as before (`worker.rs`'s thread-id
+  test).
+- The bridge never resolves an ambient runtime; it uses the one the `Viewer` was handed.
+- `close_session` stays the one choke point freeing a session, its media tokens, and its temp; both close paths (IPC and
+  window destroyed) reach it in both hosts, and every token drop reaches the events host, where the demo revokes its
+  `blob:` URL (Vitest and smoke pins).
+- A media URL is built only by `mediaUrl(token)` (a lint on the literal); a token is 128-bit and unguessable in both
+  hosts (the smoke checks two differ). A viewer token lives as long as its session (a Markdown image's, until the next
+  render); a thumbnail's lives until the main window drops it.
+- Demo events reach listeners asynchronously, as Tauri's do.
 - ammonia's allowlist, the cross-line regex rejection, the ISO-8859-1 table, rows-not-lines, and UTF-16 search columns
   are untouched (the crate's `CLAUDE.md` carries them).
 - No `if (demo)` in app code, no viewer logic in TS, no demo code in a non-demo build.
