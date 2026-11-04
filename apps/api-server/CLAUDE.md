@@ -19,7 +19,7 @@ Root holds the assembly and the shared leaves (`index.ts`, `types.ts`, `admin-au
 `user-agent.ts`; DETAILS § Root files). ❌ Areas depend on root leaves, never each other.
 
 `email/` is one module per audience: `send.ts` (the Resend door), `layout.ts` (HTML chrome), then `crash.ts`,
-`feedback.ts`, `error-report.ts`, `ops-alerts.ts`, `license.ts`. Import the specific one; no barrel.
+`feedback.ts`, `error-report.ts`, `ops-alerts.ts`, `license.ts`, `sale.ts`. Import the specific one; no barrel.
 
 ## Must-knows
 

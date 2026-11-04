@@ -156,6 +156,56 @@ export async function markIssuanceDelivered(db: D1Database, transactionId: strin
 }
 
 /**
+ * Claim the right to send a Paddle row's sale notice (`sale-notices.ts`). Conditional on
+ * `sale_notified_at IS NULL`, so of every redelivery and backfill run, exactly one wins.
+ * `not_in_ledger` covers a missing row and a manual one: only a purchase gets a notice.
+ */
+export async function claimSaleNotice(
+  db: D1Database,
+  transactionId: string,
+  now: Date,
+): Promise<'claimed' | 'already_notified' | 'not_in_ledger'> {
+  const claimed = await db
+    .prepare(
+      `UPDATE license_issuance SET sale_notified_at = ?
+       WHERE transaction_id = ? AND source = 'paddle' AND sale_notified_at IS NULL
+       RETURNING transaction_id`,
+    )
+    .bind(now.toISOString(), transactionId)
+    .first()
+  if (claimed !== null) return 'claimed'
+  const existing = await db
+    .prepare(`SELECT 1 AS found FROM license_issuance WHERE transaction_id = ? AND source = 'paddle'`)
+    .bind(transactionId)
+    .first()
+  return existing === null ? 'not_in_ledger' : 'already_notified'
+}
+
+/** Give a claimed sale notice back after its send failed, so the backfill route can retry it. */
+export async function releaseSaleNotice(db: D1Database, transactionId: string, claimedAt: Date): Promise<void> {
+  await db
+    .prepare(`UPDATE license_issuance SET sale_notified_at = NULL WHERE transaction_id = ? AND sale_notified_at = ?`)
+    .bind(transactionId, claimedAt.toISOString())
+    .run()
+}
+
+/**
+ * The running count: how many purchases the ledger holds up to and including this one, by claim
+ * time. Counts refunded sales too (they happened), so the number never moves backwards.
+ */
+export async function countSalesThrough(db: D1Database, transactionId: string): Promise<number> {
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) AS sales FROM license_issuance
+       WHERE source = 'paddle'
+         AND claimed_at <= (SELECT claimed_at FROM license_issuance WHERE transaction_id = ?)`,
+    )
+    .bind(transactionId)
+    .first<{ sales: number }>()
+  return row?.sales ?? 0
+}
+
+/**
  * Revoke a purchase after a full refund or a chargeback (`refunds.ts`). Keeps the first
  * `revoked_at`, so a redelivered refund changes nothing, and returns the row's codes either way so
  * the caller can make sure they're gone from KV.

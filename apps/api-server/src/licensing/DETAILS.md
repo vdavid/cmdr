@@ -15,6 +15,8 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   (`license_adjustments`), decides which revoke (`classifyAdjustment`, pure), and lists them for the dashboard. §
   Refunds.
 - **`license-backup.ts`**: the daily R2 snapshot of the ledger and the key store. § License backups.
+- **`sale-notices.ts`**: `notifySale` (the email to David for each sale) and `POST /admin/sale-notices` (its backfill
+  and retry). § Sale notices.
 - **`license.ts`**: short-code and license-key generation, the `LicenseType` enum, `isPaddleTransactionId` /
   `generateManualTransactionId` (the id namespaces `/validate` dispatches on), and `generateShortId(prefix, len)` (also
   used for the `ERR-XXXXX` error-report ids).
@@ -28,11 +30,13 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **`paddle-api.ts`**: Paddle REST client (transaction / subscription / customer fetch, `getLicenseTypeFromPriceId`).
 - **`device-tracking.ts`**: device-set helpers — prune stale devices, alert threshold.
 - Tests: `license.test.ts`, `paddle.test.ts`, `license-issuance.test.ts` (the two pure classifiers), `refunds.test.ts`
-  (`classifyAdjustment`), `device-tracking.test.ts`, `webhook-paddle.test.ts` (first delivery, duplicate, retry after a
-  failed email, concurrent delivery, Resend rejection), `admin-licenses.test.ts` (the states, the orphan and
-  missing-code reconciliation), and two real-runtime suites that run the built Worker in workerd (`../../DETAILS.md` §
-  Test runtimes): `production-runtime.test.ts` (minting, manual validation, revocation) and `webhook-runtime.test.ts`
-  (the purchase and refund paths end to end, with Paddle and Resend stubbed at the socket).
+  (`classifyAdjustment`), `sale-notices.test.ts` (the sandbox and recipient gates), `device-tracking.test.ts`,
+  `webhook-paddle.test.ts` (first delivery, duplicate, retry after a failed email, concurrent delivery, Resend
+  rejection), `admin-licenses.test.ts` (the states, the orphan and missing-code reconciliation), and two real-runtime
+  suites that run the built Worker in workerd (`../../DETAILS.md` § Test runtimes): `production-runtime.test.ts`
+  (minting, manual validation, revocation) and `webhook-runtime.test.ts` (the purchase and refund paths end to end, with
+  Paddle and Resend stubbed at the socket), plus `sale-notice-runtime.test.ts` (the sale notice and its backfill route,
+  same harness shape).
 
 ## Data flow
 
@@ -45,6 +49,7 @@ Paddle webhook → HMAC verify (tries both live + sandbox secrets)
   → store the codes on the row (short_codes, issued_at)
   → sendLicenseEmail() via Resend
   → mark the row delivered (emailed_at)
+  → in the background (waitUntil): notifySale() → the sale notice to David (see Sale notices)
 
 Paddle adjustment webhook (refund, chargeback, credit) → same HMAC verify
   → upsert the adjustment (D1 license_adjustments)
@@ -127,7 +132,7 @@ mint them by hand until that's built.
 **Decision, why not the Paddle `event_id` as the key:** one purchase must yield one set of licenses however many events
 carry it, so the transaction id is the unit of fulfillment. `event_id` is stored on the row for debugging only.
 
-**Gotcha: Resend reports failures in its response, it doesn't throw.** All four senders go through `sendViaResend`
+**Gotcha: Resend reports failures in its response, it doesn't throw.** Every sender goes through `sendViaResend`
 (`../email/send.ts`), which turns an `error` into a thrown one. The app-wide rule is in `../../CLAUDE.md`; the money
 consequence is here: an unchecked `await` marks the purchase delivered and stops Paddle retrying, so the buyer pays and
 gets nothing.
@@ -145,6 +150,39 @@ notification log shows it.
 share one NAT address. A 429 is safe: the app reads any non-502 failure like a network error, keeps its cached status,
 and retries after its cooldown (`apps/desktop/src-tauri/src/licensing/validation_client.rs`). Both limits and their
 bindings: `../../DETAILS.md` § Configuration; pinned by `rate-limits.test.ts`.
+
+## Sale notices
+
+Every completed purchase emails David (`humanReportRecipient`, the digest's address) so a sale is a moment, not a row he
+finds in an analytics report weeks later (2026-11, two sales went unnoticed that way). The copy lives in
+`../email/sale.ts`, pinned by `sale.test.ts`: amount and currency, what's left after Paddle's fee and tax, product and
+price name, country, buyer name and email, company, date, the transaction linked to the Paddle dashboard, and the
+running count ("That's sale #3!").
+
+- **Best-effort, after fulfillment.** The webhook schedules `notifySale` via `waitUntil` only once the buyer's email is
+  accepted and `emailed_at` is set. `notifySale` never throws, so the notice can't change the response or put a
+  fulfilled purchase back up for Paddle to retry.
+- **One sale, one email.** `claimSaleNotice` is `UPDATE ... SET sale_notified_at WHERE sale_notified_at IS NULL`
+  (migration `0029`), so redeliveries and rerun backfills find it taken. A failed send (Paddle or Resend) releases the
+  claim and writes a `sale-notice-failed` ops event, which the digest mails.
+- **Details come from Paddle, not the webhook body**: `getSaleDetails` fetches the transaction with
+  `include=customer,address,business`, so the live path and the backfill share one source.
+- **Skipped**: any environment but `PADDLE_ENVIRONMENT = live` (a sandbox purchase is a test), a `grand_total` of 0 (a
+  100% discount is a license handed out), a transaction Paddle doesn't call `completed`, and anything without a `paddle`
+  ledger row. Hand-minted licenses never reach this path at all.
+- **The running count** is the number of `paddle` rows claimed at or before this one. It counts refunded sales (they
+  happened) and would count a $0 checkout, which hasn't occurred yet.
+
+**Backfill or retry** (explicit ids only, so the sales David already knew about stay quiet; safe to rerun, a sent one
+answers `already_sent`):
+
+```bash
+curl -s -X POST https://api.getcmdr.com/admin/sale-notices \
+  -H "Authorization: Bearer $(secret CMDR_ADMIN_API_TOKEN)" -H 'Content-Type: application/json' \
+  -d '{"transactionIds":["txn_..."]}'
+```
+
+Each id answers `sent`, `already_sent`, `not_live`, `no_recipient`, `not_found`, `not_completed`, `free`, or `failed`.
 
 ## Manual licenses
 

@@ -267,3 +267,86 @@ function extractCustomerData(json: unknown): CustomerDetails | null {
 
   return { email, name, businessName }
 }
+
+/** What the sale notice says about a purchase, read off Paddle's transaction with its customer and address. */
+export interface SaleDetails {
+  transactionId: string
+  status: string
+  /** ISO 8601: when Paddle billed it, or when the transaction was created if it never says. */
+  billedAt: string | null
+  currencyCode: string
+  /** What the buyer paid, tax included, in the currency's smallest unit (cents), as Paddle sends it. */
+  grandTotalMinor: number
+  /** What reaches us after Paddle's fee and tax, in the same unit. Null when Paddle leaves it out. */
+  earningsMinor: number | null
+  productName: string | null
+  priceName: string | null
+  quantity: number
+  /** ISO 3166-1 alpha-2, for example `DE`. */
+  countryCode: string | null
+  buyerName: string | null
+  buyerEmail: string | null
+  businessName: string | null
+}
+
+/**
+ * Fetch one transaction with its customer, address, and business, for the sale notice.
+ * Returns null on a 404. Throws `PaddleApiError` when Paddle is unreachable or answers otherwise.
+ */
+export async function getSaleDetails(transactionId: string, config: PaddleConfig): Promise<SaleDetails | null> {
+  const baseUrl = config.environment === 'sandbox' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
+  let response: Response
+  try {
+    response = await fetch(
+      `${baseUrl}/transactions/${encodeURIComponent(transactionId)}?include=customer,address,business`,
+      { headers: { Authorization: `Bearer ${config.apiKey}` } },
+    )
+  } catch (error) {
+    throw new PaddleApiError(`Paddle API unreachable: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (response.status === 404) return null
+  if (!response.ok) {
+    throw new PaddleApiError(`Paddle API returned HTTP ${String(response.status)} for transaction`)
+  }
+  const data = unwrapPaddleData(await response.json())
+  if (!data) throw new PaddleApiError('Paddle API answered a transaction without its data')
+  return extractSaleDetails(transactionId, data)
+}
+
+function stringField(object: unknown, key: string): string | null {
+  if (!object || typeof object !== 'object') return null
+  const value = (object as Record<string, unknown>)[key]
+  return typeof value === 'string' && value.length > 0 ? value : null
+}
+
+/** Paddle sends amounts as integer strings in the smallest unit ("5900" is $59.00). */
+function minorAmount(value: string | null): number | null {
+  if (value === null || !/^-?\d+$/.test(value)) return null
+  return Number(value)
+}
+
+function recordList(value: unknown): Array<Record<string, unknown>> {
+  return Array.isArray(value) ? (value as Array<Record<string, unknown>>) : []
+}
+
+function extractSaleDetails(transactionId: string, data: Record<string, unknown>): SaleDetails {
+  const details = data.details && typeof data.details === 'object' ? (data.details as Record<string, unknown>) : {}
+  const totals = details.totals
+  const firstItem = recordList(data.items).at(0)
+  const firstLineItem = recordList(details.line_items).at(0)
+  return {
+    transactionId,
+    status: stringField(data, 'status') ?? 'unknown',
+    billedAt: stringField(data, 'billed_at') ?? stringField(data, 'created_at'),
+    currencyCode: stringField(data, 'currency_code') ?? stringField(totals, 'currency_code') ?? 'USD',
+    grandTotalMinor: minorAmount(stringField(totals, 'grand_total')) ?? 0,
+    earningsMinor: minorAmount(stringField(totals, 'earnings')),
+    productName: stringField(firstLineItem?.product, 'name'),
+    priceName: stringField(firstItem?.price, 'name'),
+    quantity: typeof firstItem?.quantity === 'number' ? firstItem.quantity : 1,
+    countryCode: stringField(data.address, 'country_code'),
+    buyerName: stringField(data.customer, 'name'),
+    buyerEmail: stringField(data.customer, 'email'),
+    businessName: stringField(data.business, 'name'),
+  }
+}

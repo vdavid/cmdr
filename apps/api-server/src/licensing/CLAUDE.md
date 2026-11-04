@@ -4,7 +4,8 @@ Everything money touches: the Paddle webhook (fulfill a purchase, revoke on a re
 hand-issued licenses behind `/admin/generate` and `/admin/revoke`. `licensing.ts` holds the routes and mounts
 `manual-licenses.ts` plus `admin-licenses.ts` (the dashboard's list, and its note editor). Leaves: `license.ts` (codes,
 signing, id namespaces), `license-issuance.ts` (the D1 ledger), `refunds.ts` (refund and chargeback adjustments),
-`license-backup.ts`, `paddle.ts` (HMAC verify), `paddle-api.ts`, and `device-tracking.ts`.
+`license-backup.ts`, `sale-notices.ts` (a best-effort email to David per sale, DETAILS § Sale notices), `paddle.ts`
+(HMAC verify), `paddle-api.ts`, and `device-tracking.ts`.
 
 ## Must-knows
 

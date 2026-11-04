@@ -8,6 +8,7 @@
 
 import { Resend } from 'resend'
 import { sendViaResend } from './send'
+import { paddleTransactionUrl } from './sale'
 import {
   CELL_STYLE,
   TABLE_STYLE,
@@ -122,8 +123,7 @@ interface DeviceCountAlertParams {
  */
 export async function sendDeviceCountAlert(params: DeviceCountAlertParams): Promise<void> {
   const resend = new Resend(params.resendApiKey)
-  const paddleDomain = params.paddleEnvironment === 'sandbox' ? 'sandbox-vendors.paddle.com' : 'vendors.paddle.com'
-  const paddleUrl = `https://${paddleDomain}/transactions-v2/${params.baseTransactionId}`
+  const paddleUrl = paddleTransactionUrl(params.baseTransactionId, params.paddleEnvironment)
   const labelCell = `${CELL_STYLE} font-weight: bold;`
 
   await sendViaResend(

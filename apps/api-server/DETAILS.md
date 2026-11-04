@@ -32,7 +32,8 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   - **`digest.ts`**: the three-hour report digest, the one email reports produce (§ Cron handler job 2). It composes the
     renderers in **`crash.ts`** (a table: machine facts scanned down a column), **`error-report.ts`** (report and
     amendment cards), and **`feedback.ts`** (cards: prose would shred in a table column). Then **`ops-alerts.ts`** (DB
-    size, device count) and **`license.ts`** (key delivery).
+    size, device count), **`license.ts`** (key delivery), and **`sale.ts`** (the sale notice to David, in the ops-alert
+    chrome with a plain-text part; also home of `paddleTransactionUrl`, the dashboard link the device alert shares).
   - **Decision: two visual families, deliberately.** The digest renders on `#1f2937` over an explicit white ground; the
     ops alerts (DB size, device count) render tables on `#333` over the client's default ground. `bodyStyle` takes the
     color and width rather than hiding the difference, because converging them changes what lands in a human inbox and
@@ -40,15 +41,16 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   - `license.ts` exports its two copy builders (`getLicenseDescription`, `getIntroText`) so the three validity sentences
     and the two openers are pinned by `license.test.ts` rather than reviewed by eye. `src/licensing/DETAILS.md` § Manual
     licenses says why a dated license must never read as renewing.
-  - **Decision: `license.ts` shares only `escapeHtml`.** It is the one email a customer receives, the one with a
-    plain-text alternative (it carries a key the reader has to copy, so it must survive an HTML-refusing client), and
-    the one styled by a `<head>` `<style>` block with class names. Forcing it onto the ops chrome would trade a real
-    difference for a false symmetry.
+  - **Decision: `license.ts` shares only `escapeHtml`.** It is the one email a customer receives, carries a plain-text
+    alternative (it carries a key the reader has to copy, so it must survive an HTML-refusing client), and is the one
+    styled by a `<head>` `<style>` block with class names. Forcing it onto the ops chrome would trade a real difference
+    for a false symmetry.
   - There is no barrel file: importers name the module they need (`./email/digest`, `../email/ops-alerts`), so an import
     says which family of mail a route touches.
   - **Every sender has a real-runtime lane.** `email-runtime.test.ts` drives them through the actual Worker and asserts
-    the Resend payload off the wire; `src/licensing/webhook-runtime.test.ts` does `sendLicenseEmail`. Adding a sender
-    means adding it there too, or it ships untested against the runtime it deploys to. § Test runtimes.
+    the Resend payload off the wire; `src/licensing/webhook-runtime.test.ts` does `sendLicenseEmail`, and
+    `src/licensing/sale-notice-runtime.test.ts` does `sendSaleNotice`. Adding a sender means adding it there too, or it
+    ships untested against the runtime it deploys to. § Test runtimes.
 - **`ops-events.ts`**: the operational notices (cron failures, eviction, CSP violations, signups) as D1 rows the digest
   mails. § Ops events.
 - **`cron-health.ts`**: `pingCronHealth`, the healthchecks.io dead-man's switch for the cron tick. **`cron-streaks.ts`**
@@ -92,6 +94,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 | POST    | `/admin/revoke`                | Bearer token  | Kill a hand-issued license by short code or manual transaction id                                  |
 | GET     | `/admin/licenses`              | Bearer token  | Every license in the ledger with a computed state, plus KV codes no row explains (and the reverse) |
 | PUT     | `/admin/licenses/:id/note`     | Bearer token  | Rewrite one row's note, either source. A hand-issued license can't be left without one             |
+| POST    | `/admin/sale-notices`          | Bearer token  | Send the sale notice for named purchases that never got one (backfill, or a failed send)           |
 | GET     | `/admin/stats`                 | Bearer token  | Activation count + device count (for analytics dashboard)                                          |
 | GET     | `/admin/downloads`             | Bearer token  | Aggregated downloads by day/version/arch/country/source, with raw `count` + deduped `uniqueCount`  |
 | GET     | `/admin/active-users`          | Bearer token  | Aggregated daily active users by version/arch                                                      |
@@ -209,8 +212,9 @@ other namespaces).
 
 `ops-events.ts` writes the operational notices to the D1 `ops_events` table: `cron-failure`, `board-add-failed`,
 `board-rating-failed`, `csp-violation`, `eviction`, `eviction-blocked`, `intake-rejected`, `admin-auth-rejected`,
-`webhook-signature-rejected`, and the two signup kinds. The three-hour digest mails the alerts (§ Cron handler job 2)
-and leaves the signups for the morning brief to count. Nothing else watches a channel: there is no Discord integration.
+`webhook-signature-rejected`, `sale-notice-failed` (`src/licensing/DETAILS.md` § Sale notices), and the two signup
+kinds. The three-hour digest mails the alerts (§ Cron handler job 2) and leaves the signups for the morning brief to
+count. Nothing else watches a channel: there is no Discord integration.
 
 - **Rejected requests are counted, not logged one by one** (`countOpsEvent`): a repeat adds to the unnotified row with
   the same kind and message (`occurrences`, migration `0024`), so a burst is one digest line and one small row, and the
@@ -755,12 +759,14 @@ proof.
 
 **Wrangler's `createTestHarness` is the lane that proves parity**, and the only one. It builds `src/index.ts` and runs
 it in workerd under the real `wrangler.toml`, with test-only secrets passed in, so a Node API anywhere along an
-exercised route throws the way it throws in production. Three files use it, and they cover every path that leaves the
+exercised route throws the way it throws in production. Four files use it, and they cover every path that leaves the
 Worker for a third party:
 
 - `src/licensing/production-runtime.test.ts` — minting through `/admin/generate`, manual validation, revocation.
 - `src/licensing/webhook-runtime.test.ts` — `/webhook/paddle` including `sendLicenseEmail`, the route the `Buffer` bug
   actually broke.
+- `src/licensing/sale-notice-runtime.test.ts` — the sale notice beside a purchase, and `/admin/sale-notices`. Its own
+  harness, since configuring the notice's recipient would add a send to every purchase test above.
 - `src/email/email-runtime.test.ts` — the other senders in `email/`: the report digest (a report and its amendment
   through `/error-report` and `/error-report/:id/amend`, plus a crash and feedback, mailed on one cron tick), the daily
   path probe, the device count alert (over `/validate`), and the DB size alert.
