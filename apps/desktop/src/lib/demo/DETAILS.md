@@ -169,10 +169,11 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
   `unanswered`.
 - `volumes.ts` answers `pathExists` and `statPathsKinds` from the same tree; `getSyncStatus` (nothing syncs) and
   `storedSpellings` (the demo volume stores every path as given) live there too.
-- Known gap: Brief mode's `get_brief_column_text_widths` isn't in the engine yet, so Brief columns stay at their
-  provisional width (the pane logs a warning and carries on). It lives in the app crate today
-  (`src-tauri/src/font_metrics/`); once it moves into a Tauri-free crate the engine answers it, `has_font_metrics` flips
-  to `false` so the frontend sends `store_font_metrics` / `extend_font_metrics`, and no other TS changes.
+- Brief mode's column widths come from the engine too (`cmdr-brief-columns`): it answers `has_font_metrics`, the
+  frontend measures and sends `store_font_metrics` / `extend_font_metrics` as on desktop, and
+  `get_brief_column_text_widths` shrink-wraps each column. So the demo has no TS answer for any of the four. Verified in
+  headless Chromium (2026-11-04): Documents' columns fit their names, `旅行の計画.txt` included, and the 1,200-photo
+  folder lays out five fitted columns.
 
 ## Placeholders David decides
 

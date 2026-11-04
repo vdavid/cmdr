@@ -73,6 +73,8 @@ export const demoEntries: DemoEntry[] = [
     ['Lease agreement.pdf', 912_004, 200],
     ['Meeting notes.docx', 21_877, 2],
     ['Recipe ideas.md', 3_102, 30],
+    // A non-Latin name, so Brief mode's column widths get measured on more than ASCII.
+    ['旅行の計画.txt', 1_844, 6],
   ]),
   ...files(`${H}/Documents/Invoices`, [
     ['invoice-2026-01.pdf', 88_120, 270],

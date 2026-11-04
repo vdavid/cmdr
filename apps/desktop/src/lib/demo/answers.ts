@@ -137,7 +137,6 @@ export const appAnswers: AnswerTable = {
   getWhatsNew: empty,
   updateCheckDueIn: () => Number.MAX_SAFE_INTEGER,
   askCmdrLegacyOptIn: () => 'notRecorded',
-  hasFontMetrics: on,
 
   // The pane's surroundings
   // macOS draws the live icons, and the demo can't ask it: every icon is the app's own bundled
