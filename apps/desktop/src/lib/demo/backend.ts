@@ -13,6 +13,7 @@ import { openInBrowserTab } from './opener.js'
 import { noteUnanswered } from './unanswered.js'
 import { demoEntries } from './demo-tree.js'
 import { demoPath, volumeAnswers } from './volumes.js'
+import { createDragSessions } from './drag-session.js'
 import { createWindowHost, type WindowHost } from './windows.js'
 
 type Handler = (payload: Payload) => unknown
@@ -106,6 +107,10 @@ export function createDemoBackend(): DemoBackend {
   })
   // The backend lives in the top frame, which is the main window.
   windows.mountMainWindowLights()
+  // Drags happen in the main window, the only one with file panes; its events go there, as wry's do.
+  const drags = createDragSessions(window, (event, payload) => {
+    emit(event, payload, { kind: 'label', label: 'main' })
+  })
   const menu = startMenuEngine()
 
   // The demo's "default app" for a file is Cmdr's own viewer: Enter opens it, through the event the
@@ -119,7 +124,8 @@ export function createDemoBackend(): DemoBackend {
 
   async function invoke(cmd: string, payload: Payload): Promise<unknown> {
     if (cmd === 'open_path' && openInViewer(payload)) return null
-    const handler = windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
+    const handler =
+      drags.handler(cmd) ?? windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
     if (handler) return handler(payload)
     if (await menu.handles(cmd)) return menu.invoke(cmd, payload)
     if (await engine.handles(cmd)) return engine.invoke(cmd, payload)

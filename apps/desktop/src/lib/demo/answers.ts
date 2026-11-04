@@ -68,6 +68,10 @@ export const silentCommands: readonly VoidCommand[] = [
   'updateRightPaneState',
   'recordBreadcrumb',
   'setChildWindowRect',
+  // The swizzle's self-drag state: a page has no OS drag image to swap or badge to draw.
+  'prepareSelfDragOverlay',
+  'clearSelfDragOverlay',
+  'setSelfDragResolvedOp',
 ]
 
 export const appAnswers: AnswerTable = {
