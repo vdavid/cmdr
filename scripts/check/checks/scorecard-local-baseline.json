@@ -10,9 +10,15 @@
         }
       ]
     },
-    "Dangerous-Workflow": { "floor": 10 },
-    "Dependency-Update-Tool": { "floor": 10 },
-    "Fuzzing": { "floor": 10 },
+    "Dangerous-Workflow": {
+      "floor": 10
+    },
+    "Dependency-Update-Tool": {
+      "floor": 10
+    },
+    "Fuzzing": {
+      "floor": 10
+    },
     "License": {
       "floor": 9,
       "accepted": [
@@ -44,7 +50,9 @@
         }
       ]
     },
-    "Security-Policy": { "floor": 10 },
+    "Security-Policy": {
+      "floor": 10
+    },
     "Token-Permissions": {
       "floor": 10,
       "accepted": [
@@ -55,10 +63,6 @@
         {
           "warning": "Warn: jobLevel 'contents' permission set to 'write': .github/workflows/release.yml",
           "reason": "The caller of release-pipeline.yml has to grant what the reusable workflow's jobs ask for."
-        },
-        {
-          "warning": "Warn: jobLevel 'packages' permission set to 'write': .github/workflows/ci.yml",
-          "reason": "`e2e-base-image` pushes the E2E Docker base image to GHCR, only when the registry lacks the current tag. Test infra only (releases never use it), the token stays out of the Docker build, and fork PRs get a read-only token anyway. The jobs that only pull get `packages: read`; the score stays 10."
         },
         {
           "warning": "Warn: jobLevel 'actions' permission set to 'write': .github/workflows/ci.yml",

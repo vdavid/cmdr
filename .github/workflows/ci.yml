@@ -1838,6 +1838,9 @@ jobs:
     permissions:
       contents: read # check out the code
       packages: write # push to ghcr.io/vdavid/cmdr-demo
+    outputs:
+      key: ${{ steps.image.outputs.key }}
+      digest: ${{ steps.digest.outputs.digest }}
     # The deploy's own condition: it runs exactly when a deploy will.
     needs: [changes, website-demo, website]
     if: >-
@@ -1852,7 +1855,10 @@ jobs:
 
       - name: Compute the image tag
         id: image
-        run: echo "ref=ghcr.io/vdavid/cmdr-demo:$(./scripts/website-demo-key.sh)" >>"$GITHUB_OUTPUT"
+        run: |
+          key=$(./scripts/website-demo-key.sh)
+          echo "key=$key" >>"$GITHUB_OUTPUT"
+          echo "ref=ghcr.io/vdavid/cmdr-demo:$key" >>"$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         run: echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
@@ -1898,12 +1904,25 @@ jobs:
           docker build -f apps/website/demo-image.Dockerfile -t "${{ steps.image.outputs.ref }}" apps/desktop/build-demo
           docker push "${{ steps.image.outputs.ref }}"
 
+      # The deploy builds from the digest, never the tag (a tag can be moved): the webhook payload
+      # carries it, signed, and the Dockerfile pins `cmdr-demo@sha256:<digest>`.
+      - name: Read the image digest
+        id: digest
+        run: |
+          digest=$(docker buildx imagetools inspect "${{ steps.image.outputs.ref }}" --format '{{.Manifest.Digest}}')
+          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Couldn't read the digest of ${{ steps.image.outputs.ref }} (got '$digest')."
+            exit 1
+          fi
+          echo "digest=${digest#sha256:}" >>"$GITHUB_OUTPUT"
+          echo "${{ steps.image.outputs.ref }} is $digest"
+
       # The server pulls anonymously. A new GHCR package can start out private, and then every
       # deploy would fail on the pull; this says so here, before the webhook fires.
       - name: Check the image is public
         run: |
           docker logout ghcr.io
-          if ! docker manifest inspect "${{ steps.image.outputs.ref }}" >/dev/null; then
+          if ! docker manifest inspect "ghcr.io/vdavid/cmdr-demo@sha256:${{ steps.digest.outputs.digest }}" >/dev/null; then
             echo "::error::${{ steps.image.outputs.ref }} isn't publicly readable. Set the cmdr-demo package's visibility to public: github.com/users/vdavid/packages/container/cmdr-demo/settings."
             exit 1
           fi
@@ -1923,10 +1942,16 @@ jobs:
       'true' && needs.changes.outputs.website-changed == 'true'))
 
     steps:
+      # The payload names the browser demo image by digest plus the content key it was built from;
+      # the signature covers the whole body, so the server trusts both. `deploy-website.sh` checks
+      # the key against its own checkout before building with the digest.
       - name: Trigger deploy webhook
+        env:
+          DEMO_KEY: ${{ needs.publish-website-demo.outputs.key }}
+          DEMO_DIGEST: ${{ needs.publish-website-demo.outputs.digest }}
         run: |
           # Compute HMAC-SHA256 signature
-          PAYLOAD='{}'
+          PAYLOAD=$(jq -cn --arg key "$DEMO_KEY" --arg digest "$DEMO_DIGEST" '{demo_key: $key, demo_image_digest: $digest}')
           SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" | cut -d' ' -f2)
 
           # Send signed request to webhook

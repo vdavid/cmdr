@@ -25,13 +25,22 @@ git fetch origin main
 git reset --hard origin/main
 
 echo "Building new image (old site stays up during build)..."
-# The browser demo bundle for exactly this checkout's sources, which CI published before it fired
-# this webhook (apps/website/DETAILS.md § Browser demo). A missing image fails the build, and the
-# old site stays up.
-DEMO_IMAGE="ghcr.io/vdavid/cmdr-demo:$(./scripts/website-demo-key.sh)"
-echo "Browser demo: $DEMO_IMAGE"
+# The browser demo bundle: CI pushed it and signed its digest and content key into the webhook
+# payload, which hooks.json hands over as DEMO_IMAGE_DIGEST and DEMO_KEY (apps/website/DETAILS.md §
+# Browser demo). The key must equal this checkout's: if main moved on to other demo sources since
+# that run, this deploy stops here, the old site stays up, and the newer commit's run deploys.
+if [[ ! "${DEMO_IMAGE_DIGEST:-}" =~ ^[0-9a-f]{64}$ || -z "${DEMO_KEY:-}" ]]; then
+    echo "=== ERROR: the webhook payload carries no browser demo digest and key ==="
+    exit 1
+fi
+CHECKOUT_DEMO_KEY="$(./scripts/website-demo-key.sh)"
+if [[ "$DEMO_KEY" != "$CHECKOUT_DEMO_KEY" ]]; then
+    echo "=== ERROR: the demo image was built from sources $DEMO_KEY, this checkout has $CHECKOUT_DEMO_KEY; leaving the old site up for the newer commit's deploy ==="
+    exit 1
+fi
+echo "Browser demo: ghcr.io/vdavid/cmdr-demo@sha256:$DEMO_IMAGE_DIGEST (sources $DEMO_KEY)"
 cd apps/website
-docker compose build --no-cache --build-arg DEMO_IMAGE="$DEMO_IMAGE"
+docker compose build --no-cache --build-arg DEMO_IMAGE_DIGEST="$DEMO_IMAGE_DIGEST"
 
 echo "Swapping containers..."
 docker compose down

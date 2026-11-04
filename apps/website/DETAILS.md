@@ -337,15 +337,19 @@ nothing links to it, it's out of the sitemap, and it's `noindex` until David lau
   grocery apps, and the demo's Vite build alone peaks around 1.7 GB RSS (with 2.6 GB free and no swap, 2026-11-04), so a
   Rust or Vite build there risks OOM-killing them. CI's `publish-website-demo` job pushes the bundle as a `FROM scratch`
   image (`demo-image.Dockerfile`) to `ghcr.io/vdavid/cmdr-demo`, with `GITHUB_TOKEN` and `packages: write` (no new
-  secret), and `deploy-website` waits for it. The Dockerfile's `demo-bundle` stage is `FROM ${DEMO_IMAGE}`, which
-  `deploy-website.sh` sets; the deploy keeps `--no-cache`.
+  secret), and `deploy-website` waits for it. The deploy keeps `--no-cache`.
+- **Decision: the build pins the image by digest; the content key only finds and checks it.** The Dockerfile's
+  `demo-bundle` stage is `FROM ghcr.io/vdavid/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST}` (a tag can be moved, and
+  Scorecard's Pinned-Dependencies accepts this `@sha256:${ARG}` form). `publish-website-demo` outputs the digest it
+  pushed or found, and `deploy-website` sends it, with the content key, in the HMAC-signed webhook payload (the
+  signature covers the whole body); `hooks.json` passes both to `deploy-website.sh` as `DEMO_IMAGE_DIGEST` and
+  `DEMO_KEY`. The script fails unless the payload's key equals `scripts/website-demo-key.sh` on its own checkout, so a
+  site is only ever built with the demo of its own sources. On a mismatch (`main` moved on to other demo sources since
+  that run), the old site stays up and the newer commit's run deploys.
 - **Decision: the tag is a content key, not a commit SHA.** `scripts/website-demo-key.sh` hashes every demo source (git
-  tree entries only, so the server needs nothing but git) and CI and the deploy each compute it from their own checkout,
-  so a site is only ever built with the demo of its own sources, and never `:latest`. A commit SHA can't do that here:
-  the server deploys `origin/main`, which may already be newer than the run that fired the webhook, and a landed
-  commit's lanes usually skip (verified on its PR), so no run builds per SHA. With a key, any commit with the same demo
-  sources finds the image, and an unchanged demo skips the build. If `main` moved on to new demo sources whose image
-  isn't pushed yet, the build fails on the pull and the old site stays up until that commit's own deploy.
+  tree entries only, so the server needs nothing but git). A landed commit's lanes usually skip (verified on its PR), so
+  no run builds per SHA; with a key, any commit with the same demo sources finds the image, and an unchanged demo skips
+  the build.
 - **The key's path list is load-bearing.** It must equal `websiteDemoInputs` (check runner) and be covered by ci.yml's
   `website` filter, excluding the agent docs as the filter does; `TestWebsiteDemoInputsMatchTheImageKey` holds all three
   together. A path hashed but not filtered would change the key on a commit that publishes no image.
@@ -353,8 +357,11 @@ nothing links to it, it's out of the sitemap, and it's `noindex` until David lau
   first push; then David sets it public once at github.com/users/vdavid/packages/container/cmdr-demo/settings. The
   publish job checks an anonymous pull before the deploy fires and names that page when it fails.
 - **Local builds**: `CMDR_WEBSITE_DEMO=1 pnpm build` reads `apps/desktop/build-demo/` directly. A local Docker build
-  passes that dir with `--build-context demo=apps/desktop/build-demo` (what `website-docker-build` does; without a local
-  demo it uses an empty dir and `CMDR_WEBSITE_DEMO=0`).
+  passes that dir as a named build context for the placeholder ref the Dockerfile names without a digest:
+  `--build-context ghcr.io/vdavid/cmdr-demo@sha256:<64 zeros>=apps/desktop/build-demo` (what `website-docker-build`
+  does; without a local demo it uses an empty dir and `CMDR_WEBSITE_DEMO=0`).
+- **Changing the webhook**: the listener reads `hooks.json` only at start (no `-hotreload`), so a change to it takes a
+  `sudo systemctl restart deploy-webhook` on the server after it lands, then a redeploy (`workflow_dispatch`).
 - **CI**: the `website-demo` job builds it on the bare runner (the `website` job runs inside the Playwright image, which
   has no Rust) and hands it over as an artifact, which `publish-website-demo` reuses when it exists. Both build through
   `.github/actions/build-website-demo`. The `website` filter includes the demo's inputs, so a change there re-runs the
