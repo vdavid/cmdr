@@ -39,7 +39,7 @@ impl VolumeReadStream for InMemoryReadStream {
                 return None;
             }
             if let Some(delay) = self.chunk_delay {
-                tokio::time::sleep(delay).await;
+                crate::rt::time::sleep(delay).await;
             }
             let end = (self.offset + IN_MEMORY_STREAM_CHUNK_SIZE).min(self.data.len());
             let chunk = self.data[self.offset..end].to_vec();

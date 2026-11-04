@@ -190,7 +190,7 @@ pub(super) async fn keep_signed_in_secret<B: HttpBackend>(owner: &B, sign_in: &S
 /// iteration: an ejected or superseded volume stops answering.
 pub(super) async fn run_reconnect_loop<B: HttpBackend>(handle: SelfHandle<B>) {
     for (attempt, delay) in RECONNECT_BACKOFF.iter().enumerate() {
-        tokio::time::sleep(*delay).await;
+        crate::rt::time::sleep(*delay).await;
         let Some(owner) = handle
             .live()
             .filter(|owner| !owner.session().unmounted.load(Ordering::Relaxed))

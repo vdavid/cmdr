@@ -35,7 +35,7 @@ pub async fn report_while<T>(
             // reporting one more approximate count.
             biased;
             answer = &mut listing => return answer,
-            () = tokio::time::sleep(interval) => {
+            () = crate::rt::time::sleep(interval) => {
                 let progress = sample();
                 if progress.entries() > 0 {
                     on_progress(progress);
