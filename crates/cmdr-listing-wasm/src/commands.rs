@@ -134,7 +134,7 @@ impl Demo {
             .index(Arc::clone(&sizes) as _)
             .build();
         panes.attach(&listings);
-        panes.attach_sizes(Arc::clone(&sizes), Arc::clone(&sink));
+        panes.attach_sizes(Arc::clone(&sizes), Arc::clone(&sink), page_runtime());
         listings.start_orphan_reaper();
         let volume_host = VolumeHost::builder().listings(panes).build();
         let search = Arc::new(DemoSearch::new(

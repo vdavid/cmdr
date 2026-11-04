@@ -140,7 +140,8 @@ tree lists as a folder (as on disk).
   proof that the scan's rayon fallback runs inline and its timing log reads the page's clock. Its write half
   (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
   delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
-  that fails past a 50 ms hold. Any unhandled rejection fails the run.
+  that fails past a 50 ms hold. The probe runs past the settle until the engine has sent nothing for 200 ms, so the
+  folder-size news that trails the delete is inside it. Any unhandled rejection fails the run.
   - **The hold is the main thread's CPU time** between two ticks (`process.threadCpuUsage`), with wall time only
     printed. Decision/Why: wall time failed under machine load (87 ms at a load average of 74–130 from parallel agents'
     checks, 13–19 ms alone), since a descheduled process ages the wall clock but not its thread's CPU time. Measured
@@ -207,12 +208,19 @@ store (`InMemoryVolume::subtree_totals`, counting the way `cmdr-index`'s aggrega
   the fold counts, it keeps no leaf list.
 - **Changes compose ahead of the panes**, as the app's composer feeds its index first: `BackendListings` hands every
   `directory_changed` to `FolderSizes::changed` (which forgets the changed entry's subtree and its ancestors from the
-  memo), then to the panes, then `FolderSizes::publish_moved` tells every open listing AT or above the change what
-  moved, the app's index-size worker's way: the one folder row on the way down written into the cache by
-  `update_index_sizes` (the pane AT the change has none: it heard the change itself), then `listing-index-sizes-changed`
-  with that row and the listing's own folder (`currentDir`, the `..` row). That event is the only path the frontend has
-  for the `..` row and the status bar to move without a re-read. No cooldown and no hourglass: the app's worker batches
-  a live index, and a fold is never behind.
+  memo), then to the panes, then `FolderSizes::note_moved` gathers its parent. 50 ms after the first note
+  (`SIZES_GATHER` in `backend_listings.rs`, the write engine's progress cadence), `FolderSizes::publish_moved` tells
+  every open listing AT or above a gathered change what moved, the app's index-size worker's way: each folder row on the
+  way down written into the cache by `update_index_sizes` (the pane AT a change has none: it heard the change itself),
+  then ONE `listing-index-sizes-changed` with those rows and the listing's own folder (`currentDir`, the `..` row). That
+  event is the only path the frontend has for the `..` row and the status bar to move without a re-read. No hourglass,
+  and a short gather in place of the app's 2 s cooldown, since a fold is never behind.
+  - **Decision/Why: gathered, not one event per change.** A 1,200-file delete reported 1,200 removals, each its own
+    event per pane; the page took them through the frontend's handler back to back, a ~45 ms hold at the delete's end
+    (#956). Gathered, the smoke's long delete sends one. The app's worker doesn't have this burst: it already merges
+    index batches per listing behind its cooldown (`apps/desktop/src-tauri/src/listing_index_sizes/schedule.rs`), so the
+    fix is the demo's alone. A test waiting on a pane's row after a write waits for the event, not the settle
+    (`folder_sizes_test.rs`'s `heard_size`).
 - **Physical size** is each file's `physical_size`, or its logical size where the store models none.
 
 ## Search
