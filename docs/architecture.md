@@ -149,6 +149,8 @@ All under `apps/desktop/src/lib/`.
 - `utils/`: Filename validation, confirm dialog utilities
 - `path/`: Path manipulation helpers (normalize, segment, join/split, platform-aware comparators)
 - `font-metrics/`: Character width measurement for accurate Brief mode column sizing
+- `demo/`: the browser demo's fake backend (`pnpm build:demo`, served at getcmdr.com/demo): typed answers behind
+  `mockIPC`, with the listing commands routed to the WASM listing engine. See `apps/desktop/src/lib/demo/CLAUDE.md`
 
 **Adding a new top-level window** (route + opener + capability file, plus the perms gotcha that window-creation is
 checked against the calling window): see `guides/adding-a-window.md`. Existing windows are Settings, the File viewer,

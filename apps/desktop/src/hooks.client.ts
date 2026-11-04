@@ -12,9 +12,9 @@
  */
 
 // First import, so in a demo build the fake backend is in place before any other module runs.
-// `boot.ts` installs itself behind a `__CMDR_DEMO_BUILD__` guard, so every other build tree-shakes
-// all of `#lib/demo/`. Never a top-level `await import()` instead: WebKit can run an importer
-// before an awaiting module finishes, and Safari visitors run the demo too.
+// Every other build resolves it to an empty module (`vite.config.js`). Never a top-level
+// `await import()` instead: WebKit can run an importer before an awaiting module finishes, and
+// Safari visitors run the demo too. See `src/lib/demo/DETAILS.md`.
 import '#lib/demo/boot.js'
 import type { HandleClientError } from '@sveltejs/kit/hooks'
 import { logPageCrash } from '#lib/logging/uncaught-errors.js'

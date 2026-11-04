@@ -2,8 +2,9 @@
  * The browser demo's stand-in for the Tauri backend: imported first by `hooks.client.ts`, and in
  * demo builds only (`__CMDR_DEMO_BUILD__`) it installs itself before any app module runs. Every
  * `invoke` the app makes lands in `answer()`; events the "backend" sends go through
- * `@tauri-apps/api/mocks`' event emulation. Everything here sits behind the guard, so a normal
- * build tree-shakes this module and all it imports.
+ * `@tauri-apps/api/mocks`' event emulation. Every other build never sees this module:
+ * `vite.config.js` aliases it to the empty `boot-absent.ts` (see `DETAILS.md` § Keeping the demo
+ * out of the app); the guard only keeps vitest from installing it.
  */
 import { mockIPC, mockWindows } from '@tauri-apps/api/mocks'
 import type { AnswerTable, Payload } from './answer-types.js'
