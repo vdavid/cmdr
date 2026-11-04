@@ -322,8 +322,9 @@ check.
    - **Check the prep before asking for the go**: `pnpm check -m` (a plain full default run, about 5 minutes; `-m`
      because release prep happens in the main clone), and fix what it finds. The prep edits stay uncommitted until
      `release.sh` commits them, so no commit hook ever sees them, and a broken edit would otherwise surface only as a
-     red release CI run. One finding is expected: a new security advisory entry fails `desktop-security-advisories` (its
-     `fixedIn` is newer than the app version until `release.sh` bumps it).
+     red release CI run. Two findings are expected: a new security advisory entry fails `desktop-security-advisories`
+     (its `fixedIn` is newer than the app version until `release.sh` bumps it), and `website-e2e`'s changelog test fails
+     on the `## [Unreleased]` heading (it wants every heading to be `[X.Y.Z] - date`, which `release.sh` writes).
 6. **Advise the version** (patch: bug fixes, minor: new features, major: major launches), and give the user the
    `./scripts/release.sh x.x.x` command. Once the version is picked, **review the trust pages** per
    `docs/guides/trust-page-review.md` (start with `./scripts/trust-review.sh`) and stamp `verifiedAgainst` with it;

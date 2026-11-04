@@ -1,0 +1,6 @@
+# osv-scanner ignores for `tools/demo-video/pnpm-lock.yaml` only. This is local promo-video tooling
+# (Remotion): nothing here ships in the app, the website, or the API server.
+
+[[IgnoredVulns]]
+id = "GHSA-mrhx-c7xc-m3w5"
+reason = "zod 4.5.4 (memory exhaustion while validating oversized constrained collections). Pinned exactly by every @remotion/* 4.0.536–4.0.539 package; 4.0.540 moves to zod 4.6.7 but was published 2026-11-02, inside the three-day release-age window. Not reachable: Remotion validates only our own committed props files on David's Mac, never untrusted input. Remove this when Renovate takes Remotion to 4.0.540 or later."
