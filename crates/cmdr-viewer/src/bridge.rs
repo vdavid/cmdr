@@ -8,9 +8,10 @@
 //! resolve an ambient runtime here (`Handle::current()`): a reader drops on a plain
 //! worker thread, which has none.
 //!
-//! In the browser a page can't block, so [`block_on`] polls the future ONCE: an in-memory
-//! volume's unpaced read is ready on its first poll. One that isn't (a paced or networked
-//! volume) answers `NotSupported`, never a hang or a panic.
+//! In the browser a page can't block, so [`block_on`] polls the future ONCE, inside
+//! `cmdr_fs::rt::in_one_poll`: an in-memory volume's read is ready on that poll, the demo
+//! device's breath and bandwidth skipping their waits there. One that still isn't (a
+//! networked volume) answers `NotSupported`, never a hang or a panic.
 
 use std::future::Future;
 
@@ -46,7 +47,8 @@ where
 {
     let mut future = std::pin::pin!(future);
     let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
-    match future.as_mut().poll(&mut cx) {
+    // Tells a paced backend (the demo's device) there's no second poll to wait for.
+    match cmdr_fs::rt::in_one_poll(|| future.as_mut().poll(&mut cx)) {
         std::task::Poll::Ready(answer) => answer,
         std::task::Poll::Pending => {
             log::warn!("viewer bridge: a volume call wasn't ready on its first poll; a page can't wait for it");

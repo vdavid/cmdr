@@ -44,6 +44,33 @@ pub fn since(earlier: Instant) -> std::time::Duration {
     earlier.elapsed()
 }
 
+std::thread_local! {
+    /// How deep this thread is in [`in_one_poll`] scopes.
+    static ONE_POLL_DEPTH: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+/// Runs `f` as a caller that polls each future ONCE and can't wait for a second
+/// (the browser viewer's bridge, `cmdr-viewer`'s `bridge.rs`). Pacing that only
+/// hands the thread back (a device's breath, a modeled bandwidth) skips its wait
+/// inside, so the answer is there on that one poll. Nests; thread-local, so it
+/// never reaches another caller's work.
+pub fn in_one_poll<R>(f: impl FnOnce() -> R) -> R {
+    struct Exit;
+    impl Drop for Exit {
+        fn drop(&mut self) {
+            ONE_POLL_DEPTH.with(|depth| depth.set(depth.get() - 1));
+        }
+    }
+    ONE_POLL_DEPTH.with(|depth| depth.set(depth.get() + 1));
+    let _exit = Exit;
+    f()
+}
+
+/// Whether the caller can wait for a second poll: `false` inside [`in_one_poll`].
+pub fn caller_can_wait() -> bool {
+    ONE_POLL_DEPTH.with(|depth| depth.get() == 0)
+}
+
 /// The wall clock, as `std`'s `SystemTime` (what file dates and journal stamps are
 /// made of). `std`'s own `SystemTime::now` panics in the browser build.
 #[cfg(not(target_family = "wasm"))]

@@ -1172,6 +1172,9 @@ unless set, so a test that only cares about bytes sees the store it always did:
 - **Yielding** (`with_yielding`): every call and streamed chunk hands the thread back once a slice has passed since the
   last time (`rt::task::yield_now`, a macrotask in the browser), like a device waiting on I/O. That's what keeps the
   page painting and Cancel clickable during a 1,200-file delete.
+- **A caller that polls once** (`rt::in_one_poll`, the browser viewer's bridge) skips both waits: it has no second poll
+  to come back on, so a paced device would answer it `NotSupported`. Outside that scope the device paces as before.
+  Pinned by `device_tests.rs`'s one-poll cell and `smoke-viewer.mjs`.
 - **Pane patches** (`with_pane_patches(volume_id, listings)`, `src/volume/in_memory/panes.rs`): every create, delete,
   rename, and streamed write then patches the listings through the shared patcher (`patching.rs`), as SFTP and S3 do,
   and `notify_mutation` (the engine's own reports) goes there too. The demo hands it its listing engine

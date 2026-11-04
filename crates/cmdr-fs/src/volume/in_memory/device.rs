@@ -254,6 +254,11 @@ impl Bandwidth {
     /// wait (a cancel) gives the caller back at once; the slot it booked stays
     /// spent, as a disk's read-ahead would.
     pub(crate) async fn transfer(&self, bytes: usize) {
+        // A caller that polls once can't wait out a slot; it reads at memory speed,
+        // as a positioned read does.
+        if !rt::caller_can_wait() {
+            return;
+        }
         let takes = Duration::from_nanos((bytes as u128 * 1_000_000_000 / u128::from(self.bytes_per_sec)) as u64);
         let done = {
             let mut free_at = self.free_at.lock_ignore_poison();
@@ -291,6 +296,10 @@ impl Yielder {
 
     /// Yields when the slice is spent; otherwise returns without pending.
     pub(crate) async fn breathe(&self) {
+        // A caller that polls once has no second poll to come back on.
+        if !rt::caller_can_wait() {
+            return;
+        }
         let due = {
             let mut last = self.last.lock_ignore_poison();
             if rt::since(*last) >= self.slice {

@@ -110,6 +110,33 @@ async fn a_yielding_device_hands_the_thread_back_at_a_call() {
     assert!(futures_util::FutureExt::now_or_never(quiet.list_directory(Path::new("/"), None)).is_some());
 }
 
+/// Regression: the browser viewer polls a volume call once (`cmdr-viewer`'s bridge), so a
+/// device that breathed or paced under it answered the viewer `NotSupported`.
+#[tokio::test]
+async fn a_caller_that_polls_once_gets_an_answer_from_a_paced_device() {
+    let volume = device_with_photo(2 * MIB)
+        .with_yielding(Duration::ZERO)
+        .with_bandwidth(1);
+    let answered = rt::in_one_poll(|| {
+        let metadata = futures_util::FutureExt::now_or_never(volume.get_metadata(Path::new("/photo.jpg")));
+        let range = futures_util::FutureExt::now_or_never(volume.read_range(Path::new("/photo.jpg"), 0, 64));
+        let stream = futures_util::FutureExt::now_or_never(async {
+            let mut stream = volume.open_read_stream(Path::new("/photo.jpg")).await?;
+            stream
+                .next_chunk()
+                .await
+                .transpose()
+                .map(|chunk| chunk.map(|c| c.len()))
+        });
+        (metadata.is_some(), range.is_some(), stream.is_some())
+    });
+    assert_eq!(answered, (true, true, true), "metadata, a range, and a streamed chunk");
+    assert!(
+        futures_util::FutureExt::now_or_never(volume.get_metadata(Path::new("/photo.jpg"))).is_none(),
+        "outside the poll, the device paces again"
+    );
+}
+
 #[test]
 fn unmix_inverts_mix() {
     for z in [0u64, 1, 42, u64::MAX, 0x0123_4567_89AB_CDEF, GOLDEN] {
