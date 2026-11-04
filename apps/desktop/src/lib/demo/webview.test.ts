@@ -13,7 +13,7 @@ function fakeBackend(answer: unknown = 'from backend') {
   const invoked: [string, unknown][] = []
   const emitted: [string, unknown, unknown][] = []
   let attached: DemoWebview | undefined
-  const backend: Pick<DemoBackend, 'invoke' | 'emit' | 'attach'> = {
+  const backend: Pick<DemoBackend, 'invoke' | 'emit' | 'attach' | 'mediaUrl'> = {
     invoke: (cmd, payload) => {
       invoked.push([cmd, payload])
       return Promise.resolve(answer)

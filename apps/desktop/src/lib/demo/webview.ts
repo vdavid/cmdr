@@ -59,7 +59,10 @@ function reaches(target: EventTarget, listenTarget: ListenTarget): boolean {
 
 /** Installs the webview for the window labeled `label`, attached to `backend`. */
 // Only the IPC and event halves: a webview has no business with the menu bar or the panels.
-export function installWebview(backend: Pick<DemoBackend, 'invoke' | 'emit' | 'attach'>, label: string): void {
+export function installWebview(
+  backend: Pick<DemoBackend, 'invoke' | 'emit' | 'attach' | 'mediaUrl'>,
+  label: string,
+): void {
   // Keyed by the handler's callback id, which doubles as the event id `listen` resolves with,
   // as the mocks' own `unregisterListener` assumes.
   const listeners = new Map<number, Listener>()
