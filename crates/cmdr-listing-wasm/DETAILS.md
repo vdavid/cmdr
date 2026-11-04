@@ -40,7 +40,7 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
 - `default(init?)`: the glue's initializer. In a page `await init()` fetches `cmdr_listing_wasm_bg.wasm` next to the
   glue; Node passes `{ module_or_path: bytes }`.
 - `new DemoListing(tree, onEvent)`: `tree` is
-  `{ volumeId, volumeName?, root, entries: [{ path, kind: "file" | "dir" | "symlink", size?, modifiedMs?, createdMs?, symlinkTarget? }] }`,
+  `{ volumeId, volumeName?, home?, root, entries: [{ path, kind: "file" | "dir" | "symlink", size?, modifiedMs?, createdMs?, symlinkTarget? }] }`,
   every parent folder listed. Throws on a bad tree (a relative path, a duplicate, a missing parent).
   `onEvent(name: string, payload: unknown)` hears every event by its Tauri name: `listing-opening`, `listing-progress`,
   `listing-read-complete`, `listing-complete`, `listing-error`, `listing-cancelled`, `listing-stalled`,
@@ -112,17 +112,18 @@ every op), `events.rs` (`EngineEvents`), `sinks.rs` (the per-op and per-preview 
 queue before its `write-error`, as the desktop's terminal effects order it), `wire.rs` (every event name, pinned against
 `bindings.ts` by `events_test.rs`), and `commands/` by domain (`transfers.rs`, `instant.rs`, `queue.rs`, `history.rs`,
 and `paths.rs`: the dialogs' `path_exists`, `destination_exists`, `destination_root_echo`, and `stat_paths_kinds`,
-answered from the live volume). The volume is named after the tree's `volumeName` (`Macintosh HD`), so a transfer's
-summary reads `Macintosh HD/Users/you`. `Demo` routes a command to it when `DemoOperations::handles` claims it.
+answered from the live volume). The volume is named after the tree's `volumeName` (`Macintosh HD`), and its `home` makes
+it stand in for the computer's own disk (`Volume::stands_in_for_own_disk`), so a transfer's summary reads `~/Documents`
+as the desktop's does. `Demo` routes a command to it when `DemoOperations::handles` claims it.
 
 - **One volume, one `Listings`**: `Demo::new` builds the `InMemoryVolume` once, hands it to both engines, and gives it
   pane patches through `backend_listings.rs`'s late-bound `BackendListings` (the volume needs its listing host before
   the engine that lists it exists). The write engine's `VolumeHost` carries the same host, and its `NameOrder` is the
   listing engine's collator.
-- **The device**: `with_bandwidth(5 MiB/s)`, measured at about 2.9 MB/s end to end in headless Chromium (why it runs
-  below the setting isn't pinned down yet; 2026-11-04), so a 120 MB file copies for about 40 s, long enough to watch and
-  pause in the queue, `with_yielding(8 ms)` (the page never waits long on engine work), and `with_capacity` at the disk
-  size the volume list shows, so free space is live. `Pacing` stays the engine's default `None`.
+- **The device**: `with_bandwidth(5 MiB/s)` (its burst window keeps a page's late timers from eating the rate:
+  `crates/cmdr-fs/DETAILS.md` § Bandwidth), so a 120 MB file copies for about 23 s, long enough to watch and pause in
+  the queue, `with_yielding(8 ms)` (the page never waits long on engine work), and `with_capacity` at the disk size the
+  volume list shows, so free space is live. `Pacing` stays the engine's default `None`.
 - **The journal** is the real `cmdr-operation-log` on `/demo/operation-log.db` (SQLite's in-memory VFS, gone on reload
   like the volume; the writer applies inline, `cmdr-operation-log`'s browser build). The ledger is claimed unpersisted;
   its `LedgerUnpersisted` report stays quiet. Natively (tests) the log is a scratch file in the temp dir.

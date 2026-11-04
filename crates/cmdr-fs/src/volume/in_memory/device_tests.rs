@@ -192,6 +192,36 @@ async fn bandwidth_is_one_budget_the_whole_device_shares() {
     assert_took(rt::time::now() - started, Duration::from_secs(3));
 }
 
+/// A page's timers wake several ms late and the copy does its own work between
+/// chunks; a reader that's back within the device's burst window keeps the full
+/// rate. Regression: a 10 ms gap per 64 KiB chunk once cost the demo's 5 MiB/s
+/// device nearly half its rate (about 2.9 MB/s measured).
+#[tokio::test(start_paused = true)]
+async fn a_reader_with_short_gaps_keeps_the_full_rate() {
+    let device = Bandwidth::new(MIB);
+    let started = rt::time::now();
+    for _ in 0..16 {
+        device.transfer(64 * 1024).await;
+        // allowed-test-sleep: the reader's gap between chunks is the subject (paused clock)
+        rt::time::sleep(Duration::from_millis(10)).await;
+    }
+    // One second of bytes, plus only the last gap.
+    assert_took(rt::time::now() - started, Duration::from_millis(1_010));
+}
+
+/// A reader slower than the device sets the pace: its gaps aren't banked
+/// past the burst window.
+#[tokio::test(start_paused = true)]
+async fn an_idle_device_banks_only_its_burst() {
+    let device = Bandwidth::new(MIB);
+    device.transfer(1).await;
+    // allowed-test-sleep: the device's idle time is the subject (paused clock)
+    rt::time::sleep(Duration::from_secs(10)).await;
+    let started = rt::time::now();
+    device.transfer(MIB as usize).await;
+    assert_took(rt::time::now() - started, Duration::from_secs(1) - DEVICE_BURST);
+}
+
 #[tokio::test(start_paused = true)]
 async fn a_dropped_transfer_returns_at_once() {
     let device = Bandwidth::new(1_000);

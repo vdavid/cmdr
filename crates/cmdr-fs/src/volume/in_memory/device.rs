@@ -223,9 +223,14 @@ impl ContentSink {
     }
 }
 
-/// How late a timer may wake (tokio's resolution is a millisecond, a page's
-/// `setTimeout` a few) and still count as "straight back" for [`Bandwidth`].
-const TIMER_SLACK: Duration = Duration::from_millis(5);
+/// How far [`Bandwidth`]'s timeline may trail `now` and still be continued: a
+/// reader back within it keeps the full rate, and an idle device banks at most
+/// this much (a disk's read-ahead). It covers what comes between two chunks:
+/// timers waking late (tokio by a millisecond; a page's `setTimeout` clamped to
+/// 4 ms, plus its macrotask yields) and the copy's own work on each chunk. Five
+/// milliseconds was too tight for a page, where those gaps ran near 10 ms per
+/// 64 KiB chunk and cost the demo's 5 MiB/s device nearly half its rate.
+pub(crate) const DEVICE_BURST: Duration = Duration::from_millis(50);
 
 /// One device's throughput, shared by every stream on the volume: each chunk
 /// books the next free slot on the device's timeline and waits for its end, so
@@ -253,12 +258,13 @@ impl Bandwidth {
         let done = {
             let mut free_at = self.free_at.lock_ignore_poison();
             let now = rt::time::now();
-            // A reader that comes straight back for its next chunk continues the
-            // device's timeline: timers wake up to a millisecond late, and starting
-            // from `now` would add that lateness to every chunk.
-            let start = match *free_at {
-                Some(free) if free + TIMER_SLACK >= now => free,
-                _ => now,
+            // A reader back within the burst window continues the device's
+            // timeline; starting from `now` would add every gap to the copy. A
+            // longer idle banks only the window.
+            let start = match (*free_at, now.checked_sub(DEVICE_BURST)) {
+                (Some(free), Some(earliest)) => free.max(earliest),
+                (Some(free), None) => free,
+                (None, _) => now,
             };
             let done = start + takes;
             *free_at = Some(done);
@@ -302,6 +308,18 @@ impl Yielder {
 
 /// The device knobs, and the helpers the `Volume` impl calls them through.
 impl super::InMemoryVolume {
+    /// Stands in for the computer's own disk, `home` its home folder, so path
+    /// labels read as the desktop's (`Volume::stands_in_for_own_disk`).
+    pub fn standing_in_for_own_disk(mut self, home: impl Into<std::path::PathBuf>) -> Self {
+        self.own_disk_home = Some(home.into());
+        self
+    }
+
+    /// The home folder [`Self::standing_in_for_own_disk`] set.
+    pub(super) fn own_disk_home(&self) -> Option<&Path> {
+        self.own_disk_home.as_deref()
+    }
+
     /// Streams every read at `bytes_per_sec`, shared by all of this volume's
     /// readers at once ([`Bandwidth`]). Positioned reads stay at memory speed.
     pub fn with_bandwidth(mut self, bytes_per_sec: u64) -> Self {

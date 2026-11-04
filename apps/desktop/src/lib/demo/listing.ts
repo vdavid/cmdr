@@ -5,7 +5,7 @@
  * `DETAILS.md` § The listing seam.
  */
 import type { Payload } from './answer-types.js'
-import { DEMO_ROOT, DEMO_VOLUME_ID, demoEntries } from './demo-tree.js'
+import { DEMO_HOME, DEMO_ROOT, DEMO_VOLUME_ID, demoEntries } from './demo-tree.js'
 import { loadEngineModule } from './engine-module.js'
 import { demoPath } from './volumes.js'
 
@@ -50,7 +50,13 @@ function expandPaths(payload: Payload): Payload {
 export function startListingEngine(sink: ListingEventSink): ListingEngineHandle {
   const ready = loadEngineModule().then((wasm) => {
     if (!wasm) return null
-    const tree = { volumeId: DEMO_VOLUME_ID, volumeName: 'Macintosh HD', root: DEMO_ROOT, entries: demoEntries }
+    const tree = {
+      volumeId: DEMO_VOLUME_ID,
+      volumeName: 'Macintosh HD',
+      home: DEMO_HOME,
+      root: DEMO_ROOT,
+      entries: demoEntries,
+    }
     try {
       const engine = new wasm.DemoListing(tree, (event, payload) => {
         setTimeout(() => {

@@ -1165,8 +1165,10 @@ unless set, so a test that only cares about bytes sees the store it always did:
   generated. A file built from a listing alone (no content) still reads as empty.
 - **Bandwidth** (`with_bandwidth`): ONE budget the whole volume shares: each chunk books the next slot on the device's
   timeline, so three concurrent readers each get a third of the rate, as on one disk (a per-stream rate would show three
-  times the device's speed, since the copy runs `max_concurrent_ops()` streams). A reader straight back for its next
-  chunk continues the timeline within a few milliseconds of slack, or timer lateness would accrue per chunk.
+  times the device's speed, since the copy runs `max_concurrent_ops()` streams). A reader back within `DEVICE_BURST` (50
+  ms) continues the timeline, so timer lateness and the copy's per-chunk work don't accrue; an idle device banks at most
+  that window. Five milliseconds of slack was too tight for a page, whose gaps ran near 10 ms per 64 KiB chunk and cost
+  the demo nearly half its 5 MiB/s (about 2.9 MB/s measured).
 - **Yielding** (`with_yielding`): every call and streamed chunk hands the thread back once a slice has passed since the
   last time (`rt::task::yield_now`, a macrotask in the browser), like a device waiting on I/O. That's what keeps the
   page painting and Cancel clickable during a 1,200-file delete.

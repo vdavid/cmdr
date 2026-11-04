@@ -19,6 +19,11 @@ pub struct DemoTree {
     /// its ends; the id when the page gives none.
     #[serde(default)]
     pub volume_name: Option<String>,
+    /// The visitor's home folder (`"/Users/you"`): the volume then stands in for
+    /// the computer's own disk, so a transfer's summary words its ends as the
+    /// desktop's (`~/Documents`). `None` reads them as `<volume name>/…`.
+    #[serde(default)]
+    pub home: Option<String>,
     /// Where the volume is mounted (`"/"`).
     pub root: String,
     /// Every file, folder, and symlink, by absolute path.
@@ -127,6 +132,9 @@ impl DemoTree {
         let mut volume = InMemoryVolume::with_entries(name, entries)
             .with_root(root)
             .with_held_folders_only();
+        if let Some(home) = self.home {
+            volume = volume.standing_in_for_own_disk(home);
+        }
         // Every file reads as many bytes as its listing says: generated ones,
         // seeded from its path, so a copy moves real-sized data without the page
         // holding gigabytes (`crates/cmdr-fs/src/volume/in_memory/device.rs`).

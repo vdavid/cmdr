@@ -81,6 +81,10 @@ impl Volume for InMemoryVolume {
         &self.name
     }
 
+    fn stands_in_for_own_disk(&self) -> Option<&Path> {
+        self.own_disk_home()
+    }
+
     fn connection_state(&self) -> Option<ConnectionState> {
         self.connection_state
     }

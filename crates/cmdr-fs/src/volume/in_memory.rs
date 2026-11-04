@@ -150,6 +150,9 @@ pub struct InMemoryVolume {
     /// One device's throughput, shared by every read stream. `None` (the default)
     /// streams at memory speed. Set via [`Self::with_bandwidth`].
     bandwidth: Option<Arc<Bandwidth>>,
+    /// The home folder when this volume stands in for the computer's own disk
+    /// (`Volume::stands_in_for_own_disk`). Set via [`Self::standing_in_for_own_disk`].
+    own_disk_home: Option<PathBuf>,
     /// Hands the caller's thread back every slice, like a device waiting on I/O.
     /// `None` (the default) never yields. Set via [`Self::with_yielding`].
     yielder: Option<Arc<Yielder>>,
@@ -275,6 +278,7 @@ impl InMemoryVolume {
             delete_fails: false,
             read_chunk_delay: None,
             bandwidth: None,
+            own_disk_home: None,
             yielder: None,
             capacity: None,
             pane_patches: None,
