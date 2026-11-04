@@ -37,6 +37,9 @@ const engineCommands = [
   'rollback_operation',
   'get_recent_operation_log_entries',
   'get_operation_log_detail',
+  // The folder sizes, off the engine's fold over the volume.
+  'get_dir_stats',
+  'get_dir_stats_batch',
 ]
 
 const camelCase = (snake: string) => snake.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())

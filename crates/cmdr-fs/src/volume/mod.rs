@@ -2395,7 +2395,7 @@ pub use share_link::{ShareLink, ShareLinkExpiry};
 pub use supported_dates::SupportedDates;
 // The app-path schemes live beside the translation they feed; re-exported here
 // so callers keep `volume::sftp_app_root` and friends.
-pub use in_memory::{InMemoryContent, InMemoryVolume};
+pub use in_memory::{HeldAt, InMemoryContent, InMemoryVolume, SubtreeTotals};
 pub use locked_container::LockedContainer;
 pub use mkdir_all::{LeadsTo, MadeDirectories, MakesDirectories};
 pub use node_identity::NodeIdentity;

@@ -25,10 +25,15 @@ use std::sync::{Arc, RwLock};
 pub use device::InMemoryContent;
 use device::{Bandwidth, Yielder};
 use std::sync::atomic::{AtomicU64, Ordering};
+pub use subtree_totals::{HeldAt, SubtreeTotals};
 
 mod device;
 mod links;
 mod panes;
+mod subtree_totals;
+#[cfg(test)]
+#[path = "in_memory/subtree_totals_test.rs"]
+mod subtree_totals_test;
 mod transfer_holds;
 mod volume_impl;
 mod xattrs;

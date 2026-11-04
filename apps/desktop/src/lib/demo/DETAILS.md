@@ -211,7 +211,10 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
 3. Look up its return type in `bindings.ts` (the `__TAURI_INVOKE<...>` or `typedError<Ok, Err>`).
 4. Void command (returns `()`): add its bindings name to `silentCommands` in `answers.ts`. `VoidCommand` rejects a
    command that returns a value. Unanswered voids work anyway (the fallback answers `null`); listing them only keeps the
-   log quiet.
+   log quiet. Any OTHER unanswered command rejects with a string, as Tauri rejects a command it lacks: a `null` posing
+   as an answer crashed the search dialog once. Which are void (`Promise<void>`, or a `Result<(), E>` whose success is
+   `null`) is `virtual:cmdr-demo-void-commands`, which `apps/desktop/scripts/vite-demo-void-commands.ts` reads off
+   `bindings.ts` at build time (registered in `vite.config.js` for the demo build only, and in `vitest.config.ts`).
 5. Value command: add an entry to `appAnswers` (app state) or `volumeAnswers` (volumes, paths, and the tree), keyed by
    its bindings (camelCase) name. The answer is the `ok` value (`RawAnswer<K>`); a `typedError` command's error branch
    is `refuse('openPath', { type: 'unsupported' })`, typed against that command's error, which `invoke` rejects with as
@@ -221,7 +224,8 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
 7. Plugin commands (`plugin:<name>|<command>`) go in `plugins.ts`, or in `webview.ts`'s `windowAnswer` when they're
    about the calling window.
 
-Answer as a fresh, personal-use Cmdr on a Mac with nothing extra would: no index, no AI, no network hosts, no updater
+Answer as a fresh, personal-use Cmdr on a Mac with nothing extra would: no index (folder sizes are real anyway, from the
+engine's fold: `crates/cmdr-listing-wasm/DETAILS.md` § Folder sizes), no AI, no network hosts, no updater
 (`getManagedPolicy` says updates are disabled), no tags or custom folder icons. Icons: macOS draws the live ones and the
 demo can't ask it, so `getIcons` answers every id with the app's bundled generic folder or document
 (`static/icons/default-*.png`), through `$app/paths`' `asset()` so they resolve under `/demo`.

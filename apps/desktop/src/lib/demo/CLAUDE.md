@@ -10,7 +10,8 @@ lands in a typed answer here; the listing commands go to the real listing engine
   `menu-bar.ts`: the macOS menu bar, drawn from `menu-engine.ts` (the desktop's own bar and fold, through WASM).
   `traffic-lights.ts`: the macOS window buttons the page draws, for the main window and each panel.
 - `answers.ts` (app commands), `volumes.ts`, `plugins.ts` (in-memory `plugin:store`, path, app), `listing.ts` (routes to
-  the WASM engine, loaded once by `engine-module.ts`), `unanswered.ts` (`window.__cmdrDemo.unanswered`).
+  the WASM engine, loaded once by `engine-module.ts`), `unanswered.ts` (`window.__cmdrDemo.unanswered`; an unanswered
+  void resolves, any other rejects, DETAILS § Answering a command).
 - `demo-tree.ts` and `browser-shortcuts.ts`: PLACEHOLDER content David still decides.
 
 Run: `pnpm dev:demo` or `pnpm build:demo` (into `apps/desktop/build-demo/`, base `/demo`) in `apps/desktop`. Both build
@@ -18,9 +19,10 @@ the WASM engine first.
 
 ## Must-knows
 
-- **Isolation is a hard rule.** The app-side footprint is the `hooks.client.ts` import, the `vite.config.js` define and
-  aliases, and the `app.d.ts` global. No `if (demo)` in app code: demo behavior goes through existing seams (an IPC
-  answer, a store seed, a typed refusal). `cmdr/demo-isolation` fails any `__CMDR_DEMO_BUILD__` or `#lib/demo` outside.
+- **Isolation is a hard rule.** The app-side footprint is the `hooks.client.ts` import, the `vite.config.js` define,
+  aliases, and demo-only void-commands plugin, and the `app.d.ts` global. No `if (demo)` in app code: demo behavior goes
+  through existing seams (an IPC answer, a store seed, a typed refusal). `cmdr/demo-isolation` fails any
+  `__CMDR_DEMO_BUILD__` or `#lib/demo` outside.
 - **No demo code in any other build.** Outside `CMDR_DEMO_BUILD=1`, `vite.config.js` aliases `#lib/demo/boot.js` to the
   empty `boot-absent.ts`. Verify with a normal `pnpm build` and a grep of `build/` for `__cmdrDemo`.
 - **One backend per page, in the top frame; one webview per frame.** A secondary window is a same-origin iframe of its

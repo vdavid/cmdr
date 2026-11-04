@@ -11,13 +11,16 @@
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::host::listings::ListingHost;
 use cmdr_fs::volume::{DirectoryChange, SupportedDates};
 
 use cmdr_listing::{DirectorySortMode, EffectiveSort, Listings, SortColumn, SortOrder, sort_entries};
+
+use crate::events::EventSink;
+use crate::folder_sizes::FolderSizes;
 
 /// The listing engine as the [`ListingHost`] a backend reports its writes to.
 /// Late-bound: the volume needs its listing host before the engine that lists it
@@ -27,6 +30,7 @@ use cmdr_listing::{DirectorySortMode, EffectiveSort, Listings, SortColumn, SortO
 #[derive(Default)]
 pub struct BackendListings {
     listings: OnceLock<Listings>,
+    sizes: OnceLock<(Arc<FolderSizes>, Arc<dyn EventSink>)>,
 }
 
 impl BackendListings {
@@ -34,12 +38,25 @@ impl BackendListings {
     pub fn attach(&self, listings: &Listings) {
         let _ = self.listings.set(listings.clone());
     }
+
+    /// Feeds every change to `sizes` ahead of the panes, and tells every pane
+    /// at or above it what moved, through `sink`. A second call is ignored.
+    pub fn attach_sizes(&self, sizes: Arc<FolderSizes>, sink: Arc<dyn EventSink>) {
+        let _ = self.sizes.set((sizes, sink));
+    }
 }
 
 impl ListingHost for BackendListings {
     fn directory_changed(&self, volume_id: &str, parent_path: &Path, change: DirectoryChange) {
+        let sizes = self.sizes.get();
+        if let Some((sizes, _)) = sizes {
+            sizes.changed(parent_path, &change);
+        }
         if let Some(listings) = self.listings.get() {
             listings.directory_changed(volume_id, parent_path, change);
+            if let Some((sizes, sink)) = sizes {
+                sizes.publish_moved(listings, sink.as_ref(), volume_id, parent_path);
+            }
         }
     }
 

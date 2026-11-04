@@ -69,10 +69,11 @@ describe('demo backend', () => {
     expect(await backend.invoke('plugin:window|get_all_windows', {})).toEqual(['main'])
   })
 
-  it('notes a command nobody answers and answers null', async () => {
+  it('resolves an unanswered void command and rejects any other, as Tauri does', async () => {
     vi.spyOn(console, 'debug').mockImplementation(() => undefined)
     const backend = createDemoBackend()
-    expect(await backend.invoke('no_such_command', {})).toBeNull()
+    expect(await backend.invoke('fill_git_commit_counts', {})).toBeNull()
+    await expect(backend.invoke('no_such_command', {})).rejects.toMatch(/no_such_command/)
   })
 
   it('fans every event out to every attached webview, engine events included', () => {

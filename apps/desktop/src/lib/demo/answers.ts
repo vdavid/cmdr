@@ -143,11 +143,11 @@ export const appAnswers: AnswerTable = {
   recordVisit: none,
   // A demo panel opens centered every time (`windows.ts`): no remembered rect.
   getChildWindowRect: none,
-  // No Finder tags, packages, custom folder icons, or index-backed folder stats on the demo volume.
+  // No Finder tags, packages, or custom folder icons on the demo volume. Folder stats
+  // (`get_dir_stats*`) come from the engine's fold over the volume.
   enrichTags: () => ({ data: null, timedOut: false }),
   enrichPackages: () => ({ data: null, timedOut: false }),
   getCustomFolderIconIds: () => ({ data: [], timedOut: false }),
-  getDirStatsBatch: (p) => (p.paths as string[]).map(() => null),
   // Only an S3 transfer has a storage bill to estimate, and the demo has no S3.
   estimateOperationCost: () => [],
   getVolumeIndexStatusById: (p) => ({

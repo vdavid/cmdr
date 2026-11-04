@@ -18,6 +18,7 @@ pub mod backend_listings;
 mod bindings;
 pub mod commands;
 pub mod events;
+pub mod folder_sizes;
 pub mod menu;
 pub mod operations_host;
 #[cfg(target_family = "wasm")]
@@ -28,6 +29,8 @@ pub mod tree;
 mod commands_test;
 #[cfg(all(test, not(target_family = "wasm")))]
 mod events_test;
+#[cfg(all(test, not(target_family = "wasm")))]
+mod folder_sizes_test;
 #[cfg(all(test, not(target_family = "wasm")))]
 mod menu_test;
 #[cfg(all(test, not(target_family = "wasm")))]
