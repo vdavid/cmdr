@@ -87,7 +87,7 @@ func RunDiskImageTests(ctx *CheckContext) (CheckResult, error) {
 	filter := diskImageLaneFilter(diskImageLaneTestAtoms, diskImageHandRunTestAtoms)
 	lane, output, _, err := runNextestLane(ctx.RootDir, nextestRunOptions{RunIgnoredOnly: true}, filter)
 	if lane == nil {
-		return CheckResult{}, err
+		return rustLaneNotRun(err)
 	}
 	defer lane.remove()
 	ctx.RecordTests(ParseNextestResults(output)...)
@@ -102,9 +102,12 @@ func RunDiskImageTests(ctx *CheckContext) (CheckResult, error) {
 		count, _ = strconv.Atoi(m[1])
 		message = fmt.Sprintf("%d disk-image %s passed", count, Pluralize(count, "test", "tests"))
 	}
+	message += lane.scope.note()
 	// ❗ Zero is a failure, not a pass. Every atom is a module path, so a moved
 	// or renamed module selects nothing, and nextest calls that a clean run.
-	if count == 0 {
+	// The atoms span several crates, so a narrowed Rust test scope can make zero
+	// honest; the full runs still hold the guard.
+	if count == 0 && !lane.scope.Narrowed {
 		return CheckResult{}, fmt.Errorf(
 			"the filter %s selected no test; a real-image module moved or was renamed, so its pins would go unchecked",
 			filter,

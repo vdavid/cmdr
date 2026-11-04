@@ -56,7 +56,10 @@ func cacheBypassed(flags *cliFlags) bool {
 // "run everything fresh" (active=false on the read side, but we still try to
 // write fresh passes unless writing is disabled).
 func planCache(ctx *checks.CheckContext, flags *cliFlags, selected []checks.CheckDefinition) *cachePlan {
-	writeDisabled := flags.ciMode // CI never writes the cache
+	// CI never writes the cache. Neither does a run under a narrowed Rust test
+	// scope: its Rust test passes covered fewer crates than the fingerprint says,
+	// so recording them would let a later full run cache-hit on a partial green.
+	writeDisabled := flags.ciMode || checks.RustTestScopeNarrowed()
 	cacheReads := !cacheBypassed(flags) && len(flags.checkNames) == 0
 
 	plan := &cachePlan{
