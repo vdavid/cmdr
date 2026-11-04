@@ -59,18 +59,6 @@ futures-util = "0.3"
 # `deny.toml` allowlist.
 nucleo-matcher = "0.3.1"
 
-# The browser build's executor and clock (`src/rt/wasm.rs`): a page has no
-# threads for a tokio runtime, and `std::time::Instant::now` panics on
-# `wasm32-unknown-unknown`. Native builds never see these. `DETAILS.md` §
-# "The browser build".
-[target.'cfg(target_family = "wasm")'.dependencies]
-# `setTimeout` / `clearTimeout`, the sleep under the 50 ms diff flush.
-wasm-bindgen = "0.2.126"
-# `spawn_local`: a task runs on the page's microtask queue.
-wasm-bindgen-futures = "0.4.76"
-# `performance.now()` behind a `std`-shaped `Instant`.
-web-time = "1.1.0"
-
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and
 # leaves it off for the lib, so a shipped build carries no fakes.

@@ -3,7 +3,7 @@
  */
 import type { LocationCategory, LocationInfo } from '#lib/ipc/bindings.js'
 import type { AnswerTable } from './answer-types.js'
-import { DEMO_HOME, DEMO_VOLUME_ID, demoEntries } from './demo-tree.js'
+import { DEMO_HOME, DEMO_VOLUME_ID, demoEntries, type DemoEntry } from './demo-tree.js'
 
 function location(
   id: string,
@@ -21,7 +21,9 @@ function location(
     isEjectable: false,
     fsType: 'apfs',
     supportsTrash: false,
-    mountIsReadOnly: false,
+    // The demo writes nothing (file operations are #929): a read-only mount gets the app's own
+    // read-only handling for every write, the way a locked `.dmg` would.
+    mountIsReadOnly: true,
     isDiskImage: false,
     sharesDiskWithOthers: false,
     isCloudMount: false,
@@ -51,7 +53,10 @@ const demoLocations: LocationInfo[] = [
   mainVolume,
 ]
 
-const knownPaths = new Set(['/', ...demoEntries.map((e) => e.path)])
+const kindByPath = new Map<string, DemoEntry['kind']>([
+  ['/', 'dir'],
+  ...demoEntries.map((e): [string, DemoEntry['kind']] => [e.path, e.kind]),
+])
 
 /** A path as the demo volume spells it: `~` expanded, no trailing slash. */
 export function demoPath(raw: string): string {
@@ -64,5 +69,17 @@ export const volumeAnswers: AnswerTable = {
   getDefaultVolumeId: () => DEMO_VOLUME_ID,
   getE2eStartPath: () => null,
   resolvePathVolume: () => ({ volume: mainVolume, timedOut: false }),
-  pathExists: (p) => ({ data: knownPaths.has(demoPath(p.path as string)), timedOut: false }),
+  pathExists: (p) => ({ data: kindByPath.has(demoPath(p.path as string)), timedOut: false }),
+  // `true` for a folder, `false` for a file, `null` for a path the tree doesn't hold. A symlink
+  // counts as unknown: the drop path that asks degrades to its approximate count.
+  statPathsKinds: (p) => ({
+    data: (p.paths as string[]).map((raw) => {
+      const kind = kindByPath.get(demoPath(raw))
+      return kind === 'dir' ? true : kind === 'file' ? false : null
+    }),
+    timedOut: false,
+  }),
+  // Nothing on the demo volume syncs, and it stores every path as given.
+  getSyncStatus: () => ({ data: {}, timedOut: false }),
+  storedSpellings: (p) => ({ data: p.paths as string[], timedOut: false }),
 }

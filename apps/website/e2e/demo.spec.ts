@@ -32,10 +32,9 @@ test.describe('Browser demo', () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
   })
 
-  // PENDING: the listing engine (crates/cmdr-listing-wasm) isn't wired into the demo's
-  // `loadEngine` seam yet (apps/desktop/src/lib/demo/listing.ts), so every listing command goes
-  // unanswered and the panes show a read failure. Drop the `fixme` once it is.
-  test.fixme('lists the home folder in a pane', async ({ page }) => {
+  // The real listing engine (crates/cmdr-listing-wasm, loaded by apps/desktop/src/lib/demo/listing.ts)
+  // answers the pane: a missing `.wasm`, a CSP block, or a wire mismatch leaves it on `..` alone.
+  test('lists the home folder in a pane', async ({ page }) => {
     const errors = collectPageErrors(page)
     await page.goto('/demo/')
     // More than one row, so the `..` row alone doesn't count as a listing.

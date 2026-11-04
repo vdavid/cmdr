@@ -226,7 +226,7 @@ impl CachedListing {
             directory_sort_mode,
             supported_dates,
             sequence: AtomicU64::new(0),
-            created_at: Instant::now(),
+            created_at: crate::rt::now(),
             last_accessed_ms: AtomicU64::new(engine.epoch_millis_now()),
             epoch: engine.epoch,
             overlay_rows,
@@ -305,7 +305,7 @@ impl CachedListing {
     /// orphan reaper never evicts a listing in active use.
     pub(crate) fn touch(&self) {
         self.last_accessed_ms
-            .store(self.epoch.elapsed().as_millis() as u64, Ordering::Relaxed);
+            .store(crate::rt::since(self.epoch).as_millis() as u64, Ordering::Relaxed);
     }
 
     /// Everything on disk, in sort order. For an index a PANE gave you, ask

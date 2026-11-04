@@ -6,11 +6,10 @@ the seam it needs: `crates/cmdr-listing/DETAILS.md` § "The browser build"; `cmd
 
 ## Decision: `wasm32-unknown-unknown` + `wasm-bindgen`, on the page's event loop
 
-**Decision:** the target is `wasm32-unknown-unknown` with `wasm-bindgen`. The engine's executor and clock go through one
-crate-private seam, `cmdr-listing`'s `src/rt/`: natively it re-exports `tokio::runtime::Handle`, `tokio::time`, and
-`std::time::Instant` (so desktop code is the same code), and in the browser it spawns with
-`wasm_bindgen_futures::spawn_local`, runs blocking work inline, reads `performance.now()` (`web-time`), and sleeps on
-`setTimeout`.
+**Decision:** the target is `wasm32-unknown-unknown` with `wasm-bindgen`. The engines' executor and clock go through one
+seam, `cmdr_fs::rt`: natively it re-exports `tokio::runtime::Handle`, `tokio::time`, and `std::time::Instant` (so
+desktop code is the same code), and in the browser it spawns with `wasm_bindgen_futures::spawn_local`, runs blocking
+work inline, reads `performance.now()` (`web-time`), and sleeps on `setTimeout`.
 
 **Why:** what the engine needs from its host is "run this future", "run this closure", "what time is it", and "wake me
 in 50 ms". A browser answers all four natively, and none of them needs a thread. Options considered (verified on rustc
@@ -53,8 +52,10 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
   (`commands.rs`'s `COMMANDS`), so a mock routes those here and fakes the rest.
 - `DemoListing.setLogLevel(level)`: the engine's `log` lines on the console, `"warn"` by default.
 
-The tree: dates are JS milliseconds and become `FileEntry`'s seconds; files get mode `0644`, folders `0755`; a symlink
-whose `symlinkTarget` is a folder in the tree lists as a folder (as on disk).
+The volume is built `with_held_folders_only()`, so a folder the tree doesn't hold ends in the typed `notFound`
+`listing-error` a disk's missing folder does (and a file, `NotADirectory`). The tree: dates are JS milliseconds and
+become `FileEntry`'s seconds; files get mode `0644`, folders `0755`; a symlink whose `symlinkTarget` is a folder in the
+tree lists as a folder (as on disk).
 
 ## The build
 
@@ -73,8 +74,6 @@ whose `symlinkTarget` is a folder in the tree lists as a folder (as on disk).
 
 ## Where the demo differs from the app
 
-- **A folder the tree doesn't hold lists as empty**, where a disk answers `NotFound`: `InMemoryVolume` filters by
-  parent. Pinned by `commands_test.rs`'s `a_missing_folder_lists_empty`.
 - **No `listing-progress`**: `InMemoryVolume` ignores its progress callback; an in-memory read is instant anyway.
 - **No `~` expansion** on `list_directory_start_streaming` (the desktop expands it for `root`); a browser has no home.
 - **`refresh_listing` awaits the re-read in place**: the desktop's two-second cap guards hung mounts, which an in-memory

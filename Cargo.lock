@@ -1639,6 +1639,8 @@ dependencies = [
  "unicode-segmentation",
  "uuid",
  "uzers",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-time",
  "xattr",
 ]
@@ -1742,9 +1744,6 @@ dependencies = [
  "tokio",
  "tokio-util",
  "uuid",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-time",
 ]
 
 [[package]]

@@ -24,7 +24,6 @@
 //! (`commands/file_system/listing.rs`) a thin pass-through that just grabs the
 //! read lock and delegates here.
 
-use crate::rt::Instant;
 use serde::{Deserialize, Serialize};
 
 use nucleo_matcher::{
@@ -123,7 +122,7 @@ impl Inner {
         query: &str,
         include_hidden: bool,
     ) -> Result<Option<usize>, FuzzyJumpError> {
-        let started = Instant::now();
+        let started = crate::rt::now();
         // Recovering is right for a read of a cache: a panic elsewhere left the map
         // intact, and refusing every jump afterwards would be worse than reading it.
         let cache = self.reconciled_cache(&[listing_id]);
@@ -134,7 +133,7 @@ impl Inner {
 
         let rows = listing.rows(include_hidden);
         let result = find_first_match(rows.iter(), query);
-        let elapsed_us = started.elapsed().as_micros();
+        let elapsed_us = crate::rt::since(started).as_micros();
         log::debug!(
             target: "type_to_jump",
             "listing_id={} query_len={} include_hidden={} result_index={:?} elapsed_us={}",

@@ -1,6 +1,5 @@
 //! Directory listing cache for on-demand virtual scrolling.
 
-use crate::rt::Instant;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -34,7 +33,7 @@ impl Inner {
     /// abandons or that surfaces an error).
     pub(crate) fn snapshot_listings(&self) -> Vec<ListingSummary> {
         let cache = self.cache.read_ignore_poison();
-        let now = Instant::now();
+        let now = crate::rt::now();
         let mut out: Vec<ListingSummary> = cache
             .iter()
             .map(|(id, listing)| ListingSummary {
