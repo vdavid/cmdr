@@ -925,11 +925,13 @@ into `origin.rs`, `session_store.rs`, or `markdown_document.rs`; hand them the p
 - **`range_read` checks the cancel flag inside the per-line loop, not just between chunks**: the inner check fires every
   256 lines OR every 64 KB of emitted output, whichever first. Without the inner check, a 4096-line chunk of 4 KB/line
   files (16 MB) would be uninterruptible. Same lesson as `search_cancel`'s per-chunk progress reporting.
-- **CRLF: line readers keep `\r` AS PART of the returned line string.** All three backends (`byte_seek.rs:118`,
-  `full_load.rs:43`, `line_index.rs:172`) split only on `\n` and slice up to the `\n` byte; the `\r` stays with the
-  line. So `line.len()` already includes the `\r` for CRLF files, and `range_read`'s `chunk_end_offset += line.len()
-  - 1`accounts only for the single`\n`delimiter byte. No drift on LF or CRLF. Pinned by`read_range_full_load_crlf_preserves_carriage_returns`in`session_range_test.rs`. If a future change makes line readers strip `\r`, the byte-offset arithmetic in `range_read.rs`
-    needs the same change.
+- **CRLF: a row keeps its `\r` AS PART of its text.** Rows end only at `\n` (`rows.rs`), so a CRLF row's text ends in
+  `\r`, and `range_read`'s byte arithmetic counts it as text and pays only the `\n` as the delimiter. No drift on LF or
+  CRLF. Pinned by `read_range_full_load_crlf_preserves_carriage_returns` in `session_range_test.rs`. If rows ever drop
+  the `\r`, `range_read.rs` needs the same change. Search is the one reader that trims it: `scan_line_with_matcher`
+  drops a row's trailing `\r` before matching, so `e$` finds a CRLF line ending in `e` and a needle never matches the
+  terminator; columns are unchanged since only the end moves. Pinned by `search_answers_these_shapes_with_utf16_columns`
+  (`wire_characterization_test.rs`) and `a_crlf_rows_carriage_return_is_not_searched`.
 
 ## Performance targets
 

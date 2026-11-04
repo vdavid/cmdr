@@ -36,7 +36,7 @@ model. A host builds one `Viewer` over its `host::ViewerHost`: the desktop app
 - **ISO-8859-1 uses a manual 1:1 table, NOT `encoding_rs::WINDOWS_1252`**, and UTF-16 detection runs its parity
   heuristic BEFORE the UTF-8 fast path.
 - **`SearchMatch.column` / `.length` are UTF-16 code units** within the ROW. **Reject cross-line regex** (`(?s)`,
-  literal `\n`, `\n` escape) at build time; `(?m)` is fine. **CRLF: a row keeps its `\r`**.
+  literal `\n`, `\n` escape) at build time; `(?m)` is fine. **CRLF: a row keeps its `\r`**; search alone trims it.
 - **Cancellation is per-read / per-search, never session-wide**, checked inside the per-row loop.
 - **`write_range_to_file` streams; `read_range` buffers** (1 MiB chunks under a stall watch, ❌ never `read_range` +
   `fs::write`).

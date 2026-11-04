@@ -225,9 +225,10 @@ fn search_answers_these_shapes_with_utf16_columns() {
         use_regex: true,
         case_sensitive: true,
     };
+    // `$` sits before a CRLF line's `\r` too: the terminator is not the line's text.
     pin(
         search_to_the_end(&sid, "e$", regex),
-        r##"{"status":{"status":"done"},"newMatches":[{"row":2,"column":4,"length":1,"byteOffset":18}],"totalMatchCount":1,"totalBytes":23,"bytesScanned":23,"matchLimitReached":false}"##,
+        r##"{"status":{"status":"done"},"newMatches":[{"row":0,"column":2,"length":1,"byteOffset":0},{"row":2,"column":4,"length":1,"byteOffset":18}],"totalMatchCount":2,"totalBytes":23,"bytesScanned":23,"matchLimitReached":false}"##,
     );
     // The message is the regex crate's own wording, which a dependency bump may reword;
     // the shape around it is the wire.
