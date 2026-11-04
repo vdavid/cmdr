@@ -218,7 +218,9 @@ nothing else in the plan may move a golden.
 1. **`home_relative_parent` gets a `/` boundary** (`engine.rs:536`, before M0): a bare `strip_prefix(home)` turns
    `/Users/david/x` into `~id/x` when home is `/Users/dav`.
 2. **"Today" starts at local midnight** (`ai/mappings/time_mapping.rs:11`, before M0): `now_utc()` puts "today" and
-   "yesterday" one to two hours off in Stockholm.
+   "yesterday" one to two hours off in Stockholm. The MCP `search` tool's `modifiedAfter` / `modifiedBefore`
+   (`query_builder::iso_date_to_timestamp`) follow: a date is the user's local day (David, 2026-11-04, no backward
+   compatibility).
 3. **A bad exclude glob is surfaced** (`excludes.rs:62`, before M0): it's dropped by `if let Ok` today, so the search
    quietly ignores an exclusion the user typed. It becomes a `Query` error naming the pattern, like an invalid name
    pattern.

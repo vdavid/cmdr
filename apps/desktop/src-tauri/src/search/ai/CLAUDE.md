@@ -43,7 +43,7 @@ enum-to-value mappings, and an assembler. The LLM only classifies intent; Rust c
   semantics live on the FRONTEND (`applyTypeFromAi`). Don't add a Rust-side default that forces `yes`/`no`.
 - **`iso_date_to_timestamp` is re-exported for the MCP executor** (`crate::tools::actions` calls it for date arguments
   from MCP clients). It looks like an internal assembler helper but isn't; don't move it into `query_builder` private
-  scope.
+  scope. A date means the user's LOCAL day (`mappings/local_days.rs`), like the AI's "today".
 - **`KNOWN_EXTENSIONS` lives in `mappings/mod.rs`, not `keyword_mapping.rs`.** `keywords_to_pattern` reads it to detect
   exact-extension keywords (`.heic`, `package.json`). Add a new extension in the parent `mod.rs` of `mappings/`.
 - **`LABEL_MAX_CHARS = 40` must stay equal to `AI_LABEL_MAX_CHARS` in `lib/search/snapshot-label.ts`.** Truncation is
