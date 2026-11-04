@@ -159,7 +159,7 @@ impl ScanWatchdog {
             target: target.label,
             log_target: target.log_label,
             first_source: target.first_source,
-            started: Instant::now(),
+            started: crate::rt::now(),
             last_progress_ms: AtomicU64::new(0),
             files: AtomicUsize::new(0),
             dirs: AtomicUsize::new(0),
@@ -188,7 +188,7 @@ impl ScanWatchdog {
         self.dirs.store(dirs, Ordering::Relaxed);
         self.bytes.store(bytes, Ordering::Relaxed);
         self.last_progress_ms
-            .store(self.started.elapsed().as_millis() as u64, Ordering::Relaxed);
+            .store(crate::rt::since(self.started).as_millis() as u64, Ordering::Relaxed);
     }
 
     /// The walk has parked on its operation's pause gate: stop the inactivity
@@ -202,7 +202,7 @@ impl ScanWatchdog {
     /// the pause itself is never charged against the budget.
     pub(super) fn note_resumed(&self) {
         self.last_progress_ms
-            .store(self.started.elapsed().as_millis() as u64, Ordering::Relaxed);
+            .store(crate::rt::since(self.started).as_millis() as u64, Ordering::Relaxed);
         self.parked.store(false, Ordering::Release);
     }
 
@@ -258,15 +258,14 @@ impl ScanWatchdog {
             tally.files,
             tally.dirs,
             tally.bytes,
-            self.started.elapsed().as_secs_f64(),
+            crate::rt::since(self.started).as_secs_f64(),
             self.log_target
         );
     }
 
     /// How long since the walk last counted anything.
     fn idle(&self) -> Duration {
-        self.started
-            .elapsed()
+        crate::rt::since(self.started)
             .saturating_sub(Duration::from_millis(self.last_progress_ms.load(Ordering::Relaxed)))
     }
 
@@ -313,7 +312,7 @@ impl ScanWatchdog {
         // to catch.
         let tick = HEARTBEAT.min(self.inactivity_limit / 2).max(Duration::from_millis(10));
         loop {
-            tokio::time::sleep(tick).await;
+            crate::rt::time::sleep(tick).await;
             match self.beat() {
                 Beat::Walking | Beat::Parked => {}
                 Beat::Settled => return,
@@ -343,7 +342,7 @@ impl ScanWatchdog {
             target: LOG_TARGET,
             "scan preview {} gave up after {:.0}s: nothing counted for {:.0}s, stopped at {} files, {} dirs, {} bytes ({})",
             self.preview_id,
-            self.started.elapsed().as_secs_f64(),
+            crate::rt::since(self.started).as_secs_f64(),
             self.idle().as_secs_f64(),
             self.files.load(Ordering::Relaxed),
             self.dirs.load(Ordering::Relaxed),

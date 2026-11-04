@@ -23,7 +23,7 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
@@ -797,7 +797,7 @@ pub async fn copy_volumes_with_progress(
     let files_done_atomic = Arc::new(AtomicUsize::new(0));
     let files_skipped_atomic = Arc::new(AtomicUsize::new(0));
     let bytes_skipped_atomic = Arc::new(AtomicU64::new(0));
-    let last_progress_mutex = Arc::new(std::sync::Mutex::new(Instant::now()));
+    let last_progress_mutex = Arc::new(std::sync::Mutex::new(crate::rt::now()));
     let files_done;
     let bytes_done;
     let mut files_skipped;

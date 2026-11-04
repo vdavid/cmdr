@@ -40,7 +40,7 @@
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, UNIX_EPOCH};
 
 use tokio::io::AsyncWriteExt;
 
@@ -446,7 +446,7 @@ async fn reap_remote_temps(
         }
     };
 
-    let now_secs = SystemTime::now()
+    let now_secs = crate::rt::wall_now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);

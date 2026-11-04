@@ -63,7 +63,7 @@ impl FinishedTrees {
         let ttl = *self.ttl.lock_ignore_poison();
         let store: Weak<Self> = Arc::downgrade(self);
         runtime.spawn(async move {
-            tokio::time::sleep(ttl).await;
+            crate::rt::time::sleep(ttl).await;
             if let Some(store) = store.upgrade()
                 && store.entries.lock_ignore_poison().remove(&operation_id).is_some()
             {

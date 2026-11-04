@@ -312,14 +312,14 @@ pub(super) async fn scan_volume_sources(
     // trait-method call below — same scope as the function body, so no
     // `Arc`-ing or pointer gymnastics needed. Throttle interval comes from
     // the op state (default 200 ms in prod, 0 ms in tests).
-    let last_scan_emit: Mutex<Instant> = Mutex::new(Instant::now());
+    let last_scan_emit: Mutex<Instant> = Mutex::new(crate::rt::now());
     let progress_interval = state.progress_interval;
     let scan_progress = |progress: ListingProgress| {
         let mut last = last_scan_emit.lock_ignore_poison();
-        if last.elapsed() < progress_interval {
+        if crate::rt::since(*last) < progress_interval {
             return;
         }
-        *last = Instant::now();
+        *last = crate::rt::now();
         drop(last);
         state.emit_progress_via_sink(
             events,

@@ -24,7 +24,7 @@ use std::fs;
 use cmdr_fs::apple_double::SidecarRule;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Instant, SystemTime};
+use std::time::SystemTime;
 
 use crate::error_classification::IoResultExt;
 use crate::event_sinks::OperationEventSink;
@@ -282,7 +282,7 @@ pub(super) fn delete_sources_after_move(
     // still sitting in the user's source folder.
     let mut originals_spared = 0usize;
     let mut leftovers = LeftInSource::default();
-    let mut last_progress_time = Instant::now();
+    let mut last_progress_time = crate::rt::now();
 
     // The opening tick, unthrottled: it's what flips the frontend off the copy's
     // full bar and onto this phase's own, and the first source can take minutes.
@@ -376,10 +376,10 @@ pub(super) fn delete_sources_after_move(
         }
 
         sources_done += 1;
-        if last_progress_time.elapsed() >= state.progress_interval {
+        if crate::rt::since(last_progress_time) >= state.progress_interval {
             let name = source.file_name().map(|n| n.to_string_lossy().into_owned());
             emit_source_sweep_progress(events, state, operation_id, name, sources_done, sources_total);
-            last_progress_time = Instant::now();
+            last_progress_time = crate::rt::now();
         }
     }
 

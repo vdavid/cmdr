@@ -339,14 +339,14 @@ pub(super) fn walk_dir_recursive<E>(
         log::debug!("scan: skipping special file: {}", LogPrivate::path(path));
     }
 
-    if last_progress_time.elapsed() >= ctx.progress_interval {
+    if crate::rt::since(*last_progress_time) >= ctx.progress_interval {
         let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
         let current_dir = path.parent().map(|p| p.display().to_string());
         // Report the dedup'd running total: the scan-phase bar compares this
         // against the index's inode-dedup'd estimate, so reporting the raw
         // write footprint would overshoot 100% on hardlink-heavy trees.
         (ctx.on_progress)(files.len(), dirs.len(), *dedup_bytes, current_file, current_dir);
-        *last_progress_time = Instant::now();
+        *last_progress_time = crate::rt::now();
     }
 
     Ok(())
@@ -450,11 +450,11 @@ fn walk_cached_entries<E>(
         }
     }
 
-    if last_progress_time.elapsed() >= ctx.progress_interval {
+    if crate::rt::since(*last_progress_time) >= ctx.progress_interval {
         let current_dir = Some(parent_path.display().to_string());
         // Dedup'd running total — see the matching note in `walk_dir_recursive`.
         (ctx.on_progress)(files.len(), dirs.len(), *dedup_bytes, None, current_dir);
-        *last_progress_time = Instant::now();
+        *last_progress_time = crate::rt::now();
     }
 
     Ok(())

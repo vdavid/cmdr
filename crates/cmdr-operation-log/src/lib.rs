@@ -6,6 +6,15 @@
 #![warn(unused_crate_dependencies)]
 #![warn(unreachable_pub)]
 #![deny(missing_docs)]
+// `clippy.toml` refuses direct clock and timer reads (the browser build traps on
+// them); a test drives its own clocks and threads, as a host does.
+#![cfg_attr(
+    test,
+    allow(
+        clippy::disallowed_methods,
+        reason = "tests drive their own clocks, timers, and threads, as a host would"
+    )
+)]
 
 //! The operation log: a durable, cross-volume journal of every file mutation,
 //! the foundation for search, rollback, and a future undo.
@@ -41,16 +50,17 @@ pub mod writer;
 
 mod handle;
 mod recording;
+mod rt;
 
 pub use handle::{OpJournal, OpenError, OperationLog};
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 
 /// Seconds since the Unix epoch — the journal's opaque clock (the store owns no
 /// clock, so callers supply the time). Shared by the write pipeline's capture glue
 /// and the rollback engine.
 pub(crate) fn now_secs() -> i64 {
-    SystemTime::now()
+    rt::wall_now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)

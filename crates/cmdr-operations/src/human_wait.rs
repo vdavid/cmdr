@@ -98,7 +98,7 @@ impl HumanWaitClock {
     /// Opens or closes `source`'s interval. Idempotent: setting what is already
     /// set changes nothing, so a caller may simply mirror its own state.
     pub fn set(&self, source: HumanWaitSource, waiting: bool) {
-        self.set_at(source, waiting, Instant::now());
+        self.set_at(source, waiting, crate::rt::now());
     }
 
     /// [`set`](Self::set) against an injected clock, for tests that drive a

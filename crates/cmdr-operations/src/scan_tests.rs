@@ -14,6 +14,7 @@ use super::*;
 use crate::host::testing::PANE_ORDER_LISTINGS;
 use crate::testing::TestOperations;
 use std::fs;
+use std::time::Instant;
 
 fn make_file_info(path: &str, source_root: &str) -> FileInfo {
     FileInfo {

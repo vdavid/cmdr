@@ -437,16 +437,16 @@ async fn wait_for_volume(
     log::warn!(
         target: "copy",
         "volume outage: volumeName={name:?} went away; waiting up to {:?} for it to come back",
-        deadline.saturating_duration_since(Instant::now()),
+        deadline.saturating_duration_since(crate::rt::time::now()),
         name = LogPrivate::volume(&name),
     );
     if let Some(announce) = announce {
         announce_wait(state, announce);
     }
 
-    let started = Instant::now();
+    let started = crate::rt::time::now();
     let mut failed_attempts = 0;
-    let mut next_attempt = Instant::now();
+    let mut next_attempt = crate::rt::time::now();
     loop {
         if state.work_stopped() {
             return OutageEnd::Cancelled;
@@ -457,8 +457,8 @@ async fn wait_for_volume(
             if state.stop_or_park_async().await {
                 return OutageEnd::Cancelled;
             }
-            deadline = deadline.max(Instant::now() + policy.budget);
-            next_attempt = Instant::now();
+            deadline = deadline.max(crate::rt::time::now() + policy.budget);
+            next_attempt = crate::rt::time::now();
             continue;
         }
         match volume.connection_state() {
@@ -468,7 +468,7 @@ async fn wait_for_volume(
             // fixes. The pane offers the sign-in; the transfer fails as before.
             _ => return OutageEnd::NotWaitable,
         }
-        let now = Instant::now();
+        let now = crate::rt::time::now();
         if now >= deadline {
             let waited = outages.gave_up(&lane);
             log::warn!(
@@ -486,7 +486,7 @@ async fn wait_for_volume(
                 Attempt::Hopeless => return OutageEnd::NotWaitable,
                 Attempt::Failed => {
                     failed_attempts += 1;
-                    next_attempt = Instant::now() + policy.delay_after(failed_attempts);
+                    next_attempt = crate::rt::time::now() + policy.delay_after(failed_attempts);
                 }
             }
             continue;
@@ -498,7 +498,7 @@ async fn wait_for_volume(
         tokio::select! {
             biased;
             () = state.stop_work.cancelled() => return OutageEnd::Cancelled,
-            () = tokio::time::sleep_until(wake) => {}
+            () = crate::rt::time::sleep_until(wake) => {}
         }
     }
 }
@@ -529,7 +529,7 @@ fn came_back(outages: &Outages, lane: &LaneKey, name: &str, started: Instant) ->
     log::info!(
         target: "copy",
         "volume outage: volumeName={name:?} is back after {:?}; carrying on",
-        started.elapsed(),
+        crate::rt::time::now().saturating_duration_since(started),
         name = LogPrivate::volume(name),
     );
     OutageEnd::Back
@@ -556,7 +556,7 @@ async fn attempt_once(
 ) -> Attempt {
     let until_deadline = async {
         match deadline {
-            Some(at) => tokio::time::sleep_until(at).await,
+            Some(at) => crate::rt::time::sleep_until(at).await,
             None => std::future::pending().await,
         }
     };
@@ -567,7 +567,7 @@ async fn attempt_once(
         // The loop reads the deadline next and gives up; an attempt still
         // dialing then is dropped, which the backends' single-flight tolerates.
         () = until_deadline => return Attempt::Failed,
-        result = tokio::time::timeout(attempt_timeout, volume.attempt_reconnect()) => match result {
+        result = crate::rt::time::timeout(attempt_timeout, volume.attempt_reconnect()) => match result {
             Ok(result) => result,
             Err(_elapsed) => {
                 log::warn!(
@@ -668,7 +668,7 @@ impl Outages {
     /// nothing but its own wait.
     fn join(outages: &Arc<Self>, lane: &LaneKey, born: std::time::Instant, budget: Duration) -> Joined {
         let mut records = outages.records.lock_ignore_poison();
-        let now = Instant::now();
+        let now = crate::rt::time::now();
         if let Some(outage) = records.get_mut(lane) {
             match outage.gave_up_at {
                 None => {
@@ -682,7 +682,7 @@ impl Outages {
                         },
                     };
                 }
-                Some(gave_up_at) if born <= gave_up_at && gave_up_at.elapsed() < budget => {
+                Some(gave_up_at) if born <= gave_up_at && crate::rt::since(gave_up_at) < budget => {
                     return Joined::AlreadyGaveUp { waited: outage.waited };
                 }
                 Some(_) => {}
@@ -718,7 +718,7 @@ impl Outages {
             .lock_ignore_poison()
             .get(lane)
             .and_then(|outage| outage.gave_up_at)
-            .is_some_and(|gave_up_at| born <= gave_up_at && gave_up_at.elapsed() < budget)
+            .is_some_and(|gave_up_at| born <= gave_up_at && crate::rt::since(gave_up_at) < budget)
     }
 
     /// The volume is back: the outage is over for everyone.
@@ -736,8 +736,8 @@ impl Outages {
             return Duration::ZERO;
         };
         if outage.gave_up_at.is_none() {
-            outage.gave_up_at = Some(std::time::Instant::now());
-            outage.waited = outage.started.elapsed();
+            outage.gave_up_at = Some(crate::rt::now());
+            outage.waited = crate::rt::time::now().saturating_duration_since(outage.started);
         }
         outage.waited
     }

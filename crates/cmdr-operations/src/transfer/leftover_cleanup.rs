@@ -62,7 +62,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
 
@@ -236,7 +235,7 @@ async fn take_away(pass: &Pass, left: LeftBehind) -> Vec<PathBuf> {
     if !left.late.is_empty() {
         // The server may still be reading the dropped upload; a delete on a
         // name that isn't there yet is the cheap way to be sure.
-        tokio::time::sleep(state.cleanup_policy.late_landing_recheck).await;
+        crate::rt::time::sleep(state.cleanup_policy.late_landing_recheck).await;
         let round = delete_each(pass, left.late).await;
         remaining.extend(round.remaining);
         refused.extend(round.refused);
@@ -246,7 +245,7 @@ async fn take_away(pass: &Pass, left: LeftBehind) -> Vec<PathBuf> {
         if refused.is_empty() {
             break;
         }
-        tokio::time::sleep(pause).await;
+        crate::rt::time::sleep(pause).await;
         pause = pause.saturating_mul(2);
         let round = delete_each(pass, std::mem::take(&mut refused)).await;
         remaining.extend(round.remaining);
@@ -275,7 +274,7 @@ async fn delete_each(pass: &Pass, temps: Vec<PathBuf>) -> Deletes {
             round.remaining.push(temp);
             continue;
         }
-        match tokio::time::timeout(state.outage_policy.attempt_timeout, volume.delete(&temp)).await {
+        match crate::rt::time::timeout(state.outage_policy.attempt_timeout, volume.delete(&temp)).await {
             Ok(Ok(()) | Err(VolumeError::NotFound(_))) => {
                 in_flight_temps::retire_temp(state, pass.home.clone(), &temp);
             }
@@ -303,14 +302,14 @@ fn reads_live(volume: &Arc<dyn Volume>) -> bool {
 /// someone else's, unless the operation already gave this outage up.
 async fn bring_back(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>) {
     let policy = state.cleanup_policy;
-    let deadline = Instant::now() + policy.wait;
+    let deadline = crate::rt::time::now() + policy.wait;
     if volume.connection_state() != Some(ConnectionState::Disconnected) {
         // Live, no session at all, or waiting on a person (a sign-in, a host
         // key): nothing a dial or the clock fixes.
         return;
     }
     let attempt_timeout = state.outage_policy.attempt_timeout.min(policy.wait);
-    match tokio::time::timeout(attempt_timeout, volume.attempt_reconnect()).await {
+    match crate::rt::time::timeout(attempt_timeout, volume.attempt_reconnect()).await {
         Ok(Ok(())) => return,
         Ok(Err(error)) => {
             log::debug!(target: "copy", "leftover cleanup: the reconnect attempt failed: {error}", error = LogError(&error))
@@ -324,11 +323,11 @@ async fn bring_back(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>) 
         return;
     }
     while !reads_live(volume) && volume.connection_state() == Some(ConnectionState::Disconnected) {
-        let now = Instant::now();
+        let now = crate::rt::time::now();
         if now >= deadline {
             return;
         }
-        tokio::time::sleep_until(deadline.min(now + state.outage_policy.poll_every)).await;
+        crate::rt::time::sleep_until(deadline.min(now + state.outage_policy.poll_every)).await;
     }
 }
 

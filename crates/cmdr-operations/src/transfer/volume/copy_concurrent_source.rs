@@ -16,7 +16,6 @@
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::time::Instant;
 
 use super::super::super::types::SourceItemOutcome;
 use super::super::transfer_driver::emit_source_outcome;
@@ -388,8 +387,8 @@ impl ConcurrentCopy<'_> {
         self.bytes_skipped_atomic.fetch_add(hint_size, Ordering::Relaxed);
 
         let mut last = self.last_progress_mutex.lock_ignore_poison();
-        if last.elapsed() >= self.progress_interval {
-            *last = Instant::now();
+        if crate::rt::since(*last) >= self.progress_interval {
+            *last = crate::rt::now();
             drop(last);
             self.leaf_ledger.emit(
                 source_path.file_name().map(|n| n.to_string_lossy().to_string()),

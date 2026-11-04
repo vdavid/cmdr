@@ -1849,7 +1849,6 @@ dependencies = [
  "serde",
  "specta",
  "tempfile",
- "tokio",
  "unicode-normalization",
  "uuid",
 ]

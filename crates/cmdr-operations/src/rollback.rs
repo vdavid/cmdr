@@ -131,11 +131,11 @@ impl ReversalRunner {
             let due = must_send
                 || stand
                     .last_emit
-                    .is_none_or(|at| at.elapsed() >= self.state.progress_interval);
+                    .is_none_or(|at| crate::rt::since(at) >= self.state.progress_interval);
             if !due {
                 return;
             }
-            stand.last_emit = Some(Instant::now());
+            stand.last_emit = Some(crate::rt::now());
             WriteProgressEvent::new(
                 self.operation_id.clone(),
                 self.operation_type,

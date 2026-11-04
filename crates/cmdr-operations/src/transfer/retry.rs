@@ -105,7 +105,7 @@ pub(super) async fn wait_before_retry(state: &Arc<WriteOperationState>, failed_a
     tokio::select! {
         biased;
         () = state.stop_work.cancelled() => false,
-        () = tokio::time::sleep(backoff_after(failed_attempt)) => !state.work_stopped(),
+        () = crate::rt::time::sleep(backoff_after(failed_attempt)) => !state.work_stopped(),
     }
 }
 

@@ -33,11 +33,13 @@ mod wasm;
 pub use wasm::{Instant, JoinError, JoinHandle, Runtime, spawn_ambient, task, time, wall_now};
 
 /// The current instant on the wall-clock-backed [`Instant`].
+#[inline]
 pub fn now() -> Instant {
     Instant::now()
 }
 
 /// How long ago `earlier` was.
+#[inline]
 pub fn since(earlier: Instant) -> std::time::Duration {
     earlier.elapsed()
 }
@@ -45,6 +47,7 @@ pub fn since(earlier: Instant) -> std::time::Duration {
 /// The wall clock, as `std`'s `SystemTime` (what file dates and journal stamps are
 /// made of). `std`'s own `SystemTime::now` panics in the browser build.
 #[cfg(not(target_family = "wasm"))]
+#[inline]
 pub fn wall_now() -> std::time::SystemTime {
     std::time::SystemTime::now()
 }
@@ -65,7 +68,14 @@ where
 /// Task sets and cooperative yields: tokio's natively, the page's in the browser.
 #[cfg(not(target_family = "wasm"))]
 pub mod task {
-    pub use tokio::task::{AbortHandle, Id, JoinSet, yield_now};
+    pub use tokio::task::{AbortHandle, Id, JoinSet};
+
+    /// `tokio::task::yield_now`, wrapped rather than re-exported so an engine's
+    /// clippy ban on the direct call can tell the two apart.
+    #[inline]
+    pub async fn yield_now() {
+        tokio::task::yield_now().await;
+    }
 }
 
 /// The engines' timers, on tokio's clock natively (so `start_paused` tests
@@ -78,26 +88,31 @@ pub mod time {
     pub use tokio::time::Instant;
 
     /// The current instant on tokio's clock.
+    #[inline]
     pub fn now() -> Instant {
         Instant::now()
     }
 
     /// `tokio::time::sleep`.
+    #[inline]
     pub fn sleep(duration: Duration) -> tokio::time::Sleep {
         tokio::time::sleep(duration)
     }
 
     /// `tokio::time::sleep_until`.
+    #[inline]
     pub fn sleep_until(deadline: Instant) -> tokio::time::Sleep {
         tokio::time::sleep_until(deadline)
     }
 
     /// `tokio::time::timeout`.
+    #[inline]
     pub fn timeout<F: IntoFuture>(duration: Duration, future: F) -> tokio::time::Timeout<F::IntoFuture> {
         tokio::time::timeout(duration, future)
     }
 
     /// `tokio::time::timeout_at`.
+    #[inline]
     pub fn timeout_at<F: IntoFuture>(deadline: Instant, future: F) -> tokio::time::Timeout<F::IntoFuture> {
         tokio::time::timeout_at(deadline, future)
     }

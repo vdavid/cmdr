@@ -53,6 +53,11 @@ inside it names the app's accessor.
   The crate `clippy.toml` refuses `tokio::spawn`, `tokio::task::spawn{,_blocking}`, and `std::thread::spawn` (a thread
   the engine owns is a named `std::thread::Builder` one). A helper with no engine in reach takes the `Handle` as a
   parameter, and a test calling one directly passes its own (`Handle::current()`).
+- **Clocks, timers, and yields go through `crate::rt`** (`src/rt.rs`, over `cmdr_fs::rt`), and `clippy.toml` refuses the
+  direct `std` / tokio calls, because the engine also runs in the browser demo, where `std`'s clock and tokio's timer
+  trap. Natively each is the same call under another name. ❗ Two clocks: `rt::now` / `rt::since` are `std`'s,
+  `rt::time::*` tokio's (which `start_paused` cells drive); a site keeps the clock it had. `crates/cmdr-fs/DETAILS.md` §
+  "The browser build".
 - **One documented exception: `mutation_reply.rs`'s late-settle continuation stays ambient.** `reply_or_hand_off` is a
   free function the app's IPC commands call with no engine, and it waits out `cmdr_fs::deadline::race_detached`'s own
   ambient spawn (that crate's documented exception), so the work and the task waiting it out share the caller's runtime;

@@ -343,7 +343,7 @@ impl WriteOperationState {
             outage: Arc::new(OutageSlot::new(Arc::clone(&human_wait))),
             outage_policy: OutagePolicy::default(),
             cleanup_policy: CleanupPolicy::default(),
-            born: Instant::now(),
+            born: crate::rt::now(),
             human_wait,
             journal_volumes: None,
             sides: None,
@@ -642,7 +642,7 @@ impl WriteOperationState {
             event.activity = self.activity(&event.operation_id, Some(event));
         }
 
-        let now = Instant::now();
+        let now = crate::rt::now();
         // Net of everything skipped: the event keeps the gross counters the two
         // bars render, the estimator only ever sees work that moved bytes. The
         // remaining work is identical either way (both sides lose the same

@@ -5,7 +5,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::super::Operations;
 use super::super::event_sinks::ScanPreviewEventSink;
@@ -70,7 +70,7 @@ pub(crate) async fn run_volume_scan_preview(
     let host = engine.host();
     // E2E only; see the local walk's matching delay.
     if let Some(delay) = host.pacing().scan_preview_delay() {
-        tokio::time::sleep(delay).await;
+        crate::rt::time::sleep(delay).await;
     }
 
     // Throttled progress emitter: the underlying MTP listing fires the callback
@@ -86,7 +86,7 @@ pub(crate) async fn run_volume_scan_preview(
         Arc::clone(&watchdog),
     ));
 
-    let progress_state = Arc::new(std::sync::Mutex::new(Instant::now()));
+    let progress_state = Arc::new(std::sync::Mutex::new(crate::rt::now()));
     let pause_for_cb = Arc::clone(&pause);
     let events_for_cb = Arc::clone(&events);
     let watchdog_for_cb = Arc::clone(&watchdog);
@@ -102,10 +102,10 @@ pub(crate) async fn run_volume_scan_preview(
         watchdog_for_cb.note_progress(p.files, p.dirs, p.bytes);
         // A throttle timestamp: a poisoned one is still a timestamp.
         let mut last = progress_state.lock_ignore_poison();
-        if last.elapsed() < Duration::from_millis(200) {
+        if crate::rt::since(*last) < Duration::from_millis(200) {
             return;
         }
-        *last = Instant::now();
+        *last = crate::rt::now();
         drop(last);
         // Off the per-entry path (the throttle above owns that), which is where
         // the claim that names this walk's owner gets looked up.

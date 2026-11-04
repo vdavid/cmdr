@@ -45,7 +45,7 @@ pub(super) struct VolumeScanTracker {
 impl VolumeScanTracker {
     pub(super) fn new(progress_interval: Duration) -> Self {
         Self {
-            last_emit: Mutex::new(Instant::now()),
+            last_emit: Mutex::new(crate::rt::now()),
             progress_interval,
             files_so_far: std::sync::atomic::AtomicUsize::new(0),
             dirs_so_far: std::sync::atomic::AtomicUsize::new(0),
@@ -58,10 +58,10 @@ impl VolumeScanTracker {
     pub(super) fn should_emit(&self) -> bool {
         // A throttle timestamp: a poisoned one is still a timestamp.
         let mut last = self.last_emit.lock_ignore_poison();
-        if last.elapsed() < self.progress_interval {
+        if crate::rt::since(*last) < self.progress_interval {
             return false;
         }
-        *last = Instant::now();
+        *last = crate::rt::now();
         true
     }
 }

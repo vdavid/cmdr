@@ -227,7 +227,7 @@ impl ScanPreviews {
                     phase: PreviewPhase::Settled {
                         outcome,
                         result: result.map(Box::new),
-                        settled_at: Instant::now(),
+                        settled_at: crate::rt::now(),
                     },
                     claim,
                 },
@@ -241,7 +241,7 @@ impl ScanPreviews {
 /// entries have no age to judge and claimed ones belong to an operation that
 /// may still be waiting on a lane, so both stay.
 fn prune_expired(previews: &mut HashMap<String, PreviewEntry>) {
-    let now = Instant::now();
+    let now = crate::rt::now();
     let aged = previews.iter().filter_map(|(id, entry)| match &entry.phase {
         PreviewPhase::Settled { settled_at, .. } if entry.claim.is_none() => Some((id, *settled_at)),
         _ => None,
@@ -526,7 +526,7 @@ impl ScanPreviews {
                 phase: PreviewPhase::Settled {
                     outcome: ScanOutcome::Complete,
                     result: Some(Box::new(result)),
-                    settled_at: Instant::now(),
+                    settled_at: crate::rt::now(),
                 },
                 claim: None,
             },

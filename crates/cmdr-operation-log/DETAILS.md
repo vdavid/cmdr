@@ -6,6 +6,10 @@ future agent needs on hand, including every decision behind it. App paths named 
 `operation_log_host/`) are under `apps/desktop/src-tauri/src/`; the write engine that journals into the log is
 `crates/cmdr-operations/`.
 
+**Clocks and timers go through `crate::rt`** (`src/rt.rs`, over `cmdr_fs::rt`): the journal's wall clock (`now_secs`),
+the retention tick, and the rollback pacing. `clippy.toml` refuses the direct calls, because the log also runs in the
+browser demo, where `std`'s clock and tokio's timer trap; natively each is the same call.
+
 ## Must-knows, in full
 
 `CLAUDE.md` keeps each of these as one line; this is the full text, with the why each line compresses.

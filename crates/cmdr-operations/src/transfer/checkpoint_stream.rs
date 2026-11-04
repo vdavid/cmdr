@@ -267,7 +267,7 @@ impl CheckpointStream {
         self.bounded_yield_to_dest_foreground().await;
 
         // Yield so foreground tasks get scheduled during a long copy.
-        tokio::task::yield_now().await;
+        crate::rt::task::yield_now().await;
     }
 
     /// The foreground auto-yield arm (step 2 in the wrapper's doc). No-op unless
@@ -341,7 +341,7 @@ impl CheckpointStream {
             tokio::select! {
                 biased;
                 () = state.stop_work.cancelled() => break,
-                () = tokio::time::sleep(self.foreground_debounce) => {}
+                () = crate::rt::time::sleep(self.foreground_debounce) => {}
             }
             if !source_volume.foreground_pending().await {
                 break; // quiet for the full window ⇒ resume
@@ -441,7 +441,7 @@ impl CheckpointStream {
             biased;
             () = state.stop_work.cancelled() => {}
             () = dest_volume.wait_until_foreground_idle() => {}
-            () = tokio::time::sleep(self.dest_yield_hard_cap) => {}
+            () = crate::rt::time::sleep(self.dest_yield_hard_cap) => {}
         }
         // Resuming: restart the min-progress floor so the next yield can only fire
         // after another `min_progress_floor` bytes.

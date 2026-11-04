@@ -374,10 +374,10 @@ impl<'a> ConcurrentDriver<'a> {
                          cutting the drain short (to {shortened:?})",
                         self.in_flight.len(),
                     );
-                    self.drain_deadline = Some(tokio::time::Instant::now() + shortened);
+                    self.drain_deadline = Some(crate::rt::time::now() + shortened);
                     return AwaitStep::Rearmed;
                 }
-                result = tokio::time::timeout_at(deadline, self.in_flight.join_next_with_id()) => match result {
+                result = crate::rt::time::timeout_at(deadline, self.in_flight.join_next_with_id()) => match result {
                     Ok(next) => next,
                     Err(_) => {
                         let operation_id = operation_id.into();
@@ -431,7 +431,7 @@ impl<'a> ConcurrentDriver<'a> {
                                  {tasks} in-flight task(s); winding them down (up to {window:?})",
                             ),
                         }
-                        self.drain_deadline = Some(tokio::time::Instant::now() + window);
+                        self.drain_deadline = Some(crate::rt::time::now() + window);
                         return AwaitStep::Rearmed;
                     }
                     next = self.in_flight.join_next_with_id() => next,
@@ -496,9 +496,9 @@ impl<'a> ConcurrentDriver<'a> {
             return;
         }
         self.in_flight.abort_all();
-        let grace = tokio::time::Instant::now() + ABORTED_TASKS_GRACE;
+        let grace = crate::rt::time::now() + ABORTED_TASKS_GRACE;
         loop {
-            match tokio::time::timeout_at(grace, self.in_flight.join_next_with_id()).await {
+            match crate::rt::time::timeout_at(grace, self.in_flight.join_next_with_id()).await {
                 Ok(Some(joined)) => self.settled.record_joined(&self.ctx, joined),
                 Ok(None) => return,
                 Err(_) => {
@@ -666,7 +666,7 @@ impl Settlements {
         // Through the ledger, ❌ never a hand-built event: the other tasks are
         // still streaming, so only the ledger's ordered emit keeps this one from
         // landing behind (or under) theirs.
-        *ctx.last_progress_mutex.lock_ignore_poison() = Instant::now();
+        *ctx.last_progress_mutex.lock_ignore_poison() = crate::rt::now();
         ctx.leaf_ledger.emit(file_name_done, ctx.leaf_ledger.current());
     }
 

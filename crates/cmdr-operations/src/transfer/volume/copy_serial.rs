@@ -20,7 +20,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::journal;
@@ -302,7 +302,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     // throttle mutex (the serial-path closure outlives
                     // a single iteration but the previous file's last-
                     // emit instant doesn't carry meaning across files).
-                    let last_emit = Arc::new(std::sync::Mutex::new(Instant::now()));
+                    let last_emit = Arc::new(std::sync::Mutex::new(crate::rt::now()));
                     // The driver's tally of every PRIOR source, which the leaves
                     // below add their own bytes on top of.
                     leaf_ledger.reseed_finished(bytes_done_so_far);

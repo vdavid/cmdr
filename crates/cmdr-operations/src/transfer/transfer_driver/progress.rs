@@ -175,7 +175,7 @@ impl LeafProgressLedger {
             ledger: Self::silent(state),
             file_name: None,
             node: None,
-            last_emit: Arc::new(Mutex::new(Instant::now())),
+            last_emit: Arc::new(Mutex::new(crate::rt::now())),
         })
     }
 
@@ -450,7 +450,7 @@ impl LeafProgress {
             ledger.snapshot(&mut totals)
         };
         self.row.complete();
-        *self.source.last_emit.lock_ignore_poison() = Instant::now();
+        *self.source.last_emit.lock_ignore_poison() = crate::rt::now();
         ledger.emit(self.source.file_name.clone(), snapshot);
     }
 
@@ -491,10 +491,10 @@ impl Drop for LeafProgress {
 /// ([`LeafProgressLedger::emit`]).
 fn try_emit_throttled(source: &SourceProgress, snapshot: Snapshot) -> bool {
     let mut last = source.last_emit.lock_ignore_poison();
-    if last.elapsed() < source.ledger.progress_interval {
+    if crate::rt::since(*last) < source.ledger.progress_interval {
         return false;
     }
-    *last = Instant::now();
+    *last = crate::rt::now();
     drop(last);
     source.ledger.emit(source.file_name.clone(), snapshot);
     true

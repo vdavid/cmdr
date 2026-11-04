@@ -111,6 +111,7 @@ mod routed_writes_tests;
 mod routing;
 #[cfg(test)]
 mod routing_table_tests;
+mod rt;
 mod scan;
 mod scan_bridge;
 mod scan_cache;
