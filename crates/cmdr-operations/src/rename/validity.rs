@@ -178,8 +178,8 @@ impl crate::Operations {
         // Check for conflict: does a sibling with this name already exist?
         let old_path = PathBuf::from(&dir).join(&old_name);
 
-        if volume_id != "root" {
-            // Non-local volume: use Volume trait for conflict detection
+        if self.host().volumes().local_disk(&volume_id).is_none() {
+            // Not the local disk: use Volume trait for conflict detection
             let conflict_info = check_sibling_conflict_via_volume(self.host(), &volume_id, &old_path, &new_path).await;
             let (by_move, move_to_price) = match rename_by_move(self.host(), &volume_id, &old_path).await {
                 Some((by_move, facts)) => (Some(by_move), facts),

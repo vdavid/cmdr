@@ -143,7 +143,12 @@ async fn create_directory_managed_inner(
         .as_deref()
         .unwrap_or(cmdr_fs::volume::DEFAULT_VOLUME_ID)
         .to_string();
-    let descriptor = instant_descriptor(WriteOperationType::CreateFolder, volume_id.as_deref(), &name);
+    let descriptor = instant_descriptor(
+        engine.host(),
+        WriteOperationType::CreateFolder,
+        volume_id.as_deref(),
+        &name,
+    );
     let op_id = descriptor.operation_id.clone();
     // The op's own scope on the engine, which journals it: an instant op has no
     // state to carry one.
@@ -219,7 +224,12 @@ async fn create_file_managed_inner(
         .as_deref()
         .unwrap_or(cmdr_fs::volume::DEFAULT_VOLUME_ID)
         .to_string();
-    let descriptor = instant_descriptor(WriteOperationType::CreateFile, volume_id.as_deref(), &name);
+    let descriptor = instant_descriptor(
+        engine.host(),
+        WriteOperationType::CreateFile,
+        volume_id.as_deref(),
+        &name,
+    );
     let op_id = descriptor.operation_id.clone();
     // The op's own scope on the engine, which journals it: an instant op has no
     // state to carry one.
@@ -340,20 +350,23 @@ async fn route_archive_create(
 }
 
 /// Builds the instant-op descriptor: no lanes, the new entry's name as the
-/// summary, and the volume marked busy for non-root volumes (`root` is never
+/// summary, and the volume marked busy unless it's the local disk (never
 /// ejectable, so it stays out of the busy set — no eject-menu churn for local
-/// creates).
+/// creates). No id means the local disk's.
 ///
 /// `pub(super)` so the sibling numbered create (`create_numbered.rs`) routes through the same
 /// managed `CreateFile` instant op (and journals for free).
 pub(super) fn instant_descriptor(
+    host: &EngineHost,
     op_type: WriteOperationType,
     volume_id: Option<&str>,
     name: &str,
 ) -> OperationDescriptor {
-    let volume_ids = match volume_id {
-        None | Some("root") => vec![],
-        Some(id) => vec![id.to_string()],
+    let id = volume_id.unwrap_or(cmdr_fs::volume::DEFAULT_VOLUME_ID);
+    let volume_ids = if host.volumes().local_disk(id).is_some() {
+        vec![]
+    } else {
+        vec![id.to_string()]
     };
     OperationDescriptor {
         operation_id: OperationId::from(cmdr_operation_log::new_operation_id()),

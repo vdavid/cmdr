@@ -94,6 +94,16 @@ inside it names the app's accessor.
   `VolumeError::ReadOnly` on the instant one), whatever the caller. The frontend refuses the same writes in a routed
   pane; this is the backend's line for Ask Cmdr, MCP, and any later caller. `FakeVolumes::route` lets a test serve a
   prefix through a route (`routed_writes_tests.rs`).
+- **Which id is the local disk is the host's answer** (`OperationVolumes::local_disk_id`, default `DEFAULT_VOLUME_ID`),
+  and every branch that would run the `std::fs` engine on an id asks `local_disk(id)`, which hands out a `LocalDisk`
+  capability only nothing else can build: the rename and its `lstat` pre-flight, the rename validity check, delete, bulk
+  rename and rename-as-move, the busy-volume descriptors, and the scan preview's "no volume means local" shortcut. The
+  local-only commands guard on it too: `move_files_start` becomes a volume move on `root`, and `trash_files_start`
+  refuses `TrashNotSupported`, as a share without a Trash does. **Why a host answer and not `cfg`**: the browser demo's
+  one volume is called `root` (the frontend reads that id as "the local disk" in many places), so the engine has to be
+  TOLD there is no local disk; and as a value, both host shapes run natively in `routing_table_tests.rs`. Copy, move,
+  and the instant creates were already decided by the volume's own predicates (`native_roots`,
+  `supports_local_fs_access`), so the no-local-disk cells for them pass on either answer.
 - **Engine-wide facts go through `EngineEvents`**: operations changed, busy volumes changed, a transfer started /
   finished on volumes (indexing priority), leftovers the sweep kept (a move's staging folder, or an unfinished landing
   kept under a ` (recovered)` name), an instant mutation settled (analytics, as an `InstantMutationFact` of categories

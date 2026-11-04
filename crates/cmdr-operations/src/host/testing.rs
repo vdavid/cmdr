@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
@@ -95,6 +95,9 @@ pub struct FakeVolumes {
     volumes: Mutex<HashMap<String, Arc<dyn Volume>>>,
     arrival_listeners: Mutex<Vec<ArrivalListener>>,
     routes: Mutex<Vec<FakeRoute>>,
+    /// Set by [`Self::without_local_disk`]: the browser demo's shape, where no id
+    /// is the local disk. `false` (the desktop's `"root"`) by default.
+    no_local_disk: AtomicBool,
 }
 
 /// A path prefix [`FakeVolumes`] serves through a route rather than its drive.
@@ -105,6 +108,12 @@ struct FakeRoute {
 }
 
 impl FakeVolumes {
+    /// From now on, no volume id is the local disk (the browser demo's host),
+    /// so `"root"` is a volume like any other.
+    pub fn without_local_disk(&self) {
+        self.no_local_disk.store(true, Ordering::Relaxed);
+    }
+
     /// Serves every path strictly under `under` (on any volume id) through
     /// `volume` as a `kind` route, the way the app routes a `.zip`'s inside or a
     /// repo's `.git/<category>/` trees.
@@ -189,6 +198,10 @@ impl OperationVolumes for FakeVolumes {
     }
     fn unregistered<'a>(&'a self, _volume_id: &'a str) -> VolumeAnswer<'a, UnregisteredVolume> {
         Box::pin(async { UnregisteredVolume::Gone })
+    }
+
+    fn local_disk_id(&self) -> Option<&str> {
+        (!self.no_local_disk.load(Ordering::Relaxed)).then_some(cmdr_fs::volume::DEFAULT_VOLUME_ID)
     }
 }
 

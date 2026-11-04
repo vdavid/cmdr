@@ -163,12 +163,15 @@ async fn rename_managed_inner(
         }
     }
 
-    let is_root = volume_id == "root";
+    // The `std::fs` rename runs only on the host's local disk (the capability
+    // `OperationVolumes::local_disk` hands out); every other id renames through its
+    // volume, the browser demo's `"root"` included.
+    let on_local_disk = manager.local_disk(&volume_id).is_some();
     // The target is a NEW name: spelled the way the volume wants new names, and
     // taken when the folder holds it under another Unicode spelling (a byte-exact
     // share would rename a twin in beside it). Settled before the journal and the
     // descriptor, so both record where the entry really lands.
-    let to = if is_root {
+    let to = if on_local_disk {
         to
     } else {
         match manager.get(&volume_id) {
@@ -184,7 +187,7 @@ async fn rename_managed_inner(
     // big file) never reaches `Volume::rename`: it starts a background move,
     // with progress and cancel, and this answers once that has started, the
     // way an in-zip rename does.
-    if !is_root && let Some(volume) = manager.get(&volume_id) {
+    if !on_local_disk && let Some(volume) = manager.get(&volume_id) {
         match volume.rename_work(&from).await {
             Ok(RenameWork::OneCall) => {}
             Ok(RenameWork::CopyThenDelete) => {
@@ -198,7 +201,7 @@ async fn rename_managed_inner(
             }
         }
     }
-    let descriptor = rename_descriptor(&from, &to, &volume_id);
+    let descriptor = rename_descriptor(&from, &to, &volume_id, on_local_disk);
     // Journal the rename as a single-item op under the REAL volume id. Snapshot the
     // source kind BEFORE the closure moves `from`/`to` and the rename fires: local
     // reads size + mtime for free from `symlink_metadata`; a volume probes only the
@@ -209,12 +212,12 @@ async fn rename_managed_inner(
     // Cloned so the record after the op (which moves `volume_id` into the closure)
     // still has the id.
     let journal_volume_id = volume_id.clone();
-    let local_meta = if is_root {
+    let local_meta = if on_local_disk {
         std::fs::symlink_metadata(&from).ok()
     } else {
         None
     };
-    let volume_is_dir = if is_root {
+    let volume_is_dir = if on_local_disk {
         false
     } else {
         match manager.get(&volume_id) {
@@ -249,7 +252,7 @@ async fn rename_managed_inner(
             host.announce(&from);
             host.announce(&to);
 
-            if !is_root {
+            if !on_local_disk {
                 // Volume-aware rename (MTP, SMB, and other non-local volumes).
                 // The volume's `rename` calls `notify_mutation` internally, so
                 // the listing cache updates automatically.
@@ -516,16 +519,16 @@ fn leaf(inner_path: &str) -> String {
 }
 
 /// Builds the instant-op descriptor for a rename: no lanes, a `from → to`
-/// basename summary, and the volume marked busy for its duration for non-root
-/// volumes. Root is never ejectable, so it marks nothing busy (no eject-menu
+/// basename summary, and the volume marked busy for its duration unless it's the
+/// local disk, which is never ejectable, so it marks nothing busy (no eject-menu
 /// churn for local renames).
-fn rename_descriptor(from: &Path, to: &Path, volume_id: &str) -> OperationDescriptor {
+fn rename_descriptor(from: &Path, to: &Path, volume_id: &str, on_local_disk: bool) -> OperationDescriptor {
     fn name(p: &Path) -> String {
         p.file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| p.to_string_lossy().into_owned())
     }
-    let volume_ids = if volume_id == "root" {
+    let volume_ids = if on_local_disk {
         vec![]
     } else {
         vec![volume_id.to_string()]
@@ -646,7 +649,7 @@ impl crate::Operations {
 
 /// Whether a local `lstat` / `access` can answer for a path on this volume.
 fn preflight_reaches(host: &host::EngineHost, volume_id: &str) -> bool {
-    if volume_id == "root" {
+    if host.volumes().local_disk(volume_id).is_some() {
         return true;
     }
     host.volumes()

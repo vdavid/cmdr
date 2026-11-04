@@ -135,7 +135,7 @@ impl crate::Operations {
         // `root` is the only backend that owns raw local paths here. Every mounted
         // volume, including a locally mounted removable drive, stays on its Volume
         // route so its listing and connection semantics remain authoritative.
-        let uses_local_paths = volume_id == "root";
+        let uses_local_paths = self.host().volumes().local_disk(&volume_id).is_some();
         let (lanes, volume_ids, settled_volume, rows) = if uses_local_paths {
             (vec![LaneKey::new("root")], Vec::new(), None, rows)
         } else {

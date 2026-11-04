@@ -23,8 +23,8 @@ use super::state::{WriteOperationState, WriteSettledGuard};
 use super::transfer::copy::copy_files_with_progress_inner;
 use super::transfer::move_op::move_files_with_progress_inner;
 use super::types::{
-    ConflictResolution, ReadOnlySide, RollbackSupport, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationStartResult, WriteOperationType,
+    ConflictResolution, ReadOnlySide, RollbackSupport, VolumeCopyConfig, WriteErrorEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationStartResult, WriteOperationType,
 };
 use super::validation::{
     ensure_destination_dir, validate_destination_not_inside_source, validate_destination_writable,
@@ -320,6 +320,23 @@ impl Operations {
         expected_sources: Option<ExpectedSources>,
         sides: Option<transfer_sides::TransferSides>,
     ) -> Result<WriteOperationStartResult, WriteOperationError> {
+        // A host with no local disk (the browser demo) has no `std::fs` engine to
+        // run this on: its `root` is a volume, so the move is a volume move.
+        let root = cmdr_fs::volume::DEFAULT_VOLUME_ID;
+        if self.host().volumes().local_disk(root).is_none() {
+            return self
+                .start_volume_move(
+                    events,
+                    root.into(),
+                    sources,
+                    root.into(),
+                    destination.display().to_string(),
+                    VolumeCopyConfig::from(&config),
+                    initiator,
+                    expected_sources,
+                )
+                .await;
+        }
         validate_transfer_leaves(&config.leaves, &sources, &destination, LeafIdentity::NamesAndInodes)?;
         self.local_move_start(
             events,
@@ -460,7 +477,7 @@ impl Operations {
             return Err(routed_transfer_refusal(&routed, ReadOnlySide::Source));
         }
 
-        if volume_id_str != "root" {
+        if self.host().volumes().local_disk(&volume_id_str).is_none() {
             // Volume-aware delete: its body is async (the `Volume` trait's I/O is), so
             // it owns its own deferred start rather than riding `start_write_operation`.
             // `delete/volume_start.rs`.
@@ -556,6 +573,19 @@ impl Operations {
         .await
         {
             return Err(routed_transfer_refusal(&routed, ReadOnlySide::Source));
+        }
+
+        // The OS trash is the local disk's; a host with none (the browser demo) has
+        // no Trash, which is exactly what a share without one answers.
+        if self
+            .host()
+            .volumes()
+            .local_disk(cmdr_fs::volume::DEFAULT_VOLUME_ID)
+            .is_none()
+        {
+            return Err(WriteOperationError::TrashNotSupported {
+                path: sources.first().map(|p| p.display().to_string()).unwrap_or_default(),
+            });
         }
 
         // Trash always targets the local macOS Trash; no ejectable volume involved.

@@ -9,13 +9,16 @@
 //! volume is rooted AT a real (empty) scratch dir, so a misrouted local engine
 //! would find nothing there or write into it, and both show.
 //!
-//! Shapes:
-//! - `"root"` over the local disk (the desktop): local engine.
-//! - A non-local id (`"mem"`): volume engine.
+//! Shapes (the probes take one by name):
+//! - `"root"`: the desktop, where `root` is the local disk: local engine.
+//! - `"mem"`: a non-local id: volume engine.
+//! - `"demo-root"`: a host with NO local disk (the browser demo, whose one volume
+//!   is also called `root`): volume engine for every entry point, and the OS
+//!   trash refused as a volume without one refuses.
 //!
-//! Not pinned here, each for a stated reason: trash (`trash_files_start` takes
-//! no volume id; it is the OS trash, local by construction), the scan preview
-//! (its caller passes the source volume, so the HOST decides), bulk rename (its
+//! Not pinned here, each for a stated reason: the scan preview (its walk is the
+//! same code either way once a volume is in hand; `start_scan_preview` picks it
+//! for a host with no local disk), bulk rename (its
 //! rows carry reviewed fingerprints; `rename/bulk/tests.rs` pins its local and
 //! volume halves), and the archive edits' `settle_volume` choice (it picks which
 //! volume to notify after an in-zip edit, not an engine).
@@ -38,8 +41,14 @@ enum Ran {
     Volume,
 }
 
+/// The id a shape's operations name.
+fn id(shape: &str) -> &str {
+    if shape == "demo-root" { "root" } else { shape }
+}
+
 /// One engine, a scratch dir on disk, and an in-memory volume rooted at a second,
-/// EMPTY scratch dir, registered under `mem`.
+/// EMPTY scratch dir, registered under `mem` (or, for `demo-root`, under `root` on a
+/// host with no local disk).
 struct Rig {
     engine: TestOperations,
     disk: tempfile::TempDir,
@@ -48,9 +57,13 @@ struct Rig {
 }
 
 impl Rig {
-    async fn new() -> Self {
+    async fn new(shape: &str) -> Self {
         let engine = TestOperations::new();
-        engine.register_local_root();
+        if shape == "demo-root" {
+            engine.volumes().without_local_disk();
+        } else {
+            engine.register_local_root();
+        }
         let disk = tempfile::tempdir().expect("a scratch dir");
         let mem_root = tempfile::tempdir().expect("an empty scratch dir");
         let mem = Arc::new(
@@ -58,7 +71,8 @@ impl Rig {
                 .with_root(mem_root.path())
                 .with_space_info(10_000_000, 9_000_000),
         );
-        engine.volumes().register("mem", Arc::clone(&mem) as Arc<dyn Volume>);
+        let mem_id = if shape == "demo-root" { "root" } else { "mem" };
+        engine.volumes().register(mem_id, Arc::clone(&mem) as Arc<dyn Volume>);
         for (name, bytes) in [("a.txt", b"aaa".as_slice()), ("b.txt", b"bbbb".as_slice())] {
             std::fs::write(disk.path().join(name), bytes).expect("a disk file");
             mem.create_file(&mem_root.path().join(name), bytes)
@@ -79,7 +93,7 @@ impl Rig {
 
     /// The base path an id's paths live under.
     fn base(&self, volume_id: &str) -> PathBuf {
-        if volume_id == "mem" {
+        if volume_id != "root" {
             self.mem_root.path().to_path_buf()
         } else {
             self.disk.path().to_path_buf()
@@ -104,8 +118,8 @@ impl Rig {
             ("root", false) if on_disk && !in_memory => Ran::Local,
             ("root", true) if !on_disk => Ran::Local,
             // A volume id: the effect is in memory, and the empty dir under it stays empty.
-            ("mem", false) if in_memory && !on_disk && mem_disk_untouched => Ran::Volume,
-            ("mem", true) if !in_memory && mem_disk_untouched => Ran::Volume,
+            (_, false) if in_memory && !on_disk && mem_disk_untouched => Ran::Volume,
+            (_, true) if !in_memory && mem_disk_untouched => Ran::Volume,
             _ => panic!(
                 "{volume_id}: `{rel}` on disk {on_disk}, in memory {in_memory}, mem dir untouched {mem_disk_untouched}"
             ),
@@ -126,15 +140,15 @@ async fn settled(events: &CollectorEventSink) {
 }
 
 async fn copy(volume_id: &str) -> Ran {
-    let rig = Rig::new().await;
+    let rig = Rig::new(volume_id).await;
     let base = rig.base(volume_id);
     let events = sink();
     rig.engine
         .start_volume_copy(
             Arc::clone(&events) as Arc<dyn OperationEventSink>,
-            volume_id.into(),
+            id(volume_id).into(),
             vec![base.join("a.txt")],
-            volume_id.into(),
+            id(volume_id).into(),
             base.join("out").display().to_string(),
             VolumeCopyConfig::default(),
             Initiator::User,
@@ -147,15 +161,15 @@ async fn copy(volume_id: &str) -> Ran {
 }
 
 async fn moved(volume_id: &str) -> Ran {
-    let rig = Rig::new().await;
+    let rig = Rig::new(volume_id).await;
     let base = rig.base(volume_id);
     let events = sink();
     rig.engine
         .start_volume_move(
             Arc::clone(&events) as Arc<dyn OperationEventSink>,
-            volume_id.into(),
+            id(volume_id).into(),
             vec![base.join("a.txt")],
-            volume_id.into(),
+            id(volume_id).into(),
             base.join("out").display().to_string(),
             VolumeCopyConfig::default(),
             Initiator::User,
@@ -174,7 +188,7 @@ async fn moved(volume_id: &str) -> Ran {
 }
 
 async fn delete(volume_id: &str) -> Ran {
-    let rig = Rig::new().await;
+    let rig = Rig::new(volume_id).await;
     let base = rig.base(volume_id);
     let events = sink();
     rig.engine
@@ -182,7 +196,7 @@ async fn delete(volume_id: &str) -> Ran {
             Arc::clone(&events) as Arc<dyn OperationEventSink>,
             vec![base.join("a.txt")],
             WriteOperationConfig::default(),
-            Some(volume_id.into()),
+            Some(id(volume_id).into()),
             Initiator::User,
             None,
         )
@@ -199,14 +213,14 @@ async fn delete(volume_id: &str) -> Ran {
 }
 
 async fn rename(volume_id: &str) -> Ran {
-    let rig = Rig::new().await;
+    let rig = Rig::new(volume_id).await;
     let base = rig.base(volume_id);
     rig.engine
         .rename_managed(
             base.join("a.txt"),
             base.join("renamed.txt"),
             false,
-            volume_id.into(),
+            id(volume_id).into(),
             Initiator::User,
         )
         .await
@@ -215,11 +229,11 @@ async fn rename(volume_id: &str) -> Ran {
 }
 
 async fn mkdir(volume_id: &str) -> Ran {
-    let rig = Rig::new().await;
+    let rig = Rig::new(volume_id).await;
     let base = rig.base(volume_id);
     rig.engine
         .create_directory_managed(
-            Some(volume_id.into()),
+            Some(id(volume_id).into()),
             base.display().to_string(),
             "New folder".into(),
             Initiator::User,
@@ -230,11 +244,11 @@ async fn mkdir(volume_id: &str) -> Ran {
 }
 
 async fn mkfile(volume_id: &str) -> Ran {
-    let rig = Rig::new().await;
+    let rig = Rig::new(volume_id).await;
     let base = rig.base(volume_id);
     rig.engine
         .create_file_managed(
-            Some(volume_id.into()),
+            Some(id(volume_id).into()),
             base.display().to_string(),
             "New file.txt".into(),
             Initiator::User,
@@ -248,11 +262,11 @@ async fn mkfile(volume_id: &str) -> Ran {
 /// volume. A path that exists ONLY in memory tells them apart: the local check
 /// can't find it.
 async fn rename_preflight(volume_id: &str) -> Ran {
-    let rig = Rig::new().await;
+    let rig = Rig::new(volume_id).await;
     let only_in_memory = rig.mem_root.path().join("a.txt");
     match rig
         .engine
-        .check_rename_permission_for_volume(only_in_memory, volume_id.into())
+        .check_rename_permission_for_volume(only_in_memory, id(volume_id).into())
         .await
     {
         Ok(()) => Ran::Volume,
@@ -293,3 +307,105 @@ route!(
     "mem",
     Ran::Volume
 );
+
+route!(
+    copy_with_no_local_disk_runs_the_volume_engine,
+    copy,
+    "demo-root",
+    Ran::Volume
+);
+route!(
+    move_with_no_local_disk_runs_the_volume_engine,
+    moved,
+    "demo-root",
+    Ran::Volume
+);
+route!(
+    delete_with_no_local_disk_runs_the_volume_engine,
+    delete,
+    "demo-root",
+    Ran::Volume
+);
+route!(
+    rename_with_no_local_disk_runs_the_volume_engine,
+    rename,
+    "demo-root",
+    Ran::Volume
+);
+route!(
+    mkdir_with_no_local_disk_runs_the_volume_engine,
+    mkdir,
+    "demo-root",
+    Ran::Volume
+);
+route!(
+    mkfile_with_no_local_disk_runs_the_volume_engine,
+    mkfile,
+    "demo-root",
+    Ran::Volume
+);
+route!(
+    rename_preflight_with_no_local_disk_leaves_it_to_the_volume,
+    rename_preflight,
+    "demo-root",
+    Ran::Volume
+);
+route!(
+    local_move_with_no_local_disk_runs_the_volume_engine,
+    local_move,
+    "demo-root",
+    Ran::Volume
+);
+
+/// The local-disk-only move command (`move_files_start`, no volume id): on a host
+/// with no local disk it moves through the volume `root` names.
+async fn local_move(volume_id: &str) -> Ran {
+    let rig = Rig::new(volume_id).await;
+    let base = rig.base(volume_id);
+    let events = sink();
+    rig.engine
+        .move_files_start(
+            Arc::clone(&events) as Arc<dyn OperationEventSink>,
+            vec![base.join("a.txt")],
+            base.join("out"),
+            WriteOperationConfig::default(),
+            Vec::new(),
+            None,
+            Initiator::User,
+            None,
+            None,
+        )
+        .await
+        .expect("the move starts");
+    settled(&events).await;
+    rig.ran(volume_id, "out/a.txt", false).await
+}
+
+route!(local_move_on_root_runs_the_local_engine, local_move, "root", Ran::Local);
+
+/// The OS trash needs the local disk: a host with none answers the way a volume
+/// without a Trash does, typed, and touches nothing.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn trash_with_no_local_disk_refuses_like_a_volume_without_one() {
+    let rig = Rig::new("demo-root").await;
+    let file = rig.base("demo-root").join("a.txt");
+    let refused = rig
+        .engine
+        .trash_files_start(
+            sink() as Arc<dyn OperationEventSink>,
+            vec![file.clone()],
+            None,
+            WriteOperationConfig::default(),
+            Initiator::User,
+            None,
+        )
+        .await;
+    assert!(
+        matches!(
+            refused,
+            Err(crate::types::WriteOperationError::TrashNotSupported { .. })
+        ),
+        "{refused:?}"
+    );
+    assert!(rig.mem.exists(&file).await, "the file stays");
+}
