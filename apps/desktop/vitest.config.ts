@@ -14,6 +14,8 @@ export default defineConfig({
   // builds); here it's always on so the tests run.
   define: {
     __CMDR_E2E_BUILD__: 'true',
+    // Off, as in the app build: a test that imports `hooks.client.ts` must not install the demo's mock backend.
+    __CMDR_DEMO_BUILD__: 'false',
     // Empty in unit tests; the worktree-label decoration is exercised in `app-mode.test.ts`
     // by passing the label explicitly rather than relying on this baked-in constant.
     __CMDR_WORKTREE_LABEL__: '""',

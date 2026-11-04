@@ -148,6 +148,7 @@ export default defineConfig(async () => ({
 
   define: {
     __CMDR_E2E_BUILD__: JSON.stringify(e2eBuild),
+    __CMDR_DEMO_BUILD__: JSON.stringify(process.env.CMDR_DEMO_BUILD === '1'),
     __CMDR_WORKTREE_LABEL__: JSON.stringify(worktreeLabel),
   },
 
