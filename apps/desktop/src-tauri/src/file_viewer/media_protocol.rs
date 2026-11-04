@@ -12,13 +12,13 @@
 //! rule ([`fetch_deferred`]), then serves it the same way. A volume token reads by
 //! position through its session's source ([`serve_volume`]), under a stall rule too.
 //!
-//! The handler is a **thin shell over pure functions** ([`parse_token_from_uri`],
-//! [`resolve_range`], the `Content-Type` from the entry) so the testable logic lives
-//! outside the Tauri glue. It does its OWN `spawn_blocking` + `tokio::time::timeout`
-//! (mapping expiry to **504**) rather than reusing `blocking_with_timeout`, because a
-//! scheme handler must answer with an HTTP-shaped response, not a typed IPC error. The
-//! file-read syscalls carry the same network-mount hazard as IPC commands
-//! (`docs/architecture.md` § Platform constraints), only the return shape differs.
+//! The handler is a **thin shell over the framework-free answer** (`media_serve.rs`: the
+//! token, the `Range` math, the bytes, the outcome), turning a `MediaAnswer` into an HTTP
+//! response. It does its OWN `spawn_blocking` + `tokio::time::timeout` (mapping expiry to
+//! **504**) rather than reusing `blocking_with_timeout`, because a scheme handler must
+//! answer with an HTTP-shaped response, not a typed IPC error. The file-read syscalls
+//! carry the same network-mount hazard as IPC commands (`docs/architecture.md` § Platform
+//! constraints), only the return shape differs.
 //!
 //! FDA note: the handler `File::open`s a real path off an IPC-minted token, inheriting
 //! the viewer's existing assumption that a viewer only opens after the user picked the
@@ -26,8 +26,6 @@
 //! (`fda_gate.rs`); a stray TCC denial reading bytes here is a real access failure, not
 //! a scheme bug.
 
-use std::io::{Read, Seek, SeekFrom};
-use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -37,7 +35,9 @@ use tauri_specta::Event as _;
 
 use super::events::ViewerMediaLoad;
 use super::media::{DeferredMedia, MediaEntry, MediaSource, resolve_token};
-use super::media_volume::{MediaLoad, MediaLoadStage, MediaReadFailure, ReadProgress, ReadWatch, VolumeMedia};
+use super::media_serve::{MediaAnswer, VolumeRead, finish_volume_read, serve_entry};
+pub use super::media_serve::{RangeOutcome, ResolvedRange, parse_token_from_uri, resolve_range};
+use super::media_volume::{MediaLoad, MediaReadFailure, ReadProgress, ReadWatch, VolumeMedia};
 
 /// The scheme name registered with Tauri. The frontend builds URLs as
 /// `cmdr-media://localhost/<token>` (macOS/Linux origin shape).
@@ -48,171 +48,20 @@ pub const SCHEME: &str = "cmdr-media";
 /// range request on a slow-but-live disk shouldn't trip it.
 const MEDIA_READ_TIMEOUT: Duration = Duration::from_secs(15);
 
-/// The byte range to serve, computed purely from the `Range` header and the file size.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ResolvedRange {
-    /// First byte offset to serve (inclusive).
-    pub start: u64,
-    /// Last byte offset to serve (inclusive).
-    pub end: u64,
-    /// Total file size in bytes.
-    pub total: u64,
-    /// True when the client sent a satisfiable `Range` header (-> 206 + `Content-Range`).
-    /// False when there was no range (-> 200, whole file up to the cap).
-    pub is_partial: bool,
-}
-
-impl ResolvedRange {
-    /// Number of bytes this range covers.
-    pub fn len(&self) -> u64 {
-        self.end - self.start + 1
+/// The HTTP response for `answer`.
+fn respond(answer: MediaAnswer) -> Response<Vec<u8>> {
+    match answer {
+        MediaAnswer::Body { mime, range, body } => with_body(&mime, &range, body),
+        MediaAnswer::Unsatisfiable { total } => unsatisfiable(total),
+        MediaAnswer::NotFound => not_found(),
+        MediaAnswer::TimedOut => timed_out(),
     }
-
-    pub fn is_empty(&self) -> bool {
-        self.total == 0
-    }
-}
-
-/// Outcome of resolving a `Range` header against a file size.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RangeOutcome {
-    /// Serve this range. 200 when `!is_partial`, 206 when `is_partial`.
-    Serve(ResolvedRange),
-    /// The `Range` header was present but unsatisfiable (start past EOF). The handler
-    /// answers `416 Range Not Satisfiable` with `Content-Range: bytes */<total>`.
-    Unsatisfiable { total: u64 },
-}
-
-/// Extracts the token from a `cmdr-media://localhost/<token>` request URI: the first
-/// non-empty path segment. Returns `None` when the path is empty.
-pub fn parse_token_from_uri(uri_path: &str) -> Option<&str> {
-    uri_path.split('/').find(|seg| !seg.is_empty())
-}
-
-/// Resolves the `Range` request header against `total` file size, clamping the end to
-/// `total - 1`. Honors only the first `bytes=start-end` spec (a single range; WKWebView
-/// never sends multipart ranges for media). Anything it can't parse degrades to a full
-/// 200 response, never an error.
-///
-/// Supported forms:
-/// - `bytes=START-END`  -> `[START, min(END, total-1)]`
-/// - `bytes=START-`     -> `[START, total-1]`
-/// - `bytes=-SUFFIX`    -> the last `SUFFIX` bytes
-/// - no/!bytes header   -> full file (200)
-pub fn resolve_range(range_header: Option<&str>, total: u64) -> RangeOutcome {
-    let full = || {
-        RangeOutcome::Serve(ResolvedRange {
-            start: 0,
-            end: total.saturating_sub(1),
-            total,
-            is_partial: false,
-        })
-    };
-
-    let Some(raw) = range_header else {
-        return full();
-    };
-    let Some(spec) = raw.trim().strip_prefix("bytes=") else {
-        return full(); // unknown unit: serve whole file
-    };
-    // Only the first range of a possibly-comma-separated list.
-    let spec = spec.split(',').next().unwrap_or("").trim();
-    let Some((start_s, end_s)) = spec.split_once('-') else {
-        return full();
-    };
-    let start_s = start_s.trim();
-    let end_s = end_s.trim();
-
-    // Empty file: any range is unsatisfiable.
-    if total == 0 {
-        return RangeOutcome::Unsatisfiable { total };
-    }
-
-    let (start, end) = if start_s.is_empty() {
-        // Suffix form `bytes=-N`: last N bytes.
-        let Ok(suffix) = end_s.parse::<u64>() else {
-            return full();
-        };
-        if suffix == 0 {
-            return RangeOutcome::Unsatisfiable { total };
-        }
-        let len = suffix.min(total);
-        (total - len, total - 1)
-    } else {
-        let Ok(start) = start_s.parse::<u64>() else {
-            return full();
-        };
-        if start >= total {
-            return RangeOutcome::Unsatisfiable { total };
-        }
-        let end = if end_s.is_empty() {
-            total - 1
-        } else {
-            match end_s.parse::<u64>() {
-                Ok(e) => e.min(total - 1),
-                Err(_) => return full(),
-            }
-        };
-        if end < start {
-            return RangeOutcome::Unsatisfiable { total };
-        }
-        (start, end)
-    };
-
-    RangeOutcome::Serve(ResolvedRange {
-        start,
-        end,
-        total,
-        is_partial: true,
-    })
-}
-
-/// Reads `[range.start, range.end]` (inclusive) from `path`. Re-stats the file fresh so
-/// the size we serve matches the bytes we read (the file could have changed since the
-/// token was minted). Used inside the handler's blocking task.
-fn read_byte_range(path: &Path, range: &ResolvedRange) -> std::io::Result<Vec<u8>> {
-    let mut file = std::fs::File::open(path)?;
-    if range.is_empty() {
-        return Ok(Vec::new());
-    }
-    // Serve the whole requested range, uncapped: a no-range `<img>` GET needs the entire
-    // file or the image decodes truncated, and capping a 206 would desync `Content-Range`
-    // from the body. The 15s read timeout bounds a runaway read; a guard for pathologically
-    // huge images is deferred (see `viewer-media-plan.md` § Phase 3).
-    let len = range.len();
-    file.seek(SeekFrom::Start(range.start))?;
-    let mut buf = vec![0u8; len as usize];
-    let mut filled = 0usize;
-    while filled < buf.len() {
-        match file.read(&mut buf[filled..]) {
-            Ok(0) => break, // hit EOF early (file shrank); serve what we have
-            Ok(n) => filled += n,
-            Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
-            Err(e) => return Err(e),
-        }
-    }
-    buf.truncate(filled);
-    Ok(buf)
 }
 
 /// Builds the HTTP response for a resolved entry + range, doing the blocking file read.
-/// Pure of Tauri types so it's unit-testable against a real temp file. The caller wraps
-/// this in `spawn_blocking` + timeout.
+/// The caller wraps this in `spawn_blocking` + timeout.
 fn build_response(entry: &MediaEntry, range_header: Option<String>) -> Response<Vec<u8>> {
-    // Re-stat for the authoritative size (network-mount hazard handled by the caller's
-    // timeout). If we can't stat, the file vanished -> 404.
-    let total = match std::fs::metadata(&entry.canonical_path) {
-        Ok(meta) => meta.len(),
-        Err(_) => return not_found(),
-    };
-
-    match resolve_range(range_header.as_deref(), total) {
-        RangeOutcome::Unsatisfiable { total } => unsatisfiable(total),
-        RangeOutcome::Serve(range) => match read_byte_range(&entry.canonical_path, &range) {
-            Ok(body) => with_body(&entry.mime, &range, body),
-            Err(_) => not_found(),
-        },
-    }
+    respond(serve_entry(entry, range_header.as_deref()))
 }
 
 fn unsatisfiable(total: u64) -> Response<Vec<u8>> {
@@ -342,36 +191,20 @@ pub(crate) async fn serve_volume(
     };
     let read_progress = Arc::clone(&progress);
     let start = range.start;
-    let outcome = blocking_typed_result_until_stalled(
+    let outcome: Result<Vec<u8>, MediaReadFailure> = blocking_typed_result_until_stalled(
         stall_limit,
         &mut watch,
         |_join_failure| MediaReadFailure::Unreadable,
         move || media.read(start, bytes_total, &read_progress),
     )
     .await;
-    let mut report = |stage| {
-        emit(MediaLoad {
-            token: token.clone(),
-            stage,
-            bytes_done: progress.done(),
-            bytes_total,
-        });
+    let read = VolumeRead {
+        token,
+        mime,
+        range,
+        progress: &progress,
     };
-    match outcome {
-        Ok(body) => {
-            report(MediaLoadStage::Done);
-            with_body(&mime, &range, body)
-        }
-        Err(MediaReadFailure::Closed) => not_found(),
-        Err(MediaReadFailure::Stalled) => {
-            report(MediaLoadStage::Failed);
-            timed_out()
-        }
-        Err(MediaReadFailure::Unreadable) => {
-            report(MediaLoadStage::Failed);
-            not_found()
-        }
-    }
+    respond(finish_volume_read(outcome, read, emit))
 }
 
 /// The Tauri async URI scheme handler. Thin shell: resolve the token, then run the

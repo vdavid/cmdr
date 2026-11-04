@@ -27,6 +27,7 @@ pub(crate) mod materialize;
 pub mod media;
 mod media_backend;
 pub mod media_protocol;
+pub mod media_serve;
 mod media_session;
 mod media_volume;
 mod open_with_copies;
@@ -74,6 +75,8 @@ mod markdown_session_test;
 mod materialize_test;
 #[cfg(test)]
 mod media_protocol_test;
+#[cfg(test)]
+mod media_serve_test;
 #[cfg(test)]
 mod media_session_test;
 #[cfg(test)]

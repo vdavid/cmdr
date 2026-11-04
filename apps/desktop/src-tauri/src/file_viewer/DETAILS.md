@@ -166,8 +166,11 @@ The viewer renders images and PDFs inline instead of showing the binary warning,
   `token -> { canonical_path, kind, mime }` (128-bit CSPRNG via `rand`, 32 hex chars) and returns the token;
   `resolve_token` / `drop_token` round it out. `read_image_dimensions` reads header-only pixel dimensions best-effort
   (the `image` crate; `None` for HEIC/SVG/errors).
-- `media_protocol.rs`: the async URI scheme handler. Pure helpers (`parse_token_from_uri`, `resolve_range`,
-  `build_response`) are unit-tested; `handle_request` is the thin Tauri shell. It resolves the token (unknown -> 404),
+- `media_serve.rs`: what a request answers, framework-free: `parse_token_from_uri`, `resolve_range`, `serve_entry`
+  (a local file), `finish_volume_read`, and `serve_volume_inline` (a volume token read in one go, for a host with no
+  blocking threads), each ending in a `MediaAnswer` (body / 416 / 404 / 504).
+- `media_protocol.rs`: the async URI scheme handler, turning a `MediaAnswer` into an HTTP response;
+  `handle_request` is the thin Tauri shell. It resolves the token (unknown -> 404),
   then runs its OWN `tauri::async_runtime::spawn_blocking` + `tokio::time::timeout` (expiry -> 504; deliberately NOT
   the command layer's timeout helpers, which answer in a command's typed error vocabulary where a scheme handler owes an
   HTTP response). Honors `Range`: 206 with inclusive `Content-Range`/`Accept-Ranges`, end clamped to `size-1`, 416 when
