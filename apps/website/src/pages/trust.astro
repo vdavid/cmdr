@@ -600,13 +600,13 @@ const toc = [
         </li>
     </ul>
     <DevTodo>
-        The entitlements (none), the code requirement, and notarization above were read from the installed 0.57.0 on
-        2026-10-29 with <code>codesign -d --entitlements -</code>, <code>codesign -d -r-</code>,
-        <code>spctl -a -vv</code>, and <code>stapler validate</code>. Both MDM profiles were applied on a Mac enrolled
+        The entitlements (none on the app, App Sandbox only on the Finder extension), the code requirement, and
+        notarization above were read from the shipped 0.59.0 update archive (Apple Silicon) on 2026-11-04 with
+        <code>codesign -d --entitlements -</code> on the app and its <code>.appex</code>, <code>codesign -d -r-</code>,
+        <code>codesign --verify --deep --strict</code>, and <code>spctl -a -vv</code> (<code>stapler validate</code>
+        last checked on the installed 0.57.0, 2026-10-29). Both MDM profiles were applied on a Mac enrolled
         in Fleet on 2026-10-14 (0.52.0 from the <code>.pkg</code>, macOS 27.0.1,
-        <code>managed_policy/DETAILS.md</code> § Testing). 0.59.0 is the first release that bundles the Finder
-        extension: re-read both the app and <code>Contents/PlugIns/*.appex</code> with the same commands once it's
-        built, and confirm the app's code requirement didn't change.
+        <code>managed_policy/DETAILS.md</code> § Testing).
     </DevTodo>
 
     <h2 id="permissions">Sandbox and permissions</h2>
