@@ -17,4 +17,12 @@ describe('paneSplitLeak', () => {
     expect(paneSplitLeak(null)).toBeNull()
     expect(paneSplitLeak('')).toBeNull()
   })
+
+  it('reports nothing when the read came back from no page at all', () => {
+    // The production-binding Escape tests close the window they ran in, so the probe's
+    // `evaluate` resolves to `undefined`, not a width. Reporting that failed both of
+    // them with "left pane at ".
+    expect(paneSplitLeak(undefined)).toBeNull()
+    expect(paneSplitLeak({})).toBeNull()
+  })
 })

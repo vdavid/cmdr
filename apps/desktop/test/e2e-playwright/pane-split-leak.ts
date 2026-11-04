@@ -16,12 +16,14 @@ import type { EvaluatablePage } from './app-death.js'
 const CENTERED = '50%'
 
 /**
- * The leaked split, or `null` when there's nothing to report: centered, or no pane
- * wrapper to read (a test that left the explorer route or killed the app has a
- * louder failure of its own, and the guard mustn't mask it).
+ * The leaked split, or `null` when there's nothing to report: centered, or nothing
+ * readable (no pane wrapper, or no page: the production-binding Escape tests close
+ * the window they ran in, and `evaluate` then resolves to `undefined`). A test that
+ * left the explorer or killed the app has a louder failure of its own, and the
+ * guard mustn't mask it.
  */
-export function paneSplitLeak(leftWrapperWidth: string | null): string | null {
-  if (leftWrapperWidth === null || leftWrapperWidth === '') return null
+export function paneSplitLeak(leftWrapperWidth: unknown): string | null {
+  if (typeof leftWrapperWidth !== 'string' || leftWrapperWidth === '') return null
   return leftWrapperWidth === CENTERED ? null : leftWrapperWidth
 }
 
@@ -34,7 +36,7 @@ const READ_LEFT_WIDTH = `(function(){
 export async function reportAndResetPaneSplit(tauriPage: EvaluatablePage): Promise<string | null> {
   let leaked: string | null
   try {
-    leaked = paneSplitLeak(await tauriPage.evaluate<string | null>(READ_LEFT_WIDTH))
+    leaked = paneSplitLeak(await tauriPage.evaluate<unknown>(READ_LEFT_WIDTH))
   } catch {
     return null
   }
