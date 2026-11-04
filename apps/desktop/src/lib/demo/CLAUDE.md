@@ -10,8 +10,8 @@ lands in a typed answer here; the listing commands go to the real listing engine
   bar, drawn from `menu-engine.ts` (the desktop's own bar and fold, through WASM). `traffic-lights.ts`: the macOS window
   buttons the page draws, for the main window and each panel.
 - `answers.ts` (app commands), `writes.ts` (every write refused, typed), `volumes.ts`, `plugins.ts` (in-memory
-  `plugin:store`, path, app), `listing.ts` (routes to the WASM engine, loaded once by `engine-module.ts`),
-  `unanswered.ts` (`window.__cmdrDemo.unanswered`).
+  `plugin:store`, path, app), `opener.ts` (external links open in a new tab), `listing.ts` (routes to the WASM engine,
+  loaded once by `engine-module.ts`), `unanswered.ts` (`window.__cmdrDemo.unanswered`).
 - `demo-tree.ts` and `browser-shortcuts.ts`: PLACEHOLDER content David still decides.
 
 Run: `pnpm dev:demo` or `pnpm build:demo` (into `apps/desktop/build-demo/`, base `/demo`) in `apps/desktop`. Both build

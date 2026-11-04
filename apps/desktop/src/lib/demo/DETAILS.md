@@ -248,6 +248,18 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
   it.
 - `demo.invoke(cmd, args)` takes the Tauri (snake_case) name and the camelCase IPC args, and resolves or rejects exactly
   as `invoke` does. `listing.ts` expands `~` in `path` / `paths` first (`demoPath`): the engine has no home folder.
+## Links
+
+- Every external link the app opens goes through `openExternalUrl` (`plugin:opener|open_url`): About, the feedback
+  dialog, onboarding's "Star the repo on GitHub" (`GITHUB_REPO_URL` in `lib/beta-links.ts`), and Markdown links. The
+  demo answers that one IPC (`opener.ts`, wired in `plugins.ts`) with a new browser tab, `noopener,noreferrer` so the
+  opened page can't reach back into the demo. The backend lives in the top frame, so a link clicked in a panel opens
+  from there too.
+- Only `http:`, `https:`, and `mailto:`. Anything else (`file:`, `javascript:`, a System Settings URL, a string that
+  isn't a URL) gets a plain-string refusal, as the plugin refuses a URL outside its scope, and opens nothing.
+- Risk: the tab opens a few microtasks after the click (the invoke is a promise chain), which Chromium and Firefox count
+  as the same user gesture; a stricter popup blocker may still hold it.
+
 - Engine events (`onEvent(name, payload)`, Tauri names) go to the backend's fan-out a task late, in order. Why the
   delay: the in-memory read can finish inside `list_directory_start_streaming`, but the pane expects that command's
   answer before the listing's first event, as Rust's spawned read guarantees.
