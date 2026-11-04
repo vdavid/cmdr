@@ -188,7 +188,7 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
         pointer-events: none;
         position: absolute;
         right: 0.5rem;
-        bottom: calc(100% - 3.5rem);
+        bottom: calc(100% - 3.5rem + 30px);
         z-index: 3;
         width: 15rem;
         height: 6rem;
@@ -217,9 +217,22 @@ import tryItLive from '../assets/hero/try-it-live.svg?raw'
     .try-live-arrow {
         position: absolute;
         top: 1.25rem;
-        right: 7rem;
+        right: 7.75rem;
         width: 6.5rem;
         transform: scaleX(-1) rotate(12deg);
+    }
+
+    /* The copy above leaves the right side free, more so as the card widens. */
+    @media (min-width: 640px) {
+        .try-live-note {
+            bottom: calc(100% - 3.5rem + 10px);
+        }
+    }
+
+    @media (min-width: 700px) {
+        .try-live-note {
+            bottom: calc(100% - 3.5rem + 45px);
+        }
     }
 
     @media (min-width: 1024px) {
