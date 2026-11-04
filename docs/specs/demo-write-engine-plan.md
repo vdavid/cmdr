@@ -15,25 +15,28 @@ David's calls (2026-11-04): yes to the local-disk facade in `cmdr-operations`; u
 with an LLVM clang in the toolchain (mise-managed, never brew, working locally, in CI, and in the website-demo image
 build) so SQLite compiles for `wasm32-unknown-unknown`.
 
-Open, with the plan's default in bold (each is cheap to flip before its milestone starts):
+Decided (2026-11-04, after review round 1):
 
-1. **Toolchain pin location.** (a) **The Go build script pins `conda:clang@23.1.4` and `conda:llvm-tools@23.1.4`, runs
-   `mise install` for exactly those, and hands cargo their absolute paths** (`CC_wasm32_unknown_unknown`,
-   `AR_wasm32_unknown_unknown`), with a Renovate regex comment so updates still arrive. (b) A `MISE_ENV=wasm` config
-   file. ❌ Never `.mise.toml` `[tools]`: the conda env ships its own `cc`, `cpp`, `ar`, and `ld`, and on PATH it would
-   replace Apple's compiler for every native C build (bundled SQLite, `ring`, objc shims), which breaks
-   "byte-identical".
-2. **Crate name.** The WASM crate grows from listing to listing + writes + undo. (a) **Rename `cmdr-listing-wasm` to
-   `cmdr-demo-wasm` in the host milestone** (touches the build script, the check, CI filters, `website-demo-key.sh`,
-   docs). (b) Keep the name.
-3. **Trash in the demo.** `trash_files` is the desktop's OS trash (NSFileManager / freedesktop), which a browser has
-   none of. (a) **The demo volume reports no trash, so F8 takes the app's own permanent-delete path and confirm.** (b)
-   An in-memory Trash folder (a new `Volume` capability on `InMemoryVolume`; more work, more to keep honest).
-4. **Pacing.** An in-memory copy finishes in microseconds, so the progress dialog flashes and the queue window is always
-   empty. (a) **Answer the engine's existing `Pacing` seam with a modest per-file pace in the demo host only**, so
-   progress, pause, and the queue are visible. (b) Real speed. Every desktop build still answers `None`.
-5. **Archive edits** (copy into a zip, compress, move out of one) need a local working copy and a writer thread. **Out
-   of scope for the demo: they refuse with the typed answer a read-only route gives**, never a trap.
+1. **Toolchain**: the Go build script pins `conda:clang@23.1.4` and `conda:llvm-tools@23.1.4` (Renovate tracks the pin),
+   installs and resolves them with a PRIVATE `MISE_DATA_DIR` / `MISE_CACHE_DIR` under `~/.cache/cmdr/wasm-toolchain/`,
+   and hands cargo only absolute `CC_wasm32_unknown_unknown` / `AR_wasm32_unknown_unknown`. CI caches that dir keyed on
+   the pin. ❌ Never in `.mise.toml` or the default mise data dir: the conda env ships its own `cc`, `cpp`, `ar`, and
+   `ld`, and its shims sit ahead of `/usr/bin`.
+2. **Trash**: permanent delete with the app's own confirm, exactly as on an SMB mount. The `Volume` trait has only
+   `has_trash()` (default `false`; only `LocalPosixVolume` overrides it), so the demo's `supportsTrash` comes from the
+   engine's `has_trash()`, ❌ not the hardcoded `false` in `lib/demo/volumes.ts`.
+3. **Throughput**: ❌ no change to the engine's `Pacing` seam or to E2E timing. The in-memory volume models device speed
+   itself: a bandwidth property on its read stream, sleeping through `rt::time::sleep`, like a real slow disk. Verified:
+   a demo copy streams (`InMemoryVolume` keeps `supports_copy_within() == false`, so `may_copy_on_server_from` says no
+   and every file goes through `open_read_stream` → `write_from_stream`). A same-volume move is a rename (instant, as on
+   a real disk), and so is delete.
+4. **Archive edits** (copy into a zip, compress, move out of one) refuse cleanly with the routed read-only answer,
+   before anything touches a scratch dir.
+5. **"Which volume id is the local disk" is a HOST answer**, ❌ not `cfg`: natively `Some("root")`, the demo host
+   `None`. The local engine bodies are still `cfg`-gated out of the wasm build so the browser can't reach them by
+   mistake.
+6. **Crate rename** (`cmdr-listing-wasm` → `cmdr-demo-wasm`): a separate commit after all three round-two efforts land,
+   ❌ not in this plan's milestones.
 
 ## Spike result (the evidence the toolchain decision rests on)
 
@@ -58,11 +61,13 @@ Verified 2026-11-04 on macOS 27 arm64 (and Linux aarch64 in `ubuntu:24.04` Docke
   and `SystemTime::now()` (what `now_secs` reads) aborts with `RuntimeError: unreachable`.
 - **Size**: the spike module (SQLite + op log + `cmdr-fs`) was 1.2 MB after `wasm-bindgen`; today's listing module is
   2.5 MB raw. Expect the combined engine around 5–6 MB raw; the host milestone measures it.
-- ❗ **Side effect to know**: installing the conda clang creates mise shims named `cc`, `cpp`, `clang`, `clang-cpp`, and
-  `llvm-ar` in `~/.local/share/mise/shims`, which sits ahead of `/usr/bin` on David's PATH. With no config naming the
-  tool they fall through to Apple's (`cc --version` in the repo still says Apple clang 21, verified). That's why option
-  1(b)/`.mise.toml` is dangerous: the moment any active config names `conda:clang`, every native build switches
-  compiler.
+- ❗ **Why the private data dir**: installing the conda clang into the default mise data dir created shims named `cc`,
+  `cpp`, `clang`, `clang-cpp`, and `llvm-ar` in `~/.local/share/mise/shims`, ahead of `/usr/bin` on David's PATH. They
+  fell through to Apple's compiler while no config named the tool, one `mise use conda:clang` away from switching every
+  native C build. The spike's install was removed from the default dir (`mise uninstall`, `mise reshim`; `which cc` is
+  `/usr/bin/cc` again). Installing with `MISE_DATA_DIR=~/.cache/cmdr/wasm-toolchain/data` and
+  `MISE_CACHE_DIR=~/.cache/cmdr/wasm-toolchain/cache` puts its shims in that private dir only, and `mise where` answers
+  the absolute path (verified 2026-11-04).
 
 ## Loud rules (every milestone)
 
@@ -87,14 +92,15 @@ Verified 2026-11-04 on macOS 27 arm64 (and Linux aarch64 in `ubuntu:24.04` Docke
   answer is a typed variant.
 - ❌ **No logic in TS for the demo** (`apps/desktop/src/lib/demo/CLAUDE.md`): every write answer comes from the engine;
   no `if (demo)` in app code (`cmdr/demo-isolation`).
-- ❌ **No conda clang on PATH**, anywhere (rule 1 above): only absolute paths into `CC_wasm32_unknown_unknown` /
-  `AR_wasm32_unknown_unknown`.
+- ❌ **No conda clang on PATH or in the default mise data dir**, anywhere (decision 1): only the private
+  `MISE_DATA_DIR`, and only absolute paths into `CC_wasm32_unknown_unknown` / `AR_wasm32_unknown_unknown`.
+- ❌ **No change to `Pacing`, its answers, or E2E timing.** Demo throughput is the in-memory volume's own bandwidth.
 - ❌ **No milestone tags** in code, comments, test names, `reason` strings, or docs: run
   `rg -n '\b(M[0-9]+[a-z]?|Milestone\s*[0-9]|Phase\s*[0-9])\b' <touched paths>` before reporting.
 - ❌ **Never translate** new strings; English plus an `@key` description. Any new UI copy is a draft for David.
 - **Gates per milestone**: `pnpm check --fast && pnpm check svelte-tests-related`, `pnpm check clippy`, the touched Rust
-  tests via `cargo nextest run`, the wasm lane (`pnpm check desktop-rust-listing-wasm`, renamed if decision 2 lands),
-  and from the host milestone on the website's demo Playwright smoke. Foreground commands only.
+  tests via `cargo nextest run`, the wasm lane (`pnpm check desktop-rust-listing-wasm`), and from the host milestone on
+  the website's demo Playwright smoke. Foreground commands only.
 
 ## Survey of the current code (2026-11-04, `49aad7f793`)
 
@@ -134,6 +140,14 @@ files with tests). `cmdr-operation-log`: 27 files, about 7,900 lines.
   archive-edit `settle_volume` sites. ❗ **The demo's volume id IS `"root"`** (`apps/desktop/src/lib/demo/demo-tree.ts`
   `DEMO_VOLUME_ID`), so on wasm every one of those must answer "not the local disk", or a demo delete walks `std::fs`.
   The desktop command layer decides the same thing (`write_ops.rs` `is_local`), but the demo host doesn't run it.
+- **Keep `"root"` for the demo; renaming it would reroute the app's own UI.** The frontend reads `'root'` as the local
+  disk in many places: `transfer-dispatch.ts` `isVolumeMove` is false for root to root (so a demo F6 calls `moveFiles`),
+  `TransferDialog.svelte` `isSameVolumeMove` excludes root (so the deep scan preview keeps running and the move consumes
+  its `preview_id`), `path-navigation.ts` (`~` is the landing folder), `listing-loader.ts` (falls back to `'root'`),
+  `explorer-state.svelte.ts` (the initial tab). Another id would need `if (demo)` checks.
+- Other local-only traps the facade's gating covers: `scratch_dir.rs` (`std::env::temp_dir()` panics on
+  `wasm32-unknown-unknown`, so archive entry points must refuse BEFORE `ScratchDir::new`), `fresh_zip.rs`'s
+  `blocking_send`, and `delete/real_image.rs`'s `process::id` (a test-image helper).
 - What routes the demo onto the volume engine already: `copy_between_volumes` takes the volume path unless both volumes
   report `supports_local_fs_access()` (`InMemoryVolume` says no unless built `with_local_fs_access()`); rename and the
   rename pre-flight check the same predicate beside their `"root"` test.
@@ -152,6 +166,14 @@ files with tests). `cmdr-operation-log`: 27 files, about 7,900 lines.
   (`timeout_detached_within`, on the volume path) and `mutation_reply.rs` (app IPC helper; the demo host won't call it).
 - `cmdr-operation-log`: 2 `tokio::time` (retention tick, rollback pacing), 1 `SystemTime::now`.
 - `rt::` seam: 0 uses in either crate today.
+- **`cmdr-fs` itself**: `InMemoryVolume`'s read stream calls `tokio::time::sleep` directly for its chunk delay
+  (`in_memory/volume_impl.rs`, the `with_read_chunk_delay` test hook), which panics in the browser the moment a delay is
+  set, and `cmdr-fs` has no `clippy.toml`, so nothing stops a new direct clock read there. (`InMemoryVolume::now_secs`
+  already reads `web_time` in the browser.)
+- **Checked and fine**: the pause gate's async half waits on tokio `Notify` (`operation_intent.rs`), which works in the
+  browser, and `wake()`'s `Condvar::notify_all` is harmless there; `claim_ledger(None)` starts no writer or sweep
+  (`in_flight_claim.rs`); `Uuid::new_v4` (`overwrite.rs`) gets `js` through `cmdr-fs`'s wasm deps by feature
+  unification; `retry.rs`'s ambient spawns are test-only.
 
 ### Executors, threads, and blocking
 
@@ -177,6 +199,17 @@ files with tests). `cmdr-operation-log`: 27 files, about 7,900 lines.
   never yield to the page's event loop: no paint, no input until it ends).
 - The scan preview: `start_scan_preview` spawns on the runtime for `Some(volume)` and on a named thread for `None`
   (local). The desktop's `scan_preview_source_volume` passes `None` for `"root"`; the demo host must pass the volume.
+
+### Throughput and pacing
+
+- `Pacing::copy_throttle_for` is read only in the LOCAL copy loop (`transfer/copy/mod.rs`, a `std::thread::sleep`).
+  Nothing under `transfer/volume/` reads `pacing()`; on the volume path only delete batches (`delete/volume_walker.rs`),
+  the scan preview (`scan_preview/volume.rs`), and rollback (`rollback.rs`, `state/wind_down.rs`) are paced. A new
+  volume-copy pacing site would also slow the desktop's E2E volume copies (`operations_host::pacing` over `test_mode`),
+  which is why decision 3 models speed on the volume instead.
+- A demo copy streams: `InMemoryVolume` doesn't override `supports_copy_within()` (default `false`), so the trait's
+  `may_copy_on_server_from` answers no and every file goes `open_read_stream` → `write_from_stream`, chunk by chunk,
+  with progress per chunk. A bandwidth on the read stream therefore paces the bar honestly.
 
 ### The listing side
 
@@ -209,28 +242,31 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 - **Scope**: the toolchain (decision 1), `cmdr_fs::sqlite_util` for wasm, and a wasm compile of `cmdr-operation-log` in
   the check lane.
 - **Intentions**:
-  - The Go build script (`scripts/build-listing-wasm/main.go`) installs and resolves the pinned conda clang and llvm-ar
-    through mise and passes ONLY `CC_wasm32_unknown_unknown` / `AR_wasm32_unknown_unknown` to cargo. Its tests pin that
-    it never touches PATH. Renovate tracks the pin (`docs/tooling/` has the Renovate notes).
+  - The Go build script (`scripts/build-listing-wasm/main.go`) pins `conda:clang` and `conda:llvm-tools`, runs
+    `mise install` and `mise where` for exactly those with `MISE_DATA_DIR` / `MISE_CACHE_DIR` set to
+    `~/.cache/cmdr/wasm-toolchain/{data,cache}`, and passes ONLY `CC_wasm32_unknown_unknown` /
+    `AR_wasm32_unknown_unknown` (absolute) to cargo. Its tests pin that it never touches PATH and never runs mise
+    against the default data dir. Renovate tracks the pin with a regex manager (`docs/tooling/` has the Renovate notes).
   - `cmdr-fs`: `rusqlite` joins the wasm deps with the same features; `sqlite_util` is ungated; its doc says the slab
     must still be installed before the first open (the spike's `TooLate`).
   - The check (`desktop-rust-listing-wasm`) also builds `cmdr-operation-log` for wasm32 (compile only for now).
   - CI: every job that runs the wasm build (Desktop Rust's wasm step, `.github/actions/build-website-demo`,
     `publish-website-demo`) gets the toolchain through the script itself; nothing adds it to `mise install`'s config.
-    Cache the conda installs (`~/.local/share/mise/installs/conda-*`) keyed on the pin: 1.5 GB on Linux.
+    Cache `~/.cache/cmdr/wasm-toolchain/` keyed on the pin: about 1.5 GB on Linux.
   - Docs: `crates/cmdr-listing-wasm/DETAILS.md` § The build, `crates/cmdr-fs/DETAILS.md` § The browser build, and a
     one-line `AGENTS.md`-level pointer only if the toolchain needs one (prefer `scripts/` docs).
-- **Landmines**: conda's `cc`/`ar`/`ld` on PATH (rule above). `website-demo-key.sh` hashes `scripts/build-listing-wasm`,
-  so the image key changes (expected). The listing module now links SQLite (+ about 1 MB) once the engines merge; this
-  milestone doesn't link it yet.
+- **Landmines**: conda's `cc`/`ar`/`ld` on PATH or its shims in the default mise data dir (decision 1).
+  `website-demo-key.sh` hashes `scripts/build-listing-wasm`, so the image key changes (expected). The listing module now
+  links SQLite (+ about 1 MB) once the engines merge; this milestone doesn't link it yet.
 - **Test plan**: the Go script's unit tests (env built, PATH untouched); the wasm lane green; a native
-  `pnpm check clippy` and `cargo nextest run -p cmdr-fs -p cmdr-operation-log` unchanged; `cc --version` in the repo
-  still Apple's.
+  `pnpm check clippy` and `cargo nextest run -p cmdr-fs -p cmdr-operation-log` unchanged; after a build, `which cc` is
+  still `/usr/bin/cc` and `~/.local/share/mise/shims` holds no `cc`, `clang`, or `llvm-ar`.
 - **DONE**: `cmdr-operation-log` compiles for wasm32 in CI on macOS and Linux runners; the desktop build is untouched.
 
 ### 2. The runtime seam covers the write engine's needs (S–M)
 
-- **Scope**: `crates/cmdr-fs/src/rt/` and `crates/cmdr-fs/src/deadline/`.
+- **Scope**: `crates/cmdr-fs/src/rt/`, `crates/cmdr-fs/src/deadline/`, `InMemoryVolume`'s stream timing, and a new
+  `crates/cmdr-fs/clippy.toml`.
 - **Intentions**: add what the survey found the write engine uses beyond the listing engine's ten sites:
   - `rt::wall_now()` (natively `SystemTime::now()`, in the browser `web_time::SystemTime::now()`).
   - `rt::JoinSet` (natively tokio's `JoinSet` re-exported with a `spawn_on(&Runtime)`; in the browser a small set over
@@ -239,12 +275,20 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   - `rt::yield_now()` (natively `tokio::task::yield_now`; in the browser a `setTimeout(0)` macrotask yield, so the page
     paints and takes input between chunks).
   - `deadline`: route its spawns and timers through `rt` (natively identical).
+  - `InMemoryVolume`: the chunk delay sleeps through `rt::time::sleep`, and a new `with_bandwidth(bytes_per_sec)`
+    builder option models a device's speed on its read stream (each chunk waits its share of the second), for the demo
+    (decision 3). Off unless set, so every existing cell is unchanged.
+  - `crates/cmdr-fs/clippy.toml`: the root's general settings plus the clock bans from
+    `crates/cmdr-listing/clippy.toml`; `rt/` keeps its module-level allow. Existing direct reads elsewhere in `cmdr-fs`
+    either move to `rt` (if a browser path can reach them) or carry a reasoned allow (host-only modules).
 - **Landmines**: dropping tokio's `JoinSet` ABORTS its tasks, while a dropped `spawn_local` task runs on. The browser
   set must abort on drop too (an abort flag each task checks at its next poll), or the plan must prove the driver never
   drops a non-empty set. `yield_now` natively must stay exactly tokio's (a `setTimeout`-shaped yield natively would slow
   every copy). `spawn_local` futures aren't `Send`-checked: keep the native signature's `Send` bounds so desktop code
-  can't regress.
-- **Test plan**: native unit tests for each wrapper (pure forwards); browser behavior through the Node smoke
+  can't regress. The bandwidth sleep must sit where cancel and pause still reach it (the engine's `CheckpointStream`
+  wraps the source stream, so a pending sleep is dropped on cancel like any read); ❌ never a busy wait.
+- **Test plan**: native unit tests for each wrapper (pure forwards); a paused-clock cell for `with_bandwidth` (a 1 MB
+  file at 1 MB/s takes one virtual second, and a cancel mid-file stops it); browser behavior through the Node smoke
   (`smoke.mjs` gains a `rt` self-test export: a three-task `JoinSet` drain, a `yield_now` that lets a `setTimeout` fire,
   `wall_now` within a second of `Date.now()`).
 - **DONE**: the seam has every primitive the write engine needs, each natively a re-export or one-line forward.
@@ -255,8 +299,11 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 - **Intentions**: pin CURRENT behavior so milestones 4–6 are provably byte-identical:
   - **Routing table**: for each entry point (copy, move, delete, trash, rename, rename pre-flight, mkdir, mkfile, bulk
     rename, scan preview), which engine runs (local `std::fs` vs volume) for volume id `"root"` with a local root,
-    `"root"` absent, and a non-local id. One table-driven cell file; it's what the facade must preserve natively and
-    flip only in the browser.
+    `"root"` absent, and a non-local id. One table-driven cell file. Each cell asserts an OBSERVABLE that tells the
+    engines apart (the bytes land in a tempdir versus inside the `InMemoryVolume` registered under that id), ❌ never
+    just "it succeeded", which passes on both. The commit body shows each cell going red with the routing deliberately
+    flipped. Milestone 5 extends the same table with the demo host's shape (no local-disk id), so both shapes run
+    natively.
   - **Clock-sensitive cells**: list the existing `start_paused` and timing cells over the sites milestone 4 converts
     (outage waits, retry backoff, stall watchdog, scan watchdog, human-wait clock, leftover-cleanup dial, progress
     cadence). Add a pin where a converted site has none, and see each RED once.
@@ -291,17 +338,21 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   - One module owns "the local disk": the `cmdr-local` calls, the `libc` syscalls and errnos, the `std::os::unix`
     metadata, the OS trash (`objc2` / `trash`), `xattr`, `dirs`, mount tables, `statvfs`. The rest of the engine asks it
     and never reaches those crates itself. Natively it is today's code moved, not rewritten.
-  - **It answers "which volume ids are the local disk"** (`LocalDisk::serves(volume_id, host)` or similar): natively
-    exactly today's `volume_id == "root"` (plus the existing `supports_local_fs_access` checks where they stand); in the
-    browser, nothing is. The ~12 deciding `"root"` sites ask it; the default-id fills stay literal.
-  - In the browser it answers every local question with a typed "no local disk here" (pick or add ONE variant per error
-    family: `MutationError`, `WriteOperationError`; no prose), and the local engine bodies (`copy/`, `move_op/`,
-    `delete/walker.rs`, `chunked_copy.rs`, `macos_copy.rs`, `linux_copy.rs`, `copy_strategy.rs`, `scan.rs`,
-    `scan_dry_run.rs`, `cancellable.rs`, local scan preview, leftover sweep's local half) are `cfg`-gated out, so the
-    browser can't reach a thread or a `blocking_recv` even by mistake.
+  - **"Which volume id is the local disk" is a HOST answer** (decision 5): a value on `EngineHost` (or
+    `OperationVolumes`), set through `Operations::builder`, `Some("root")` by default (what the desktop and every
+    existing test get, so natively nothing changes) and `None` from the demo host. The ~12 deciding `"root"` sites ask
+    it (through the facade); the default-id fills stay literal. Because it's a value, milestone 3's routing table runs
+    natively in BOTH shapes: with `None`, a `"root"` `InMemoryVolume` takes the volume engine for every entry point.
+  - With no local disk, every local question answers a typed "no local disk here" (pick or add ONE variant per error
+    family: `MutationError`, `WriteOperationError`; no prose). Separately, and as belt and braces, the local engine
+    bodies (`copy/`, `move_op/`, `delete/walker.rs`, `chunked_copy.rs`, `macos_copy.rs`, `linux_copy.rs`,
+    `copy_strategy.rs`, `scan.rs`, `scan_dry_run.rs`, `cancellable.rs`, local scan preview, leftover sweep's local half,
+    `scratch_dir.rs`) are `cfg`-gated out of the wasm build, so the browser can't reach a thread or a `blocking_recv`
+    even if a host answer were wrong.
   - `Cargo.toml`: `cmdr-local`, `libc`, `dirs`, `walkdir`, `xattr`, and tokio's `fs` move under
     `cfg(not(target_family = "wasm"))` (the `testing` feature's `cmdr-local/testing` with them).
-  - Archive edits (decision 5): their entry points refuse in the browser with the routed-read-only answer.
+  - Archive edits (decision 4): their entry points refuse with the routed-read-only answer when the host has no local
+    disk, BEFORE `ScratchDir::new` (whose `std::env::temp_dir()` panics in the browser).
 - **Landmines**:
   - ❗ The facade's value is that the boundary is REAL: an `#[allow]`-sprinkled half-gate (some `libc` still in
     `error_classification.rs`, say) defeats it. Errno classification can stay where it is if it reads
@@ -311,7 +362,8 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
     the only door. `ledger.rs`'s local identity (`dev`, `ino`) moves with it; the volume identity (size) stays.
   - `module-cycles` and `file-length` will notice; split by responsibility, not to satisfy the check.
   - The public surface is capped (`DETAILS.md` § "The public surface is capped"); the facade is crate-private.
-- **Test plan**: milestone 3's routing table and the full native suite unchanged;
+- **Test plan**: milestone 3's routing table and the full native suite unchanged, plus the table's no-local-disk shape
+  (every entry point on the volume engine, archive edits refused, each cell red once with the answer flipped);
   `cargo build -p cmdr-operations --target wasm32-unknown-unknown` green (added to the wasm lane); clippy for both
   targets (`--target wasm32` lane: `cargo clippy -p cmdr-operations --target wasm32-unknown-unknown`).
 - **DONE**: `cmdr-operations` compiles for wasm32; natively identical; a grep finds `cmdr_local`, `libc`,
@@ -343,7 +395,8 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 
 ### 7. The demo host: writes in the WASM engine (L)
 
-- **Scope**: the WASM crate (renamed per decision 2), `cmdr-fs`'s `InMemoryVolume`, the build, the checks.
+- **Scope**: the WASM crate (`cmdr-listing-wasm`; the rename is decision 6, later), `cmdr-fs`'s `InMemoryVolume`, the
+  build, the checks.
 - **Intentions**:
   - `InMemoryVolume` patches listings: a builder option hands it a `VolumeHost` (or `ListingHost`), and its
     `notify_mutation` then runs `patch_mutation` through a `PatchSource`, as every mutable backend does. Without the
@@ -351,16 +404,21 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   - One `ListingHost` over `cmdr_listing::Listings` for the demo. If the engine's `host::testing::PaneListings` and the
     demo's would be the same code, put it once in `cmdr-listing` (a genuine boundary win); the desktop keeps
     `AppListings` (it composes the index and badges).
-  - The host mirrors `apps/desktop/src-tauri/src/operations_host/`: `OperationVolumes` over the one volume (id `"root"`,
-    decision-free because the facade says it isn't local in the browser), `EngineEvents` and the per-op sinks emitting
-    the desktop's event names and payloads (`operations_host/wire.rs`, `sinks.rs`), the op log opened on
-    `/demo/operation-log.db` (memvfs; gone on reload, as the demo's state is), `Pacing` per decision 4, `NameOrder` from
-    the listing engine's collator.
+  - The host mirrors `apps/desktop/src-tauri/src/operations_host/`: the builder's local-disk id `None` (decision 5),
+    `OperationVolumes` over the one volume (id `"root"`), `EngineEvents` and the per-op sinks emitting the desktop's
+    event names and payloads (`operations_host/wire.rs`, `sinks.rs`), the op log opened on `/demo/operation-log.db`
+    (memvfs; gone on reload, as the demo's state is), `NameOrder` from the listing engine's collator, and `Pacing` left
+    at its default `None`. The demo's `InMemoryVolume` is built `with_bandwidth(…)` (decision 3; pick a rate that makes
+    a 10 MB copy take a couple of seconds, and say it in `DETAILS.md`).
   - Commands by their Tauri names with camelCase args, answers and typed rejections exactly as the desktop's
     (`commands/file_system/write_ops.rs`, `volume_copy.rs`, `operations.rs`, `commands/rename.rs`,
     `commands/operation_log.rs`). Where a desktop command is local-only (`moveFiles`, `trashFiles`, `moveToTrash`), the
-    demo host answers it the way the desktop would for a non-local volume (the volume move; decision 3 for trash); say
-    so in `DETAILS.md` § "Where the demo differs from the app".
+    demo host answers it the way the desktop would for a non-local volume (the volume move; trash refused as a volume
+    without one refuses, decision 2); say so in `DETAILS.md` § "Where the demo differs from the app". ❗ `moveFiles`
+    must consume the dialog's `preview_id` (root to root keeps the deep scan preview running, per the survey), or the
+    preview leaks and the move re-walks.
+  - The volume's `supportsTrash` (and every capability the frontend reads) comes from the engine's `Volume` answers
+    (`has_trash()` false), ❌ not a TS constant.
   - `events_test.rs`-style pins for every new event's keys against `bindings.ts`.
   - The Node smoke grows: each command, a conflict round trip, a cancel, an undo, and a `directory-diff` seen for each
     mutation.
@@ -378,11 +436,12 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 ### 8. The demo frontend writes (M)
 
 - **Scope**: `apps/desktop/src/lib/demo/` and the website's demo e2e.
-- **Intentions**: delete `writes.ts` and its test; `volumes.ts` stops reporting `mountIsReadOnly`; the backend routes
-  the write commands to the engine (`DemoListing.handles()` or its renamed twin) and the write events through the
-  existing fan-out. Re-derive the command set from `window.__cmdrDemo.unanswered` while driving F5–F8, rename, and the
-  transfer dialog. Update `lib/demo/CLAUDE.md` + `DETAILS.md` (the "writes nothing, and says so" must-know becomes
-  "writes through the real engine, in memory, gone on reload").
+- **Intentions**: delete `writes.ts` and its test; `volumes.ts` stops reporting `mountIsReadOnly` and stops hardcoding
+  `supportsTrash` (the engine answers it); F8 then takes the app's own permanent-delete confirm; the backend routes the
+  write commands to the engine (`DemoListing.handles()` or its renamed twin) and the write events through the existing
+  fan-out. Re-derive the command set from `window.__cmdrDemo.unanswered` while driving F5–F8, rename, and the transfer
+  dialog. Update `lib/demo/CLAUDE.md` + `DETAILS.md` (the "writes nothing, and says so" must-know becomes "writes
+  through the real engine, in memory, gone on reload").
 - **Landmines**: a TS answer for an engine command silently shadows the engine (the backend tries TS tables first).
   `answers.ts` may already answer some write-adjacent commands (`destinationWriteAccess`, space queries) with read-only
   values; each moves to the engine or to an honest TS fact. The demo can be framed: dialogs must work inside an iframe.
@@ -398,8 +457,8 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
   the real op log and rollback planner; the in-browser `RollbackRunner` is the engine's own executor. A copy, a move, a
   rename, and a new folder undo; a permanent delete says it can't (the planner's typed answer).
 - **Landmines**: the planner FAILS SAFE (verify each item against its snapshot); an in-memory volume's identities must
-  satisfy `verify_snapshot` honestly, or every undo skips. Rollback pacing (`pace_between_items`) is a `Pacing` answer,
-  so decision 4 applies there too. Multi-op undo reverses newest first.
+  satisfy `verify_snapshot` honestly, or every undo skips. Rollback pacing stays `None`; an undo's copy-back streams
+  through the same bandwidth. Multi-op undo reverses newest first.
 - **Test plan**: Node smoke (each undoable op round-trips; a drifted item skips with its `SkipReason`), Playwright
   (Cmd+Z after a copy and after a rename).
 - **DONE**: Cmd+Z undoes the last demo operation through the same planner the desktop uses.
@@ -407,10 +466,10 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
 ### 10. The transfer queue window (S)
 
 - **Scope**: `apps/desktop/src/lib/demo/windows.ts` and QA.
-- **Intentions**: add `queue` to `OPENABLE`; it runs on the same backend and events. QA with decision 4's pace:
-  progress, pause and resume (one and all), cancel, reorder, and the transfer tree view. Retained failures and Retry
-  can't happen on a healthy in-memory volume; cover them in the Node smoke with a failing volume option rather than
-  faking one in the demo.
+- **Intentions**: add `queue` to `OPENABLE`; it runs on the same backend and events. QA at the volume's bandwidth
+  (decision 3; two copies at once queue behind each other's lane): progress, pause and resume (one and all), cancel,
+  reorder, and the transfer tree view. Retained failures and Retry can't happen on a healthy in-memory volume; cover
+  them in the Node smoke with a failing volume option rather than faking one in the demo.
 - **Landmines**: the queue window may call commands no milestone answered yet (`unanswered` tells); it opens as a
   same-origin iframe of its route and must find the top frame's backend.
 - **Test plan**: `windows.test.ts`; a Playwright cell that opens the queue during a paced copy and pauses it.
@@ -433,6 +492,9 @@ Sequential, one agent each, in this worktree. Sizes: S < half a day, M about a d
    Node smoke or the Playwright smoke.
 7. The demo's wire (command names, args, answers, rejections, events) equals the desktop's, pinned against
    `bindings.ts`.
-8. No conda toolchain binary on PATH in any script or CI job; only absolute paths in the wasm-target CC/AR variables.
+8. No conda toolchain binary on PATH or in the default mise data dir in any script or CI job; only the private
+   `MISE_DATA_DIR` and absolute paths in the wasm-target CC/AR variables.
 9. No demo code in a normal build, and no `if (demo)` in app code.
 10. Undo in the demo is the real planner, failing safe; nothing in TS decides what an undo does.
+11. `Pacing`, its desktop answers, and E2E timing are unchanged; demo throughput is `InMemoryVolume`'s bandwidth alone.
+12. "Which id is the local disk" is a host value (`Some("root")` by default), and the routing table pins both shapes.
