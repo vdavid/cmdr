@@ -16,10 +16,42 @@ fn covered(volume: &str) -> SearchRunCoverage {
         uncovered_scopes: Vec::new(),
         abandoned_ground: false,
         abandoned_locations: 0,
+        failed_roots: Vec::new(),
         capped: false,
         target_volume_id: volume.to_string(),
         hidden_by_excludes: 0,
     }
+}
+
+/// Regression: a folder the walk couldn't open makes the answer incomplete and
+/// says so by name. The NAS answered, so the walk "completed", and an empty list
+/// over a folder nothing read went out as a confident zero.
+#[test]
+fn a_folder_the_walk_could_not_open_is_never_a_confident_zero() {
+    let folder = "/Volumes/naspi/papers/Rymdskottkärra AB".to_string();
+    let result = shape_answer(
+        answer(
+            settled(SearchRunCoverage {
+                walk: WalkEnding::Completed,
+                kind: CoverageKind::Live,
+                failed_roots: vec![folder.clone()],
+                ..covered("naspi")
+            }),
+            0,
+        ),
+        true,
+    );
+    assert!(!result.coverage.complete);
+    assert_eq!(result.coverage.failed_roots, std::slice::from_ref(&folder));
+    assert_eq!(result.match_count_human, "≥ 0 matches");
+    assert!(
+        result
+            .notes
+            .iter()
+            .any(|n| n.contains(&folder) && n.contains("couldn't open")),
+        "{:?}",
+        result.notes
+    );
 }
 
 /// An answer with no rows, ending however the test needs.
@@ -457,6 +489,7 @@ fn the_result_serializes_camel_case_with_coverage_beside_the_notes() {
         "unresolvedScopes",
         "abandonedGround",
         "abandonedLocations",
+        "failedRoots",
     ] {
         assert!(
             json["coverage"].get(key).is_some(),

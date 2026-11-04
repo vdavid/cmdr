@@ -118,6 +118,19 @@
         {#if walkMessage}
             <p class="message">{walkMessage}</p>
         {/if}
+        {#if note.live && note.live.failedRoots.length > 0}
+            <!-- A folder the walk set out to read and couldn't open, on a drive that
+                 was there. First among the lists: it's usually the scope itself, so
+                 it's the whole reason the list is empty. -->
+            <p class="message">
+                {tString('search.coverage.failedRoots', { count: note.live.failedRoots.length })}
+            </p>
+            <ul class="scopes">
+                {#each note.live.failedRoots as path (path)}
+                    <li>{path}</li>
+                {/each}
+            </ul>
+        {/if}
         {#if note.live && note.live.permissionDenied.length > 0}
             <!-- A folder somebody refused us. Its own sentence, and the only one of
                  the two with a way out: on macOS that's Full Disk Access, offered

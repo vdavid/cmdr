@@ -168,6 +168,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, one {Cmdr kon deze map niet openen, dus er staat niets uit deze map in de resultaten:} other {Cmdr kon deze mappen niet openen, dus er staat niets uit deze mappen in de resultaten:}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "Met volledige schijftoegang kan Cmdr ook in zulke mappen zoeken.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

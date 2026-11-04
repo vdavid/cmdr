@@ -165,6 +165,11 @@ fn a_frontier_root_that_will_not_list_covers_nothing() {
     let (entries, outcome) = drain(share.walk(&scope).0);
 
     assert_eq!(outcome.roots_covered, 0, "nothing was covered");
+    assert_eq!(
+        outcome.failed_roots,
+        std::slice::from_ref(&scope),
+        "and it names the root it couldn't read, so a search can say so"
+    );
     // The folder's own row is materialized before anything is listed, so it goes
     // out; its CONTENTS are what the refusal costs.
     let emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
@@ -180,6 +185,30 @@ fn a_frontier_root_that_will_not_list_covers_nothing() {
         "❌ never given up on: one round trip that didn't land is no reason to \
          write off the folder a person asked about, and the walk has nothing else \
          to go on ({covered:?})"
+    );
+}
+
+/// Regression: a frontier root the share doesn't have under that name is a
+/// FAILED root, named as one. A scope path spelled the way macOS smbfs spells it
+/// (`Rymdskottka\u{308}rra`, NFD) reached a QNAP that stores NFC, the server said
+/// `STATUS_OBJECT_NAME_NOT_FOUND`, and the walk dropped the root with nothing but
+/// a log line: the search said "no matches" over a folder nothing read.
+#[test]
+fn a_frontier_root_the_share_does_not_have_is_named_as_failed() {
+    let share = Share::new("cover-share-missing-root-test", |t| {
+        vec![t.dir("Rymdskottkärra AB"), t.file("Rymdskottkärra AB/a.pdf", 1)]
+    });
+    let spelled_otherwise = share.path("Rymdskottka\u{308}rra AB");
+
+    let (entries, outcome) = drain(share.walk(&spelled_otherwise).0);
+
+    assert!(entries.is_empty(), "nothing was read");
+    assert_eq!(outcome.roots_covered, 0);
+    assert!(!outcome.cancelled, "nobody stopped it");
+    assert_eq!(
+        outcome.failed_roots,
+        [spelled_otherwise],
+        "the root that didn't open is named, so the search reports it instead of an empty answer"
     );
 }
 

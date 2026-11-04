@@ -127,7 +127,7 @@ every rule below is unit-tested against fabricated answers with no harness and n
   entries: [{ name, path, parentPath, isDirectory, sizeBytes, sizeHuman, modified, modifiedHuman }],
   coverage: { complete, stillWalking, foldersFound, capped, hiddenByExcludes,
               permissionDenied[], declined[], stillCovering[], unresolvedScopes[],
-              abandonedGround, abandonedLocations },
+              abandonedGround, abandonedLocations, failedRoots[] },
   notes: [ "…" ] }
 ```
 

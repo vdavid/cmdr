@@ -167,6 +167,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, =1 {Cmdr не удалось открыть эту папку, поэтому ее содержимого нет в результатах:} one {Cmdr не удалось открыть эти папки, поэтому их содержимого нет в результатах:} few {Cmdr не удалось открыть эти папки, поэтому их содержимого нет в результатах:} many {Cmdr не удалось открыть эти папки, поэтому их содержимого нет в результатах:} other {Cmdr не удалось открыть эти папки, поэтому их содержимого нет в результатах:}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "С полным доступом к диску Cmdr может искать и в таких папках.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

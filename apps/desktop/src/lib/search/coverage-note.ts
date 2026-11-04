@@ -58,6 +58,14 @@ export interface LiveCoverage {
    * would be true and useless.
    */
   abandonedLocations: number
+  /**
+   * Folders the walk set out to read and couldn't open, with the drive still there
+   * (the server didn't have that name, the folder went away, the listing failed).
+   * Nothing inside them was read, so an empty list over one is ❌ never "no matches".
+   * The backend keeps these out of `unresolvedScopes`, whose "press Enter" line
+   * would offer a walk that just ran.
+   */
+  failedRoots: string[]
 }
 
 /** What one run couldn't cover, ready to render. Absent when coverage was complete. */
@@ -110,8 +118,10 @@ export function coverageNoteFrom(result: SearchResult): CoverageNote | null {
 export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote | null {
   const short = coverage.walk === 'interrupted' || coverage.walk === 'cancelled' || coverage.abandonedGround
   const uncoveredScopes = coverage.uncoveredScopes ?? []
+  const failedRoots = coverage.failedRoots ?? []
   if (
     !short &&
+    failedRoots.length === 0 &&
     coverage.permissionDenied.length === 0 &&
     coverage.declined.length === 0 &&
     coverage.stillCovering.length === 0 &&
@@ -131,6 +141,7 @@ export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote |
       stillCovering: coverage.stillCovering,
       abandonedGround: coverage.abandonedGround,
       abandonedLocations: coverage.abandonedLocations ?? 0,
+      failedRoots,
     },
   }
 }

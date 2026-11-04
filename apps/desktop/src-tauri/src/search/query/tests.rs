@@ -377,13 +377,41 @@ fn diagnostic_summary_pluralizes_a_one_character_pattern() {
 #[test]
 fn canonicalize_scope_path_expands_the_home_tilde() {
     let home = std::env::var("HOME").expect("HOME is set");
-    assert_eq!(canonicalize_scope_path("~"), canonicalize_scope_path(&home));
-    assert_eq!(
-        canonicalize_scope_path("~/Documents"),
-        canonicalize_scope_path(&format!("{home}/Documents"))
+    for namespace in [PathNamespace::Os, PathNamespace::Backend] {
+        assert_eq!(
+            canonicalize_scope_path("~", namespace),
+            canonicalize_scope_path(&home, namespace)
+        );
+        assert_eq!(
+            canonicalize_scope_path("~/Documents", namespace),
+            canonicalize_scope_path(&format!("{home}/Documents"), namespace)
+        );
+        // A tilde INSIDE a path is an ordinary character, and a file may be named it.
+        assert_eq!(canonicalize_scope_path("/tmp/~notme", namespace), "/tmp/~notme");
+    }
+}
+
+/// Regression: a backend volume's scope path never goes through `realpath`. The
+/// OS mount at the same mount point spells names its own way (macOS smbfs: NFD),
+/// and a canonicalized `Rymdskottkärra AB` reached the NAS as
+/// `Rymdskottka\u{308}rra AB`, which it didn't have. A symlink stands in for the
+/// rename here: anything `realpath` would change, a backend path must keep.
+#[cfg(unix)]
+#[test]
+fn a_backend_scope_path_keeps_the_backends_spelling() {
+    let base = TestDir::new("scope-backend");
+    let real = base.join("real");
+    std::fs::create_dir_all(real.join("Rymdskottkärra AB")).expect("create real dir");
+    let link = base.join("link");
+    std::os::unix::fs::symlink(&real, &link).expect("create symlink");
+
+    let scope = link.join("Rymdskottkärra AB").to_string_lossy().into_owned();
+    assert_eq!(canonicalize_scope_path(&scope, PathNamespace::Backend), scope);
+    assert_ne!(
+        canonicalize_scope_path(&scope, PathNamespace::Os),
+        scope,
+        "the OS namespace still resolves the link, so the stand-in rename is real"
     );
-    // A tilde INSIDE a path is an ordinary character, and a file may be named it.
-    assert_eq!(canonicalize_scope_path("/tmp/~notme"), "/tmp/~notme");
 }
 
 #[cfg(unix)]
@@ -408,11 +436,11 @@ fn canonicalize_scope_path_resolves_symlinks() {
         .expect("canonicalize real")
         .to_string_lossy()
         .into_owned();
-    assert_eq!(canonicalize_scope_path(&through_link), want);
+    assert_eq!(canonicalize_scope_path(&through_link, PathNamespace::Os), want);
 
     // A non-existent path keeps the literal (best-effort: the offline-index case).
     let missing = link.join("nope").to_string_lossy().into_owned();
-    assert_eq!(canonicalize_scope_path(&missing), missing);
+    assert_eq!(canonicalize_scope_path(&missing, PathNamespace::Os), missing);
 }
 
 // ── parse_scope ─────────────────────────────────────────────────
@@ -539,7 +567,12 @@ fn scope_at_volume_root_searches_whole_volume() {
     let (_dir, pool) = mount_rooted_pool();
     // The mount root itself strips to "/" ⇒ whole volume ⇒ NO include restriction
     // (empty ids), not `[i64::MIN]` (which would match nothing — the live bug).
-    let r = resolve_include_scope(&[TEST_MOUNT.to_string()], &pool, Some(TEST_MOUNT));
+    let r = resolve_include_scope(
+        &[TEST_MOUNT.to_string()],
+        PathNamespace::Backend,
+        &pool,
+        Some(TEST_MOUNT),
+    );
     assert!(
         r.include_ids.is_empty(),
         "volume-root scope ⇒ no restriction (whole volume)"
@@ -551,7 +584,7 @@ fn scope_at_volume_root_searches_whole_volume() {
 fn scope_subpath_resolves_to_its_index_id() {
     let (_dir, pool) = mount_rooted_pool();
     let scope = format!("{TEST_MOUNT}/photos");
-    let r = resolve_include_scope(&[scope], &pool, Some(TEST_MOUNT));
+    let r = resolve_include_scope(&[scope], PathNamespace::Backend, &pool, Some(TEST_MOUNT));
     // `/Volumes/cmdr-test-nas/photos` → strip mount → `/photos` → resolves.
     assert_eq!(r.include_ids.len(), 1);
     assert_ne!(r.include_ids[0], i64::MIN);
@@ -562,7 +595,12 @@ fn scope_subpath_resolves_to_its_index_id() {
 fn scope_path_not_in_index_is_reported_unresolved() {
     let (_dir, pool) = mount_rooted_pool();
     let scope = format!("{TEST_MOUNT}/does-not-exist");
-    let r = resolve_include_scope(std::slice::from_ref(&scope), &pool, Some(TEST_MOUNT));
+    let r = resolve_include_scope(
+        std::slice::from_ref(&scope),
+        PathNamespace::Backend,
+        &pool,
+        Some(TEST_MOUNT),
+    );
     // Nothing resolved ⇒ match nothing AND surface the path honestly.
     assert_eq!(r.include_ids, vec![i64::MIN]);
     assert_eq!(r.unresolved, vec![scope]);
@@ -572,9 +610,48 @@ fn scope_path_not_in_index_is_reported_unresolved() {
 fn scope_outside_mount_root_is_unresolved() {
     let (_dir, pool) = mount_rooted_pool();
     // A path not under the volume's mount root can't map into its index.
-    let r = resolve_include_scope(&["/Volumes/other/x".to_string()], &pool, Some(TEST_MOUNT));
+    let r = resolve_include_scope(
+        &["/Volumes/other/x".to_string()],
+        PathNamespace::Backend,
+        &pool,
+        Some(TEST_MOUNT),
+    );
     assert_eq!(r.include_ids, vec![i64::MIN]);
     assert_eq!(r.unresolved, vec!["/Volumes/other/x".to_string()]);
+}
+
+/// Regression: a backend volume's scope resolves against its index under the
+/// backend's own spelling, even where the OS mount at that path spells it
+/// differently. Here the mount point is reached through a symlink, so `realpath`
+/// would move the scope out from under the mount root, the way smbfs's NFD moved
+/// `Rymdskottkärra AB` out from under the index's NFC row.
+#[cfg(unix)]
+#[test]
+fn a_backend_scope_resolves_under_the_backends_spelling() {
+    let (_dir, pool) = mount_rooted_pool();
+    let base = TestDir::new("scope-backend-mount");
+    std::fs::create_dir_all(base.join("real").join("photos")).expect("create real dir");
+    let mount = base.join("mount");
+    std::os::unix::fs::symlink(base.join("real"), &mount).expect("create symlink");
+    let mount = mount.to_string_lossy().into_owned();
+    let scope = format!("{mount}/photos");
+
+    let r = resolve_include_scope(
+        std::slice::from_ref(&scope),
+        PathNamespace::Backend,
+        &pool,
+        Some(&mount),
+    );
+    assert_eq!(r.include_ids.len(), 1);
+    assert_ne!(r.include_ids[0], i64::MIN);
+    assert!(r.unresolved.is_empty());
+
+    let through_the_os = resolve_include_scope(std::slice::from_ref(&scope), PathNamespace::Os, &pool, Some(&mount));
+    assert_eq!(
+        through_the_os.unresolved,
+        vec![scope],
+        "the OS namespace renames the path, which is the failure the backend namespace avoids"
+    );
 }
 
 mod scope_proptests {

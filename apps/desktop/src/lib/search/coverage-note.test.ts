@@ -32,6 +32,20 @@ describe('coverageNoteFromRun', () => {
     expect(coverageNoteFromRun(runCoverage())).toBeNull()
   })
 
+  it('never goes quiet over a folder the walk could not open', () => {
+    // Regression: a NAS folder whose name the server didn't recognize came back as
+    // a completed walk with nothing in it, and the dialog said "No files match".
+    const folder = '/Volumes/naspi/papers/Rymdskottkärra AB'
+    const note = coverageNoteFromRun(runCoverage({ failedRoots: [folder] }))
+    expect(note?.live?.failedRoots).toEqual([folder])
+  })
+
+  it('reads a backend that sends no failed folders as none', () => {
+    expect(
+      coverageNoteFromRun(runCoverage({ abandonedGround: true, failedRoots: undefined }))?.live?.failedRoots,
+    ).toEqual([])
+  })
+
   it('labels a walk that finished having given up on folders', () => {
     // The quiet way a run comes back short: every root covered, nobody stopped
     // it, and it still read less than the tree holds. Without a note here the
@@ -50,6 +64,7 @@ describe('coverageNoteFromRun', () => {
       stillCovering: [],
       abandonedGround: true,
       abandonedLocations: 0,
+      failedRoots: [],
     })
   })
 
@@ -149,6 +164,7 @@ describe('offersFullDiskAccess', () => {
         stillCovering: [],
         abandonedGround: false,
         abandonedLocations: 0,
+        failedRoots: [],
         ...live,
       },
     }

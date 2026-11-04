@@ -60,6 +60,17 @@ struct Target {
     /// A server's can't, so a live run answers "not covered" without walking it: a
     /// walk stands an index up for the volume it walks.
     can_be_indexed: bool,
+    /// Whose names the scope paths are in, decided once from the volume, so every
+    /// place that canonicalizes a scope agrees: the coverage question, the index
+    /// lookup, and the walk's frontier are matched by string.
+    namespace: volumes::PathNamespace,
+}
+
+impl Target {
+    /// One scope path the way the index and the walk will name it.
+    fn canonical_scope(&self, path: &str) -> String {
+        query::canonicalize_scope_path(path, self.namespace)
+    }
 }
 
 /// Why a query's scope can't be reduced to the one volume a search may cover. Typed
@@ -99,6 +110,7 @@ fn resolve_target(query: &SearchQuery) -> Result<Target, ScopeError> {
             include_paths: Vec::new(),
             from_scope: false,
             can_be_indexed: true,
+            namespace: volumes::path_namespace(ROOT_VOLUME_ID),
         });
     };
 
@@ -115,6 +127,7 @@ fn resolve_target(query: &SearchQuery) -> Result<Target, ScopeError> {
     let volume_id = volume_ids.remove(0);
     Ok(Target {
         can_be_indexed: volume_can_be_indexed(&volume_id, &paths[0]),
+        namespace: volumes::path_namespace(&volume_id),
         volume_id,
         include_paths: paths.clone(),
         from_scope: true,
@@ -132,6 +145,7 @@ fn target_on(query: &SearchQuery, volume_id: &str) -> Target {
     let include_paths = query.include_paths.clone().unwrap_or_default();
     Target {
         can_be_indexed: volume_can_be_indexed(volume_id, include_paths.first().map_or("", String::as_str)),
+        namespace: volumes::path_namespace(volume_id),
         volume_id: volume_id.to_string(),
         from_scope: !include_paths.is_empty(),
         include_paths,
@@ -210,8 +224,12 @@ fn search_covered_half(query: &SearchQuery, target: &Target, loaded: &LoadedVolu
         vq.include_path_ids = None;
         Vec::new()
     } else {
-        let resolution =
-            query::resolve_include_scope(&target.include_paths, &loaded.pool, loaded.mount_root.as_deref());
+        let resolution = query::resolve_include_scope(
+            &target.include_paths,
+            target.namespace,
+            &loaded.pool,
+            loaded.mount_root.as_deref(),
+        );
         // Empty ids ⇒ a mount-root ("whole volume") scope: drop the restriction
         // entirely (routing already scoped to this volume). Otherwise apply it.
         if resolution.include_ids.is_empty() {

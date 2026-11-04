@@ -27,6 +27,7 @@ function liveNote(live: Partial<LiveCoverage>): Note {
       stillCovering: [],
       abandonedGround: false,
       abandonedLocations: 0,
+      failedRoots: [],
       ...live,
     },
   }
@@ -102,6 +103,14 @@ describe('a live run that came back short', () => {
     const gaveUp = text.indexOf(tString('search.coverage.walk.abandonedCount', { count: 2, countText: '2' }))
     expect(denied).toBeGreaterThanOrEqual(0)
     expect(gaveUp).toBeGreaterThan(denied)
+  })
+
+  it('names a folder it could not open, and offers no Enter it already pressed', () => {
+    const folder = '/Volumes/naspi/papers/Rymdskottkärra AB'
+    const text = noteText(liveNote({ failedRoots: [folder] }))
+    expect(text).toContain(tString('search.coverage.failedRoots', { count: 1 }))
+    expect(text).toContain(folder)
+    expect(text).not.toContain(tString('search.coverage.pressEnter'))
   })
 
   it('stays quiet about a walk that covered its ground', () => {

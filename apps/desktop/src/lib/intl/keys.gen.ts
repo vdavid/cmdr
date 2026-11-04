@@ -3870,6 +3870,7 @@ export type MessageKey =
   | 'search.coverage.denied'
   | 'search.coverage.deniedFullDiskAccess'
   | 'search.coverage.dontAskAgain'
+  | 'search.coverage.failedRoots'
   | 'search.coverage.indexDrive'
   | 'search.coverage.pressEnter'
   | 'search.coverage.setUpFullDiskAccess'

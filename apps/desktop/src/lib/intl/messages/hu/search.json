@@ -167,6 +167,10 @@
   "@search.coverage.denied": {
     "sourceHash": "c71fc2e"
   },
+  "search.coverage.failedRoots": "{count, plural, one {A Cmdr nem tudta megnyitni ezt a mappát, ezért semmi sincs belőle a találatok között:} other {A Cmdr nem tudta megnyitni ezeket a mappákat, ezért semmi sincs belőlük a találatok között:}}",
+  "@search.coverage.failedRoots": {
+    "sourceHash": "9b978eb"
+  },
   "search.coverage.deniedFullDiskAccess": "Teljes lemezhozzáféréssel a Cmdr az ilyen mappákban is tud keresni.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"

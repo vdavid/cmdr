@@ -144,6 +144,18 @@ pub struct SearchRunCoverage {
     /// recorded a path for, so something was missed and nothing can say where.
     #[serde(default)]
     pub abandoned_locations: u32,
+    /// Folders this run's walk set out to read and couldn't open at all, as
+    /// absolute paths, while the drive itself stayed there: the server didn't
+    /// have that name, the folder went away since the index was asked, or the
+    /// listing failed outright. Nothing inside them was read, so for these the
+    /// list says nothing, ❌ never "no matches".
+    ///
+    /// A scope listed here is NOT also in
+    /// [`unresolved_scopes`](Self::unresolved_scopes): that one says "press
+    /// Enter and Cmdr will look", and Cmdr just did. ❌ Not a disconnect either,
+    /// which is [`WalkEnding::Interrupted`]. The next search tries them again.
+    #[serde(default)]
+    pub failed_roots: Vec<String>,
     /// Whether the result cap was reached. The walk carries on past it (the count
     /// keeps rising), only the rows stop.
     pub capped: bool,
