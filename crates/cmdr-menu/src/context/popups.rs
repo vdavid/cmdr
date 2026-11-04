@@ -256,7 +256,7 @@ pub fn date_sort_pick(menu_id: &str) -> Option<(PaneSide, SortColumn)> {
 
 /// One thing a queue row's menu can do. Pause and Resume share a key but are separate actions, so
 /// the label can say which one this click is, and so a pick that went stale while the menu was up
-/// can be told apart. Its menu ids, labels, and commands live right below.
+/// can be told apart. Its menu ids, labels, and commands are this enum's methods in `cmdr-menu`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum QueueRowMenuAction {
