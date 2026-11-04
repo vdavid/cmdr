@@ -259,7 +259,7 @@ const wcagA: CriterionRow[] = [
     name: 'Language of page',
     level: 'A',
     conformance: 'supports',
-    remark: 'Every window declares the language the user chose for the app (12 languages).',
+    remark: 'Every window declares the language the user chose for the app (17 languages).',
   },
   {
     id: '3.2.1',

@@ -18,7 +18,7 @@
  */
 
 /** The release and date the page's claims were checked against. */
-export const verifiedAgainst = { version: '0.58.0', date: '2026-10-31' }
+export const verifiedAgainst = { version: '0.59.0', date: '2026-11-04' }
 
 export interface NetworkConnection {
   id: string
