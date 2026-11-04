@@ -44,7 +44,7 @@ export function refuse<K extends CommandName>(_command: K, error: RefusalOf<K>):
  * with a plain string, which is what the caller (`tauri://error` on a window handle) expects.
  */
 export function refuseWith(error: unknown): never {
-  // eslint-disable-next-line @typescript-eslint/only-throw-error -- the IPC wire carries the typed value, never an `Error`
+  // The IPC wire carries the typed value itself, never an `Error`.
   throw error
 }
 

@@ -7,3 +7,8 @@
 export function asset(file: string): string {
   return file.startsWith('/') ? file : `/${file}`
 }
+
+/** A route pathname under the (root) base: unchanged. */
+export function resolve(pathname: string): string {
+  return pathname
+}

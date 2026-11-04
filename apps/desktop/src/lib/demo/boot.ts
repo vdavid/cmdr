@@ -28,7 +28,8 @@ function parentBackend(): DemoBackend | undefined {
   }
 }
 
-function installDemoBackend(): void {
+/** Installs this frame's role. Exported for its test; the app runs it only through the guard below. */
+export function installDemoBackend(): void {
   const shared = parentBackend()
   if (shared) {
     installWebview(shared, window.name || 'secondary')

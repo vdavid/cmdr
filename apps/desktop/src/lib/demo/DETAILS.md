@@ -124,6 +124,20 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
   page error, lists the home folder): `apps/website/DETAILS.md` § Browser demo. The CSP blocks off-origin fetches,
   `eval` / `new Function`, and inline scripts added after the build, though the smoke's server sends no CSP.
 
+## Tests
+
+- One colocated `*.test.ts` per module. They pin what breaks the demo silently: the tree's parents and its 1,200 photos
+  (the engine refuses a bad tree at boot), the browser-safe map (real command ids, the canonical combo vocabulary, no
+  clash in an overlapping scope, no browser-reserved combo left), every write refused, the backend's routing order (TS
+  tables, then `handles()`, then `unanswered`), the webview's JSON wire and event targets, the window panels'
+  open/close/raise/refuse, and the boot role pick.
+- vitest aliases `#lib/demo/boot.js` to `boot-absent.ts`, `$app/paths` to `apps/desktop/src/test-app-paths-shim.ts`, and
+  `virtual:cmdr-listing-wasm` to `apps/desktop/src/test-listing-wasm-shim.ts`; `listing.test.ts` mocks the last with a
+  fake engine. `test-setup.ts` stubs `@tauri-apps/api/event` app-wide, so `webview.test.ts` unmocks it to test the real
+  one.
+- The real `.wasm` and the iframes' pages loading are covered outside vitest: `desktop-rust-listing-wasm` runs the
+  engine's smoke, `apps/website/e2e/demo.spec.ts` boots the built demo, and the headless QA above.
+
 ## Answering a command
 
 1. Find what's unanswered: open the demo, then read `window.__cmdrDemo.unanswered` (command → call count) in devtools.
