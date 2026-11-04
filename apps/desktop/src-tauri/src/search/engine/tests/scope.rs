@@ -286,6 +286,34 @@ fn search_with_wildcard_exclude() {
     assert!(!names.contains(&"config"));
 }
 
+/// An exclusion the user typed that can't be compiled must fail the search, never be
+/// dropped: a dropped exclude answers with exactly the folders the user asked to hide.
+/// A glob this long blows the regex crate's compiled-size limit.
+#[test]
+fn an_exclude_glob_that_cannot_compile_fails_the_search() {
+    let index = make_scope_test_index();
+    let huge_glob = format!("{}*", "?".repeat(200_000));
+    let query = SearchQuery {
+        name_pattern: None,
+        pattern_type: PatternType::Glob,
+        min_size: None,
+        max_size: None,
+        modified_after: None,
+        modified_before: None,
+        is_directory: Some(false),
+        include_paths: None,
+        exclude_dir_names: Some(vec![huge_glob]),
+        include_path_ids: None,
+        count_only: false,
+        limit: 30,
+        case_sensitive: None,
+        exclude_system_dirs: Some(false),
+        sort_by: None,
+    };
+    let error = search(&index, &query, &ImportanceWeights::empty()).expect_err("an uncompilable exclude must fail");
+    assert!(!error.is_empty());
+}
+
 // ── Newlines in directory names ─────────────────────────────────
 
 /// A two-entry index: one directory whose name contains a newline, holding one file.

@@ -41,7 +41,7 @@ fn the_system_tier_is_on_by_default_and_off_when_the_query_says_so() {
     // `excludeSystemDirs` absent means exclude (the dialog's default), and only an
     // explicit `false` turns the tier off — the same three-way reading the arena
     // scan has always had.
-    let on = ExcludeRules::from_query(&query(), true);
+    let on = ExcludeRules::from_query(&query(), true).expect("the test excludes compile");
     assert!(
         on.excludes_walked("/Users/me/app/node_modules/left-pad/index.js", None),
         "a file inside node_modules is out by default"
@@ -53,7 +53,8 @@ fn the_system_tier_is_on_by_default_and_off_when_the_query_says_so() {
             ..query()
         },
         true,
-    );
+    )
+    .expect("the test excludes compile");
     assert!(
         !off.excludes_walked("/Users/me/app/node_modules/left-pad/index.js", None),
         "and in when the query turns the tier off"
@@ -66,7 +67,7 @@ fn a_walked_entry_is_judged_by_its_ancestors_not_its_own_name() {
     // Excluding `node_modules` hides what's INSIDE it. The folder itself is a
     // legitimate hit for someone who searched for it, which is why the arena walk
     // starts at the parent — and why this one drops the leaf before looking.
-    let rules = ExcludeRules::from_query(&query(), true);
+    let rules = ExcludeRules::from_query(&query(), true).expect("the test excludes compile");
     assert!(
         !rules.excludes_walked("/Users/me/app/node_modules", None),
         "the excluded directory itself is still a candidate"
@@ -84,10 +85,10 @@ fn case_folding_comes_from_the_compiled_query_both_ways() {
     // The rule arrives from `CompiledQuery::case_insensitive`; folding here again
     // is how an unindexed drive starts excluding under a different alphabet than
     // the pattern matched with.
-    let insensitive = ExcludeRules::from_query(&with_excludes(&["Archive"]), true);
+    let insensitive = ExcludeRules::from_query(&with_excludes(&["Archive"]), true).expect("the test excludes compile");
     assert!(insensitive.excludes_walked("/p/archive/out.o", None));
 
-    let sensitive = ExcludeRules::from_query(&with_excludes(&["Archive"]), false);
+    let sensitive = ExcludeRules::from_query(&with_excludes(&["Archive"]), false).expect("the test excludes compile");
     assert!(!sensitive.excludes_walked("/p/archive/out.o", None), "case matters now");
     assert!(sensitive.excludes_walked("/p/Archive/out.o", None));
 }
@@ -99,10 +100,10 @@ fn an_uppercase_directory_on_disk_is_excluded_under_a_case_insensitive_query() {
     // reached for it directly compared a raw name against a lowercased key: every
     // system exclude with a capital in it (`Caches`, `Logs`, `WebKit`, `.Trash`)
     // silently stopped excluding anything there.
-    let rules = ExcludeRules::from_query(&with_excludes(&["caches"]), true);
+    let rules = ExcludeRules::from_query(&with_excludes(&["caches"]), true).expect("the test excludes compile");
     assert!(rules.excludes_walked("/p/Library/Caches/thing.db", None));
 
-    let tier = ExcludeRules::from_query(&query(), true);
+    let tier = ExcludeRules::from_query(&query(), true).expect("the test excludes compile");
     assert!(
         tier.excludes_walked("/p/Library/Caches/thing.db", None),
         "the system tier too"
@@ -113,7 +114,7 @@ fn an_uppercase_directory_on_disk_is_excluded_under_a_case_insensitive_query() {
 
 #[test]
 fn a_wildcard_exclude_matches_a_directory_name_as_a_glob() {
-    let rules = ExcludeRules::from_query(&with_excludes(&["*.bundle"]), true);
+    let rules = ExcludeRules::from_query(&with_excludes(&["*.bundle"]), true).expect("the test excludes compile");
     assert!(rules.excludes_walked("/apps/Thing.bundle/Contents/Info.plist", None));
     assert!(!rules.excludes_walked("/apps/Thing.app/Contents/Info.plist", None));
 }
@@ -123,7 +124,8 @@ fn an_exclude_with_a_slash_is_a_path_prefix_in_the_space_the_walk_reports() {
     // A path exclude is absolute, so it has to be compared against the path the
     // user would recognize — mount-absolute on a share, not the mount-relative
     // form the index stores.
-    let rules = ExcludeRules::from_query(&with_excludes(&["/Volumes/naspi/Photos"]), true);
+    let rules =
+        ExcludeRules::from_query(&with_excludes(&["/Volumes/naspi/Photos"]), true).expect("the test excludes compile");
     assert!(rules.excludes_walked("/Volumes/naspi/Photos/2019/a.jpg", Some("/Volumes/naspi")));
     assert!(!rules.excludes_walked("/Volumes/naspi/Docs/a.pdf", Some("/Volumes/naspi")));
 }
@@ -133,7 +135,7 @@ fn the_volume_root_is_where_the_ancestor_walk_stops() {
     // The arena's walk stops at the volume root, so a mount root that happens to
     // contain an excluded NAME can't exclude the whole share. Without the strip,
     // one unlucky mount point would empty every search on that drive.
-    let rules = ExcludeRules::from_query(&with_excludes(&["archive"]), true);
+    let rules = ExcludeRules::from_query(&with_excludes(&["archive"]), true).expect("the test excludes compile");
     assert!(
         !rules.excludes_walked("/Volumes/archive/notes/a.txt", Some("/Volumes/archive")),
         "the mount root's own name is above the volume, so it isn't an ancestor"
@@ -152,7 +154,7 @@ fn a_name_only_rule_set_never_materializes_a_path() {
     // prefix, and reconstruction is per candidate on a scan of millions. So a rule
     // set with no prefixes has to say so, or the hot path pays for a string it
     // would only throw away.
-    let rules = ExcludeRules::from_query(&with_excludes(&["node_modules"]), true);
+    let rules = ExcludeRules::from_query(&with_excludes(&["node_modules"]), true).expect("the test excludes compile");
     assert!(!rules.has_path_prefixes());
     assert!(rules.has_name_rules());
 }
@@ -161,7 +163,7 @@ fn a_name_only_rule_set_never_materializes_a_path() {
 fn a_rule_set_with_no_names_never_walks_the_components() {
     // `has_name_rules` is what lets the live evaluator skip the component walk,
     // and a path-prefix-only rule set must still answer correctly.
-    let rules = ExcludeRules::from_query(&with_excludes(&["/tmp/scratch"]), true);
+    let rules = ExcludeRules::from_query(&with_excludes(&["/tmp/scratch"]), true).expect("the test excludes compile");
     assert!(!rules.has_name_rules());
     assert!(rules.has_path_prefixes());
     assert!(rules.excludes_walked("/tmp/scratch/a.txt", None));
@@ -198,7 +200,8 @@ fn a_name_the_shortcut_declines_still_folds_and_is_still_excluded() {
     assert!(with_ascii_folded(accented, |_| ()).is_none());
     assert!(with_ascii_folded(&long, |_| ()).is_none());
 
-    let rules = ExcludeRules::from_query(&with_excludes(&[accented, &long.to_lowercase()]), true);
+    let rules = ExcludeRules::from_query(&with_excludes(&[accented, &long.to_lowercase()]), true)
+        .expect("the test excludes compile");
     assert!(rules.excludes_dir_name("CAF\u{c9}"));
     assert!(rules.excludes_dir_name(&long));
 }

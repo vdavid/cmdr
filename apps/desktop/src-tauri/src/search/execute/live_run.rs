@@ -344,7 +344,13 @@ pub(super) fn run_live_blocking(query: SearchQuery, target: Target, run: &LiveRu
         stream.finish(coverage);
         return;
     };
-    let excludes = ExcludeRules::from_query(&query, compiled.case_insensitive());
+    let excludes = match ExcludeRules::from_query(&query, compiled.case_insensitive()) {
+        Ok(excludes) => excludes,
+        Err(e) => {
+            stream.fail(SearchRunError::Query, e.to_string());
+            return;
+        }
+    };
 
     // The arena behind this search is out of date from here on. Marked at the
     // START, not on the first batch: a walk writes rows this run never sees — the

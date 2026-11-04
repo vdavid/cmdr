@@ -26,6 +26,7 @@ use regex::{Regex, RegexBuilder};
 
 use cmdr_index::store;
 
+use super::matcher::CompileError;
 use super::query::{SYSTEM_DIR_EXCLUDES, glob_to_regex};
 use super::types::SearchQuery;
 
@@ -55,7 +56,10 @@ pub(crate) struct ExcludeRules {
 impl ExcludeRules {
     /// Compile a query's exclusions. `case_insensitive` comes from the compiled
     /// query; ❌ don't derive it again here.
-    pub(crate) fn from_query(query: &SearchQuery, case_insensitive: bool) -> Self {
+    ///
+    /// A glob that won't compile is an error, ❌ never skipped: skipping it answers with
+    /// the folders the user asked to hide.
+    pub(crate) fn from_query(query: &SearchQuery, case_insensitive: bool) -> Result<Self, CompileError> {
         let mut exact_names = HashSet::new();
         let mut name_patterns = Vec::new();
         let mut path_prefixes = Vec::new();
@@ -68,9 +72,14 @@ impl ExcludeRules {
                     path_prefixes.push(pattern.clone());
                 } else if pattern.contains('*') || pattern.contains('?') {
                     let regex_str = glob_to_regex(pattern);
-                    if let Ok(re) = RegexBuilder::new(&regex_str).case_insensitive(case_insensitive).build() {
-                        name_patterns.push(re);
-                    }
+                    let re = RegexBuilder::new(&regex_str)
+                        .case_insensitive(case_insensitive)
+                        .build()
+                        .map_err(|e| CompileError::InvalidExclude {
+                            pattern: pattern.clone(),
+                            reason: e.to_string(),
+                        })?;
+                    name_patterns.push(re);
                 } else {
                     exact_names.insert(fold(pattern, case_insensitive));
                 }
@@ -84,12 +93,12 @@ impl ExcludeRules {
             }
         }
 
-        Self {
+        Ok(Self {
             exact_names: Arc::new(exact_names),
             name_patterns,
             path_prefixes: path_prefixes.into(),
             case_insensitive,
-        }
+        })
     }
 
     /// Whether anything is excluded at all, so a caller can skip the walk.

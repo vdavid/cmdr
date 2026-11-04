@@ -16,7 +16,7 @@ use cmdr_index::store::ROOT_ID;
 
 use super::excludes::ExcludeRules;
 use super::index::SearchIndex;
-use super::matcher::{Candidate, CompiledQuery, Evaluator};
+use super::matcher::{Candidate, CompileError, CompiledQuery, Evaluator};
 use super::query::summarize_query_for_diagnostics;
 use super::ranking::{self, ImportanceWeights};
 use super::types::{SearchQuery, SearchResultEntry, SearchSort};
@@ -168,7 +168,11 @@ enum ScopeVerdict {
 /// `case_insensitive` comes from the compiled query rather than being derived again:
 /// excluding under a different alphabet than the pattern matched with is the kind of
 /// silent disagreement `matcher.rs` exists to prevent.
-fn prepare_scope_filter(query: &SearchQuery, case_insensitive: bool, path_prefix: &str) -> ScopeFilter {
+fn prepare_scope_filter(
+    query: &SearchQuery,
+    case_insensitive: bool,
+    path_prefix: &str,
+) -> Result<ScopeFilter, CompileError> {
     // Use pre-resolved include path IDs (resolved via SQLite before search())
     let include_ids = if let Some(ref ids) = query.include_path_ids {
         if ids.is_empty() {
@@ -185,11 +189,11 @@ fn prepare_scope_filter(query: &SearchQuery, case_insensitive: bool, path_prefix
         None
     };
 
-    ScopeFilter {
+    Ok(ScopeFilter {
         include_ids,
-        excludes: ExcludeRules::from_query(query, case_insensitive),
+        excludes: ExcludeRules::from_query(query, case_insensitive)?,
         path_prefix: Arc::from(path_prefix),
-    }
+    })
 }
 
 // ── Search execution ─────────────────────────────────────────────────
@@ -298,7 +302,7 @@ pub(crate) fn search_ranked(
     let case_insensitive = compiled.case_insensitive();
 
     // Pre-resolve scope filter
-    let scope_filter = prepare_scope_filter(query, case_insensitive, path_prefix);
+    let scope_filter = prepare_scope_filter(query, case_insensitive, path_prefix).map_err(|e| e.to_string())?;
 
     // How many query-matching entries an exclusion rule dropped. Counted with a
     // relaxed atomic rather than a fold, because `collect()` preserves arena order

@@ -82,6 +82,10 @@ pub(crate) enum CompileError {
     /// The name pattern isn't a valid regex (either as typed, or after glob
     /// conversion). Carries the regex crate's own explanation.
     InvalidPattern(String),
+    /// A `!` exclusion the user typed isn't a valid glob. Fails the query rather than
+    /// being dropped: a dropped exclude answers with the very folders it was asked to
+    /// hide.
+    InvalidExclude { pattern: String, reason: String },
     /// Nothing in the query narrows the candidate set — no name pattern, no size
     /// bound, no date bound, no type filter — and the evaluator can't afford that.
     TooBroad,
@@ -91,6 +95,7 @@ impl std::fmt::Display for CompileError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidPattern(reason) => write!(f, "Invalid pattern: {reason}"),
+            Self::InvalidExclude { pattern, reason } => write!(f, "Invalid exclude pattern \"{pattern}\": {reason}"),
             Self::TooBroad => {
                 f.write_str("Query too broad. Add a filename pattern, size, date, or type filter to narrow results.")
             }
