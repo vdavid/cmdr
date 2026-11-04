@@ -55,12 +55,14 @@ async fn run(now_ms: f64) -> Result<String, String> {
         let flag = Rc::clone(&ran);
         set.spawn_on(
             async move {
+                // allowed-test-sleep: timers ARE the subject of this self-test of the page runtime.
                 time::sleep(Duration::from_millis(5)).await;
                 flag.set(true);
             },
             &runtime,
         );
     }
+    // allowed-test-sleep: timers ARE the subject of this self-test of the page runtime.
     time::sleep(Duration::from_millis(20)).await;
     if ran.get() {
         return Err("a dropped set's task ran on".into());
@@ -70,6 +72,7 @@ async fn run(now_ms: f64) -> Result<String, String> {
     let fired = Rc::new(Cell::new(false));
     let flag = Rc::clone(&fired);
     drop(runtime.spawn(async move {
+        // allowed-test-sleep: timers ARE the subject of this self-test of the page runtime.
         time::sleep(Duration::ZERO).await;
         flag.set(true);
     }));
@@ -109,6 +112,7 @@ async fn run(now_ms: f64) -> Result<String, String> {
 }
 
 async fn sleep_then(ms: u64, label: &'static str) -> &'static str {
+    // allowed-test-sleep: timers ARE the subject of this self-test of the page runtime.
     time::sleep(Duration::from_millis(ms)).await;
     label
 }
