@@ -1762,6 +1762,7 @@ dependencies = [
 name = "cmdr-listing-wasm"
 version = "0.0.0"
 dependencies = [
+ "cmdr-brief-columns",
  "cmdr-fs",
  "cmdr-listing",
  "js-sys",

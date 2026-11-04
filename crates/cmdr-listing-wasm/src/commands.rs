@@ -9,6 +9,10 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use cmdr_brief_columns::{
+    BriefColumnsIpcError, BriefColumnsQuery, FontMetrics, FontMetricsError, FontMetricsStore,
+    compute_brief_column_text_widths, widths_from_parallel,
+};
 use cmdr_fs::deadline::TimedOut;
 use cmdr_fs::volume::{ResolvedVolume, Volume};
 use cmdr_listing::host::{ListingVolumes, Unregistered};
@@ -44,6 +48,12 @@ pub const COMMANDS: &[&str] = &[
     "refresh_listing",
     "get_listing_stats",
     "refresh_listing_index_sizes",
+    // Brief mode's column widths (`commands/font_metrics.rs` and `listing.rs` in the
+    // app). The page measures its own fonts and stores them, as the desktop's does.
+    "store_font_metrics",
+    "extend_font_metrics",
+    "has_font_metrics",
+    "get_brief_column_text_widths",
 ];
 
 /// One engine over one in-memory volume: what the demo page talks to.
@@ -51,6 +61,9 @@ pub const COMMANDS: &[&str] = &[
 pub struct Demo {
     listings: Listings,
     events: Arc<DemoEvents>,
+    /// The page's measured fonts, in memory only: the desktop's disk cache has no
+    /// counterpart, so a reload measures again.
+    fonts: Arc<FontMetricsStore>,
 }
 
 impl Demo {
@@ -62,7 +75,11 @@ impl Demo {
         let volumes = Arc::new(OneVolume { volume_id, volume });
         let listings = Listings::builder(volumes, Arc::clone(&events) as _).build();
         listings.start_orphan_reaper();
-        Ok(Self { listings, events })
+        Ok(Self {
+            listings,
+            events,
+            fonts: Arc::new(FontMetricsStore::new()),
+        })
     }
 
     /// Whether [`Demo::invoke`] answers `command`.
@@ -225,6 +242,31 @@ impl Demo {
                 let a: IdArgs = parse(command, args)?;
                 l.refresh_index_sizes(&ListingId::new(a.listing_id));
                 Ok(Value::Null)
+            }
+            "store_font_metrics" => {
+                let a: FontWidthsArgs = parse(command, args)?;
+                answer(widths_from_parallel(a.code_points, a.widths).map(|widths| {
+                    let metrics = FontMetrics::new(a.font_id.clone(), widths);
+                    self.fonts.insert(a.font_id, metrics);
+                }))
+            }
+            "extend_font_metrics" => {
+                let a: FontWidthsArgs = parse(command, args)?;
+                answer(widths_from_parallel(a.code_points, a.widths).and_then(|widths| {
+                    // The desktop's not-stored answer, which its extend reports as a
+                    // persist that didn't land.
+                    self.fonts
+                        .extend_with(&a.font_id, widths, |_| ())
+                        .map_err(|detail| FontMetricsError::CouldntPersist { detail })
+                }))
+            }
+            "has_font_metrics" => {
+                let a: FontIdArgs = parse(command, args)?;
+                ok(self.fonts.contains(&a.font_id))
+            }
+            "get_brief_column_text_widths" => {
+                let query: BriefColumnsQuery = parse(command, args)?;
+                answer(compute_brief_column_text_widths(l, &self.fonts, &query).map_err(BriefColumnsIpcError::from))
             }
             _ => Err(Value::String(format!("the browser demo doesn't answer `{command}`"))),
         }
@@ -449,6 +491,20 @@ struct FilterArgs {
 struct RefreshArgs {
     listing_id: String,
     force: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FontWidthsArgs {
+    font_id: String,
+    code_points: Vec<u32>,
+    widths: Vec<f32>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FontIdArgs {
+    font_id: String,
 }
 
 #[derive(Deserialize)]

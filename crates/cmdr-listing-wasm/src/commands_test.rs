@@ -271,3 +271,63 @@ async fn unknown_commands_and_bad_arguments_reject_with_a_string() {
     assert!(!Demo::handles("copy_files"));
     assert!(COMMANDS.iter().all(|c| Demo::handles(c)));
 }
+
+/// Widths the page would have measured: 2 px for every printable ASCII code point.
+fn ascii_widths(font_id: &str) -> Value {
+    let code_points: Vec<u32> = (0x20..=0x7E).collect();
+    let widths = vec![2.0; code_points.len()];
+    json!({ "fontId": font_id, "codePoints": code_points, "widths": widths })
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn brief_columns_answer_from_the_metrics_the_page_stored() {
+    let (demo, events) = demo();
+    open(&demo, &events, "brief-1", "/Users/you").await;
+    let query = json!({
+        "listingId": "brief-1", "itemsPerColumn": 2, "hasParent": true,
+        "fontId": "system-400-12", "includeHidden": false,
+    });
+
+    // Before the page measures: the kind the frontend measures-and-retries on.
+    let font = json!({ "fontId": "system-400-12" });
+    assert_eq!(call(&demo, "has_font_metrics", font.clone()).await, json!(false));
+    let not_ready = demo.invoke("get_brief_column_text_widths", query.clone()).await;
+    assert_eq!(not_ready.expect_err("no metrics yet")["kind"], "fontMetricsNotReady");
+
+    assert_eq!(
+        call(&demo, "store_font_metrics", ascii_widths("system-400-12")).await,
+        Value::Null
+    );
+    assert_eq!(call(&demo, "has_font_metrics", font).await, json!(true));
+
+    // Rows: Documents, Music, notes 9.txt, notes 10.txt, report.pdf, with ".." first, so
+    // columns of two are [.., Documents] [Music, notes 9.txt] [notes 10.txt, report.pdf].
+    let widths = call(&demo, "get_brief_column_text_widths", query.clone()).await;
+    assert_eq!(
+        widths,
+        json!({ "widths": [18.0, 22.0, 24.0], "missingCodePoints": [], "approximate": false })
+    );
+
+    // Another size of the same font stands in, scaled, until it's measured.
+    let mut bigger = query;
+    bigger["fontId"] = json!("system-400-24");
+    let scaled = call(&demo, "get_brief_column_text_widths", bigger).await;
+    assert_eq!(scaled["widths"], json!([36.0, 44.0, 48.0]));
+    assert_eq!(scaled["approximate"], json!(true));
+}
+
+#[tokio::test]
+async fn font_metric_writes_reject_like_the_desktop() {
+    let (demo, _) = demo();
+    let mismatched = json!({ "fontId": "system-400-12", "codePoints": [97, 98], "widths": [1.0] });
+    assert_eq!(
+        demo.invoke("store_font_metrics", mismatched).await,
+        Err(json!({ "type": "mismatchedWidths", "codePoints": 2, "widths": 1 }))
+    );
+    let unstored = demo.invoke("extend_font_metrics", ascii_widths("system-400-12")).await;
+    assert_eq!(unstored.expect_err("nothing to extend")["type"], "couldntPersist");
+
+    call(&demo, "store_font_metrics", ascii_widths("system-400-12")).await;
+    let extended = json!({ "fontId": "system-400-12", "codePoints": [0x732B], "widths": [12.0] });
+    assert_eq!(call(&demo, "extend_font_metrics", extended).await, Value::Null);
+}

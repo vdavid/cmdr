@@ -49,7 +49,10 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
   its camelCase args. Resolves with the command's answer, rejects with its serialized error
   (`{ type: "gone", listingId }`), or a string for args that don't parse or a command it doesn't answer.
 - `DemoListing.commands(): string[]` and `DemoListing.handles(command): boolean`: which commands `invoke` answers
-  (`commands.rs`'s `COMMANDS`), so a mock routes those here and fakes the rest.
+  (`commands.rs`'s `COMMANDS`), so a mock routes those here and fakes the rest. Beside the listing commands, that's
+  Brief mode's widths (`get_brief_column_text_widths`) and the font metrics behind them (`store_font_metrics`,
+  `extend_font_metrics`, `has_font_metrics`), answered by `cmdr-brief-columns`, the code the desktop's commands run. The
+  page measures its own fonts with the Canvas API and stores them, as the desktop's frontend does.
 - `DemoListing.setLogLevel(level)`: the engine's `log` lines on the console, `"warn"` by default.
 
 The volume is built `with_held_folders_only()`, so a folder the tree doesn't hold ends in the typed `notFound`
@@ -69,8 +72,8 @@ tree lists as a folder (as on disk).
 - The `wasm-bindgen` CLI has to be the exact version of the `wasm-bindgen` crate in `Cargo.lock`, or it refuses the
   module; the script reads the lockfile and `cargo install`s that version into `~/.cargo/bin` when it's missing.
 - The check: `desktop-rust-listing-wasm` runs the script with `-smoke` into a temp dir, in CI's "Desktop (Rust)" job.
-  The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, and a typed
-  rejection, which is what catches the browser-only traps.
+  The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, Brief column
+  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps.
 
 ## Where the demo differs from the app
 
@@ -78,6 +81,9 @@ tree lists as a folder (as on disk).
 - **No `~` expansion** on `list_directory_start_streaming` (the desktop expands it for `root`); a browser has no home.
 - **`refresh_listing` awaits the re-read in place**: the desktop's two-second cap guards hung mounts, which an in-memory
   read can't be.
+- **Font metrics live in memory only**: the desktop persists each size to `font-metrics/{font_id}.bin`, so a reload of
+  the page measures again. No `timeout` kind either: the desktop's two-second cap on `get_brief_column_text_widths`
+  guards a write-locked cache, which a page's one thread can't be waiting on.
 - **Owners show as empty, permissions are fixed**, and nothing reads tags, packages, index sizes, or git status.
 - **No writes**: the demo answers listing commands only. Copy, move, rename, and create would each need their own
   extraction (#302).

@@ -51,6 +51,13 @@ change the exact size takes seconds to measure; text width tracks font size to w
 fill-in can only extend a stored size, so an approximate answer asks for none. Only when no size of the family is stored
 does it answer `FontMetricsNotReady`.
 
+## Cost in the browser build
+
+Adding the crate to `cmdr-listing-wasm` grew `cmdr_listing_wasm_bg.wasm` from 2,094,733 to 2,149,943 bytes (+54 KiB raw,
++12 KiB gzipped: 748,025 → 760,775) (verified on rustc 1.99.1, `wasm-release`, `pnpm build:listing-wasm`, 2026-11-04).
+Most of it is likely `f32` parsing (`split_font_id`) and `ln` from libm, plus the `HashMap<u32, f32>` code; not
+profiled.
+
 ## The public surface is capped
 
 `index-crate-isolation` caps it at what the hosts use, item by item:
