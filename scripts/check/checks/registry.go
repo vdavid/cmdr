@@ -397,6 +397,20 @@ var AllChecks = []CheckDefinition{
 		Run:    RunVendorPatchApplied,
 	},
 	{
+		ID:          "desktop-rust-listing-wasm",
+		CpuWeight:   8,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "listing-wasm",
+		DisplayName: "listing engine builds and runs as wasm",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   []string{"desktop-rust-clippy"},
+		// Every crate the wasm build compiles is a workspace member, so the shared
+		// Rust set covers them; the build script is the rest of the pipeline.
+		Inputs: inputs(rustCompileInputs, []string{"scripts/build-listing-wasm.sh", "scripts/build-listing-wasm/**"}),
+		Run:    RunDesktopRustListingWasm,
+	},
+	{
 		ID:          "desktop-security-advisories",
 		Nickname:    "security-advisories",
 		DisplayName: "security advisory list is valid",

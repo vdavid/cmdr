@@ -227,6 +227,11 @@ jobs:
               # The managed-policy drift guard embeds these (`managed_policy/public_docs_test.rs`).
               - 'apps/website/public/mdm/**'
               - 'apps/website/src/lib/trust-mdm.ts'
+              # The browser listing engine's event drift guard embeds this (`cmdr-listing-wasm`).
+              - 'apps/desktop/src/lib/ipc/bindings.ts'
+              # Built and smoke-run by `desktop-rust-listing-wasm`.
+              - 'scripts/build-listing-wasm.sh'
+              - 'scripts/build-listing-wasm/**'
               - 'crates/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
@@ -492,6 +497,12 @@ jobs:
 
       - name: Run clippy
         run: ./scripts/check/check --check desktop-rust-clippy --ci
+
+      # The browser demo's listing engine: a wasm32 build plus a Node smoke run, the only
+      # lane that sees a host-only dep or a `std` clock reach the engine. `wasm-bindgen-cli`
+      # installs into `~/.cargo/bin`, which rust-cache keeps.
+      - name: Build the listing engine for wasm
+        run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
 
       # A broken intra-doc link is invisible to every other lane, because only
       # `cargo doc` resolves one. These steps are sequential, so this lane keeps

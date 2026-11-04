@@ -20,4 +20,7 @@ components = ["rustfmt", "clippy", "rust-analyzer"]
 # channel needs both available. Listing them here makes rustup auto-sync them
 # the first time the toolchain is resolved; no separate `rustup target add`
 # step is needed in CI.
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+#
+# `wasm32-unknown-unknown` is the browser demo's listing engine
+# (`crates/cmdr-listing-wasm`), which `desktop-rust-listing-wasm` builds in CI.
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "wasm32-unknown-unknown"]
