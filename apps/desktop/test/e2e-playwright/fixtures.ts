@@ -41,6 +41,7 @@ import {
   findAppDeath,
   type EvaluatablePage,
 } from './app-death.js'
+import { reportAndResetPaneSplit } from './pane-split-leak.js'
 
 // Each parallel E2E shard spawns its own Tauri instance bound to a distinct
 // Unix socket. The Go check runner sets CMDR_PLAYWRIGHT_SOCKET per shard.
@@ -195,8 +196,8 @@ async function decorateTitle(tauriPage: EvaluatablePage, testInfo: TestInfo, suf
 
 /** Fails the test that leaked UI artifacts or a dirty fixture tree, and cleans both up. */
 async function failOnLeaks(tauriPage: EvaluatablePage): Promise<void> {
-  // ONE post-test leak guard, two kinds of leak: UI artifacts left on screen,
-  // and a shared fixture tree left dirty. Both cascade into the NEXT test's
+  // ONE post-test leak guard, three kinds of leak: UI artifacts left on screen,
+  // a shared fixture tree left dirty, and a pane divider left off center. Both cascade into the NEXT test's
   // beforeEach if unchecked, where the failure surfaces against the wrong test
   // and reads as a flake. Both probes run unconditionally, both auto-clean
   // AFTER the failure decision (so a leak never cascades even when this hook
@@ -271,6 +272,10 @@ async function failOnLeaks(tauriPage: EvaluatablePage): Promise<void> {
   }
 
   if (leaked && leaked.length > 0) await reportAndCleanOverlayLeak(tauriPage, leaked, leakReports)
+
+  // Pane-split leak: a moved divider narrows a pane for every later spec (`pane-split-leak.ts`).
+  const splitLeak = await reportAndResetPaneSplit(tauriPage)
+  if (splitLeak !== null) leakReports.push(splitLeak)
 
   if (leakReports.length > 0) throw new Error(leakReports.join('\n\n'))
 }

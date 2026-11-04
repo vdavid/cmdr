@@ -1207,6 +1207,17 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
   clears toasts once more at the very end rather than relying on per-surface cleanup. A test that merely runs long
   enough for a background event to fire needs the same end-of-test sweep.
 
+## The pane-split leak guard
+
+The divider's split is app layout: it outlives the test, and `ensureAppReady` doesn't reset it. A spec that drags it and
+leaves it there narrows a pane for every later spec on the shard, and a pane's width changes what renders: Full view
+drops its date column below a width (`src/lib/file-explorer/views/full-list-column-fit.ts`). That's how
+`brief-cursor-visibility`'s resize variant failed `pane-controls`' date-chevron test about 100 specs later, only in the
+full suite (verified on the Linux Docker lane, the pair alone reproduces it, 2026-11-04). The leak guard's third probe
+(`pane-split-leak.ts`) reads the left wrapper's width after every test, fails the test that left it off center, and
+re-centers it. **What a spec owes**: moved the divider? Re-center it in its own `afterEach`
+(`dispatchMenuCommand(tauriPage, 'pane.resetDivider')`, then poll for `50%`).
+
 ## Gotchas
 
 **Gotcha**: a raw `window.__TAURI_INTERNALS__.invoke('<command>', {...})` inside an `evaluate()` string is invisible to
