@@ -2441,6 +2441,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "„{server}” nem erősítette meg a Cmdrrel egyeztetett biztonsági beállításokat, ezért a Cmdr lezárta a kapcsolatot. Ezt okozhatja egy rosszul működő szerver, de az is, ha valaki beavatkozik a kapcsolatba. Ha ez továbbra is előfordul, ellenőrizd a hálózatodat és a szerver beállításait.",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "„{server}” csak titkosított kapcsolatot fogad el, de nem egyezett meg a Cmdrrel a titkosítás módjáról. Ellenőrizd a szerver SMB-titkosítási beállításait.",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "Valami nem sikerült, miközben a Cmdr lekérte ennek a szervernek a megosztásait: „{server}”. Próbáld újra egy pillanat múlva.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

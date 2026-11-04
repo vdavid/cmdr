@@ -2196,6 +2196,22 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} bevestigde de beveiligingsinstellingen die met Cmdr waren afgesproken niet, dus Cmdr blijft op de systeemverbinding. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit.",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "7ea7c4f"
+  },
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} accepteert alleen versleutelde verbindingen en kon met Cmdr geen manier afspreken om de verbinding te versleutelen, dus Cmdr blijft op de systeemverbinding.",
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "a731300"
+  },
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de server de beveiligingsinstellingen die met Cmdr waren afgesproken niet bevestigde. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.",
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "758e268"
+  },
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat deze gedeelde map alleen versleutelde verbindingen accepteert en de server met Cmdr geen manier kon afspreken om de verbinding te versleutelen. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.",
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "23dd607"
+  },
   "fileExplorer.smbLinkConsent.title": "Inloggen bij een andere server?",
   "@fileExplorer.smbLinkConsent.title": {
     "sourceHash": "91458ea"

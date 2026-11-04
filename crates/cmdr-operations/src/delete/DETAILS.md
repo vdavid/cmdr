@@ -202,7 +202,8 @@ for.
 - **Logged at info**: an expected outcome, and warn reaches error-report bundles.
 - **The race inside a walk**: the LOCAL walker treats a `NotFound` from `remove_file` (a file the scan listed, gone
   before its unlink) as done, with no journal row. The volume walker's outage re-check already does the same after a
-  wait (`outage.rs`).
+  wait (`outage.rs`). An SMB delete that took a `._` sidecar the walk also listed answers that walk's later delete of it
+  `Ok` itself: `crates/cmdr-smb/DETAILS.md` § "AppleDouble sidecars".
 - Frontend counterpart (the "already gone" toast and its setting):
   `apps/desktop/src/lib/file-operations/delete/DETAILS.md`.
 

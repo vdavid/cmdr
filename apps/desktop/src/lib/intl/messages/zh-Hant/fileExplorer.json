@@ -2177,6 +2177,22 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} 沒有確認和 Cmdr 協商好的安全性設定，所以 Cmdr 會繼續使用系統連線。伺服器運作不正常可能造成這種情況，有人竄改連線也可能。",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "7ea7c4f"
+  },
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} 只接受加密的連線，而且沒有和 Cmdr 協商出加密的方式，所以 Cmdr 會繼續使用系統連線。",
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "a731300"
+  },
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "無法直接連線到 <shareName>{share}</shareName>，因為伺服器沒有確認和 Cmdr 協商好的安全性設定。伺服器運作不正常可能造成這種情況，有人竄改連線也可能。你仍然連著，但用的是 macOS 內建的 SMB 網路連線，慢上許多。",
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "758e268"
+  },
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "無法直接連線到 <shareName>{share}</shareName>，因為這個共享資料夾只接受加密的連線，而伺服器沒有和 Cmdr 協商出加密的方式。你仍然連著，但用的是 macOS 內建的 SMB 網路連線，慢上許多。",
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "23dd607"
+  },
   "fileExplorer.smbLinkConsent.title": "要登入另一個伺服器嗎？",
   "@fileExplorer.smbLinkConsent.title": {
     "sourceHash": "91458ea"

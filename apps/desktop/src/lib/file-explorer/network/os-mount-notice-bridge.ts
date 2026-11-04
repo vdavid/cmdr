@@ -30,6 +30,7 @@ import { getAppLogger } from '#lib/logging/logger.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { onSmbFellBackToOsMount, onSmbOsMountNoticeWithdrawn, onVolumesChanged } from '#lib/tauri-commands/index.js'
 import type { SmbFellBackToOsMount } from '#lib/ipc/bindings.js'
+import { STUCK_REASONS } from './upgrade-messages'
 import type { VolumeInfo } from '../types'
 import SmbOsMountFallbackToastContent from './SmbOsMountFallbackToastContent.svelte'
 
@@ -65,13 +66,16 @@ function raiseNotice(payload: SmbFellBackToOsMount): void {
   // `shareNotOnServer` is the server saying it has no such share. The same
   // identity asking again gets the same answer, so the notice explains and
   // offers nothing, instead of a button that is certain to fail. A namespace on
-  // another server nobody allowed gets the same answer until someone does.
-  const retryable = payload.reason !== 'shareNotOnServer' && payload.reason !== 'otherServerNotAllowed'
+  // another server nobody allowed gets the same answer until someone does, and so
+  // does a connection whose security didn't check out (an unconfirmed negotiation,
+  // or encryption the share requires and the connection couldn't agree on).
+  const stuckReason = STUCK_REASONS.find((reason) => reason === payload.reason)
+  const retryable = payload.reason !== 'shareNotOnServer' && stuckReason === undefined
   log.info(
     retryable
       ? 'Offering a direct-connection retry for the share stuck on the kernel mount: {share}'
-      : 'The share stuck on the kernel mount is one the server says it does not have, so no retry is offered: {share}',
-    { share: payload.share },
+      : 'The share stuck on the kernel mount has a reason no retry can fix, so none is offered: {share} ({reason})',
+    { share: payload.share, reason: payload.reason },
   )
   addToast(SmbOsMountFallbackToastContent, {
     level: 'info',
@@ -82,7 +86,7 @@ function raiseNotice(payload: SmbFellBackToOsMount): void {
       volumeId: payload.volumeId,
       share: payload.share,
       retryable,
-      otherServerNotAllowed: payload.reason === 'otherServerNotAllowed' ? true : undefined,
+      stuckReason,
       // This Mac refused the route to a server its own mount reaches: the notice
       // names the server and the permission to switch.
       blockedServer: payload.reason === 'blockedByThisMac' ? payload.displayName : undefined,

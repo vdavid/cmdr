@@ -2190,6 +2190,22 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} não confirmou os ajustes de segurança que combinou com o Cmdr, então o Cmdr continua na conexão do sistema. Um servidor que não funciona direito pode causar isso, e também alguém adulterando a conexão.",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "7ea7c4f"
+  },
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} só aceita conexões criptografadas e não combinou com o Cmdr uma forma de criptografá-las, então o Cmdr continua na conexão do sistema.",
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "a731300"
+  },
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "Não foi possível conectar diretamente a <shareName>{share}</shareName>, porque o servidor não confirmou os ajustes de segurança que combinou com o Cmdr. Um servidor que não funciona direito pode causar isso, e também alguém adulterando a conexão. Você continua conectado pela conexão de rede SMB nativa do macOS, que é bem mais lenta.",
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "758e268"
+  },
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Não foi possível conectar diretamente a <shareName>{share}</shareName>, porque este compartilhamento só aceita conexões criptografadas e o servidor não combinou com o Cmdr uma forma de criptografá-las. Você continua conectado pela conexão de rede SMB nativa do macOS, que é bem mais lenta.",
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "23dd607"
+  },
   "fileExplorer.smbLinkConsent.title": "Iniciar sessão em outro servidor?",
   "@fileExplorer.smbLinkConsent.title": {
     "sourceHash": "91458ea"

@@ -2183,6 +2183,22 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} bekräftade inte de säkerhetsinställningar som hade avtalats med Cmdr, så Cmdr stannar kvar på systemanslutningen. Det kan bero på en server som krånglar, men också på att någon manipulerar anslutningen.",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "7ea7c4f"
+  },
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} tar bara emot krypterade anslutningar och kom inte överens med Cmdr om något sätt att kryptera dem, så Cmdr stannar kvar på systemanslutningen.",
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "a731300"
+  },
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "Det gick inte att ansluta direkt till <shareName>{share}</shareName>, eftersom servern inte bekräftade de säkerhetsinställningar som hade avtalats med Cmdr. Det kan bero på en server som krånglar, men också på att någon manipulerar anslutningen. Du är fortfarande ansluten, men via macOS inbyggda SMB-anslutning, som är mycket långsammare.",
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "758e268"
+  },
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Det gick inte att ansluta direkt till <shareName>{share}</shareName>, eftersom den delade mappen bara tar emot krypterade anslutningar och servern inte kom överens med Cmdr om något sätt att kryptera dem. Du är fortfarande ansluten, men via macOS inbyggda SMB-anslutning, som är mycket långsammare.",
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "23dd607"
+  },
   "fileExplorer.smbLinkConsent.title": "Logga in på en annan server?",
   "@fileExplorer.smbLinkConsent.title": {
     "sourceHash": "91458ea"

@@ -2441,6 +2441,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "“{server}” không xác nhận các thiết lập bảo mật đã thống nhất với Cmdr, nên Cmdr đã đóng kết nối. Một máy chủ hoạt động không bình thường có thể gây ra chuyện này, và ai đó can thiệp vào kết nối cũng vậy. Nếu việc này cứ tiếp diễn, hãy kiểm tra mạng của bạn và cài đặt của máy chủ.",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "“{server}” chỉ chấp nhận kết nối được mã hóa, nhưng không thống nhất được với Cmdr cách mã hóa kết nối. Hãy kiểm tra cài đặt mã hóa SMB của máy chủ.",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "Có gì đó không ổn khi lấy danh sách mục chia sẻ từ “{server}”. Hãy thử lại sau giây lát.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

@@ -678,14 +678,16 @@
                             <span class="smb-label">Max transact</span>
                             <span class="smb-value">{fmtBytes(n.max_transact_size)}</span>
                             <span class="smb-label"
-                                >GMAC <span
+                                >Signing <span
                                     class="info-icon"
                                     use:tooltip={{
-                                        text: 'Whether AES-GMAC signing was negotiated (SMB 3.1.1 with SMB2_SIGNING_CAPABILITIES). Falls back to AES-CMAC otherwise. GMAC is AES-128-GCM with empty plaintext — the auth tag IS the signature.',
+                                        text: 'The algorithm this connection signs with. SMB 2.x uses HMAC-SHA256 and SMB 3.0/3.0.2 AES-CMAC; on SMB 3.1.1 the server picks from what Cmdr offers in SMB2_SIGNING_CAPABILITIES (AES-GMAC, AES-CMAC, or HMAC-SHA256).',
                                     }}>i</span
                                 ></span
                             >
-                            <span class="smb-value">{n.gmac_negotiated ? 'yes' : 'no'}</span>
+                            <span class="smb-value">{n.signing_algorithm}</span>
+                            <span class="smb-label">Cipher</span>
+                            <span class="smb-value">{n.cipher ?? 'none'}</span>
                             <span class="smb-label">Server GUID</span>
                             <span class="smb-value smb-value-mono smb-value-truncate" use:tooltip={{ text: n.server_guid_hex }}
                                 >{n.server_guid_hex}</span

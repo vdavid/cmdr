@@ -340,3 +340,9 @@ All (uk) unless noted.
 - Concept `upgrade` (a Cmdr license) matched "upgrade your plan" in `askCmdr.error.modelNotInPlan.*`, which upgrades a
   plan with the AI provider; I added `notMatch` "upgrade your plan" and the new concept `ai-plan`. A future "upgrade"
   about a provider plan needs the same exclusion, so consider widening `ai-plan` to own it. (all)
+- `fileExplorer.pane.directConnectionNegotiationInvalidToast`, `…EncryptionUnavailableToast`: "so Cmdr stays on the
+  system connection", while every sibling toast says the share stays (`…ShareNotOnServerToast`, `…UnreachableToast`).
+  Pick one subject for the family; locales followed the English (Cmdr) this time. (all)
+- The six SMB negotiation and encryption keys list "security", "agreed", "misbehaving", "cause", "someone", "stays",
+  "directly" under "No concept yet": ordinary words with nothing to mine. Consider a stop list for the brief, and one
+  concept for "the security settings both sides agreed on" (SMB negotiation), now in four keys. (all)

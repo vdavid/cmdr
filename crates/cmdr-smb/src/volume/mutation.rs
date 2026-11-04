@@ -167,8 +167,15 @@ impl SmbVolume {
                     link_delete,
                 )
                 .await;
+            // A sidecar an earlier delete took along (`apple_double.rs`): a
+            // walk that listed `._a` beside `a` still sends its delete, and the
+            // file is gone, which is what it asked for.
+            let r = match r {
+                Err(e) if e.kind() == smb2::ErrorKind::NotFound && self.inner.sidecars.take_back(&smb_path) => Ok(()),
+                r => r,
+            };
             self.handle_smb_result("delete", &smb_path, generation, r)?;
-            self.delete_staging_fork_file(&tree, &mut conn, &smb_path).await;
+            self.delete_apple_double_sidecar(&tree, &conn, &smb_path).await;
         }
 
         if let (Some(parent), Some(name)) = (path.parent(), path.file_name())

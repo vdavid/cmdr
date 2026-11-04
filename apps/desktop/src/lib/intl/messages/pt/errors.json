@@ -2441,6 +2441,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "“{server}” não confirmou os ajustes de segurança que combinou com o Cmdr, então o Cmdr fechou a conexão. Um servidor que não funciona direito pode causar isso, e também alguém adulterando a conexão. Se continuar acontecendo, verifique sua rede e os ajustes do servidor.",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "“{server}” só aceita conexões criptografadas, mas não combinou com o Cmdr uma forma de criptografá-las. Verifique os ajustes de criptografia SMB do servidor.",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "Algo deu errado ao pedir a lista de compartilhamentos a “{server}”. Tente novamente em instantes.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

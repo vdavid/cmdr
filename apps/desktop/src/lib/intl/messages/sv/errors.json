@@ -2441,6 +2441,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "”{server}” bekräftade inte de säkerhetsinställningar som hade avtalats med Cmdr, så Cmdr stängde anslutningen. Det kan bero på en server som krånglar, men också på att någon manipulerar anslutningen. Om det fortsätter, kontrollera ditt nätverk och serverns inställningar.",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "”{server}” tar bara emot krypterade anslutningar, men kom inte överens med Cmdr om något sätt att kryptera dem. Kontrollera serverns inställningar för SMB-kryptering.",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "Något gick fel när listan över delade mappar hämtades från ”{server}”. Försök igen om en stund.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

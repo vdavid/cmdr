@@ -2441,6 +2441,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "„{server}“ hat die Sicherheitseinstellungen, die mit Cmdr vereinbart waren, nicht bestätigt, deshalb hat Cmdr die Verbindung getrennt. Das kann an einem Server liegen, der nicht richtig arbeitet, aber auch daran, dass jemand die Verbindung manipuliert. Wenn das immer wieder passiert, prüfe dein Netzwerk und die Einstellungen des Servers.",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "„{server}“ akzeptiert nur verschlüsselte Verbindungen, konnte sich mit Cmdr aber auf keine Verschlüsselung einigen. Prüfe die SMB-Verschlüsselungseinstellungen des Servers.",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "Beim Abrufen der Freigaben von „{server}“ ist etwas schiefgelaufen. Versuche es gleich noch einmal.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

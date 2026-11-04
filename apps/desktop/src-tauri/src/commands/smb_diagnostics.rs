@@ -88,7 +88,9 @@ pub struct NegotiatedSummaryDto {
     pub server_guid_hex: String,
     pub signing_required: bool,
     pub capabilities_bits: u32,
-    pub gmac_negotiated: bool,
+    /// The algorithm the connection's sessions sign with (on SMB 3.1.1, the server's pick).
+    pub signing_algorithm: String,
+    /// The negotiated cipher, `Aes128Ccm` on SMB 3.0 and 3.0.2 when the server can encrypt.
     pub cipher: Option<String>,
     pub compression_supported: bool,
 }
@@ -320,7 +322,7 @@ impl From<smb2::NegotiatedSummary> for NegotiatedSummaryDto {
             ),
             signing_required: n.signing_required,
             capabilities_bits: n.capabilities.0,
-            gmac_negotiated: n.gmac_negotiated,
+            signing_algorithm: format!("{:?}", n.signing_algorithm),
             cipher: n.cipher.map(|c| format!("{:?}", c)),
             compression_supported: n.compression_supported,
         }

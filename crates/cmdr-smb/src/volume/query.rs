@@ -6,6 +6,7 @@
 //! [`SmbVolume::handle_smb_result`]. The `Volume` methods in `volume_impl.rs`
 //! are thin wrappers over these.
 
+use super::apple_double::Sidecars;
 use super::dfs_links::{link_bare_stat, link_stat};
 use super::links::stat_through_link;
 use super::mapping::{directory_entry_to_file_entry, file_info_to_file_entry, fs_info_to_space_info};
@@ -53,6 +54,7 @@ pub(super) enum ListingStop {
 pub(super) async fn read_listing(
     mut reader: DirectoryReader,
     display_path: &str,
+    sidecars: &Sidecars,
     on_progress: Option<&(dyn Fn(ListingProgress) + Sync)>,
     cancel: Option<&CancellationToken>,
     runtime: &Handle,
@@ -79,6 +81,7 @@ pub(super) async fn read_listing(
             return Ok(entries);
         };
         for raw in batch.iter().filter(|e| e.name != "." && e.name != "..") {
+            sidecars.note_name(&raw.name);
             let entry = directory_entry_to_file_entry(raw, display_path);
             if entry.is_directory {
                 tally.dirs += 1;
@@ -138,7 +141,15 @@ impl SmbVolume {
         let listed = match opened {
             Ok(reader) => {
                 let runtime = self.inner.host().runtime();
-                read_listing(reader, &display_path, on_progress, cancel, &runtime).await
+                read_listing(
+                    reader,
+                    &display_path,
+                    &self.inner.sidecars,
+                    on_progress,
+                    cancel,
+                    &runtime,
+                )
+                .await
             }
             Err(e) => Err(ListingStop::Smb(e)),
         };
@@ -225,6 +236,7 @@ impl SmbVolume {
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| smb_path.clone());
         let display_path = self.to_display_path(&smb_path);
+        self.inner.sidecars.note_name(&name);
 
         Ok(file_info_to_file_entry(&info, name, display_path))
     }

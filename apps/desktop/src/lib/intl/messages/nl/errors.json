@@ -2441,6 +2441,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "‘{server}’ bevestigde de beveiligingsinstellingen die met Cmdr waren afgesproken niet, dus Cmdr verbrak de verbinding. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit. Als het blijft gebeuren, controleer dan je netwerk en de instellingen van de server.",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "‘{server}’ accepteert alleen versleutelde verbindingen, maar kon met Cmdr geen manier afspreken om de verbinding te versleutelen. Controleer de SMB-versleutelingsinstellingen van de server.",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "Er ging iets mis bij het opvragen van de gedeelde mappen van ‘{server}’. Probeer het zo meteen opnieuw.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

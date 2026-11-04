@@ -2180,6 +2180,22 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} nem erősítette meg a Cmdrrel egyeztetett biztonsági beállításokat, ezért a Cmdr a rendszerkapcsolaton marad. Ezt okozhatja egy rosszul működő szerver, de az is, ha valaki beavatkozik a kapcsolatba.",
+  "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
+    "sourceHash": "7ea7c4f"
+  },
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} csak titkosított kapcsolatot fogad el, és nem egyezett meg a Cmdrrel a titkosítás módjáról, ezért a Cmdr a rendszerkapcsolaton marad.",
+  "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
+    "sourceHash": "a731300"
+  },
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "Nem sikerült közvetlenül csatlakozni ehhez: <shareName>{share}</shareName>, mert a szerver nem erősítette meg a Cmdrrel egyeztetett biztonsági beállításokat. Ezt okozhatja egy rosszul működő szerver, de az is, ha valaki beavatkozik a kapcsolatba. Továbbra is a macOS natív SMB-hálózati kapcsolatán keresztül csatlakozol, ami jóval lassabb.",
+  "@fileExplorer.network.osMountFallback.negotiationInvalid": {
+    "sourceHash": "758e268"
+  },
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Nem sikerült közvetlenül csatlakozni ehhez: <shareName>{share}</shareName>, mert ez a megosztás csak titkosított kapcsolatot fogad el, és a szerver nem egyezett meg a Cmdrrel a titkosítás módjáról. Továbbra is a macOS natív SMB-hálózati kapcsolatán keresztül csatlakozol, ami jóval lassabb.",
+  "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
+    "sourceHash": "23dd607"
+  },
   "fileExplorer.smbLinkConsent.title": "Bejelentkezel egy másik szerverre?",
   "@fileExplorer.smbLinkConsent.title": {
     "sourceHash": "91458ea"

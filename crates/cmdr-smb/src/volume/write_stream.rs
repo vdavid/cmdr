@@ -356,7 +356,7 @@ impl SmbVolume {
                 }) = self.clone_session().await
                 {
                     match tree.delete_file(&mut conn, &smb_path).await {
-                        Ok(()) => self.delete_staging_fork_file(&tree, &mut conn, &smb_path).await,
+                        Ok(()) => self.delete_apple_double_sidecar(&tree, &conn, &smb_path).await,
                         Err(e) if is_behind_dfs_link(&e) => {
                             let _ = self
                                 .inner

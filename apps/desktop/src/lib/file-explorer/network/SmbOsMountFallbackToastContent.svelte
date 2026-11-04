@@ -23,7 +23,12 @@
     import { dismissToast } from '#lib/ui/toast/index.js'
     import { openLocalNetworkSettings } from '#lib/tauri-commands/index.js'
     import { connectDirectly } from './direct-connect'
-    import { directConnectionUnavailableMessage, openLocalNetworkSettingsLabel } from './upgrade-messages'
+    import {
+        directConnectionUnavailableMessage,
+        openLocalNetworkSettingsLabel,
+        type StuckReason,
+    } from './upgrade-messages'
+    import type { MessageKey } from '#lib/intl/keys.gen.js'
 
     interface Props {
         /** Dedup id of this toast; lets the notice retire itself once it's moot. */
@@ -38,8 +43,13 @@
          * so the notice explains instead of offering a retry.
          */
         retryable: boolean
-        /** The share is a namespace on another server nobody allowed signing in to. */
-        otherServerNotAllowed?: boolean
+        /**
+         * Why no retry is offered, when it's something other than the server
+         * having no such share (the default sentence): a namespace on another
+         * server nobody allowed signing in to, or a connection whose security
+         * didn't check out.
+         */
+        stuckReason?: StuckReason
         /**
          * The server's friendly name, set when something on this Mac is what
          * blocked the connection (`blockedByThisMac`). The notice then says what
@@ -48,7 +58,13 @@
         blockedServer?: string
     }
 
-    const { toastId, volumeId, share, retryable, otherServerNotAllowed = false, blockedServer }: Props = $props()
+    const { toastId, volumeId, share, retryable, stuckReason, blockedServer }: Props = $props()
+
+    const STUCK_MESSAGE: Record<StuckReason, MessageKey> = {
+        otherServerNotAllowed: 'fileExplorer.network.osMountFallback.otherServerNotAllowed',
+        negotiationInvalid: 'fileExplorer.network.osMountFallback.negotiationInvalid',
+        encryptionUnavailable: 'fileExplorer.network.osMountFallback.encryptionUnavailable',
+    }
 
     let connecting = $state(false)
 
@@ -74,12 +90,8 @@
             {directConnectionUnavailableMessage('blockedByThisMac', blockedServer)}
         {:else if retryable}
             <Trans key="fileExplorer.network.osMountFallback.message" snippets={{ shareName }} params={{ share }} />
-        {:else if otherServerNotAllowed}
-            <Trans
-                key="fileExplorer.network.osMountFallback.otherServerNotAllowed"
-                snippets={{ shareName }}
-                params={{ share }}
-            />
+        {:else if stuckReason !== undefined}
+            <Trans key={STUCK_MESSAGE[stuckReason]} snippets={{ shareName }} params={{ share }} />
         {:else}
             <Trans
                 key="fileExplorer.network.osMountFallback.shareNotOnServer"

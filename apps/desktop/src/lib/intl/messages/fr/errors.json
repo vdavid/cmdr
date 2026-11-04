@@ -2441,6 +2441,14 @@
   "@errors.shareList.signatureInvalid": {
     "sourceHash": "6523e32"
   },
+  "errors.shareList.negotiationInvalid": "« {server} » n’a pas confirmé les réglages de sécurité convenus avec Cmdr, donc Cmdr a fermé la connexion. Un serveur qui fonctionne mal peut en être la cause, tout comme quelqu’un qui trafique la connexion. Si cela continue, vérifiez votre réseau et les réglages du serveur.",
+  "@errors.shareList.negotiationInvalid": {
+    "sourceHash": "80739f5"
+  },
+  "errors.shareList.encryptionUnavailable": "« {server} » n’accepte que les connexions chiffrées, mais n’a convenu avec Cmdr d’aucune façon de chiffrer la connexion. Vérifiez les réglages de chiffrement SMB du serveur.",
+  "@errors.shareList.encryptionUnavailable": {
+    "sourceHash": "ea3a52f"
+  },
   "errors.shareList.protocolError": "Un problème est survenu lors de la récupération des partages de « {server} ». Réessayez dans un instant.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

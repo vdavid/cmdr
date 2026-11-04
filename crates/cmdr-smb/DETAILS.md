@@ -36,7 +36,11 @@ Here, because the answer is yes:
   even though its own enum has no auth variant. A named login answered with a guest session (`GuestSessionRefused`, smb2
   0.31) counts as auth: it's how a Samba server set to `map to guest = bad user` answers a wrong password. A reply
   refused for its signature (`SignatureInvalid`) is ❌ not auth, and becomes `ShareListError::SignatureInvalid` /
-  `VolumeError::SignatureInvalid`, never the `ProtocolError` that sends a listing down the CLI fallback.
+  `VolumeError::SignatureInvalid`, never the `ProtocolError` that sends a listing down the CLI fallback. The same goes
+  for a negotiation the server didn't confirm (`NegotiateValidationFailed`, smb2 0.41:
+  `ShareListError::NegotiationInvalid`) and a server requiring encryption the connection has no cipher for
+  (`Error::EncryptionUnavailable`, by variant: `ShareListError::EncryptionUnavailable`). Both are connect-time answers;
+  on a volume they arrive only through a rebuilt session, as an `IoError` the reconnect backoff retries.
 - Every smb2 error on the main session passes ONE funnel, `SmbVolumeInner::note_smb_error` (called by
   `handle_smb_result`, the streaming-read producer, the random reader, and the copy scan's stat pipeline), which calls
   `session::report_security_refusal` to tell the host's `security_refusal` seam about a refused signature. A refused
@@ -169,10 +173,11 @@ on", not by watching a number.
   byte-moving calls ride), `dfs_links` (any call through a DFS link inside the share), `link_watch` (a shown link's own
   watch), `watcher`, `foreground_yield`, `links` (what a stat reads as through a link), `slow_calls` (the rolled-up
   `warn` for a metadata call the server held over a second), `attributes` (Hidden and Locked by path), `xattrs`
-  (`Volume`'s xattr methods, over named streams), and the stateless `mapping`. Splitting further needs a responsibility
-  you can name the same way; a line count is not one. `e5ea10d02` reverted four splits invented to satisfy the counter,
-  and every one of them had widened a visibility or torn a struct from its trait impl to do it. These carry the same
-  `pub(super)` the crate already used and leave no module reaching into another's internals.
+  (`Volume`'s xattr methods, over named streams), `apple_double` (a deleted file's `._` sidecar), and the stateless
+  `mapping`. Splitting further needs a responsibility you can name the same way; a line count is not one. `e5ea10d02`
+  reverted four splits invented to satisfy the counter, and every one of them had widened a visibility or torn a struct
+  from its trait impl to do it. These carry the same `pub(super)` the crate already used and leave no module reaching
+  into another's internals.
 - **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" from the WORK, not the transport.**
   MTP has an explicit holder for its single scarce USB pipe; SMB frames just interleave over a connection, so there is
   nothing on the transport to count. It survives the transfer session because the copy and the pane still share the link
@@ -1068,10 +1073,8 @@ source's metadata".
   2026-11-03, smb2's `nas_a_copy_keeps_its_xattrs_and_a_deleted_temp_leaves_its_fork_file` and a one-off probe through
   `SmbVolume`): tags, a comment, FinderInfo, a 300 KiB resource fork, and a plain xattr round-trip byte for byte, and
   the landing rename keeps them. The resource fork lives in a visible `._<name>` file (`fruit:resource = file`), and the
-  share's recycle bin turns a delete into a move that leaves it behind, through macOS's own client too. So deleting a
-  staging temp (`.cmdr-tmp-`, `.cmdr-temp-`) also deletes its `._` file (`copy_xattrs.rs::delete_staging_fork_file`, on
-  `delete` and on the write's own `delete_partial`): one round trip, only on a share with streams, so a rolled-back copy
-  and a replaced file's aside leave nothing in the user's folder. A file the user deletes keeps its `._`, as in Finder.
+  share's recycle bin turns a delete into a move that leaves it behind, through macOS's own client too. So every delete
+  takes its `._` file along, a staging temp's included: § "AppleDouble sidecars".
 - **Cost** (`examples/copy_xattrs_bench.rs`, `docs/notes/smb-copy-xattrs-bench-2026-11-03.md`): big-file reads and
   writes unchanged within noise; a plain small file's read with the listing costs about 20–40 µs more of the server's
   time on loopback (8–18% of a 0.2 ms read) and 0.3–0.4 ms on the QNAP over the LAN (+5–7% of a 6 ms read, one at a
@@ -1080,6 +1083,46 @@ source's metadata".
 - **The Finder-mounted share keeps them on its own path** (the native chunked arm through `smbfs`; on the guest fixture,
   which has no `vfs_fruit`, as `._` sidecars, and a resource fork is lost:
   `crates/cmdr-operations/src/transfer/DETAILS.md` § "Local copies stage").
+
+## AppleDouble sidecars
+
+`apple_double.rs`. A QNAP keeps a file's resource fork in a visible `._<name>` (`vfs_fruit` with
+`fruit:resource = file`), and its recycle bin (`recycle bin = yes`) turns a delete into a move that leaves the `._` file
+behind, through macOS's own client and Finder too (`~/projects-git/vdavid/smb2/docs/notes/named-streams-and-xattrs.md`,
+seen over SSH on 2026-11-03). So after `delete_impl` (and a failed write's `delete_partial`) takes `<name>`, the volume
+deletes `._<name>` beside it when that file's first four bytes are AppleDouble's magic `00 05 16 07`; a person's own
+`._notes` stays.
+
+- **Cheap**: nothing goes out on a share without named streams, behind a DFS link, or before the share has shown a
+  sidecar: `Sidecars::seen` flips on a listing or stat naming a `._` entry (`read_listing`, `get_metadata_impl`) or a
+  copy writing `com.apple.ResourceFork` (`put_copied_xattrs`, `apply_xattrs_by_path`). Then each delete sends ONE probe
+  after it, `read_file_compound_sized` of 4 KiB (CREATE+READ+CLOSE, `NotFound` the usual answer; a bigger file reads its
+  head through a `FileReader`), and the delete only when the magic matches. Pinned `(1, 3)` before and `(2, 6)` after by
+  `apple_double_integration_test.rs`. Decision/Why sequential and not beside the delete: an open of `._<name>` racing
+  the delete could stand in the way of a server that unlinks the sidecar itself (`vfs_fruit` without a recycle bin).
+- **A share without streams keeps its `._` files.** There they're Finder's own AppleDouble (smbfs writes xattrs that
+  way), which a copy never reads, so a move off the share would lose them for good. On a share with streams a copy
+  carries the fork as the `AFP_Resource` stream (§ "Xattrs on copies"), so the sidecar is a duplicate once the file is
+  gone.
+- **A walk's own delete of a taken sidecar is done.** A folder delete lists `._a` beside `a`; if `a` goes first, the
+  walk's delete of `._a` would answer `NotFound`, which the volume walker reads as a failure on a first try
+  (`crates/cmdr-operations/src/delete/DETAILS.md` § "Waiting out a dropped share"). So a taken sidecar is remembered
+  (FIFO, 4,096, `Sidecars::take_back`) BEFORE its delete goes out, and one later `NotFound` for exactly that path
+  answers `Ok`. A batch (`delete_files`) already reads `NotFound` as done.
+- **Best-effort**: a probe that can't read logs at debug, a sidecar that won't delete at warn, and neither fails the
+  user's delete. A taken sidecar patches its folder's listing with its own `Deleted`.
+- **Folders** too: `._Folder` beside a deleted folder goes the same way.
+- **Rename and move within the share**: the server takes the sidecar along (verified on the QNAP by smb2, 2026-11-03),
+  so Cmdr does nothing there. A move OFF the share is a copy plus a delete of the source, so the delete takes it.
+- **Trash**: SMB has no trash (`trash_dir_for_path` answers `None`), so a direct-SMB "trash" is a delete. A Finder mount
+  trashes through macOS, which moves the sidecar itself.
+- **Undo and the recycle bin**: a delete isn't rollbackable, and the sidecar isn't journaled; the deleted file's own
+  journal row is unchanged. A rollback that deletes a copy Cmdr made takes its server-made sidecar too, and an undone
+  move off the share writes the fork back as a stream, which the server stores as a fresh `._` file. On a QNAP the
+  sidecar's delete is a move into `@Recycle` beside its file, so restoring both there restores the fork (by design of
+  the recycle bin; not verified).
+- **Not verified on the QNAP itself**: the fixture is the guest share playing one (visible `._` files plus a forced
+  `stores_xattrs`), since `smb-consumer-fruit` vetoes `._` names (`fruit:veto_appledouble`'s default).
 
 ## Server-side copy (copychunk)
 
@@ -1668,6 +1711,8 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   or period, and so on), which the `unicode` fixture container seeds in the private-use bytes macOS smbfs writes: they
   list as the characters themselves with no private-use code point left, open and read (also through a directory whose
   own name carries one), and a name Cmdr writes round-trips.
+- `apple_double_integration_test.rs` — a delete taking its AppleDouble sidecar along (§ "AppleDouble sidecars"), on the
+  guest share playing a QNAP; `apple_double_test.rs` holds its server-free half.
 - `transfer_session_test.rs` — the transfer session against a real server, plus two server-free cells (§ "The transfer
   session").
 - `dfs_links_integration_test.rs` — every call family through a DFS link, against smb2's internal DFS fixtures, run by
