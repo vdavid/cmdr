@@ -171,6 +171,8 @@ export const appAnswers: AnswerTable = {
   getNetworkDiscoveryState: () => 'idle',
   suggestedOpsList: empty,
   agentWakeStatus: () => ({ phase: { phase: 'idle' }, readiness: 'askCmdrOff' }),
+  // The AI features need the app's local model or a provider key; a page has neither.
+  getAiStatus: () => 'unavailable',
   getAiRuntimeStatus: () => ({
     serverRunning: false,
     serverStarting: false,
