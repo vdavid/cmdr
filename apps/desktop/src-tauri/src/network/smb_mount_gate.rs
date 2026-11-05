@@ -23,7 +23,6 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Duration;
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::log_private::LogPrivate;
@@ -135,7 +134,8 @@ pub(crate) struct UnverifiedSmbMount {
 
 /// How long `smbutil statshares` may take. It reads the kernel's own state for one
 /// mount (tens of milliseconds); the limit only bounds a wedged mount.
-const STATSHARES_LIMIT: Duration = Duration::from_secs(5);
+#[cfg(target_os = "macos")]
+const STATSHARES_LIMIT: std::time::Duration = std::time::Duration::from_secs(5);
 
 impl UnverifiedSmbMount {
     fn new(mount: LocalPosixVolume) -> Self {
