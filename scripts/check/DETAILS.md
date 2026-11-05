@@ -644,9 +644,10 @@ orchestrator), `registry.go`, `inputs.go`, `fingerprint.go`, `cache.go`, `runner
 `test-log.go`, `fixture-stacks.go`, `smb_ports.go`, `sftp_ports.go`, plus `go.mod`, `go.sum`, `scripts/check.sh`, and
 `.mise.toml`. Package `main` imports `checks` and never the reverse, so nothing a check reaches can reveal that the
 EXECUTOR uses a symbol; `TestRunnerCoreCoversWhatTheExecutorReaches` walks package `main`'s `checks.X` references and
-fails when one resolves to a non-core file. Three names are exempt with a reason at the declaration site:
-`NightlyToolchain` (`--print-nightly`), `CargoModulesVersion` (`--print-cargo-modules-version`), and `BuildDocGraph` /
-`DocGraph` (the `--docs-graph` renderer), none of which runs during a check.
+fails when one resolves to a non-core file. A few names are exempt with a reason at the declaration site:
+`NightlyToolchain` (`--print-nightly`), `CargoModulesVersion` (`--print-cargo-modules-version`), `NextestVersion`
+(`--print-nextest-version`), `ComputeRustTestScope` (`--print-rust-test-scope`), and `BuildDocGraph` / `DocGraph` (the
+`--docs-graph` renderer), none of which runs during a check.
 
 **The per-check half (`runner-sources.go`)** is derived from the AST at plan time, because the whole runner is ONE Go
 package and package-level analysis buys nothing. Two rules, no type information:

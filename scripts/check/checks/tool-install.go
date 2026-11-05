@@ -161,8 +161,10 @@ func installExecutable(binary []byte, destination string) error {
 // against it.
 const NextestVersion = "0.9.136"
 
-// EnsureCargoNextest installs `cargo-nextest` at NextestVersion unless it's already on
-// PATH.
+// EnsureCargoNextest installs `cargo-nextest` at NextestVersion unless that exact version
+// is already on PATH. Any other version gets replaced: a `~/.cargo/bin` that outlives a
+// pin bump (a dev machine, the M1's CI slots, a restored Rust cache) otherwise kept the
+// old binary forever, and the parsers here are written against NextestVersion's output.
 //
 // ❗ Every check that shells out to `cargo nextest` must call this first, even one that
 // only *lists* tests. CI runs `nextest-filter-coverage` before the lanes that run tests,
@@ -172,13 +174,25 @@ const NextestVersion = "0.9.136"
 // install.
 func EnsureCargoNextest() error {
 	if CommandExists("cargo-nextest") {
-		return nil
+		output, _ := exec.Command("cargo", "nextest", "--version").Output()
+		if nextestVersionIs(string(output), NextestVersion) {
+			return nil
+		}
 	}
-	installCmd := exec.Command("cargo", "install", "cargo-nextest", "--version", NextestVersion, "--locked")
+	// `--force`, so a different installed version gets replaced instead of refused.
+	installCmd := exec.Command("cargo", "install", "cargo-nextest", "--version", NextestVersion, "--locked", "--force")
 	if _, err := RunCommand(installCmd, true); err != nil {
 		return fmt.Errorf("failed to install cargo-nextest: %w", err)
 	}
 	return nil
+}
+
+// nextestVersionIs says whether `cargo nextest --version` output names exactly want. Its
+// first line reads `cargo-nextest 0.9.136 (1d5bf1ec9 2026-05-16)`.
+func nextestVersionIs(output, want string) bool {
+	firstLine, _, _ := strings.Cut(output, "\n")
+	fields := strings.Fields(firstLine)
+	return len(fields) >= 2 && fields[0] == "cargo-nextest" && fields[1] == want
 }
 
 // GoToolsBinPath is where the pinned Go analyzers live, alongside the check cache in the one
