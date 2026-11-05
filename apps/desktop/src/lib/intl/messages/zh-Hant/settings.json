@@ -166,9 +166,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "交替的橫列底色，方便逐列查看。完整和簡潔顯示方式都適用。",
+  "settings.listing.stripedRows.description": "交替的橫列底色，方便逐列查看。「完整顯示方式」和「簡潔顯示方式」都適用。",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "條紋, 斑馬紋, 交錯, 間隔色, 橫列, 列, 底色, 輔助使用, 協助工具",
   "@settings.listing.stripedRows.keywords": {
@@ -822,9 +822,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "總是為 {name} 上的照片建立索引",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "總是為這部磁碟機建立索引：{name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "已暫停，將在這部磁碟機重新連線時繼續",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -942,9 +942,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "刪除多餘的已建立索引項目",
+  "settings.mediaIndex.reclaim.confirmTitle": "要刪除多餘的已建立索引項目嗎？",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "要刪除 {doomed, plural, other {{doomedText} 個已建立索引的項目}} 以釋出約 {size} 嗎？你之後可以重新為這些影像建立索引，但重新讀取需要時間。",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1091,9 +1091,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "不顯示最新下載項目快速鍵的詢問",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "不要再詢問最新下載項目的快速鍵",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "你第一次在任何 App 中按下跳至最新下載項目的快速鍵時，Cmdr 會問你要不要繼續開著。更改快速鍵會關閉這一項，這樣新的按鍵組合也會被問到。關閉這一項，就能再看一次這個詢問。",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1240,9 +1240,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "模型在回答前要思考多久。強度越高越能處理棘手的任務，但回覆會比較慢，思考過程也會按輸出計費。",
+  "settings.ai.reasoningEfforts.description": "模型在回答前要思考多久。思考越多，越能處理棘手的任務，但回覆會比較慢，思考過程也會按輸出計費。",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "推理強度, 投入程度, 推理, 思考, 強度, 深度, 速度, 費用, 成本, 品質",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1460,9 +1460,9 @@
   "@settings.fileExplorer.git.showStatusColumn.label": {
     "sourceHash": "0f6a836"
   },
-  "settings.fileExplorer.git.showStatusColumn.description": "在完整模式下加上一欄，顯示每個檔案的 git 狀態（已修改、未追蹤等）。",
+  "settings.fileExplorer.git.showStatusColumn.description": "在「完整顯示方式」下加上一欄，顯示每個檔案的 git 狀態（已修改、未追蹤等）。",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "狀態, 欄, 已修改, 未追蹤, 已忽略, 已加入, 已刪除",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1762,11 +1762,11 @@
   },
   "settings.fileOperations.showAlreadyGoneToast.label": "要刪除的項目已經不在時顯示提示",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "如果你刪除的東西已經被其他 App 移走或刪除，Cmdr 會當作完成，並顯示一則簡短的提示。關閉這個選項（或在提示裡按一下「不要再顯示」），就不會再看到這則提示。",
+  "settings.fileOperations.showAlreadyGoneToast.description": "如果你刪除的東西已經被其他 App 移走或刪除，Cmdr 會當作完成，並顯示一則簡短的提示。關閉這個選項（或在提示裡按一下「不要再顯示」），就能停止顯示這類提示。",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "消失, 不見了, 找不到, 移走, 通知, 提示, 彈出",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2427,9 +2427,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr 使用你的雲端 AI 服務。在 AI 設定中允許使用雲端 AI，就能開始聊天。",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr 使用你的雲端 AI 服務。在 AI 設定中開啟「允許使用雲端 AI」，就能開始聊天。",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "開啟 AI 設定",
   "@settings.askCmdr.openAiSettings": {
@@ -2938,25 +2938,25 @@
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "2 位數月份（01-12）",
+  "settings.appearance.formatHelpMonth": "2 位數月份（01–12）",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
-  "settings.appearance.formatHelpDay": "2 位數日期（01-31）",
+  "settings.appearance.formatHelpDay": "2 位數日期（01–31）",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
-  "settings.appearance.formatHelpHour": "2 位數小時（00-23）",
+  "settings.appearance.formatHelpHour": "2 位數小時（00–23）",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
-  "settings.appearance.formatHelpMinute": "2 位數分鐘（00-59）",
+  "settings.appearance.formatHelpMinute": "2 位數分鐘（00–59）",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
-  "settings.appearance.formatHelpSecond": "2 位數秒數（00-59）",
+  "settings.appearance.formatHelpSecond": "2 位數秒數（00–59）",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "為窗格加上一層淡淡的背景著色，讓你一眼就能分辨卷宗類型。",
   "@settings.appearance.tintGroupDescription": {
@@ -3163,9 +3163,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "在「鍵盤快速鍵 → 前往最新下載項目（全域）」底下更改這個快速鍵。",
+  "settings.fileSystemWatching.globalShortcutHint": "在「鍵盤快速鍵 → 前往最新下載項目」底下更改這個快速鍵。",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "{localNetwork} 存取權",
   "@settings.network.localNetworkAccessLabel": {

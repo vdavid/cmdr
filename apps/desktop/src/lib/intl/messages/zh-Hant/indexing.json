@@ -249,9 +249,9 @@
   "@indexing.enrich.label": {
     "sourceHash": "442068b"
   },
-  "indexing.enrich.progress": "{total, plural, one {{doneText} of {totalText} image} other {{doneText} of {totalText} images}}",
+  "indexing.enrich.progress": "{total, plural, other {{totalText} 張影像中的 {doneText} 張}}",
   "@indexing.enrich.progress": {
-    "sourceHash": "b307416"
+    "sourceHash": "7cf480d"
   },
   "indexing.enrich.rate": "{rateText} 個/分鐘",
   "@indexing.enrich.rate": {

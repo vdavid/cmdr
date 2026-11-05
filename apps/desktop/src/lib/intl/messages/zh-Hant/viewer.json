@@ -47,9 +47,9 @@
   "@viewer.error.coldStorage": {
     "sourceHash": "236cd1b"
   },
-  "viewer.error.linkTargetUnreachable": "這個檔案要透過連結連到另一個伺服器，而 Cmdr 現在連不上那個伺服器。請確認伺服器正在執行，然後再試一次。",
+  "viewer.error.linkTargetUnreachable": "這個檔案的路徑要透過連結連到另一個伺服器，而 Cmdr 現在連不上那個伺服器。請確認伺服器正在執行，然後再試一次。",
   "@viewer.error.linkTargetUnreachable": {
-    "sourceHash": "8dcb736"
+    "sourceHash": "0540c9a"
   },
   "viewer.error.retry": "再試一次",
   "@viewer.error.retry": {

@@ -1633,6 +1633,13 @@
     "forms": "quoted: 「完全取用磁碟」; badge 沒有「完全取用磁碟」權限",
     "sources": "AP SecurityPrivacyExtension ALL_FILES (macOS 26.6.2 and 27.0)"
   },
+  "full-view": {
+    "accept": ["完整"],
+    "chosen": "完整顯示方式",
+    "confidence": "high",
+    "forms": "quoted in prose: 「完整顯示方式」 (matches menu.view.fullView)",
+    "sources": "shipped menu.view.fullView; view-mode suffix 顯示方式 per AP-TW Finder (列表顯示方式, 直欄顯示方式), pairs with brief-view 簡潔顯示方式"
+  },
   "full-screen": {
     "chosen": "全螢幕",
     "confidence": "high",
@@ -2671,7 +2678,6 @@
     "exceptions": {
       "feedback.sentToast": "We read every note → 我們每一則都會讀: the classifier 則 carries the note, and 留言 is named in feedback.dialog.description.",
       "feedback.sentWithoutLogsToast": "Opens with feedback.sentToast verbatim (我們每一則都會讀), as its English does.",
-      "settings.fileOperations.showAlreadyGoneToast.description": "This “note” is the short toast Cmdr shows, not text the user writes: 提示.",
       "ai.cloudConsent.askCmdr.protectedContents": "Notes is the Apple app: its own name 備忘錄 (macOS Notes.app, zh_TW CFBundleName)."
     },
     "forms": "a note on an error report → 備註; Ask Cmdr’s saved notes → 筆記; the feedback message → 留言",
@@ -3508,7 +3514,6 @@
     "confidence": "confirmed",
     "decision": "Selection",
     "exceptions": {
-      "ui.select.placeholder": "A dropdown placeholder is choose-one: Apple's 請選擇⋯.",
       "viewer.copy.readTooLong": "A smaller selection of text: 選少一點.",
       "viewer.saveAs.tooLong": "Same as viewer.copy.readTooLong: 選少一點."
     },
@@ -3726,9 +3731,6 @@
     ],
     "chosen": "略過",
     "confidence": "confirmed",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "“Skip the note” means not seeing a toast, not leaving an item out of an operation: 就不會再看到這則提示."
-    },
     "sources": "AP-TW = AP-HK, NAU, THU, DC"
   },
   "slideshow": {

@@ -75,9 +75,9 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "看起來你之前給過「完全取用磁碟」權限，後來又收回了。",
+  "onboarding.stepFda.revoked.intro": "看起來你之前給過「完全取用磁碟」權限，後來又把它關掉了。",
   "@onboarding.stepFda.revoked.intro": {
-    "sourceHash": "9087914"
+    "sourceHash": "6759357"
   },
   "onboarding.stepFda.revoked.noAccess": "這個 App 目前沒有「完全取用磁碟」權限。",
   "@onboarding.stepFda.revoked.noAccess": {
@@ -241,7 +241,7 @@
   },
   "onboarding.stepAi.table.renameWithout": "你在「多檔重新命名」裡手動設好命名樣式，檢查過後再套用。",
   "@onboarding.stepAi.table.renameWithout": {
-    "sourceHash": "e7531dc"
+    "sourceHash": "1b85bf6"
   },
   "onboarding.stepAi.table.renameWith": "你說「加上 ISO 日期前綴」，代理程式就幫你設好命名樣式，你檢查過後隨時可以套用。",
   "@onboarding.stepAi.table.renameWith": {

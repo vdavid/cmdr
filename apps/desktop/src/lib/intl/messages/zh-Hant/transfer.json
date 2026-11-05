@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "這部伺服器無法儲存 {classes}，所以這些資訊沒有一起帶過去。",
+  "transfer.metadataLeftBehind": "這個目標位置無法儲存部分資訊，所以這些資訊沒有一起帶過去：{classes}。",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, other {有 {countText} 個已鎖定的項目留在原處。}}",
   "@transfer.lockedSkipped": {

@@ -770,7 +770,7 @@
   },
   "askCmdr.limit.repeatedCall.answered": "這次回答一再重複同一次查詢，所以 Cmdr 讓它停止查找，用已經找到的內容作答。",
   "@askCmdr.limit.repeatedCall.answered": {
-    "sourceHash": "884a9ae"
+    "sourceHash": "c603b8c"
   },
   "askCmdr.limit.repeatedCall.unfinished": "這次回答一再重複同一次查詢，所以 Cmdr 在它完成前就停止了它。",
   "@askCmdr.limit.repeatedCall.unfinished": {
@@ -778,7 +778,7 @@
   },
   "askCmdr.limit.noProgress.answered": "這次回答最近 {maxText} {max, plural, other {輪查詢}}都沒有找到新內容，所以 Cmdr 讓它停止查找，用已經找到的內容作答。",
   "@askCmdr.limit.noProgress.answered": {
-    "sourceHash": "6dc1bc0"
+    "sourceHash": "574fe02"
   },
   "askCmdr.limit.noProgress.unfinished": "這次回答最近 {maxText} {max, plural, other {輪查詢}}都沒有找到新內容，所以 Cmdr 在它完成前就停止了它。",
   "@askCmdr.limit.noProgress.unfinished": {
@@ -916,9 +916,9 @@
   "@askCmdr.sessions.renameLabel": {
     "sourceHash": "17a3048"
   },
-  "askCmdr.sessions.archive": "封存",
+  "askCmdr.sessions.archive": "封存對話",
   "@askCmdr.sessions.archive": {
-    "sourceHash": "66f4804"
+    "sourceHash": "9bd687c"
   },
   "askCmdr.sessions.unarchive": "取消封存",
   "@askCmdr.sessions.unarchive": {
@@ -1224,17 +1224,17 @@
   "@askCmdr.renameReview.stopChecking": {
     "sourceHash": "4373037"
   },
-  "askCmdr.renameReview.checkUnfinished": "Cmdr 還有 {count, plural, other {# 個檔案}}沒檢查完，所以還不能重新命名。",
+  "askCmdr.renameReview.checkUnfinished": "{count, plural, other {還有 # 個檔案沒檢查}}，所以 Cmdr 還不能重新命名。",
   "@askCmdr.renameReview.checkUnfinished": {
-    "sourceHash": "c3c05ce"
+    "sourceHash": "1160511"
   },
   "askCmdr.renameReview.checkAgain": "重新檢查",
   "@askCmdr.renameReview.checkAgain": {
     "sourceHash": "fb7099a"
   },
-  "askCmdr.renameReview.needsAnotherLook": "Cmdr 檢查過這些名稱之後，有些地方變了，所以沒有重新命名任何檔案。請再看一遍，然後再試一次。",
+  "askCmdr.renameReview.needsAnotherLook": "Cmdr 檢查過這些名稱之後，有些地方變了，所以什麼都沒有重新命名。請檢查這些名稱，然後再試一次。",
   "@askCmdr.renameReview.needsAnotherLook": {
-    "sourceHash": "36c6050"
+    "sourceHash": "5e7d2da"
   },
   "askCmdr.renameReview.couldntStart": "Cmdr 無法開始這項重新命名，什麼都沒有變動。請稍後再試一次。",
   "@askCmdr.renameReview.couldntStart": {
@@ -1256,9 +1256,9 @@
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },
-  "askCmdr.renameUndo.swapsSkipped": "已略過 {countText} 項會互換名稱的{count, plural, other {重新命名}}。請一次重新命名一個。",
+  "askCmdr.renameUndo.swapsSkipped": "已略過 {countText} 項會互換名稱的{count, plural, other {重新命名}}。請把這些項目一個一個重新命名。",
   "@askCmdr.renameUndo.swapsSkipped": {
-    "sourceHash": "90e8dfc"
+    "sourceHash": "bb3ee75"
   },
   "askCmdr.renameUndo.notRecorded": "操作記錄已關閉，所以沒辦法把名稱改回去。",
   "@askCmdr.renameUndo.notRecorded": {
@@ -1300,9 +1300,9 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "有 {countText} 個{count, plural, other {檔案}}維持原樣：它們在重新命名之後有過更動。",
+  "askCmdr.renameUndo.skipReason.drift.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：它們在重新命名之後有過更動。",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "217d1e8"
+    "sourceHash": "dbeb782"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "找不到 {name}：它在重新命名之後被移動或刪除了。",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
@@ -1316,17 +1316,17 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "有 {countText} 個{count, plural, other {檔案}}維持原樣：它們原本的名稱又被佔走了。",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：它們原本的名稱又被佔走了。",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "2fd2e7a"
+    "sourceHash": "409140a"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} 維持原樣：Cmdr 無法確認它有沒有更動過。",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "有 {countText} 個{count, plural, other {檔案}}維持原樣：Cmdr 無法確認它們有沒有更動過。",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：Cmdr 無法確認它們有沒有更動過。",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "5964166"
+    "sourceHash": "25fe620"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "資料夾 {name} 維持原樣：它裡面現在有東西了。",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
@@ -1340,9 +1340,9 @@
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "有 {countText} 個{count, plural, other {檔案}}維持原樣：Cmdr 無法把它們原本的名稱改回去。",
+  "askCmdr.renameUndo.skipReason.failed.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：Cmdr 無法把它們原本的名稱改回去。",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "f13c021"
+    "sourceHash": "cf38d62"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr 無法還原 {countText} {count, plural, other {批}}。詳情在操作記錄裡。",
   "@askCmdr.renameUndo.refusedBatches": {

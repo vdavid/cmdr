@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Cmdr 讀取 `{path}` 時遇到了預期之外的狀況。看看下方的技術詳細資訊，裡面有具體的系統代碼，對排查很有幫助。",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr 讀取 `{path}` 時遇到了預期之外的狀況。看看下方的「技術詳細資訊」，裡面有具體的系統代碼，對排查很有幫助。",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "可以這樣試試：\n- 確認磁碟或裝置仍然連接著\n- 再次進入這裡重試\n- 如果一直這樣，開啟**磁碟工具程式**，對這個卷宗執行**修理工具**",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -593,7 +593,7 @@
   },
   "errors.listing.linkTargetUnreachable.explanation": "`{path}` 要透過連結連到另一個伺服器，而 Cmdr 現在連不上那個伺服器。這個共享資料夾的其他地方都沒問題，也沒有任何東西被刪除。",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "可以這樣試試：\n- 確認另一個伺服器正在執行，而且你的網路連得上它\n- 再次進入這裡重試",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "伺服器的回覆沒有有效的簽章，所以 Cmdr 停下來了。",
+  "errors.write.replySignatureRefused.message": "伺服器的回覆沒有有效的簽章，所以 Cmdr 到這裡就停止了。",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "網路裝置不穩定可能造成這種情況，有人竄改你和伺服器之間傳輸的資料也可能。請重新連線，如果再次發生，請檢查你的網路。",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "目標裝置",
+  "errors.write.readOnlyDevice.destination.fallbackName": "目標位置",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "檔案已鎖定",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "這裡要透過連結連到另一個伺服器，而 Cmdr 現在連不上那個伺服器。",
+  "errors.volume.linkTargetUnreachable": "這個路徑要透過連結連到另一個伺服器，而 Cmdr 現在連不上那個伺服器。",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "裝置重新建立了連線。等個幾秒再試一次。",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "連線沒有及時回應。",
+  "errors.volume.connectionTimeout": "伺服器或裝置沒有及時回應。",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr 按你的要求停下來了。",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "伺服器的回覆沒有有效的簽章，所以 Cmdr 停下來了。",
+  "errors.volume.signatureInvalid": "伺服器的回覆沒有有效的簽章，所以 Cmdr 到這裡就停止了。",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "這個卷宗沒能完成那件事。",
   "@errors.volume.ioError": {
@@ -2369,13 +2369,13 @@
   "@errors.eject.unmountRefused": {
     "sourceHash": "f855a33"
   },
-  "errors.eject.unmountRefusedByApp": "{app} 還在使用那裡的某些內容。請把它關掉，然後再試一次。",
+  "errors.eject.unmountRefusedByApp": "{app} 還在使用那裡的某些內容。請關閉那個 App，然後再試一次。",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
-  "errors.eject.unmountRefusedByApps": "{apps} 還在使用那裡的某些內容。請把它們關掉，然後再試一次。",
+  "errors.eject.unmountRefusedByApps": "{apps} 還在使用那裡的某些內容。請關閉這些 App，然後再試一次。",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "其他 App",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "選取的項目有一部分在虛擬資料夾裡",
+  "errors.write.sourcesSpanVolumes.title": "選取的項目有一部分在備份、封存檔或 git 歷史記錄裡",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} 位在備份的快照、封存檔或存放庫的歷史記錄裡，其他選取的項目卻不是，所以 Cmdr 無法一起讀取。什麼都沒有更動。",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "分兩步來做：先單獨處理虛擬資料夾裡的項目，再處理其餘的項目。",
+  "errors.write.sourcesSpanVolumes.suggestion": "分兩步來做：先單獨處理這些項目，再處理其餘的項目。",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "一個一個地移動，或者先幫其中一個改名。",
   "@errors.write.duplicateSourceNames.suggestion.move": {

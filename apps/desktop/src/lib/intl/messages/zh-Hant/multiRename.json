@@ -171,9 +171,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "你已經有 {max, number} 個預設組，這是 Cmdr 的上限。刪除一個，就能儲存這個預設組。",
+  "multiRename.presets.listFull": "你已經有 {max, plural, other {# 個預設組}}，這是 Cmdr 的上限。刪除一個，就能儲存這個預設組。",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "取代",
   "@multiRename.presets.replace": {
@@ -223,13 +223,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "和另一個檔案同名",
+  "multiRename.status.duplicate": "和另一個項目同名",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
   "multiRename.status.targetExists": "名稱已被佔用",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "不是有效的名稱",
   "@multiRename.status.invalidName": {
@@ -383,17 +383,17 @@
   "@multiRename.status.ready": {
     "sourceHash": "f032574"
   },
-  "multiRename.reason.duplicate": "這一批裡的另一個檔案也會得到相同的新名稱，所以兩個都不會重新命名。",
+  "multiRename.reason.duplicate": "這一批裡的另一個項目也會得到相同的新名稱，所以兩個都不會重新命名。",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
-  "multiRename.reason.targetExists": "留在這個資料夾裡的另一個檔案已經用了這個名稱，所以這個檔案保留原本的名稱。",
+  "multiRename.reason.targetExists": "留在這個資料夾裡的另一個項目已經用了這個名稱，所以這個項目保留原本的名稱。",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
-  "multiRename.reason.missing": "開啟「多檔重新命名」之後，這個檔案被移動或刪除了，所以略過它。",
+  "multiRename.reason.missing": "開啟「多檔重新命名」之後，這個項目被移動或刪除了，所以略過它。",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "正在讀取⋯",
   "@multiRename.status.reading": {
@@ -403,13 +403,13 @@
   "@multiRename.status.noValue": {
     "sourceHash": "619464f"
   },
-  "multiRename.reason.noValue": "這個檔案沒有「{field}」的值，所以保留原本的名稱。",
+  "multiRename.reason.noValue": "這個項目沒有「{field}」的值，所以保留原本的名稱。",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "這個檔案沒有「{field}」的值，所以保留原本的名稱。預留位置的編輯器可以改用檔案上次更改的日期。",
+  "multiRename.reason.noDate": "這個項目沒有「{field}」的值，所以保留原本的名稱。預留位置的編輯器可以改用項目上次更改的日期。",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "無法讀取標籤",
   "@multiRename.status.unreadable": {
@@ -632,9 +632,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "已略過 {count, plural, other {# 項會互換名稱的重新命名}}。請一次重新命名一個。",
+  "multiRename.swapsSkipped": "{count, plural, other {已略過 # 項會互換名稱的重新命名}}。請把這些項目一個一個重新命名。",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "「多檔重新命名」無法在封存檔裡使用",
   "@multiRename.archiveTitle": {

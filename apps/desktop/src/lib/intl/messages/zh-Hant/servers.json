@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "在伺服器上按右鍵並選擇「從切換器取消釘選」，或在指令面板中使用「{command}」。它仍會留在「伺服器」列表裡。",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "知道了",
   "@servers.pinHint.gotIt": {
@@ -65,7 +65,7 @@
   },
   "servers.hub.neverUsed": "從未使用",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "以 {username} 身分登入",
   "@servers.hub.shareAccount": {
@@ -381,7 +381,7 @@
   },
   "servers.sheet.addAnywayHelp": "Cmdr 無法檢查這個伺服器，所以「仍要加入」會照你輸入的樣子把它儲存起來。",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "退出並儲存",
   "@servers.sheet.ejectAndSave": {
@@ -527,9 +527,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS 最多可以傳送 16 個其他群組，而這裡列出了 {count} 個。",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS 最多只能傳送 16 個其他群組，而這個列表有 {count, plural, other {# 個群組}}。",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "伺服器會依這些號碼決定你能開啟什麼。NFS 不會問你密碼。",
   "@servers.sheet.nfsIdentityHelp": {
@@ -928,9 +928,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "暫時停止嘗試。連線仍然可用，切換回來就會繼續試。",
+  "servers.paneState.cancelCycleTooltip": "暫時停止嘗試。連線仍然可用，再次開啟這部伺服器就會重試。",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "停止嘗試並中斷與伺服器的連線。",
   "@servers.paneState.disconnectCycleTooltip": {
