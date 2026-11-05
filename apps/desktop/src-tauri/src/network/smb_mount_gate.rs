@@ -37,7 +37,11 @@ use crate::file_system::volume::{ListingProgress, Volume, VolumeError};
 pub(crate) enum MountEncryption {
     /// The session runs an encryption algorithm.
     Encrypted,
-    /// The session runs in the clear.
+    /// The session runs in the clear. Only macOS's `smbutil statshares` reports it.
+    #[cfg_attr(
+        not(any(target_os = "macos", test)),
+        expect(dead_code, reason = "only the macOS probe can see a session in the clear")
+    )]
     NotEncrypted,
     /// The probe couldn't tell. Treated as not encrypted.
     Unknown,
@@ -305,6 +309,7 @@ async fn probe(_root: PathBuf) -> MountEncryption {
 /// Verified on macOS 27.0.1, against Samba on Alpine (the `auth` fixture as is, and
 /// a copy with `smb encrypt = required`) and a QNAP, `smbutil statshares -m` on each
 /// mount, 2026-11-05. Snapshot: `smb_mount_gate_test.rs`.
+#[cfg(any(target_os = "macos", test))]
 pub(crate) fn parse_statshares(stdout: &str) -> MountEncryption {
     stdout
         .lines()
