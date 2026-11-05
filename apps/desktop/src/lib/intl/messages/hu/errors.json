@@ -1989,6 +1989,46 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
+  "errors.write.homeFolderMove.title": "Kérlek, ne helyezd át a saját mappádat",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "Hé, a saját mappád pont ott jó, ahol van. Ha áthelyezed, a Mac a következő bejelentkezéskor rossz helyen fog keresni téged.",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "Ezt nem helyezheted át: <code>{path}</code>, mert benne van a saját mappád, és a Mac pont ott számít rá, ahol most van.",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "Ha máshol szeretnéd tartani a fájljaidat, menj be, válaszd ki, amire szükséged van, és azt helyezd át. A Mac hálás lesz érte.",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "Ha néhány fájlt szeretnél áthelyezni, légy egy kicsit konkrétabb, és belülről válaszd ki őket.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "Kérlek, ne nevezd át a saját mappádat",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "Hé, a Mac ezen a néven ismeri a saját mappádat. Ha átnevezed, a következő bejelentkezéskor nem fog rád találni.",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "Ezt nem nevezheted át: <code>{path}</code>, mert benne van a saját mappád, és a Mac pontosan ezen az útvonalon számít rá.",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "Ha tényleg új név kell, a macOS-ben erre van egy óvatos módszer a „Felhasználók és csoportok” beállításoknál. Csak hát ez nem egy gyors F2.",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Inkább valamit belül nevezz át, vagy hagyd ezt békén. Többet tart a hátán, mint gondolnád.",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "Ez a fájl megváltozott másolás közben",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

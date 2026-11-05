@@ -1989,6 +1989,46 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
+  "errors.write.homeFolderMove.title": "Ne déplacez pas votre dossier personnel, s’il vous plaît",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "Hé, votre dossier personnel est très bien là où il est. Si vous le déplacez, votre Mac vous cherchera au mauvais endroit à la prochaine ouverture de session.",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "Vous ne pouvez pas déplacer <code>{path}</code>, car votre dossier personnel s’y trouve, et votre Mac s’attend à le trouver exactement là où il est.",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "Si vous voulez mettre vos fichiers ailleurs, allez dedans, choisissez ce qu’il vous faut et déplacez-le. Votre Mac vous remerciera.",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "Si vous voulez déplacer quelques fichiers, visez un peu plus précisément et choisissez-les à l’intérieur.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "Ne renommez pas votre dossier personnel, s’il vous plaît",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "Hé, votre Mac connaît votre dossier personnel sous ce nom. Si vous le renommez, votre Mac ne vous retrouvera plus à la prochaine ouverture de session.",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "Vous ne pouvez pas renommer <code>{path}</code>, car votre dossier personnel s’y trouve, et votre Mac s’attend à le trouver précisément à ce chemin.",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "Si vous avez vraiment besoin d’un nouveau nom, macOS propose une méthode prudente dans « Utilisateurs et groupes ». Ce n’est pas un simple F2, cela dit.",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Renommez plutôt quelque chose à l’intérieur, ou laissez celui-ci tranquille. Il porte bien plus qu’il n’y paraît.",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "Ce fichier a changé pendant la copie",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

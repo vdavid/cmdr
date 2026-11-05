@@ -1989,6 +1989,46 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
+  "errors.write.homeFolderMove.title": "Пожалуйста, не перемещайте папку пользователя",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "Эй, вашей папке пользователя самое место там, где она сейчас. Если ее переместить, при следующем входе ваш Mac будет искать вас не там.",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "Папку <code>{path}</code> переместить нельзя: в ней находится ваша папка пользователя, а ваш Mac ожидает найти ее ровно там, где она сейчас.",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "Если хотите, чтобы файлы лежали в другом месте, зайдите в нее, выберите то, что нужно, и переместите это. Ваш Mac скажет вам спасибо.",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "Если хотите переместить какие-то файлы, выберите что-нибудь поконкретнее внутри.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "Пожалуйста, не переименовывайте папку пользователя",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "Эй, ваш Mac знает вашу папку пользователя именно под этим именем. Если ее переименовать, при следующем входе он вас не найдет.",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "Папку <code>{path}</code> переименовать нельзя: в ней находится ваша папка пользователя, а ваш Mac ожидает найти ее именно по этому пути.",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "Если новое имя действительно нужно, в macOS есть аккуратный способ сделать это в разделе «Пользователи и группы». Только это не быстрое F2.",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Лучше переименуйте что-нибудь внутри или оставьте эту папку в покое. На ней держится больше, чем кажется.",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "Файл изменился во время копирования",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

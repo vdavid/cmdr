@@ -1655,6 +1655,7 @@
     "chosen": "分组",
     "confidence": "tentative",
     "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHome": "Quotes Apple’s System Settings pane 用户与群组 exactly (verified on macOS 27.0.1 (26A434), UsersGroups.appex InfoPlist.loctable, 2026-11-05).",
       "servers.sheet.nfsGid": "A Unix file group, not a group of rows: 群组 ID, Finder's own word for a permission group (Get Info 选择新用户或群组, IN_S20.1) and Synology DSM's 用户与群组.",
       "servers.sheet.nfsOtherGids": "Same Unix group as servers.sheet.nfsGid, so the field reads 其他群组 ID right under 群组 ID.",
       "servers.sheet.nfsOtherGidsNotIds": "Same Unix group as servers.sheet.nfsGid; names that field's 群组 ID.",

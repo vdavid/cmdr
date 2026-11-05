@@ -22,8 +22,8 @@
       "why": "a slashed article or pronoun hedging an unknown gender; repeat the noun (das Objekt) or rephrase"
     },
     {
-      "pattern": "\\p{L}[*:_·](?:in|innen)\\b|\\p{Ll}Innen\\b",
-      "why": "a gender star, colon, or Binnen-I; restructure to du or a neutral noun"
+      "pattern": "\\p{L}[*:_·](?:in|innen)\\b(?! & Gruppen“)|\\p{Ll}Innen\\b",
+      "why": "a gender star, colon, or Binnen-I; restructure to du or a neutral noun (Apple's own pane label „Benutzer:innen & Gruppen“, verified on macOS 27.0.1 (26A434) UsersGroups.appex InfoPlist.loctable, is quoted exactly)"
     }
   ]
 }

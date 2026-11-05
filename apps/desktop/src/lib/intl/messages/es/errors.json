@@ -1989,6 +1989,46 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
+  "errors.write.homeFolderMove.title": "Por favor, no muevas tu carpeta de inicio",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "Oye, tu carpeta de inicio vive justo donde está. Si la mueves, la próxima vez que inicies sesión tu Mac te buscará en el lugar equivocado.",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "No puedes mover <code>{path}</code> porque tu carpeta de inicio está ahí dentro, y tu Mac espera encontrarla justo donde está.",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "Si quieres tener tus archivos en otro lugar, entra en ella, elige lo que necesites y muévelo. Tu Mac te lo agradecerá.",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "Si quieres mover algunos archivos, afina un poco más y elígelos desde dentro.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "Por favor, no renombres tu carpeta de inicio",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "Oye, tu Mac conoce tu carpeta de inicio por este nombre. Si la renombras, no te encontrará la próxima vez que inicies sesión.",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "No puedes renombrar <code>{path}</code> porque tu carpeta de inicio está ahí dentro, y tu Mac espera encontrarla exactamente en esta ruta.",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "Si de verdad necesitas un nombre nuevo, macOS tiene una forma cuidadosa de hacerlo en “Usuarios y grupos”. Eso sí, no es un F2 rápido.",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Mejor renombra algo de dentro, o deja esta carpeta en paz. Sostiene más de lo que parece.",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "Este archivo ha cambiado durante la copia",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

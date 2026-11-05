@@ -1989,6 +1989,46 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
+  "errors.write.homeFolderMove.title": "Snälla, flytta inte din hemmapp",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "Hallå, din hemmapp bor precis där den är. Flyttar du den letar din Mac efter dig på fel ställe nästa gång du loggar in.",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "Du kan inte flytta <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den precis där den är.",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "Om du vill ha dina filer någon annanstans, gå in där, välj det du behöver och flytta det. Din Mac kommer att tacka dig.",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "Om du vill flytta några filer, var lite mer specifik och välj dem inifrån.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "Snälla, byt inte namn på din hemmapp",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "Hallå, din Mac känner igen din hemmapp på det här namnet. Byter du namn på den hittar din Mac dig inte nästa gång du loggar in.",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "Du kan inte byta namn på <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den på exakt den här sökvägen.",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "Om du verkligen behöver ett nytt namn har macOS ett försiktigt sätt att göra det i ”Användare och grupper”. Det är dock ingen snabb F2.",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Byt hellre namn på något där inne, eller låt den här mappen vara. Den håller uppe mer än man tror.",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "Den här filen ändrades under kopieringen",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"
