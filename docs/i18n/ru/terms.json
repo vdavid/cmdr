@@ -544,6 +544,13 @@
     "confidence": "high",
     "sources": "macOS live Photos (badge → значок), Localizable (Badge → Значок); MS (badge → значок)"
   },
+  "batch": {
+    "chosen": "группа",
+    "accept": ["групп", "пакет"],
+    "forms": "in this batch → в этой группе",
+    "confidence": "tentative",
+    "sources": "Ties to групповое переименование (TC 6601, DC, Nautilus); MS terminology keeps пакетная обработка for technical batch jobs, which reads too technical for a set of renames"
+  },
   "batch-rename": {
     "chosen": "групповое переименование",
     "accept": ["группов", "переименовать объекты"],
@@ -4492,14 +4499,12 @@
     "sources": "TC menu: Mark → Выделение, Markierung umkehren → Инвертировать выделение, Auswahl reduzieren → Снять выделение, Auswahl temporär merken → Временно сохранить выделение; DC: Select All → Выделить всё, Selection → Выделение, Unselect mask → Снять выделение по маске; Nautilus: Select All → Выделить все, Invert Selection → Инвертировать выделение, %d item selected → Выделено %d объектов; Dolphin: Unselect All → Снять всё выделение; MS: select (mark items) → выделить, selection → выделение. Finder alone has AppKit FindPanel Select All → Выбрать все",
     "note": "Product-owner decision: Total Commander's vocabulary for marking files. Ticking operation-queue rows and picking a server, volume, or dropdown option is choose («выбрать»), listed under exceptions.",
     "exceptions": {
-      "ui.select.placeholder": "Dropdown placeholder: picking an option is «Выберите…».",
+      "commands.downloadsGoToLatest.description": "The command puts the cursor on the newest file and marks nothing: «поставить курсор на самый новый файл».",
       "commands.volumeSelect.label": "Picking a volume for the pane is choose: «Выбрать том».",
       "commands.volumeSelectByName.label": "Picking a volume by name is choose: «Выбрать том панели по имени».",
       "commands.networkSelectHost.label": "Opening a network host is choose: «Выбрать сетевой хост».",
       "servers.hub.editPickHint": "Picking one server in the list to edit is choose.",
       "servers.hub.editShareHint": "Picking the server's row to edit it is choose.",
-      "commands.navDown.label": "Moves the cursor, marks nothing; say «Следующий файл».",
-      "commands.navUp.label": "Moves the cursor, marks nothing; say «Предыдущий файл».",
       "queue.row.selectAria": "Checkbox picking operation rows to cancel together: choosing items in a list, not marking files in a pane, so «выбрать» stays.",
       "menu.queue.select": "The queue row's right-click Select ticks the same checkbox as `queue.row.selectAria`: list-item choosing, so «Выбрать».",
       "queue.toolbar.cancelSelected": "Cancels the operation rows ticked by checkbox; list-item choosing, so «выбранные».",
@@ -4648,7 +4653,9 @@
     "confidence": "high",
     "sources": "MS: keyboard shortcut → сочетание клавиш; TC: Tastenkürzel → Сочетание клавиш; Thunar: Keyboard shortcut already in use → Сочетание клавиш уже используется; DC: Hotkeys → Горячие клавиши; AppKit Services: Shortcuts → Быстрые команды (the app)",
     "exceptions": {
-      "menu.volume.editFavoriteShortcut": "A favorite takes one A–Z key, not a combination, and English says “shortcut key”: «Назначить клавишу…»."
+      "menu.volume.editFavoriteShortcut": "A favorite takes one A–Z key, not a combination, and English says “shortcut key”: «Назначить клавишу…».",
+      "fileExplorer.navigation.favoriteShortcutAriaLabel": "Same one A–Z key as `menu.volume.editFavoriteShortcut`, so «Клавиша для «{name}»».",
+      "fileExplorer.navigation.favoriteShortcutSaveFailed": "Same one A–Z key as `menu.volume.editFavoriteShortcut`: «Не удалось сохранить эту клавишу»."
     }
   },
   "show": {

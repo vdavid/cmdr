@@ -9,7 +9,7 @@
   },
   "suggestedOps.approvalNoticeDismiss": "Больше не показывать",
   "@suggestedOps.approvalNoticeDismiss": {
-    "sourceHash": "2c23c21"
+    "sourceHash": "f6f62e0"
   },
   "suggestedOps.sweepWhen.justNow": "Предложено только что",
   "@suggestedOps.sweepWhen.justNow": {
@@ -85,7 +85,8 @@
   },
   "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
   "@suggestedOps.groupTitle": {
-    "sourceHash": "201c1fc"
+    "sourceHash": "201c1fc",
+    "sameAsSourceJustification": "Tags and placeholders only: Russian puts the verb label first, as English does («Переместить» + the AI’s title), with a plain space between."
   },
   "suggestedOps.approve.move": "Переместить {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}}",
   "@suggestedOps.approve.move": {
@@ -267,11 +268,11 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
-  "suggestedOps.factUnknownSize": "Unknown",
+  "suggestedOps.factUnknownSize": "Неизвестно",
   "@suggestedOps.factUnknownSize": {
     "sourceHash": "b764cdc"
   },
-  "suggestedOps.factUnknownDate": "Unknown",
+  "suggestedOps.factUnknownDate": "Неизвестно",
   "@suggestedOps.factUnknownDate": {
     "sourceHash": "b764cdc"
   },

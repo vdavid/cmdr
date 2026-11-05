@@ -769,17 +769,17 @@
   "@askCmdr.limit.wallTime": {
     "sourceHash": "fc47e07"
   },
-  "askCmdr.limit.repeatedCall.answered": "Этот ответ раз за разом повторял один и тот же поиск, поэтому Cmdr остановил поиск, а ответ собран из того, что удалось найти.",
+  "askCmdr.limit.repeatedCall.answered": "Этот ответ раз за разом повторял один и тот же поиск, поэтому Cmdr остановил поиск и попросил ответить по тому, что удалось найти.",
   "@askCmdr.limit.repeatedCall.answered": {
-    "sourceHash": "884a9ae"
+    "sourceHash": "c603b8c"
   },
   "askCmdr.limit.repeatedCall.unfinished": "Этот ответ раз за разом повторял один и тот же поиск, поэтому Cmdr остановил его, и он не успел завершиться.",
   "@askCmdr.limit.repeatedCall.unfinished": {
     "sourceHash": "c21dbe9"
   },
-  "askCmdr.limit.noProgress.answered": "За последние {maxText} {max, plural, one {раунд} few {раунда} many {раундов} other {раунда}} поиска этот ответ не нашел ничего нового, поэтому Cmdr остановил поиск, а ответ собран из того, что удалось найти.",
+  "askCmdr.limit.noProgress.answered": "За последние {maxText} {max, plural, one {раунд} few {раунда} many {раундов} other {раунда}} поиска этот ответ не нашел ничего нового, поэтому Cmdr остановил поиск и попросил ответить по тому, что удалось найти.",
   "@askCmdr.limit.noProgress.answered": {
-    "sourceHash": "6dc1bc0"
+    "sourceHash": "574fe02"
   },
   "askCmdr.limit.noProgress.unfinished": "За последние {maxText} {max, plural, one {раунд} few {раунда} many {раундов} other {раунда}} поиска этот ответ не нашел ничего нового, поэтому Cmdr остановил его, и он не успел завершиться.",
   "@askCmdr.limit.noProgress.unfinished": {
@@ -917,9 +917,9 @@
   "@askCmdr.sessions.renameLabel": {
     "sourceHash": "17a3048"
   },
-  "askCmdr.sessions.archive": "Архивировать",
+  "askCmdr.sessions.archive": "Архивировать чат",
   "@askCmdr.sessions.archive": {
-    "sourceHash": "66f4804"
+    "sourceHash": "9bd687c"
   },
   "askCmdr.sessions.unarchive": "Восстановить из архива",
   "@askCmdr.sessions.unarchive": {
@@ -1225,17 +1225,17 @@
   "@askCmdr.renameReview.stopChecking": {
     "sourceHash": "4373037"
   },
-  "askCmdr.renameReview.checkUnfinished": "Cmdr еще не проверил {count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}, поэтому пока не может начать переименование.",
+  "askCmdr.renameReview.checkUnfinished": "{count, plural, one {# файл еще не проверен} few {# файла еще не проверены} many {# файлов еще не проверено} other {# файла еще не проверено}}, поэтому Cmdr пока не может начать переименование.",
   "@askCmdr.renameReview.checkUnfinished": {
-    "sourceHash": "c3c05ce"
+    "sourceHash": "1160511"
   },
   "askCmdr.renameReview.checkAgain": "Проверить снова",
   "@askCmdr.renameReview.checkAgain": {
     "sourceHash": "fb7099a"
   },
-  "askCmdr.renameReview.needsAnotherLook": "С тех пор как Cmdr проверил эти имена, что-то изменилось, поэтому он ничего не переименовал. Посмотрите еще раз и попробуйте снова.",
+  "askCmdr.renameReview.needsAnotherLook": "С тех пор как Cmdr проверил эти имена, что-то изменилось, поэтому ничего не переименовано. Проверьте имена и попробуйте еще раз.",
   "@askCmdr.renameReview.needsAnotherLook": {
-    "sourceHash": "36c6050"
+    "sourceHash": "5e7d2da"
   },
   "askCmdr.renameReview.couldntStart": "Cmdr не удалось начать это переименование, и ничего не изменилось. Попробуйте еще раз чуть позже.",
   "@askCmdr.renameReview.couldntStart": {
@@ -1257,9 +1257,9 @@
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },
-  "askCmdr.renameUndo.swapsSkipped": "{count, plural, one {Пропущено {countText} переименование, которое меняет имена местами} few {Пропущены {countText} переименования, которые меняют имена местами} many {Пропущено {countText} переименований, которые меняют имена местами} other {Пропущено {countText} переименования, которые меняют имена местами}}. Переименуйте эти файлы по одному.",
+  "askCmdr.renameUndo.swapsSkipped": "{count, plural, one {Пропущено {countText} переименование, которое меняет имена местами} few {Пропущены {countText} переименования, которые меняют имена местами} many {Пропущено {countText} переименований, которые меняют имена местами} other {Пропущено {countText} переименования, которые меняют имена местами}}. Переименуйте эти объекты по одному.",
   "@askCmdr.renameUndo.swapsSkipped": {
-    "sourceHash": "90e8dfc"
+    "sourceHash": "bb3ee75"
   },
   "askCmdr.renameUndo.notRecorded": "Журнал операций выключен, поэтому это нельзя отменить.",
   "@askCmdr.renameUndo.notRecorded": {
@@ -1301,9 +1301,9 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "Оставлено как есть: {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}}. Они изменились после переименования.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Они изменились после переименования.",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "217d1e8"
+    "sourceHash": "dbeb782"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "Не удалось найти файл {name}: после переименования его переместили или удалили.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
@@ -1317,17 +1317,17 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Оставлено как есть: {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}}. Прежние имена снова заняты.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Прежние имена снова заняты.",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "2fd2e7a"
+    "sourceHash": "409140a"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "Оставлено как есть: {name}. Cmdr не удалось проверить, были ли изменения.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Оставлено как есть: {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}}. Cmdr не удалось проверить, были ли изменения.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Cmdr не удалось проверить, были ли изменения.",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "5964166"
+    "sourceHash": "25fe620"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Папка {name} оставлена как есть. В ней теперь что-то есть.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
@@ -1341,9 +1341,9 @@
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "Оставлено как есть: {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}}. Cmdr не удалось вернуть прежние имена.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Cmdr не удалось вернуть прежние имена.",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "f13c021"
+    "sourceHash": "cf38d62"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr не удалось отменить {countText} {count, plural, one {пакет} few {пакета} many {пакетов} other {пакета}}. Подробности в журнале операций.",
   "@askCmdr.renameUndo.refusedBatches": {

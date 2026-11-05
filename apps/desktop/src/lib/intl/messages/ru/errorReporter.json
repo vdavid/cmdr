@@ -146,7 +146,7 @@
   },
   "errorReporter.sentToast.message": "Отчет об ошибке отправлен. Идентификатор обращения:",
   "@errorReporter.sentToast.message": {
-    "sourceHash": "75be6ba"
+    "sourceHash": "d1e9bfc"
   },
   "errorReporter.sentToast.dismiss": "Закрыть",
   "@errorReporter.sentToast.dismiss": {
@@ -162,7 +162,7 @@
   },
   "errorReporter.amendedToast.message": "Примечание добавлено к отчету. Идентификатор обращения:",
   "@errorReporter.amendedToast.message": {
-    "sourceHash": "5471d7f"
+    "sourceHash": "fc7535b"
   },
   "errorReporter.bundleSavedToast.message": "Пакет сохранен на диск",
   "@errorReporter.bundleSavedToast.message": {

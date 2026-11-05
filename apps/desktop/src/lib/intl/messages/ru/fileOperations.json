@@ -252,9 +252,9 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "Эта общая папка использует системное подключение, поэтому отмена может запаздывать. Для быстрой передачи и надежной отмены выберите «Подключиться напрямую для быстрого доступа» в списке томов.",
+  "fileOperations.transferDialog.smbNativeNote": "Эта общая папка использует системное подключение, поэтому отмена может запаздывать. Для быстрой передачи и надежной отмены выберите «Подключиться напрямую для быстрого доступа» в переключателе томов.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "60af535"
+    "sourceHash": "95b30c0"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Этой папки еще нет. Cmdr создаст ее при копировании.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -612,27 +612,27 @@
   "@fileOperations.transferProgress.conflictPolicyCaption": {
     "sourceHash": "cec5c27"
   },
-  "fileOperations.transferProgress.policyName.skip": "Skip",
+  "fileOperations.transferProgress.policyName.skip": "Пропустить",
   "@fileOperations.transferProgress.policyName.skip": {
     "sourceHash": "28d0359"
   },
-  "fileOperations.transferProgress.policyName.overwrite": "Overwrite",
+  "fileOperations.transferProgress.policyName.overwrite": "Заменить",
   "@fileOperations.transferProgress.policyName.overwrite": {
     "sourceHash": "b24963e"
   },
-  "fileOperations.transferProgress.policyName.overwriteSmaller": "Overwrite if smaller",
+  "fileOperations.transferProgress.policyName.overwriteSmaller": "Заменить, если меньше",
   "@fileOperations.transferProgress.policyName.overwriteSmaller": {
     "sourceHash": "0473dc5"
   },
-  "fileOperations.transferProgress.policyName.overwriteOlder": "Overwrite if older",
+  "fileOperations.transferProgress.policyName.overwriteOlder": "Заменить, если более старый",
   "@fileOperations.transferProgress.policyName.overwriteOlder": {
     "sourceHash": "6c111a2"
   },
-  "fileOperations.transferProgress.policyName.askEach": "Ask for each",
+  "fileOperations.transferProgress.policyName.askEach": "Спрашивать каждый раз",
   "@fileOperations.transferProgress.policyName.askEach": {
     "sourceHash": "4302843"
   },
-  "fileOperations.transferProgress.policyName.rename": "Rename",
+  "fileOperations.transferProgress.policyName.rename": "Переименовать",
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
@@ -1284,13 +1284,13 @@
   "@fileOperations.validation.empty": {
     "sourceHash": "2a25343"
   },
-  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})} other {Filename is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})}}",
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Слишком длинное имя папки ({byteCount}/{maxBytes} {max, plural, one {байт} few {байта} many {байт} other {байта}})} other {Слишком длинное имя файла ({byteCount}/{maxBytes} {max, plural, one {байт} few {байта} many {байт} other {байта}})}}",
   "@fileOperations.validation.nameTooLong": {
-    "sourceHash": "76a85fd"
+    "sourceHash": "4978a6f"
   },
-  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathTooLong": "Слишком длинный полный путь ({byteCount}/{maxBytes} {max, plural, one {байт} few {байта} many {байт} other {байта}})",
   "@fileOperations.validation.pathTooLong": {
-    "sourceHash": "1658c7a"
+    "sourceHash": "9aa3b43"
   },
   "fileOperations.validation.extensionChangeBlocked": "Менять расширение файла не разрешено (было «{oldExt}»)",
   "@fileOperations.validation.extensionChangeBlocked": {
@@ -1316,13 +1316,13 @@
   "@fileOperations.validation.pathNullChar": {
     "sourceHash": "271149f"
   },
-  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathTotalTooLong": "Слишком длинный путь ({byteCount}/{maxBytes} {max, plural, one {байт} few {байта} many {байт} other {байта}})",
   "@fileOperations.validation.pathTotalTooLong": {
-    "sourceHash": "30aca7d"
+    "sourceHash": "dd75780"
   },
-  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathSegmentTooLong": "Слишком длинное имя папки в пути ({byteCount}/{maxBytes} {max, plural, one {байт} few {байта} many {байт} other {байта}})",
   "@fileOperations.validation.pathSegmentTooLong": {
-    "sourceHash": "75b2602"
+    "sourceHash": "c0773d3"
   },
   "fileOperations.transferTree.treeLabel": "Файлы этой передачи",
   "@fileOperations.transferTree.treeLabel": {

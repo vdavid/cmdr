@@ -171,9 +171,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "Наборов настроек уже {max, number}, больше Cmdr не хранит. Удалите один, чтобы сохранить этот.",
+  "multiRename.presets.listFull": "У вас уже {max, plural, one {# набор настроек} few {# набора настроек} many {# наборов настроек} other {# набора настроек}}, больше Cmdr не хранит. Удалите один, чтобы сохранить этот.",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "Заменить",
   "@multiRename.presets.replace": {
@@ -223,13 +223,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "Такое же имя у другого файла",
+  "multiRename.status.duplicate": "Такое же имя у другого объекта",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
-  "multiRename.status.targetExists": "Имя занято",
+  "multiRename.status.targetExists": "Имя уже занято",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "Недопустимое имя",
   "@multiRename.status.invalidName": {
@@ -383,17 +383,17 @@
   "@multiRename.status.ready": {
     "sourceHash": "f032574"
   },
-  "multiRename.reason.duplicate": "Другой файл в этой группе получает такое же новое имя, поэтому ни один из них не будет переименован.",
+  "multiRename.reason.duplicate": "Другой объект в этой группе получает такое же новое имя, поэтому ни один из них не будет переименован.",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
-  "multiRename.reason.targetExists": "Такое имя уже есть у файла, который остается в этой папке, поэтому имя этого файла не меняется.",
+  "multiRename.reason.targetExists": "Такое имя уже есть у объекта, который остается в этой папке, поэтому этот объект сохраняет свое имя.",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
-  "multiRename.reason.missing": "Этот файл переместили или удалили после того, как открылось «Групповое переименование», поэтому он пропущен.",
+  "multiRename.reason.missing": "Этот объект переместили или удалили после того, как открылось «Групповое переименование», поэтому он пропущен.",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "Чтение…",
   "@multiRename.status.reading": {
@@ -403,13 +403,13 @@
   "@multiRename.status.noValue": {
     "sourceHash": "619464f"
   },
-  "multiRename.reason.noValue": "У этого файла нет значения «{field}», поэтому его имя не меняется.",
+  "multiRename.reason.noValue": "У этого объекта нет значения «{field}», поэтому его имя не меняется.",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "У этого файла нет значения «{field}», поэтому его имя не меняется. В редакторе обозначения можно выбрать вместо этого дату изменения файла.",
+  "multiRename.reason.noDate": "У этого объекта нет значения «{field}», поэтому его имя не меняется. В редакторе обозначения можно выбрать вместо этого дату изменения объекта.",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "Не удалось прочитать теги",
   "@multiRename.status.unreadable": {
@@ -632,9 +632,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "{count, plural, one {Пропущено # переименование, которое меняет имена местами} few {Пропущены # переименования, которые меняют имена местами} many {Пропущено # переименований, которые меняют имена местами} other {Пропущено # переименования, которые меняют имена местами}}. Переименуйте эти файлы по одному.",
+  "multiRename.swapsSkipped": "{count, plural, one {Пропущено # переименование, которое меняет имена местами} few {Пропущены # переименования, которые меняют имена местами} many {Пропущено # переименований, которые меняют имена местами} other {Пропущено # переименования, которые меняют имена местами}}. Переименуйте эти объекты по одному.",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "«Групповое переименование» не работает внутри архивов",
   "@multiRename.archiveTitle": {

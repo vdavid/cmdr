@@ -33,7 +33,7 @@
   },
   "stateRecovery.operationLog.title": "Cmdr не удалось прочитать журнал операций, поэтому журнал начинается заново",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "Cmdr не удалось прочитать ваши чаты Ask Cmdr, поэтому список чатов пока пуст",
   "@stateRecovery.chatHistory.title": {

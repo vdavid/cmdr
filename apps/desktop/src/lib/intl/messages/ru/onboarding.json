@@ -75,9 +75,9 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "Похоже, раньше вы предоставили полный доступ к диску, а затем отозвали его.",
+  "onboarding.stepFda.revoked.intro": "Похоже, раньше вы предоставили полный доступ к диску, а затем выключили его.",
   "@onboarding.stepFda.revoked.intro": {
-    "sourceHash": "9087914"
+    "sourceHash": "6759357"
   },
   "onboarding.stepFda.revoked.noAccess": "Сейчас у приложения нет полного доступа к диску.",
   "@onboarding.stepFda.revoked.noAccess": {
@@ -239,9 +239,9 @@
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "5cc5e7f"
   },
-  "onboarding.stepAi.table.renameWithout": "Вы вручную задаете шаблон в окне «Групповое переименование», а затем проверяете и применяете его.",
+  "onboarding.stepAi.table.renameWithout": "Вы вручную задаете шаблон в окне «Групповое переименование», а затем проверяете и применяете этот шаблон.",
   "@onboarding.stepAi.table.renameWithout": {
-    "sourceHash": "e7531dc"
+    "sourceHash": "1b85bf6"
   },
   "onboarding.stepAi.table.renameWith": "Вы говорите «добавить дату в формате ISO в начало», агент задает шаблон, а вы проверяете и применяете по желанию.",
   "@onboarding.stepAi.table.renameWith": {

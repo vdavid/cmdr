@@ -19,17 +19,17 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "Благодарности…",
+  "commands.appAcknowledgements.label": "Благодарности",
   "@commands.appAcknowledgements.label": {
-    "sourceHash": "7d0e506"
+    "sourceHash": "c9015d5"
   },
   "commands.appLicenseKey.seeDetails.label": "Сведения о лицензии",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
   },
-  "commands.appLicenseKey.enterKey.label": "Ввести лицензионный ключ",
+  "commands.appLicenseKey.enterKey.label": "Ввести лицензионный ключ…",
   "@commands.appLicenseKey.enterKey.label": {
-    "sourceHash": "357d05e"
+    "sourceHash": "24a8d77"
   },
   "commands.appCommandPalette.label": "Открыть палитру команд",
   "@commands.appCommandPalette.label": {
@@ -45,7 +45,7 @@
   },
   "commands.appCheckForUpdates.description": "Проверить наличие новой версии Cmdr и скачать ее, если она доступна",
   "@commands.appCheckForUpdates.description": {
-    "sourceHash": "c53dab0"
+    "sourceHash": "90523c6"
   },
   "commands.cmdrOpenOnboarding.label": "Знакомство с приложением…",
   "@commands.cmdrOpenOnboarding.label": {
@@ -53,7 +53,7 @@
   },
   "commands.cmdrOpenOnboarding.description": "Повторно открыть мастер знакомства, чтобы проверить или изменить настройки первого запуска",
   "@commands.cmdrOpenOnboarding.description": {
-    "sourceHash": "a45c542"
+    "sourceHash": "fc0a198"
   },
   "commands.appToggleCliCommand.install.label": "Установить команду «cmdr»",
   "@commands.appToggleCliCommand.install.label": {
@@ -67,9 +67,9 @@
   "@commands.appToggleCliCommand.homebrew.label": {
     "sourceHash": "cc4c0fd"
   },
-  "commands.appToggleCliCommand.description": "Введите в терминале cmdr и путь, чтобы открыть этот файл или папку в Cmdr",
+  "commands.appToggleCliCommand.description": "Открывать файл или папку в Cmdr, набрав в терминале cmdr и путь",
   "@commands.appToggleCliCommand.description": {
-    "sourceHash": "ce7efbd"
+    "sourceHash": "73b4f32"
   },
   "commands.helpOpenShortcuts.label": "Сочетания клавиш",
   "@commands.helpOpenShortcuts.label": {
@@ -77,7 +77,7 @@
   },
   "commands.helpOpenShortcuts.description": "Открыть окно только для чтения со всеми сочетаниями клавиш; оно сразу учитывает ваши изменения",
   "@commands.helpOpenShortcuts.description": {
-    "sourceHash": "a9a1e0d"
+    "sourceHash": "caa15c9"
   },
   "commands.helpAccessibility.label": "Руководство по универсальному доступу",
   "@commands.helpAccessibility.label": {
@@ -85,7 +85,7 @@
   },
   "commands.helpAccessibility.description": "Открыть на сайте getcmdr.com руководство по функциям универсального доступа в Cmdr",
   "@commands.helpAccessibility.description": {
-    "sourceHash": "2ece797"
+    "sourceHash": "7104ee3"
   },
   "commands.helpSendErrorReport.label": "Отправить отчет об ошибке…",
   "@commands.helpSendErrorReport.label": {
@@ -93,7 +93,7 @@
   },
   "commands.helpSendErrorReport.description": "Отправить команде журналы Cmdr, чтобы помочь исправить то, что пошло не так",
   "@commands.helpSendErrorReport.description": {
-    "sourceHash": "021d333"
+    "sourceHash": "7615640"
   },
   "commands.queueShow.label": "Очередь операций",
   "@commands.queueShow.label": {
@@ -101,32 +101,32 @@
   },
   "commands.queueShow.description": "Открыть окно выполняемых и ожидающих операций, чтобы приостанавливать, возобновлять или отменять их",
   "@commands.queueShow.description": {
-    "sourceHash": "37b616a"
+    "sourceHash": "4511b63"
   },
   "commands.helpWhatsNew.label": "Что нового",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "37e6112"
   },
-  "commands.helpWhatsNew.description": "Посмотреть изменения в последних версиях Cmdr",
+  "commands.helpWhatsNew.description": "Показать, что изменилось в последних версиях Cmdr",
   "@commands.helpWhatsNew.description": {
-    "sourceHash": "f8ad411"
+    "sourceHash": "4e04cc8"
   },
   "commands.logOperationLog.label": "Журнал операций",
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
-  "commands.logOperationLog.description": "Посмотреть историю файловых операций и откатить их",
+  "commands.logOperationLog.description": "Показать историю файловых операций с возможностью их отменить",
   "@commands.logOperationLog.description": {
-    "sourceHash": "ea2d082"
+    "sourceHash": "70b7bcd"
   },
   "commands.askCmdrToggle.label": "Ask Cmdr",
   "@commands.askCmdrToggle.label": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the built-in AI panel); kept verbatim in every locale, matching menu.view.askCmdr. The ru termbase rules Ask Cmdr verbatim (ask-cmdr)."
   },
-  "commands.askCmdrToggle.description": "Обсудить с ИИ ваши файлы, диски и историю",
+  "commands.askCmdrToggle.description": "Открыть чат с ИИ о ваших файлах, дисках и истории",
   "@commands.askCmdrToggle.description": {
-    "sourceHash": "c520468"
+    "sourceHash": "a25a7a4"
   },
   "commands.askCmdrNewChat.label": "Новый чат Ask Cmdr",
   "@commands.askCmdrNewChat.label": {
@@ -134,7 +134,7 @@
   },
   "commands.askCmdrNewChat.description": "Начать новый чат в панели Ask Cmdr и открыть ее, если она закрыта",
   "@commands.askCmdrNewChat.description": {
-    "sourceHash": "957741b"
+    "sourceHash": "aa3c28c"
   },
   "commands.askCmdrFind.label": "Найти в чате",
   "@commands.askCmdrFind.label": {
@@ -154,7 +154,7 @@
   },
   "commands.feedbackSend.description": "Рассказать автору Cmdr о своих идеях, пожеланиях и впечатлениях",
   "@commands.feedbackSend.description": {
-    "sourceHash": "89d08a8"
+    "sourceHash": "bdf844c"
   },
   "commands.searchOpen.label": "Найти файлы",
   "@commands.searchOpen.label": {
@@ -166,7 +166,7 @@
   },
   "commands.navGoToPath.description": "Открыть в активной панели введенный, вставленный или недавний путь.",
   "@commands.navGoToPath.description": {
-    "sourceHash": "fc6a00c"
+    "sourceHash": "0b91354"
   },
   "commands.favoritesAdd.label": "Добавить в избранное",
   "@commands.favoritesAdd.label": {
@@ -174,15 +174,15 @@
   },
   "commands.favoritesAdd.description": "Добавить текущую папку активной панели в избранное, чтобы возвращаться к ней через меню избранного.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "999aa52"
+    "sourceHash": "43043e8"
   },
   "commands.favoritesOpen.label": "Показать избранное",
   "@commands.favoritesOpen.label": {
     "sourceHash": "f4dfe9b"
   },
-  "commands.favoritesOpen.description": "Открыть меню избранного в активной панели и нажать цифру для перехода к соответствующему пункту.",
+  "commands.favoritesOpen.description": "Открыть меню избранного в активной панели: клавиша с цифрой сразу открывает соответствующую папку.",
   "@commands.favoritesOpen.description": {
-    "sourceHash": "d188872"
+    "sourceHash": "5fcfcee"
   },
   "commands.favoritesOpenByNumber.label": "Открыть избранное с этим номером",
   "@commands.favoritesOpenByNumber.label": {
@@ -194,7 +194,7 @@
   },
   "commands.downloadsGoToLatest.description": "Открыть ~/Downloads и поставить курсор на самый новый файл.",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "42a26a2"
+    "sourceHash": "6b3fe83"
   },
   "commands.viewShowHidden.label": "Переключить показ скрытых файлов",
   "@commands.viewShowHidden.label": {
@@ -298,23 +298,23 @@
   },
   "commands.paneClone.description": "Открыть папку этой панели и в другой панели.",
   "@commands.paneClone.description": {
-    "sourceHash": "8a13dc9"
+    "sourceHash": "fcbddd9"
   },
   "commands.paneFocusControls.label": "Переместить фокус на элементы управления панели",
   "@commands.paneFocusControls.label": {
     "sourceHash": "b71f4ad"
   },
-  "commands.paneFocusControls.description": "Перейти с клавиатуры к вкладкам, строке расположения и кнопкам сортировки активной панели. Клавиши со стрелками перемещают фокус между ними, а клавиша Escape вернет вас к файлам.",
+  "commands.paneFocusControls.description": "Перевести фокус клавиатуры на вкладки, строку расположения и кнопки сортировки активной панели. Клавиши со стрелками перемещают фокус между ними, а Escape вернет вас к файлам.",
   "@commands.paneFocusControls.description": {
-    "sourceHash": "e5828ae"
+    "sourceHash": "ffce489"
   },
   "commands.appFocusNotifications.label": "Переместить фокус на уведомления",
   "@commands.appFocusNotifications.label": {
     "sourceHash": "628f0e5"
   },
-  "commands.appFocusNotifications.description": "Перейти с клавиатуры к уведомлениям и их кнопкам, например «Отменить». Клавиши со стрелками перемещают фокус между ними, а клавиша Escape вернет вас обратно.",
+  "commands.appFocusNotifications.description": "Перевести фокус клавиатуры на уведомления и их кнопки, например «Отменить». Клавиши со стрелками перемещают фокус между ними, а Escape вернет вас обратно.",
   "@commands.appFocusNotifications.description": {
-    "sourceHash": "87886a4"
+    "sourceHash": "8157823"
   },
   "commands.editUndoTrash.label": "Отменить перемещение в Корзину",
   "@commands.editUndoTrash.label": {
@@ -330,7 +330,7 @@
   },
   "commands.editUndoTrash.description": "Восстановить файлы, которые вы в последний раз переместили в Корзину",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "3aa756f"
+    "sourceHash": "dca1b63"
   },
   "commands.paneLeftVolumeChooser.label": "Открыть переключатель томов левой панели",
   "@commands.paneLeftVolumeChooser.label": {
@@ -346,7 +346,7 @@
   },
   "commands.paneCopyPathLeftToRight.description": "Открыть расположение левой панели в правой. Если активна левая панель и курсор находится на папке, справа откроется эта папка.",
   "@commands.paneCopyPathLeftToRight.description": {
-    "sourceHash": "07ac6a1"
+    "sourceHash": "d866ae5"
   },
   "commands.paneCopyPathRightToLeft.label": "Скопировать путь из правой панели в левую",
   "@commands.paneCopyPathRightToLeft.label": {
@@ -354,7 +354,7 @@
   },
   "commands.paneCopyPathRightToLeft.description": "Открыть расположение правой панели в левой. Если активна правая панель и курсор находится на папке, слева откроется эта папка.",
   "@commands.paneCopyPathRightToLeft.description": {
-    "sourceHash": "95c566f"
+    "sourceHash": "052c7cd"
   },
   "commands.paneRefresh.label": "Обновить панель",
   "@commands.paneRefresh.label": {
@@ -416,13 +416,13 @@
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
-  "commands.navUp.label": "Перейти к предыдущему файлу",
+  "commands.navUp.label": "Переместить курсор на предыдущий объект",
   "@commands.navUp.label": {
-    "sourceHash": "40dca00"
+    "sourceHash": "6197d1a"
   },
-  "commands.navDown.label": "Перейти к следующему файлу",
+  "commands.navDown.label": "Переместить курсор на следующий объект",
   "@commands.navDown.label": {
-    "sourceHash": "61e81ee"
+    "sourceHash": "8b5b37b"
   },
   "commands.navOpen.label": "Открыть файл или папку",
   "@commands.navOpen.label": {
@@ -504,9 +504,9 @@
   "@commands.paneQuickFilter.label": {
     "sourceHash": "e731882"
   },
-  "commands.paneQuickFilter.description": "Открыть значок фильтра с текущим шаблоном. Нажмите еще раз, чтобы переключиться между режимами «Фильтр» и «Переход»",
+  "commands.paneQuickFilter.description": "Открыть значок с уже введенным текстом. Нажмите еще раз, чтобы переключиться между режимами «Фильтр» и «Переход»",
   "@commands.paneQuickFilter.description": {
-    "sourceHash": "2778526"
+    "sourceHash": "e531430"
   },
   "commands.fileMultiRename.label": "Групповое переименование",
   "@commands.fileMultiRename.label": {
@@ -726,7 +726,7 @@
   },
   "commands.fileDuplicate.description": "Создать копию выделенных файлов в той же папке",
   "@commands.fileDuplicate.description": {
-    "sourceHash": "2c038a2"
+    "sourceHash": "5c02b66"
   },
   "commands.fileCompress.label": "Сжать",
   "@commands.fileCompress.label": {
@@ -738,7 +738,7 @@
   },
   "commands.editCopy.description": "Скопировать выделенные файлы в буфер обмена для вставки",
   "@commands.editCopy.description": {
-    "sourceHash": "5c769a7"
+    "sourceHash": "3ded30a"
   },
   "commands.editCut.label": "Вырезать в буфер обмена",
   "@commands.editCut.label": {
@@ -746,7 +746,7 @@
   },
   "commands.editCut.description": "Вырезать выделенные файлы (при вставке они переместятся)",
   "@commands.editCut.description": {
-    "sourceHash": "5bc3870"
+    "sourceHash": "1e03b84"
   },
   "commands.editPaste.label": "Вставить",
   "@commands.editPaste.label": {
@@ -754,7 +754,7 @@
   },
   "commands.editPaste.description": "Вставить файлы из буфера обмена в текущую папку",
   "@commands.editPaste.description": {
-    "sourceHash": "32545d7"
+    "sourceHash": "9eca6d3"
   },
   "commands.editPasteAsMove.label": "Переместить объекты сюда",
   "@commands.editPasteAsMove.label": {
@@ -762,7 +762,7 @@
   },
   "commands.editPasteAsMove.description": "Переместить файлы из буфера обмена",
   "@commands.editPasteAsMove.description": {
-    "sourceHash": "961316d"
+    "sourceHash": "41e9245"
   },
   "commands.fileNewFolder.label": "Новая папка",
   "@commands.fileNewFolder.label": {
@@ -786,7 +786,7 @@
   },
   "commands.fileGoToTrash.description": "Открыть Корзину просматриваемого диска",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "73eae92"
+    "sourceHash": "6496c25"
   },
   "commands.dialogConfirm.label": "Подтвердить диалог на экране",
   "@commands.dialogConfirm.label": {
@@ -806,7 +806,7 @@
   },
   "commands.fileOpenTerminalHere.description": "Открыть приложение терминала в просматриваемой папке",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "ac0ddb8"
+    "sourceHash": "f03d961"
   },
   "commands.fileCopyPath.label": "Скопировать путь в буфер обмена",
   "@commands.fileCopyPath.label": {
@@ -1280,17 +1280,17 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "1a1f5b9"
   },
-  "commands.suggestedOpsShow.description": "Просмотреть предложенные ИИ файловые операции и решить, какие выполнить",
+  "commands.suggestedOpsShow.description": "Показать файловые операции, предложенные ИИ, чтобы решить, какие из них выполнить",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "7efe8c9"
+    "sourceHash": "5468fcf"
   },
   "commands.helpViewDebugLog.label": "Просмотреть журнал отладки",
   "@commands.helpViewDebugLog.label": {
     "sourceHash": "007c98d"
   },
-  "commands.helpViewDebugLog.description": "Следить в реальном времени за журналом отладки Cmdr в окне просмотра",
+  "commands.helpViewDebugLog.description": "Показать журнал отладки Cmdr в окне просмотра в реальном времени",
   "@commands.helpViewDebugLog.description": {
-    "sourceHash": "a937e6e"
+    "sourceHash": "06f49ab"
   },
   "commands.handler.viewDebugLog.disabled": "Хранение журналов выключено. Задайте ограничение места для журналов больше 0 в разделе «Настройки > Дополнения» и перезапустите Cmdr, чтобы просмотреть журнал отладки.",
   "@commands.handler.viewDebugLog.disabled": {

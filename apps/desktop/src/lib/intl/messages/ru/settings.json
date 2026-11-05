@@ -164,9 +164,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Чередовать фон строк, чтобы легче следить за строкой. Работает в подробном и кратком режимах просмотра.",
+  "settings.listing.stripedRows.description": "Чередовать фон строк, чтобы легче следить за строкой. Работает и в подробном, и в кратком режиме.",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "полосы, полосатые, зебра, чередование, строки, фон строк, заливка, читаемость, универсальный доступ",
   "@settings.listing.stripedRows.keywords": {
@@ -820,9 +820,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Всегда индексировать фотографии на {name}",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Всегда индексировать этот диск: {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "Приостановлено до повторного подключения диска",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -940,9 +940,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Удалить лишние записи индекса",
+  "settings.mediaIndex.reclaim.confirmTitle": "Удалить лишние записи индекса?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "Удалить {doomed, plural, one {{doomedText} запись индекса} few {{doomedText} записи индекса} many {{doomedText} записей индекса} other {{doomedText} записи индекса}}, чтобы освободить около {size}? Изображения можно проиндексировать снова, но повторное чтение займет время.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1089,9 +1089,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Скрывать вопрос о сочетании клавиш для последней загрузки",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Не спрашивать о сочетании клавиш для последней загрузки",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Когда вы впервые нажимаете сочетание клавиш, которое из любого приложения позволяет перейти к последней загрузке, Cmdr спрашивает, оставить ли его включенным. Если изменить сочетание клавиш, этот параметр выключится, и Cmdr спросит и о новом сочетании. Выключите параметр, чтобы увидеть вопрос еще раз.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1238,9 +1238,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "Сколько модель размышляет перед ответом. Глубокие размышления помогают со сложными задачами, но ответы приходят медленнее, а размышления оплачиваются как вывод модели.",
+  "settings.ai.reasoningEfforts.description": "Как долго модель думает перед ответом. Чем дольше она думает, тем лучше справляется со сложными задачами, но ответы приходят медленнее, а обдумывание оплачивается как вывод модели.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "глубина рассуждений, усилие, усилия, рассуждение, размышление, думать, скорость, стоимость, качество",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1460,7 +1460,7 @@
   },
   "settings.fileExplorer.git.showStatusColumn.description": "Добавлять колонку состояния git каждого файла (изменено, не отслеживается и другие) в подробном режиме.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "состояние, статус, столбец, колонка, изменен, не отслеживается, неотслеживаемый, игнорируется, игнорируемый, добавлен, удален",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1758,13 +1758,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Сообщать, если удаляемого объекта уже нет",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Показывать уведомление, если удаляемого объекта уже нет",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Если вы удаляете то, что другое приложение уже переместило или удалило, Cmdr считает удаление выполненным и коротко сообщает об этом. Выключите (или нажмите «Больше не показывать» в сообщении), и Cmdr будет пропускать это сообщение.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Если вы удаляете то, что другое приложение уже переместило или удалило, Cmdr считает удаление выполненным и показывает об этом короткое уведомление. Выключите этот параметр (или нажмите «Больше не показывать» в уведомлении), чтобы Cmdr перестал показывать такие уведомления.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "пропал, исчез, нет на месте, перемещен, удален, уведомление, всплывающее сообщение, подсказка",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2424,9 +2424,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr работает через облачный сервис ИИ. Включите «Разрешить облачный ИИ» в настройках ИИ, чтобы начать общение.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr работает через облачный сервис ИИ. Включите параметр «Разрешить облачный ИИ» в настройках ИИ, чтобы начать общение.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "Открыть настройки ИИ",
   "@settings.askCmdr.openAiSettings": {
@@ -2935,25 +2935,25 @@
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "Месяц, 2 цифры (01-12)",
+  "settings.appearance.formatHelpMonth": "Месяц, две цифры (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
-  "settings.appearance.formatHelpDay": "День, 2 цифры (01-31)",
+  "settings.appearance.formatHelpDay": "День, две цифры (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
-  "settings.appearance.formatHelpHour": "Час, 2 цифры (00-23)",
+  "settings.appearance.formatHelpHour": "Час, две цифры (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
-  "settings.appearance.formatHelpMinute": "Минута, 2 цифры (00-59)",
+  "settings.appearance.formatHelpMinute": "Минута, две цифры (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
-  "settings.appearance.formatHelpSecond": "Секунда, 2 цифры (00-59)",
+  "settings.appearance.formatHelpSecond": "Секунда, две цифры (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Добавляет легкий оттенок фона панелей, чтобы сразу различать типы томов.",
   "@settings.appearance.tintGroupDescription": {
@@ -3160,9 +3160,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Измените сочетание в разделе «Сочетания клавиш» → «Перейти к последней загрузке (глобальное)».",
+  "settings.fileSystemWatching.globalShortcutHint": "Измените сочетание в разделе «Сочетания клавиш → Перейти к последней загрузке».",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "Доступ: {localNetwork}",
   "@settings.network.localNetworkAccessLabel": {

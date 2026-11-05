@@ -449,7 +449,7 @@
   },
   "errors.listing.couldntReadUnknown.explanation": "Cmdr столкнулся с неожиданной проблемой при чтении `{path}`. Проверьте системный код в разделе «Технические подробности» ниже: он поможет найти причину.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Что можно сделать:\n- Проверьте подключение диска или устройства\n- Откройте это место снова\n- Если проблема повторяется, откройте **Дисковую утилиту** и запустите **Первую помощь** для тома",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -591,9 +591,9 @@
   "@errors.listing.linkTargetUnreachable.title": {
     "sourceHash": "8aee94c"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "К папке `{path}` ведет ссылка на другой сервер, а Cmdr сейчас не удается с ним связаться. С остальной частью этой общей папки все в порядке, и ничего не удалено.",
+  "errors.listing.linkTargetUnreachable.explanation": "Путь `{path}` ведет через ссылку на другой сервер, а Cmdr сейчас не удается связаться с этим сервером. С остальной частью этой общей папки все в порядке, и ничего не удалено.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Что можно сделать:\n- Убедитесь, что другой сервер работает и доступен из вашей сети\n- Откройте это место снова",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1487,7 +1487,7 @@
   },
   "errors.write.replySignatureRefused.message": "В ответе сервера не было действительной подписи, поэтому Cmdr остановил операцию.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Причиной может быть ненадежное сетевое устройство или чье-то вмешательство в трафик между вами и сервером. Подключитесь снова, а если это повторится, проверьте сеть.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "Целевое устройство",
+  "errors.write.readOnlyDevice.destination.fallbackName": "Место назначения",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "Файл защищен",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "К этому месту ведет ссылка на другой сервер, а Cmdr сейчас не удается с ним связаться.",
+  "errors.volume.linkTargetUnreachable": "Этот путь ведет через ссылку на другой сервер, а Cmdr сейчас не удается связаться с этим сервером.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "Устройство перезапустило соединение. Подождите несколько секунд и повторите попытку.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "Соединение не ответило вовремя.",
+  "errors.volume.connectionTimeout": "Сервер или устройство не ответили вовремя.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr остановил действие по вашему запросу.",
   "@errors.volume.cancelled": {
@@ -2291,7 +2291,7 @@
   },
   "errors.volume.signatureInvalid": "В ответе сервера не было действительной подписи, поэтому Cmdr остановил операцию.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "Тому не удалось завершить это действие.",
   "@errors.volume.ioError": {
@@ -2371,11 +2371,11 @@
   },
   "errors.eject.unmountRefusedByApp": "{app} еще что-то там использует. Закройте это приложение и повторите попытку.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
   "errors.eject.unmountRefusedByApps": "{apps} еще что-то там используют. Закройте эти приложения и повторите попытку.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "другие приложения",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "Часть выделенных объектов находится в виртуальной папке",
+  "errors.write.sourcesSpanVolumes.title": "Часть выделенных объектов находится в резервной копии, архиве или истории git",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "Объект «{path}» находится в снимках резервной копии, в архиве или в истории репозитория, а остальные выделенные объекты — нет, поэтому Cmdr не может прочитать их вместе. Ничего не изменилось.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Сделайте это в два шага: сначала объекты из виртуальной папки, затем остальные.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Сделайте это в два шага: сначала эти объекты отдельно, затем остальные.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Перемещайте по одному или сначала переименуйте один объект.",
   "@errors.write.duplicateSourceNames.suggestion.move": {

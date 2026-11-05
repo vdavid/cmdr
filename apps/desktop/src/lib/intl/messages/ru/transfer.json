@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Этот сервер не может хранить {classes}, поэтому эти сведения не перенесены.",
+  "transfer.metadataLeftBehind": "В этом месте назначения нельзя сохранить некоторые сведения, поэтому они не перенесены: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, one {{countText} защищенный объект остался на месте.} few {{countText} защищенных объекта остались на месте.} many {{countText} защищенных объектов остались на месте.} other {{countText} защищенного объекта остались на месте.}}",
   "@transfer.lockedSkipped": {

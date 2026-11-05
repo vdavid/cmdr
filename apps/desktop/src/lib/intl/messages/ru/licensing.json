@@ -230,7 +230,7 @@
   },
   "licensing.dialog.pendingHint": "Мы автоматически проверим ключ на сервере в течение {days, plural, one {# дня} few {# дней} many {# дней} other {# дня}}.",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "b4bbb38"
+    "sourceHash": "4ecbc26"
   },
   "licensing.dialog.useDifferentKey": "Использовать другой ключ",
   "@licensing.dialog.useDifferentKey": {
@@ -262,7 +262,7 @@
   },
   "licensing.dialog.retryExhausted": "Мы попробовали {count, plural, one {# раз} few {# раза} many {# раз} other {# раза}}, но не получилось. Извините за неудобства. Напишите нам на <supportEmail>{email}</supportEmail>, и мы во всем разберемся.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "d2aa21a"
+    "sourceHash": "9dc812f"
   },
   "licensing.dialog.serverInvalidHelp": "Если вы считаете это ошибкой, напишите нам на <supportEmail>{email}</supportEmail>, и мы разберемся.",
   "@licensing.dialog.serverInvalidHelp": {

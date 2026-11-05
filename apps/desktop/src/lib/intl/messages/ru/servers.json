@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Нажмите на сервер правой кнопкой и выберите «Открепить от переключателя» или выполните «{command}» в палитре команд. Сервер останется в списке «Серверы».",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "Понятно",
   "@servers.pinHint.gotIt": {
@@ -63,9 +63,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Никогда",
+  "servers.hub.neverUsed": "Не использовался",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "как {username}",
   "@servers.hub.shareAccount": {
@@ -379,9 +379,9 @@
   "@servers.sheet.addAnyway": {
     "sourceHash": "d0652ad"
   },
-  "servers.sheet.addAnywayHelp": "Cmdr не удалось проверить сервер. Кнопка «Все равно добавить» сохранит введенные данные без проверки.",
+  "servers.sheet.addAnywayHelp": "Cmdr не удалось проверить этот сервер, поэтому «Все равно добавить» сохранит его так, как вы его ввели.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Извлечь и сохранить",
   "@servers.sheet.ejectAndSave": {
@@ -527,9 +527,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS передает не больше 16 других групп, а в этом списке их {count}.",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS отправляет не больше 16 других групп, а в этом списке {count, plural, one {# группа} few {# группы} many {# групп} other {# группы}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "По этим числам сервер решает, что вам можно открывать. NFS не спрашивает пароль.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -928,9 +928,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Пока прекратить попытки. Соединение останется доступным. Вернитесь, чтобы попробовать снова.",
+  "servers.paneState.cancelCycleTooltip": "Пока прекратить попытки. Соединение останется доступным; чтобы попробовать снова, откройте сервер еще раз.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Остановить попытки и отключиться от сервера.",
   "@servers.paneState.disconnectCycleTooltip": {

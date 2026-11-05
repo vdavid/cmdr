@@ -89,7 +89,7 @@
   },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, когда вы общаетесь в чате или Cmdr начинает разговор самостоятельно:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Ваши сообщения, в том числе любой пароль, который вы вводите в чате, чтобы разблокировать архив или резервную копию",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Если включить запись вызовов моделей ИИ в дополнительных настройках, Cmdr будет также сохранять каждый запрос и ответ в папку на вашем Mac. Эти журналы вызовов остаются локальными и никуда не отправляются.",
+  "ai.cloudConsent.logsNote": "Если включить параметр «Вести журнал вызовов моделей ИИ» в дополнительных настройках, Cmdr будет также сохранять каждый запрос и ответ в папку на вашем Mac. Эти журналы вызовов остаются локальными и никуда не отправляются.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Выключите этот параметр в любой момент, и Cmdr сразу перестанет отправлять данные. Сервис, ключ и чаты сохранятся.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Возможно, модели нужен больший лимит для этого запроса. Попробуйте более быструю модель, например gpt-4.1-mini, в разделе «Настройки > ИИ».",
+  "ai.translateError.emptyResponse.body": "Возможно, модель израсходовала свой лимит токенов, не успев ответить. Попробуйте более быструю модель, например gpt-4.1-mini, в разделе «Настройки > ИИ».",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "У поставщика ИИ что-то пошло не так",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "Сервер не ответил вовремя. Попробуйте еще раз чуть позже.",
+  "ai.cloud.timedOut": "Сервис не ответил вовремя. Попробуйте еще раз чуть позже.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Похоже, с адресом что-то не так. Укажите полный веб-адрес, который начинается с https://.",
   "@ai.cloud.invalidEndpoint": {
