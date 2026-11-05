@@ -244,6 +244,7 @@ answered 403 after CI was green, and that land was lost. So:
 - **A run that showed up never makes the wait give up** (`missingRunGivesUp`): on 2026-10-20 a queued run printed
   "Waiting for CI OK", then dropped out of the `head_sha` list, and the land quit with "no CI run after 5m0s". Only a
   push that started no run at all stops at `appearWithin`; a seen run waits out the usual timeout.
+- **A newer push cancels the PR's running CI**, so the wait follows the newest land run (`newestLandRun`).
 - **A cancelled newest run waits `successorWithin` (2 min) for its successor** (`cancelledRunGivesUp`): on 2026-11-05
   (PR #999) the push's run and the `land` label's run started in the same second, the later cancelled the earlier, and
   the next poll listed only the cancelled one, so the land quit while its land run was going. Only a run still alone
@@ -406,6 +407,20 @@ decides, `etagh.go` fetches), and the docs point at `pnpm land eta` rather than 
 - **`pnpm land eta`** (read-only) prints the load, the typical land and light runs, each lane's typical end, and, when
   HEAD has a land run going, its live ETA. It can't say which lanes a future land run would pick: `changes`' outputs
   aren't in the REST API.
+
+## Decision: yield before the prompt cache expires
+
+An agent runs `pnpm land` in the background and sleeps until it exits. Idle past an hour, its Anthropic prompt cache
+expires, and rebuilding it is costly. So when `CLAUDECODE` is set (Claude Code sets it in its shells), `land` stops
+waiting `claudeYieldAfter` (50 min) after the process started (`shouldYield`, `yield.go`), prints "Still waiting for CI
+OK (expect it around ...)" with the last ETA and queue, and exits with `exitStillWaiting` (75), so the agent wakes, sees
+it, and runs `land` again.
+
+- **Rerunning resumes**: origin already has the head (no push), the PR is reused, and with the `land` label on and a
+  land run listed, `nextLandAsk` asks for nothing, so no new CI starts. The wait picks the same run up.
+- **Outside Claude Code nothing changes** (`defaultYieldAfter` is 0). `-yield-after D` overrides it; `-yield-after 0`
+  never yields.
+- **Measured from process start**, so a land that waited through a rebase and a second CI run still yields in time.
 
 ## Open points
 

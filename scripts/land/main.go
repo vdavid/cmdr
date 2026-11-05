@@ -98,6 +98,8 @@ type config struct {
 	record int
 	// merge: never rebase; land by fast-forward or a merge commit GitHub makes.
 	merge bool
+	// yieldAfter: stop waiting this long after start, to be run again (`yield.go`); 0 never.
+	yieldAfter time.Duration
 }
 
 // validate refuses flag combinations that don't go together.
@@ -130,10 +132,11 @@ func main() {
 	message := flag.String("m", "", "with -squash: the commit message (default: every commit message, oldest first)")
 	noWait := flag.Bool("no-wait", false, "push and open the PR, then return without waiting for CI or landing")
 	timeout := flag.Duration("timeout", 2*time.Hour, "how long to wait for CI")
+	yieldAfter := flag.Duration("yield-after", defaultYieldAfter(os.Getenv(claudeCodeEnv)), "stop waiting this long after start (exit status 75), to be run again; 0 never. Inside Claude Code it defaults to 50m")
 	recordPR := flag.Int("record", 0, "once the branch landed, record contributor PR `N` as merged (docs/guides/handling-prs.md)")
 	merge := flag.Bool("merge", false, "never rebase: land by fast-forward or a GitHub merge commit (a release commit and its tag, docs/guides/releasing.md)")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: pnpm land [-no-wait] [-squash [-m MESSAGE]] [-record N] [-merge] [-timeout 2h]")
+		fmt.Fprintln(os.Stderr, "Usage: pnpm land [-no-wait] [-squash [-m MESSAGE]] [-record N] [-merge] [-timeout 2h] [-yield-after 50m]")
 		fmt.Fprintln(os.Stderr, "       pnpm land rulesets [-apply]")
 		fmt.Fprintln(os.Stderr, "       pnpm land eta              CI load, typical run times, and this commit's ETA")
 		flag.PrintDefaults()
@@ -164,7 +167,7 @@ func main() {
 		}
 		return
 	}
-	cfg := config{root: *root, squash: *squash, message: *message, noWait: *noWait, timeout: *timeout, record: *recordPR, merge: *merge}
+	cfg := config{root: *root, squash: *squash, message: *message, noWait: *noWait, timeout: *timeout, record: *recordPR, merge: *merge, yieldAfter: *yieldAfter}
 	if err := cfg.validate(); err != nil {
 		fail(err)
 	}
@@ -517,6 +520,9 @@ func waitForCI(r runner, head string, cfg config) error {
 				return ciFailure(run, jobs, jobLogSummaries(r, jobs), true, cfg.command())
 			}
 		}
+		if shouldYield(cfg.yieldAfter, time.Since(processStart)) {
+			return stillWaiting{yieldMessage(eta.printed, time.Now(), cfg.command())}
+		}
 		if time.Since(start) > cfg.timeout {
 			return fmt.Errorf("CI is still running after %s; land again to keep waiting: %s", cfg.timeout, cfg.command())
 		}
@@ -734,6 +740,10 @@ func plural(n int, singular, pluralForm string) string {
 }
 
 func fail(err error) {
+	if isStillWaiting(err) {
+		say("%v", err)
+		os.Exit(exitStillWaiting)
+	}
 	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
 }
