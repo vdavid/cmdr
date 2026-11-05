@@ -35,12 +35,14 @@ concurrency:
 # prefixes into its key. The lane files restate it (a called workflow doesn't inherit `env`).
 #
 # `LIGHT_LANE_RUNNER` is the light lane's runner, the one switch between the self-hosted
-# `cmdr-light` runner (on David's Hetzner box) and `ubuntu-latest`. Only trusted runs get it,
-# whatever this says: the `changes` job's runner step hands everything else `ubuntu-latest` (a
+# `cmdr-light` runner (on David's Hetzner box) and `ubuntu-latest`. Hosted is the default: the box
+# runs one job at a time on 1.5 cores, so under several agents' PRs it would queue every light job
+# behind the others (`docs/tooling/ci.md` § The light lane). Set it to `cmdr-light` and only trusted
+# runs get it: the `changes` job's runner step hands everything else `ubuntu-latest` (a
 # self-hosted runner keeps state between jobs, so it must never run code from outside the repo).
 env:
   SAVE_RUST_CACHE: ${{ github.ref == 'refs/heads/main' }}
-  LIGHT_LANE_RUNNER: cmdr-light
+  LIGHT_LANE_RUNNER: ubuntu-latest
 
 jobs:
   # ===========================================
