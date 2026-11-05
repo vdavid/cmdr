@@ -453,7 +453,7 @@ describe('MultiRenameDialog', () => {
       const status = [...root.querySelectorAll('[role="gridcell"][data-column="status"]')]
       expect(status[0].querySelector('[role="img"]')).toBeNull()
       expect(status[0].querySelector('.sr-only')?.textContent).toBe('Ready to rename')
-      expect(status[1].querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Name is taken')
+      expect(status[1].querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Name already taken')
       expect(status[2].querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('No longer in this folder')
     })
 

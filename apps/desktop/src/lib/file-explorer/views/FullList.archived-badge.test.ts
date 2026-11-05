@@ -30,7 +30,7 @@ vi.mock('#lib/settings/settings-store.js', async () =>
 function archivedGlyphOf(rows: HTMLElement[], filename: string): HTMLElement | null {
   const row = rows.find((r) => r.dataset.filename === filename)
   if (!row) throw new Error(`no row rendered for ${filename}`)
-  return row.querySelector<HTMLElement>('.status-glyph[aria-label="Archived"]')
+  return row.querySelector<HTMLElement>('.status-glyph[aria-label="In cold storage"]')
 }
 
 const entries = [fileEntry({ name: 'holiday-2019.tar', inColdStorage: true }), fileEntry({ name: 'notes.txt' })]

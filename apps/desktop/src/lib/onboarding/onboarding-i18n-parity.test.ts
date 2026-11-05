@@ -111,7 +111,7 @@ describe('onboarding step 1 (FDA) parity (en)', () => {
   it('resolves the welcome heading and the revoked-variant copy', () => {
     expect(tString('onboarding.stepFda.welcome.title')).toBe('Welcome to Cmdr!')
     expect(tString('onboarding.stepFda.revoked.intro')).toBe(
-      'It looks like you accepted full disk access before but then revoked it.',
+      'It looks like you granted full disk access before but then turned it off.',
     )
     expect(tString('onboarding.stepFda.revoked.noAccess')).toBe('The app currently has no full disk access.')
     expect(renderRich('onboarding.stepFda.revoked.ifIntentional', ['deny'])).toBe(
@@ -211,7 +211,7 @@ describe('onboarding step 2 (AI) parity (en)', () => {
     )
     expect(tString('onboarding.stepAi.table.rowRename')).toBe('Rename many files')
     expect(tString('onboarding.stepAi.table.renameWithout')).toBe(
-      'You set a rename pattern by hand in Multi-rename, then review and apply it.',
+      'You set a rename pattern by hand in Multi-rename, then review and apply the pattern.',
     )
     expect(tString('onboarding.stepAi.table.renameWith')).toBe(
       'You say “add ISO date prefix”, agent sets your rename pattern, you review and apply at will.',

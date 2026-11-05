@@ -376,7 +376,7 @@ describe('KeyboardShortcutsSection fixed-key rows', () => {
     expect(banner).not.toBeNull()
     const text = banner?.textContent ?? ''
     expect(text).toContain('fixed key in Cmdr')
-    expect(text).toContain('Select previous file')
+    expect(text).toContain('Move cursor to previous item')
 
     // Only Cancel: the fixed binding can't be removed and would keep firing.
     const buttonLabels = [...(banner?.querySelectorAll('button') ?? [])].map((b) => b.textContent.trim())

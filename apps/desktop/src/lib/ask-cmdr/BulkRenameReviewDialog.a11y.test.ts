@@ -646,7 +646,7 @@ describe('BulkRenameReviewDialog', () => {
     await tick()
 
     const notice = requiredElement(target, '[data-rename-check="unfinished"]')
-    expect(notice.textContent).toContain('hasn’t finished checking')
+    expect(notice.textContent).toContain('are still unchecked')
     notice.querySelector('button')?.click()
     expect(actions.checkAgain).toHaveBeenCalledTimes(1)
     const rename = Array.from(target.querySelectorAll('button')).find((button) =>

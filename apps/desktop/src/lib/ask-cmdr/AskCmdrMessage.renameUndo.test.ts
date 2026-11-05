@@ -63,7 +63,7 @@ describe('a completed batch', () => {
     const target = render(line({ status: 'undoable' }, { fileCount: 3, swapsSkipped: 2 }))
 
     expect(target.textContent).toContain('Renamed 3 files.')
-    expect(target.textContent).toContain('Skipped 2 renames that swap names. Rename them one at a time.')
+    expect(target.textContent).toContain('Skipped 2 renames that swap names. Rename those items one at a time.')
   })
 
   it('says nothing about swaps when there were none', () => {
@@ -149,7 +149,7 @@ describe('the result', () => {
       }),
     )
 
-    expect(target.textContent).toContain('Left 3 files alone: they changed since the rename.')
+    expect(target.textContent).toContain('Left 3 items alone: they changed since the rename.')
     expect(target.textContent).toContain('Left receipt-2026.pdf alone: its old name is taken again.')
   })
 

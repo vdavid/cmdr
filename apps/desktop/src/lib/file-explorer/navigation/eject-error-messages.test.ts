@@ -198,13 +198,13 @@ function refusedBy(named: VolumeHolder[]): EjectError {
 describe('a refused unmount names who held the drive', () => {
   it('names the one app, so the person knows what to close', () => {
     expect(renderEjectError(refusedBy([holder('app', 'Preview')]))).toBe(
-      'Preview is still using something there. Close it, then try again.',
+      'Preview is still using something there. Close that app, then try again.',
     )
   })
 
   it('joins two names with "and"', () => {
     expect(renderEjectError(refusedBy([holder('app', 'Preview'), holder('app', 'Warp')]))).toBe(
-      'Preview and Warp are still using something there. Close them, then try again.',
+      'Preview and Warp are still using something there. Close those apps, then try again.',
     )
   })
 
@@ -212,13 +212,15 @@ describe('a refused unmount names who held the drive', () => {
     const rendered = renderEjectError(
       refusedBy([holder('app', 'Preview'), holder('app', 'Warp'), holder('app', 'Photos')]),
     )
-    expect(rendered).toBe('Preview, Warp, and Photos are still using something there. Close them, then try again.')
+    expect(rendered).toBe(
+      'Preview, Warp, and Photos are still using something there. Close those apps, then try again.',
+    )
   })
 
   it('stops at three names and says "other apps" for the rest, so the toast stays one line', () => {
     const four = [holder('app', 'Preview'), holder('app', 'Warp'), holder('app', 'Photos'), holder('app', 'Music')]
     expect(renderEjectError(refusedBy(four))).toBe(
-      'Preview, Warp, Photos, and other apps are still using something there. Close them, then try again.',
+      'Preview, Warp, Photos, and other apps are still using something there. Close those apps, then try again.',
     )
     const six = [...four, holder('app', 'Mail'), holder('app', 'Notes')]
     expect(renderEjectError(refusedBy(six))).toBe(renderEjectError(refusedBy(four)))
@@ -226,7 +228,7 @@ describe('a refused unmount names who held the drive', () => {
 
   it('words a tool exactly like an app, because a name is a name to the person reading it', () => {
     expect(renderEjectError(refusedBy([holder('tool', 'mds_stores')]))).toBe(
-      'mds_stores is still using something there. Close it, then try again.',
+      'mds_stores is still using something there. Close that app, then try again.',
     )
   })
 

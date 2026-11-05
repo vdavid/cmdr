@@ -62,7 +62,7 @@ describe('fileRowName', () => {
     expect(fileRowName({ entry: entry({ name: 'Desktop', isDirectory: true }), isRestricted: true })).toBe(
       'Desktop (folder, Restricted folder)',
     )
-    expect(fileRowName({ entry: entry({ name: 'cold.bin', inColdStorage: true }) })).toBe('cold.bin (Archived)')
+    expect(fileRowName({ entry: entry({ name: 'cold.bin', inColdStorage: true }) })).toBe('cold.bin (In cold storage)')
     // `unknown` draws no badge, so it says nothing either.
     expect(fileRowName({ entry: entry({ name: 'a.txt' }), syncStatus: 'unknown' })).toBe('a.txt')
   })

@@ -77,7 +77,7 @@ describe('error-reporter dialog copy parity (en)', () => {
 
 describe('error-reporter toast copy parity (en)', () => {
   it('resolves the post-send toast', () => {
-    expect(tString('errorReporter.sentToast.message')).toBe('Error report sent. Your reference ID is')
+    expect(tString('errorReporter.sentToast.message')).toBe('Error report sent. Your reference ID:')
     expect(tString('errorReporter.sentToast.dismiss')).toBe('Dismiss')
     expect(tString('errorReporter.sentToast.copyId')).toBe('Copy ID')
     expect(tString('errorReporter.sentToast.copied')).toBe('Copied')
@@ -97,7 +97,7 @@ describe('error-reporter toast copy parity (en)', () => {
   })
 
   it('resolves the amended-report toast', () => {
-    expect(tString('errorReporter.amendedToast.message')).toBe('Note added to your report. Your reference ID is')
+    expect(tString('errorReporter.amendedToast.message')).toBe('Note added to your report. Your reference ID:')
   })
 })
 

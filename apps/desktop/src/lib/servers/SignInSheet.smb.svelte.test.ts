@@ -208,7 +208,7 @@ describe('SignInSheet: editing an SMB host', () => {
     await flush()
 
     expect(document.body.querySelector('#server-address-refusal')?.textContent.trim()).toBe(
-      'Cmdr couldn’t eject Photos, so nothing was saved. Preview is still using something there. Close it, then try again.',
+      'Cmdr couldn’t eject Photos, so nothing was saved. Preview is still using something there. Close that app, then try again.',
     )
     expect(buttonSaying('Eject and save')).toBeTruthy()
     expect(done).toEqual([])

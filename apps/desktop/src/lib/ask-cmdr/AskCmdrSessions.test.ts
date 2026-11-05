@@ -121,7 +121,7 @@ describe('AskCmdrSessions interactions', () => {
   it('the archive action archives the row', async () => {
     const target = mountPanel()
     await tick()
-    const archiveButton = target.querySelector<HTMLButtonElement>('[aria-label="Archive"]')
+    const archiveButton = target.querySelector<HTMLButtonElement>('[aria-label="Archive chat"]')
     archiveButton?.click()
     expect(spies.setArchived).toHaveBeenCalledWith(1, true)
   })

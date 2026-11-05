@@ -139,7 +139,7 @@ describe('StepFda', () => {
     setStep1Variant('revoked')
     mounted = mountStep()
     await tick()
-    expect(mounted.target.textContent).toContain('accepted full disk access before but then revoked it')
+    expect(mounted.target.textContent).toContain('granted full disk access before but then turned it off')
     expect(findButtonContaining(mounted.target, 'Open')).not.toBeNull()
     expect(findButton(mounted.target, 'Deny')).not.toBeNull()
   })

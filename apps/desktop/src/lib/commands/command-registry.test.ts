@@ -398,7 +398,7 @@ describe('CommandId is a closed union (compile-time)', () => {
 describe('updateLicenseCommandName', () => {
   it('mutates the license command name in place (the registry stays mutable)', () => {
     updateLicenseCommandName(false)
-    expect(commands.find((c) => c.id === 'app.licenseKey')?.name).toBe('Enter license key')
+    expect(commands.find((c) => c.id === 'app.licenseKey')?.name).toBe('Enter license key…')
 
     updateLicenseCommandName(true)
     expect(commands.find((c) => c.id === 'app.licenseKey')?.name).toBe('See license details')

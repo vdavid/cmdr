@@ -408,7 +408,7 @@ describe('getUserFriendlyMessage', () => {
       }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.message).toContain('The target device')
+      expect(result.message).toContain('The destination')
       expect(result.message).toContain('read-only')
     })
 
@@ -506,7 +506,7 @@ describe('getUserFriendlyMessage', () => {
       const result = getUserFriendlyMessage(error, 'move')
 
       expect(result.message).toContain('The source')
-      expect(result.message).not.toContain('The target device')
+      expect(result.message).not.toContain('The destination')
     })
 
     it('handles invalid_name', () => {

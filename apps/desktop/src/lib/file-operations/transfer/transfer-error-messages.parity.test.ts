@@ -204,10 +204,10 @@ const cases: Case[] = [
     error: { type: 'sources_span_volumes', path: '/r/Browse snapshots' },
     op: 'copy',
     expected: {
-      title: 'Part of your selection is inside a view',
+      title: 'Part of your selection is inside a backup, archive, or git history',
       message:
         '/r/Browse snapshots is inside a backup’s snapshots, an archive, or a repository’s history, and the rest of your selection isn’t, so Cmdr can’t read them together. Nothing was changed.',
-      suggestion: 'Do it in two steps: the items inside the view on their own, then the rest.',
+      suggestion: 'Do it in two steps: those items on their own, then the rest.',
     },
   },
   {
@@ -716,7 +716,7 @@ const cases: Case[] = [
     error: { type: 'reply_signature_refused', path: '/p', message: 'signature verification failed' },
     expected: {
       title: 'Server reply refused',
-      message: 'The server’s reply had no valid signature, so Cmdr stopped.',
+      message: 'The server’s reply had no valid signature, so Cmdr stopped there.',
       suggestion:
         'A flaky network device can cause this, and so can someone tampering with traffic between you and the server. Reconnect, and if it happens again, check your network.',
     },
@@ -782,7 +782,7 @@ const cases: Case[] = [
     error: { type: 'read_only_device', path: '/p', deviceName: null, side: 'destination' },
     expected: {
       title: 'Read-only device',
-      message: 'The target device is read-only. You can copy files from it, but not to it.',
+      message: 'The destination is read-only. You can copy files from it, but not to it.',
       suggestion: 'Choose a different destination that supports writing.',
     },
   },

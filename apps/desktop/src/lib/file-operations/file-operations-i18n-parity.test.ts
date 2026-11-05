@@ -124,7 +124,7 @@ describe('transfer dialog chrome (en)', () => {
 
   it('resolves the SMB note and checking-conflicts status', () => {
     expect(tString('fileOperations.transferDialog.smbNativeNote')).toBe(
-      'This share uses the system connection. Cancellation may be delayed. Use “Connect directly” in the volume picker for faster transfers and reliable cancel.',
+      'This share uses the system connection. Cancellation may be delayed. Use “Connect directly for faster access” in the volume switcher for faster transfers and reliable cancel.',
     )
     expect(tString('fileOperations.transferDialog.checkingConflicts')).toBe('Checking for conflicts…')
   })

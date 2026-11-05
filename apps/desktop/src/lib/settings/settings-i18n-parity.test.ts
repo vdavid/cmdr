@@ -36,7 +36,7 @@ describe('settings registry label/description parity (en)', () => {
     const def = getSettingDefinition('listing.stripedRows')
     expect(def?.label).toBe('Striped rows')
     expect(def?.description).toBe(
-      'Alternate row shading for easier line tracking. Applies to both Full and Brief view modes.',
+      'Alternate row shading for easier line tracking. Applies to both Full view and Brief view.',
     )
   })
 
