@@ -48,6 +48,7 @@ import { ReconnectFailure } from './reconnect-error'
 import {
   smbReconnectManager,
   RECONNECT_DELAYS_MS,
+  QUIET_ATTEMPT_GRACE_MS,
   TOTAL_ATTEMPTS,
   TOTAL_DURATION_MS,
   ordinalCount,
@@ -92,9 +93,8 @@ describe('smbReconnectManager', () => {
     if (!lastReconnectRequest) throw new Error("init() didn't listen for reconnect requests")
     lastReconnectRequest({ volumeId: 'vol-asked' })
 
-    expect(smbReconnectManager.getState('vol-asked')?.status).toBe('waiting')
     mockReconnect.mockResolvedValueOnce(undefined)
-    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    await vi.advanceTimersByTimeAsync(0)
     expect(mockReconnect).toHaveBeenCalledWith('vol-asked')
   })
 
@@ -102,17 +102,14 @@ describe('smbReconnectManager', () => {
     await smbReconnectManager.init()
     const unsub = smbReconnectManager.subscribe('vol-1')
     emit('vol-1', 'disconnected')
-    // Right after the event we're in the first "waiting" phase.
-    const state1 = smbReconnectManager.getState('vol-1')
-    expect(state1?.status).toBe('waiting')
-    expect(state1?.attemptIndex).toBe(0)
-    expect(state1?.currentDelayMs).toBe(RECONNECT_DELAYS_MS[0])
+    // The first attempt waits for nothing, and shows nothing while it's quiet.
+    expect(RECONNECT_DELAYS_MS[0]).toBe(0)
+    expect(smbReconnectManager.getState('vol-1')).toBeNull()
 
-    // Wait through the first delay → first attempt fires.
     mockReconnect.mockRejectedValueOnce(new Error('still down'))
-    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    await vi.advanceTimersByTimeAsync(0)
     expect(mockReconnect).toHaveBeenCalledTimes(1)
-    // Failed → next delay scheduled.
+    // Failed → the next delay is scheduled, and it shows.
     const state2 = smbReconnectManager.getState('vol-1')
     expect(state2?.status).toBe('waiting')
     expect(state2?.attemptIndex).toBe(1)
@@ -367,7 +364,6 @@ describe('smbReconnectManager', () => {
     const onSuccess = vi.fn()
     const unsub = smbReconnectManager.subscribe('vol-ok', onSuccess)
     emit('vol-ok', 'disconnected')
-    expect(smbReconnectManager.getState('vol-ok')?.status).toBe('waiting')
 
     emit('vol-ok', 'connected')
     expect(smbReconnectManager.getState('vol-ok')).toBeNull()
@@ -400,15 +396,16 @@ describe('smbReconnectManager', () => {
   it('"Retry now" fires immediately and resumes backoff at attempt 2', async () => {
     await smbReconnectManager.init()
     const unsub = smbReconnectManager.subscribe('vol-retry')
+    mockReconnect.mockRejectedValue(new Error('still down'))
     smbReconnectManager.startCycle('vol-retry')
-    // We're in attempt-0 wait. Skip ahead a bit, then click Retry now.
+    // The quiet first attempt fails; we're in attempt 1's wait. Skip ahead a bit, then click Retry now.
     await vi.advanceTimersByTimeAsync(500)
-    mockReconnect.mockRejectedValueOnce(new Error('still down'))
+    expect(mockReconnect).toHaveBeenCalledTimes(1)
     smbReconnectManager.retryNow('vol-retry')
     // The retry runs synchronously through the awaited reconnect call.
     // Flush microtasks so the failure handler runs.
     await vi.advanceTimersByTimeAsync(0)
-    expect(mockReconnect).toHaveBeenCalledTimes(1)
+    expect(mockReconnect).toHaveBeenCalledTimes(2)
     // After the failure, we're scheduled for the SECOND attempt: index 1
     // (with delay RECONNECT_DELAYS_MS[1]), not back to index 0.
     const state = smbReconnectManager.getState('vol-retry')
@@ -424,7 +421,6 @@ describe('smbReconnectManager', () => {
     await smbReconnectManager.init()
     const unsub = smbReconnectManager.subscribe('vol-cancel')
     smbReconnectManager.startCycle('vol-cancel')
-    expect(smbReconnectManager.getState('vol-cancel')?.status).toBe('waiting')
 
     smbReconnectManager.cancel('vol-cancel')
     expect(smbReconnectManager.getState('vol-cancel')).toBeNull()
@@ -440,7 +436,9 @@ describe('smbReconnectManager', () => {
     await smbReconnectManager.init()
     const unsub1 = smbReconnectManager.subscribe('vol-refcount')
     const unsub2 = smbReconnectManager.subscribe('vol-refcount')
+    mockReconnect.mockRejectedValue(new Error('still down'))
     smbReconnectManager.startCycle('vol-refcount')
+    await vi.advanceTimersByTimeAsync(0)
     expect(smbReconnectManager.getState('vol-refcount')?.status).toBe('waiting')
 
     unsub1()
@@ -470,7 +468,9 @@ describe('smbReconnectManager', () => {
     const unsub = smbReconnectManager.subscribe('vol-untrack')
     // The `subscribe` call returns synchronously; if it had been looping, we
     // wouldn't have reached this line. The state should have a single entry.
+    mockReconnect.mockImplementationOnce(() => new Promise<void>(() => {}))
     smbReconnectManager.startCycle('vol-untrack')
+    await vi.advanceTimersByTimeAsync(QUIET_ATTEMPT_GRACE_MS)
     const state = smbReconnectManager.getState('vol-untrack')
     expect(state).not.toBeNull()
     expect(state?.attemptIndex).toBe(0)
@@ -511,13 +511,14 @@ describe('smbReconnectManager', () => {
         seen = status
       })
     })
-    smbReconnectManager.startCycle('vol-reactive')
-    flushSync()
-    expect(seen).toBe('waiting')
-
     let fail!: (e: Error) => void
     mockReconnect.mockImplementationOnce(() => new Promise<void>((_resolve, reject) => (fail = reject)))
-    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    smbReconnectManager.startCycle('vol-reactive')
+    flushSync()
+    expect(seen).toBeNull()
+
+    // The first attempt outlasts its grace, so the reader hears it.
+    await vi.advanceTimersByTimeAsync(QUIET_ATTEMPT_GRACE_MS)
     flushSync()
     expect(seen).toBe('attempting')
 
@@ -540,7 +541,7 @@ describe('smbReconnectManager', () => {
     smbReconnectManager.startCycle('vol-cancel-inflight')
     let fail!: (e: Error) => void
     mockReconnect.mockImplementationOnce(() => new Promise<void>((_resolve, reject) => (fail = reject)))
-    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    await vi.advanceTimersByTimeAsync(QUIET_ATTEMPT_GRACE_MS)
     expect(smbReconnectManager.getState('vol-cancel-inflight')?.status).toBe('attempting')
 
     smbReconnectManager.cancel('vol-cancel-inflight')
@@ -556,7 +557,9 @@ describe('smbReconnectManager', () => {
     await smbReconnectManager.init()
     const unsub1 = smbReconnectManager.subscribe('vol-shared')
     const unsub2 = smbReconnectManager.subscribe('vol-shared')
+    mockReconnect.mockRejectedValue(new Error('still down'))
     smbReconnectManager.startCycle('vol-shared')
+    await vi.advanceTimersByTimeAsync(0)
     const a = smbReconnectManager.getState('vol-shared')
     const b = smbReconnectManager.getState('vol-shared')
     expect(a).not.toBeNull()
@@ -565,6 +568,56 @@ describe('smbReconnectManager', () => {
     smbReconnectManager.cancel('vol-shared')
     unsub1()
     unsub2()
+  })
+
+  /**
+   * The case this exists for: a drop the first dial fixes (a NAS that hung up on an idle
+   * connection) shows nothing at all, where it used to count a progress bar down for two seconds.
+   */
+  it('a first attempt that comes back inside the grace never shows, and reloads the pane', async () => {
+    await smbReconnectManager.init()
+    const onSuccess = vi.fn()
+    const unsub = smbReconnectManager.subscribe('vol-quiet', onSuccess)
+    const statuses: (string | null)[] = []
+    const dispose = $effect.root(() => {
+      const status = $derived(smbReconnectManager.getState('vol-quiet')?.status ?? null)
+      $effect(() => {
+        statuses.push(status)
+      })
+    })
+
+    let succeed!: () => void
+    mockReconnect.mockImplementationOnce(() => new Promise<void>((resolve) => (succeed = resolve)))
+    emit('vol-quiet', 'disconnected')
+    await vi.advanceTimersByTimeAsync(QUIET_ATTEMPT_GRACE_MS - 1)
+    flushSync()
+    succeed()
+    await vi.advanceTimersByTimeAsync(QUIET_ATTEMPT_GRACE_MS)
+    flushSync()
+
+    expect(mockReconnect).toHaveBeenCalledTimes(1)
+    expect(onSuccess).toHaveBeenCalledTimes(1)
+    expect(statuses.every((s) => s === null)).toBe(true)
+
+    dispose()
+    unsub()
+  })
+
+  it('"Retry now" shows its attempt at once, even as the first one', async () => {
+    await smbReconnectManager.init()
+    const unsub = smbReconnectManager.subscribe('vol-retry-shown')
+    mockReconnect.mockRejectedValueOnce(new Error('still down'))
+    smbReconnectManager.startCycle('vol-retry-shown')
+    await vi.advanceTimersByTimeAsync(0)
+
+    mockReconnect.mockImplementationOnce(() => new Promise<void>(() => {}))
+    smbReconnectManager.retryNow('vol-retry-shown')
+    const state = smbReconnectManager.getState('vol-retry-shown')
+    expect(state?.status).toBe('attempting')
+    expect(state?.attemptIndex).toBe(0)
+
+    smbReconnectManager.cancel('vol-retry-shown')
+    unsub()
   })
 })
 
@@ -586,16 +639,15 @@ describe('reconnect display helpers', () => {
     })
 
     it('formats the body 2 message for each attempt index', () => {
-      // With the default 5-attempt array:
-      // attemptIndex=1 → upcoming attempt 2, 3 more after this (3, 4, 5)
-      expect(reconnectProgressMessage(1)).toBe('Retried once, will try it 3 times more after this.')
-      // attemptIndex=2 → upcoming attempt 3, 2 more after this (4, 5)
-      expect(reconnectProgressMessage(2)).toBe('Retried twice, will try it twice more after this.')
-      // attemptIndex=3 → upcoming attempt 4, 1 more after this (5)
-      expect(reconnectProgressMessage(3)).toBe('Retried 3 times, will try it once more after this.')
-      // attemptIndex=4 → final attempt
-      expect(reconnectProgressMessage(4)).toBe(
-        'Retried 4 times, this is the final attempt. Connection drops if it fails.',
+      // With the default 6-attempt array (the quiet first attempt counts as a try):
+      // attemptIndex=1 → upcoming attempt 2, 4 more after this (3, 4, 5, 6)
+      expect(reconnectProgressMessage(1)).toBe('Retried once, will try it 4 times more after this.')
+      expect(reconnectProgressMessage(2)).toBe('Retried twice, will try it 3 times more after this.')
+      expect(reconnectProgressMessage(3)).toBe('Retried 3 times, will try it twice more after this.')
+      expect(reconnectProgressMessage(4)).toBe('Retried 4 times, will try it once more after this.')
+      // attemptIndex=5 → final attempt
+      expect(reconnectProgressMessage(5)).toBe(
+        'Retried 5 times, this is the final attempt. Connection drops if it fails.',
       )
     })
   })

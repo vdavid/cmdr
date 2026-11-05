@@ -144,13 +144,45 @@ impl SmbVolumeInner {
     ///   backoff cycle, the watcher-death loop below, or a transfer waiting for this share to come
     ///   back, `crates/cmdr-operations/src/transfer/volume_outage.rs` in the app).
     pub(super) async fn do_attempt_reconnect(&self) -> Result<(), VolumeError> {
-        self.reconnect_once().await.map(|_| ())
+        self.reconnect_once(None).await.map(|_| ())
+    }
+
+    /// Rebuilds the main session `closed`, which the server hung up on while it
+    /// sat idle, with the share still reading `Direct` (`SmbVolume::clone_session`
+    /// found it). The same rebuild as [`Self::do_attempt_reconnect`], announcing
+    /// nothing: the state never left `Direct`, so `transition_to_direct` has no
+    /// flip to report and the pane shows no reconnect. A no-op when a concurrent
+    /// caller already revived it.
+    pub(super) async fn revive_idle_closed(&self, closed: SessionGeneration) -> Result<(), VolumeError> {
+        info!(
+            "SmbVolumeInner::revive_idle_closed(share={:?}): the server closed the idle connection; reconnecting in place",
+            LogPrivate::volume(&self.share_name)
+        );
+        self.reconnect_once(Some(closed)).await.map(|_| ())
+    }
+
+    /// Whether the installed main session is `closed` and its connection is torn
+    /// down: the one case a `Direct` share still needs a rebuild.
+    async fn installed_session_is_closed(&self, closed: Option<SessionGeneration>) -> bool {
+        let Some(closed) = closed else {
+            return false;
+        };
+        self.session
+            .lock()
+            .await
+            .as_ref()
+            .is_some_and(|s| s.generation == closed && s.client.connection().is_disconnected())
     }
 
     /// [`Self::do_attempt_reconnect`]'s body, answering which credentials a fresh
     /// session came up on, or `None` when one was already live and nothing was
     /// dialed. A sign-in needs the difference before it writes anything down.
-    async fn reconnect_once(&self) -> Result<Option<SmbConnectionParams>, VolumeError> {
+    /// `revive` names a `Direct` share's idle-closed session to rebuild anyway
+    /// ([`Self::revive_idle_closed`]).
+    async fn reconnect_once(
+        &self,
+        revive: Option<SessionGeneration>,
+    ) -> Result<Option<SmbConnectionParams>, VolumeError> {
         // Bail early if `on_unmount` already ran. Doing this before taking the
         // lock means a queued caller doesn't pay the lock-acquisition cost for
         // a volume that's about to be (or already is) gone.
@@ -168,7 +200,7 @@ impl SmbVolumeInner {
             return Err(VolumeError::DeviceDisconnected("SMB volume has been unmounted".into()));
         }
 
-        if self.connection_state() == ConnectionState::Direct {
+        if self.connection_state() == ConnectionState::Direct && !self.installed_session_is_closed(revive).await {
             debug!(
                 "SmbVolumeInner::attempt_reconnect(share={:?}): already Direct, skipping",
                 LogPrivate::volume(&self.share_name)
@@ -339,7 +371,7 @@ impl SmbVolumeInner {
             params_w.password = sign_in.secret.clone();
         }
         // `None`: a session was already live, so nothing proved these credentials.
-        let Some(connected_with) = self.reconnect_once().await? else {
+        let Some(connected_with) = self.reconnect_once(None).await? else {
             return Ok(SignedIn::NOTHING_FILED);
         };
         Ok(self.file_sign_in(&connected_with, &sign_in).await)
