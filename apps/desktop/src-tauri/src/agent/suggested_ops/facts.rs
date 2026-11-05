@@ -43,6 +43,9 @@ pub enum SourceStat {
         /// Unix seconds.
         modified: Option<i64>,
         inode: Option<u64>,
+        /// A folder, as the volume says. Its own field because `size: None` also means a file
+        /// whose volume reports no size, and a rename plan must refuse a folder for certain.
+        is_directory: bool,
     },
     /// The volume says there's nothing at that path.
     Missing,
@@ -55,7 +58,9 @@ impl SourceStat {
     /// freeze. A missing or unanswered stat stays `NULL`, ❌ never a zero.
     pub fn snapshot(self) -> Option<OpSnapshot> {
         match self {
-            SourceStat::Present { size, modified, inode } => Some(OpSnapshot {
+            SourceStat::Present {
+                size, modified, inode, ..
+            } => Some(OpSnapshot {
                 size,
                 mtime: modified,
                 inode,
@@ -128,6 +133,7 @@ fn classify(answer: Result<cmdr_fs::entry::FileEntry, VolumeError>) -> SourceSta
             size: if entry.is_directory { None } else { entry.size },
             modified: entry.modified_at.map(|at| at as i64),
             inode: entry.inode,
+            is_directory: entry.is_directory,
         },
         Err(VolumeError::NotFound(_)) => SourceStat::Missing,
         Err(e) => {

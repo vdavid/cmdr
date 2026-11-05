@@ -1,7 +1,7 @@
 //! Rename-proposal tests, one file per concern:
 //!
-//! - `plan.rs`: the tool boundary — the pane's effective scope, per-row validation, and the
-//!   evidence guardrail.
+//! - `plan.rs`: the tool boundary — placement on any connected volume, per-row validation, the
+//!   bounded existence check, and the evidence guardrail.
 //! - `store.rs`: what staging into `main.db` makes true — durability, the acceptance
 //!   binding, and the user's own revise.
 //! - `preflight.rs`: the preflight engine's blocks and warnings.

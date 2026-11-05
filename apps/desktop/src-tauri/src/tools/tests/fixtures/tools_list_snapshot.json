@@ -1812,7 +1812,7 @@
     },
     {
       "name": "propose_rename_plan",
-      "description": "Stage a same-folder image-file rename plan for the user to review; it changes nothing and approves nothing. At most 200 rows.",
+      "description": "Stage a rename plan for the files of ONE folder, on any connected volume, for the user to review; it changes nothing and approves nothing. Each row's volumeId comes from a pane or a location. A file that doesn't exist stays in the review, marked missing. At most 200 rows.",
       "inputSchema": {
         "type": "object",
         "properties": {

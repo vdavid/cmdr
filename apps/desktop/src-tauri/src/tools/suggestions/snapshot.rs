@@ -6,10 +6,12 @@
 //! source volume, before anything is written: a path that answers freezes its size, date, and
 //! inode, and one that doesn't (missing, refused, too slow) stays `NULL`. Never a zero.
 //!
-//! The ONE path for every producer that names sources by hand: `propose_suggestions` (paths and
-//! renames) and `propose_rename_plan` both freeze through [`freeze_paths`]. A call shares ONE
-//! deadline, so a sweep onto a dead mount costs the agent one budget, not one per file; the
-//! stats themselves are capped in `suggested_ops::facts`.
+//! Every producer that names sources by hand stats them through `suggested_ops::facts`'s
+//! `stat_sources` under [`snapshot_deadline`]: `propose_suggestions` (paths and renames) through
+//! [`freeze_paths`], and `propose_rename_plan` directly (`propose/rename/sources.rs`), because its
+//! one stat also answers whether each source exists. A call shares ONE deadline, so a sweep onto
+//! a dead mount costs the agent one budget, not one per file; the stats themselves are capped in
+//! `suggested_ops::facts`.
 
 use std::sync::Arc;
 

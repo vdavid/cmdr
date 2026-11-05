@@ -1,5 +1,5 @@
-//! The `propose_rename_plan` tool. It stages a bounded, cache-validated rename
-//! proposal without touching the filesystem.
+//! The `propose_rename_plan` tool. It stages a bounded rename proposal for one folder on any
+//! connected volume, after one time-limited stat per source and without changing anything.
 //!
 //! Every row carries typed [`RenameEvidence`](super::evidence::RenameEvidence) for where
 //! its name came from, and a row claiming image content is checked against
@@ -8,9 +8,11 @@
 //! refusal, so the user is never shown a name whose evidence didn't check out. See
 //! `evidence.rs` for the guardrail itself.
 //!
-//! Five concerns, one per file:
+//! The concerns, one per file:
 //! - [`plan`]: the tool boundary — schema, dispatch, and everything a plan must survive
-//!   before a single row is staged (scope, validation, the evidence check).
+//!   before a single row is staged (placement, validation, the evidence check).
+//! - [`rows`]: the per-row refusals, collected over the whole plan and named back to the model.
+//! - [`sources`]: the one bounded live stat per source (existence, folders, the snapshot).
 //! - [`store`]: what a staged proposal IS and where it lives — one durable group on the
 //!   proposal spine, its display snapshot, and the process-local accepted preflight.
 //! - [`preflight`](mod@preflight): user-action-time revalidation of the subset the user allows, and the
@@ -28,6 +30,8 @@ mod cut_listing;
 mod plan;
 mod preflight;
 mod revise;
+mod rows;
+mod sources;
 mod store;
 
 pub use check::{BulkRenameCheckProgress, RenameChecks};

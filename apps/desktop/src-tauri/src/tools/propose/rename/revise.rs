@@ -4,8 +4,8 @@
 //! model's name or the old one. Revise is the third option, and it is deliberately its own
 //! narrow operation rather than a re-staged plan: re-staging would re-run two gates that must
 //! not fire for an edit. The evidence check refuses the WHOLE plan when one `call_id` was
-//! revoked, so fixing row seven could destroy a 50-row review; and the pane's effective scope
-//! has moved on by review time, so every row would refuse.
+//! revoked, so fixing row seven could destroy a 50-row review; and the plan's live stat would
+//! re-ask a share for every row (and refuse them all on a slow one) over one changed name.
 //!
 //! What it must do instead, on the server:
 //!

@@ -241,6 +241,7 @@ mod tests {
             size: Some(7),
             modified: Some(1_700_000_000),
             inode: Some(12),
+            is_directory: false,
         });
         assert_eq!(
             serde_json::to_value(SuggestedOpLiveFact {
@@ -259,6 +260,7 @@ mod tests {
             size: None,
             modified: None,
             inode: None,
+            is_directory: true,
         });
         assert_eq!(
             serde_json::to_value(folder).unwrap(),
@@ -279,6 +281,7 @@ mod tests {
             size: Some(1),
             modified: Some(1),
             inode: Some(inode),
+            is_directory: false,
         }
     }
 

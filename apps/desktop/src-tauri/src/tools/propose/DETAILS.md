@@ -70,6 +70,51 @@ that sends it is refused with `EvidenceProblem::SourceReservedForUser`, because 
 name is the misattribution this whole module exists to stop. The plan schema's enum lists the five model-usable sources,
 so a compliant model never trips that refusal.
 
+## Where a plan may point, and what it checks there
+
+David's decision (#213, 2026-11-04): a plan targets any ONE folder on any volume Cmdr has connected, whether or not a
+pane shows it, and a selection no longer narrows what it may include. The case that forced it: chat about `~/Downloads`,
+move the panes to `~/Documents`, then ask to rename the invoices in `~/Downloads/something`; a focused-pane rule refused
+it. The user's review, preflight's live re-check, and apply's re-check are the safety; the chat defines intent.
+
+`plan.rs::build_draft` runs, in order, and each step refuses before the next spends anything:
+
+1. **Each row on its own** (`rows.rs::own_problem`, no I/O): a plain full path (`rows.rs::is_plain_path`: no relative
+   path, no empty, `.`, or `..` segment, so one folder can't be spelled two ways past the one-folder check), not inside
+   an archive, a repo's history, or a backup's snapshots, and a valid new name.
+2. **Across rows**: one `volumeId`, one folder, no repeated source, no repeated name (`destination_key`). The volume and
+   folder are the ones MOST rows name (`rows.rs::most_common`), so one stray row is the one refused, ❌ not the 39 that
+   agree.
+3. **Evidence** (§ Evidence), on the paths as sent, which are the paths `image_facts` answered for.
+4. **Placement** (`plan.rs::place_folder`): the shared folder goes through `crate::location`'s resolver over one
+   `VolumeFacts` snapshot. An unknown id, a path off the named volume, or a volume that isn't connected refuses in the
+   read tools' miss shape (`refusal: "location"`, plus `nearby` and `sameShareAs`), the same next moves `list_dir`
+   gives. A not-live share with a live, proven sibling is re-addressed onto it, as `propose_suggestions` does, and the
+   rows' paths are rewritten to where the files are now: the stored rows are what preflight and apply read.
+5. **One bounded stat per source** (`sources.rs::check_sources`), through the placed volume, under the one
+   `snapshot_deadline()` the whole call shares (10 s), via `suggested_ops::facts::stat_sources` (detached, capped in
+   flight, a spent deadline asks nothing). Boot disk and remote volumes take the same path; the local volume's
+   `get_metadata` reads `lstat`, so a symlink stays a link.
+
+What the stat's three answers mean:
+
+- **Missing**: the row stays, with no snapshot, and preflight shows it as "(doesn't exist)" (`SourceMissing`). One
+  invented name costs that row, not the plan. **Except when EVERY row is missing**: nothing the user could approve would
+  rename anything, so the plan names the wrong folder or invented every name, and it refuses with each row as `missing`.
+- **Present**: a folder refuses its row (`SourceStat::Present::is_directory`, its own field because `size: None` also
+  means a file whose volume reports no size). A file's size, date, and inode freeze as the row's creation snapshot: one
+  stat does both jobs.
+- **Unknown** (timed out, or refused in a way that isn't "not there"): the row refuses as `unreachable`. This is the
+  dead-mount guarantee as a bounded wait: a hung share costs the turn the deadline, then says so. ❌ Never stage an
+  unanswered row as missing: "I couldn't check" is not "it isn't there", and the review would tell the user a real file
+  doesn't exist.
+
+**Decision: every refusal about rows names them, all at once.** `RowProblem` is typed per source path, collected over
+the whole plan, and grouped by problem in the result (`rowsRejected: [{ problem, detail, sourcePaths }]`), so 40 rows on
+one unreachable share read as one sentence. A model that only learns one bad row per retry burns its turn budget; one
+fixed sentence that names no row ("Every source must be in the focused pane's effective scope.") gave it nothing to fix
+at all. Plan-wide problems (no rows, too many, the store isn't there) stay a plain `problem`: there's no row to name.
+
 ## A check with no time limit
 
 `preflight` has no deadline, because a 500-row job on a busy NAS can take minutes while working fine (David's call, #152). `rename/check.rs` holds the mechanism and its reasoning: one registered check per proposal (a new one stops the old), a scan detached from its waiter, and progress from the waiter's own clock. Decisions worth knowing here:
@@ -85,8 +130,8 @@ Frontend half: `apps/desktop/src/lib/ask-cmdr/DETAILS.md` § A check with no tim
 The review can replace one staged row's destination name with the user's own (`revise.rs`, reached over
 `revise_bulk_rename_row`). It is deliberately NOT a re-staged plan: re-staging would re-run two gates that must not fire
 for an edit. The whole-plan evidence rule refuses all 50 rows when one `call_id` was revoked, so fixing row seven could
-destroy the review; and the pane's effective scope has moved on by review time, so every row would refuse. Revise
-consults no ledger and no pane state.
+destroy the review; and the plan's live stat would re-ask a share for every row (refusing them all on a slow one) over
+one changed name. Revise consults no ledger and stats nothing.
 
 What it does instead:
 
@@ -214,9 +259,6 @@ answer. A refusal is not a failure here.
 Closing a review REJECTS its group rather than deleting it, so what the user was asked and what they answered stay in
 the decision record. Proposing, approving, and rejecting all go through `agent/suggested_ops/`, which is where the
 acceptance-rate metric is reported from.
-
-Proposal validation reads the `PaneStateStore` cache and index registration only. It does not call live filesystem APIs:
-a dead mount must not hang an agent turn, and symlinks remain links rather than targets.
 
 Preflight owns row warnings as well as blockers. It compares the final filename extension case-insensitively and marks
 extension additions, removals, and changes without blocking them. A renamed dotfile still has no extension; a trailing
