@@ -220,7 +220,7 @@ SUPPORT_EMAIL = "david@getcmdr.com"
 # which a later `wrangler deploy` would silently clobber back to this value.
 PADDLE_ENVIRONMENT = "live"
 
-# Listmonk. The signup routes (POST /beta-signup, /newsletter-signup) subscribe by list UUID through
+# Listmonk. The signup routes (POST /beta-signup, /newsletter-signup, /subprocessor-updates-signup) subscribe by list UUID through
 # Listmonk's public endpoint, which needs no credentials; the UUIDs are public anyway (Listmonk's own
 # subscription form shows them). The API user + token (`wrangler secret put LISTMONK_API_TOKEN`) are
 # only for GET /admin/funnel. The list ids MUST be TOML integers: the funnel checks
@@ -231,6 +231,10 @@ LISTMONK_BETA_LIST_ID = 4
 LISTMONK_BETA_LIST_UUID = "8ad332ca-ef4d-4663-b38f-933ec7e857c9"
 LISTMONK_NEWSLETTER_LIST_ID = 3
 LISTMONK_NEWSLETTER_LIST_UUID = "160d5cda-88f3-4f87-a8b3-82677f0b9157"
+# "Cmdr subprocessor updates" (getcmdr.com/trust): 30 days' notice before a subprocessor change.
+# The funnel leaves it out on purpose (it counts interest in Cmdr, not due diligence).
+LISTMONK_SUBPROCESSOR_LIST_ID = 5
+LISTMONK_SUBPROCESSOR_LIST_UUID = "990aee1b-97df-4a5b-be6f-d4def6783e87"
 
 # The PRIVATE GitHub repo every crash, error report, and feedback message is filed into, so triage
 # happens on one board. `owner/name`.

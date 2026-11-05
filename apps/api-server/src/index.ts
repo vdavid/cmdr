@@ -11,6 +11,7 @@ import { feedback } from './telemetry/feedback'
 import { likes } from './website/likes'
 import { betaSignup } from './website/beta-signup'
 import { newsletterSignup } from './website/newsletter-signup'
+import { subprocessorUpdatesSignup } from './website/subprocessor-updates-signup'
 import { linkCodes } from './website/link-codes'
 import { cspReport } from './website/csp-report'
 import { s3Prices } from './s3-prices/s3-prices'
@@ -51,6 +52,7 @@ app.route('/', errorReport)
 app.route('/', errorReportAmend)
 app.route('/', betaSignup)
 app.route('/', newsletterSignup)
+app.route('/', subprocessorUpdatesSignup)
 app.route('/', feedback)
 app.route('/', linkCodes)
 app.route('/', cspReport)

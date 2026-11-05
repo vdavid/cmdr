@@ -15,7 +15,8 @@ import type { CrashFate } from './email/crash'
 import type { FeedbackEmailLogs } from './email/feedback'
 import type { BoardCard } from './email/layout'
 import { humanReportRecipient } from './email/send'
-import { SIGNUP_KINDS, type OpsEventKind } from './ops-events'
+// Signups are the morning brief's to count, never an alert, so the digest neither mails nor stamps them.
+import { NOT_A_SIGNUP, type OpsEventKind } from './ops-events'
 import { parseOsFrames } from './report-outbox'
 import { PRESIGN_TTL_HOURS, buildPresignedUrl } from './telemetry/error-report'
 import type { Bindings } from './types'
@@ -111,9 +112,6 @@ interface PendingRows {
   feedback: FeedbackRow[]
   opsAlerts: OpsRow[]
 }
-
-/** Signups are the morning brief's to count, never an alert, so the digest neither mails nor stamps them. */
-const NOT_A_SIGNUP = `kind NOT IN (${SIGNUP_KINDS.map((kind) => `'${kind}'`).join(', ')})`
 
 async function readPending(db: D1Database): Promise<PendingRows> {
   const crashes = await db

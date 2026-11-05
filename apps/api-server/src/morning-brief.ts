@@ -9,6 +9,7 @@
 
 import { sendMorningBriefEmail, type BriefArrivals, type BriefCard } from './email/morning-brief'
 import { humanReportRecipient } from './email/send'
+import { NOT_A_SIGNUP } from './ops-events'
 import { listOpenCards, resolveIssueTarget } from './github-issues'
 import { NEEDS_REPLY_LABEL, UNPROCESSED_LABEL } from './report-cards'
 import { ERROR_REPORT_PREFIX } from './telemetry/error-report-eviction'
@@ -81,7 +82,8 @@ async function readArrivals(db: D1Database): Promise<BriefArrivals> {
     ),
     betaSignups: await opsCount(`kind = 'beta-signup'`),
     newsletterSignups: await opsCount(`kind = 'newsletter-signup'`),
-    opsAlerts: await opsCount(`kind NOT IN ('beta-signup', 'newsletter-signup')`),
+    subprocessorUpdatesSignups: await opsCount(`kind = 'subprocessor-updates-signup'`),
+    opsAlerts: await opsCount(NOT_A_SIGNUP),
   }
 }
 

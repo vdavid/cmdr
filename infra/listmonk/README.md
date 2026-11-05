@@ -13,8 +13,9 @@ getcmdr.com → Caddy → listmonk:9000 (Docker, proxy-net)
               SMTP2Go (mail-eu.smtp2go.com, SMTP relay for sending emails)
 ```
 
-- Signups reach Listmonk through the api-server Worker (`/newsletter-signup`, `/beta-signup`), which calls Listmonk's
-  public subscription API at `mail.getcmdr.com`: `apps/api-server/src/website/DETAILS.md` § Signups
+- Signups reach Listmonk through the api-server Worker (`/newsletter-signup`, `/beta-signup`,
+  `/subprocessor-updates-signup`), which calls Listmonk's public subscription API at `mail.getcmdr.com`:
+  `apps/api-server/src/website/DETAILS.md` § Signups
 - Caddy proxies Listmonk's public pages on getcmdr.com (the confirm and unsubscribe links in its emails, the archive)
 - `mail.getcmdr.com` serves the Listmonk admin UI (also proxied by Caddy), Cloudflare-proxied and behind Cloudflare
   Access. Its `/api` path bypasses Access, since the api-server and agents authenticate to Listmonk itself. The DNS
@@ -151,8 +152,10 @@ Reload Caddy: `docker compose restart caddy` in Caddy's folder.
 ### 7. Connect the signup routes
 
 The website form and the desktop app sign up through the api-server, which needs each list's UUID (from step 6.4): set
-`LISTMONK_NEWSLETTER_LIST_UUID` and `LISTMONK_BETA_LIST_UUID` under `[vars]` in `apps/api-server/wrangler.toml`, then
-deploy the Worker. The lists must stay **public**: the public subscription API refuses private lists.
+`LISTMONK_NEWSLETTER_LIST_UUID`, `LISTMONK_BETA_LIST_UUID`, and `LISTMONK_SUBPROCESSOR_LIST_UUID` under `[vars]` in
+`apps/api-server/wrangler.toml`, then deploy the Worker. The lists must stay **public**: the public subscription API
+refuses private lists. The live lists: "Cmdr newsletter" (id 3), the beta list (id 4), and "Cmdr subprocessor updates"
+(id 5, getcmdr.com/trust's 30-day notice list), all double opt-in.
 
 ## Maintenance
 

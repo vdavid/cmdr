@@ -28,6 +28,7 @@ export interface BriefArrivals {
   feedback: number
   betaSignups: number
   newsletterSignups: number
+  subprocessorUpdatesSignups: number
   opsAlerts: number
 }
 
@@ -98,6 +99,7 @@ function arrivalsList(arrivals: BriefArrivals): string {
     counted(arrivals.feedback, 'feedback message', 'feedback messages'),
     counted(arrivals.betaSignups, 'beta signup', 'beta signups'),
     counted(arrivals.newsletterSignups, 'newsletter signup', 'newsletter signups'),
+    counted(arrivals.subprocessorUpdatesSignups, 'subprocessor updates signup', 'subprocessor updates signups'),
     counted(arrivals.opsAlerts, 'ops alert', 'ops alerts'),
   ]
   return `<h3 style="color: #111827; margin: 24px 0 8px;">In the last day</h3><ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`

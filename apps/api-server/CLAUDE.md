@@ -10,7 +10,7 @@ Five areas own their code, tests, and `C+D.md`; read an area's docs before worki
 
 - `src/licensing/` — the Paddle webhook, `/activate`, `/validate`, the `/admin/` license routes, the daily backup.
 - `src/telemetry/` — crash reports, heartbeats, downloads, update checks, error reports, feedback.
-- `src/website/` — `/beta-signup`, `/newsletter-signup`, `/likes/:slug`, `?r=` link codes.
+- `src/website/` — `/beta-signup`, `/newsletter-signup`, `/subprocessor-updates-signup`, `/likes/:slug`, `?r=` codes.
 - `src/admin/` — the dashboard's read-only aggregations, including `/admin/funnel`.
 - `src/s3-prices/` — `/s3-prices/v1`, the app's S3 price table.
 

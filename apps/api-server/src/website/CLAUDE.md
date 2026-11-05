@@ -1,16 +1,19 @@
 # Website endpoints
 
-What getcmdr.com, the blog, and the app call: `beta-signup.ts` (`POST /beta-signup`, the app) and `newsletter-signup.ts`
-(`POST /newsletter-signup`, getcmdr.com's form), both thin over `listmonk-signup.ts`; `likes.ts` (`/likes/:slug` blog
-hearts in KV), `link-codes.ts` (`GET /r-codes.json` plus the `/admin/r-codes` CRUD behind it), and `csp-report.ts`
-(`POST /csp-report`, the site's CSP violations, raised as ops alerts).
+What getcmdr.com, the blog, and the app call: `beta-signup.ts` (`POST /beta-signup`, the app), `newsletter-signup.ts`
+(`POST /newsletter-signup`), and `subprocessor-updates-signup.ts` (`POST /subprocessor-updates-signup`, /trust), all
+thin over `listmonk-signup.ts`; `likes.ts` (`/likes/:slug` blog hearts in KV), `link-codes.ts` (`GET /r-codes.json` plus
+the `/admin/r-codes` CRUD behind it), and `csp-report.ts` (`POST /csp-report`, the site's CSP violations, raised as ops
+alerts).
 
 ## Must-knows
 
 - **Signups go through Listmonk's PUBLIC endpoint (`/api/public/subscription`), ❌ never the admin
   `POST /api/subscribers`**: the admin one answers 200 when the opt-in mail fails to send, which hid a dead SMTP
   credential for two months. The public one fails loudly, handles existing subscribers, and can't preconfirm, so double
-  opt-in holds. Both lists must stay `public` in Listmonk.
+  opt-in holds. Every list must stay `public` in Listmonk.
+- **A new list's ops-event kind joins `SIGNUP_KINDS` (`ops-events.ts`)**, or the digest mails every signup as an ops
+  alert and the brief counts it as one.
 - **Every signup outcome returns an identical empty 204** (new, re-sent, already confirmed), so the response can't
   enumerate addresses. The exceptions carry no such signal: 400 (bad address), 429, and a soft 502 when the confirmation
   mail didn't go out.

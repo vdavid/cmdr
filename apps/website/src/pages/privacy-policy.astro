@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 <LegalLayout
     title="Privacy policy"
     description="How Cmdr collects, uses, and protects your personal data. GDPR compliant."
-    lastUpdated="2026-11-04"
+    lastUpdated="2026-11-05"
 >
     <p>
         Your privacy matters to us a lot. This policy explains what data we collect, why, and how we protect it. We've
@@ -39,7 +39,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <h3>On the website (getcmdr.com)</h3>
     <ul>
         <li>
-            <strong>Email address</strong>: if you subscribe to our newsletter or contact us
+            <strong>Email address</strong>: if you subscribe to our newsletter or to subprocessor updates (the emails that
+            tell you 30 days before we change who processes data for us), or contact us
         </li>
         <li>
             <strong>Page analytics</strong>: we use <a href="https://umami.is" target="_blank" rel="noopener noreferrer"
@@ -205,7 +206,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         </li>
         <li>
             <strong>Consent</strong>: Email addresses to send you news that hopefully interest you, including the optional
-            beta contact email. (You can unsubscribe anytime from all communications we send, except for stuff we
+            beta contact email and the subprocessor updates. (You can unsubscribe anytime from all communications we send, except for stuff we
             <em>need</em> to send like updates to this very policy.)
         </li>
         <li>
@@ -218,6 +219,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>To process your license purchase</li>
         <li>To maintain and improve Cmdr</li>
         <li>To send you product updates (if you subscribed)</li>
+        <li>To tell you 30 days before we change who processes data for us (if you subscribed)</li>
         <li>To respond to your support requests</li>
         <li>To analyze website traffic and improve our communication</li>
     </ul>
@@ -287,8 +289,10 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             >
         </li>
         <li>
-            <strong>Listmonk</strong> (newsletter and beta list): self-hosted on our server. Stores your email address
-            and subscription status, including the optional beta contact email you can share in the desktop app. Your
+            <strong>Listmonk</strong> (newsletter, beta, and subprocessor updates lists): self-hosted on our server.
+            Stores your email address and subscription status, including the optional beta contact email you can share
+            in the desktop app. Every list uses double opt-in: you're only subscribed once you click the link in the
+            confirmation email. Your
             signup passes through our API server on its way there, which doesn't keep it. No data leaves our
             infrastructure except when sending emails via Resend.
         </li>
@@ -324,7 +328,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <strong>Purchase records</strong>: kept for seven years (Swedish accounting law requirement)
         </li>
         <li>
-            <strong>Email subscriptions</strong>: kept until you unsubscribe, then we have no use for it.
+            <strong>Email subscriptions</strong> (newsletter, beta, and subprocessor updates): kept until you
+            unsubscribe, then we have no use for it.
         </li>
         <li>
             <strong>Website analytics</strong>: deleted after two years. A monthly job removes everything older than 23
@@ -389,7 +394,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <strong>Object</strong>: object to processing based on legitimate interest
         </li>
         <li>
-            <strong>Withdraw consent</strong>: for newsletter subscriptions, unsubscribe anytime
+            <strong>Withdraw consent</strong>: for email subscriptions, unsubscribe anytime
         </li>
     </ul>
     <p>

@@ -148,7 +148,8 @@ describe('handleMorningBrief', () => {
         VALUES ('${hoursAgo(1)}', 'hi', '0.52.0', '27.0', 'release');
       INSERT INTO ops_events (created_at, kind, message)
         VALUES ('${hoursAgo(4)}', 'beta-signup', 'x'), ('${hoursAgo(4)}', 'newsletter-signup', 'x'),
-               ('${hoursAgo(4)}', 'beta-signup', 'x'), ('${hoursAgo(4)}', 'csp-violation', 'x');
+               ('${hoursAgo(4)}', 'beta-signup', 'x'), ('${hoursAgo(4)}', 'csp-violation', 'x'),
+               ('${hoursAgo(4)}', 'subprocessor-updates-signup', 'x');
     `)
 
     await handleMorningBrief(testEnv())
@@ -158,6 +159,8 @@ describe('handleMorningBrief', () => {
     expect(html).toContain('1 hand-written, 1 auto-sent')
     expect(html).toContain('2 beta signups')
     expect(html).toContain('1 newsletter signup')
+    expect(html).toContain('1 subprocessor updates signup')
+    // A signup is news, never an alert: only the CSP violation counts here.
     expect(html).toContain('1 ops alert')
   })
 

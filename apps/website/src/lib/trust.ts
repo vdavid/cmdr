@@ -268,7 +268,7 @@ export const serverRetention: RetentionRule[] = [
     rule: "Deleted after two years, by a monthly job on Cmdr's own server that removes anything older than 23 months.",
   },
   { what: 'Website server logs', rule: 'Deleted after 30 days. They never hold an IP address.' },
-  { what: 'Newsletter list (Listmonk)', rule: 'Kept until the person unsubscribes.' },
+  { what: 'Newsletter and subprocessor updates lists (Listmonk)', rule: 'Kept until the person unsubscribes.' },
   { what: 'Purchase records at Paddle', rule: 'Seven years, as Swedish accounting law requires. Paddle keeps these.' },
 ]
 

@@ -121,6 +121,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 | POST    | `/error-report/:id/amend`      | amend key     | Add a note or reply-to address to a report already in R2 (`.amend.json` sidecar + email)           |
 | POST    | `/beta-signup`                 | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                |
 | POST    | `/newsletter-signup`           | IP rate-limit | getcmdr.com's newsletter form → the Listmonk newsletter list (CORS: getcmdr.com)                   |
+| POST    | `/subprocessor-updates-signup` | IP rate-limit | getcmdr.com/trust's form → the Listmonk subprocessor updates list (CORS: getcmdr.com)              |
 | POST    | `/feedback`                    | IP rate-limit | Ingest in-app feedback to D1 (the outbox row)                                                      |
 | GET     | `/update-check/:version`       | none          | Log update check to D1 (deduped), 302 → latest.json                                                |
 | GET     | `/likes/:slug`                 | none          | Blog-post like count + whether this caller already liked it                                        |
@@ -165,7 +166,7 @@ Decisions.
 | `LISTMONK_API_URL`                 | `https://mail.getcmdr.com`       | Same base URL                       |
 | `LISTMONK_API_USER`                | Listmonk API user                | Funnel only (signups need none)     |
 | `LISTMONK_API_TOKEN`               | Listmonk API token               | Funnel only (signups need none)     |
-| `LISTMONK_*_LIST_ID` / `_UUID`     | Beta + newsletter list ids/UUIDs | Same ([vars], not secrets)          |
+| `LISTMONK_*_LIST_ID` / `_UUID`     | Each list's id and UUID          | Same ([vars], not secrets)          |
 | `IP_HASH_PEPPER`                   | Any random string                | Makes every stored IP hash one-way  |
 | `HEALTHCHECKS_PING_URL`            | unset (skips the ping)           | healthchecks.io cron ping URL       |
 
@@ -189,7 +190,7 @@ until the live Worker has it (`.github/workflows/deploy-api-server.yml`, `Check 
 | `ERROR_REPORT_META`          | KV namespace | Eviction bookkeeping + intake admission counters (key list below)                         |
 | `LINK_CODES`                 | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)              |
 | `HEARTBEAT_LIMITER`          | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)             |
-| `SIGNUP_LIMITER`             | Rate limit   | Gates both signup routes at 5 req/min/IP, one shared window (signups are rare)            |
+| `SIGNUP_LIMITER`             | Rate limit   | Gates every signup route at 5 req/min/IP, one shared window (signups are rare)            |
 | `FEEDBACK_LIMITER`           | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)         |
 | `ERROR_REPORT_LIMITER`       | Rate limit   | Gates `POST /error-report` at 3 req/min/IP (tightest: each request stores up to 10 MB)    |
 | `ERROR_REPORT_AMEND_LIMITER` | Rate limit   | Gates `POST /error-report/:id/amend` at 10 req/min/IP (a note, not a bundle)              |
@@ -228,9 +229,10 @@ other namespaces).
 
 `ops-events.ts` writes the operational notices to the D1 `ops_events` table: `cron-failure`, `board-add-failed`,
 `board-rating-failed`, `csp-violation`, `eviction`, `eviction-blocked`, `intake-rejected`, `admin-auth-rejected`,
-`webhook-signature-rejected`, `sale-notice-failed` (`src/licensing/DETAILS.md` § Sale notices), and the two signup
-kinds. The three-hour digest mails the alerts (§ Cron handler job 2) and leaves the signups for the morning brief to
-count. Nothing else watches a channel: there is no Discord integration.
+`webhook-signature-rejected`, `sale-notice-failed` (`src/licensing/DETAILS.md` § Sale notices), and the signup kinds
+(`SIGNUP_KINDS`, and `NOT_A_SIGNUP`, the SQL filter both readers use). The three-hour digest mails the alerts (§ Cron
+handler job 2) and leaves the signups for the morning brief to count. Nothing else watches a channel: there is no
+Discord integration.
 
 - **Rejected requests are counted, not logged one by one** (`countOpsEvent`): a repeat adds to the unnotified row with
   the same kind and message (`occurrences`, migration `0024`), so a burst is one digest line and one small row, and the
