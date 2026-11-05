@@ -69,7 +69,7 @@ node apps/api-server/scripts/mint-license.js --email test@example.com --org "Tes
 ```
 
 These keys pass `/validate` too, resolved from the local `license_issuance` ledger rather than from Paddle, so run
-`wrangler d1 migrations apply cmdr-telemetry --local` once first. Flags, revocation, and the production runbook:
+`wrangler d1 migrations apply TELEMETRY_DB --local` once first. Flags, revocation, and the production runbook:
 `apps/api-server/src/licensing/DETAILS.md` § Manual licenses.
 
 ## Refund it

@@ -49,7 +49,7 @@ space, no `T`, no offset) so a plain `YYYY-MM-DD` bound compares lexicographical
 
 ```bash
 cd apps/api-server
-npx wrangler d1 execute cmdr-telemetry --remote --json \
+npx wrangler d1 execute TELEMETRY_DB --remote --json \
   --command "SELECT id, created_at, feedback, email, app_version, os_version, build_mode, error_report_id \
              FROM feedback WHERE created_at >= '2026-05-30' ORDER BY created_at DESC"
 ```
@@ -156,7 +156,7 @@ key, the note and reply-to, `issue_number`, `notified_at`), deleted with the bun
 the quickest way to its note and card:
 
 ```bash
-npx wrangler d1 execute cmdr-telemetry --remote --json \
+npx wrangler d1 execute TELEMETRY_DB --remote --json \
   --command "SELECT short_id, created_at, kind, user_note, email, issue_number FROM error_reports WHERE short_id = 'ERR-ABXW4'"
 ```
 

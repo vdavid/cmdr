@@ -48,7 +48,7 @@ Root holds the assembly and the shared leaves (`index.ts`, `types.ts`, `admin-au
 - **D1 rejects SQL that SQLite accepts, and mocked tests can't see it**: a dialect rejection (`SQLITE_AUTH` on
   `pragma_*` functions) passes CI and throws daily in production. Run a new query shape through
   `wrangler d1 execute --remote` once. DETAILS § Cron jobs, job 4.
-- **Deploy rails**: apply D1 migrations first (`wrangler d1 migrations apply cmdr-telemetry`); the default export stays
+- **Deploy rails**: apply D1 migrations first (`wrangler d1 migrations apply TELEMETRY_DB`); the default export stays
   the object form (`{ fetch, scheduled }`) or cron breaks (`app` is also named-exported for tests).
 
 Routes, secrets, bindings, Worker types (`wrangler types`, gitignored), cron, retention, and runbooks: `DETAILS.md`.

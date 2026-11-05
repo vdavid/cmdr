@@ -36,6 +36,8 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Runbooks for a one-off operation**, deleted once it's done:
 
+- `eu-data-moves-2026-11.md`: keeping Cmdr's data in the EU (#805): what's live, the email, R2, and D1 cutovers with
+  their rollbacks, the local-only copy tool, and the public passages that changed.
 - `github-org-move.md`: moving the repo from `vdavid/cmdr` to the `getcmdr` org (#476): the swap script, what only David
   can click, the transfer-day order, and how to verify or reverse the move.
 

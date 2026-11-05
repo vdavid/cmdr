@@ -266,7 +266,11 @@ Bad webhook signatures (`/webhook/paddle`, `/webhook/github`) count a `webhook-s
 
 The cron mints 24-hour presigned GET URLs for the zip bundles in R2 for the digest and the card's personal comment. R2
 bindings can't presign on their own, so the Worker uses the S3-compatible API via `aws4fetch` and three secrets:
-`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`.
+`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. The `[vars]` `R2_ERROR_REPORTS_BUCKET_NAME` (default
+`cmdr-error-reports`) and `R2_ERROR_REPORTS_JURISDICTION` (unset, or `eu`, which moves the host to
+`<account>.eu.r2.cloudflarestorage.com`) must name what the `ERROR_REPORTS_BUCKET` binding names, or every link 404s
+while uploads keep working; `src/telemetry/error-report-bucket-config.test.ts` enforces it. The token's bucket scope
+must include the bucket too.
 
 Current values: stored in David's password store (Bitwarden). The secrets also live as Cloudflare Worker secrets
 (`wrangler secret list` to confirm).
@@ -317,8 +321,8 @@ column the crash email ranks rows by; `0014_downloads_daily_unique.sql` is the d
 sweep writes; `0013_minimize_stored_identifiers.sql` adds `downloads.ua_family` and erases the crash-table IP hashes;
 `0012_license_issuance.sql` is the fulfillment record; `0011_crash_panic_message.sql` adds the nullable `panic_message`
 column; `0007_feedback.sql` adds the `feedback` table; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email`
-columns; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with `wrangler d1 migrations apply cmdr-telemetry`
-before deploying changes that add tables or columns.
+columns; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with `wrangler d1 migrations apply TELEMETRY_DB` before
+deploying changes that add tables or columns.
 
 `license_issuance` is the one money-critical table in an otherwise telemetry-shaped database: it shares the binding
 because a second D1 buys nothing at a few hundred rows a year, and nothing prunes it (the daily aggregation job only
@@ -328,6 +332,16 @@ and `/validate` answers from it). `src/licensing/DETAILS.md` § Manual licenses.
 dataset is `DEVICE_COUNTS` for fair-use monitoring. All other state (license codes, activation counter, device sets,
 link codes, blog likes) lives in Cloudflare KV. Short codes never expire (perpetual licenses last forever); subscription
 validity is checked live via the Paddle API.
+
+**Data location (#805).** The `eu`-jurisdiction twins exist: D1 `cmdr-telemetry-eu` (empty until its cutover) and R2
+`cmdr-error-reports-eu` (a full copy, with per-date expiry rules so copied bundles still go 90 days after their ORIGINAL
+upload). A jurisdiction can only be set when a resource is created, so a move is a copy plus a binding switch. The
+switch, its preconditions (Workers Paid before the D1 import: Workers Free's 100,000 rows written a day is account-wide,
+so importing ~300,000 rows would stop the production database for the day), the gap reconcile, and the rollback:
+`docs/notes/eu-data-moves-2026-11.md`. The local-only tool it drives: `scripts/eu-move/worker.js` (❌ never deployed).
+The presign host follows `R2_ERROR_REPORTS_JURISDICTION`, which `error-report-bucket-config.test.ts` pins to the
+binding's `jurisdiction`, and the deploy workflow migrates by binding (`TELEMETRY_DB`), so neither keeps pointing at the
+old resource after a switch. KV and Analytics Engine have no jurisdiction and stay on the global network.
 
 **Workers types:** there's no `@cloudflare/workers-types` dependency. `wrangler types` generates
 `worker-configuration.d.ts` from `wrangler.toml`, and `tsconfig.json` includes it. Two things come out of that file: the
@@ -868,7 +882,7 @@ test license key): `src/licensing/DETAILS.md` § Sandbox runbooks.
 ```bash
 cd apps/api-server
 npx wrangler secret put IP_HASH_PEPPER            # one-time, before the first deploy of the peppered hashing
-npx wrangler d1 migrations apply cmdr-telemetry   # apply any new D1 migrations first
+npx wrangler d1 migrations apply TELEMETRY_DB   # apply any new D1 migrations first
 npx wrangler deploy
 ```
 

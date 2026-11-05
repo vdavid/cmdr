@@ -447,7 +447,7 @@ node apps/api-server/scripts/mint-license.js --email test@example.com --org "Tes
 ```
 
 It returns a short code like `CMDR-ABCD-EFGH-1234`. Local `/validate` needs the local D1 to have the table, so run
-`wrangler d1 migrations apply cmdr-telemetry --local` once. These keys validate for real (against the local ledger),
+`wrangler d1 migrations apply TELEMETRY_DB --local` once. These keys validate for real (against the local ledger),
 unlike a Paddle purchase; for an end-to-end run through Paddle itself, use the sandbox checkout flow described in
 [testing Paddle checkout](../../README.md#testing-paddle-checkout).
 

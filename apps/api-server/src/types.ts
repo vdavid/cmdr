@@ -118,8 +118,11 @@ export type Bindings = {
   R2_ACCOUNT_ID?: string
   R2_ACCESS_KEY_ID?: string
   R2_SECRET_ACCESS_KEY?: string
-  // R2 bucket name (used in presigned URL host/path). Defaults to "cmdr-error-reports".
+  // R2 bucket name (used in the presigned URL path). Defaults to "cmdr-error-reports".
   R2_ERROR_REPORTS_BUCKET_NAME?: string
+  // The bucket's jurisdiction (`eu`), which picks the presigned URL's host. Unset for a bucket
+  // outside any jurisdiction. Must match the ERROR_REPORTS_BUCKET binding in wrangler.toml.
+  R2_ERROR_REPORTS_JURISDICTION?: string
   // Listmonk (the beta-tester and newsletter lists), at its base URL (for example
   // https://mail.getcmdr.com). The signup routes subscribe by list UUID through the public endpoint,
   // which needs no credentials; the API user and token (sent as `Authorization: token <user>:<token>`)

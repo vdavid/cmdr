@@ -6,7 +6,7 @@
  * ❗ Every number here was measured on `measuredOn`, and each block says how. Re-measure them all
  * together (same window, same day) and bump `measuredOn`, or the page mixes dates. Commands run
  * from the repo root; the D1 queries need `CLOUDFLARE_API_TOKEN` and are read-only
- * (`pnpm exec wrangler d1 execute cmdr-telemetry --remote --command "..."` from `apps/api-server`).
+ * (`pnpm exec wrangler d1 execute TELEMETRY_DB --remote --command "..."` from `apps/api-server`).
  * Write straight quotes; `smart-quotes.ts` curls them in the built HTML.
  */
 

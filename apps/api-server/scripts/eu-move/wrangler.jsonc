@@ -1,0 +1,28 @@
+// The EU move tool (vdavid/cmdr#805). ❗ Never `wrangler deploy` this: it runs only as
+// `wrangler dev --config scripts/eu-move/wrangler.jsonc --ip 127.0.0.1 --port <random>`, with every
+// binding remote, so it reads and writes the REAL production resources from the laptop and nothing
+// public exists. `worker.js` says what it does; `docs/notes/eu-data-moves-2026-11.md` is the runbook.
+{
+  "name": "cmdr-eu-move-local-only",
+  "main": "worker.js",
+  "compatibility_date": "2025-01-01",
+  "workers_dev": false,
+  "r2_buckets": [
+    { "binding": "OLD_BUCKET", "bucket_name": "cmdr-error-reports", "remote": true },
+    { "binding": "EU_BUCKET", "bucket_name": "cmdr-error-reports-eu", "jurisdiction": "eu", "remote": true },
+  ],
+  "d1_databases": [
+    {
+      "binding": "OLD_DB",
+      "database_name": "cmdr-telemetry",
+      "database_id": "537fdb4a-cd66-4faf-a2fe-3e51b5f6f915",
+      "remote": true,
+    },
+    {
+      "binding": "EU_DB",
+      "database_name": "cmdr-telemetry-eu",
+      "database_id": "936d4ece-7f66-45d9-be68-dc1135790bdd",
+      "remote": true,
+    },
+  ],
+}

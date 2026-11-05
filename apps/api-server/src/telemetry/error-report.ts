@@ -127,19 +127,32 @@ function buildR2Key(env: 'prod' | 'dev', datePrefix: string, id: string, uuid: s
 }
 
 /**
+ * The S3 API host for a bucket. A bucket created in a jurisdiction (`eu`) answers ONLY at that
+ * jurisdiction's host, so a link minted on the plain host 404s. `R2_ERROR_REPORTS_JURISDICTION`
+ * mirrors the binding's `jurisdiction` in `wrangler.toml`; `error-report-bucket-config.test.ts`
+ * fails when the two drift apart.
+ */
+export function r2S3Host(accountId: string, jurisdiction: string | undefined): string {
+  if (jurisdiction === undefined || jurisdiction === '') return `${accountId}.r2.cloudflarestorage.com`
+  if (!/^[a-z]+$/.test(jurisdiction)) throw new Error(`Not an R2 jurisdiction: ${jurisdiction}`)
+  return `${accountId}.${jurisdiction}.r2.cloudflarestorage.com`
+}
+
+/**
  * Build a presigned GET URL, valid for {@link PRESIGN_TTL_HOURS} hours, using the R2 S3-compatible API.
  * Returns null if R2 credentials aren't configured.
  */
 export async function buildPresignedUrl(env: Bindings, key: string): Promise<string | null> {
   if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY) return null
   const bucketName = env.R2_ERROR_REPORTS_BUCKET_NAME ?? DEFAULT_BUCKET_NAME
+  const host = r2S3Host(env.R2_ACCOUNT_ID, env.R2_ERROR_REPORTS_JURISDICTION)
   const client = new AwsClient({
     accessKeyId: env.R2_ACCESS_KEY_ID,
     secretAccessKey: env.R2_SECRET_ACCESS_KEY,
     service: 's3',
     region: 'auto',
   })
-  const url = new URL(`https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${bucketName}/${key}`)
+  const url = new URL(`https://${host}/${bucketName}/${key}`)
   url.searchParams.set('X-Amz-Expires', PRESIGN_TTL_SECONDS.toString())
   // `client.sign` returns a `Request` whose `url` is a string (per AwsClient typings).
   const signed = await client.sign(url, { method: 'GET', aws: { signQuery: true } })
