@@ -93,6 +93,7 @@
     "@vitest/coverage-v8": "^5.0.5",
     "axe-core": "~4.14.0",
     "cldr-core": "49.0.0",
+    "css-tree": "3.2.1",
     "dom-accessibility-api": "0.7.1",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",

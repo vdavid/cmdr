@@ -47,35 +47,71 @@ function compareVersions(a: readonly number[], b: readonly number[]): number {
   return 0
 }
 
-/** The version one support entry ships the feature as written in, or undefined. */
-function plainVersion(e: SupportEntry): number[] | undefined {
-  if (e.flags || e.prefix !== undefined || e.alternative_name !== undefined || e.version_removed) return undefined
-  return typeof e.version_added === 'string' ? parseVersion(e.version_added) : undefined
+/** A feature's Safari support entries written with exactly `prefix` (none: unprefixed), unflagged. */
+function entriesFor(feature: Feature | undefined, prefix: string | undefined): SupportEntry[] {
+  const raw = feature?.__compat?.support?.safari
+  const all = raw === undefined ? [] : Array.isArray(raw) ? raw : [raw]
+  return all.filter((e) => !e.flags && e.alternative_name === undefined && e.prefix === prefix)
 }
 
-/** The first Safari that ships the feature as written, or undefined when none does. */
-export function safariSince(feature: Feature | undefined): string | undefined {
-  const raw = feature?.__compat?.support?.safari
-  const entries = raw === undefined ? [] : Array.isArray(raw) ? raw : [raw]
+const versionOf = (value: unknown) => (typeof value === 'string' ? parseVersion(value) : undefined)
+
+/**
+ * The first Safari that ships the feature as written (with `prefix`, if any) and still does,
+ * or undefined. An entry BCD marks removed is skipped here: usually it's a partial
+ * implementation the current one replaced (`outline` before it followed `border-radius`).
+ */
+export function safariSince(feature: Feature | undefined, prefix?: string): string | undefined {
   let best: number[] | undefined
-  for (const e of entries) {
-    const parsed = plainVersion(e)
-    if (parsed && (!best || compareVersions(parsed, best) < 0)) best = parsed
+  for (const e of entriesFor(feature, prefix)) {
+    const added = e.version_removed ? undefined : versionOf(e.version_added)
+    if (added && (!best || compareVersions(added, best) < 0)) best = added
   }
   return best?.join('.')
 }
 
-/** True when the feature exists in BCD and Safari `floor` doesn't ship it. */
-export function isBeyond(feature: Feature | undefined, floor: string): boolean {
+/** True when some entry has the feature in Safari `floor`: added by then, and not yet removed. */
+function supportedAt(feature: Feature | undefined, floor: string, prefix: string | undefined): boolean {
+  const at = parseVersion(floor) ?? []
+  return entriesFor(feature, prefix).some((e) => {
+    const added = versionOf(e.version_added)
+    const removed = versionOf(e.version_removed)
+    return added !== undefined && compareVersions(added, at) <= 0 && (!removed || compareVersions(removed, at) > 0)
+  })
+}
+
+/**
+ * True when the feature exists in BCD and Safari `floor` doesn't ship it as written. For a
+ * prefixed name, only an entry BCD records for that prefix counts: silence about
+ * `-webkit-text-decoration` is a gap in the data, not proof Safari lacks it.
+ */
+export function isBeyond(feature: Feature | undefined, floor: string, prefix?: string): boolean {
   if (!feature?.__compat) return false
-  const since = safariSince(feature)
-  return since === undefined || compareVersions(parseVersion(since) ?? [], parseVersion(floor) ?? []) > 0
+  if (prefix !== undefined && entriesFor(feature, prefix).length === 0) return false
+  return !supportedAt(feature, floor, prefix)
 }
 
 /** How a finding names the Safari that added it. */
-export function describeSince(feature: Feature | undefined): string {
-  const since = safariSince(feature)
+export function describeSince(feature: Feature | undefined, prefix?: string): string {
+  const since = safariSince(feature, prefix)
   return since === undefined ? 'not in any Safari yet' : `added in Safari ${since}`
+}
+
+/** BCD's CSS tree, for `vite-webkit-css-floor.ts`. */
+export const cssData = bcd.css as unknown as Record<'at-rules' | 'properties' | 'selectors' | 'types', Feature>
+
+/** Every CSS function BCD knows (`color-mix`, `light-dark`), by name, wherever under `css.types` it's filed. */
+export function cssFunctions(): Map<string, Feature> {
+  const found = new Map<string, Feature>()
+  const visit = (feature: Feature) => {
+    for (const key of childKeys(feature)) {
+      const child = feature[key] as Feature
+      if (!found.has(key)) found.set(key, child)
+      visit(child)
+    }
+  }
+  visit(cssData.types)
+  return found
 }
 
 const childKeys = (feature: Feature) => Object.keys(feature).filter((key) => key !== '__compat')
