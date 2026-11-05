@@ -405,11 +405,11 @@ Gotchas:
 ## macOS lane (`desktop-rust-macos`)
 
 Every other `ci.yml` job runs on ubuntu, so code under `cfg(target_os = "macos")` used to be compiled only on whichever
-Mac last ran `pnpm check`. This job runs on `macos-26` (the release builder's image, so it lints against the shipping
-SDK; free for a public repo) and asks the three questions Linux can't answer for that code: `desktop-rust-clippy`,
-`desktop-rust-rustdoc`, and `desktop-rust-tests`, in that order. The other platform-blind scanners stay in
-`desktop-rust` alone. Gated on the `rust-macos` filter (the Rust lanes' shared inputs plus its own lane file), so it
-runs in parallel with `desktop-rust`.
+Mac last ran `pnpm check`. This job runs on an idle slot of David's M1 when it can (§ The M1 runner), else on hosted
+`macos-26` (the release builder's image, so it lints against the shipping SDK; free for a public repo), and asks the
+three questions Linux can't answer for that code: `desktop-rust-clippy`, `desktop-rust-rustdoc`, and
+`desktop-rust-tests`, in that order. The other platform-blind scanners stay in `desktop-rust` alone. Gated on the
+`rust-macos` filter (the Rust lanes' shared inputs plus its own lane file), so it runs in parallel with `desktop-rust`.
 
 Its steps live in the reusable `macos-lane.yml`, called by `ci.yml`'s `desktop-rust-macos` (§ Lane files).
 
@@ -439,8 +439,8 @@ the account's five-job cap. PRs and dispatches (the release gate's `run_all`) ge
 nothing replaces them. The replaced job reads `cancelled`, which `ci-ok` counts as covered (§ Branch protection). The
 group is job-level because the workflow-level one must stay per-run (§ Triggers and concurrency), and GitHub allows
 `concurrency` on a job that calls a reusable workflow (docs: "Supported keywords for jobs that call a reusable
-workflow", checked 2026-10-21). `warm-rust-macos-cache` stays out of the group: it runs only when the lane skipped, and
-mostly hits the cache and exits.
+workflow", checked 2026-10-21). `warm-rust-macos-cache` stays out of the group: it runs only when the lane skipped or
+ran on the M1, and mostly hits the cache and exits.
 
 - **Required.** It's in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and the release's CI gate. Its
   first run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a tight
@@ -458,19 +458,26 @@ mostly hits the cache and exits.
 **The lane runs on David's M1 when a slot is free, and on hosted `macos-26` otherwise.** The M1 (M1 Max, 10 cores, 64
 GB, the box his agent loops run on) carries four self-hosted runner slots, `m1-cmdr-1` to `-4`, labels
 `self-hosted, macOS, ARM64, cmdr-m1`. Each slot keeps its own warm `CARGO_TARGET_DIR` outside the job workspace (one
-shared dir would serialize them on cargo's build-directory lock), so a run there compiles only what changed. Measured
-MEASURE.
+shared dir would serialize them on cargo's build-directory lock), so a run there compiles only what changed. The lane's
+checks took 6.4 min there after an edit to the `cmdr` crate (clippy 41 s, rustdoc 27 s, tests 147 s, module cycles 165
+s) and 11 min cold, at nice 10 (2026-11-05, timed step by step on the box); hosted, the same lane took 29–50 min, median
+~38, over the 24 green runs of 2026-11-04 and 11-05 (tests alone 17–32 min).
 
-- **Routing** (`changes`' `macos-runner` step, output `macos-runs-on` as JSON for `runs-on`): a trusted run gets the M1
-  when the repo's runners API lists a `cmdr-m1` runner that's online and not busy; else hosted. Trusted is an allowlist
-  like the light lane's: a push (only `main`), a dispatch or the schedule, or a PR whose head is in this repo and whose
+- **Routing** (`changes`' `macos-runner` step, the last one, output `macos-runs-on` as JSON for `runs-on`): a trusted
+  run gets the M1 when the repo's runners API lists a `cmdr-m1` runner that's online and not busy; else hosted. Trusted
+  is an allowlist like the light lane's: a push (only `main`), a dispatch, or a PR whose head is in this repo and whose
   author isn't a bot. Listing runners needs Administration: read, which `GITHUB_TOKEN` can't get, so it reads the
   `RUNNER_STATUS_TOKEN` secret (a fine-grained PAT on `vdavid/cmdr` only, Administration read-only). No secret (a fork's
   run gets none) or a failed lookup routes hosted, so the worst case is the old behavior.
+- **Always hosted**: a full run (the release gate's `run_all`, the nightly), so a release is gated on the release
+  builder's own image and SDK; and a run that compiles the Finder extension (the `finder-extension` filter). The M1 has
+  only the Command Line Tools, whose Swift runtime has no x86_64 slice, so the extension's 10.15 slice fails to link
+  there (`swiftCompatibility*` undefined, 2026-11-05). The M1 also runs a newer macOS than `macos-26`, so a test that
+  depends on the OS version can pass on one and fail on the other; the nightly and the release gate catch the hosted
+  side.
 - **What the M1 path changes** (`self-hosted` input): no rust-cache and no mise Actions cache (the box keeps both); the
   pinned toolchain installs under a `shlock` (four slots share one rustup home, and rustup has no lock of its own);
-  `timeout-minutes` is MEASURE instead of 90, about 2x a healthy run, so a box dying mid-job fails the run instead of
-  hanging it.
+  `timeout-minutes` is 30 instead of 90, so a box dying mid-job fails the run instead of hanging it.
 - **The race**: two runs can see the same idle slot; the loser queues for the next free one. A box that goes offline
   between `changes` and the lane's start leaves the job queued until it's back (GitHub doesn't time out a queued job for
   24 h); cancel and re-run, and it routes hosted.

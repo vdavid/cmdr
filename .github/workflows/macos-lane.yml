@@ -41,10 +41,12 @@ jobs:
     # Self-hosted: the M1 runs the same macOS major, provisioned by David's infra repo
     # (`m1mbp/ansible`, the `ci_runner` role).
     runs-on: ${{ fromJSON(inputs.runs-on) }}
-    # About 2x a healthy run, so a dead box or a wedged step fails the run instead of hanging it. A
-    # warm M1 slot runs the lane in ~MEASURE min; hosted builds the ~1000-crate Tauri tree cold on 3
-    # cores (clippy, rustdoc, then the test build), runs the suite, and analyzes module cycles.
-    timeout-minutes: ${{ inputs.self-hosted && 40 || 90 }}
+    # Near the real runtime, so a dead box or a wedged step fails the run instead of hanging it. An
+    # M1 slot ran the lane's checks in 6.4 min warm and 11 min cold (2026-11-05, nice 10, one slot
+    # busy); 30 leaves room for four cold slots at once. Hosted builds the ~1000-crate Tauri tree
+    # cold on 3 cores (clippy, rustdoc, then the test build), runs the suite, and analyzes module
+    # cycles.
+    timeout-minutes: ${{ inputs.self-hosted && 30 || 90 }}
 
     steps:
       # Two commits, for the Rust test scope below (see `rust-lane.yml`).
