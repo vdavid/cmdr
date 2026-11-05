@@ -27,6 +27,8 @@ pub use tokio::runtime::Handle as Runtime;
 #[cfg(not(target_family = "wasm"))]
 pub use tokio::task::{JoinError, JoinHandle};
 
+#[cfg(all(test, not(target_family = "wasm")))]
+mod task_test;
 #[cfg(target_family = "wasm")]
 mod wasm;
 #[cfg(target_family = "wasm")]

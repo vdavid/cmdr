@@ -5,13 +5,17 @@
 //! are already inside one (an IPC command, an operation's task), and the detached work must run on that same runtime
 //! to its own end. A caller outside a runtime gets tokio's panic, the same as a bare `tokio::spawn`. Clocks and
 //! timers go through `crate::rt`, so the future-racing helpers (`timeout_detached_typed`, `race_detached`,
-//! `Deadline`) run in the browser build too, on the page's event loop; the `spawn_blocking` ones are host-only
-//! in practice (the browser has no blocking pool, and no browser path calls them).
+//! `Deadline`) run in the browser build too, on the page's event loop; the ambient `spawn_blocking` ones are host-only
+//! in practice (the browser has no blocking pool, and no browser path calls them). The one exception to the ambient
+//! design is `blocking_typed_result_with_timeout_on`, which takes the runtime it spawns on, and runs its work inline in
+//! the browser.
 
 #[cfg(test)]
 mod budget_tests;
 #[cfg(test)]
 mod fallback_tests;
+#[cfg(test)]
+mod held_runtime_tests;
 #[cfg(test)]
 mod stall_tests;
 
@@ -119,10 +123,44 @@ where
     T: Send + 'static,
     E: Send + 'static,
 {
-    match crate::rt::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
+    let raced = crate::rt::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await;
+    typed_answer(raced.map_err(drop), on_timeout, on_join_failure)
+}
+
+/// [`blocking_typed_result_with_timeout`] on a HELD runtime rather than the
+/// ambient one: for an engine that spawns on its host's [`crate::rt::Runtime`]
+/// and may be called from outside any runtime.
+///
+/// Natively the work goes to `runtime`'s blocking pool (`Handle::spawn_blocking`),
+/// so hand in the runtime the ambient call would have used, or the work moves
+/// pools. In the browser it runs inline (no pool there), so it always answers
+/// before the deadline can pass.
+pub async fn blocking_typed_result_with_timeout_on<T, E>(
+    runtime: &crate::rt::Runtime,
+    timeout_duration: Duration,
+    on_timeout: impl FnOnce() -> E,
+    on_join_failure: impl FnOnce(String) -> E,
+    f: impl FnOnce() -> Result<T, E> + Send + 'static,
+) -> Result<T, E>
+where
+    T: Send + 'static,
+    E: Send + 'static,
+{
+    let raced = crate::rt::time::timeout(timeout_duration, runtime.spawn_blocking(f)).await;
+    typed_answer(raced.map_err(drop), on_timeout, on_join_failure)
+}
+
+/// The typed-result helpers' one answer: the work's own result, the join
+/// failure, or (an `Err(())` race) the deadline, each in the caller's type.
+fn typed_answer<T, E, J: std::fmt::Display>(
+    raced: Result<Result<Result<T, E>, J>, ()>,
+    on_timeout: impl FnOnce() -> E,
+    on_join_failure: impl FnOnce(String) -> E,
+) -> Result<T, E> {
+    match raced {
         Ok(Ok(result)) => result,
         Ok(Err(join_err)) => Err(on_join_failure(join_err.to_string())),
-        Err(_) => Err(on_timeout()),
+        Err(()) => Err(on_timeout()),
     }
 }
 

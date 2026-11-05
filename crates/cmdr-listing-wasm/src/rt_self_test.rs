@@ -6,6 +6,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 use std::time::Duration;
 
+use cmdr_fs::deadline::blocking_typed_result_with_timeout_on;
 use cmdr_fs::rt::{self, Runtime, task::JoinSet, time};
 use wasm_bindgen::prelude::*;
 
@@ -59,6 +60,49 @@ async fn run(now_ms: f64) -> Result<String, String> {
     match set.join_next_with_id().await {
         Some(Err(e)) if e.is_cancelled() && e.id() == forever => {}
         other => return Err(format!("an aborted task joined as {:?}", other.map(|r| r.map(|_| ())))),
+    }
+
+    // Blocking work runs inline and joins as a finished task, in turn with the rest, under
+    // the id it spawned with; aborting it once finished changes nothing, as with tokio.
+    let mut set = JoinSet::new();
+    let ran_inline = Rc::new(Cell::new(false));
+    let flag = Rc::clone(&ran_inline);
+    let blocking = set.spawn_blocking_on(
+        move || {
+            flag.set(true);
+            "blocking"
+        },
+        &runtime,
+    );
+    if !ran_inline.get() {
+        return Err("a set's blocking work didn't run inline".into());
+    }
+    blocking.abort();
+    match set.join_next_with_id().await {
+        Some(Ok((id, "blocking"))) if id == blocking.id() => {}
+        other => return Err(format!("blocking work joined as {other:?}")),
+    }
+    set.spawn_on(sleep_then(5, "async"), &runtime);
+    set.spawn_blocking_on(|| "inline", &runtime);
+    let mut joined = Vec::new();
+    while let Some(value) = set.join_next().await {
+        joined.push(value.map_err(|e| format!("join_next failed: {e}"))?);
+    }
+    if joined != ["inline", "async"] {
+        return Err(format!("join_next joined {joined:?}, want [\"inline\", \"async\"]"));
+    }
+
+    // The held-runtime deadline helper runs its work inline and answers before any deadline.
+    let answer = blocking_typed_result_with_timeout_on(
+        &runtime,
+        Duration::ZERO,
+        || "timed out",
+        |_| "join failed",
+        || Ok::<_, &str>(7),
+    )
+    .await;
+    if answer != Ok(7) {
+        return Err(format!("blocking_typed_result_with_timeout_on answered {answer:?}"));
     }
 
     // Dropping a set aborts what's still in it, as tokio's does.

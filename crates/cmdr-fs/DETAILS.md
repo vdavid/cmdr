@@ -152,12 +152,13 @@ allows:
 - **What else `rt` carries for the write engine**: `rt::wall_now()` (`std`'s `SystemTime`, re-based from the page's
   clock in the browser), `rt::spawn_ambient` (`tokio::spawn` natively, the page's loop in the browser; only for
   `deadline`'s ambient design), `rt::task::{JoinSet, Id, AbortHandle, yield_now}` (tokio's natively; in the browser a
-  set over `spawn_local` that, like tokio's, aborts what's left when dropped, and a macrotask yield so the page paints
-  and fires timers, which tokio's microtask-shaped yield with no runtime would starve), and
+  set over `spawn_local` that, like tokio's, aborts what's left when dropped, whose `spawn_blocking_on` runs the closure
+  inline and enters it as an already-finished task that joins in turn, and a macrotask yield so the page paints and
+  fires timers, which tokio's microtask-shaped yield with no runtime would starve), and
   `rt::time::{timeout_at, interval_delayed, Interval, Elapsed}`. In the browser `JoinError::is_panic` is always `false`:
   `panic = "abort"` ends the module first. `smoke.mjs` runs `rtSelfTest` (`src/rt_self_test.rs`) against the real
-  `.wasm`: join order, abort, drop-aborts, a yield that lets a timer fire, what 100 yields cost, `timeout_at`, the
-  interval, the wall clock.
+  `.wasm`: join order, abort, inline blocking work in a set and in `deadline::blocking_typed_result_with_timeout_on`,
+  drop-aborts, a yield that lets a timer fire, what 100 yields cost, `timeout_at`, the interval, the wall clock.
 - **The browser's yield is a turn, ❌ never `setTimeout(0)`** (`rt/wasm.rs`'s `Turns`, picked once as React's scheduler
   picks it): one shared `MessageChannel` in a browser (each message a task of its own, interleaved with timer tasks),
   `setImmediate` where the host has it (Node: the smoke and the golden replay). Both are macrotasks (paint, input, and

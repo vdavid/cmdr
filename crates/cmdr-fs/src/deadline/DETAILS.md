@@ -10,6 +10,10 @@ must-knows.
 - **`blocking_with_timeout`**, **`blocking_with_timeout_flag`**, **`blocking_typed_result_with_timeout`**: run a closure
   on the blocking pool under a timeout, answering with a fallback, a flagged fallback (`TimedOut<T>`), or the caller's
   own typed error.
+- **`blocking_typed_result_with_timeout_on`**: the typed one on a HELD `rt::Runtime` (`runtime.spawn_blocking`), for an
+  engine that holds its host's runtime instead of assuming an ambient one. Natively that's the runtime's own blocking
+  pool, so hand in the runtime the ambient call would have used; in the browser the closure runs inline and answers
+  before any deadline. The one `deadline` helper that runs in the browser build with blocking work.
 - **`timeout_detached_typed`**: runs a FUTURE in its own task and races that task's join handle, so expiry detaches the
   work rather than dropping it.
 - **`race_detached`** (`Raced::Answered` / `Raced::StillRunning(handle)`): the same race, but expiry hands the caller

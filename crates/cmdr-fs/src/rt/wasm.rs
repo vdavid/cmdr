@@ -3,9 +3,10 @@
 //! - **Spawning** queues the future on the page's microtask queue
 //!   (`wasm_bindgen_futures::spawn_local`), so a task runs as soon as the JS call
 //!   that spawned it returns, with no thread and no pump to drive.
-//! - **Blocking work** runs inline: there's no pool to hand it to, and the only
-//!   blocking work the engine does there (the overlay gather, the stall probe's
-//!   symlink walk) is in-memory and instant in the browser.
+//! - **Blocking work** runs inline (`Runtime::spawn_blocking`, a set's
+//!   `spawn_blocking_on`): there's no pool to hand it to, and the blocking work
+//!   the engines do there (the overlay gather, the stall probe's symlink walk, a
+//!   media read off an in-memory file) is in-memory and instant in the browser.
 //! - **Time** is `performance.now()` (`web-time`) and sleeping is `setTimeout`,
 //!   so a 50 ms diff flush is a real 50 ms the page never blocks on.
 //!
@@ -217,6 +218,23 @@ pub mod task {
             AbortHandle { id, abort }
         }
 
+        /// Runs `work` right here and adds it to the set as a task that already
+        /// finished: the browser has no blocking pool (`super::Runtime::spawn_blocking`).
+        /// It joins in turn like any other, and aborting it then is a no-op, as
+        /// aborting a finished tokio task is.
+        pub fn spawn_blocking_on<F>(&mut self, work: F, _runtime: &Runtime) -> AbortHandle
+        where
+            F: FnOnce() -> T + 'static,
+        {
+            let id = Id(NEXT_ID.fetch_add(1, Ordering::Relaxed));
+            let output = work();
+            // The set holds the receiver, so this send can't fail.
+            let _ = self.ended_tx.send((id, Some(output)));
+            let (abort, _never_registered) = Abort::new_pair();
+            self.live.insert(id, abort.clone());
+            AbortHandle { id, abort }
+        }
+
         /// How many tasks are in the set (finished but not yet joined included).
         pub fn len(&self) -> usize {
             self.live.len()
@@ -236,6 +254,13 @@ pub mod task {
             let (id, output) = self.ended_rx.recv().await?;
             self.live.remove(&id);
             Some(output.map(|value| (id, value)).ok_or(JoinError { id: Some(id) }))
+        }
+
+        /// The next task to finish; `None` once the set is empty.
+        pub async fn join_next(&mut self) -> Option<Result<T, JoinError>> {
+            self.join_next_with_id()
+                .await
+                .map(|joined| joined.map(|(_, value)| value))
         }
 
         /// Asks every task in the set to stop; each still joins, as cancelled.

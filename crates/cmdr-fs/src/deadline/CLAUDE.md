@@ -2,7 +2,8 @@
 
 Timeouts and budgets for blocking work (`mod.rs`), shared by the app's IPC commands and the subsystems under them
 (network, reveal, write operations). Every helper spawns on the ambient runtime by design: callers are already inside
-one. Tests: `budget_tests.rs`, `stall_tests.rs`.
+one, except `blocking_typed_result_with_timeout_on`, which takes a held `rt::Runtime`. Tests: `budget_tests.rs`,
+`stall_tests.rs`, `held_runtime_tests.rs`.
 
 ## Must-knows
 
