@@ -41,6 +41,53 @@ fn ranked_names(index: &SearchIndex, matching_ids: &[i64], stem: &str, weights: 
     matching.iter().map(|&i| index.name(i).to_string()).collect()
 }
 
+// ── Stem forms ─────────────────────────────────────────────────────────────
+
+/// A plain query for `pattern`, as the dialog sends it.
+fn plain_query(pattern: &str) -> SearchQuery {
+    SearchQuery {
+        name_pattern: Some(pattern.to_string()),
+        pattern_type: PatternType::Glob,
+        min_size: None,
+        max_size: None,
+        modified_after: None,
+        modified_before: None,
+        is_directory: None,
+        include_paths: None,
+        exclude_dir_names: None,
+        include_path_ids: None,
+        count_only: false,
+        limit: 30,
+        case_sensitive: None,
+        exclude_system_dirs: Some(false),
+        sort_by: None,
+    }
+}
+
+#[test]
+fn a_mac_stem_ranks_a_name_in_either_form_alike() {
+    // APFS keeps whichever form the writer used, so the same name in either form
+    // must land in the same band, whichever form the stem was typed in (#955).
+    for typed in ["caf\u{e9}", "cafe\u{301}"] {
+        let stem = stem_for(&plain_query(typed), &NameRules::MACOS);
+        for (nfc, nfd, band) in [
+            ("caf\u{e9}", "cafe\u{301}", MatchQuality::Exact),
+            ("Caf\u{e9}-terrace.jpg", "Cafe\u{301}-terrace.jpg", MatchQuality::Prefix),
+            ("le-caf\u{e9}.jpg", "le-cafe\u{301}.jpg", MatchQuality::Other),
+        ] {
+            assert_eq!(stem.classify(nfc, true), band, "{typed:?} vs NFC {nfc:?}");
+            assert_eq!(stem.classify(nfd, true), band, "{typed:?} vs NFD {nfd:?}");
+        }
+    }
+}
+
+#[test]
+fn a_linux_stem_ranks_only_the_form_typed() {
+    let stem = stem_for(&plain_query("caf\u{e9}"), &NameRules::LINUX);
+    assert_eq!(stem.classify("caf\u{e9}", false), MatchQuality::Exact);
+    assert_eq!(stem.classify("cafe\u{301}", false), MatchQuality::Other);
+}
+
 // ── classify_match ─────────────────────────────────────────────────────────
 
 #[test]

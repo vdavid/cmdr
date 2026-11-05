@@ -208,42 +208,78 @@ fn a_query_can_override_the_platform_default_both_ways() {
     assert!(!compiled.matches(&file("notes.txt")));
 }
 
-// ── NFD normalization (macOS) ────────────────────────────────────────
+// ── Unicode normal forms (macOS) ─────────────────────────────────────
 
-// The two forms and both tests over them are macOS-only, and the CONSTANTS have to
-// carry the gate too: Linux builds with `-D unused`, so a constant whose only
-// readers are gated out is a hard error there rather than a warning.
+// APFS keeps whichever form the writer used: Finder writes NFD, while downloads and
+// files from Linux or Windows arrive NFC. So a Mac's rules match a name in EITHER
+// form, whichever form the pattern was typed in (#955). These run under explicit
+// rules, so both platforms' answers are checked on every machine.
 
-/// "café" composed (NFC): the form a keyboard produces.
-#[cfg(target_os = "macos")]
-const CAFE_NFC: &str = "caf\u{e9}.txt";
-/// "café" decomposed (NFD): the form APFS stores, and the form both a walk and the
-/// index read back off the filesystem.
-#[cfg(target_os = "macos")]
-const CAFE_NFD: &str = "cafe\u{301}.txt";
+/// "café" composed (NFC): the form a keyboard produces, and most non-Finder writers.
+const CAFE_NFC: &str = "caf\u{e9}";
+/// "café" decomposed (NFD): the form Finder writes.
+const CAFE_NFD: &str = "cafe\u{301}";
 
-#[cfg(target_os = "macos")]
-#[test]
-fn a_composed_pattern_matches_the_decomposed_name_apfs_stores() {
+fn compile_under(rules: NameRules, pattern: &str, pattern_type: PatternType) -> CompiledQuery {
     let mut q = query();
-    q.name_pattern = Some(CAFE_NFC.to_string());
-    let compiled = compile(&q, SMALL_ARENA).unwrap();
+    q.name_pattern = Some(pattern.to_string());
+    q.pattern_type = pattern_type;
+    CompiledQuery::compile(&q, SMALL_ARENA, &rules).unwrap()
+}
 
+#[test]
+fn a_mac_glob_in_either_form_matches_a_name_in_either_form() {
+    for pattern in [CAFE_NFC, CAFE_NFD] {
+        let compiled = compile_under(NameRules::MACOS, pattern, PatternType::Glob);
+        for name in [CAFE_NFC, CAFE_NFD] {
+            let name = format!("{name}-terrace.jpg");
+            assert!(compiled.matches(&file(&name)), "pattern {pattern:?} vs name {name:?}");
+        }
+    }
+}
+
+#[test]
+fn a_mac_wildcard_glob_and_a_regex_match_either_form_too() {
+    for (pattern_nfc, pattern_type) in [
+        (format!("{CAFE_NFC}*.jpg"), PatternType::Glob),
+        (format!("^{CAFE_NFC}-.*\\.jpg$"), PatternType::Regex),
+    ] {
+        let pattern_nfd = pattern_nfc.replace(CAFE_NFC, CAFE_NFD);
+        for pattern in [&pattern_nfc, &pattern_nfd] {
+            let compiled = compile_under(NameRules::MACOS, pattern, pattern_type.clone());
+            for name in [CAFE_NFC, CAFE_NFD] {
+                let name = format!("{name}-terrace.jpg");
+                assert!(compiled.matches(&file(&name)), "pattern {pattern:?} vs name {name:?}");
+            }
+            assert!(
+                !compiled.matches(&file("cafe-terrace.jpg")),
+                "an unaccented name stays out"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_mac_case_insensitive_match_holds_across_forms() {
+    let compiled = compile_under(NameRules::MACOS, "CAF\u{c9}", PatternType::Glob);
+    assert!(compiled.matches(&file(CAFE_NFC)));
     assert!(compiled.matches(&file(CAFE_NFD)));
 }
 
-#[cfg(target_os = "macos")]
 #[test]
-fn a_candidate_name_is_matched_raw_never_normalized() {
-    // The PATTERN is normalized, the candidate is not: normalizing per entry would
-    // cost an allocation per row and would be a second rule to keep in sync. The
-    // consequence is that a composed name doesn't match — which is fine precisely
-    // because it holds identically for an arena row and for a walked entry.
-    let mut q = query();
-    q.name_pattern = Some(CAFE_NFC.to_string());
-    let compiled = compile(&q, SMALL_ARENA).unwrap();
+fn a_regex_with_a_named_group_still_compiles_in_both_forms() {
+    // Two regexes, never one alternation: an alternation would repeat the group's
+    // name, which the regex crate refuses.
+    let compiled = compile_under(NameRules::MACOS, &format!("(?P<word>{CAFE_NFC})"), PatternType::Regex);
+    assert!(compiled.matches(&file(CAFE_NFD)));
+}
 
-    assert!(!compiled.matches(&file(CAFE_NFC)));
+#[test]
+fn linux_matches_the_form_as_typed() {
+    // A Linux filesystem keeps names as bytes, and its rules leave the pattern alone.
+    let compiled = compile_under(NameRules::LINUX, CAFE_NFC, PatternType::Glob);
+    assert!(compiled.matches(&file(CAFE_NFC)));
+    assert!(!compiled.matches(&file(CAFE_NFD)));
 }
 
 // ── Type, size, and date predicates ──────────────────────────────────

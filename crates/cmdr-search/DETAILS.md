@@ -42,7 +42,7 @@ Each is what a review of this crate checks first.
 
 ## Deliberate behavior changes
 
-The extraction changed desktop behavior in exactly these places, each a red-first commit; the goldens pin the result.
+Desktop behavior moved on purpose in exactly these places, each a red-first commit; the goldens pin the result.
 
 1. **`home_relative_parent` matches home on a `/` boundary**: a bare prefix strip turned `/Users/david/x` into `~id/x`
    for a home of `/Users/dav`.
@@ -53,6 +53,10 @@ The extraction changed desktop behavior in exactly these places, each a red-firs
 3. **A bad exclusion glob is a `Query` error naming it**, never silently dropped.
 4. **A failed folder-size fill, size-range read, or scope resolution fails the search**, never a sizeless row, "no
    filter", or an "unresolved" scope; a live run reports it as `IndexUnreadable` with conversational copy.
+5. **On a Mac a pattern matches a name stored in either Unicode normal form** (#955). APFS keeps whichever form the
+   writer used, so an NFC `café-terrace.jpg` was invisible to every typed pattern once the pattern was forced to NFD;
+   the macOS goldens moved: `accented_folder` from zero rows to the folder and its file, and `accented_nfc_pattern` /
+   `accented_nfd_pattern` gained the NFC `Photos/résumé.txt`.
 
 ## Performance across the crate edge
 
@@ -92,9 +96,9 @@ would be millions of virtual calls and, worse, a `dyn` iterator can't `par_chunk
   `SearchError::SourceUnreadable` (`SourceRead::Scope`, `SizeRange`, `SizeFill`). The desktop's live run maps the second
   to `IndexUnreadable` with a sentence a person can act on.
 - **`NameRules`** (`name_rules.rs`, a private leaf promised at the crate root) carries the default case rule, whether a
-  pattern is NFD-normalized, and the `NameFold` an exclusion keys on. `NameRules::host()` is the `cfg`-derived desktop
-  answer, pinned to the old answers by `the_host_rules_are_what_this_machine_always_answered`; `MACOS` and `LINUX` let
-  any machine run either platform's rules (the host's goldens do, both ways).
+  pattern meets names in either Unicode normal form, and the `NameFold` an exclusion keys on. `NameRules::host()` is the
+  `cfg`-derived desktop answer, pinned to the old answers by `the_host_rules_are_what_this_machine_always_answered`;
+  `MACOS` and `LINUX` let any machine run either platform's rules (the host's goldens do, both ways).
 
 ## Rows held in memory (`memory.rs`)
 
@@ -276,9 +280,9 @@ emits (`docs/specs/unindexed-search-plan.md` Decision 3). If those entries were 
 the same query would answer differently depending on whether the drive happened to be indexed, which is the one thing
 that plan forbids. So both paths call `CompiledQuery::matches`, and the module owns the rules that break silently when
 duplicated: the case-folding resolution (the scope filter and the ranker read it back rather than deriving it again) and
-the NFD normalization of the pattern. Both come from the volume's `NameRules` (`name_rules.rs`), a value the host passes
-in: `NameRules::host()` is the `cfg`-derived desktop answer, and `MACOS` / `LINUX` let a test run either platform's
-rules anywhere (`the_other_platforms_goldens_hold_under_its_rules`).
+the Unicode forms the pattern compiles in. Both come from the volume's `NameRules` (`name_rules.rs`), a value the host
+passes in: `NameRules::host()` is the `cfg`-derived desktop answer, and `MACOS` / `LINUX` let a test run either
+platform's rules anywhere (`the_other_platforms_goldens_hold_under_its_rules`).
 
 It isn't in `cmdr-index` because `index-crate-isolation` forbids that crate from depending on the search side. That
 constraint is also why `Index::cover` hands back `CoveredEntry` batches instead of taking a match callback, and why the
@@ -293,6 +297,14 @@ walk's half of the adapter (`live/walked.rs`: `matches_walked`, `covered_name`) 
 - **The scope filter.** Include roots are arena entry ids and the exclusion check is an ancestor walk through
   `id_to_index`, so neither means anything for an entry that isn't in the arena. The live path applies the same policy
   against a walked entry's own path instead.
+
+**A Mac's pattern compiles in both normal forms.** APFS doesn't normalize: Finder writes NFD, while downloads, most
+non-Finder apps, and files from Linux or Windows arrive NFC, so one drive holds both. `NameRules::pattern_forms` gives
+the pattern NFD first, then NFC when that spells it differently (only ever for a non-ASCII letter), and `CompiledQuery`
+keeps a second regex, `other_form`, tried only when the first misses. The candidate name is matched raw, so the scan
+stays allocation-free per row and the live walk's judge answers exactly as the arena does (both call `matches`). Two
+regexes, ❌ never one alternation: an alternation repeats a user regex's named groups, which the regex crate refuses. A
+name mixing the two forms within itself still matches neither; no writer we know produces one.
 
 **A glob's `.` crosses a newline; a user's regex keeps standard semantics.** Filenames may contain newlines, and a
 glob's `*` and `?` mean "any characters" and "one character", so `glob_to_regex` prefixes its output with `(?s)`. It
@@ -360,8 +372,8 @@ never a penalty.
 **Only a wildcard-free plain query has a quality gradient.** The `stem` fed to the ranker is the raw pattern only when
 it's a glob with no `*`/`?` (the auto-wrapped `*stem*` case); a wildcard glob or regex yields an empty stem, so every
 result lands in the `Other` band and recency alone orders — unchanged from before this feature (and matching how those
-patterns behaved). On macOS the stem is NFD-normalized like the matcher's pattern, so it compares against the arena's
-NFD filenames.
+patterns behaved). The stem takes the matcher's pattern forms (`ranking::Stem`), and a name is banded by the best form
+it meets, so on a Mac the same name ranks alike in either normal form.
 
 ### The degradation contract
 

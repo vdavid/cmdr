@@ -239,8 +239,9 @@ over the page's one volume, with no index to load.
   `release_search_index` only stops dialog runs: the arena is tiny, so there's no idle drop.
 - **Folder sizes are the fold's** (`FoldSizes`, a `DirSizeSource` over `FolderSizes::held_at`), read per query: a size
   filter and a results row read the numbers the panes and `get_dir_stats` show. ❌ Never a second rollup here.
-- **Name rules** (`DEMO_NAME_RULES`): a Mac's case rule and APFS fold (it presents as one), patterns left as typed (the
-  tree's names are NFC, so an NFD pattern would miss every accented one). Home is the tree's `home`, so rows read `~/…`.
+- **Name rules** (`DEMO_NAME_RULES`): a Mac's (`NameRules::MACOS`), since it presents as one; a pattern meets a name in
+  either normal form, so the tree's NFC names answer whichever form is typed. Home is the tree's `home`, so rows read
+  `~/…`.
 - **A live run covers everything at once**: `search_files_streaming` announces, hands the covered half to
   `ResultStream`, and finishes with `CoverageFacts::new(NothingToWalk, Covered, ..)`, all before the command answers.
   The page's sink defers every event a task (`listing.ts`), so the dialog has registered the run first. Payloads mirror

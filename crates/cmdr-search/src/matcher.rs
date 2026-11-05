@@ -18,12 +18,11 @@
 //! - **Case folding.** The volume's default from its `NameRules` (insensitive on
 //!   macOS, sensitive on Linux), overridable per query. The scope filter and the ranker read it back off
 //!   the compiled query rather than recomputing it.
-//! - **NFD normalization.** APFS stores filenames decomposed, so under
-//!   `NameRules::nfd_patterns` the PATTERN is NFD-normalized at compile time and
-//!   candidate names are matched raw. Normalizing
-//!   a candidate instead would make live results differ from indexed ones on every
-//!   accented filename, and would cost an allocation per entry besides
-//!   (`search/CLAUDE.md`: no stored `name_folded`).
+//! - **Unicode normal forms.** APFS keeps a name in whichever form its writer used
+//!   (Finder NFD, most other writers NFC), so under `NameRules::either_normal_form`
+//!   the PATTERN compiles in both forms and a candidate name is matched raw against
+//!   either. Normalizing a candidate instead would cost an allocation per entry
+//!   (`DETAILS.md` § "Scan cost").
 //!
 //! It lives app-side because `cmdr-index` cannot depend on the app
 //! (`index-crate-isolation`), which is why the walk hands back batches of entries
@@ -144,6 +143,12 @@ pub struct Candidate<'a> {
 pub struct CompiledQuery {
     /// The name pattern, or `None` when the query doesn't filter by name.
     pattern: Option<Regex>,
+    /// The same pattern in its other Unicode normal form, tried only when `pattern`
+    /// misses: present when the volume stores either form and the two spell the
+    /// pattern differently (`NameRules::pattern_forms`). Two regexes rather than one
+    /// alternation, because an alternation repeats a regex's named groups, which the
+    /// regex crate refuses.
+    other_form: Option<Regex>,
     /// The case-folding rule this query resolved to, shared with the scope filter
     /// and the ranker so all three fold alike.
     case_insensitive: bool,
@@ -163,15 +168,22 @@ impl CompiledQuery {
         }
 
         let case_insensitive = case_insensitive_for(query, rules);
-        let pattern = match &query.name_pattern {
+        let (pattern, other_form) = match &query.name_pattern {
             Some(pattern) if !pattern.is_empty() => {
-                Some(compile_pattern(pattern, &query.pattern_type, case_insensitive, rules)?)
+                let forms = rules.pattern_forms(pattern);
+                let primary = compile_pattern(&forms.primary, &query.pattern_type, case_insensitive)?;
+                let other = match &forms.other {
+                    Some(other) => Some(compile_pattern(other, &query.pattern_type, case_insensitive)?),
+                    None => None,
+                };
+                (Some(primary), other)
             }
-            _ => None,
+            _ => (None, None),
         };
 
         Ok(Self {
             pattern,
+            other_form,
             case_insensitive,
             is_directory: query.is_directory,
             min_size: query.min_size,
@@ -198,6 +210,10 @@ impl CompiledQuery {
     pub fn matches(&self, candidate: &Candidate<'_>) -> bool {
         if let Some(ref re) = self.pattern
             && !re.is_match(candidate.name)
+            && !self
+                .other_form
+                .as_ref()
+                .is_some_and(|other| other.is_match(candidate.name))
         {
             return false;
         }
@@ -272,8 +288,8 @@ fn case_insensitive_for(query: &SearchQuery, rules: &NameRules) -> bool {
 /// Build the name-matching regex.
 ///
 /// A glob with no wildcard is wrapped in `*…*` so typing `tes` finds `test.rs`, the
-/// UX every file-search dialog has. Under [`NameRules::nfd_patterns`] (macOS) the pattern is NFD-normalized first, so
-/// it matches the decomposed names APFS stores without folding every candidate.
+/// UX every file-search dialog has. `pattern` is already in one normal form
+/// ([`NameRules::pattern_forms`]); the caller compiles each form it needs.
 ///
 /// The two pattern types get DIFFERENT `.` semantics, on purpose. `glob_to_regex`
 /// emits its own `(?s)`, because a glob's `*` and `?` mean "any characters" and "one
@@ -281,13 +297,7 @@ fn case_insensitive_for(query: &SearchQuery, rules: &NameRules) -> bool {
 /// to the builder untouched and keeps the standard rule, where `.` stops at a newline
 /// and `(?s)` is how an author asks for more; overriding that would make Cmdr's regex
 /// mode a dialect of its own.
-fn compile_pattern(
-    pattern: &str,
-    pattern_type: &PatternType,
-    case_insensitive: bool,
-    rules: &NameRules,
-) -> Result<Regex, CompileError> {
-    let pattern = rules.normalize_pattern(pattern);
+fn compile_pattern(pattern: &str, pattern_type: &PatternType, case_insensitive: bool) -> Result<Regex, CompileError> {
     let regex_str = match pattern_type {
         PatternType::Glob => {
             let glob = if !pattern.contains('*') && !pattern.contains('?') {
