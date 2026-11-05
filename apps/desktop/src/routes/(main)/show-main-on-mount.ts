@@ -13,9 +13,10 @@ const PAINT_AFTER_SHOW_TIMEOUT_MS = 1000
 
 /**
  * How long after the repair to keep waiting before calling the window stuck.
- * A frame that lands inside this is late, not stuck: the 2015 MacBook Air on
- * Catalina misses the first deadline on every launch while both panes mount,
- * then paints (Cmdr 0.59.0, 10.15.8, four of four launches, 2026-11-04).
+ * A frame that lands inside this is late, not stuck: a slow Mac can spend the
+ * first second mounting both panes. A window on no screen (a closed lid, no
+ * external display) never paints and warns after the full wait; see
+ * `DETAILS.md` § Startup: showing the main window.
  */
 const PAINT_AFTER_REPAIR_TIMEOUT_MS = 9000
 

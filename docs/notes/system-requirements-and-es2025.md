@@ -71,12 +71,26 @@ the `:has()` selector all arrived in Safari 15.4. Nothing lowers those, so 15.4 
 genuinely cannot work.
 
 The same gap runs the other way: a function NEWER than 15.4 (`toSorted`, `Object.groupBy`, `Set.union`) ships as written
-and throws `TypeError` on Catalina, breaking just the feature that calls it, so a startup smoke test can miss it. Two
-guards hold the line. `apps/desktop/tsconfig.json` pins `lib` to ES2022, and `apps/desktop/src/webkit-floor.d.ts` adds
-back the ES2023 members Safari 15.4 has (`findLast`, `findLastIndex`), so the app's own code fails type-checking.
-`vite-webkit-api-floor.ts` in `apps/desktop/scripts/` scans every emitted client chunk, dependencies included, for
-unchecked calls to a curated list of newer JavaScript and DOM functions; a call inside a check that names the function
-passes. On adding it, the whole bundle passed with nothing to change (Vite 8.3.5 production build, 2026-11-04).
+and throws `TypeError` on Catalina, breaking just the feature that calls it, so a startup smoke test can miss it. Three
+guards hold the line, all reading what's "newer" from MDN's browser-compat-data (`@mdn/browser-compat-data`, through
+`apps/desktop/scripts/vite-webkit-floor-compat.ts`, which also holds the floor constant), so no hand-kept list goes
+stale:
+
+- **JavaScript built-ins in the app's code**: `apps/desktop/tsconfig.json` pins `lib` to ES2022, and
+  `apps/desktop/src/webkit-floor.d.ts` adds back the ES2023 members Safari 15.4 has (`findLast`, `findLastIndex`), so a
+  newer one fails type-checking.
+- **DOM calls in the app's code**: the type-aware lint rule `cmdr/webkit-floor-dom`
+  (`apps/desktop/eslint-plugins/webkit-floor-dom.js`) asks TypeScript which declaration a call resolves to and looks up
+  exactly that BCD entry (`api.Element.checkVisibility`, `api.AbortSignal.timeout_static`). TypeScript's DOM lib can't
+  be versioned, and matching DOM method names in the bundle is hopeless: generic ones (`info`, `format`, `destroy`)
+  collide with libraries' own methods.
+- **Everything shipped, dependencies included**: `vite-webkit-api-floor.ts` scans each emitted client chunk for calls to
+  newer globals, owner-qualified statics, and JavaScript prototype methods whose name no older API shares. Hand-checked
+  uses sit in its `REVIEWED` list with the reason (devalue's feature-checked base64, LogTape's own `with` and `drop`).
+
+A call inside a check that names the function passes all three. On adding them, the bundle and the app's source had six
+hits, all already guarded through indirection the checks can't follow (a helper, a worker started behind a main-thread
+check), now marked with reasons (Vite 8.3.5 production build, BCD 8.1.8, 2026-11-05).
 
 **Beside the floors, ICU.** A staged Safari brings its own JavaScriptCore but keeps the OS's ICU, and some `Intl` APIs
 exist only on a newer ICU than Catalina's. So Safari 15.6.1 on Catalina still has no `Intl.ListFormat`, which crashed
@@ -144,12 +158,14 @@ check. Two ways, cheapest first:
   port with `ssh -R <port>:127.0.0.1:<port> air`, and `open -a Safari http://127.0.0.1:<port>/` there. Safari runs the
   same staged WebKit and ICU Cmdr gets, so a parse or module-evaluation error shows up with its chunk and column. Past
   that point, the only errors are the missing `window.__TAURI_INTERNALS__`.
-- **The real app** (about five minutes warm):
+- **The real app** (about five minutes warm, eight from a fresh worktree):
   `node scripts/tauri-wrapper.ts build --no-bundle --target x86_64-apple-darwin -- --profile e2e` in `apps/desktop/`,
-  copy an installed `Cmdr.app` under `~` on the Air, swap in `target/x86_64-apple-darwin/e2e/Cmdr`,
-  `codesign --force --deep -s -` it there, and `open` it. `FE:` lines in `~/Library/Logs/com.veszelovszki.cmdr/cmdr.log`
-  mean the frontend mounted. The jsc in Catalina's own `JavaScriptCore.framework` is Safari 13's, and it can't load the
-  staged framework (missing symbols), so it's no help.
+  `scp` an installed `Cmdr.app` from the Air to the laptop, swap in `target/x86_64-apple-darwin/e2e/Cmdr`,
+  `codesign --force --deep -s -` it HERE (the Air has no command-line tools, so `codesign` fails there for want of
+  `codesign_allocate`), copy it back under `~`, and `open` it over `ssh`. `FE:` lines in
+  `~/Library/Logs/com.veszelovszki.cmdr/cmdr.log` mean the frontend mounted. Anything about painting needs the lid open:
+  closed, the window is on no screen and WebKit draws no frame at all (2026-11-05). The jsc in Catalina's own
+  `JavaScriptCore.framework` is Safari 13's, and it can't load the staged framework (missing symbols), so it's no help.
 
 ## Effective minimums imposed by the stack
 
@@ -165,12 +181,16 @@ check. Two ways, cheapest first:
   `UniformTypeIdentifiers` (macOS 11) rode in behind an `objc2-quick-look-ui` feature default and made the app
   unlaunchable on Catalina. `desktop-macos-framework-floor` reads the load commands now, so this line stays true by
   enforcement rather than by assumption (verified by `otool -L` on the `aarch64-apple-darwin` build, 2026-09-05).
-- **Modern CSS**: nothing above the `build.target` floor ships. Container queries (Safari 16) are gone from the tree and
-  banned by stylelint (`at-rule-disallowed-list` / `property-disallowed-list` in `apps/desktop/.stylelintrc.mjs`); the
-  stand-in is `useInlineSize` in `apps/desktop/src/lib/utils/inline-size-action.ts`. `:has()` (Safari 15.4) sits ON the
-  capability floor, so the boot guard covers it. The one thing esbuild can't lower is `color-mix()` over a `var()`,
-  which is why the `@supports not (…)` fallbacks in `app.css` and the runtime mixes behind `webkit-compat.ts` both have
-  to stay.
+- **Modern CSS**: nothing newer than the floor ships without a fallback or a reviewed reason.
+  `apps/desktop/scripts/vite-webkit-css-floor.ts` checks every emitted stylesheet against BCD (properties, keyword
+  values, functions, selectors, at-rules, media features) and fails the build on anything Safari 15.4 drops that the
+  cascade doesn't cover; its `REVIEWED_CSS` list holds the accepted ones, `harmless` (scrollbar styling, `text-wrap`) or
+  `degrades` (tracked in #994: `subgrid` rows stack their cells, `::highlight` paints no find matches). Container
+  queries (Safari 16) are also banned by stylelint (`at-rule-disallowed-list` / `property-disallowed-list` in
+  `apps/desktop/.stylelintrc.mjs`); the stand-in is `useInlineSize` in
+  `apps/desktop/src/lib/utils/inline-size-action.ts`. `:has()` (Safari 15.4) sits ON the capability floor, so the boot
+  guard covers it. `color-mix()` over a `var()` can't be lowered, which is why the `@supports not (…)` fallbacks in
+  `app.css` and the runtime mixes behind `webkit-compat.ts` both have to stay (the CSS check reads those fallbacks).
 - **llama-server (AI feature only)**: Apple Silicon only (no Intel AI build, rest of app works fine)
 
 **Effective practical floor: macOS 10.15 Catalina (2019-10)**, the version the plist declares, on the best-effort terms

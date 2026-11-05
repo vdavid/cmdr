@@ -46,7 +46,9 @@ self.onmessage = (event: MessageEvent<MeasureRequest>) => {
 
   try {
     // 1×1 is enough: `measureText` reports the advance width without drawing.
+    // eslint-disable-next-line cmdr/webkit-floor-dom -- `worker-client.ts` starts this worker only after `typeof OffscreenCanvas` passes
     const canvas = new OffscreenCanvas(1, 1)
+    // eslint-disable-next-line cmdr/webkit-floor-dom -- same: the canvas above exists, so its context does
     const ctx = canvas.getContext('2d')
     if (!ctx) {
       throw new Error('OffscreenCanvas 2D context unavailable')

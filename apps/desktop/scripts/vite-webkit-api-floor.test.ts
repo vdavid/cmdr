@@ -40,6 +40,25 @@ describe('findApisBeyondSafari15', () => {
     ])
   })
 
+  it('knows what MDN knows, beyond any hand-kept list: DOM statics and global constructors', () => {
+    expect(find('AbortSignal.any([a,b]);new Highlight(r);Uint8Array.fromHex(s)')).toEqual([
+      'AbortSignal.any',
+      'Highlight',
+      'Uint8Array.fromHex',
+    ])
+  })
+
+  it('reads a name the chunk declares as a local, not as the global it shadows', () => {
+    // The minifier named a Svelte template `ML`, which is also a (Chrome-only) global.
+    expect(find('var ML=h(`<div>`);let a=ML();function Highlight(){};Highlight()')).toEqual([])
+  })
+
+  it('leaves out the generic method names of wholly new types, whose construction already trips', () => {
+    // `DisposableStack.prototype.dispose`: a library's own `.dispose()` must not match it.
+    expect(find('n.session.dispose()')).toEqual([])
+    expect(find('let s=new DisposableStack()')).toEqual(['DisposableStack'])
+  })
+
   it('exempts a worker that is only ever started behind a check in the main bundle', () => {
     expect(
       find('self.onmessage=()=>{new OffscreenCanvas(1,1)}', '_app/immutable/workers/measure-worker-_Kr8.js'),
