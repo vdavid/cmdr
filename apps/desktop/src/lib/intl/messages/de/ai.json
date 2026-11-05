@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, wenn du chattest oder wenn es von selbst einen Chat beginnt:",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, wenn du chattest oder wenn Cmdr von selbst einen Chat beginnt:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Deine Nachrichten, auch jedes Passwort, das du dort eingibst, um ein Archiv oder ein Backup zu entsperren",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Wenn du in den erweiterten Einstellungen die Protokollierung von KI-Modellaufrufen aktivierst, speichert Cmdr außerdem jede Anfrage und Antwort in einem Ordner auf deinem Mac. Diese Aufrufprotokolle bleiben lokal und werden nie irgendwohin gesendet.",
+  "ai.cloudConsent.logsNote": "Wenn du in den erweiterten Einstellungen „KI-Modellaufrufe protokollieren“ einschaltest, speichert Cmdr außerdem jede Anfrage und Antwort in einem Ordner auf deinem Mac. Diese Aufrufprotokolle bleiben lokal und werden nie irgendwohin gesendet.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Du kannst das jederzeit ausschalten, dann hört Cmdr sofort auf zu senden. Dein Dienst, dein Schlüssel und deine Chats bleiben, wie sie sind.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Dein Modell braucht dafür möglicherweise ein größeres Budget. Probiere unter Einstellungen > KI ein schnelleres Modell wie gpt-4.1-mini.",
+  "ai.translateError.emptyResponse.body": "Dein Modell hat sein Token-Budget möglicherweise aufgebraucht, bevor es geantwortet hat. Probiere unter Einstellungen > KI ein schnelleres Modell wie gpt-4.1-mini.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Dein KI-Anbieter hatte ein Problem",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "Der Server hat nicht rechtzeitig geantwortet. Versuche es gleich noch einmal.",
+  "ai.cloud.timedOut": "Der Dienst hat nicht rechtzeitig geantwortet. Versuche es gleich noch einmal.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Diese Adresse sieht nicht richtig aus. Verwende eine vollständige Webadresse, die mit https:// beginnt.",
   "@ai.cloud.invalidEndpoint": {

@@ -297,6 +297,13 @@
     "note": "Names only the chat panel itself (title, View menu item, palette command, Settings section, switch). Don't add it where the English says Cmdr or the AI.",
     "sources": "product name; do-not-translate list"
   },
+  "ask-question": {
+    "accept": ["frag", "Frage"],
+    "chosen": "fragen",
+    "confidence": "high",
+    "forms": "Don't ask about X again → Nicht mehr nach X fragen",
+    "sources": "catalog (fileOperations.transferDialog.policyAskEach Bei jeder fragen); macOS de (Nicht mehr fragen)"
+  },
   "attachment": {
     "accept": ["Anhänge", "anhängen", "angehängt", "hängt", "häng"],
     "chosen": "Anhang",
@@ -314,6 +321,19 @@
     "chosen": "Automation",
     "confidence": "high",
     "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, key AUTOMATION, 2026-10-08"
+  },
+  "batch": {
+    "accept": ["Gruppen"],
+    "chosen": "Gruppe",
+    "confidence": "tentative",
+    "forms": "one batch of an Ask Cmdr rename run, and the set in one Multi-rename → Gruppe (Alle # Gruppen widerrufen; in dieser Gruppe)",
+    "avoid": [
+      {
+        "form": "Stapel",
+        "why": "Finder’s word for desktop stacks (N148.1 Stapel verwenden), a different feature"
+      }
+    ],
+    "sources": "catalog (askCmdr.renameUndo.undoJob, .refusedBatches, .unavailable); macOS Finder Stapel = stacks"
   },
   "bucket": {
     "chosen": "Bucket",
@@ -339,6 +359,13 @@
     "chosen": "Client",
     "confidence": "high",
     "sources": "MS terminology (client → Client); catalog (operationLog.initiator.aiClient)"
+  },
+  "cold-storage": {
+    "accept": ["archiviert"],
+    "chosen": "Cold Storage",
+    "confidence": "tentative",
+    "forms": "the row glyph’s name → Im Cold Storage; a file in it → Im Cold Storage archiviert",
+    "sources": "MS terminology (cold storage → Cold Storage); catalog (fileExplorer.archivedFile.tooltip)"
   },
   "column": {
     "chosen": "Spalte",
@@ -567,6 +594,7 @@
       "geprüft",
       "überprüf",
       "Prüfe",
+      "Prüft",
       "prüfst",
       "sieh",
       "nachsehen",
@@ -822,6 +850,31 @@
     "accept": ["Erweiterung"],
     "confidence": "high",
     "sources": "macOS pane Anmeldeobjekte & Erweiterungen (errors.provider.pCloudFuse.needsAction); compounds like Systemerweiterung"
+  },
+  "focus": {
+    "accept": ["Tastaturfokus", "fokussiert", "fokussierten"],
+    "chosen": "Fokus",
+    "confidence": "high",
+    "forms": "Moves keyboard focus to X → Setzt den Tastaturfokus auf X; the focused pane → der fokussierte Bereich",
+    "sources": "KDE Dolphin (Tastaturfokus … bewegen); Double Commander (Fokus auf die Befehlszeile); MS terminology (Fokus)"
+  },
+  "grant": {
+    "accept": ["gewähr", "Gewähr", "erlaub", "erhalten", "erteilt"],
+    "chosen": "gewähren",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.emptyRootICloud.explanation": "apps that haven’t been granted X → Apps, die keinen X haben: the plain state reads more natural than the act",
+      "onboarding.stepAi.bannerBody.granted": "thanks for granting X → Danke für den vollständigen Festplattenzugriff: the thank-you names the permission, not the act"
+    },
+    "forms": "granted full disk access before → den vollständigen Festplattenzugriff schon einmal gewährt; give Cmdr access in System Settings → gewähre Cmdr Zugriff; macOS grants on its own → erteilt; Cmdr has received access → Zugriff erhalten",
+    "sources": "MS terminology (Zugriff gewähren auf); catalog (errors.listing.permissionDenied.suggestion gewähre Cmdr Zugriff, onboarding.stepFda.con.body; allow → erlauben for the switch)"
+  },
+  "guide": {
+    "accept": ["Anleitungen"],
+    "chosen": "Anleitung",
+    "confidence": "high",
+    "forms": "Accessibility guide → Anleitung zu Bedienungshilfen",
+    "sources": "catalog (commands.helpAccessibility.label); git de (Anleitung zu Git)"
   },
   "learn-more": {
     "chosen": "Mehr über",
@@ -1603,6 +1656,19 @@
     "confidence": "high",
     "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
   },
+  "smb-negotiated-security": {
+    "chosen": "Sicherheitseinstellungen",
+    "confidence": "high",
+    "forms": "the security settings it agreed on with Cmdr → die Sicherheitseinstellungen, die mit Cmdr vereinbart waren (one fixed phrase across the family)",
+    "sources": "catalog (errors.volume.negotiationInvalid and five siblings)"
+  },
+  "speed": {
+    "accept": ["schnell", "schneller", "beschleunig"],
+    "chosen": "Geschwindigkeit",
+    "confidence": "high",
+    "forms": "faster X → schnellere X (für schnelleren Zugriff, schnellere Übertragungen)",
+    "sources": "catalog (fileExplorer.navigation.connectDirectly, settings.network.smbConcurrency.keywords); MS terminology"
+  },
   "step": {
     "chosen": "Schritt",
     "confidence": "high",
@@ -1622,12 +1688,26 @@
     "accept": ["nachdenk", "Nachdenken", "Denkt nach"],
     "sources": "shipped askCmdr.thinking; no AI-assistant precedent in the pile"
   },
+  "unix-group": {
+    "accept": ["Gruppen", "Gruppen-ID", "Gruppen-IDs"],
+    "chosen": "Gruppe",
+    "confidence": "high",
+    "forms": "other group IDs → Weitere Gruppen-IDs",
+    "sources": "MS terminology (Gruppen-ID); catalog (servers.sheet.nfsOtherGids)"
+  },
   "web": {
     "accept": ["Web"],
     "chosen": "Internet",
     "confidence": "tentative",
     "forms": "from the web → aus dem Internet; web links → Weblinks",
     "sources": "catalog (viewer.markdown.* notice, placeholder, button, link notices), 2026-10-19"
+  },
+  "wizard": {
+    "accept": ["Einführungsassistent", "Assistenten"],
+    "chosen": "Assistent",
+    "confidence": "high",
+    "forms": "onboarding wizard → Einführungsassistent",
+    "sources": "MS terminology (Assistent, many wizards); catalog (commands.cmdrOpenOnboarding.description)"
   },
   "working-tree": {
     "chosen": "Arbeitsbaum",
@@ -2300,8 +2380,7 @@
       "feedback.dialog.description": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
       "feedback.dialog.invalid": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
       "feedback.sentToast": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
-      "feedback.sentWithoutLogsToast": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
-      "settings.fileOperations.showAlreadyGoneToast.description": "English-sense: the “note” is Cmdr’s own short toast, not text the user writes, so it takes the notification ruling’s Hinweis (as settings.suggestedOps.suppressApprovalNotice.description does)"
+      "feedback.sentWithoutLogsToast": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface"
     },
     "sources": "MS terminology (note → Notiz); catalog (errorReporter.dialog.noteLabel)"
   },
@@ -2499,7 +2578,7 @@
     "sources": "Total/Double Commander de phrasing + macOS"
   },
   "paste": {
-    "accept": ["eingesetzt", "Einsetzen", "setze"],
+    "accept": ["eingesetzt", "Einsetzen", "setze", "Setzt"],
     "avoid": [
       {
         "form": "einfügen",
@@ -3208,9 +3287,6 @@
     "accept": ["übersprungen", "überspringt", "überspring"],
     "chosen": "überspringen",
     "confidence": "high",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "English-sense: “skip the note” means not seeing a toast again, not leaving an item out of an operation (damit der Hinweis wegbleibt)"
-    },
     "forms": "Skip all → Alle überspringen; outcome Übersprungen; du-imperative Überspringe dieses Objekt",
     "sources": "macOS Finder copy dialog (Überspringen), Double Commander, Nautilus"
   },
@@ -3261,7 +3337,7 @@
     "sources": "macOS de (iCloud-Status, Statusleiste ausblenden); MS terminology (status → Status)"
   },
   "stop": {
-    "accept": ["gestoppt", "Stoppen", "stoppt", "stopp", "aufhör", "hört"],
+    "accept": ["gestoppt", "Stoppen", "stoppt", "stopp", "aufhör", "aufzuhör", "hört"],
     "avoid": [
       {
         "form": "anhalten",
@@ -3277,6 +3353,7 @@
     "decision": "Wörter, die auseinandergelaufen sind, ohne dass ein Check es sehen konnte",
     "exceptions": {
       "errors.mount.cancelled": "stopped before it finished → endete, bevor er abgeschlossen war",
+      "settings.fileOperations.showAlreadyGoneToast.description": "to stop these notices means they no longer appear, nothing running is halted → damit diese Hinweise wegbleiben",
       "errors.volume.cancelled": "a stop at the user’s request is the cancel status: auf deinen Wunsch abgebrochen",
       "settings.mediaIndex.chosenFolders.help": "Removing a folder stops new indexing → wird nichts Neues mehr indiziert"
     },
@@ -3523,7 +3600,7 @@
     "accept": ["Tippsprung"],
     "chosen": "Springen",
     "confidence": "high",
-    "forms": "the mode and badge word Springen (Springen: …), beside Filtern; the reset-delay setting's noun Tippsprung; clear the typed text → Eingabe zum Springen löschen (a bare Springen löschen doesn't parse)",
+    "forms": "the mode and badge word Springen (Springen: …), beside Filtern; the reset-delay setting's noun Tippsprung; clear the typed text → Eingabe löschen (fileExplorer.typeToJump.clear names the text, not the mode)",
     "sources": "catalog (fileExplorer.typeToJump.prefix, settings.fileExplorer.typeToJump.mode.opt.jump)"
   },
   "typo": {

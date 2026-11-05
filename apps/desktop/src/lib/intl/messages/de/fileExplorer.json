@@ -83,9 +83,9 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
-  "fileExplorer.archivedFile.label": "Archiviert",
+  "fileExplorer.archivedFile.label": "Im Cold Storage",
   "@fileExplorer.archivedFile.label": {
-    "sourceHash": "bdb8650"
+    "sourceHash": "78bf854"
   },
   "fileExplorer.archivedFile.tooltip": "Im Cold Storage archiviert. Stelle die Datei in der Konsole deines Speicheranbieters wieder her, bevor du sie öffnest oder kopierst.",
   "@fileExplorer.archivedFile.tooltip": {
@@ -312,9 +312,9 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
-  "fileExplorer.open.didNotOpen": "{fileName} ließ sich nicht öffnen. macOS hat die Datei oder eine passende App nicht gefunden.",
+  "fileExplorer.open.didNotOpen": "{fileName} ließ sich nicht öffnen. macOS hat die Datei nicht gefunden, oder keine App kann sie öffnen.",
   "@fileExplorer.open.didNotOpen": {
-    "sourceHash": "c8362d8"
+    "sourceHash": "cd95423"
   },
   "fileExplorer.openingToast.noApp": "{fileName} wird geöffnet …",
   "@fileExplorer.openingToast.noApp": {
@@ -1710,13 +1710,13 @@
   "@fileExplorer.navigation.favoriteShortcutPrompt": {
     "sourceHash": "51f3d7d"
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Kurzbefehl für {name}. A–Z drücken oder mit Entf entfernen.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Taste für Kurzbefehl zu {name}. A–Z drücken oder mit Entf entfernen.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
-    "sourceHash": "31515c1"
+    "sourceHash": "0c5db95"
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Dieser Kurzbefehl ließ sich nicht speichern. Erneut versuchen?",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Die Taste für den Kurzbefehl ließ sich nicht speichern. Erneut versuchen?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "38e7225"
+    "sourceHash": "de62c34"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "Dieser Favorit ließ sich nicht entfernen. Erneut versuchen?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
@@ -1730,9 +1730,9 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
+  "fileExplorer.navigation.favoriteStatus.connects": "Nicht verbunden. Beim Öffnen dieses Favoriten verbindet sich Cmdr mit {kind, select, share {der Freigabe „{place}“} server {dem Server „{place}“} phone {dem Telefon „{place}“} other {„{place}“}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
-    "sourceHash": "a30b8cd"
+    "sourceHash": "0ed263f"
   },
   "fileExplorer.navigation.favoriteStatus.notFound": "Diesen Ordner gibt es nicht mehr.",
   "@fileExplorer.navigation.favoriteStatus.notFound": {
@@ -1742,9 +1742,9 @@
   "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
     "sourceHash": "00f7bf0"
   },
-  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Der Speicher, auf dem dieser Ordner lag, ist auf {device} gerade nicht verfügbar.",
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Der Speicher, auf dem dieser Ordner lag, ist auf „{device}“ gerade nicht verfügbar.",
   "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
-    "sourceHash": "a06d5ae"
+    "sourceHash": "ef526cd"
   },
   "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "„{drive}“ ist nicht verbunden. Verbinde das Laufwerk, dann versuche es erneut.",
   "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
@@ -1758,9 +1758,9 @@
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
     "sourceHash": "4fba610"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr weiß nicht mehr, wie es {kind, select, share {die Freigabe „{place}“} server {den Server „{place}“} phone {das Telefon „{place}“} other {„{place}“}} erreicht. Verbinde dich unter „Server“ erneut damit, dann funktioniert dieser Favorit wieder.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
-    "sourceHash": "842858c"
+    "sourceHash": "59f7041"
   },
   "fileExplorer.navigation.favoriteUnreachable.notFound": "„{name}“ ist nicht mehr unter {path}.",
   "@fileExplorer.navigation.favoriteUnreachable.notFound": {
@@ -1866,9 +1866,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr arbeitet noch mit Dateien auf diesem Server. Trenne die Verbindung, sobald das erledigt ist.",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr arbeitet noch mit Dateien auf diesem Server. Du kannst die Verbindung trennen, sobald das erledigt ist.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "bd52d60"
+    "sourceHash": "760edfd"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} ist jetzt in deiner Volume-Auswahl.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1894,7 +1894,7 @@
   "@fileExplorer.navigation.forgetConfirmButton": {
     "sourceHash": "a6bd489"
   },
-  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Vergessen",
   "@fileExplorer.navigation.forgetPasswordConfirmButton": {
     "sourceHash": "a6bd489"
   },
@@ -1938,9 +1938,9 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr arbeitet noch mit Dateien auf diesem Gerät. Wirf das Gerät aus, sobald das erledigt ist.",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr arbeitet noch mit Dateien auf diesem Gerät. Du kannst das Gerät auswerfen, sobald das erledigt ist.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "3da6312"
+    "sourceHash": "b298e2f"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "{name} wird ausgeworfen …",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -2116,9 +2116,9 @@
   "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
     "sourceHash": "4ef8487"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Die Laufwerksindizierung ist in den Einstellungen aus, deshalb wird {name} nicht indiziert. Schalte sie unter Indizierung > Laufwerksindizierung ein.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Die Laufwerksindizierung ist in den Einstellungen aus, deshalb wird {name} nicht indiziert. Schalte sie unter „Indizierung > Laufwerksindizierung“ ein.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
-    "sourceHash": "ce0d45c"
+    "sourceHash": "0253edd"
   },
   "fileExplorer.navigation.driveIndex.driveLeaving": "{name} wird gerade getrennt, deshalb hat Cmdr den Index so gelassen, wie er war. Falls das Laufwerk verbunden bleibt, versuche es gleich noch einmal.",
   "@fileExplorer.navigation.driveIndex.driveLeaving": {
@@ -2128,9 +2128,9 @@
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Die Laufwerksindizierung ist in den Einstellungen aus. Schalte sie unter Indizierung > Laufwerksindizierung ein, dann macht dieses Laufwerk dort weiter, wo es aufgehört hat.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Die Laufwerksindizierung ist in den Einstellungen aus. Schalte sie unter „Indizierung > Laufwerksindizierung“ ein, dann macht dieses Laufwerk dort weiter, wo es aufgehört hat.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
-    "sourceHash": "e045664"
+    "sourceHash": "26e250c"
   },
   "fileExplorer.dragOut.failed": "{count, plural, =1 {„{name}“ ließ sich nicht kopieren.} one {{countText} Objekt ließ sich nicht kopieren.} other {{countText} Objekte ließen sich nicht kopieren.}}",
   "@fileExplorer.dragOut.failed": {
@@ -2152,9 +2152,9 @@
   "@fileExplorer.typeToJump.modeJump": {
     "sourceHash": "292fdf5"
   },
-  "fileExplorer.typeToJump.clear": "Eingabe zum Springen löschen",
+  "fileExplorer.typeToJump.clear": "Eingabe löschen",
   "@fileExplorer.typeToJump.clear": {
-    "sourceHash": "42ec82f"
+    "sourceHash": "61920c5"
   },
   "fileExplorer.quickFilter.clear": "Filter löschen",
   "@fileExplorer.quickFilter.clear": {
@@ -2212,13 +2212,13 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
-  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} hat die Sicherheitseinstellungen, die mit Cmdr vereinbart waren, nicht bestätigt, daher bleibt Cmdr bei der Systemverbindung. Das kann an einem Server liegen, der nicht richtig arbeitet, aber auch daran, dass jemand die Verbindung manipuliert.",
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} hat die Sicherheitseinstellungen, die mit Cmdr vereinbart waren, nicht bestätigt, daher bleibt diese Freigabe bei der Systemverbindung. Das kann an einem Server liegen, der nicht richtig arbeitet, aber auch daran, dass jemand die Verbindung manipuliert.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
-    "sourceHash": "7ea7c4f"
+    "sourceHash": "9b3a6ae"
   },
-  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} akzeptiert nur verschlüsselte Verbindungen und konnte sich mit Cmdr auf keine Verschlüsselung einigen, daher bleibt Cmdr bei der Systemverbindung.",
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} akzeptiert nur verschlüsselte Verbindungen und konnte sich mit Cmdr auf keine Verschlüsselung einigen, daher bleibt diese Freigabe bei der Systemverbindung.",
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
-    "sourceHash": "a731300"
+    "sourceHash": "4df31b6"
   },
   "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} kann die Verbindung nicht verschlüsseln und in Cmdr ist „SMB-Verschlüsselung immer verlangen“ eingeschaltet, daher hat sich Cmdr nicht direkt verbunden.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {

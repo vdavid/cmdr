@@ -171,9 +171,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "Du hast {max, number} Voreinstellungen, mehr behält Cmdr nicht. Lösche eine, um diese zu sichern.",
+  "multiRename.presets.listFull": "Du hast {max, plural, one {# Voreinstellung} other {# Voreinstellungen}}, mehr behält Cmdr nicht. Lösche eine, um diese zu sichern.",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "Ersetzen",
   "@multiRename.presets.replace": {
@@ -224,13 +224,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "Gleicher Name wie bei einer anderen Datei",
+  "multiRename.status.duplicate": "Gleicher Name wie bei einem anderen Objekt",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
-  "multiRename.status.targetExists": "Name ist belegt",
+  "multiRename.status.targetExists": "Name bereits belegt",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "Kein gültiger Name",
   "@multiRename.status.invalidName": {
@@ -384,17 +384,17 @@
   "@multiRename.status.ready": {
     "sourceHash": "f032574"
   },
-  "multiRename.reason.duplicate": "Eine andere Datei, die hier umbenannt wird, bekommt denselben neuen Namen, daher wird keine von beiden umbenannt.",
+  "multiRename.reason.duplicate": "Ein anderes Objekt in dieser Gruppe bekommt denselben neuen Namen, daher wird keines der beiden umbenannt.",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
-  "multiRename.reason.targetExists": "Eine Datei, die in diesem Ordner bleibt, hat bereits diesen Namen, daher behält diese Datei ihren Namen.",
+  "multiRename.reason.targetExists": "Ein Objekt, das in diesem Ordner bleibt, hat bereits diesen Namen, daher behält dieses Objekt seinen Namen.",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
-  "multiRename.reason.missing": "Diese Datei wurde bewegt oder gelöscht, nachdem „Mehrfach umbenennen“ geöffnet wurde, daher wird sie ausgelassen.",
+  "multiRename.reason.missing": "Dieses Objekt wurde bewegt oder gelöscht, nachdem „Mehrfach umbenennen“ geöffnet wurde, daher wird es ausgelassen.",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "Wird gelesen …",
   "@multiRename.status.reading": {
@@ -404,13 +404,13 @@
   "@multiRename.status.noValue": {
     "sourceHash": "619464f"
   },
-  "multiRename.reason.noValue": "Diese Datei hat keinen Wert für „{field}“, daher behält die Datei ihren Namen.",
+  "multiRename.reason.noValue": "Dieses Objekt hat keinen Wert für „{field}“, daher behält es seinen Namen.",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "Diese Datei hat keinen Wert für „{field}“, daher behält die Datei ihren Namen. Der Editor des Platzhalters kann stattdessen das Datum nehmen, an dem die Datei zuletzt geändert wurde.",
+  "multiRename.reason.noDate": "Dieses Objekt hat keinen Wert für „{field}“, daher behält es seinen Namen. Der Editor des Platzhalters kann stattdessen das Datum nehmen, an dem das Objekt zuletzt geändert wurde.",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "Tags nicht lesbar",
   "@multiRename.status.unreadable": {
@@ -636,9 +636,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "{count, plural, one {# Umbenennung übersprungen, die Namen vertauscht} other {# Umbenennungen übersprungen, die Namen vertauschen}}. Benenne diese Dateien einzeln um.",
+  "multiRename.swapsSkipped": "{count, plural, one {# Umbenennung übersprungen, die Namen vertauscht} other {# Umbenennungen übersprungen, die Namen vertauschen}}. Benenne diese Objekte einzeln um.",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "„Mehrfach umbenennen“ funktioniert nicht in Archiven",
   "@multiRename.archiveTitle": {

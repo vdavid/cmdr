@@ -33,7 +33,7 @@
   },
   "stateRecovery.operationLog.title": "Cmdr konnte dein Vorgangsprotokoll nicht lesen, deshalb startet das Protokoll von vorn",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "Cmdr konnte deine Ask-Cmdr-Chats nicht lesen, deshalb startet die Chat-Liste leer",
   "@stateRecovery.chatHistory.title": {

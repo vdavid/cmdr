@@ -145,9 +145,9 @@
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "02f82ce"
   },
-  "errorReporter.sentToast.message": "Fehlerbericht gesendet. Deine Referenz-ID ist",
+  "errorReporter.sentToast.message": "Fehlerbericht gesendet. Deine Referenz-ID:",
   "@errorReporter.sentToast.message": {
-    "sourceHash": "75be6ba"
+    "sourceHash": "d1e9bfc"
   },
   "errorReporter.sentToast.dismiss": "Schließen",
   "@errorReporter.sentToast.dismiss": {
@@ -161,9 +161,9 @@
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
   },
-  "errorReporter.amendedToast.message": "Notiz zum Bericht hinzugefügt. Deine Referenz-ID ist",
+  "errorReporter.amendedToast.message": "Notiz zum Bericht hinzugefügt. Deine Referenz-ID:",
   "@errorReporter.amendedToast.message": {
-    "sourceHash": "5471d7f"
+    "sourceHash": "fc7535b"
   },
   "errorReporter.bundleSavedToast.message": "Bündel auf Datenträger gesichert",
   "@errorReporter.bundleSavedToast.message": {

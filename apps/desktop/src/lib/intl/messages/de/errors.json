@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Cmdr ist beim Lesen von `{path}` auf ein unerwartetes Problem gestoßen. Sieh dir die technischen Details unten für den genauen Systemcode an, der bei der Fehlersuche helfen kann.",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr ist beim Lesen von `{path}` auf ein unerwartetes Problem gestoßen. Unten unter „Technische Details“ kannst du den genauen Systemcode nachsehen, der bei der Fehlersuche helfen kann.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch verbunden ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen\n- Wenn das immer wieder passiert, öffne das **Festplattendienstprogramm** und führe für dieses Volume die **Erste Hilfe** aus",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -591,9 +591,9 @@
   "@errors.listing.linkTargetUnreachable.title": {
     "sourceHash": "8aee94c"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "`{path}` liegt hinter einem Link zu einem anderen Server, und Cmdr kann diesen Server gerade nicht erreichen. Der Rest dieser Freigabe ist in Ordnung, und es wurde nichts gelöscht.",
+  "errors.listing.linkTargetUnreachable.explanation": "`{path}` führt über einen Link zu einem anderen Server, und Cmdr kann diesen Server gerade nicht erreichen. Der Rest dieser Freigabe ist in Ordnung, und es wurde nichts gelöscht.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Das kannst du versuchen:\n- Prüfe, ob der andere Server läuft und über dein Netzwerk erreichbar ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "Die Antwort des Servers hatte keine gültige Signatur, deshalb hat Cmdr den Vorgang gestoppt.",
+  "errors.write.replySignatureRefused.message": "Die Antwort des Servers hatte keine gültige Signatur, deshalb hat Cmdr den Vorgang an dieser Stelle gestoppt.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Das kann an einem unzuverlässigen Netzwerkgerät liegen, aber auch daran, dass jemand den Datenverkehr zwischen dir und dem Server manipuliert. Stelle die Verbindung wieder her, und wenn das noch einmal passiert, prüfe dein Netzwerk.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "Das Zielgerät",
+  "errors.write.readOnlyDevice.destination.fallbackName": "Das Ziel",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "Datei ist geschützt",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "Das liegt hinter einem Link zu einem anderen Server, und Cmdr kann diesen Server gerade nicht erreichen.",
+  "errors.volume.linkTargetUnreachable": "Dieser Pfad führt über einen Link zu einem anderen Server, und Cmdr kann diesen Server gerade nicht erreichen.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "Das Gerät hat seine Verbindung neu gestartet. Warte ein paar Sekunden und versuche es dann erneut.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "Die Verbindung hat nicht rechtzeitig geantwortet.",
+  "errors.volume.connectionTimeout": "Der Server oder das Gerät hat nicht rechtzeitig geantwortet.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr hat das auf deinen Wunsch abgebrochen.",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "Die Antwort des Servers hatte keine gültige Signatur, deshalb hat Cmdr den Vorgang gestoppt.",
+  "errors.volume.signatureInvalid": "Die Antwort des Servers hatte keine gültige Signatur, deshalb hat Cmdr den Vorgang an dieser Stelle gestoppt.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "Das Volume konnte das nicht abschließen.",
   "@errors.volume.ioError": {
@@ -2369,13 +2369,13 @@
   "@errors.eject.unmountRefused": {
     "sourceHash": "f855a33"
   },
-  "errors.eject.unmountRefusedByApp": "{app} verwendet dort noch etwas. Schließe die App, dann versuche es erneut.",
+  "errors.eject.unmountRefusedByApp": "{app} verwendet dort noch etwas. Schließe diese App, dann versuche es erneut.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
   "errors.eject.unmountRefusedByApps": "{apps} verwenden dort noch etwas. Schließe diese Apps, dann versuche es erneut.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "andere Apps",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "Ein Teil deiner Auswahl liegt in einer Ansicht",
+  "errors.write.sourcesSpanVolumes.title": "Ein Teil deiner Auswahl liegt in einem Backup, einem Archiv oder einem Git-Verlauf",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} liegt in den Snapshots eines Backups, in einem Archiv oder in der Historie eines Repos, der Rest deiner Auswahl aber nicht, deshalb kann Cmdr nicht alles zusammen lesen. Es wurde nichts geändert.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Mach es in zwei Schritten: zuerst die Objekte in der Ansicht für sich, dann den Rest.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Mach es in zwei Schritten: zuerst diese Objekte für sich, dann den Rest.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Bewege sie nacheinander, oder benenne eines vorher um.",
   "@errors.write.duplicateSourceNames.suggestion.move": {

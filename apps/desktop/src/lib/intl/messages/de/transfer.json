@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Dieser Server kann {classes} nicht speichern, deshalb sind diese Angaben nicht mitgekommen.",
+  "transfer.metadataLeftBehind": "Dieses Ziel kann einige Angaben nicht speichern, deshalb sind sie nicht mitgekommen: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, one {{countText} geschütztes Objekt ist geblieben, wo es war.} other {{countText} geschützte Objekte sind geblieben, wo sie waren.}}",
   "@transfer.lockedSkipped": {

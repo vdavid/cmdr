@@ -626,11 +626,13 @@
   },
   "queryUi.date.preset.thisMonth": "{date} {time}",
   "@queryUi.date.preset.thisMonth": {
-    "sourceHash": "030ee23"
+    "sourceHash": "ed860a4",
+    "sameAsSourceJustification": "Nur Platzhalter: {date} kommt schon im deutschen Datumsformat („1. Mai“), die Leerstelle davor passt auch im Deutschen."
   },
   "queryUi.date.preset.lastMonth": "{date}, {time}",
   "@queryUi.date.preset.lastMonth": {
-    "sourceHash": "0838509"
+    "sourceHash": "1a88956",
+    "sameAsSourceJustification": "Nur Platzhalter: {date} kommt schon im deutschen Datumsformat („1. April 2026“), Komma vor der Uhrzeit wie im Deutschen üblich."
   },
   "queryUi.date.preset.yearStart": "1. Januar {year}, {time}",
   "@queryUi.date.preset.yearStart": {

@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Klicke einen Server mit der rechten Maustaste an und wähle „Aus der Volume-Auswahl lösen“, oder führe „{command}“ in der Befehlspalette aus. Der Server bleibt in der Liste „Server“.",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "Alles klar",
   "@servers.pinHint.gotIt": {
@@ -65,9 +65,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Nie",
+  "servers.hub.neverUsed": "Nie benutzt",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "als {username}",
   "@servers.hub.shareAccount": {
@@ -383,7 +383,7 @@
   },
   "servers.sheet.addAnywayHelp": "Cmdr konnte diesen Server nicht prüfen, deshalb speichert „Trotzdem hinzufügen“ ihn so, wie du ihn eingegeben hast.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Auswerfen und sichern",
   "@servers.sheet.ejectAndSave": {
@@ -529,9 +529,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS sendet bis zu 16 weitere Gruppen mit, diese Liste enthält aber {count}.",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS sendet bis zu 16 weitere Gruppen mit, und diese Liste enthält {count, plural, one {# Gruppe} other {# Gruppen}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "Anhand dieser Nummern entscheidet der Server, was du öffnen kannst. NFS fragt nicht nach einem Passwort.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -934,9 +934,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Vorerst aufhören. Die Verbindung bleibt verfügbar. Wechsle zurück, um es erneut zu versuchen.",
+  "servers.paneState.cancelCycleTooltip": "Vorerst aufhören. Die Verbindung bleibt verfügbar; öffne den Server erneut, um es noch einmal zu versuchen.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Aufhören und die Verbindung zum Server trennen.",
   "@servers.paneState.disconnectCycleTooltip": {
