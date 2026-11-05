@@ -42,14 +42,16 @@ export interface ColorSchemeHandle {
 /** A `MediaQueryList` for a scheme query, answering for the pinned theme. */
 class PinnedQueryList extends EventTarget implements MediaQueryList {
   onchange: ((this: MediaQueryList, event: MediaQueryListEvent) => unknown) | null = null
+  readonly media: string
+  private readonly evaluate: (query: string) => boolean
+  private readonly onListened: (list: PinnedQueryList) => void
   private last: boolean
 
-  constructor(
-    readonly media: string,
-    private readonly evaluate: (query: string) => boolean,
-    private readonly onListened: (list: PinnedQueryList) => void,
-  ) {
+  constructor(media: string, evaluate: (query: string) => boolean, onListened: (list: PinnedQueryList) => void) {
     super()
+    this.media = media
+    this.evaluate = evaluate
+    this.onListened = onListened
     this.last = this.matches
   }
 
