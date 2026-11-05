@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Kérlek, ne töröld a saját mappádat",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Hé, a saját mappádat nem törölheted.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Ezt nem törölheted: <code>{path}</code>, mert benne van a saját mappád, azt pedig nem törölheted.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Ha az összes fájlodtól meg akarsz szabadulni, menj be, jelölj ki mindent, és töröld. Bár ez még így is elég rossz ötletnek hangzik.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Ha helyet akarsz felszabadítani, légy egy kicsit konkrétabb. Ha mindentől meg akarsz szabadulni ezen a számítógépen, állítsd vissza a rendszert gyári állapotra.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Ez a fájl megváltozott másolás közben",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

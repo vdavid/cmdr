@@ -15,6 +15,10 @@
   "@ui.menuBar.label": {
     "sourceHash": "2d9de7e"
   },
+  "ui.demoDrop.overBudget": "這個線上展示每次造訪最多容納你 {budgetText} 的檔案，所以有 {countText} 個{count, plural, other {項目}}沒放進來。",
+  "@ui.demoDrop.overBudget": {
+    "sourceHash": "9a11992"
+  },
   "ui.popover.defaultAriaLabel": "選項",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

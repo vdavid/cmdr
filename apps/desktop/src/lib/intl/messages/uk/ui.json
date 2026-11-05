@@ -16,6 +16,10 @@
   "@ui.menuBar.label": {
     "sourceHash": "2d9de7e"
   },
+  "ui.demoDrop.overBudget": "Демо вміщує до {budgetText} ваших файлів за один візит, тому {count, plural, one {не вмістився {countText} елемент} few {не вмістилося {countText} елементи} many {не вмістилося {countText} елементів} other {не вмістилося {countText} елемента}}.",
+  "@ui.demoDrop.overBudget": {
+    "sourceHash": "9a11992"
+  },
   "ui.popover.defaultAriaLabel": "Параметри",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

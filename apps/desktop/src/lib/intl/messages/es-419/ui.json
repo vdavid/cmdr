@@ -42,5 +42,9 @@
   "ui.toolAsk.setSetting.systemDefault": "Predeterminado del sistema",
   "@ui.toolAsk.setSetting.systemDefault": {
     "sourceHash": "c8aa231"
+  },
+  "ui.demoDrop.overBudget": "La demo admite hasta {budgetText} de tus archivos por visita, así que dejó fuera {countText} {count, plural, one {elemento} many {elementos} other {elementos}}.",
+  "@ui.demoDrop.overBudget": {
+    "sourceHash": "81fae3c"
   }
 }

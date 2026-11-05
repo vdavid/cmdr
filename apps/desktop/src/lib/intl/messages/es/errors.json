@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Por favor, no elimines tu carpeta de inicio",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Oye, no puedes eliminar tu propia carpeta de inicio.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "No puedes eliminar <code>{path}</code> porque contiene tu carpeta de inicio, y tu carpeta de inicio no se puede eliminar.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Si quieres deshacerte de todos tus archivos, entra en ella, selecciona todo y elimínalo. Aunque, la verdad, sigue pareciendo una idea malísima.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Si quieres liberar espacio, elige algo más concreto. Si quieres deshacerte de todo lo que hay en este ordenador, restablece el sistema de fábrica.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Este archivo ha cambiado durante la copia",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

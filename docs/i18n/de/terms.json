@@ -2914,7 +2914,7 @@
     "sources": "macOS de Finder (Der Name „^0“ kann nicht verwendet werden, da er vom System reserviert ist.); MS terminology (reserviertes Schlüsselwort); catalog (errors.listing.invalidName.suggestion reservierte Namen)"
   },
   "reset": {
-    "accept": ["zurückgesetzt", "Zurücksetz", "setzen"],
+    "accept": ["zurückgesetzt", "Zurücksetz", "setzen", "setz"],
     "chosen": "zurücksetzen",
     "confidence": "high",
     "forms": "Reset to default → Auf Standard zurücksetzen",

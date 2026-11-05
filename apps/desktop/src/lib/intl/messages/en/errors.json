@@ -2921,7 +2921,7 @@
     "description": "Recovery suggestion for a move (onto another drive or into a zip archive) that reached a mounted drive. Plain text. \"Eject\" is the macOS verb for disconnecting a drive or server safely (Finder's Eject). The second sentence is for someone who wanted the drive's files moved: they can open the drive and move them from there.",
     "screenshot": "transfer-error-mounted_volume_inside-move.png"
   },
-  "errors.write.homeFolder.title": "Your home folder stays",
+  "errors.write.homeFolder.title": "Please don’t delete your home folder",
   "errors.write.homeFolder.message.isHome": "Hey, you can’t delete your own home folder.",
   "errors.write.homeFolder.message.holdsHome": "You can’t delete <code>{path}</code> because it contains your home folder, and you can’t delete your home folder.",
   "errors.write.homeFolder.suggestion.isHome": "If you want to get rid of all your files, go in there, select all, and delete. Although, it still sounds like a very bad idea.",

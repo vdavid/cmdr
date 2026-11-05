@@ -387,7 +387,7 @@
   },
   "delete": {
     "chosen": "smazat",
-    "accept": ["smaz", "smaž", "mazán", "mazat"],
+    "accept": ["smaz", "smaž", "mazán", "mazat", "nemaž"],
     "forms": "command → Smazat; progress → Mazání…; result → Smazáno; noun → smazání; prose imperative → smaž",
     "avoid": [
       {

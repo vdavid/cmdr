@@ -1968,6 +1968,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "拜托，别删掉你的个人文件夹",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "嘿，你可不能删除自己的个人文件夹。",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "你不能删除 <code>{path}</code>，因为你的个人文件夹就在里面，而个人文件夹是不能删的。",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "如果你想删掉所有文件，就进到里面，全选，然后删除。不过说真的，这听起来还是个很糟糕的主意。",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "如果你想腾出空间，就挑得具体一点。如果你想清空这台电脑上的一切，就重置一下系统。",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "这个文件在拷贝期间发生了变化",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

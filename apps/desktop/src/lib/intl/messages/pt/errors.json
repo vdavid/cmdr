@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Por favor, não apague sua pasta pessoal",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Ei, você não pode apagar a sua própria pasta pessoal.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Você não pode apagar <code>{path}</code> porque a sua pasta pessoal está lá dentro, e não dá para apagar a pasta pessoal.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Se quiser se livrar de todos os seus arquivos, entre nela, selecione tudo e apague. Mas, cá entre nós, ainda parece uma péssima ideia.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Se quiser liberar espaço, escolha algo mais específico. Se quiser se livrar de tudo neste computador, restaure o sistema para os ajustes de fábrica.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Este arquivo mudou durante a cópia",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"
