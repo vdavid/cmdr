@@ -141,10 +141,11 @@ tree lists as a folder (as on disk).
     either. What the page actually receives is the precompressed Brotli file (`apps/website/DETAILS.md` § Browser demo).
     The smoke tests run on the optimized module; the golden replay runs on the dev-profile test build, which `wasm-opt`
     never touches.
-- **Every crate the module links is a demo image input**: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
-  `scripts/check/checks/inputs.go`, and ci.yml's `website` filter each list them (the first two are kept aligned by
-  `TestWebsiteDemoInputsMatchTheImageKey`, the filter by hand). A new path dep goes in all three, or an engine-only
-  change keeps the old image key and getcmdr.com serves a stale engine. List them with
+- **The engine ships at release cadence.** No land builds it for wasm: the release pipeline's `demo` job builds and
+  smoke-runs it before it publishes the demo image, and the nightly CI run builds it too (`rust-lane.yml`'s `wasm` job),
+  so a break shows the next morning. An engine change reaches getcmdr.com with the next release
+  (`apps/website/DETAILS.md` § Browser demo). `websiteDemoInputs` in `scripts/check/checks/inputs.go` lists the crates
+  the module links, for the local website Docker build's fingerprint; a new path dep goes there too. List them with
   `cargo tree -p cmdr-listing-wasm --target wasm32-unknown-unknown -e normal --prefix none | rg '\(/'`.
 - The `wasm-bindgen` CLI has to be the exact version of the `wasm-bindgen` crate in `Cargo.lock`, or it refuses the
   module; the script reads the lockfile and `cargo install`s that version into `~/.cargo/bin` when it's missing.

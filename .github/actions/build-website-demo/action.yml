@@ -3,8 +3,8 @@ description: >-
   Builds the browser demo the website publishes at /demo/ (`pnpm build:demo`: the listing engine to WASM, then the
   desktop frontend's demo build) into `apps/desktop/build-demo/`. Expects a checkout and mise's tools installed.
 
-# Shared by ci.yml's `website-demo` (which tests it in the website lane) and `publish-website-demo`
-# (which pushes it as the image the deploy copies). `apps/website/DETAILS.md` § Browser demo.
+# Used by `release-pipeline.yml`'s `demo` job, which pushes the result as the release's demo image
+# that the website lane tests and the deploy copies. `apps/website/DETAILS.md` § Browser demo.
 inputs:
   save-rust-cache:
     description: Whether this run may save the Rust cache (`main` only, like every Rust lane)

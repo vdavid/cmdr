@@ -350,7 +350,8 @@ func desktopAppInputs() []string {
 	)
 }
 
-// websiteInputs and websiteDemoInputs together mirror ci.yml's `website` filter.
+// websiteInputs mirror ci.yml's `website` filter, which leaves the demo's sources out: CI builds
+// and tests /demo/ from the last release's demo image (`scripts/released-demo.sh`).
 var websiteInputs = []string{
 	"apps/website/**",
 	".dockerignore",
@@ -360,10 +361,9 @@ var websiteInputs = []string{
 }
 
 // websiteDemoInputs are what the browser demo at /demo/ builds from (`pnpm build:demo`: the
-// listing engine for wasm32, then the desktop frontend's demo build), for the website checks that
-// see the demo (the Docker build and the E2E, when a local demo is built). It must equal the path
-// list `scripts/website-demo-key.sh` hashes into the demo image's tag, which
-// `TestWebsiteDemoInputsMatchTheImageKey` enforces.
+// listing engine for wasm32, then the desktop frontend's demo build), for the local Docker build,
+// which copies a locally built demo when there is one. CI's website lane reads the released demo
+// image instead, so no lane check carries these.
 var websiteDemoInputs = []string{
 	"package.json",
 	"pnpm-lock.yaml",
@@ -395,7 +395,6 @@ var websiteDemoInputs = []string{
 	"vendor/**",
 	"scripts/build-listing-wasm.sh",
 	"scripts/build-listing-wasm/**",
-	"scripts/website-demo-key.sh",
 	"Cargo.toml",
 	"Cargo.lock",
 	"rust-toolchain.toml",

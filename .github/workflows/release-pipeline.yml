@@ -10,8 +10,9 @@
 #   signatures and no manifest move, while the release's full CI run goes on beside it.
 #   `scripts/release-finish.sh` on David's laptop waits for both, verifies each archive's
 #   provenance, signs it with the key from sops, uploads the `.sig` files, then dispatches this
-#   workflow on the tag (`workflow_dispatch`), which runs only `guard`, `ci-gate`,
-#   `vet-update-archives`, `publish`, `attest`, and `bump-tap`. The updater key never reaches GitHub.
+#   workflow on the tag (`workflow_dispatch`), which runs only `guard`, `ci-gate`, `demo` (which
+#   finds the tag push's image), `vet-update-archives`, `publish`, `attest`, and `bump-tap`.
+#   The updater key never reaches GitHub.
 # `ci-gate` runs in whichever run publishes, so nothing ships without a green full CI run on the
 # tagged commit: before `compile` in `ci` mode, before `publish` in the `local` dispatch.
 # `docs/guides/releasing.md` § Who signs the update archives.
@@ -1036,6 +1037,127 @@ jobs:
               "$RUNNER_TEMP/archives/Cmdr_${VERSION}_x64.app.tar.gz" \
               "$RUNNER_TEMP/archives/Cmdr_${VERSION}_universal.app.tar.gz"
 
+  # The browser demo getcmdr.com serves at /demo/, built from the tagged sources: both wasm
+  # engines first, with the listing engine's Node smoke run and golden traces (`desktop-rust-*-wasm`,
+  # which no land runs; the nightly CI run builds them too), then `pnpm build:demo`, pushed as
+  # `ghcr.io/vdavid/cmdr-demo:<tag>` and attested, so `scripts/released-demo.sh` can refuse a tag
+  # moved by anyone else. `publish` needs it: a release whose demo doesn't build doesn't ship.
+  # Every run of this workflow runs it (the tag push in both modes builds beside `compile`, since
+  # an unpublished tag's image is never served; `local` mode's dispatch finds that image and only
+  # re-checks it). `apps/website/DETAILS.md` § Browser demo.
+  demo:
+    name: Build and publish the browser demo
+    needs: [guard]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read # check out the tagged sources
+      packages: write # push to ghcr.io/vdavid/cmdr-demo
+      id-token: write # request the Sigstore signing certificate for the image's provenance
+      attestations: write # store that provenance, and push it beside the image
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          # A tag's cache entries are readable by that tag alone, so saving here only spends budget.
+          cache_save: false
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Log in to GHCR
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ github.token }}
+        run: docker login ghcr.io --username "$ACTOR" --password-stdin <<<"$TOKEN"
+
+      # A re-run, or `local` mode's dispatch after its tag push, finds the image this release
+      # already published, and reuses it only when this workflow attested it.
+      - name: Look for this release's demo image
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ref="ghcr.io/vdavid/cmdr-demo:$TAG"
+          if digest=$(docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}' 2>/dev/null) &&
+            gh attestation verify "oci://ghcr.io/vdavid/cmdr-demo@$digest" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-pipeline.yml" >/dev/null; then
+            echo "found=true" >>"$GITHUB_OUTPUT"
+            echo "$ref ($digest) is already published and attested."
+          else
+            echo "No attested $ref yet, so this builds it."
+          fi
+
+      # The demo's own small Rust cache (`website-demo`), restored from `main`, where the nightly
+      # CI run's wasm job saves it.
+      - name: Build the browser demo
+        if: steps.existing.outputs.found != 'true'
+        uses: ./.github/actions/build-website-demo
+        with:
+          save-rust-cache: 'false'
+
+      - name: Build check tool
+        if: steps.existing.outputs.found != 'true'
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Build and smoke-run the listing engine for wasm
+        if: steps.existing.outputs.found != 'true'
+        run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
+
+      - name: Build the viewer core for wasm
+        if: steps.existing.outputs.found != 'true'
+        run: ./scripts/check/check --check desktop-rust-viewer-wasm --ci
+
+      - name: Push the browser demo image
+        if: steps.existing.outputs.found != 'true'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          docker build -f apps/website/demo-image.Dockerfile -t "ghcr.io/vdavid/cmdr-demo:$TAG" apps/desktop/build-demo
+          docker push "ghcr.io/vdavid/cmdr-demo:$TAG"
+
+      - name: Read the image digest
+        id: digest
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          digest=$(docker buildx imagetools inspect "ghcr.io/vdavid/cmdr-demo:$TAG" --format '{{.Manifest.Digest}}')
+          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Couldn't read the digest of ghcr.io/vdavid/cmdr-demo:$TAG (got '$digest')."
+            exit 1
+          fi
+          echo "digest=${digest#sha256:}" >>"$GITHUB_OUTPUT"
+          echo "ghcr.io/vdavid/cmdr-demo:$TAG is $digest"
+
+      # Signed SLSA provenance naming this workflow, stored on the repo and pushed beside the image.
+      - name: Attest the demo image
+        if: steps.existing.outputs.found != 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ghcr.io/vdavid/cmdr-demo
+          subject-digest: sha256:${{ steps.digest.outputs.digest }}
+          push-to-registry: true
+
+      # The server pulls anonymously. A new GHCR package can start out private, and then every
+      # deploy would fail on the pull; this says so before the release can publish.
+      - name: Check the image is public
+        env:
+          DIGEST: ${{ steps.digest.outputs.digest }}
+        run: |
+          docker logout ghcr.io
+          if ! docker manifest inspect "ghcr.io/vdavid/cmdr-demo@sha256:$DIGEST" >/dev/null; then
+            echo "::error::The demo image isn't publicly readable. Set the cmdr-demo package's visibility to public: github.com/users/vdavid/packages/container/cmdr-demo/settings."
+            exit 1
+          fi
+
   # Builds `latest.json` from the `.sig` assets and ships it. In `ci` mode it follows the builds;
   # in `local` mode it's the dispatch that `scripts/release-finish.sh` starts once its signatures
   # are on the draft, and its first act is publishing that draft. Same steps either way, so the
@@ -1044,11 +1166,12 @@ jobs:
     name: Publish release
     # `pkg` only for ordering: its pkg (if any) is on the release before the checksums are taken.
     # The `if` below ignores how it ended. `ci-gate` (a green full CI run and CodeQL on the tagged
-    # commit) and `vet-update-archives` are hard requirements.
-    needs: [guard, ci-gate, sign, pkg, vet-update-archives]
+    # commit), `vet-update-archives`, and `demo` (the attested browser demo image the website
+    # deploy below ships) are hard requirements.
+    needs: [guard, ci-gate, sign, pkg, vet-update-archives, demo]
     if: >-
       !cancelled() && needs.guard.result == 'success' && needs.ci-gate.result == 'success' &&
-      needs.vet-update-archives.result == 'success' && (
+      needs.vet-update-archives.result == 'success' && needs.demo.result == 'success' && (
         github.event_name == 'workflow_dispatch' ||
         (needs.guard.outputs.update-signing == 'ci' && needs.sign.result == 'success'))
     runs-on: ubuntu-latest
@@ -1253,10 +1376,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release edit "${{ github.ref_name }}" --latest
 
+      # The site now serves this release's `latest.json` and its browser demo, by the digest the
+      # `demo` job pushed and attested (the same one `scripts/released-demo.sh` resolves for
+      # `main`'s deploys from now on).
       - name: Trigger website deploy
+        env:
+          DEMO_VERSION: ${{ github.ref_name }}
+          DEMO_DIGEST: ${{ needs.demo.outputs.digest }}
         run: |
           # Compute HMAC-SHA256 signature
-          PAYLOAD='{}'
+          PAYLOAD=$(jq -cn --arg version "$DEMO_VERSION" --arg digest "$DEMO_DIGEST" '{demo_version: $version, demo_image_digest: $digest}')
           SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" | cut -d' ' -f2)
 
           # Send signed request to webhook

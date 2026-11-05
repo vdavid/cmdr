@@ -1,12 +1,17 @@
 name: Rust lane
 
 # The Linux Rust lane, called by `ci.yml` (`desktop-rust`): the platform-blind scanners, clippy,
-# the wasm builds, rustdoc, and the suite, plus the Kani proofs and the Shuttle interleavings in
-# parallel jobs of their own. Its own file so an edit here reruns this lane alone
-# (the `rust` filter in `ci.yml` lists it). `docs/tooling/ci.md` § Lane files.
+# rustdoc, and the suite, plus the nextest filter coverage, the Kani proofs, the Shuttle
+# interleavings, and (nightly only) the browser engines for wasm in parallel jobs of their own.
+# Its own file so an edit here reruns this lane alone (the `rust` filter in `ci.yml` lists it).
+# `docs/tooling/ci.md` § Lane files.
 on:
   workflow_call:
     inputs:
+      build-wasm:
+        description: Whether to build the browser demo's engines for wasm (the nightly full run)
+        type: boolean
+        required: true
       marker-key:
         description: The lane's marker key from `ci.yml`'s lane plan, saved by the `marker` job once every job passed
         type: string
@@ -28,7 +33,7 @@ jobs:
   # and the ~1.5 min reclaim buys nothing. Some get a 72 GB disk, which ran out mid-link
   # (run 41839837176, 2026-11-04). Each job ends by printing `df -h /`.
   lane:
-    name: Scanners, clippy, wasm, rustdoc, tests
+    name: Scanners, clippy, rustdoc, tests
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -203,23 +208,6 @@ jobs:
       - name: Run clippy
         run: ./scripts/check/check --check desktop-rust-clippy --ci
 
-      # The browser demo's listing engine: a wasm32 build plus a Node smoke run, the only
-      # lane that sees a host-only dep or a `std` clock reach the engine. `wasm-bindgen-cli`
-      # installs into `~/.cargo/bin`, which rust-cache keeps; the C toolchain that compiles
-      # SQLite for wasm32 comes from its own cache.
-      - name: Install the wasm C toolchain
-        uses: ./.github/actions/wasm-toolchain
-        with:
-          save-cache: ${{ env.SAVE_RUST_CACHE }}
-
-      - name: Build the listing engine for wasm
-        run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
-
-      # The file viewer's core compiles for the browser: the only lane that sees a host-only
-      # dep reach `cmdr-viewer` before the demo engine hosts it.
-      - name: Build the viewer core for wasm
-        run: ./scripts/check/check --check desktop-rust-viewer-wasm --ci
-
       # A broken intra-doc link is invisible to every other lane, because only
       # `cargo doc` resolves one. These steps are sequential, so this lane keeps
       # the shared, cached `target/` here; locally it gets a private one to stay
@@ -240,18 +228,114 @@ jobs:
         if: always()
         run: rm -rf target/doc
 
-      # Before the suite, because it says whether the suite is running under the
-      # caps and groups its config claims. A filter that selects nothing drops
-      # its tests back to the global cap and full parallelism, silently.
-      - name: Check nextest filter coverage
-        run: ./scripts/check/check --check nextest-filter-coverage --ci
-
       - name: Run Rust tests
         run: ./scripts/check/check --check desktop-rust-tests --ci
 
       - name: Report disk usage
         if: always()
         run: df -h /
+
+  # Every `.config/nextest.toml` override still selects a test: a filter that selects nothing
+  # drops its tests back to the global cap and full parallelism, silently. It lists (and so
+  # compiles) every test binary in the workspace, ~2.7 min the `lane` job's suite doesn't need on
+  # a PR whose Rust test scope is narrow, so it runs beside it on the same restored entry,
+  # saving nothing.
+  nextest-filters:
+    name: Nextest filter coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Free disk space on a small runner
+        uses: ./.github/actions/free-disk-if-small
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          # Saved from `main` only, so a PR reads `main`'s entry and adds none (`docs/tooling/ci.md` § Build caching).
+          cache_save: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
+      # `lane`'s entry, restored by name; only `lane` saves it.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: desktop-rust
+          save-if: false
+
+      - name: Install Tauri dependencies (Linux)
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Check nextest filter coverage
+        run: ./scripts/check/check --check nextest-filter-coverage --ci
+
+      - name: Report disk usage
+        if: always()
+        run: df -h /
+
+  # The browser demo's engines for wasm32, on the nightly full run only (`build-wasm`): the
+  # listing engine with its Node smoke run and golden traces, and the viewer core. The release
+  # pipeline builds both before it publishes a demo (its `demo` job), so a land never waits on
+  # them, and the nightly makes a host-only dep or a `std` clock reaching the engine surface the
+  # next morning instead of on release day. Its own small rust-cache entry (the one the release's
+  # demo build restores), not `desktop-rust`'s native tree. `apps/website/DETAILS.md` § Browser demo.
+  wasm:
+    name: Browser engines for wasm
+    if: inputs.build-wasm
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          cache_save: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
+      # `wasm-bindgen-cli` installs into `~/.cargo/bin`, which this entry keeps.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: website-demo
+          cache-on-failure: true
+          save-if: ${{ env.SAVE_RUST_CACHE }}
+
+      # The C toolchain that compiles SQLite for wasm32, from its own cache.
+      - name: Install the wasm C toolchain
+        uses: ./.github/actions/wasm-toolchain
+        with:
+          save-cache: ${{ env.SAVE_RUST_CACHE }}
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Build the listing engine for wasm
+        run: ./scripts/check/check --check desktop-rust-listing-wasm --ci
+
+      - name: Build the viewer core for wasm
+        run: ./scripts/check/check --check desktop-rust-viewer-wasm --ci
 
   # Every `#[kani::proof]`, one `cargo kani` per crate. On the landing path because a proof can
   # only go stale through a feature change (a new `OpKind` arm broke one, and the six-day slow
@@ -324,11 +408,15 @@ jobs:
       - name: Run the interleaving tests
         run: ./scripts/check/check --check desktop-rust-shuttle --ci
 
-  # The lane's marker, once EVERY job passed (a job's `needs` without `if:` runs only then), so
-  # one green job can't vouch for another (`scripts/lane-markers/DETAILS.md`).
+  # The lane's marker, once EVERY job passed, so one green job can't vouch for another
+  # (`scripts/lane-markers/DETAILS.md`). `wasm` may skip, but only when it wasn't asked for.
   marker:
     name: Lane marker
-    needs: [lane, kani, shuttle]
+    needs: [lane, nextest-filters, wasm, kani, shuttle]
+    if: >-
+      !cancelled() && needs.lane.result == 'success' && needs.nextest-filters.result == 'success' && needs.kani.result
+      == 'success' && needs.shuttle.result == 'success' && (needs.wasm.result == 'success' || (needs.wasm.result ==
+      'skipped' && !inputs.build-wasm))
     runs-on: ubuntu-latest
     timeout-minutes: 5
 

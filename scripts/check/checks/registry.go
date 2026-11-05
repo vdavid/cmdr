@@ -1489,8 +1489,10 @@ var AllChecks = []CheckDefinition{
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
 		DependsOn:   []string{"website-build"},
-		Inputs:      inputs(websiteInputs, websiteDemoInputs),
-		Run:         RunWebsiteE2E,
+		// The demo it smoke-tests is the built `dist/demo/`, copied from `apps/desktop/build-demo/`
+		// (in CI, the released demo image), never the demo's sources.
+		Inputs: websiteInputs,
+		Run:    RunWebsiteE2E,
 	},
 	{
 		ID:          "website-analytics-injection",

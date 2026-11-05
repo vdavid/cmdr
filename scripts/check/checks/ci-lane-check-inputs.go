@@ -22,8 +22,9 @@ import (
 // scripts. Keyed by lane file.
 var laneExtraInputs = map[string][]string{
 	// `pnpm install --frozen-lockfile` before the checks.
-	"svelte-lane.yml":  {"pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"},
-	"website-lane.yml": {"pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"},
+	"svelte-lane.yml": {"pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"},
+	// Plus the script that finds the released demo image the site builds and tests /demo/ with.
+	"website-lane.yml": {"pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "scripts/released-demo.sh"},
 	// `e2e-linux.sh` builds the app in Docker from the lockfiles and the E2E harness.
 	"e2e-linux-lane.yml": {"pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "apps/desktop/test/e2e-linux/**"},
 }

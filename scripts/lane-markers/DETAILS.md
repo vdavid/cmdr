@@ -112,11 +112,12 @@ All six path-filtered lanes in `ci.yml` follow this (`docs/tooling/ci.md` § "La
 inputs already passed)" lists them). `changes` and `CI OK` get the built binary from `.github/actions/lane-markers-tool`
 (the Actions cache, keyed on its sources and the Go pin; a miss installs Go with mise, builds, and saves), which saves
 ~20 s in each of those jobs, both on every run's critical path. The save is the `lane-marker` composite action
-(`.github/actions/lane-marker`), which refuses a key without the `lane-green-` prefix; a multi-job lane file (Rust,
-Svelte, website, macOS) saves from a `marker` job that `needs` every other job, so one green job can't vouch for
-another. The macOS lane's `finder-extension` job runs only when asked (`compile-finder-extension`), so its `marker` has
-an explicit `if:` that accepts that job's skip only when the compile wasn't asked for or ran as a step of the main job
-(on the M1).
+(`.github/actions/lane-marker`), which refuses a key without the `lane-green-` prefix. Every lane file is multi-job, so
+each saves from a `marker` job that `needs` every other job (a matrix job, like the Vitest and Linux E2E slices, counts
+as passed only when every slice did), so one green job can't vouch for another. Two jobs run only when asked, and their
+lane's `marker` has an explicit `if:` that accepts the skip only then: the macOS lane's `finder-extension`
+(`compile-finder-extension`, or it ran as a step of the main job on the M1) and the Rust lane's `wasm` (`build-wasm`,
+the nightly).
 
 `changes` job:
 
@@ -137,7 +138,7 @@ Each lane job:
   `key: ${{ fromJSON(needs.changes.outputs.lanes)['<id>'].key }}`. No `if:` on them, and nothing after them.
 - A lane calling a reusable `<lane>-lane.yml` passes the key as an input (`marker-key:`); the reusable job's last steps
   save it. The calling job then reads `.key`, which is what makes it the lane.
-- A prerequisite job (`e2e-base-image`, `website-demo`) follows its lane's verdict with the same
+- A prerequisite job in `ci.yml` (`e2e-base-image`) follows its lane's verdict with the same
   `!fromJSON(...)['<lane>'].verified` clause and saves nothing. Left on its own filter, it would build for a lane that
   skips. Made a lane of its own, it could verify while its lane doesn't, and the lane would then cascade-skip on the
   skipped `needs`, which `verify` reports red on every push until the inputs change. The lane's hash already covers the

@@ -25,20 +25,15 @@ git fetch origin main
 git reset --hard origin/main
 
 echo "Building new image (old site stays up during build)..."
-# The browser demo bundle: CI pushed it and signed its digest and content key into the webhook
-# payload, which hooks.json hands over as DEMO_IMAGE_DIGEST and DEMO_KEY (apps/website/DETAILS.md §
-# Browser demo). The key must equal this checkout's: if main moved on to other demo sources since
-# that run, this deploy stops here, the old site stays up, and the newer commit's run deploys.
-if [[ ! "${DEMO_IMAGE_DIGEST:-}" =~ ^[0-9a-f]{64}$ || -z "${DEMO_KEY:-}" ]]; then
-    echo "=== ERROR: the webhook payload carries no browser demo digest and key ==="
+# The browser demo bundle: the latest release's demo image, which CI resolved, checked for the
+# release pipeline's provenance, and signed into the webhook payload by digest, with the release it
+# came from. hooks.json hands them over as DEMO_IMAGE_DIGEST and DEMO_VERSION
+# (apps/website/DETAILS.md § Browser demo).
+if [[ ! "${DEMO_IMAGE_DIGEST:-}" =~ ^[0-9a-f]{64}$ ]]; then
+    echo "=== ERROR: the webhook payload carries no browser demo digest ==="
     exit 1
 fi
-CHECKOUT_DEMO_KEY="$(./scripts/website-demo-key.sh)"
-if [[ "$DEMO_KEY" != "$CHECKOUT_DEMO_KEY" ]]; then
-    echo "=== ERROR: the demo image was built from sources $DEMO_KEY, this checkout has $CHECKOUT_DEMO_KEY; leaving the old site up for the newer commit's deploy ==="
-    exit 1
-fi
-echo "Browser demo: ghcr.io/vdavid/cmdr-demo@sha256:$DEMO_IMAGE_DIGEST (sources $DEMO_KEY)"
+echo "Browser demo: ghcr.io/vdavid/cmdr-demo@sha256:$DEMO_IMAGE_DIGEST (release ${DEMO_VERSION:-unknown})"
 cd apps/website
 docker compose build --no-cache --build-arg DEMO_IMAGE_DIGEST="$DEMO_IMAGE_DIGEST"
 

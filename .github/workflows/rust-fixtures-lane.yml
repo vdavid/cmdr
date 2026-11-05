@@ -1,16 +1,16 @@
 name: Rust fixtures lane
 
 # The Rust lane against the Docker fixtures, called by `ci.yml` (`desktop-rust-fixtures`): the
-# SMB, SFTP, WebDAV, S3, and NFS containers, plus a real Nextcloud, in their own job so their
-# ~10 min of container bring-up runs alongside the Rust lane instead of after it. It restores
-# that lane's rust-cache entry by name and never saves, so the repo keeps one Linux Rust entry.
+# SMB, SFTP, WebDAV, S3, and NFS containers in one job, and a real Nextcloud in a second beside
+# it, so their container bring-up runs alongside the Rust lane instead of after it. Both restore
+# that lane's rust-cache entry by name and never save, so the repo keeps one Linux Rust entry.
 # Dependency-only, like every rust-cache entry: the workspace crates compile here once, with the
 # same cargo flags as `desktop-rust-tests` (`HostCargoLaneArgs`). `docs/tooling/ci.md` § Lane files.
 on:
   workflow_call:
     inputs:
       marker-key:
-        description: The lane's marker key from `ci.yml`'s lane plan, saved by the last step once every step passed
+        description: The lane's marker key from `ci.yml`'s lane plan, saved by the `marker` job once every job passed
         type: string
         required: true
 
@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   lane:
-    name: Docker fixtures and Nextcloud
+    name: Docker fixtures
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
@@ -81,13 +81,64 @@ jobs:
       - name: Run the Docker fixture integration tests (SMB, SFTP, WebDAV, S3, and NFS)
         run: ./scripts/check/check --check desktop-rust-integration-tests --ci
 
-      # The sabre/dav cells, against a real Nextcloud. Slow-lane locally (a ~1 GB
-      # pull plus a self-install before the container listens, so a default
-      # `pnpm check` never pays for it), but CI is where "does a real server
-      # still answer this way" has to be asked: the three claims these cells pin
-      # are the only ones in `crates/cmdr-webdav` that no Apache fixture can
-      # reach. Measured 2026-09-02: ~1 min of container, seconds of tests, on a
-      # build the step above already warmed.
+      - name: Report disk usage
+        if: always()
+        run: |
+          df -h /
+          docker system df
+
+  # The sabre/dav cells, against a real Nextcloud. Slow-lane locally (a ~1 GB pull plus a
+  # self-install before the container listens, so a default `pnpm check` never pays for it), but
+  # CI is where "does a real server still answer this way" has to be asked: the three claims these
+  # cells pin are the only ones in `crates/cmdr-webdav` that no Apache fixture can reach. Its own
+  # job beside `lane`, which it used to follow for 3.2 of the lane's 14.6 min (run 42116859486,
+  # 2026-11-05); here it compiles its own test build on the same restored entry.
+  nextcloud:
+    name: WebDAV against a real Nextcloud
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # Two commits, for the Rust test scope below (see `rust-lane.yml`).
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
+
+      - name: Free disk space on a small runner
+        uses: ./.github/actions/free-disk-if-small
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          # Saved from `main` only, so a PR reads `main`'s entry and adds none (`docs/tooling/ci.md` § Build caching).
+          cache_save: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: desktop-rust
+          save-if: false
+
+      - name: Install Tauri dependencies (Linux)
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      # Pull requests only (see `rust-lane.yml`): a scope that leaves `cmdr-webdav` out runs no cell.
+      - name: Scope the Rust tests to the crates this change can affect
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/rust-test-scope
+
       - name: Run the WebDAV cells against a real Nextcloud (sabre/dav)
         run: ./scripts/check/check --check desktop-rust-webdav-nextcloud --ci
 
@@ -97,8 +148,18 @@ jobs:
           df -h /
           docker system df
 
-      # Last, with no `if:`, so it runs only when every step above passed: it records that this
-      # lane's exact inputs passed (`scripts/lane-markers/DETAILS.md`). ❌ Nothing after it.
+  # The lane's marker, once BOTH jobs passed (a job's `needs` without `if:` runs only then), so
+  # one green job can't vouch for the other (`scripts/lane-markers/DETAILS.md`).
+  marker:
+    name: Lane marker
+    needs: [lane, nextcloud]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Save the lane marker
         uses: ./.github/actions/lane-marker
         with:

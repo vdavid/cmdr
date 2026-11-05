@@ -65,6 +65,10 @@
           "reason": "The caller of release-pipeline.yml has to grant what the reusable workflow's jobs ask for."
         },
         {
+          "warning": "Warn: jobLevel 'packages' permission set to 'write': .github/workflows/release.yml",
+          "reason": "The caller of release-pipeline.yml grants what its `demo` job asks for: pushing the release's browser demo image to ghcr.io/vdavid/cmdr-demo. Scorecard sees release-pipeline.yml's own `docker push` and waives it there, but a caller has no steps to recognize. The score stays 10."
+        },
+        {
           "warning": "Warn: jobLevel 'actions' permission set to 'write': .github/workflows/ci-upkeep.yml",
           "reason": "`prune-superseded-caches` deletes superseded `main` build caches after a land, so the repo stays under its 10 GB budget. Runs only after CI on a `main` push, with no checkout and no third-party action, just an inline `gh cache` script; `release.yml` can't be dispatched. The score stays 10."
         }

@@ -15,7 +15,7 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                      |
 | `deploy-dashboard.yml`  | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                     |
 | `release.yml`           | `v*` tags                               | Only calls `release-pipeline.yml` (so attestations name the reusable workflow as signer).           |
-| `release-pipeline.yml`  | Called by `release.yml`                 | Builds, signs, and publishes the desktop app on macOS runners. `docs/guides/releasing.md`           |
+| `release-pipeline.yml`  | Called by `release.yml`                 | Builds, signs, and publishes the app, and the site's browser demo. `docs/guides/releasing.md`       |
 | `scorecard.yml`         | Push to main, weekly, rule edits        | OpenSSF Scorecard: publishes the score (README badge) and SARIF to code scanning. § below           |
 | `codeql.yml`            | PRs, push to main, weekly, manual       | CodeQL (Actions, JS/TS, Rust); a high or critical finding fails it and blocks releases. § below     |
 | `gradle-wrapper.yml`    | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard |
@@ -83,10 +83,9 @@ The six path-filtered lanes are wired (`desktop-rust`, `desktop-rust-fixtures`, 
 `desktop-e2e-linux`, `website`); the light lane isn't, since it gates on no filter. In `ci.yml`: `changes` plans
 (`lanes` output), each lane's `if:` adds `!fromJSON(needs.changes.outputs.lanes)['<id>'].verified` and passes its `.key`
 as `marker-key`, `e2e-base-image` follows the E2E lane's verdict, and `CI OK` runs `lane-markers verify` after its jq
-gate. In each lane file, the `lane-marker` action saves the key: as the last step of a one-job lane, or in a `marker`
-job that `needs` every other job of a multi-job lane (Rust, Svelte, website, macOS), so one green job can't vouch for
-another. macOS's `finder-extension` job runs only on demand, so its `marker` takes a skip only when the compile wasn't
-asked for.
+gate. In each lane file, the `lane-marker` action saves the key in a `marker` job that `needs` every other job of the
+lane, so one green job can't vouch for another. macOS's `finder-extension` and the Rust lane's `wasm` run only on
+demand, so their `marker` takes a skip only when the job wasn't asked for.
 
 A PR run hashes `refs/pull/N/merge`, the PR merged with the current `main`. So a follow-up push skips a lane only while
 `main` hasn't moved any of that lane's inputs since the run that passed; a land that touched them makes a new tree and
@@ -170,8 +169,10 @@ itself still reruns all.
 - **`e2e-base-image` stays in `ci.yml`**: OpenSSF Scorecard waives a job's `packages: write` only in a workflow it
   recognizes as packaging, which `ci.yml` is (its `docker push`); in `e2e-linux-lane.yml` it was a new Token-Permissions
   finding (scorecard v5.5.0, `pnpm check scorecard`, 2026-11-05).
-- The website lane's `demo` job uploads the `website-demo` artifact, which `publish-website-demo` in `ci.yml` downloads:
-  artifacts are per run, so a called workflow's jobs and the caller's share them.
+- **A lane file splits a long job across runners by handing artifacts between its own jobs** (artifacts are per run):
+  the Svelte lane's four Vitest slices pass blob reports to `coverage`, the E2E lane's `build` passes the binary to
+  three Playwright slices, and the website lane's `demo` passes the released demo bundle to `site`. § Critical path says
+  what each split buys.
 
 ## The light lane
 
@@ -238,13 +239,13 @@ cache, so `go test` always runs for real. Two things keep `light-go` small (it r
 A fresh `light-go` weighs ~0.23 GB (the Go checks run cold with empty caches, then tar+zstd like actions/cache: build
 cache 92 MB, modules 106 MB, tools 35 MB; measured locally, 2026-11-05).
 
-**The pnpm store** (`.github/actions/pnpm-store`): the Svelte lane, the website lane, the demo build, the deploys, and
-`slow-checks` restore pnpm's store before `pnpm install`, at the path `pnpm store path` reports (pnpm 12 keeps it under
-`$XDG_DATA_HOME`; every job used to cache `~/.pnpm-store`, which didn't exist, so they cached nothing). Exact keys only,
-saved from `main` only, and only by a whole-workspace install (the Svelte lane's `checks`, the website's `site`, and
-`warm-light-cache`, which fills the host entry with `pnpm fetch`); the website's `site` job runs in a container with
-another `HOME`, so it has an entry of its own (`-container-` in the key). `prune-superseded-caches` keeps one per
-family.
+**The pnpm store** (`.github/actions/pnpm-store`): the Svelte lane, the website lane, the release's demo build, the
+deploys, and `slow-checks` restore pnpm's store before `pnpm install`, at the path `pnpm store path` reports (pnpm 12
+keeps it under `$XDG_DATA_HOME`; every job used to cache `~/.pnpm-store`, which didn't exist, so they cached nothing).
+Exact keys only, saved from `main` only, and only by a whole-workspace install (the Svelte lane's `checks`, the
+website's `site`, and `warm-light-cache`, which fills the host entry with `pnpm fetch`); the website's `site` job runs
+in a container with another `HOME`, so it has an entry of its own (`-container-` in the key). `prune-superseded-caches`
+keeps one per family.
 
 ## Build caching
 
@@ -297,21 +298,21 @@ silent** (a warning, not a red job):
   `CARGO_CI_PROFILES_HASH`, a hash of the root `Cargo.toml`'s `[profile*]` tables: rust-cache hashes member manifests
   and `Cargo.lock` but never the virtual root manifest, so without it a profile edit keeps every key, each hit rebuilds
   every dependency, and an exact hit never saves the fix.
-- **`desktop-e2e-linux`**: caches the Docker-side cargo + `target/` via host bind mounts (`/tmp/cmdr-docker-cache/*`),
-  keyed on Cargo.lock with a restore-keys fallback. Separate from `desktop-rust` because the e2e binary builds a
-  different feature set (`playwright-e2e,virtual-mtp,smb-e2e`). Split into `actions/cache/restore` and a save step that
-  runs only on `main` (`SAVE_RUST_CACHE`, like the Rust caches), so PRs restore `main`'s entry and add none.
-  **Load-bearing companion: the "Reclaim cache dir ownership" step.** The Docker build runs as root and writes the
-  bind-mounted dirs as root; the save step runs as the runner user, so `tar` can't read them and the **save fails as a
-  warning** — which is exactly why this cache never persisted for months (every e2e run did a cold ~10-min build). A
-  `chown` back to the runner after the Docker run fixes it (warm e2e build ~11 min vs ~21 cold). If e2e ever starts
-  building cold again, check that the save isn't warning "Permission denied" again. **Second companion: the
-  `warm-e2e-linux-cache` job.** A PR restores only its own or `main`'s caches, and a verified `main` push skips the
-  lane, so without it no main-scoped entry exists and every new PR's first run builds cold (4 of 9 PR runs on
-  2026-10-19, #557). It runs post-land on `main`, rebuilds the E2E target cache only when the current key has no entry,
-  in `ci-upkeep.yml` (§ CI upkeep). Its cache `path`s and key must stay identical to the lane's. It has no
-  `restore-keys`, so a new key's entry starts empty: nothing prunes `target/` or the registry, so building on the older
-  entry carried every stale artifact forward.
+- **`desktop-e2e-linux`** (its `build` job; the test slices only take the binary): caches the Docker-side cargo +
+  `target/` via host bind mounts (`/tmp/cmdr-docker-cache/*`), keyed on Cargo.lock with a restore-keys fallback.
+  Separate from `desktop-rust` because the e2e binary builds a different feature set
+  (`playwright-e2e,virtual-mtp,smb-e2e`). Split into `actions/cache/restore` and a save step that runs only on `main`
+  (`SAVE_RUST_CACHE`, like the Rust caches), so PRs restore `main`'s entry and add none. **Load-bearing companion: the
+  "Reclaim cache dir ownership" step.** The Docker build runs as root and writes the bind-mounted dirs as root; the save
+  step runs as the runner user, so `tar` can't read them and the **save fails as a warning** — which is exactly why this
+  cache never persisted for months (every e2e run did a cold ~10-min build). A `chown` back to the runner after the
+  Docker run fixes it (warm e2e build ~11 min vs ~21 cold). If e2e ever starts building cold again, check that the save
+  isn't warning "Permission denied" again. **Second companion: the `warm-e2e-linux-cache` job.** A PR restores only its
+  own or `main`'s caches, and a verified `main` push skips the lane, so without it no main-scoped entry exists and every
+  new PR's first run builds cold (4 of 9 PR runs on 2026-10-19, #557). It runs post-land on `main`, rebuilds the E2E
+  target cache only when the current key has no entry, in `ci-upkeep.yml` (§ CI upkeep). Its cache `path`s and key must
+  stay identical to the lane's. It has no `restore-keys`, so a new key's entry starts empty: nothing prunes `target/` or
+  the registry, so building on the older entry carried every stale artifact forward.
 - **The E2E base image is not an Actions cache.** It lives in GitHub's container registry, tagged by the hash of
   `Dockerfile.base`: the `e2e-base-image` job builds and pushes it only when the tag is missing, and `desktop-e2e-linux`
   (which needs that job) pulls it. As a cache entry it was the LRU victim whenever the repo went over budget, and the
@@ -353,16 +354,36 @@ the old one lingers until 7 unused days pass, so two generations put the repo at
 for `mise-v1-*`, minus only the last one, since an `install_args` hash before it names a variant) and deletes the rest.
 Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop under pressure.
 
-**Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
-detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured
-over 109 runs (2026-10-12 to 2026-10-19, #557), a warm E2E job is ~24.5 min: ~1.3 setup, ~12 build (the final `cmdr`
-crate alone ~10), ~8.5 tests (455, one worker). The Rust work runs as three parallel jobs: on Linux `desktop-rust`
-(scanners, clippy, rustdoc, the suite) and `desktop-rust-fixtures` (the Docker fixture lanes and the Nextcloud cells),
-and on macOS `desktop-rust-macos` (clippy, rustdoc, the suite, module cycles; ~20 min warm). macOS stays one job on
-purpose: the account runs at most 20 jobs at once, five of them macOS, and a second macOS job per run cost more queue
-time than the ~5 min it saved (2026-10-20). Sharding the E2E tests (−3 to −4 min) only pays off once the Rust jobs are
-shorter than E2E too. Don't re-add a `needs: desktop-svelte` to the e2e job — it only added ~4 min of latency for a
-compute-saving skip that isn't worth it (see the comment on the job).
+**Critical path.** A land run's wall clock is its longest chain of jobs, since every lane gates only on `changes` and
+starts at t=0 (don't re-add a `needs: desktop-svelte` to the E2E lane: it added ~4 min of latency for a compute-saving
+skip that isn't worth it; see the comment in its lane file). As of land run 42116859486 (2026-11-05, 19 min wall), four
+single jobs were 15–18 min each: Vitest (15.2 of the Svelte job's 17.7), Linux E2E (16.6: a ~5.5 min `e2e`-profile build
+plus 8.4 min for 465 tests on one worker), the Rust lane (15.3), and the fixtures lane (14.6). So each was split across
+runners, aiming at ~12 min:
+
+- **Svelte**: Vitest in four slices plus a coverage merge (`scripts/check/checks/DETAILS.md` § "Sharded Vitest in CI"),
+  expected ~6 min a slice plus ~2.5 for the merge.
+- **Linux E2E**: one build job (~7 min warm, the Cargo + target cache) hands the binary to three Playwright slices (~5
+  min each: ~2 of setup, ~3 of tests), expected ~12–13 min, now the floor (`apps/desktop/test/e2e-linux/DETAILS.md` §
+  CI: build once, test in three slices).
+- **Rust**: the nextest filter coverage (2.7 min, compiling every test binary even when the PR's test scope is narrow)
+  moved to a sibling job, and the wasm builds (~3.8 min) left the land path for the release and the nightly
+  (`apps/website/DETAILS.md` § Browser demo). Expected ~10–11 min, since the suite now compiles its own test binaries.
+- **Fixtures**: the Nextcloud cells (3.2 min) became a sibling job, which compiles its own test build on the shared
+  entry; expected ~11 min for the Docker fixtures job.
+- **macOS**: ~7 min on a warm M1 slot, 32–46 min hosted (as of 2026-11-05, § The M1 runner). It stays one job on
+  purpose: the account runs at most five macOS jobs at once, and a second macOS job per run cost more queue time than
+  the ~5 min it saved (2026-10-20).
+
+These estimates are from the old jobs' step times; the first land runs on the split are what to measure next.
+
+**The concurrent-job budget.** GitHub's free plan runs at most 20 jobs at once per account (five of them macOS), and a
+job over the cap queues. The splits made a land run wider: at its peak (the first few minutes) one runs about 18 Linux
+jobs (the light lane and `go-tools`; Rust `lane`, `nextest-filters`, `kani`, `shuttle`; fixtures `lane` and `nextcloud`;
+Svelte `checks`, `eslint-typecheck`, and four Vitest slices; the E2E build; the website's `demo`; plus `changes` and the
+gate) and one macOS job, and the three E2E slices start as the Vitest slices finish. Two land runs at once, or a land
+run beside a light run, queue some jobs; a light run alone is far narrower (no Rust, fixtures, macOS, or E2E). If
+queueing eats the gain, shard Vitest three ways before anything else, since its slices are the shortest.
 
 ## CI upkeep
 
@@ -402,9 +423,12 @@ a `run_all` dispatch, so every lane runs, lane markers and the Rust test scope a
 run, and `CI OK` reds any skipped lane. A `main` tree no single run tested (two PRs that each passed alone, then landed
 as `verified` pushes; a scoped PR run that never reached a crate a landed PR broke; a scope rule that missed a read) is
 caught within a day instead of at the next release's gate. Its lanes save fresh markers and Rust caches into `main`'s
-scope, which seeds every PR. It doesn't deploy: the deploy jobs run on pushes and dispatches only. A red one reaches
-David the way a red `main` push does: through the digest (§ How a red `main` reaches David). A schedule rather than a
-dispatch from another workflow: dispatching needs `actions: write`, which Scorecard's Token-Permissions flags.
+scope, which seeds every PR. It's also the one CI run that builds the browser demo's engines for wasm (`rust-lane.yml`'s
+`wasm` job, `build-wasm`), which no land does: a host-only dep reaching the engine shows the next morning, not in the
+release's `demo` job (`apps/website/DETAILS.md` § Browser demo); it saves the `website-demo` Rust cache and the wasm
+toolchain cache that job restores. It doesn't deploy: the deploy jobs run on pushes and dispatches only. A red one
+reaches David the way a red `main` push does: through the digest (§ How a red `main` reaches David). A schedule rather
+than a dispatch from another workflow: dispatching needs `actions: write`, which Scorecard's Token-Permissions flags.
 
 ### How a red `main` reaches David
 
@@ -424,7 +448,7 @@ crash, then a Kani proof that a new `OpKind` arm made stale). Two things keep it
 
 - **The quick Linux slow-tier checks run before landing**, with the Rust lane: `desktop-rust-kani` (~4 min) and
   `desktop-rust-shuttle` (~10 min) as parallel jobs in `rust-lane.yml`. Each is shorter than the lane's main job, so
-  they add no wall-clock time, and the lane's `marker` job waits on all three. They carry no build cache (the 10 GB
+  they add no wall-clock time, and the lane's `marker` job waits on every job. They carry no build cache (the 10 GB
   ceiling below). What stays nightly takes too long for the landing path (the long fuzz, ~3.5 h; property mutants, ~30
   min, a build per mutant; cargo-udeps; the real-API smokes; the macOS pre-release gates) or would cost a second macOS
   job per land run, which queues (§ macOS lane): Miri, ~4 min, whose pure-Rust `unsafe` modules rarely change.
@@ -671,10 +695,10 @@ every lane the change needs runs or skips as a verified marker (§ Lane markers)
 
 `ci-ok` is the single required status check, and `main`'s ruleset names it by its check-run name, **`CI OK`**, which the
 job reports on land runs only (§ Light runs and land runs; ❌ don't change the job's `name:` expression). It needs every
-job in `ci.yml` except the post-land deploy (`publish-website-demo`, `deploy-website`), `changes` included, and passes
-only when each result is `success` or `skipped` and `changes` is `success`. A lane skipped by change detection passes; a
-failed `changes`, which skips every lane, is red. A lane that calls a lane file reports its whole file's result, so a
-red job inside it fails the gate.
+job in `ci.yml` except the post-land deploy (`deploy-website`), `changes` included, and passes only when each result is
+`success` or `skipped` and `changes` is `success`. A lane skipped by change detection passes; a failed `changes`, which
+skips every lane, is red. A lane that calls a lane file reports its whole file's result, so a red job inside it fails
+the gate.
 
 One exception: on a `main` push, a `cancelled` `desktop-rust-macos` passes when `main` has moved past the commit (the
 current head differs from it and `compare/{sha}...{head}` reads `ahead`), because a newer push replaced it in the lane's

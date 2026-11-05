@@ -1,10 +1,9 @@
 name: Website lane
 
-# The website lane, called by `ci.yml` (`website`): the browser demo build, then the site's
+# The website lane, called by `ci.yml` (`website`): the released browser demo, then the site's
 # checks, E2E, and Lighthouse around it. Its own file so an edit here reruns this lane alone (the
-# `website` filter in `ci.yml` lists it). The deploy stays in `ci.yml`, gated on this lane, and
-# reads the demo artifact this lane uploads (artifacts are per run, so the caller's jobs see
-# them). `docs/tooling/ci.md` § Lane files.
+# `website` filter in `ci.yml` lists it). The deploy stays in `ci.yml`, gated on this lane.
+# `docs/tooling/ci.md` § Lane files.
 on:
   workflow_call:
     inputs:
@@ -24,35 +23,38 @@ permissions:
   contents: read
 
 jobs:
-  # The browser demo the site publishes at /demo/: the listing engine built to WASM plus the
-  # desktop frontend's demo build (`pnpm build:demo`, `apps/website/DETAILS.md` § Browser demo).
-  # Its own job on the bare runner because `site` runs inside the Playwright image, which has
-  # no Rust toolchain; `site` takes the result as an artifact and builds the site around it, so
-  # its E2E tests the same /demo/ the deploy's Docker build produces from the same sources.
+  # The browser demo the site publishes at /demo/: the LAST RELEASE's demo image, which the
+  # release pipeline built from the tagged sources and attested (`scripts/released-demo.sh`), so
+  # the site's E2E tests exactly the /demo/ the deploy ships, and no land builds Rust for wasm.
+  # Its own job on the bare runner because `site` runs inside the Playwright image, which has no
+  # Docker; `site` takes the files as an artifact and builds the site around them.
+  # `apps/website/DETAILS.md` § Browser demo.
   demo:
-    name: Demo build
+    name: Released demo
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-        with:
-          # Saved from `main` only, so a PR reads `main`'s entry and adds none (`docs/tooling/ci.md` § Build caching).
-          cache_save: ${{ github.ref == 'refs/heads/main' }}
+      - name: Find the released demo image
+        id: demo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/released-demo.sh >>"$GITHUB_OUTPUT"
 
-      - name: Install tools with mise
-        run: mise install
-
-      # Its Rust cache saves from `main` only, like `ci.yml`'s `SAVE_RUST_CACHE` (a called
-      # workflow doesn't inherit the caller's `env`).
-      - name: Build the browser demo
-        uses: ./.github/actions/build-website-demo
-        with:
-          save-rust-cache: ${{ github.ref == 'refs/heads/main' }}
+      # The image is `FROM scratch` with the bundle at its root, so a build whose only stage is
+      # that image, exported as plain files, is the bundle itself (the website's Dockerfile copies
+      # the same image the same way). The image is files only, but its manifest names the
+      # platform it was pushed from, so the platform is spelled out for a non-amd64 host.
+      - name: Unpack the browser demo
+        env:
+          DIGEST: ${{ steps.demo.outputs.digest }}
+        run: |
+          echo "FROM ghcr.io/vdavid/cmdr-demo@sha256:$DIGEST" |
+            docker buildx build --platform linux/amd64 --output type=local,dest=apps/desktop/build-demo -
+          test -f apps/desktop/build-demo/index.html
 
       - name: Upload the browser demo
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

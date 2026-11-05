@@ -348,37 +348,48 @@ embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until 
   The places that ship or test the site set the flag: the Dockerfile (on by default) and CI's `website` job.
 - **Decision: CI builds it, the server only copies it.** The Hetzner box also runs Caddy, Umami, Photato, and the
   grocery apps, and the demo's Vite build alone peaks around 1.7 GB RSS (with 2.6 GB free and no swap, 2026-11-04), so a
-  Rust or Vite build there risks OOM-killing them. CI's `publish-website-demo` job pushes the bundle as a `FROM scratch`
-  image (`demo-image.Dockerfile`) to `ghcr.io/vdavid/cmdr-demo`, with `GITHUB_TOKEN` and `packages: write` (no new
-  secret), and `deploy-website` waits for it. The deploy keeps `--no-cache`.
-- **Decision: the build pins the image by digest; the content key only finds and checks it.** The Dockerfile's
-  `demo-bundle` stage is `FROM ghcr.io/vdavid/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST}` (a tag can be moved, and
-  Scorecard's Pinned-Dependencies accepts this `@sha256:${ARG}` form). `publish-website-demo` outputs the digest it
-  pushed or found, and `deploy-website` sends it, with the content key, in the HMAC-signed webhook payload (the
-  signature covers the whole body); `hooks.json` passes both to `deploy-website.sh` as `DEMO_IMAGE_DIGEST` and
-  `DEMO_KEY`. The script fails unless the payload's key equals `scripts/website-demo-key.sh` on its own checkout, so a
-  site is only ever built with the demo of its own sources. On a mismatch (`main` moved on to other demo sources since
-  that run), the old site stays up and the newer commit's run deploys.
-- **Decision: the tag is a content key, not a commit SHA.** `scripts/website-demo-key.sh` hashes every demo source (git
-  tree entries only, so the server needs nothing but git). A landed commit's lanes usually skip (verified on its PR), so
-  no run builds per SHA; with a key, any commit with the same demo sources finds the image, and an unchanged demo skips
-  the build.
-- **The key's path list is load-bearing.** It must equal `websiteDemoInputs` (check runner) and be covered by ci.yml's
-  `website` filter, excluding the agent docs as the filter does; `TestWebsiteDemoInputsMatchTheImageKey` holds all three
-  together. A path hashed but not filtered would change the key on a commit that publishes no image.
+  Rust or Vite build there risks OOM-killing them. The release pipeline pushes the bundle as a `FROM scratch` image
+  (`demo-image.Dockerfile`) to `ghcr.io/vdavid/cmdr-demo`, with `GITHUB_TOKEN` and `packages: write` (no new secret).
+  The deploy keeps `--no-cache`.
+- **Decision: the demo ships at release cadence.** The site serves the LAST RELEASE's demo, not `main`'s. Building it
+  per land put ~4 min of wasm builds in the Rust lane and a demo build in the website lane on every land run, for a page
+  that shows what users can download, which is the release. `release-pipeline.yml`'s `demo` job builds both wasm engines
+  with the listing engine's smoke run and golden traces (`desktop-rust-listing-wasm`, `desktop-rust-viewer-wasm`), runs
+  `pnpm build:demo` on the tagged sources, pushes `cmdr-demo:<tag>`, and attests it (SLSA provenance naming
+  `release-pipeline.yml`, pushed beside the image). `publish` needs it, so a release whose demo doesn't build doesn't
+  ship. The nightly CI run also builds both engines (`rust-lane.yml`'s `wasm` job), so a host-only dep reaching the
+  engine surfaces the next morning, not on release day. A change to the desktop frontend or the engine reaches `/demo/`
+  with the next release; a change to the site itself still deploys on land.
+- **Decision: the source of truth is GitHub's "Latest" release, resolved at use.** `scripts/released-demo.sh` reads the
+  Latest release's tag, resolves `cmdr-demo:<tag>` to its digest, and runs `gh attestation verify` against
+  `release-pipeline.yml` as signer, so a tag moved by anything but the release pipeline is refused. Why this over a file
+  the release commits: "Latest" is already the one pointer to the live release (the site's `latest.json` and the release
+  guard read it, `docs/guides/releasing.md`), `publish` flips it only after the demo exists, a rollback
+  (`RELEASE_REPUBLISH_TAG`) moves the demo with it, and `main` only takes commits CI passed, so a release commit there
+  would need a land of its own. Releases up to 0.59.0 published no image: the script maps them to the demo `main`
+  deployed at the cutover, pinned by digest in the script.
+- **Decision: the build pins the image by digest.** The Dockerfile's `demo-bundle` stage is
+  `FROM ghcr.io/vdavid/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST}` (a tag can be moved, and Scorecard's Pinned-Dependencies
+  accepts this `@sha256:${ARG}` form). The deploy sends the digest, with the release tag for the log, in the HMAC-signed
+  webhook payload (the signature covers the whole body); `hooks.json` passes them to `deploy-website.sh` as
+  `DEMO_IMAGE_DIGEST` and `DEMO_VERSION`. Two senders: `ci.yml`'s `deploy-website` (a land that touched the site; it
+  runs `released-demo.sh`) and the release pipeline's `publish` (the new release's `latest.json` and demo, by the digest
+  its `demo` job pushed).
 - **The image must be public**: the server pulls anonymously. GHCR may create the `cmdr-demo` package private on its
   first push; then David sets it public once at github.com/users/vdavid/packages/container/cmdr-demo/settings. The
-  publish job checks an anonymous pull before the deploy fires and names that page when it fails.
+  release's `demo` job checks an anonymous pull before the release can publish and names that page when it fails.
 - **Local builds**: `CMDR_WEBSITE_DEMO=1 pnpm build` reads `apps/desktop/build-demo/` directly. A local Docker build
   passes that dir as a named build context for the placeholder ref the Dockerfile names without a digest:
   `--build-context ghcr.io/vdavid/cmdr-demo@sha256:<64 zeros>=apps/desktop/build-demo` (what `website-docker-build`
   does; without a local demo it uses an empty dir and `CMDR_WEBSITE_DEMO=0`).
 - **Changing the webhook**: the listener reads `hooks.json` only at start (no `-hotreload`), so a change to it takes a
   `sudo systemctl restart deploy-webhook` on the server after it lands, then a redeploy (`workflow_dispatch`).
-- **CI**: the website lane's `demo` job (`.github/workflows/website-lane.yml`) builds it on the bare runner (its `site`
-  job runs inside the Playwright image, which has no Rust) and hands it over as an artifact, which
-  `publish-website-demo` reuses when it exists. Both build through `.github/actions/build-website-demo`. The `website`
-  filter includes the demo's inputs, so a change there re-runs the lane and redeploys.
+- **CI**: the website lane's `demo` job (`.github/workflows/website-lane.yml`) runs `released-demo.sh`, unpacks that
+  image on the bare runner (`docker buildx build --output type=local`; its `site` job runs inside the Playwright image,
+  which has no Docker), and hands the files over as an artifact, so the site's build, E2E, and Lighthouse see exactly
+  the `/demo/` the deploy ships. The `website` filter carries no demo source: a frontend or engine change doesn't run
+  the lane. The lane's verdict therefore also rides on which release is Latest, which its marker doesn't hash; the
+  nightly full run (no markers) re-tests the site against the current one.
 - **Serving** (`nginx.conf`): `/demo` redirects to `/demo/`; `/demo/_app/immutable/` is content-hashed (a year,
   immutable, and a bare 404 when missing: no body, the demo's headers, never the site's HTML 404 page, so the demo's
   loader can tell a stale chunk name in an old tab from a real failure); anything else under `/demo/` is the file or,

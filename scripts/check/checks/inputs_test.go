@@ -12,43 +12,6 @@ import (
 	"testing"
 )
 
-// The demo image's tag is a hash of the paths `scripts/website-demo-key.sh` lists, and the deploy
-// computes it from its checkout. A source the key misses lets a changed demo reuse a stale image;
-// a path ci.yml's `website` filter misses changes the key on a commit that publishes no image, so
-// the next deploy can't find one. All three lists have to agree.
-func TestWebsiteDemoInputsMatchTheImageKey(t *testing.T) {
-	root := repoRootForTest(t)
-	script := readRepoFile(t, root, "scripts/website-demo-key.sh")
-	start := strings.Index(script, "\npaths=(\n")
-	if start < 0 {
-		t.Fatal("scripts/website-demo-key.sh has no `paths=(` list")
-	}
-	body := script[start+len("\npaths=(\n"):]
-	var keyed []string
-	for _, line := range strings.Split(body[:strings.Index(body, "\n)")], "\n") {
-		keyed = append(keyed, strings.TrimSpace(line))
-	}
-	var want []string
-	for _, pattern := range websiteDemoInputs {
-		want = append(want, strings.TrimSuffix(pattern, "/**"))
-	}
-	if strings.Join(keyed, "\n") != strings.Join(want, "\n") {
-		t.Errorf("scripts/website-demo-key.sh hashes\n  %s\nbut websiteDemoInputs is\n  %s",
-			strings.Join(keyed, "\n  "), strings.Join(want, "\n  "))
-	}
-
-	ci := readRepoFile(t, root, ".github/workflows/ci.yml")
-	filter := ci[strings.Index(ci, "\n            website:\n"):]
-	filter = filter[:strings.Index(filter, "\n            api-server:")]
-	for _, pattern := range websiteDemoInputs {
-		covered := strings.Contains(filter, "- '"+pattern+"'") ||
-			(strings.HasPrefix(pattern, "apps/website/") && strings.Contains(filter, "- 'apps/website/**'"))
-		if !covered {
-			t.Errorf("ci.yml's `website` filter doesn't list %q", pattern)
-		}
-	}
-}
-
 // repoRootForTest walks up from the test's working directory to the repo root,
 // using the same landmark `findRootDir` does. Tests that assert something about
 // the REAL tree (rather than a fixture) need it; a fixture can't tell us whether
@@ -472,7 +435,6 @@ var realTreeReadingTests = map[string][]string{
 	"TestRustMemberTreesMatchTheWorkspace":                     {"Cargo.toml", "crates/cmdr-sftp/Cargo.toml", "apps/desktop/src-tauri/Cargo.toml"},
 	"TestSftpFixturePathsAgree":                                {sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel},
 	"TestTheFixtureEntrypointRegeneratesAKeyItCanNoLongerBack": {sftpEntrypointRel},
-	"TestWebsiteDemoInputsMatchTheImageKey":                    {"scripts/website-demo-key.sh", ".github/workflows/ci.yml"},
 	"TestSftpFixturePortsBindToLoopback":                       {sftpComposeRel},
 	"TestSftpFixturePortsMatchComposeDefaults":                 {sftpComposeRel, sftpTestingRel},
 	"TestWebdavFixturePortsBindToLoopback":                     {webdavComposeRel},

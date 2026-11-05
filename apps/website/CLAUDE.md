@@ -19,9 +19,9 @@ statically built. Its markdown may use tables.
 
 ## Deployment
 
-Auto-deploys from `main` (`apps/website/**`, `/demo/`'s sources, releases) via `ci.yml`'s `deploy-website` job, a signed
-webhook to Hetzner, the only path. ❌ Never build `/demo/` on the box. Steps: `docs/guides/deploy-website.md`.
-`public/latest.json` is a frozen dev copy (deploys fetch the live one): ❌ never read the current version from it.
+Deploys on a `main` land (`ci.yml`'s `deploy-website`) and on each release, by signed webhook. `/demo/` is the last
+release's demo. ❌ Never build `/demo/` on the box. Steps: `docs/guides/deploy-website.md`. `public/latest.json` is a
+frozen dev copy (deploys fetch the live one): ❌ never read the current version from it.
 
 ## Analytics (must-knows)
 

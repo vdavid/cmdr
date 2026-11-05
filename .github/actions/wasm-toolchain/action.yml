@@ -4,10 +4,10 @@ description: >-
   (`scripts/build-listing-wasm/toolchain.go`), in its private mise home under `~/.cache/cmdr/wasm-toolchain/`. Never on
   PATH: the build script hands cargo only absolute wasm-target `CC`/`AR` paths. Expects a checkout and mise.
 
-# Used by ci.yml's `desktop-rust` (its wasm step) and by `build-website-demo` (the `website-demo` and
-# `publish-website-demo` builds). About 1.5 GB on Linux, so it saves from `main` only, where the
-# per-repo 10 GB cache budget is managed; a PR restores main's entry. Keyed on the file that holds
-# the pins, so a Renovate bump makes a fresh entry.
+# Used by `rust-lane.yml`'s nightly `wasm` job and by `build-website-demo` (the release pipeline's
+# demo build). About 1.5 GB on Linux, so it saves from `main` only (the nightly), where the
+# per-repo 10 GB cache budget is managed; a release tag restores main's entry. Keyed on the file
+# that holds the pins, so a Renovate bump makes a fresh entry.
 inputs:
   save-cache:
     description: Whether this run may save the toolchain cache (`main` only, like every Rust cache)

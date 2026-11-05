@@ -498,47 +498,15 @@ jobs:
               - '.mise.toml'
               - '.github/workflows/ci.yml'
               - '.github/workflows/website-lane.yml'
-              - '.github/actions/build-website-demo/**'
               - '.github/actions/lane-marker/**'
               - '.github/actions/pnpm-store/**'
-              - '.github/actions/pinned-rust-toolchain/**'
-              - '.github/actions/wasm-toolchain/**'
-              # The browser demo the site publishes at /demo/ (`website-demo` builds it), so a
-              # change to the desktop frontend or the listing engine redeploys the site. Must
-              # cover every path `scripts/website-demo-key.sh` hashes into the demo image's tag
-              # (`TestWebsiteDemoInputsMatchTheImageKey`).
-              - 'scripts/website-demo-key.sh'
+              # The site builds and tests /demo/ from the LAST RELEASE's demo image, which this
+              # script finds, so a change to the desktop frontend or the listing engine waits for
+              # the next release (`apps/website/DETAILS.md` § Browser demo).
+              - 'scripts/released-demo.sh'
+              # `pnpm install` reads the root manifest's overrides.
               - 'package.json'
               - 'feature-status.json'
-              - 'apps/desktop/src/**'
-              - 'apps/desktop/static/**'
-              - 'apps/desktop/package.json'
-              - 'apps/desktop/vite.config.js'
-              - 'apps/desktop/tsconfig.json'
-              - 'apps/desktop/scripts/precompress-demo.ts'
-              - 'crates/cmdr-listing-wasm/**'
-              - 'crates/cmdr-listing/**'
-              - 'crates/cmdr-fs/**'
-              - 'crates/cmdr-collation/**'
-              - 'crates/cmdr-brief-columns/**'
-              - 'crates/cmdr-menu/**'
-              - 'crates/cmdr-operations/**'
-              - 'crates/cmdr-operation-log/**'
-              - 'crates/cmdr-archive/**'
-              - 'crates/cmdr-viewer/**'
-              - 'brand/screenshots/**'
-              - 'apps/desktop/test/e2e-shared/media-fixtures/**'
-              - 'crates/cmdr-sort/**'
-              - 'crates/cmdr-search/**'
-              - 'crates/cmdr-recents/**'
-              - 'crates/cmdr-multi-rename/**'
-              - 'crates/cmdr-media-meta/**'
-              - 'vendor/**'
-              - 'scripts/build-listing-wasm.sh'
-              - 'scripts/build-listing-wasm/**'
-              - 'Cargo.toml'
-              - 'Cargo.lock'
-              - 'rust-toolchain.toml'
               - 'scripts/check.sh'
               - 'scripts/check/**'
               - '!scripts/check/**/*_test.go'
@@ -869,7 +837,8 @@ jobs:
   # permissions each lane may use (a called workflow can only narrow them).
   # `docs/tooling/ci.md` § Lane files.
 
-  # Linux: the platform-blind scanners, clippy, the wasm builds, rustdoc, and the suite.
+  # Linux: the platform-blind scanners, clippy, rustdoc, and the suite, plus the browser engines
+  # for wasm on the nightly run only (the release pipeline builds them for every release).
   desktop-rust:
     name: Desktop (Rust)
     needs: changes
@@ -878,6 +847,7 @@ jobs:
       !fromJSON(needs.changes.outputs.lanes)['desktop-rust'].verified)
     uses: ./.github/workflows/rust-lane.yml
     with:
+      build-wasm: ${{ github.event_name == 'schedule' }}
       marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['desktop-rust'].key }}
 
   # The fixture lanes (SMB, SFTP, WebDAV, S3, and NFS containers, plus a real Nextcloud) in their
@@ -961,8 +931,8 @@ jobs:
   # and a slow apt mirror ran it out (2026-10-22). Here a build has its own long cap, and the
   # registry never evicts. `apps/desktop/test/e2e-linux/DETAILS.md` § CI base image.
   # It stays here, not in `e2e-linux-lane.yml`: OpenSSF Scorecard waives a job's
-  # `packages: write` only in a workflow it recognizes as packaging, which this one is (its
-  # `docker push`), and the lane file would add a Token-Permissions finding.
+  # `packages: write` only in a workflow it recognizes as packaging, which this one is (the
+  # `docker push` below), and the lane file would add a Token-Permissions finding.
   e2e-base-image:
     name: E2E base image
     runs-on: ubuntu-latest
@@ -988,12 +958,24 @@ jobs:
           TOKEN: ${{ github.token }}
         run: docker login ghcr.io --username "$ACTOR" --password-stdin <<<"$TOKEN"
 
-      - name: Build and push the base image if the registry lacks it
+      - name: Build the base image if the registry lacks it
         run: ./scripts/e2e-linux.sh --base-only
         working-directory: ./apps/desktop
         env:
           E2E_BASE_REGISTRY: ghcr.io/${{ github.repository_owner }}
-          E2E_BASE_PUSH: 'true'
+          E2E_BASE_PUSH_REF_FILE: ${{ runner.temp }}/e2e-base-push-ref
+
+      # The push lives here, not in the script, so Scorecard sees this workflow publish and
+      # waives the job's `packages: write` (see the comment above the job).
+      - name: Push the base image it built
+        env:
+          REF_FILE: ${{ runner.temp }}/e2e-base-push-ref
+        run: |
+          if [[ -s "$REF_FILE" ]]; then
+            docker push "$(cat "$REF_FILE")"
+          else
+            echo "Nothing to push: the registry already had the base image."
+          fi
 
   # The Playwright suite on Linux, in Docker, once the registry holds the base image. Gated only
   # on change detection, never on the Rust or Svelte lanes (the lane file says why), so it
@@ -1011,7 +993,7 @@ jobs:
     with:
       marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['desktop-e2e-linux'].key }}
 
-  # The browser demo build, then the site's checks, E2E, and Lighthouse inside the pinned
+  # The released browser demo, then the site's checks, E2E, and Lighthouse inside the pinned
   # Playwright image (`changes` resolves it, since `container:` can't read a step output).
   website:
     name: Website
@@ -1049,30 +1031,26 @@ jobs:
   # ===========================================
   # Website deployment
   # ===========================================
-  # This is the ONLY website deploy path. There used to be a standalone
+  # This is the ONLY deploy path for `main`'s changes. There used to be a standalone
   # deploy-website.yml that fired on the same paths — that deployed twice per
   # push and, worse, deployed even when checks failed (it didn't wait for the
   # website job). Keep deployment here, gated on the website checks passing.
   # `workflow_dispatch` on main (with run_all) doubles as the manual deploy lever.
   #
+  # The release pipeline's `publish` job fires the same webhook once a release goes Latest.
+  #
   # The browser demo reaches the server as a prebuilt image, so the shared box never compiles
-  # Rust: this job pushes `ghcr.io/vdavid/cmdr-demo:<content key>` (`scripts/website-demo-key.sh`)
-  # before the deploy fires, and the deploy computes the same key from its checkout. A content key,
-  # not this commit's SHA, because the server deploys `origin/main`, which may already be a newer
-  # commit than this run's, and because a landed commit's lanes usually skip (verified on its PR),
-  # so no run builds per SHA. Same sources, same key, whichever commit asks.
-  # `apps/website/DETAILS.md` § Browser demo.
-  publish-website-demo:
-    name: Publish the browser demo image
+  # Rust: the site serves the LAST RELEASE's demo, which the release pipeline built from the tagged
+  # sources, pushed as `ghcr.io/vdavid/cmdr-demo:<tag>`, and attested. `scripts/released-demo.sh`
+  # resolves the release GitHub marks "Latest" to that image's digest and checks its provenance
+  # (the same lookup the website lane tested /demo/ with), and the signed webhook payload carries
+  # the digest the Dockerfile pins. `apps/website/DETAILS.md` § Browser demo.
+  deploy-website:
+    name: Deploy website
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    permissions:
-      contents: read # check out the code
-      packages: write # push to ghcr.io/vdavid/cmdr-demo
-    outputs:
-      key: ${{ steps.image.outputs.key }}
-      digest: ${{ steps.digest.outputs.digest }}
-    # The deploy's own condition: it runs exactly when a deploy will.
+    timeout-minutes: 15
+    # Deploys when the website lane passed in this run, or when it skipped because the landed
+    # commit was already verified on its PR and the push touched the website.
     needs: [changes, website]
     if: >-
       github.ref == 'refs/heads/main' && !cancelled() && (github.event_name == 'push' || github.event_name ==
@@ -1084,105 +1062,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Compute the image tag
-        id: image
-        run: |
-          key=$(./scripts/website-demo-key.sh)
-          echo "key=$key" >>"$GITHUB_OUTPUT"
-          echo "ref=ghcr.io/vdavid/cmdr-demo:$key" >>"$GITHUB_OUTPUT"
-
-      - name: Log in to GHCR
-        run: echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Find the released demo image
+        id: demo
         env:
           GH_TOKEN: ${{ github.token }}
+        run: ./scripts/released-demo.sh >>"$GITHUB_OUTPUT"
 
-      # Content-keyed, so an image for these sources is final: a deploy that changed no demo
-      # source finds it and skips the build.
-      - name: Look for an image of these sources
-        id: existing
-        run: |
-          if docker manifest inspect "${{ steps.image.outputs.ref }}" >/dev/null 2>&1; then
-            echo "found=true" >>"$GITHUB_OUTPUT"
-            echo "${{ steps.image.outputs.ref }} already exists."
-          fi
-
-      # This run's website lane built it (its `demo` job) when the lane ran; a verified landed
-      # commit skipped that lane, so it builds here.
-      - name: Download the browser demo
-        if: steps.existing.outputs.found != 'true' && needs.website.result == 'success'
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: website-demo
-          path: apps/desktop/build-demo/
-
-      - name: Install mise
-        if: steps.existing.outputs.found != 'true' && needs.website.result != 'success'
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        if: steps.existing.outputs.found != 'true' && needs.website.result != 'success'
-        run: mise install
-
-      - name: Build the browser demo
-        if: steps.existing.outputs.found != 'true' && needs.website.result != 'success'
-        uses: ./.github/actions/build-website-demo
-        with:
-          save-rust-cache: ${{ env.SAVE_RUST_CACHE }}
-
-      - name: Push the browser demo image
-        if: steps.existing.outputs.found != 'true'
-        run: |
-          docker build -f apps/website/demo-image.Dockerfile -t "${{ steps.image.outputs.ref }}" apps/desktop/build-demo
-          docker push "${{ steps.image.outputs.ref }}"
-
-      # The deploy builds from the digest, never the tag (a tag can be moved): the webhook payload
-      # carries it, signed, and the Dockerfile pins `cmdr-demo@sha256:<digest>`.
-      - name: Read the image digest
-        id: digest
-        run: |
-          digest=$(docker buildx imagetools inspect "${{ steps.image.outputs.ref }}" --format '{{.Manifest.Digest}}')
-          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-            echo "::error::Couldn't read the digest of ${{ steps.image.outputs.ref }} (got '$digest')."
-            exit 1
-          fi
-          echo "digest=${digest#sha256:}" >>"$GITHUB_OUTPUT"
-          echo "${{ steps.image.outputs.ref }} is $digest"
-
-      # The server pulls anonymously. A new GHCR package can start out private, and then every
-      # deploy would fail on the pull; this says so here, before the webhook fires.
-      - name: Check the image is public
-        run: |
-          docker logout ghcr.io
-          if ! docker manifest inspect "ghcr.io/vdavid/cmdr-demo@sha256:${{ steps.digest.outputs.digest }}" >/dev/null; then
-            echo "::error::${{ steps.image.outputs.ref }} isn't publicly readable. Set the cmdr-demo package's visibility to public: github.com/users/vdavid/packages/container/cmdr-demo/settings."
-            exit 1
-          fi
-
-  deploy-website:
-    name: Deploy website
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # Deploys when the website lane passed in this run, or when it skipped because the landed
-    # commit was already verified on its PR and the push touched the website. Always after the
-    # browser demo image for these sources is public.
-    needs: [changes, website, publish-website-demo]
-    if: >-
-      github.ref == 'refs/heads/main' && !cancelled() && (github.event_name == 'push' || github.event_name ==
-      'workflow_dispatch') && needs.changes.result == 'success' && needs.publish-website-demo.result == 'success' &&
-      (needs.website.result == 'success' || (needs.website.result == 'skipped' && needs.changes.outputs.verified ==
-      'true' && needs.changes.outputs.website-changed == 'true'))
-
-    steps:
-      # The payload names the browser demo image by digest plus the content key it was built from;
-      # the signature covers the whole body, so the server trusts both. `deploy-website.sh` checks
-      # the key against its own checkout before building with the digest.
+      # The payload names the browser demo image by digest, plus the release it came from for the
+      # server's log; the signature covers the whole body, so the server trusts both.
       - name: Trigger deploy webhook
         env:
-          DEMO_KEY: ${{ needs.publish-website-demo.outputs.key }}
-          DEMO_DIGEST: ${{ needs.publish-website-demo.outputs.digest }}
+          DEMO_VERSION: ${{ steps.demo.outputs.version }}
+          DEMO_DIGEST: ${{ steps.demo.outputs.digest }}
         run: |
           # Compute HMAC-SHA256 signature
-          PAYLOAD=$(jq -cn --arg key "$DEMO_KEY" --arg digest "$DEMO_DIGEST" '{demo_key: $key, demo_image_digest: $digest}')
+          PAYLOAD=$(jq -cn --arg version "$DEMO_VERSION" --arg digest "$DEMO_DIGEST" '{demo_version: $version, demo_image_digest: $digest}')
           SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" | cut -d' ' -f2)
 
           # Send signed request to webhook
@@ -1214,8 +1108,8 @@ jobs:
   # ===========================================
   # `main`'s ruleset requires this job's check by its NAME, `CI OK`, so ❌ don't rename it. It must
   # report on every run, never be skipped: GitHub counts a skipped required check as passing.
-  # - `needs` lists every job but the post-land deploy (`publish-website-demo`, `deploy-website`;
-  #   `ci-coverage` enforces it). The cache upkeep lives in `ci-upkeep.yml`. `changes` belongs
+  # - `needs` lists every job but the post-land deploy (`deploy-website`; `ci-coverage` enforces
+  #   it). The cache upkeep lives in `ci-upkeep.yml`. `changes` belongs
   #   here too: when it fails, every lane is skipped, and the gate used to read that as green.
   #   A lane's result is its whole lane file's: one red job inside makes the lane `failure`.
   # - `always()`, not `!cancelled()`, so a cancelled run reports red instead of skipped.
