@@ -35,10 +35,11 @@ pnpm check --ci --fail-fast
 Positional args select what to run: check IDs/nicknames, app names (`desktop`, `website`, `api-server`, `scripts`), and
 tech groups (`rust`, `svelte`, `go`), in any mix, space- or comma-separated, with flags anywhere in between
 (`parseInterspersed` re-parses around positionals since Go's stdlib `flag` stops at the first one). Named checks run
-even if slow or CI-only; app/group selectors keep the default lanes. `ValidateCheckNames` rejects any check ID or
-nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main.go`). A selector that matches nothing
-prints `unknown check or group`, names the accepted spellings closest to it, and exits 1, leaving a row behind for the
-naming review (§ "The unrecognized-name log").
+even if slow or CI-only, and skip the cache unless they're `CachedWhenNamed` (§ "Input fingerprint cache"); app/group
+selectors keep the default lanes. `ValidateCheckNames` rejects any check ID or nickname that would shadow a group/app
+keyword (`reservedSelectorNames` in `main.go`). A selector that matches nothing prints `unknown check or group`, names
+the accepted spellings closest to it, and exits 1, leaving a row behind for the naming review (§ "The unrecognized-name
+log").
 
 - **`--app NAME`**: Run checks for specific apps (repeatable or comma-separated)
 - **`--rust`, `--rust-only`**: Run only Rust checks (desktop)
@@ -51,7 +52,8 @@ naming review (§ "The unrecognized-name log").
 - **`--only-slow`**: Run only slow checks
 - **`--fast`**: Run only the curated fast pre-commit check set. Errors out with `--include-slow` / `--only-slow`; named
   checks bypass both
-- **`--fresh`**: Bypass the input-fingerprint cache: run everything selected, then refresh it
+- **`--fresh`**: Bypass the input-fingerprint cache: run everything selected, then refresh it. The way to re-run a named
+  `CachedWhenNamed` lane on unchanged inputs
 - **`--exact`**: Run only the selected checks, without the whole-repo doc lanes a scoped run adds (§ "Scoped runs")
 - **`--fail-fast`**: Stop on first failure
 - **`--no-log`**: Disable the CSV logs (all four of them) and the saved outputs
@@ -620,8 +622,18 @@ entry. Warns aren't cached because warn-only checks are cheap and their messages
 - `--fresh` (or `CMDR_CHECK_NO_CACHE=1`) bypasses the cache: runs everything selected, then refreshes the entries.
 - `--ci` always runs fresh and never writes the cache. **CI is the authoritative backstop against a wrong `Inputs`
   list** — a too-narrow `Inputs` can only mask a regression locally until the next CI run, never ship one.
-- Explicitly NAMED checks (positional or `--check`) always run fresh, matching the existing "named ⇒ actually run"
-  escape hatch. Group/app selectors stay cache-aware.
+- A run that NAMES checks (positional or `--check`) runs fresh, matching the "named ⇒ actually run" escape hatch, with
+  one exception: a named check carrying `CachedWhenNamed` reads the cache like an unnamed one, and prints `OK (cached)`
+  on identical inputs. Everything else in that run (other named checks, the scoped doc lanes) still runs fresh.
+  Group/app selectors stay cache-aware.
+- **`CachedWhenNamed`** is for lanes agents name as a ritual: `svelte-tests-related` (named before every commit) and
+  both `eslint-typecheck-*` lanes (named after a CI failure). Before it, 94 of 403 `svelte-tests-related` passes in two
+  weeks (2.6 h) repeated the previous run's result within the hour
+  (`docs/notes/performance/local-check-lanes-2026-11-05.md`). Opt a lane in only when its fingerprint covers everything
+  its verdict depends on: `svelte-tests-related` picks its tests by diffing against the branch base, so it also carries
+  `KeyedOnBranchBase`, which adds `BranchBase` (the merge base with `origin/main`, else HEAD) to its fingerprint; a
+  rebase or a fetch that moves the base is a miss. An unresolvable base keys the fingerprint uniquely, so nothing hits
+  or records. `TestPlanNamedCheckCachedWhenNamedHitsCache` pins the behavior.
 
 **Ordering (load-bearing):** planning happens BEFORE pnpm install and SMB/Docker bring-up, so a run whose node/SMB
 checks are all cache hits never installs deps or starts a container. A cached dependency is absent from the run set, so

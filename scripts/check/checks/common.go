@@ -206,6 +206,18 @@ type CheckDefinition struct {
 	// suite would only repeat work. Like Disabled, it clears every lane flag and
 	// carries a NotInCI reason (`TestNamedOnlyChecksClaimNoLane`).
 	NamedOnly string
+	// CachedWhenNamed lets a NAMED run of this check reuse a cached pass on
+	// identical inputs, where naming a check otherwise forces it to run. It's
+	// for lanes agents name as a ritual (before every commit, after a CI
+	// failure), where most named runs repeat a pass on unchanged inputs.
+	// `--fresh` still forces a run. Only for checks whose fingerprint covers
+	// everything the verdict depends on.
+	CachedWhenNamed bool
+	// KeyedOnBranchBase adds the branch base (`BranchBase`) to this check's
+	// fingerprint, for a check that chooses its work by diffing against it
+	// (`svelte-tests-related`): the same files under a different base select
+	// different tests, so they're different inputs.
+	KeyedOnBranchBase bool
 	// Inputs lists path globs (relative to repo root) describing what this check
 	// reads. The input-fingerprint cache (see scripts/check/checks/fingerprint.go)
 	// hashes the union of these plus the global inputs (GlobalInputs) and skips

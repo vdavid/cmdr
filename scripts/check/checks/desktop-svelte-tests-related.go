@@ -131,11 +131,13 @@ func catalogReaderTargets(desktopDir string) ([]string, error) {
 // branchChangedFiles lists what this branch changed against `origin/main`:
 // committed, staged, unstaged, and untracked alike, so the lane works before a
 // commit and after one. Without an `origin/main` (a fresh clone with no fetch),
-// it falls back to the uncommitted changes alone.
+// it falls back to the uncommitted changes alone. The base comes from
+// `BranchBase`, which this lane's fingerprint also carries
+// (`KeyedOnBranchBase`), so a named run's cache hit can't be from another base.
 func branchChangedFiles(rootDir string) ([]string, error) {
-	base := "HEAD"
-	if out, err := runGit(rootDir, "merge-base", "HEAD", "origin/main"); err == nil {
-		base = strings.TrimSpace(out)
+	base, err := BranchBase(rootDir)
+	if err != nil {
+		return nil, err
 	}
 	diff, err := runGit(rootDir, "diff", "--name-only", "--diff-filter=d", base)
 	if err != nil {

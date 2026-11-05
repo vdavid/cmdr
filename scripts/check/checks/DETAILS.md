@@ -1277,9 +1277,9 @@ and on a machine with the `Cmdr Dev` identity every run rebuilt (verified on mac
 order.
 
 `ctx.ReuseArtifacts` is the escape hatch, false under `--ci`, `--fresh`, and `CMDR_CHECK_NO_CACHE`. It deliberately
-stays true for a NAMED check, unlike the check-level cache's "named ⇒ run fresh" rule: naming the slow lane is how you
-run it at all, and running the suite against an up-to-date binary is running it for real. `cacheBypassed` in `plan.go`
-is the one predicate both consumers read.
+stays true for a NAMED check, unlike the check-level cache's "named ⇒ run fresh" rule (which only `CachedWhenNamed`
+lanes escape): naming the slow lane is how you run it at all, and running the suite against an up-to-date binary is
+running it for real. `cacheBypassed` in `plan.go` is the one predicate both consumers read.
 
 ## One feature set across the cargo lanes
 
@@ -2865,8 +2865,8 @@ over their own file set followed by the verdict again (`typeAwareFixPasses`), bu
 the lane's files, compared by content before and after (`fixThenReverdict`, `lintScopeSnapshot`; a fix pass that changed
 nothing leaves the first verdict standing, which saves a whole second lint on every type-aware-only failure); the
 single-lane apps (`api-server`, `website`, `dashboard`) run the fix pass and then the full config check-only, the final
-pass being the verdict. The cost: type-aware findings (`no-unnecessary-type-assertion`, `no-unnecessary-condition`, unused directives) are reported,
-never fixed, so an agent fixes them by hand.
+pass being the verdict. The cost: type-aware findings (`no-unnecessary-type-assertion`, `no-unnecessary-condition`,
+unused directives) are reported, never fixed, so an agent fixes them by hand.
 
 **Decision**: `desktop-svelte-kit-sync` runs before every check that needs the TypeScript program. **Why**:
 `apps/desktop/tsconfig.json` extends `$app/tsconfig`, the gitignored `node_modules/$app/tsconfig.json` sync generates,
@@ -3069,3 +3069,6 @@ that graph decide most of its cost:
   catalogs: every test under `src/lib/intl/`, plus any test whose source names the catalog dir, the plugin's virtual
   modules, or the two catalog loaders (46 spec files today). ❌ Never pass a loader itself: it's a config dependency. A
   component test asserting English copy isn't selected; CI's full suite covers it.
+- **The base is part of the cache key.** The lane diffs against `BranchBase` (`fingerprint.go`), and its fingerprint
+  carries the same base (`KeyedOnBranchBase`), so a named run can be a cache hit (`CachedWhenNamed`) without ever
+  replaying a pass from a different selection. `--fresh` forces a run.

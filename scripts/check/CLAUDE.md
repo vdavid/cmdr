@@ -13,6 +13,8 @@ Authoring a check: `checks/CLAUDE.md`.
 
 - **Run from repo root via `pnpm check`.** A named check runs even if slow, CI-only, or disabled; an app or group
   selector keeps the default lanes.
+- **Named runs skip the cache, except `CachedWhenNamed` lanes** (`svelte-tests-related`, both `eslint-typecheck-*`):
+  those print `OK (cached)` on identical inputs. `--fresh` forces a real run.
 - **Checks refuse to run in the main clone** (the auto-fixers rewrite tracked files): `--ci` is exempt, `--allow-main`
   overrides. A run blocks while a fresh worktree is still warming (`.warming-worktree`).
 - **A check fingerprints `GlobalInputs` plus the files its own `Run` reaches** (read from the AST), failing closed to

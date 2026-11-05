@@ -1099,8 +1099,11 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-kit-sync"},
-		Inputs:      svelteInputs,
-		Run:         RunDesktopESLintTypecheckSvelte,
+		// Named after a CI failure and when scoped; the verdict is the tree's
+		// content alone, which svelteInputs covers.
+		CachedWhenNamed: true,
+		Inputs:          svelteInputs,
+		Run:             RunDesktopESLintTypecheckSvelte,
 	},
 	{
 		ID:          "desktop-svelte-eslint-typecheck-typescript",
@@ -1110,8 +1113,10 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
 		DependsOn:   []string{"desktop-svelte-kit-sync"},
-		Inputs:      svelteInputs,
-		Run:         RunDesktopESLintTypecheckTypescript,
+		// Same as the Svelte pass above.
+		CachedWhenNamed: true,
+		Inputs:          svelteInputs,
+		Run:             RunDesktopESLintTypecheckTypescript,
 	},
 	{
 		ID:          "desktop-svelte-stylelint",
@@ -1319,8 +1324,12 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🎨 Svelte",
 		NamedOnly:   "a subset of svelte-tests, which every suite and CI already run in full; agents name it beside --fast",
 		NotInCI:     "CI runs the full svelte-tests suite, which this is a subset of",
-		Inputs:      svelteInputs,
-		Run:         RunSvelteTestsRelated,
+		// Named before every commit, so most runs repeat a pass; the branch base
+		// is in the fingerprint because the selection diffs against it.
+		CachedWhenNamed:   true,
+		KeyedOnBranchBase: true,
+		Inputs:            svelteInputs,
+		Run:               RunSvelteTestsRelated,
 	},
 	{
 		ID:          "desktop-svelte-e2e-linux-typecheck",

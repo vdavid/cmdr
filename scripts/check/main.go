@@ -688,6 +688,7 @@ func showUsage() {
 	fmt.Println("    --fast                   Run only the curated fast pre-commit check set")
 	fmt.Println("    --pre-release            Run only the pre-release gates (release.sh runs them before tagging)")
 	fmt.Println("    --fresh                  Bypass the input-fingerprint cache: run everything selected, then refresh it")
+	fmt.Println("                             (named checks run fresh anyway, except svelte-tests-related and eslint-typecheck-*)")
 	fmt.Println("    --exact                  Run only the selected checks, without the doc lanes a scoped run adds")
 	fmt.Println("    --fail-fast              Stop on first failure")
 	fmt.Println("    --no-log                 Disable the CSV logs and saved outputs (~/.local/share/check-runner/cmdr/)")

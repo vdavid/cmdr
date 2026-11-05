@@ -21,8 +21,10 @@ import (
 //     so it always runs fresh AND never writes the cache (mirrors --ci's
 //     no-stats-logging behavior),
 //   - a check was named explicitly (positional or --check): naming a check is the
-//     existing "I want this to actually run" escape hatch, so named checks always
-//     run fresh. Group/app selectors stay cache-aware.
+//     "I want this to actually run" escape hatch, so a named run runs fresh.
+//     The exception is a named check with `CachedWhenNamed` (the lanes agents
+//     name as a pre-commit ritual), which reuses a pass on identical inputs;
+//     `--fresh` forces it. Group/app selectors stay cache-aware.
 
 // cachedHit pairs a cache-skipped check with the message to replay on its skip
 // line, so the runner can report it with real context.
@@ -45,8 +47,8 @@ type cachePlan struct {
 // cacheBypassed reports whether this run refuses to trust anything a previous run
 // recorded: `--fresh` and `CMDR_CHECK_NO_CACHE` are the debug escape hatches,
 // `--ci` runs fresh by contract. Naming checks is a separate, narrower rule that
-// only the check-level cache applies (see `planCache`), because "I named this
-// check" means "actually run it", not "rebuild its inputs from scratch".
+// `planCache` applies per check, because "I named this check" means "actually
+// run it" (unless it's `CachedWhenNamed`), not "rebuild its inputs from scratch".
 func cacheBypassed(flags *cliFlags) bool {
 	return flags.fresh || flags.ciMode || os.Getenv("CMDR_CHECK_NO_CACHE") != ""
 }
@@ -60,7 +62,7 @@ func planCache(ctx *checks.CheckContext, flags *cliFlags, selected []checks.Chec
 	// scope: its Rust test passes covered fewer crates than the fingerprint says,
 	// so recording them would let a later full run cache-hit on a partial green.
 	writeDisabled := flags.ciMode || checks.RustTestScopeNarrowed()
-	cacheReads := !cacheBypassed(flags) && len(flags.checkNames) == 0
+	cacheReads := !cacheBypassed(flags)
 
 	plan := &cachePlan{
 		toRun:         selected,
@@ -84,7 +86,7 @@ func planCache(ctx *checks.CheckContext, flags *cliFlags, selected []checks.Chec
 		return plan
 	}
 
-	namedFresh := namedCheckIDs(flags.checkNames)
+	named := namedCheckIDs(flags.checkNames)
 	for i := range selected {
 		def := &selected[i]
 		fp := data.FingerprintFor(def)
@@ -98,7 +100,9 @@ func planCache(ctx *checks.CheckContext, flags *cliFlags, selected []checks.Chec
 	var toRun []checks.CheckDefinition
 	for i := range selected {
 		def := selected[i]
-		if namedFresh[def.ID] {
+		// A named run runs everything fresh, except a named check that opted
+		// into the cache (`CachedWhenNamed`).
+		if len(flags.checkNames) > 0 && !(named[def.ID] && def.CachedWhenNamed) {
 			toRun = append(toRun, def)
 			continue
 		}

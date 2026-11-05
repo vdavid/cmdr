@@ -1,9 +1,9 @@
 # The four costliest local check lanes (2026-11-05)
 
 Why `clippy`, `svelte-tests-related`, `eslint-typecheck-svelte`, and `eslint-typecheck-ts` cost ~42 machine-hours of
-local `pnpm check` in 14 days, where the time goes inside each, and the ranked cuts. Cuts 1–4, 6, and the catalog bug
-have landed: § "Results" has the before/after numbers. Cut 7 was declined. Runner background: `scripts/check/DETAILS.md`
-§ "Input fingerprint cache".
+local `pnpm check` in 14 days, where the time goes inside each, and the ranked cuts. Cuts 1–6 and the catalog bug have
+landed: § "Results" has the before/after numbers. Cut 7 was declined. Runner background: `scripts/check/DETAILS.md` §
+"Input fingerprint cache".
 
 ## Method
 
@@ -254,6 +254,13 @@ exact.
     → 92 s** (new first at load 23 → 15, old after at 15 → 18; the fair pair, −54%) and 321 s → 104 s (old first at load
     70 → 83, new after at 83 → 28, load-skewed). Same single finding reported both ways.
   - The content check is two `git status` calls and hashes of the lane's dirty files: well under a second.
+- **Cut 5, named runs reuse a cached pass** (`CachedWhenNamed` on `svelte-tests-related` and both `eslint-typecheck-*`;
+  `KeyedOnBranchBase` puts the merge base in `svelte-tests-related`'s key; `planCache` in `scripts/check/plan.go`;
+  measured in `worktree-agent-aaa14f30675d4f0f2`, load 10–13).
+  - A one-line edit to `multi-rename/counter-token.ts`, then `pnpm check svelte-tests-related --exact` three times: the
+    first ran (28.6 s), the repeat was a cache hit in **0.7 s**, and the same repeat with `--fresh` (today's old
+    behavior for every named run) took **16.2 s**. A repeat of a full-suite selection saves its whole ~130 s.
+  - The ESLint lanes use the same path (no separate timing): a named repeat on identical inputs skips its 90–200 s.
 - **Bug, catalog edits selected nothing** (`catalogReaderTargets`,
   `scripts/check/checks/desktop-svelte-tests-related.go`).
   - An edit to `intl/messages/en/common.json`: **0 → 46 spec files** (every `src/lib/intl/` test plus the parity,

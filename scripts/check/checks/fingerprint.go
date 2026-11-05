@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 )
 
 // Fingerprinting answers one question per check: "did anything this check reads
@@ -48,6 +50,40 @@ type RepoFingerprintData struct {
 	// (`runner-sources.go`). A nil index, or one whose analysis gave up, hands
 	// every check the whole runner tree.
 	runnerSources *RunnerSourceIndex
+	// branchBase is `BranchBase`, resolved on first use by a check that's
+	// KeyedOnBranchBase, so a run without one never pays the git calls.
+	branchBaseOnce sync.Once
+	branchBase     string
+}
+
+// BranchBase is the commit a branch-diffing lane compares against: the merge
+// base of HEAD and `origin/main`, or HEAD itself when there's no `origin/main`
+// (a fresh clone with no fetch). It lives in this core file because both the
+// lane (`branchChangedFiles`) and its fingerprint read it, and they must agree.
+func BranchBase(rootDir string) (string, error) {
+	if out, err := runGit(rootDir, "merge-base", "HEAD", "origin/main"); err == nil {
+		return strings.TrimSpace(out), nil
+	}
+	out, err := runGit(rootDir, "rev-parse", "HEAD")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(out), nil
+}
+
+// branchBaseKey is the branch base as a fingerprint component. When it can't
+// be resolved, it's unique per call, so the plan-time and end-of-run
+// fingerprints never match: nothing is recorded and nothing hits.
+func (data *RepoFingerprintData) branchBaseKey() string {
+	data.branchBaseOnce.Do(func() {
+		if base, err := BranchBase(data.rootDir); err == nil && base != "" {
+			data.branchBase = base
+		}
+	})
+	if data.branchBase == "" {
+		return fmt.Sprintf("unresolved-%d", time.Now().UnixNano())
+	}
+	return data.branchBase
 }
 
 // CollectRepoFingerprintData runs the two git commands once and assembles the
@@ -214,6 +250,10 @@ func (data *RepoFingerprintData) FingerprintFor(def *CheckDefinition) string {
 		// Include the path itself so adds/removes shift the hash, and a stable
 		// delimiter so "a\nb" can't collide with "a\0b"-style ambiguity.
 		fmt.Fprintf(hasher, "%s\x00%s\x00", p, matched[p])
+	}
+	if def.KeyedOnBranchBase {
+		// A NUL can't occur in a path, so this can't collide with a file entry.
+		fmt.Fprintf(hasher, "\x00branch-base\x00%s\x00", data.branchBaseKey())
 	}
 	return hex.EncodeToString(hasher.Sum(nil))
 }
