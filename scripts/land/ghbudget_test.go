@@ -141,3 +141,31 @@ func TestRateLimitBudget(t *testing.T) {
 		t.Errorf("budget left: got %+v", b)
 	}
 }
+
+// Regression: a land waiting on CI gave up on one HTTP 500 from the check-runs poll (2026-11-05,
+// PR #992), after two 10 s retries, though CI kept running. A server error on a read backs off
+// like a secondary limit, from a minute, doubling, then gives up.
+func TestAfterGHFailureBacksOffAServerError(t *testing.T) {
+	now := time.Date(2026, 11, 5, 17, 4, 0, 0, time.UTC)
+	broken := &apiBudget{serverError: true}
+	for backedOff, want := range []time.Duration{time.Minute, 2 * time.Minute, 4 * time.Minute, 8 * time.Minute} {
+		got, wait := afterGHFailure(broken, 0, backedOff, now)
+		if got != ghBackOff || wait != want {
+			t.Errorf("backoff %d: got %d after %s, want %d after %s", backedOff, got, wait, ghBackOff, want)
+		}
+	}
+	if got, _ := afterGHFailure(broken, 2, secondaryBackoffs, now); got != ghGiveUp {
+		t.Errorf("backoffs spent: got %d, want %d", got, ghGiveUp)
+	}
+}
+
+func TestParseAPIResponseMarksAServerError(t *testing.T) {
+	resp, ok := parseAPIResponse("HTTP/2.0 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n{}")
+	if !ok || !resp.budget.serverError || resp.budget.limited {
+		t.Fatalf("got ok=%v budget=%+v, want a server error that isn't a rate limit", ok, resp.budget)
+	}
+	resp, _ = parseAPIResponse("HTTP/2.0 404 Not Found\r\n\r\n{}")
+	if resp.budget.serverError {
+		t.Fatalf("a 404 isn't a server error")
+	}
+}

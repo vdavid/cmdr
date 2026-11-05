@@ -218,8 +218,9 @@ answered 403 after CI was green, and that land was lost. So:
   budget's reset, or a secondary limit's `Retry-After`. A 403 or 429 with budget left and no `Retry-After` is a
   secondary limit too: GitHub's docs say to wait at least a minute, then longer each time, so it backs off 1, 2, 4, and
   8 min (15 min in all) before giving up. That costs a real permission 403 the same 15 min, which no polled path
-  answers. Reads otherwise get two short retries; writes (`gh pr create`, ruleset apply) get none, since they may have
-  gone through.
+  answers. A 5xx on a polled read (`ghAPI`) backs off the same way: on 2026-11-05 one HTTP 500 from the check-runs poll
+  outlasted the two 10 s retries and ended a land whose CI was still running. Reads otherwise get two short retries;
+  writes (`gh pr create`, ruleset apply) get none, since they may have gone through.
 - **A run that showed up never makes the wait give up** (`missingRunGivesUp`): on 2026-10-20 a queued run printed
   "Waiting for CI OK", then dropped out of the `head_sha` list, and the land quit with "no CI run after 5m0s". Only a
   push that started no run at all stops at `appearWithin`; a seen run waits out the usual timeout.
