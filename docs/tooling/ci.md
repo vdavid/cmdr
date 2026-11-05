@@ -402,10 +402,18 @@ a `run_all` dispatch, so every lane runs, lane markers and the Rust test scope a
 run, and `CI OK` reds any skipped lane. A `main` tree no single run tested (two PRs that each passed alone, then landed
 as `verified` pushes; a scoped PR run that never reached a crate a landed PR broke; a scope rule that missed a read) is
 caught within a day instead of at the next release's gate. Its lanes save fresh markers and Rust caches into `main`'s
-scope, which seeds every PR. It doesn't deploy: the deploy jobs run on pushes and dispatches only. A red one is as
-visible as a red `main` push: GitHub emails a failed scheduled run to whoever last edited the cron, as it emails a
-push's failure to its pusher. A schedule rather than a dispatch from another workflow: dispatching needs
-`actions: write`, which Scorecard's Token-Permissions flags.
+scope, which seeds every PR. It doesn't deploy: the deploy jobs run on pushes and dispatches only. A red one reaches
+David the way a red `main` push does: through the digest (§ How a red `main` reaches David). A schedule rather than a
+dispatch from another workflow: dispatching needs `actions: write`, which Scorecard's Token-Permissions flags.
+
+### How a red `main` reaches David
+
+GitHub's own Actions failure emails are OFF on David's account, so nothing from GitHub says `main` went red. The API
+server's three-hour cron asks GitHub instead (`apps/api-server/src/ci-health.ts`) and puts a `ci-health` line in the
+digest when something CHANGES: `main`'s push CI, the nightly, `ci-upkeep.yml`, `slow-checks.yml`, or `advisories.yml`
+going red or back to green, the nightly not starting for 26 hours, or `main`'s head commit sitting an hour with no CI
+run. The 06:30 morning brief carries one CI line with the last day's numbers (lands, their median CI time, the macOS
+lane's M1 share, the Actions cache size). Definitions and API budget: `apps/api-server/DETAILS.md` § CI health.
 
 ## Slow checks cadence
 
