@@ -1298,9 +1298,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr шифрує власні підʼєднання до спільних папок SMB, навіть без запиту від сервера, і не підʼєднується до сервера, який не може шифрувати. Гостьові підʼєднання зашифрувати не можна, тож доведеться ввійти. Діє для нових підʼєднань.",
+  "settings.network.requireSmbEncryption.description": "Cmdr шифрує свої підʼєднання до спільних папок SMB, навіть без запиту від сервера, і не відкриває спільну папку, підʼєднання до якої не можна зашифрувати, зокрема ту, яку ваш Mac підʼєднав без шифрування. Гостьові підʼєднання зашифрувати не можна, тож доведеться ввійти. Підʼєднання, які Cmdr уже відкрив, залишаються як є, доки не підʼєднаються знову.",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "шифр, шифрувати, зашифровано, захист, безпека, приватність, конфіденційність, підключення, мережа",
   "@settings.network.requireSmbEncryption.keywords": {

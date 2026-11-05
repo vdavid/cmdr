@@ -215,6 +215,10 @@
   "@fileExplorer.errorPane.tryAgain": {
     "sourceHash": "d8b8392"
   },
+  "fileExplorer.errorPane.openSmbEncryptionSetting": "開啟 SMB 設定",
+  "@fileExplorer.errorPane.openSmbEncryptionSetting": {
+    "sourceHash": "f428144"
+  },
   "fileExplorer.errorPane.openSystemSettings": "開啟 {systemSettings}",
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
@@ -2185,9 +2189,9 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
-  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} 無法加密連線，而 Cmdr 已啟用「一律要求 SMB 加密」，所以 Cmdr 會繼續使用系統連線。",
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} 無法加密連線，而 Cmdr 已啟用「一律要求 SMB 加密」，所以 Cmdr 沒有直接連線。",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
-    "sourceHash": "e4af63d"
+    "sourceHash": "fe17565"
   },
   "fileExplorer.network.osMountFallback.encryptionRequired": "無法直接連線到 <shareName>{share}</shareName>，因為伺服器無法加密連線，而 Cmdr 已啟用「一律要求 SMB 加密」。你仍然連著，但用的是 macOS 內建的 SMB 網路連線，慢上許多。",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {

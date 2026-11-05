@@ -892,6 +892,10 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
+  "servers.paneState.encryptionRequired": "Cmdr återanslöt inte: servern kan inte kryptera anslutningen och inställningen ”Kräv alltid SMB-kryptering” är aktiverad i Cmdr.",
+  "@servers.paneState.encryptionRequired": {
+    "sourceHash": "f04a96a"
+  },
   "servers.paneState.guestSessionRefusedHint": "Du ville logga in med ditt konto, men servern erbjöd en gästsession i stället. Oftast betyder det att lösenordet inte stämde. I sällsynta fall betyder det att någon manipulerar anslutningen.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

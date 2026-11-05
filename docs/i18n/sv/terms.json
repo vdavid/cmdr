@@ -775,7 +775,14 @@
     "exceptions": {
       "settings.network.directSmbConnection.description": "Verb form with the subject between: ansluter Cmdr direkt."
     },
-    "accept": ["anslut direkt", "ansluta direkt", "ansluter direkt", "ansluten direkt", "direkta anslutning"],
+    "accept": [
+      "anslut direkt",
+      "ansluta direkt",
+      "ansluter direkt",
+      "ansluten direkt",
+      "direkta anslutning",
+      "anslöt inte direkt"
+    ],
     "chosen": "direktanslutning",
     "confidence": "high",
     "forms": "Cmdrs direktanslutning; a failure in prose → Det gick inte att ansluta direkt",

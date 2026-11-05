@@ -216,6 +216,10 @@
   "@fileExplorer.errorPane.tryAgain": {
     "sourceHash": "d8b8392"
   },
+  "fileExplorer.errorPane.openSmbEncryptionSetting": "Ouvrir les réglages SMB",
+  "@fileExplorer.errorPane.openSmbEncryptionSetting": {
+    "sourceHash": "f428144"
+  },
   "fileExplorer.errorPane.openSystemSettings": "Ouvrir {systemSettings}",
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
@@ -2198,9 +2202,9 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
-  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} ne peut pas chiffrer la connexion et l’option « Toujours exiger le chiffrement SMB » est activée dans Cmdr, donc Cmdr reste sur la connexion système.",
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} ne peut pas chiffrer la connexion et l’option « Toujours exiger le chiffrement SMB » est activée dans Cmdr, donc Cmdr ne s’est pas connecté directement.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
-    "sourceHash": "e4af63d"
+    "sourceHash": "fe17565"
   },
   "fileExplorer.network.osMountFallback.encryptionRequired": "Impossible de se connecter directement à <shareName>{share}</shareName>, car le serveur ne peut pas chiffrer la connexion et l’option « Toujours exiger le chiffrement SMB » est activée dans Cmdr. Vous y avez toujours accès, mais via la connexion réseau SMB native de macOS, qui est bien plus lente.",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {

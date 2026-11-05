@@ -2553,6 +2553,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "A megosztás kapcsolata nem titkosított",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "A Cmdrben be van kapcsolva a „Mindig kötelező SMB-titkosítás” beállítás, ez a kapcsolat viszont nem titkosítható, ezért a Cmdr nem nyitotta meg ezt a mappát: `{path}`. Ezen a kapcsolaton semmi nem ment át.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Ezeket próbálhatod:\n- Jelentkezz be egy fiókkal: a vendégkapcsolatok nem titkosíthatók\n- Kapcsold be az SMB-titkosítást a szerveren\n- Ha nincs rá szükséged, kapcsold ki a „Mindig kötelező SMB-titkosítás” beállítást a Beállításokban",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "A megosztás kapcsolata nem titkosítható, a Cmdrben pedig be van kapcsolva a „Mindig kötelező SMB-titkosítás” beállítás.",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "A kapcsolat nem titkosított",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "A megosztás kapcsolata nem titkosítható, a Cmdrben pedig be van kapcsolva a „Mindig kötelező SMB-titkosítás” beállítás, ezért a Cmdr leállt.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Jelentkezz be egy fiókkal vendég helyett, vagy kapcsold be az SMB-titkosítást a szerveren. A „Mindig kötelező SMB-titkosítás” beállítást is kikapcsolhatod a Beállításokban.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Ez a mappa egy másik szerveren van",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

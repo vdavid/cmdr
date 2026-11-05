@@ -1301,9 +1301,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr cifra sus propias conexiones a recursos compartidos SMB, aunque el servidor no lo pida, y no se conecta a un servidor que no pueda cifrar. Las conexiones como invitado no se pueden cifrar, así que tendrás que iniciar sesión. Se aplica a las conexiones nuevas.",
+  "settings.network.requireSmbEncryption.description": "Cmdr cifra sus conexiones a recursos compartidos SMB, aunque el servidor no lo pida, y no abre un recurso compartido cuya conexión no se pueda cifrar, incluido uno al que tu Mac se haya conectado sin cifrado. Las conexiones como invitado no se pueden cifrar, así que tendrás que iniciar sesión. Las conexiones que Cmdr ya tiene abiertas siguen igual hasta que se reconecten.",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "cifrar, cifrada, encriptar, encriptado, seguridad, seguro, privacidad, protección",
   "@settings.network.requireSmbEncryption.keywords": {

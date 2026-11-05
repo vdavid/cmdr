@@ -2553,6 +2553,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "Die Verbindung zu dieser Freigabe ist nicht verschlüsselt",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "In Cmdr ist „SMB-Verschlüsselung immer verlangen“ eingeschaltet und die Verbindung zu `{path}` lässt sich nicht verschlüsseln, daher hat Cmdr den Ordner nicht geöffnet. Über diese Verbindung wurde nichts übertragen.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Das kannst du versuchen:\n- Melde dich mit einem Konto an: Gastverbindungen lassen sich nicht verschlüsseln\n- Schalte die SMB-Verschlüsselung auf dem Server ein\n- Schalte „SMB-Verschlüsselung immer verlangen“ in den Einstellungen aus, wenn du die Option nicht brauchst",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "Die Verbindung zu dieser Freigabe lässt sich nicht verschlüsseln und in Cmdr ist „SMB-Verschlüsselung immer verlangen“ eingeschaltet.",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "Verbindung nicht verschlüsselt",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "Die Verbindung zur Freigabe lässt sich nicht verschlüsseln und in Cmdr ist „SMB-Verschlüsselung immer verlangen“ eingeschaltet, daher hat Cmdr den Vorgang gestoppt.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Melde dich mit einem Konto statt als Gast an oder schalte die SMB-Verschlüsselung auf dem Server ein. Du kannst „SMB-Verschlüsselung immer verlangen“ auch in den Einstellungen ausschalten.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Dieser Ordner liegt auf einem anderen Server",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

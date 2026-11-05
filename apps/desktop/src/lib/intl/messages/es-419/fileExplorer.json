@@ -514,5 +514,9 @@
   },
   "@fileExplorer.network.osMountFallback.encryptionRequired": {
     "sourceHash": "2573b89"
+  },
+  "fileExplorer.errorPane.openSmbEncryptionSetting": "Abrir la configuración de SMB",
+  "@fileExplorer.errorPane.openSmbEncryptionSetting": {
+    "sourceHash": "99eab87"
   }
 }

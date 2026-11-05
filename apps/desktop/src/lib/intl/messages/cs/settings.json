@@ -1298,9 +1298,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr šifruje svá vlastní připojení ke sdíleným složkám SMB, i když to server nevyžaduje, a k serveru, který šifrování nezvládne, se nepřipojí. Připojení jako host zašifrovat nejde, takže se budete muset přihlásit. Projeví se u nových připojení.",
+  "settings.network.requireSmbEncryption.description": "Cmdr šifruje svá připojení ke sdíleným složkám SMB, i když to server nevyžaduje, a neotevře sdílenou složku, jejíž připojení zašifrovat nejde, a to ani takovou, kterou váš Mac připojil bez šifrování. Připojení jako host zašifrovat nejde, takže se budete muset přihlásit. Připojení, která už Cmdr má otevřená, zůstanou beze změny, dokud se znovu nepřipojí.",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "šifrovat, šifrované, zašifrovat, zabezpečení, bezpečnost, soukromí, ochrana, bezpečné připojení",
   "@settings.network.requireSmbEncryption.keywords": {

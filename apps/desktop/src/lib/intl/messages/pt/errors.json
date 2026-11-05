@@ -2553,6 +2553,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "A conexão com este compartilhamento não está criptografada",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "O ajuste “Sempre exigir criptografia SMB” está ativado no Cmdr, e a conexão com `{path}` não pode ser criptografada, então o Cmdr não abriu essa pasta. Nada passou por essa conexão.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Veja o que tentar:\n- Inicie a sessão com uma conta: conexões de convidado não podem ser criptografadas\n- Ative a criptografia SMB no servidor\n- Desative “Sempre exigir criptografia SMB” nos Ajustes, se não precisar desse ajuste",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "A conexão com este compartilhamento não pode ser criptografada, e o ajuste “Sempre exigir criptografia SMB” está ativado no Cmdr.",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "Conexão não criptografada",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "A conexão com o compartilhamento não pode ser criptografada, e o ajuste “Sempre exigir criptografia SMB” está ativado no Cmdr, então o Cmdr interrompeu a operação.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Inicie a sessão com uma conta em vez de entrar como convidado, ou ative a criptografia SMB no servidor. Você também pode desativar “Sempre exigir criptografia SMB” nos Ajustes.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Esta pasta está em outro servidor",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

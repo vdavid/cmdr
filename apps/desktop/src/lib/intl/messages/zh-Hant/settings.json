@@ -1300,9 +1300,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr 會加密自己建立的 SMB 共享資料夾連線，即使伺服器沒有要求也一樣，而且不會連線到無法加密的伺服器。以訪客身分連線時無法加密，所以你需要登入。對新的連線生效。",
+  "settings.network.requireSmbEncryption.description": "Cmdr 會加密自己建立的 SMB 共享資料夾連線，即使伺服器沒有要求也一樣，而且不會開啟連線無法加密的共享資料夾，包括你的 Mac 在沒有加密的情況下連上的共享資料夾。以訪客身分連線時無法加密，所以你需要登入。Cmdr 已經開著的連線會維持原樣，直到重新連線。",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "安全性, 安全, 隱私, 保護, 保密, 加密連線, 強制加密",
   "@settings.network.requireSmbEncryption.keywords": {

@@ -2553,6 +2553,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "La conexión a este recurso compartido no está cifrada",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "Cmdr tiene activado “Requerir siempre cifrado SMB” y la conexión a `{path}` no se puede cifrar, así que Cmdr no ha abierto esta carpeta. No ha pasado nada por esa conexión.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Esto es lo que puedes probar:\n- Inicia sesión con una cuenta: las conexiones como invitado no se pueden cifrar\n- Activa el cifrado SMB en el servidor\n- Desactiva “Requerir siempre cifrado SMB” en Ajustes, si no lo necesitas",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "La conexión a este recurso compartido no se puede cifrar y Cmdr tiene activado “Requerir siempre cifrado SMB”.",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "Conexión sin cifrar",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "La conexión al recurso compartido no se puede cifrar y Cmdr tiene activado “Requerir siempre cifrado SMB”, así que Cmdr ha detenido la operación.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Inicia sesión con una cuenta en vez de como invitado, o activa el cifrado SMB en el servidor. También puedes desactivar “Requerir siempre cifrado SMB” en Ajustes.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Esta carpeta está en otro servidor",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

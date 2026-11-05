@@ -2552,6 +2552,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "这个共享的连接没有加密",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "Cmdr 已开启“始终要求 SMB 加密”，而到 `{path}` 的连接无法加密，所以 Cmdr 没有打开它。这个连接上没有传送任何内容。",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "可以这样试试：\n- 用账户登录：以客人身份连接时无法加密\n- 在服务器上开启 SMB 加密\n- 如果用不着，在“设置”中关闭“始终要求 SMB 加密”",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "这个共享的连接无法加密，而 Cmdr 已开启“始终要求 SMB 加密”。",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "连接没有加密",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "这个共享的连接无法加密，而 Cmdr 已开启“始终要求 SMB 加密”，所以 Cmdr 停止了这项操作。",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "请用账户登录，不要以客人身份连接，或者在服务器上开启 SMB 加密。你也可以在“设置”中关闭“始终要求 SMB 加密”。",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "这个文件夹在另一台服务器上",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

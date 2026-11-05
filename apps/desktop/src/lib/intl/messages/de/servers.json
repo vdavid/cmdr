@@ -894,6 +894,10 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
+  "servers.paneState.encryptionRequired": "Cmdr hat die Verbindung nicht wiederhergestellt: Der Server kann die Verbindung nicht verschlüsseln und in Cmdr ist „SMB-Verschlüsselung immer verlangen“ eingeschaltet.",
+  "@servers.paneState.encryptionRequired": {
+    "sourceHash": "f04a96a"
+  },
   "servers.paneState.guestSessionRefusedHint": "Du wolltest dich mit deinem Konto anmelden, aber der Server hat stattdessen eine Gastsitzung angeboten. Meist heißt das, dass das Passwort falsch war. Selten heißt es, dass jemand die Verbindung manipuliert.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"
