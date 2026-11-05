@@ -29,9 +29,10 @@ on:
   # `run_all` dispatch runs (`changes`' `full` output). A `main` push that merged a green PR is
   # `verified` and skips its lanes, so a tree made of two PRs that each passed alone is never
   # tested on `main`, and later PR runs may skip or scope away the lane that would fail on it;
-  # this catches that within a day. A red scheduled run emails whoever last edited this cron, as
-  # a red `main` push emails its pusher. It doesn't deploy (the deploy jobs run on pushes and
-  # dispatches only). `docs/tooling/ci.md` § Nightly full run.
+  # this catches that within a day. A red scheduled run (or a red `main` push, or a nightly that
+  # stops running) reaches David as a line in the API server's three-hour digest
+  # (`apps/api-server/src/ci-health.ts`); GitHub's own failure emails are off. It doesn't deploy
+  # (the deploy jobs run on pushes and dispatches only). `docs/tooling/ci.md` § Nightly full run.
   schedule:
     - cron: '17 2 * * *' # 02:17 UTC daily, off-peak and off the hour
 

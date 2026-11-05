@@ -5,10 +5,11 @@ name: Advisory scan
 # `osv-scanner` sweeps every tracked lockfile (Rust, npm, Go, Python) the way
 # OpenSSF Scorecard's Vulnerabilities check does; `cargo-deny` reads the
 # shipped macOS Rust graph. Neither compiles anything, so this is cheap next to
-# the every-6-days `slow-checks.yml` lane (which also runs them, beside
+# the nightly `slow-checks.yml` lane (which also runs them, beside
 # `cargo-udeps` and the rest). The `/trust/development` page on the website
 # states this one-day cadence: change both together.
-# GitHub automatically emails repo admins on failure.
+# A red run reaches David as a line in the API server's three-hour digest
+# (`apps/api-server/src/ci-health.ts`); GitHub's own failure emails are off.
 on:
   schedule:
     - cron: '17 4 * * *' # daily, 5:17 AM CET = 4:17 AM UTC

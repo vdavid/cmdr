@@ -88,8 +88,34 @@ async function stubbedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
   if (url.startsWith('https://api.paddle.com/customers/')) {
     return Response.json({ data: paddleCustomer })
   }
+  if (url.startsWith('https://api.github.com/repos/vdavid/cmdr/')) return greenGitHub(url)
   unexpectedOutbound.push(url)
   return Response.json({ error: 'This host is not stubbed' }, { status: 502 })
+}
+
+/**
+ * The public CI repo `ci-health.ts` reads on every tick (`CI_HEALTH_REPO`), all green, so the job
+ * runs in workerd on each tick here and adds nothing to the digest the tests assert on.
+ */
+function greenGitHub(url: string): Response {
+  const head = 'e81d02881c00239b4df238425ec89addb3ca0888'
+  const now = new Date().toISOString()
+  if (url.includes('/commits/main')) return Response.json({ sha: head, commit: { committer: { date: now } } })
+  const workflow = /\/actions\/workflows\/([^/]+)\/runs/.exec(url)?.[1]
+  if (!workflow) return Response.json({ message: 'Not Found' }, { status: 404 })
+  return Response.json({
+    workflow_runs: [
+      {
+        id: 1,
+        html_url: 'https://github.com/vdavid/cmdr/actions/runs/1',
+        head_sha: head,
+        event: new URL(url).searchParams.get('event') ?? 'schedule',
+        status: 'completed',
+        conclusion: 'success',
+        created_at: now,
+      },
+    ],
+  })
 }
 
 /** The runtime's own logs, for a failure message: a throw inside workerd leaves nothing in the body. */
@@ -210,6 +236,9 @@ describe('mailing the report digest from the Worker runtime', () => {
     expect(email.html).toContain('It also stalls on a local disk')
     expect(email.html).toContain('assertion failed: chunk.len() &gt; 0')
     expect(email.html).toContain('The dual pane finally makes sense to me')
+    // CI health read GitHub on the same tick in workerd, found it green, and said nothing.
+    const ciStates = await env.TELEMETRY_DB.prepare(`SELECT state FROM ci_health WHERE signal = 'main'`).first()
+    expect(ciStates, `Worker logs:\n${workerLogs()}`).toEqual({ state: 'green' })
 
     for (const table of ['crash_reports', 'error_reports', 'error_report_amendments', 'feedback']) {
       const pending = await env.TELEMETRY_DB.prepare(

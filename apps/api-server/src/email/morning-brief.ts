@@ -39,6 +39,8 @@ export interface BriefContent {
   arrivals: BriefArrivals
   /** Plain sentences, each one a reason to look closer. Empty on a healthy morning. */
   tripwires: string[]
+  /** The one CI line (`ci-brief.ts`), or null when CI health is off. */
+  ci: string | null
 }
 
 function counted(count: number, singular: string, plural: string): string {
@@ -114,6 +116,7 @@ function renderBody(subject: string, content: BriefContent): string {
     ${cardList('Waiting on a reply', content.needsReply, 'Nobody is waiting on an answer.')}
     ${cardList('Not looked at yet', content.unprocessed, 'The triage agent got to every card.')}
     ${arrivalsList(content.arrivals)}
+    ${content.ci ? `<p>${escapeHtml(content.ci)}</p>` : ''}
     ${tripwires}
 
     ${signoffParagraph('The Cmdr API server sends this every morning at 06:30 Stockholm time, after the triage agent has gone through the board.')}`,

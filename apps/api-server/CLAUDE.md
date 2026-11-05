@@ -16,7 +16,7 @@ Five areas own their code, tests, and `C+D.md`; read an area's docs before worki
 
 Root holds the assembly and the shared leaves (`index.ts`, `types.ts`, `admin-auth.ts`, `email/`, `ops-events.ts`, the
 `report-*.ts` + `github-issues.ts` + `morning-brief.ts` board, `project-board.ts`, `scheduled.ts`, `cron-health.ts`,
-`user-agent.ts`; DETAILS § Root files). ❌ Areas depend on root leaves, never each other.
+`ci-*.ts`, `user-agent.ts`; DETAILS § Root files). ❌ Areas depend on root leaves, never each other.
 
 `email/` is one module per audience: `send.ts` (the SMTP2Go door), `layout.ts` (HTML chrome), then `crash.ts`,
 `feedback.ts`, `error-report.ts`, `ops-alerts.ts`, `license.ts`, `sale.ts`. Import the specific one; no barrel.
@@ -51,5 +51,5 @@ Root holds the assembly and the shared leaves (`index.ts`, `types.ts`, `admin-au
 - **Deploy rails**: apply D1 migrations first (`wrangler d1 migrations apply TELEMETRY_DB`); the default export stays
   the object form (`{ fetch, scheduled }`) or cron breaks (`app` is also named-exported for tests).
 
-Routes, secrets, bindings, Worker types (`wrangler types`, gitignored), cron, retention, and runbooks: `DETAILS.md`.
-Read it before any non-trivial work here, advising included.
+Routes, secrets, bindings, Worker types, cron, retention, and runbooks: `DETAILS.md`. Read it before any non-trivial
+work or advice here.

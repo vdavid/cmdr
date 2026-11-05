@@ -77,7 +77,9 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   Impact, and Size fields on the backlog board. § Card ratings.
 - **`report-digest.ts`**: the cron job that mails the three-hour digest and stamps what it sent. § Cron handler.
 - **`morning-brief.ts`**: the 06:30 Stockholm brief: who's waiting on a reply, unprocessed cards, the last day's
-  arrivals, and the tripwires. § Cron handler job 10.
+  arrivals, the CI line, and the tripwires. § Cron handler job 10.
+- **`ci-health.ts`**, **`ci-brief.ts`**, **`ci-github.ts`**: GitHub Actions health for the public repo, into the digest
+  and the brief. § CI health.
 - The five are tested against a REAL SQLite built from the migrations (`sqlite-d1-test-helper.ts`), because the risk of
   an outbox is a row a WHERE clause quietly skips: `report-outbox.test.ts`, `report-digest.test.ts`,
   `report-retention.test.ts`, `morning-brief.test.ts`, `report-ratings.test.ts`.
@@ -229,10 +231,10 @@ other namespaces).
 
 `ops-events.ts` writes the operational notices to the D1 `ops_events` table: `cron-failure`, `board-add-failed`,
 `board-rating-failed`, `csp-violation`, `eviction`, `eviction-blocked`, `intake-rejected`, `admin-auth-rejected`,
-`webhook-signature-rejected`, `sale-notice-failed` (`src/licensing/DETAILS.md` § Sale notices), and the signup kinds
-(`SIGNUP_KINDS`, and `NOT_A_SIGNUP`, the SQL filter both readers use). The three-hour digest mails the alerts (§ Cron
-handler job 2) and leaves the signups for the morning brief to count. Nothing else watches a channel: there is no
-Discord integration.
+`webhook-signature-rejected`, `sale-notice-failed` (`src/licensing/DETAILS.md` § Sale notices), `ci-health` (§ CI
+health), and the signup kinds (`SIGNUP_KINDS`, and `NOT_A_SIGNUP`, the SQL filter both readers use). The three-hour
+digest mails the alerts (§ Cron handler job 2) and leaves the signups for the morning brief to count. Nothing else
+watches a channel: there is no Discord integration.
 
 - **Rejected requests are counted, not logged one by one** (`countOpsEvent`): a repeat adds to the unnotified row with
   the same kind and message (`occurrences`, migration `0024`), so a burst is one digest line and one small row, and the
@@ -369,7 +371,9 @@ failure from the rest and raises the alarm for it (§ Cron alarms):
 
 1. **The board** (every invocation, first): `fileCrashCards`, `fileErrorReportCards`, `fileFeedbackCards`, then
    `postAmendmentsToBoard` file every pending report as a card. § The reports repo. Then `applyCardRatings` sets the
-   Severity, Impact, and Size the triage agent wrote on each card it triaged (§ Card ratings).
+   Severity, Impact, and Size the triage agent wrote on each card it triaged (§ Card ratings). Then `handleCiHealth`
+   reads GitHub Actions and records a `ci-health` ops event on any change (§ CI health), before the digest so it's in
+   this tick's email.
 2. **Report digest** (every invocation, right after the board, so it can link the cards just filed):
    `handleReportDigest` (`report-digest.ts`) sends ZERO OR ONE email covering every release-build crash, error report
    (hand-written and auto-sent), amendment, and feedback message whose `notified_at` is NULL, then stamps exactly those
@@ -449,6 +453,8 @@ failure from the rest and raises the alarm for it (§ Cron alarms):
     - **The tripwires** ("Look closer"): reports still owed a card after six hours (filing is failing), yesterday's prod
       bundles in R2 outnumbering yesterday's `error_reports` rows (a failed outbox insert, which only logs), and a board
       GitHub wouldn't list. These are what make "nothing is lost" checkable rather than hoped for.
+    - **The CI line** (`ci-brief.ts`): one line of the last day's CI numbers, or what GitHub wouldn't answer. § CI
+      health.
     - Its healthcheck report is failure-only: the check's period is the three-hour tick, and a success ping from the
       morning trigger would only blur it.
 
@@ -536,6 +542,8 @@ triage value live in the other columns, and there's no privacy reason to lose th
   both under the license sections.
 - **`card_ratings`**: never swept. GitHub comment and issue numbers, the applied `Rating:` line, and timestamps; no
   personal data, so the privacy policy has nothing to promise about it.
+- **`ci_health`** (migration `0030`): never swept, one row per CI signal (§ CI health). A signal name, a state, and two
+  times; no personal data.
 - **`cron_job_streaks`**: a row lives only while a cron job keeps throwing; its next clean run deletes it. A job label
   and a tick time, no personal data. § Cron alarms.
 - **`license_adjustments`**: never swept, for the same audit reason; it's how we know a license was revoked by a refund.
@@ -735,6 +743,36 @@ comment with a line, and `applyCardRatings` (`report-ratings.ts`) copies that on
 - **Bounded**: five comment pages and 25 ratings per tick, 20 pages of board items; the rest wait a tick.
 - **Cadence**: every three-hour tick, after the amendments and before the digest (so a failure from this tick is in it).
   The agent runs at 05:30 Stockholm, so a rating lands on the next tick, 06:00 UTC: about 1.5–2.5 hours later.
+
+## CI health
+
+David has GitHub's Actions failure emails OFF, so the Worker is how a red `main` reaches him. Code: `ci-health.ts` (the
+three-hour job), `ci-brief.ts` (the brief's line), `ci-github.ts` (the reads). Off when the `CI_HEALTH_REPO` var
+(`vdavid/cmdr`) is unset; every test env leaves it unset except the ones about it.
+
+- **Watched**: `ci.yml` push runs on `main` and its nightly `schedule` runs (two signals), `ci-upkeep.yml` (skipped
+  while the file 404s), `slow-checks.yml`, `advisories.yml`. Per signal, the newest run that decided something:
+  `success` green; `failure`, `timed_out`, `startup_failure` red; cancelled, skipped, and running runs passed over.
+  Always `status`/`conclusion`, ❌ never a title or log.
+- **Change-only**: `ci_health` holds the last state per signal. An ops event on green→red (workflow, commit, failed
+  jobs, run link), red→green ("back to green"), and a red on first sight; nothing while a state holds.
+- **Silence**: the nightly not started in 26 h (judged only once GitHub lists one schedule run, so a brand-new schedule
+  doesn't alarm), or `main`'s head commit older than an hour by committer date with no `ci.yml` push run. Each alerts
+  once, and once more when it clears.
+- **GitHub down never throws**: any refused read is one `Couldn't check CI: …` line on the way down (none on the way
+  back), and a state it couldn't read stays as it was. Only D1 failures throw, into the usual cron alarm.
+- **The brief's line**:
+  `CI: main green · nightly green · 9 lands, median 21 min · macOS 8 of 9 on the M1 · cache 6.1 GB`. main/nightly come
+  from `ci_health` (no API call). A land is a PR merged into `main` in the last 24 h whose `ci.yml` `pull_request` run
+  has a green `CI OK` job (only land runs name the gate that; light runs say `CI light`). Median: run start to `CI OK`
+  done. macOS: of the lands whose macOS lane ran (a non-skipped job on a `cmdr-m1` or `macos-*` label), those on
+  `cmdr-m1`. Cache: `actions/cache/usage`. A part GitHub won't answer reads as unknown.
+- **API budget**: the job makes six reads a tick (five run listings and `main`'s head), plus one jobs read per red
+  transition. The brief makes one PR listing, up to 30 lands times (one run listing plus at most three jobs reads), and
+  one cache read: about 25 calls on a 10-land day (verified live against `vdavid/cmdr`, 2026-11-05: 21 lands, 48 s).
+- **Token**: every read works unauthenticated on a public repo, but Workers share Cloudflare's egress IPs and their
+  60-an-hour budget, so `GITHUB_PROJECT_TOKEN` rides along when set (a classic PAT reads public repos whatever its
+  scope). Only sent, never widened.
 
 ## Synthetic heartbeats
 

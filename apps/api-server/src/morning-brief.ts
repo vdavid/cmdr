@@ -9,6 +9,7 @@
 
 import { sendMorningBriefEmail, type BriefArrivals, type BriefCard } from './email/morning-brief'
 import { humanReportRecipient } from './email/send'
+import { readCiBriefLine } from './ci-brief'
 import { NOT_A_SIGNUP } from './ops-events'
 import { listOpenCards, resolveIssueTarget } from './github-issues'
 import { NEEDS_REPLY_LABEL, UNPROCESSED_LABEL } from './report-cards'
@@ -178,7 +179,13 @@ export async function handleMorningBrief(env: Bindings): Promise<void> {
   if (reconciled) tripwires.push(reconciled)
 
   await sendMorningBriefEmail({
-    content: { needsReply, unprocessed, arrivals: await readArrivals(env.TELEMETRY_DB), tripwires },
+    content: {
+      needsReply,
+      unprocessed,
+      arrivals: await readArrivals(env.TELEMETRY_DB),
+      tripwires,
+      ci: await readCiBriefLine(env),
+    },
     to,
     smtp2goApiKey: env.SMTP2GO_API_KEY,
   })

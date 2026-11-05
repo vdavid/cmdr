@@ -407,8 +407,9 @@ jobs:
   # Red-run issue
   # ===========================================
   # A red run on `main` opens one issue labeled `slow-checks` (or comments on the open one), and
-  # a fully green run closes it, so the issue's state is the workflow's. GitHub's failure email
-  # alone let this workflow stay red for four weeks (2026-10-13 to 2026-11-05). The board's
+  # a fully green run closes it, so the issue's state is the workflow's. With nothing but GitHub's
+  # failure email (which is off), this workflow stayed red for four weeks (2026-10-13 to
+  # 2026-11-05); the API server's digest now flags a red run too (`docs/tooling/ci.md`). The board's
   # "Auto-add to project" workflow puts the issue on the backlog board. A cancelled run says
   # nothing (`!cancelled()`); a timed-out job reads as `failure`. Branch dispatches stay out
   # (`refs/heads/main`), since a branch's red says nothing about `main`.
