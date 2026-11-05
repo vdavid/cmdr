@@ -89,7 +89,10 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
 - `notMatch` (optional): patterns in the same syntax as `match`. A key whose English hits one doesn't count for this
   concept, in the brief and the drift check alike. This is where an ENGLISH-sense exclusion goes ("come back" isn't the
   Back button, "apps like TextEdit" isn't the Like action), written once for every locale. A locale's `exceptions` are
-  only for deviations specific to that language.
+  only for deviations specific to that language. When no phrase tells the senses apart (the bare label `Archive` names
+  the zip noun in one key and archiving a chat in another), an entry can be `{ "key": "<message key>", "why": "…" }`
+  instead of a form: it excludes that one key, which must exist in the English catalog. An `exceptions` entry for that
+  key then turns stale, so drop it.
 - `sense` (required): one sentence, what this concept means in Cmdr. Split one English word into several concepts when
   it has several senses (`browse-file-picker` vs `browse-archive`), give each a `match` as specific as possible (they
   may overlap; the brief shows both), and link them with `distinct`.
@@ -351,6 +354,9 @@ doc-citation check".
   new concepts to `<tag>/concepts-proposed.json` instead (same schema), and one agent merges them into `concepts.json`
   afterwards, so they don't collide on the shared file.
 - New or changed ruling: edit the entry in place in `terms.json`; a replaced form moves to `avoid` with its reason.
+  Seeding or changing one, read the locale's rulings for the concept's `distinct` siblings too (`select`, `deselect`,
+  `invert-selection`) and make them share one root word, fixing the outlier in the same pass: uk's first pass ruled the
+  three apart.
 - A key whose English uses the concept but whose translation rightly doesn't use the ruling: add it to that term's
   `exceptions` with the reason.
 - An everyday synonym that reads better in running prose (never in a name): the ruling's `proseAccept`.

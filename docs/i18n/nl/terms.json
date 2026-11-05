@@ -130,7 +130,7 @@
     "sources": "general NL; catalog throughout (askCmdr.error.notConfigured)"
   },
   "ai-reply": {
-    "accept": ["antwoorden"],
+    "accept": ["antwoorden", "antwoordde"],
     "chosen": "antwoord",
     "confidence": "tentative",
     "forms": "het antwoord; an AI answer and a server reply are both antwoord in this catalog",
@@ -271,10 +271,10 @@
         "why": "macOS's accept-something sense; approving grants permission"
       }
     ],
-    "chosen": "Goedkeuren",
+    "chosen": "goedkeuren",
     "confidence": "high",
     "decision": "AI-suggesties",
-    "forms": "suggested-ops buttons are bare-stem imperatives like every Cmdr button: the approve button names its action (Verplaats {countText} bestanden), the reject button is Weiger; in prose goedkeuren, Na goedkeuring",
+    "forms": "the prose verb; never an infinitive button. Suggested-ops buttons are bare-stem imperatives like every Cmdr button: the approve button names its action (Verplaats {countText} bestanden), a bare approve button reads Keur goed, the reject button is Weiger; in prose goedkeuren, Na goedkeuring",
     "sources": "MS / standard NL"
   },
   "archive": {
@@ -288,10 +288,6 @@
     "accept": ["gearchiveerd", "Uit archief halen", "archiveren"],
     "chosen": "Archiveer",
     "confidence": "tentative",
-    "exceptions": {
-      "fileExplorer.list.rowKind.archive": "English sense: a zip-style archive file (the archive concept, archief), not hiding a chat.",
-      "suggestedOps.facts.archive": "English sense: the NOUN label before the zip file a compress suggestion creates (the archive concept, archief), not hiding a chat."
-    },
     "forms": "button Archiveer; restore Uit archief halen (no single-word reverse verb); badge gearchiveerd",
     "sources": "coined from the settled noun archief; no pile source for this sense"
   },
@@ -800,9 +796,6 @@
     ],
     "chosen": "contextmenu",
     "confidence": "high",
-    "exceptions": {
-      "queryUi.recent.popoverHint": "Terse key-hint line: rechtsklik keeps it short next to the other hints."
-    },
     "forms": "Right-click <x> → Klik met de rechtermuisknop op <x>",
     "sources": "Double Commander (Toon contextmenu)"
   },
@@ -2787,13 +2780,6 @@
     "chosen": "vervangen",
     "confidence": "high",
     "sources": "macOS Finder (Replace → Vervang)"
-  },
-  "reply": {
-    "accept": ["antwoorden", "antwoordde"],
-    "chosen": "antwoord",
-    "confidence": "high",
-    "forms": "het antwoord van de server; answered without → antwoordde zonder",
-    "sources": "catalog (errors.write.replySignatureRefused.title Antwoord van de server geweigerd, errors.shareList.signatureInvalid)"
   },
   "report": {
     "accept": ["rapporten", "rapportdetails"],

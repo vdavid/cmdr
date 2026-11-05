@@ -270,10 +270,7 @@
         "form": "додаток",
         "why": "Russian-influenced (приложение); means an add-on in Ukrainian"
       }
-    ],
-    "exceptions": {
-      "settings.archives.bundle.description": "Matches the .app extension, not an app."
-    }
+    ]
   },
   "app-bundle": {
     "chosen": "пакет",
@@ -350,11 +347,7 @@
     "accept": ["архівува", "заархів", "з архіву", "в архів", "архівован"],
     "confidence": "high",
     "sources": "macOS live Mail MainMenu (Archive → Заархівувати), FinanceKitUI (Archive → В архів, Unarchive → З архіву); MS (archive → архівувати)",
-    "note": "Unarchive → Повернути з архіву.",
-    "exceptions": {
-      "suggestedOps.facts.archive": "the noun «Архів» labels an archive FILE (a .zip a compress suggestion creates), the archive concept, not the chat-archiving verb; matches fileExplorer.list.rowKind.archive «архів»",
-      "fileExplorer.list.rowKind.archive": "A zip-style archive file, not an archived chat."
-    }
+    "note": "Unarchive → Повернути з архіву."
   },
   "ask": {
     "chosen": "Питати",
@@ -385,10 +378,6 @@
     "accept": ["вкладен", "вклас", "вкладі", "вкладе", "дода"],
     "confidence": "high",
     "sources": "macOS live Notes (Attachment → Вкладення, Attach → Вкласти), Feedback Assistant (Attachments → Вкладення); MS (attachment → вкладення)",
-    "exceptions": {
-      "settings.updates.attachEmailToReports.label": "adds the user's email to a diagnostic report, not an Ask Cmdr attachment; follows common.attachEmailPrompt (додати)",
-      "settings.updates.emailPrivacyNote": "adds the user's email to a diagnostic report, not an Ask Cmdr attachment; follows common.attachEmailPrompt (додати)"
-    },
     "note": "Added «дода» (b05): attaching an email address reads «додати е‑адресу» (common.attachEmailPrompt, errorReporter.amend.description); «вкласти» stays for attaching files and logs (crashReporter.sentToast.sendLog «Вкласти журнали»)."
   },
   "attribute": {
@@ -537,11 +526,7 @@
     "accept": ["перегляд", "переглян"],
     "confidence": "high",
     "sources": "MS (browse → переглядати); macOS live Bluetooth File Exchange (Browse → Перегляд)",
-    "note": "Stepping into an archive or a phone to list it is also переглядати (переглядати архів як папку).",
-    "exceptions": {
-      "settings.adb.browse": "the file-picker button «Browse…» follows the browse-file-picker ruling «Огляд…» (macOS)",
-      "servers.sheet.browse": "The file-picker button, which is the browse-file-picker concept («Огляд…», as settings.adb.browse); the browse concept co-matches the English word."
-    }
+    "note": "Stepping into an archive or a phone to list it is also переглядати (переглядати архів як папку)."
   },
   "browse-file-picker": {
     "chosen": "Огляд…",
@@ -930,9 +915,6 @@
     "accept": ["контекстн", "правою кнопкою"],
     "confidence": "high",
     "sources": "macOS Finder AX13.1 (Show Contextual Menu → Показати контекстне меню), live ExtensionKitSettings (context menus in Finder → контекстних меню в Finder); MS (context menu → контекстне меню); DC",
-    "exceptions": {
-      "queryUi.recent.popoverHint": "«right-click to remove» names the mouse gesture, not a menu: «клацніть правою кнопкою»"
-    },
     "note": "Added «правою кнопкою» (b25): a right-click instruction («Клацніть сервер правою кнопкою й виберіть…», servers.pinHint.body) names the gesture, not the menu, and adding «у контекстному меню» there would only pad the sentence."
   },
   "context-window": {
@@ -1962,13 +1944,7 @@
     "chosen": "глобальний",
     "accept": ["глобальн"],
     "confidence": "high",
-    "sources": "macOS live CoreUSDEdit (Global → Глобальний), CoreAudioKit (Global → Глобальні); MS (global → глобальний)",
-    "exceptions": {
-      "downloads.toast.inAppHint": "English «In-app» means inside Cmdr, the opposite of global; the concept matched the word «app», not «global».",
-      "downloads.toast.summaryInApp": "English «in-app» means inside Cmdr, the opposite of global; the concept matched the word «app», not «global».",
-      "settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": "\"In-app\" matched via \"app\"; it means inside Cmdr, not global.",
-      "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "\"In-app\" matched via \"app\"; it means inside Cmdr, not global."
-    }
+    "sources": "macOS live CoreUSDEdit (Global → Глобальний), CoreAudioKit (Global → Глобальні); MS (global → глобальний)"
   },
   "go-back": {
     "chosen": "Назад",
@@ -2288,10 +2264,7 @@
     "chosen": "щойно",
     "accept": ["щойно"],
     "confidence": "high",
-    "sources": "macOS live Freeform TSUtility (Just now → Щойно), Maps (Just Now → Щойно)",
-    "exceptions": {
-      "onboarding.stepBeta.signup.unreachable": "English «just now» there means «at the moment» («Зараз»), not the relative-time label"
-    }
+    "sources": "macOS live Freeform TSUtility (Just now → Щойно), Maps (Just Now → Щойно)"
   },
   "keep": {
     "chosen": "залишити",
@@ -2698,10 +2671,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged MV12 and AppKit SavePanel (Move → Перемістити); MS; Double Commander (Move → Перемістити)",
-    "exceptions": {
-      "queryUi.recent.popoverHint": "«↑↓ to move» is cursor movement in a list (the concept excludes it): «переходити»"
-    }
+    "sources": "macOS Finder LocalizableMerged MV12 and AppKit SavePanel (Move → Перемістити); MS; Double Commander (Move → Перемістити)"
   },
   "move-to-trash": {
     "chosen": "Перемістити в Смітник",
@@ -3063,19 +3033,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged N30 (permission settings → привілеї; Sharing & Permissions → «Спільний доступ і привілеї»), InfoWindowPermissionsView 142 (Немає інформації про привілеї); live ErrnoErrors (Permission denied → Доступ заборонено); Dolphin (Permissions → Права доступу)",
-    "exceptions": {
-      "onboarding.stepFda.firstAsk.explain": "macOS privacy consent (TCC), not file-system rights: the avoid note itself routes this sense to дозвіл",
-      "onboarding.stepFda.granted.hint": "macOS privacy consent (TCC), not file-system rights: the avoid note itself routes this sense to дозвіл",
-      "onboarding.stepFda.postAction.intro": "macOS privacy consent (TCC), not file-system rights: the avoid note itself routes this sense to дозвіл",
-      "onboarding.stepFda.pro.body": "macOS privacy consent (TCC), not file-system rights: the avoid note itself routes this sense to дозвіл",
-      "onboarding.stepAi.bannerBody.denied": "macOS privacy consent (TCC), not file-system rights: the avoid note itself routes this sense to дозвіл",
-      "onboarding.stepOptional.networking.desc": "macOS privacy consent (TCC), not file-system rights: the avoid note itself routes this sense to дозвіл",
-      "errors.listing.notPermitted.explanation": "The English «permissions» here is macOS privacy access (TCC: Files and Folders, Full Disk Access), the access concept, so «потрібного доступу»; «привілеї» would read as Finder's file-system rights.",
-      "errors.listing.noPermissionErrno.explanation": "Same: macOS deciding which apps may open which folders is privacy access, so «Cmdr не має доступу до папки…»; the suggestion beside it keeps «привілеї» for the Finder rights.",
-      "errors.listing.permissionDenied.explanation": "macOS privacy access (TCC), not file-system rights: «не має доступу», byte-identical with the shipped errors.listing.noPermissionErrno.explanation.",
-      "errors.listing.emptyRootICloud.explanation": "«granting Cmdr that permission» is Full Disk Access, macOS privacy access (TCC), so «надати Cmdr цей доступ», as in errors.listing.notPermitted.explanation; «привілеї» would read as Finder's file-system rights."
-    }
+    "sources": "macOS Finder LocalizableMerged N30 (permission settings → привілеї; Sharing & Permissions → «Спільний доступ і привілеї»), InfoWindowPermissionsView 142 (Немає інформації про привілеї); live ErrnoErrors (Permission denied → Доступ заборонено); Dolphin (Permissions → Права доступу)"
   },
   "personal-data": {
     "chosen": "особисті дані",
@@ -3517,12 +3475,6 @@
     "accept": ["замін"],
     "confidence": "high",
     "sources": "macOS AppKit Replace → «Замінити», Replace All → «Замінити всі»; Finder BulkRename «Замінити на:»"
-  },
-  "reply": {
-    "chosen": "відповідь",
-    "accept": ["відповід"],
-    "confidence": "high",
-    "sources": "macOS AppKit reply → «відповісти»; live NotificationCenter Reply → «Відповісти»; MS reply → «відповідь»"
   },
   "report": {
     "chosen": "звіт",
@@ -4270,12 +4222,7 @@
     "accept": ["сховищ"],
     "forms": "«хмарне сховище», «сховище телефону»",
     "confidence": "high",
-    "sources": "macOS live CoreTypes Storage → «Сховище», FinderKit Cloud Storage → «Хмарне сховище», System Settings Storage → «Сховище»",
-    "exceptions": {
-      "settings.advanced.maxLogStorageMb.description": "«log storage» here is the act of keeping logs on disk (зберігання журналу), not a storage space (сховище); matches commands.handler.viewDebugLog.disabled «Зберігання журналу вимкнено»",
-      "settings.applier.logStorageRestart": "«log storage» is keeping logs on disk (зберігання журналу), not a storage space; same as b30 exception for settings.advanced.maxLogStorageMb.description",
-      "commands.handler.viewDebugLog.disabled": "\"Log storage\" is the act of keeping logs (зберігання), not a storage place."
-    }
+    "sources": "macOS live CoreTypes Storage → «Сховище», FinderKit Cloud Storage → «Хмарне сховище», System Settings Storage → «Сховище»"
   },
   "store": {
     "chosen": "зберігати",

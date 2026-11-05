@@ -171,9 +171,6 @@
   "app": {
     "chosen": "ứng dụng",
     "confidence": "high",
-    "exceptions": {
-      "settings.archives.bundle.description": "English-sense: `.app` is a filename extension here, kept verbatim."
-    },
     "sources": "macOS Finder (Ứng dụng)"
   },
   "app-bundle": {
@@ -252,10 +249,6 @@
     ],
     "chosen": "Lưu trữ",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.list.rowKind.archive": "English-sense: the zip-file row kind (concept `archive`), not a chat; `tệp nén` carries it.",
-      "suggestedOps.facts.archive": "English-sense: the zip file a compress suggestion creates (concept `archive`), not a chat; `Tệp nén`."
-    },
     "forms": "archive → Lưu trữ, archived → đã lưu trữ, unarchive → Bỏ lưu trữ",
     "sources": "macOS Finder AR40 (Archive → Lưu trữ); Bỏ lưu trữ mirrors Gmail/Zalo (tentative)"
   },
@@ -3702,19 +3695,7 @@
     "chosen": "câu trả lời",
     "confidence": "high",
     "forms": "the AI's reply → câu trả lời của AI; a server's reply is the respond concept (phản hồi), not this one",
-    "sources": "catalog (askCmdr.error.unfinishedReply, ai.translateError.parseError.title, askCmdr.softCap.message, ai.cloudConsent.logsNote)",
-    "exceptions": {
-      "securityNotices.smbSignatureRefused.body": "English-sense: the reply is an SMB server's signed response (respond concept, phản hồi), not an AI reply"
-    }
-  },
-  "reply": {
-    "chosen": "câu trả lời",
-    "confidence": "high",
-    "forms": "the AI's reply → câu trả lời; a server's reply is the respond concept (phản hồi), not this one",
-    "sources": "catalog (askCmdr.error.unfinishedReply Câu trả lời chưa hoàn tất được, ai.translateError.parseError.title)",
-    "exceptions": {
-      "securityNotices.smbSignatureRefused.body": "English-sense: the reply is an SMB server's signed response (respond concept, phản hồi), not an AI reply"
-    }
+    "sources": "catalog (askCmdr.error.unfinishedReply, ai.translateError.parseError.title, askCmdr.softCap.message, ai.cloudConsent.logsNote)"
   },
   "reasoning-effort": {
     "chosen": "Mức nỗ lực suy luận",

@@ -288,10 +288,6 @@
     ],
     "chosen": "存档",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.list.rowKind.archive": "A zip-style archive file (the archive concept), not a chat: 压缩文件, matching fileExplorer.archiveEnterMenu.ariaLabel.",
-      "suggestedOps.facts.archive": "The noun label before the zip a compress suggestion creates (the archive concept), not a chat: 压缩文件, like fileExplorer.list.rowKind.archive."
-    },
     "forms": "unarchive 取消存档; the badge 已存档",
     "sources": "MS terminology (archive → 存档)"
   },
@@ -1311,9 +1307,6 @@
     ],
     "chosen": "无法",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.network.reconnect.finalAttempt": "\"if it fails\" reads as the calm 若仍不成功."
-    },
     "forms": "Couldn't X → 无法 X; a one-off miss → 没能 X; a second clause after a wrapper that already spent 无法 → 没法",
     "sources": "style.md"
   },
@@ -1654,13 +1647,6 @@
     ],
     "chosen": "分组",
     "confidence": "tentative",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHome": "Quotes Apple’s System Settings pane 用户与群组 exactly (verified on macOS 27.0.1 (26A434), UsersGroups.appex InfoPlist.loctable, 2026-11-05).",
-      "servers.sheet.nfsGid": "A Unix file group, not a group of rows: 群组 ID, Finder's own word for a permission group (Get Info 选择新用户或群组, IN_S20.1) and Synology DSM's 用户与群组.",
-      "servers.sheet.nfsOtherGids": "Same Unix group as servers.sheet.nfsGid, so the field reads 其他群组 ID right under 群组 ID.",
-      "servers.sheet.nfsOtherGidsNotIds": "Same Unix group as servers.sheet.nfsGid; names that field's 群组 ID.",
-      "servers.sheet.nfsOtherGidsTooMany": "Same Unix group as servers.sheet.nfsGid; counts what that field calls 群组."
-    },
     "forms": "a named group takes the quoted name before it (“网络”分组); the servers found nearby → 附近服务器分组",
     "sources": "catalog (servers.pinHint.title); macOS Finder zh-CN MenuBar (Group By → 分组方式, Use Groups → 使用群组), verified on macOS 27.0 (26A428), live bundle, 2026-09-30"
   },
@@ -3982,12 +3968,6 @@
     "confidence": "high",
     "forms": "an administrator password → 管理员密码; administrator rights → 管理员权限",
     "sources": "MS terminology (系统管理员密码); the catalog's 8 uses (管理员权限, 管理员密码)"
-  },
-  "reply": {
-    "chosen": "回复",
-    "confidence": "high",
-    "forms": "a server's reply → 服务器的回复 (这个回复); an Ask Cmdr answer → 回复",
-    "sources": "MS terminology (reply → 回复, \"to answer a message\"); the catalog's 16 uses"
   },
   "ai-reply": {
     "chosen": "回复",

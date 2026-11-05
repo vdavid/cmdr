@@ -68,10 +68,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS SystemSettings/Finder (Aplikace, O aplikaci Finder, Otevřít v aplikaci); Nautilus; MS (aplikace)",
-    "exceptions": {
-      "settings.archives.bundle.description": ".app is a file extension here, not the word app"
-    }
+    "sources": "macOS SystemSettings/Finder (Aplikace, O aplikaci Finder, Otevřít v aplikaci); Nautilus; MS (aplikace)"
   },
   "appearance": {
     "chosen": "vzhled",
@@ -247,10 +244,7 @@
     "accept": ["dokonč"],
     "forms": "verb → dokončit; status → Dokončeno",
     "confidence": "high",
-    "sources": "macOS SystemSettings (Dokončené); MS (dokončeno)",
-    "exceptions": {
-      "fileExplorer.folderSizes.unreadable": "English „incomplete“ (a partial size) matches the stem; Czech says neúplná, not the finish-an-operation verb dokončit."
-    }
+    "sources": "macOS SystemSettings (Dokončené); MS (dokončeno)"
   },
   "compress": {
     "chosen": "komprimovat",
@@ -290,13 +284,6 @@
     "forms": "f.: in the context menu → v místní nabídce; right-click menu → nabídka po kliknutí pravým tlačítkem",
     "confidence": "high",
     "sources": "Total Commander (místní nabídka pro soubor pod kurzorem); MS (místní nabídka / kontextová nabídka); Dolphin (Místní nabídka); macOS KeyboardSettings (z místní nabídky); Thunar has Kontextová nabídka",
-    "exceptions": {
-      "errors.listing.diskFullErrno.suggestion": "right-click is an action here (klikněte pravým tlačítkem); no menu is named",
-      "errors.listing.noPermissionErrno.suggestion": "right-click is an action here (klikněte na ni pravým tlačítkem); no menu is named",
-      "errors.listing.permissionDenied.suggestion": "right-click is an action here (klikněte na složku pravým tlačítkem); no menu is named",
-      "errors.listing.storageFull.suggestion": "right-click is an action here (klikněte pravým tlačítkem); no menu is named",
-      "queryUi.recent.popoverHint": "right-click removes the entry directly; no menu opens, so místní nabídka would be wrong."
-    },
     "note": "Right-click to … in a tooltip → … v místní nabídce po kliknutí pravým tlačítkem (fileExplorer.navigation.favoriteTooltip)."
   },
   "continue": {
@@ -1065,10 +1052,7 @@
     "accept": ["přesun", "přesouv", "přesuň"],
     "forms": "command → Přesunout… (F6); Move here → Přesunout sem; progress → Přesouvání…; result → Přesunuto; noun → přesun",
     "confidence": "high",
-    "sources": "macOS Finder/AppKit (Přesunout, Přesouvání „^1“ do „^2“, Příprava přesunu); Total Commander (Přesunout F6); Double Commander (Přesunout); Thunar; MS",
-    "exceptions": {
-      "queryUi.recent.popoverHint": "↑↓ to move is cursor movement in a list, not relocating files; rendered pohyb."
-    }
+    "sources": "macOS Finder/AppKit (Přesunout, Přesouvání „^1“ do „^2“, Příprava přesunu); Total Commander (Přesunout F6); Double Commander (Přesunout); Thunar; MS"
   },
   "move-to-trash": {
     "chosen": "přesunout do koše",
@@ -1742,12 +1726,7 @@
     "accept": ["úložišt"],
     "forms": "n.: phone storage → úložiště telefonu; cloud storage → cloudové úložiště",
     "confidence": "high",
-    "sources": "macOS CoreTypes/SystemSettings (Storage → Úložiště); MS (úložiště, úložiště telefonu)",
-    "exceptions": {
-      "commands.handler.viewDebugLog.disabled": "Log storage is the act of keeping logs: Ukládání protokolů je vypnuté",
-      "settings.advanced.maxLogStorageMb.description": "Log storage is the act of keeping logs: ukládání protokolů (as commands.handler.viewDebugLog.disabled)",
-      "settings.applier.logStorageRestart": "log storage is the act of saving logs (ukládání protokolů), matching commands.handler.viewDebugLog.disabled"
-    }
+    "sources": "macOS CoreTypes/SystemSettings (Storage → Úložiště); MS (úložiště, úložiště telefonu)"
   },
   "subfolder": {
     "chosen": "podsložka",
@@ -3432,13 +3411,7 @@
     "accept": ["globáln", "v celém systému"],
     "forms": "adj.: Global shortcut → globální klávesová zkratka; system-wide → v celém systému",
     "confidence": "high",
-    "sources": "Microsoft terminology (global → globální); Double Commander (globální nastavení)",
-    "exceptions": {
-      "downloads.toast.inAppHint": "In-app is the opposite scope of global; V aplikaci, as settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp.",
-      "downloads.toast.summaryInApp": "In-app is the opposite scope of global; v aplikaci, no global word belongs.",
-      "settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": "In-app is the opposite scope of global: V aplikaci, no global word belongs.",
-      "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "In-app is the opposite scope of global: V aplikaci, like its downloads twin."
-    }
+    "sources": "Microsoft terminology (global → globální); Double Commander (globální nastavení)"
   },
   "group": {
     "chosen": "skupina",
@@ -3810,14 +3783,6 @@
     "forms": "option suffix → (doporučeno); Recommended: on → Doporučeno: zapnuto",
     "confidence": "high",
     "sources": "macOS cs (Doporučené, Doporučení); MS (Recommended → Doporučené)"
-  },
-  "reply": {
-    "chosen": "odpověď",
-    "accept": ["odpov", "odpověď", "odpověd"],
-    "forms": "f.: noun → odpověď; verb → odpovědět; so we can reply → abychom vám mohli odpovědět",
-    "confidence": "high",
-    "sources": "MS terminology (reply → odpovědět, odpověď)",
-    "note": "Same word as ai-reply; the user-side answer concept is the verb odpovědět."
   },
   "review": {
     "chosen": "posoudit",

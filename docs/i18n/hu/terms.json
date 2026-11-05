@@ -324,11 +324,7 @@
     "forms": "unarchive → Archiválás visszavonása (tentative); the badge → Archivált",
     "confidence": "high",
     "sources": "ms (archive verb → archivál, a separate entry from the zip-archive noun); Gmail hu",
-    "note": "Distinct from the zip-archive noun archívum.",
-    "exceptions": {
-      "fileExplorer.list.rowKind.archive": "English sense: a zip-style archive file (the archive concept), not hiding a chat, so it takes the noun archívum.",
-      "suggestedOps.facts.archive": "English sense: the noun label before the zip file a compress suggestion creates (the archive concept), not hiding a chat, so it takes the noun Archívum."
-    }
+    "note": "Distinct from the zip-archive noun archívum."
   },
   "ask": {
     "chosen": "Rákérdezés",
@@ -2852,10 +2848,7 @@
     "accept": ["jogosultság", "jog", "hozzáférés"],
     "forms": "file-system rights → engedély; the FDA / privacy grant → jogosultság; Sharing & Permissions → Megosztás és jogok; permission denied → hozzáférés megtagadva",
     "confidence": "high",
-    "sources": "macOS Finder (N30/N32/NE43 Megosztás és jogok); ms",
-    "exceptions": {
-      "onboarding.stepFda.firstAsk.explain": "grant permission to this → ezt nem adja meg: the object is the access named just before."
-    }
+    "sources": "macOS Finder (N30/N32/NE43 Megosztás és jogok); ms"
   },
   "phone": {
     "chosen": "telefon",
@@ -3232,13 +3225,6 @@
     "forms": "Cmdr will replace it → A Cmdr lecseréli; replacing X with Y (a worked example) → X helyére Y kerül",
     "confidence": "high",
     "sources": "macOS Finder (Replace → Kicserélés, Csere)"
-  },
-  "reply": {
-    "chosen": "válasz",
-    "accept": ["válaszol"],
-    "forms": "the AI's replies → a válaszok; a server reply (SMB signing) → a szerver válasza, title Elutasított szerverválasz",
-    "confidence": "high",
-    "sources": "catalog (askCmdr.* A válasz nem fejeződött be; errors.volume.signatureInvalid A szerver válasza); macOS (Válasz)"
   },
   "report": {
     "chosen": "jelentés",

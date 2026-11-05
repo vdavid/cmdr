@@ -270,10 +270,6 @@
     "chosen": "Archiver",
     "confidence": "high",
     "decision": "Ask Cmdr",
-    "exceptions": {
-      "fileExplorer.list.rowKind.archive": "a zip-file row kind, the archive concept (archive), not a chat being archived",
-      "suggestedOps.facts.archive": "a label naming the archive file a compress suggestion creates, the archive noun, not a chat being archived"
-    },
     "forms": "badge Archivée (agrees with the implicit conversation); unarchive → Désarchiver (tentative, no pile hit)",
     "sources": "MS terminology FRA (archive verb → archiver)"
   },
@@ -603,7 +599,6 @@
       "errors.write.readError.suggestion": "English-sense: check the technical details means read them (consultez).",
       "errors.write.trashRefused.suggestion.other": "English-sense: check the technical details means read them (consultez).",
       "errors.write.writeError.suggestion": "English-sense: check the technical details means read them (consultez).",
-      "fileExplorer.navigation.driveIndex.tooltipCoalesced": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family.",
       "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family."
     },
     "forms": "Check that … → Vérifiez que …; Check for updates → Rechercher les mises à jour; Re-check (adb) → Rechercher à nouveau; checking (update check) → Recherche / vérification",
@@ -2114,7 +2109,6 @@
       "operationLog.summary.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "suggestedOps.approve.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "suggestedOps.reversible.moveBack": "Moving files back where they were is remettre à sa place, the put-back verb Finder uses (Remettre).",
-      "queryUi.recent.popoverHint": "English-sense: the arrow keys move the highlight, so naviguer.",
       "transfer.trash": "English-sense: moving to the trash is placer dans la corbeille."
     },
     "forms": "progress noun Déplacement (Déplacement vers {destination}); participles déplacé/déplacés",
@@ -2788,12 +2782,6 @@
     "chosen": "Remplacer",
     "confidence": "high",
     "sources": "macOS Finder (« Souhaitez-vous le remplacer… »)"
-  },
-  "reply": {
-    "chosen": "réponse",
-    "confidence": "high",
-    "forms": "an AI reply → la réponse (Une nouvelle conversation garde les réponses rapides); a server’s reply is the same word (La réponse du serveur n’était pas signée)",
-    "sources": "catalog: askCmdr.softCap.message, askCmdr.error.unfinishedReply, errors.volume.signatureInvalid"
   },
   "report": {
     "chosen": "rapport",

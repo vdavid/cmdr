@@ -145,6 +145,7 @@
   "ai-reply": {
     "chosen": "svar",
     "confidence": "high",
+    "decision": "Ask Cmdr chat",
     "forms": "neuter ett svar, svaret; a server's reply takes the same word (Serverns svar)",
     "sources": "MS terminology (reply → svar); catalog (Serverns svar, svaret)"
   },
@@ -302,10 +303,6 @@
     "accept": ["avarkivera"],
     "chosen": "arkivera",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.list.rowKind.archive": "English sense: a zip-like archive file (the archive concept, arkiv), not archiving a chat; source-queue asks to move it to archive-chat's notMatch.",
-      "suggestedOps.facts.archive": "English sense: the NOUN label before the zip file a compress suggestion creates (the archive concept, arkiv), not archiving a chat."
-    },
     "forms": "Arkivera; badge Arkiverad; Visa/Göm arkiverade; unarchive → avarkivera (tentative, av- reversal like avmontera)",
     "sources": "MS terminology (archive verb → arkivera)"
   },
@@ -2794,13 +2791,6 @@
     },
     "note": "Where English replaced means overwrote, Swedish says skriver över.",
     "sources": "macOS Finder (Replace → Ersätt)"
-  },
-  "reply": {
-    "chosen": "svar",
-    "confidence": "high",
-    "decision": "Ask Cmdr chat",
-    "forms": "neuter ett svar, svaret; names the antecedent where English says it or this one",
-    "sources": "MS terminology (reply → svara)"
   },
   "report": {
     "chosen": "rapport",

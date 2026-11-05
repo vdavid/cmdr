@@ -218,11 +218,7 @@
     "accept": ["arquivad"],
     "forms": "Arquivar / Arquivado / Desarquivar",
     "confidence": "confirmed",
-    "sources": "MS terminology pt-BR (archive → arquivar, Archived → Arquivado)",
-    "exceptions": {
-      "fileExplorer.list.rowKind.archive": "The zip/tar file kind (concept archive), not a chat: arquivo compactado.",
-      "suggestedOps.facts.archive": "The archive file a compress suggestion creates (concept archive), not a chat: Arquivo compactado."
-    }
+    "sources": "MS terminology pt-BR (archive → arquivar, Archived → Arquivado)"
   },
   "ask": {
     "chosen": "Perguntar",
@@ -337,8 +333,6 @@
     "confidence": "high",
     "sources": "macOS Finder pt-BR VO (Navegar em visualização por colunas); Total Commander pt-BR",
     "exceptions": {
-      "servers.sheet.browse": "The file-picker button (browse-file-picker): Escolher…, as Apple labels it.",
-      "settings.adb.browse": "The file-picker button (browse-file-picker): Escolher…, as Apple labels it.",
       "settings.mediaIndex.networkVolumes.alwaysHelp": "Browsing a photo archive in passing is opening it: raramente abre."
     },
     "decision": "Archives"
@@ -2537,13 +2531,6 @@
     "accept": ["substitu"],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR conflict sheet (Substituir)"
-  },
-  "reply": {
-    "chosen": "resposta",
-    "accept": ["respostas", "respond"],
-    "confidence": "high",
-    "forms": "a server’s reply → a resposta do servidor",
-    "sources": "MS terminology pt-BR resposta; catalog (askCmdr, errors.write.replySignatureRefused.*)"
   },
   "report": {
     "chosen": "relatório",

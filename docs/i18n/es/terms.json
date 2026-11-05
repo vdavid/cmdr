@@ -260,10 +260,6 @@
     "accept": ["archivad", "Archivado"],
     "forms": "Archivar / Archivado / Desarchivar (tentative); distinct from archivo comprimido",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.list.rowKind.archive": "a zip file's spoken kind, the archive concept (archivo comprimido), not hiding a chat",
-      "suggestedOps.facts.archive": "labels the zip a compress suggestion creates, the archive concept (archivo comprimido), not hiding a chat"
-    },
     "sources": "MS terminology (archive → archivar, Archived → Archivado)"
   },
   "ask": {
@@ -518,7 +514,6 @@
     "confidence": "high",
     "sources": "macOS Finder (Comprobando…), SoftwareUpdate/Mail (Check Again → Comprobar de nuevo)",
     "exceptions": {
-      "fileExplorer.navigation.driveIndex.tooltipCoalesced": "A full index check is análisis in this catalog (el próximo análisis completo de Cmdr).",
       "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "A full index check is análisis in this catalog (el análisis que se está ejecutando ahora mismo)."
     },
     "decision": "Índice de unidades"
@@ -1306,9 +1301,6 @@
     ],
     "confidence": "high",
     "sources": "Cmdr voice rule (stricter than macOS, which says Error interno)",
-    "exceptions": {
-      "fileExplorer.network.reconnect.finalAttempt": "Voice rule: \"if it fails\" → si tampoco funciona."
-    },
     "decision": "Coherencia del termbase"
   },
   "favorites": {
@@ -2734,12 +2726,6 @@
     "accept": ["reemplaz", "sustitu"],
     "confidence": "high",
     "sources": "macOS Finder (Replace → Reemplazar)"
-  },
-  "reply": {
-    "chosen": "respuesta",
-    "accept": ["respuesta", "respuestas", "respond"],
-    "confidence": "high",
-    "sources": "macOS es (respuesta); Microsoft (reply → responder); catalog askCmdr.error.unfinishedReply"
   },
   "report": {
     "chosen": "informe",

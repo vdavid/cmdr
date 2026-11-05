@@ -340,9 +340,6 @@
   "archive-chat": {
     "chosen": "封存",
     "confidence": "high",
-    "exceptions": {
-      "suggestedOps.facts.archive": "English sense: the NOUN label before the zip file a compress suggestion creates (the archive concept, 封存檔), not archiving a chat."
-    },
     "forms": "same word as the archive-file noun, unambiguous in context",
     "sources": "AP-TW = AP-HK (Archive → 封存)"
   },
@@ -3218,12 +3215,6 @@
     "confidence": "high",
     "note": "更新 stays the word for a software update.",
     "sources": "AP-TW App Store"
-  },
-  "reply": {
-    "chosen": "回覆",
-    "confidence": "high",
-    "forms": "a server's reply → 伺服器的回覆; a reply from {name} → 來自 {name} 的回覆; the AI's reply → 回覆",
-    "sources": "MS reply → 回覆; catalog errors.volume.signatureInvalid, errors.shareList.signatureInvalid, askCmdr (5 uses, 0 for 回應 in this sense)"
   },
   "replace": {
     "accept": ["換成", "換掉"],

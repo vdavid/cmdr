@@ -278,10 +278,6 @@
     "chosen": "archivieren",
     "confidence": "high",
     "decision": "Ask Cmdr (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
-    "exceptions": {
-      "fileExplorer.list.rowKind.archive": "English sense: the zip-file row kind (concept archive), not hiding a chat, so it's the noun Archiv",
-      "suggestedOps.facts.archive": "English sense: the noun label before the zip file a compress suggestion creates (concept archive), not hiding a chat, so it's the noun Archiv"
-    },
     "forms": "badge Archiviert; unarchive → Archivierung aufheben (mirrors Auswahl aufheben); Archivierte ausblenden",
     "note": "Archivierung aufheben is tentative: no direct unarchive source.",
     "sources": "MS terminology (archive → archivieren, archived → Archiviert)"
@@ -481,8 +477,6 @@
     "exceptions": {
       "commands.fileGoToTrash.description": "the drive you’re browsing → das Laufwerk, auf dem du gerade bist",
       "errors.listing.archiveNeedsPassword.suggestion": "to browse it → um hineinzuschauen",
-      "servers.sheet.browse": "English sense: the file-picker button is the browse-file-picker concept (proposed notMatch: =browse …, =browse...)",
-      "settings.adb.browse": "English sense: the file-picker button is the browse-file-picker concept (proposed notMatch: =browse …, =browse...)",
       "settings.mediaIndex.networkVolumes.alwaysHelp": "a photo archive you rarely browse → das du selten öffnest"
     },
     "forms": "Browse like a folder → Wie einen Ordner durchsehen; segmented cell Durchsehen; a phone → ein Android-Telefon durchsehen",
@@ -593,7 +587,6 @@
     "confidence": "high",
     "decision": "Ein englisches Wort, ein deutsches Wort: die Drift-Prüfung",
     "exceptions": {
-      "fileExplorer.navigation.driveIndex.tooltipCoalesced": "the check running now is der gerade laufende Durchlauf, the catalog word for a full check",
       "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "the check running now is der gerade laufende Durchlauf, the catalog word for a full check",
       "indexing.step.findFilesChangeCheck": "check against the index → mit dem Index verglichen, deliberately plain vergleichen over database-register abgleichen",
       "onboarding.stepOptional.updates.summary": "a tiny check → eine winzige Anfrage; the one-line summary has no room for a verb",
@@ -2867,13 +2860,6 @@
     "chosen": "ersetzen",
     "confidence": "high",
     "sources": "macOS Finder (Replace → Ersetzen)"
-  },
-  "reply": {
-    "accept": ["Antworten"],
-    "chosen": "Antwort",
-    "confidence": "high",
-    "note": "also a network server's reply (SMB signing): Antwort des Servers, as errors.volume.signatureInvalid writes it",
-    "sources": "Microsoft Terminology (reply → Antwort); catalog (errors.volume.signatureInvalid, askCmdr.error.unfinishedReply)"
   },
   "report": {
     "accept": ["Berichte"],

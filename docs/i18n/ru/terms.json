@@ -305,10 +305,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder KIND_FORMATTER_20_1 (App → Приложение), Localizable (Apps → Приложения); MS (app → приложение); Nautilus (Program → Приложение)",
-    "exceptions": {
-      "settings.archives.bundle.description": "\".app\" here is a file extension, kept verbatim; the row label above names the kind («Пакеты приложений»)."
-    }
+    "sources": "macOS Finder KIND_FORMATTER_20_1 (App → Приложение), Localizable (Apps → Приложения); MS (app → приложение); Nautilus (Program → Приложение)"
   },
   "app-bundle": {
     "chosen": "пакет",
@@ -600,11 +597,7 @@
     "accept": ["просм"],
     "forms": "Browse like a folder → Просматривать как папку; the drive you're browsing → просматриваемый диск; Enter the password to browse it → для просмотра",
     "confidence": "high",
-    "sources": "macOS Finder ConnectToWindow 48.title (Browse → Просмотреть); MS (browse → просмотреть)",
-    "exceptions": {
-      "settings.adb.browse": "The Browse… button opens a file picker: that's the browse-file-picker concept, whose ruling is «Обзор…».",
-      "servers.sheet.browse": "The Browse… button opens a file picker (browse-file-picker sense), not browsing a folder; «Обзор…» is the standard Russian picker button. Better fixed once by adding browse… to the concept's notMatch."
-    }
+    "sources": "macOS Finder ConnectToWindow 48.title (Browse → Просмотреть); MS (browse → просмотреть)"
   },
   "browse-file-picker": {
     "chosen": "Обзор…",
@@ -1307,10 +1300,7 @@
     "confidence": "high",
     "sources": "macOS Finder (в папке назначения, целевой том, на диске назначения); Nautilus (Место назначения не является папкой); MS (destination → назначение)",
     "note": "A symlink's target is цель ссылки (Thunar), a different sense.",
-    "proseAccept": ["мест"],
-    "exceptions": {
-      "fileOperations.delete.symlinkNoticeSingle": "'target' is a symlink's target, not a transfer destination; phrased as «то, на что она указывает», like its sibling symlinkNoticeMany."
-    }
+    "proseAccept": ["мест"]
   },
   "details": {
     "chosen": "Подробнее",
@@ -2585,9 +2575,6 @@
     "chosen": "только что",
     "accept": ["только что", "сейчас"],
     "note": "Couldn’t X just now (a passing failure) → «Сейчас не удалось X».",
-    "exceptions": {
-      "onboarding.stepBeta.signup.unreachable": "The retry advice that follows («снова нажмите … через минуту») already marks the failure as passing."
-    },
     "confidence": "high",
     "sources": "macOS live (ControlCenter Just now → Только что; FindMy Just Now)"
   },
@@ -4106,13 +4093,6 @@
     "forms": "the conflict button → «Заменить»; replaced → заменен",
     "confidence": "high",
     "sources": "macOS AppKit SavePanel Replace → «Заменить», NSFindPanel Replace → «Заменить»; Double Commander and GNOME Nautilus Replace → «Заменить»"
-  },
-  "reply": {
-    "chosen": "ответ",
-    "accept": ["ответ", "отвеча"],
-    "forms": "The reply didn't finish → Ответ не завершен; keeps replies fast → поможет отвечать быстро",
-    "confidence": "high",
-    "sources": "MS reply (noun) → «ответ», reply (verb) → «ответить»; macOS live Reply → «Ответить»"
   },
   "report": {
     "chosen": "отчет",

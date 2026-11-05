@@ -109,8 +109,9 @@
   "ai-plan": {
     "distinct": ["upgrade"],
     "en": "plan",
-    "match": ["your plan", "bigger plan"],
-    "sense": "The paid or free tier a person has with an AI provider (Mistral's free plan), which sets its quota and which models it serves. Never a rename plan Ask Cmdr prepares."
+    "match": ["your plan", "bigger plan", "upgrade your plan"],
+    "note": "Upgrading a provider plan (\"upgrade your plan\") belongs here, never to the `upgrade` concept, which is a Cmdr license; a future provider-plan phrasing gets a `match` form here and a `notMatch` there.",
+    "sense": "The paid or free tier a person has with an AI provider (Mistral's free plan), which sets its quota and which models it serves, including upgrading it. Never a rename plan Ask Cmdr prepares."
   },
   "ai-provider": {
     "distinct": ["cloud-provider", "service"],
@@ -123,13 +124,22 @@
     "distinct": ["answer", "respond"],
     "en": "reply",
     "match": ["reply", "replies"],
-    "notMatch": ["so we can reply", "a reply from", "server reply", "server's reply", "trust the reply"],
-    "sense": "An Ask Cmdr assistant answer, or an AI provider response."
+    "note": "A server's reply (an SMB server's signed response) is not this concept.",
+    "notMatch": [
+      "so we can reply",
+      "a reply from",
+      "server reply",
+      "server's reply",
+      "trust the reply",
+      "the reply didn't carry"
+    ],
+    "sense": "The AI's answer in an Ask Cmdr chat, an AI provider response, or a logged model response."
   },
   "ai-lookup": {
-    "distinct": ["ai-tool"],
+    "distinct": ["ai-tool", "search"],
     "en": "lookup (AI)",
     "match": ["lookup", "lookups"],
+    "note": "Keep it distinct from the search concept (⌘F, the search a lookup may run): the `askCmdr.limit.*` copy counts lookups, and a locale that renders both with one word blurs what the limit counts.",
     "notMatch": ["network discovery, lookup"],
     "sense": "One call the Ask Cmdr assistant makes to look something up (list a folder, search), as the chat rail names it; a round runs one or more of them."
   },
@@ -211,7 +221,7 @@
     "distinct": ["applications-folder", "app-bundle"],
     "en": "app",
     "match": ["app", "apps"],
-    "notMatch": ["app bundle", "app bundles", "app switcher", "app store"],
+    "notMatch": ["app bundle", "app bundles", "app switcher", "app store", ".app"],
     "sense": "An application in general: Cmdr itself as \"the app\", another app on the Mac, the app that opens a file, a cloud provider's sync app."
   },
   "app-bundle": {
@@ -273,7 +283,12 @@
     "en": "archive (a chat)",
     "match": ["=archive", "archive chat", "archived", "unarchive"],
     "sense": "Hiding an Ask Cmdr chat from the active list, or restoring it (Gmail-style), with no compression involved.",
-    "notMatch": ["is archived", "archived in cold storage"]
+    "notMatch": [
+      "is archived",
+      "archived in cold storage",
+      { "key": "fileExplorer.list.rowKind.archive", "why": "the zip file's spoken row kind, the archive noun" },
+      { "key": "suggestedOps.facts.archive", "why": "labels the zip a compress suggestion creates, the archive noun" }
+    ]
   },
   "ask": {
     "en": "Ask",
@@ -320,6 +335,8 @@
   "attachment": {
     "en": "attachment",
     "match": ["attachment", "attachments", "attach", "attached"],
+    "note": "Adding the user's email or a log snippet to a crash or error report is a different act; a locale may use its plain \"add\" or \"include\" verb there.",
+    "notMatch": ["attach my email", "attach your email", "attach to a report", "attach logs", "attaching a snippet"],
     "sense": "A file or folder the user attaches to an Ask Cmdr question."
   },
   "attribute": {
@@ -384,8 +401,8 @@
     "en": "badge",
     "match": ["badge", "badges", "status badge", "status badges"],
     "notMatch": ["badges mark"],
-    "note": "Not the gamification sense some term bases give for badge.",
-    "sense": "A small overlay marker on a file icon or in the title bar showing a state."
+    "note": "Not the gamification sense some term bases give for badge. The typing badge shows in both typing modes, so never name it after the filter alone.",
+    "sense": "A small marker showing a state (an overlay on a file icon, a label in the title bar), or the small box in a pane that holds the text typed in the quick filter or Jump mode."
   },
   "batch": {
     "distinct": ["run"],
@@ -436,7 +453,7 @@
     "en": "browse",
     "match": ["browse", "browsing", "browses"],
     "note": "\"What you're browsing\" (whatever the pane shows) is the plain looking-at sense and may take a view verb.",
-    "notMatch": ["browse and vote", "browse the library", "browse snapshots"],
+    "notMatch": ["browse and vote", "browse the library", "browse snapshots", "browse…", "browse..."],
     "sense": "Moving through folders to look at what is there, including stepping into an archive, bundle, phone, or git ref and listing it like a folder."
   },
   "browse-file-picker": {
@@ -579,7 +596,8 @@
       "check the details",
       "worth checking",
       "check your provider",
-      "check in when",
+      "check in",
+      "checks in",
       "check your inbox",
       "check “remember this choice"
     ],
@@ -743,7 +761,15 @@
       "finishing compression",
       "finishing transfer"
     ],
-    "notMatch": ["and complete", "is complete", "isn't complete", "complete new", "complete file", "complete files"],
+    "notMatch": [
+      "and complete",
+      "is complete",
+      "isn't complete",
+      "complete new",
+      "complete file",
+      "complete files",
+      "may be incomplete"
+    ],
     "note": "A scan or an AI answer being finished may take a different word than a file operation; see the locale's note.",
     "sense": "An operation or a wizard reaching its end, or a rollback being finished."
   },
@@ -786,7 +812,8 @@
   },
   "context-menu": {
     "en": "context menu",
-    "match": ["context menu", "context menus", "right-click", "right click"],
+    "match": ["context menu", "context menus", "right-click menu", "right click menu"],
+    "note": "The bare gesture (\"Right-click a server and choose…\", \"right-click to remove\") is not this concept: render it the way the locale's macOS help names the click.",
     "sense": "The menu a right-click opens."
   },
   "context-window": {
@@ -852,7 +879,7 @@
     "distinct": ["password", "username"],
     "en": "credentials",
     "match": ["credentials"],
-    "sense": "A username and password pair used to sign in."
+    "sense": "Whatever proves who someone is to a server or service: a username and password pair, an access token, or a key file."
   },
   "current-folder": {
     "distinct": ["parent-folder"],
@@ -977,6 +1004,7 @@
     "en": "destination",
     "match": ["destination", "destinations", "destination folder", "target"],
     "note": "A symlink's target is a different sense (what the link points at).",
+    "notMatch": ["not its target", "not their target"],
     "sense": "Where a copy, move, or compress writes to."
   },
   "details": {
@@ -1178,8 +1206,9 @@
   "encrypted": {
     "distinct": ["password-protected"],
     "en": "encrypted",
-    "match": ["encrypted", "encryption"],
-    "sense": "An archive or entry protected with encryption."
+    "match": ["encrypted", "encryption", "encrypt", "encrypts"],
+    "note": "The verb (\"Cmdr encrypts its connections\", \"can't encrypt\") is this concept too: the locale's ruling should accept its verb stem.",
+    "sense": "Protecting data with encryption: an encrypted archive, entry, backup, or volume, and the encryption of an SMB connection, verb included."
   },
   "endpoint": {
     "en": "endpoint",
@@ -1255,7 +1284,7 @@
     "distinct": ["not-finished"],
     "en": "failed",
     "match": ["failed", "failure", "fails"],
-    "notMatch": ["failed our signature", "usually fails"],
+    "notMatch": ["failed our signature", "usually fails", "if it fails"],
     "sense": "Something didn't work. Cmdr's voice never labels it with a bare failure or error word."
   },
   "favorites": {
@@ -1551,7 +1580,8 @@
   },
   "global": {
     "en": "global",
-    "match": ["global", "system-wide", "in-app"],
+    "match": ["global", "system-wide"],
+    "note": "Its opposite, \"in-app\", is not this concept: render it as \"inside Cmdr\" or the locale's usual phrase.",
     "sense": "A keyboard shortcut scope that works everywhere on the Mac, as opposed to inside the app."
   },
   "go-back": {
@@ -1587,9 +1617,11 @@
     "sense": "Giving an app a permission (grant full disk access, grant Cmdr access)."
   },
   "group": {
+    "distinct": ["unix-group"],
     "en": "group",
     "match": ["group", "groups"],
-    "sense": "A labelled group of rows (the volume switcher's Network group), or a Unix file group."
+    "notMatch": ["group id", "group ids", "other groups", "users & groups"],
+    "sense": "A labelled group of rows or items (the volume switcher's Network group, a tool group in an Ask Cmdr answer)."
   },
   "guest": {
     "en": "guest",
@@ -1746,6 +1778,13 @@
     "note": "A full sentence and a grayed-out menu item's short state marker may differ.",
     "sense": "A volume, device, or file that something still has open."
   },
+  "include-in-approval": {
+    "distinct": ["select", "approve", "skip"],
+    "en": "Include",
+    "match": ["=include", "include all files"],
+    "note": "Never reuse the file-selection verb (the `select` concept): these boxes decide what an approval acts on, and the pane's selection is a different thing.",
+    "sense": "The tick boxes in an AI suggestion's file list that keep a file in, or leave it out of, the operation the user approves (the Include column, Include all files, Include a named file)."
+  },
   "incoming-connections": {
     "distinct": ["local-network"],
     "en": "incoming connections",
@@ -1838,9 +1877,9 @@
   },
   "just-now": {
     "en": "just now",
-    "match": ["just now"],
-    "sense": "The newest step of a relative-time label (just now, 5m ago).",
-    "notMatch": ["just now. try", "just now. make"]
+    "match": ["=just now", "suggested just now"],
+    "note": "\"Couldn't reach it just now\" (at the moment, a moment ago) is plain prose, not this label.",
+    "sense": "The newest step of a relative-time label (just now, 5m ago)."
   },
   "keep": {
     "distinct": ["leave-alone"],
@@ -1962,7 +2001,8 @@
     "en": "link",
     "match": ["link", "links"],
     "notMatch": ["symbolic link", "symbolic links", "symlink", "symlinks", "linked worktree", "link loop"],
-    "sense": "A hyperlink: a clickable reference in a document, or a shareable web address (a share link, a Google Drive link)."
+    "note": "The DFS sense (a folder in an SMB share that points to another server: `*.linkTargetUnreachable`, `*.linkNeedsConsent`, the SMB link sign-ins) shares the word: Windows and Samba call it a DFS link. A filesystem symlink is the `symlink` concept.",
+    "sense": "A reference that leads somewhere else: a hyperlink in a document, a shareable web address (a share link, a Google Drive link), or a DFS link in an SMB share that leads to a folder on another server."
   },
   "linux-distribution": {
     "en": "distribution",
@@ -2210,7 +2250,8 @@
       "=moved to of",
       "move focus",
       "keys move between",
-      "moves it up"
+      "moves it up",
+      "↑↓ to move"
     ],
     "sense": "Relocating files to another folder (F6)."
   },
@@ -2538,10 +2579,20 @@
     "sense": "A percentage, spelled out for screen readers."
   },
   "permission": {
-    "distinct": ["access", "allow"],
+    "distinct": ["access", "allow", "privacy-permission"],
     "en": "permission",
     "match": ["permission", "permissions", "permission denied"],
     "note": "Consent to share data is a different sense in some locales.",
+    "notMatch": [
+      "granted the right permissions",
+      "macos controls which apps",
+      "granting cmdr that permission",
+      "new permission",
+      "grant permission to this",
+      "for permissions to each folder",
+      "permission requests",
+      "macos permission dialog"
+    ],
     "sense": "File-system rights to read or change a file."
   },
   "personal-data": {
@@ -2626,6 +2677,22 @@
     "en": "Privacy & Security",
     "match": ["privacy & security", "privacy and security"],
     "sense": "The macOS System Settings pane."
+  },
+  "privacy-permission": {
+    "distinct": ["permission", "full-disk-access", "grant", "privacy-and-security"],
+    "en": "permission (macOS consent)",
+    "match": [
+      "granted the right permissions",
+      "macos controls which apps",
+      "granting cmdr that permission",
+      "new permission",
+      "grant permission to this",
+      "for permissions to each folder",
+      "permission requests",
+      "macos permission dialog"
+    ],
+    "note": "Use the word the locale's macOS uses in Privacy & Security and its consent alerts, never the file-system rights word of the `permission` concept (Finder's Sharing & Permissions).",
+    "sense": "A consent macOS asks for and an app holds (Full Disk Access, access to the Desktop or Downloads folder, Local Network), as opposed to a file's read and write rights."
   },
   "privacy-policy": {
     "en": "privacy policy",
@@ -2909,13 +2976,6 @@
     "match": ["replace", "replaces", "replaced", "replacing"],
     "sense": "Putting one thing in place of another (an existing file, an archive)."
   },
-  "reply": {
-    "distinct": ["answer"],
-    "en": "reply",
-    "match": ["reply", "replies"],
-    "notMatch": ["a reply from", "server reply", "server's reply", "so we can reply", "trust the reply"],
-    "sense": "The AI's answer in an Ask Cmdr chat, or a logged model response."
-  },
   "report": {
     "distinct": ["crash-report", "error-report"],
     "en": "report",
@@ -3117,7 +3177,7 @@
     "sense": "Moving a list's viewport."
   },
   "search": {
-    "distinct": ["query", "scan", "image-search", "search-match"],
+    "distinct": ["query", "scan", "image-search", "search-match", "ai-lookup"],
     "en": "search",
     "match": ["search", "searches", "searching", "searched"],
     "note": "The button that starts a search and the feature's name can take different forms.",
@@ -3244,7 +3304,7 @@
     "distinct": ["see", "open", "hide"],
     "en": "Show",
     "match": ["show", "shows", "showing", "shown", "show all", "show details"],
-    "notMatch": ["is shown in the list", "it shows what", "showing whether", "show up", "shows as"],
+    "notMatch": ["is shown in the list", "it shows what", "showing whether", "show up", "shows as", "shows how"],
     "sense": "Making something visible (Show hidden files, Show favorites, Show all)."
   },
   "show-in-finder": {
@@ -3362,6 +3422,13 @@
     "en": "slow",
     "match": ["slow", "slower", "slowly"],
     "sense": "A volume or connection that answers slowly."
+  },
+  "smb-negotiated-security": {
+    "distinct": ["signature", "encrypted", "settings"],
+    "en": "the security settings both sides agreed on",
+    "match": ["security settings it agreed on"],
+    "note": "Not the app's Settings and not the server's configuration: it's what the two ends settled on for this one connection. Render it as one fixed phrase across the family.",
+    "sense": "The security parameters a server and Cmdr settle on when an SMB connection opens (protocol version, signing, encryption), which the server must confirm afterwards; a server that doesn't makes Cmdr close the connection."
   },
   "snapshot": {
     "distinct": ["git-commit"],
@@ -3519,7 +3586,7 @@
     "en": "storage",
     "match": ["storage"],
     "sense": "Space to store data (a phone's storage, cloud storage, the Storage pane).",
-    "notMatch": ["google cloud storage", "cloud storage settings", "hetzner object storage"]
+    "notMatch": ["google cloud storage", "cloud storage settings", "hetzner object storage", "log storage"]
   },
   "store": {
     "distinct": ["save", "write"],
@@ -3822,10 +3889,18 @@
     "sense": "Something happened that Cmdr didn't anticipate."
   },
   "uninstall": {
-    "distinct": ["remove", "install"],
+    "distinct": ["remove", "install", "eject", "mount"],
     "en": "uninstall",
     "match": ["uninstall", "uninstalls", "uninstalled", "uninstalling"],
-    "sense": "Taking installed software off the Mac: Cmdr itself, or its “cmdr” terminal command. Distinct from removing an item from a list."
+    "note": "Some macOS locales use one word for uninstalling and unmounting (zh-CN 卸载); pick a form that can't read as unmounting a drive.",
+    "sense": "Removing installed software from the Mac: Cmdr itself, or its “cmdr” terminal command. Never unmounting or ejecting a drive, and distinct from removing an item from a list."
+  },
+  "unix-group": {
+    "distinct": ["group", "username"],
+    "en": "group (Unix)",
+    "match": ["group id", "group ids", "other groups", "users & groups"],
+    "note": "Users & Groups is the macOS System Settings pane: use its localized name.",
+    "sense": "A Unix user group, as file ownership and NFS identify a user by (a group ID, other group IDs), and the macOS Users & Groups pane that manages them."
   },
   "unknown": {
     "en": "unknown",
@@ -3846,14 +3921,15 @@
       "phone, unlock it",
       "unlock the device",
       "phone is unlocked",
-      "cable and unlock it"
+      "cable and unlock it",
+      "unlock your phone"
     ],
     "sense": "Opening something password-protected with its password: an archive, a restic backup, or the Keychain or a keyring."
   },
   "unlock-device": {
     "distinct": ["unlock"],
     "en": "unlock (a device)",
-    "match": ["phone, unlock it", "unlock the device", "phone is unlocked", "cable and unlock it"],
+    "match": ["phone, unlock it", "unlock the device", "phone is unlocked", "cable and unlock it", "unlock your phone"],
     "sense": "Unlocking a phone’s or other device’s screen so the Mac can reach its files."
   },
   "unplug": {
@@ -4112,7 +4188,7 @@
   },
   "type-to-jump": {
     "en": "Jump (typing mode)",
-    "match": ["type-to-jump", "switch to jump", "=jump"],
+    "match": ["type-to-jump", "switch to jump", "=jump", "jump:", "between filter and jump"],
     "sense": "Cmdr’s Jump typing mode: typing in a pane moves the cursor to the best-matching name without hiding anything. The other mode is the quick filter. Not navigating to a typed path, and not the plain verb “jump to”.",
     "distinct": ["quick-filter", "go-to-path"]
   },
