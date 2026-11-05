@@ -19,59 +19,37 @@
  * method of that name; keep this list to names distinctive enough that none does.
  */
 
-/** A function newer than Safari 15.4, with the Safari that added it. */
+import { apiFloor, SAFARI_FLOOR } from './vite-webkit-floor-compat.ts'
+
+/** A floor API a call names. */
 interface FloorApi {
-  /** `Object` for `Object.groupBy`; absent for a method (any receiver) or a global. */
-  owner?: string
+  /** `Object.groupBy`, `toSorted`, or `requestIdleCallback`. */
+  label: string
+  /** The bare name a feature check would mention: `groupBy`. */
   name: string
-  kind: 'static' | 'method' | 'global'
   since: string
 }
 
-const API_LIST: readonly FloorApi[] = [
-  { owner: 'Object', name: 'groupBy', kind: 'static', since: 'Safari 17.4' },
-  { owner: 'Map', name: 'groupBy', kind: 'static', since: 'Safari 17.4' },
-  { owner: 'Promise', name: 'withResolvers', kind: 'static', since: 'Safari 17.4' },
-  { owner: 'Promise', name: 'try', kind: 'static', since: 'Safari 18.2' },
-  { owner: 'Array', name: 'fromAsync', kind: 'static', since: 'Safari 16.4' },
-  { owner: 'Iterator', name: 'from', kind: 'static', since: 'Safari 18.4' },
-  { owner: 'RegExp', name: 'escape', kind: 'static', since: 'Safari 18.4' },
-  { owner: 'AbortSignal', name: 'timeout', kind: 'static', since: 'Safari 16.0' },
-  { owner: 'AbortSignal', name: 'any', kind: 'static', since: 'Safari 17.4' },
-  { owner: 'URL', name: 'canParse', kind: 'static', since: 'Safari 17.0' },
-  { owner: 'URL', name: 'parse', kind: 'static', since: 'Safari 18.0' },
-  { owner: 'Atomics', name: 'waitAsync', kind: 'static', since: 'Safari 16.4' },
-  { owner: 'Intl', name: 'DurationFormat', kind: 'static', since: 'Safari 16.4' },
-  { name: 'toSorted', kind: 'method', since: 'Safari 16.0' },
-  { name: 'toReversed', kind: 'method', since: 'Safari 16.0' },
-  { name: 'toSpliced', kind: 'method', since: 'Safari 16.0' },
-  { name: 'isWellFormed', kind: 'method', since: 'Safari 16.4' },
-  { name: 'toWellFormed', kind: 'method', since: 'Safari 16.4' },
-  { name: 'union', kind: 'method', since: 'Safari 17.0 (Set)' },
-  { name: 'intersection', kind: 'method', since: 'Safari 17.0 (Set)' },
-  { name: 'symmetricDifference', kind: 'method', since: 'Safari 17.0 (Set)' },
-  { name: 'isSubsetOf', kind: 'method', since: 'Safari 17.0 (Set)' },
-  { name: 'isSupersetOf', kind: 'method', since: 'Safari 17.0 (Set)' },
-  { name: 'isDisjointFrom', kind: 'method', since: 'Safari 17.0 (Set)' },
-  { name: 'checkVisibility', kind: 'method', since: 'Safari 17.4' },
-  { name: 'showPopover', kind: 'method', since: 'Safari 17.0' },
-  { name: 'togglePopover', kind: 'method', since: 'Safari 17.0' },
-  { name: 'requestIdleCallback', kind: 'global', since: 'not in Safari 15' },
-  { name: 'OffscreenCanvas', kind: 'global', since: 'Safari 16.4' },
-  { name: 'CompressionStream', kind: 'global', since: 'Safari 16.4' },
-  { name: 'DecompressionStream', kind: 'global', since: 'Safari 16.4' },
-]
+const FLOOR = apiFloor(SAFARI_FLOOR)
 
 /**
- * A chunk that may use an API unchecked, because nothing loads it without a check elsewhere.
- * Matched on the emitted file name minus its hash, so it survives rebuilds.
+ * Uses a person checked by hand and found safe, each with the reason. `chunkPrefix` (the emitted
+ * file name minus its hash) limits one to a single chunk. An entry here still can't hide the
+ * app's OWN use of the name: the ES2022 `lib` pin fails it at type-check time.
  */
-const EXEMPT_CHUNKS: readonly { prefix: string; api: string; why: string }[] = [
+const REVIEWED: readonly { api: string; chunkPrefix?: string; why: string }[] = [
   {
-    prefix: '_app/immutable/workers/measure-worker-',
     api: 'OffscreenCanvas',
+    chunkPrefix: '_app/immutable/workers/measure-worker-',
     why: 'the font-measure worker starts only after `typeof OffscreenCanvas` passes on the main thread',
   },
+  {
+    api: 'Uint8Array.fromBase64',
+    why: 'devalue (SvelteKit) picks its native base64 only when `typeof Uint8Array.fromBase64` is a function, through a variable this scan cannot follow',
+  },
+  { api: 'toBase64', why: 'devalue: the native encoder behind the same `fromBase64` check' },
+  { api: 'with', why: "LogTape's own `Logger.with()`, not `Array.prototype.with`" },
+  { api: 'drop', why: "LogTape's sink queue's own `drop()`, not the iterator helper" },
 ]
 
 export interface ApiFinding {
@@ -84,8 +62,6 @@ interface AstNode {
   type?: string
   [key: string]: unknown
 }
-
-const label = (api: FloorApi) => (api.owner ? `${api.owner}.${api.name}` : api.name)
 
 /** Calls `fn` on each child node (array items and object fields), skipping position fields. */
 function eachChild(value: unknown, fn: (child: unknown) => void): void {
@@ -119,29 +95,39 @@ function namesIn(value: unknown, into: Set<string>): Set<string> {
 
 /** The floor API a call's callee names, if any. */
 function calledApi(callee: AstNode): FloorApi | undefined {
-  if (callee.type === 'Identifier') {
-    return API_LIST.find((api) => api.kind === 'global' && api.name === callee.name)
+  if (callee.type === 'Identifier' && typeof callee.name === 'string') {
+    const since = FLOOR.globals.get(callee.name)
+    return since === undefined ? undefined : { label: callee.name, name: callee.name, since }
   }
   if (callee.type !== 'MemberExpression' || callee.computed === true) return undefined
-  const property = (callee.property as AstNode).name
+  const name = (callee.property as AstNode).name
+  if (typeof name !== 'string') return undefined
   const object = callee.object as AstNode
-  return API_LIST.find(
-    (api) =>
-      api.name === property &&
-      (api.kind === 'method' || (api.kind === 'static' && object.type === 'Identifier' && object.name === api.owner)),
-  )
+  if (object.type === 'Identifier' && typeof object.name === 'string') {
+    const label = `${object.name}.${name}`
+    const since = FLOOR.statics.get(label)
+    if (since !== undefined) return { label, name, since }
+  }
+  const since = FLOOR.methods.get(name)
+  return since === undefined ? undefined : { label: name, name, since }
 }
 
 /** Every unchecked call to an API newer than Safari 15.4 in one parsed chunk. */
 export function findApisBeyondSafari15(program: unknown, chunkFileName: string): ApiFinding[] {
-  const exempt = new Set(EXEMPT_CHUNKS.filter((e) => chunkFileName.startsWith(e.prefix)).map((e) => e.api))
+  const exempt = new Set(
+    REVIEWED.filter((e) => e.chunkPrefix === undefined || chunkFileName.startsWith(e.chunkPrefix)).map((e) => e.api),
+  )
+  // The minifier names its locals freely, so a `var ML=` must not read as the `ML` global.
+  const declared = declaredNames(program)
   const findings: ApiFinding[] = []
   const checkCall = (node: AstNode, guards: ReadonlySet<string>) => {
     if (node.type !== 'CallExpression' && node.type !== 'NewExpression') return
     if (node.optional === true) return
-    const api = calledApi(node.callee as AstNode)
-    if (api && !guards.has(api.name) && !exempt.has(label(api))) {
-      findings.push({ api: label(api), since: api.since })
+    const callee = node.callee as AstNode
+    if (callee.type === 'Identifier' && declared.has(callee.name as string)) return
+    const api = calledApi(callee)
+    if (api && !guards.has(api.name) && !exempt.has(api.label)) {
+      findings.push({ api: api.label, since: api.since })
     }
   }
   const visit = (value: unknown, guards: ReadonlySet<string>): void => {
@@ -166,6 +152,34 @@ export function findApisBeyondSafari15(program: unknown, chunkFileName: string):
   }
   visit(program, new Set())
   return findings
+}
+
+/** The binding-pattern fields that introduce a name. */
+const DECLARING_FIELDS: Record<string, readonly string[]> = {
+  VariableDeclarator: ['id'],
+  FunctionDeclaration: ['id', 'params'],
+  FunctionExpression: ['id', 'params'],
+  ArrowFunctionExpression: ['params'],
+  ClassDeclaration: ['id'],
+  ClassExpression: ['id'],
+  CatchClause: ['param'],
+  ImportSpecifier: ['local'],
+  ImportDefaultSpecifier: ['local'],
+  ImportNamespaceSpecifier: ['local'],
+}
+
+/** Every name the chunk declares anywhere, scope-blind: enough to tell a local from a global. */
+function declaredNames(program: unknown): Set<string> {
+  const names = new Set<string>()
+  const visit = (value: unknown): void => {
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      const node = value as AstNode
+      for (const field of DECLARING_FIELDS[node.type ?? ''] ?? []) namesIn(node[field], names)
+    }
+    eachChild(value, visit)
+  }
+  visit(program)
+  return names
 }
 
 /** A feature check's parts: its test, the branch it protects, and the branch it doesn't. */

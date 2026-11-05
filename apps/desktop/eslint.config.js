@@ -52,6 +52,7 @@ import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js
 import noRawWaitBudget from './eslint-plugins/no-raw-wait-budget.js'
 import noUnrenderedLogFields from './eslint-plugins/no-unrendered-log-fields.js'
 import noStringifiedLogValues from './eslint-plugins/no-stringified-log-values.js'
+import webkitFloorDom from './eslint-plugins/webkit-floor-dom.js'
 
 /* global process */
 const noTypecheck = process.env.ESLINT_NO_TYPECHECK === '1'
@@ -331,6 +332,7 @@ export default tseslint.config(
           'no-root-relative-asset': noRootRelativeAsset,
           'no-unrendered-log-fields': noUnrenderedLogFields,
           'no-stringified-log-values': noStringifiedLogValues,
+          'webkit-floor-dom': webkitFloorDom,
         },
       },
     },
@@ -460,6 +462,16 @@ export default tseslint.config(
       // chain and a TypedFailure's payload, where `String(x)` gives `[object Object]` for
       // a plain object. ERR-VEZUB's dialog crash reached its report as exactly that.
       'cmdr/no-stringified-log-values': 'error',
+    },
+  },
+  {
+    // A DOM call newer than Safari 15.4 (the WebKit a fully patched Catalina Mac runs Cmdr on)
+    // throws there, so it needs a feature check. Type-aware: a no-op in the fast pass. Tests are
+    // out: they run in Node and jsdom, never in WebKit.
+    files: ['src/**/*.{ts,svelte}'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.test.svelte.ts', 'src/lib/test-*.ts', 'src/test-setup.ts'],
+    rules: {
+      'cmdr/webkit-floor-dom': 'error',
     },
   },
   {

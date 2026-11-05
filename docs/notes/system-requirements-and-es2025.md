@@ -71,12 +71,26 @@ the `:has()` selector all arrived in Safari 15.4. Nothing lowers those, so 15.4 
 genuinely cannot work.
 
 The same gap runs the other way: a function NEWER than 15.4 (`toSorted`, `Object.groupBy`, `Set.union`) ships as written
-and throws `TypeError` on Catalina, breaking just the feature that calls it, so a startup smoke test can miss it. Two
-guards hold the line. `apps/desktop/tsconfig.json` pins `lib` to ES2022, and `apps/desktop/src/webkit-floor.d.ts` adds
-back the ES2023 members Safari 15.4 has (`findLast`, `findLastIndex`), so the app's own code fails type-checking.
-`vite-webkit-api-floor.ts` in `apps/desktop/scripts/` scans every emitted client chunk, dependencies included, for
-unchecked calls to a curated list of newer JavaScript and DOM functions; a call inside a check that names the function
-passes. On adding it, the whole bundle passed with nothing to change (Vite 8.3.5 production build, 2026-11-04).
+and throws `TypeError` on Catalina, breaking just the feature that calls it, so a startup smoke test can miss it. Three
+guards hold the line, all reading what's "newer" from MDN's browser-compat-data (`@mdn/browser-compat-data`, through
+`apps/desktop/scripts/vite-webkit-floor-compat.ts`, which also holds the floor constant), so no hand-kept list goes
+stale:
+
+- **JavaScript built-ins in the app's code**: `apps/desktop/tsconfig.json` pins `lib` to ES2022, and
+  `apps/desktop/src/webkit-floor.d.ts` adds back the ES2023 members Safari 15.4 has (`findLast`, `findLastIndex`), so a
+  newer one fails type-checking.
+- **DOM calls in the app's code**: the type-aware lint rule `cmdr/webkit-floor-dom`
+  (`apps/desktop/eslint-plugins/webkit-floor-dom.js`) asks TypeScript which declaration a call resolves to and looks up
+  exactly that BCD entry (`api.Element.checkVisibility`, `api.AbortSignal.timeout_static`). TypeScript's DOM lib can't
+  be versioned, and matching DOM method names in the bundle is hopeless: generic ones (`info`, `format`, `destroy`)
+  collide with libraries' own methods.
+- **Everything shipped, dependencies included**: `vite-webkit-api-floor.ts` scans each emitted client chunk for calls to
+  newer globals, owner-qualified statics, and JavaScript prototype methods whose name no older API shares. Hand-checked
+  uses sit in its `REVIEWED` list with the reason (devalue's feature-checked base64, LogTape's own `with` and `drop`).
+
+A call inside a check that names the function passes all three. On adding them, the bundle and the app's source had six
+hits, all already guarded through indirection the checks can't follow (a helper, a worker started behind a main-thread
+check), now marked with reasons (Vite 8.3.5 production build, BCD 8.1.8, 2026-11-05).
 
 **Beside the floors, ICU.** A staged Safari brings its own JavaScriptCore but keeps the OS's ICU, and some `Intl` APIs
 exist only on a newer ICU than Catalina's. So Safari 15.6.1 on Catalina still has no `Intl.ListFormat`, which crashed
