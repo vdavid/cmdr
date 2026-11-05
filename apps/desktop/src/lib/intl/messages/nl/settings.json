@@ -168,7 +168,7 @@
   },
   "settings.listing.stripedRows.description": "Wissel de rijarcering af om regels makkelijker te volgen. Geldt voor zowel de Volledige weergave als de Beknopte weergave.",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "strepen, gestreept, zebra, afwisselend, rij, rijen, arcering, toegankelijkheid, leesbaarheid",
   "@settings.listing.stripedRows.keywords": {
@@ -825,9 +825,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Foto''s op {name} altijd indexeren",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Deze schijf altijd indexeren: {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "Gepauzeerd, gaat verder zodra deze schijf opnieuw verbinding maakt",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -945,9 +945,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Extra geïndexeerde vermeldingen verwijderen",
+  "settings.mediaIndex.reclaim.confirmTitle": "Extra geïndexeerde vermeldingen verwijderen?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "{doomed, plural, one {{doomedText} geïndexeerde vermelding} other {{doomedText} geïndexeerde vermeldingen}} verwijderen om ongeveer {size} vrij te maken? Je kunt deze afbeeldingen later opnieuw indexeren, maar ze opnieuw inlezen kost tijd.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1094,9 +1094,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "De vraag over de sneltoets voor de laatste download onderdrukken",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Niet meer naar de sneltoets voor de laatste download vragen",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "De eerste keer dat je op de sneltoets drukt die vanuit elke app naar je laatste download springt, vraagt Cmdr of de sneltoets aan moet blijven. Als je de sneltoets wijzigt, gaat dit uit, zodat Cmdr ook naar een nieuwe combinatie vraagt. Zet dit uit om de vraag nog een keer te zien.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1244,9 +1244,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "Hoelang het model nadenkt voordat het antwoordt. Meer inspanning helpt bij lastige taken, maar antwoorden komen trager en het nadenken wordt gefactureerd als uitvoer.",
+  "settings.ai.reasoningEfforts.description": "Hoelang het model nadenkt voordat het antwoordt. Meer nadenken helpt bij lastige taken, maar antwoorden komen trager en het nadenken wordt gefactureerd als uitvoer.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "redeneerinspanning, inspanning, redeneren, nadenken, denken, denktijd, diepte, snelheid, kosten, kwaliteit",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1466,7 +1466,7 @@
   },
   "settings.fileExplorer.git.showStatusColumn.description": "Voeg een kolom toe met de git-status per bestand (gewijzigd, niet gevolgd, enz.) in de Volledige weergave.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "status, kolom, gewijzigd, niet gevolgd, genegeerd, toegevoegd, verwijderd",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1764,13 +1764,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Melden wanneer een verwijderd onderdeel al weg was",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Melding tonen wanneer een verwijderd onderdeel al weg was",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Als je iets verwijdert dat een andere app al heeft verplaatst of verwijderd, beschouwt Cmdr dat als klaar en toont het daar een korte melding over. Zet dit uit (of klik in de melding op ‘Toon dit nooit meer’) om geen melding meer te krijgen.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Als je iets verwijdert dat een andere app al heeft verplaatst of verwijderd, beschouwt Cmdr dat als klaar en toont het daar een korte melding over. Zet dit uit (of klik in de melding op ‘Toon dit nooit meer’) om deze meldingen te stoppen.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "ontbreekt, verdwenen, kwijt, weg, verschoven, gewist, melding, notificatie, pop-up, waarschuwing",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2436,9 +2436,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr gebruikt je cloud-AI-service. Sta cloud-AI toe in de AI-instellingen om te beginnen met chatten.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr gebruikt je cloud-AI-service. Zet ‘Cloud-AI toestaan’ aan in de AI-instellingen om te beginnen met chatten.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "Ga naar AI-instellingen",
   "@settings.askCmdr.openAiSettings": {
@@ -2950,25 +2950,25 @@
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "Maand van 2 cijfers (01-12)",
+  "settings.appearance.formatHelpMonth": "Maand van 2 cijfers (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
-  "settings.appearance.formatHelpDay": "Dag van 2 cijfers (01-31)",
+  "settings.appearance.formatHelpDay": "Dag van 2 cijfers (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
-  "settings.appearance.formatHelpHour": "Uur van 2 cijfers (00-23)",
+  "settings.appearance.formatHelpHour": "Uur van 2 cijfers (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
-  "settings.appearance.formatHelpMinute": "Minuut van 2 cijfers (00-59)",
+  "settings.appearance.formatHelpMinute": "Minuut van 2 cijfers (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
-  "settings.appearance.formatHelpSecond": "Seconde van 2 cijfers (00-59)",
+  "settings.appearance.formatHelpSecond": "Seconde van 2 cijfers (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Voegt een vage achtergrondtint toe aan panelen zodat je volumetypen in één oogopslag uit elkaar kunt houden.",
   "@settings.appearance.tintGroupDescription": {
@@ -3178,9 +3178,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Wijzig de sneltoets onder Sneltoetsen → Ga naar laatste download (globaal).",
+  "settings.fileSystemWatching.globalShortcutHint": "Wijzig de sneltoets onder ‘Sneltoetsen → Ga naar laatste download’.",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "Toegang tot {localNetwork}",
   "@settings.network.localNetworkAccessLabel": {

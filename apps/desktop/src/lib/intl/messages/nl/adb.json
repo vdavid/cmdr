@@ -75,9 +75,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "Cmdr is nog bezig met bestanden op dit apparaat. Verbreek de verbinding zodra dat klaar is.",
+  "adb.disconnectBusyTooltip": "Cmdr is nog bezig met bestanden op dit apparaat. Je kunt de verbinding verbreken zodra dat klaar is.",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "73c355e"
+    "sourceHash": "7a49436"
   },
   "adb.disconnectingDeviceAriaLabel": "Verbinding met {name} wordt verbroken…",
   "@adb.disconnectingDeviceAriaLabel": {

@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Klik met de rechtermuisknop op een server en kies ‘Maak los uit volumekiezer’, of gebruik ‘{command}’ in het opdrachtenpalet. De server blijft in de lijst Servers staan.",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "Begrepen",
   "@servers.pinHint.gotIt": {
@@ -65,9 +65,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Nooit",
+  "servers.hub.neverUsed": "Nooit gebruikt",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "als {username}",
   "@servers.hub.shareAccount": {
@@ -384,7 +384,7 @@
   },
   "servers.sheet.addAnywayHelp": "Cmdr kon deze server niet controleren, dus ‘Voeg toch toe’ bewaart hem zoals je hem hebt getypt.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Werp uit en bewaar",
   "@servers.sheet.ejectAndSave": {
@@ -532,9 +532,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS kan maximaal 16 andere groepen doorgeven, en deze lijst bevat er {count}.",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS stuurt maximaal 16 andere groepen mee, en deze lijst bevat {count, plural, one {# groep} other {# groepen}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "De server bepaalt aan de hand van deze nummers wat je kunt openen. NFS vraagt niet om een wachtwoord.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -934,9 +934,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Stop voorlopig met proberen. De verbinding blijft beschikbaar. Schakel terug om het opnieuw te proberen.",
+  "servers.paneState.cancelCycleTooltip": "Stop voorlopig met proberen. De verbinding blijft beschikbaar; open de server opnieuw om het nog eens te proberen.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Stop met proberen en verbreek de verbinding met de server.",
   "@servers.paneState.disconnectCycleTooltip": {

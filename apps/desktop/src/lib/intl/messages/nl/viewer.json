@@ -47,9 +47,9 @@
   "@viewer.error.coldStorage": {
     "sourceHash": "236cd1b"
   },
-  "viewer.error.linkTargetUnreachable": "Dit bestand ligt achter een link naar een andere server, en Cmdr kan die server nu niet bereiken. Controleer of de server draait en probeer het dan opnieuw.",
+  "viewer.error.linkTargetUnreachable": "Het pad van dit bestand leidt via een link naar een andere server, en Cmdr kan die server nu niet bereiken. Controleer of de server draait en probeer het dan opnieuw.",
   "@viewer.error.linkTargetUnreachable": {
-    "sourceHash": "8dcb736"
+    "sourceHash": "0540c9a"
   },
   "viewer.error.retry": "Probeer opnieuw",
   "@viewer.error.retry": {

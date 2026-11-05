@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Cmdr liep tegen een onverwacht probleem aan bij het lezen van `{path}`. Bekijk de technische details hieronder voor de specifieke systeemcode, die kan helpen bij het oplossen.",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr liep tegen een onverwacht probleem aan bij het lezen van `{path}`. Bekijk ‘Technische details’ hieronder voor de specifieke systeemcode, die kan helpen bij het oplossen.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, open dan **Disk Utility** en voer **First Aid** uit op dit volume",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -591,9 +591,9 @@
   "@errors.listing.linkTargetUnreachable.title": {
     "sourceHash": "8aee94c"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "`{path}` ligt achter een link naar een andere server, en Cmdr kan die server nu niet bereiken. De rest van deze netwerkshare is in orde, en er is niets verwijderd.",
+  "errors.listing.linkTargetUnreachable.explanation": "`{path}` leidt via een link naar een andere server, en Cmdr kan die server nu niet bereiken. De rest van deze netwerkshare is in orde, en er is niets verwijderd.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Dit kun je proberen:\n- Controleer of de andere server draait en of je netwerk die kan bereiken\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "Het antwoord van de server had geen geldige handtekening, dus Cmdr is gestopt.",
+  "errors.write.replySignatureRefused.message": "Het antwoord van de server had geen geldige handtekening, dus Cmdr is daar gestopt.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Een haperend netwerkapparaat kan dit veroorzaken, maar ook iemand die met het verkeer tussen jou en de server knoeit. Maak opnieuw verbinding, en als het weer gebeurt, controleer dan je netwerk.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "Het doelapparaat",
+  "errors.write.readOnlyDevice.destination.fallbackName": "De bestemming",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "Bestand is beveiligd",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "Dit ligt achter een link naar een andere server, en Cmdr kan die server nu niet bereiken.",
+  "errors.volume.linkTargetUnreachable": "Dit pad leidt via een link naar een andere server, en Cmdr kan die server nu niet bereiken.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "Het apparaat heeft zijn verbinding opnieuw gestart. Geef het een paar seconden en probeer het opnieuw.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "De verbinding reageerde niet op tijd.",
+  "errors.volume.connectionTimeout": "De server of het apparaat reageerde niet op tijd.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr heeft dit op je verzoek gestopt.",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "Het antwoord van de server had geen geldige handtekening, dus Cmdr is gestopt.",
+  "errors.volume.signatureInvalid": "Het antwoord van de server had geen geldige handtekening, dus Cmdr is daar gestopt.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "Het volume kon dat niet voltooien.",
   "@errors.volume.ioError": {
@@ -2369,13 +2369,13 @@
   "@errors.eject.unmountRefused": {
     "sourceHash": "f855a33"
   },
-  "errors.eject.unmountRefusedByApp": "{app} gebruikt daar nog iets. Sluit de app en probeer het daarna opnieuw.",
+  "errors.eject.unmountRefusedByApp": "{app} gebruikt daar nog iets. Sluit die app en probeer het daarna opnieuw.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
   "errors.eject.unmountRefusedByApps": "{apps} gebruiken daar nog iets. Sluit die apps en probeer het daarna opnieuw.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "andere apps",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "Een deel van je selectie staat in een weergave",
+  "errors.write.sourcesSpanVolumes.title": "Een deel van je selectie staat in een back-up, archief of git-geschiedenis",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} staat in de momentopnames van een back-up, in een archief of in de geschiedenis van een repo, en de rest van je selectie niet, dus Cmdr kan niet alles samen lezen. Er is niets gewijzigd.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Doe het in twee stappen: eerst alleen de onderdelen in de weergave, dan de rest.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Doe het in twee stappen: eerst alleen die onderdelen, dan de rest.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Verplaats ze een voor een, of wijzig eerst de naam van een ervan.",
   "@errors.write.duplicateSourceNames.suggestion.move": {

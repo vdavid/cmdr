@@ -33,7 +33,7 @@
   },
   "stateRecovery.operationLog.title": "Cmdr kon je bewerkingenlogboek niet lezen, dus het logboek begint opnieuw",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "Cmdr kon je Ask Cmdr-chats niet lezen, dus de chatlijst begint leeg",
   "@stateRecovery.chatHistory.title": {

@@ -385,6 +385,13 @@
     "forms": "badge → markering, status badge → statusmarkering",
     "sources": "macOS Finder Markeer (QK4); catalog gemarkeerd"
   },
+  "batch": {
+    "accept": ["reeks", "groep", "groepen"],
+    "chosen": "reeks",
+    "confidence": "tentative",
+    "forms": "the files in one Multi-rename → deze reeks; one batch of an Ask Cmdr rename run → groep (Alle {countText} groepen ongedaan maken)",
+    "sources": "catalog (multiRename.reason.duplicate, askCmdr.renameUndo.undoJobLabel); no pile precedent for a rename batch"
+  },
   "binary-view": {
     "chosen": "Binair",
     "confidence": "high",
@@ -633,6 +640,12 @@
     "forms": "your cloud provider → je cloudprovider; cloud folders → cloudmappen; cloud mount → Cloudkoppeling; provider app names (Dropbox, Google Drive, OneDrive, iCloud Drive, macFUSE) stay verbatim",
     "sources": "compositional; brands do-not-translate"
   },
+  "cold-storage": {
+    "chosen": "koude opslag",
+    "confidence": "high",
+    "forms": "the file-row label In koude opslag; tooltip Gearchiveerd in koude opslag",
+    "sources": "Microsoft Terminology (cold storage → koude opslag, per the storage ruling); catalog fileExplorer.archivedFile.tooltip"
+  },
   "column": {
     "accept": ["kolommen"],
     "chosen": "kolom",
@@ -736,6 +749,27 @@
     "accept": ["extensie"],
     "confidence": "high",
     "sources": "macOS pane Inlogonderdelen en extensies (errors.provider.pCloudFuse.needsAction); systeemextensie"
+  },
+  "focus": {
+    "accept": ["toetsenbordfocus", "actieve paneel", "actief"],
+    "chosen": "focus",
+    "confidence": "high",
+    "forms": "Move focus to … → Verplaats focus naar …; keyboard focus → toetsenbordfocus; the focused pane → het actieve paneel",
+    "sources": "Microsoft Terminology (focus → focus); catalog commands.paneFocusControls.label and 30+ keys saying actieve paneel"
+  },
+  "grant": {
+    "accept": ["verleend", "verlenen", "verleende", "verleen", "verleent", "geef", "geven", "gegeven", "gekregen"],
+    "chosen": "verlenen",
+    "confidence": "high",
+    "forms": "granted full disk access → volledige schijftoegang verleend; an instruction in everyday prose → geef Cmdr toegang (macOS-style); not yet granted → heeft nog geen toegang gekregen",
+    "sources": "Microsoft Terminology (grant access to → toegang verlenen tot); catalog onboarding.stepFda.granted.title"
+  },
+  "guide": {
+    "accept": ["gids", "Toegankelijkheidsgids"],
+    "chosen": "gids",
+    "confidence": "tentative",
+    "forms": "Accessibility guide → Toegankelijkheidsgids; the guide to X → de gids over X",
+    "sources": "catalog commands.helpAccessibility.label, menu.help.accessibility"
   },
   "learn-more": {
     "chosen": "Meer over",
@@ -2261,9 +2295,6 @@
     "accept": ["notities", "bericht"],
     "chosen": "notitie",
     "confidence": "high",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "English-sense: the “note” is Cmdr’s own short toast, not text the user writes, so it takes the notification ruling’s melding (as settings.suggestedOps.suppressApprovalNotice.description does)"
-    },
     "forms": "error-report notes and the free-text field → notitie; the feedback dialog's Your note → je bericht (that surface only; never mix the two in one dialog)",
     "sources": "MS (note → notitie)"
   },
@@ -3045,9 +3076,6 @@
     "chosen": "Selecteer",
     "confidence": "high",
     "decision": "Selecteren",
-    "exceptions": {
-      "ui.select.placeholder": "Dropdown placeholder, the choose concept: Kies..."
-    },
     "forms": "button and menu Selecteer, Selecteer alles; the selection (a noun, the submenu title) → Selectie; recent selections → recente selecties; onboarding feature-row name → Selecteren",
     "sources": "macOS AppKit / Finder (Select All → Selecteer alles, MenuBar 172.title), Double Commander"
   },
@@ -3219,9 +3247,6 @@
     "accept": ["overslaan", "overgeslagen", "slaat", "sla", "sloeg"],
     "chosen": "Sla over",
     "confidence": "high",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "English-sense: “skip the note” means not seeing a toast again, not leaving an item out of an operation (om geen melding meer te krijgen)"
-    },
     "forms": "button Sla over / Sla alles over; outcome Overgeslagen; Cmdr skips anything it isn't sure about → Cmdr slaat alles over waar het niet zeker van is",
     "sources": "Nautilus (Overslaan), bare-stem imperative per the button rule"
   },
@@ -3231,6 +3256,12 @@
     "confidence": "high",
     "forms": "The volume may be slow → Het volume is mogelijk traag; speed multipliers 4x zo langzaam als …; a lot slower → een stuk langzamer",
     "sources": "macOS Finder LA20 (… zijn erg traag)"
+  },
+  "smb-negotiated-security": {
+    "chosen": "de beveiligingsinstellingen die met Cmdr waren afgesproken",
+    "confidence": "high",
+    "forms": "one fixed phrase across the negotiationInvalid family",
+    "sources": "catalog (errors.volume.negotiationInvalid and six siblings)"
   },
   "snapshot": {
     "accept": ["momentopnames", "momentopnamen", "git-momentopname"],
@@ -3569,6 +3600,12 @@
     "forms": "the mode and badge word Ga naar (Ga naar: …), beside Filter; quoted in running text (Schakel naar ‘Ga naar’); clear the typed text → Getypte tekst wissen (a bare Ga naar wissen doesn't parse)",
     "sources": "catalog (fileExplorer.typeToJump.prefix, settings.fileExplorer.typeToJump.mode.opt.jump)"
   },
+  "typing-badge": {
+    "chosen": "vakje",
+    "confidence": "tentative",
+    "forms": "Opens the badge with what you’ve typed → Opent het vakje met wat je tot nu toe hebt getypt",
+    "sources": "coined: no pile source names this UI; markering reads as a status badge and filtermarkering names it after one mode"
+  },
   "typo": {
     "accept": ["typefouten"],
     "chosen": "typefout",
@@ -3619,6 +3656,13 @@
       }
     ],
     "sources": "MS terminology (uninstall → verwijderen, id 125612); catalog menu.app.cliCommandUninstall"
+  },
+  "unix-group": {
+    "accept": ["groepen", "groeps-ID", "groeps-ID’s"],
+    "chosen": "groep",
+    "confidence": "high",
+    "forms": "other group IDs → andere groeps-ID’s; the macOS pane → Gebruikers en groepen",
+    "sources": "Microsoft Terminology (Groepen); macOS System Settings Gebruikers en groepen (catalog errors.write.homeFolderRename.suggestion.isHome)"
   },
   "unknown": {
     "chosen": "onbekend",
@@ -3795,6 +3839,13 @@
     "confidence": "high",
     "sources": "standard NL",
     "accept": ["wat er nieuw is"]
+  },
+  "wizard": {
+    "accept": ["onboardingwizard"],
+    "chosen": "wizard",
+    "confidence": "tentative",
+    "forms": "closed compound onboardingwizard",
+    "sources": "catalog commands.cmdrOpenOnboarding.description, settings.onboarding.upgradeNudgeShown.description"
   },
   "word-wrap": {
     "accept": ["terugloop", "teruglopen", "lopen terug"],

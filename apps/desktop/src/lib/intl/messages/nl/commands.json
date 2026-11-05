@@ -19,17 +19,17 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "Dankbetuigingen…",
+  "commands.appAcknowledgements.label": "Dankbetuigingen",
   "@commands.appAcknowledgements.label": {
-    "sourceHash": "7d0e506"
+    "sourceHash": "c9015d5"
   },
   "commands.appLicenseKey.seeDetails.label": "Toon licentiegegevens",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
   },
-  "commands.appLicenseKey.enterKey.label": "Voer licentiesleutel in",
+  "commands.appLicenseKey.enterKey.label": "Voer licentiesleutel in…",
   "@commands.appLicenseKey.enterKey.label": {
-    "sourceHash": "357d05e"
+    "sourceHash": "24a8d77"
   },
   "commands.appCommandPalette.label": "Open opdrachtenpalet",
   "@commands.appCommandPalette.label": {
@@ -43,18 +43,18 @@
   "@commands.appCheckForUpdates.label": {
     "sourceHash": "52d6f7d"
   },
-  "commands.appCheckForUpdates.description": "Kijk of er een nieuwere versie van Cmdr is, en download die als dat zo is",
+  "commands.appCheckForUpdates.description": "Controleert of er een nieuwere versie van Cmdr is, en downloadt die als dat zo is",
   "@commands.appCheckForUpdates.description": {
-    "sourceHash": "c53dab0"
+    "sourceHash": "90523c6"
   },
   "commands.cmdrOpenOnboarding.label": "Onboarding…",
   "@commands.cmdrOpenOnboarding.label": {
     "sourceHash": "c4cc4aa",
     "sameAsSourceJustification": "'Onboarding' is kept verbatim as a loanword throughout the Dutch catalog (glossary: onboarding kept; matches the shipped 'Cmdr onboarding' title and onboardingwizard); the trailing ellipsis is preserved."
   },
-  "commands.cmdrOpenOnboarding.description": "Open de onboardingwizard opnieuw om de instellingen van de eerste start te bekijken of te wijzigen",
+  "commands.cmdrOpenOnboarding.description": "Opent de onboardingwizard opnieuw om de instellingen van de eerste start te bekijken of te wijzigen",
   "@commands.cmdrOpenOnboarding.description": {
-    "sourceHash": "a45c542"
+    "sourceHash": "fc0a198"
   },
   "commands.appToggleCliCommand.install.label": "Installeer opdracht ‘cmdr’",
   "@commands.appToggleCliCommand.install.label": {
@@ -68,74 +68,74 @@
   "@commands.appToggleCliCommand.homebrew.label": {
     "sourceHash": "cc4c0fd"
   },
-  "commands.appToggleCliCommand.description": "Typ cmdr en een pad in een terminal om dat bestand of die map in Cmdr te openen",
+  "commands.appToggleCliCommand.description": "Laat je cmdr en een pad in een terminal typen om dat bestand of die map in Cmdr te openen",
   "@commands.appToggleCliCommand.description": {
-    "sourceHash": "ce7efbd"
+    "sourceHash": "73b4f32"
   },
   "commands.helpOpenShortcuts.label": "Sneltoetsen",
   "@commands.helpOpenShortcuts.label": {
     "sourceHash": "e9bef0b"
   },
-  "commands.helpOpenShortcuts.description": "Open een alleen-lezenvenster met alle sneltoetsen, live gesynchroniseerd met je aanpassingen",
+  "commands.helpOpenShortcuts.description": "Opent een alleen-lezenvenster met alle sneltoetsen, live gesynchroniseerd met je aanpassingen",
   "@commands.helpOpenShortcuts.description": {
-    "sourceHash": "a9a1e0d"
+    "sourceHash": "caa15c9"
   },
   "commands.helpAccessibility.label": "Toegankelijkheidsgids",
   "@commands.helpAccessibility.label": {
     "sourceHash": "eee67fa"
   },
-  "commands.helpAccessibility.description": "Open de gids over de toegankelijkheidsfuncties van Cmdr op getcmdr.com",
+  "commands.helpAccessibility.description": "Opent de gids over de toegankelijkheidsfuncties van Cmdr op getcmdr.com",
   "@commands.helpAccessibility.description": {
-    "sourceHash": "2ece797"
+    "sourceHash": "7104ee3"
   },
   "commands.helpSendErrorReport.label": "Verstuur foutrapport…",
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
-  "commands.helpSendErrorReport.description": "Verstuur Cmdr-logs naar het team om iets dat misging te helpen oplossen",
+  "commands.helpSendErrorReport.description": "Verstuurt logbestanden van Cmdr naar het team om te helpen iets op te lossen dat misging",
   "@commands.helpSendErrorReport.description": {
-    "sourceHash": "021d333"
+    "sourceHash": "7615640"
   },
   "commands.queueShow.label": "Bewerkingenwachtrij",
   "@commands.queueShow.label": {
     "sourceHash": "fa91417"
   },
-  "commands.queueShow.description": "Open een venster met alle lopende en wachtende bewerkingen, waar je ze kunt pauzeren, hervatten of annuleren",
+  "commands.queueShow.description": "Opent een venster met alle lopende en wachtende bewerkingen, waar je ze kunt pauzeren, hervatten of annuleren",
   "@commands.queueShow.description": {
-    "sourceHash": "37b616a"
+    "sourceHash": "4511b63"
   },
   "commands.helpWhatsNew.label": "Wat is er nieuw",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "37e6112"
   },
-  "commands.helpWhatsNew.description": "Bekijk wat er is veranderd in de nieuwste versies van Cmdr",
+  "commands.helpWhatsNew.description": "Toont wat er is veranderd in de nieuwste versies van Cmdr",
   "@commands.helpWhatsNew.description": {
-    "sourceHash": "f8ad411"
+    "sourceHash": "4e04cc8"
   },
   "commands.logOperationLog.label": "Bewerkingenlogboek",
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
-  "commands.logOperationLog.description": "Bekijk een geschiedenis van je bestandsbewerkingen en draai ze terug",
+  "commands.logOperationLog.description": "Toont een geschiedenis van je bestandsbewerkingen, en laat je ze terugdraaien",
   "@commands.logOperationLog.description": {
-    "sourceHash": "ea2d082"
+    "sourceHash": "70b7bcd"
   },
   "commands.askCmdrToggle.label": "Ask Cmdr",
   "@commands.askCmdrToggle.label": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the command that opens/closes the Ask Cmdr chat rail); kept verbatim in every locale, matches askCmdr.title and settings.section.askCmdr."
   },
-  "commands.askCmdrToggle.description": "Chat met een AI over je bestanden, schijven en geschiedenis",
+  "commands.askCmdrToggle.description": "Opent een chat met een AI over je bestanden, schijven en geschiedenis",
   "@commands.askCmdrToggle.description": {
-    "sourceHash": "c520468"
+    "sourceHash": "a25a7a4"
   },
   "commands.askCmdrNewChat.label": "Nieuwe Ask Cmdr-chat",
   "@commands.askCmdrNewChat.label": {
     "sourceHash": "54ebf70"
   },
-  "commands.askCmdrNewChat.description": "Start een nieuwe chat in Ask Cmdr en open het gedeelte als het gesloten is",
+  "commands.askCmdrNewChat.description": "Start een nieuwe chat met Ask Cmdr, en opent het Ask Cmdr-gedeelte als dat gesloten is",
   "@commands.askCmdrNewChat.description": {
-    "sourceHash": "957741b"
+    "sourceHash": "aa3c28c"
   },
   "commands.askCmdrFind.label": "Zoek in chat",
   "@commands.askCmdrFind.label": {
@@ -153,9 +153,9 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Vertel de maker van Cmdr wat je denkt: ideeën, wensen, alles",
+  "commands.feedbackSend.description": "Laat je de maker van Cmdr vertellen wat je denkt: ideeën, wensen, alles",
   "@commands.feedbackSend.description": {
-    "sourceHash": "89d08a8"
+    "sourceHash": "30c0620"
   },
   "commands.searchOpen.label": "Zoek bestanden",
   "@commands.searchOpen.label": {
@@ -165,25 +165,25 @@
   "@commands.navGoToPath.label": {
     "sourceHash": "33de610"
   },
-  "commands.navGoToPath.description": "Spring met het actieve paneel naar een getypt, geplakt of recent pad.",
+  "commands.navGoToPath.description": "Laat het actieve paneel naar een getypt, geplakt of recent pad springen.",
   "@commands.navGoToPath.description": {
-    "sourceHash": "fc6a00c"
+    "sourceHash": "0b91354"
   },
   "commands.favoritesAdd.label": "Voeg aan favorieten toe",
   "@commands.favoritesAdd.label": {
     "sourceHash": "7f3c078"
   },
-  "commands.favoritesAdd.description": "Voeg de huidige map van het actieve paneel toe aan je favorieten, zodat je er via het favorietenmenu weer terugkomt.",
+  "commands.favoritesAdd.description": "Voegt de huidige map van het actieve paneel toe aan je favorieten, zodat je er via het favorietenmenu weer terugkomt.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "999aa52"
+    "sourceHash": "43043e8"
   },
   "commands.favoritesOpen.label": "Toon favorieten",
   "@commands.favoritesOpen.label": {
     "sourceHash": "f4dfe9b"
   },
-  "commands.favoritesOpen.description": "Open het favorietenmenu op het actieve paneel en druk op een cijfer om naar die favoriet te springen.",
+  "commands.favoritesOpen.description": "Opent het favorietenmenu op het actieve paneel, waar je met een cijfertoets naar die favoriet springt.",
   "@commands.favoritesOpen.description": {
-    "sourceHash": "d188872"
+    "sourceHash": "5fcfcee"
   },
   "commands.favoritesOpenByNumber.label": "Open de favoriet met dat nummer",
   "@commands.favoritesOpenByNumber.label": {
@@ -193,9 +193,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "Open ~/Downloads en selecteer het meest recente bestand.",
+  "commands.downloadsGoToLatest.description": "Opent ~/Downloads en selecteert het meest recente bestand.",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "42a26a2"
+    "sourceHash": "6b3fe83"
   },
   "commands.viewShowHidden.label": "Verborgen bestanden aan/uit",
   "@commands.viewShowHidden.label": {
@@ -298,25 +298,25 @@
   "@commands.paneClone.label": {
     "sourceHash": "74b2c7f"
   },
-  "commands.paneClone.description": "Open de map van dit paneel ook in het andere paneel.",
+  "commands.paneClone.description": "Opent de map van dit paneel ook in het andere paneel.",
   "@commands.paneClone.description": {
-    "sourceHash": "8a13dc9"
+    "sourceHash": "fcbddd9"
   },
   "commands.paneFocusControls.label": "Verplaats focus naar paneelregelaars",
   "@commands.paneFocusControls.label": {
     "sourceHash": "b71f4ad"
   },
-  "commands.paneFocusControls.description": "Bereik de tabbladen, locatiebalk en sorteerknoppen van het actieve paneel met het toetsenbord. Met de pijltoetsen verplaats je de focus ertussen en de Escape-toets brengt je terug naar de bestanden.",
+  "commands.paneFocusControls.description": "Verplaatst de toetsenbordfocus naar de tabbladen, locatiebalk en sorteerknoppen van het actieve paneel. Met de pijltoetsen ga je ertussen heen en weer, en met Escape ga je terug naar de bestanden.",
   "@commands.paneFocusControls.description": {
-    "sourceHash": "e5828ae"
+    "sourceHash": "ffce489"
   },
   "commands.appFocusNotifications.label": "Verplaats focus naar meldingen",
   "@commands.appFocusNotifications.label": {
     "sourceHash": "628f0e5"
   },
-  "commands.appFocusNotifications.description": "Bereik de meldingen en hun knoppen, zoals ‘Zet terug’, met het toetsenbord. Met de pijltoetsen verplaats je de focus ertussen en de Escape-toets brengt je terug.",
+  "commands.appFocusNotifications.description": "Verplaatst de toetsenbordfocus naar de meldingen en hun knoppen, zoals ‘Zet terug’. Met de pijltoetsen ga je ertussen heen en weer, en met Escape ga je terug.",
   "@commands.appFocusNotifications.description": {
-    "sourceHash": "87886a4"
+    "sourceHash": "8157823"
   },
   "commands.editUndoTrash.label": "Herstel verplaatsen naar prullenmand",
   "@commands.editUndoTrash.label": {
@@ -332,7 +332,7 @@
   },
   "commands.editUndoTrash.description": "Zet de bestanden terug die je het laatst naar de prullenmand hebt verplaatst",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "3aa756f"
+    "sourceHash": "dca1b63"
   },
   "commands.paneLeftVolumeChooser.label": "Open linker volumekiezer",
   "@commands.paneLeftVolumeChooser.label": {
@@ -346,17 +346,17 @@
   "@commands.paneCopyPathLeftToRight.label": {
     "sourceHash": "d1376f6"
   },
-  "commands.paneCopyPathLeftToRight.description": "Open de locatie van het linkerpaneel rechts. Wanneer het linkerpaneel actief is en de cursor op een map staat, wordt die map in plaats daarvan rechts geopend.",
+  "commands.paneCopyPathLeftToRight.description": "Opent de locatie van het linkerpaneel rechts. Wanneer het linkerpaneel actief is en de cursor op een map staat, wordt die map in plaats daarvan rechts geopend.",
   "@commands.paneCopyPathLeftToRight.description": {
-    "sourceHash": "07ac6a1"
+    "sourceHash": "d866ae5"
   },
   "commands.paneCopyPathRightToLeft.label": "Kopieer pad van rechter- naar linkerpaneel",
   "@commands.paneCopyPathRightToLeft.label": {
     "sourceHash": "266a30d"
   },
-  "commands.paneCopyPathRightToLeft.description": "Open de locatie van het rechterpaneel links. Wanneer het rechterpaneel actief is en de cursor op een map staat, wordt die map in plaats daarvan links geopend.",
+  "commands.paneCopyPathRightToLeft.description": "Opent de locatie van het rechterpaneel links. Wanneer het rechterpaneel actief is en de cursor op een map staat, wordt die map in plaats daarvan links geopend.",
   "@commands.paneCopyPathRightToLeft.description": {
-    "sourceHash": "95c566f"
+    "sourceHash": "052c7cd"
   },
   "commands.paneRefresh.label": "Ververs paneel",
   "@commands.paneRefresh.label": {
@@ -418,13 +418,13 @@
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
-  "commands.navUp.label": "Selecteer vorig bestand",
+  "commands.navUp.label": "Verplaats cursor naar vorig onderdeel",
   "@commands.navUp.label": {
-    "sourceHash": "40dca00"
+    "sourceHash": "6197d1a"
   },
-  "commands.navDown.label": "Selecteer volgend bestand",
+  "commands.navDown.label": "Verplaats cursor naar volgend onderdeel",
   "@commands.navDown.label": {
-    "sourceHash": "61e81ee"
+    "sourceHash": "8b5b37b"
   },
   "commands.navOpen.label": "Open bestand of map",
   "@commands.navOpen.label": {
@@ -506,9 +506,9 @@
   "@commands.paneQuickFilter.label": {
     "sourceHash": "e731882"
   },
-  "commands.paneQuickFilter.description": "Opent de filtermarkering met het huidige patroon. Druk nog eens om te schakelen tussen ‘Filter’ en ‘Ga naar’",
+  "commands.paneQuickFilter.description": "Opent het vakje met wat je tot nu toe hebt getypt. Druk nog eens om te schakelen tussen ‘Filter’ en ‘Ga naar’",
   "@commands.paneQuickFilter.description": {
-    "sourceHash": "2778526"
+    "sourceHash": "e531430"
   },
   "commands.fileMultiRename.label": "Wijzig meerdere namen",
   "@commands.fileMultiRename.label": {
@@ -726,9 +726,9 @@
   "@commands.fileDuplicate.label": {
     "sourceHash": "02cdaab"
   },
-  "commands.fileDuplicate.description": "Maak een kopie van de geselecteerde bestanden in dezelfde map",
+  "commands.fileDuplicate.description": "Maakt een kopie van de geselecteerde bestanden in dezelfde map",
   "@commands.fileDuplicate.description": {
-    "sourceHash": "2c038a2"
+    "sourceHash": "5c02b66"
   },
   "commands.fileCompress.label": "Comprimeer",
   "@commands.fileCompress.label": {
@@ -738,33 +738,33 @@
   "@commands.editCopy.label": {
     "sourceHash": "b749e20"
   },
-  "commands.editCopy.description": "Kopieer geselecteerde bestanden naar het klembord om te plakken",
+  "commands.editCopy.description": "Kopieert geselecteerde bestanden naar het klembord om te plakken",
   "@commands.editCopy.description": {
-    "sourceHash": "5c769a7"
+    "sourceHash": "3ded30a"
   },
   "commands.editCut.label": "Knip naar klembord",
   "@commands.editCut.label": {
     "sourceHash": "a954b4a"
   },
-  "commands.editCut.description": "Knip geselecteerde bestanden (plakken verplaatst ze)",
+  "commands.editCut.description": "Knipt geselecteerde bestanden (plakken verplaatst ze)",
   "@commands.editCut.description": {
-    "sourceHash": "5bc3870"
+    "sourceHash": "1e03b84"
   },
   "commands.editPaste.label": "Plak",
   "@commands.editPaste.label": {
     "sourceHash": "f3380f7"
   },
-  "commands.editPaste.description": "Plak bestanden van het klembord in de huidige map",
+  "commands.editPaste.description": "Plakt bestanden van het klembord in de huidige map",
   "@commands.editPaste.description": {
-    "sourceHash": "32545d7"
+    "sourceHash": "9eca6d3"
   },
   "commands.editPasteAsMove.label": "Verplaats hierheen",
   "@commands.editPasteAsMove.label": {
     "sourceHash": "56f1247"
   },
-  "commands.editPasteAsMove.description": "Plak bestanden van het klembord als een verplaatsing",
+  "commands.editPasteAsMove.description": "Plakt bestanden van het klembord door ze te verplaatsen",
   "@commands.editPasteAsMove.description": {
-    "sourceHash": "961316d"
+    "sourceHash": "41e9245"
   },
   "commands.fileNewFolder.label": "Nieuwe map",
   "@commands.fileNewFolder.label": {
@@ -786,9 +786,9 @@
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "Open de prullenmand van de schijf die je bekijkt",
+  "commands.fileGoToTrash.description": "Opent de prullenmand van de schijf die je bekijkt",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "73eae92"
+    "sourceHash": "6496c25"
   },
   "commands.dialogConfirm.label": "Bevestig dialoogvenster op het scherm",
   "@commands.dialogConfirm.label": {
@@ -806,9 +806,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Open je terminal-app in de map die je bekijkt",
+  "commands.fileOpenTerminalHere.description": "Opent je terminal-app in de map die je bekijkt",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "ac0ddb8"
+    "sourceHash": "f03d961"
   },
   "commands.fileCopyPath.label": "Kopieer pad naar klembord",
   "@commands.fileCopyPath.label": {
@@ -1283,17 +1283,17 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "1a1f5b9"
   },
-  "commands.suggestedOpsShow.description": "Beoordeel de bestandsbewerkingen die de AI heeft voorgesteld en bepaal wat er gebeurt",
+  "commands.suggestedOpsShow.description": "Toont de bestandsbewerkingen die de AI heeft voorgesteld, zodat je kunt bepalen wat er wordt uitgevoerd",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "7efe8c9"
+    "sourceHash": "5468fcf"
   },
   "commands.helpViewDebugLog.label": "Bekijk foutopsporingslogbestand",
   "@commands.helpViewDebugLog.label": {
     "sourceHash": "007c98d"
   },
-  "commands.helpViewDebugLog.description": "Volg het foutopsporingslogbestand van Cmdr live in het weergavevenster",
+  "commands.helpViewDebugLog.description": "Toont het foutopsporingslogbestand van Cmdr live in het weergavevenster",
   "@commands.helpViewDebugLog.description": {
-    "sourceHash": "a937e6e"
+    "sourceHash": "06f49ab"
   },
   "commands.handler.viewDebugLog.disabled": "Logopslag staat uit. Zet de schijfruimtelimiet in Instellingen > Geavanceerd op meer dan 0 en herstart daarna Cmdr om het foutopsporingslogbestand te bekijken.",
   "@commands.handler.viewDebugLog.disabled": {

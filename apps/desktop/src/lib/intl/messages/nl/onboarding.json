@@ -76,9 +76,9 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "Het lijkt erop dat je eerder volledige schijftoegang hebt geaccepteerd, maar die later hebt ingetrokken.",
+  "onboarding.stepFda.revoked.intro": "Het lijkt erop dat je eerder volledige schijftoegang hebt verleend, maar die later hebt uitgezet.",
   "@onboarding.stepFda.revoked.intro": {
-    "sourceHash": "9087914"
+    "sourceHash": "6759357"
   },
   "onboarding.stepFda.revoked.noAccess": "De app heeft op dit moment geen volledige schijftoegang.",
   "@onboarding.stepFda.revoked.noAccess": {
@@ -241,9 +241,9 @@
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "5cc5e7f"
   },
-  "onboarding.stepAi.table.renameWithout": "Je stelt in ‘Wijzig meerdere namen’ handmatig een naampatroon in, kijkt het na en past het toe.",
+  "onboarding.stepAi.table.renameWithout": "Je stelt in ‘Wijzig meerdere namen’ handmatig een naampatroon in, kijkt het patroon na en past het toe.",
   "@onboarding.stepAi.table.renameWithout": {
-    "sourceHash": "e7531dc"
+    "sourceHash": "1b85bf6"
   },
   "onboarding.stepAi.table.renameWith": "Je zegt ‘zet er een ISO-datum voor’, de agent stelt je naampatroon in, en je kijkt het na en past het naar eigen inzicht toe.",
   "@onboarding.stepAi.table.renameWith": {

@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, als je chat of als het uit zichzelf een chat begint:",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, als je chat of als Cmdr uit zichzelf een gesprek begint:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Je berichten, inclusief elk wachtwoord dat je daar typt om een archief of back-up te ontgrendelen",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Als je logboekregistratie voor LLM-aanroepen aanzet in Geavanceerde instellingen, bewaart Cmdr ook elk verzoek en antwoord in een map op je Mac. Die aanroeplogs blijven lokaal en worden nooit verstuurd.",
+  "ai.cloudConsent.logsNote": "Als je ‘Log AI-modelaanroepen’ aanzet in de geavanceerde instellingen, bewaart Cmdr ook elk verzoek en antwoord in een map op je Mac. Die aanroeplogs blijven lokaal en worden nooit verstuurd.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Zet dit op elk moment uit en Cmdr stopt meteen met versturen. Je service, sleutel en chats blijven zoals ze zijn.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Je model heeft hier mogelijk een hogere limiet voor nodig. Probeer een sneller model zoals gpt-4.1-mini bij Instellingen > AI.",
+  "ai.translateError.emptyResponse.body": "Je model heeft misschien zijn tokenlimiet opgebruikt voordat het antwoordde. Probeer een sneller model zoals gpt-4.1-mini bij Instellingen > AI.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Je AI-aanbieder liep tegen een probleem aan",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "De server reageerde niet op tijd. Probeer het zo meteen opnieuw.",
+  "ai.cloud.timedOut": "De service reageerde niet op tijd. Probeer het zo meteen opnieuw.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Dat adres lijkt niet te kloppen. Gebruik een volledig webadres dat begint met https://.",
   "@ai.cloud.invalidEndpoint": {

@@ -225,10 +225,11 @@ second half is now a normal plural with a real verb
 - **Een knoplabel dat een handeling stopt, staat in de stam-imperatief, ook als het onzichtbaar is.**
   `askCmdr.wake.stop` is de toegankelijke naam van een echte knop, dus `Stop waar Cmdr mee bezig is`, niet de infinitief
   `Stoppen …`. De knopregel hierboven geldt net zo goed voor een label dat alleen een schermlezer uitspreekt.
-- **"Review" in een goedkeuringsscherm is `beoordelen`, niet `bekijken`.** `commands.suggestedOpsShow.description` opent
-  een per-rij goedkeur-of-weiger-dialoog, dus `Beoordeel de bestandsbewerkingen …`, in lijn met de al vastgelegde keuze
-  voor "Review file renames". De buurman `commands.logOperationLog.description` houdt `Bekijk`, want zijn Engels is "See
-  a history of your file operations…": alleen kijken, geen goedkeuringsstap.
+- **"Review" in een goedkeuringsscherm is `beoordelen`, niet `bekijken`** ("Review file renames" →
+  `Naamwijzigingen beoordelen`). Gewoon kijken zonder beslissing blijft `bekijken`.
+- **Opdrachtbeschrijvingen in het palet staan in de derde persoon**, zoals de Nederlandse helptags van macOS
+  (`Verplaatst onderdelen naar de prullenmand`, `Toont de onderdelen in Finder-vensters`, Finder `Localizable.strings`):
+  `Opent …`, `Toont …`, `Kopieert …`. "Lets you X" wordt `Laat je … X`.
 - **`Dock` blijft Engels en krijgt het lidwoord `het`.** Apple laat het lidwoord weg in korte labels
   (`Voeg toe aan Dock`, `Verwijder uit Dock`), maar zet het er in een zin wél bij (`Toon/verberg het Dock automatisch`,
   Systeeminstellingen). Kies op de vorm: label zonder, zin met. De bezittelijke vorm `je Dock` mag waar het Engels

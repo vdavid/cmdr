@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Deze server kan {classes} niet opslaan, dus die gegevens zijn achtergebleven.",
+  "transfer.metadataLeftBehind": "Deze bestemming kan sommige gegevens niet opslaan, dus die zijn achtergebleven: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, one {{countText} beveiligd onderdeel is gebleven waar het was.} other {{countText} beveiligde onderdelen zijn gebleven waar ze waren.}}",
   "@transfer.lockedSkipped": {
