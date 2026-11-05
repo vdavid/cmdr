@@ -420,7 +420,9 @@ embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until 
   Locally it needs Playwright's Chromium (`pnpm exec playwright install chromium` here, once). Its full-disk cell opens
   `/demo/?free=1000` (`crates/cmdr-listing-wasm/DETAILS.md` § Writes).
 - **Other dist checks skip `dist/demo/`**: `.htmlvalidateignore` (the desktop's `app.html` conventions differ) and
-  `website-dead-links` (Vite hashes its own asset names, so the `?v=` rule doesn't apply).
+  `website-dead-links` (Vite hashes its own asset names, so the `?v=` rule doesn't apply). A build without the demo (no
+  `CMDR_WEBSITE_DEMO=1`) can't judge links INTO `/demo/` either, like the hero's, so `website-dead-links` skips those
+  until `dist/demo/index.html` exists, and checks them once it does.
 
 ## Typed linting
 
