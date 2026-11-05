@@ -50,9 +50,9 @@ describe('showMainOnMount', () => {
   })
 
   it('re-shows, then logs a late frame at info, not warn', async () => {
-    // Regression anchor: the 2015 MacBook Air on Catalina misses the first deadline on every
-    // launch while both panes mount, then paints. A late frame isn't a stuck window, so it
-    // must not warn, or a real stuck window drowns in the noise.
+    // Regression anchor: a slow Mac can miss the first deadline while both panes mount, then
+    // paint. A late frame isn't a stuck window, so it must not warn, or a real stuck window
+    // drowns in the noise.
     waitForNextPaint.mockResolvedValueOnce('timeout').mockResolvedValueOnce('painted')
     await showMainOnMount()
     expect(showMainWindow).toHaveBeenCalledTimes(2)

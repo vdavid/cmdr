@@ -158,12 +158,14 @@ check. Two ways, cheapest first:
   port with `ssh -R <port>:127.0.0.1:<port> air`, and `open -a Safari http://127.0.0.1:<port>/` there. Safari runs the
   same staged WebKit and ICU Cmdr gets, so a parse or module-evaluation error shows up with its chunk and column. Past
   that point, the only errors are the missing `window.__TAURI_INTERNALS__`.
-- **The real app** (about five minutes warm):
+- **The real app** (about five minutes warm, eight from a fresh worktree):
   `node scripts/tauri-wrapper.ts build --no-bundle --target x86_64-apple-darwin -- --profile e2e` in `apps/desktop/`,
-  copy an installed `Cmdr.app` under `~` on the Air, swap in `target/x86_64-apple-darwin/e2e/Cmdr`,
-  `codesign --force --deep -s -` it there, and `open` it. `FE:` lines in `~/Library/Logs/com.veszelovszki.cmdr/cmdr.log`
-  mean the frontend mounted. The jsc in Catalina's own `JavaScriptCore.framework` is Safari 13's, and it can't load the
-  staged framework (missing symbols), so it's no help.
+  `scp` an installed `Cmdr.app` from the Air to the laptop, swap in `target/x86_64-apple-darwin/e2e/Cmdr`,
+  `codesign --force --deep -s -` it HERE (the Air has no command-line tools, so `codesign` fails there for want of
+  `codesign_allocate`), copy it back under `~`, and `open` it over `ssh`. `FE:` lines in
+  `~/Library/Logs/com.veszelovszki.cmdr/cmdr.log` mean the frontend mounted. Anything about painting needs the lid open:
+  closed, the window is on no screen and WebKit draws no frame at all (2026-11-05). The jsc in Catalina's own
+  `JavaScriptCore.framework` is Safari 13's, and it can't load the staged framework (missing symbols), so it's no help.
 
 ## Effective minimums imposed by the stack
 
@@ -179,12 +181,16 @@ check. Two ways, cheapest first:
   `UniformTypeIdentifiers` (macOS 11) rode in behind an `objc2-quick-look-ui` feature default and made the app
   unlaunchable on Catalina. `desktop-macos-framework-floor` reads the load commands now, so this line stays true by
   enforcement rather than by assumption (verified by `otool -L` on the `aarch64-apple-darwin` build, 2026-09-05).
-- **Modern CSS**: nothing above the `build.target` floor ships. Container queries (Safari 16) are gone from the tree and
-  banned by stylelint (`at-rule-disallowed-list` / `property-disallowed-list` in `apps/desktop/.stylelintrc.mjs`); the
-  stand-in is `useInlineSize` in `apps/desktop/src/lib/utils/inline-size-action.ts`. `:has()` (Safari 15.4) sits ON the
-  capability floor, so the boot guard covers it. The one thing esbuild can't lower is `color-mix()` over a `var()`,
-  which is why the `@supports not (…)` fallbacks in `app.css` and the runtime mixes behind `webkit-compat.ts` both have
-  to stay.
+- **Modern CSS**: nothing newer than the floor ships without a fallback or a reviewed reason.
+  `apps/desktop/scripts/vite-webkit-css-floor.ts` checks every emitted stylesheet against BCD (properties, keyword
+  values, functions, selectors, at-rules, media features) and fails the build on anything Safari 15.4 drops that the
+  cascade doesn't cover; its `REVIEWED_CSS` list holds the accepted ones, `harmless` (scrollbar styling, `text-wrap`) or
+  `degrades` (tracked in #994: `subgrid` rows stack their cells, `::highlight` paints no find matches). Container
+  queries (Safari 16) are also banned by stylelint (`at-rule-disallowed-list` / `property-disallowed-list` in
+  `apps/desktop/.stylelintrc.mjs`); the stand-in is `useInlineSize` in
+  `apps/desktop/src/lib/utils/inline-size-action.ts`. `:has()` (Safari 15.4) sits ON the capability floor, so the boot
+  guard covers it. `color-mix()` over a `var()` can't be lowered, which is why the `@supports not (…)` fallbacks in
+  `app.css` and the runtime mixes behind `webkit-compat.ts` both have to stay (the CSS check reads those fallbacks).
 - **llama-server (AI feature only)**: Apple Silicon only (no Intel AI build, rest of app works fine)
 
 **Effective practical floor: macOS 10.15 Catalina (2019-10)**, the version the plist declares, on the best-effort terms
