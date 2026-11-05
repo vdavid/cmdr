@@ -448,9 +448,44 @@ mostly hits the cache and exits.
 - **Left out on purpose**: `macos-availability` (the committed selector list records the newest SDK it was built on, and
   an older runner SDK that knows a different selector set fails by design), `disk-images` (a candidate once the job has
   a track record), and the Docker fixture lanes (no Docker on GitHub's macOS runners).
-- **Cache**: one rust-cache entry covering the clippy, rustdoc, and test builds plus `~/.cargo/bin`, saved only from
-  `main` and kept current by `warm-rust-macos-cache`, which builds all three on a miss (§ Build caching). If the job
-  starts building cold, check `gh cache list`.
+- **Cache**: on the M1, none (each slot's `target/` persists). Hosted, one small rust-cache entry with
+  `cache-targets: false`: the cargo registry and `~/.cargo/bin` (cargo-nextest, cargo-modules), saved only from `main`
+  and kept current by `warm-rust-macos-cache`, which runs whenever the push's lane didn't save it (skipped, or ran on
+  the M1) and on a miss fetches the crates and installs both tools. Why no `target/`: § The M1 runner.
+
+### The M1 runner
+
+**The lane runs on David's M1 when a slot is free, and on hosted `macos-26` otherwise.** The M1 (M1 Max, 10 cores, 64
+GB, the box his agent loops run on) carries four self-hosted runner slots, `m1-cmdr-1` to `-4`, labels
+`self-hosted, macOS, ARM64, cmdr-m1`. Each slot keeps its own warm `CARGO_TARGET_DIR` outside the job workspace (one
+shared dir would serialize them on cargo's build-directory lock), so a run there compiles only what changed. Measured
+MEASURE.
+
+- **Routing** (`changes`' `macos-runner` step, output `macos-runs-on` as JSON for `runs-on`): a trusted run gets the M1
+  when the repo's runners API lists a `cmdr-m1` runner that's online and not busy; else hosted. Trusted is an allowlist
+  like the light lane's: a push (only `main`), a dispatch or the schedule, or a PR whose head is in this repo and whose
+  author isn't a bot. Listing runners needs Administration: read, which `GITHUB_TOKEN` can't get, so it reads the
+  `RUNNER_STATUS_TOKEN` secret (a fine-grained PAT on `vdavid/cmdr` only, Administration read-only). No secret (a fork's
+  run gets none) or a failed lookup routes hosted, so the worst case is the old behavior.
+- **What the M1 path changes** (`self-hosted` input): no rust-cache and no mise Actions cache (the box keeps both); the
+  pinned toolchain installs under a `shlock` (four slots share one rustup home, and rustup has no lock of its own);
+  `timeout-minutes` is MEASURE instead of 90, about 2x a healthy run, so a box dying mid-job fails the run instead of
+  hanging it.
+- **The race**: two runs can see the same idle slot; the loser queues for the next free one. A box that goes offline
+  between `changes` and the lane's start leaves the job queued until it's back (GitHub doesn't time out a queued job for
+  24 h); cancel and re-run, and it routes hosted.
+- **Trust**: the slots keep state between jobs (the target dirs, `~/.cargo`, mise's tools), so one job's build script
+  could change what a later job builds against, `main`'s included, in a way no tree hash or marker sees. That's why only
+  trusted runs reach them, and the same caveat as the light lane's applies: an outside contributor's commit
+  cherry-picked onto David's branch (`docs/guides/handling-prs.md`) rides a trusted run. The box itself is protected
+  regardless: the jobs run as a separate non-admin user that can't read David's home, and pf blocks that user from the
+  LAN and the tailnet.
+- **The box side** (the user, the slots, pf, the job hooks, the runner-down email, how to pause it) lives in David's
+  private infra repo: the `ci_runner` Ansible role of its M1 host, and that host's CLAUDE.md § CI runner.
+
+**Why the hosted fallback caches no `target/`** (#981): the `desktop-rust-macos` entry was 3.8 GB of the repo's 10 GB
+budget (`gh cache list`, 2026-11-05), and with the M1 taking trusted runs, the hosted lane runs only on overflow, an M1
+outage, and untrusted runs. MEASURE.
 
 The CI failure history that motivated it: `docs/notes/ci-health-2026-10.md`.
 
