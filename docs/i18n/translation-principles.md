@@ -35,6 +35,9 @@ through `source-queue.md`.
   for a third-party one (Android's AOSP strings count as Tier 1, like Apple's). A synonym sends the reader hunting for a
   control that doesn't exist. A quoted third-party label (a NAS's switch name) is exempt from your avoid-lists: quoting
   it exactly wins.
+- **Command descriptions follow your macOS help tags**: the English palette descriptions speak in the third person
+  (“Opens…”), like English macOS help tags; write yours in the form your language's macOS help tags use (Russian uses
+  the infinitive).
 - **Show-the-result labels**: a label that displays its own effect (“lowercase”, “UPPERCASE”, “Every Word Capitalized”)
   mirrors that casing and is exempt from sentence case. A script without letter case (Chinese, Japanese, Korean)
   describes the transform in words instead.
