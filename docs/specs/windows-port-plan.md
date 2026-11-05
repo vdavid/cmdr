@@ -128,8 +128,8 @@ Settled:
 - **api-server titles Linux reports "macOS Ubuntu …"** (`apps/api-server/src/report-cards.ts:140`). Task 2.
 - **Off macOS the updater skips the advisory list and trust checks** (`lib/updates/updater.svelte.ts:390-430`). Fine for
   an unadvertised Linux alpha, a blocker for any Windows release. Task 33.
-- **Linux licenses carry no device id** (`licensing/device_id.rs:87-90` returns `None` though `/etc/machine-id` exists).
-  A tradeoff call, not fixed; folded into task 38.
+- **Linux licenses carried no device id.** Fixed in [#980](https://github.com/vdavid/cmdr/issues/980): Linux now hashes
+  `/etc/machine-id`, the precedent task 38's `MachineGuid` arm follows.
 
 ## Task list
 
@@ -254,8 +254,9 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
 37. [S] Windows. Cloud Files placeholders (OneDrive and friends: sync badges, cloud trash) and Mark of the Web on
     extract (`cmdr-operations` + `cmdr-archive`). Needs 36.
 38. [S] Windows. Identity and system bundle: secrets via `windows-native-keyring-store` (❗ a blocker: off macOS and
-    Linux secrets fall back to a plaintext file today), device id (`MachineGuid`; decide the Linux `/etc/machine-id` arm
-    here too), OS version, memory, the instance-lock `MessageBoxW`, managed policy from the registry. Needs 18.
+    Linux secrets fall back to a plaintext file today), device id (`MachineGuid`, hashed like the Linux
+    `/etc/machine-id` arm in `licensing/device_id.rs`), OS version, memory, the instance-lock `MessageBoxW`, managed
+    policy from the registry. Needs 18.
 39. [M] Windows. Drives: drive letters and labels, the device-arrival watcher (`CM_Register_Notification`), mapped and
     UNC drives, eject. Needs 20, 34.
 40. [S] Windows. System look: accent color, text scale, high contrast and transparency, UI language and formats, all
