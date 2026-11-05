@@ -69,6 +69,8 @@ jobs:
       # keeps the key stable across runner images (see the action).
       - name: Keep only the pinned Rust toolchain
         uses: ./.github/actions/pinned-rust-toolchain
+        with:
+          dependency-debuginfo: false # the `desktop-rust` entry's jobs all pass it (see the action)
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
