@@ -261,7 +261,7 @@ jobs:
 
       # `main` only (see the action); `warm-light-cache` covers the `main` pushes that skip this lane.
       - name: Save the light lane caches
-        if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+        if: ${{ !cancelled() && true }}
         uses: ./.github/actions/light-cache
         with:
           phase: save
