@@ -12,27 +12,37 @@ description: >-
 #     the check runner's own `pnpm install --frozen-lockfile` still runs before each Node check and finds nothing to do.
 #   - The check tool: its non-test Go sources, its module files, and the Go version.
 #   - Go: the module sums, the files that pin each Go check's tool, and the Go version. A stale tool is safe
-#     (`EnsureGoTool` reinstalls one whose module or Go version differs), so this one also restores by prefix.
+#     (`EnsureGoTool` reinstalls one whose module or Go version differs), so a run may also restore by prefix
+#     (`fallback`).
 #   - Scorecard: the check file that pins it, and the Go version. Its own entry, because a lane run saves only what its
 #     sections installed: in one shared entry, a Go-only run's save (no scorecard) hit exactly on every later run, so
 #     scorecard's ~2 min `go install` never got cached.
-# - The light lane saves from `main` only, like the Rust caches: node_modules is ~1 GB unpacked, and per-PR entries
-#   are what pushed the repo past its 10 GB budget before (`docs/tooling/ci.md` § Build caching). A PR restores
-#   `main`'s entries, which `warm-light-cache` keeps current after every land.
+# - Only `warm-light-cache` saves, from `main` only, like the Rust caches: node_modules is ~1 GB unpacked, and per-PR
+#   entries are what pushed the repo past its 10 GB budget before (`docs/tooling/ci.md` § Build caching). It restores
+#   the Go caches without `fallback`, so on a new key it saves only what this commit's checks used: a prefix restore
+#   carried every older entry's modules and build cache forward, and `light-go` grew to 1.6 GB (4.5 GB unpacked).
+# - ❗ A path that excludes part of a listed directory lists the directory's children (`dir/*`, then `!dir/child`):
+#   actions/cache passes a listed directory to `tar` whole, so `!` under it excludes nothing (probe run 42024754473,
+#   actions/cache v6.1.0, 2026-11-05). `*` matches dotfiles, so `node_modules/*` keeps `.pnpm` and `.modules.yaml`.
+#   Before this, `light-node-modules` carried every Go tool and `light-go` the scorecard binary.
 inputs:
   phase:
     description: '`restore` or `save`'
     required: true
   node-modules:
-    description: >-
-      Whether to restore `node_modules` (`true` or `false`): off on the self-hosted runner, whose warm pnpm store
-      installs it faster, and for a job that runs no Node check
+    description: Whether to restore `node_modules` (`true` or `false`), off for a job that runs no Node check
     required: false
     default: 'true'
   go:
     description: Whether to restore or save the Go checks' caches too (`true` or `false`)
     required: false
     default: 'false'
+  fallback:
+    description: >-
+      Whether the Go caches' restore falls back to the newest entry with an older key (`true` or `false`). Off for a job
+      that saves, so a new key's entry starts empty.
+    required: false
+    default: 'true'
   scorecard:
     description: Whether to restore or save the scorecard binary too (`true` or `false`)
     required: false
@@ -82,10 +92,10 @@ runs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
-          node_modules
+          node_modules/*
+          !node_modules/.cache
           apps/*/node_modules
           eslint-plugins/node_modules
-          !node_modules/.cache
         key:
           light-node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml',
           '.mise.toml') }}
@@ -108,13 +118,12 @@ runs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-          node_modules/.cache/cmdr-go-tools
+          node_modules/.cache/cmdr-go-tools/*
           !node_modules/.cache/cmdr-go-tools/scorecard
         key:
           light-go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.mise.toml', 'scripts/**/go.sum',
           'apps/desktop/scripts/**/go.sum', 'scripts/check/checks/scripts-go-*.go') }}
-        restore-keys: |
-          light-go-${{ runner.os }}-${{ runner.arch }}-
+        restore-keys: ${{ inputs.fallback == 'true' && format('light-go-{0}-{1}-', runner.os, runner.arch) || '' }}
 
     - name: Restore the scorecard binary
       id: scorecard
@@ -131,10 +140,10 @@ runs:
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
-          node_modules
+          node_modules/*
+          !node_modules/.cache
           apps/*/node_modules
           eslint-plugins/node_modules
-          !node_modules/.cache
         key:
           light-node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml',
           '.mise.toml') }}
@@ -157,7 +166,7 @@ runs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-          node_modules/.cache/cmdr-go-tools
+          node_modules/.cache/cmdr-go-tools/*
           !node_modules/.cache/cmdr-go-tools/scorecard
         key:
           light-go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.mise.toml', 'scripts/**/go.sum',

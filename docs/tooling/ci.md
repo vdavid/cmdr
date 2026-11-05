@@ -171,17 +171,14 @@ itself still reruns all.
 
 ## The light lane
 
-`light-lane.yml`, one job: everything that needs no Rust and no browser, so a narrow PR (docs, Go, API server,
-dashboard, CI config) pays setup once and takes one runner. It runs on every unverified PR and push (§ Landing doesn't
-re-run the suite), except a PR that changes no file. Every check step runs once setup is done, even after another
-failed, so a red run lists every failure, like the four separate jobs it replaced did.
+`light-lane.yml`, one job on `ubuntu-latest`: everything that needs no Rust and no browser, so a narrow PR (docs, Go,
+API server, dashboard, CI config) pays setup once and takes one runner. It runs on every unverified PR and push (§
+Landing doesn't re-run the suite), except a PR that changes no file. Every check step runs once setup is done, even
+after another failed, so a red run lists every failure, like the four separate jobs it replaced did.
 
-**It runs on `ubuntu-latest` by default, and the self-hosted `cmdr-light` runner is a one-line flip** (§ the runner
-bullets below). Hosted wins because the box runs one job at a time on 1.5 cores: measured there (throwaway PRs
-#971–#973, 2026-11-05), a docs-only PR's light job took 61 s (63 s on hosted the same day, PR #974), a Go-only PR's 174
-s, and an API-server-only PR's 145 s, and three PRs pushed together queued behind each other (the Go probe waited 110 s,
-the API one ~4 min). So it's no faster per job, and with several agents' PRs in flight it serializes every light job,
-the opposite of what the box was for. It would only win while hosted runners queue, which these runs didn't measure.
+**No self-hosted runner.** A capped one on David's Hetzner box ran this lane briefly and was removed (2026-11-05): a
+docs-only light job took 61 s there against 63 s hosted (throwaway PRs #971–#974), and the box ran one job at a time, so
+three PRs pushed together queued behind each other. Hosted runners run them in parallel.
 
 - **Repo hygiene, on every change**: the checks whose inputs no per-app filter can cover. `oxfmt` formats the whole
   monorepo (before hygiene ran on every change, a docs-only commit ran zero CI, so unformatted markdown could land on
@@ -191,16 +188,13 @@ the opposite of what the box was for. It would only win while hosted runners que
   territory). Grouped a few per step: one invocation runs its checks in parallel.
 - **Per filter**: the Go checks (`scripts`, one invocation, so they overlap), the API server (`api-server`), and the
   dashboard (`dashboard`).
-- **nilaway and Scorecard run in `hosted-go`, a second job on `ubuntu-latest`**, gated on `scripts` (nilaway),
-  `scorecard` (Scorecard), or a full run, so the self-hosted runner keeps only the fast checks: there nilaway passed 2.5
-  GB and kept growing against a 1.5 GB job budget, and Scorecard's cold `go install` pulled ~2.3 GB of Go modules and
-  filled its disk (run 41949695576, 2026-11-05). Beside the light job, it also takes both off that job's critical path.
-  It restores the check tool, the Go caches (nilaway's binary among them), and the scorecard binary, and saves nothing.
-  nilaway fans out two modules at a time (`scripts/check/checks/DETAILS.md`).
+- **nilaway and Scorecard run in `go-tools`, a second job**, gated on `scripts` (nilaway), `scorecard` (Scorecard), or a
+  full run, which takes the two slowest Go tools off the light job's critical path. It restores the check tool, the Go
+  caches (nilaway's binary among them), and the scorecard binary, and saves nothing. nilaway fans out two modules at a
+  time (`scripts/check/checks/DETAILS.md`).
 - **Two slow hygiene checks, per filter** (each filter carries the check's fingerprint, `ci-coverage` rule 7):
   `desktop-i18n-termbase` (~40 s) on `termbase`; `changelog-commit-links` on `changelog`, which alone needs history, so
-  the lane fetches it (`git fetch --unshallow`) only then. `scorecard-local` on `scorecard` is the third, in
-  `hosted-go`.
+  the lane fetches it (`git fetch --unshallow`) only then. `scorecard-local` on `scorecard` is the third, in `go-tools`.
 - **Scorecard's trigger has two halves**, both decided in `changes`. Its file checks read workflows, Dockerfiles, the
   Renovate config, the license, security policy, and fuzz harness: the `scorecard` filter. But Binary-Artifacts and
   Pinned-Dependencies' shell half read EVERY file, by content (read in ossf/scorecard v5.5.0's source, 2026-11-05: its
@@ -209,29 +203,6 @@ the opposite of what the box was for. It would only win while hosted runners que
   Scorecard when a file, a deleted one or a rename's old path included, has a binary or shell extension, a Dockerfile or
   `.github/` path, a shebang, or a NUL in its first 1,024 bytes. 3,000+ files (the API's cap) or a failed lookup runs
   it. A push or dispatch always runs it.
-- **The runner is an input** (`runs-on`, default `ubuntu-latest`). `ci.yml`'s top-level `LIGHT_LANE_RUNNER` is the one
-  switch, set to `ubuntu-latest` (above says why). `cmdr-light` is the self-hosted runner on David's Hetzner box (labels
-  `self-hosted, Linux, X64, cmdr-light`; its budget, containment, and how to pause it live with the `gha-runner` Ansible
-  role in David's private infra repo); set the switch to it to move trusted runs there. ❗ Precondition: only same-repo,
-  human-authored code may run there, and that includes an outside contributor's commit cherry-picked onto David's branch
-  per `docs/guides/handling-prs.md` (its PR is same-repo and human-authored, so the allowlist below would send it
-  there). The box shares mise's tools, pnpm's store, and the Go module cache (writable, `-modcacherw`) across jobs, so
-  one job's code can change what every later job on the box runs against, `main`'s included, in a way no tree hash or
-  filter sees. Before flipping the switch, route those PRs to hosted, or make the runner ephemeral.
-- **Only trusted runs reach that runner**, since it keeps state (its tool caches) between jobs. `changes`' runner step
-  is an allowlist: a push (only `main`), a dispatch (only collaborators can), or a pull request whose head is in this
-  repo and whose author isn't a bot gets `LIGHT_LANE_RUNNER`; everything else gets `ubuntu-latest`. So a fork PR, a
-  Renovate or Dependabot PR (third-party code a test run executes), and any trigger added later (`pull_request_target`,
-  which no workflow uses and `workflows-hardening` refuses, or `merge_group`) stay hosted. That guards against our own
-  workflow routing outside code there; a fork PR that edits `ci.yml` to name the label itself is stopped by the repo's
-  approval rule, which holds every outside contributor's run until David approves it (`fork-pr-contributor-approval` is
-  `all_external_contributors`, read with `gh api` on 2026-11-05).
-- **What changes on that runner** (`HOSTED` in `light-lane.yml`): `jdx/mise-action` gets `cache: false` and the
-  `node_modules` and Go cache restores skip, because the box keeps mise's tools, pnpm's store, and the Go caches between
-  jobs, pre-warmed from `main`; `pnpm install` links from the warm store. The check tool (small, per checkout) still
-  restores, and nothing saves from there (it restored only part of the set), so `warm-light-cache` runs after every
-  `main` push whose light lane ran on the box. `GOFLAGS` adds `-modcacherw`, so the box's disk cleanup can delete the
-  module cache.
 
 **A PR whose head tree equals its base branch's skips it** (`changes`' `same-tree` step, pull requests only). That's a
 `pnpm land -record N` record (`docs/guides/handling-prs.md`): an `ours` merge that changes no file, only ancestry, so
@@ -250,9 +221,18 @@ lanes, and the record lands in about a minute instead of waiting out a busy queu
 built check tool (keyed on its non-test Go sources and the Go version), the Go caches (module and build caches plus the
 Go checks' `go install`ed tools; restored only when the Go checks run), and the scorecard binary (its ~2 min
 `go install`, an entry of its own: in a shared one, a Go-only run's save, which held no scorecard, hit exactly on every
-later run, so scorecard was never cached; seen on the probe PR #964, 2026-11-05). They save from `main` only, like the
-Rust caches, and `warm-light-cache` fills them after a verified land. `GOFLAGS=-count=1` keeps test results out of the
-Go build cache, so `go test` always runs for real.
+later run, so scorecard was never cached; seen on the probe PR #964, 2026-11-05). The lane only restores them;
+`warm-light-cache` is their one writer, on every `main` push. `GOFLAGS=-count=1` keeps test results out of the Go build
+cache, so `go test` always runs for real. Two things keep `light-go` small (it reached 1.6 GB, 4.5 GB unpacked, on
+2026-11-05, measured by restoring it in a throwaway run):
+
+- **The writer restores it without `fallback`**, so a new key's entry holds only what that commit's Go checks used. A
+  prefix restore carried every older entry's modules and build cache forward into each new save.
+- **Scorecard installs into Go caches of its own**, thrown away after: its `go install` pulled ~3 GB of modules and ~1.3
+  GB of build cache into `light-go`, of which only the binary (in `light-scorecard`) is worth keeping.
+
+A fresh `light-go` weighs ~0.23 GB (the Go checks run cold with empty caches, then tar+zstd like actions/cache: build
+cache 92 MB, modules 106 MB, tools 35 MB; measured locally, 2026-11-05).
 
 **The pnpm store** (`.github/actions/pnpm-store`): the Svelte lane, the website lane, the demo build, the deploys, and
 `slow-checks` restore pnpm's store before `pnpm install`, at the path `pnpm store path` reports (pnpm 12 keeps it under
