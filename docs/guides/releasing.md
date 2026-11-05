@@ -771,8 +771,8 @@ tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, five are worth kno
   (`desktop-bundle-size`, which fails when the frontend grew more than 10% past its baseline). A few minutes, mostly the
   mimalloc clippy build. Fix a bundle-size failure by shrinking the growth or, if it's intended, refreshing the baseline
   (delete `scripts/check/checks/desktop-bundle-size-baseline.json`, run `pnpm check desktop-bundle-size`, land it; no
-  need to ask). The same lane runs every six days in `slow-checks.yml`. What's in it and why: `scripts/check/DETAILS.md`
-  § Pre-release lane.
+  need to ask). The same lane runs nightly in `slow-checks.yml`. What's in it and why: `scripts/check/DETAILS.md` §
+  Pre-release lane.
 - **Visual baselines are auto-refreshed (Docker required).** After the CHANGELOG/roadmap/version are finalized, the
   script runs `apps/website/scripts/update-visual-baselines.sh`, which re-shoots any stale website baseline in a pinned
   Playwright container and folds the result into the release commit. Docker must be running; a stopped Docker aborts the

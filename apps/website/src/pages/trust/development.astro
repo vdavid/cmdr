@@ -243,8 +243,9 @@ const toc = [
         <li>
             <strong>Before a change lands on the main branch, on GitHub</strong>: every change arrives as a pull
             request, and GitHub refuses to merge it until the checks for the parts it touches pass: lints and custom
-            checks, unit and integration tests, and the end-to-end suite in Docker on Linux, plus the Rust lints and
-            tests on macOS when Rust code changed, and a build of the Finder extension for both chip types, against
+            checks, unit and integration tests, and the end-to-end suite in Docker on Linux. When Rust code changed,
+            also the Rust lints and tests on macOS, the Kani proofs, and the Shuttle interleaving tests, plus a build
+            of the Finder extension for both chip types, against
             the oldest macOS version Cmdr supports, when it changed. Nobody can skip this, the maintainer included.
         </li>
         <li>
@@ -253,11 +254,11 @@ const toc = [
             versions.
         </li>
         <li>
-            <strong>Every six days, on GitHub</strong>: <code>govulncheck</code> for the Go build scripts, an
+            <strong>Every night, on GitHub</strong>: <code>govulncheck</code> for the Go build scripts, an
             unused-dependency scan, and live tests against five AI providers' real APIs. Also fuzzing: random-input
             testing, 20 minutes each, of the parsers that read data from outside (Android phones, WebDAV, S3, and NFS
             server responses, archives, PDFs, and image headers), where each target checks real properties such as
-            round trips. Plus the Kani proofs, the Shuttle interleaving tests, the mutant check, and Miri, which runs
+            round trips. Plus the mutant check and Miri, which runs
             the tests of the pure-Rust <code>unsafe</code> code and reports undefined behavior. The macOS lints of the release build and a bundle
             size limit run on this schedule too, and before every release tag.
         </li>

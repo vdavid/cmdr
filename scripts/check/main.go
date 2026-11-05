@@ -46,7 +46,7 @@ type cliFlags struct {
 	includeSlow       bool
 	onlySlow          bool
 	fast              bool
-	preRelease        bool // run only the IsPreRelease checks (before a release tag, and every six days in CI)
+	preRelease        bool // run only the IsPreRelease checks (before a release tag, and nightly in CI)
 	failFast          bool
 	noLog             bool
 	quiet             bool   // the default: collapse passing checks into a one-line count; stream only warns, failures, skips, and changes. `-v` turns it off

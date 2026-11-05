@@ -152,8 +152,8 @@ risk.
     chain loops reads as unparseable instead of recursing (`crates/cmdr-archive/src/read/DETAILS.md` § Resource caps,
     `apps/desktop/src-tauri/src/tools/DETAILS.md`).
   - **Fuzzing**: fuzz targets cover archive names and indexes, PDF, image headers, and the S3, WebDAV, NFS, and ADB wire
-    parsers, on demand (`pnpm check fuzz`) and in the slow CI lane every six days (`fuzz/DETAILS.md`, which also lists
-    the findings and the one open upstream issue).
+    parsers, on demand (`pnpm check fuzz`) and in the slow CI lane nightly (`fuzz/DETAILS.md`, which also lists the
+    findings and the one open upstream issue).
 - **Residual risk**:
   - **Parsers run in Cmdr's process, unsandboxed, with Full Disk Access.** A memory-safety bug in a native dependency or
     Apple framework (ImageIO is a classic target) reached through a downloaded file would run with the user's full file

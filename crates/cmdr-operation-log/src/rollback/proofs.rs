@@ -95,7 +95,8 @@ fn a_run_never_claims_more_than_it_reversed() {
 
 /// The per-item inverse: every kind but Delete has one, a folder the operation
 /// created is only ever removed (empty), a copied file is only removed while its
-/// original stays, and a moved item's action agrees with the inverse op's kind.
+/// original stays, only a tag write gets its tags written back, and a restore
+/// (move or tags) is exactly the action whose inverse op can be undone again.
 #[kani::proof]
 fn every_item_gets_the_inverse_its_kind_promises() {
     let kind: OpKind = kani::any();
@@ -120,9 +121,16 @@ fn every_item_gets_the_inverse_its_kind_promises() {
             "a copy removed without checking its original"
         );
     }
+    assert_eq!(
+        action == Some(InverseAction::RestoreTags),
+        kind == OpKind::Tag,
+        "a tag write undone some other way"
+    );
     if let Some(action) = action {
+        // Only a restore (a move back, or the prior tags written back) leaves an op
+        // that can be undone again; every removal's inverse is a delete.
         assert_eq!(
-            action == InverseAction::RestoreMove,
+            matches!(action, InverseAction::RestoreMove | InverseAction::RestoreTags),
             inverse_kind(kind) != OpKind::Delete,
             "the action and the inverse op's kind disagree"
         );

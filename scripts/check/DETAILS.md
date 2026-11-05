@@ -360,15 +360,15 @@ seat on every run: today `clippy-mimalloc` and `desktop-bundle-size`. `pnpm chec
 every other run (default, `--fast`, `--include-slow`, `--only-slow`, `--ci`) leaves them out (`FilterPreReleaseChecks`,
 second in `applyLaneFilters`). Naming one still runs it. `--pre-release` doesn't combine with `--fast` /
 `--include-slow` / `--only-slow`. Two places run it: `scripts/release.sh` (`--pre-release --ci`, before any version
-bump, so a red gate stops the release untagged) and `slow-checks.yml`'s macOS `pre-release` job every six days (macOS
-because `clippy-mimalloc` lints macOS-only code and skips elsewhere). `ci-coverage` counts a workflow line running
+bump, so a red gate stops the release untagged) and `slow-checks.yml`'s macOS `pre-release` job nightly (macOS because
+`clippy-mimalloc` lints macOS-only code and skips elsewhere). `ci-coverage` counts a workflow line running
 `scripts/check ... --pre-release` as a reference to every pre-release check, so they carry no `NotInCI` reason.
 
 **Decision**: a pre-release lane that FAILS. **Why**: `clippy-mimalloc` (~120 s, weight 8) never failed in the check log
 from 2026-07-19 to 2026-10-29, and `desktop-bundle-size` did a full frontend build to print a warning nobody read,
-because a warning logs as a pass. Gating the release (plus a six-day CI run, so a break surfaces before release morning)
+because a warning logs as a pass. Gating the release (plus a nightly CI run, so a break surfaces before release morning)
 keeps both meaningful at a fraction of the cost. `module-cycles` stays where it is: it already fails, and `ci.yml`'s
-macOS lane (`macos-lane.yml`) runs it on every push, which a six-day cadence would weaken.
+macOS lane (`macos-lane.yml`) runs it on every push, which a nightly cadence would weaken.
 
 **CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently `cargo-udeps`, `jscpd-rust`, and
 the four real-API `<provider>-smoke` lanes). They're silently dropped from local runs (no SKIPPED line) and are not
