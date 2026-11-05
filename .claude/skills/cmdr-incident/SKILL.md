@@ -38,7 +38,7 @@ minutes, not an hour.
      secrets on `vdavid/cmdr` (`gh run list`, `gh release list`, `gh api repos/vdavid/cmdr/keys`,
      `gh api repos/vdavid/cmdr/hooks`, `gh variable list`, `gh secret list --env release`).
    - Cloudflare: the account audit log through the API (D1, R2, Workers, Pages, and token changes).
-   - Paddle, PostHog, and Resend: whatever their APIs expose about key use and account activity.
+   - Paddle, PostHog, and SMTP2Go: whatever their APIs expose about key use and account activity.
    - For what no API reaches (the GitHub account security log, dashboard-only logs), give David the exact pages to open.
    - Personal data accessed? Say so at once and add the IMY deadline (72 hours from that discovery) to the issue, plus a
      48-hour deadline per affected customer with a signed DPA (§ Deadlines). Their notice is a draft for David, like

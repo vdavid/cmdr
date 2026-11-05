@@ -60,7 +60,7 @@ Count from the aware time. One SRP submission reaches CERT-SE and ENISA together
   - GitHub: the account security log, recent Actions runs, tags, releases, deploy keys, webhooks, and the `release`
     environment's secrets.
   - Cloudflare: the account audit log, API tokens, and Workers, Pages, D1, and R2 changes.
-  - Paddle, PostHog, and Resend: each dashboard's API-key and activity logs.
+  - Paddle, PostHog, and SMTP2Go: each dashboard's API-key and activity logs.
   - The api-server's D1 database: unexpected queries or exports, through the Cloudflare audit log.
 - **Ship a fix release** if users need one: `docs/guides/releasing.md` § Emergency release during an incident.
 - Personal data touched? Start the IMY clock now, and the 48-hour clock for every affected customer with a signed DPA (§

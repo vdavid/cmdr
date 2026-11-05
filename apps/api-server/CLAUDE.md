@@ -18,15 +18,15 @@ Root holds the assembly and the shared leaves (`index.ts`, `types.ts`, `admin-au
 `report-*.ts` + `github-issues.ts` + `morning-brief.ts` board, `project-board.ts`, `scheduled.ts`, `cron-health.ts`,
 `user-agent.ts`; DETAILS § Root files). ❌ Areas depend on root leaves, never each other.
 
-`email/` is one module per audience: `send.ts` (the Resend door), `layout.ts` (HTML chrome), then `crash.ts`,
+`email/` is one module per audience: `send.ts` (the SMTP2Go door), `layout.ts` (HTML chrome), then `crash.ts`,
 `feedback.ts`, `error-report.ts`, `ops-alerts.ts`, `license.ts`, `sale.ts`. Import the specific one; no barrel.
 
 ## Must-knows
 
-- **Secrets go in via `wrangler secret put`, ❌ never `wrangler.toml`.**
-- **Email through `sendViaResend` (`src/email/send.ts`), ❌ never `resend.emails.send`**: Resend reports a failed send
-  in its RESPONSE rather than throwing, so a raw call reads every failure as success (for a license mail, that means the
-  buyer pays and gets nothing).
+- **Secrets go in via `wrangler secret put`, ❌ never `wrangler.toml`.** A required one also joins the deploy workflow's
+  `required` list, put BEFORE landing. DETAILS § Deployment.
+- **Email through `sendEmail` (`src/email/send.ts`), ❌ never a raw `fetch` to SMTP2Go**: it answers 200 for a failed
+  send, so a raw call reads failure as success (a buyer pays, gets no license).
 - **Hash every stored IP through `types.ts::hashCallerIp` with `IP_HASH_PEPPER`.** The salts are public (a UTC day, a
   post slug), so the pepper alone makes the hash one-way and the policy's "we don't store your IP address" true. ❌
   Never a second scheme, ❌ never an IP-derived value no query reads.
@@ -36,8 +36,8 @@ Root holds the assembly and the shared leaves (`index.ts`, `types.ts`, `admin-au
   intake. Privacy is re-checked per write, failing closed. ❌ No note, reply-to, or bundle link in an issue title or
   body: personal data goes only in the `expires=`-stamped comment. ❌ Never widen `GITHUB_PROJECT_TOKEN` past `project`.
   DETAILS §§ The reports repo, The backlog board, Card ratings.
-- **Rate limits are per data center, not global** (`enforceIpRateLimit`), so they bound one abusive client, never a
-  distributed flood. `/error-report` adds a global ceiling.
+- **Rate limits are per data center** (`enforceIpRateLimit`): they bound one abusive client, never a distributed flood.
+  `/error-report` adds a global ceiling.
 - **A heartbeat install id is not proof of a person.** A fresh data dir mints a fresh `anal_` id, which left the table
   6x over-counted. `handleSyntheticHeartbeatSweep` deletes ids that never persisted a setting and have been quiet a
   week; ❌ never shorten that grace period, a brand-new real user looks identical for their first minutes. DETAILS §
@@ -52,4 +52,4 @@ Root holds the assembly and the shared leaves (`index.ts`, `types.ts`, `admin-au
   the object form (`{ fetch, scheduled }`) or cron breaks (`app` is also named-exported for tests).
 
 Routes, secrets, bindings, Worker types (`wrangler types`, gitignored), cron, retention, and runbooks: `DETAILS.md`.
-Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Read it before any non-trivial work here, advising included.

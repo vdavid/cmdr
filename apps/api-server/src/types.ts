@@ -67,7 +67,7 @@ export type Bindings = {
   // deployed environment.
   IP_HASH_PEPPER?: string
   // Email
-  RESEND_API_KEY: string
+  SMTP2GO_API_KEY: string
   // Config
   PRODUCT_NAME: string
   SUPPORT_EMAIL: string

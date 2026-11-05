@@ -23,7 +23,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   `heartbeat-sql.test.ts` (the INSERTs against a real SQLite with the real migrations),
   `download-and-update-check.test.ts`, `error-report.test.ts`, `error-report-intake.test.ts`,
   `error-report-eviction.test.ts`, `error-report-amend.test.ts`, `feedback.test.ts`. The route-level R2/KV/D1 fakes live
-  in `error-report-test-helpers.ts`; the Resend mock can't (`vi.mock` is hoisted per file).
+  in `error-report-test-helpers.ts`; the `sendEmail` mock can't (`vi.mock` is hoisted per file).
 
 ## Request flows
 

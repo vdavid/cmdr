@@ -268,7 +268,10 @@ GITHUB_TRIAGE_AUTHOR = "vdavid"
 #                                   space brute-forces in seconds. Generate with
 #                                   `openssl rand -hex 32`. Safe to rotate: costs one day of
 #                                   same-day download dedup, re-anonymizes every older row.)
-# - RESEND_API_KEY                 (from resend.com)
+# - SMTP2GO_API_KEY               (SMTP2Go API key, made in the dashboard and allowed ONLY
+#                                   `/email/send` and `/stats/email_cycle`. ❌ Never the broad
+#                                   agent key: that one can delete our sending domain. DETAILS.md
+#                                   § Configuration.)
 # - PRICE_ID_COMMERCIAL_PERPETUAL  (Price ID for the $59 one-time Commercial license. The name still
 #                                   says "perpetual" because that's the license TYPE the webhook
 #                                   issues for it; the retired $199 tier used to hold this slot.
@@ -286,7 +289,7 @@ GITHUB_TRIAGE_AUTHOR = "vdavid"
 #                                   falls back to CRASH_NOTIFICATION_EMAIL when unset, so the digest
 #                                   email needs no new secret)
 # - HEALTHCHECKS_PING_URL          (optional: healthchecks.io ping URL for the cron dead-man's
-#                                   switch, and the cron alarm that works without D1 or Resend. Alerts
+#                                   switch, and the cron alarm that works without D1 or SMTP2Go. Alerts
 #                                   when a tick fails or never arrives. A capability URL, hence a secret.)
 # - R2_ACCOUNT_ID                  (for minting presigned R2 GET URLs)
 # - R2_ACCESS_KEY_ID               (R2 S3-compatible access key; read-only suffices)

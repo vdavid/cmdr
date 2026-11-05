@@ -5,7 +5,7 @@
  * **Paddle rows are a fulfillment record.** Minting codes must happen exactly once per transaction;
  * emailing them is fine to repeat. This module keeps those two apart: a row is claimed atomically
  * before any side effect, the minted codes are stored before the email goes out, and the row is
- * marked delivered only after Resend accepts it. A redelivery therefore re-sends the SAME codes
+ * marked delivered only after SMTP2Go accepts it. A redelivery therefore re-sends the SAME codes
  * instead of minting a second set. Rows never expire: "this purchase was fulfilled" has no useful
  * end date. A full refund or a chargeback sets `revoked_at` (`refunds.ts`), the one fact about a
  * purchase `/validate` reads from here rather than from Paddle.
@@ -147,7 +147,7 @@ export async function recordIssuedCodes(
     .run()
 }
 
-/** Mark the purchase fulfilled. Only reached once Resend has accepted the license email. */
+/** Mark the purchase fulfilled. Only reached once SMTP2Go has accepted the license email. */
 export async function markIssuanceDelivered(db: D1Database, transactionId: string, now: Date): Promise<void> {
   await db
     .prepare(`UPDATE license_issuance SET emailed_at = ? WHERE transaction_id = ?`)

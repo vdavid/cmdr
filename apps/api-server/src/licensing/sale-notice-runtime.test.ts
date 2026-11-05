@@ -1,10 +1,11 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestHarness } from 'wrangler'
 import * as ed from '@noble/ed25519'
+import { createSmtp2GoStub, type WireEmail } from '../email/smtp2go-test-helpers'
 
 /**
  * The sale notice in the REAL Worker, beside the purchase it celebrates: wrangler builds
- * `src/index.ts` and runs it in workerd under the production `wrangler.toml`, with Paddle and Resend
+ * `src/index.ts` and runs it in workerd under the production `wrangler.toml`, with Paddle and SMTP2Go
  * stubbed at the socket, the same way `webhook-runtime.test.ts` does (read its header for the
  * mechanics). Its own harness because this one configures a notification recipient, which is what
  * turns the notice on; the purchase suite runs without one so its email counts stay exact.
@@ -30,7 +31,7 @@ const server = createTestHarness({
         PADDLE_API_KEY_LIVE: 'test-paddle-key',
         ADMIN_API_TOKEN: adminToken,
         PRICE_ID_COMMERCIAL_PERPETUAL: perpetualPriceId,
-        RESEND_API_KEY: 'test-resend-key',
+        SMTP2GO_API_KEY: 'test-smtp2go-key',
         CRASH_NOTIFICATION_EMAIL: david,
       },
     },
@@ -41,21 +42,11 @@ interface HarnessEnv {
   TELEMETRY_DB: D1Database
 }
 
-interface SentEmail {
-  to: string
-  subject: string
-  html: string
-  text: string
-}
-
 const buyer = { email: 'buyer@example.com', name: 'Robin' }
 /** Per-transaction overrides of what Paddle answers: a $0 purchase, an unknown id. */
 const paddleTransactions = new Map<string, { grandTotal?: string; missing?: boolean }>()
-const resend = {
-  sent: [] as SentEmail[],
-  /** Recipients Resend refuses, the way a rate limit answers: an error in the response. */
-  rejectTo: new Set<string>(),
-}
+/** `smtp2go.failTo` holds the recipients SMTP2Go fails, the way it reports it: a 200 saying `failed: 1`. */
+const smtp2go = createSmtp2GoStub()
 const unexpectedOutbound: string[] = []
 const realFetch = globalThis.fetch
 
@@ -71,8 +62,7 @@ afterAll(async () => {
 })
 
 beforeEach(() => {
-  resend.sent.length = 0
-  resend.rejectTo.clear()
+  smtp2go.reset()
 })
 
 afterEach(() => {
@@ -90,14 +80,7 @@ async function stubbedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
     if (override?.missing) return Response.json({ error: { code: 'not_found' } }, { status: 404 })
     return Response.json({ data: paddleTransaction(id, override?.grandTotal ?? '5900') })
   }
-  if (url === 'https://api.resend.com/emails') {
-    const email = JSON.parse(await requestBody(input, init)) as SentEmail
-    resend.sent.push(email)
-    if (resend.rejectTo.has(email.to)) {
-      return Response.json({ name: 'rate_limit_exceeded', message: 'Too many requests' }, { status: 429 })
-    }
-    return Response.json({ id: `email_${String(resend.sent.length)}` })
-  }
+  if (smtp2go.handles(url)) return await smtp2go.answer(url, input, init)
   unexpectedOutbound.push(url)
   return Response.json({ error: 'This host is not stubbed' }, { status: 502 })
 }
@@ -121,15 +104,6 @@ function paddleTransaction(id: string, grandTotal: string): unknown {
     address: { country_code: 'DE' },
     business: null,
   }
-}
-
-/** See `webhook-runtime.test.ts::requestBody` for why this duck-types. */
-async function requestBody(input: RequestInfo | URL, init?: RequestInit): Promise<string> {
-  for (const candidate of [init, input]) {
-    const body = candidate as { text?: () => Promise<string> } | undefined
-    if (typeof body?.text === 'function') return await body.text()
-  }
-  return typeof init?.body === 'string' ? init.body : ''
 }
 
 async function sign(body: string): Promise<string> {
@@ -180,8 +154,8 @@ function workerLogs(): string {
     .join('\n')
 }
 
-function sentTo(to: string): SentEmail[] {
-  return resend.sent.filter((email) => email.to === to)
+function sentTo(to: string): WireEmail[] {
+  return smtp2go.sent.filter((email) => email.to === to)
 }
 
 async function db(): Promise<D1Database> {
@@ -228,7 +202,7 @@ describe('the sale notice in the Worker runtime', () => {
     expect(notice.html).toContain('https://vendors.paddle.com/transactions-v2/txn_sale_first')
     expect(await saleNotifiedAt(transactionId)).toBeTruthy()
 
-    resend.sent.length = 0
+    smtp2go.sent.length = 0
     const redelivery = await deliver(transactionId)
     await settle()
 
@@ -238,7 +212,7 @@ describe('the sale notice in the Worker runtime', () => {
 
   it('keeps the purchase fulfilled when the notice fails, and lets the backfill send it later', async () => {
     const transactionId = 'txn_sale_notice_rejected'
-    resend.rejectTo.add(david)
+    smtp2go.failTo.add(david)
 
     const delivery = await deliver(transactionId)
 
@@ -254,8 +228,8 @@ describe('the sale notice in the Worker runtime', () => {
       .first<{ message: string }>()
     expect(event?.message).toContain(transactionId)
 
-    resend.rejectTo.clear()
-    resend.sent.length = 0
+    smtp2go.failTo.clear()
+    smtp2go.sent.length = 0
     const first = await backfill([transactionId])
 
     expect(first.status, workerLogs()).toBe(200)
@@ -291,7 +265,7 @@ describe('the sale notice in the Worker runtime', () => {
       txn_sale_not_in_ledger: 'not_found',
       txn_sale_unknown_to_paddle: 'not_found',
     })
-    expect(resend.sent).toHaveLength(0)
+    expect(smtp2go.sent).toHaveLength(0)
   })
 
   it('refuses a backfill without the admin token, or with ids that are not Paddle transactions', async () => {

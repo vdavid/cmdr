@@ -1,22 +1,20 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { app } from '../index'
 import { issuanceStaleAfterMs } from './license-issuance'
+import { SMTP2GO_API_BASE, type sendEmail } from '../email/send'
 
-// Mock Resend so no email leaves the test. The result shape matters here: the SDK reports a
-// rejected send in the response rather than throwing, and the route has to notice.
-interface SendResult {
-  data: { id: string } | null
-  error: { message: string } | null
-}
-const emailAccepted: SendResult = { data: { id: 'test-email-id' }, error: null }
-const mockSend = vi.fn<(payload: { to: string; subject: string; html: string }) => Promise<SendResult>>(() =>
-  Promise.resolve(emailAccepted),
-)
-vi.mock('resend', () => ({
-  Resend: class {
-    emails = { send: mockSend }
-  },
+// Intercept the one email door so no email leaves the test. A test that needs SMTP2Go's own answer
+// (a 200 that reports a failed send) routes the call to the real `sendEmail` instead.
+const email = vi.hoisted(() => ({
+  mockSend: vi.fn<typeof sendEmail>(() => Promise.resolve()),
+  realSend: null as null | typeof sendEmail,
 }))
+const mockSend = email.mockSend
+vi.mock('../email/send', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../email/send')>()
+  email.realSend = original.sendEmail
+  return { ...original, sendEmail: email.mockSend }
+})
 
 const webhookSecret = 'test-webhook-secret'
 const transactionId = 'txn_01hv8x'
@@ -139,7 +137,7 @@ function createBindings(overrides: Record<string, unknown> = {}) {
     ERROR_REPORTS_BUCKET: {} as R2Bucket,
     ERROR_REPORT_META: {} as KVNamespace,
     ED25519_PRIVATE_KEY: 'ab'.repeat(32),
-    RESEND_API_KEY: 'test-resend-key',
+    SMTP2GO_API_KEY: 'test-smtp2go-key',
     PRODUCT_NAME: 'Cmdr',
     SUPPORT_EMAIL: 'david@getcmdr.com',
     PADDLE_ENVIRONMENT: 'live',
@@ -194,7 +192,7 @@ function mintedCodes(bindings: Bindings): string[] {
 }
 
 function emailedKeys(): string[] {
-  const html = mockSend.mock.lastCall?.[0].html ?? ''
+  const html = mockSend.mock.lastCall?.[1].html ?? ''
   return [...html.matchAll(/CMDR-[23456789A-HJ-NP-Z]{4}-[23456789A-HJ-NP-Z]{4}-[23456789A-HJ-NP-Z]{4}/g)].map(
     (match) => match[0],
   )
@@ -208,7 +206,7 @@ function storedFullKey(bindings: Bindings, code: string): string {
 
 beforeEach(() => {
   mockSend.mockClear()
-  mockSend.mockImplementation(() => Promise.resolve(emailAccepted))
+  mockSend.mockImplementation(() => Promise.resolve())
   globalThis.fetch = vi.fn(() =>
     Promise.resolve(Response.json({ data: { email: 'buyer@example.com', name: 'Robin', business: { name: 'Acme' } } })),
   )
@@ -231,7 +229,7 @@ describe('POST /webhook/paddle idempotency', () => {
     expect(emailedKeys()).toEqual(mintedCodes(bindings))
     // Each seat's full signed key travels too: the short code alone needs `/activate` to work.
     for (const code of mintedCodes(bindings)) {
-      expect(mockSend.mock.lastCall?.[0].html).toContain(storedFullKey(bindings, code))
+      expect(mockSend.mock.lastCall?.[1].html).toContain(storedFullKey(bindings, code))
     }
     const row = bindings.TELEMETRY_DB.rows.get(transactionId)
     expect(row?.emailed_at).toBeTruthy()
@@ -256,7 +254,7 @@ describe('POST /webhook/paddle idempotency', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-12T10:00:00Z'))
     const bindings = createBindings()
-    mockSend.mockImplementation(() => Promise.reject(new Error('Resend is down')))
+    mockSend.mockImplementation(() => Promise.reject(new Error("SMTP2Go couldn't be reached")))
 
     const failed = await deliver(bindings)
     expect(failed.status).toBe(500)
@@ -264,7 +262,7 @@ describe('POST /webhook/paddle idempotency', () => {
     expect(codesAfterFailure).toHaveLength(1)
     expect(bindings.TELEMETRY_DB.rows.get(transactionId)?.emailed_at).toBeNull()
 
-    mockSend.mockImplementation(() => Promise.resolve(emailAccepted))
+    mockSend.mockImplementation(() => Promise.resolve())
     vi.setSystemTime(new Date(Date.now() + issuanceStaleAfterMs + 1000))
 
     const retried = await deliver(bindings)
@@ -273,15 +271,23 @@ describe('POST /webhook/paddle idempotency', () => {
     expect(mintedCodes(bindings)).toEqual(codesAfterFailure)
     expect(emailedKeys()).toEqual(codesAfterFailure)
     // The resend reads the full key back from KV, so it still activates without our server.
-    expect(mockSend.mock.lastCall?.[0].html).toContain(storedFullKey(bindings, codesAfterFailure[0]))
+    expect(mockSend.mock.lastCall?.[1].html).toContain(storedFullKey(bindings, codesAfterFailure[0]))
     expect(bindings.TELEMETRY_DB.rows.get(transactionId)?.emailed_at).toBeTruthy()
   })
 
-  it('leaves the purchase unfulfilled when Resend rejects the email', async () => {
+  it('leaves the purchase unfulfilled when SMTP2Go answers 200 but reports the send failed', async () => {
     const bindings = createBindings()
-    // Resend reports a rejected send in the response, it doesn't throw. Treating that as success
-    // would mark the purchase delivered and stop Paddle retrying, leaving the buyer with nothing.
-    mockSend.mockImplementation(() => Promise.resolve({ data: null, error: { message: 'rate_limit_exceeded' } }))
+    // SMTP2Go reports a failed send in a 200's body. Treating that as success would mark the
+    // purchase delivered and stop Paddle retrying, leaving the buyer with nothing.
+    const paddleFetch = globalThis.fetch
+    globalThis.fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) =>
+      (input instanceof Request ? input.url : input.toString()).startsWith(SMTP2GO_API_BASE)
+        ? Promise.resolve(Response.json({ data: { succeeded: 0, failed: 1, failures: ['Sender not allowed'] } }))
+        : paddleFetch(input, init),
+    )
+    const realSend = email.realSend
+    if (!realSend) throw new Error('The real sendEmail was never captured')
+    mockSend.mockImplementation(realSend)
 
     const res = await deliver(bindings)
 
@@ -297,7 +303,7 @@ describe('POST /webhook/paddle idempotency', () => {
       () =>
         new Promise((resolve) => {
           releaseEmail = () => {
-            resolve(emailAccepted)
+            resolve()
           }
         }),
     )

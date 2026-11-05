@@ -20,11 +20,20 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   reports, feedback, error reports, and amendments), `isAbsent`, `readCappedBody`, `scheduleBackground`, `redactEmail`,
   `activationCountKey`, `formatBytes`. The last four live here rather than beside one route precisely so a second route
   can't reimplement them: a hand-rolled body read is how a size cap becomes decorative.
-- **`email/`**: Resend delivery, split one module per audience so a sender is read and changed without the others in
-  view.
-  - **`send.ts`**: the only door out. `sendViaResend` (every sender goes through it), `humanReportRecipient` (the one
-    place the `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL` rule lives), and `sendEmailPathProbe` (the daily
-    liveness check, § Cron handler job 9).
+- **`email/`**: SMTP2Go delivery (its EU endpoint, `eu-api.smtp2go.com`), split one module per audience so a sender is
+  read and changed without the others in view.
+  - **`send.ts`**: the only door out. `sendEmail(apiKey, message, label)` (every sender goes through it; our own
+    `EmailMessage` type, mapped onto SMTP2Go's fields there), `humanReportRecipient` (the one place the
+    `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL` rule lives), and `checkEmailPath` (the daily liveness
+    check, § Cron handler job 9).
+  - **Gotcha: SMTP2Go answers 200 OK for a failed send.** The verdict is in the body (`data.succeeded`, `data.failed`,
+    `data.failures`, or `data.error` / `error_code`), so `sendEmail` throws on a network failure, a non-2xx, an error in
+    the body, and anything but exactly one success, naming the label and SMTP2Go's words and never the key. It sends
+    with `fastaccept: false`, because `true` accepts first and judges later, where nothing here would see a failure.
+    Pinned by `send.test.ts`.
+  - **`smtp2go-test-helpers.ts`**: SMTP2Go at the socket for the runtime lanes below, answering in SMTP2Go's own shapes
+    (including the 200 that reports a failed send) and decoding each send back into an `EmailMessage`. The node tests
+    mock `sendEmail` itself.
   - **`layout.ts`**: the HTML vocabulary. `escapeHtml`, `documentShell` (the `<!DOCTYPE>`…`<body>` wrapper),
     `bodyStyle`, the card constants, `replyToLine`, `boardLine` (an entry's link to its card), and the table cell styles
     (`CELL_STYLE`, `headCellStyle`, `TABLE_STYLE`). Everything is inline style with explicit hex: mail clients strip
@@ -48,7 +57,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   - There is no barrel file: importers name the module they need (`./email/digest`, `../email/ops-alerts`), so an import
     says which family of mail a route touches.
   - **Every sender has a real-runtime lane.** `email-runtime.test.ts` drives them through the actual Worker and asserts
-    the Resend payload off the wire; `src/licensing/webhook-runtime.test.ts` does `sendLicenseEmail`, and
+    the SMTP2Go payload off the wire; `src/licensing/webhook-runtime.test.ts` does `sendLicenseEmail`, and
     `src/licensing/sale-notice-runtime.test.ts` does `sendSaleNotice`. Adding a sender means adding it there too, or it
     ships untested against the runtime it deploys to. § Test runtimes.
 - **`ops-events.ts`**: the operational notices (cron failures, eviction, CSP violations, signups) as D1 rows the digest
@@ -147,7 +156,7 @@ Decisions.
 | `PRICE_ID_COMMERCIAL_SUBSCRIPTION` | Sandbox price ID                 | Live price ID                       |
 | `PRICE_ID_COMMERCIAL_PERPETUAL`    | Sandbox price ID                 | Live price ID                       |
 | `ED25519_PRIVATE_KEY`              | DEV private key hex              | PRODUCTION private key hex          |
-| `RESEND_API_KEY`                   | Resend key                       | Same Resend key                     |
+| `SMTP2GO_API_KEY`                  | SMTP2Go key (or unset)           | The narrow SMTP2Go key (below)      |
 | `CRASH_NOTIFICATION_EMAIL`         | `david@getcmdr.com`              | Report digest + ops alert recipient |
 | `FEEDBACK_NOTIFICATION_EMAIL`      | unset (falls back)               | Optional report digest recipient    |
 | `R2_ACCOUNT_ID`                    | Same account ID                  | For minting presigned R2 URLs       |
@@ -164,6 +173,13 @@ Decisions.
 every shipped build accepts, so it exists only as a wrangler secret; `.dev.vars` gets its own pair, and the desktop app
 verifies against whichever public key matches its build mode. Full rationale and the rotation caveat:
 `apps/desktop/src-tauri/src/licensing/DETAILS.md` § Signing keys.
+
+**`SMTP2GO_API_KEY` is a narrow key made in the SMTP2Go dashboard, allowed only `/email/send` and
+`/stats/email_cycle`.** Those are the two endpoints the Worker calls (`src/email/send.ts`). ❌ Never put the broad agent
+key here: it can delete our sending domain and mint keys, so a leak from the Worker would reach far past sending. The
+getcmdr.com account's quota (1,000 emails a cycle) is shared with mailcow and Listmonk, which is why the daily probe
+watches it (§ Cron handler job 9). Without the key every sender stays quiet, and the deploy workflow refuses to ship
+until the live Worker has it (`.github/workflows/deploy-api-server.yml`, `Check required Worker secrets`).
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
@@ -347,8 +363,8 @@ failure from the rest and raises the alarm for it (§ Cron alarms):
    - **One email for all four kinds, on purpose**: per-kind emails at intake trained David to ignore them, and an
      instant mail per report meant a flood of auto-sends would bury the one that needs an answer. Three hours is fine
      because the board, not the inbox, is where a report waits.
-   - **Stamps `notified_at` AFTER the send.** `sendViaResend` throws on a rejected send, so a failure leaves every row
-     NULL and the next tick retries in a bigger digest. Stamping first drops the alert permanently, and the credential
+   - **Stamps `notified_at` AFTER the send.** `sendEmail` throws on a failed send, so a failure leaves every row NULL
+     and the next tick retries in a bigger digest. Stamping first drops the alert permanently, and the credential
      failure that would cause it is exactly when reports matter most. The cost is a duplicate when a send succeeds and
      an `UPDATE` then fails; it's bounded by the cron interval, which a silent drop is not. ❌ Don't stamp before the
      send.
@@ -388,16 +404,21 @@ failure from the rest and raises the alarm for it (§ Cron alarms):
    (the per-upload KV counter is racy and drifts), clears `intake_paused` if the bucket is back under the LOW watermark,
    then triggers `tryEvict` if still over 8 GB. Idempotent, and it catches drift from concurrent uploads or a Worker
    dying mid-eviction.
-9. **Email path probe** (00:00 UTC only): `handleEmailPathProbe` sends one throwaway email through Resend so a dead
-   `RESEND_API_KEY` surfaces within a day instead of at the moment a report digest or a buyer's license key needs it.
-   Recipient is `delivered@resend.dev`, Resend's simulator address, so nobody receives it.
-   - **It has to be a real send.** The key is scoped to sending only, so `GET /domains`, `/api-keys`, and `/emails` all
-     return 401 however healthy the key is (verified against the live key, 2026-09-02); a check built on them would
-     alarm constantly. ❌ Don't widen the key to "Full access" to make them work: it would test the wrong capability (a
-     readable domain list doesn't prove sending works) and give a leaked key the power to delete our sending domain and
-     mint its own keys.
-   - Covers the Worker's Resend API path only. Listmonk authenticates to the same service over SMTP with a **separate**
-     credential, so one can be dead while the other works. `src/website/DETAILS.md` owns the signup path.
+9. **Email path probe** (00:00 UTC only): `handleEmailPathProbe` calls `checkEmailPath`, which reads SMTP2Go's
+   `POST /stats/email_cycle` with the Worker's own key, so a dead `SMTP2GO_API_KEY` or a spent quota surfaces within a
+   day instead of at the moment a report digest or a buyer's license key needs it. It throws on a 401/403 or an error in
+   the body, AND when `cycle_remaining` drops below 15% of `cycle_max` (`EMAIL_QUOTA_ALARM_FRACTION`), with a message
+   saying license mails are at risk and how many remain.
+   - **Why not a real send**: SMTP2Go has no simulator address, and every send spends the 1,000-a-cycle quota mailcow
+     and Listmonk share. A newsletter run is what could starve a license email, so the quota is the thing worth
+     watching.
+   - **Known gap**: it proves the key is live and the quota has room, not that a send would succeed. SMTP2Go can block
+     sending on its own (a suspended account, an unverified sender domain) while stats still answer. Accepted: closing
+     it costs a real email a day.
+   - ❌ Don't widen the key to make a richer probe: it's allowed `/email/send` and `/stats/email_cycle` only (§
+     Configuration).
+   - Covers the Worker's API path only. Listmonk relays through SMTP2Go over SMTP with a **separate** credential, so one
+     can be dead while the other works. `src/website/DETAILS.md` owns the signup path.
 
 10. **Morning brief** (the morning trigger, on the tick that is 06:xx in Stockholm): `handleMorningBrief`
     (`morning-brief.ts`, rendered by `src/email/morning-brief.ts`) sends one email every day, quiet days included, an
@@ -426,12 +447,12 @@ cover that, and they cover different failures.
 1. **An ops event, for a tick that ran and threw.** `runCronJob` (`index.ts`) catches, then writes a `cron-failure` ops
    event naming the job, the tick's `scheduledTime`, and the stringified error, so the next digest says what broke.
    `recordOpsEvent` never throws, so a broken D1 costs this layer and nothing else. It can't be the only layer: D1 and
-   Resend are both things that can be broken here, and an alarm routed through the broken path can't fire.
+   SMTP2Go are both things that can be broken here, and an alarm routed through the broken path can't fire.
 2. **healthchecks.io, for a tick that never ran AND for one that threw** (`cron-health.ts`, `HEALTHCHECKS_PING_URL`).
    The switch pings after the last job, so a removed cron trigger, a bad deploy, or a Worker dying before the first job
    all surface when the expected ping doesn't arrive. A tick with failures pings `/fail` instead, which trips the check
-   immediately and names the jobs in the body. healthchecks.io emails through its own infrastructure, not Resend, so
-   this is the layer that still works when D1 or the Resend key is dead.
+   immediately and names the jobs in the body. healthchecks.io emails through its own infrastructure, not SMTP2Go, so
+   this is the layer that still works when D1 or the SMTP2Go key is dead.
 3. **Workers logs, for reading the stack afterwards.** `[observability] enabled = true` in `wrangler.toml`. Without it
    `console.error` is written nowhere and is visible only to a live `wrangler tail`, which is how a job could throw
    every three hours indefinitely and leave no trace. Layers 1 and 2 wake someone; this is what they read.
@@ -457,7 +478,7 @@ setup. `HEALTHCHECKS_PING_URL` is a capability URL (anyone holding it can report
    ```sh
    pnpm --filter @cmdr/api-server exec wrangler secret put HEALTHCHECKS_PING_URL
    ```
-3. Confirm the alert route on the check is an address that doesn't depend on Cmdr's own Resend account. The whole point
+3. Confirm the alert route on the check is an address that doesn't depend on Cmdr's own SMTP2Go account. The whole point
    of this layer is surviving a broken Cmdr email path.
 4. Smoke-test both endpoints, then let the next real tick clear the check:
    ```sh
@@ -787,11 +808,12 @@ threshold seam just to make that cheaper.
 **Stub an upstream at the socket, never in the source.** The harness points the Worker's global `fetch` at this process
 (`outboundService: (request) => globalThis.fetch(request.url, request)`), so replacing `globalThis.fetch` in a test
 intercepts every outbound request the Worker makes with the route, the SDK, and the runtime untouched. That is how
-`webhook-runtime.test.ts` answers for Paddle and Resend; `applyD1Migrations('TELEMETRY_DB')` on the worker handle gives
-it the real schema. Two gotchas (verified on wrangler 4.107.1, 2026-09-16): the intercepted request arrives as the INIT
-argument, not the input, and it's undici's internal `Request` class, so `init instanceof Request` reads false in the
-test's realm and silently yields an empty body. Duck-type on `text()`. Requests the harness itself makes don't pass
-through this stub, so an unstubbed host can safely fail loudly instead of reaching the internet.
+`webhook-runtime.test.ts` answers for Paddle and SMTP2Go (`src/email/smtp2go-test-helpers.ts`);
+`applyD1Migrations('TELEMETRY_DB')` on the worker handle gives it the real schema. Two gotchas (verified on wrangler
+4.107.1, 2026-09-16): the intercepted request arrives as the INIT argument, not the input, and it's undici's internal
+`Request` class, so `init instanceof Request` reads false in the test's realm and silently yields an empty body.
+Duck-type on `text()`. Requests the harness itself makes don't pass through this stub, so an unstubbed host can safely
+fail loudly instead of reaching the internet.
 
 **How the gap shipped**: `bytesToBase64` called `Buffer.from()`, so every license mint threw in production from the
 first deploy, while a node-project test suite stayed green over it.
@@ -814,20 +836,16 @@ never reach the Worker, so they stay out of scope. What lint structurally can't 
 global on a path we exercise, which is what the `createTestHarness` lanes above are for.
 
 ❌ **Don't add a third layer that scans the built bundle**, and don't re-derive the question from scratch. It sounds
-like the way to reach dependency code no test exercises; measured against the real bundle
-(`wrangler deploy --dry-run --outdir`, 429 KB, 2026-09-16) it reports 14 Node references and not one of them is a bug:
+like the way to reach dependency code no test exercises, but a text scan can't tell a live call from a string literal, a
+comment, a property name, or a `typeof process !== 'undefined'` guard (the standard, workerd-safe way a library reads an
+optional env), so a real one needs JS parsing plus reachability from the entry point. Short of that it needs an
+allowlist of unreachable symbols that re-churns on every dependency bump, which is exactly the contract that rots into a
+rubber stamp. The runtime lanes answer the same question by executing the paths instead of approximating them.
 
-- `Buffer` × 3 — one live call, `resend`'s `forwardWrapped` (forwarding a raw `.eml`), which nothing here calls; the
-  other two are a string literal and a `constructor.name` comparison inside svix's webhook verifier.
-- `process` × 10 — every one inside `resend`'s `typeof process !== 'undefined' && process.env` config lookups, which is
-  the standard way a library reads an optional env and is correct in workerd.
-- `node:*` imports, `__dirname`, `__filename`, `setImmediate`, `require` — zero. The single `global` is in a comment.
-
-To report nothing today it would have to parse JS rather than match text (to skip strings, comments, and property
-names), understand `typeof` guards, and do reachability analysis from the entry point, because "references a Node
-global" is not the claim worth failing on. Short of that it needs an allowlist that re-churns on every `resend` bump,
-and an allowlist of unreachable symbols is exactly the contract that rots into a rubber stamp. The runtime lanes answer
-the same question by executing the paths instead of approximating them.
+Today's bundle is clean anyway (`wrangler deploy --dry-run --outdir`, 363 KB, 2026-11-05): zero `Buffer`, zero
+`process`, zero `node:*` imports, `__dirname`, `__filename`, `setImmediate`, or `require`; the single `global` is in a
+comment. The 14 references a 2026-09-16 scan found all came from the `resend` SDK and svix, which left with the move to
+SMTP2Go's plain HTTP API.
 
 ```sh
 pnpm dev          # starts wrangler dev server on :8787
@@ -853,6 +871,11 @@ npx wrangler secret put IP_HASH_PEPPER            # one-time, before the first d
 npx wrangler d1 migrations apply cmdr-telemetry   # apply any new D1 migrations first
 npx wrangler deploy
 ```
+
+CI deploys on every push to `main` that touches this app (`.github/workflows/deploy-api-server.yml`). Its first step,
+`Check required Worker secrets`, lists the live Worker's secrets and fails the deploy when one on its `required` list is
+missing, so the old Worker keeps serving. When code starts depending on a new secret, add it to that list and run
+`wrangler secret put` before landing. Optional secrets (the Worker runs without them) stay off it.
 
 `IP_HASH_PEPPER` is a one-time setup step (`openssl rand -hex 32`), not a per-deploy one, but until it exists every
 stored IP hash is brute-forceable. The Worker warns in the log rather than failing, so check for
@@ -887,6 +910,7 @@ Payment-provider, pricing, and device-limit decisions live with the code that im
 
 ## Dependencies
 
-Runtime: `hono`, `@noble/ed25519`, `resend`, `aws4fetch`. Dev: `wrangler`, `vitest`, `typescript`, `eslint`.
+Runtime: `hono`, `@noble/ed25519`, `aws4fetch`. Email is a plain `fetch` to SMTP2Go's API, so no SDK. Dev: `wrangler`,
+`vitest`, `typescript`, `eslint`.
 
 See also: `apps/desktop/src/lib/licensing/CLAUDE.md` (the frontend licensing feature).

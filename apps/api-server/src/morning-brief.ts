@@ -142,10 +142,10 @@ function toBriefCards(cards: { number: number; title: string; url: string; creat
   return cards.map((card) => ({ ...card, openedOn: card.createdAt.slice(0, 10) }))
 }
 
-/** Send the brief. A silent no-op without a recipient or a Resend key. */
+/** Send the brief. A silent no-op without a recipient or an SMTP2Go key. */
 export async function handleMorningBrief(env: Bindings): Promise<void> {
   const to = humanReportRecipient(env)
-  if (!to || !env.RESEND_API_KEY) return
+  if (!to || !env.SMTP2GO_API_KEY) return
 
   const tripwires: string[] = []
   let needsReply: BriefCard[] | null = []
@@ -178,6 +178,6 @@ export async function handleMorningBrief(env: Bindings): Promise<void> {
   await sendMorningBriefEmail({
     content: { needsReply, unprocessed, arrivals: await readArrivals(env.TELEMETRY_DB), tripwires },
     to,
-    resendApiKey: env.RESEND_API_KEY,
+    smtp2goApiKey: env.SMTP2GO_API_KEY,
   })
 }

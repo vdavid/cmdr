@@ -24,8 +24,7 @@
   "dependencies": {
     "@noble/ed25519": "^3.1.0",
     "aws4fetch": "^1.0.20",
-    "hono": "^4.12.30",
-    "resend": "^6.17.2"
+    "hono": "^4.12.30"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.4.0",

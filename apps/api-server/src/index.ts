@@ -65,7 +65,7 @@ export { app }
  * `console.error` alone is where cron failures used to go, and Workers logs weren't retained, so a
  * job could throw every three hours forever with nothing to show for it. Two channels carry the
  * alarm now, and they fail independently: the caller reports the failed job to healthchecks.io,
- * which emails through its OWN infrastructure (so a dead Resend key or a broken D1 still alerts),
+ * which emails through its OWN infrastructure (so a dead SMTP2Go key or a broken D1 still alerts),
  * and an ops event puts the cause in the next report digest.
  *
  * A job with grace (`alertAfter` > 1) alerts only once it has thrown on that many ticks in a row

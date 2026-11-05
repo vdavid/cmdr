@@ -59,7 +59,7 @@ Ranked by what losing them costs a user.
   prompt injection through file names and contents is in scope.
 - **A compromised update channel or maintainer account**: the GitHub account, the release workflow, the website host
   serving `latest.json`, or a signing key.
-- **The backend and its subprocessors** (Cloudflare, PostHog, GitHub, Resend, Google, Paddle, Hetzner): hold report and
+- **The backend and its subprocessors** (Cloudflare, PostHog, GitHub, SMTP2Go, Google, Paddle, Hetzner): hold report and
   telemetry data, never file contents.
 - **A malicious dependency or contributor.** One maintainer, AI-assisted development, outside PRs accepted
   (`docs/guides/handling-prs.md`).

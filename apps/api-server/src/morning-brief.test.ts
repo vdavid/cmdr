@@ -16,15 +16,14 @@ interface SentEmail {
   html: string
 }
 
-const mockSend = vi.fn<(payload: SentEmail) => Promise<{ id: string }>>(() => Promise.resolve({ id: 'email-id' }))
-vi.mock('resend', () => ({
-  Resend: class {
-    emails = { send: mockSend }
-  },
+const mockSend = vi.hoisted(() => vi.fn<typeof import('./email/send').sendEmail>(() => Promise.resolve()))
+vi.mock('./email/send', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./email/send')>()),
+  sendEmail: mockSend,
 }))
 
 function lastEmail(): SentEmail {
-  const payload = mockSend.mock.lastCall?.[0]
+  const payload = mockSend.mock.lastCall?.[1]
   if (!payload) throw new Error('No email was sent')
   return payload
 }
@@ -71,7 +70,7 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings {
     TELEMETRY_DB: db.d1,
     ERROR_REPORTS_BUCKET: fakeBucket(),
     CRASH_NOTIFICATION_EMAIL: 'david@example.com',
-    RESEND_API_KEY: 'test-resend-key',
+    SMTP2GO_API_KEY: 'test-smtp2go-key',
     GITHUB_ISSUES_TOKEN: 'ghp_test',
     GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports',
     ...overrides,
@@ -209,9 +208,9 @@ describe('handleMorningBrief', () => {
     expect(lastEmail().html).toContain("Couldn't read the board")
   })
 
-  it('stays quiet without a recipient or a Resend key', async () => {
+  it('stays quiet without a recipient or an SMTP2Go key', async () => {
     fakeGitHub([])
-    await handleMorningBrief(testEnv({ RESEND_API_KEY: undefined }))
+    await handleMorningBrief(testEnv({ SMTP2GO_API_KEY: undefined }))
     expect(mockSend).not.toHaveBeenCalled()
   })
 })

@@ -7,8 +7,7 @@
  * a missing brief is itself the signal that something broke.
  */
 
-import { Resend } from 'resend'
-import { sendViaResend } from './send'
+import { sendEmail } from './send'
 import { CARD_BODY_STYLE, documentShell, escapeHtml, signoffParagraph } from './layout'
 
 /** One card in a brief list. */
@@ -123,11 +122,11 @@ function renderBody(subject: string, content: BriefContent): string {
 export async function sendMorningBriefEmail(params: {
   content: BriefContent
   to: string
-  resendApiKey: string
+  smtp2goApiKey: string
 }): Promise<void> {
   const subject = briefSubject(params.content)
-  await sendViaResend(
-    new Resend(params.resendApiKey),
+  await sendEmail(
+    params.smtp2goApiKey,
     {
       from: 'Cmdr Morning Brief <noreply@getcmdr.com>',
       to: params.to,

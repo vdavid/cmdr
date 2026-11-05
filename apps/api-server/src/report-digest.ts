@@ -5,7 +5,7 @@
  *
  * Runs after the outbox on the same tick, so the cards it links were filed seconds earlier.
  *
- * ❗ Stamps AFTER the send. `sendViaResend` throws on a rejected send, so a failure leaves every row
+ * ❗ Stamps AFTER the send. `sendEmail` throws on a failed send, so a failure leaves every row
  * unstamped and the next tick retries it in a bigger digest. Stamping first would drop the alert
  * permanently, and a dead credential is exactly when that happens.
  */
@@ -313,10 +313,10 @@ async function stamp(db: D1Database, table: string, ids: number[], now: string):
     .run()
 }
 
-/** Mail whatever arrived since the last digest. A silent no-op without a recipient or a Resend key. */
+/** Mail whatever arrived since the last digest. A silent no-op without a recipient or an SMTP2Go key. */
 export async function handleReportDigest(env: Bindings): Promise<void> {
   const to = humanReportRecipient(env)
-  if (!to || !env.RESEND_API_KEY) return
+  if (!to || !env.SMTP2GO_API_KEY) return
 
   const pending = await readPending(env.TELEMETRY_DB)
   const { alerts, quiet } = splitBelowThreshold(pending.opsAlerts)
@@ -328,7 +328,7 @@ export async function handleReportDigest(env: Bindings): Promise<void> {
     return
   }
 
-  await sendReportDigestEmail({ content, to, resendApiKey: env.RESEND_API_KEY })
+  await sendReportDigestEmail({ content, to, smtp2goApiKey: env.SMTP2GO_API_KEY })
 
   const now = new Date().toISOString()
   await stamp(

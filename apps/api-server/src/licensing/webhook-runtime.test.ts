@@ -5,6 +5,7 @@ import { isValidShortCode, validationAnswerSignaturePrefix, type LicenseData } f
 import type { LicenseListing } from './admin-licenses'
 import type { ValidationResponse } from './paddle-api'
 import { issuanceStaleAfterMs } from './license-issuance'
+import { createSmtp2GoStub, type WireEmail } from '../email/smtp2go-test-helpers'
 
 /**
  * The purchase path in the REAL Worker: wrangler builds `src/index.ts` and runs it in workerd under
@@ -15,9 +16,9 @@ import { issuanceStaleAfterMs } from './license-issuance'
  *
  * ❌ Never give this harness its own compatibility settings, and never reach for `nodejs_compat`.
  *
- * **Paddle and Resend are stubbed at the socket, not in the source.** The harness points the
+ * **Paddle and SMTP2Go are stubbed at the socket, not in the source.** The harness points the
  * Worker's global `fetch` at this process, so replacing `globalThis.fetch` here intercepts every
- * outbound request the Worker makes, with the route, the SDK, and the runtime all untouched. A
+ * outbound request the Worker makes, with the route, the sender, and the runtime all untouched. A
  * request to any other host fails loudly rather than leaving the machine.
  */
 
@@ -38,7 +39,7 @@ const server = createTestHarness({
         PADDLE_API_KEY_LIVE: 'test-paddle-key',
         ADMIN_API_TOKEN: adminToken,
         PRICE_ID_COMMERCIAL_PERPETUAL: perpetualPriceId,
-        RESEND_API_KEY: 'test-resend-key',
+        SMTP2GO_API_KEY: 'test-smtp2go-key',
       },
     },
   ],
@@ -49,23 +50,9 @@ interface HarnessEnv {
   TELEMETRY_DB: D1Database
 }
 
-/** The license email as it left the Worker, read off the wire rather than off a mocked SDK. */
-interface SentEmail {
-  to: string
-  subject: string
-  html: string
-  text: string
-}
-
-/** What Paddle and Resend answer, per test. */
+/** What Paddle and SMTP2Go answer, per test. `smtp2go.sent` is the license email off the wire. */
 const paddleCustomer = { email: 'buyer@example.com', name: 'Robin', business: { name: 'Acme Inc' } }
-const resend = {
-  sent: [] as SentEmail[],
-  /** `reject` makes Resend answer the way a rate limit does: an error in the response, not a throw. */
-  mode: 'accept' as 'accept' | 'reject',
-  /** Set to hold a send open, which is the widest window a redelivery can land in. */
-  held: null as { promise: Promise<void>; release: () => void } | null,
-}
+const smtp2go = createSmtp2GoStub()
 /** Any host we didn't stub. Asserted empty after every test: the Worker talks to two services. */
 const unexpectedOutbound: string[] = []
 
@@ -84,9 +71,7 @@ afterAll(async () => {
 })
 
 beforeEach(() => {
-  resend.sent.length = 0
-  resend.mode = 'accept'
-  resend.held = null
+  smtp2go.reset()
 })
 
 afterEach(() => {
@@ -104,36 +89,9 @@ async function stubbedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
     const id = url.slice('https://api.paddle.com/transactions/'.length)
     return Response.json({ data: { id, status: 'completed', customer_id: 'ctm_01hv8x', custom_data: null } })
   }
-  if (url === 'https://api.resend.com/emails') {
-    return await answerResend(await requestBody(input, init))
-  }
+  if (smtp2go.handles(url)) return await smtp2go.answer(url, input, init)
   unexpectedOutbound.push(url)
   return Response.json({ error: 'This host is not stubbed' }, { status: 502 })
-}
-
-async function answerResend(body: string): Promise<Response> {
-  resend.sent.push(JSON.parse(body) as SentEmail)
-  if (resend.held) await resend.held.promise
-  if (resend.mode === 'reject') {
-    return Response.json({ name: 'rate_limit_exceeded', message: 'Too many requests' }, { status: 429 })
-  }
-  return Response.json({ id: `email_${String(resend.sent.length)}` })
-}
-
-/**
- * The body of an outbound request. The harness hands it over as `fetch(url, request)`, so the body
- * rides on the init rather than the input.
- *
- * ❌ No `instanceof Request` here: the init is undici's internal `Request` class, which is NOT the
- * `Request` this module's global resolves to, so the check silently reads false and the body comes
- * back empty. Duck-typing on `text()` is what survives that.
- */
-async function requestBody(input: RequestInfo | URL, init?: RequestInit): Promise<string> {
-  for (const candidate of [init, input]) {
-    const body = candidate as { text?: () => Promise<string> } | undefined
-    if (typeof body?.text === 'function') return await body.text()
-  }
-  return typeof init?.body === 'string' ? init.body : ''
 }
 
 /** Hold the license email open until the returned release is called. Always release in a `finally`. */
@@ -142,10 +100,10 @@ function holdEmail(): { release: () => void } {
   const promise = new Promise<void>((resolve) => {
     release = resolve
   })
-  resend.held = { promise, release }
+  smtp2go.held = { promise, release }
   return {
     release: () => {
-      resend.held = null
+      smtp2go.held = null
       release()
     },
   }
@@ -274,7 +232,7 @@ async function verifyStoredLicense(code: string): Promise<LicenseData> {
 const codePattern = /CMDR-[23456789A-HJ-NP-Z]{4}-[23456789A-HJ-NP-Z]{4}-[23456789A-HJ-NP-Z]{4}/g
 
 /** The codes the buyer actually received, read out of the delivered message. */
-function emailedCodes(email: SentEmail): string[] {
+function emailedCodes(email: WireEmail): string[] {
   return [...new Set(email.html.match(codePattern) ?? [])].sort()
 }
 
@@ -309,10 +267,10 @@ describe('fulfilling a purchase in the Worker runtime', () => {
     expect(row?.issued_at).toBeTruthy()
     expect(row?.emailed_at).toBeTruthy()
 
-    expect(resend.sent).toHaveLength(1)
-    expect(resend.sent[0].to).toBe(paddleCustomer.email)
-    expect(emailedCodes(resend.sent[0])).toEqual(codes)
-    expect(resend.sent[0].text).toContain(codes[0])
+    expect(smtp2go.sent).toHaveLength(1)
+    expect(smtp2go.sent[0].to).toBe(paddleCustomer.email)
+    expect(emailedCodes(smtp2go.sent[0])).toEqual(codes)
+    expect(smtp2go.sent[0].text).toContain(codes[0])
   })
 
   it('issues one code per seat, and mails all of them', async () => {
@@ -329,7 +287,7 @@ describe('fulfilling a purchase in the Worker runtime', () => {
     const row = await readLedgerRow(transactionId)
     expect(JSON.parse(row?.short_codes ?? '[]')).toEqual(expect.arrayContaining(minted))
     expect(row?.quantity).toBe(3)
-    expect(emailedCodes(resend.sent[0])).toEqual(minted)
+    expect(emailedCodes(smtp2go.sent[0])).toEqual(minted)
 
     // Each seat carries its own id, so device tracking counts a seat rather than the whole purchase.
     const payloads = await Promise.all(minted.map((code) => verifyStoredLicense(code)))
@@ -346,20 +304,20 @@ describe('redelivering a purchase in the Worker runtime', () => {
     const transactionId = 'txn_runtime_duplicate'
     await deliver({ transactionId })
     const codesAfterFirst = await storedCodes()
-    resend.sent.length = 0
+    smtp2go.sent.length = 0
 
     const redelivery = await deliver({ transactionId })
 
     expect(redelivery.status).toBe(200)
     expect(redelivery.body.status).toBe('already_processed')
     expect(await storedCodes()).toEqual(codesAfterFirst)
-    expect(resend.sent).toHaveLength(0)
+    expect(smtp2go.sent).toHaveLength(0)
   })
 
   it('re-sends the codes it already minted when the first email was rejected', async () => {
     const transactionId = 'txn_runtime_retry'
     const before = await storedCodes()
-    resend.mode = 'reject'
+    smtp2go.failAll = true
 
     const failed = await deliver({ transactionId })
 
@@ -370,15 +328,15 @@ describe('redelivering a purchase in the Worker runtime', () => {
     expect(JSON.parse((await readLedgerRow(transactionId))?.short_codes ?? '[]')).toEqual(mintedCodes)
     expect((await readLedgerRow(transactionId))?.emailed_at).toBeNull()
 
-    resend.mode = 'accept'
-    resend.sent.length = 0
+    smtp2go.failAll = false
+    smtp2go.sent.length = 0
     await ageClaim(transactionId)
 
     const retried = await deliver({ transactionId })
 
     expect(retried.status, `Body: ${retried.text}\nWorker logs:\n${workerLogs()}`).toBe(200)
     expect((await storedCodes()).filter((code) => !before.includes(code))).toEqual(mintedCodes)
-    expect(emailedCodes(resend.sent[0])).toEqual(mintedCodes)
+    expect(emailedCodes(smtp2go.sent[0])).toEqual(mintedCodes)
     expect((await readLedgerRow(transactionId))?.emailed_at).toBeTruthy()
   })
 
@@ -390,14 +348,14 @@ describe('redelivering a purchase in the Worker runtime', () => {
     try {
       const first = deliver({ transactionId })
       // Wait until the first delivery is inside the email step, which is where the claim is held.
-      await expect.poll(() => resend.sent.length).toBe(1)
+      await expect.poll(() => smtp2go.sent.length).toBe(1)
 
       const concurrent = await deliver({ transactionId })
 
       expect(concurrent.status).toBe(503)
       expect(concurrent.body.status).toBe('in_progress')
       expect((await storedCodes()).filter((code) => !before.includes(code))).toHaveLength(1)
-      expect(resend.sent).toHaveLength(1)
+      expect(smtp2go.sent).toHaveLength(1)
 
       held.release()
       expect((await first).status).toBe(200)
@@ -584,7 +542,7 @@ describe('refunding a purchase in the Worker runtime', () => {
     expect(late.status).toBe(200)
     expect(late.body.status).toBe('revoked')
     expect(await storedCodes()).toEqual(before)
-    expect(resend.sent).toHaveLength(0)
+    expect(smtp2go.sent).toHaveLength(0)
     expect((await validate(transactionId)).body.status).toBe('invalid')
   })
 

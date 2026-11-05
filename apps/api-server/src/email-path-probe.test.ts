@@ -1,71 +1,55 @@
 /**
- * The daily liveness probe for the Resend send path. Sends are sporadic (a handful a month), so
- * without this a revoked or rotated `RESEND_API_KEY` stays invisible until the moment it costs us
- * something: a report digest or a buyer's license key.
+ * The daily liveness probe for the SMTP2Go path. Sends are sporadic (a handful a month), so
+ * without this a revoked `SMTP2GO_API_KEY` or a spent quota stays invisible until the moment it
+ * costs us something: a report digest or a buyer's license key. The threshold and error shapes are
+ * pinned in `email/send.test.ts`; this covers the cron wiring.
  */
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { handleEmailPathProbe } from './index'
-import { EMAIL_PROBE_RECIPIENT } from './email/send'
 import { createBaseEnv } from './cron-test-helpers'
 
-/** The fields of the Resend payload these tests read back. */
-interface SentEmail {
-  from: string
-  to: string
-  subject: string
-  text: string
-}
+let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>
 
-/** Resend reports a rejected send in the response rather than throwing, so both shapes are valid. */
-type SendOutcome = { id: string; error?: never } | { id?: never; error: { message: string } }
-
-const mockSend = vi.fn<(payload: SentEmail) => Promise<SendOutcome>>(() => Promise.resolve({ id: 'test-email-id' }))
-vi.mock('resend', () => ({
-  Resend: class {
-    emails = { send: mockSend }
-  },
-}))
-
-function lastEmailCall(): SentEmail {
-  const payload = mockSend.mock.lastCall?.[0]
-  if (!payload) throw new Error('No email was sent')
-  return payload
+function cycle(remaining: number, max = 1000): Response {
+  return Response.json({ data: { cycle_used: max - remaining, cycle_remaining: remaining, cycle_max: max } })
 }
 
 beforeEach(() => {
-  mockSend.mockClear()
+  fetchMock = vi.fn<typeof fetch>(() => Promise.resolve(cycle(900)))
+  vi.stubGlobal('fetch', fetchMock)
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 describe('handleEmailPathProbe', () => {
-  it("sends to Resend's simulator address, so no person ever receives the probe", async () => {
+  it('reads the email cycle with the configured key and sends no email', async () => {
     await handleEmailPathProbe(createBaseEnv() as never)
 
-    expect(mockSend).toHaveBeenCalledOnce()
-    expect(lastEmailCall().to).toBe(EMAIL_PROBE_RECIPIENT)
-    expect(EMAIL_PROBE_RECIPIENT).toBe('delivered@resend.dev')
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const [url, init] = fetchMock.mock.lastCall ?? []
+    expect(url).toBe('https://eu-api.smtp2go.com/v3/stats/email_cycle')
+    expect(new Headers(init?.headers).get('X-Smtp2go-Api-Key')).toBe('test-smtp2go-key')
   })
 
-  it('sends from our own verified domain, so it exercises the real sending identity', async () => {
-    await handleEmailPathProbe(createBaseEnv() as never)
+  it('throws when SMTP2Go refuses the key, which is what raises the cron alarm', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(Response.json({ data: { error: 'The API key is invalid' } }, { status: 401 })),
+    )
 
-    expect(lastEmailCall().from).toContain('@getcmdr.com')
+    await expect(handleEmailPathProbe(createBaseEnv() as never)).rejects.toThrow('The API key is invalid')
   })
 
-  it('says what it is, so a stray copy in a log or dashboard explains itself', async () => {
-    await handleEmailPathProbe(createBaseEnv() as never)
+  it('throws when the quota runs low, so a newsletter can never quietly starve license emails', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(cycle(40)))
 
-    expect(lastEmailCall().subject.toLowerCase()).toContain('probe')
-  })
-
-  it('throws when Resend rejects the key, which is what raises the cron alarm', async () => {
-    mockSend.mockImplementationOnce(() => Promise.resolve({ error: { message: 'API key is invalid' } }))
-
-    await expect(handleEmailPathProbe(createBaseEnv() as never)).rejects.toThrow('API key is invalid')
+    await expect(handleEmailPathProbe(createBaseEnv() as never)).rejects.toThrow(/40 of 1,000/)
   })
 
   it('stays quiet when no key is configured, so local dev and tests need no setup', async () => {
-    await handleEmailPathProbe(createBaseEnv({ RESEND_API_KEY: undefined }) as never)
+    await handleEmailPathProbe(createBaseEnv({ SMTP2GO_API_KEY: undefined }) as never)
 
-    expect(mockSend).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

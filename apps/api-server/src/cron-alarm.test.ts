@@ -1,21 +1,20 @@
 /**
  * The cron handler's alarm wiring: a job that throws has to reach a channel a person actually
  * watches. Before this existed, every cron failure went to `console.error` and nowhere else, and a
- * dead `RESEND_API_KEY` would have dropped crash alerts silently for as long as it took someone to
+ * dead `SMTP2GO_API_KEY` would have dropped crash alerts silently for as long as it took someone to
  * notice the quiet. Two channels carry it, failing independently: healthchecks.io (its own email,
- * so it works while D1 or Resend is broken) and an ops event in the next digest.
+ * so it works while D1 or SMTP2Go is broken) and an ops event in the next digest.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import worker from './index'
 import { createBaseEnv } from './cron-test-helpers'
 import { createSqliteD1 } from './sqlite-d1-test-helper'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock stands in for Resend's send; a precise signature adds no test value
-const mockSend = vi.fn<any>(() => Promise.resolve({ id: 'test-email-id' }))
-vi.mock('resend', () => ({
-  Resend: class {
-    emails = { send: mockSend }
-  },
+// No email or SMTP2Go probe leaves the test; the fetch stub below sees only the healthchecks ping.
+vi.mock('./email/send', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./email/send')>()),
+  sendEmail: vi.fn(() => Promise.resolve()),
+  checkEmailPath: vi.fn(() => Promise.resolve()),
 }))
 
 /** A D1 stand-in that throws the moment a job touches it, so every job on the tick fails. */

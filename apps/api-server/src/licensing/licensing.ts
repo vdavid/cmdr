@@ -145,7 +145,7 @@ async function trackDevice(params: {
   kv: KVNamespace
   deviceCounts: AnalyticsEngineDataset
   paddleConfig: { apiKey: string; environment: 'sandbox' | 'live' }
-  resendApiKey: string
+  smtp2goApiKey: string
 }): Promise<void> {
   const kvKey = `devices:${params.seatTransactionId}`
   const now = new Date().toISOString()
@@ -184,7 +184,7 @@ async function trackDevice(params: {
       baseTransactionId: params.baseTransactionId,
       deviceCount,
       customerEmail,
-      resendApiKey: params.resendApiKey,
+      smtp2goApiKey: params.smtp2goApiKey,
       paddleEnvironment: params.paddleConfig.environment,
     })
 
@@ -282,7 +282,7 @@ async function handleValidation(
         kv: env.LICENSE_CODES,
         deviceCounts: env.DEVICE_COUNTS,
         paddleConfig,
-        resendApiKey: env.RESEND_API_KEY,
+        smtp2goApiKey: env.SMTP2GO_API_KEY,
       })
     : null
 
@@ -530,7 +530,7 @@ async function processCompletedTransaction(
     licenses,
     productName: env.PRODUCT_NAME,
     supportEmail: env.SUPPORT_EMAIL,
-    resendApiKey: env.RESEND_API_KEY,
+    smtp2goApiKey: env.SMTP2GO_API_KEY,
     organizationName,
     licenseType,
   })

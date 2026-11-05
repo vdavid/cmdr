@@ -6,8 +6,7 @@
  * the wording is pinned by `sale.test.ts` rather than reviewed by eye.
  */
 
-import { Resend } from 'resend'
-import { sendViaResend } from './send'
+import { sendEmail } from './send'
 import { CELL_STYLE, TABLE_STYLE, bodyStyle, documentShell, escapeHtml, signoffParagraph } from './layout'
 
 /** Everything the notice says about one sale. Amounts are in the currency's smallest unit, as Paddle sends them. */
@@ -153,11 +152,11 @@ ${tableRows}
   return { subject, html, text }
 }
 
-/** Mail one sale notice. Throws through `sendViaResend` when Resend rejects it. */
-export async function sendSaleNotice(params: { notice: SaleNotice; to: string; resendApiKey: string }): Promise<void> {
+/** Mail one sale notice. Throws through `sendEmail` when SMTP2Go refuses it. */
+export async function sendSaleNotice(params: { notice: SaleNotice; to: string; smtp2goApiKey: string }): Promise<void> {
   const { subject, html, text } = renderSaleNotice(params.notice)
-  await sendViaResend(
-    new Resend(params.resendApiKey),
+  await sendEmail(
+    params.smtp2goApiKey,
     { from: 'Cmdr Sales <noreply@getcmdr.com>', to: params.to, subject, html, text },
     'sale notice',
   )
