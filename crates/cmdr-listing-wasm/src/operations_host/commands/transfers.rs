@@ -136,7 +136,7 @@ impl DemoOperations {
                 let a: ScanPreviewArgs = parse(command, args)?;
                 let volume_id = a.source_volume_id.unwrap_or_else(|| self.volume_id.clone());
                 // `None` asks the engine for the volume its id names.
-                ok(e.start_scan_preview(
+                answer(e.start_scan_preview(
                     Arc::new(DemoScanPreviewSink {
                         sink: Arc::clone(&self.sink),
                     }),

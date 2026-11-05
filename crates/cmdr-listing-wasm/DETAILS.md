@@ -191,6 +191,9 @@ command to it when `DemoOperations::handles` claims it.
   `crates/cmdr-fs/DETAILS.md` § "The browser build"), `with_yielding(8 ms)` (the page never waits long on engine work),
   and `with_capacity` at the disk size the volume list shows, so free space is live. `Pacing` stays the engine's default
   `None`.
+- **The home folder stays**: the tree's `home` is also the engine's `home_folder`, so deleting `~`, `/Users`, or `/`
+  refuses exactly as on the desktop (`crates/cmdr-operations/src/delete/DETAILS.md` § "The home folder stays"), with no
+  demo branch. Pinned by `commands_test.rs`'s home-folder cell.
 - **A full disk, on purpose**: the tree's `freeBytes` (the page's `?free=<bytes>`, `listing.ts`'s `freeBytesFromSearch`)
   sizes the disk as what the files hold plus that much room. A copy that doesn't fit then fails the way a real disk does
   (`StorageFull` → `destination_full`), and a backgrounded one stays in the queue as "Couldn't finish", whose Retry

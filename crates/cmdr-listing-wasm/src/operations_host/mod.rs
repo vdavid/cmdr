@@ -51,7 +51,12 @@ pub struct DemoOperations {
 impl DemoOperations {
     /// The write engine over `volume` (filed under `volume_id`), on `volume_host`
     /// (which carries the panes), sorting names as `listings` does, sizing
-    /// folders through `index`, and journaling into a fresh operation log.
+    /// folders through `index`, journaling into a fresh operation log, and
+    /// guarding `home` (the visitor's `/Users/you`) against delete and trash.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the host's seams, each its own value; a struct would only rename them"
+    )]
     pub(crate) fn new(
         volume_id: String,
         volume: Arc<dyn Volume>,
@@ -59,6 +64,7 @@ impl DemoOperations {
         listings: &Listings,
         index: Arc<dyn OperationIndex>,
         sink: Arc<dyn EventSink>,
+        home: Option<PathBuf>,
     ) -> Self {
         let volumes = Arc::new(volumes::DemoVolumes::new(volume_id.clone(), Arc::clone(&volume)));
         let registry = Arc::clone(&volumes);
@@ -72,14 +78,17 @@ impl DemoOperations {
         if let Err(e) = log.open(&log_db, &|_| None) {
             log::warn!(target: "operation_log", "the demo's operation log didn't open: {e}");
         }
-        let engine = Operations::builder(volumes, events)
+        let mut builder = Operations::builder(volumes, events)
             .volume_host(volume_host)
             .operation_log(log)
             .index(index)
             .name_order(Arc::new(PaneNameOrder {
                 listings: listings.clone(),
-            }))
-            .build();
+            }));
+        if let Some(home) = home {
+            builder = builder.home_folder(home);
+        }
+        let engine = builder.build();
         // Unpersisted on purpose: a page has nowhere to keep a ledger across
         // reloads, and an in-memory volume loses its leftovers with it.
         let _ = engine.claim_ledger(None);

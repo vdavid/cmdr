@@ -71,6 +71,7 @@ const variantDetailFormatters: VariantDetailFormatters = {
   ],
   destination_inside_source: (error) => [`Source: ${error.source}`, `Destination: ${error.destination}`],
   mounted_volume_inside: (error) => [`Mount point: ${error.mountPoint}`],
+  home_folder: (error) => [`Path: ${error.path}`, `Relation: ${error.relation}`],
   duplicate_source_names: (error) => [`Name: ${error.name}`, `First: ${error.first}`, `Second: ${error.second}`],
   named_leaves_refused: (error) => [`Path: ${error.path}`, `Reason: ${error.reason}`],
   files_too_large_for_filesystem: (error) => [

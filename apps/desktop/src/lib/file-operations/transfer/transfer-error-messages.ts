@@ -21,7 +21,7 @@ import type {
   FriendlyError,
   PermissionRefusal,
 } from '#lib/file-explorer/types.js'
-import type { MountedVolumeAction, StagedLeftovers, TrashRefusalKind } from '#lib/ipc/bindings.js'
+import type { HomeFolderRelation, MountedVolumeAction, StagedLeftovers, TrashRefusalKind } from '#lib/ipc/bindings.js'
 import { fdaIsMissing } from '#lib/onboarding/fda-status.svelte.js'
 import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
 import { w, type FriendlyErrorMessage } from './transfer-error-catalog'
@@ -241,6 +241,8 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // No Retry: the drive is still mounted there, so the same request refuses
   // again. The way out is ejecting it, which the suggestion says.
   mounted_volume_inside: { category: 'needs_action', retryHint: false },
+  // No Retry: the home folder stays where it is, so the same request refuses again.
+  home_folder: { category: 'needs_action', retryHint: false },
   // No Retry: the same name is refused again. The way out is renaming the file
   // or leaving it out of the selection.
   archive_entry_name_refused: { category: 'needs_action', retryHint: false },
@@ -634,6 +636,16 @@ function otherFieldDrivenMessage(error: WriteOperationError): FriendlyErrorMessa
  * carrying its files off. A move can refuse either of the last two, so the
  * operation type can't pick.
  */
+/** The home-folder refusal's copy, shared by the error dialog and the delete
+ *  dialog's up-front refusal. `path` lands inside `<code>`, escaped. */
+export function homeFolderMessage(path: string, relation: HomeFolderRelation): FriendlyErrorMessage {
+  return {
+    title: w('homeFolder.title'),
+    message: w(`homeFolder.message.${relation}`, { path: escapeHtml(path) }),
+    suggestion: w(`homeFolder.suggestion.${relation}`),
+  }
+}
+
 function mountedVolumeMessage(mountPoint: string, action: MountedVolumeAction): FriendlyErrorMessage {
   return {
     title: w('mountedVolumeInside.title'),
@@ -715,6 +727,11 @@ function operationWordedMessage(
     // eject.
     case 'mounted_volume_inside':
       return mountedVolumeMessage(error.mountPoint, error.action)
+    // The person's own home folder, or a folder holding it. The same words the
+    // delete dialog shows when it refuses up front (`DeleteDialog.svelte`); this is
+    // the path for a start that skipped the dialog (MCP, an AI suggestion).
+    case 'home_folder':
+      return homeFolderMessage(error.path, error.relation)
     // Names given per item (an approved suggestion) that can't all be used. One
     // sentence per rule, since each has its own way out, and none varies by
     // operation: nothing started.

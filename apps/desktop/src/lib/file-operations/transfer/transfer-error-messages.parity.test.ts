@@ -830,6 +830,33 @@ const cases: Case[] = [
   },
 
   {
+    // The person's own home folder: refused whoever asked.
+    name: 'home_folder (is home)',
+    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome' },
+    op: 'delete',
+    expected: {
+      title: 'Your home folder stays',
+      message: 'Hey, you can’t delete your own home folder.',
+      suggestion:
+        'If you want to get rid of all your files, go in there, select all, and delete. Although, it still sounds like a very bad idea.',
+    },
+  },
+
+  {
+    // A folder holding the home folder: names it, escaped, as code.
+    name: 'home_folder (holds home)',
+    error: { type: 'home_folder', path: '/Users/<x>', relation: 'holdsHome' },
+    op: 'trash',
+    expected: {
+      title: 'Your home folder stays',
+      message:
+        'You can’t delete <code>/Users/&lt;x&gt;</code> because it contains your home folder, and you can’t delete your home folder.',
+      suggestion:
+        'If you want to free up space, be a bit more specific. If you want to get rid of everything on this machine, do an OS reset.',
+    },
+  },
+
+  {
     // A delete that would have walked into a mounted drive: names the mount,
     // which can sit deep inside the selection, and says nothing was deleted.
     name: 'mounted_volume_inside (delete)',

@@ -102,6 +102,14 @@ impl Operations {
             config.dry_run
         );
 
+        // Never the person's own home folder, nor a folder holding it (`home_folder.rs`).
+        if let Some(hit) = self.home_folder_hit(&volume_id_str, &sources) {
+            return Err(WriteOperationError::HomeFolder {
+                path: hit.path,
+                relation: hit.relation,
+            });
+        }
+
         // Deleting entries INSIDE a zip is a mutation: route to the managed archive-edit
         // driver as a single `{ delete }` changeset (a rewrite, not per-entry). The
         // `.zip` file itself is a regular file — deleting it stays on the normal path.
@@ -166,6 +174,16 @@ impl Operations {
             "trash_files_start: sources={:?}",
             sources.iter().map(LogPrivate::path).collect::<Vec<_>>()
         );
+
+        // Never the person's own home folder, nor a folder holding it
+        // (`home_folder.rs`). Before the preview is freed: the dialog that asked
+        // is still up and owns it.
+        if let Some(hit) = self.home_folder_hit(cmdr_fs::volume::DEFAULT_VOLUME_ID, &sources) {
+            return Err(WriteOperationError::HomeFolder {
+                path: hit.path,
+                relation: hit.relation,
+            });
+        }
 
         // ❌ Trash does NOT wait for the confirming dialog's scan preview, and this
         // is the one operation that doesn't. `trashItemAtURL` is atomic per

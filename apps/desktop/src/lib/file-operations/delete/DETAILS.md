@@ -51,6 +51,17 @@ turns the suite into a false-positive net; one test asserts the overlay really d
 Each volume exposes `supportsTrash` from its `fsType` (statfs): APFS and HFS+ yes; FAT32, exFAT, smbfs, nfs, afpfs, and
 webdav no.
 
+## The home folder refuses up front
+
+Deleting or trashing the person's own home folder, or a folder holding it, is refused by the engine
+(`crates/cmdr-operations/src/delete/DETAILS.md` § "The home folder stays"). The dialog learns it from its own scan
+preview: `startScanPreview` answers `{ refusal: { type: 'home_folder', path, relation } }`, `delete-scan-state` keeps it
+as `homeFolderRefusal`, and `DeleteDialog` swaps its whole body for the refusal's words and its footer for Close (no
+trash switch, no Delete; Enter and an MCP `dialog_confirm` press nothing). The words are the `errors.write.homeFolder.*`
+ones `homeFolderMessage` builds (`../transfer/transfer-error-messages.ts`), the same the error dialog shows when a start
+skipped this dialog, so they live in one place. The path renders in `<code>`, escaped. The refusal lands a moment after
+mount, so the confirm UI may show for a frame first; a press in that window awaits `scanStarted` and stops there.
+
 ## Scan-preview detail
 
 `data-scan-state` on `.scan-stats` (`counting` | `done`) is the only "counting done" signal; tests and MCP wait on it.

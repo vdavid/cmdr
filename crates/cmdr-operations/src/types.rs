@@ -688,6 +688,11 @@ pub enum ScanPreviewRefusal {
     /// instead is what this exists to stop: it can only fail, and the dialog
     /// would then offer a Retry that never works.
     SourceNotConnected { volume_id: String },
+    /// A delete or trash preview over the person's own home folder, or a folder
+    /// holding it. The delete itself would refuse the same way
+    /// (`WriteOperationError::HomeFolder`), so the dialog shows why and offers no
+    /// Delete button, and nothing sizes up the whole disk first.
+    HomeFolder { path: String, relation: HomeFolderRelation },
 }
 
 /// Cached scan-preview totals, returned by `check_scan_preview_status` when the

@@ -6430,7 +6430,7 @@ export type ArchiveFailureKind =
 
 /**
  *  Why a name can't be a fresh-ZIP entry, for
- *  [`WriteOperationError::ArchiveEntryNameRefused`]. Mirrors the archive
+ *  [`super::WriteOperationError::ArchiveEntryNameRefused`]. Mirrors the archive
  *  reader's own quarantine reasons (`cmdr_archive::read::QuarantineReason`), which
  *  decide it.
  */
@@ -10163,6 +10163,20 @@ export type HolderScan =
     }
 
 /**
+ *  How a refused delete's source relates to the person's own home folder, for
+ *  [`super::WriteOperationError::HomeFolder`] and the delete dialog's matching
+ *  `ScanPreviewRefusal::HomeFolder`. Each gets its own sentence.
+ */
+export type HomeFolderRelation =
+  /**
+   *  The source IS the home folder (`~`, `/Users/me/`, a path through a
+   *  symlinked folder that lands there).
+   */
+  | 'isHome'
+  // The source is a folder that holds the home folder: `/Users`, `/`.
+  | 'holdsHome'
+
+/**
  *  A server whose key nobody has approved yet, and what to say about it.
  *
  *  Carries serde and `specta::Type` because this is the value the approval flow
@@ -12949,7 +12963,7 @@ export type MountResult = {
 
 /**
  *  What a refused operation would have done to a mounted drive, for
- *  [`WriteOperationError::MountedVolumeInside`]. Each is its own sentence: a
+ *  [`super::WriteOperationError::MountedVolumeInside`]. Each is its own sentence: a
  *  MOVE of the folder holding the drive and an Overwrite REPLACING a folder
  *  both run under a move, so the operation type can't tell them apart.
  */
@@ -13663,7 +13677,7 @@ export type NameFilterResult = {
 
 /**
  *  Why a transfer that names its items one by one refused to start, for
- *  [`WriteOperationError::NamedLeavesRefused`]. Every one is checked before the
+ *  [`super::WriteOperationError::NamedLeavesRefused`]. Every one is checked before the
  *  operation is admitted, so nothing was written (`transfer/DETAILS.md` §
  *  "Named destinations").
  */
@@ -14400,7 +14414,7 @@ export type OsLocalesChanged = {
 
 /**
  *  A file that exceeds the destination filesystem's per-file size limit.
- *  Carried by [`WriteOperationError::FilesTooLargeForFilesystem`] so the dialog
+ *  Carried by [`super::WriteOperationError::FilesTooLargeForFilesystem`] so the dialog
  *  can list the offenders.
  */
 export type OversizedFile = {
@@ -14694,12 +14708,12 @@ export type PauseOutcome =
 
 /**
  *  What a permission refusal's errno says about whether administrator rights
- *  could change the answer, for [`WriteOperationError::PermissionDenied`].
+ *  could change the answer, for [`super::WriteOperationError::PermissionDenied`].
  *
  *  Rust folds `EACCES` and `EPERM` into one `ErrorKind::PermissionDenied`, and the
  *  two are opposite advice: one is a folder an administrator could write to, the
  *  other is macOS itself refusing, where administrator rights change nothing.
- *  Derived from the errno by [`WriteOperationError::permission_denied`], the only
+ *  Derived from the errno by [`super::WriteOperationError::permission_denied`], the only
  *  thing that builds the variant, so the two can't disagree.
  */
 export type PermissionRefusal =
@@ -14735,7 +14749,7 @@ export type PermissionRefusal =
 
 /**
  *  Which half of a transfer refused on permission grounds, for
- *  [`WriteOperationError::PermissionDenied`].
+ *  [`super::WriteOperationError::PermissionDenied`].
  *
  *  Copying OUT of a folder that refuses reads and copying INTO one that refuses
  *  writes are different fixes, and without this they read identically. Filled
@@ -15270,7 +15284,7 @@ export type ReadOnlyPlace =
   | 'resticSnapshots'
 
 /**
- *  Which half of a transfer refused the write, for [`WriteOperationError::ReadOnlyDevice`].
+ *  Which half of a transfer refused the write, for [`super::WriteOperationError::ReadOnlyDevice`].
  *
  *  The two are different sentences, not different wordings of one: a read-only
  *  DESTINATION means "put it somewhere else", a read-only SOURCE means "you can
@@ -16698,7 +16712,14 @@ export type ScanPreviewRefusal =
    *  instead is what this exists to stop: it can only fail, and the dialog
    *  would then offer a Retry that never works.
    */
-  { type: 'source_not_connected'; volumeId: string }
+  | { type: 'source_not_connected'; volumeId: string }
+  /**
+   *  A delete or trash preview over the person's own home folder, or a folder
+   *  holding it. The delete itself would refuse the same way
+   *  (`WriteOperationError::HomeFolder`), so the dialog shows why and offers no
+   *  Delete button, and nothing sizes up the whole disk first.
+   */
+  | { type: 'home_folder'; path: string; relation: HomeFolderRelation }
 
 // Result of starting a scan preview.
 export type ScanPreviewStartResult = {
@@ -22061,6 +22082,14 @@ export type WriteOperationError =
    *  done to it.
    */
   | { type: 'mounted_volume_inside'; mountPoint: string; action: MountedVolumeAction }
+  /**
+   *  A delete or a trash named the person's own home folder, or a folder that
+   *  holds it. Refused before anything is read or removed, whoever asked (a
+   *  person, MCP, or an AI suggestion): `home_folder.rs`. `path` is the source
+   *  as the caller sent it, tilde expanded. Other people's home folders stay
+   *  deletable.
+   */
+  | { type: 'home_folder'; path: string; relation: HomeFolderRelation }
   /**
    *  A fresh ZIP would hold an entry the archive reader quarantines: a name
    *  that climbs out of the archive (a macOS `..\notes.txt` reads as
