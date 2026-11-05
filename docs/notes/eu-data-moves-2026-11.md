@@ -6,16 +6,18 @@ are gone.
 
 ## Status per item
 
-- **A1, email (Resend → SMTP2Go EU)**: Listmonk is LIVE on SMTP2Go. The API server's code is on this branch and waits
-  for one secret (§ A1 runbook). Resend leaves the public pages with this branch.
-- **A2, D1 and R2 in the `eu` jurisdiction**: both EU resources exist. The R2 copy is complete and verified. The D1
-  switch is rehearsed on a local copy, and blocked on Workers Paid (§ A2 runbook). No binding is switched on this
-  branch, so landing it moves nothing.
+- **A1, email (Resend → SMTP2Go EU)**: LIVE. Listmonk since 2026-11-05 morning; the API server since David set
+  `SMTP2GO_API_KEY` and deploy run 42025533993 went green (2026-11-05 12:15 UTC, the Worker now holds the secret). The
+  first Worker send shows in SMTP2Go's activity at the next digest or the 06:30 brief (§ A1 runbook step 4).
+- **A2, D1 and R2 in the `eu` jurisdiction**: the switch commit, the cutover script, and a full remote rehearsal are on
+  the branch; it waits for the R2 token scopes and the lead's land (§ A2 cutover).
 - **A3, updates from EU R2**: the bucket and `download.getcmdr.com` are LIVE with 0.59.0 backfilled; the `/download`
   redirect moves when this lands, and `latest.json` with the next release (§ A3).
-- **A4–A6, B1–B3, B5, B7, B8**: public text on this branch, § Changed public passages. B8 is done for everything that's
-  true after the land; the "not locked to the EU yet" lines change when the D1 and R2 switches finish (a `DevTodo` on
-  `/trust#eu` lists them).
+- **A4–A6, B1–B3, B5, B7, B8**: public text LIVE on `main`, § Changed public passages. The switch commit replaces the
+  "not locked to the EU yet" lines with "stored in Cloudflare's EU jurisdiction" (naming the KV store of license
+  activation codes as the part that stays global), drops that Known limitations clause, and adds a dated Cloudflare line
+  to the change log. B5: a second search (2026-11-05) found no official Paddle page with its W-8BEN-E, so the FAQ asks
+  buyers to request it from Paddle's buyer support, and its `DevTodo` is gone.
 - **A5 list**: Listmonk list 5, "Cmdr subprocessor updates" (public, double opt-in, UUID
   `990aee1b-97df-4a5b-be6f-d4def6783e87`), LIVE; the signup route and form ship with this branch.
 - **B4** (insurance) deferred; **B6** (contract terms) lives in David's vault.
@@ -97,83 +99,62 @@ It never deletes or overwrites. Every route names a direction, so the same calls
 Rollback: Listmonk, re-enable the Resend block and disable `email-smtp2go-eu`. The Worker, revert the A1 commit and land
 (the Resend secret is still set until step 7).
 
-## A2 runbook, R2 (`cmdr-error-reports` → `cmdr-error-reports-eu`)
+## A2 cutover (D1 `cmdr-telemetry` → `cmdr-telemetry-eu`, R2 `cmdr-error-reports` → `cmdr-error-reports-eu`)
 
-Preconditions:
+Both switch in ONE land: the switch commit changes the two bindings (`apps/api-server/wrangler.toml`), the presign vars,
+the triage box's host and allowlist (`scripts/report-triage/`), the docs that name either resource, and the public text
+(`/trust`, privacy policy, a change-log line). `apps/api-server/scripts/eu-move/cutover.sh` drives the land-time steps;
+its gates refuse to run a phase out of order.
 
-- **David**: add `cmdr-error-reports-eu` to the bucket scope of BOTH R2 API tokens: the Worker's presign token
-  (`cmdr-error-reports-presign`, its id is `R2_ACCESS_KEY_ID`) and the report-triage token (`TRIAGE_R2_ACCESS_KEY_ID`).
-  Editing the scope keeps the key id and secret, so no secret changes. Keep the old bucket in scope until a day after
-  the switch, so links minted before it still open.
+### Done before the land (2026-11-05)
 
-The switch commit:
+- Workers Paid is on (David), which lifted the account-wide 100,000 rows a day that would have taken production down
+  mid-import. `D1_MAX_DB_MB` (`wrangler.toml` `[vars]`) follows it to 10 GB.
+- **Plan review** (a separate agent): two blockers, both fixed. (1) Since per-lane CI, `pnpm land -no-wait` runs a light
+  CI that never reports `CI OK`, so a `pnpm land` after the import would start a 25–35-minute run inside the window; the
+  sequence now gets a green land run FIRST, and `prepare` refuses without one. (2) The reconcile only reported keyed
+  rows, so a license minted, refunded, or claimed in the window would have stayed behind (and a Paddle redelivery could
+  mint a second set); it now copies them, carries forward-only stamps so the EU cron doesn't re-file cards or re-send
+  digests, counts real writes, and the bump covers a table with no `sqlite_sequence` row.
+- **Remote rehearsal** of the whole script against a scratch EU database (`cmdr-telemetry-rehearsal`, deleted after):
+  export 10 s, import 24 s (299,095 changes, 1.88 M rows written with indexes, 148 MB), 29 migrations, D1 accepts
+  `UPDATE sqlite_sequence`, a new row took id `max + 1000000`, the reconcile moved one window row, and the `/validate`
+  snapshot (four licenses plus two unknown ids) matched. The first `wrangler d1 export` of the day failed with no
+  message and the rerun worked, so `prepare` retries it three times.
+- R2: the delta copy found nothing new (274 objects both sides). The EU bucket's lifecycle has
+  `expire-error-reports-90-days` plus the per-date rules.
 
-1. `apps/api-server/wrangler.toml`: the `ERROR_REPORTS_BUCKET` binding gets `bucket_name = "cmdr-error-reports-eu"` and
-   `jurisdiction = "eu"`; `[vars]` gets `R2_ERROR_REPORTS_BUCKET_NAME = "cmdr-error-reports-eu"` and
-   `R2_ERROR_REPORTS_JURISDICTION = "eu"` (`error-report-bucket-config.test.ts` fails if any of the four disagree).
-2. `scripts/report-triage/fetch-bundle.sh` (host `${TRIAGE_R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com`, bucket),
-   `scripts/report-triage/settings.json` (`allowedDomains`), and the bucket name in `run.sh`, `DETAILS.md`.
-3. `docs/tooling/feedback-and-error-digest.md`: the bucket name in the REST calls, plus the header
-   `cf-r2-jurisdiction: eu`. Also `scripts/setup-cf-infra.sh` (`--jurisdiction eu`), `docs/security.md`, and the
-   lifecycle command in `src/telemetry/DETAILS.md` (`-J eu`).
+### Land-time sequence (the lead)
 
-Cutover:
+Preconditions: David has added `cmdr-error-reports-eu` to both R2 tokens' bucket scope (§ Open items 3), and this
+command answers `200` (the triage token; the presign one can't be checked from here):
+`curl -s -o /dev/null -w '%{http_code}\n' --aws-sigv4 aws:amz:auto:s3 --user "$(secret TRIAGE_R2_ACCESS_KEY_ID):$(secret TRIAGE_R2_SECRET_ACCESS_KEY)" "https://6a4433bf11c3cf86feda057f76f47991.eu.r2.cloudflarestorage.com/cmdr-error-reports-eu?list-type=2&max-keys=1"`.
+No other api-server land until step 6 is done.
 
-1. `pnpm land -no-wait`, wait for green CI, then `pnpm land`. The deploy follows in about five minutes.
-2. After it: `/r2/copy?from=old&to=eu&limit=500` for the objects written meanwhile, then `/r2/diff`. A key listed under
-   `differing` is an `.amend.json` rewritten in the old bucket after the copy (the tool never overwrites): copy that one
-   by hand, old → EU.
-3. Add expiry rules for any new date prefix the delta brought (rebuild with the recipe in § Lifecycle recipe).
-4. Verify: `/admin/error-reports` lists the bundles; the next digest's download link opens; the triage box fetches a
-   bundle.
+1. From the worktree: `pnpm land -no-wait`, then `gh pr edit --add-label land` and wait for that run's `CI OK` (25–35
+   min). Nothing has moved yet.
+2. `D=<scratch>/cutover; apps/api-server/scripts/eu-move/cutover.sh snapshot $D/before.json`.
+3. Not within 15 minutes before a cron tick (`0 */3` UTC, plus 04:30 and 05:30), so no EU tick runs before step 5:
+   `apps/api-server/scripts/eu-move/cutover.sh prepare $D` (about a minute; production's database is unavailable for
+   about 10 s of it).
+4. `pnpm land` (in the background): the head is green, so it lands at once, and `deploy-api-server.yml` deploys in about
+   five minutes. The website deploys the public text from the same push.
+5. `apps/api-server/scripts/eu-move/cutover.sh finish $D`: waits for the deploy (the Worker's `TELEMETRY_DB` binding),
+   then for the old database to go quiet, reconciles, copies the window's R2 objects, and compares `/validate`.
+   `ignored` rows on `update_checks`, `analytics_event`, `daily_active_users`, and `downloads_daily_unique` are UNIQUE
+   duplicates the EU side already counted, so expected. Anything under `differing` is a human's call.
+6. Verify: the next cron tick is clean (healthchecks.io, no `cron-failure` ops event), the next digest's bundle link
+   opens, and re-install the triage box (`m1mbp/ansible`, `--tags report_triage`, from the laptop's updated checkout).
+   Delete `$D` (it holds license ids).
+7. If the land happens after 2026-11-05, fix the date of the Cloudflare line in `subprocessorChanges` (`trust.ts`).
 
-Rollback: revert the switch commit and land, then `/r2/copy?from=eu&to=old`. Nothing gets deleted from the old bucket
-until David decides, at least a week after the switch.
+Write window: from the export in step 3 to the deploy in step 4, about 6–8 minutes. Nothing pauses: writes in it land in
+the old database and step 5 carries them over.
 
-## A2 runbook, D1 (`cmdr-telemetry` → `cmdr-telemetry-eu`)
-
-Preconditions:
-
-- **David: Workers Paid ($5 a month).** Workers Free allows 100,000 rows written a day ACROSS THE ACCOUNT, and past it
-  every D1 query errors until 00:00 UTC (D1 pricing docs, checked 2026-11-05). Production already writes 36,000–59,000 a
-  day, and the import is about 290,000 rows plus their index rows. On Free it would take the production database down
-  for the rest of the day: manual licenses would answer `upstream_error`, and purchases couldn't be claimed.
-- With Paid, the D1 size cap rises from 500 MB to 10 GB, so `d1MaxDbBytes` (cron job 7) changes in the same commit, or
-  its size alarms fire at the wrong steps.
-- A remote dry run first: the same export → import → bump → compare into a scratch database
-  (`wrangler d1 create cmdr-telemetry-rehearsal --jurisdiction eu`), then delete the scratch one. It proves the remote
-  import and whether D1 accepts `UPDATE sqlite_sequence` (if it refuses with `SQLITE_AUTH`, bump each table by inserting
-  a row at `max(id) + 1000000` and deleting it; AUTOINCREMENT keeps the sequence).
-- Freeze other api-server lands until step 7: a migration landing in between would reach only the old database, and the
-  deploy workflow has no concurrency group.
-
-Steps:
-
-1. The switch commit: `apps/api-server/wrangler.toml` `database_name = "cmdr-telemetry-eu"`,
-   `database_id = "936d4ece-7f66-45d9-be68-dc1135790bdd"`, plus the docs that name the database
-   (`apps/api-server/DETAILS.md` § Storage, `docs/tooling/cloudflare.md`, `docs/tooling/feedback-and-error-digest.md`).
-   The deploy workflow migrates by binding, so it follows. `pnpm land -no-wait`, wait for green CI.
-2. Capture production's `/validate` answers for every ledger license (the rehearsal's script, no device id), to compare
-   after.
-3. Right after a cron tick (`0 */3 * * *` UTC; not near 04:30 or 05:30):
-   `wrangler d1 export cmdr-telemetry --remote --output <scratch>/prod.sql`.
-4. `wrangler d1 execute cmdr-telemetry-eu --remote --file <scratch>/prod.sql -y`.
-5. `/d1/stats?db=eu` (29 migrations), then `/d1/marks?db=eu` (save the JSON: the max ids AT THE EXPORT), then
-   `/d1/bump?db=eu&by=1000000`. The bump makes every id the new Worker writes land far above anything the old database
-   hands out meanwhile, so gap rows keep their own ids and every later step can rerun safely.
-6. `pnpm land`. CI is already green, so it lands at once.
-7. When the deploy finishes, wait two minutes (in-flight `waitUntil` writes), confirm the old database's max ids have
-   stopped moving (`/d1/stats?db=old`), then `/d1/reconcile?from=old&to=eu&marks=<url-encoded marks>` (dry), then the
-   same with `apply=1`. Settle anything under `differing` by hand: those are rows changed in place in the old database
-   during the window (a digest stamp, `answered_at`, an ops-event count, a license row).
-8. Verify: production `/validate` answers match step 2; `/d1/compare?from=old&to=eu` differs only where the EU side
-   moved on; the next cron tick is clean (healthchecks.io, no `cron-failure`), and the morning brief's tripwires are
-   quiet.
-9. Delete `<scratch>/prod.sql`. Keep the old database untouched (nothing binds it, so nothing writes it) for at least
-   seven days. Deleting it is David's call after that.
-
-Rollback: revert the switch commit and land, then `/d1/reconcile?from=eu&to=old` with marks = the OLD database's max ids
-at the switch (from step 7's stats). The bump put every EU-written id above them.
+Rollback: revert the switch commit and land. Then, with the tool, `/d1/reconcile?from=eu&to=old&marks=<$D/marks.json>`
+(dry, then `apply=1`): rows the EU side wrote sit above the marks (the bump), the window rows the old side already has
+are skipped, and keyed rows and stamps carry over as in step 5. Then `/r2/copy?from=eu&to=old`. The old database and
+bucket stay untouched for at least seven days after the switch; deleting them is David's call (not before 2026-11-12).
 
 ## Lifecycle recipe
 
@@ -298,7 +279,9 @@ the lead's brief said v0 at the land with your review after; whoever lands it pi
 - `#company`: the DPA bullet says "30 days' notice before a change to the subprocessors" and links the new section; a
   new Support bullet carries B7's reply times. The old "There's no written response time" sentence is gone.
 - `#signing`: downloads come "from `download.getcmdr.com` or its mirror on GitHub Releases".
-- Known limitations: "Cloudflare's database and error-report storage aren't locked to the EU jurisdiction yet."
+- Known limitations: "Cloudflare's database and error-report storage aren't locked to the EU jurisdiction yet." The A2
+  switch commit drops that clause, and rewrites `#eu`, `#outside-eu`, the Cloudflare subprocessor entry, and privacy
+  policy §6 to "stored in Cloudflare's EU jurisdiction", naming the KV store (license activation codes) as global.
 - `verifiedAgainst.date`: 2026-11-05 (version stays 0.59.0).
 - A3's `updates` connection and allowlist lines: § A3 above.
 
@@ -315,22 +298,30 @@ Privacy policy (`apps/website/src/pages/privacy-policy.astro`, last updated 2026
 Pricing FAQ (`apps/website/src/pages/pricing.astro`):
 
 - "Who sells it, and which tax form does our accounts payable team need?" (B5). It links Paddle's buyer support
-  (paddle.net), because no official Paddle page offering its W-8BEN-E turned up; a `DevTodo` beside it says so.
+  (paddle.net) and asks buyers to request the form there, because no official Paddle page offering its W-8BEN-E turned
+  up in two searches (2026-11-05).
 - "When does support answer?" (B7).
 
 ## Open items for David
 
-1. **SMTP2Go key for the Worker** (A1 runbook step 1), then `wrangler secret put SMTP2GO_API_KEY`. Until then, every
-   api-server deploy stops at the secrets check, and the old Worker keeps sending through Resend.
-2. **Workers Paid** ($5 a month) before the D1 switch. It also lifts the 500 MB cap the size alarm tracks.
-3. **The two R2 token scopes** (A2 runbook, R2 preconditions) before the R2 switch.
-4. **The GitHub `CLOUDFLARE_API_TOKEN`'s R2 write access** before the next release (§ A3 runbook step 1).
-5. **Paddle's W-8BEN-E link**: confirm the form and find an official page for it, or ask Paddle support.
-6. **Review the public passages** above, and the support-hours wording: "Stockholm time (CET)" is CEST in summer;
+1. Done 2026-11-05: the Worker's SMTP2Go key, and Workers Paid.
+2. Done 2026-11-05: Paddle's W-8BEN-E (no official page exists; the FAQ points to buyer support).
+3. **The two R2 token scopes**, before the A2 land. No token in the sops store can read or edit API tokens
+   (`/user/tokens` and `/accounts/<id>/tokens` answer 9109, checked 2026-11-05), so it's a dashboard edit: R2 Object
+   Storage → Manage API tokens → `cmdr-error-reports-presign` (its Access Key ID is the Worker's `R2_ACCESS_KEY_ID`) →
+   Edit → under the bucket scope, add `cmdr-error-reports-eu` (it's listed under the EU jurisdiction) and keep
+   `cmdr-error-reports` → Save. The same for the report-triage token (Access Key ID starting `1d0073`). The key id and
+   secret stay the same. Today the triage token gets `403` on the EU bucket and `200` on the old one.
+4. **The GitHub `CLOUDFLARE_API_TOKEN`'s R2 write access**, before the next release (§ A3 runbook step 1). It can't be
+   confirmed from here: no token can list tokens, GitHub won't show a secret's value, and checking it means running a
+   workflow. In the dashboard (My Profile → API Tokens), the token whose "last used" matches the 2026-11-05 12:15 UTC
+   deploy is the CI one; give it "Workers R2 Storage: Edit" if it lacks it. Otherwise the next release's `guard` job
+   stops at "Require write access to the EU download bucket", before anything ships.
+5. **Review the public passages** above, and the support-hours wording: "Stockholm time (CET)" is CEST in summer;
    "Stockholm time" alone would always be right.
-7. **After the week** (from 2026-11-12): the Resend cleanup in A1 step 7, and later deleting the old D1 database and R2
+6. **After the week** (from 2026-11-12): the Resend cleanup in A1 step 7, and later deleting the old D1 database and R2
    bucket once their switches have run a week.
-8. **SMTP2Go quota**: 1,000 emails a cycle across mailcow, Listmonk, and the Worker. The lists are small today (26 and
+7. **SMTP2Go quota**: 1,000 emails a cycle across mailcow, Listmonk, and the Worker. The lists are small today (26 and
    18 subscribers), but a bigger newsletter needs the next plan.
-9. **Listmonk's public form** (`getcmdr.com/subscription/form`) now shows the subprocessor list too, pre-ticked with the
+8. **Listmonk's public form** (`getcmdr.com/subscription/form`) now shows the subprocessor list too, pre-ticked with the
    newsletter and beta lists, as Listmonk does for every public list. The `/trust` form subscribes to that list alone.
