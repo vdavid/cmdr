@@ -514,7 +514,6 @@ var manifestDirHopRE = regexp.MustCompile(`CARGO_MANIFEST_DIR(?:[^\n]*\n){0,6}?[
 var rustScopeHopFiles = map[string]string{
 	"apps/desktop/src-tauri/src/operations_host/backend_suites/copy_bench.rs": "climbs out of the repo to the sibling smb2 checkout's `.env`",
 	"crates/cmdr-git/src/bench.rs":                                            "locates `target/` for its generated fixture; reads nothing tracked",
-	"crates/cmdr-index/src/importance/evals/tests.rs":                         "loads the gitignored importance corpus, which no diff carries",
 	"crates/cmdr-operations/src/golden_trace_tests.rs":                        "the `.parent()` creates the dir of an in-crate golden file",
 }
 

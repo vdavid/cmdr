@@ -34,8 +34,9 @@
 //! Synthetic scenarios ([`scenarios`](crate::importance::evals::scenarios)) are committed and cover varied homes
 //! (dev-home, media-home, downloads-heavy, an SMB/NAS). Real-derived corpus
 //! scenarios are loaded at test time from a gitignored dir (the corpus tool
-//! exports them, David labels them); `evals::tests` auto-includes any it finds, so the
-//! committed suite is fully green with zero corpus files present.
+//! exports them, David labels them); only the opt-in (`#[ignore]`d)
+//! `evals::tests::local_corpus_*` test reads them, so the default suite never
+//! touches the corpus and is green with zero corpus files present.
 
 pub mod constraints;
 pub mod corpus;
