@@ -184,7 +184,10 @@ describe('createOsDrops', () => {
   })
 
   const names = () => sent.map((s) => s.event)
-  const settled = () => vi.waitFor(() => expect(names()).toContain('tauri://drag-drop'))
+  const settled = () =>
+    vi.waitFor(() => {
+      expect(names()).toContain('tauri://drag-drop')
+    })
 
   it('sends wry’s events for a drag over the page, then the drop with the staged paths', async () => {
     setUp()
@@ -242,8 +245,12 @@ describe('createOsDrops', () => {
     setUp({ accepted: 0, roots: [], refusal })
     window.dispatchEvent(drag('dragenter'))
     window.dispatchEvent(drag('drop', { files: [file('big.bin', 'x')] }))
-    await vi.waitFor(() => expect(refusals).toEqual([refusal]))
-    await vi.waitFor(() => expect(names().at(-1)).toBe('tauri://drag-leave'))
+    await vi.waitFor(() => {
+      expect(refusals).toEqual([refusal])
+    })
+    await vi.waitFor(() => {
+      expect(names().at(-1)).toBe('tauri://drag-leave')
+    })
     expect(names()).not.toContain('tauri://drag-drop')
     // Nothing went out, so the empty batch is swept at once.
     expect(fake.handedOff).toEqual([{ batch: 1, offered: false }])
