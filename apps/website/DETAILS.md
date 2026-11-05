@@ -324,7 +324,14 @@ gives it browser globals.
 
 `/demo/` serves the real desktop frontend on a fake backend, with the listing engine built to WASM (issue #302; the app
 side is `apps/desktop/src/lib/demo/CLAUDE.md`, the engine `crates/cmdr-listing-wasm/CLAUDE.md`). The home page's hero
-embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until David launches it as a page.
+embeds it (below), and `/demo/` is a page of its own too, in the sitemap and `llms.txt`.
+
+- **Indexing**: search engines list `/demo/` and nothing else under it. The app's own routes (`/demo/settings` and the
+  like, its secondary windows) get the same page from the SPA fallback, so the page's canonical link names `/demo/`, and
+  nginx sends `X-Robots-Tag: noindex, nofollow` for every path under `/demo/` except the page itself (`$demo_robots` in
+  `nginx.conf`, read off `$request_uri`, since `try_files` rewrites `$uri`). The sitemap lists `/demo/` through
+  `customPages` in `astro.config.ts`, only on a `CMDR_WEBSITE_DEMO=1` build, and its `filter` drops any other `/demo/`
+  URL. `website-docker-build` probes the header both ways when a local demo is built.
 
 - **The hero embed** (`src/components/HeroLiveDemo.astro`): a same-origin iframe of `/demo/` at a fixed desktop size,
   scaled to fit a tilted window. The iframe gets its `src` only after the page's `load` and an idle callback, so the
@@ -340,9 +347,10 @@ embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until 
 
 - **Build**: `pnpm build:demo` at the repo root (the WASM engine, then `apps/desktop`'s `build:demo` into
   `apps/desktop/build-demo/`). Then `CMDR_WEBSITE_DEMO=1 pnpm build` here: `src/plugins/demo.ts` copies it into
-  `dist/demo/`, rewrites the page's `<title>` (placeholder copy) and adds a `noindex` meta, and writes
-  `nginx-generated/csp-demo-script-hashes.conf` (the page's inline-script hashes). With the flag set, a missing demo
-  build fails the site build; without it, the site builds as always and the snippet is written empty.
+  `dist/demo/`, gives the page its own `<title>`, description, canonical link, and link-preview tags (`demoPageHead`;
+  the copy is a draft David reviews), and writes `nginx-generated/csp-demo-script-hashes.conf` (the page's inline-script
+  hashes). With the flag set, a missing demo build fails the site build; without it, the site builds as always and the
+  snippet is written empty.
 - **Decision: opt-in, not part of every `pnpm build`.** The demo needs Rust, the wasm32 target, `wasm-bindgen`, and Go,
   so building it on every website build would put that toolchain under the website checks, local dev, and Lighthouse.
   The places that ship or test the site set the flag: the Dockerfile (on by default) and CI's `website` job.
@@ -425,18 +433,20 @@ embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until 
 - **Headers**: `nginx-demo-security-headers.conf` replaces the site's CSP for `/demo/` only, sharing the rest via
   `nginx-security-headers-base.conf`. The policy and why each part is there are in that file's header. Verified in the
   built image with Chromium (2026-11-04): no CSP violation on boot, `WebAssembly.instantiate` allowed under `/demo/` and
-  refused under the site's own policy. It also sends `X-Robots-Tag: noindex, nofollow`. `frame-src 'self' blob:` because
-  the demo's secondary windows (Settings) are same-origin iframes of `/demo/<route>`, and Chrome's PDF viewer checks
-  `frame-src` for the viewer's `blob:` PDF; `frame-ancestors 'self'` lets our own pages embed the demo.
-  `connect-src 'self'` refuses a `data:` URL, so the demo's media imports are never inlined
+  refused under the site's own policy. It also sends the `X-Robots-Tag` (the Indexing bullet above).
+  `frame-src 'self' blob:` because the demo's secondary windows (Settings) are same-origin iframes of `/demo/<route>`,
+  and Chrome's PDF viewer checks `frame-src` for the viewer's `blob:` PDF; `frame-ancestors 'self'` lets our own pages
+  embed the demo. `connect-src 'self'` refuses a `data:` URL, so the demo's media imports are never inlined
   (`apps/desktop/src/lib/demo/DETAILS.md` § Viewer media).
 - **Tests: a smoke on every land, the full suite against a demo of the same sources.** Both run against `dist/` like
   every website E2E (so without nginx's headers; the CSP is verified by hand as above), skip locally when `dist/demo/`
   isn't built, and fail in CI when it's missing. Locally they need Playwright's Chromium
   (`pnpm exec playwright install chromium` here, once). Two Playwright projects split them (`playwright.config.ts`):
-  - `e2e/demo-smoke.spec.ts` (boots without a page error, kept out of search results, lists the home folder) is in the
-    `chromium` project with every other spec, so `website-e2e` runs it in the website lane against the RELEASED demo. It
-    asks only what every release's demo answers.
+  - `e2e/demo-smoke.spec.ts` (boots without a page error, is indexable with its description and canonical link, is the
+    sitemap's only `/demo/` URL, lists the home folder) is in the `chromium` project with every other spec, so
+    `website-e2e` runs it in the website lane against the RELEASED demo. It asks only what every release's demo answers;
+    the page's `<head>` and the sitemap come from the site's own build (`demoPageHead`), never the image, so those
+    asserts track `main`. The deep routes' `noindex` is an nginx header, so `website-docker-build` probes it instead.
   - `e2e/demo.spec.ts` is everything else (⌘F, file operations, the queue and the operation log, Multi-Rename, drops, a
     full disk via `/demo/?free=1000`, touch), the `demo` project with the smoke, run by `website-demo-e2e` (CI-only)
     against a demo built from the same sources: in the release pipeline's `demo` job before it publishes (a failure

@@ -23,6 +23,7 @@ Current version: ${version}
 
 - [Download (Apple Silicon)](${dmgUrls.aarch64}): DMG installer for Apple Silicon Macs
 - [Download (Intel)](${dmgUrls.x86_64}): DMG installer for Intel Macs
+- [Live demo](${site}/demo/): The real app running in the browser on a sample drive, nothing to install
 - [Pricing](${site}/pricing/): Free for personal use, $59 once for commercial use
 - [Trust and security](${site}/trust/): What the app sends over the network, where data is stored, signing and updates, and known gaps, for security and IT reviewers
 - [How Cmdr is built and kept up to date](${site}/trust/development/): The development process by stage (design, code, review, test, dependencies, release, updates) with measured numbers, for security questionnaires

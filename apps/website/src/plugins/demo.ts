@@ -1,7 +1,7 @@
 /**
  * Astro integration that publishes the browser demo (issue #302) at `/demo/`: it copies the desktop
  * frontend's demo build (`apps/desktop/build-demo/`, from `pnpm build:demo` at the repo root) into
- * `dist/demo/`, marks its page `noindex` with its own `<title>`, and writes the nginx snippet that
+ * `dist/demo/`, gives its page its own `<title>`, description, and canonical URL, and writes the nginx snippet that
  * sets `$csp_demo_script_hashes`, the demo's inline-script hashes for its own CSP
  * (`nginx-demo-security-headers.conf`).
  *
@@ -19,16 +19,32 @@ import { dirname, extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { inlineScriptHashes } from './csp-hashes.ts'
 
-/** The tab title while the demo is unlaunched. PLACEHOLDER copy: David decides the final one. */
-const DEMO_TITLE = 'Cmdr demo'
+/** The demo page's title and description, in the site's `<page> - Cmdr` pattern. Draft copy: David reviews it. */
+export const DEMO_TITLE = 'Live demo - Cmdr'
+export const DEMO_DESCRIPTION =
+  'Cmdr, the fastest two-pane file manager for macOS, running live in your browser. Browse, search, copy, and move files on a sample drive, with nothing to install.'
 
 /**
- * The demo page's `<head>` with our title and a `noindex`. The page stays out of search results
- * until David launches it; nginx also sends `X-Robots-Tag` for every file under `/demo/`. Pure.
+ * The demo page's `<head>` with our title, description, canonical URL, and link-preview tags, the
+ * way `src/layouts/Layout.astro` writes them for the site's pages. `siteUrl` is the config's `site`.
+ * Every path under `/demo/` serves this same page (the SPA fallback), so the canonical points them all
+ * at `/demo/`; nginx also marks every non-root path `noindex` (`nginx.conf`, `$demo_robots`). Pure.
  */
-export function demoPageHead(html: string): string {
+export function demoPageHead(html: string, siteUrl: string): string {
+  const pageUrl = new URL('/demo/', siteUrl).href
+  const image = new URL('/og-default.png', siteUrl).href
+  const tags = [
+    `<title>${DEMO_TITLE}</title>`,
+    `<meta name="description" content="${DEMO_DESCRIPTION}" />`,
+    `<link rel="canonical" href="${pageUrl}" />`,
+    `<meta property="og:title" content="${DEMO_TITLE}" />`,
+    `<meta property="og:description" content="${DEMO_DESCRIPTION}" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:url" content="${pageUrl}" />`,
+    `<meta property="og:image" content="${image}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+  ].join('\n    ')
   // Where the title was (after `<meta charset>`, which has to come first), else the end of `<head>`.
-  const tags = `<meta name="robots" content="noindex, nofollow" />\n    <title>${DEMO_TITLE}</title>`
   return /<title>[^<]*<\/title>/i.test(html)
     ? html.replace(/<title>[^<]*<\/title>/i, tags)
     : html.replace(/<\/head>/i, `  ${tags}\n  </head>`)
@@ -63,7 +79,11 @@ const DEMO_MIME_TYPES: Record<string, string> = {
 }
 
 /** Dev only: the demo build's file for a URL under `/demo`, or its app page for any other path. */
-async function serveDemoFile(sourceDir: string, url: string): Promise<{ body: Buffer | string; type: string } | null> {
+async function serveDemoFile(
+  sourceDir: string,
+  siteUrl: string,
+  url: string,
+): Promise<{ body: Buffer | string; type: string } | null> {
   const pathname = decodeURIComponent(new URL(url, 'http://localhost').pathname)
   const candidate = normalize(join(sourceDir, pathname))
   if (
@@ -77,7 +97,7 @@ async function serveDemoFile(sourceDir: string, url: string): Promise<{ body: Bu
   }
   const page = join(sourceDir, 'index.html')
   if (!(await exists(page))) return null
-  return { body: demoPageHead(await readFile(page, 'utf8')), type: DEMO_MIME_TYPES['.html'] }
+  return { body: demoPageHead(await readFile(page, 'utf8'), siteUrl), type: DEMO_MIME_TYPES['.html'] }
 }
 
 export function demoIntegration({
@@ -87,9 +107,15 @@ export function demoIntegration({
   sourceDir: string
   snippetPath: string
 }): AstroIntegration {
+  // The config's `site` (the canonical and link-preview URLs need an origin).
+  let siteUrl = ''
   return {
     name: 'demo',
     hooks: {
+      'astro:config:done': ({ config }) => {
+        if (!config.site) throw new Error('the demo integration needs `site` in astro.config.ts')
+        siteUrl = config.site
+      },
       'astro:build:done': async ({ dir, logger }) => {
         await mkdir(dirname(snippetPath), { recursive: true })
         if (process.env.CMDR_WEBSITE_DEMO !== '1') {
@@ -110,7 +136,7 @@ export function demoIntegration({
         for (const entry of await readdir(demoDir, { withFileTypes: true, recursive: true })) {
           if (!entry.isFile() || !entry.name.endsWith('.html')) continue
           const path = join(entry.parentPath, entry.name)
-          const html = demoPageHead(await readFile(path, 'utf8'))
+          const html = demoPageHead(await readFile(path, 'utf8'), siteUrl)
           await writeFile(path, html)
           for (const hash of inlineScriptHashes(html)) hashes.add(hash)
         }
@@ -121,7 +147,7 @@ export function demoIntegration({
       // the way nginx does in production: the file if it exists, else the app page.
       'astro:server:setup': ({ server, logger }) => {
         server.middlewares.use('/demo', (req, res, next) => {
-          void serveDemoFile(sourceDir, req.url ?? '/').then(
+          void serveDemoFile(sourceDir, siteUrl, req.url ?? '/').then(
             (file) => {
               if (!file) {
                 res.statusCode = 404

@@ -33,6 +33,7 @@ Release date: ${latestRelease.pub_date.split('T')[0]}
 - [Download (Apple Silicon)](${dmgUrls.aarch64}): DMG installer for Apple Silicon Macs
 - [Download (Intel)](${dmgUrls.x86_64}): DMG installer for Intel Macs
 - [Download (Universal)](${dmgUrls.universal}): DMG installer that works on both architectures
+- [Live demo](${site}/demo/): The real app running in the browser on a sample drive, nothing to install
 - [Pricing](${site}/pricing/): Free for personal use, $59 once for commercial use
 - [Blog](${site}/blog/): Updates and news
 - [Changelog](${site}/changelog/): Release notes

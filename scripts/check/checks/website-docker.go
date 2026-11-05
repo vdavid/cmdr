@@ -31,7 +31,9 @@ func RunWebsiteDockerBuild(ctx *CheckContext) (CheckResult, error) {
 
 	args := []string{"build", "-f", "apps/website/Dockerfile", "-t", "getcmdr-check"}
 	demoDir := filepath.Join(ctx.RootDir, "apps", "desktop", "build-demo")
-	if _, err := os.Stat(filepath.Join(demoDir, "index.html")); err == nil {
+	_, statErr := os.Stat(filepath.Join(demoDir, "index.html"))
+	withDemo := statErr == nil
+	if withDemo {
 		args = append(args, "--build-context", websiteDemoImagePlaceholder+"="+demoDir)
 	} else {
 		emptyDir, err := os.MkdirTemp("", "website-docker-no-demo-")
@@ -49,7 +51,7 @@ func RunWebsiteDockerBuild(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("docker build failed\n%s", indentOutput(output))
 	}
 
-	probes, err := probeWebsiteContainer("getcmdr-check")
+	probes, err := probeWebsiteContainer("getcmdr-check", withDemo)
 	if err != nil {
 		return CheckResult{}, err
 	}
@@ -64,6 +66,10 @@ type websiteServingProbe struct {
 	wantEmptyBody bool
 	// wantHeaders: each header must contain its value (case-sensitive substring).
 	wantHeaders map[string]string
+	// wantNoHeaders: each header must be absent.
+	wantNoHeaders []string
+	// needsDemo: the probe only means something when the image holds a demo build, so it runs only then.
+	needsDemo bool
 }
 
 // websiteServingProbes are the nginx behaviors a build can't prove.
@@ -71,7 +77,29 @@ type websiteServingProbe struct {
 // A missing file under `/demo/_app/immutable/` (a stale chunk name in an old tab after a deploy)
 // must be a bare 404 under the demo's headers, never the site's HTML 404 page under the site's
 // CSP: the demo's loader can then tell a gone chunk from a real failure (issue #961).
+//
+// Search engines may list `/demo/` itself, so it goes out without `X-Robots-Tag`, while the app's
+// own routes under it (its secondary windows, served the same page by the SPA fallback) stay
+// `noindex` (`$demo_robots` in nginx.conf).
 var websiteServingProbes = []websiteServingProbe{
+	{
+		path:          "/demo/",
+		wantStatus:    http.StatusOK,
+		wantNoHeaders: []string{"X-Robots-Tag"},
+		needsDemo:     true,
+	},
+	{
+		path:          "/demo/?free=1000",
+		wantStatus:    http.StatusOK,
+		wantNoHeaders: []string{"X-Robots-Tag"},
+		needsDemo:     true,
+	},
+	{
+		path:        "/demo/settings",
+		wantStatus:  http.StatusOK,
+		wantHeaders: map[string]string{"X-Robots-Tag": "noindex"},
+		needsDemo:   true,
+	},
 	{
 		path:          "/demo/_app/immutable/chunks/missing-check-probe.js",
 		wantStatus:    http.StatusNotFound,
@@ -93,8 +121,9 @@ var websiteServingProbes = []websiteServingProbe{
 }
 
 // probeWebsiteContainer starts the image on a random loopback port, runs every probe, and stops
-// it. Returns how many probes passed, or an error listing every one that didn't.
-func probeWebsiteContainer(image string) (int, error) {
+// it. `withDemo`: the image holds a demo build, so the probes that need one run too. Returns how
+// many probes passed, or an error listing every one that didn't.
+func probeWebsiteContainer(image string, withDemo bool) (int, error) {
 	runOut, err := exec.Command("docker", "run", "-d", "--rm", "-p", "127.0.0.1::80", image).Output()
 	if err != nil {
 		return 0, fmt.Errorf("docker run of the built image failed: %w", err)
@@ -127,13 +156,18 @@ func probeWebsiteContainer(image string) (int, error) {
 	}
 
 	var failures []string
+	ran := 0
 	for _, probe := range websiteServingProbes {
+		if probe.needsDemo && !withDemo {
+			continue
+		}
+		ran++
 		failures = append(failures, runWebsiteServingProbe(client, baseURL, probe)...)
 	}
 	if len(failures) > 0 {
 		return 0, fmt.Errorf("the built image serves wrong\n%s", indentOutput(strings.Join(failures, "\n")))
 	}
-	return len(websiteServingProbes), nil
+	return ran, nil
 }
 
 func runWebsiteServingProbe(client *http.Client, baseURL string, probe websiteServingProbe) []string {
@@ -154,6 +188,11 @@ func runWebsiteServingProbe(client *http.Client, baseURL string, probe websiteSe
 	for name, want := range probe.wantHeaders {
 		if got := resp.Header.Get(name); !strings.Contains(got, want) {
 			failures = append(failures, fmt.Sprintf("%s: header %s is %q, want it to contain %q", probe.path, name, got, want))
+		}
+	}
+	for _, name := range probe.wantNoHeaders {
+		if got := resp.Header.Get(name); got != "" {
+			failures = append(failures, fmt.Sprintf("%s: header %s is %q, want none", probe.path, name, got))
 		}
 	}
 	return failures

@@ -271,8 +271,9 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
 - The static host needs an SPA fallback to `index.html` for paths under `/demo/`, as adapter-static's `fallback`
   assumes.
 - Hosting on getcmdr.com, the demo's CSP, and the Playwright smoke (`apps/website/e2e/demo-smoke.spec.ts`: boots without
-  a page error, lists the home folder): `apps/website/DETAILS.md` § Browser demo. The CSP blocks off-origin fetches,
-  `eval` / `new Function`, and inline scripts added after the build, though the smoke's server sends no CSP.
+  a page error, is indexable, lists the home folder): `apps/website/DETAILS.md` § Browser demo. The CSP blocks
+  off-origin fetches, `eval` / `new Function`, and inline scripts added after the build, though the smoke's server sends
+  no CSP.
 
 ## Tests
 

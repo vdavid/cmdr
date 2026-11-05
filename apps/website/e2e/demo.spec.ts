@@ -3,7 +3,7 @@ import { collectPageErrors, skipWithoutDemo } from './demo-support.js'
 
 // The full demo suite: the `demo` Playwright project, run against a demo built from the same sources
 // (the release pipeline's `demo` job, the nightly CI run), never the website lane's released image.
-// Where each suite runs: `demo-support.ts`. Boot, noindex, and the first listing: `demo-smoke.spec.ts`.
+// Where each suite runs: `demo-support.ts`. Boot, indexing, and the first listing: `demo-smoke.spec.ts`.
 skipWithoutDemo()
 
 test.describe('Browser demo', () => {

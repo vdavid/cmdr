@@ -33,11 +33,19 @@ export default defineConfig({
     // /visual-fixture and /clip-fixture are Playwright fixtures (src/pages/visual-fixture.astro,
     // src/pages/clip-fixture.astro): they have to build so the E2E can load them, but they're not
     // content, so keep them out of the sitemap. They carry `noindex` too.
-    // /demo/ is copied in after the build (demoIntegration) so it's no Astro route, but the filter
-    // keeps it out even if that changes: it stays unlisted until David launches it.
+    // /demo/ is copied in after the build (demoIntegration), so it's no Astro route: it's listed by
+    // hand when the build publishes it. Only the page itself: the app's own routes under it
+    // (`/demo/settings` and the like, its secondary windows) stay out, and nginx marks them `noindex`.
     sitemap({
-      filter: (page) =>
-        !page.includes('/visual-fixture') && !page.includes('/clip-fixture') && !page.includes('/demo/'),
+      customPages: process.env.CMDR_WEBSITE_DEMO === '1' ? ['https://getcmdr.com/demo/'] : [],
+      filter: (page) => {
+        const path = new URL(page).pathname
+        return (
+          !path.startsWith('/visual-fixture') &&
+          !path.startsWith('/clip-fixture') &&
+          (!path.startsWith('/demo/') || path === '/demo/')
+        )
+      },
     }),
     smartQuotesIntegration(),
     stripEmptySrcsetIntegration(),
