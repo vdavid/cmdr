@@ -1,7 +1,28 @@
 {
   "accented_folder": {
-    "entries": [],
-    "totalCount": 0,
+    "entries": [
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      }
+    ],
+    "totalCount": 2,
     "unresolvedScopes": [],
     "hiddenByExcludes": 0
   },
@@ -16,9 +37,19 @@
         "modifiedAt": 1700000300,
         "iconId": "ext:txt",
         "entryId": 10
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
       }
     ],
-    "totalCount": 1,
+    "totalCount": 2,
     "unresolvedScopes": [],
     "hiddenByExcludes": 0
   },
@@ -33,9 +64,19 @@
         "modifiedAt": 1700000300,
         "iconId": "ext:txt",
         "entryId": 10
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
       }
     ],
-    "totalCount": 1,
+    "totalCount": 2,
     "unresolvedScopes": [],
     "hiddenByExcludes": 0
   },
