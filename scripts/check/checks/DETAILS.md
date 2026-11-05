@@ -1884,9 +1884,9 @@ version reports.
 CI runs it on `ci.yml`'s `desktop-rust-macos` job only, last, after the Rust tests. The baseline is a **macOS** module
 graph, and an ubuntu runner analyzes a different set of cfg-gated modules (`drag_image_detection` and `drag_image_swap`
 are macOS-only and don't exist there), so its numbers would disagree for reasons that have nothing to do with coupling.
-The job installs the pin it reads from `--print-cargo-modules-version`, and rust-cache carries `~/.cargo/bin`, so the
-multi-minute install runs only on a cold cache or a bump. That job gates `ci-ok` and both release gates, so a tangle
-blocks a release until it's cut or David accepts it.
+The job installs the pin it reads from `--print-cargo-modules-version`, and both runners keep `~/.cargo/bin` (the M1's
+slots on disk, hosted through rust-cache), so the multi-minute install runs only on a cold cache or a bump. That job
+gates `ci-ok` and both release gates, so a tangle blocks a release until it's cut or David accepts it.
 
 ### The six traps
 
