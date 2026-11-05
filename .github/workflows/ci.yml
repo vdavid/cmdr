@@ -1109,8 +1109,6 @@ jobs:
       # Must match the lane's steps in `rust-lane.yml`.
       - name: Keep only the pinned Rust toolchain
         uses: ./.github/actions/pinned-rust-toolchain
-        with:
-          dependency-debuginfo: false # the `desktop-rust` entry's jobs all pass it (see the action)
 
       - name: Cache Rust build
         id: cache

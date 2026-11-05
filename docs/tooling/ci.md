@@ -263,11 +263,12 @@ silent** (a warning, not a red job):
   binaries) in a throwaway run, tar+zstd after dropping workspace artifacts as rust-cache does (runs 42024754473 and
   42028774426, 2026-11-05). The live entry was 2.7 GB (12 GB unpacked); a fresh one is ~1.7 GB, and ~1.1 GB without
   dependency debuginfo:
-  - **Dependencies build without debuginfo** (`dependency-debuginfo: false` on the `pinned-rust-toolchain` action, in
-    every job that shares the entry). Dependency `.debug_*` sections were ~0.9 GB unpacked, mostly in proc-macro and
-    cdylib `.so`s. Workspace crates keep `Cargo.toml`'s line tables, so a test's backtrace still names our files and
-    lines; local builds are untouched. The action also sets `CARGO_CI_DEPENDENCY_DEBUGINFO`, the `CARGO*` env var that
-    gives these builds their own rust-cache key.
+  - **Dependencies build without debuginfo**, for everyone: `[profile.dev.package."*"] debug = false` in the root
+    `Cargo.toml`, so every lane and local build use the same profile. Dependency `.debug_*` sections were ~0.9 GB
+    unpacked, mostly in proc-macro and cdylib `.so`s. Workspace crates keep their line tables, so a test's backtrace
+    still names our files and lines. Locally, a cold `cargo build -p cmdr` went 12 GB -> 9.9 GB of `target/` and 440 s
+    -> 366 s, and a warm rebuild after touching `cmdr-listing` 43 s -> 31 s (median of three; macOS arm64, a busy
+    laptop, so the times are rough; 2026-11-05).
   - **`warm-rust-cache` builds a new key from a clean `target/`.** On a miss rust-cache restores the newest older entry,
     and its pre-save cleanup keeps every artifact of a dependency it still lists, whatever version or feature set built
     it, so stale builds rode along into each new save (three copies of `tauri-plugin-mcp-bridge`'s 338 MB staticlib, for
@@ -288,7 +289,10 @@ silent** (a warning, not a red job):
   image (days, after each Rust release), runners differ, so one job wrote two keys run by run: `e3a6d410` with the old
   stable next to the pin, `770ca156` without it (2026-10-22). Each flip restored a partial match, recompiled ~20 min,
   and saved another ~1.8 GB entry. The action installs the pin and uninstalls every other toolchain, so the key depends
-  on `rust-toolchain.toml` alone. A new rust-cache step needs it too.
+  on `rust-toolchain.toml` alone. A new rust-cache step needs it too. ❗ The action also exports
+  `CARGO_CI_PROFILES_HASH`, a hash of the root `Cargo.toml`'s `[profile*]` tables: rust-cache hashes member manifests
+  and `Cargo.lock` but never the virtual root manifest, so without it a profile edit keeps every key, each hit rebuilds
+  every dependency, and an exact hit never saves the fix.
 - **`desktop-e2e-linux`**: caches the Docker-side cargo + `target/` via host bind mounts (`/tmp/cmdr-docker-cache/*`),
   keyed on Cargo.lock with a restore-keys fallback. Separate from `desktop-rust` because the e2e binary builds a
   different feature set (`playwright-e2e,virtual-mtp,smb-e2e`). Split into `actions/cache/restore` and a save step that

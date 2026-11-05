@@ -117,6 +117,14 @@ strip = true
 [profile.dev]
 debug = "line-tables-only"
 
+# Dependencies carry no debuginfo at all; our own crates keep the line tables above, so a panic or a
+# backtrace still names our file and line, and only frames inside a dependency lose theirs. It cuts
+# `target/` with no build-time cost: a CI cold build of the Linux lane's cached set went 6.6 GB ->
+# 3.7 GB unpacked and 1.55 GB -> 0.94 GB as its cache entry (runs 42024754473 and 42028774426,
+# 2026-11-05, #981). Locally, see `docs/tooling/ci.md` § Build caching for the numbers.
+[profile.dev.package."*"]
+debug = false
+
 # The regex engines, optimized even in debug and test builds. `redact` matches Unicode word
 # boundaries over lines that carry its non-ASCII span markers, so `regex` falls back from the lazy
 # DFA to the PikeVM, which unoptimized runs ~20 ms per 1 KB line. That made the redact property
