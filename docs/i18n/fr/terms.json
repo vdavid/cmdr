@@ -2066,6 +2066,22 @@
     "confidence": "high",
     "sources": "descriptive FR"
   },
+  "maker": {
+    "avoid": [
+      {
+        "form": "créateur",
+        "why": "a masculine agent noun genders the person; concepts.json maker note"
+      },
+      {
+        "form": "développeur",
+        "why": "masculine agent noun, same reason"
+      }
+    ],
+    "chosen": "personne qui développe Cmdr",
+    "confidence": "tentative",
+    "forms": "the maker of Cmdr → la personne qui développe Cmdr (commands.feedbackSend.description, feedback.dialog.description)",
+    "sources": "concepts.json maker note (« la personne qui fait Cmdr »; développe is the everyday verb for software)"
+  },
   "manifest": {
     "chosen": "manifeste",
     "confidence": "high",

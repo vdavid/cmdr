@@ -150,11 +150,17 @@
     "sources": "MS terminology (reply → svar); catalog (Serverns svar, svaret)"
   },
   "ai-lookup": {
-    "accept": ["sökningar", "sökomgång"],
-    "chosen": "sökning",
-    "confidence": "high",
-    "forms": "a round of lookups → sökomgång / sökomgångar",
-    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+    "accept": ["uppslagningar", "uppslagsomgång", "slå upp"],
+    "chosen": "uppslagning",
+    "confidence": "tentative",
+    "forms": "en uppslagning, uppslagningar; a round of lookups → uppslagsomgång / uppslagsomgångar; stopped looking → slutade leta",
+    "avoid": [
+      {
+        "form": "sökning",
+        "why": "the ⌘F search word; the `askCmdr.limit.*` copy counts lookups, and one word for both blurs what the limit counts (concepts.json ai-lookup note)"
+      }
+    ],
+    "sources": "macOS 27 AppKit and Finder (Look Up → Slå upp, Look Up in Dictionary → Slå upp i Ordbok); MS terminology (Lookup field → uppslagsfält, lookup view → uppslagsvy); catalog `askCmdr.limit.*`, `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
   },
   "ai-tool": {
     "accept": ["platform tools"],

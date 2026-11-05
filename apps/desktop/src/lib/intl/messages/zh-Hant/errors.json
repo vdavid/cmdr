@@ -1845,7 +1845,7 @@
   "@errors.write.readOnlyDevice.destination.title": {
     "sourceHash": "3f79690"
   },
-  "errors.write.readOnlyDevice.destination.message": "{deviceName} 是唯讀的。你可以從它複製檔案出來，但無法複製進去。",
+  "errors.write.readOnlyDevice.destination.message": "「{deviceName}」是唯讀的。你可以從它複製檔案出來，但無法複製進去。",
   "@errors.write.readOnlyDevice.destination.message": {
     "sourceHash": "932e2ed"
   },
@@ -2521,7 +2521,7 @@
   "@errors.write.readOnlyDevice.source.title": {
     "sourceHash": "5d77aa4"
   },
-  "errors.write.readOnlyDevice.source.message": "{deviceName} 是唯讀的。你可以從中複製檔案，但無法把檔案移出。",
+  "errors.write.readOnlyDevice.source.message": "「{deviceName}」是唯讀的。你可以從中複製檔案，但無法把檔案移出。",
   "@errors.write.readOnlyDevice.source.message": {
     "sourceHash": "ec7d263"
   },
@@ -2529,7 +2529,7 @@
   "@errors.write.readOnlyDevice.source.suggestion": {
     "sourceHash": "f6a307b"
   },
-  "errors.write.readOnlyDevice.source.fallbackName": "該來源",
+  "errors.write.readOnlyDevice.source.fallbackName": "來源",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
   },

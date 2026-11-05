@@ -1845,7 +1845,7 @@
   "@errors.write.readOnlyDevice.destination.title": {
     "sourceHash": "3f79690"
   },
-  "errors.write.readOnlyDevice.destination.message": "{deviceName} je jen ke čtení. Z tohoto zařízení můžete soubory kopírovat, ale na něj ne.",
+  "errors.write.readOnlyDevice.destination.message": "{deviceName} je jen ke čtení. Soubory můžete kopírovat odtamtud, ale ne tam.",
   "@errors.write.readOnlyDevice.destination.message": {
     "sourceHash": "932e2ed"
   },

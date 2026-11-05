@@ -1844,7 +1844,7 @@
   "@errors.write.readOnlyDevice.destination.title": {
     "sourceHash": "3f79690"
   },
-  "errors.write.readOnlyDevice.destination.message": "{deviceName} 是只读的。你可以从它拷贝文件出来，但无法拷贝到它上面。",
+  "errors.write.readOnlyDevice.destination.message": "“{deviceName}”是只读的。你可以从它拷贝文件出来，但无法拷贝到它上面。",
   "@errors.write.readOnlyDevice.destination.message": {
     "sourceHash": "932e2ed"
   },
@@ -2520,7 +2520,7 @@
   "@errors.write.readOnlyDevice.source.title": {
     "sourceHash": "5d77aa4"
   },
-  "errors.write.readOnlyDevice.source.message": "{deviceName} 是只读的。你可以从中拷贝文件，但无法把文件移出。",
+  "errors.write.readOnlyDevice.source.message": "“{deviceName}”是只读的。你可以从中拷贝文件，但无法把文件移出。",
   "@errors.write.readOnlyDevice.source.message": {
     "sourceHash": "ec7d263"
   },
@@ -2528,7 +2528,7 @@
   "@errors.write.readOnlyDevice.source.suggestion": {
     "sourceHash": "f6a307b"
   },
-  "errors.write.readOnlyDevice.source.fallbackName": "该源",
+  "errors.write.readOnlyDevice.source.fallbackName": "来源",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
   },

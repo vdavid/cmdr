@@ -2164,6 +2164,22 @@
     "confidence": "high",
     "sources": "catalog (shortcuts.scope.mainWindow, search.action.showAll.label; 5 uses); Double/Total Commander de (Hauptfenster)"
   },
+  "maker": {
+    "avoid": [
+      {
+        "form": "Macher",
+        "why": "a masculine agent noun genders the person; concepts.json maker note"
+      },
+      {
+        "form": "Entwickler",
+        "why": "masculine agent noun, same reason"
+      }
+    ],
+    "chosen": "Menschen hinter Cmdr",
+    "confidence": "tentative",
+    "forms": "the maker of Cmdr → den Menschen hinter Cmdr (dative, commands.feedbackSend.description); an die Menschen hinter Cmdr (feedback.dialog.description)",
+    "sources": "concepts.json maker note (restructure around the people, never an agent noun); everyday German (die Menschen hinter …)"
+  },
   "media-tag": {
     "chosen": "Tags",
     "confidence": "high",

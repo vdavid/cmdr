@@ -3,7 +3,7 @@
   "@feedback.dialog.title": {
     "sourceHash": "8235980"
   },
-  "feedback.dialog.description": "Qu’est-ce qui fonctionne ? Qu’est-ce qui manque ? Votre message arrive directement au créateur de Cmdr.",
+  "feedback.dialog.description": "Qu’est-ce qui fonctionne ? Qu’est-ce qui manque ? Votre message arrive directement à la personne qui développe Cmdr.",
   "@feedback.dialog.description": {
     "sourceHash": "a0dc540"
   },

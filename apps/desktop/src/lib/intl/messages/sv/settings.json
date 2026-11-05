@@ -2491,7 +2491,7 @@
   "@settings.askCmdr.spendPause.label": {
     "sourceHash": "0d0fa3b"
   },
-  "settings.askCmdr.spendPause.description": "Ett svar kan göra många sökningar. Över den här uppskattade kostnaden pausar Cmdr svaret och frågar innan mer pengar går åt. Uppskattningarna bygger på listpriser, så med cachelagring blir den verkliga kostnaden oftast lägre.",
+  "settings.askCmdr.spendPause.description": "Ett svar kan göra många uppslagningar. Över den här uppskattade kostnaden pausar Cmdr svaret och frågar innan mer pengar går åt. Uppskattningarna bygger på listpriser, så med cachelagring blir den verkliga kostnaden oftast lägre.",
   "@settings.askCmdr.spendPause.description": {
     "sourceHash": "089be96"
   },

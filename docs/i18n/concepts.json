@@ -416,6 +416,12 @@
     "note": "Not the gamification sense some term bases give for badge. The pane box that holds typed text is `typing-badge`.",
     "sense": "A small marker showing a state: an overlay on a file icon, or a label in the title bar."
   },
+  "maker": {
+    "en": "maker",
+    "sense": "The person who makes Cmdr, as in “the maker of Cmdr” (commands.feedbackSend.description): whoever reads the feedback.",
+    "match": ["maker of cmdr", "the maker"],
+    "note": "Gender-neutral: never a masculine or feminine agent noun (German “Macher”, French “créateur”). Restructure around the act (“the people behind Cmdr”, “whoever makes Cmdr”, German “wer Cmdr macht”, French “l’équipe de Cmdr” or “la personne qui fait Cmdr”), as the principles ask for gender."
+  },
   "typing-badge": {
     "en": "badge (typing)",
     "sense": "The small box in a pane corner that holds the text typed in the quick filter or Jump mode; it shows in both modes, so never name it after the filter alone.",
