@@ -33,7 +33,7 @@
   },
   "stateRecovery.operationLog.title": "O Cmdr não conseguiu ler seu Registro de operações, então o registro começa do zero",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "O Cmdr não conseguiu ler seus chats do Ask Cmdr, então a lista de chats começa vazia",
   "@stateRecovery.chatHistory.title": {

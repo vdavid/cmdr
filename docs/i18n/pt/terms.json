@@ -301,6 +301,32 @@
     "sources": "MS terminology pt-BR (badge → selo)",
     "decision": "Image index"
   },
+  "typing-badge": {
+    "chosen": "selo",
+    "forms": "the badge with what you’ve typed → o selo com o que você digitou; its × button → Limpar o texto digitado",
+    "note": "One word for both typing modes, so never selo de filtro.",
+    "confidence": "high",
+    "sources": "the badge ruling (MS terminology pt-BR badge → selo); shipped pt catalog (commands.paneQuickFilter.description)"
+  },
+  "cold-storage": {
+    "chosen": "armazenamento frio",
+    "accept": ["arquivado"],
+    "forms": "the file-row glyph’s name → Em armazenamento frio; the tooltip keeps Arquivado em armazenamento frio",
+    "avoid": [
+      {
+        "form": "Arquivado (alone)",
+        "why": "reads as the Ask Cmdr chat archive (Arquivar) or a zip"
+      }
+    ],
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (cold storage → armazenamento frio, id 2266289); shipped pt catalog (fileExplorer.archivedFile.tooltip)"
+  },
+  "smb-negotiated-security": {
+    "chosen": "ajustes de segurança",
+    "forms": "the security settings it agreed on with Cmdr → os ajustes de segurança que combinou com o Cmdr (one fixed phrase across the family)",
+    "confidence": "high",
+    "sources": "shipped pt catalog (errors.volume.negotiationInvalid, fileExplorer.pane.directConnectionNegotiationInvalidToast)"
+  },
   "binary-view": {
     "chosen": "Binário",
     "confidence": "high",
@@ -2214,7 +2240,7 @@
   },
   "paste": {
     "chosen": "Colar",
-    "accept": ["cole", "colad", "colá", "colou", "colage"],
+    "accept": ["cole", "cola ", "colad", "colá", "colou", "colage"],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (N49_V1 Paste → Colar)"
   },
@@ -3677,7 +3703,7 @@
   "type-to-jump": {
     "chosen": "Ir para",
     "accept": ["digitar-para-pular"],
-    "forms": "the typing-mode name and badge beside Filtrar; quoted in running text (Mudar para “Ir para”); Clear jump → Limpar “Ir para”; the English compound type-to-jump → digitar-para-pular (settings.fileExplorer.typeToJump.resetDelay.*)",
+    "forms": "the typing-mode name and badge beside Filtrar; quoted in running text (Mudar para “Ir para”); the English compound type-to-jump → digitar-para-pular (settings.fileExplorer.typeToJump.resetDelay.*)",
     "confidence": "high",
     "sources": "shipped pt catalog (fileExplorer.typeToJump.prefix, settings.fileExplorer.typeToJump.mode.opt.jump, fileExplorer.quickFilter.intro.switchToJump)"
   },

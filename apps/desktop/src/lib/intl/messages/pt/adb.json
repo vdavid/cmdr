@@ -75,9 +75,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "O Cmdr ainda está trabalhando com arquivos neste dispositivo. Desconecte assim que isso terminar.",
+  "adb.disconnectBusyTooltip": "O Cmdr ainda está trabalhando com arquivos neste dispositivo. Você pode desconectá-lo assim que isso terminar.",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "73c355e"
+    "sourceHash": "7a49436"
   },
   "adb.disconnectingDeviceAriaLabel": "Desconectando {name}…",
   "@adb.disconnectingDeviceAriaLabel": {

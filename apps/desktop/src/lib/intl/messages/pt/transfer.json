@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Este servidor não consegue armazenar {classes}, então essas informações ficaram para trás.",
+  "transfer.metadataLeftBehind": "Este destino não consegue armazenar alguns detalhes, então eles ficaram para trás: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, one {{countText} item bloqueado ficou onde estava.} many {{countText} itens bloqueados ficaram onde estavam.} other {{countText} itens bloqueados ficaram onde estavam.}}",
   "@transfer.lockedSkipped": {

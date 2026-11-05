@@ -166,9 +166,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Alterna o sombreado das linhas para acompanhar cada linha com mais facilidade. Vale para os modos de exibição Completo e Resumido.",
+  "settings.listing.stripedRows.description": "Alterna o sombreado das linhas para acompanhar cada linha com mais facilidade. Vale para a visualização completa e para a resumida.",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "listras, listrado, zebra, alternado, linha, linhas, sombreamento, acessibilidade",
   "@settings.listing.stripedRows.keywords": {
@@ -823,9 +823,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Sempre indexar fotos em {name}",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Sempre indexar este disco: {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "Pausado, retoma quando este disco se reconecta",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -943,9 +943,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Apagar entradas indexadas extras",
+  "settings.mediaIndex.reclaim.confirmTitle": "Apagar entradas indexadas extras?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "Apagar {doomed, plural, one {{doomedText} entrada indexada} other {{doomedText} entradas indexadas} many {{doomedText} entradas indexadas}} para liberar cerca de {size}? Você pode indexar essas imagens novamente depois, mas relê-las leva tempo.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1092,9 +1092,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Ocultar a pergunta do atalho do último download",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Não perguntar de novo sobre o atalho do último download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Na primeira vez que você pressiona o atalho que pula para o seu último download de qualquer app, o Cmdr pergunta se deve mantê-lo ativo. Mudar o atalho desativa isto, então a nova combinação também gera a pergunta. Desative isto para ver a pergunta de novo.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1241,9 +1241,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "Quanto tempo o modelo pensa antes de responder. Mais esforço ajuda em tarefas difíceis, mas as respostas demoram mais e o raciocínio é cobrado como saída.",
+  "settings.ai.reasoningEfforts.description": "Quanto tempo o modelo pensa antes de responder. Pensar mais ajuda em tarefas difíceis, mas as respostas demoram mais, e o que o modelo pensa é cobrado como saída.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "esforço de raciocínio, esforço, raciocínio, pensar, pensamento, profundidade, velocidade, custo, qualidade",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1462,9 +1462,9 @@
   "@settings.fileExplorer.git.showStatusColumn.label": {
     "sourceHash": "0f6a836"
   },
-  "settings.fileExplorer.git.showStatusColumn.description": "Adiciona uma coluna mostrando o status git de cada arquivo (modificado, não rastreado, etc.) no modo Completo.",
+  "settings.fileExplorer.git.showStatusColumn.description": "Adiciona uma coluna mostrando o status git de cada arquivo (modificado, não rastreado, etc.) na visualização completa.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "status, coluna, modificado, não rastreado, ignorado, adicionado, apagado, removido",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1762,13 +1762,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Avisar quando um item apagado já tinha sumido",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Mostrar um aviso quando um item apagado já tinha sumido",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Quando você apaga algo que outro app já moveu ou apagou, o Cmdr considera isso concluído e mostra uma nota curta avisando. Desative esta opção (ou clique em “Nunca mais mostrar” na nota) para pular a nota.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Quando você apaga algo que outro app já moveu ou apagou, o Cmdr considera isso concluído e mostra um aviso curto informando isso. Desative esta opção (ou clique em “Nunca mais mostrar” no aviso), e esses avisos param de aparecer.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "sumido, desaparecido, ausente, removido, excluído, aviso, notificação, mensagem",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2431,7 +2431,7 @@
   },
   "settings.askCmdr.cloudOffHint": "O Ask Cmdr usa seu serviço de IA na nuvem. Ative “Permitir IA na nuvem” nos ajustes de IA para começar a conversar.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "Abrir ajustes de IA",
   "@settings.askCmdr.openAiSettings": {
@@ -2940,25 +2940,25 @@
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "mês com 2 dígitos (01-12)",
+  "settings.appearance.formatHelpMonth": "mês com 2 dígitos (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
-  "settings.appearance.formatHelpDay": "dia com 2 dígitos (01-31)",
+  "settings.appearance.formatHelpDay": "dia com 2 dígitos (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
-  "settings.appearance.formatHelpHour": "hora com 2 dígitos (00-23)",
+  "settings.appearance.formatHelpHour": "hora com 2 dígitos (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
-  "settings.appearance.formatHelpMinute": "minuto com 2 dígitos (00-59)",
+  "settings.appearance.formatHelpMinute": "minuto com 2 dígitos (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
-  "settings.appearance.formatHelpSecond": "segundo com 2 dígitos (00-59)",
+  "settings.appearance.formatHelpSecond": "segundo com 2 dígitos (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Adiciona um leve matiz de fundo aos painéis para você diferenciar os tipos de volume num relance.",
   "@settings.appearance.tintGroupDescription": {
@@ -3166,9 +3166,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Mude o atalho em Atalhos de teclado → Ir para o download mais recente (global).",
+  "settings.fileSystemWatching.globalShortcutHint": "Mude o atalho em “Atalhos de teclado → Ir para o último download”.",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "Acesso à {localNetwork}",
   "@settings.network.localNetworkAccessLabel": {

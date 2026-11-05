@@ -144,9 +144,9 @@
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "02f82ce"
   },
-  "errorReporter.sentToast.message": "Relatório de problema enviado. Seu ID de referência é",
+  "errorReporter.sentToast.message": "Relatório de problema enviado. Seu ID de referência:",
   "@errorReporter.sentToast.message": {
-    "sourceHash": "75be6ba"
+    "sourceHash": "d1e9bfc"
   },
   "errorReporter.sentToast.dismiss": "Dispensar",
   "@errorReporter.sentToast.dismiss": {
@@ -160,9 +160,9 @@
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
   },
-  "errorReporter.amendedToast.message": "Nota adicionada ao seu relatório. Seu ID de referência é",
+  "errorReporter.amendedToast.message": "Nota adicionada ao seu relatório. Seu ID de referência:",
   "@errorReporter.amendedToast.message": {
-    "sourceHash": "5471d7f"
+    "sourceHash": "fc7535b"
   },
   "errorReporter.bundleSavedToast.message": "Pacote salvo no disco",
   "@errorReporter.bundleSavedToast.message": {

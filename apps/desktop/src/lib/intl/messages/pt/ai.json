@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, quando você conversa ou quando ele abre uma conversa por conta própria:",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, quando você conversa ou quando o Cmdr abre uma conversa por conta própria:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Suas mensagens, incluindo qualquer senha que você digitar ali para desbloquear um arquivo compactado ou um backup",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Se você ativar o registro de chamadas de IA nos ajustes avançados, o Cmdr também salva cada solicitação e resposta em uma pasta no seu Mac. Esses registros de chamadas ficam locais e nunca são enviados a lugar nenhum.",
+  "ai.cloudConsent.logsNote": "Se você ativar “Registrar chamadas do modelo de IA” nos ajustes avançados, o Cmdr também salva cada solicitação e resposta em uma pasta no seu Mac. Esses registros de chamadas ficam locais e nunca são enviados a lugar nenhum.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Desative isto quando quiser e o Cmdr para de enviar na hora. Seu serviço, sua chave e seus chats continuam como estão.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Seu modelo pode precisar de um orçamento maior para isso. Experimente um modelo mais rápido como gpt-4.1-mini em Ajustes > IA.",
+  "ai.translateError.emptyResponse.body": "Seu modelo pode ter gastado todo o orçamento de tokens antes de responder. Experimente um modelo mais rápido como gpt-4.1-mini em Ajustes > IA.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Seu provedor de IA encontrou um problema",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "O servidor não respondeu a tempo. Tente novamente em instantes.",
+  "ai.cloud.timedOut": "O serviço não respondeu a tempo. Tente novamente em instantes.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Esse endereço não parece certo. Use um endereço da web completo que comece com https://.",
   "@ai.cloud.invalidEndpoint": {

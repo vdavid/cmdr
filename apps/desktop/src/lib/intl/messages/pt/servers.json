@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Clique em um servidor com o botão direito e escolha “Desafixar do seletor”, ou use “{command}” na paleta de comandos. O servidor continua na lista Servidores.",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "Entendi",
   "@servers.pinHint.gotIt": {
@@ -64,9 +64,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Nunca",
+  "servers.hub.neverUsed": "Nunca usado",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "como {username}",
   "@servers.hub.shareAccount": {
@@ -382,7 +382,7 @@
   },
   "servers.sheet.addAnywayHelp": "O Cmdr não conseguiu verificar este servidor, então “Adicionar mesmo assim” salva o servidor do jeito que você digitou.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Ejetar e salvar",
   "@servers.sheet.ejectAndSave": {
@@ -528,9 +528,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "O NFS envia até 16 outros grupos, e esta lista tem {count}.",
+  "servers.sheet.nfsOtherGidsTooMany": "O NFS envia até 16 outros grupos, e esta lista tem {count, plural, one {# grupo} many {# grupos} other {# grupos}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "É por esses números que o servidor decide o que você pode abrir. O NFS não pede senha.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -930,9 +930,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Parar de tentar por enquanto. A conexão continua disponível. Volte para tentar novamente.",
+  "servers.paneState.cancelCycleTooltip": "Parar de tentar por enquanto. A conexão continua disponível; abra o servidor de novo para tentar outra vez.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Parar de tentar e desconectar do servidor.",
   "@servers.paneState.disconnectCycleTooltip": {

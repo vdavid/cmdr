@@ -19,17 +19,17 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "Agradecimentos…",
+  "commands.appAcknowledgements.label": "Agradecimentos",
   "@commands.appAcknowledgements.label": {
-    "sourceHash": "7d0e506"
+    "sourceHash": "c9015d5"
   },
   "commands.appLicenseKey.seeDetails.label": "Ver detalhes da licença",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
   },
-  "commands.appLicenseKey.enterKey.label": "Inserir chave de licença",
+  "commands.appLicenseKey.enterKey.label": "Inserir chave de licença…",
   "@commands.appLicenseKey.enterKey.label": {
-    "sourceHash": "357d05e"
+    "sourceHash": "24a8d77"
   },
   "commands.appCommandPalette.label": "Abrir paleta de comandos",
   "@commands.appCommandPalette.label": {
@@ -43,17 +43,17 @@
   "@commands.appCheckForUpdates.label": {
     "sourceHash": "52d6f7d"
   },
-  "commands.appCheckForUpdates.description": "Verifique se há uma versão mais recente do Cmdr e baixe-a, se houver",
+  "commands.appCheckForUpdates.description": "Verifica se há uma versão mais recente do Cmdr e baixa a nova versão, se houver",
   "@commands.appCheckForUpdates.description": {
-    "sourceHash": "c53dab0"
+    "sourceHash": "90523c6"
   },
   "commands.cmdrOpenOnboarding.label": "Introdução…",
   "@commands.cmdrOpenOnboarding.label": {
     "sourceHash": "c4cc4aa"
   },
-  "commands.cmdrOpenOnboarding.description": "Reabra o assistente de introdução para revisar ou mudar as opções de configuração inicial",
+  "commands.cmdrOpenOnboarding.description": "Reabre o assistente de introdução para revisar ou mudar as opções de configuração inicial",
   "@commands.cmdrOpenOnboarding.description": {
-    "sourceHash": "a45c542"
+    "sourceHash": "fc0a198"
   },
   "commands.appToggleCliCommand.install.label": "Instalar o comando “cmdr”",
   "@commands.appToggleCliCommand.install.label": {
@@ -67,74 +67,74 @@
   "@commands.appToggleCliCommand.homebrew.label": {
     "sourceHash": "cc4c0fd"
   },
-  "commands.appToggleCliCommand.description": "Em um terminal, digite cmdr e um caminho para abrir esse arquivo ou pasta no Cmdr",
+  "commands.appToggleCliCommand.description": "Permite digitar cmdr e um caminho em um terminal para abrir esse arquivo ou pasta no Cmdr",
   "@commands.appToggleCliCommand.description": {
-    "sourceHash": "ce7efbd"
+    "sourceHash": "73b4f32"
   },
   "commands.helpOpenShortcuts.label": "Atalhos de teclado",
   "@commands.helpOpenShortcuts.label": {
     "sourceHash": "e9bef0b"
   },
-  "commands.helpOpenShortcuts.description": "Abra uma janela somente leitura com todos os atalhos de teclado, sincronizada ao vivo com suas personalizações",
+  "commands.helpOpenShortcuts.description": "Abre uma janela somente leitura com todos os atalhos de teclado, sincronizada ao vivo com suas personalizações",
   "@commands.helpOpenShortcuts.description": {
-    "sourceHash": "a9a1e0d"
+    "sourceHash": "caa15c9"
   },
   "commands.helpAccessibility.label": "Guia de acessibilidade",
   "@commands.helpAccessibility.label": {
     "sourceHash": "eee67fa"
   },
-  "commands.helpAccessibility.description": "Abra o guia dos recursos de acessibilidade do Cmdr em getcmdr.com",
+  "commands.helpAccessibility.description": "Abre o guia dos recursos de acessibilidade do Cmdr em getcmdr.com",
   "@commands.helpAccessibility.description": {
-    "sourceHash": "2ece797"
+    "sourceHash": "7104ee3"
   },
   "commands.helpSendErrorReport.label": "Enviar relatório de problema…",
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
-  "commands.helpSendErrorReport.description": "Envie os registros do Cmdr para a equipe ajudar a resolver algo que deu errado",
+  "commands.helpSendErrorReport.description": "Envia os registros do Cmdr para a equipe ajudar a resolver algo que deu errado",
   "@commands.helpSendErrorReport.description": {
-    "sourceHash": "021d333"
+    "sourceHash": "7615640"
   },
   "commands.queueShow.label": "Fila de operações",
   "@commands.queueShow.label": {
     "sourceHash": "fa91417"
   },
-  "commands.queueShow.description": "Abra uma janela com todas as operações em andamento e aguardando, onde você pode pausar, retomar ou cancelar",
+  "commands.queueShow.description": "Abre uma janela com todas as operações em andamento e aguardando, onde você pode pausar, retomar ou cancelar",
   "@commands.queueShow.description": {
-    "sourceHash": "37b616a"
+    "sourceHash": "4511b63"
   },
   "commands.helpWhatsNew.label": "Novidades",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "37e6112"
   },
-  "commands.helpWhatsNew.description": "Veja o que mudou nas versões mais recentes do Cmdr",
+  "commands.helpWhatsNew.description": "Mostra o que mudou nas versões mais recentes do Cmdr",
   "@commands.helpWhatsNew.description": {
-    "sourceHash": "f8ad411"
+    "sourceHash": "4e04cc8"
   },
   "commands.logOperationLog.label": "Registro de operações",
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
-  "commands.logOperationLog.description": "Veja o histórico das suas operações de arquivo e reverta-as",
+  "commands.logOperationLog.description": "Mostra o histórico das suas operações de arquivo e permite revertê-las",
   "@commands.logOperationLog.description": {
-    "sourceHash": "ea2d082"
+    "sourceHash": "70b7bcd"
   },
   "commands.askCmdrToggle.label": "Ask Cmdr",
   "@commands.askCmdrToggle.label": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the Ask Cmdr chat rail); kept verbatim in every locale (do-not-translate list)."
   },
-  "commands.askCmdrToggle.description": "Converse com uma IA sobre seus arquivos, discos e histórico",
+  "commands.askCmdrToggle.description": "Abre um chat com uma IA sobre seus arquivos, discos e histórico",
   "@commands.askCmdrToggle.description": {
-    "sourceHash": "c520468"
+    "sourceHash": "a25a7a4"
   },
   "commands.askCmdrNewChat.label": "Novo chat do Ask Cmdr",
   "@commands.askCmdrNewChat.label": {
     "sourceHash": "54ebf70"
   },
-  "commands.askCmdrNewChat.description": "Inicie um novo chat no Ask Cmdr e abra o painel se ele estiver fechado",
+  "commands.askCmdrNewChat.description": "Inicia um novo chat no Ask Cmdr e abre o painel se ele estiver fechado",
   "@commands.askCmdrNewChat.description": {
-    "sourceHash": "957741b"
+    "sourceHash": "aa3c28c"
   },
   "commands.askCmdrFind.label": "Buscar no chat",
   "@commands.askCmdrFind.label": {
@@ -152,9 +152,9 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Conte ao criador do Cmdr o que você acha: ideias, desejos, qualquer coisa",
+  "commands.feedbackSend.description": "Permite contar ao criador do Cmdr o que você acha: ideias, desejos, qualquer coisa",
   "@commands.feedbackSend.description": {
-    "sourceHash": "89d08a8"
+    "sourceHash": "30c0620"
   },
   "commands.searchOpen.label": "Buscar arquivos",
   "@commands.searchOpen.label": {
@@ -164,25 +164,25 @@
   "@commands.navGoToPath.label": {
     "sourceHash": "33de610"
   },
-  "commands.navGoToPath.description": "Leve o painel em foco para um caminho digitado, colado ou recente.",
+  "commands.navGoToPath.description": "Leva o painel em foco para um caminho digitado, colado ou recente.",
   "@commands.navGoToPath.description": {
-    "sourceHash": "fc6a00c"
+    "sourceHash": "0b91354"
   },
   "commands.favoritesAdd.label": "Adicionar aos favoritos",
   "@commands.favoritesAdd.label": {
     "sourceHash": "7f3c078"
   },
-  "commands.favoritesAdd.description": "Adicione a pasta atual do painel em foco aos favoritos, para voltar até ela pelo menu de favoritos.",
+  "commands.favoritesAdd.description": "Adiciona a pasta atual do painel em foco aos favoritos, para voltar até ela pelo menu de favoritos.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "999aa52"
+    "sourceHash": "43043e8"
   },
   "commands.favoritesOpen.label": "Mostrar favoritos",
   "@commands.favoritesOpen.label": {
     "sourceHash": "f4dfe9b"
   },
-  "commands.favoritesOpen.description": "Abra o menu de favoritos no painel em foco e pressione um número para ir até esse favorito.",
+  "commands.favoritesOpen.description": "Abre o menu de favoritos no painel em foco, onde uma tecla numérica pula para o favorito com esse número.",
   "@commands.favoritesOpen.description": {
-    "sourceHash": "d188872"
+    "sourceHash": "5fcfcee"
   },
   "commands.favoritesOpenByNumber.label": "Abrir o favorito com esse número",
   "@commands.favoritesOpenByNumber.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "Abra ~/Downloads e selecione o arquivo mais recente.",
+  "commands.downloadsGoToLatest.description": "Abre ~/Downloads e seleciona o arquivo mais recente.",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "42a26a2"
+    "sourceHash": "6b3fe83"
   },
   "commands.viewShowHidden.label": "Alternar arquivos ocultos",
   "@commands.viewShowHidden.label": {
@@ -296,25 +296,25 @@
   "@commands.paneClone.label": {
     "sourceHash": "74b2c7f"
   },
-  "commands.paneClone.description": "Abra a pasta deste painel também no outro painel.",
+  "commands.paneClone.description": "Abre a pasta deste painel também no outro painel.",
   "@commands.paneClone.description": {
-    "sourceHash": "8a13dc9"
+    "sourceHash": "fcbddd9"
   },
   "commands.paneFocusControls.label": "Mover o foco para os controles do painel",
   "@commands.paneFocusControls.label": {
     "sourceHash": "b71f4ad"
   },
-  "commands.paneFocusControls.description": "Acesse pelo teclado as abas, a barra de localização e os botões de ordenação do painel em foco. As teclas de seta movem o foco entre eles, e Esc leva você de volta aos arquivos.",
+  "commands.paneFocusControls.description": "Move o foco do teclado para as abas, a barra de localização e os botões de ordenação do painel em foco. As teclas de seta movem o foco entre eles, e Esc leva você de volta aos arquivos.",
   "@commands.paneFocusControls.description": {
-    "sourceHash": "e5828ae"
+    "sourceHash": "ffce489"
   },
   "commands.appFocusNotifications.label": "Mover o foco para as notificações",
   "@commands.appFocusNotifications.label": {
     "sourceHash": "628f0e5"
   },
-  "commands.appFocusNotifications.description": "Acesse pelo teclado as notificações e os botões delas, como “Desfazer”. As teclas de seta movem o foco entre eles, e Esc leva você de volta.",
+  "commands.appFocusNotifications.description": "Move o foco do teclado para as notificações e os botões delas, como “Desfazer”. As teclas de seta movem o foco entre eles, e Esc leva você de volta.",
   "@commands.appFocusNotifications.description": {
-    "sourceHash": "87886a4"
+    "sourceHash": "8157823"
   },
   "commands.editUndoTrash.label": "Desfazer mover para o Lixo",
   "@commands.editUndoTrash.label": {
@@ -328,9 +328,9 @@
   "@commands.editUndoTrash.many": {
     "sourceHash": "69c4966"
   },
-  "commands.editUndoTrash.description": "Coloque de volta os arquivos que você moveu por último para o Lixo",
+  "commands.editUndoTrash.description": "Coloca de volta os arquivos que você moveu por último para o Lixo",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "3aa756f"
+    "sourceHash": "dca1b63"
   },
   "commands.paneLeftVolumeChooser.label": "Abrir seletor de volume da esquerda",
   "@commands.paneLeftVolumeChooser.label": {
@@ -344,17 +344,17 @@
   "@commands.paneCopyPathLeftToRight.label": {
     "sourceHash": "d1376f6"
   },
-  "commands.paneCopyPathLeftToRight.description": "Abra a localização do painel esquerdo à direita. Quando o painel esquerdo está em foco e o cursor está sobre uma pasta, essa pasta abre à direita.",
+  "commands.paneCopyPathLeftToRight.description": "Abre a localização do painel esquerdo à direita. Quando o painel esquerdo está em foco e o cursor está sobre uma pasta, essa pasta abre à direita.",
   "@commands.paneCopyPathLeftToRight.description": {
-    "sourceHash": "07ac6a1"
+    "sourceHash": "d866ae5"
   },
   "commands.paneCopyPathRightToLeft.label": "Copiar caminho do painel direito para o esquerdo",
   "@commands.paneCopyPathRightToLeft.label": {
     "sourceHash": "266a30d"
   },
-  "commands.paneCopyPathRightToLeft.description": "Abra a localização do painel direito à esquerda. Quando o painel direito está em foco e o cursor está sobre uma pasta, essa pasta abre à esquerda.",
+  "commands.paneCopyPathRightToLeft.description": "Abre a localização do painel direito à esquerda. Quando o painel direito está em foco e o cursor está sobre uma pasta, essa pasta abre à esquerda.",
   "@commands.paneCopyPathRightToLeft.description": {
-    "sourceHash": "95c566f"
+    "sourceHash": "052c7cd"
   },
   "commands.paneRefresh.label": "Atualizar painel",
   "@commands.paneRefresh.label": {
@@ -416,13 +416,13 @@
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
-  "commands.navUp.label": "Selecionar arquivo anterior",
+  "commands.navUp.label": "Mover o cursor para o item anterior",
   "@commands.navUp.label": {
-    "sourceHash": "40dca00"
+    "sourceHash": "6197d1a"
   },
-  "commands.navDown.label": "Selecionar próximo arquivo",
+  "commands.navDown.label": "Mover o cursor para o próximo item",
   "@commands.navDown.label": {
-    "sourceHash": "61e81ee"
+    "sourceHash": "8b5b37b"
   },
   "commands.navOpen.label": "Abrir arquivo ou pasta",
   "@commands.navOpen.label": {
@@ -504,9 +504,9 @@
   "@commands.paneQuickFilter.label": {
     "sourceHash": "e731882"
   },
-  "commands.paneQuickFilter.description": "Abre o selo de filtro com o padrão atual. Pressione de novo para alternar entre “Filtrar” e “Ir para”",
+  "commands.paneQuickFilter.description": "Abre o selo com o que você digitou até agora. Pressione de novo para alternar entre “Filtrar” e “Ir para”",
   "@commands.paneQuickFilter.description": {
-    "sourceHash": "2778526"
+    "sourceHash": "e531430"
   },
   "commands.fileMultiRename.label": "Renomear em lote",
   "@commands.fileMultiRename.label": {
@@ -724,9 +724,9 @@
   "@commands.fileDuplicate.label": {
     "sourceHash": "02cdaab"
   },
-  "commands.fileDuplicate.description": "Faça uma cópia dos arquivos selecionados na mesma pasta",
+  "commands.fileDuplicate.description": "Faz uma cópia dos arquivos selecionados na mesma pasta",
   "@commands.fileDuplicate.description": {
-    "sourceHash": "2c038a2"
+    "sourceHash": "5c02b66"
   },
   "commands.fileCompress.label": "Comprimir",
   "@commands.fileCompress.label": {
@@ -736,33 +736,33 @@
   "@commands.editCopy.label": {
     "sourceHash": "b749e20"
   },
-  "commands.editCopy.description": "Copie os arquivos selecionados para a área de transferência e cole-os",
+  "commands.editCopy.description": "Copia os arquivos selecionados para a área de transferência, para colar depois",
   "@commands.editCopy.description": {
-    "sourceHash": "5c769a7"
+    "sourceHash": "3ded30a"
   },
   "commands.editCut.label": "Recortar para a área de transferência",
   "@commands.editCut.label": {
     "sourceHash": "a954b4a"
   },
-  "commands.editCut.description": "Recorte os arquivos selecionados (colar vai movê-los)",
+  "commands.editCut.description": "Recorta os arquivos selecionados (colar move os arquivos)",
   "@commands.editCut.description": {
-    "sourceHash": "5bc3870"
+    "sourceHash": "1e03b84"
   },
   "commands.editPaste.label": "Colar",
   "@commands.editPaste.label": {
     "sourceHash": "f3380f7"
   },
-  "commands.editPaste.description": "Cole os arquivos da área de transferência na pasta atual",
+  "commands.editPaste.description": "Cola os arquivos da área de transferência na pasta atual",
   "@commands.editPaste.description": {
-    "sourceHash": "32545d7"
+    "sourceHash": "9eca6d3"
   },
   "commands.editPasteAsMove.label": "Mover para cá",
   "@commands.editPasteAsMove.label": {
     "sourceHash": "56f1247"
   },
-  "commands.editPasteAsMove.description": "Cole os arquivos da área de transferência como movimentação",
+  "commands.editPasteAsMove.description": "Cola os arquivos da área de transferência como movimentação",
   "@commands.editPasteAsMove.description": {
-    "sourceHash": "961316d"
+    "sourceHash": "41e9245"
   },
   "commands.fileNewFolder.label": "Nova pasta",
   "@commands.fileNewFolder.label": {
@@ -784,9 +784,9 @@
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "Abra o Lixo do disco em que você está navegando",
+  "commands.fileGoToTrash.description": "Abre o Lixo do disco em que você está navegando",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "73eae92"
+    "sourceHash": "6496c25"
   },
   "commands.dialogConfirm.label": "Confirmar caixa de diálogo na tela",
   "@commands.dialogConfirm.label": {
@@ -804,9 +804,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Abra seu app de terminal na pasta que você está vendo",
+  "commands.fileOpenTerminalHere.description": "Abre seu app de terminal na pasta que você está vendo",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "ac0ddb8"
+    "sourceHash": "f03d961"
   },
   "commands.fileCopyPath.label": "Copiar caminho para a área de transferência",
   "@commands.fileCopyPath.label": {
@@ -1280,17 +1280,17 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "1a1f5b9"
   },
-  "commands.suggestedOpsShow.description": "Revise as operações de arquivo que a IA sugeriu e decida o que é executado",
+  "commands.suggestedOpsShow.description": "Mostra as operações de arquivo que a IA sugeriu, para você decidir o que é executado",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "7efe8c9"
+    "sourceHash": "5468fcf"
   },
   "commands.helpViewDebugLog.label": "Visualizar registro de depuração",
   "@commands.helpViewDebugLog.label": {
     "sourceHash": "007c98d"
   },
-  "commands.helpViewDebugLog.description": "Acompanhe ao vivo o registro de depuração do Cmdr no visualizador de arquivos",
+  "commands.helpViewDebugLog.description": "Mostra ao vivo o registro de depuração do Cmdr no visualizador de arquivos",
   "@commands.helpViewDebugLog.description": {
-    "sourceHash": "a937e6e"
+    "sourceHash": "06f49ab"
   },
   "commands.handler.viewDebugLog.disabled": "O armazenamento de registros está desativado. Defina um limite de espaço em disco maior que 0 em Ajustes > Avançado e reinicie o Cmdr para visualizar o registro de depuração.",
   "@commands.handler.viewDebugLog.disabled": {

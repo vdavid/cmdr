@@ -171,9 +171,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "Você tem {max, number} pré-ajustes, o máximo que o Cmdr mantém. Apague um para salvar este.",
+  "multiRename.presets.listFull": "Você tem {max, plural, one {# pré-ajuste} many {# pré-ajustes} other {# pré-ajustes}}, o máximo que o Cmdr mantém. Apague um para salvar este.",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "Substituir",
   "@multiRename.presets.replace": {
@@ -224,13 +224,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "Mesmo nome de outro arquivo",
+  "multiRename.status.duplicate": "Mesmo nome de outro item",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
   "multiRename.status.targetExists": "Nome já em uso",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "Nome inválido",
   "@multiRename.status.invalidName": {
@@ -384,17 +384,17 @@
   "@multiRename.status.ready": {
     "sourceHash": "f032574"
   },
-  "multiRename.reason.duplicate": "Outro arquivo deste lote recebe o mesmo nome novo, então nenhum dos dois é renomeado.",
+  "multiRename.reason.duplicate": "Outro item deste lote recebe o mesmo nome novo, então nenhum dos dois é renomeado.",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
-  "multiRename.reason.targetExists": "Um arquivo que continua nesta pasta já tem este nome, então este mantém o nome.",
+  "multiRename.reason.targetExists": "Um item que continua nesta pasta já tem este nome, então este mantém o nome.",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
-  "multiRename.reason.missing": "Este arquivo foi movido ou apagado depois que “Renomear em lote” abriu, então ficou de fora.",
+  "multiRename.reason.missing": "Este item foi movido ou apagado depois que “Renomear em lote” abriu, então ficou de fora.",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "Lendo…",
   "@multiRename.status.reading": {
@@ -404,13 +404,13 @@
   "@multiRename.status.noValue": {
     "sourceHash": "619464f"
   },
-  "multiRename.reason.noValue": "Este arquivo não tem valor para “{field}”, então mantém o nome.",
+  "multiRename.reason.noValue": "Este item não tem valor para “{field}”, então mantém o nome.",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "Este arquivo não tem valor para “{field}”, então mantém o nome. O editor do marcador pode usar a data da última alteração do arquivo em vez disso.",
+  "multiRename.reason.noDate": "Este item não tem valor para “{field}”, então mantém o nome. O editor do marcador pode usar a data da última alteração do item em vez disso.",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "Não foi possível ler as tags",
   "@multiRename.status.unreadable": {
@@ -633,9 +633,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "O Cmdr ignorou {count, plural, one {# renomeação que troca} many {# renomeações que trocam} other {# renomeações que trocam}} nomes. Faça essas renomeações uma de cada vez.",
+  "multiRename.swapsSkipped": "O Cmdr ignorou {count, plural, one {# renomeação que troca} many {# renomeações que trocam} other {# renomeações que trocam}} nomes. Renomeie esses itens um de cada vez.",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "“Renomear em lote” não funciona dentro de arquivos compactados",
   "@multiRename.archiveTitle": {

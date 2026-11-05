@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "O Cmdr encontrou um problema inesperado ao ler `{path}`. Veja os detalhes técnicos abaixo para o código específico do sistema, que pode ajudar na resolução.",
+  "errors.listing.couldntReadUnknown.explanation": "O Cmdr encontrou um problema inesperado ao ler `{path}`. Confira “Detalhes técnicos” abaixo para ver o código específico do sistema, que pode ajudar a resolver o problema.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Veja o que tentar:\n- Verifique se o disco ou dispositivo ainda está conectado\n- Navegue até aqui de novo para tentar outra vez\n- Se isso continuar acontecendo, abra o **Utilitário de Disco** e execute os **Primeiros Socorros** neste volume",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -591,9 +591,9 @@
   "@errors.listing.linkTargetUnreachable.title": {
     "sourceHash": "8aee94c"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "O acesso a `{path}` passa por um link para outro servidor, e o Cmdr não consegue alcançar esse servidor agora. O resto deste compartilhamento continua funcionando, e nada foi apagado.",
+  "errors.listing.linkTargetUnreachable.explanation": "O caminho `{path}` passa por um link para outro servidor, e o Cmdr não consegue alcançar esse servidor agora. O resto deste compartilhamento continua funcionando, e nada foi apagado.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Veja o que tentar:\n- Verifique se o outro servidor está em execução e se a sua rede consegue alcançá-lo\n- Navegue até aqui de novo para tentar outra vez",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "A resposta do servidor não tinha uma assinatura válida, então o Cmdr parou.",
+  "errors.write.replySignatureRefused.message": "A resposta do servidor não tinha uma assinatura válida, então o Cmdr parou por ali.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Um dispositivo de rede instável pode causar isso, e também alguém adulterando o tráfego entre você e o servidor. Reconecte e, se acontecer de novo, verifique sua rede.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "O dispositivo de destino",
+  "errors.write.readOnlyDevice.destination.fallbackName": "O destino",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "O arquivo está bloqueado",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "O acesso a este local passa por um link para outro servidor, e o Cmdr não consegue alcançar esse servidor agora.",
+  "errors.volume.linkTargetUnreachable": "Este caminho passa por um link para outro servidor, e o Cmdr não consegue alcançar esse servidor agora.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "O dispositivo reiniciou a conexão. Espere alguns segundos e tente de novo.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "A conexão não respondeu a tempo.",
+  "errors.volume.connectionTimeout": "O servidor ou dispositivo não respondeu a tempo.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "O Cmdr parou isso a seu pedido.",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "A resposta do servidor não tinha uma assinatura válida, então o Cmdr parou.",
+  "errors.volume.signatureInvalid": "A resposta do servidor não tinha uma assinatura válida, então o Cmdr parou por ali.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "O volume não conseguiu concluir isso.",
   "@errors.volume.ioError": {
@@ -2369,13 +2369,13 @@
   "@errors.eject.unmountRefused": {
     "sourceHash": "f855a33"
   },
-  "errors.eject.unmountRefusedByApp": "{app} ainda está usando algo lá. Feche o app, depois tente de novo.",
+  "errors.eject.unmountRefusedByApp": "{app} ainda está usando algo lá. Feche esse app, depois tente de novo.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
   "errors.eject.unmountRefusedByApps": "{apps} ainda estão usando algo lá. Feche esses apps, depois tente de novo.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "outros apps",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "Parte da sua seleção está dentro de uma visualização",
+  "errors.write.sourcesSpanVolumes.title": "Parte da sua seleção está dentro de um backup, de um arquivo compactado ou de um histórico do git",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} está dentro dos instantâneos de um backup, de um arquivo compactado ou do histórico de um repo, e o resto da sua seleção não está, então o Cmdr não consegue ler esses itens juntos. Nada foi alterado.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Faça em duas etapas: primeiro só os itens dentro da visualização, depois o resto.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Faça em duas etapas: primeiro só esses itens, depois o resto.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Mova um de cada vez, ou renomeie um antes.",
   "@errors.write.duplicateSourceNames.suggestion.move": {
