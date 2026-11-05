@@ -152,9 +152,9 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Рассказать автору Cmdr о своих идеях, пожеланиях и впечатлениях",
+  "commands.feedbackSend.description": "Рассказать автору Cmdr, что вы думаете: идеи, пожелания, что угодно",
   "@commands.feedbackSend.description": {
-    "sourceHash": "bdf844c"
+    "sourceHash": "30c0620"
   },
   "commands.searchOpen.label": "Найти файлы",
   "@commands.searchOpen.label": {

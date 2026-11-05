@@ -152,9 +152,9 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Cuenta a quien hace Cmdr lo que piensas: ideas, deseos, lo que sea",
+  "commands.feedbackSend.description": "Te permite contarle a quien hace Cmdr lo que piensas: ideas, deseos, lo que sea",
   "@commands.feedbackSend.description": {
-    "sourceHash": "bdf844c"
+    "sourceHash": "30c0620"
   },
   "commands.searchOpen.label": "Buscar archivos",
   "@commands.searchOpen.label": {

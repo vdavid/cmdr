@@ -152,7 +152,7 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Transmet au créateur de Cmdr ce que vous en pensez : idées, envies, tout ce que vous voulez",
+  "commands.feedbackSend.description": "Vous permet de dire au créateur de Cmdr ce que vous en pensez : idées, envies, tout ce que vous voulez",
   "@commands.feedbackSend.description": {
     "sourceHash": "30c0620"
   },

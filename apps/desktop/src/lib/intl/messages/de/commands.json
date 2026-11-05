@@ -152,9 +152,9 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Sendet dem Macher von Cmdr, was du denkst: Ideen, Wünsche, alles",
+  "commands.feedbackSend.description": "Damit kannst du dem Macher von Cmdr sagen, was du denkst: Ideen, Wünsche, alles",
   "@commands.feedbackSend.description": {
-    "sourceHash": "bdf844c"
+    "sourceHash": "30c0620"
   },
   "commands.searchOpen.label": "Dateien suchen",
   "@commands.searchOpen.label": {
