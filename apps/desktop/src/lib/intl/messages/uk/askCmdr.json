@@ -1301,49 +1301,49 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "Залишено як є {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}: вони змінилися після перейменування.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{count, plural, one {Залишено як є: {countText} елемент, який змінився після перейменування.} few {Залишено як є: {countText} елементи, які змінилися після перейменування.} many {Залишено як є: {countText} елементів, які змінилися після перейменування.} other {Залишено як є: {countText} елемента, які змінилися після перейменування.}}",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "dbeb782"
+    "sourceHash": "5c3e633"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "Не вдалося знайти: {name}. Після перейменування цей елемент перемістили або видалили.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
     "sourceHash": "4daa75c"
   },
-  "askCmdr.renameUndo.skipReason.vanished.counted": "Не вдалося знайти {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}: після перейменування їх перемістили або видалили.",
+  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {Не вдалося знайти {countText} елемент, який після перейменування перемістили або видалили.} few {Не вдалося знайти {countText} елементи, які після перейменування перемістили або видалили.} many {Не вдалося знайти {countText} елементів, які після перейменування перемістили або видалили.} other {Не вдалося знайти {countText} елемента, які після перейменування перемістили або видалили.}}",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "c8d1788"
+    "sourceHash": "738f396"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "Залишено як є: {name}. Стару назву цього файлу знову зайнято.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Залишено як є {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}: їхні старі назви знову зайняті.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{count, plural, one {Залишено як є: {countText} елемент, стару назву якого знову зайнято.} few {Залишено як є: {countText} елементи, старі назви яких знову зайнято.} many {Залишено як є: {countText} елементів, старі назви яких знову зайнято.} other {Залишено як є: {countText} елемента, старі назви яких знову зайнято.}}",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "409140a"
+    "sourceHash": "c5faa4d"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "Залишено як є: {name}. Cmdr не вдалося перевірити, чи цей елемент змінювали.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Залишено як є {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}: Cmdr не вдалося перевірити, чи їх змінювали.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{count, plural, one {Залишено як є: {countText} елемент. Cmdr не вдалося перевірити, чи були зміни.} few {Залишено як є: {countText} елементи. Cmdr не вдалося перевірити, чи були зміни.} many {Залишено як є: {countText} елементів. Cmdr не вдалося перевірити, чи були зміни.} other {Залишено як є: {countText} елемента. Cmdr не вдалося перевірити, чи були зміни.}}",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Залишено як є папку {name}: у ній тепер щось є.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Залишено як є {countText} {count, plural, one {папку} few {папки} many {папок} other {папки}}: у них тепер щось є.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{count, plural, one {Залишено як є: {countText} папка, у якій тепер щось є.} few {Залишено як є: {countText} папки, у яких тепер щось є.} many {Залишено як є: {countText} папок, у яких тепер щось є.} other {Залишено як є: {countText} папки, у яких тепер щось є.}}",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "Залишено як є: {name}. Cmdr не вдалося повернути стару назву цього файлу.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "Залишено як є {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}: Cmdr не вдалося повернути їхні старі назви.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{count, plural, one {Залишено як є: {countText} елемент, стару назву якого Cmdr не вдалося повернути.} few {Залишено як є: {countText} елементи, старі назви яких Cmdr не вдалося повернути.} many {Залишено як є: {countText} елементів, старі назви яких Cmdr не вдалося повернути.} other {Залишено як є: {countText} елемента, старі назви яких Cmdr не вдалося повернути.}}",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "cf38d62"
+    "sourceHash": "0c68461"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr не вдалося відмінити {countText} {count, plural, one {пакет} few {пакети} many {пакетів} other {пакета}}. Деталі є в журналі операцій.",
   "@askCmdr.renameUndo.refusedBatches": {

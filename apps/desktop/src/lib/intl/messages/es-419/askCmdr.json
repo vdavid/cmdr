@@ -383,49 +383,49 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "f623e67"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {elemento} many {elementos} other {elementos}} se quedaron como están: cambiaron después del cambio de nombre.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{count, plural, one {{countText} elemento se quedó como está: cambió después del cambio de nombre.} many {{countText} elementos se quedaron como están: cambiaron después del cambio de nombre.} other {{countText} elementos se quedaron como están: cambiaron después del cambio de nombre.}}",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "da97989"
+    "sourceHash": "95ef406"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "No se pudo encontrar {name}: se movió o se eliminó después del cambio de nombre.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
     "sourceHash": "1c8a0a2"
   },
-  "askCmdr.renameUndo.skipReason.vanished.counted": "No se pudo encontrar {countText} {count, plural, one {elemento} many {elementos} other {elementos}}: {count, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} después del cambio de nombre.",
+  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {No se pudo encontrar {countText} elemento: se movió o se eliminó después del cambio de nombre.} many {No se pudieron encontrar {countText} elementos: se movieron o se eliminaron después del cambio de nombre.} other {No se pudieron encontrar {countText} elementos: se movieron o se eliminaron después del cambio de nombre.}}",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "371c66a"
+    "sourceHash": "eac36bf"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} se quedó como está: su nombre anterior vuelve a estar ocupado.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "c74d22e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {elemento} many {elementos} other {elementos}} se quedaron como están: sus nombres anteriores vuelven a estar ocupados.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{count, plural, one {{countText} elemento se quedó como está: su nombre anterior vuelve a estar ocupado.} many {{countText} elementos se quedaron como están: sus nombres anteriores vuelven a estar ocupados.} other {{countText} elementos se quedaron como están: sus nombres anteriores vuelven a estar ocupados.}}",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "e4b2445"
+    "sourceHash": "ad6df1e"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} se quedó como está: Cmdr no pudo comprobar si cambió.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "afec204"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {elemento} many {elementos} other {elementos}} se quedaron como están: Cmdr no pudo comprobar si cambiaron.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{count, plural, one {{countText} elemento se quedó como está: Cmdr no pudo comprobar si cambió.} many {{countText} elementos se quedaron como están: Cmdr no pudo comprobar si cambiaron.} other {{countText} elementos se quedaron como están: Cmdr no pudo comprobar si cambiaron.}}",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "95ca7ec"
+    "sourceHash": "957e730"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "La carpeta {name} se quedó como está: ahora tiene algo dentro.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "5c24a41"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {carpeta} many {carpetas} other {carpetas}} se quedaron como están: ahora tienen algo dentro.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{count, plural, one {{countText} carpeta se quedó como está: ahora tiene algo dentro.} many {{countText} carpetas se quedaron como están: ahora tienen algo dentro.} other {{countText} carpetas se quedaron como están: ahora tienen algo dentro.}}",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "e59c18e"
+    "sourceHash": "3b460b3"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "{name} se quedó como está: Cmdr no pudo devolverle su nombre anterior.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "47ccf29"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {elemento} many {elementos} other {elementos}} se quedaron como están: Cmdr no pudo devolverles sus nombres anteriores.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{count, plural, one {{countText} elemento se quedó como está: Cmdr no pudo devolverle su nombre anterior.} many {{countText} elementos se quedaron como están: Cmdr no pudo devolverles sus nombres anteriores.} other {{countText} elementos se quedaron como están: Cmdr no pudo devolverles sus nombres anteriores.}}",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "aab0cd2"
+    "sourceHash": "c6a72f2"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr no pudo deshacer {countText} {count, plural, one {lote} many {lotes} other {lotes}}. El registro de operaciones tiene los detalles.",
   "@askCmdr.renameUndo.refusedBatches": {

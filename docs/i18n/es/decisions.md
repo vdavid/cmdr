@@ -289,8 +289,7 @@ Cmdr did the careful thing: no apology, no alarm.
 - `todos los {countText} elementos` is what separates `done*` from `some*`; lose it and the partial notice promises a
   clean destination.
 - Rolling back a copy `elimina`, a move `devuelve … a su sitio`. "Cmdr had written" → `que Cmdr había creado`.
-- `*.counted` keys show only for two or more: plural verb outside the branches, `one` unused; if one can ever be 1, redo
-  all five.
+- `*.counted`: each branch is a whole sentence, verb and tail agreeing (`se ha quedado` / `se han quedado`).
 - `stagedLeftover.*` retries `la próxima vez que se conecte a ese sitio`, never a time; `es-419` forks only the tense
   and `lugar`.
 

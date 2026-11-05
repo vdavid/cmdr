@@ -1109,49 +1109,49 @@
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: změnily se poté, co je tam zapsal.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {Cmdr nechal {countText} položku beze změny: změnila se poté, co ji tam zapsal.} few {Cmdr nechal {countText} položky beze změny: změnily se poté, co je tam zapsal.} many {Cmdr nechal {countText} položky beze změny: změnily se poté, co je tam zapsal.} other {Cmdr nechal {countText} položek beze změny: změnily se poté, co je tam zapsal.}}",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "Cmdr nechal položku „{name}“ beze změny: nemohl ověřit, jestli se změnila.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: nemohl ověřit, jestli se změnily.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {Cmdr nechal {countText} položku beze změny: nemohl ověřit, jestli se změnila.} few {Cmdr nechal {countText} položky beze změny: nemohl ověřit, jestli se změnily.} many {Cmdr nechal {countText} položky beze změny: nemohl ověřit, jestli se změnily.} other {Cmdr nechal {countText} položek beze změny: nemohl ověřit, jestli se změnily.}}",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "Cmdr nechal položku „{name}“ tam, kde je: na jejím původním místě je teď něco jiného.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} tam, kde jsou: na jejich původním místě je teď něco jiného.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {Cmdr nechal {countText} položku tam, kde je: na jejím původním místě je teď něco jiného.} few {Cmdr nechal {countText} položky tam, kde jsou: na jejich původním místě je teď něco jiného.} many {Cmdr nechal {countText} položky tam, kde jsou: na jejich původním místě je teď něco jiného.} other {Cmdr nechal {countText} položek tam, kde jsou: na jejich původním místě je teď něco jiného.}}",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Cmdr nechal složku „{name}“ beze změny: teď v ní něco je.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Cmdr nechal {countText} {count, plural, one {složku} few {složky} many {složky} other {složek}} beze změny: teď v nich něco je.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{count, plural, one {Cmdr nechal {countText} složku beze změny: teď v ní něco je.} few {Cmdr nechal {countText} složky beze změny: teď v nich něco je.} many {Cmdr nechal {countText} složky beze změny: teď v nich něco je.} other {Cmdr nechal {countText} složek beze změny: teď v nich něco je.}}",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Změnu u položky „{name}“ se nepodařilo vrátit. Její disk je možná odpojený nebo jen ke čtení.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "d22eda5"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "Změny u {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}} se nepodařilo vrátit. Jejich disk je možná odpojený nebo jen ke čtení.",
+  "fileOperations.cancelRollback.reason.failed.counted": "{count, plural, one {Změny u {countText} položky se nepodařilo vrátit. Její disk je možná odpojený nebo jen ke čtení.} few {Změny u {countText} položek se nepodařilo vrátit. Jejich disk je možná odpojený nebo jen ke čtení.} many {Změny u {countText} položky se nepodařilo vrátit. Jejich disk je možná odpojený nebo jen ke čtení.} other {Změny u {countText} položek se nepodařilo vrátit. Jejich disk je možná odpojený nebo jen ke čtení.}}",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "Cmdr nechal položku „{name}“ na místě: je zamčená a Cmdr ji nedokáže odemknout.",
   "@fileOperations.cancelRollback.reason.locked.named": {
     "sourceHash": "5d36672"
   },
-  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {{countText} položka zůstává na místě: je zamčená} few {{countText} položky zůstávají na místě: jsou zamčené} many {{countText} položky zůstává na místě: jsou zamčené} other {{countText} položek zůstává na místě: jsou zamčené}} a Cmdr je nedokáže odemknout.",
+  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {Cmdr nechal {countText} položku na místě: je zamčená a Cmdr ji nedokáže odemknout.} few {Cmdr nechal {countText} položky na místě: jsou zamčené a Cmdr je nedokáže odemknout.} many {Cmdr nechal {countText} položky na místě: jsou zamčené a Cmdr je nedokáže odemknout.} other {Cmdr nechal {countText} položek na místě: jsou zamčené a Cmdr je nedokáže odemknout.}}",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Nedokončenou kopii „{name}“ v cíli se nepodařilo odstranit. Můžete ji bez obav smazat a Cmdr to zkusí znovu, až se tam příště připojí.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

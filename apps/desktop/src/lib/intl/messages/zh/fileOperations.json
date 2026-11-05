@@ -1109,7 +1109,7 @@
   },
   "fileOperations.cancelRollback.reason.drift.counted": "保留了 {countText} {count, plural, other {个项目}}：Cmdr 放好之后它们有改动。",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "保留了 {name}：Cmdr 无法确认它有没有改动。",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
@@ -1117,7 +1117,7 @@
   },
   "fileOperations.cancelRollback.reason.unverifiable.counted": "保留了 {countText} {count, plural, other {个项目}}：Cmdr 无法确认它们有没有改动。",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "保留了 {name}：它原来的位置现在被别的东西占用了。",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
@@ -1125,7 +1125,7 @@
   },
   "fileOperations.cancelRollback.reason.spotTaken.counted": "保留了 {countText} {count, plural, other {个项目}}：它们原来的位置现在被别的东西占用了。",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "保留了文件夹 {name}：里面现在有东西了。",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
@@ -1133,7 +1133,7 @@
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "保留了 {countText} {count, plural, other {个文件夹}}：里面现在有东西了。",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Cmdr 没能撤销 {name} 的改动。它所在的驱动器可能未连接，或者是只读的。",
   "@fileOperations.cancelRollback.reason.failed.named": {
@@ -1141,7 +1141,7 @@
   },
   "fileOperations.cancelRollback.reason.failed.counted": "Cmdr 没能撤销 {countText} {count, plural, other {个项目}}的改动。它们所在的驱动器可能未连接，或者是只读的。",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "保留了 {name}：它被锁定了，Cmdr 无法解锁。",
   "@fileOperations.cancelRollback.reason.locked.named": {
@@ -1149,7 +1149,7 @@
   },
   "fileOperations.cancelRollback.reason.locked.counted": "保留了 {countText} {count, plural, other {个项目}}：它们被锁定了，Cmdr 无法解锁。",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "没能删除 {name}，这是留在目标位置的一个不完整副本。你可以放心删掉它，Cmdr 下次连接到那里时会再试一次。",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

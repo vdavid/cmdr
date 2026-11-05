@@ -1305,49 +1305,49 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : ils ont changé depuis le renommage.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{count, plural, one {{countText} élément laissé tel quel : il a changé depuis le renommage.} many {{countText} éléments laissés tels quels : ils ont changé depuis le renommage.} other {{countText} éléments laissés tels quels : ils ont changé depuis le renommage.}}",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "dbeb782"
+    "sourceHash": "5c3e633"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "{name} introuvable : le fichier a été déplacé ou supprimé depuis le renommage.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
     "sourceHash": "4daa75c"
   },
-  "askCmdr.renameUndo.skipReason.vanished.counted": "{countText} {count, plural, one {élément introuvable : il a été déplacé ou supprimé} many {éléments introuvables : ils ont été déplacés ou supprimés} other {éléments introuvables : ils ont été déplacés ou supprimés}} depuis le renommage.",
+  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {{countText} élément introuvable : il a été déplacé ou supprimé depuis le renommage.} many {{countText} éléments introuvables : ils ont été déplacés ou supprimés depuis le renommage.} other {{countText} éléments introuvables : ils ont été déplacés ou supprimés depuis le renommage.}}",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "c8d1788"
+    "sourceHash": "738f396"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} laissé tel quel : son ancien nom est de nouveau pris.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : leurs anciens noms sont de nouveau pris.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{count, plural, one {{countText} élément laissé tel quel : son ancien nom est de nouveau pris.} many {{countText} éléments laissés tels quels : leurs anciens noms sont de nouveau pris.} other {{countText} éléments laissés tels quels : leurs anciens noms sont de nouveau pris.}}",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "409140a"
+    "sourceHash": "c5faa4d"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} laissé tel quel : Cmdr n’a pas pu vérifier s’il avait changé.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{count, plural, one {{countText} élément laissé tel quel : Cmdr n’a pas pu vérifier s’il avait changé.} many {{countText} éléments laissés tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.} other {{countText} éléments laissés tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.}}",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Dossier {name} laissé tel quel : il contient maintenant quelque chose.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {dossier laissé} many {dossiers laissés} other {dossiers laissés}} tels quels : ils contiennent maintenant quelque chose.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{count, plural, one {{countText} dossier laissé tel quel : il contient maintenant quelque chose.} many {{countText} dossiers laissés tels quels : ils contiennent maintenant quelque chose.} other {{countText} dossiers laissés tels quels : ils contiennent maintenant quelque chose.}}",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "{name} laissé tel quel : Cmdr n’a pas pu lui rendre son ancien nom.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : Cmdr n’a pas pu leur rendre leurs anciens noms.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{count, plural, one {{countText} élément laissé tel quel : Cmdr n’a pas pu lui rendre son ancien nom.} many {{countText} éléments laissés tels quels : Cmdr n’a pas pu leur rendre leurs anciens noms.} other {{countText} éléments laissés tels quels : Cmdr n’a pas pu leur rendre leurs anciens noms.}}",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "cf38d62"
+    "sourceHash": "0c68461"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr n’a pas pu annuler {countText} {count, plural, one {lot} many {lots} other {lots}}. L’historique des opérations donne les détails.",
   "@askCmdr.renameUndo.refusedBatches": {

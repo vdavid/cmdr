@@ -1110,49 +1110,49 @@
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {{countText} item ficou como está: mudou depois que o Cmdr colocou lá} many {{countText} itens ficaram como estão: mudaram depois que o Cmdr colocou lá} other {{countText} itens ficaram como estão: mudaram depois que o Cmdr colocou lá}}.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {{countText} item ficou como está: mudou depois que o Cmdr colocou lá.} many {{countText} itens ficaram como estão: mudaram depois que o Cmdr colocou lá.} other {{countText} itens ficaram como estão: mudaram depois que o Cmdr colocou lá.}}",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "{name} ficou como está: o Cmdr não conseguiu verificar se mudou.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {{countText} item ficou como está: o Cmdr não conseguiu verificar se mudou} many {{countText} itens ficaram como estão: o Cmdr não conseguiu verificar se mudaram} other {{countText} itens ficaram como estão: o Cmdr não conseguiu verificar se mudaram}}.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {{countText} item ficou como está: o Cmdr não conseguiu verificar se mudou.} many {{countText} itens ficaram como estão: o Cmdr não conseguiu verificar se mudaram.} other {{countText} itens ficaram como estão: o Cmdr não conseguiu verificar se mudaram.}}",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "{name} ficou onde está: já existe outra coisa no lugar de onde veio.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {{countText} item ficou onde está: já existe outra coisa no lugar de onde veio} many {{countText} itens ficaram onde estão: já existe outra coisa no lugar de onde vieram} other {{countText} itens ficaram onde estão: já existe outra coisa no lugar de onde vieram}}.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {{countText} item ficou onde está: já existe outra coisa no lugar de onde veio.} many {{countText} itens ficaram onde estão: já existe outra coisa no lugar de onde vieram.} other {{countText} itens ficaram onde estão: já existe outra coisa no lugar de onde vieram.}}",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "A pasta {name} ficou como está: agora tem algo dentro.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {pasta} many {pastas} other {pastas}} ficaram como estão: agora têm algo dentro.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{count, plural, one {{countText} pasta ficou como está: agora tem algo dentro.} many {{countText} pastas ficaram como estão: agora têm algo dentro.} other {{countText} pastas ficaram como estão: agora têm algo dentro.}}",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Não foi possível reverter {name}. O disco pode estar desconectado ou ser somente leitura.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "d22eda5"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "Não foi possível reverter {countText} {count, plural, one {item} many {itens} other {itens}}. O disco pode estar desconectado ou ser somente leitura.",
+  "fileOperations.cancelRollback.reason.failed.counted": "{count, plural, one {Não foi possível reverter {countText} item. O disco pode estar desconectado ou ser somente leitura.} many {Não foi possível reverter {countText} itens. O disco pode estar desconectado ou ser somente leitura.} other {Não foi possível reverter {countText} itens. O disco pode estar desconectado ou ser somente leitura.}}",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "{name} ficou onde está: tem um bloqueio que o Cmdr não consegue remover.",
   "@fileOperations.cancelRollback.reason.locked.named": {
     "sourceHash": "5d36672"
   },
-  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {{countText} item ficou onde está: tem um bloqueio que o Cmdr não consegue remover} many {{countText} itens ficaram onde estão: têm um bloqueio que o Cmdr não consegue remover} other {{countText} itens ficaram onde estão: têm um bloqueio que o Cmdr não consegue remover}}.",
+  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {{countText} item ficou onde está: tem um bloqueio que o Cmdr não consegue remover.} many {{countText} itens ficaram onde estão: têm um bloqueio que o Cmdr não consegue remover.} other {{countText} itens ficaram onde estão: têm um bloqueio que o Cmdr não consegue remover.}}",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Não foi possível apagar {name}, uma cópia incompleta que ficou no destino. Você pode apagá-la sem problema, e o Cmdr tenta de novo na próxima vez que se conectar lá.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

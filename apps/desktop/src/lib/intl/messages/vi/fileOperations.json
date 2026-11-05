@@ -1110,7 +1110,7 @@
   },
   "fileOperations.cancelRollback.reason.drift.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: chúng đã thay đổi sau khi Cmdr đưa chúng tới đó.",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "Giữ nguyên {name}: Cmdr không kiểm tra được liệu có gì thay đổi hay không.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
@@ -1118,7 +1118,7 @@
   },
   "fileOperations.cancelRollback.reason.unverifiable.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: Cmdr không kiểm tra được chúng có thay đổi hay không.",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "Giữ nguyên {name}: nơi nó xuất phát bây giờ đã có thứ khác.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
@@ -1126,15 +1126,15 @@
   },
   "fileOperations.cancelRollback.reason.spotTaken.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: nơi chúng xuất phát bây giờ đã có thứ khác.",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Giữ nguyên thư mục {name}: bây giờ trong đó đã có thứ gì.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Giữ nguyên thư mục {name}: bây giờ trong đó đã có thứ gì đó.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Giữ nguyên {countText} {count, plural, other {thư mục}}: bây giờ trong đó đã có thứ gì.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Giữ nguyên {countText} {count, plural, other {thư mục}}: bây giờ trong đó đã có thứ gì đó.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Không hoàn tác được {name}. Ổ đĩa của nó có thể chưa được kết nối hoặc là chỉ đọc.",
   "@fileOperations.cancelRollback.reason.failed.named": {
@@ -1142,7 +1142,7 @@
   },
   "fileOperations.cancelRollback.reason.failed.counted": "Không hoàn tác được {countText} {count, plural, other {mục}}. Ổ đĩa của chúng có thể chưa được kết nối hoặc là chỉ đọc.",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "Giữ nguyên {name}: mục này bị khóa và Cmdr không mở khóa được.",
   "@fileOperations.cancelRollback.reason.locked.named": {
@@ -1150,7 +1150,7 @@
   },
   "fileOperations.cancelRollback.reason.locked.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: chúng bị khóa và Cmdr không mở khóa được.",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Không xóa được {name}, một bản sao chưa hoàn chỉnh còn lại ở đích. Bạn có thể xóa nó mà không mất gì, và Cmdr sẽ thử lại vào lần kết nối tới đó tiếp theo.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

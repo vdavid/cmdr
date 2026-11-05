@@ -1109,7 +1109,7 @@
   },
   "fileOperations.cancelRollback.reason.drift.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：它們在 Cmdr 放好之後有過更動。",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "{name} 維持原樣：Cmdr 無法確認它有沒有更動過。",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
@@ -1117,7 +1117,7 @@
   },
   "fileOperations.cancelRollback.reason.unverifiable.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：Cmdr 無法確認它們有沒有更動過。",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "{name} 維持原樣：它原本的位置已經被別的東西佔走了。",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
@@ -1125,7 +1125,7 @@
   },
   "fileOperations.cancelRollback.reason.spotTaken.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：它們原本的位置已經被別的東西佔走了。",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "資料夾 {name} 維持原樣：它裡面現在有東西了。",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
@@ -1133,7 +1133,7 @@
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "有 {countText} 個{count, plural, other {資料夾}}維持原樣：它們裡面現在有東西了。",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "無法復原 {name}。它所在的磁碟機可能沒有連接，或是唯讀的。",
   "@fileOperations.cancelRollback.reason.failed.named": {
@@ -1141,7 +1141,7 @@
   },
   "fileOperations.cancelRollback.reason.failed.counted": "無法復原 {countText} 個{count, plural, other {項目}}。它們所在的磁碟機可能沒有連接，或是唯讀的。",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "{name} 維持原樣：它被鎖定了，Cmdr 無法解鎖。",
   "@fileOperations.cancelRollback.reason.locked.named": {
@@ -1149,7 +1149,7 @@
   },
   "fileOperations.cancelRollback.reason.locked.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：它們被鎖定了，Cmdr 無法解鎖。",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "無法刪除 {name}，這是留在目標位置的一個不完整副本。你可以放心刪掉它，Cmdr 下次連線到那裡時會再試一次。",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

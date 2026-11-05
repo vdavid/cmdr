@@ -1304,7 +1304,7 @@
   },
   "askCmdr.renameUndo.skipReason.drift.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: chúng đã thay đổi sau khi đổi tên.",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "dbeb782"
+    "sourceHash": "5c3e633"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "Không tìm thấy {name}: tệp đã bị di chuyển hoặc xóa sau khi đổi tên.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
@@ -1312,7 +1312,7 @@
   },
   "askCmdr.renameUndo.skipReason.vanished.counted": "Không tìm thấy {countText} {count, plural, other {mục}}: chúng đã bị di chuyển hoặc xóa sau khi đổi tên.",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "c8d1788"
+    "sourceHash": "738f396"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "Giữ nguyên {name}: tên cũ đã có thứ khác dùng.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
@@ -1320,7 +1320,7 @@
   },
   "askCmdr.renameUndo.skipReason.nameTaken.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: tên cũ của chúng đã có thứ khác dùng.",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "409140a"
+    "sourceHash": "c5faa4d"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "Giữ nguyên {name}: Cmdr không kiểm tra được liệu có gì thay đổi hay không.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
@@ -1328,15 +1328,15 @@
   },
   "askCmdr.renameUndo.skipReason.unverifiable.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: Cmdr không kiểm tra được chúng có thay đổi hay không.",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Giữ nguyên thư mục {name}: bây giờ trong đó đã có thứ gì.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Giữ nguyên thư mục {name}: bây giờ trong đó đã có thứ gì đó.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Giữ nguyên {countText} {count, plural, other {thư mục}}: bây giờ trong đó đã có thứ gì.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Giữ nguyên {countText} {count, plural, other {thư mục}}: bây giờ trong đó đã có thứ gì đó.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "Giữ nguyên {name}: Cmdr không đặt lại được tên cũ.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
@@ -1344,7 +1344,7 @@
   },
   "askCmdr.renameUndo.skipReason.failed.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: Cmdr không đặt lại được tên cũ của chúng.",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "cf38d62"
+    "sourceHash": "0c68461"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr không hoàn tác được {countText} {count, plural, other {lô}}. Chi tiết nằm trong nhật ký thao tác.",
   "@askCmdr.renameUndo.refusedBatches": {

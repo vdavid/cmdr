@@ -1307,49 +1307,49 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: daar is iets aan gewijzigd na de naamwijziging.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{count, plural, one {{countText} onderdeel ongemoeid gelaten: daar is iets aan gewijzigd na de naamwijziging.} other {{countText} onderdelen ongemoeid gelaten: daar is iets aan gewijzigd na de naamwijziging.}}",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "dbeb782"
+    "sourceHash": "5c3e633"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "Kon {name} niet vinden: het bestand is na de naamwijziging verplaatst of verwijderd.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
     "sourceHash": "4daa75c"
   },
-  "askCmdr.renameUndo.skipReason.vanished.counted": "Kon {countText} {count, plural, one {onderdeel niet vinden: het is} other {onderdelen niet vinden: ze zijn}} na de naamwijziging verplaatst of verwijderd.",
+  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {Kon {countText} onderdeel niet vinden: het is na de naamwijziging verplaatst of verwijderd.} other {Kon {countText} onderdelen niet vinden: ze zijn na de naamwijziging verplaatst of verwijderd.}}",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "c8d1788"
+    "sourceHash": "738f396"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} ongemoeid gelaten: de oude naam is weer in gebruik.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: hun oude namen zijn weer in gebruik.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{count, plural, one {{countText} onderdeel ongemoeid gelaten: de oude naam is weer in gebruik.} other {{countText} onderdelen ongemoeid gelaten: hun oude namen zijn weer in gebruik.}}",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "409140a"
+    "sourceHash": "c5faa4d"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{count, plural, one {{countText} onderdeel ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.} other {{countText} onderdelen ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.}}",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Map {name} ongemoeid gelaten: er staat nu iets in.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {map} other {mappen}} ongemoeid gelaten: er staat nu iets in.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{count, plural, one {{countText} map ongemoeid gelaten: er staat nu iets in.} other {{countText} mappen ongemoeid gelaten: er staat nu iets in.}}",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "{name} ongemoeid gelaten: Cmdr kon de oude naam niet terugzetten.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: Cmdr kon hun oude namen niet terugzetten.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{count, plural, one {{countText} onderdeel ongemoeid gelaten: Cmdr kon de oude naam niet terugzetten.} other {{countText} onderdelen ongemoeid gelaten: Cmdr kon hun oude namen niet terugzetten.}}",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "cf38d62"
+    "sourceHash": "0c68461"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr kon {countText} {count, plural, one {groep} other {groepen}} niet ongedaan maken. Het bewerkingenlogboek heeft de details.",
   "@askCmdr.renameUndo.refusedBatches": {

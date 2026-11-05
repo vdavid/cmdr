@@ -1110,49 +1110,49 @@
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: daar is iets aan gewijzigd nadat Cmdr er klaar mee was.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {{countText} onderdeel ongemoeid gelaten: daar is iets aan gewijzigd nadat Cmdr er klaar mee was.} other {{countText} onderdelen ongemoeid gelaten: daar is iets aan gewijzigd nadat Cmdr er klaar mee was.}}",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "{name} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {{countText} onderdeel ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.} other {{countText} onderdelen ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.}}",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "{name} laten staan: op de oude plek staat nu iets anders.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} laten staan: op de oude plek staat nu iets anders.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {{countText} onderdeel laten staan: op de oude plek staat nu iets anders.} other {{countText} onderdelen laten staan: op de oude plekken staat nu iets anders.}}",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Map {name} ongemoeid gelaten: er staat nu iets in.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {map} other {mappen}} ongemoeid gelaten: er staat nu iets in.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{count, plural, one {{countText} map ongemoeid gelaten: er staat nu iets in.} other {{countText} mappen ongemoeid gelaten: er staat nu iets in.}}",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "{name} terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "d22eda5"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.",
+  "fileOperations.cancelRollback.reason.failed.counted": "{count, plural, one {{countText} onderdeel terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.} other {{countText} onderdelen terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.}}",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "{name} laten staan: daar zit een beveiliging op die Cmdr niet kan opheffen.",
   "@fileOperations.cancelRollback.reason.locked.named": {
     "sourceHash": "5d36672"
   },
-  "fileOperations.cancelRollback.reason.locked.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} laten staan: daar zit een beveiliging op die Cmdr niet kan opheffen.",
+  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {{countText} onderdeel laten staan: daar zit een beveiliging op die Cmdr niet kan opheffen.} other {{countText} onderdelen laten staan: daar zit een beveiliging op die Cmdr niet kan opheffen.}}",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "{name} verwijderen lukte niet: een onvolledig exemplaar dat op de bestemming is blijven staan. Je kunt het gerust verwijderen, en Cmdr probeert het opnieuw de volgende keer dat het verbinding maakt met de bestemming.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

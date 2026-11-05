@@ -1108,49 +1108,49 @@
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "Залишено як є {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}: їх змінили вже після того, як Cmdr їх туди помістив.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {Залишено як є: {countText} елемент, який змінили вже після того, як Cmdr його туди помістив.} few {Залишено як є: {countText} елементи, які змінили вже після того, як Cmdr їх туди помістив.} many {Залишено як є: {countText} елементів, які змінили вже після того, як Cmdr їх туди помістив.} other {Залишено як є: {countText} елемента, які змінили вже після того, як Cmdr їх туди помістив.}}",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "Залишено як є: {name}. Cmdr не вдалося перевірити, чи цей елемент змінювали.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "Залишено як є {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}: Cmdr не вдалося перевірити, чи їх змінювали.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {Залишено як є: {countText} елемент. Cmdr не вдалося перевірити, чи були зміни.} few {Залишено як є: {countText} елементи. Cmdr не вдалося перевірити, чи були зміни.} many {Залишено як є: {countText} елементів. Cmdr не вдалося перевірити, чи були зміни.} other {Залишено як є: {countText} елемента. Cmdr не вдалося перевірити, чи були зміни.}}",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "Залишено на місці: {name}. На старому місці цього елемента тепер є щось інше.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "Залишено на місці {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}: на їхньому старому місці тепер є щось інше.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {Залишено на місці: {countText} елемент, на старому місці якого тепер є щось інше.} few {Залишено на місці: {countText} елементи, на старих місцях яких тепер є щось інше.} many {Залишено на місці: {countText} елементів, на старих місцях яких тепер є щось інше.} other {Залишено на місці: {countText} елемента, на старих місцях яких тепер є щось інше.}}",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Залишено як є папку {name}: у ній тепер щось є.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Залишено як є {countText} {count, plural, one {папку} few {папки} many {папок} other {папки}}: у них тепер щось є.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{count, plural, one {Залишено як є: {countText} папка, у якій тепер щось є.} few {Залишено як є: {countText} папки, у яких тепер щось є.} many {Залишено як є: {countText} папок, у яких тепер щось є.} other {Залишено як є: {countText} папки, у яких тепер щось є.}}",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Не вдалося відмінити зміни: {name}. Можливо, диск цього елемента відʼєднано або він доступний лише для читання.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "d22eda5"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "Не вдалося відмінити зміни для {countText} {count, plural, one {елемента} few {елементів} many {елементів} other {елемента}}. Можливо, їхній диск відʼєднано або він доступний лише для читання.",
+  "fileOperations.cancelRollback.reason.failed.counted": "{count, plural, one {Не вдалося відмінити зміни: {countText} елемент. Можливо, диск відʼєднано або він доступний лише для читання.} few {Не вдалося відмінити зміни: {countText} елементи. Можливо, диск відʼєднано або він доступний лише для читання.} many {Не вдалося відмінити зміни: {countText} елементів. Можливо, диск відʼєднано або він доступний лише для читання.} other {Не вдалося відмінити зміни: {countText} елемента. Можливо, диск відʼєднано або він доступний лише для читання.}}",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "Залишено на місці: {name}. Цей елемент замкнений, і Cmdr не може його відімкнути.",
   "@fileOperations.cancelRollback.reason.locked.named": {
     "sourceHash": "5d36672"
   },
-  "fileOperations.cancelRollback.reason.locked.counted": "Залишено на місці {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}: їх замкнено, і Cmdr не може їх відімкнути.",
+  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {Залишено на місці: {countText} замкнений елемент, який Cmdr не може відімкнути.} few {Залишено на місці: {countText} замкнені елементи, які Cmdr не може відімкнути.} many {Залишено на місці: {countText} замкнених елементів, які Cmdr не може відімкнути.} other {Залишено на місці: {countText} замкненого елемента, які Cmdr не може відімкнути.}}",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Не вдалося видалити незавершену копію в місці призначення: {name}. Її можна видалити без ризику, а Cmdr спробує ще раз, коли наступного разу підʼєднається туди.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

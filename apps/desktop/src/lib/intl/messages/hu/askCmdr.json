@@ -1302,49 +1302,49 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {elem} other {elem}} változatlan maradt: az átnevezés után módosultak.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{count, plural, one {{countText} elem változatlan maradt: az átnevezés után módosult.} other {{countText} elem változatlan maradt: az átnevezés után módosultak.}}",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "dbeb782"
+    "sourceHash": "5c3e633"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "„{name}” nem található: az átnevezés óta áthelyezték vagy törölték.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
     "sourceHash": "4daa75c"
   },
-  "askCmdr.renameUndo.skipReason.vanished.counted": "{countText} {count, plural, one {elem nem található: az átnevezés óta áthelyezték vagy törölték.} other {elem nem található: az átnevezés óta áthelyezték vagy törölték őket.}}",
+  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {{countText} elem nem található: az átnevezés óta áthelyezték vagy törölték.} other {{countText} elem nem található: az átnevezés óta áthelyezték vagy törölték őket.}}",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "c8d1788"
+    "sourceHash": "738f396"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "„{name}” változatlan maradt: a régi nevét már más használja.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {elem} other {elem}} változatlan maradt: a régi nevüket már más használja.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{count, plural, one {{countText} elem változatlan maradt: a régi nevét már más használja.} other {{countText} elem változatlan maradt: a régi nevüket már más használja.}}",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "409140a"
+    "sourceHash": "c5faa4d"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "„{name}” változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosult-e.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {elem} other {elem}} változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosultak-e.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{count, plural, one {{countText} elem változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosult-e.} other {{countText} elem változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosultak-e.}}",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "„{name}” változatlan maradt: a mappában már van valami.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {mappa} other {mappa}} változatlan maradt: már van bennük valami.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{count, plural, one {{countText} mappa változatlan maradt: már van benne valami.} other {{countText} mappa változatlan maradt: már van bennük valami.}}",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "„{name}” változatlan maradt: a Cmdr nem tudta visszaadni a régi nevét.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {elem} other {elem}} változatlan maradt: a Cmdr nem tudta visszaadni a régi nevüket.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{count, plural, one {{countText} elem változatlan maradt: a Cmdr nem tudta visszaadni a régi nevét.} other {{countText} elem változatlan maradt: a Cmdr nem tudta visszaadni a régi nevüket.}}",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "cf38d62"
+    "sourceHash": "0c68461"
   },
   "askCmdr.renameUndo.refusedBatches": "A Cmdr {countText} {count, plural, one {csomagot} other {csomagot}} nem tudott visszavonni. A részletek a műveletnaplóban vannak.",
   "@askCmdr.renameUndo.refusedBatches": {

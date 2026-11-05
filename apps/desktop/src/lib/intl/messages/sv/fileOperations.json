@@ -1109,49 +1109,49 @@
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades som de är: de ändrades efter att Cmdr lade dem där.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {{countText} objekt lämnades som det är: det ändrades efter att Cmdr lade det där.} other {{countText} objekt lämnades som de är: de ändrades efter att Cmdr lade dem där.}}",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "{name} lämnades som den är: Cmdr kunde inte kontrollera om den ändrats.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades som de är: Cmdr kunde inte kontrollera om de ändrats.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {{countText} objekt lämnades som det är: Cmdr kunde inte kontrollera om det ändrats.} other {{countText} objekt lämnades som de är: Cmdr kunde inte kontrollera om de ändrats.}}",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "{name} lämnades där den ligger: något annat finns nu där den kom ifrån.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades där de ligger: något annat finns nu där de kom ifrån.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {{countText} objekt lämnades där det ligger: något annat finns nu där det kom ifrån.} other {{countText} objekt lämnades där de ligger: något annat finns nu där de kom ifrån.}}",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Mappen {name} lämnades som den är: det ligger något i den nu.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {mapp} other {mappar}} lämnades som de är: det ligger något i dem nu.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{count, plural, one {{countText} mapp lämnades som den är: det ligger något i den nu.} other {{countText} mappar lämnades som de är: det ligger något i dem nu.}}",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Det gick inte att ångra {name}. Enheten den ligger på kan vara frånkopplad eller skrivskyddad.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "d22eda5"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "Det gick inte att ångra {countText} {count, plural, one {objekt} other {objekt}}. Enheten de ligger på kan vara frånkopplad eller skrivskyddad.",
+  "fileOperations.cancelRollback.reason.failed.counted": "{count, plural, one {Det gick inte att ångra {countText} objekt. Enheten det ligger på kan vara frånkopplad eller skrivskyddad.} other {Det gick inte att ångra {countText} objekt. Enheten de ligger på kan vara frånkopplad eller skrivskyddad.}}",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "{name} lämnades där den ligger: den är låst, och Cmdr kan inte låsa upp den.",
   "@fileOperations.cancelRollback.reason.locked.named": {
     "sourceHash": "5d36672"
   },
-  "fileOperations.cancelRollback.reason.locked.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades där de ligger: de är låsta, och Cmdr kan inte låsa upp dem.",
+  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {{countText} objekt lämnades där det ligger: det är låst, och Cmdr kan inte låsa upp det.} other {{countText} objekt lämnades där de ligger: de är låsta, och Cmdr kan inte låsa upp dem.}}",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Det gick inte att radera {name}, en ofullständig kopia som blev kvar på målplatsen. Du kan radera den utan risk, och Cmdr försöker igen nästa gång Cmdr ansluter dit.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

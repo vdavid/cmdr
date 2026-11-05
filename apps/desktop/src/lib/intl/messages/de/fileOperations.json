@@ -1112,49 +1112,49 @@
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} unverändert gelassen: sie haben sich geändert, seit Cmdr sie dort abgelegt hat.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {Habe {countText} Objekt unverändert gelassen: es hat sich geändert, seit Cmdr es dort abgelegt hat.} other {Habe {countText} Objekte unverändert gelassen: sie haben sich geändert, seit Cmdr sie dort abgelegt hat.}}",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "Habe {name} unverändert gelassen: Cmdr konnte nicht prüfen, ob sich das Objekt geändert hat.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} unverändert gelassen: Cmdr konnte nicht prüfen, ob sie sich geändert haben.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {Habe {countText} Objekt unverändert gelassen: Cmdr konnte nicht prüfen, ob es sich geändert hat.} other {Habe {countText} Objekte unverändert gelassen: Cmdr konnte nicht prüfen, ob sie sich geändert haben.}}",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "Habe {name} am neuen Ort gelassen: am alten Ort liegt jetzt etwas anderes.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} am neuen Ort gelassen: an ihren alten Orten liegt jetzt etwas anderes.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {Habe {countText} Objekt am neuen Ort gelassen: am alten Ort liegt jetzt etwas anderes.} other {Habe {countText} Objekte am neuen Ort gelassen: an ihren alten Orten liegt jetzt etwas anderes.}}",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Habe den Ordner {name} unverändert gelassen: es liegt jetzt etwas darin.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Habe {countText} {count, plural, one {Ordner} other {Ordner}} unverändert gelassen: es liegt jetzt etwas darin.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{count, plural, one {Habe {countText} Ordner unverändert gelassen: es liegt jetzt etwas darin.} other {Habe {countText} Ordner unverändert gelassen: es liegt jetzt etwas darin.}}",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Cmdr konnte {name} nicht rückgängig machen. Vielleicht ist das Laufwerk nicht verbunden oder schreibgeschützt.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "d22eda5"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "Cmdr konnte {countText} {count, plural, one {Objekt} other {Objekte}} nicht rückgängig machen. Vielleicht ist ihr Laufwerk nicht verbunden oder schreibgeschützt.",
+  "fileOperations.cancelRollback.reason.failed.counted": "{count, plural, one {Cmdr konnte {countText} Objekt nicht rückgängig machen. Vielleicht ist sein Laufwerk nicht verbunden oder schreibgeschützt.} other {Cmdr konnte {countText} Objekte nicht rückgängig machen. Vielleicht ist ihr Laufwerk nicht verbunden oder schreibgeschützt.}}",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "Habe {name} am neuen Ort gelassen: das Objekt ist geschützt, und Cmdr kann den Schutz nicht aufheben.",
   "@fileOperations.cancelRollback.reason.locked.named": {
     "sourceHash": "5d36672"
   },
-  "fileOperations.cancelRollback.reason.locked.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} am neuen Ort gelassen: sie sind geschützt, und Cmdr kann den Schutz nicht aufheben.",
+  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {Habe {countText} Objekt am neuen Ort gelassen: es ist geschützt, und Cmdr kann den Schutz nicht aufheben.} other {Habe {countText} Objekte am neuen Ort gelassen: sie sind geschützt, und Cmdr kann den Schutz nicht aufheben.}}",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr konnte {name} nicht entfernen: eine unvollständige Kopie, die am Ziel geblieben ist. Du kannst sie gefahrlos löschen, und Cmdr versucht es erneut, wenn es sich das nächste Mal mit dem Ziel verbindet.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

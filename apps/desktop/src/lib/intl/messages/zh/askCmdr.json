@@ -1302,7 +1302,7 @@
   },
   "askCmdr.renameUndo.skipReason.drift.counted": "保留了 {countText} {count, plural, other {个项目}}：重命名后它们有改动。",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "dbeb782"
+    "sourceHash": "5c3e633"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "找不到 {name}：重命名后它被移动或删除了。",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
@@ -1310,7 +1310,7 @@
   },
   "askCmdr.renameUndo.skipReason.vanished.counted": "找不到 {countText} {count, plural, other {个项目}}：重命名后它们被移动或删除了。",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "c8d1788"
+    "sourceHash": "738f396"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "保留了 {name}：它原来的名称已被占用。",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
@@ -1318,7 +1318,7 @@
   },
   "askCmdr.renameUndo.skipReason.nameTaken.counted": "保留了 {countText} {count, plural, other {个项目}}：它们原来的名称已被占用。",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "409140a"
+    "sourceHash": "c5faa4d"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "保留了 {name}：Cmdr 无法确认它有没有改动。",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
@@ -1326,7 +1326,7 @@
   },
   "askCmdr.renameUndo.skipReason.unverifiable.counted": "保留了 {countText} {count, plural, other {个项目}}：Cmdr 无法确认它们有没有改动。",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "保留了文件夹 {name}：里面现在有东西了。",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
@@ -1334,7 +1334,7 @@
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "保留了 {countText} {count, plural, other {个文件夹}}：里面现在有东西了。",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "保留了 {name}：Cmdr 无法把原来的名称改回去。",
   "@askCmdr.renameUndo.skipReason.failed.named": {
@@ -1342,7 +1342,7 @@
   },
   "askCmdr.renameUndo.skipReason.failed.counted": "保留了 {countText} {count, plural, other {个项目}}：Cmdr 无法把原来的名称改回去。",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "cf38d62"
+    "sourceHash": "0c68461"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr 无法撤销 {countText} {count, plural, other {批}}。详情请看操作日志。",
   "@askCmdr.renameUndo.refusedBatches": {

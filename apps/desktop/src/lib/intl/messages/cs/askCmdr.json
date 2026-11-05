@@ -1301,49 +1301,49 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: od přejmenování se změnily.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{count, plural, one {Cmdr nechal {countText} položku beze změny: od přejmenování se změnila.} few {Cmdr nechal {countText} položky beze změny: od přejmenování se změnily.} many {Cmdr nechal {countText} položky beze změny: od přejmenování se změnily.} other {Cmdr nechal {countText} položek beze změny: od přejmenování se změnily.}}",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "dbeb782"
+    "sourceHash": "5c3e633"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "Položka „{name}“ nebyla nalezena: od přejmenování byla přesunuta nebo smazána.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
     "sourceHash": "4daa75c"
   },
-  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {Nebyla nalezena {countText} položka: od přejmenování byla přesunuta nebo smazána} few {Nebyly nalezeny {countText} položky: od přejmenování byly přesunuty nebo smazány} many {Nebylo nalezeno {countText} položky: od přejmenování byly přesunuty nebo smazány} other {Nebylo nalezeno {countText} položek: od přejmenování byly přesunuty nebo smazány}}.",
+  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {Nebyla nalezena {countText} položka: od přejmenování byla přesunuta nebo smazána.} few {Nebyly nalezeny {countText} položky: od přejmenování byly přesunuty nebo smazány.} many {Nebylo nalezeno {countText} položky: od přejmenování byly přesunuty nebo smazány.} other {Nebylo nalezeno {countText} položek: od přejmenování byly přesunuty nebo smazány.}}",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "c8d1788"
+    "sourceHash": "738f396"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "Cmdr nechal položku „{name}“ beze změny: její původní název je znovu obsazený.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: jejich původní názvy jsou znovu obsazené.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{count, plural, one {Cmdr nechal {countText} položku beze změny: její původní název je znovu obsazený.} few {Cmdr nechal {countText} položky beze změny: jejich původní názvy jsou znovu obsazené.} many {Cmdr nechal {countText} položky beze změny: jejich původní názvy jsou znovu obsazené.} other {Cmdr nechal {countText} položek beze změny: jejich původní názvy jsou znovu obsazené.}}",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "409140a"
+    "sourceHash": "c5faa4d"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "Cmdr nechal položku „{name}“ beze změny: nemohl ověřit, jestli se změnila.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: nemohl ověřit, jestli se změnily.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{count, plural, one {Cmdr nechal {countText} položku beze změny: nemohl ověřit, jestli se změnila.} few {Cmdr nechal {countText} položky beze změny: nemohl ověřit, jestli se změnily.} many {Cmdr nechal {countText} položky beze změny: nemohl ověřit, jestli se změnily.} other {Cmdr nechal {countText} položek beze změny: nemohl ověřit, jestli se změnily.}}",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Cmdr nechal složku „{name}“ beze změny: teď v ní něco je.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Cmdr nechal {countText} {count, plural, one {složku} few {složky} many {složky} other {složek}} beze změny: teď v nich něco je.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{count, plural, one {Cmdr nechal {countText} složku beze změny: teď v ní něco je.} few {Cmdr nechal {countText} složky beze změny: teď v nich něco je.} many {Cmdr nechal {countText} složky beze změny: teď v nich něco je.} other {Cmdr nechal {countText} složek beze změny: teď v nich něco je.}}",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "Cmdr nechal položku „{name}“ beze změny: původní název se nepodařilo vrátit zpět.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: původní názvy se nepodařilo vrátit zpět.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{count, plural, one {Cmdr nechal {countText} položku beze změny: původní název se nepodařilo vrátit zpět.} few {Cmdr nechal {countText} položky beze změny: původní názvy se nepodařilo vrátit zpět.} many {Cmdr nechal {countText} položky beze změny: původní názvy se nepodařilo vrátit zpět.} other {Cmdr nechal {countText} položek beze změny: původní názvy se nepodařilo vrátit zpět.}}",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "cf38d62"
+    "sourceHash": "0c68461"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr nemohl odvolat {countText} {count, plural, one {dávku} few {dávky} many {dávky} other {dávek}}. Podrobnosti najdete v historii operací.",
   "@askCmdr.renameUndo.refusedBatches": {

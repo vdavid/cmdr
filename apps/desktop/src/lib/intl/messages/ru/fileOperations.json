@@ -1108,49 +1108,49 @@
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Они изменились после того, как Cmdr их записал.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {Оставлено как есть: {countText} объект, который изменился после того, как Cmdr его записал.} few {Оставлено как есть: {countText} объекта, которые изменились после того, как Cmdr их записал.} many {Оставлено как есть: {countText} объектов, которые изменились после того, как Cmdr их записал.} other {Оставлено как есть: {countText} объекта, которые изменились после того, как Cmdr их записал.}}",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "Оставлено как есть: {name}. Cmdr не удалось проверить, были ли изменения.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Cmdr не удалось проверить, были ли изменения.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {Оставлено как есть: {countText} объект. Cmdr не удалось проверить, были ли изменения.} few {Оставлено как есть: {countText} объекта. Cmdr не удалось проверить, были ли изменения.} many {Оставлено как есть: {countText} объектов. Cmdr не удалось проверить, были ли изменения.} other {Оставлено как есть: {countText} объекта. Cmdr не удалось проверить, были ли изменения.}}",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "Оставлено на месте: {name}. На прежнем месте теперь другой объект.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "Оставлено на месте: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. На прежних местах теперь другие объекты.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {Оставлено на месте: {countText} объект, прежнее место которого теперь занято.} few {Оставлено на месте: {countText} объекта, прежние места которых теперь заняты.} many {Оставлено на месте: {countText} объектов, прежние места которых теперь заняты.} other {Оставлено на месте: {countText} объекта, прежние места которых теперь заняты.}}",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Папка {name} оставлена как есть. В ней теперь что-то есть.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Оставлено как есть: {countText} {count, plural, one {папка} few {папки} many {папок} other {папки}}. В них теперь что-то есть.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{count, plural, one {Оставлено как есть: {countText} папка, в которой теперь что-то есть.} few {Оставлено как есть: {countText} папки, в которых теперь что-то есть.} many {Оставлено как есть: {countText} папок, в которых теперь что-то есть.} other {Оставлено как есть: {countText} папки, в которых теперь что-то есть.}}",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Не удалось отменить: {name}. Возможно, диск отключен или доступен только для чтения.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "d22eda5"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "Не удалось отменить: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Возможно, их диск отключен или доступен только для чтения.",
+  "fileOperations.cancelRollback.reason.failed.counted": "{count, plural, one {Не удалось отменить: {countText} объект. Возможно, диск отключен или доступен только для чтения.} few {Не удалось отменить: {countText} объекта. Возможно, диск отключен или доступен только для чтения.} many {Не удалось отменить: {countText} объектов. Возможно, диск отключен или доступен только для чтения.} other {Не удалось отменить: {countText} объекта. Возможно, диск отключен или доступен только для чтения.}}",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "Оставлено на месте: {name}. Объект защищен, и Cmdr не может снять защиту.",
   "@fileOperations.cancelRollback.reason.locked.named": {
     "sourceHash": "5d36672"
   },
-  "fileOperations.cancelRollback.reason.locked.counted": "Оставлено на месте: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Они защищены, и Cmdr не может снять защиту.",
+  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {Оставлено на месте: {countText} защищенный объект, с которого Cmdr не может снять защиту.} few {Оставлено на месте: {countText} защищенных объекта, с которых Cmdr не может снять защиту.} many {Оставлено на месте: {countText} защищенных объектов, с которых Cmdr не может снять защиту.} other {Оставлено на месте: {countText} защищенного объекта, с которых Cmdr не может снять защиту.}}",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Не удалось убрать незавершенную копию в месте назначения: {name}. Ее можно спокойно удалить, а Cmdr попробует еще раз, когда в следующий раз подключится туда.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

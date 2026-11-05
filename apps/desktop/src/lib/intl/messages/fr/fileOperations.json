@@ -1111,49 +1111,49 @@
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : ils ont changé depuis que Cmdr les a mis là.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {{countText} élément laissé tel quel : il a changé depuis que Cmdr l’a mis là.} many {{countText} éléments laissés tels quels : ils ont changé depuis que Cmdr les a mis là.} other {{countText} éléments laissés tels quels : ils ont changé depuis que Cmdr les a mis là.}}",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "233b2f5"
+    "sourceHash": "b7514e3"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "{name} laissé tel quel : Cmdr n’a pas pu vérifier s’il avait changé.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {{countText} élément laissé tel quel : Cmdr n’a pas pu vérifier s’il avait changé.} many {{countText} éléments laissés tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.} other {{countText} éléments laissés tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.}}",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "{name} laissé sur place : quelque chose d’autre occupe maintenant sa place d’origine.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} sur place : quelque chose d’autre occupe maintenant leur place d’origine.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {{countText} élément laissé sur place : quelque chose d’autre occupe maintenant sa place d’origine.} many {{countText} éléments laissés sur place : quelque chose d’autre occupe maintenant leur place d’origine.} other {{countText} éléments laissés sur place : quelque chose d’autre occupe maintenant leur place d’origine.}}",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "a55ac9a"
+    "sourceHash": "aae0dc9"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Dossier {name} laissé tel quel : il contient maintenant quelque chose.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {dossier laissé} many {dossiers laissés} other {dossiers laissés}} tels quels : ils contiennent maintenant quelque chose.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{count, plural, one {{countText} dossier laissé tel quel : il contient maintenant quelque chose.} many {{countText} dossiers laissés tels quels : ils contiennent maintenant quelque chose.} other {{countText} dossiers laissés tels quels : ils contiennent maintenant quelque chose.}}",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Cmdr n’a pas pu revenir en arrière sur {name}. Son disque est peut-être déconnecté ou en lecture seule.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "d22eda5"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "Cmdr n’a pas pu revenir en arrière sur {countText} {count, plural, one {élément} many {éléments} other {éléments}}. Leur disque est peut-être déconnecté ou en lecture seule.",
+  "fileOperations.cancelRollback.reason.failed.counted": "{count, plural, one {Cmdr n’a pas pu revenir en arrière sur {countText} élément. Son disque est peut-être déconnecté ou en lecture seule.} many {Cmdr n’a pas pu revenir en arrière sur {countText} éléments. Leur disque est peut-être déconnecté ou en lecture seule.} other {Cmdr n’a pas pu revenir en arrière sur {countText} éléments. Leur disque est peut-être déconnecté ou en lecture seule.}}",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "fa172fb"
+    "sourceHash": "69b4096"
   },
   "fileOperations.cancelRollback.reason.locked.named": "{name} laissé sur place : il est verrouillé, et Cmdr ne peut pas le déverrouiller.",
   "@fileOperations.cancelRollback.reason.locked.named": {
     "sourceHash": "5d36672"
   },
-  "fileOperations.cancelRollback.reason.locked.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} sur place : ils sont verrouillés, et Cmdr ne peut pas les déverrouiller.",
+  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {{countText} élément laissé sur place : il est verrouillé, et Cmdr ne peut pas le déverrouiller.} many {{countText} éléments laissés sur place : ils sont verrouillés, et Cmdr ne peut pas les déverrouiller.} other {{countText} éléments laissés sur place : ils sont verrouillés, et Cmdr ne peut pas les déverrouiller.}}",
   "@fileOperations.cancelRollback.reason.locked.counted": {
-    "sourceHash": "4830a5e"
+    "sourceHash": "17d44dd"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr n’a pas pu supprimer {name}, une copie incomplète restée à destination. Vous pouvez la supprimer sans risque, et Cmdr réessaiera la prochaine fois qu’il se connectera à cet endroit.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {

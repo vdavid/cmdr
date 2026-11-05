@@ -2042,7 +2042,7 @@
     "screenshot": "ask-cmdr-chat.png",
     "screenshotNote": "A line in the Ask Cmdr thread, under a reply like the one pictured here, saying how a rename went and offering to undo it. This screenshot doesn’t show that line."
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "Left {countText} {count, plural, one {item} other {items}} alone: they changed since the rename.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{count, plural, one {Left {countText} item alone: it changed since the rename.} other {Left {countText} items alone: they changed since the rename.}}",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed items (files or folders: a rename run can include folders, so use a word for “item” that covers both) kept their new names and why. This version is used when the reason applies to two or more items, so the line counts them instead of naming them. This reason: the items were edited after Cmdr renamed them, so putting the old names back would touch something the user has since changed. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
@@ -2060,7 +2060,7 @@
     },
     "screenshot": "ask-cmdr-rename-undo-partial.png"
   },
-  "askCmdr.renameUndo.skipReason.vanished.counted": "Couldn’t find {countText} {count, plural, one {item} other {items}}: they were moved or deleted since the rename.",
+  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {Couldn’t find {countText} item: it was moved or deleted since the rename.} other {Couldn’t find {countText} items: they were moved or deleted since the rename.}}",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed items didn't get their old names back and why. A rename run can include folders, so each one is a file or a folder: use a word for \"item\" that covers both. This version is used when the reason applies to two or more items, so the line counts them instead of naming them. This reason: the items are no longer where Cmdr renamed them, and aren't back under their old names either, so there's nothing to rename. A plain statement, not a warning. Sentence case; the apostrophe is U+2019.",
     "placeholders": {
@@ -2079,7 +2079,7 @@
     "screenshot": "ask-cmdr-chat.png",
     "screenshotNote": "A line in the Ask Cmdr thread, under a reply like the one pictured here, saying how a rename went and offering to undo it. This screenshot doesn’t show that line."
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Left {countText} {count, plural, one {item} other {items}} alone: their old names are taken again.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{count, plural, one {Left {countText} item alone: its old name is taken again.} other {Left {countText} items alone: their old names are taken again.}}",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed items (files or folders: a rename run can include folders, so use a word for “item” that covers both) kept their new names and why. This version is used when the reason applies to two or more items, so the line counts them instead of naming them. This reason: something else now sits at the names the items used to have, so they keep their new names. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
@@ -2098,7 +2098,7 @@
     "screenshot": "ask-cmdr-chat.png",
     "screenshotNote": "A line in the Ask Cmdr thread, under a reply like the one pictured here, saying how a rename went and offering to undo it. This screenshot doesn’t show that line."
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Left {countText} {count, plural, one {item} other {items}} alone: Cmdr couldn’t check whether they changed.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{count, plural, one {Left {countText} item alone: Cmdr couldn’t check whether it changed.} other {Left {countText} items alone: Cmdr couldn’t check whether they changed.}}",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed items (files or folders: a rename run can include folders, so use a word for “item” that covers both) kept their new names and why. This version is used when the reason applies to two or more items, so the line counts them instead of naming them. This reason: the drive could not tell Cmdr whether the items have changed since the rename (some network drives and phones cannot), and Cmdr never renames something it cannot check first. Say this as caution, not as a fault. Sentence case; the apostrophe is U+2019.",
     "placeholders": {
@@ -2117,7 +2117,7 @@
     "screenshot": "ask-cmdr-chat.png",
     "screenshotNote": "A line in the Ask Cmdr thread, under a reply like the one pictured here, saying how a rename went and offering to undo it. This screenshot doesn’t show that line."
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Left {countText} {count, plural, one {folder} other {folders}} alone: they have something in them now.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{count, plural, one {Left {countText} folder alone: it has something in it now.} other {Left {countText} folders alone: they have something in them now.}}",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
     "description": "One line of a partial undo result, about FOLDERS rather than files. This reason: undoing would have removed a folder Cmdr created, but something has been put inside it since, so Cmdr keeps the folder and what is in it. This version is used when the reason applies to two or more folders, so the line counts them instead of naming them. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
@@ -2136,7 +2136,7 @@
     "screenshot": "ask-cmdr-chat.png",
     "screenshotNote": "A line in the Ask Cmdr thread, under a reply like the one pictured here, saying how a rename went and offering to undo it. This screenshot doesn’t show that line."
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "Left {countText} {count, plural, one {item} other {items}} alone: Cmdr couldn’t put their old names back.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{count, plural, one {Left {countText} item alone: Cmdr couldn’t put its old name back.} other {Left {countText} items alone: Cmdr couldn’t put their old names back.}}",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed items (files or folders: a rename run can include folders, so use a word for “item” that covers both) kept their new names and why. This version is used when the reason applies to two or more items, so the line counts them instead of naming them. This reason: the drive refused to rename the items back (they're disconnected, read-only, or it reported a problem). Unlike the other reasons this one is not a deliberate choice, so it may be worth trying again. Sentence case; the apostrophe is U+2019.",
     "placeholders": {

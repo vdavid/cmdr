@@ -1303,49 +1303,49 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} unverändert gelassen: sie haben sich seit dem Umbenennen geändert.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{count, plural, one {Habe {countText} Objekt unverändert gelassen: es hat sich seit dem Umbenennen geändert.} other {Habe {countText} Objekte unverändert gelassen: sie haben sich seit dem Umbenennen geändert.}}",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "dbeb782"
+    "sourceHash": "5c3e633"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "Cmdr konnte {name} nicht finden: das Objekt wurde seit dem Umbenennen bewegt oder gelöscht.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
     "sourceHash": "4daa75c"
   },
-  "askCmdr.renameUndo.skipReason.vanished.counted": "Cmdr konnte {countText} {count, plural, one {Objekt nicht finden: es wurde} other {Objekte nicht finden: sie wurden}} seit dem Umbenennen bewegt oder gelöscht.",
+  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {Cmdr konnte {countText} Objekt nicht finden: es wurde seit dem Umbenennen bewegt oder gelöscht.} other {Cmdr konnte {countText} Objekte nicht finden: sie wurden seit dem Umbenennen bewegt oder gelöscht.}}",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "c8d1788"
+    "sourceHash": "738f396"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "Habe {name} unverändert gelassen: der alte Name ist wieder belegt.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} unverändert gelassen: ihre alten Namen sind wieder belegt.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{count, plural, one {Habe {countText} Objekt unverändert gelassen: sein alter Name ist wieder belegt.} other {Habe {countText} Objekte unverändert gelassen: ihre alten Namen sind wieder belegt.}}",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "409140a"
+    "sourceHash": "c5faa4d"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "Habe {name} unverändert gelassen: Cmdr konnte nicht prüfen, ob sich das Objekt geändert hat.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} unverändert gelassen: Cmdr konnte nicht prüfen, ob sie sich geändert haben.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{count, plural, one {Habe {countText} Objekt unverändert gelassen: Cmdr konnte nicht prüfen, ob es sich geändert hat.} other {Habe {countText} Objekte unverändert gelassen: Cmdr konnte nicht prüfen, ob sie sich geändert haben.}}",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Habe den Ordner {name} unverändert gelassen: es liegt jetzt etwas darin.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Habe {countText} {count, plural, one {Ordner} other {Ordner}} unverändert gelassen: es liegt jetzt etwas darin.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{count, plural, one {Habe {countText} Ordner unverändert gelassen: es liegt jetzt etwas darin.} other {Habe {countText} Ordner unverändert gelassen: es liegt jetzt etwas darin.}}",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "Habe {name} unverändert gelassen: Cmdr konnte den alten Namen nicht zurücksetzen.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} unverändert gelassen: Cmdr konnte ihre alten Namen nicht zurücksetzen.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{count, plural, one {Habe {countText} Objekt unverändert gelassen: Cmdr konnte seinen alten Namen nicht zurücksetzen.} other {Habe {countText} Objekte unverändert gelassen: Cmdr konnte ihre alten Namen nicht zurücksetzen.}}",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "cf38d62"
+    "sourceHash": "0c68461"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr konnte {countText} {count, plural, one {Gruppe} other {Gruppen}} nicht widerrufen. Details stehen im Vorgangsprotokoll.",
   "@askCmdr.renameUndo.refusedBatches": {

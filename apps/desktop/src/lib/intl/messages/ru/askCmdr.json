@@ -1301,49 +1301,49 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Они изменились после переименования.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{count, plural, one {Оставлено как есть: {countText} объект, который изменился после переименования.} few {Оставлено как есть: {countText} объекта, которые изменились после переименования.} many {Оставлено как есть: {countText} объектов, которые изменились после переименования.} other {Оставлено как есть: {countText} объекта, которые изменились после переименования.}}",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "dbeb782"
+    "sourceHash": "5c3e633"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "Не удалось найти файл {name}: после переименования его переместили или удалили.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
     "sourceHash": "4daa75c"
   },
-  "askCmdr.renameUndo.skipReason.vanished.counted": "Не удалось найти {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}: после переименования их переместили или удалили.",
+  "askCmdr.renameUndo.skipReason.vanished.counted": "{count, plural, one {Не удалось найти {countText} объект, который после переименования переместили или удалили.} few {Не удалось найти {countText} объекта, которые после переименования переместили или удалили.} many {Не удалось найти {countText} объектов, которые после переименования переместили или удалили.} other {Не удалось найти {countText} объекта, которые после переименования переместили или удалили.}}",
   "@askCmdr.renameUndo.skipReason.vanished.counted": {
-    "sourceHash": "c8d1788"
+    "sourceHash": "738f396"
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "Оставлено как есть: {name}. Прежнее имя снова занято.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Прежние имена снова заняты.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{count, plural, one {Оставлено как есть: {countText} объект, прежнее имя которого снова занято.} few {Оставлено как есть: {countText} объекта, прежние имена которых снова заняты.} many {Оставлено как есть: {countText} объектов, прежние имена которых снова заняты.} other {Оставлено как есть: {countText} объекта, прежние имена которых снова заняты.}}",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "409140a"
+    "sourceHash": "c5faa4d"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "Оставлено как есть: {name}. Cmdr не удалось проверить, были ли изменения.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Cmdr не удалось проверить, были ли изменения.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{count, plural, one {Оставлено как есть: {countText} объект. Cmdr не удалось проверить, были ли изменения.} few {Оставлено как есть: {countText} объекта. Cmdr не удалось проверить, были ли изменения.} many {Оставлено как есть: {countText} объектов. Cmdr не удалось проверить, были ли изменения.} other {Оставлено как есть: {countText} объекта. Cmdr не удалось проверить, были ли изменения.}}",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "25fe620"
+    "sourceHash": "f352e13"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Папка {name} оставлена как есть. В ней теперь что-то есть.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Оставлено как есть: {countText} {count, plural, one {папка} few {папки} many {папок} other {папки}}. В них теперь что-то есть.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{count, plural, one {Оставлено как есть: {countText} папка, в которой теперь что-то есть.} few {Оставлено как есть: {countText} папки, в которых теперь что-то есть.} many {Оставлено как есть: {countText} папок, в которых теперь что-то есть.} other {Оставлено как есть: {countText} папки, в которых теперь что-то есть.}}",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
-    "sourceHash": "d2c9f56"
+    "sourceHash": "fed8255"
   },
   "askCmdr.renameUndo.skipReason.failed.named": "Оставлено как есть: {name}. Cmdr не удалось вернуть прежнее имя.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "Оставлено как есть: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Cmdr не удалось вернуть прежние имена.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{count, plural, one {Оставлено как есть: {countText} объект, прежнее имя которого Cmdr не удалось вернуть.} few {Оставлено как есть: {countText} объекта, прежние имена которых Cmdr не удалось вернуть.} many {Оставлено как есть: {countText} объектов, прежние имена которых Cmdr не удалось вернуть.} other {Оставлено как есть: {countText} объекта, прежние имена которых Cmdr не удалось вернуть.}}",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "cf38d62"
+    "sourceHash": "0c68461"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr не удалось отменить {countText} {count, plural, one {пакет} few {пакета} many {пакетов} other {пакета}}. Подробности в журнале операций.",
   "@askCmdr.renameUndo.refusedBatches": {

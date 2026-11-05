@@ -183,41 +183,41 @@
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "62ce66c"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {elemento} many {elementos} other {elementos}} se quedaron como están: cambiaron después de que Cmdr terminara de escribir ahí.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {{countText} elemento se quedó como está: cambió después de que Cmdr terminara de escribir ahí.} many {{countText} elementos se quedaron como están: cambiaron después de que Cmdr terminara de escribir ahí.} other {{countText} elementos se quedaron como están: cambiaron después de que Cmdr terminara de escribir ahí.}}",
   "@fileOperations.cancelRollback.reason.drift.counted": {
-    "sourceHash": "01d2093"
+    "sourceHash": "48ec54c"
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "{name} se quedó como está: Cmdr no pudo comprobar si cambió.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "afec204"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {elemento} many {elementos} other {elementos}} se quedaron como están: Cmdr no pudo comprobar si cambiaron.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {{countText} elemento se quedó como está: Cmdr no pudo comprobar si cambió.} many {{countText} elementos se quedaron como están: Cmdr no pudo comprobar si cambiaron.} other {{countText} elementos se quedaron como están: Cmdr no pudo comprobar si cambiaron.}}",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "95ca7ec"
+    "sourceHash": "957e730"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "{name} se quedó donde está: ahora hay otra cosa en su lugar.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "845b2fb"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {elemento} many {elementos} other {elementos}} se quedaron donde están: ahora hay otra cosa en su lugar.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {{countText} elemento se quedó donde está: ahora hay otra cosa en su lugar.} many {{countText} elementos se quedaron donde están: ahora hay otra cosa en su lugar.} other {{countText} elementos se quedaron donde están: ahora hay otra cosa en su lugar.}}",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
-    "sourceHash": "12c39a3"
+    "sourceHash": "c2040d0"
   },
   "fileOperations.cancelRollback.reason.folderNotEmpty.named": "La carpeta {name} se quedó como está: ahora tiene algo dentro.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "5c24a41"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {carpeta} many {carpetas} other {carpetas}} se quedaron como están: ahora tienen algo dentro.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{count, plural, one {{countText} carpeta se quedó como está: ahora tiene algo dentro.} many {{countText} carpetas se quedaron como están: ahora tienen algo dentro.} other {{countText} carpetas se quedaron como están: ahora tienen algo dentro.}}",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
-    "sourceHash": "e59c18e"
+    "sourceHash": "3b460b3"
   },
   "fileOperations.cancelRollback.reason.failed.named": "Cmdr no pudo revertir {name}. Puede que su unidad no esté conectada o sea de solo lectura.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "63c0ec9"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "Cmdr no pudo revertir {countText} {count, plural, one {elemento} many {elementos} other {elementos}}. Puede que su unidad no esté conectada o sea de solo lectura.",
+  "fileOperations.cancelRollback.reason.failed.counted": "{count, plural, one {Cmdr no pudo revertir {countText} elemento. Puede que su unidad no esté conectada o sea de solo lectura.} many {Cmdr no pudo revertir {countText} elementos. Puede que su unidad no esté conectada o sea de solo lectura.} other {Cmdr no pudo revertir {countText} elementos. Puede que su unidad no esté conectada o sea de solo lectura.}}",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "96484fb"
+    "sourceHash": "1b072fe"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr no pudo eliminar {name}, una copia parcial que se quedó en el destino. Puedes borrarla sin problema, y Cmdr lo volverá a intentar la próxima vez que se conecte a ese lugar.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {
