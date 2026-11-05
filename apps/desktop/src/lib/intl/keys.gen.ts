@@ -5342,6 +5342,7 @@ export type MessageKey =
   | 'ui.copyBox.copied'
   | 'ui.copyBox.copy'
   | 'ui.copyBox.copyAria'
+  | 'ui.demoDrop.overBudget'
   | 'ui.dialogBoundary.closedToast'
   | 'ui.findBar.close'
   | 'ui.findBar.matchPosition'

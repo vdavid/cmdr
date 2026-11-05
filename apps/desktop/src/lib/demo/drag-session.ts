@@ -7,6 +7,9 @@
  * runs unchanged: its hit test, overlay, auto-scroll, and the real transfer dialog. See `DETAILS.md`
  * § Drag and drop.
  *
+ * Files dragged in from the computer are `os-drop.ts`'s: a browser hands those over as HTML
+ * drag events, not a pointer this follows.
+ *
  * A finger works the same way: the app arms a touch drag on a hold (`file-explorer/drag/touch-hold.ts`)
  * and keeps the page from scrolling under it, and this follows that pointer like a mouse.
  */
@@ -156,14 +159,6 @@ export function createDragSessions(win: Window, emit: EmitToMain): DragSessions 
     endSession = finish
   }
 
-  // Files dragged in from the OS: the in-memory volume takes no outside bytes, so a drop is a no-op.
-  // Without this the browser would open the dropped file in place of the demo.
-  const refuseOsDrop = (event: Event) => {
-    event.preventDefault()
-  }
-  win.addEventListener('dragover', refuseOsDrop)
-  win.addEventListener('drop', refuseOsDrop)
-
   return {
     handler(cmd) {
       if (cmd !== 'start_drag_paths') return undefined
@@ -174,8 +169,6 @@ export function createDragSessions(win: Window, emit: EmitToMain): DragSessions 
     },
     dispose() {
       endSession?.()
-      win.removeEventListener('dragover', refuseOsDrop)
-      win.removeEventListener('drop', refuseOsDrop)
     },
   }
 }

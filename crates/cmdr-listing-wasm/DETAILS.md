@@ -60,6 +60,9 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
   Brief mode's widths (`get_brief_column_text_widths`) and the font metrics behind them (`store_font_metrics`,
   `extend_font_metrics`, `has_font_metrics`), answered by `cmdr-brief-columns`, the code the desktop's commands run. The
   page measures its own fonts with the Canvas API and stores them, as the desktop's frontend does.
+- `demo.importPlan(items): Promise<ImportPlan>` and `demo.importFile(batch, index, bytes: Uint8Array): Promise<null>`:
+  files dropped in from the computer (§ Files dropped in from the computer). Both reject with an `ImportError`
+  (`{ kind: "badPath" | "unknownItem" | "sizeChanged" | "volume", ... }`).
 - `DemoListing.setLogLevel(level)`: the engine's `log` lines on the console, `"warn"` by default.
 - `new DemoMenuBar()`: the menu bar (`menu.rs`). `DemoMenuBar.handles(command)` and `menu.invoke(command, args)` take
   the desktop's menu-state pushes by their Tauri names (`activate_window_menu`, `set_commands_refused_over_dialog`,
@@ -247,6 +250,29 @@ over the page's one volume, with no index to load.
   the app's `search/live/events.rs`; `search_test.rs` pins their keys against `bindings.ts`.
 - **Results order and recent searches**: `sort_search_results` is `cmdr_listing::sort_search_rows` on the panes'
   collator; the recent list is `cmdr-recents`' rules over `cmdr_search::history`'s key, in memory.
+
+## Files dropped in from the computer
+
+`imports.rs`'s `DemoImports` lands a visitor's dropped files on the page's volume through `InMemoryVolume`'s import door
+(`import_folder`, `import_file`: real bytes beside the synthetic files, no clobber, `StorageFull` past the disk's room;
+`crates/cmdr-fs/DETAILS.md` § Module map). The page side is `apps/desktop/src/lib/demo/DETAILS.md` § Files dropped in
+from the computer. Nothing leaves the page.
+
+- **Two steps, so the page reads only bytes that will land.** `plan(items)` takes the drop's shape (relative
+  `/`-separated paths, folders before their contents, kinds, sizes, `modifiedMs`; no bytes), accepts the longest prefix
+  the budget covers, creates its folders, and reserves its files' bytes. `file(batch, index, bytes)` lands one accepted
+  file; bytes of another size (`SizeChanged`) or a volume refusal give the reservation back. A path with an empty, `.`,
+  or `..` name, or a leading `/`, is `BadPath`, checked by hand: `Path::components` drops a `.`, and `Path::is_absolute`
+  is always `false` in the browser.
+- **Staging**: each drop gets a fresh `/.drops/<n>/` (hidden like a dotfile), so a drop never collides with itself or an
+  earlier one; the page hands the staged top-level paths to the app as an OS drop, and the transfer dialog settles
+  collisions with the destination. A drop the visitor cancels leaves its staged folder behind; its bytes stay counted.
+- **Decision: 10 MB per visit (`IMPORT_BUDGET_BYTES`), counting every byte imported**, David's call (#957). Reserved at
+  plan time, so two drops in flight can't both spend the same room. The first item that doesn't fit stops the drop
+  there: it and everything after stay out (`OverBudget { budgetBytes, leftOut }`), even a smaller one that would fit, so
+  what came in is always a prefix of the drop. A reload resets it, with the volume.
+- Tests: `imports_test.rs` (plan, structure, the budget across drops, a changed size, bad paths, a staged file copying
+  and counting in folder sizes like any other).
 
 ## Where the demo differs from the app
 

@@ -22,6 +22,16 @@
     "description": "Screen-reader name of the strip of menus (Cmdr, File, Edit, View, …) at the top of the browser demo on getcmdr.com, which stands in for the macOS menu bar a web page doesn't have. Use the term macOS uses for its own menu bar in this language."
   },
 
+  "ui.demoDrop.overBudget": "The demo holds up to {budgetText} of your files per visit, so it left out {countText} {count, plural, one {item} other {items}}.",
+  "@ui.demoDrop.overBudget": {
+    "description": "Notification in the browser demo on getcmdr.com, shown when a visitor drags files from their own computer into the demo and some of them don't fit the demo's per-visit size limit. The files that fit came in; the rest stayed out. The visitor's own files are never changed, so keep the tone light and reassuring, with no sense of something going wrong.",
+    "placeholders": {
+      "budgetText": "the size limit, already formatted for display (for example 10 MB)",
+      "countText": "how many dropped files and folders stayed out, already formatted for display (for example 3)",
+      "count": "the same number (drives the singular/plural form of the noun)"
+    }
+  },
+
   "ui.popover.defaultAriaLabel": "Options",
   "@ui.popover.defaultAriaLabel": {
     "description": "Default aria-label naming a popover region when the caller passes none. Generic fallback meaning a small floating panel of choices."

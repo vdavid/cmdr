@@ -198,6 +198,58 @@ test.describe('Browser demo', () => {
       expect(errors.map((error) => error.message)).toEqual([])
     })
 
+    /**
+     * Drops files from the computer onto `target`, as a browser hands a Finder drag to the page: a
+     * `DataTransfer` of `File`s on `dragenter`, `dragover`, and `drop` (apps/desktop/src/lib/demo/os-drop.ts).
+     */
+    async function dropFromComputer(
+      page: Page,
+      target: Locator,
+      files: { name: string; text?: string; bytes?: number }[],
+    ) {
+      const box = await target.boundingBox()
+      if (!box) throw new Error('the drop target has no box')
+      await page.evaluate(
+        ({ files, x, y }) => {
+          const dataTransfer = new DataTransfer()
+          for (const f of files) dataTransfer.items.add(new File([f.text ?? new Uint8Array(f.bytes ?? 0)], f.name))
+          const init = { clientX: x, clientY: y, bubbles: true, cancelable: true, dataTransfer }
+          const element = document.elementFromPoint(x, y) ?? document.body
+          for (const type of ['dragenter', 'dragover', 'drop']) element.dispatchEvent(new DragEvent(type, init))
+        },
+        // Upper left: a toast from an earlier transfer sits over the lower right, and a drop on it
+        // lands nowhere, as on desktop.
+        { files, x: box.x + box.width / 4, y: box.y + box.height / 3 },
+      )
+    }
+
+    test('files dropped in from the computer land through the transfer dialog, conflicts included', async ({
+      page,
+    }) => {
+      const errors = collectPageErrors(page)
+      await openDemo(page)
+      const name = 'from my computer.txt'
+      await dropFromComputer(page, right(page), [{ name, text: 'hello from outside' }])
+      await confirmTransfer(page, 'Move')
+      await expect(row(right(page), 'from my computer')).toBeVisible()
+
+      // The same name again: the dialog sees the clash, as for any transfer.
+      // The progress dialog closes a moment after the row lands; a drop onto it lands nowhere.
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+      await dropFromComputer(page, right(page), [{ name, text: 'again' }])
+      await expect(page.getByText('1 file already exists')).toBeVisible()
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
+
+    test('a drop past the visit’s 10 MB says what stayed out', async ({ page }) => {
+      const errors = collectPageErrors(page)
+      await openDemo(page)
+      await dropFromComputer(page, right(page), [{ name: 'huge.bin', bytes: 11_000_000 }])
+      await expect(page.getByText(/holds up to 10 MB of your files per visit, so it left out 1 item/)).toBeVisible()
+      await expect(row(right(page), 'huge')).toHaveCount(0)
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
+
     test('a copy onto a full disk stays in the queue, and Retry lands it once there is room', async ({ page }) => {
       const errors = collectPageErrors(page)
       // `?free=100` leaves 100 bytes on the disk, too little for `notes.md` (its 372 real bytes).

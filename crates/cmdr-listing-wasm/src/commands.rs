@@ -29,6 +29,7 @@ use cmdr_fs::volume::host::VolumeHost;
 use crate::backend_listings::BackendListings;
 use crate::events::{DemoEvents, EventSink, ListingPathEvent};
 use crate::folder_sizes::FolderSizes;
+use crate::imports::{DemoImports, IMPORT_BUDGET_BYTES};
 use crate::invoke::{answer, ok, parse};
 use crate::operations_host::DemoOperations;
 use crate::search::{DemoSearch, SEARCH_COMMANDS};
@@ -98,6 +99,8 @@ pub struct Demo {
     viewer: DemoViewer,
     /// ⌘F over the same volume, sized by the same fold (`search.rs`).
     search: Arc<DemoSearch>,
+    /// Files dropped in from the visitor's computer, onto the same volume (`imports.rs`).
+    imports: Arc<DemoImports>,
 }
 
 impl Demo {
@@ -118,6 +121,7 @@ impl Demo {
         // The drive index's stand-in, for the panes, the dialogs, the status bar, and ⌘F.
         let sizes = Arc::new(FolderSizes::new(Arc::clone(&store)));
         let searched = Arc::clone(&store);
+        let imports = Arc::new(DemoImports::new(Arc::clone(&store), IMPORT_BUDGET_BYTES));
         let volume: Arc<dyn Volume> = store;
         let viewer = DemoViewer::new(
             volume_id.clone(),
@@ -154,6 +158,7 @@ impl Demo {
             sizes,
             viewer,
             search,
+            imports,
         })
     }
 
@@ -184,6 +189,11 @@ impl Demo {
     /// The file viewer over the demo's volume.
     pub fn viewer(&self) -> &DemoViewer {
         &self.viewer
+    }
+
+    /// Files dropped in from the visitor's computer.
+    pub fn imports(&self) -> &Arc<DemoImports> {
+        &self.imports
     }
 
     /// Runs `command` with Tauri-style `args` (camelCase keys).

@@ -149,6 +149,37 @@ impl DemoListing {
         Demo::handles(command)
     }
 
+    /// Plans a drop from the visitor's computer (`imports.rs`): `items` is
+    /// `[{ path, kind: 'file' | 'folder', size?, modifiedMs? }]`. Resolves with the
+    /// plan (`{ batch, accepted, roots, refusal }`), rejects with an `ImportError`.
+    #[wasm_bindgen(js_name = importPlan)]
+    pub fn import_plan(&self, items: JsValue) -> js_sys::Promise {
+        let imports = Arc::clone(self.demo.imports());
+        let items = from_js(&items);
+        wasm_bindgen_futures::future_to_promise(async move {
+            let items: Vec<crate::imports::ImportItem> = serde_json::from_value(items.map_err(JsValue::from)?)
+                .map_err(|e| JsValue::from(JsError::new(&format!("import items: {e}"))))?;
+            match imports.plan(&items).await {
+                Ok(plan) => Ok(to_js(&serde_json::to_value(plan).unwrap_or(Value::Null))),
+                Err(error) => Err(to_js(&serde_json::to_value(error).unwrap_or(Value::Null))),
+            }
+        })
+    }
+
+    /// Lands the bytes of the planned file `index` of `batch`. Resolves with
+    /// `null`, rejects with an `ImportError`.
+    #[wasm_bindgen(js_name = importFile)]
+    pub fn import_file(&self, batch: u32, index: u32, bytes: js_sys::Uint8Array) -> js_sys::Promise {
+        let imports = Arc::clone(self.demo.imports());
+        let bytes = bytes.to_vec();
+        wasm_bindgen_futures::future_to_promise(async move {
+            match imports.file(u64::from(batch), index as usize, bytes).await {
+                Ok(()) => Ok(JsValue::NULL),
+                Err(error) => Err(to_js(&serde_json::to_value(error).unwrap_or(Value::Null))),
+            }
+        })
+    }
+
     /// Runs a listing command like Tauri's `invoke(command, args)`: resolves
     /// with its answer, rejects with its error.
     pub fn invoke(&self, command: String, args: JsValue) -> js_sys::Promise {

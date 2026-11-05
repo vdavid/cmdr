@@ -8,6 +8,7 @@ import type { Payload } from './answer-types.js'
 import { demoContents } from './demo-contents.js'
 import { DEMO_HOME, DEMO_ROOT, DEMO_VOLUME_ID, demoEntries } from './demo-tree.js'
 import { loadEngineModule } from './engine-module.js'
+import type { DropImporter } from './os-drop.js'
 import { demoPath } from './volumes.js'
 
 /** The loaded engine, by Tauri command name, as the backend routes to it. */
@@ -20,6 +21,8 @@ export interface ListingEngineHandle {
   closeViewerWindow(label: string): void
   /** A viewer media token's bytes for the window `label`, or `undefined` (an unknown token, or no engine yet). */
   mediaBody(token: string, label: string): { mime: string; bytes: Uint8Array } | undefined
+  /** The engine's door for files dropped in from the computer (`os-drop.ts`); waits for the engine. */
+  importer: DropImporter
 }
 
 /** One engine event: its Tauri name, its payload, and the window label an `emit_to` names. */
@@ -115,5 +118,17 @@ export function startListingEngine(sink: ListingEventSink): ListingEngineHandle 
       void ready.then((loaded) => loaded?.engine.closeViewerWindow(label))
     },
     mediaBody: (token, label) => engine?.mediaBody(token, label),
+    importer: {
+      plan: async (items) => {
+        const loaded = await ready
+        if (!loaded) throw new Error("[demo] the listing engine did not load, so it can't take a drop")
+        return loaded.engine.importPlan(items)
+      },
+      file: async (batch, index, bytes) => {
+        const loaded = await ready
+        if (!loaded) throw new Error("[demo] the listing engine did not load, so it can't take a drop")
+        return loaded.engine.importFile(batch, index, bytes)
+      },
+    },
   }
 }
