@@ -238,7 +238,7 @@ The repo-wide worktree workflow is in `AGENTS.md` § Workflow. Desktop-specific 
     bare-cargo run after editing `.rs` can be a FALSE green (tests run against stale code). Always
     `find apps/desktop/src-tauri/src -name '*.rs' | xargs touch` before a bare cargo run in a worktree, or use
     `pnpm check` (cache-aware, builds correctly). Don't trust a bare-cargo green right after edits. (Also:
-    `pnpm check rust` does NOT run docs-group checks like `pluralize-noun` — run full `pnpm check` before claiming
+    `pnpm check rust` does NOT run docs-group checks like `pluralize-noun` — run `pnpm check --fast` too before claiming
     green.)
 - CodeGraph: `mkdir -p <worktree>/.codegraph`, `cp -c .codegraph/codegraph.db` and `cp .codegraph/config.json` into it,
   then `(cd <worktree> && codegraph sync)`. Without its own populated `.codegraph`, the worktree session deadlocks

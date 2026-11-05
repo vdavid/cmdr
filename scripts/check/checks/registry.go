@@ -1784,10 +1784,11 @@ var AllChecks = []CheckDefinition{
 		Tech:        "📏 Metrics",
 		NotInCI:     "warn-only metric; it can never fail, so a CI step would be noise",
 		DependsOn:   nil,
-		// Neither in --fast nor in scoped runs: mid-iteration it fires on every
-		// run before the docs pass has had a chance to happen. A plain milestone
-		// run still carries it.
-		IsFast: false,
+		// In --fast, the pre-commit run, because agents never run a full local
+		// check (`pnpm land`'s CI is the full run), and the nudge is meant for
+		// the agent finishing a change. Not in scoped runs: a named lane is a
+		// question about that lane. Still warn-only and one line.
+		IsFast: true,
 		Inputs: wholeRepoInputs,
 		Run:    RunClaudeMdReminder,
 	},

@@ -263,8 +263,8 @@ regenerate, migrate the call site to `commands.foo(...)`.
 2. `cd apps/desktop && pnpm bindings:regen`.
 3. Manually inspect the `bindings.ts` diff before merging. RC bumps can shift output format (whitespace, type names,
    helper layout). If the diff is purely cosmetic, fine. If it changes API shapes the FE consumes, walk the consumers.
-4. Run `pnpm check`, then `pnpm check --only-slow`, to catch Linux-stub breakage (ask: did the new specta version change
-   which derives it requires?).
+4. Run `pnpm check clippy`, then `pnpm check --only-slow`, to catch Linux-stub breakage (ask: did the new specta version
+   change which derives it requires?).
 5. Re-evaluate § Excluded commands: if the new RC supports `skip_serializing_if` or `serde_json::Value`, migrate the
    relevant commands and shrink the table.
 
