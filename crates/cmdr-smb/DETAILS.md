@@ -39,8 +39,10 @@ Here, because the answer is yes:
   `VolumeError::SignatureInvalid`, never the `ProtocolError` that sends a listing down the CLI fallback. The same goes
   for a negotiation the server didn't confirm (`NegotiateValidationFailed`, smb2 0.41:
   `ShareListError::NegotiationInvalid`) and a server requiring encryption the connection has no cipher for
-  (`Error::EncryptionUnavailable`, by variant: `ShareListError::EncryptionUnavailable`). Both are connect-time answers;
-  on a volume they arrive only through a rebuilt session, as an `IoError` the reconnect backoff retries.
+  (`Error::EncryptionUnavailable`, by variant: `ShareListError::EncryptionUnavailable`), and Cmdr's own requirement the
+  connection can't meet (`Error::EncryptionRequired`, by variant: `ShareListError::EncryptionRequired`, § "Requiring
+  encryption"). All three are connect-time answers; on a volume they arrive only through a rebuilt session, as an
+  `IoError` the reconnect backoff retries.
 - Every smb2 error on the main session passes ONE funnel, `SmbVolumeInner::note_smb_error` (called by
   `handle_smb_result`, the streaming-read producer, the random reader, and the copy scan's stat pipeline), which calls
   `session::report_security_refusal` to tell the host's `security_refusal` seam about a refused signature. A refused
@@ -100,7 +102,7 @@ Whichever crate's test target enables the feature, the one `smb2` gets it.
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to 17 root promises, 4 public modules, and 23 public items inside them. The
+`index-crate-isolation` holds this crate to 18 root promises, 4 public modules, and 23 public items inside them. The
 numbers were set to exactly what the crate exposed the day the extraction finished, with no headroom, so an addition has
 to be argued for, and each raise since carries its argument below.
 
@@ -115,6 +117,12 @@ after one, and a new item should name which of three audiences it serves:
 - **Recording a person's yes**: `LinkConsents` (§ "Signing in through a link"). Every smb2 session here has to read the
   set, and the app owns the file and the question, so one type crosses, with no module and no reader: only the crate can
   ask it.
+- **Requiring encryption**: `SmbEncryption` (§ "Requiring encryption"). The same shape for the same reason: every
+  session reads the switch, and the app owns the setting and the policy. Root 17 → 18 (2026-11-05, #932). The four
+  dispositions: a facade would be the app setting `ClientConfig::require_encryption` itself, on configs it never builds;
+  folding it into `SmbConnectionParams` would miss both listings (they take no params) and freeze the value a reconnect
+  reads at the volume's first dial; folding it into `LinkConsents` would weld two unrelated consents into one name; and
+  it's the feature, so neither deletable nor gateable.
 - **Constructing and asking after a share**, for `network/smb_upgrade.rs` and the debug window's diagnostics dashboard:
   `connect_smb_volume`, `SmbVolume` with `volume_id` / `session_state` / `diagnostics`, `SmbConnectionParams` with its
   five fields, and `ConnectionState`. `SmbVolume::new` is `pub(crate)`: outside, a share is dialed, which is the only
@@ -819,8 +827,9 @@ different host until a person allows that (share's server, target host) pair**: 
 
 - **smb2 asks before it dials** (`ClientConfig::dfs_target_policy`, smb2 0.38.0): its one target dial, its pooled-target
   lookup, and a target's reviver. Namespace roots and Interlinks go through the same dial. Every `ClientConfig` here
-  with `dfs_enabled` carries `link_consent::dfs_target_policy()`, an `Ask` over the in-memory set; a config that forgets
-  refuses everything different, since smb2's default is `SameServerOnly`.
+  carries `link_consent::dfs_target_policy()`, an `Ask` over the in-memory set, through `encryption::session_config()`
+  (§ "Requiring encryption"); a config that forgets refuses everything different, since smb2's default is
+  `SameServerOnly`.
 - **"The same server" takes proof** (smb2's `same_server`): the same host once ASCII case, one trailing dot, and an IP's
   spelling are set aside, and the same port. A short name and its FQDN, or a name and its IP, count as different, and ❌
   `network::server_identity` stays out of this: it pairs names through mDNS, which anyone on the network can answer.
@@ -852,6 +861,32 @@ different host until a person allows that (share's server, target host) pair**: 
   `localhost` so the pair differs from the one `dfs_volume` allows), plus
   `smb_dfs_a_link_to_another_host_stops_when_consent_is_forgotten` (verified against smb2 0.38.0, Samba on Alpine 3.21,
   2026-10-31).
+
+## Requiring encryption
+
+"Always require SMB encryption" (Settings > File systems > SMB/Network shares, or the managed policy's
+`RequireSMBEncryption`) reaches this crate as ONE process-wide switch, `SmbEncryption::set_required` (`encryption.rs`).
+The app's `network::smb_encryption` sets it to the setting OR the policy; nothing else calls it.
+
+- **Every `ClientConfig` here starts from `encryption::session_config()`** (`..session_config()` where a config would
+  say `..Default::default()`): the volume's main session and every reconnect, the scan pool, transfer sessions, a link
+  watch (all through `session_build::build_session`), the watcher, both share listings, and `try_open_share`. It also
+  carries the DFS consent policy (§ "Signing in through a link"). `every_client_config_starts_from_session_config` scans
+  the sources and fails on a literal that skips it. `probe_server_guid` builds no session (NEGOTIATE only, no
+  credentials, no file data), so it has nothing to encrypt.
+- **The switch is read when a session is BUILT.** ❗ Flipping it never touches a session that's up: tearing one down
+  would cut a running copy, and smb2 decides encryption at session setup anyway. The next session built (a new share, a
+  reconnect, a fresh pool member) follows the new value (decided 2026-11-05, #932).
+- **What "can't encrypt" means** (smb2 0.41's `session_cipher`): no cipher negotiated (a dialect below SMB 3.0, or a
+  server with encryption off), or a guest or anonymous session, which has no keys. Both fail the connect with
+  `Error::EncryptionRequired` before anything past the login goes out. Samba at its default offers a cipher, so a NAS
+  that never asks for encryption still gets an encrypted session when an account signs in.
+- **No CLI fallback under the requirement**: `smbutil` / `smbclient` don't know about it, so the app's listing skips
+  them while it's on, and a guest listing refused for it asks for an account
+  (`apps/desktop/src-tauri/src/network/DETAILS.md` § "Requiring SMB encryption").
+- Pinned by `src/volume/encryption_integration_test.rs` against the `auth` fixture (encrypts) and a guest session on the
+  `guest` fixture (can't), off and on (verified on smb2 0.41.0, Samba on Alpine, 2026-11-05). No fixture negotiates
+  below SMB 3.0, so "no cipher" rests on smb2's own unit tests.
 
 ## Re-rooting a share
 

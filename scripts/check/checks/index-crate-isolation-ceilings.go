@@ -154,9 +154,11 @@ var surfaceGuardedCrates = []struct {
 		// addresses proven one share): why, in that same DETAILS section.
 		// Root 16 -> 17 for `LinkConsents` (a DFS link's sign-in on another host needs a
 		// person's yes, and the app holds the record): why, in that same DETAILS section.
+		// Root 17 -> 18 for `SmbEncryption` (#932: "Always require SMB encryption", the
+		// app's setting OR the managed policy): why, in that same DETAILS section.
 		Name: "cmdr-smb",
 		Ceilings: surfaceCeilings{
-			RootPromises:   17,
+			RootPromises:   18,
 			PublicModules:  4,
 			SubsystemItems: 23,
 		},

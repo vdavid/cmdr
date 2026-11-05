@@ -39,11 +39,13 @@ pub fn classify_error(err: &smb2::Error) -> ShareListError {
     {
         return ShareListError::HostUnreachable { message };
     }
-    // By variant: `EncryptionRequired` shares its `Unsupported` kind and means something else
-    // (Cmdr required encryption the server can't give), but Cmdr never sets
-    // `ClientConfig::require_encryption`, so it can't arrive yet.
-    if let smb2::Error::EncryptionUnavailable { .. } = err {
-        return ShareListError::EncryptionUnavailable { message };
+    // By variant: the two share the `Unsupported` kind and mean different things. The
+    // server requiring encryption it couldn't agree on is the server's setting;
+    // `EncryptionRequired` is Cmdr's own (`SmbEncryption`).
+    match err {
+        smb2::Error::EncryptionUnavailable { .. } => return ShareListError::EncryptionUnavailable { message },
+        smb2::Error::EncryptionRequired => return ShareListError::EncryptionRequired { message },
+        _ => {}
     }
     match err.kind() {
         ErrorKind::AuthRequired => ShareListError::AuthRequired { message },
@@ -158,6 +160,23 @@ mod tests {
         assert!(matches!(
             classify_error(&err),
             ShareListError::EncryptionUnavailable { .. }
+        ));
+    }
+
+    /// Cmdr requiring encryption on a connection that can't have it (a guest session, or no
+    /// cipher). Its own answer, ❌ never `ProtocolError`, whose CLI fallback lists unencrypted,
+    /// and not an auth error, so no retry path reads it as "try other credentials".
+    #[test]
+    fn encryption_cmdr_requires_and_cannot_get_is_typed() {
+        let err = smb2::Error::EncryptionRequired;
+        assert!(!is_auth_error(&err));
+        assert!(matches!(
+            classify_error(&err),
+            ShareListError::EncryptionRequired { .. }
+        ));
+        assert!(matches!(
+            classify_authenticated_error(&err),
+            ShareListError::EncryptionRequired { .. }
         ));
     }
 

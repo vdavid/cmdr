@@ -51,12 +51,11 @@ pub(super) async fn build_session(
         // ordinary NAS pays nothing for this being on.
         dfs_enabled: true,
         dfs_target_overrides: dfs_target_overrides(),
-        dfs_target_policy: crate::link_consent::dfs_target_policy(),
         // Safe because Cmdr asks for no durable handles: on Windows 8.1+ this
         // also closes the old session's durable opens, which a client meaning to
         // reclaim one must keep.
         previous_session_id: replaces,
-        ..Default::default()
+        ..crate::encryption::session_config()
     };
     let mut client = crate::connection::connect_volume_client(config).await?;
     let tree = client.connect_share(&params.share_name).await?;

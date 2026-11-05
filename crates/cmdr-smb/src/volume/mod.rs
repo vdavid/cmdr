@@ -714,6 +714,8 @@ mod credit_cap_proxy;
 #[cfg(test)]
 mod dfs_links_integration_test;
 #[cfg(test)]
+mod encryption_integration_test;
+#[cfg(test)]
 mod forbidden_chars_integration_test;
 #[cfg(test)]
 mod host_seam_test;
