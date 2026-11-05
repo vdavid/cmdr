@@ -21,6 +21,9 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Dated records:**
 
+- `ci-gate-review-2026-11-05.md`: the adversarial review of the per-lane CI (lane markers, Rust test scope, runner
+  allowlist) before it landed: every false-green path it found, the fixes, and what it checked and found sound.
+
 - `docs/hackathon-submission.md`: what changed for OpenAI Build Week (2026) and how it was built. Kept for the record;
   nothing current depends on it.
 
