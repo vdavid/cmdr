@@ -1,0 +1,84 @@
+<!doctype html>
+<!-- Source of `sample-boarding-pass.pdf` (Documents/Travel/Boarding pass.pdf in the demo). Made up; PLACEHOLDER copy. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Boarding pass</title>
+    <link rel="stylesheet" href="sample-docs.css" />
+    <style>
+      .pass {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        margin-top: 12mm;
+        padding: 8mm;
+        border: 0.75pt solid #d0d7de;
+        border-radius: 8pt;
+        text-align: center;
+      }
+      .code {
+        font-size: 40pt;
+        font-weight: 800;
+        letter-spacing: 2pt;
+      }
+      .plane {
+        font-size: 22pt;
+        color: #0969da;
+      }
+      .bars {
+        height: 18mm;
+        margin-top: 12mm;
+        background: repeating-linear-gradient(
+          90deg,
+          #1f2328 0 2pt,
+          transparent 2pt 4pt,
+          #1f2328 4pt 5pt,
+          transparent 5pt 8pt
+        );
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="watermark">FAKE</div>
+      <div class="kicker">Example Air · Boarding pass</div>
+      <h1>Alex Example</h1>
+      <p class="muted">Booking EX4M2L</p>
+
+      <div class="pass">
+        <div>
+          <div class="code">ARN</div>
+          <p class="muted">Stockholm</p>
+        </div>
+        <div class="plane">✈</div>
+        <div>
+          <div class="code">LIS</div>
+          <p class="muted">Lisbon</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="kicker">Flight</div>
+          <div class="big">EX 1234</div>
+        </div>
+        <div>
+          <div class="kicker">Date</div>
+          <div class="big">2026-10-14</div>
+        </div>
+        <div>
+          <div class="kicker">Boarding</div>
+          <div class="big">07:25</div>
+        </div>
+        <div>
+          <div class="kicker">Gate · Seat</div>
+          <div class="big">F38 · 14A</div>
+        </div>
+      </div>
+
+      <div class="bars"></div>
+
+      <footer>A sample document for the Cmdr demo. Every name, number, and flight on it is made up.</footer>
+    </div>
+  </body>
+</html>
