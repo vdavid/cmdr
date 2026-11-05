@@ -155,8 +155,8 @@ The full top-level inventory is here:
   (Shuttle)"), `human_wait.rs` (how long a person, or a volume that left, has kept the operation waiting),
   `metadata_losses.rs` (per-class counts of the metadata a destination couldn't keep, for the completion's note:
   `src/transfer/volume/DETAILS.md` § "Copies keep the source's metadata"), `mount_boundary.rs` (where a delete's walk
-  stops: `src/delete/DETAILS.md` § "A mount is a wall"), `home_folder.rs` (the home folder no delete or trash removes:
-  `src/delete/DETAILS.md` § "The home folder stays"), `archive_edit/` (the zip-edit driver).
+  stops: `src/delete/DETAILS.md` § "A mount is a wall"), `home_folder.rs` (the home folder no delete, trash, move, or
+  rename touches: `src/delete/DETAILS.md` § "The home folder stays"), `archive_edit/` (the zip-edit driver).
 - The in-flight ledgers and what reverses them: `ledger.rs` (`CopyTransaction` and `WrittenFile`, the vocabulary of what
   an operation currently has at the destination, plus the `Drop` panic net) and `reversal.rs` (the policy over it: the
   recheck before each destructive act, and `ReversalTally`), plus `unblocked_removal.rs` (the one removal every reversal
@@ -1220,12 +1220,12 @@ the optional seams), what each seam's contract is, and where Cmdr answers it: `s
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to 89 root promises, 58 `Operations` methods, one public module (`host`), and
+`index-crate-isolation` holds this crate to 90 root promises, 59 `Operations` methods, one public module (`host`), and
 25 public items inside it (`scripts/check/checks/index-crate-isolation-ceilings.go`). The numbers are exactly what the
 crate exposes, measured with no headroom, so an addition has to be argued for. Everything counted exists for a named
 caller.
 
-Root promises (89), by who needs them:
+Root promises (90), by who needs them:
 
 - **The handle** (3): `Operations`, `OperationsBuilder` (from `Operations::builder`), and `AlreadyClaimed` (a second
   `claim_ledger`'s refusal).
@@ -1254,7 +1254,7 @@ Root promises (89), by who needs them:
   name refuses while the model can still fix the call. The alternative was a second copy of the rules app-side, which is
   how a proposal and the start would come to disagree; the function itself is an associated fn on the already-public
   `TransferLeaves`, so it costs no promise.
-- **The wire vocabulary** (42): the payloads, configs, and typed outcomes from `types` that cross IPC unchanged
+- **The wire vocabulary** (43): the payloads, configs, and typed outcomes from `types` that cross IPC unchanged
   (`WriteOperationConfig`, `VolumeCopyConfig`, `WriteOperationError`, the `Write*Event` and `ScanPreview*Event`
   payloads, `ConflictResolution`, `LifecycleStatus`, `OperationStatus`, …). The Locked-items question added three (its
   event, `LockedSourcesAnswer`, and `LockedSourcesAnswerOutcome`), the same shape as the sources-gone question's.
@@ -1263,11 +1263,12 @@ Root promises (89), by who needs them:
   take a partly counted folder's floor for its size, which is how a 40 GB folder read as 12 KB on the replace prompt
   (#528). `TransferLeaves` is the type of both transfer configs' `leaves` field: on the wire it's the single
   `destinationName`, and the per-source map only Rust builds (the agent's approval bridge, and the app's SMB and MTP
-  filing cells) needs its constructor named. `ipc.rs` registers them; `bindings.ts` is generated from them, so none can
-  go private without the frontend losing a type.
+  filing cells) needs its constructor named. `HomeFolderAction` is `check_home_folder_guard`'s argument (the home-folder
+  guard below). `ipc.rs` registers them; `bindings.ts` is generated from them, so none can go private without the
+  frontend losing a type.
 - **`host`** (1): the public module below.
 
-`Operations` methods (58), grouped by caller below. The two `testing`-gated ones (`render_live_transfer_dump` and
+`Operations` methods (59), grouped by caller below. The two `testing`-gated ones (`render_live_transfer_dump` and
 `route_archive_copy_into`) count apart. Each IPC command, MCP tool, and quit step is a one-line pass-through, so the
 verbs read one-to-one:
 
@@ -1281,8 +1282,10 @@ verbs read one-to-one:
   file), `rename_managed`, `check_rename_validity_impl` (priced app-side into the wire answer), and
   `check_rename_permission_for_volume`.
 - **Previews and pre-flight**: `start_scan_preview`, `cancel_scan_preview`, `get_scan_preview_totals`,
-  `cached_cost_facts`, `scan_volume_for_conflicts_within`, and the agent bridge's `resolve_source_volume` and
-  `unregistered_source_error`.
+  `cached_cost_facts`, `scan_volume_for_conflicts_within`, the agent bridge's `resolve_source_volume` and
+  `unregistered_source_error`, and `home_folder_guard`: whether a delete, move, or rename would be refused for the
+  person's own home folder, asked BEFORE its confirm dialog or the rename editor renders (`home_folder.rs`). No verb
+  answers that without starting something, and a frontend copy of the rule would drift from what MCP meets.
 - **The queue and one operation's controls**: `list_operations`, `latest_operation_progress`, `get_operation_status`,
   `operations_need_volume`, `cancel_operation`, `cancel_operations`, `cancel_write_operation`, `pause_operation`,
   `resume_operation`, `pause_all`, `resume_all`, `move_queued_operation`, `place_queued_operation`,

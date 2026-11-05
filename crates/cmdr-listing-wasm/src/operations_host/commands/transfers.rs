@@ -9,9 +9,9 @@ use cmdr_fs::deadline::{Deadline, TimedOut};
 use cmdr_fs::volume::{SpaceInfo, WriteAccess};
 use cmdr_operation_log::types::{Initiator, OperationId};
 use cmdr_operations::{
-    CONFLICT_CHECK_BUDGET, ConflictId, ConflictResolution, ConflictResolutionOutcome, LockedSourcesAnswer,
-    LockedSourcesAnswerOutcome, ScanPreviewPurpose, SourceItemInput, SourcesGoneAnswerOutcome, TrashRoutingAnswer,
-    VolumeCopyConfig, WriteOperationConfig, resolve_dest_path,
+    CONFLICT_CHECK_BUDGET, ConflictId, ConflictResolution, ConflictResolutionOutcome, HomeFolderAction,
+    LockedSourcesAnswer, LockedSourcesAnswerOutcome, ScanPreviewPurpose, SourceItemInput, SourcesGoneAnswerOutcome,
+    TrashRoutingAnswer, VolumeCopyConfig, WriteOperationConfig, resolve_dest_path,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -28,6 +28,7 @@ pub(super) const NAMES: &[&str] = &[
     "delete_files",
     "trash_files",
     "trash_routing_for_paths",
+    "check_home_folder_guard",
     "cancel_write_operation",
     "start_scan_preview",
     "cancel_scan_preview",
@@ -127,6 +128,12 @@ impl DemoOperations {
             // No cloud folder holds anything online-only here: the trash answer, as
             // the desktop's timeout default is.
             "trash_routing_for_paths" => ok(TrashRoutingAnswer::TRASH),
+            "check_home_folder_guard" => {
+                let a: HomeFolderGuardArgs = parse(command, args)?;
+                let volume_id = a.volume_id.unwrap_or_else(|| self.volume_id.clone());
+                let sources: Vec<PathBuf> = a.sources.iter().map(PathBuf::from).collect();
+                ok(e.home_folder_guard(&volume_id, &sources, a.action))
+            }
             "cancel_write_operation" => {
                 let a: CancelArgs = parse(command, args)?;
                 e.cancel_write_operation(&OperationId::from(a.operation_id), a.rollback);
@@ -266,6 +273,14 @@ struct ScanPreviewArgs {
     source_volume_id: Option<String>,
     progress_interval_ms: Option<u64>,
     purpose: ScanPreviewPurpose,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct HomeFolderGuardArgs {
+    sources: Vec<String>,
+    volume_id: Option<String>,
+    action: HomeFolderAction,
 }
 
 #[derive(Deserialize)]

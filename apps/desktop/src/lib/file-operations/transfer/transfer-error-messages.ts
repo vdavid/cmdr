@@ -21,7 +21,13 @@ import type {
   FriendlyError,
   PermissionRefusal,
 } from '#lib/file-explorer/types.js'
-import type { HomeFolderRelation, MountedVolumeAction, StagedLeftovers, TrashRefusalKind } from '#lib/ipc/bindings.js'
+import type {
+  HomeFolderAction,
+  HomeFolderRelation,
+  MountedVolumeAction,
+  StagedLeftovers,
+  TrashRefusalKind,
+} from '#lib/ipc/bindings.js'
 import { fdaIsMissing } from '#lib/onboarding/fda-status.svelte.js'
 import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
 import { w, type FriendlyErrorMessage } from './transfer-error-catalog'
@@ -636,13 +642,26 @@ function otherFieldDrivenMessage(error: WriteOperationError): FriendlyErrorMessa
  * carrying its files off. A move can refuse either of the last two, so the
  * operation type can't pick.
  */
+/** Each action reads differently: a delete loses the files, a move or a rename
+ *  leaves macOS looking for the account in the wrong place. */
+const HOME_FOLDER_FAMILY: Record<HomeFolderAction, string> = {
+  delete: 'homeFolder',
+  move: 'homeFolderMove',
+  rename: 'homeFolderRename',
+}
+
 /** The home-folder refusal's copy, shared by the error dialog and the delete
- *  dialog's up-front refusal. `path` lands inside `<code>`, escaped. */
-export function homeFolderMessage(path: string, relation: HomeFolderRelation): FriendlyErrorMessage {
+ *  dialog's backstop refusal. `path` lands inside `<code>`, escaped. */
+export function homeFolderMessage(
+  path: string,
+  relation: HomeFolderRelation,
+  action: HomeFolderAction,
+): FriendlyErrorMessage {
+  const family = HOME_FOLDER_FAMILY[action]
   return {
-    title: w('homeFolder.title'),
-    message: w(`homeFolder.message.${relation}`, { path: escapeHtml(path) }),
-    suggestion: w(`homeFolder.suggestion.${relation}`),
+    title: w(`${family}.title`),
+    message: w(`${family}.message.${relation}`, { path: escapeHtml(path) }),
+    suggestion: w(`${family}.suggestion.${relation}`),
   }
 }
 
@@ -731,7 +750,7 @@ function operationWordedMessage(
     // delete dialog shows when it refuses up front (`DeleteDialog.svelte`); this is
     // the path for a start that skipped the dialog (MCP, an AI suggestion).
     case 'home_folder':
-      return homeFolderMessage(error.path, error.relation)
+      return homeFolderMessage(error.path, error.relation, error.action)
     // Names given per item (an approved suggestion) that can't all be used. One
     // sentence per rule, since each has its own way out, and none varies by
     // operation: nothing started.

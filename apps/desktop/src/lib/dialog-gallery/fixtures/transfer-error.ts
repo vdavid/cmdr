@@ -327,7 +327,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   // A permanent delete an agent started on the person's own home folder.
   home_folder: {
     operationType: 'delete',
-    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome' },
+    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'delete' },
   },
   // A move within an S3 account whose source another app replaced mid-copy.
   source_changed: {
@@ -490,7 +490,27 @@ const extraStates: Record<string, TransferErrorFixture> = {
   // A trash of `/Users`, which holds the home folder.
   'home_folder-holds': {
     operationType: 'trash',
-    error: { type: 'home_folder', path: '/Users', relation: 'holdsHome' },
+    error: { type: 'home_folder', path: '/Users', relation: 'holdsHome', action: 'delete' },
+  },
+  // A move of the home folder onto an external drive.
+  'home_folder-move': {
+    operationType: 'move',
+    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'move' },
+  },
+  // A move of `/Users`, which holds the home folder.
+  'home_folder-move-holds': {
+    operationType: 'move',
+    error: { type: 'home_folder', path: '/Users', relation: 'holdsHome', action: 'move' },
+  },
+  // F2 on the home folder.
+  'home_folder-rename': {
+    operationType: 'move',
+    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'rename' },
+  },
+  // F2 on `/Users`.
+  'home_folder-rename-holds': {
+    operationType: 'move',
+    error: { type: 'home_folder', path: '/Users', relation: 'holdsHome', action: 'rename' },
   },
   'files_too_large_for_filesystem-single': {
     operationType: 'copy',

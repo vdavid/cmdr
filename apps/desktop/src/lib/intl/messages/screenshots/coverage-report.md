@@ -16,7 +16,7 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 3842 / 5569 keys have a screenshot (69%):** 2076 direct (37%) and 1766 representative (32%). 1535 remain
+**Total: 3852 / 5580 keys have a screenshot (69%):** 2076 direct (37%) and 1776 representative (32%). 1536 remain
 uncoupled, and 192 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
@@ -30,7 +30,7 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
 | errorReporter   |     16 |              0 |        43 |      0 |    59 |   27% |
-| errors          |    157 |            486 |         0 |      0 |   643 |  100% |
+| errors          |    157 |            496 |         0 |      0 |   653 |  100% |
 | feedback        |      8 |              6 |         2 |      0 |    16 |   88% |
 | fileExplorer    |    162 |             82 |       312 |      0 |   556 |   44% |
 | fileOperations  |    141 |             88 |       112 |      0 |   341 |   67% |
@@ -56,7 +56,7 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | stateRecovery   |      0 |              0 |        33 |      0 |    33 |    0% |
 | suggestedOps    |     85 |              0 |        25 |      0 |   110 |   77% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |
-| ui              |     10 |              0 |        54 |      0 |    64 |   16% |
+| ui              |     10 |              0 |        55 |      0 |    65 |   15% |
 | updates         |      6 |             26 |         0 |      0 |    32 |  100% |
 | viewer          |     30 |             97 |         0 |      0 |   127 |  100% |
 | whatsNew        |      8 |              1 |         2 |      0 |    11 |   82% |

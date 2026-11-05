@@ -1,9 +1,12 @@
-//! The delete nobody gets: the person's own home folder, or a folder that holds
-//! it (`/Users`, `/`). Delete and trash refuse it at their start
-//! (`write_start.rs`), and the delete dialog's scan preview refuses it before
-//! walking (`scan_preview.rs`), so the dialog says why and offers no Delete
-//! button. Every caller (a person, MCP, an AI suggestion) reaches the engine
-//! through those starts, so none slips past.
+//! What nobody does to the person's own home folder, or a folder that holds it
+//! (`/Users`, `/`): delete or trash it (the files go), or move or rename it
+//! (macOS then looks for the account in the wrong place; a move onto another
+//! volume is copy-then-delete besides). Each start refuses it typed
+//! (`write_start.rs`, `routing.rs`, `rename.rs`, `rename/bulk/by_move.rs`), so
+//! every caller (a person, MCP, an AI suggestion) hits it. The frontend asks
+//! [`Operations::home_folder_guard`] BEFORE it opens a confirm dialog or the
+//! rename editor, so no confirm UI ever shows for a refused one; the delete
+//! dialog's scan preview refuses too (`scan_preview.rs`), a backstop.
 //!
 //! The home folder is the host's answer (`OperationsBuilder::home_folder`): the
 //! app's real one, the browser demo's `/Users/you`. Only the default volume holds
@@ -24,7 +27,8 @@ use std::path::{Component, Path, PathBuf};
 
 use super::Operations;
 use super::local_disk::file_id;
-use super::types::HomeFolderRelation;
+use super::mutation_error::MutationError;
+use super::types::{HomeFolderAction, HomeFolderRelation, WriteOperationError};
 
 /// A source that names the home folder, or a folder holding it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,6 +52,35 @@ impl Operations {
         let home = self.host().home_folder()?;
         let on_disk = self.host().volumes().local_disk(volume_id).is_some();
         home_folder_hit(home, sources, on_disk)
+    }
+
+    /// The typed refusal `action` on `sources` (on `volume_id`) would meet for the
+    /// home folder's sake, or `None` when it may go ahead. Cheap: a lexical
+    /// compare, plus an `lstat` per source and a `stat` per folder above the home
+    /// on the local disk. The frontend asks it before any confirm UI renders.
+    pub fn home_folder_guard(
+        &self,
+        volume_id: &str,
+        sources: &[PathBuf],
+        action: HomeFolderAction,
+    ) -> Option<WriteOperationError> {
+        self.home_folder_hit(volume_id, sources)
+            .map(|hit| WriteOperationError::HomeFolder {
+                path: hit.path,
+                relation: hit.relation,
+                action,
+            })
+    }
+
+    /// [`Self::home_folder_guard`] for an instant rename, as its typed refusal.
+    pub(crate) fn home_folder_rename_guard(&self, volume_id: &str, from: &Path) -> Result<(), MutationError> {
+        match self.home_folder_hit(volume_id, &[from.to_path_buf()]) {
+            Some(hit) => Err(MutationError::HomeFolder {
+                path: hit.path,
+                relation: hit.relation,
+            }),
+            None => Ok(()),
+        }
     }
 }
 

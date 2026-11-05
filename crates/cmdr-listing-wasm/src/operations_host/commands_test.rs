@@ -456,6 +456,33 @@ async fn the_home_folder_and_its_holders_refuse_delete() {
         assert_eq!(preview["type"], "home_folder", "{source}: {preview}");
     }
 
+    // The dialogs ask first, so no confirm UI shows for a refused one.
+    for action in ["delete", "move", "rename"] {
+        let answer = call(
+            &demo,
+            "check_home_folder_guard",
+            json!({ "sources": ["/Users"], "volumeId": "root", "action": action }),
+        )
+        .await;
+        assert_eq!(answer["type"], "home_folder", "{action}: {answer}");
+        assert_eq!(answer["action"], action, "{answer}");
+        let clear = call(
+            &demo,
+            "check_home_folder_guard",
+            json!({ "sources": ["/Users/guest"], "volumeId": "root", "action": action }),
+        )
+        .await;
+        assert!(clear.is_null(), "{action}: {clear}");
+    }
+    let moved = demo
+        .invoke(
+            "move_files",
+            json!({ "sources": ["/Users/you"], "destination": "/Users/guest", "initiator": "user" }),
+        )
+        .await
+        .expect_err("a move of the home folder refuses");
+    assert_eq!(moved["action"], "move", "{moved}");
+
     // Another user's home folder deletes as before.
     let deleted = call(
         &demo,

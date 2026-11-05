@@ -887,6 +887,504 @@ export const commands = {
    */
   trashRoutingForPaths: (sources: string[]) =>
     __TAURI_INVOKE<TrashRoutingAnswer>('trash_routing_for_paths', { sources }),
+  /**
+   *  The refusal a delete, move, or rename of `sources` would meet for the person's
+   *  own home folder's sake, or `None` when it may go ahead (`cmdr-operations`'
+   *  `home_folder.rs`). Asked before a confirm dialog or the rename editor opens,
+   *  so no confirm UI ever shows for one the engine would refuse. Cheap: a path
+   *  compare plus a few `stat`s. Before `install` there's no engine, so nothing
+   *  to refuse with yet; the start itself refuses then.
+   */
+  checkHomeFolderGuard: (sources: string[], volumeId: string | null, action: HomeFolderAction) =>
+    __TAURI_INVOKE<
+      | { type: 'source_not_found'; path: string }
+      /**
+       *  The destination folder isn't there (or the volume can't address it), so
+       *  there was nowhere to put anything. Kept SEPARATE from `SourceNotFound`
+       *  because the two send the user to opposite places: a missing source reads
+       *  as "your file is gone" and starts a hunt for data loss, when the file is
+       *  sitting untouched and it's the target folder that's missing. Which one a
+       *  `VolumeError::NotFound` becomes is decided by the `PathRole` the caller
+       *  passes to `map_volume_error`, never guessed from the path.
+       */
+      | { type: 'destination_not_found'; path: string }
+      /**
+       *  The destination folder couldn't be created because something that isn't
+       *  a folder sits where it, or one of the folders above it, has to be.
+       *  Refused before anything is written, by the volume engines
+       *  (`VolumeError::NotADirectory` out of `create_directory_all`) and the
+       *  local one (`ensure_destination_dir`) alike.
+       *
+       *  ❗ `path` is the thing IN THE WAY, which is often an ancestor of the
+       *  folder the user typed. It is the whole point of the variant: as a
+       *  `DestinationNotFound` or a generic `IoError` the dialog named the folder
+       *  Cmdr was asked to create, or nothing, and the file to move aside was
+       *  never mentioned.
+       */
+      | { type: 'destination_not_a_folder'; path: string }
+      /**
+       *  The volume holding the sources is a phone its provider lists, or a saved
+       *  server, that nothing has connected yet, so no volume answers for it.
+       *  Refused before anything is read. `path` is the first source as the
+       *  caller sent it.
+       *
+       *  ❌ Never `DeviceDisconnected`, which tells the user a session dropped
+       *  mid-operation, and ❌ never a "volume not found", which reads as a place
+       *  that's gone. Opening it in a pane is what connects it.
+       */
+      | { type: 'source_not_connected'; path: string }
+      /**
+       *  The destination is a phone its provider lists, or a saved server, that
+       *  nothing has connected yet. Refused before anything is written. Same
+       *  wording rules as `SourceNotConnected`; the two stay separate for the same
+       *  reason `SourceNotFound` and `DestinationNotFound` do.
+       */
+      | { type: 'destination_not_connected'; path: string }
+      /**
+       *  The volume holding the sources left the registry, and nothing lists or
+       *  saves it any more: a phone that was unplugged, or a server that went
+       *  away, typically under a search-results pane still showing its files.
+       *  Refused before anything is read. `path` is the first source as the
+       *  caller sent it.
+       *
+       *  ❌ Never `SourceNotConnected`: there's no row to open, so "open it from
+       *  the volume switcher" would send the user looking for one. ❌ Never a bare
+       *  "volume not found" either, which names an internal id.
+       */
+      | { type: 'source_no_longer_connected'; path: string }
+      // Overwrite not enabled.
+      | { type: 'destination_exists'; path: string }
+      /**
+       *  A write the OS refused on permission grounds.
+       *
+       *  ❗ Build it with [`WriteOperationError::permission_denied`], ❌ never as a
+       *  literal. `refusal` is `errno` read as advice and the two must agree; a
+       *  hand-written pair ships a sentence that contradicts the number under it,
+       *  and later stops the elevated-operations engine from recognizing a refusal
+       *  root could fix. All four construction sites go through the constructor.
+       *  Full rationale: `crates/cmdr-operations/DETAILS.md` § "Naming the folder that
+       *  refused a write".
+       */
+      | {
+          type: 'permission_denied'
+          // What was being written when the refusal came back.
+          path: string
+          // The OS's own sentence, for the technical-details block ONLY.
+          message: string
+          /**
+           *  The OS's number for the refusal, so a bug report keeps it. `None` for a
+           *  backend that raises its own refusal with no errno behind it.
+           */
+          errno: number | null
+          // What that errno says about administrator rights, derived from it.
+          refusal: PermissionRefusal
+          /**
+           *  The folder that refuses writes, PROVED with `access(W_OK)` at the
+           *  refusal (`error_classification::refusing_folder`).
+           *
+           *  ❗ `None` when nothing could be proved, and the message then stays the
+           *  generic one. ❌ Never fill it in from the operation's shape: a
+           *  `rename(2)` needs both parents and its errno says nothing about which
+           *  one refused, which is how a refused move came to tell a user to check
+           *  the destination when it was the source folder that said no.
+           */
+          refusedFolder: string | null
+          // Which half of the transfer refused, when the refusing site knows.
+          side: PermissionSide | null
+        }
+      /**
+       *  The destination has no room for the transfer, MEASURED before anything was
+       *  written, so both numbers are real.
+       *
+       *  ❌ Never build one without measuring: a write the destination refused for
+       *  lack of room is [`DestinationFull`](Self::DestinationFull), which carries no
+       *  sizes, so the dialog can't say "needs 0 bytes but only has 0 bytes".
+       */
+      | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }
+      /**
+       *  The destination ran out of room (or of quota) partway through, found out
+       *  from the write it refused (`ENOSPC`, `EDQUOT`, a backend's `StorageFull`).
+       *  Nothing was measured, so there are no sizes to show. `path` is the item
+       *  being written when it happened, for the technical details.
+       */
+      | { type: 'destination_full'; path: string }
+      // Would cause infinite recursion.
+      | { type: 'destination_inside_source'; source: string; destination: string }
+      /**
+       *  Two of the selected items carry the same name, so they would land on one
+       *  destination path and fight over it. Refused before anything is written:
+       *  a cross-filesystem move stages both under that one name, and whichever
+       *  arrives second meets the first one's files instead of an empty slot.
+       *  Carries both paths, so the message can show which two clashed.
+       */
+      | { type: 'duplicate_source_names'; name: string; first: string; second: string }
+      /**
+       *  The names a transfer gave its items one by one can't all be honoured,
+       *  so it refused before anything was admitted or written. `reason` says
+       *  which rule, and `path` is the item, landing path, or destination that
+       *  rule is about.
+       */
+      | { type: 'named_leaves_refused'; path: string; reason: NamedLeavesRefusal }
+      /**
+       *  The selected items aren't all served by one volume: some sit on the drive
+       *  and some inside a read-only view of it (a backup repo's `Browse snapshots`,
+       *  a repository's virtual `.git` folders, the inside of an archive), and one
+       *  transfer reads through one volume. Refused before anything is read or
+       *  written. `path` is the first item served by a different volume than the
+       *  first one, so the message can name what to leave out.
+       */
+      | { type: 'sources_span_volumes'; path: string }
+      /**
+       *  A delete, an Overwrite, or a move onto another volume reached a folder
+       *  another drive, disk image, or server is mounted on, inside the selection
+       *  or as the selection itself. Refused before anything is removed or
+       *  copied, as Finder does: going on would empty that volume, often a NAS
+       *  other people use. `mount_point` is where it's mounted, so the message
+       *  can say which one to eject; `action` is what the operation would have
+       *  done to it.
+       */
+      | { type: 'mounted_volume_inside'; mountPoint: string; action: MountedVolumeAction }
+      /**
+       *  A delete, trash, move, or rename named the person's own home folder, or a
+       *  folder that holds it. Refused before anything is read, moved, or removed,
+       *  whoever asked (a person, MCP, or an AI suggestion): `home_folder.rs`.
+       *  `path` is the source as the caller sent it, tilde expanded; `action` is
+       *  what was stopped. Other people's home folders stay untouched by this.
+       */
+      | { type: 'home_folder'; path: string; relation: HomeFolderRelation; action: HomeFolderAction }
+      /**
+       *  A fresh ZIP would hold an entry the archive reader quarantines: a name
+       *  that climbs out of the archive (a macOS `..\notes.txt` reads as
+       *  `../notes.txt`), nests too deep, or turns into nothing. Refused from the
+       *  plan, before a byte is compressed. `entry` is the name as it would be
+       *  written, so the message can say which file.
+       */
+      | { type: 'archive_entry_name_refused'; entry: string; reason: ArchiveNameRefusal }
+      /**
+       *  Two planned fresh-ZIP entries read back as one archive path, so one
+       *  would shadow the other (`a\b.txt` next to a real `a/b.txt`: the reader
+       *  treats `\` as a separator). Refused from the plan, before a byte is
+       *  compressed.
+       */
+      | {
+          type: 'archive_entry_names_collide'
+          entry: string
+          other: string
+          // Where both would land inside the archive.
+          archivePath: string
+        }
+      /**
+       *  The zip being edited holds two entries under one name. The rewrite
+       *  copies through a library that keeps only the later one, so the earlier
+       *  copy would silently go (Cmdr's reader shows only the later one too, but
+       *  other tools show both). Refused before anything is written. `path` is
+       *  the zip, `name` the shared entry name, `None` when the reader couldn't
+       *  parse the zip to say which.
+       */
+      | { type: 'archive_duplicate_entry_name'; path: string; name: string | null }
+      /**
+       *  The edit would have to keep a password-protected entry of the zip in a
+       *  scheme the rewrite can't copy intact (ZipCrypto and WinZip AES copy fine;
+       *  see `cmdr_archive`'s `MutationError::EncryptedEntryRetained`). Refused
+       *  before anything is written; deleting the entry is fine. `path` is the
+       *  zip, `name` the entry.
+       */
+      | { type: 'archive_encrypted_entry'; path: string; name: string }
+      /**
+       *  The edit would leave an entry of the zip under a FILE entry (`notes/a.txt`
+       *  beside a file `notes`), which every reader drops, so it would sit in the
+       *  zip unseen. Refused before anything is written. The copy-into planner
+       *  asks about that clash first, so this is the backstop. `path` is the zip,
+       *  `entry` the entry that would sit under `file`, both inner paths.
+       */
+      | { type: 'archive_entry_under_file'; path: string; entry: string; file: string }
+      | { type: 'symlink_loop'; path: string }
+      | { type: 'cancelled'; message: string }
+      /**
+       *  Device was disconnected during the operation (USB, MTP, etc.).
+       *
+       *  `side` says WHICH of the transfer's two volumes left, named as it was
+       *  when the operation started: the frontend's volume list drops an unmounted
+       *  volume, so by the time this is worded nothing can look the name up any
+       *  more. `None` for a backend disconnect with no typed sides behind it (MTP,
+       *  SMB), where the copy stays the volume-agnostic one.
+       */
+      | { type: 'device_disconnected'; path: string; side: DisconnectedSide | null }
+      /**
+       *  A move's closing flush couldn't prove the copied files were on disk, so
+       *  the move kept every source where it was.
+       *
+       *  `path` is what the flush was syncing and `errno` the OS's number for why
+       *  it wouldn't; both come from `durability::FlushFailure`. `volume_name` is
+       *  the destination volume as the transfer captured it at start.
+       */
+      | { type: 'move_not_confirmed'; path: string; errno: number | null; volumeName: string | null }
+      /**
+       *  A device or volume refused a write, and [`ReadOnlySide`] says WHICH half
+       *  of the transfer it was.
+       *
+       *  ❗ The side is load-bearing for the sentence the user reads: a move OFF a
+       *  read-only source is refused because the source has no delete to pair with
+       *  the copy, and telling that user to "choose a different destination" sends
+       *  them to fix the half that was fine.
+       */
+      | { type: 'read_only_device'; path: string; deviceName: string | null; side: ReadOnlySide }
+      /**
+       *  The destination folder takes no writes, found out BEFORE anything was
+       *  created or measured (`Volume::write_access_at`).
+       *
+       *  ❗ About the FOLDER, never the device: a phone's `/` refuses writes while
+       *  its shared storage takes them, so "the phone is read-only" would be a lie.
+       *  `reason` carries only what the backend can tell apart; a backend that
+       *  can't tell read-only from no permission says `Unexplained`.
+       */
+      | { type: 'destination_not_writable'; path: string; reason: UnwritableReason }
+      // File is locked (macOS immutable flag, "Operation not permitted" on delete).
+      | { type: 'file_locked'; path: string }
+      // Volume doesn't support trash (network mounts, FAT, etc.).
+      | { type: 'trash_not_supported'; path: string }
+      // Network connection was interrupted or timed out.
+      | { type: 'connection_interrupted'; path: string }
+      /**
+       *  The file sits behind a link to another server (a DFS link in an SMB share),
+       *  and nobody has allowed signing in there, so nothing went to it. Opening the
+       *  folder in a pane is where a person can.
+       */
+      | {
+          type: 'link_needs_consent'
+          path: string
+          // The server the share is on.
+          server: string
+          // The other server the link leads to.
+          target: string
+        }
+      /**
+       *  The connection to a SERVER (SMB, SFTP, WebDAV, S3) ended the operation:
+       *  Cmdr waited for it to come back and gave up, or couldn't wait at all.
+       *  The connection is the cause; `path` (the file it was on) is context only.
+       *
+       *  ❗ Only the outage wait's verdict builds it (`volume_outage::lost_connection`,
+       *  from typed facts: a transport fault, a session that reads not live, a
+       *  backend that's a server), ❌ never a path or a message. A phone (MTP, ADB)
+       *  or a local drive keeps `DeviceDisconnected`: unplugged is a device, not a
+       *  server.
+       */
+      | {
+          type: 'server_connection_lost'
+          path: string
+          // The server's volume, named as it was when the operation stopped.
+          volumeName: string
+          /**
+           *  How long Cmdr waited for it before stopping, in whole seconds. `None`
+           *  when it didn't wait this time (a sign-in only a person can give, or
+           *  a file that had already ridden out its share of outages).
+           */
+          gaveUpAfterSecs: number | null
+        }
+      /**
+       *  A delete waited out a dropped connection, and the item it was about to
+       *  delete again no longer matches what its walk listed (another kind, or
+       *  another size): someone put a different file there meanwhile. The delete
+       *  left it and stopped; everything it deleted before stays deleted.
+       *
+       *  ❗ Only `delete/outage.rs`'s re-check builds it, from the listed kind and
+       *  size against a fresh stat, ❌ never a guess: a delete has no rollback.
+       */
+      | {
+          type: 'changed_while_disconnected'
+          path: string
+          /**
+           *  The volume whose connection dropped, named as it was when the
+           *  delete stopped.
+           */
+          volumeName: string
+        }
+      /**
+       *  A server's reply on a signed session carried a bad or missing signature, so Cmdr refused
+       *  it and stopped (`VolumeError::SignatureInvalid`, SMB-only today). Its own variant so the
+       *  stopped state can say so: it's a possible sign of tampering between the Mac and the
+       *  server (or a broken network device), ❌ never a blip to retry. `message` is the backend's
+       *  diagnostic, for the technical details only.
+       */
+      | { type: 'reply_signature_refused'; path: string; message: string }
+      // Couldn't read from the source.
+      | { type: 'read_error'; path: string; message: string }
+      // Couldn't write to the destination.
+      | { type: 'write_error'; path: string; message: string }
+      // File name exceeds the destination filesystem's length limit.
+      | { type: 'name_too_long'; path: string }
+      // File name contains characters not allowed at the destination.
+      | { type: 'invalid_name'; path: string; message: string }
+      /**
+       *  The file is in `STATUS_DELETE_PENDING` on the server: a delete was requested
+       *  but at least one open handle is keeping it alive. Transient — clears when the
+       *  last handle closes. SMB-only today.
+       */
+      | { type: 'delete_pending'; path: string }
+      /**
+       *  The source file is archived in cold storage (S3 Glacier Flexible
+       *  Retrieval or Deep Archive) and can't be read until someone restores it.
+       *  Not transient: a retry meets the same archived object.
+       */
+      | { type: 'source_in_cold_storage'; path: string }
+      /**
+       *  The source changed while the copy read it (an S3 server-side copy saw
+       *  it replaced, or its stream delivered more or fewer bytes than its
+       *  declared length), so the copy landed nothing that could mix two
+       *  versions or miss a part. A move left the source in place. A retry
+       *  copies the version that's there now.
+       */
+      | { type: 'source_changed'; path: string }
+      /**
+       *  One or more files exceed the destination filesystem's per-file size
+       *  limit (FAT32's 4 GiB cap). Detected during the pre-copy scan, before any
+       *  bytes are written, so the whole operation is blocked all-or-nothing
+       *  rather than failing partway through.
+       */
+      | {
+          type: 'files_too_large_for_filesystem'
+          // The destination filesystem, so the message can name it ("FAT32").
+          filesystem: FilesystemKind
+          // The per-file ceiling in bytes (FAT32: 4 GiB − 1).
+          maxSize: number
+          // Up to 10 offending files (name + size), largest first.
+          files: OversizedFile[]
+          // Total number of offending files (may exceed `files.len()`).
+          totalCount: number
+        }
+      /**
+       *  Reading a copy/move source needs a password: the source is inside an
+       *  encrypted archive or a locked restic repo. `container` says which one
+       *  asked, so the FE words the prompt and picks its unlock flow from it (a 7z
+       *  inside a restic snapshot is an archive, though its path runs through the
+       *  repo). `wrong_attempt` is `true` when the stored password was rejected (so
+       *  the FE re-prompts rather than prompting fresh). The FE supplies the
+       *  password via `unlock_container` and retries the operation.
+       */
+      | { type: 'archive_needs_password'; path: string; container: LockedContainer; wrongAttempt: boolean }
+      /**
+       *  A cross-volume Overwrite wrote the new file completely, then couldn't give
+       *  it the destination's name, and the destination it was replacing is
+       *  already gone (the safe-replace deletes it between the last byte and the
+       *  rename). The new data is intact at `kept_at`, under a ` (recovered)` name.
+       *
+       *  ❗ `kept_at` is the whole point of the variant: it is the only place the
+       *  user's new file exists, and a message that doesn't name it leaves them
+       *  hunting. Typed so nothing has to parse it back out of prose.
+       */
+      | {
+          type: 'new_data_kept_at'
+          // The name the file was meant to take.
+          path: string
+          // Where the complete new data is right now.
+          keptAt: string
+          // What the destination said when the rename was refused.
+          message: string
+        }
+      /**
+       *  A replace refused before it cleared anything: Cmdr couldn't confirm its
+       *  note of the landing on disk (the in-flight ledger's writer is gone, or
+       *  the log refused the line), and without it a crash after the clearing
+       *  delete would leave the only copy of the new bytes on a temp nothing
+       *  protects. Whatever held `path` is still there, and the temp is gone.
+       *
+       *  ❗ Its own variant, ❌ never an `IoError` with prose: the dialog tells the
+       *  user the file was left alone, and the backend carries no sentence.
+       */
+      | {
+          type: 'landing_not_recorded'
+          // The name the new file was meant to take, still holding what was there.
+          path: string
+        }
+      /**
+       *  The operation failed, and a folder that was replacing one of the user's
+       *  files had already taken its name. Everything that landed is kept, so the
+       *  folder stays; the file it displaced is beside it under a ` (recovered)`
+       *  name rather than being thrown away with the aside.
+       *
+       *  ❗ `recovered` is the whole point of the variant, and it is never empty:
+       *  nothing else in the app tells the user their file changed names. `cause`
+       *  carries what actually failed, so the dialog keeps that error's own advice
+       *  (a full disk still says "free up space") instead of flattening every
+       *  failure into one sentence.
+       */
+      | { type: 'originals_kept_aside'; cause: WriteOperationError; recovered: RecoveredOriginal[] }
+      /**
+       *  A cross-volume move whose copy landed COMPLETELY and whose original could
+       *  not be removed. Nothing is lost and nothing is broken: the item now exists
+       *  at both ends.
+       *
+       *  ❗ Its own variant, never a flag on the refusal, because the fact the user
+       *  needs is different in kind: "the move failed" makes them conclude nothing
+       *  happened, and the next attempt then walks into a conflict with the copy
+       *  that did land (cmdr-reports#17). The way out is theirs: remove the
+       *  original, or fix what refused and remove it. `cause` is what refused the
+       *  delete (a locked file, a busy one, a read-only source, an SMB
+       *  `DeletePending`), so its own advice survives, the same shape as
+       *  [`OriginalsKeptAside`](Self::OriginalsKeptAside).
+       */
+      | {
+          type: 'source_not_removed'
+          /**
+           *  The original that stayed. For a folder, the item inside it that
+           *  refused to go.
+           */
+          path: string
+          // Where the complete copy is.
+          landedAt: string
+          cause: WriteOperationError
+        }
+      /**
+       *  The operation failed, and on its way to stopping it kept new files the
+       *  person has to know about: complete files waiting for their names until
+       *  the destination is back, or ones saved under a ` (recovered)` name
+       *  because they couldn't take their own. Without it, someone finds their
+       *  original gone and a scratch or ` (recovered)` file beside it with no word
+       *  about it.
+       *
+       *  ❗ `kept` is never empty and holds only the fates with new data in them
+       *  (`StagedLeftoverFate::holds_new_data`). `cause` is what actually failed,
+       *  so its own advice survives, the same shape as
+       *  [`OriginalsKeptAside`](Self::OriginalsKeptAside).
+       */
+      | { type: 'new_files_kept'; cause: WriteOperationError; kept: StagedLeftovers[] }
+      /**
+       *  The OS refused to move items to the Trash.
+       *
+       *  Separate from [`IoError`](Self::IoError) because the REASON decides what the
+       *  dialog can offer, and a reason has to survive the trip as a value. As an
+       *  `IoError` it arrived as one sentence macOS had written, which left the dialog
+       *  with nothing to say beyond "try again" — useless advice for a refusal that
+       *  retrying cannot change.
+       */
+      | {
+          type: 'trash_refused'
+          /**
+           *  How many top-level items it refused, so the message can be plural-correct
+           *  without counting the sentences in `message`.
+           */
+          itemCount: number
+          // Why, classified at the OS boundary.
+          reason: TrashRefusalKind
+          // The OS's own words, for the technical-details disclosure ONLY.
+          message: string
+          /**
+           *  At least one refused item is online-only (`SF_DATALESS`): its contents
+           *  live on the provider's servers, which is the actual reason the trash
+           *  wouldn't take it.
+           *
+           *  ❗ It suppresses the "grant Full Disk Access" paragraph. An evicted
+           *  file refuses as `NSError` 513 as readily as 3328 (`delete/cloud_trash.rs`),
+           *  so the reason alone can't tell the two apart, and sending someone to
+           *  System Settings for a permission that would change nothing is a wrong
+           *  answer. Read at refusal time, when the item is still there to stat.
+           */
+          onlineOnly?: boolean
+        }
+      // Catch-all for genuinely unexpected IO errors.
+      | { type: 'io_error'; path: string; message: string }
+      | null
+    >('check_home_folder_guard', { sources, volumeId, action }),
   cancelWriteOperation: (operationId: string, rollback: boolean) =>
     __TAURI_INVOKE<void>('cancel_write_operation', { operationId, rollback }),
   /**
@@ -10163,6 +10661,20 @@ export type HolderScan =
     }
 
 /**
+ *  What a home-folder refusal stopped, for [`super::WriteOperationError::HomeFolder`].
+ *  Each reads differently: a delete loses the files, a move or a rename leaves
+ *  macOS looking for the account in the wrong place. A trash is a `Delete`, and
+ *  a move onto another volume (copy, then delete) is a `Move`.
+ */
+export type HomeFolderAction =
+  // A permanent delete or a move to the Trash.
+  | 'delete'
+  // A move, on the same disk or onto another volume.
+  | 'move'
+  // A rename in place, F2's or a batch's.
+  | 'rename'
+
+/**
  *  How a refused delete's source relates to the person's own home folder, for
  *  [`super::WriteOperationError::HomeFolder`] and the delete dialog's matching
  *  `ScanPreviewRefusal::HomeFolder`. Each gets its own sentence.
@@ -13506,6 +14018,18 @@ export type MutationError =
     }
   // A volume's root has no parent to be renamed within.
   | { type: 'cantRenameVolumeRoot' }
+  /**
+   *  The rename named the person's own home folder, or a folder that holds
+   *  it, which would leave macOS looking for the account in the wrong place
+   *  (`home_folder.rs`). Refused before anything changes.
+   */
+  | {
+      type: 'homeFolder'
+      // The source as sent, tilde expanded.
+      path: string
+      // Whether it IS the home folder or holds it.
+      relation: HomeFolderRelation
+    }
   // The containing folder refuses writes, so the rename can't land.
   | {
       type: 'parentNotWritable'
@@ -22083,13 +22607,13 @@ export type WriteOperationError =
    */
   | { type: 'mounted_volume_inside'; mountPoint: string; action: MountedVolumeAction }
   /**
-   *  A delete or a trash named the person's own home folder, or a folder that
-   *  holds it. Refused before anything is read or removed, whoever asked (a
-   *  person, MCP, or an AI suggestion): `home_folder.rs`. `path` is the source
-   *  as the caller sent it, tilde expanded. Other people's home folders stay
-   *  deletable.
+   *  A delete, trash, move, or rename named the person's own home folder, or a
+   *  folder that holds it. Refused before anything is read, moved, or removed,
+   *  whoever asked (a person, MCP, or an AI suggestion): `home_folder.rs`.
+   *  `path` is the source as the caller sent it, tilde expanded; `action` is
+   *  what was stopped. Other people's home folders stay untouched by this.
    */
-  | { type: 'home_folder'; path: string; relation: HomeFolderRelation }
+  | { type: 'home_folder'; path: string; relation: HomeFolderRelation; action: HomeFolderAction }
   /**
    *  A fresh ZIP would hold an entry the archive reader quarantines: a name
    *  that climbs out of the archive (a macOS `..\notes.txt` reads as

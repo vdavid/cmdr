@@ -133,7 +133,9 @@
     const homeFolderRefusal = $derived(scan.homeFolderRefusal)
     /** The refusal's words, the same the error dialog shows for a start that skipped this dialog. */
     const refusalText = $derived(
-        homeFolderRefusal ? homeFolderMessage(homeFolderRefusal.path, homeFolderRefusal.relation) : null,
+        homeFolderRefusal
+            ? homeFolderMessage(homeFolderRefusal.path, homeFolderRefusal.relation, 'delete')
+            : null,
     )
 
     const dialogTitle = $derived(generateDeleteTitle(sourceItems, isFromCursor))

@@ -508,6 +508,15 @@ var surfaceGuardedCrates = []struct {
 		// to exactly what the crate exposes, with no headroom (David approved the
 		// rule in the #415 plan).
 		//
+		// Raised to 90 root promises and 59 handle methods on 2026-11-05 for the
+		// home-folder guard: `home_folder_guard` and its `HomeFolderAction` let
+		// the frontend ask BEFORE a delete or move dialog or a folder's rename
+		// editor renders, so no confirm UI ever shows for a refusal the starts
+		// would make anyway. No existing verb answers "would this refuse?"
+		// without starting something, and a frontend copy of the rule would let
+		// MCP drift from it. `crates/cmdr-operations/DETAILS.md` § "The public
+		// surface is capped".
+		//
 		// Raised to 89 on 2026-10-27 for `LandingClash`, the typed answer of
 		// `TransferLeaves::check_landings`: the agent's proposal asks the start's
 		// per-source name rules ahead of time rather than keeping a second copy.
@@ -533,8 +542,8 @@ var surfaceGuardedCrates = []struct {
 		Name:       "cmdr-operations",
 		HandleType: "Operations",
 		Ceilings: surfaceCeilings{
-			RootPromises:   89,
-			HandleMethods:  58,
+			RootPromises:   90,
+			HandleMethods:  59,
 			PublicModules:  1,
 			SubsystemItems: 25,
 		},

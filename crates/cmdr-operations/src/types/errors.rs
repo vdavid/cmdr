@@ -179,14 +179,15 @@ pub enum WriteOperationError {
         mount_point: String,
         action: MountedVolumeAction,
     },
-    /// A delete or a trash named the person's own home folder, or a folder that
-    /// holds it. Refused before anything is read or removed, whoever asked (a
-    /// person, MCP, or an AI suggestion): `home_folder.rs`. `path` is the source
-    /// as the caller sent it, tilde expanded. Other people's home folders stay
-    /// deletable.
+    /// A delete, trash, move, or rename named the person's own home folder, or a
+    /// folder that holds it. Refused before anything is read, moved, or removed,
+    /// whoever asked (a person, MCP, or an AI suggestion): `home_folder.rs`.
+    /// `path` is the source as the caller sent it, tilde expanded; `action` is
+    /// what was stopped. Other people's home folders stay untouched by this.
     HomeFolder {
         path: String,
         relation: HomeFolderRelation,
+        action: HomeFolderAction,
     },
     /// A fresh ZIP would hold an entry the archive reader quarantines: a name
     /// that climbs out of the archive (a macOS `..\notes.txt` reads as

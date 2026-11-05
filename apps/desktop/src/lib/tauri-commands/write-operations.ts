@@ -1,7 +1,7 @@
 // Copy/move/delete operations + event handlers
 
 import { type Event, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { commands, events, type ScanPreviewPurpose } from '#lib/ipc/bindings.js'
+import { commands, events, type HomeFolderAction, type ScanPreviewPurpose } from '#lib/ipc/bindings.js'
 import { throwIpcError } from './ipc-types'
 import type {
   ConflictResolution,
@@ -183,6 +183,23 @@ export async function trashFiles(
  *  The backend decides; see `crates/cmdr-operations/src/delete/cloud_trash.rs`. */
 export async function trashRoutingForPaths(sources: string[]): Promise<TrashRoutingAnswer> {
   return await commands.trashRoutingForPaths(sources)
+}
+
+/** The typed refusal a delete, move, or rename of `sources` would meet for the
+ *  person's own home folder, or `null` when it may go ahead. Asked BEFORE a
+ *  confirm dialog or the rename editor opens, so no confirm UI ever shows for a
+ *  refused one. A call that throws answers `null`: the start itself refuses
+ *  typed anyway. The rule is Rust's (`crates/cmdr-operations/src/home_folder.rs`). */
+export async function checkHomeFolderGuard(
+  sources: string[],
+  volumeId: string,
+  action: HomeFolderAction,
+): Promise<WriteOperationError | null> {
+  try {
+    return await commands.checkHomeFolderGuard(sources, volumeId, action)
+  } catch {
+    return null
+  }
 }
 
 export async function cancelWriteOperation(operationId: string, rollback: boolean): Promise<void> {

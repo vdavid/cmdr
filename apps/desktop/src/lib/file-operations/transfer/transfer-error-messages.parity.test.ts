@@ -832,7 +832,7 @@ const cases: Case[] = [
   {
     // The person's own home folder: refused whoever asked.
     name: 'home_folder (is home)',
-    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome' },
+    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'delete' },
     op: 'delete',
     expected: {
       title: 'Your home folder stays',
@@ -845,7 +845,7 @@ const cases: Case[] = [
   {
     // A folder holding the home folder: names it, escaped, as code.
     name: 'home_folder (holds home)',
-    error: { type: 'home_folder', path: '/Users/<x>', relation: 'holdsHome' },
+    error: { type: 'home_folder', path: '/Users/<x>', relation: 'holdsHome', action: 'delete' },
     op: 'trash',
     expected: {
       title: 'Your home folder stays',
@@ -853,6 +853,32 @@ const cases: Case[] = [
         'You can’t delete <code>/Users/&lt;x&gt;</code> because it contains your home folder, and you can’t delete your home folder.',
       suggestion:
         'If you want to free up space, be a bit more specific. If you want to get rid of everything on this machine, do an OS reset.',
+    },
+  },
+
+  {
+    // A move of the home folder: the account would break, so it gets its own words.
+    name: 'home_folder (move, is home)',
+    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'move' },
+    op: 'move',
+    expected: {
+      title: 'Please don’t move your home folder',
+      message:
+        'Hey, your home folder lives right where it is. Move it, and your Mac will look for you in the wrong place next time you log in.',
+      suggestion:
+        'If you want your files somewhere else, go in there, pick what you need, and move that. Your Mac will thank you.',
+    },
+  },
+
+  {
+    name: 'home_folder (rename, holds home)',
+    error: { type: 'home_folder', path: '/Users', relation: 'holdsHome', action: 'rename' },
+    op: 'move',
+    expected: {
+      title: 'Please don’t rename your home folder',
+      message:
+        'You can’t rename <code>/Users</code> because your home folder is in there, and your Mac expects to find it at this exact path.',
+      suggestion: 'Rename something inside it instead, or let this one be. It’s holding up more than it looks.',
     },
   },
 

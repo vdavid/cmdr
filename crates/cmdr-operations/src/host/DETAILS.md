@@ -36,8 +36,8 @@ Each line: the question the seam asks, its trait file, who answers it in Cmdr, a
 - **The panes' name order**: `NameOrder` (`name_order.rs`). App: `operations_host/name_order.rs` over the listing
   engine's collator. Default: English, built once on the answer.
 - **The person's own home folder**: a plain value, `OperationsBuilder::home_folder` (`EngineHost::home_folder`), which
-  no delete or trash may remove (`home_folder.rs`). App: `dirs::home_dir()` in `operations_host::app_answers`; demo: the
-  tree's `home` (`/Users/you`). Default: `None`, which guards nothing.
+  no delete, trash, move, or rename may touch (`home_folder.rs`). App: `dirs::home_dir()` in
+  `operations_host::app_answers`; demo: the tree's `home` (`/Users/you`). Default: `None`, which guards nothing.
 
 ## How the engine holds its host
 

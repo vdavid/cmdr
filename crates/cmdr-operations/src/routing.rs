@@ -29,7 +29,7 @@ use super::routed_writes::{first_routed, routed_transfer_refusal};
 use super::source_binding::ExpectedSources;
 use super::target_names::{NotAName, TargetNames};
 use super::transfer::volume::{PathRole, native_roots, on_local_root, unregistered_volume_error};
-use super::types::{ReadOnlySide, VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
+use super::types::{HomeFolderAction, ReadOnlySide, VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
 use cmdr_fs::volume::RoutedKind;
 use cmdr_fs::volume::Volume;
 use cmdr_operation_log::types::Initiator;
@@ -411,6 +411,11 @@ impl crate::Operations {
         initiator: Initiator,
         expected_sources: Option<ExpectedSources>,
     ) -> Result<WriteOperationStartResult, WriteOperationError> {
+        // Never the person's own home folder, nor a folder holding it: a move onto
+        // another volume is copy-then-delete (`home_folder.rs`).
+        if let Some(refusal) = self.home_folder_guard(&source_volume_id, &source_paths, HomeFolderAction::Move) {
+            return Err(refusal);
+        }
         // An archive SOURCE routes to the compound move-out op (extract via the copy
         // engine, then a batch `{ delete }` archive rewrite once the extract lands).
         // A snapshot source (git or restic) has no delete to pair with the copy,
@@ -636,6 +641,10 @@ impl crate::Operations {
                 message: "a new name is one name, not a path".into(),
             })?;
         let (sources, names): (Vec<PathBuf>, Vec<String>) = renames.into_iter().unzip();
+        // Never the person's own home folder, nor a folder holding it (`home_folder.rs`).
+        if let Some(refusal) = self.home_folder_guard(&volume_id, &sources, HomeFolderAction::Rename) {
+            return Err(refusal);
+        }
         // Plain `get`: the route gates below refuse an in-zip or `.git` source or target.
         let Some(volume) = self.host().volumes().get(&volume_id) else {
             return Err(source_volume_missing(self.host(), &volume_id, &sources).await);

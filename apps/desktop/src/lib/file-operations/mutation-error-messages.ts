@@ -104,6 +104,9 @@ const MUTATION_MESSAGE: {
 
   notFound: (e) => raw('errors.mutation.notFound', { path: e.path }),
   cantRenameVolumeRoot: () => raw('errors.mutation.cantRenameVolumeRoot'),
+  // The home folder's refusal normally shows as its own dialog before the editor
+  // opens (`rename-flow.svelte.ts`); a line is all a toast has room for.
+  homeFolder: () => raw('errors.write.homeFolderRename.title'),
   parentNotWritable: (e) => raw('errors.mutation.parentNotWritable', { path: e.path }),
   fileLocked: () => raw('errors.mutation.fileLocked'),
   sipProtected: () => raw('errors.mutation.sipProtected'),

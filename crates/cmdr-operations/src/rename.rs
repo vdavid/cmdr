@@ -120,6 +120,7 @@ fn log_rename_refusal(stage: RenameStage, from: &Path, volume_id: &str, error: &
             | MutationError::NameEmpty
             | MutationError::NameHasDisallowedCharacter
             | MutationError::CantRenameVolumeRoot
+            | MutationError::HomeFolder { .. }
     );
     let stage = stage.label();
     if expected {
@@ -147,6 +148,10 @@ async fn rename_managed_inner(
     // `manager.get` below passes `from`: plain `get`, as this gate sent an in-zip
     // rename away.
     let host = engine.host();
+    // Never the person's own home folder, nor a folder holding it (`home_folder.rs`).
+    if let Err(refusal) = engine.home_folder_rename_guard(&volume_id, &from) {
+        return (Err(refusal), InstantTarget::Volume);
+    }
     let manager = host.volumes();
     if manager.path_is_inside_archive(&volume_id, &from).await || manager.path_is_inside_archive(&volume_id, &to).await
     {
@@ -634,6 +639,12 @@ impl crate::Operations {
         path: PathBuf,
         volume_id: String,
     ) -> Result<(), MutationError> {
+        // The home folder's refusal holds on every volume kind the guard covers,
+        // so it comes before the reach check (`home_folder.rs`).
+        if let Err(refusal) = self.home_folder_rename_guard(&volume_id, &path) {
+            log_rename_refusal(RenameStage::Preflight, &path, &volume_id, &refusal);
+            return Err(refusal);
+        }
         if !preflight_reaches(self.host(), &volume_id) {
             log::debug!(
                 target: "volume",

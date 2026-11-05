@@ -16,7 +16,8 @@ use super::leaf_validation::{LeafIdentity, validate_transfer_leaves};
 use super::routed_writes::{first_routed, routed_transfer_refusal};
 use super::source_binding::ExpectedSources;
 use super::types::{
-    ReadOnlySide, VolumeCopyConfig, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
+    HomeFolderAction, ReadOnlySide, VolumeCopyConfig, WriteOperationConfig, WriteOperationError,
+    WriteOperationStartResult,
 };
 use super::{OperationEventSink, Operations, transfer_sides};
 
@@ -44,6 +45,10 @@ impl Operations {
         sides: Option<transfer_sides::TransferSides>,
     ) -> Result<WriteOperationStartResult, WriteOperationError> {
         let root = cmdr_fs::volume::DEFAULT_VOLUME_ID;
+        // Never the person's own home folder, nor a folder holding it (`home_folder.rs`).
+        if let Some(refusal) = self.home_folder_guard(root, &sources, HomeFolderAction::Move) {
+            return Err(refusal);
+        }
         #[cfg(not(target_family = "wasm"))]
         if self.host().volumes().local_disk(root).is_some() {
             validate_transfer_leaves(&config.leaves, &sources, &destination, LeafIdentity::NamesAndInodes)?;
@@ -103,11 +108,8 @@ impl Operations {
         );
 
         // Never the person's own home folder, nor a folder holding it (`home_folder.rs`).
-        if let Some(hit) = self.home_folder_hit(&volume_id_str, &sources) {
-            return Err(WriteOperationError::HomeFolder {
-                path: hit.path,
-                relation: hit.relation,
-            });
+        if let Some(refusal) = self.home_folder_guard(&volume_id_str, &sources, HomeFolderAction::Delete) {
+            return Err(refusal);
         }
 
         // Deleting entries INSIDE a zip is a mutation: route to the managed archive-edit
@@ -178,11 +180,10 @@ impl Operations {
         // Never the person's own home folder, nor a folder holding it
         // (`home_folder.rs`). Before the preview is freed: the dialog that asked
         // is still up and owns it.
-        if let Some(hit) = self.home_folder_hit(cmdr_fs::volume::DEFAULT_VOLUME_ID, &sources) {
-            return Err(WriteOperationError::HomeFolder {
-                path: hit.path,
-                relation: hit.relation,
-            });
+        if let Some(refusal) =
+            self.home_folder_guard(cmdr_fs::volume::DEFAULT_VOLUME_ID, &sources, HomeFolderAction::Delete)
+        {
+            return Err(refusal);
         }
 
         // ❌ Trash does NOT wait for the confirming dialog's scan preview, and this

@@ -198,6 +198,21 @@ pub enum HomeFolderRelation {
     HoldsHome,
 }
 
+/// What a home-folder refusal stopped, for [`super::WriteOperationError::HomeFolder`].
+/// Each reads differently: a delete loses the files, a move or a rename leaves
+/// macOS looking for the account in the wrong place. A trash is a `Delete`, and
+/// a move onto another volume (copy, then delete) is a `Move`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum HomeFolderAction {
+    /// A permanent delete or a move to the Trash.
+    Delete,
+    /// A move, on the same disk or onto another volume.
+    Move,
+    /// A rename in place, F2's or a batch's.
+    Rename,
+}
+
 /// Why the OS wouldn't take something to the Trash.
 ///
 /// ❗ Classified from the `NSError` domain and code at the boundary, ❌ never from
