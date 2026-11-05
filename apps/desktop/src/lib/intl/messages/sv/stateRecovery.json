@@ -33,7 +33,7 @@
   },
   "stateRecovery.operationLog.title": "Cmdr kunde inte läsa din åtgärdslogg, så loggen börjar om",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "Cmdr kunde inte läsa dina chattar i Ask Cmdr, så chattlistan är tom",
   "@stateRecovery.chatHistory.title": {

@@ -83,9 +83,9 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
-  "fileExplorer.archivedFile.label": "Arkiverad",
+  "fileExplorer.archivedFile.label": "I kall lagring",
   "@fileExplorer.archivedFile.label": {
-    "sourceHash": "bdb8650"
+    "sourceHash": "78bf854"
   },
   "fileExplorer.archivedFile.tooltip": "Arkiverad i kall lagring. Återställ filen i din lagringsleverantörs konsol innan du öppnar eller kopierar den.",
   "@fileExplorer.archivedFile.tooltip": {
@@ -312,9 +312,9 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
-  "fileExplorer.open.didNotOpen": "Det gick inte att öppna {fileName}. macOS hittade inte filen eller någon app som kan öppna den.",
+  "fileExplorer.open.didNotOpen": "Det gick inte att öppna {fileName}. macOS hittade inte filen, eller så finns det ingen app som kan öppna den.",
   "@fileExplorer.open.didNotOpen": {
-    "sourceHash": "c8362d8"
+    "sourceHash": "cd95423"
   },
   "fileExplorer.openingToast.noApp": "Öppnar {fileName}…",
   "@fileExplorer.openingToast.noApp": {
@@ -1704,13 +1704,13 @@
   "@fileExplorer.navigation.favoriteShortcutPrompt": {
     "sourceHash": "51f3d7d"
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Genväg för {name}. Tryck på A–Z eller Delete för att ta bort den.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Genvägstangent för {name}. Tryck på A–Z eller Delete för att ta bort den.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
-    "sourceHash": "31515c1"
+    "sourceHash": "0c5db95"
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Det gick inte att spara genvägen. Försök igen?",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Det gick inte att spara genvägstangenten. Försök igen?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "38e7225"
+    "sourceHash": "de62c34"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "Det gick inte att ta bort den favoriten. Försök igen?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
@@ -1724,9 +1724,9 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
+  "fileExplorer.navigation.favoriteStatus.connects": "Inte ansluten. När du öppnar den här favoriten ansluter Cmdr till {kind, select, share {den delade mappen ”{place}”} server {servern ”{place}”} phone {telefonen ”{place}”} other {”{place}”}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
-    "sourceHash": "a30b8cd"
+    "sourceHash": "0ed263f"
   },
   "fileExplorer.navigation.favoriteStatus.notFound": "Den här mappen finns inte längre.",
   "@fileExplorer.navigation.favoriteStatus.notFound": {
@@ -1736,9 +1736,9 @@
   "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
     "sourceHash": "00f7bf0"
   },
-  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Lagringen som mappen låg på är inte tillgänglig på {device} just nu.",
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Lagringen som mappen låg på är inte tillgänglig på ”{device}” just nu.",
   "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
-    "sourceHash": "a06d5ae"
+    "sourceHash": "ef526cd"
   },
   "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "Enheten ”{drive}” är inte ansluten. Anslut den och försök sedan igen.",
   "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
@@ -1752,9 +1752,9 @@
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
     "sourceHash": "4fba610"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr har inte längre något sätt att nå {kind, select, share {den delade mappen ”{place}”} server {servern ”{place}”} phone {telefonen ”{place}”} other {”{place}”}}. Anslut dit igen från Servrar, så fungerar favoriten igen.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
-    "sourceHash": "842858c"
+    "sourceHash": "59f7041"
   },
   "fileExplorer.navigation.favoriteUnreachable.notFound": "”{name}” finns inte längre på {path}.",
   "@fileExplorer.navigation.favoriteUnreachable.notFound": {
@@ -1860,9 +1860,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr arbetar fortfarande med filer på den här servern. Koppla från när det är klart.",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr arbetar fortfarande med filer på den här servern. Du kan koppla från när det är klart.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "bd52d60"
+    "sourceHash": "760edfd"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} finns nu i din volymväljare.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1888,7 +1888,7 @@
   "@fileExplorer.navigation.forgetConfirmButton": {
     "sourceHash": "a6bd489"
   },
-  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Glöm",
   "@fileExplorer.navigation.forgetPasswordConfirmButton": {
     "sourceHash": "a6bd489"
   },
@@ -1932,9 +1932,9 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr arbetar fortfarande med filer på den här enheten. Mata ut när det är klart.",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr arbetar fortfarande med filer på den här enheten. Du kan mata ut den när det är klart.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "3da6312"
+    "sourceHash": "b298e2f"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Matar ut {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -2111,9 +2111,9 @@
   "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
     "sourceHash": "4ef8487"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Enhetsindexering är avstängd i Inställningar, så {name} indexeras inte. Slå på den under Indexering > Enhetsindexering.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Enhetsindexering är avstängd i Inställningar, så {name} indexeras inte. Slå på den under ”Indexering > Enhetsindexering”.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
-    "sourceHash": "ce0d45c"
+    "sourceHash": "0253edd"
   },
   "fileExplorer.navigation.driveIndex.driveLeaving": "{name} håller på att kopplas från, så Cmdr lät indexet vara orört. Om enheten förblir ansluten, försök igen om en stund.",
   "@fileExplorer.navigation.driveIndex.driveLeaving": {
@@ -2123,9 +2123,9 @@
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Enhetsindexering är avstängd i Inställningar. Slå på den under Indexering > Enhetsindexering, så fortsätter den här enheten där den slutade.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Enhetsindexering är avstängd i Inställningar. Slå på den under ”Indexering > Enhetsindexering”, så fortsätter den här enheten där den slutade.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
-    "sourceHash": "e045664"
+    "sourceHash": "26e250c"
   },
   "fileExplorer.dragOut.failed": "{count, plural, =1 {Det gick inte att kopiera ”{name}”.} one {Det gick inte att kopiera {countText} objekt.} other {Det gick inte att kopiera {countText} objekt.}}",
   "@fileExplorer.dragOut.failed": {
@@ -2147,9 +2147,9 @@
   "@fileExplorer.typeToJump.modeJump": {
     "sourceHash": "292fdf5"
   },
-  "fileExplorer.typeToJump.clear": "Rensa Hoppa-texten",
+  "fileExplorer.typeToJump.clear": "Rensa den inskrivna texten",
   "@fileExplorer.typeToJump.clear": {
-    "sourceHash": "42ec82f"
+    "sourceHash": "61920c5"
   },
   "fileExplorer.quickFilter.clear": "Rensa filter",
   "@fileExplorer.quickFilter.clear": {
@@ -2207,13 +2207,13 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
-  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} bekräftade inte de säkerhetsinställningar som hade avtalats med Cmdr, så Cmdr stannar kvar på systemanslutningen. Det kan bero på en server som krånglar, men också på att någon manipulerar anslutningen.",
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} bekräftade inte de säkerhetsinställningar som hade avtalats med Cmdr, så den här delade mappen stannar kvar på systemanslutningen. Det kan bero på en server som krånglar, men också på att någon manipulerar anslutningen.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
-    "sourceHash": "7ea7c4f"
+    "sourceHash": "9b3a6ae"
   },
-  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} tar bara emot krypterade anslutningar och kom inte överens med Cmdr om något sätt att kryptera dem, så Cmdr stannar kvar på systemanslutningen.",
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} tar bara emot krypterade anslutningar och kom inte överens med Cmdr om något sätt att kryptera en, så den här delade mappen stannar kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
-    "sourceHash": "a731300"
+    "sourceHash": "4df31b6"
   },
   "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} kan inte kryptera anslutningen och inställningen ”Kräv alltid SMB-kryptering” är aktiverad, så Cmdr anslöt inte direkt.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {

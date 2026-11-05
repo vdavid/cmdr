@@ -75,9 +75,9 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "Det ser ut som att du accepterade full skivtillgång tidigare men sedan återkallade den.",
+  "onboarding.stepFda.revoked.intro": "Det ser ut som att du gav full skivtillgång tidigare men sedan stängde av den.",
   "@onboarding.stepFda.revoked.intro": {
-    "sourceHash": "9087914"
+    "sourceHash": "6759357"
   },
   "onboarding.stepFda.revoked.noAccess": "Appen har just nu ingen full skivtillgång.",
   "@onboarding.stepFda.revoked.noAccess": {
@@ -239,9 +239,9 @@
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "5cc5e7f"
   },
-  "onboarding.stepAi.table.renameWithout": "Du ställer in ett namnmönster för hand i Massbyt namn, sedan granskar och tillämpar du det.",
+  "onboarding.stepAi.table.renameWithout": "Du ställer in ett namnmönster för hand i Massbyt namn, sedan granskar och tillämpar du mönstret.",
   "@onboarding.stepAi.table.renameWithout": {
-    "sourceHash": "e7531dc"
+    "sourceHash": "1b85bf6"
   },
   "onboarding.stepAi.table.renameWith": "Du säger ”lägg till ISO-datumprefix”, agenten ställer in ditt namnmönster, du granskar och tillämpar som du vill.",
   "@onboarding.stepAi.table.renameWith": {

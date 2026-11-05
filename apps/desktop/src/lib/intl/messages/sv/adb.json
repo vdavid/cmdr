@@ -75,9 +75,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "Cmdr arbetar fortfarande med filer på den här enheten. Koppla från när det är klart.",
+  "adb.disconnectBusyTooltip": "Cmdr arbetar fortfarande med filer på den här enheten. Du kan koppla från den när det är klart.",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "73c355e"
+    "sourceHash": "7a49436"
   },
   "adb.disconnectingDeviceAriaLabel": "Kopplar från {name}…",
   "@adb.disconnectingDeviceAriaLabel": {

@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Cmdr stötte på ett oväntat problem när `{path}` lästes. Kolla de tekniska detaljerna nedan för den specifika systemkoden, som kan hjälpa vid felsökning.",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr stötte på ett oväntat problem när `{path}` lästes. Kolla ”Tekniska detaljer” nedan för den specifika systemkoden, som kan hjälpa vid felsökning.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** och kör **Skivkontroll** på den här volymen",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -591,9 +591,9 @@
   "@errors.listing.linkTargetUnreachable.title": {
     "sourceHash": "8aee94c"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "`{path}` ligger bakom en länk till en annan server, och Cmdr kan inte nå den servern just nu. Resten av den här delade mappen fungerar, och inget har raderats.",
+  "errors.listing.linkTargetUnreachable.explanation": "`{path}` leder via en länk till en annan server, och Cmdr kan inte nå den servern just nu. Resten av den här delade mappen fungerar, och inget har raderats.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Så här kan du prova:\n- Kontrollera att den andra servern är igång och att ditt nätverk kan nå den\n- Gå hit igen för att försöka på nytt",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "Serverns svar hade ingen giltig signatur, så Cmdr stoppade åtgärden.",
+  "errors.write.replySignatureRefused.message": "Serverns svar hade ingen giltig signatur, så Cmdr stoppade åtgärden där.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Det kan bero på en nätverksenhet som krånglar, men också på att någon manipulerar trafiken mellan dig och servern. Återanslut, och om det händer igen, kontrollera ditt nätverk.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "Målenheten",
+  "errors.write.readOnlyDevice.destination.fallbackName": "Målplatsen",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "Filen är låst",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "Den här platsen ligger bakom en länk till en annan server, och Cmdr kan inte nå den servern just nu.",
+  "errors.volume.linkTargetUnreachable": "Den här sökvägen leder via en länk till en annan server, och Cmdr kan inte nå den servern just nu.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "Enheten startade om sin anslutning. Vänta några sekunder och försök igen.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "Anslutningen svarade inte i tid.",
+  "errors.volume.connectionTimeout": "Servern eller enheten svarade inte i tid.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr stoppade det här på din begäran.",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "Serverns svar hade ingen giltig signatur, så Cmdr stoppade åtgärden.",
+  "errors.volume.signatureInvalid": "Serverns svar hade ingen giltig signatur, så Cmdr stoppade åtgärden där.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "Volymen kunde inte slutföra åtgärden.",
   "@errors.volume.ioError": {
@@ -2371,11 +2371,11 @@
   },
   "errors.eject.unmountRefusedByApp": "{app} använder fortfarande något där. Stäng appen och försök sedan igen.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
   "errors.eject.unmountRefusedByApps": "{apps} använder fortfarande något där. Stäng apparna och försök sedan igen.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "andra appar",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "En del av markeringen ligger i en vy",
+  "errors.write.sourcesSpanVolumes.title": "En del av markeringen ligger i en säkerhetskopia, ett arkiv eller en git-historik",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} ligger i en säkerhetskopias ögonblicksbilder, ett arkiv eller ett repos historik, men resten av markeringen gör det inte, så Cmdr kan inte läsa dem tillsammans. Inget har ändrats.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Gör det i två steg: först objekten i vyn för sig, sedan resten.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Gör det i två steg: först de objekten för sig, sedan resten.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Flytta dem ett i taget, eller byt namn på ett först.",
   "@errors.write.duplicateSourceNames.suggestion.move": {

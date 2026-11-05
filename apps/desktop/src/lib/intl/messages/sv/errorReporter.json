@@ -145,9 +145,9 @@
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "02f82ce"
   },
-  "errorReporter.sentToast.message": "Felrapporten har skickats. Ditt referens-ID är",
+  "errorReporter.sentToast.message": "Felrapporten har skickats. Ditt referens-ID:",
   "@errorReporter.sentToast.message": {
-    "sourceHash": "75be6ba"
+    "sourceHash": "d1e9bfc"
   },
   "errorReporter.sentToast.dismiss": "Avfärda",
   "@errorReporter.sentToast.dismiss": {
@@ -161,9 +161,9 @@
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
   },
-  "errorReporter.amendedToast.message": "Noteringen har lagts till i din rapport. Ditt referens-ID är",
+  "errorReporter.amendedToast.message": "Noteringen har lagts till i din rapport. Ditt referens-ID:",
   "@errorReporter.amendedToast.message": {
-    "sourceHash": "5471d7f"
+    "sourceHash": "fc7535b"
   },
   "errorReporter.bundleSavedToast.message": "Sparade paketet på disk",
   "@errorReporter.bundleSavedToast.message": {

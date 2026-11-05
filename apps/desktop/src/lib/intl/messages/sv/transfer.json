@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Den här servern kan inte lagra {classes}, så de uppgifterna kom inte med.",
+  "transfer.metadataLeftBehind": "Det här målet kan inte lagra vissa uppgifter, så de kom inte med: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, one {{countText} låst objekt stannade där det var.} other {{countText} låsta objekt stannade där de var.}}",
   "@transfer.lockedSkipped": {

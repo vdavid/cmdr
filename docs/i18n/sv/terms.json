@@ -667,6 +667,12 @@
     "forms": "molnmappar, molnmontering, molntjänst",
     "sources": "MS terminology (provider → leverantör)"
   },
+  "cold-storage": {
+    "chosen": "kall lagring",
+    "confidence": "high",
+    "forms": "the row glyph's name I kall lagring; the file itself reads arkiverad (Den här filen är arkiverad), getting it back is återställa",
+    "sources": "Microsoft Terminology (cold storage → kall lagring, id 2260077); catalog fileExplorer.archivedFile.tooltip"
+  },
   "column": {
     "chosen": "kolumn",
     "confidence": "high",
@@ -2231,9 +2237,6 @@
     "chosen": "notering",
     "confidence": "high",
     "decision": "Amending a sent error report",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "English-sense: the “note” is Cmdr’s own short toast, not text the user writes; meddelande, since the notification ruling avoids notis and avisering is macOS’s system-notification word"
-    },
     "forms": "a note on a report → notering; Ask Cmdr's notes about you → anteckningar",
     "sources": "catalog (Lägg till en notering)"
   },
@@ -2404,7 +2407,7 @@
     "sources": "Total Commander, Double Commander"
   },
   "paste": {
-    "accept": ["inklistr", "klistrade in"],
+    "accept": ["inklistr", "klistrade in", "klistrar in"],
     "chosen": "klistra in",
     "confidence": "high",
     "decision": "Paste clipboard as a file",
@@ -2539,7 +2542,7 @@
     "sources": "macOS AddPrinter IP.loctable (Protokoll)"
   },
   "put-back": {
-    "accept": ["lade tillbaka", "lägga tillbaka", "återställ"],
+    "accept": ["lade tillbaka", "lägga tillbaka", "lägger tillbaka", "återställ"],
     "avoid": [
       {
         "form": "flytta tillbaka",
@@ -3154,9 +3157,6 @@
     "accept": ["hoppar över", "hoppade över", "hoppas över", "överhoppad", "hoppas", "hoppades över"],
     "chosen": "hoppa över",
     "confidence": "high",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "English-sense: “skip the note” means not seeing a toast again, not leaving an item out of an operation (för att slippa meddelandet)"
-    },
     "forms": "outcome chip Överhoppad (tentative)",
     "sources": "Nautilus (_Hoppa över)"
   },
@@ -3527,7 +3527,7 @@
     "accept": ["Okänt"],
     "chosen": "okänd",
     "confidence": "high",
-    "forms": "agrees with its noun: a model or a size Okänd, in brackets (okänd); a cell value standing for either a size (en storlek) or a date (ett datum) takes the neuter Okänt (suggestedOps.factUnknown)",
+    "forms": "agrees with its noun: a model or a size Okänd, in brackets (okänd); a date (ett datum) takes the neuter Okänt (suggestedOps.factUnknownSize Okänd, suggestedOps.factUnknownDate Okänt)",
     "sources": "macOS AppKit (Okänd), Nautilus and Thunar (Okänd / okänd); catalog ai.local.modelUnknown"
   },
   "unlock": {

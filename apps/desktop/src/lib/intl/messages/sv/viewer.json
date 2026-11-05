@@ -47,9 +47,9 @@
   "@viewer.error.coldStorage": {
     "sourceHash": "236cd1b"
   },
-  "viewer.error.linkTargetUnreachable": "Den här filen ligger bakom en länk till en annan server, och Cmdr kan inte nå den servern just nu. Kontrollera att servern är igång och försök igen.",
+  "viewer.error.linkTargetUnreachable": "Sökvägen till den här filen leder via en länk till en annan server, och Cmdr kan inte nå den servern just nu. Kontrollera att servern är igång och försök igen.",
   "@viewer.error.linkTargetUnreachable": {
-    "sourceHash": "8dcb736"
+    "sourceHash": "0540c9a"
   },
   "viewer.error.retry": "Försök igen",
   "@viewer.error.retry": {

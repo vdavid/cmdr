@@ -167,9 +167,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Varannan rad skuggas för att lättare följa raderna. Gäller både visningslägena Fullständig och Kortfattad.",
+  "settings.listing.stripedRows.description": "Varannan rad skuggas så att det blir lättare att följa raderna. Gäller både Fullständig vy och Kortfattad vy.",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "rand, ränder, randig, zebra, växlande, rad, rader, skuggning, hjälpmedel",
   "@settings.listing.stripedRows.keywords": {
@@ -824,9 +824,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Indexera alltid bilder på {name}",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Indexera alltid den här enheten: {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "Pausad, återupptas när enheten återansluter",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -944,9 +944,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Ta bort extra indexerade poster",
+  "settings.mediaIndex.reclaim.confirmTitle": "Ta bort extra indexerade poster?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "Ta bort {doomed, plural, one {{doomedText} indexerad post} other {{doomedText} indexerade poster}} för att frigöra ungefär {size}? Du kan indexera de här bilderna igen senare, men det tar tid att läsa om dem.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1093,9 +1093,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Dölj frågan om genvägen till senaste hämtning",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Fråga inte om genvägen till senaste hämtning igen",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Första gången du trycker på genvägen som hoppar till din senaste hämtning från vilken app som helst frågar Cmdr om du vill behålla genvägen på. Om du ändrar genvägen stängs det här av, så att Cmdr frågar om en ny kombination också. Stäng av det här för att se frågan en gång till.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1242,9 +1242,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "Hur länge modellen tänker innan den svarar. Mer ansträngning hjälper med kluriga uppgifter, men svaren kommer långsammare och tänkandet debiteras som utdata.",
+  "settings.ai.reasoningEfforts.description": "Hur länge modellen tänker innan den svarar. Mer tänkande hjälper med kluriga uppgifter, men svaren kommer långsammare och tänkandet debiteras som utdata.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "ansträngning för resonemang, ansträngning, resonemang, tänka, tänkande, betänketid, djup, hastighet, kostnad, kvalitet",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1462,9 +1462,9 @@
   "@settings.fileExplorer.git.showStatusColumn.label": {
     "sourceHash": "0f6a836"
   },
-  "settings.fileExplorer.git.showStatusColumn.description": "Lägg till en kolumn som visar git-status per fil (ändrad, ospårad och så vidare) i Fullständigt läge.",
+  "settings.fileExplorer.git.showStatusColumn.description": "Lägg till en kolumn som visar git-status per fil (ändrad, ospårad och så vidare) i Fullständig vy.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "status, kolumn, ändrad, ospårad, ignorerad, tillagd, raderad, borttagen",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1763,13 +1763,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Säg till när ett raderat objekt redan var borta",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Visa en avisering när ett raderat objekt redan var borta",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "När du raderar något som en annan app redan har flyttat eller raderat, räknar Cmdr det som klart och visar ett kort meddelande om det. Stäng av det här (eller klicka på ”Visa aldrig igen” i meddelandet) för att slippa meddelandet.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "När du raderar något som en annan app redan har flyttat eller raderat räknar Cmdr det som klart och visar en kort avisering om det. Stäng av det här (eller klicka på ”Visa aldrig igen” i aviseringen) så slutar de här aviseringarna att visas.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "saknas, försvunnen, försvunnet, borttagen, flyttad, avisering, notis, meddelande, popup",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2435,9 +2435,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr använder din moln-AI-tjänst. Tillåt moln-AI i AI-inställningarna för att börja chatta.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr använder din moln-AI-tjänst. Slå på ”Tillåt moln-AI” i AI-inställningarna för att börja chatta.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "Gå till AI-inställningar",
   "@settings.askCmdr.openAiSettings": {
@@ -2949,23 +2949,23 @@
   },
   "settings.appearance.formatHelpMonth": "2-siffrig månad (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
   "settings.appearance.formatHelpDay": "2-siffrig dag (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
   "settings.appearance.formatHelpHour": "2-siffrig timme (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
   "settings.appearance.formatHelpMinute": "2-siffrig minut (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
   "settings.appearance.formatHelpSecond": "2-siffrig sekund (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Lägger till en svag bakgrundston på paneler så att du kan skilja volymtyper åt med en blick.",
   "@settings.appearance.tintGroupDescription": {
@@ -3172,9 +3172,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Ändra genvägen under Tangentbordsgenvägar → Gå till senaste hämtning (global).",
+  "settings.fileSystemWatching.globalShortcutHint": "Ändra genvägen under ”Tangentbordsgenvägar → Gå till senaste hämtning”.",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "Åtkomst till {localNetwork}",
   "@settings.network.localNetworkAccessLabel": {

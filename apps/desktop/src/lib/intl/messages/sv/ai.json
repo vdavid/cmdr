@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, när du chattar eller när den startar ett samtal på eget initiativ:",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, när du chattar eller när Cmdr startar ett samtal på eget initiativ:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Dina meddelanden, inklusive lösenord som du skriver där för att låsa upp ett arkiv eller en säkerhetskopia",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Om du aktiverar loggning av LLM-anrop i Avancerat i inställningarna sparar Cmdr också varje förfrågan och svar till en mapp på din Mac. De anropsloggarna stannar lokalt och skickas aldrig någonstans.",
+  "ai.cloudConsent.logsNote": "Om du aktiverar ”Logga AI-modellanrop” i Avancerat i inställningarna sparar Cmdr också varje förfrågan och svar i en mapp på din Mac. De anropsloggarna stannar lokalt och skickas aldrig någonstans.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Stäng av det här när som helst, så slutar Cmdr skicka direkt. Tjänsten, nyckeln och chattarna finns kvar som de är.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Din modell kan behöva en större budget för det här. Prova en snabbare modell som gpt-4.1-mini i Inställningar > AI.",
+  "ai.translateError.emptyResponse.body": "Din modell kan ha gjort slut på sin tokenbudget innan den svarade. Prova en snabbare modell som gpt-4.1-mini i Inställningar > AI.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Din AI-leverantör stötte på problem",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "Servern svarade inte i tid. Försök igen om en stund.",
+  "ai.cloud.timedOut": "Tjänsten svarade inte i tid. Försök igen om en stund.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Den adressen ser inte rätt ut. Använd en fullständig webbadress som börjar med https://.",
   "@ai.cloud.invalidEndpoint": {

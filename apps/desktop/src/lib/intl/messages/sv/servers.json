@@ -7,9 +7,9 @@
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"
   },
-  "servers.pinHint.body": "Högerklicka på en server och välj Lossa från volymväljaren, eller använd ”{command}” från kommandopaletten. Servern ligger kvar i listan Servrar.",
+  "servers.pinHint.body": "Högerklicka på en server och välj ”Lossa från volymväljaren”, eller använd ”{command}” från kommandopaletten. Servern ligger kvar i listan Servrar.",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "Uppfattat",
   "@servers.pinHint.gotIt": {
@@ -64,9 +64,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Aldrig",
+  "servers.hub.neverUsed": "Aldrig använd",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "som {username}",
   "@servers.hub.shareAccount": {
@@ -380,9 +380,9 @@
   "@servers.sheet.addAnyway": {
     "sourceHash": "d0652ad"
   },
-  "servers.sheet.addAnywayHelp": "Cmdr kunde inte kontrollera den här servern, så Lägg till ändå sparar den som du skrev den.",
+  "servers.sheet.addAnywayHelp": "Cmdr kunde inte kontrollera den här servern, så ”Lägg till ändå” sparar den som du skrev den.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Mata ut och spara",
   "@servers.sheet.ejectAndSave": {
@@ -529,9 +529,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS kan skicka upp till 16 andra grupper, och den här listan har {count}.",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS skickar upp till 16 andra grupper, och den här listan har {count, plural, one {# grupp} other {# grupper}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "Servern avgör utifrån de här numren vad du får öppna. NFS frågar inte efter något lösenord.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -932,9 +932,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Sluta försöka tills vidare. Anslutningen finns kvar. Växla tillbaka för att försöka igen.",
+  "servers.paneState.cancelCycleTooltip": "Sluta försöka tills vidare. Anslutningen finns kvar; öppna servern igen för att försöka på nytt.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Sluta försöka och koppla från servern.",
   "@servers.paneState.disconnectCycleTooltip": {

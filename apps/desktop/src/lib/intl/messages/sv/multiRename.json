@@ -172,9 +172,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "Du har {max, number} förinställningar, och det är max i Cmdr. Radera en för att spara den här.",
+  "multiRename.presets.listFull": "Du har {max, plural, one {# förinställning} other {# förinställningar}}, och fler än så sparar Cmdr inte. Radera en för att spara den här.",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "Ersätt",
   "@multiRename.presets.replace": {
@@ -225,13 +225,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "Samma namn som en annan fil",
+  "multiRename.status.duplicate": "Samma namn som ett annat objekt",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
-  "multiRename.status.targetExists": "Namnet är taget",
+  "multiRename.status.targetExists": "Namnet är redan taget",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "Ogiltigt namn",
   "@multiRename.status.invalidName": {
@@ -385,17 +385,17 @@
   "@multiRename.status.ready": {
     "sourceHash": "f032574"
   },
-  "multiRename.reason.duplicate": "En annan fil i den här omgången får samma nya namn, så ingen av dem byter namn.",
+  "multiRename.reason.duplicate": "Ett annat objekt i den här omgången får samma nya namn, så inget av dem byter namn.",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
-  "multiRename.reason.targetExists": "En fil som ligger kvar i den här mappen har redan det här namnet, så den här filen behåller sitt namn.",
+  "multiRename.reason.targetExists": "Ett objekt som ligger kvar i den här mappen har redan det här namnet, så det här objektet behåller sitt namn.",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
-  "multiRename.reason.missing": "Den här filen flyttades eller raderades efter att ”Massbyt namn” öppnades, så den hoppas över.",
+  "multiRename.reason.missing": "Det här objektet flyttades eller raderades efter att ”Massbyt namn” öppnades, så det hoppas över.",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "Läser…",
   "@multiRename.status.reading": {
@@ -405,13 +405,13 @@
   "@multiRename.status.noValue": {
     "sourceHash": "619464f"
   },
-  "multiRename.reason.noValue": "Den här filen har inget värde för ”{field}”, så den behåller sitt namn.",
+  "multiRename.reason.noValue": "Det här objektet har inget värde för ”{field}”, så det behåller sitt namn.",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "Den här filen har inget värde för ”{field}”, så den behåller sitt namn. I platshållarens redigerare kan du använda datumet då filen senast ändrades i stället.",
+  "multiRename.reason.noDate": "Det här objektet har inget värde för ”{field}”, så det behåller sitt namn. I platshållarens redigerare kan du använda datumet då objektet senast ändrades i stället.",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "Gick inte att läsa taggarna",
   "@multiRename.status.unreadable": {
@@ -638,9 +638,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "{count, plural, one {Hoppade över # namnbyte} other {Hoppade över # namnbyten}} där filer byter namn med varandra. Byt namn på de filerna en i taget.",
+  "multiRename.swapsSkipped": "{count, plural, one {Hoppade över # namnbyte} other {Hoppade över # namnbyten}} där objekt byter namn med varandra. Byt namn på de objekten ett i taget.",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "”Massbyt namn” fungerar inte i arkiv",
   "@multiRename.archiveTitle": {

@@ -253,9 +253,9 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "Den här delade mappen använder systemanslutningen, så det kan dröja innan en avbrytning slår igenom. Använd ”Anslut direkt” i volymväljaren för snabbare överföringar som går att avbryta direkt.",
+  "fileOperations.transferDialog.smbNativeNote": "Den här delade mappen använder systemanslutningen, så det kan dröja innan en avbrytning slår igenom. Använd ”Anslut direkt för snabbare åtkomst” i volymväljaren för snabbare överföringar som går att avbryta direkt.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "60af535"
+    "sourceHash": "95b30c0"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Den här mappen finns inte än. Cmdr skapar den under kopieringen.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -613,27 +613,27 @@
   "@fileOperations.transferProgress.conflictPolicyCaption": {
     "sourceHash": "cec5c27"
   },
-  "fileOperations.transferProgress.policyName.skip": "Skip",
+  "fileOperations.transferProgress.policyName.skip": "Hoppa över",
   "@fileOperations.transferProgress.policyName.skip": {
     "sourceHash": "28d0359"
   },
-  "fileOperations.transferProgress.policyName.overwrite": "Overwrite",
+  "fileOperations.transferProgress.policyName.overwrite": "Skriva över",
   "@fileOperations.transferProgress.policyName.overwrite": {
     "sourceHash": "b24963e"
   },
-  "fileOperations.transferProgress.policyName.overwriteSmaller": "Overwrite if smaller",
+  "fileOperations.transferProgress.policyName.overwriteSmaller": "Skriva över om mindre",
   "@fileOperations.transferProgress.policyName.overwriteSmaller": {
     "sourceHash": "0473dc5"
   },
-  "fileOperations.transferProgress.policyName.overwriteOlder": "Overwrite if older",
+  "fileOperations.transferProgress.policyName.overwriteOlder": "Skriva över om äldre",
   "@fileOperations.transferProgress.policyName.overwriteOlder": {
     "sourceHash": "6c111a2"
   },
-  "fileOperations.transferProgress.policyName.askEach": "Ask for each",
+  "fileOperations.transferProgress.policyName.askEach": "Fråga för varje",
   "@fileOperations.transferProgress.policyName.askEach": {
     "sourceHash": "4302843"
   },
-  "fileOperations.transferProgress.policyName.rename": "Rename",
+  "fileOperations.transferProgress.policyName.rename": "Byta namn",
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
@@ -1285,13 +1285,13 @@
   "@fileOperations.validation.empty": {
     "sourceHash": "2a25343"
   },
-  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})} other {Filename is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})}}",
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Mappnamnet är för långt ({byteCount}/{maxBytes} {max, plural, one {byte} other {byte}})} other {Filnamnet är för långt ({byteCount}/{maxBytes} {max, plural, one {byte} other {byte}})}}",
   "@fileOperations.validation.nameTooLong": {
-    "sourceHash": "76a85fd"
+    "sourceHash": "4978a6f"
   },
-  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathTooLong": "Hela sökvägen är för lång ({byteCount}/{maxBytes} {max, plural, one {byte} other {byte}})",
   "@fileOperations.validation.pathTooLong": {
-    "sourceHash": "1658c7a"
+    "sourceHash": "9aa3b43"
   },
   "fileOperations.validation.extensionChangeBlocked": "Det går inte att ändra filtillägget (var ”{oldExt}”)",
   "@fileOperations.validation.extensionChangeBlocked": {
@@ -1317,13 +1317,13 @@
   "@fileOperations.validation.pathNullChar": {
     "sourceHash": "271149f"
   },
-  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathTotalTooLong": "Sökvägen är för lång ({byteCount}/{maxBytes} {max, plural, one {byte} other {byte}})",
   "@fileOperations.validation.pathTotalTooLong": {
-    "sourceHash": "30aca7d"
+    "sourceHash": "dd75780"
   },
-  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathSegmentTooLong": "Ett mappnamn i sökvägen är för långt ({byteCount}/{maxBytes} {max, plural, one {byte} other {byte}})",
   "@fileOperations.validation.pathSegmentTooLong": {
-    "sourceHash": "75b2602"
+    "sourceHash": "c0773d3"
   },
   "fileOperations.transferTree.treeLabel": "Filer i den här överföringen",
   "@fileOperations.transferTree.treeLabel": {

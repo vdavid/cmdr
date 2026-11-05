@@ -19,17 +19,17 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "Tack till…",
+  "commands.appAcknowledgements.label": "Tack till",
   "@commands.appAcknowledgements.label": {
-    "sourceHash": "7d0e506"
+    "sourceHash": "c9015d5"
   },
   "commands.appLicenseKey.seeDetails.label": "Visa licensinformation",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
   },
-  "commands.appLicenseKey.enterKey.label": "Ange licensnyckel",
+  "commands.appLicenseKey.enterKey.label": "Ange licensnyckel…",
   "@commands.appLicenseKey.enterKey.label": {
-    "sourceHash": "357d05e"
+    "sourceHash": "24a8d77"
   },
   "commands.appCommandPalette.label": "Öppna kommandopaletten",
   "@commands.appCommandPalette.label": {
@@ -43,17 +43,17 @@
   "@commands.appCheckForUpdates.label": {
     "sourceHash": "52d6f7d"
   },
-  "commands.appCheckForUpdates.description": "Kontrollera om en nyare version av Cmdr finns, och hämta den i så fall",
+  "commands.appCheckForUpdates.description": "Söker efter en nyare version av Cmdr och hämtar den om det finns någon",
   "@commands.appCheckForUpdates.description": {
-    "sourceHash": "c53dab0"
+    "sourceHash": "90523c6"
   },
   "commands.cmdrOpenOnboarding.label": "Introduktion…",
   "@commands.cmdrOpenOnboarding.label": {
     "sourceHash": "c4cc4aa"
   },
-  "commands.cmdrOpenOnboarding.description": "Öppna introduktionsguiden igen för att gå igenom eller ändra inställningar från första starten",
+  "commands.cmdrOpenOnboarding.description": "Öppnar introduktionsguiden igen så att du kan gå igenom eller ändra inställningarna från första starten",
   "@commands.cmdrOpenOnboarding.description": {
-    "sourceHash": "a45c542"
+    "sourceHash": "fc0a198"
   },
   "commands.appToggleCliCommand.install.label": "Installera kommandot ”cmdr”",
   "@commands.appToggleCliCommand.install.label": {
@@ -67,74 +67,74 @@
   "@commands.appToggleCliCommand.homebrew.label": {
     "sourceHash": "cc4c0fd"
   },
-  "commands.appToggleCliCommand.description": "Skriv cmdr och en sökväg i en terminal för att öppna filen eller mappen i Cmdr",
+  "commands.appToggleCliCommand.description": "Låter dig skriva cmdr och en sökväg i en terminal för att öppna filen eller mappen i Cmdr",
   "@commands.appToggleCliCommand.description": {
-    "sourceHash": "ce7efbd"
+    "sourceHash": "73b4f32"
   },
   "commands.helpOpenShortcuts.label": "Tangentbordsgenvägar",
   "@commands.helpOpenShortcuts.label": {
     "sourceHash": "e9bef0b"
   },
-  "commands.helpOpenShortcuts.description": "Öppna ett skrivskyddat fönster med alla tangentbordsgenvägar, synkat i realtid med dina anpassningar",
+  "commands.helpOpenShortcuts.description": "Öppnar ett skrivskyddat fönster med alla tangentbordsgenvägar, synkat i realtid med dina anpassningar",
   "@commands.helpOpenShortcuts.description": {
-    "sourceHash": "a9a1e0d"
+    "sourceHash": "caa15c9"
   },
   "commands.helpAccessibility.label": "Hjälpmedelsguide",
   "@commands.helpAccessibility.label": {
     "sourceHash": "eee67fa"
   },
-  "commands.helpAccessibility.description": "Öppna guiden till Cmdrs hjälpmedelsfunktioner på getcmdr.com",
+  "commands.helpAccessibility.description": "Öppnar guiden till Cmdrs hjälpmedelsfunktioner på getcmdr.com",
   "@commands.helpAccessibility.description": {
-    "sourceHash": "2ece797"
+    "sourceHash": "7104ee3"
   },
   "commands.helpSendErrorReport.label": "Skicka felrapport…",
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
-  "commands.helpSendErrorReport.description": "Skicka Cmdr-loggar till teamet för att hjälpa till att lösa något som gick fel",
+  "commands.helpSendErrorReport.description": "Skickar Cmdr-loggar till teamet för att hjälpa till att lösa något som gick fel",
   "@commands.helpSendErrorReport.description": {
-    "sourceHash": "021d333"
+    "sourceHash": "7615640"
   },
   "commands.queueShow.label": "Åtgärdskö",
   "@commands.queueShow.label": {
     "sourceHash": "fa91417"
   },
-  "commands.queueShow.description": "Öppna ett fönster med alla pågående och väntande åtgärder, där du kan pausa, återuppta eller avbryta dem",
+  "commands.queueShow.description": "Öppnar ett fönster med alla pågående och väntande åtgärder, där du kan pausa, återuppta eller avbryta dem",
   "@commands.queueShow.description": {
-    "sourceHash": "37b616a"
+    "sourceHash": "4511b63"
   },
   "commands.helpWhatsNew.label": "Nyheter",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "37e6112"
   },
-  "commands.helpWhatsNew.description": "Se vad som ändrats i de senaste versionerna av Cmdr",
+  "commands.helpWhatsNew.description": "Visar vad som ändrats i de senaste versionerna av Cmdr",
   "@commands.helpWhatsNew.description": {
-    "sourceHash": "f8ad411"
+    "sourceHash": "4e04cc8"
   },
   "commands.logOperationLog.label": "Åtgärdslogg",
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
-  "commands.logOperationLog.description": "Se en historik över dina filåtgärder och ångra dem",
+  "commands.logOperationLog.description": "Visar en historik över dina filåtgärder och låter dig ångra dem",
   "@commands.logOperationLog.description": {
-    "sourceHash": "ea2d082"
+    "sourceHash": "70b7bcd"
   },
   "commands.askCmdrToggle.label": "Ask Cmdr",
   "@commands.askCmdrToggle.label": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name; kept verbatim in every locale (do-not-translate list)."
   },
-  "commands.askCmdrToggle.description": "Chatta med en AI om dina filer, enheter och historik",
+  "commands.askCmdrToggle.description": "Öppnar en chatt med en AI om dina filer, enheter och historik",
   "@commands.askCmdrToggle.description": {
-    "sourceHash": "c520468"
+    "sourceHash": "a25a7a4"
   },
   "commands.askCmdrNewChat.label": "Ny Ask Cmdr-chatt",
   "@commands.askCmdrNewChat.label": {
     "sourceHash": "54ebf70"
   },
-  "commands.askCmdrNewChat.description": "Starta en ny chatt i Ask Cmdr och öppna panelen om den är stängd",
+  "commands.askCmdrNewChat.description": "Startar en ny chatt i Ask Cmdr och öppnar panelen om den är stängd",
   "@commands.askCmdrNewChat.description": {
-    "sourceHash": "957741b"
+    "sourceHash": "aa3c28c"
   },
   "commands.askCmdrFind.label": "Sök i chatten",
   "@commands.askCmdrFind.label": {
@@ -152,9 +152,9 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Berätta för den som skapat Cmdr vad du tycker: idéer, önskemål, vad som helst",
+  "commands.feedbackSend.description": "Låter dig berätta för den som skapat Cmdr vad du tycker: idéer, önskemål, vad som helst",
   "@commands.feedbackSend.description": {
-    "sourceHash": "89d08a8"
+    "sourceHash": "30c0620"
   },
   "commands.searchOpen.label": "Sök filer",
   "@commands.searchOpen.label": {
@@ -164,25 +164,25 @@
   "@commands.navGoToPath.label": {
     "sourceHash": "33de610"
   },
-  "commands.navGoToPath.description": "Hoppa med den fokuserade panelen till en inskriven, inklistrad eller nyligen använd sökväg.",
+  "commands.navGoToPath.description": "Tar den fokuserade panelen direkt till en inskriven, inklistrad eller nyligen använd sökväg.",
   "@commands.navGoToPath.description": {
-    "sourceHash": "fc6a00c"
+    "sourceHash": "0b91354"
   },
   "commands.favoritesAdd.label": "Lägg till i favoriter",
   "@commands.favoritesAdd.label": {
     "sourceHash": "7f3c078"
   },
-  "commands.favoritesAdd.description": "Lägg till den fokuserade panelens aktuella mapp i favoriter, så tar favoritmenyn dig tillbaka dit när som helst.",
+  "commands.favoritesAdd.description": "Lägger till den fokuserade panelens aktuella mapp i favoriter, så att favoritmenyn kan ta dig tillbaka dit.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "999aa52"
+    "sourceHash": "43043e8"
   },
   "commands.favoritesOpen.label": "Visa favoriter",
   "@commands.favoritesOpen.label": {
     "sourceHash": "f4dfe9b"
   },
-  "commands.favoritesOpen.description": "Öppna favoritmenyn på den fokuserade panelen och tryck på en siffra för att gå till den favoriten.",
+  "commands.favoritesOpen.description": "Öppnar favoritmenyn på den fokuserade panelen, där en siffertangent tar dig till favoriten med den siffran.",
   "@commands.favoritesOpen.description": {
-    "sourceHash": "d188872"
+    "sourceHash": "5fcfcee"
   },
   "commands.favoritesOpenByNumber.label": "Öppna favoriten med den siffran",
   "@commands.favoritesOpenByNumber.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "Öppna ~/Downloads och markera den senaste filen.",
+  "commands.downloadsGoToLatest.description": "Öppnar ~/Downloads och markerar den senaste filen.",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "42a26a2"
+    "sourceHash": "6b3fe83"
   },
   "commands.viewShowHidden.label": "Visa eller göm dolda filer",
   "@commands.viewShowHidden.label": {
@@ -296,25 +296,25 @@
   "@commands.paneClone.label": {
     "sourceHash": "74b2c7f"
   },
-  "commands.paneClone.description": "Öppna den här panelens mapp i den andra panelen också.",
+  "commands.paneClone.description": "Öppnar den här panelens mapp i den andra panelen också.",
   "@commands.paneClone.description": {
-    "sourceHash": "8a13dc9"
+    "sourceHash": "fcbddd9"
   },
   "commands.paneFocusControls.label": "Flytta fokus till panelens reglage",
   "@commands.paneFocusControls.label": {
     "sourceHash": "b71f4ad"
   },
-  "commands.paneFocusControls.description": "Nå den fokuserade panelens flikar, platsfält och sorteringsknappar från tangentbordet. Piltangenterna flyttar fokus mellan dem och Escape tar dig tillbaka till filerna.",
+  "commands.paneFocusControls.description": "Flyttar tangentbordsfokus till den fokuserade panelens flikar, platsfält och sorteringsknappar. Piltangenterna flyttar fokus mellan dem och Escape tar dig tillbaka till filerna.",
   "@commands.paneFocusControls.description": {
-    "sourceHash": "e5828ae"
+    "sourceHash": "ffce489"
   },
   "commands.appFocusNotifications.label": "Flytta fokus till aviseringarna",
   "@commands.appFocusNotifications.label": {
     "sourceHash": "628f0e5"
   },
-  "commands.appFocusNotifications.description": "Nå aviseringarna och deras knappar, som Ångra, från tangentbordet. Piltangenterna flyttar fokus mellan dem och Escape tar dig tillbaka.",
+  "commands.appFocusNotifications.description": "Flyttar tangentbordsfokus till aviseringarna och deras knappar, som Ångra. Piltangenterna flyttar fokus mellan dem och Escape tar dig tillbaka.",
   "@commands.appFocusNotifications.description": {
-    "sourceHash": "87886a4"
+    "sourceHash": "8157823"
   },
   "commands.editUndoTrash.label": "Ångra flytt till papperskorgen",
   "@commands.editUndoTrash.label": {
@@ -328,9 +328,9 @@
   "@commands.editUndoTrash.many": {
     "sourceHash": "69c4966"
   },
-  "commands.editUndoTrash.description": "Lägg tillbaka filerna du senast flyttade till papperskorgen",
+  "commands.editUndoTrash.description": "Lägger tillbaka filerna du senast flyttade till papperskorgen",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "3aa756f"
+    "sourceHash": "dca1b63"
   },
   "commands.paneLeftVolumeChooser.label": "Öppna vänster volymväljare",
   "@commands.paneLeftVolumeChooser.label": {
@@ -344,17 +344,17 @@
   "@commands.paneCopyPathLeftToRight.label": {
     "sourceHash": "d1376f6"
   },
-  "commands.paneCopyPathLeftToRight.description": "Öppna vänster panels plats till höger. När vänster panel är fokuserad och markören står på en mapp öppnas den mappen till höger i stället.",
+  "commands.paneCopyPathLeftToRight.description": "Öppnar vänster panels plats till höger. När vänster panel är fokuserad och markören står på en mapp öppnas den mappen till höger i stället.",
   "@commands.paneCopyPathLeftToRight.description": {
-    "sourceHash": "07ac6a1"
+    "sourceHash": "d866ae5"
   },
   "commands.paneCopyPathRightToLeft.label": "Kopiera sökväg från höger till vänster panel",
   "@commands.paneCopyPathRightToLeft.label": {
     "sourceHash": "266a30d"
   },
-  "commands.paneCopyPathRightToLeft.description": "Öppna höger panels plats till vänster. När höger panel är fokuserad och markören står på en mapp öppnas den mappen till vänster i stället.",
+  "commands.paneCopyPathRightToLeft.description": "Öppnar höger panels plats till vänster. När höger panel är fokuserad och markören står på en mapp öppnas den mappen till vänster i stället.",
   "@commands.paneCopyPathRightToLeft.description": {
-    "sourceHash": "95c566f"
+    "sourceHash": "052c7cd"
   },
   "commands.paneRefresh.label": "Uppdatera panel",
   "@commands.paneRefresh.label": {
@@ -416,13 +416,13 @@
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
-  "commands.navUp.label": "Markera föregående fil",
+  "commands.navUp.label": "Flytta markören till föregående objekt",
   "@commands.navUp.label": {
-    "sourceHash": "40dca00"
+    "sourceHash": "6197d1a"
   },
-  "commands.navDown.label": "Markera nästa fil",
+  "commands.navDown.label": "Flytta markören till nästa objekt",
   "@commands.navDown.label": {
-    "sourceHash": "61e81ee"
+    "sourceHash": "8b5b37b"
   },
   "commands.navOpen.label": "Öppna fil eller mapp",
   "@commands.navOpen.label": {
@@ -504,15 +504,15 @@
   "@commands.paneQuickFilter.label": {
     "sourceHash": "e731882"
   },
-  "commands.paneQuickFilter.description": "Öppnar filtermärket med det aktuella mönstret. Tryck igen för att växla mellan ”Filtrera” och ”Hoppa”",
+  "commands.paneQuickFilter.description": "Öppnar märket med det du har skrivit hittills. Tryck igen för att växla mellan ”Filtrera” och ”Hoppa”",
   "@commands.paneQuickFilter.description": {
-    "sourceHash": "2778526"
+    "sourceHash": "e531430"
   },
   "commands.fileMultiRename.label": "Massbyt namn",
   "@commands.fileMultiRename.label": {
     "sourceHash": "5ceb1a2"
   },
-  "commands.fileMultiRename.description": "Byt namn på de markerade filerna (eller filen under markören) med en namnmask, en räknare och sök och ersätt",
+  "commands.fileMultiRename.description": "Byter namn på de markerade filerna (eller filen under markören) med en namnmask, en räknare och sök och ersätt",
   "@commands.fileMultiRename.description": {
     "sourceHash": "d3a52f1"
   },
@@ -724,9 +724,9 @@
   "@commands.fileDuplicate.label": {
     "sourceHash": "02cdaab"
   },
-  "commands.fileDuplicate.description": "Skapa en kopia av de markerade filerna i samma mapp",
+  "commands.fileDuplicate.description": "Skapar en kopia av de markerade filerna i samma mapp",
   "@commands.fileDuplicate.description": {
-    "sourceHash": "2c038a2"
+    "sourceHash": "5c02b66"
   },
   "commands.fileCompress.label": "Komprimera",
   "@commands.fileCompress.label": {
@@ -736,33 +736,33 @@
   "@commands.editCopy.label": {
     "sourceHash": "b749e20"
   },
-  "commands.editCopy.description": "Kopiera markerade filer till urklipp för inklistring",
+  "commands.editCopy.description": "Kopierar markerade filer till urklipp för inklistring",
   "@commands.editCopy.description": {
-    "sourceHash": "5c769a7"
+    "sourceHash": "3ded30a"
   },
   "commands.editCut.label": "Klipp ut till urklipp",
   "@commands.editCut.label": {
     "sourceHash": "a954b4a"
   },
-  "commands.editCut.description": "Klipp ut markerade filer (inklistring flyttar dem)",
+  "commands.editCut.description": "Klipper ut markerade filer (inklistring flyttar dem)",
   "@commands.editCut.description": {
-    "sourceHash": "5bc3870"
+    "sourceHash": "1e03b84"
   },
   "commands.editPaste.label": "Klistra in",
   "@commands.editPaste.label": {
     "sourceHash": "f3380f7"
   },
-  "commands.editPaste.description": "Klistra in filer från urklipp i den aktuella mappen",
+  "commands.editPaste.description": "Klistrar in filer från urklipp i den aktuella mappen",
   "@commands.editPaste.description": {
-    "sourceHash": "32545d7"
+    "sourceHash": "9eca6d3"
   },
   "commands.editPasteAsMove.label": "Flytta hit",
   "@commands.editPasteAsMove.label": {
     "sourceHash": "56f1247"
   },
-  "commands.editPasteAsMove.description": "Klistra in filer från urklipp som en flytt",
+  "commands.editPasteAsMove.description": "Klistrar in filer från urklipp som en flytt",
   "@commands.editPasteAsMove.description": {
-    "sourceHash": "961316d"
+    "sourceHash": "41e9245"
   },
   "commands.fileNewFolder.label": "Ny mapp",
   "@commands.fileNewFolder.label": {
@@ -784,9 +784,9 @@
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "Öppna papperskorgen på enheten du bläddrar i",
+  "commands.fileGoToTrash.description": "Öppnar papperskorgen på enheten du bläddrar i",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "73eae92"
+    "sourceHash": "6496c25"
   },
   "commands.dialogConfirm.label": "Bekräfta dialogen på skärmen",
   "@commands.dialogConfirm.label": {
@@ -804,9 +804,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Öppna din terminalapp i mappen du tittar på",
+  "commands.fileOpenTerminalHere.description": "Öppnar din terminalapp i mappen du tittar på",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "ac0ddb8"
+    "sourceHash": "f03d961"
   },
   "commands.fileCopyPath.label": "Kopiera sökväg till urklipp",
   "@commands.fileCopyPath.label": {
@@ -1280,17 +1280,17 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "1a1f5b9"
   },
-  "commands.suggestedOpsShow.description": "Granska filåtgärderna som AI:n föreslog och bestäm vad som körs",
+  "commands.suggestedOpsShow.description": "Visar filåtgärderna som AI:n föreslog, så att du kan bestämma vad som körs",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "7efe8c9"
+    "sourceHash": "5468fcf"
   },
   "commands.helpViewDebugLog.label": "Visa felsökningslogg",
   "@commands.helpViewDebugLog.label": {
     "sourceHash": "007c98d"
   },
-  "commands.helpViewDebugLog.description": "Följ Cmdrs felsökningslogg i realtid i filförhandsvisningen",
+  "commands.helpViewDebugLog.description": "Visar Cmdrs felsökningslogg i realtid i filförhandsvisningen",
   "@commands.helpViewDebugLog.description": {
-    "sourceHash": "a937e6e"
+    "sourceHash": "06f49ab"
   },
   "commands.handler.viewDebugLog.disabled": "Logglagringen är avstängd. Ställ in en diskutrymmesgräns över 0 i Inställningar > Avancerat och starta sedan om Cmdr för att visa felsökningsloggen.",
   "@commands.handler.viewDebugLog.disabled": {
