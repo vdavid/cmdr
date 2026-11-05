@@ -237,6 +237,18 @@ When a hot-path op hits an error that ends the session (§ "Which session a loss
 The frontend reconnect manager listens for this event and runs a per-volume backoff cycle (timer-driven, calling the
 `reconnect_smb_volume(volumeId)` Tauri command on each tick).
 
+**A connection the server closed while idle comes back on the next lease, silently.** Samba's `deadtime` (`10` minutes
+on David's QNAP, verified 2026-11-05 via `testparm -sv` over SSH) hangs up on a connection with no open files. With
+nothing outstanding, no call sees it go: smb2's receiver logs `idle teardown (no waiters)` and the share still reads
+`Direct` (prod logs showed it about every 11 minutes of quiet, the watcher's own session staying up). `clone_session`
+checks the leased connection's `is_disconnected()`, and on a torn-down one calls `revive_idle_closed`: the same
+`reconnect_once` rebuild below, allowed past its "already `Direct`" exit because it names the closed session's
+generation. The state never leaves `Direct`, so `transition_to_direct` reports no flip and the pane shows nothing; the
+call that found it runs on the new session. Only a revival that fails calls `transition_to_disconnected`, which
+announces the loss and starts the frontend's cycle. ❌ No keepalive to stop the hang-up: it would hold a session (and
+the NAS's disks) awake forever, and the dial costs about 0.2 s. Pinned by
+`smb_integration_a_connection_the_server_closed_while_idle_comes_back_on_next_use` and its failure-path sibling.
+
 `SmbVolume::do_attempt_reconnect` is the single source of truth for re-establishing the session:
 
 1. Acquires `reconnect_lock` (single-flight: concurrent FE-cycle and lazy-nav callers wait here).

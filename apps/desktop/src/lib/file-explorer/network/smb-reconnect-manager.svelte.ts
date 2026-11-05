@@ -49,11 +49,23 @@ const log = getAppLogger('smbReconnect')
  * Backoff schedule for reconnect attempts. The total wait time is the sum of
  * these delays. Single source of truth; every label and progress bar derives
  * from this array, so changing it propagates to the UI automatically.
+ *
+ * The first attempt waits for nothing and runs QUIET ({@link QUIET_ATTEMPT_GRACE_MS}):
+ * most drops (a NAS hanging up on an idle connection, a socket that died while
+ * the Mac slept) come back on the first dial in a fraction of a second, and a
+ * progress bar counting down to it only made a healthy share look broken.
  */
-export const RECONNECT_DELAYS_MS = [2000, 4000, 8000, 16000, 30000] as const
+export const RECONNECT_DELAYS_MS = [0, 2000, 4000, 8000, 16000, 30000] as const
+
+/**
+ * How long the first attempt may run before the pane shows the cycle. A dial that
+ * comes back inside it shows nothing; one that fails sooner moves to the next
+ * attempt, which shows at once; one still dialing after it shows as attempting.
+ */
+export const QUIET_ATTEMPT_GRACE_MS = 1000
 
 /** Sum of `RECONNECT_DELAYS_MS`. Cached once because it's constant. */
-export const TOTAL_DURATION_MS = RECONNECT_DELAYS_MS.reduce((a, b) => a + b, 0)
+export const TOTAL_DURATION_MS = RECONNECT_DELAYS_MS.reduce<number>((a, b) => a + b, 0)
 
 /** Number of attempts in a full cycle. */
 export const TOTAL_ATTEMPTS = RECONNECT_DELAYS_MS.length
@@ -133,6 +145,14 @@ class VolumeEntry {
   refcount = 0
   /** Active `setTimeout` handle for the next attempt, if `status === 'waiting'`. */
   timerId: ReturnType<typeof setTimeout> | null = null
+  /**
+   * Whether the first attempt has outlasted {@link QUIET_ATTEMPT_GRACE_MS} (or a
+   * person asked for it with "Retry now"), so the pane shows it. Later attempts
+   * always show.
+   */
+  firstAttemptShown = $state(false)
+  /** The grace timer that flips `firstAttemptShown`. */
+  graceTimerId: ReturnType<typeof setTimeout> | null = null
   /**
    * Bumped by every Cancel. An attempt that was in flight when it landed reads a
    * different number on its way back and drops its answer, so a failure can't
@@ -238,6 +258,7 @@ class SmbReconnectManager {
           log.debug('unsubscribe({volumeId}): refcount={refcount}', { volumeId, refcount: e.refcount })
           if (e.refcount <= 0) {
             if (e.timerId) clearTimeout(e.timerId)
+            clearGrace(e)
             this.map.delete(volumeId)
           }
         })
@@ -254,6 +275,10 @@ class SmbReconnectManager {
     if (entry.state.status === 'waiting' && entry.timerId === null && entry.state.attemptIndex === 0) {
       return null
     }
+    // The quiet first attempt, inside its grace: nothing to show yet.
+    const { status, attemptIndex } = entry.state
+    const dialing = status === 'waiting' || status === 'attempting'
+    if (dialing && attemptIndex === 0 && !entry.firstAttemptShown) return null
     return entry.state
   }
 
@@ -305,6 +330,10 @@ class SmbReconnectManager {
         clearTimeout(entry.timerId)
         entry.timerId = null
       }
+      // A person asked: the attempt shows from the start, ❌ never a quiet one
+      // that blanks the view they just clicked in.
+      clearGrace(entry)
+      entry.firstAttemptShown = true
       void this.runAttempt(volumeId, 0)
     })
   }
@@ -320,6 +349,7 @@ class SmbReconnectManager {
       if (!entry) return
       if (entry.timerId) clearTimeout(entry.timerId)
       entry.timerId = null
+      clearGrace(entry)
       entry.cycle++
       entry.state = freshState()
     })
@@ -444,6 +474,7 @@ class SmbReconnectManager {
       if (noActiveCycle) return
       if (entry.timerId) clearTimeout(entry.timerId)
       entry.timerId = null
+      clearGrace(entry)
       entry.state = freshState()
       for (const cb of entry.successCallbacks) {
         try {
@@ -465,6 +496,14 @@ class SmbReconnectManager {
     const entry = this.map.get(volumeId)
     if (!entry) return
     const delay = RECONNECT_DELAYS_MS[attemptIndex]
+    if (attemptIndex === 0) {
+      clearGrace(entry)
+      entry.firstAttemptShown = false
+      entry.graceTimerId = setTimeout(() => {
+        entry.graceTimerId = null
+        entry.firstAttemptShown = true
+      }, QUIET_ATTEMPT_GRACE_MS)
+    }
     entry.state = {
       status: 'waiting',
       attemptIndex,
@@ -524,6 +563,12 @@ class SmbReconnectManager {
       }
     }
   }
+}
+
+/** Stops a quiet first attempt's grace timer, if one is running. */
+function clearGrace(entry: VolumeEntry): void {
+  if (entry.graceTimerId) clearTimeout(entry.graceTimerId)
+  entry.graceTimerId = null
 }
 
 function freshState(): ReconnectState {

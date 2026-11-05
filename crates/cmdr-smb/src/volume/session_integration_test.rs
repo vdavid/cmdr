@@ -131,6 +131,87 @@ async fn smb_integration_reconnect_repoints_the_liveness_reading() {
         .expect("the rebuilt session works");
 }
 
+/// A server that hangs up on an idle connection (Samba's `deadtime`, 10 minutes on a QNAP)
+/// leaves the share reading `Direct` over a torn-down connection: nothing was outstanding, so
+/// no call saw it go. The next use dials a fresh session in place and answers, with no
+/// `disconnected` announced: the pane never shows a reconnect for a drop nobody saw.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_connection_the_server_closed_while_idle_comes_back_on_next_use() {
+    use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeConnection};
+    let events = Arc::new(RecordingVolumeEvents::new());
+    let vol = make_docker_volume_with_host(VolumeHost::builder().events(events.clone()).build()).await;
+    let before = Volume::connection_generation(&vol).expect("SMB reports a generation");
+
+    // The server's hang-up, as smb2 sees it with no waiters: the connection is torn down.
+    let dead = vol
+        .inner
+        .session
+        .lock()
+        .await
+        .as_ref()
+        .expect("connected")
+        .client
+        .connection()
+        .clone();
+    dead.mark_dead();
+    assert!(dead.is_disconnected());
+    assert_eq!(vol.session_state(), ConnectionState::Direct, "nothing has noticed yet");
+
+    vol.list_directory_impl(Path::new(""))
+        .await
+        .expect("the next use reconnects in place and answers");
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
+    assert_eq!(
+        Volume::connection_generation(&vol),
+        Some(before + 1),
+        "the revived session is a new generation"
+    );
+    assert!(
+        !events
+            .transitions()
+            .iter()
+            .any(|(_, state)| *state == VolumeConnection::Disconnected),
+        "a silent revival announces no disconnect: {:?}",
+        events.transitions()
+    );
+}
+
+/// The revival's other end: when the in-place dial doesn't come up, the share is lost after
+/// all, announced once, so the pane's reconnect cycle takes over from there.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_an_idle_closed_connection_that_cannot_come_back_marks_the_share_lost() {
+    use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeConnection};
+    let events = Arc::new(RecordingVolumeEvents::new());
+    let vol = make_docker_volume_with_host(VolumeHost::builder().events(events.clone()).build()).await;
+
+    // Nothing listens here, so the revival's dial is refused at once.
+    vol.inner.params.write().await.port = 1;
+    vol.inner
+        .session
+        .lock()
+        .await
+        .as_ref()
+        .expect("connected")
+        .client
+        .connection()
+        .mark_dead();
+
+    assert!(vol.list_directory_impl(Path::new("")).await.is_err());
+    assert_eq!(vol.session_state(), ConnectionState::Disconnected);
+    assert_eq!(
+        events
+            .transitions()
+            .iter()
+            .filter(|(_, state)| *state == VolumeConnection::Disconnected)
+            .count(),
+        1,
+        "the loss is announced once: {:?}",
+        events.transitions()
+    );
+}
+
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_attempt_reconnect_noop_when_already_direct() {

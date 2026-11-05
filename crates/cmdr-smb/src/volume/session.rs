@@ -96,7 +96,42 @@ impl SmbVolume {
     /// Callers can then drive `Tree::download` / `Tree::read_file_compound_sized` /
     /// `Tree::write_file_compound` on the owned `Connection` without holding
     /// any lock, enabling multiple concurrent copies on a single `SmbVolume`.
+    ///
+    /// ❗ A connection the server closed while IDLE (Samba's `deadtime`: a QNAP
+    /// hangs up after 10 quiet minutes) is torn down with nobody waiting on it,
+    /// so the share still reads `Direct`. This lease is where that's found: it
+    /// dials a fresh session in place, silently, and leases that one
+    /// (`SmbVolumeInner::revive_idle_closed`). Only a revival that fails marks
+    /// the share lost, which starts the pane's reconnect cycle.
     pub(super) async fn clone_session(&self) -> Result<SessionLease, VolumeError> {
+        let lease = self.lease_installed_session().await?;
+        if !lease.conn.is_disconnected() {
+            return Ok(self.measured(lease));
+        }
+        let closed = lease.generation;
+        drop(lease);
+        if let Err(e) = self.inner.revive_idle_closed(closed).await {
+            self.inner.transition_to_disconnected(closed);
+            return Err(e);
+        }
+        let lease = self.lease_installed_session().await?;
+        Ok(self.measured(lease))
+    }
+
+    /// Notes the credit window off a fresh lease, before any transfer has: a
+    /// small-window server's first batch is clamped too. Once a transfer session
+    /// is up, ITS window is what copies spend, and only `transfer_lease`
+    /// measures it.
+    fn measured(&self, lease: SessionLease) -> SessionLease {
+        if !self.inner.transfer.is_up() {
+            self.note_credit_capacity(&lease.conn);
+        }
+        lease
+    }
+
+    /// [`clone_session`](Self::clone_session)'s lease of whatever session is
+    /// installed, live or not.
+    async fn lease_installed_session(&self) -> Result<SessionLease, VolumeError> {
         self.check_connection()?;
         let ticket = CLIENT_LOCK_TICKET.fetch_add(1, Ordering::Relaxed);
         let start = std::time::Instant::now();
@@ -138,12 +173,6 @@ impl SmbVolume {
             );
             lease
         };
-        // Measure the window before any transfer has: a small-window server's
-        // first batch is clamped too. Once a transfer session is up, ITS window
-        // is what copies spend, and only `transfer_lease` measures it.
-        if !self.inner.transfer.is_up() {
-            self.note_credit_capacity(&lease.conn);
-        }
         Ok(lease)
     }
 
