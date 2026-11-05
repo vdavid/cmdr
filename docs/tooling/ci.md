@@ -72,8 +72,10 @@ A filter compares the PR's whole delta against `main`, so a docs fix pushed onto
 lane. `scripts/lane-markers/` hashes each lane's exact inputs (its filters' matches at the commit, its workflow and
 local actions, the toolchain pins, the check runner); a lane that passes saves a `lane-green-<lane>-<hash>` Actions
 cache entry, a later PR run that finds it in a trusted scope skips the lane, and `CI OK` re-proves every such skip.
-Pushes, dispatches, and `run_all` ignore markers. Trust argument, store choice, the one risk (a filter missing an input)
-and its guards, and the per-lane wiring: `scripts/lane-markers/DETAILS.md`.
+Pushes, dispatches, and `run_all` ignore markers. A light run doesn't run the heavy lanes, so it saves no marker for
+them; the land run does, and a later land run on the same inputs skips them (§ Light runs and land runs). Trust
+argument, store choice, the one risk (a filter missing an input) and its guards, and the per-lane wiring:
+`scripts/lane-markers/DETAILS.md`.
 
 The six path-filtered lanes are wired (`desktop-rust`, `desktop-rust-fixtures`, `desktop-rust-macos`, `desktop-svelte`,
 `desktop-e2e-linux`, `website`); the light lane isn't, since it gates on no filter. In `ci.yml`: `changes` plans
@@ -511,13 +513,50 @@ through `CODEQL_EXTRACTOR_RUST_OPTION_*` env vars.
   `filter-sarif.sh rust.sarif out.sarif`. Timing on an M-series Mac (CLI 2.27.1, 2026-10-08): Rust 8.5 min, JS/TS 1.3
   min, Actions 10 s.
 
+## Light runs and land runs
+
+An agent pushes each milestone with `pnpm land -no-wait`, and most of those pushes are never landed as they are. So a PR
+run is **light** until someone asks to land its head: `desktop-rust`, `desktop-rust-fixtures`, `desktop-rust-macos`,
+`desktop-e2e-linux`, and `e2e-base-image` skip, and every other lane runs as usual. `pnpm land` asks by adding the PR's
+`land` label; that `labeled` run, any re-run of it, and every later push while the label stays are **land runs**, where
+every lane the change needs runs or skips as a verified marker (§ Lane markers), the same gate as before.
+
+- **The gate's name is the line `main` holds.** `ci-ok`'s `name:` is `CI OK` on a land run and `CI light` on a light
+  one, so a light run's green gate is a check the ruleset doesn't accept. GitHub creates a job's check run only when the
+  job is queued, after its `needs` finished, with the name already evaluated, and a newer run whose gate is `CI light`
+  doesn't shadow an older green `CI OK` on the same SHA. Verified on throwaway PR #976 (2026-11-05) against a temporary
+  ruleset requiring `PROBE OK` on `refs/heads/probe-ruleset/**`: no gate check run existed while its `needs` job ran; a
+  push of a SHA carrying only a green `PROBE light` was refused with
+  `GH013 ... Required status check "PROBE OK" is expected`; a SHA with a green `PROBE OK` and a newer light re-run was
+  accepted. The real gate on PRs #977/#978: `docs/notes/ci-light-runs-2026-11-05.md`.
+- **Never a skipped `CI OK`**: GitHub counts a skipped required check as passing, and a skipped job does get a check run
+  (`Full run (run_all)` reads `skipped` on every PR). The gate runs on `always()`, so its name is always the evaluated
+  one. A failed `changes` on a pull request names it `CI light`, red.
+- **The mode is the event payload** (`changes`' `mode` step): non-PR events (pushes to `main`, dispatches, the schedule)
+  are always land runs, so `main`, `run_all`, and releases are untouched; a PR is a land run when its payload carries
+  the `land` label or its author is a bot (Renovate automerges on green `CI OK`). Labelling a PR needs triage access,
+  which a fork's author lacks, and a re-run keeps its payload, so it keeps its mode. Asking only ever adds lanes, so no
+  fork-controlled input can turn a light run into a passing one. A fork PR's run executes the fork's own workflow, which
+  the approval rule for outside contributors guards (§ The light lane).
+- **Any other label** also starts a `labeled` run. It checks nothing (`verified` is set), names its gate `CI light`, and
+  sits in a concurrency group of its own, so it can't cancel the PR's real run.
+- **`run-name` titles a light run `Light: <PR title>`** (other runs keep GitHub's default, which an empty `run-name`
+  falls back to), so `pnpm land` waits only on land runs (`scripts/land/DETAILS.md` § Decision: ask for a land run). It
+  mirrors the `mode` step; drift there can only make `land` wait on the wrong run, never land on one.
+- `ci-coverage` rule 5 pins the gate's name expression and the `land` output to `mode`
+  (`scripts/check/checks/ci-ok-gate.go`).
+- **Cost of the trade**: a light run runs no clippy, Rust test, or macOS build, so a Rust slip shows at land time
+  instead of at the milestone. Agents run `pnpm check clippy` and the Rust tests they touched before each commit
+  (`AGENTS.md` § Checker script).
+
 ## Branch protection
 
-`ci-ok` is the single required status check, and `main`'s ruleset names it by its check-run name, **`CI OK`** (❌ don't
-rename the job's `name:`). It needs every job in `ci.yml` except the post-land ones (`deploy-website` and the `warm-*`
-cache jobs), `changes` included, and passes only when each result is `success` or `skipped` and `changes` is `success`.
-A lane skipped by change detection passes; a failed `changes`, which skips every lane, is red. A lane that calls a lane
-file reports its whole file's result, so a red job inside it fails the gate.
+`ci-ok` is the single required status check, and `main`'s ruleset names it by its check-run name, **`CI OK`**, which the
+job reports on land runs only (§ Light runs and land runs; ❌ don't change the job's `name:` expression). It needs every
+job in `ci.yml` except the post-land ones (`deploy-website` and the `warm-*` cache jobs), `changes` included, and passes
+only when each result is `success` or `skipped` and `changes` is `success`. A lane skipped by change detection passes; a
+failed `changes`, which skips every lane, is red. A lane that calls a lane file reports its whole file's result, so a
+red job inside it fails the gate.
 
 One exception: on a `main` push, a `cancelled` `desktop-rust-macos` passes when `main` has moved past the commit (the
 current head differs from it and `compare/{sha}...{head}` reads `ahead`), because a newer push replaced it in the lane's

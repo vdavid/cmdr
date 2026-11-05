@@ -73,6 +73,28 @@ from, often has some.
 only when the release commit is on `origin/main`'s history, and local `main` synced by `fetch origin main:main`. Change
 it with the release flow (`docs/guides/releasing.md`).
 
+## Decision: ask for a land run
+
+Decision: a PR run is light (no Rust lanes, macOS, or Linux E2E; gate `CI light`) until `land` asks to land its head by
+adding the PR's `land` label (`docs/tooling/ci.md` § Light runs and land runs). Why: most `-no-wait` milestone pushes
+are never landed as they are, and each one used to pay the macOS lane's ~34 min and E2E's ~21.
+
+- **Asking** (`askToLand`, `nextLandAsk`): no label adds it, which starts a `labeled` land run on the head. With the
+  label on, a push already started one, so it waits; but when every run on the head is light (the label went on before
+  this head, or its run never started), it takes the label off and on again. A PR this land just opened carries the
+  label from `gh pr create`, which adds labels after opening, so its first light run is replaced by the label's.
+- **`-no-wait` drops the label before it pushes** (`dropLandLabel`), so a milestone push after an earlier land stays
+  light. A failed removal stops before the push, which would otherwise run every lane.
+- **Waiting reads land runs only** (`landRuns`): a run titled `Light: ` (`ci.yml`'s `run-name`) never reports `CI OK`,
+  so it's neither green nor red; with no land run listed yet the head reads as missing, and `appearWithin` bounds it. A
+  title that lies only makes the wait follow the wrong run: a light run finished without `CI OK` reads red, never green.
+- **Re-runs keep their mode** (a re-run keeps its event payload), so `gh run rerun --failed` on a land run is a land
+  run. A newer push while the label is on is a land run too, which is what the conflict rebase needs.
+- **`-record N`** opens the record PR with the label and asks the same way; its tree is `main`'s, so it still goes green
+  in about a minute.
+- Unit-tested (`TestNextLandAsk`, `TestCIVerdictIgnoresLightRuns`); the GitHub side on throwaway PR #978
+  (`docs/notes/ci-light-runs-2026-11-05.md`).
+
 ## Decision: `CI OK` decides, not the run status
 
 Decision: `ciVerdict` takes the newest CI run on the SHA and the newest `CI OK` check run of that run's current attempt,
