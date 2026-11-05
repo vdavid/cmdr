@@ -2,7 +2,7 @@
  * The range placeholders: `[N…]` `[E…]` `[P…]` `[G…]` and the full-name `[2-5]`, with `[N1]` one
  * character, `[N2-5]` a span, `[N2,5]` a start and length, `[N2-]` to the end, and negative
  * positions counting from the end (`[N-8-5]` is the 8th-to-last to the 5th-to-last). Reads exactly
- * what `range()` in `src-tauri/src/multi_rename/mask.rs` reads; both are tested against
+ * what `range()` in `crates/cmdr-multi-rename/src/mask.rs` reads; both are tested against
  * `range_token_vectors.json`.
  *
  * What a range TAKES from a name is the engine's answer (`getMultiRenameRangeSamples`), never

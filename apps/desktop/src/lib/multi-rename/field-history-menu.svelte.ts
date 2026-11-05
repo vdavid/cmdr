@@ -1,7 +1,7 @@
 /**
  * TC's per-field history (↓, or a field's chevron): one menu, shown under whichever text field asked, listing
  * what that field held when renames ran, newest first. A pick fills the field. The list is the
- * backend's (`src-tauri/src/multi_rename/history.rs`), recorded when a rename starts.
+ * backend's (`crates/cmdr-multi-rename/src/history.rs`), recorded when a rename starts.
  */
 
 import { getMultiRenameHistory, type FieldHistoryEntry, type HistoryField } from '#lib/tauri-commands/index.js'

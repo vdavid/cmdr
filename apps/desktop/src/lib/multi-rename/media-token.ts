@@ -3,7 +3,7 @@
  * `[=exif.taken:d]`, `[=exif.taken|modified:YMD_hms]`, `[=tag.track:2]`, or `[=tag.artist:1-10]`. The
  * format depends on the field's kind: a date takes the mask's date letters, a number a digit count, and
  * text a range. `|modified` (date fields only) falls back to the modified date. Reads exactly what
- * `media()` in `src-tauri/src/multi_rename/mask/media_token.rs` reads; both are tested against
+ * `media()` in `crates/cmdr-multi-rename/src/mask/media_token.rs` reads; both are tested against
  * `media_token_vectors.json`. Pure.
  */
 import type { MediaField } from '#lib/ipc/bindings.js'

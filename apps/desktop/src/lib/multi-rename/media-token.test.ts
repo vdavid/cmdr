@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import vectors from '../../../src-tauri/src/multi_rename/media_token_vectors.json'
+import vectors from '../../../../../crates/cmdr-multi-rename/src/media_token_vectors.json'
 import { MAX_COUNTER_DIGITS } from './counter-token'
 import { MEDIA_FIELDS, mediaFieldOfName, mediaKind, usesMediaFields } from './media-token'
 

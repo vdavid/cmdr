@@ -4,14 +4,15 @@ use std::sync::Arc;
 
 use tokio::time::Duration;
 
+use crate::multi_rename::app_files::{FIELD_HISTORY, LAST_SPEC};
 use crate::multi_rename::error::MultiRenameError;
-use crate::multi_rename::history::{FIELD_HISTORY, FieldHistoryEntry, MAX_FIELD_HISTORY, history_entries};
+use crate::multi_rename::history::{FieldHistoryEntry, MAX_FIELD_HISTORY, history_entries};
 use crate::multi_rename::media::{FieldSamples, MediaOverview, MediaProgress, MultiRenameMediaProgress, ProgressEmit};
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow, RenameExample, render_examples};
 use crate::multi_rename::preset_store::PRESETS;
 use crate::multi_rename::presets::{
-    LAST_SPEC, LastSpec, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PresetMove, PresetSaveRefusal,
-    PresetSeed, delete_in, move_in, rename_in, save_in, update_spec_in,
+    LastSpec, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PresetMove, PresetSaveRefusal, PresetSeed,
+    delete_in, move_in, rename_in, save_in, update_spec_in,
 };
 use crate::multi_rename::run::{MultiRenameStarted, apply};
 use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter, RangeSample, RowMove};

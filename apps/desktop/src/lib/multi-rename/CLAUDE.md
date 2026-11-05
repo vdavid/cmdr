@@ -40,7 +40,7 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - **F2 is also File > Rename's accelerator**: both roads end in `PresetsControl.pressOpenKey`, one toggle per press
   (`createKeyRoadEcho`). ❌ Don't call `openMenu` from a key path: the echo would close the menu it opened.
 - ⌘⌥ C/A/H/L/O/Q/T/V belong to app commands, D to the Dock, M to macOS. DETAILS § Layout and option keys.
-- **The `*-token.ts` grammars read tokens as `mask.rs` does** (`src-tauri/src/multi_rename/*_token_vectors.json`);
+- **The `*-token.ts` grammars read tokens as `mask.rs` does** (`crates/cmdr-multi-rename/src/*_token_vectors.json`);
   change one there first.
 - **Tooltip and editor examples are the engine's render.** ❌ No slicing or replacing in TS. DETAILS § Tooltip examples.
 - **A spec error keeps the last good preview** under the message; any other error clears it.

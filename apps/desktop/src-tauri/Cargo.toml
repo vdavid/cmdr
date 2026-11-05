@@ -127,6 +127,8 @@ cmdr-operations = { path = "../../../crates/cmdr-operations" }
 cmdr-listing = { path = "../../../crates/cmdr-listing" }
 # The file viewer's core; this crate hosts it (`src/file_viewer/`).
 cmdr-viewer = { path = "../../../crates/cmdr-viewer" }
+# The Multi-Rename Tool's engine; this crate hosts it (`src/multi_rename/`).
+cmdr-multi-rename = { path = "../../../crates/cmdr-multi-rename" }
 # The file-name collator the panes sort with. The write engine names it from
 # here rather than through `cmdr-listing`'s re-export, so it never needs the
 # listing engine for one type.
@@ -518,6 +520,7 @@ cmdr-listing = { path = "../../../crates/cmdr-listing", features = ["testing"] }
 # source-equivalence test pairs with a `MemorySource`.
 cmdr-search = { path = "../../../crates/cmdr-search", features = ["testing"] }
 cmdr-viewer = { path = "../../../crates/cmdr-viewer", features = ["testing"] }
+cmdr-multi-rename = { path = "../../../crates/cmdr-multi-rename", features = ["testing"] }
 # `cmdr_media_meta::test_fixtures`: real photos, songs, and movies for Multi-Rename's
 # end-to-end media test.
 cmdr-media-meta = { path = "../../../crates/cmdr-media-meta", features = ["testing"] }

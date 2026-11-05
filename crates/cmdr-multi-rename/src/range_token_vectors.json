@@ -19,11 +19,27 @@
     { "token": "[N2-]", "field": "name", "kind": "from", "at": 2, "to": null, "length": null, "minimal": "[N2-]" },
     { "token": "[N1-]", "field": "name", "kind": "from", "at": 1, "to": null, "length": null, "minimal": "[N]" },
     { "token": "[N-5-]", "field": "name", "kind": "from", "at": -5, "to": null, "length": null, "minimal": "[N-5-]" },
-    { "token": "[E-2-]", "field": "extension", "kind": "from", "at": -2, "to": null, "length": null, "minimal": "[E-2-]" },
+    {
+      "token": "[E-2-]",
+      "field": "extension",
+      "kind": "from",
+      "at": -2,
+      "to": null,
+      "length": null,
+      "minimal": "[E-2-]"
+    },
     { "token": "[N2,5]", "field": "name", "kind": "length", "at": 2, "to": null, "length": 5, "minimal": "[N2,5]" },
     { "token": "[N2,+3]", "field": "name", "kind": "length", "at": 2, "to": null, "length": 3, "minimal": "[N2,3]" },
     { "token": "[N-8,5]", "field": "name", "kind": "length", "at": -8, "to": null, "length": 5, "minimal": "[N-8,5]" },
-    { "token": "[P-3,3]", "field": "parent", "kind": "length", "at": -3, "to": null, "length": 3, "minimal": "[P-3,3]" },
+    {
+      "token": "[P-3,3]",
+      "field": "parent",
+      "kind": "length",
+      "at": -3,
+      "to": null,
+      "length": 3,
+      "minimal": "[P-3,3]"
+    },
     { "token": "[2-5]", "field": "fullName", "kind": "span", "at": 2, "to": 5, "length": null, "minimal": "[2-5]" },
     { "token": "[-3-]", "field": "fullName", "kind": "from", "at": -3, "to": null, "length": null, "minimal": "[-3-]" },
     { "token": "[1-]", "field": "fullName", "kind": "from", "at": 1, "to": null, "length": null, "minimal": "[1-]" },
@@ -52,25 +68,205 @@
   ],
   "notRanges": ["[C]", "[C10+5:3]", "[YMD]", "[D-M]", "[d]", "[t]", "[n]", "[U]", "[L]", "[F]"],
   "selections": [
-    { "field": "name", "length": 9, "first": 0, "last": 4, "startFromEnd": false, "endFromEnd": false, "form": "span", "token": "[N1-5]" },
-    { "field": "name", "length": 9, "first": 0, "last": 4, "startFromEnd": false, "endFromEnd": true, "form": "span", "token": "[N1--5]" },
-    { "field": "name", "length": 9, "first": 0, "last": 8, "startFromEnd": false, "endFromEnd": true, "form": "span", "token": "[N]" },
-    { "field": "name", "length": 9, "first": 0, "last": 8, "startFromEnd": false, "endFromEnd": false, "form": "span", "token": "[N1-9]" },
-    { "field": "name", "length": 9, "first": 5, "last": 8, "startFromEnd": true, "endFromEnd": true, "form": "span", "token": "[N-4-]" },
-    { "field": "name", "length": 9, "first": 5, "last": 8, "startFromEnd": false, "endFromEnd": true, "form": "span", "token": "[N6-]" },
-    { "field": "name", "length": 9, "first": 1, "last": 3, "startFromEnd": true, "endFromEnd": true, "form": "span", "token": "[N-8-6]" },
-    { "field": "name", "length": 9, "first": 1, "last": 3, "startFromEnd": true, "endFromEnd": false, "form": "span", "token": "[N-8-6]" },
-    { "field": "name", "length": 9, "first": 2, "last": 2, "startFromEnd": false, "endFromEnd": false, "form": "span", "token": "[N3]" },
-    { "field": "name", "length": 9, "first": 8, "last": 8, "startFromEnd": true, "endFromEnd": true, "form": "span", "token": "[N-1]" },
-    { "field": "name", "length": 9, "first": 2, "last": 2, "startFromEnd": false, "endFromEnd": true, "form": "span", "token": "[N3--7]" },
-    { "field": "name", "length": 9, "first": 6, "last": 8, "startFromEnd": false, "endFromEnd": true, "form": "length", "token": "[N7,3]" },
-    { "field": "name", "length": 9, "first": 6, "last": 8, "startFromEnd": true, "endFromEnd": true, "form": "length", "token": "[N-3,3]" },
-    { "field": "name", "length": 1, "first": 0, "last": 0, "startFromEnd": false, "endFromEnd": true, "form": "span", "token": "[N]" },
-    { "field": "fullName", "length": 13, "first": 0, "last": 12, "startFromEnd": false, "endFromEnd": true, "form": "span", "token": "[1-]" },
-    { "field": "fullName", "length": 13, "first": 10, "last": 12, "startFromEnd": true, "endFromEnd": true, "form": "span", "token": "[-3-]" },
-    { "field": "fullName", "length": 13, "first": 1, "last": 4, "startFromEnd": false, "endFromEnd": false, "form": "span", "token": "[2-5]" },
-    { "field": "extension", "length": 3, "first": 0, "last": 0, "startFromEnd": false, "endFromEnd": false, "form": "span", "token": "[E1]" },
-    { "field": "parent", "length": 11, "first": 0, "last": 5, "startFromEnd": false, "endFromEnd": false, "form": "length", "token": "[P1,6]" },
-    { "field": "grandparent", "length": 5, "first": 3, "last": 4, "startFromEnd": true, "endFromEnd": true, "form": "span", "token": "[G-2-]" }
+    {
+      "field": "name",
+      "length": 9,
+      "first": 0,
+      "last": 4,
+      "startFromEnd": false,
+      "endFromEnd": false,
+      "form": "span",
+      "token": "[N1-5]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 0,
+      "last": 4,
+      "startFromEnd": false,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[N1--5]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 0,
+      "last": 8,
+      "startFromEnd": false,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[N]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 0,
+      "last": 8,
+      "startFromEnd": false,
+      "endFromEnd": false,
+      "form": "span",
+      "token": "[N1-9]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 5,
+      "last": 8,
+      "startFromEnd": true,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[N-4-]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 5,
+      "last": 8,
+      "startFromEnd": false,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[N6-]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 1,
+      "last": 3,
+      "startFromEnd": true,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[N-8-6]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 1,
+      "last": 3,
+      "startFromEnd": true,
+      "endFromEnd": false,
+      "form": "span",
+      "token": "[N-8-6]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 2,
+      "last": 2,
+      "startFromEnd": false,
+      "endFromEnd": false,
+      "form": "span",
+      "token": "[N3]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 8,
+      "last": 8,
+      "startFromEnd": true,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[N-1]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 2,
+      "last": 2,
+      "startFromEnd": false,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[N3--7]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 6,
+      "last": 8,
+      "startFromEnd": false,
+      "endFromEnd": true,
+      "form": "length",
+      "token": "[N7,3]"
+    },
+    {
+      "field": "name",
+      "length": 9,
+      "first": 6,
+      "last": 8,
+      "startFromEnd": true,
+      "endFromEnd": true,
+      "form": "length",
+      "token": "[N-3,3]"
+    },
+    {
+      "field": "name",
+      "length": 1,
+      "first": 0,
+      "last": 0,
+      "startFromEnd": false,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[N]"
+    },
+    {
+      "field": "fullName",
+      "length": 13,
+      "first": 0,
+      "last": 12,
+      "startFromEnd": false,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[1-]"
+    },
+    {
+      "field": "fullName",
+      "length": 13,
+      "first": 10,
+      "last": 12,
+      "startFromEnd": true,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[-3-]"
+    },
+    {
+      "field": "fullName",
+      "length": 13,
+      "first": 1,
+      "last": 4,
+      "startFromEnd": false,
+      "endFromEnd": false,
+      "form": "span",
+      "token": "[2-5]"
+    },
+    {
+      "field": "extension",
+      "length": 3,
+      "first": 0,
+      "last": 0,
+      "startFromEnd": false,
+      "endFromEnd": false,
+      "form": "span",
+      "token": "[E1]"
+    },
+    {
+      "field": "parent",
+      "length": 11,
+      "first": 0,
+      "last": 5,
+      "startFromEnd": false,
+      "endFromEnd": false,
+      "form": "length",
+      "token": "[P1,6]"
+    },
+    {
+      "field": "grandparent",
+      "length": 5,
+      "first": 3,
+      "last": 4,
+      "startFromEnd": true,
+      "endFromEnd": true,
+      "form": "span",
+      "token": "[G-2-]"
+    }
   ]
 }

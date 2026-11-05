@@ -1,7 +1,7 @@
 /**
  * Placeholder tokens in a rename mask, for the inline editors of `MaskInput`.
  *
- * The scan mirrors the backend's mask parser (`src-tauri/src/multi_rename/mask.rs`): `[[` is a literal
+ * The scan mirrors the backend's mask parser (`crates/cmdr-multi-rename/src/mask.rs`): `[[` is a literal
  * bracket, a placeholder runs from `[` to the next `]`, and an unclosed `[` ends the scan (the backend
  * rejects the mask from there). Positions are UTF-16 offsets, so they index the text field directly.
  * Pure.

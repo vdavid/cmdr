@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import vectors from '../../../src-tauri/src/multi_rename/range_token_vectors.json'
+import vectors from '../../../../../crates/cmdr-multi-rename/src/range_token_vectors.json'
 import {
   anchorsOf,
   autoAnchors,

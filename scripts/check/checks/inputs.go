@@ -123,6 +123,7 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr-media-meta", Kind: KindApp, Glob: "crates/cmdr-media-meta/**"},
 	{Pkg: "cmdr-menu", Kind: KindApp, Glob: "crates/cmdr-menu/**"},
 	{Pkg: "cmdr-mtp", Kind: KindApp, Glob: "crates/cmdr-mtp/**"},
+	{Pkg: "cmdr-multi-rename", Kind: KindApp, Glob: "crates/cmdr-multi-rename/**"},
 	{Pkg: "cmdr-nfs", Kind: KindApp, Glob: "crates/cmdr-nfs/**"},
 	{Pkg: "cmdr-operation-log", Kind: KindApp, Glob: "crates/cmdr-operation-log/**"},
 	{Pkg: "cmdr-operations", Kind: KindApp, Glob: "crates/cmdr-operations/**"},
@@ -328,6 +329,8 @@ var svelteInputs = inputs(treeGlobs(frontendSourceRoots...), []string{
 	"apps/desktop/knip.json",
 	"apps/desktop/.stylelintrc.mjs",
 	"pnpm-lock.yaml",
+	// The mask grammars' shared vectors, which the `*-token.test.ts` files import.
+	"crates/cmdr-multi-rename/src/**/*_token_vectors.json",
 }, agentDocExclusions)
 
 // desktopAppInputs covers the whole desktop app (frontend + Rust workspace),

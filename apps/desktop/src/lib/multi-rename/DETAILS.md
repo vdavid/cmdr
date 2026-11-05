@@ -355,13 +355,13 @@ The session reads its files' EXIF and tags in the background from the moment it 
   is a step of -5) and clamps at `MIN_COUNTER_START`; digits clamp to 1–`MAX_COUNTER_DIGITS`. An emptied editor field
   means that part's default; a half-typed `-` waits.
 - **Media field** (`media-token.ts`, `mediaKind`): `[=source.field|modified:format]`, parsed like `media()` in
-  `apps/desktop/src-tauri/src/multi_rename/mask/media_token.rs`; both sides test against `media_token_vectors.json`.
-  `MEDIA_FIELDS` maps each IPC `MediaField` (`exifTaken`) to its mask name (`exif.taken`) and kind, and
-  `mediaFieldOfName` goes back. A token is `{ field, fallback, format }`, `format` being `null`,
-  `{ kind: 'date', text }` (the date letters as typed), `{ kind: 'digits', digits }`, or `{ kind: 'range', range }`
-  (`range-token.ts`'s `Range`, through its `parseRange`). Writes back in minimal form: a format or `|modified` the
-  field's kind can't take is dropped, digits clamp to 1–`MAX_COUNTER_DIGITS`, and a whole-text range (`all`, `1-`) is no
-  format. `usesMediaFields(mask)` tells whether a mask must wait for the files' tags.
+  `crates/cmdr-multi-rename/src/mask/media_token.rs`; both sides test against `media_token_vectors.json`. `MEDIA_FIELDS`
+  maps each IPC `MediaField` (`exifTaken`) to its mask name (`exif.taken`) and kind, and `mediaFieldOfName` goes back. A
+  token is `{ field, fallback, format }`, `format` being `null`, `{ kind: 'date', text }` (the date letters as typed),
+  `{ kind: 'digits', digits }`, or `{ kind: 'range', range }` (`range-token.ts`'s `Range`, through its `parseRange`).
+  Writes back in minimal form: a format or `|modified` the field's kind can't take is dropped, digits clamp to
+  1–`MAX_COUNTER_DIGITS`, and a whole-text range (`all`, `1-`) is no format. `usesMediaFields(mask)` tells whether a
+  mask must wait for the files' tags.
 
 ## Range editor
 

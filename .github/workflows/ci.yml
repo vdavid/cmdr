@@ -433,6 +433,8 @@ jobs:
               - 'apps/desktop/test/**'
               - 'apps/desktop/knip.json'
               - 'apps/desktop/.stylelintrc.mjs'
+              # The mask grammars' shared vectors, which the `*-token.test.ts` files import.
+              - 'crates/cmdr-multi-rename/src/**/*_token_vectors.json'
               # `desktop-native-strings-fresh` and `desktop-shipped-locales-fresh` compare the
               # catalogs with these generated Rust, plist, and Finder extension files.
               - 'apps/desktop/src-tauri/src/intl/**'

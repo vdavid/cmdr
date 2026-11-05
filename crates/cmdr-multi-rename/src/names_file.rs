@@ -241,15 +241,3 @@ fn create_new(path: &Path) -> io::Result<File> {
     options.mode(0o600).custom_flags(libc::O_NOFOLLOW);
     options.open(path)
 }
-
-/// The Results folder's name inside the app's cache dir.
-const RESULTS_DIR_NAME: &str = "multi-rename";
-
-/// Where session `session_id` writes its Results file: `multi-rename/` in the app's cache dir
-/// (`config::app_cache_dir`, so a dev or E2E instance keeps its own), which "Delete all Cmdr
-/// data" removes whole. `None` when the OS has no cache dir. The process id keeps two Cmdrs on
-/// one cache dir off each other's files: session ids count from 1 in each.
-pub fn path_for(session_id: &str) -> Option<PathBuf> {
-    let name = format!("{}-{session_id}.txt", std::process::id());
-    Some(crate::config::app_cache_dir()?.join(RESULTS_DIR_NAME).join(name))
-}

@@ -1465,6 +1465,7 @@ dependencies = [
  "cmdr-media-meta",
  "cmdr-menu",
  "cmdr-mtp",
+ "cmdr-multi-rename",
  "cmdr-nfs",
  "cmdr-operation-log",
  "cmdr-operations",
@@ -1843,6 +1844,25 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-util",
+]
+
+[[package]]
+name = "cmdr-multi-rename"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "cmdr-fs",
+ "cmdr-media-meta",
+ "cmdr-operations",
+ "cmdr-recents",
+ "libc",
+ "log",
+ "regex",
+ "serde",
+ "serde_json",
+ "specta",
+ "unicode-normalization",
+ "uuid",
 ]
 
 [[package]]

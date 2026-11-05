@@ -1,6 +1,6 @@
 /**
  * The counter placeholder, `[C]` with an optional start, signed step, and width: `[C10+5:3]`, `[C10]`,
- * `[C+5]`, `[C:3]`, `[C100-10]`. Reads exactly what `counter()` in `src-tauri/src/multi_rename/mask.rs`
+ * `[C+5]`, `[C:3]`, `[C100-10]`. Reads exactly what `counter()` in `crates/cmdr-multi-rename/src/mask.rs`
  * reads; both are tested against `counter_token_vectors.json`. Pure.
  */
 import type { MaskTokenGrammar } from './mask-tokens'

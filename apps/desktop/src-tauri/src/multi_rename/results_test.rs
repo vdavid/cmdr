@@ -4,8 +4,8 @@
 
 use std::sync::Arc;
 
+use super::app_files::results_path;
 use super::error::MultiRenameError;
-use super::names_file;
 use super::plan::MultiRenameSpec;
 use super::run::apply;
 use super::run_test::{folder, names_on_disk, settled, strip_diacritics};
@@ -74,7 +74,7 @@ async fn an_edit_read_back_after_the_preview_shown_never_sneaks_into_its_rename(
 async fn results_with_nowhere_to_write_is_refused_and_the_sheet_goes_on() {
     let (dir, listing) = folder("multi-rename-results-nowhere", &["a.txt"]);
     let session = open(listing.id(), true, None, 0).expect("the session opens");
-    let path = names_file::path_for(&session.session_id).expect("tests have a cache folder");
+    let path = results_path(&session.session_id).expect("tests have a cache folder");
     let results_dir = path.parent().expect("the file sits in a folder");
     std::fs::create_dir_all(results_dir.parent().expect("the cache folder")).expect("the cache folder");
     // Private, as Results makes it, so the squatter below is what refuses.

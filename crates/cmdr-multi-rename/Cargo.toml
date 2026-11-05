@@ -1,0 +1,47 @@
+[package]
+name = "cmdr-multi-rename"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# Test hooks a host's tests reach (none yet beyond `cmdr-fs`'s), kept off in every shipped build.
+testing = ["cmdr-fs/testing"]
+
+[dependencies]
+# The filesystem vocabulary: `FileEntry`, name folding and validation, routed kinds, private logging.
+cmdr-fs = { path = "../cmdr-fs" }
+# The media fields' vocabulary (`MediaFacts`, `MediaField`, `MediaValue`, `FieldKind`).
+cmdr-media-meta = { path = "../cmdr-media-meta" }
+# `RenameStartError`, which `MultiRenameError::CouldntStart` carries to the sheet.
+cmdr-operations = { path = "../cmdr-operations" }
+# The list rules presets' last settings and the field history follow (`RecentItem`).
+cmdr-recents = { path = "../cmdr-recents" }
+# The mask's dates; `Local` reads the offset from JS `Date` in the browser (default `wasmbind`).
+chrono = "0.4"
+log = "0.4"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+# The wire types' TypeScript schema, which the app exports into `bindings.ts`. Pinned to the
+# EXACT version the app uses: two `specta` crates in one graph break `tauri-specta`.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+unicode-normalization = "0.1"
+# Preset and history ids. In the browser, `cmdr-fs` turns on uuid's `js` feature.
+uuid = { version = "1.29.0", features = ["v4"] }
+
+[target.'cfg(unix)'.dependencies]
+# The Results file's private folder (`geteuid`), `O_NOFOLLOW`, and the orphan sweep's `kill(pid, 0)`.
+libc = "0.2"
+
+[dev-dependencies]
+# `TestDir`, for the Results file's tests.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# The vector JSONs and the wire pins.
+serde_json = "1"

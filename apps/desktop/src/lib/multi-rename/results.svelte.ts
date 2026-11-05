@@ -1,7 +1,7 @@
 /**
  * Results (⌥⏎), Total Commander's "edit names": the shown preview goes out to a text file in
  * the user's editor, and coming back to the window reads it back. The file, the reading, and
- * the typed names are the backend session's (`src-tauri/src/multi_rename/names_file.rs`);
+ * the typed names are the backend session's (`crates/cmdr-multi-rename/src/names_file.rs`);
  * this holds whether a file is out, and why reading it back didn't go.
  */
 

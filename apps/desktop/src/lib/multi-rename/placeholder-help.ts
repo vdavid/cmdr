@@ -1,6 +1,6 @@
 /**
  * What each placeholder button's tooltip says: the placeholder's meaning, a few of the forms
- * `src-tauri/src/multi_rename/mask.rs` reads, and examples on a made-up file
+ * `crates/cmdr-multi-rename/src/mask.rs` reads, and examples on a made-up file
  * (`rename-examples.ts`), rendered by the real engine. A range's example renders what the field
  * keeps around it too, with the part it takes between the marks, so the tooltip can set that
  * part apart. Counters need no file: their numbers come from the token. Pure.

@@ -169,7 +169,7 @@ pub(super) fn media(text: &str) -> Option<MediaToken> {
 /// write it: `{ field, fallback, format }`. For the tests that hold the
 /// frontend's parser to this one.
 #[cfg(test)]
-pub(in crate::multi_rename) fn media_token_parts(token: &str) -> Option<serde_json::Value> {
+pub(crate) fn media_token_parts(token: &str) -> Option<serde_json::Value> {
     use serde_json::json;
     let inner = token.strip_prefix('[')?.strip_suffix(']')?;
     let media = MediaToken::parse(inner)?;

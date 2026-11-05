@@ -2,7 +2,7 @@
 
 use super::names_file::{NameEdit, parse, render, write};
 use super::plan::{NameEdits, PreviewRow, RowStatus};
-use crate::test_support::TestDir;
+use cmdr_fs::testing::TestDir;
 
 fn row(old: &str, new: &str) -> PreviewRow {
     PreviewRow {
@@ -129,20 +129,6 @@ fn an_old_name_matches_in_either_unicode_form() {
     let edits = written.merge(&std::fs::read_to_string(&path).expect("reads"), &NameEdits::default());
 
     assert_eq!(edits.get(decomposed), Some("Zadost.pdf"));
-}
-
-/// The Results file lives in the app's cache dir, which "Delete all Cmdr data" removes whole
-/// (`data_wipe::plan`): moving it out would let it escape the wipe.
-#[test]
-fn the_results_file_goes_with_the_cache_dir() {
-    let cache = crate::config::app_cache_dir().expect("a test has a cache dir");
-    let path = super::names_file::path_for("multi-rename-1").expect("a test has a cache dir");
-    assert!(
-        path.starts_with(&cache),
-        "{} is outside {}",
-        path.display(),
-        cache.display()
-    );
 }
 
 /// Issue #546: the Results folder and file are the user's alone, and nothing planted at their

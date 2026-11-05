@@ -24,32 +24,170 @@
   ],
   "valid": [
     { "token": "[=exif.taken]", "field": "exif.taken", "fallback": false, "format": null, "minimal": "[=exif.taken]" },
-    { "token": "[=exif.taken:d]", "field": "exif.taken", "fallback": false, "format": { "kind": "date", "text": "d" }, "minimal": "[=exif.taken:d]" },
-    { "token": "[=exif.taken:t]", "field": "exif.taken", "fallback": false, "format": { "kind": "date", "text": "t" }, "minimal": "[=exif.taken:t]" },
-    { "token": "[=exif.taken:Y-M-D h.m.s]", "field": "exif.taken", "fallback": false, "format": { "kind": "date", "text": "Y-M-D h.m.s" }, "minimal": "[=exif.taken:Y-M-D h.m.s]" },
-    { "token": "[=exif.taken:YMD_hms]", "field": "exif.taken", "fallback": false, "format": { "kind": "date", "text": "YMD_hms" }, "minimal": "[=exif.taken:YMD_hms]" },
-    { "token": "[=exif.taken:y]", "field": "exif.taken", "fallback": false, "format": { "kind": "date", "text": "y" }, "minimal": "[=exif.taken:y]" },
-    { "token": "[=exif.taken|modified]", "field": "exif.taken", "fallback": true, "format": null, "minimal": "[=exif.taken|modified]" },
-    { "token": "[=exif.taken|modified:d]", "field": "exif.taken", "fallback": true, "format": { "kind": "date", "text": "d" }, "minimal": "[=exif.taken|modified:d]" },
-    { "token": "[=exif.taken|modified:YMD_hms]", "field": "exif.taken", "fallback": true, "format": { "kind": "date", "text": "YMD_hms" }, "minimal": "[=exif.taken|modified:YMD_hms]" },
+    {
+      "token": "[=exif.taken:d]",
+      "field": "exif.taken",
+      "fallback": false,
+      "format": { "kind": "date", "text": "d" },
+      "minimal": "[=exif.taken:d]"
+    },
+    {
+      "token": "[=exif.taken:t]",
+      "field": "exif.taken",
+      "fallback": false,
+      "format": { "kind": "date", "text": "t" },
+      "minimal": "[=exif.taken:t]"
+    },
+    {
+      "token": "[=exif.taken:Y-M-D h.m.s]",
+      "field": "exif.taken",
+      "fallback": false,
+      "format": { "kind": "date", "text": "Y-M-D h.m.s" },
+      "minimal": "[=exif.taken:Y-M-D h.m.s]"
+    },
+    {
+      "token": "[=exif.taken:YMD_hms]",
+      "field": "exif.taken",
+      "fallback": false,
+      "format": { "kind": "date", "text": "YMD_hms" },
+      "minimal": "[=exif.taken:YMD_hms]"
+    },
+    {
+      "token": "[=exif.taken:y]",
+      "field": "exif.taken",
+      "fallback": false,
+      "format": { "kind": "date", "text": "y" },
+      "minimal": "[=exif.taken:y]"
+    },
+    {
+      "token": "[=exif.taken|modified]",
+      "field": "exif.taken",
+      "fallback": true,
+      "format": null,
+      "minimal": "[=exif.taken|modified]"
+    },
+    {
+      "token": "[=exif.taken|modified:d]",
+      "field": "exif.taken",
+      "fallback": true,
+      "format": { "kind": "date", "text": "d" },
+      "minimal": "[=exif.taken|modified:d]"
+    },
+    {
+      "token": "[=exif.taken|modified:YMD_hms]",
+      "field": "exif.taken",
+      "fallback": true,
+      "format": { "kind": "date", "text": "YMD_hms" },
+      "minimal": "[=exif.taken|modified:YMD_hms]"
+    },
     { "token": "[=tag.track]", "field": "tag.track", "fallback": false, "format": null, "minimal": "[=tag.track]" },
-    { "token": "[=tag.track:2]", "field": "tag.track", "fallback": false, "format": { "kind": "digits", "digits": 2 }, "minimal": "[=tag.track:2]" },
-    { "token": "[=tag.track:+3]", "field": "tag.track", "fallback": false, "format": { "kind": "digits", "digits": 3 }, "minimal": "[=tag.track:3]" },
-    { "token": "[=tag.track:02]", "field": "tag.track", "fallback": false, "format": { "kind": "digits", "digits": 2 }, "minimal": "[=tag.track:2]" },
-    { "token": "[=tag.track:1]", "field": "tag.track", "fallback": false, "format": { "kind": "digits", "digits": 1 }, "minimal": "[=tag.track:1]" },
-    { "token": "[=exif.iso:64]", "field": "exif.iso", "fallback": false, "format": { "kind": "digits", "digits": 64 }, "minimal": "[=exif.iso:64]" },
+    {
+      "token": "[=tag.track:2]",
+      "field": "tag.track",
+      "fallback": false,
+      "format": { "kind": "digits", "digits": 2 },
+      "minimal": "[=tag.track:2]"
+    },
+    {
+      "token": "[=tag.track:+3]",
+      "field": "tag.track",
+      "fallback": false,
+      "format": { "kind": "digits", "digits": 3 },
+      "minimal": "[=tag.track:3]"
+    },
+    {
+      "token": "[=tag.track:02]",
+      "field": "tag.track",
+      "fallback": false,
+      "format": { "kind": "digits", "digits": 2 },
+      "minimal": "[=tag.track:2]"
+    },
+    {
+      "token": "[=tag.track:1]",
+      "field": "tag.track",
+      "fallback": false,
+      "format": { "kind": "digits", "digits": 1 },
+      "minimal": "[=tag.track:1]"
+    },
+    {
+      "token": "[=exif.iso:64]",
+      "field": "exif.iso",
+      "fallback": false,
+      "format": { "kind": "digits", "digits": 64 },
+      "minimal": "[=exif.iso:64]"
+    },
     { "token": "[=tag.year]", "field": "tag.year", "fallback": false, "format": null, "minimal": "[=tag.year]" },
-    { "token": "[=exif.orientation]", "field": "exif.orientation", "fallback": false, "format": null, "minimal": "[=exif.orientation]" },
+    {
+      "token": "[=exif.orientation]",
+      "field": "exif.orientation",
+      "fallback": false,
+      "format": null,
+      "minimal": "[=exif.orientation]"
+    },
     { "token": "[=tag.artist]", "field": "tag.artist", "fallback": false, "format": null, "minimal": "[=tag.artist]" },
-    { "token": "[=tag.artist:1-10]", "field": "tag.artist", "fallback": false, "format": { "kind": "range", "range": { "kind": "span", "at": 1, "to": 10 } }, "minimal": "[=tag.artist:1-10]" },
-    { "token": "[=tag.artist:2,5]", "field": "tag.artist", "fallback": false, "format": { "kind": "range", "range": { "kind": "length", "at": 2, "length": 5 } }, "minimal": "[=tag.artist:2,5]" },
-    { "token": "[=tag.artist:-3-]", "field": "tag.artist", "fallback": false, "format": { "kind": "range", "range": { "kind": "from", "at": -3 } }, "minimal": "[=tag.artist:-3-]" },
-    { "token": "[=tag.artist:1-]", "field": "tag.artist", "fallback": false, "format": { "kind": "range", "range": { "kind": "from", "at": 1 } }, "minimal": "[=tag.artist]" },
-    { "token": "[=tag.artist:3]", "field": "tag.artist", "fallback": false, "format": { "kind": "range", "range": { "kind": "one", "at": 3 } }, "minimal": "[=tag.artist:3]" },
-    { "token": "[=tag.title:+2-5]", "field": "tag.title", "fallback": false, "format": { "kind": "range", "range": { "kind": "span", "at": 2, "to": 5 } }, "minimal": "[=tag.title:2-5]" },
-    { "token": "[=exif.camera:1--2]", "field": "exif.camera", "fallback": false, "format": { "kind": "range", "range": { "kind": "span", "at": 1, "to": -2 } }, "minimal": "[=exif.camera:1--2]" },
-    { "token": "[=tag.albumartist]", "field": "tag.albumartist", "fallback": false, "format": null, "minimal": "[=tag.albumartist]" },
-    { "token": "[=tag.comment:-8,5]", "field": "tag.comment", "fallback": false, "format": { "kind": "range", "range": { "kind": "length", "at": -8, "length": 5 } }, "minimal": "[=tag.comment:-8,5]" }
+    {
+      "token": "[=tag.artist:1-10]",
+      "field": "tag.artist",
+      "fallback": false,
+      "format": { "kind": "range", "range": { "kind": "span", "at": 1, "to": 10 } },
+      "minimal": "[=tag.artist:1-10]"
+    },
+    {
+      "token": "[=tag.artist:2,5]",
+      "field": "tag.artist",
+      "fallback": false,
+      "format": { "kind": "range", "range": { "kind": "length", "at": 2, "length": 5 } },
+      "minimal": "[=tag.artist:2,5]"
+    },
+    {
+      "token": "[=tag.artist:-3-]",
+      "field": "tag.artist",
+      "fallback": false,
+      "format": { "kind": "range", "range": { "kind": "from", "at": -3 } },
+      "minimal": "[=tag.artist:-3-]"
+    },
+    {
+      "token": "[=tag.artist:1-]",
+      "field": "tag.artist",
+      "fallback": false,
+      "format": { "kind": "range", "range": { "kind": "from", "at": 1 } },
+      "minimal": "[=tag.artist]"
+    },
+    {
+      "token": "[=tag.artist:3]",
+      "field": "tag.artist",
+      "fallback": false,
+      "format": { "kind": "range", "range": { "kind": "one", "at": 3 } },
+      "minimal": "[=tag.artist:3]"
+    },
+    {
+      "token": "[=tag.title:+2-5]",
+      "field": "tag.title",
+      "fallback": false,
+      "format": { "kind": "range", "range": { "kind": "span", "at": 2, "to": 5 } },
+      "minimal": "[=tag.title:2-5]"
+    },
+    {
+      "token": "[=exif.camera:1--2]",
+      "field": "exif.camera",
+      "fallback": false,
+      "format": { "kind": "range", "range": { "kind": "span", "at": 1, "to": -2 } },
+      "minimal": "[=exif.camera:1--2]"
+    },
+    {
+      "token": "[=tag.albumartist]",
+      "field": "tag.albumartist",
+      "fallback": false,
+      "format": null,
+      "minimal": "[=tag.albumartist]"
+    },
+    {
+      "token": "[=tag.comment:-8,5]",
+      "field": "tag.comment",
+      "fallback": false,
+      "format": { "kind": "range", "range": { "kind": "length", "at": -8, "length": 5 } },
+      "minimal": "[=tag.comment:-8,5]"
+    }
   ],
   "invalid": [
     "[=]",

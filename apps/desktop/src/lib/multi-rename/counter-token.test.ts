@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import vectors from '../../../src-tauri/src/multi_rename/counter_token_vectors.json'
+import vectors from '../../../../../crates/cmdr-multi-rename/src/counter_token_vectors.json'
 import {
   COUNTER_DEFAULTS,
   MAX_COUNTER_DIGITS,

@@ -645,4 +645,22 @@ var surfaceGuardedCrates = []struct {
 			SubsystemItems: 0,
 		},
 	},
+	{
+		// Measured 2026-11-05, at the extraction, and set to exactly what the crate
+		// exposes, with no headroom.
+		//
+		// Seven root promises, all modules: the pure engine the desktop host's
+		// sessions, apply, MCP tool, and IPC commands name (`error`, `history`,
+		// `mask`, `names_file`, `plan`, `presets`, `transform`). Their 74 items are
+		// the wire types (the spec, preview rows and statuses, errors, presets, last
+		// settings, history entries), the mask's parsed tokens and row facts, the
+		// preset and history list ops, and the Results file's read and write. A wider
+		// surface is argued in `crates/cmdr-multi-rename/DETAILS.md` first.
+		Name: "cmdr-multi-rename",
+		Ceilings: surfaceCeilings{
+			RootPromises:   7,
+			PublicModules:  7,
+			SubsystemItems: 74,
+		},
+	},
 }

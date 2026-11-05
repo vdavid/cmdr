@@ -1,11 +1,9 @@
 //! Saved Multi-Rename settings: named presets in the user's order (TC's F2
-//! "Load/save settings" list), and the settings the last sheet closed with. The
-//! presets file is `preset_store`, which builds on this module and never the other
-//! way around; the last settings ride on `crate::recents`.
+//! "Load/save settings" list), and the settings the last sheet closed with. Pure
+//! list ops and types: the host keeps the lists and their files.
 
 use serde::{Deserialize, Serialize};
 
-use crate::recents::{RecentEntry, RecentsFile};
 use cmdr_recents::RecentItem;
 
 use super::mask::fill_counter_defaults;
@@ -218,10 +216,6 @@ pub fn update_spec_in(presets: &mut [MultiRenamePreset], id: &str, spec: &MultiR
     }
 }
 
-/// The settings the sheet last closed with, so the next ⌃M opens where the last
-/// one left off (TC keeps them too). One entry, in its own file.
-pub static LAST_SPEC: RecentsFile<LastSpec> = RecentsFile::new();
-
 /// What the sheet closed with: its fields, and the preset they came from, so a
 /// reopened sheet's Presets button names it (and says "edited" when the fields
 /// moved off it).
@@ -232,7 +226,8 @@ pub struct MultiRenameLastSettings {
     pub preset_id: Option<String>,
 }
 
-/// The one entry `LAST_SPEC` keeps.
+/// The settings the sheet last closed with, so the next ⌃M opens where the last
+/// one left off (TC keeps them too): the one entry of its own recents list.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", from = "StoredLastSpec")]
 pub struct LastSpec {
@@ -291,13 +286,6 @@ impl From<StoredLastSpec> for LastSpec {
             },
         }
     }
-}
-
-impl RecentEntry for LastSpec {
-    const FILENAME: &'static str = "multi-rename-last.json";
-    const LOG_TARGET: &'static str = "multi_rename::presets";
-    const LOG_NAME: &'static str = "multi-rename last settings";
-    const STATE_FILE: crate::state_recovery::StateFile = crate::state_recovery::StateFile::MultiRenameLastSettings;
 }
 
 impl RecentItem for LastSpec {

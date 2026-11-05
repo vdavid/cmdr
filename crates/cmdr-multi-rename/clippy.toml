@@ -1,0 +1,32 @@
+# Clippy reads the FIRST `clippy.toml` it finds walking up from this package's
+# manifest directory, and never merges, so this file replaces the workspace root's
+# for `cmdr-multi-rename`. It carries the root's general settings below; the root's
+# `disallowed-methods` / `disallowed-types` name `tauri`, `objc2_app_kit`, and
+# `reqwest`, none of which this crate can reach (`index-crate-isolation`), so they
+# have nothing to guard here.
+
+# Complexity threshold of 15 matches ESLint's complexity rule for consistency across Rust and TypeScript
+cognitive-complexity-threshold = 15
+
+# Tests legitimately `.unwrap()` everywhere; this exempts unwraps inside `#[test]` fns. Helper fns in
+# `#[cfg(test)] mod`s aren't covered, so those use the sanctioned `.expect("…")` form.
+allow-unwrap-in-tests = true
+
+# The crate runs in the desktop app and in the browser demo, so it owns no runtime and reads no
+# clock of its own: background work goes on the `cmdr_fs::rt::Runtime` its host hands in, and the
+# clock through `cmdr_fs::rt`. `std`'s clock and tokio's ambient runtime panic on
+# `wasm32-unknown-unknown`.
+# ❗ METHOD bans, not `disallowed-types`: natively `rt::Instant` and `rt::Runtime` ARE `std::time::Instant`
+# and `tokio::runtime::Handle`, so a type ban would fire on the seam itself.
+disallowed-methods = [
+  { path = "std::thread::spawn", reason = "run background work on the host's `cmdr_fs::rt::Runtime`: a browser host has no threads" },
+  { path = "tokio::spawn", reason = "spawn on the host's `cmdr_fs::rt::Runtime`: there's no ambient runtime in the browser" },
+  { path = "tokio::task::spawn", reason = "spawn on the host's `cmdr_fs::rt::Runtime`: there's no ambient runtime in the browser" },
+  { path = "tokio::task::spawn_blocking", reason = "use `Runtime::spawn_blocking` / `JoinSet::spawn_blocking_on` on the host's runtime: it panics in the browser" },
+  { path = "tokio::runtime::Handle::current", reason = "use the runtime the host handed in: there's no ambient one in the browser" },
+  { path = "tokio::runtime::Handle::try_current", reason = "use the runtime the host handed in: there's no ambient one in the browser" },
+  { path = "std::time::Instant::now", reason = "read the clock through `cmdr_fs::rt::now()`: `std`'s panics in the browser build" },
+  { path = "std::time::Instant::elapsed", reason = "use `cmdr_fs::rt::since(start)`: `std`'s clock panics in the browser build" },
+  { path = "std::time::SystemTime::now", reason = "`std`'s wall clock panics in the browser build; use `cmdr_fs::rt::wall_now()`" },
+  { path = "tokio::time::sleep", reason = "tokio's timer panics in the browser build; use `cmdr_fs::rt::time::sleep`" },
+]

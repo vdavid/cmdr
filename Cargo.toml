@@ -15,6 +15,7 @@ members = [
   "crates/cmdr-media-meta",
   "crates/cmdr-menu",
   "crates/cmdr-mtp",
+  "crates/cmdr-multi-rename",
   "crates/cmdr-nfs",
   "crates/cmdr-operation-log",
   "crates/cmdr-operations",

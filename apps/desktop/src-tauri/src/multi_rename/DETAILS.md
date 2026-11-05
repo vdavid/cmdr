@@ -1,7 +1,9 @@
 # Multi-Rename Tool: details
 
 Total Commander's Multi-Rename Tool, the semantics taken from its help (TOTALCMD.CHM, TC 11.58) and wiki. Proposed
-upstream in vdavid/cmdr#372.
+upstream in vdavid/cmdr#372. The pure modules named below (`mask.rs`, `transform.rs`, `plan.rs`, `presets.rs`,
+`history.rs`, `names_file.rs`, …) live in `crates/cmdr-multi-rename/src/`; the host split is
+`crates/cmdr-multi-rename/DETAILS.md`.
 
 ## Pipeline
 

@@ -130,7 +130,7 @@ impl RowStatus {
 }
 
 /// Each row's media facts, as the session's cache has them while a preview runs.
-pub(crate) trait MediaLookup {
+pub trait MediaLookup {
     /// What `entry`'s file says about itself. The entry carries its size and
     /// modification time, so a lookup can tell a file that changed since it was read.
     fn media(&self, entry: &FileEntry) -> RowMedia<'_>;
@@ -138,7 +138,7 @@ pub(crate) trait MediaLookup {
 
 /// No media facts at all: every row is `NotMedia`. For a preview with no
 /// session cache behind it (the MCP tool, tests).
-pub(crate) struct NoMedia;
+pub struct NoMedia;
 
 impl MediaLookup for NoMedia {
     fn media(&self, _entry: &FileEntry) -> RowMedia<'_> {
@@ -187,7 +187,7 @@ impl NameEdits {
 }
 
 /// The parsed spec, built once per preview.
-pub(crate) struct Compiled {
+pub struct Compiled {
     name_mask: Mask,
     extension_mask: Mask,
     transform: CompiledTransform,
@@ -195,7 +195,7 @@ pub(crate) struct Compiled {
 }
 
 impl Compiled {
-    pub(crate) fn new(spec: &MultiRenameSpec) -> Result<Self, SpecError> {
+    pub fn new(spec: &MultiRenameSpec) -> Result<Self, SpecError> {
         let name_mask = Mask::parse(&spec.name_mask).map_err(|error| SpecError::NameMask { error })?;
         let extension_mask = Mask::parse(&spec.extension_mask).map_err(|error| SpecError::ExtensionMask { error })?;
         let replace = (!spec.search.is_empty()).then(|| Replace {
@@ -225,7 +225,7 @@ impl Compiled {
     }
 
     /// Whether either mask reads files' EXIF or tags, which only a session's media read answers.
-    pub(crate) fn uses_media(&self) -> bool {
+    pub fn uses_media(&self) -> bool {
         self.name_mask.uses_media() || self.extension_mask.uses_media()
     }
 
@@ -334,7 +334,7 @@ fn example_media(taken: Option<NaiveDateTime>) -> MediaFacts {
 /// order, with `example_media`'s EXIF and tags. `None` for a spec that doesn't
 /// run, or a media field the file has no value for. Made-up files rather than
 /// the batch's own, so a tooltip never depends on what's selected.
-pub(crate) fn render_examples(examples: &[RenameExample]) -> Vec<Option<String>> {
+pub fn render_examples(examples: &[RenameExample]) -> Vec<Option<String>> {
     let (y, mo, d, h, mi, s) = EXAMPLE_MODIFIED;
     let modified = chrono::NaiveDate::from_ymd_opt(y, mo, d).and_then(|date| date.and_hms_opt(h, mi, s));
     let media = example_media(modified);
@@ -359,7 +359,7 @@ pub(crate) fn render_examples(examples: &[RenameExample]) -> Vec<Option<String>>
 }
 
 /// The names of `dir` and the folder above it, what `[P]` and `[G]` read.
-pub(crate) fn folder_names(dir: &Path) -> (Cow<'_, str>, Cow<'_, str>) {
+pub fn folder_names(dir: &Path) -> (Cow<'_, str>, Cow<'_, str>) {
     let parent = dir.file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
     let grandparent = dir
         .parent()
@@ -428,7 +428,7 @@ pub(crate) fn preview(
 /// for each that's gone, in row order. A name matches its entry exactly, as the session that
 /// resolved it from the listing spelled it. Both the sheet's session and the MCP tool run
 /// through here, so they can't disagree about a row; the tool passes [`NoMedia`].
-pub(crate) fn preview_names(
+pub fn preview_names(
     compiled: &Compiled,
     dir: &Path,
     names: &[String],

@@ -23,6 +23,7 @@ use unicode_normalization::UnicodeNormalization;
 use crate::ignore_poison::IgnorePoison;
 use cmdr_listing::{ListingId, ListingLookupError};
 
+use super::app_files::results_path;
 use super::error::MultiRenameError;
 use super::mask::{MaskError, MediaToken, RangeToken, RowFacts, RowMedia};
 use super::media::{FieldSamples, Loader, MediaOverview, MediaProgress, ProgressEmit, SessionMedia};
@@ -552,7 +553,7 @@ pub(crate) fn write_names(session_id: &str, preview_id: u64) -> Result<PathBuf, 
     // The old file first: it has the same path, and dropping it deletes it.
     with_session(session_id, |s| s.written = None)?;
     let couldnt = |detail: String| MultiRenameError::CouldntWriteNames { detail };
-    let path = names_file::path_for(session_id).ok_or_else(|| couldnt("the OS has no cache folder".to_string()))?;
+    let path = results_path(session_id).ok_or_else(|| couldnt("the OS has no cache folder".to_string()))?;
     let written = names_file::write(&path, &latest.rows).map_err(|e| couldnt(e.to_string()))?;
     with_session(session_id, |s| s.written = Some(written))?;
     Ok(path)

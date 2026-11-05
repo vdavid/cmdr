@@ -5,20 +5,14 @@ sheet is `src/lib/multi-rename/`.
 
 ## Module map
 
-- `mask.rs` the placeholders (`[N2-5]`, `[C10+5:3]`, `[YMD]`…), parsed once, rendered per row (or a `FieldGap`);
-  `mask/media_token.rs` the `[=tag.track:2]` fields. Pure.
-- `transform.rs` search & replace, the case step, Greek to Latin, `remove_diacritics`. Pure.
-- `transliterate.rs` Greek to Latin (ELOT 743). Pure.
-- `plan.rs` the preview over a folder's entries: each row's new name and status; `render_examples` renders the sheet's
-  tooltip examples with the same `Compiled::render`. Pure.
+The pure engine is `crates/cmdr-multi-rename` (`mask`, `transform`, `transliterate`, `plan`, `error`, `presets`,
+`history`, `names_file`), re-exported here so the app names it `crate::multi_rename::…`. This folder is its host:
+
 - `session.rs` one sheet's files in rename order (`move_row`), its latest preview, paging, and Results names.
-- `names_file.rs` Results (⌥⏎): the preview as `old<TAB>new` lines; edits merge back by old name.
 - `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames`.
 - `media.rs` each file's EXIF and tags, cached per session and read in the background (`crates/cmdr-media-meta`).
-- `error.rs` `MultiRenameError`, shared by `session` and `run`.
-- `history.rs` the text fields' history on `crate::recents`.
-- `presets.rs` named presets in the user's order, as pure list ops (`save_in`, …).
-  `LAST_SPEC` keeps the last sheet's settings. `preset_store.rs` (their file, `PRESETS`) builds on it.
+- `app_files.rs` the app's files: `LAST_SPEC` (last settings), `FIELD_HISTORY`, and `results_path`.
+  `preset_store.rs` the presets file (`PRESETS`).
 
 ## Must-knows
 
