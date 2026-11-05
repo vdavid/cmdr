@@ -361,7 +361,7 @@
   },
   "indexing.enrich.progress": "{total, plural, one {{doneText} of {totalText} image} other {{doneText} of {totalText} images}}",
   "@indexing.enrich.progress": {
-    "description": "Running count under the Image-indexing row, e.g. '1,200 of 5,000 images'. {doneText}/{totalText} are already-formatted numbers; {done} drives the plural. No trailing words (a separate rate/ETA line follows).",
+    "description": "Running count under the Image-indexing row, e.g. '1,200 of 5,000 images'. {doneText}/{totalText} are already-formatted numbers; {total} drives the plural, since the noun follows the total. No trailing words (a separate rate/ETA line follows).",
     "placeholders": {
       "done": "raw count done",
       "doneText": "images processed so far, formatted (e.g. 1,200)",

@@ -17,5 +17,7 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   a key-scoped `match`. (all)
 - `menu.window.zoom` and `menu.view.zoom` are both "Zoom" in English, so cs, fr, and uk keep a `zoom` exception; split
   the English or accept it. (uk)
+- `askCmdr.renameUndo.skipReason.*.counted` and `fileOperations.cancelRollback.reason.*.counted` keep "alone: they …"
+  outside the plural, so sv's `one` branch reads `1 objekt … som de är`. Move the tail into both branches. (sv)
 - sv's `ai-lookup` ruling is `sökning`, the search word, which is the mix-up the `privacy-permission` / `ai-lookup` note
   in `concepts.json` warns about. (sv)
