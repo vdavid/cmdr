@@ -404,6 +404,58 @@ async fn a_file_that_fails_or_panics_counts_as_read_and_the_rest_go_on() {
     close(&session.session_id);
 }
 
+/// A reader that reads nothing (the browser build's, where no parser runs): every
+/// file settles `Unreadable` at once, none counts toward giving up on the volume, and
+/// the read ends `done`. A mask with the field alone flags every row; one with a
+/// `|modified` fallback renames them all.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_reader_that_reads_nothing_settles_every_file_unreadable_without_giving_up() {
+    let files = photos(10);
+    let names: Vec<&str> = files.iter().map(String::as_str).collect();
+    let (_dir, listing) = folder("media-not-supported", &names, &[]);
+    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let (events, calls) = (Events::default(), Calls::default());
+
+    start_media_with(
+        &session.session_id,
+        loader(1, &events, &calls, |_| Err(ReadError::NotSupported)),
+    )
+    .expect("the read starts");
+    read_through(&session.session_id).await;
+    wait_until_async(WAIT, "the final event", || events.all().last().is_some_and(|e| e.done)).await;
+
+    assert_eq!(calls.names(), files, "every file asked, one by one: no give-up");
+    let last = events.all().last().cloned().expect("an event");
+    assert_eq!((last.read, last.total, last.done), (10, 10, true));
+
+    let field = MediaField::ExifTaken;
+    let taken = MultiRenameSpec {
+        name_mask: "[=exif.taken]".to_string(),
+        ..title_mask()
+    };
+    let preview = preview_session(&session.session_id, &taken).expect("a preview");
+    assert!(
+        preview
+            .rows
+            .iter()
+            .all(|row| row.status == RowStatus::Unreadable { field }),
+        "{:?}",
+        preview.rows
+    );
+    assert_eq!((preview.counts.problems, preview.counts.reading), (10, 0));
+
+    let with_fallback = MultiRenameSpec {
+        name_mask: "[=exif.taken|modified:YMD] [N]".to_string(),
+        ..title_mask()
+    };
+    let preview = preview_session(&session.session_id, &with_fallback).expect("a preview");
+    assert_eq!(preview.counts.ready, 10, "{:?}", preview.rows);
+    let samples = field_samples(&session.session_id, "=exif.taken|modified:YMD", &[0]).expect("samples");
+    assert_eq!(samples.samples[0].gap, None);
+    assert_eq!((samples.usage.fallback, samples.usage.missing), (10, 0));
+    close(&session.session_id);
+}
+
 fn title_mask() -> MultiRenameSpec {
     MultiRenameSpec {
         name_mask: "[=tag.title]".to_string(),

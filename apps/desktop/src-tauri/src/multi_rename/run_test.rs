@@ -374,3 +374,93 @@ async fn a_batch_holding_a_dot_git_category_row_is_refused_as_read_only() {
     assert_eq!(names_on_disk(&dot_git), vec!["description", "worktrees"]);
     close(&session.session_id);
 }
+
+/// A cached listing of `dir` on `volume_id`, showing every row.
+fn listing_on(volume_id: &str, dir: &Path, tag: &str) -> TestListingGuard {
+    TestListing::new()
+        .volume(volume_id)
+        .path(dir.to_path_buf())
+        .entries(list_directory_core(dir, &crate::listing_host::backends::AppListings).expect("the dir lists"))
+        .insert(crate::listing_host::listings(), tag)
+}
+
+/// Previews `name_mask` over every row of `listing` and applies it.
+async fn apply_mask(listing: &TestListingGuard, name_mask: &str) -> Result<(), MultiRenameError> {
+    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let spec = MultiRenameSpec {
+        name_mask: name_mask.to_string(),
+        remove_diacritics: false,
+        ..strip_diacritics()
+    };
+    let preview = preview_session(&session.session_id, &spec).expect("a preview");
+    assert!(preview.counts.ready > 0, "{preview:?}");
+    let outcome = apply(
+        Arc::new(CollectorEventSink::new()),
+        session.session_id.clone(),
+        preview.preview_id,
+    )
+    .await
+    .map(|_| ());
+    close(&session.session_id);
+    outcome
+}
+
+/// A NEW name the portal serves is refused too: `.git/description` renamed to
+/// `branches` would take the name the portal's `branches` row stands on.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_row_renamed_onto_a_portal_name_is_refused_as_read_only() {
+    let repo = TestDir::new("multi-rename-onto-portal");
+    let dot_git = repo.join(".git");
+    std::fs::create_dir_all(&dot_git).expect("the .git folder");
+    std::fs::write(dot_git.join("description"), b"x").expect("a real file in it");
+    let listing = listing_on("root", &dot_git, "multi-rename-onto-portal");
+    crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+
+    let outcome = apply_mask(&listing, "branches").await;
+
+    assert!(
+        matches!(
+            outcome,
+            Err(MultiRenameError::ReadOnly {
+                place: ReadOnlyPlace::GitPortal
+            })
+        ),
+        "{outcome:?}"
+    );
+    assert_eq!(names_on_disk(&dot_git), vec!["description"]);
+}
+
+/// Apply's refusal order: a read-only route answers before the volume lookup, so a
+/// portal row on a volume nothing serves is `ReadOnly`, and only a plain folder there
+/// is `NotConnected`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn read_only_answers_before_not_connected() {
+    let volume_id = "multi-rename-unplugged";
+    let repo = TestDir::new("multi-rename-unplugged-portal");
+    let dot_git = repo.join(".git");
+    std::fs::create_dir_all(dot_git.join("worktrees")).expect("the worktree admin folder");
+    let portal = listing_on(volume_id, &dot_git, "multi-rename-unplugged-portal");
+    crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+
+    let outcome = apply_mask(&portal, "[N]-old").await;
+    assert!(
+        matches!(
+            outcome,
+            Err(MultiRenameError::ReadOnly {
+                place: ReadOnlyPlace::GitPortal
+            })
+        ),
+        "{outcome:?}"
+    );
+
+    let plain = TestDir::new("multi-rename-unplugged-plain");
+    std::fs::write(plain.join("a.txt"), b"x").expect("scratch dir is writable");
+    let listing = listing_on(volume_id, &plain, "multi-rename-unplugged-plain");
+    let outcome = apply_mask(&listing, "[N]-old").await;
+    assert!(
+        matches!(&outcome, Err(MultiRenameError::NotConnected { volume_id: id }) if id == volume_id),
+        "{outcome:?}"
+    );
+    assert_eq!(names_on_disk(&dot_git), vec!["worktrees"]);
+    assert_eq!(names_on_disk(&plain), vec!["a.txt"]);
+}

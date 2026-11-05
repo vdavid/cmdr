@@ -676,4 +676,58 @@ mod media {
         assert_eq!(refused.take().len(), 6);
         assert_eq!(*calls.0.lock_ignore_poison(), vec!["photo.jpg".to_string()]);
     }
+
+    /// The tool's own media read answers the call and nobody else: it sends no
+    /// `multi-rename-media-progress` event, so no sheet hears of the tool's
+    /// `mcp-multi-rename` pseudo-session.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn the_tools_media_read_sends_no_progress_event() {
+        use tauri::Listener;
+
+        use crate::agent::types::TurnOrigin;
+        use crate::tools::policy::Caller;
+        use crate::ui_state::pane_state::{PaneFileEntry, PaneState, PaneStateStore};
+
+        let (dir, _entries, _listing) = folder("mcp-rename-media-silent", &["song.mp3", "photo.jpg"]);
+        let app = tauri::test::mock_app();
+        let store = PaneStateStore::new();
+        store.set_left(PaneState {
+            path: dir.to_string_lossy().into_owned(),
+            volume_id: Some("root".to_string()),
+            files: ["photo.jpg", "song.mp3"]
+                .iter()
+                .map(|name| PaneFileEntry {
+                    name: name.to_string(),
+                    path: dir.join(name).to_string_lossy().into_owned(),
+                    ..PaneFileEntry::default()
+                })
+                .collect(),
+            ..PaneState::default()
+        });
+        store.set_focused_pane("left".to_string());
+        app.manage(store);
+        let heard = Arc::new(Mutex::new(0_usize));
+        app.listen_any("multi-rename-media-progress", {
+            let heard = Arc::clone(&heard);
+            move |_| *heard.lock_ignore_poison() += 1
+        });
+        let ctx = ToolCtx {
+            caller: Caller::Agent {
+                origin: TurnOrigin::Text,
+            },
+            cancel: tokio_util::sync::CancellationToken::new(),
+            conversation_id: None,
+            asked: None,
+        };
+
+        execute_multi_rename(
+            app.handle(),
+            &ctx,
+            &json!({ "pane": "left", "names": ["photo.jpg", "song.mp3"], "nameMask": "[=tag.title]" }),
+        )
+        .await
+        .expect("the dry run answers");
+
+        assert_eq!(*heard.lock_ignore_poison(), 0);
+    }
 }

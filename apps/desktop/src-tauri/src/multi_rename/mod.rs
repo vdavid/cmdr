@@ -37,3 +37,5 @@ mod session_test;
 mod transform_test;
 #[cfg(test)]
 mod transliterate_test;
+#[cfg(test)]
+mod wire_test;
