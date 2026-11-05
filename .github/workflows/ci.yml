@@ -61,7 +61,7 @@ jobs:
     permissions:
       contents: read # check out the code
       checks: read # look up this commit's `CI OK` from its PR run
-      pull-requests: read # find the PR a GitHub merge commit came from
+      pull-requests: read # find the PR a GitHub merge commit came from, list a PR's files (Scorecard)
       actions: read # list the lane markers (`lane-markers plan`)
     # A landed commit already passed every lane on its PR. `pnpm land` either fast-forwards (same
     # SHA, so its PR run's green `CI OK` is on it) or has GitHub merge a green PR into a moved
@@ -87,11 +87,11 @@ jobs:
         ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.finder-extension || 'false' }}
       termbase: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.termbase || 'false' }}
       changelog: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.changelog || 'false' }}
-      # Pull requests only use the path filter (the light lane adds the content-based half); a
-      # push or dispatch that runs the light lane always runs Scorecard.
+      # A pull request runs Scorecard on the path filter or the content scan (`scorecard-scan`);
+      # a push or dispatch that runs the light lane always runs it.
       scorecard:
-        ${{ steps.verified.outputs.verified != 'true' && (steps.filter.outputs.scorecard == 'true' || github.event_name
-        != 'pull_request') && 'true' || 'false' }}
+        ${{ steps.verified.outputs.verified != 'true' && (steps.filter.outputs.scorecard == 'true' ||
+        steps.scorecard-scan.outputs.hit == 'true' || github.event_name != 'pull_request') && 'true' || 'false' }}
       website-changed: ${{ steps.filter.outputs.website }}
       playwright-image: ${{ steps.playwright-image.outputs.image }}
       light-runner: ${{ steps.light-runner.outputs.runner }}
@@ -603,6 +603,62 @@ jobs:
               - 'scripts/check/checks/webdav_ports.go'
               - '.mise.toml'
 
+      # Scorecard's Binary-Artifacts and Pinned-Dependencies (shell half) read EVERY file, by
+      # content: a binary by magic bytes or extension, a shell script by extension or shebang
+      # (scorecard v5.5.0, `checks/raw/binary_artifact.go` and `shell_download_validate.go`).
+      # No path filter can see that, so this looks at the PR's files themselves (this checkout is
+      # the tree the PR runs). The path-based half is the `scorecard` filter above. Here, not in
+      # the light lane, so the hosted job that runs Scorecard gets one final answer as its gate.
+      # A failed lookup runs Scorecard, never skips it.
+      - name: Look for changed binaries and shell scripts
+        id: scorecard-scan
+        if: github.event_name == 'pull_request' && steps.filter.outputs.scorecard != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          files="$RUNNER_TEMP/pr-files.tsv"
+          if ! gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" \
+            --jq '.[] | [.status, .filename, (.previous_filename // "")] | @tsv' >"$files"; then
+            echo "::warning::Couldn't list PR #$PR's files; running Scorecard."
+            echo "hit=true" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The API lists at most 3,000 files, so a list that long may be missing the one that matters.
+          if [[ "$(wc -l <"$files")" -ge 3000 ]]; then
+            echo "PR #$PR changes 3,000+ files; running Scorecard."
+            echo "hit=true" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Scorecard's binary extensions and the shells it parses, so a deleted or renamed-away
+          # one counts too (it can make an accepted finding stale, which fails in CI).
+          binary_ext='crx|deb|dex|dey|elf|o|a|so|macho|iso|class|jar|bundle|dylib|lib|msi|dll|drv|efi|exe|ocx|pyc|pyo|par|rpm|wasm|whl'
+          shell_ext='sh|bash|mksh|ksh|zsh|ash|dash'
+          reason() {
+            local path="$1" exists="$2" lower="${1,,}"
+            if [[ "$lower" =~ \.($binary_ext)$ ]]; then echo "a binary extension"; return; fi
+            if [[ "$lower" =~ \.($shell_ext)$ ]]; then echo "a shell extension"; return; fi
+            if [[ "$lower" == *dockerfile* || "$lower" == .github/* ]]; then echo "a Dockerfile or workflow path"; return; fi
+            [[ "$exists" == yes && -f "$path" && ! -L "$path" ]] || return 0
+            if [[ "$(head -c 2 "$path")" == '#!' ]]; then echo "a shebang"; return; fi
+            # A NUL in the first 1,024 bytes, the window Scorecard reads: every magic-byte type it flags has one.
+            local head_bytes; head_bytes=$(head -c 1024 "$path" | wc -c)
+            if [[ "$(head -c 1024 "$path" | tr -d '\000' | wc -c)" -lt "$head_bytes" ]]; then echo "binary content"; fi
+          }
+          while IFS=$'\t' read -r status path previous; do
+            exists=yes
+            [[ "$status" == removed ]] && exists=no
+            why=$(reason "$path" "$exists")
+            if [[ -z "$why" && -n "$previous" ]]; then why=$(reason "$previous" no); path="$previous"; fi
+            if [[ -n "$why" ]]; then
+              echo "$path has $why, which Scorecard's file checks read; running Scorecard."
+              echo "hit=true" >>"$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done <"$files"
+          echo "No changed file is a binary, a shell script, a Dockerfile, or a workflow; Scorecard skips."
+
       # The one tool this job runs, from the cache when its sources are unchanged.
       - name: Get the lane-markers tool
         uses: ./.github/actions/lane-markers-tool
@@ -826,7 +882,6 @@ jobs:
     if: needs.changes.outputs.verified != 'true' && needs.changes.outputs.same-tree != 'true'
     permissions:
       contents: read # check out the code
-      pull-requests: read # list the PR's files for the Scorecard trigger
     uses: ./.github/workflows/light-lane.yml
     with:
       runs-on: ${{ needs.changes.outputs.light-runner }}
@@ -1080,7 +1135,7 @@ jobs:
   # ===========================================
   # The light lane saves its caches (`node_modules`, the check tool, the Go caches) from `main`
   # only, from a hosted runner only, and a verified `main` push skips it, so this job fills
-  # `main`'s entries for every hosted run to restore: fork and bot PRs' light lane, the `nilaway`
+  # `main`'s entries for every hosted run to restore: fork and bot PRs' light lane, the `hosted-go`
   # job, and the host-side pnpm store the Svelte lane and the deploys restore. Same shape as
   # `warm-rust-cache`: post-land, exempt from `ci-ok` (`ciOKGateExempt`), skipped when the lane
   # ran on a hosted runner on this push (it saved the same keys). On exact hits it only looks

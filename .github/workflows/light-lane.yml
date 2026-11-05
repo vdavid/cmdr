@@ -5,7 +5,8 @@ name: Light lane
 # - Repo hygiene runs on every change: the checks whose inputs no per-app filter can cover
 #   (oxfmt over the whole monorepo, the docs, translator guides, workflow guards, `ci-coverage`).
 # - The rest runs per filter (`ci.yml` passes one input each): the Go checks, the API server,
-#   the dashboard, and the three slow hygiene checks, each gated on exactly what it reads.
+#   the dashboard, and the slow hygiene checks, each gated on exactly what it reads.
+# - nilaway and Scorecard run in `hosted-go`, on a hosted runner (the job says why).
 # - Every check step runs once setup is done, even after another one failed, so a red run lists
 #   every failure, like the separate jobs did.
 # `docs/tooling/ci.md` § The light lane.
@@ -33,7 +34,7 @@ on:
         type: boolean
         default: false
       scorecard:
-        description: A path Scorecard's file checks read changed (the content-based half is decided here)
+        description: Scorecard's file checks read something that changed (`changes` decides both halves)
         type: boolean
         default: false
       termbase:
@@ -55,7 +56,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read # check out the code
-      pull-requests: read # list the PR's files for the Scorecard trigger
     env:
       # `go test` never reads a result from the restored Go build cache, so every run tests for
       # real, as it did before that cache existed. Other go commands ignore the flag.
@@ -72,60 +72,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      # Scorecard's Binary-Artifacts and Pinned-Dependencies (shell half) read EVERY file, by
-      # content: a binary by magic bytes or extension, a shell script by extension or shebang
-      # (scorecard v5.5.0, `checks/raw/binary_artifact.go` and `shell_download_validate.go`).
-      # No path filter can see that, so this looks at the PR's files themselves. The path-based
-      # half is `ci.yml`'s `scorecard` filter. A failed lookup runs Scorecard, never skips it.
-      - name: Look for changed binaries and shell scripts
-        id: scorecard-scan
-        if: ${{ !inputs.full && !inputs.scorecard && github.event_name == 'pull_request' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          files="$RUNNER_TEMP/pr-files.tsv"
-          if ! gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" \
-            --jq '.[] | [.status, .filename, (.previous_filename // "")] | @tsv' >"$files"; then
-            echo "::warning::Couldn't list PR #$PR's files; running Scorecard."
-            echo "hit=true" >>"$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # The API lists at most 3,000 files, so a list that long may be missing the one that matters.
-          if [[ "$(wc -l <"$files")" -ge 3000 ]]; then
-            echo "PR #$PR changes 3,000+ files; running Scorecard."
-            echo "hit=true" >>"$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Scorecard's binary extensions and the shells it parses, so a deleted or renamed-away
-          # one counts too (it can make an accepted finding stale, which fails in CI).
-          binary_ext='crx|deb|dex|dey|elf|o|a|so|macho|iso|class|jar|bundle|dylib|lib|msi|dll|drv|efi|exe|ocx|pyc|pyo|par|rpm|wasm|whl'
-          shell_ext='sh|bash|mksh|ksh|zsh|ash|dash'
-          reason() {
-            local path="$1" exists="$2" lower="${1,,}"
-            if [[ "$lower" =~ \.($binary_ext)$ ]]; then echo "a binary extension"; return; fi
-            if [[ "$lower" =~ \.($shell_ext)$ ]]; then echo "a shell extension"; return; fi
-            if [[ "$lower" == *dockerfile* || "$lower" == .github/* ]]; then echo "a Dockerfile or workflow path"; return; fi
-            [[ "$exists" == yes && -f "$path" && ! -L "$path" ]] || return 0
-            if [[ "$(head -c 2 "$path")" == '#!' ]]; then echo "a shebang"; return; fi
-            # A NUL in the first 1,024 bytes, the window Scorecard reads: every magic-byte type it flags has one.
-            local head_bytes; head_bytes=$(head -c 1024 "$path" | wc -c)
-            if [[ "$(head -c 1024 "$path" | tr -d '\000' | wc -c)" -lt "$head_bytes" ]]; then echo "binary content"; fi
-          }
-          while IFS=$'\t' read -r status path previous; do
-            exists=yes
-            [[ "$status" == removed ]] && exists=no
-            why=$(reason "$path" "$exists")
-            if [[ -z "$why" && -n "$previous" ]]; then why=$(reason "$previous" no); path="$previous"; fi
-            if [[ -n "$why" ]]; then
-              echo "$path has $why, which Scorecard's file checks read; running Scorecard."
-              echo "hit=true" >>"$GITHUB_OUTPUT"
-              exit 0
-            fi
-          done <"$files"
-          echo "No changed file is a binary, a shell script, a Dockerfile, or a workflow; Scorecard skips."
-
       # Each section's gate, once, so every step below reads the same answer.
       - name: Decide which sections run
         id: plan
@@ -134,7 +80,6 @@ jobs:
           SCRIPTS: ${{ inputs.scripts }}
           API_SERVER: ${{ inputs.api-server }}
           DASHBOARD: ${{ inputs.dashboard }}
-          SCORECARD: ${{ inputs.scorecard || steps.scorecard-scan.outputs.hit == 'true' }}
           TERMBASE: ${{ inputs.termbase }}
           CHANGELOG: ${{ inputs.changelog }}
         run: |
@@ -143,7 +88,6 @@ jobs:
             echo "scripts=$(on "$SCRIPTS")"
             echo "api-server=$(on "$API_SERVER")"
             echo "dashboard=$(on "$DASHBOARD")"
-            echo "scorecard=$(on "$SCORECARD")"
             echo "termbase=$(on "$TERMBASE")"
             echo "changelog=$(on "$CHANGELOG")"
           } | tee -a "$GITHUB_OUTPUT"
@@ -165,8 +109,8 @@ jobs:
         run: mise install
 
       # On the self-hosted runner, `node_modules` installs from its warm pnpm store (hard links on
-      # one filesystem) and the Go caches are already in place, so only the small, per-checkout
-      # entries come back: the check tool and the scorecard binary.
+      # one filesystem) and the Go caches are already in place, so only the check tool, small and
+      # per checkout, comes back.
       - name: Restore the light lane caches
         id: cache
         uses: ./.github/actions/light-cache
@@ -174,7 +118,6 @@ jobs:
           phase: restore
           node-modules: ${{ env.HOSTED }}
           go: ${{ env.HOSTED == 'true' && steps.plan.outputs.scripts == 'true' }}
-          scorecard: ${{ steps.plan.outputs.scorecard }}
 
       - name: Install dependencies
         if: steps.cache.outputs.node-modules-hit != 'true'
@@ -234,15 +177,10 @@ jobs:
         if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.termbase == 'true' }}
         run: ./scripts/check/check --check desktop-i18n-termbase --ci
 
-      # Its `go install`ed binary (~2 min to build) comes from its own cache entry, restored above.
-      - name: Check OpenSSF Scorecard's file-based checks
-        if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.scorecard == 'true' }}
-        run: ./scripts/check/check --check scorecard-local --ci
-
       # ---- Go (scripts) ----
 
-      # One invocation, so the runner runs the eight in parallel. nilaway runs in the `nilaway`
-      # job below, on a hosted runner.
+      # One invocation, so the runner runs the eight in parallel. nilaway runs in the `hosted-go`
+      # job below.
       - name: Run the Go checks and tests
         if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.scripts == 'true' }}
         run: |
@@ -281,23 +219,27 @@ jobs:
         with:
           phase: save
           go: ${{ steps.plan.outputs.scripts }}
-          scorecard: ${{ steps.plan.outputs.scorecard }}
           node-modules-hit: ${{ steps.cache.outputs.node-modules-hit }}
           check-tool-hit: ${{ steps.cache.outputs.check-tool-hit }}
           go-hit: ${{ steps.cache.outputs.go-hit }}
-          scorecard-hit: ${{ steps.cache.outputs.scorecard-hit }}
 
-  # nilaway on a hosted runner, beside `checks`: it passed 2.5 GB and kept growing on the
-  # self-hosted runner, whose job budget is 1.5 GB (`MemoryMax=1536M`). Its own job also takes it
-  # off the Go section's critical path. It saves nothing; `warm-light-cache` (and `checks` on a
-  # hosted `main` run) keep the Go caches it restores current, nilaway's binary among them.
-  nilaway:
-    name: nilaway
-    if: inputs.full || inputs.scripts
+  # The two heavy Go tools, on a hosted runner beside `checks`, so the self-hosted runner keeps
+  # only the fast checks:
+  # - nilaway passed 2.5 GB and kept growing there, against a 1.5 GB job budget (`MemoryMax`).
+  # - Scorecard's cold `go install` pulls ~2.3 GB of Go modules, which filled the runner's disk
+  #   (run 41949695576, attempt 4, 2026-11-05).
+  # Its own job also takes both off the light job's critical path. It saves nothing:
+  # `warm-light-cache` (and `checks` on a hosted `main` run) keep the Go caches and the scorecard
+  # binary it restores current.
+  hosted-go:
+    name: Hosted Go tools (nilaway, Scorecard)
+    if: inputs.full || inputs.scripts || inputs.scorecard
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       GOFLAGS: -count=1
+      NILAWAY: ${{ inputs.full || inputs.scripts }}
+      SCORECARD: ${{ inputs.full || inputs.scorecard }}
 
     steps:
       - name: Checkout code
@@ -309,18 +251,29 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      - name: Restore the check tool and the Go caches
+      - name: Restore the check tool, the Go caches, and the scorecard binary
         id: cache
         uses: ./.github/actions/light-cache
         with:
           phase: restore
           node-modules: 'false'
-          go: 'true'
+          go: ${{ env.NILAWAY }}
+          scorecard: ${{ env.SCORECARD }}
 
       - name: Build check tool
         if: steps.cache.outputs.check-tool-hit != 'true'
         run: go build -o check .
         working-directory: ./scripts/check
 
+      - name: Setup done
+        id: ready
+        run: echo "Setup is done; both checks below run, even after the other fails."
+
       - name: Run nilaway
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' && env.NILAWAY == 'true' }}
         run: ./scripts/check/check --ci --check scripts-go-nilaway
+
+      # Its `go install`ed binary (~2 min to build) comes from its own cache entry, restored above.
+      - name: Check OpenSSF Scorecard's file-based checks
+        if: ${{ !cancelled() && steps.ready.outcome == 'success' && env.SCORECARD == 'true' }}
+        run: ./scripts/check/check --check scorecard-local --ci
