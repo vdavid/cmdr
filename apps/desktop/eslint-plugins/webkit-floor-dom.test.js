@@ -12,7 +12,14 @@ const filename = join(fixtureDir, 'file.ts')
 const ruleTester = new RuleTester({
   languageOptions: {
     parser: tseslint.parser,
-    parserOptions: { project: join(fixtureDir, 'tsconfig.json'), tsconfigRootDir: fixtureDir },
+    parserOptions: {
+      project: join(fixtureDir, 'tsconfig.json'),
+      tsconfigRootDir: fixtureDir,
+      // Under `CI=true`, typescript-eslint infers a single run and builds the program once from the
+      // files on DISK, so every case would be type-checked as the placeholder `file.ts` and the
+      // rule would see no DOM calls at all (all five invalid cases passed locally, failed in CI).
+      disallowAutomaticSingleRunInference: true,
+    },
   },
   plugins: { cmdr: { rules: { 'webkit-floor-dom': rule } } },
 })
