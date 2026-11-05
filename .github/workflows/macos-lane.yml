@@ -101,24 +101,22 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      # Hosted only. Its own cache (keys are per OS), saved from `main` only, like `ci.yml`'s
-      # `SAVE_RUST_CACHE` (a called workflow doesn't inherit the caller's `env`, so it's restated).
-      # `cache-targets: false` keeps it to the cargo registry and `~/.cargo/bin` (cargo-nextest,
-      # cargo-modules): the hosted runner is the fallback, and a `target/` entry was 3.8 GB of the
-      # repo's 10 GB cache budget. `shared-key` lets `warm-rust-macos-cache` write this same entry.
-      # The toolchain step keeps the key stable across runner images (see the action).
+      # Hosted only, and restore only: the M1 neither restores nor saves it. Its own cache (keys are
+      # per OS): the cargo registry, `~/.cargo/bin` (cargo-nextest, cargo-modules), and the
+      # dependencies' slice of `target/` (rust-cache drops workspace crates before saving).
+      # `warm-rust-macos-cache` is its one writer, from a clean `target/` on `main`, so stale builds
+      # never ride along into a new save (`docs/tooling/ci.md` § The M1 runner). `shared-key` names
+      # that same entry. The toolchain step keeps the key stable across runner images (see the action).
       - name: Keep only the pinned Rust toolchain
         if: ${{ !inputs.self-hosted }}
         uses: ./.github/actions/pinned-rust-toolchain
 
-      - name: Cache the cargo registry and tools
+      - name: Restore the dependency build cache
         if: ${{ !inputs.self-hosted }}
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           shared-key: desktop-rust-macos
-          cache-targets: false
-          cache-on-failure: true
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+          save-if: false
 
       # Self-hosted only. The four slots share one rustup home, and rustup takes no lock of its own,
       # so two slots installing a new pin at once could trip over each other. `shlock` takes a

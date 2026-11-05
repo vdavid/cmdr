@@ -282,10 +282,11 @@ silent** (a warning, not a red job):
   entries within minutes, and nearly every PR run built cold (PR #593, 2026-10-20). **Load-bearing companion: the
   `warm-rust-*` jobs.** A verified `main` push skips the Rust lanes, so nothing else would write `main`'s entries.
   Post-land on `main`, one job per entry restores it with the lane's exact rust-cache inputs; on an exact hit it skips
-  every build step (~1 min), on a miss it runs the lane's compiling checks and saves. They skip when the Rust lanes ran
-  on that push, and they're exempt from `ci-ok` (`ciOKGateExempt`). Their rust-cache inputs and the steps before them
-  must match the lane's: rust-cache hashes the rustc version and `CARGO*`/ `RUST*` env into the key, which is also why
-  the switch is named `SAVE_RUST_CACHE`.
+  every build step (~1 min), on a miss it runs the lane's compiling checks and saves. The Linux one skips when its lane
+  ran on that push; the macOS one is its entry's only writer, so it runs on every push (§ The M1 runner). Both are
+  exempt from `ci-ok` (`ciOKGateExempt`). Their rust-cache inputs and the steps before them must match the lane's:
+  rust-cache hashes the rustc version and `CARGO*`/ `RUST*` env into the key, which is also why the switch is named
+  `SAVE_RUST_CACHE`.
 - **Every rust-cache step follows the `pinned-rust-toolchain` action** (`.github/actions/`). rust-cache hashes the rustc
   version of EVERY installed toolchain, and the runner image preinstalls its own `stable`. While GitHub rolls out a new
   image (days, after each Rust release), runners differ, so one job wrote two keys run by run: `e3a6d410` with the old
@@ -340,7 +341,7 @@ per-repo ceiling**, and lane markers are the first LRU victims, since nothing ev
 the repo sat at ~9.5 GB (`gh api repos/vdavid/cmdr/actions/caches`): `desktop-rust-macos` 3.6, `desktop-rust` 2.7,
 `light-go` 1.6, `docker-e2e` ~1.2, four mise entries ~0.9 between `main` and one PR, `light-*` `node_modules` 0.27, and
 the pnpm store 0.2. The fixes above put `desktop-rust` at ~1.1, `light-go` at ~0.23, and `light-node-modules` at ~0.19,
-`desktop-rust-macos` keeps no `target/` (§ The M1 runner), and PRs no longer add mise. Every PR saves only its markers
+`desktop-rust-macos` at ~1.3 (estimated; § The M1 runner), and PRs no longer add mise. Every PR saves only its markers
 and the lane-markers tool (~2 MB). Before the Rust caches went main-only, every PR also saved ~1.7 GB of Rust and ~1.2
 GB of E2E target, the repo sat at ~12 GB, and LRU evicted entries within minutes.
 
@@ -445,8 +446,7 @@ the account's five-job cap. PRs and dispatches (the release gate's `run_all`) ge
 nothing replaces them. The replaced job reads `cancelled`, which `ci-ok` counts as covered (§ Branch protection). The
 group is job-level because the workflow-level one must stay per-run (§ Triggers and concurrency), and GitHub allows
 `concurrency` on a job that calls a reusable workflow (docs: "Supported keywords for jobs that call a reusable
-workflow", checked 2026-10-21). `warm-rust-macos-cache` stays out of the group: it runs only when the lane skipped or
-ran on the M1, and mostly hits the cache and exits.
+workflow", checked 2026-10-21). `warm-rust-macos-cache` stays out of the group: it mostly hits the cache and exits.
 
 - **Required.** It's in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and the release's CI gate. Its
   first run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a tight
@@ -454,10 +454,9 @@ ran on the M1, and mostly hits the cache and exits.
 - **Left out on purpose**: `macos-availability` (the committed selector list records the newest SDK it was built on, and
   an older runner SDK that knows a different selector set fails by design), `disk-images` (a candidate once the job has
   a track record), and the Docker fixture lanes (no Docker on GitHub's macOS runners).
-- **Cache**: on the M1, none (each slot's `target/` persists). Hosted, one small rust-cache entry with
-  `cache-targets: false`: the cargo registry and `~/.cargo/bin` (cargo-nextest, cargo-modules), saved only from `main`
-  and kept current by `warm-rust-macos-cache`, which runs whenever the push's lane didn't save it (skipped, or ran on
-  the M1) and on a miss fetches the crates and installs both tools. Why no `target/`: § The M1 runner.
+- **Cache**: on the M1, none (each slot's `target/` persists). Hosted, one slim rust-cache entry the lane only restores:
+  the cargo registry, `~/.cargo/bin` (cargo-nextest, cargo-modules), and the dependencies' build. Its one writer is
+  `warm-rust-macos-cache`, on every `main` push. Why and what it costs: § The M1 runner.
 
 ### The M1 runner
 
@@ -496,15 +495,16 @@ tests 154 s, module cycles 174 s). Hosted, the same lane took 29–50 min, media
 - **The box side** (the user, the slots, pf, the job hooks, the runner-down email, how to pause it) lives in David's
   private infra repo: the `ci_runner` Ansible role of its M1 host, and that host's CLAUDE.md § CI runner.
 
-**Why the hosted fallback caches no `target/`** (#981): the `desktop-rust-macos` entry was 3.8 GB of the repo's 10 GB
-budget (`gh cache list`, 2026-11-05), and with the M1 taking trusted runs, the hosted lane runs only on full runs, bot
-and fork PRs, overflow, and an M1 outage. The price, measured fully cold (no entry at all, run 42029203873, 2026-11-05):
-73.7 min, against ~38 warm with the old entry (clippy 13 min, rustdoc 4, tests 43, cargo-modules install 6, module
-cycles 6). The small entry spares the tool installs and the crate downloads, so a hosted run lands near 65 min, under
-the 90-min cap. A slim `target/` entry (dependency debuginfo off, ~1.1 GB on Linux) would buy those ~27 min back on each
-hosted run, at ~1.3 GB of budget plus a ~60-min hosted rebuild in `warm-rust-macos-cache` on every lockfile change, for
-runs mostly nobody waits on. The one that's waited on is the release gate's; if that wait starts to hurt, that's the
-trade to revisit.
+**The hosted fallback's slim `target/` entry** (#981): with the M1 taking trusted runs, the hosted lane runs only on
+full runs (the release gate, the nightly), bot and fork PRs, overflow, and an M1 outage. Without a `target/` entry it
+measured 73.7 min fully cold (run 42029203873, 2026-11-05: clippy 13 min, rustdoc 4, tests 43, cargo-modules install 6,
+module cycles 6), against ~38 warm with the old entry, and the release gate waits on it, so David chose to keep one
+(2026-11-05), estimated to bring a hosted run to ~47 min. It stays slim three ways, like `desktop-rust`'s (§ Build
+caching): dependency debuginfo is off, rust-cache drops workspace crates, and `warm-rust-macos-cache` is the only
+writer, building from a clean `target/` on a miss, so stale builds never ride along (the old entry, saved by the lane on
+top of older ones, reached 3.8 GB, `gh cache list`, 2026-11-05). Expected size ~1.3 GB (estimated from Linux's ~1.1 GB;
+not yet measured). The price: that ~1.3 GB of budget, plus a ~60-min hosted rebuild post-land on each `Cargo.lock`,
+profile, or toolchain change.
 
 The CI failure history that motivated it: `docs/notes/ci-health-2026-10.md`.
 

@@ -1227,20 +1227,19 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: ./scripts/check/check --check nextest-filter-coverage --ci
 
-  # The `desktop-rust-macos` entry, which the hosted macOS lane restores: the cargo registry and
-  # `~/.cargo/bin` (cargo-nextest, cargo-modules), no `target/` (`macos-lane.yml` says why). It
-  # runs when this push's macOS lane didn't save it: the lane skipped, or ran on the M1, which
-  # saves no Rust cache. On an exact hit it only looks (~1 min); on a miss it fetches the crates
-  # and installs the two tools, so a hosted fallback never builds them. Same shape as
-  # `warm-rust-cache` otherwise.
+  # The `desktop-rust-macos` entry, which the hosted macOS lane restores: the cargo registry,
+  # `~/.cargo/bin` (cargo-nextest, cargo-modules), and the dependencies' build. Its one writer: the
+  # lane only restores it, so this runs on every `main` push (the M1 path touches no Rust cache).
+  # On an exact hit it only looks (~1 min); on a miss it builds what the lane compiles from a clean
+  # `target/`, like `warm-rust-cache`, so a hosted fallback starts warm. A miss comes with each
+  # `Cargo.lock`, profile, or toolchain change, and a cold hosted build is ~60 min.
   warm-rust-macos-cache:
     name: Warm Rust build cache (macOS)
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 90
     needs: changes
     if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
-      (needs.changes.outputs.rust-macos != 'true' || needs.changes.outputs.macos-self-hosted == 'true')
+      github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success'
 
     steps:
       - name: Checkout code
@@ -1256,23 +1255,41 @@ jobs:
       - name: Keep only the pinned Rust toolchain
         uses: ./.github/actions/pinned-rust-toolchain
 
-      - name: Cache the cargo registry and tools
+      - name: Cache the dependency build
         id: cache
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           shared-key: desktop-rust-macos
-          cache-targets: false
-          cache-on-failure: true
           save-if: ${{ env.SAVE_RUST_CACHE }}
+
+      # As in `warm-rust-cache`: a miss restored the newest older entry, and building on it would
+      # carry its stale artifacts into the new save.
+      - name: Start the new entry from a clean target
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: rm -rf target
 
       - name: Build check tool
         if: steps.cache.outputs.cache-hit != 'true'
         run: go build -o check .
         working-directory: ./scripts/check
 
-      - name: Fetch the crates
+      - name: Build for clippy
         if: steps.cache.outputs.cache-hit != 'true'
-        run: cargo fetch --locked
+        run: ./scripts/check/check --check desktop-rust-clippy --ci
+
+      - name: Build for rustdoc
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ./scripts/check/check --check desktop-rust-rustdoc --ci
+
+      # `rust-lane.yml` says why (an unused ~200 MB, and rust-cache's ENOENT on its `tests` dirs).
+      - name: Drop rustdoc HTML before it reaches the cache
+        if: always() && steps.cache.outputs.cache-hit != 'true'
+        run: rm -rf target/doc
+
+      # Compiles the test binaries (and installs cargo-nextest) without running the suite.
+      - name: Build the test binaries
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ./scripts/check/check --check nextest-filter-coverage --ci
 
       # The checks own the pins and print them here.
       - name: Install cargo-nextest and cargo-modules (pinned)
