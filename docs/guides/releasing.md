@@ -925,6 +925,9 @@ https://alternativeto.net/software/cmdr/about/ with the "Note about your changes
 
 ## What a release publishes
 
+The release pipeline's `demo` job also builds and publishes the browser demo (`apps/website/DETAILS.md` § Browser demo),
+and a release can't publish without it.
+
 One GitHub release per tag, carrying these assets for each of the three arches (`aarch64`, `x64`, `universal`):
 
 - `Cmdr_<version>_<arch>.dmg`: what people download. `getcmdr.com/download/latest/<arch>`, the website's download
