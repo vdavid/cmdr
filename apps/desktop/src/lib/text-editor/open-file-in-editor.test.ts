@@ -25,8 +25,10 @@ interface EditorRefusal {
 
 /** Stands in for the wrapper's `TypedFailure` subclass, which `asOpenInEditorError` unwraps. */
 class FakeOpenInEditorFailure extends Error {
-  constructor(readonly failure: EditorRefusal) {
+  readonly failure: EditorRefusal
+  constructor(failure: EditorRefusal) {
     super('refused')
+    this.failure = failure
   }
 }
 

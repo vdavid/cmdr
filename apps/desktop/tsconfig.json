@@ -9,7 +9,12 @@
     // Pinned for the Safari 15.4 floor (a fully patched Catalina), so a newer standard-library
     // function is a type error here instead of a TypeError on that Mac. ❌ Don't widen it to make
     // one compile: feature-check the call and cast locally. Why and how: `src/webkit-floor.d.ts`.
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // No enums, namespaces with values, or parameter properties: Node runs `scripts/*.ts` by
+    // stripping types, which can't erase those, and with no enum anywhere ESLint can skip
+    // `no-unsafe-enum-assignment`, which cost ~17 s per Svelte lint pass guarding one enum
+    // (`docs/notes/performance/local-check-lanes-2026-11-05.md`). Use an `as const` object.
+    "erasableSyntaxOnly": true
   },
   // `test/fixtures/*.svelte` are components a unit test mounts (they'd fail
   // `a11y-coverage` under `src/lib`, which they aren't part of), so they belong to

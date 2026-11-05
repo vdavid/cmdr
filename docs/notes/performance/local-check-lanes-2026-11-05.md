@@ -232,3 +232,11 @@ contention from other agents (load average 55–170), so wall times are inflated
      this path.
    - Warm no-op: 13 s total under load (`--message-format=json` reuses the cached plain verdict: cargo doesn't
      fingerprint the message format).
+
+- **Cut 4, `no-unsafe-enum-assignment` off** (`erasableSyntaxOnly` in `apps/desktop/tsconfig.json` bans enums;
+  `MatchQuality` is an `as const` object; eight parameter-property constructors became plain fields).
+  - Svelte pass, back to back at load 12–20: **141 s → 117 s** (−17%); rule time 30.6 s → 11.8 s, of which the enum rule
+    alone was 19.0 s (62%). Parse unchanged (106 s → 102 s).
+  - TypeScript pass, back to back at load 12–20: 90 s → 97 s, rule time 59.0 s → 59.8 s: no measurable gain. The enum
+    rule's 9.6 s was the checker's lazy work, which the next type-aware rule now pays (the caveat in § ESLint).
+  - An earlier pair at load 60–130 (675 s → 205 s Svelte) swung with the load and isn't comparable.

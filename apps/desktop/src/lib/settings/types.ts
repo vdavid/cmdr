@@ -812,11 +812,13 @@ export interface SettingSearchResult {
 // ============================================================================
 
 export class SettingValidationError extends Error {
-  constructor(
-    public settingId: string,
-    public reason: string,
-  ) {
+  settingId: string
+  reason: string
+
+  constructor(settingId: string, reason: string) {
     super(`Invalid value for setting '${settingId}': ${reason}`)
+    this.settingId = settingId
+    this.reason = reason
     this.name = 'SettingValidationError'
   }
 }

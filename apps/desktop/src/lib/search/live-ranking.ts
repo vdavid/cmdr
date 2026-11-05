@@ -22,12 +22,16 @@
 import type { SearchResultEntry } from '#lib/tauri-commands/index.js'
 import type { SearchMode } from '#lib/query-ui/query-filter-state.svelte.js'
 
-/** How well a name answers the query. Bands are compared before anything else. */
-const enum MatchQuality {
-  Exact = 0,
-  Prefix = 1,
-  Other = 2,
-}
+/**
+ * How well a name answers the query. Bands are compared before anything else. An `as const`
+ * object, not an enum: `erasableSyntaxOnly` bans enums (`tsconfig.json` says why).
+ */
+const MatchQuality = {
+  Exact: 0,
+  Prefix: 1,
+  Other: 2,
+} as const
+type MatchQuality = (typeof MatchQuality)[keyof typeof MatchQuality]
 
 /**
  * The wildcard-free stem a match-quality gradient can be measured against, or `''` when

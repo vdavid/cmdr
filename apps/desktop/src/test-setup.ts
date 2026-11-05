@@ -147,10 +147,13 @@ HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
 // hits a null context and throws on `ctx.font = …`. Route it to the same
 // synthetic 2D context as the DOM canvas above.
 class OffscreenCanvasMock {
-  constructor(
-    public width: number,
-    public height: number,
-  ) {}
+  width: number
+  height: number
+
+  constructor(width: number, height: number) {
+    this.width = width
+    this.height = height
+  }
 
   getContext(contextId: string): CanvasRenderingContext2D | null {
     return contextId === '2d' ? createMockCanvas2DContext() : null

@@ -30,8 +30,10 @@ interface TerminalRefusal {
 
 /** Stands in for the wrapper's `TypedFailure` subclass, which `asOpenTerminalError` unwraps. */
 class FakeOpenTerminalFailure extends Error {
-  constructor(readonly failure: TerminalRefusal) {
+  readonly failure: TerminalRefusal
+  constructor(failure: TerminalRefusal) {
     super('refused')
+    this.failure = failure
   }
 }
 

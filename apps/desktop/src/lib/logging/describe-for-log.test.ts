@@ -93,10 +93,12 @@ describe('describeForLog', () => {
 
   it('serializes a class instance without its own toString as JSON', () => {
     class Point {
-      constructor(
-        readonly x: number,
-        readonly y: number,
-      ) {}
+      readonly x: number
+      readonly y: number
+      constructor(x: number, y: number) {
+        this.x = x
+        this.y = y
+      }
     }
     expect(describeForLog(new Point(1, 2))).toBe('{"x":1,"y":2}')
   })

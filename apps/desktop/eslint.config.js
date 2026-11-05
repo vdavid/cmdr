@@ -174,6 +174,13 @@ export default tseslint.config(
   })),
   ...svelte.configs['flat/recommended'],
   {
+    // Off: it guards enums, and `tsconfig.json`'s `erasableSyntaxOnly` bans them, so it had
+    // nothing to check yet cost 62% of the Svelte pass's rule time (~19 s, the pass −17%).
+    // `docs/notes/performance/local-check-lanes-2026-11-05.md`.
+    files: ['**/*.{ts,tsx,svelte.ts,svelte}'],
+    rules: { '@typescript-eslint/no-unsafe-enum-assignment': 'off' },
+  },
+  {
     files: ['**/*.{ts,tsx,svelte.ts}'],
     plugins: {
       '@typescript-eslint': tseslint.plugin,
