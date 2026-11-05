@@ -82,6 +82,11 @@ as `marker-key`, `e2e-base-image` follows the E2E lane's verdict, and `CI OK` ru
 gate. In each lane file, the `lane-marker` action saves the key: as the last step of a one-job lane, or in a `marker`
 job that `needs` every other job of a multi-job lane (Svelte, website), so one green job can't vouch for another.
 
+A PR run hashes `refs/pull/N/merge`, the PR merged with the current `main`. So a follow-up push skips a lane only while
+`main` hasn't moved any of that lane's inputs since the run that passed; a land that touched them makes a new tree and
+the lane runs again, as it should (PR #968, 2026-11-05: a docs push that also caught the branch up with `main` reran
+every lane, since `main` had moved crates, the app, and `trust-mdm.ts`).
+
 ### Rust test scope in the Rust lanes
 
 On a pull request, `desktop-rust`, `desktop-rust-fixtures`, and `desktop-rust-macos` run the `rust-test-scope` action
