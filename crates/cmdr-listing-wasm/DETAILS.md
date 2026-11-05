@@ -94,8 +94,8 @@ tree lists as a folder (as on disk).
 
 - `pnpm build:listing-wasm` (`scripts/build-listing-wasm.sh [-out DIR] [-smoke] [-golden]`, a Go program):
   `cargo build -p cmdr-listing-wasm --target wasm32-unknown-unknown --profile wasm-release` (plus the crates the browser
-  build is about to link, `browserBound` in `main.go`, so a host-only dep can't creep into them first), then
-  `wasm-bindgen --target web`, then `wasm-opt` (below).
+  build is about to link, `browserBound` in `main.go`, so a host-only dep can't creep into them first; empty while every
+  such crate is linked), then `wasm-bindgen --target web`, then `wasm-opt` (below).
 - **The C toolchain**: `cmdr-fs` links SQLite (`rusqlite`, which in the browser swaps in `sqlite-wasm-rs` and compiles
   `sqlite3.c` with `cc`). Apple's clang can't target wasm32, and `sqlite-wasm-rs` 0.5.5 has no precompiled option, so
   the script installs conda-forge's LLVM clang and llvm-ar (pinned in `scripts/build-listing-wasm/toolchain.go`,

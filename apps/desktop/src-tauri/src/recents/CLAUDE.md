@@ -15,7 +15,9 @@ entries the same; this module owns everything else.
 ## Must-knows
 
 - **Declare one list per consumer as a `static`** (`RecentsFile::new()` is `const`) and drive it from that feature's IPC
-  module. The three live in `search/history.rs`, `selection/history.rs`, and `go_to_path/history.rs`.
+  module. They live in `search/history.rs`, `selection/history.rs`, `go_to_path/history.rs`, and
+  `multi_rename/app_files.rs` (Multi-rename's last settings and field history, whose entry types are
+  `cmdr-multi-rename`'s; the `RecentEntry` impls stay app-side).
 - **The cap is a per-call argument, never a property of the list.** Search and Selection read theirs from a live
   setting; Go to path passes a const. Baking a cap into the store is what would couple the three.
 - **Only most-recently-used lists belong here**: `add` puts an entry on top. A list in the user's own order

@@ -2729,14 +2729,14 @@ scan (`scan_oracle.rs`), an Overwrite's displaced entry and the no-replace renam
 resolution's result (`conflict.rs`), and the mount table (`local_disk::mount_points`, so `mount_boundary.rs` is shared).
 Helpers in shared modules that only the local engine calls go unused there, which `lib.rs` allows on that target. The
 leftover sweep's `block_on` shapes have browser twins (`in_flight_sweep.rs`): no persisted records there, and the
-arrival sweep awaits on the page's loop. The wasm lane (`desktop-rust-listing-wasm`) compiles it beside the listing
-engine (`browserBound` in `scripts/build-listing-wasm/main.go`). The boundary is enforced:
-`operations-local-disk-boundary` (`scripts/check/checks/operations-local-disk-boundary.go`) fails any `libc`,
-`cmdr_local`, `objc2`, `xattr`, `trash`, `dirs`, or `std::os::unix` in production code outside `local_disk/` and the
-local-engine trees it lists (test files and `#[cfg(test)]` modules are exempt), and any listed tree whose `mod` line
-lacks the browser gate. A new host-disk question goes into `local_disk/` (`posix.rs` holds the POSIX ones: `(dev, ino)`,
-`access(W_OK)`, BSD flags, mount points, xattrs, the home folder), each with its browser answer. `walkdir` stays a
-dependency on every target: the archive edits compile in the browser too, and refuse there before any walk.
+arrival sweep awaits on the page's loop. The wasm lane (`desktop-rust-listing-wasm`) compiles it as part of the demo's
+module, which links it. The boundary is enforced: `operations-local-disk-boundary`
+(`scripts/check/checks/operations-local-disk-boundary.go`) fails any `libc`, `cmdr_local`, `objc2`, `xattr`, `trash`,
+`dirs`, or `std::os::unix` in production code outside `local_disk/` and the local-engine trees it lists (test files and
+`#[cfg(test)]` modules are exempt), and any listed tree whose `mod` line lacks the browser gate. A new host-disk
+question goes into `local_disk/` (`posix.rs` holds the POSIX ones: `(dev, ino)`, `access(W_OK)`, BSD flags, mount
+points, xattrs, the home folder), each with its browser answer. `walkdir` stays a dependency on every target: the
+archive edits compile in the browser too, and refuse there before any walk.
 
 ## Testing bar
 

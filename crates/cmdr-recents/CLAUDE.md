@@ -2,7 +2,7 @@
 
 The rules of a most-recently-used list (newest first, one row per distinct thing, a cap from the oldest end, unique
 ids), as pure `Vec` work. Every recents list in Cmdr keeps them: the desktop's search, selection, Go to path, and
-multi-rename histories (persisted by `apps/desktop/src-tauri/src/recents/`), and a browser host's session list.
+multi-rename histories (persisted by `apps/desktop/src-tauri/src/recents/`), and a browser host's session lists.
 
 ## Module map
 

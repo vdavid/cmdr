@@ -1,32 +1,37 @@
 # cmdr-multi-rename
 
-The Multi-Rename Tool's engine (⌃M, Total Commander's mask renamer), Tauri-free so the browser demo can run the same
-sheet. The desktop host is `apps/desktop/src-tauri/src/multi_rename/` (`app_host.rs` and the app's files); its
-`CLAUDE.md` + `DETAILS.md` hold the feature's must-knows and TC semantics until they move here.
+The Multi-Rename Tool's engine (⌃M, Total Commander's mask renamer), Tauri-free so the desktop and the browser demo run
+the same sheet. Hosts: `apps/desktop/src-tauri/src/multi_rename/` and `crates/cmdr-listing-wasm/src/multi_rename.rs`.
 
 ## Module map
 
-- `mask.rs` (+ `mask/media_token.rs`) the placeholders, parsed once, rendered per row. `transform.rs` search & replace
-  and the case and character steps; `transliterate.rs` Greek to Latin.
-- `plan.rs` the spec, `Compiled`, and the preview's rows and statuses. `error.rs` `MultiRenameError`.
-- `presets.rs` and `history.rs` the presets, last settings, and field history as types and pure list ops.
-  `names_file.rs` the Results file (render, parse, private write and read).
-- `session.rs` `MultiRename`, the engine: every open sheet's session, built over a host's `Listings`, runtime, and
-  `MultiRenameHost` (`host.rs`). `media.rs` each session's EXIF and tag cache and its loader. `run.rs` apply.
+- `mask.rs` (+ `mask/media_token.rs`) placeholders; `transform.rs` search & replace, case and character steps;
+  `transliterate.rs` Greek to Latin; `plan.rs` the spec, `Compiled`, rows and statuses; `error.rs`.
+- `presets.rs`, `history.rs` types and pure list ops; `names_file.rs` the Results file.
+- `session.rs` `MultiRename` (sessions, over a host's `Listings`, runtime, and `MultiRenameHost` in `host.rs`);
+  `media.rs` the media cache and loader; `run.rs` apply.
 
 ## Must-knows
 
-- **Wire types cross IPC through the app's `bindings.ts`**: specta copies their doc comments there, so ❌ never reword
-  one while moving or tidying it. `pnpm check desktop-bindings-fresh` must stay a zero diff.
-- **No `tauri`, no app paths, no ambient runtime, no `std` clock.** Background work goes on the engine's held runtime
-  (`JoinSet::spawn_blocking_on`, `deadline::*_on`), the clock through `cmdr_fs::rt`. `clippy.toml` bans the calls that
-  panic in the browser; `index-crate-isolation` bans `tauri` and caps the public surface.
-- **The host trait carries only what differs between hosts.** A progress `emit` is the CALLER's (a `Loader` field): the
-  MCP tool's read passes a no-op and must send no event. ❌ Never a host-level emit.
-- **Persistence is the host's**: files, statics, and `RecentEntry` impls live in the host. ❌ No file path decided here;
-  the Results file is written wherever the host says.
-- **The vector JSONs (`*_token_vectors.json`) are shared with the frontend's `*-token.test.ts`**: change the grammar
-  here first, then the TS mirror.
-- Log calls keep explicit `target:` strings (`multi_rename::…`), so `RUST_LOG` recipes don't move.
+- **The selection becomes names ONCE, at open**, under the listing's sequence guard. ❌ Never map row numbers through
+  the live listing again: a new file shifts rows onto files the user never picked.
+- **Names stay in the backend.** Apply takes `(session, preview)`, recomputes, and refuses `PreviewOutOfDate` unless its
+  ready rows are EXACTLY that preview's. A row move retires the preview.
+- **Results names match by OLD name, never line**, and go through every status check.
+- **❌ No file read under the sessions lock or the media cache's lock**; `Session`'s `Drop` stops the loader.
+- **`a|b` → `x|y` replaces in ONE pass.** ❌ Never chain the pairs (`a` became `c`).
+- **TC's order is fixed**: mask, search & replace, case, Greek to Latin, diacritics, Normalize Unicode. Positions count
+  from 1; a range past the end is empty. A folder has no extension; names are NFC before the mask.
+- **A preset's number is its place**: new goes last, edits keep it. ❌ Not a recents list.
+- **Statuses compare folded names**; a block cascades through a worklist.
+- **Wire types' doc comments land in the app's `bindings.ts`**: ❌ never reword one casually.
+- **No `tauri`, app paths, ambient runtime, or `std` clock.** Work goes on the held runtime
+  (`JoinSet::spawn_blocking_on`, `deadline::*_on`); `clippy.toml` bans what panics in the browser.
+- **The host trait carries only what differs.** Progress `emit` is the caller's `Loader` field: the MCP tool's read
+  sends no event. ❌ Never a host-level emit. `resultsAvailable` comes from `results_supported`, ❌ never
+  `results_path(..).is_some()`.
+- **Persistence is the host's**: files, statics, `RecentEntry` impls.
+- **`*_token_vectors.json` are shared with the frontend's `*-token.test.ts`**: change the grammar here first.
+- Log calls keep explicit `target:` strings (`multi_rename::…`).
 
-Details: `DETAILS.md`.
+TC semantics, decisions, the host seam, and the browser build: `DETAILS.md`.

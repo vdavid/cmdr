@@ -288,8 +288,9 @@ All under `apps/desktop/src-tauri/src/`.
   (`apps/desktop/src-tauri/src/search/ai.rs`; the pipeline is `cmdr_search::translate`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
   itself runs in JS
-- `multi_rename/`: Multi-Rename Tool engine (Total Commander's masks, search & replace, diacritics), preview, apply
-  through the bulk-rename executor, presets. `apps/desktop/src-tauri/src/multi_rename/CLAUDE.md`
+- `multi_rename/`: the Multi-Rename Tool's desktop host (the app's engine, volume media reads, the presets, last
+  settings, history, and Results files) over `crates/cmdr-multi-rename`.
+  `apps/desktop/src-tauri/src/multi_rename/CLAUDE.md`
 - `go_to_path/`: "Go to folder" backend: pure path resolution + fixed-cap recent-paths store. IPC in
   `commands/go_to_path.rs`
 - `recents/`: The persisted recents list all three of those keep (dedupe, cap, durable JSON file, quarantine). A
@@ -402,12 +403,13 @@ All under `apps/desktop/src-tauri/src/`.
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
 `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-http`, `cmdr-listing`,
 `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-menu`, `cmdr-operation-log`,
-`cmdr-operations`, `cmdr-recents`, `cmdr-search`, and `cmdr-update-trust` carry no `tauri` dependency and no reach into
-the app, and neither do `cmdr-listing-wasm` and the two dev CLIs; `index-crate-isolation` enforces that against the
-`cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-`cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-listing`, `cmdr-collation`,
-`cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`, `cmdr-operations`, `cmdr-recents`, and
-`cmdr-search` at the numbers their audits landed on. The vendored fork is an ordinary member.
+`cmdr-operations`, `cmdr-recents`, `cmdr-search`, `cmdr-viewer`, `cmdr-multi-rename`, and `cmdr-update-trust` carry no
+`tauri` dependency and no reach into the app, and neither do `cmdr-listing-wasm` and the two dev CLIs;
+`index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`,
+`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`,
+`cmdr-listing`, `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`,
+`cmdr-operations`, `cmdr-recents`, `cmdr-search`, and `cmdr-multi-rename` at the numbers their audits landed on. The
+vendored fork is an ordinary member.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -454,6 +456,10 @@ the app, and neither do `cmdr-listing-wasm` and the two dev CLIs; `index-crate-i
   seam (`SearchRows`, `DirSizeSource`) asked per query, never per row. Hosted by the app (`src-tauri/src/search/`,
   answering from the drive index) and the browser demo (`cmdr-listing-wasm`'s `search.rs`, through `MemorySource`, which
   answers from rows in memory, proven identical). See `crates/cmdr-search/CLAUDE.md`
+- `crates/cmdr-multi-rename/`: the Multi-Rename Tool's engine (⌃M): Total Commander's masks, search & replace, the case
+  and character steps, presets and history as pure list ops, sessions with their media cache, and apply through the
+  write engine, behind one `MultiRenameHost` seam. Hosted by the app (`src-tauri/src/multi_rename/`) and the browser
+  demo (`cmdr-listing-wasm`'s `multi_rename.rs`: no media reads, no Results). See `crates/cmdr-multi-rename/CLAUDE.md`
 - `crates/cmdr-recents/`: the rules of a most-recently-used list (newest first, dedupe, cap, unique ids), pure `Vec`
   work every recents list keeps; the app's `src-tauri/src/recents/` persists each one. See
   `crates/cmdr-recents/CLAUDE.md`

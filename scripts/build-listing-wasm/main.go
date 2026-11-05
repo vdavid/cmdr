@@ -38,9 +38,10 @@ const (
 	outName    = "cmdr_listing_wasm"
 )
 
-// browserBound are workspace crates the browser engine is about to link (the write engine, its
-// operation log), built for wasm32 beside it so the wasm compile guards them already.
-var browserBound = []string{"cmdr-operation-log", "cmdr-operations"}
+// browserBound are workspace crates the browser engine is about to link but doesn't yet, built
+// for wasm32 beside it so the wasm compile guards them already. Empty while every such crate is
+// linked: a crate goes here when its extraction starts and leaves once the module links it.
+var browserBound = []string{}
 
 func main() {
 	root := flag.String("root", ".", "the repo root")

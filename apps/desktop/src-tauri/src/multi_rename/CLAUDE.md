@@ -1,45 +1,30 @@
-# Multi-Rename Tool
+# Multi-Rename Tool: the desktop host
 
-Total Commander's ⌃M renamer: masks, search & replace, the case and character steps, presets, and a live preview. The
-sheet is `src/lib/multi-rename/`.
+The app's host for the ⌃M engine, `crates/cmdr-multi-rename` (its `CLAUDE.md` holds the feature's must-knows and TC
+semantics; read it first). The sheet is `src/lib/multi-rename/`, the IPC `commands/multi_rename.rs`.
 
 ## Module map
 
-The engine is `crates/cmdr-multi-rename` (the pure modules, plus `MultiRename`: sessions in `session.rs`, media reads
-in `media.rs`, apply in `run.rs`), re-exported here so the app names it `crate::multi_rename::…`. This folder is its
-host:
-
+- `mod.rs` re-exports the crate (`pub use cmdr_multi_rename::*`), so the app names it `crate::multi_rename::…`.
 - `app_host.rs` the app's engine (`app_multi_rename`, a `LazyLock` on Tauri's runtime), its `MultiRenameHost` answers
-  (volume reads, Results offered, `rename_place`, `io_budget`, the write engine), and the `MultiRenameMediaProgress` event.
-- `app_files.rs` the app's files: `LAST_SPEC` (last settings), `FIELD_HISTORY`, and `results_path`.
-  `preset_store.rs` the presets file (`PRESETS`).
+  (volume reads, Results, `rename_place`, `io_budget`, the write engine), and the `MultiRenameMediaProgress` event.
+- `app_files.rs` `LAST_SPEC`, `FIELD_HISTORY`, their `RecentEntry` impls, and `results_path`. `preset_store.rs` the
+  presets file (`PRESETS`).
+- Tests: the session-level ones over a real disk (`session_test`, `run_test`, `results_test`, `media_test`,
+  `media_real_test`), `wire_test` (serde shapes), and the files' (`preset_store_test`, `app_files_test`).
 
 ## Must-knows
 
-- **The selection becomes file names ONCE, when the sheet opens** (`MultiRename::open`, under the listing's sequence
-  guard). ❌ Never map row numbers through the live listing again: a file appearing while the sheet is open shifts the
-  rows, and Start would rename files the user never picked. A session file that's gone is `Missing`.
-- **Names stay in the backend.** The sheet gets counts and the page of rows it draws; apply takes `(session, preview)`
-  ids, recomputes, and refuses with `PreviewOutOfDate` unless its ready rows are EXACTLY that preview's.
-- **A Results name is matched by its OLD name, never its line**, and passes every status check. The session
-  reads back only the file it wrote, and apply renames with the edits its preview showed.
-- **Sessions are bounded** (`MAX_SESSIONS`, idle eviction on open). The app's test build raises the cap in
-  `app_multi_rename` (its tests share one engine in parallel); ❌ never in the crate.
-- **❌ No file read under the sessions lock or the media cache's lock**; `Session`'s `Drop` stops the loader.
-- **`a|b` → `x|y` replaces in ONE pass** (`Replacement::Pairs`): `a|b` → `b|c` turns `a` into `b`, `one|two` →
-  `two|one` swaps. ❌ Never chain the pairs: that's how `a` became `c`.
-- **TC's order is fixed**: mask, then search & replace, case, Greek to Latin, diacritics, and Normalize Unicode last.
-  Positions count from 1; a range past the end is empty, never an error.
-- **A folder has no extension** (`RowFacts::split_name`); a leading or trailing dot belongs to the name. Names are
-  composed (NFC) before the mask, so a range never splits an accent off its letter.
-- **Diacritics go only on Latin and Greek letters**: kana dakuten, Indic vowel signs, Cyrillic `й`/`ё` are letters.
-- **Frontend grammars mirror `mask.rs`** (`*_token_vectors.json`; change them there first); only `bounds` says
-  what a range takes.
-- **The counter's settings live in the mask** (`[C10+5:3]`); a bare `[C]` counts 1, 2, 3, unpadded. Old presets'
-  counter fields fold into the masks on load. Its width is capped (`MAX_COUNTER_DIGITS`); its arithmetic saturates.
-- **A preset's number is its place**: a new one goes last; save-over, rename, and update keep it. ❌ Not on
-  `crate::recents`, whose `add` moves an entry to the top.
-- **Statuses compare folded names** (`name_fold`, as the Mac does): a name a staying file holds is `TargetExists`,
-  one a batch row leaves is free; a block cascades through a worklist, so a long chain stays linear.
+- **The engine is held, built on Tauri's runtime**: the pool the IPC commands' blocking work always used. ❌ Never
+  `Handle::current()` at build time: a test's runtime would die while the static lives on.
+- **The app's test build raises `max_sessions`** (its tests share one engine in parallel). ❌ Never in the crate.
+- **`rename_place` resolves ONCE** through the volume manager, in the order `DETAILS.md` gives. ❌ Don't split it into a
+  read-only check plus a lookup.
+- **`MultiRenameMediaProgress` must serialize as the crate's `MediaProgressEvent`** (`wire_test.rs` pins it).
+- **The MCP tool builds its own loader** (`volume_loader` over `Handle::current()`) with a no-op emit: it sends no
+  progress event.
+- **Files keep their names and shapes** (`multi-rename-presets.json`, `-last.json`, `-history.json`); an unreadable
+  one goes through `state_recovery`.
+- **Wire changes show in `bindings.ts`**: `pnpm check desktop-bindings-fresh` after touching a crossing type.
 
-Decisions and the TC semantics in detail: `DETAILS.md`.
+Host details, the files, IPC deadlines: `DETAILS.md`.

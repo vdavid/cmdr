@@ -1,7 +1,14 @@
 # cmdr-media-meta details
 
-The design card is GitHub issue #657. This crate is its engine half: reading. The app's Multi-Rename owns the cache, the
-loader, the grammar, and every word a user sees (`apps/desktop/src-tauri/src/multi_rename/DETAILS.md`).
+The design card is GitHub issue #657. This crate is its engine half: reading. Multi-Rename owns the cache, the loader,
+and the grammar (`crates/cmdr-multi-rename/DETAILS.md` § Media fields); the sheet owns every word a user sees. Files are
+read through it by the desktop host's `volume_loader` (`apps/desktop/src-tauri/src/multi_rename/DETAILS.md` § Host
+answers), for the sheet and for the MCP `multi_rename` tool. The browser demo links the crate (its vocabulary, through
+`cmdr-multi-rename`) but answers `ReadError::NotSupported` for every file.
+
+- **Decision/Why: no `read` feature gating the readers off.** They compile for wasm32, and fat LTO drops them from the
+  demo's module since nothing there calls them: gating them saved 866 bytes raw and nothing gzipped (measured,
+  `crates/cmdr-listing-wasm/DETAILS.md` § The build).
 
 ## Why its own crate
 

@@ -48,7 +48,7 @@
   (`multiRename.fieldHistory` answers only in a text field).
 - **Rename order** (⇧↑ / ⇧↓ and ⌥↑ / ⌥↓, `multiRename.moveRowUp` / `.moveRowDown`, fixed keys, two per command): in the
   list, the cursor row moves one place in the session's order (what `[C]` counts) and the cursor goes with it
-  (`moveCursorRow`; the backend's `move_row`, `src-tauri/src/multi_rename/DETAILS.md` § Session, preview, and apply).
+  (`moveCursorRow`; the backend's `move_row`, `crates/cmdr-multi-rename/DETAILS.md` § Session, preview, and apply).
   `PreviewList` answers them through `ColumnList`'s `onKeydown` (the grid's keys that aren't cursor keys), so in a text
   field ⇧↑ / ⇧↓ stay the selection keys and ⌥↑ / ⌥↓ the caret's. The move retires the preview on screen, and the state
   previews again at once; it's `pending` from the key on, so a Start right after waits for the new order's preview.
@@ -96,15 +96,15 @@
   transient ones. The footer offers it as a house `Button`, "Results…", its key chip on it. The ellipsis follows
   `docs/style-guide.md` § Writing: the editor is where the user changes what the rename will do, so the next step steers
   the command. **Decision/Why:** ⌥⏎, the PR's key: Enter stays Rename, and Enter's handler skips any modifier, so the
-  two never meet. The matching is the backend's (`multi_rename/DETAILS.md` § Session); the sheet holds no names. Ported
-  from PR #386.
+  two never meet. The matching is the backend's (`crates/cmdr-multi-rename/DETAILS.md` § Session); the sheet holds no
+  names. Ported from PR #386.
 - **Field history** (↓, `multiRename.fieldHistory`, TC's): in the name mask, extension mask, search, or replace field, ↓
   or the chevron at the field's end opens one house `Menu` (`field-history-menu.svelte.ts`, rendered inside the dialog
   so it portals into the modal's layer) under that field, listing what it held in earlier renames, newest first (at most
   `HISTORY_SHOWN`); a pick fills the field and the menu hands focus back. The backend records it
-  (`multi_rename/DETAILS.md` § Field history); the sheet reads it once on mount. **↓ routing:** with the caret inside a
-  mask's token (never on its outer edges), MaskInput claims ↓ first (into its editor), so the sheet never sees it;
-  anywhere else the sheet's keydown opens the history, unless the field has none, when ↓ is left to the field.
+  (`crates/cmdr-multi-rename/DETAILS.md` § Field history); the sheet reads it once on mount. **↓ routing:** with the
+  caret inside a mask's token (never on its outer edges), MaskInput claims ↓ first (into its editor), so the sheet never
+  sees it; anywhere else the sheet's keydown opens the history, unless the field has none, when ↓ is left to the field.
   **Decision/Why:** the chevron (`FieldHistoryChevron.svelte`) is `Combobox`'s 16 px tertiary glyph in `TextInput`'s
   trailing slot, so it reads as the field's own list, apart from the small ▾ markers under tokens. It's disabled while
   the field has no history (the affordance stays put, and an empty list would only explain itself), out of the Tab order
@@ -132,7 +132,7 @@
   bottom; the numbers follow the places), Delete. Picking a preset loads it; nothing runs. Every preset command answers
   the backend's list after the change, so the sheet takes it from there.
   - **Seeds**: `loadPresets` hands the backend `PRESET_SEEDS` (`spec.ts`) named in the UI language; a list that never
-    took them gets them once, after its own presets (`src-tauri/src/multi_rename/DETAILS.md` § Presets). From then on
+    took them gets them once, after its own presets (`crates/cmdr-multi-rename/DETAILS.md` § Presets). From then on
     they're ordinary presets: there's no built-in kind.
   - **Last settings** (TC keeps them too): closing the sheet, any way, saves the fields and the loaded preset (`persist`
     in `onDestroy` → `save_multi_rename_last_settings`, one entry in `multi-rename-last.json`), and the next sheet's
@@ -208,7 +208,7 @@
 ## Media fields
 
 The session reads its files' EXIF and tags in the background from the moment it opens (the backend's side:
-`src-tauri/src/multi_rename/DETAILS.md` § Media fields). The sheet's side, all in `multi-rename-state.svelte.ts`:
+`crates/cmdr-multi-rename/DETAILS.md` § Media fields). The sheet's side, all in `multi-rename-state.svelte.ts`:
 
 - **Progress**: the state subscribes to `multi-rename-media-progress` (filtered by session id) and asks
   `get_multi_rename_media_progress` once, for a read that began before the subscription (an event that came meanwhile
@@ -416,7 +416,7 @@ The session reads its files' EXIF and tags in the background from the moment it 
   the selection through the field's `select` and the document's `selectionchange`.
 - **The engine decides what a range takes.** The editor asks `rangeSamples(token, rows)` (the state's, through Svelte
   context, `range-sample-source.ts`, so `MaskInput` stays free of the session), answered by
-  `get_multi_rename_range_samples` from `mask.rs`'s own `bounds` (`src-tauri/src/multi_rename/DETAILS.md` § Session). It
+  `get_multi_rename_range_samples` from `mask.rs`'s own `bounds` (`crates/cmdr-multi-rename/DETAILS.md` § Session). It
   asks on every token change and every new preview, a generation counter dropping overtaken answers; a refusal (a moved
   row's preview still on its way) keeps what's shown. The pick the last edit wrote stands in until the answer for its
   token lands (`picked`), so the box keeps the user's selection meanwhile. TS only splits the answer's text at the

@@ -1,6 +1,6 @@
 # Multi-Rename sheet
 
-The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: that module's `CLAUDE.md` / `DETAILS.md`).
+The ⌃M sheet over `crates/cmdr-multi-rename` (the engine and its rules), hosted by `src-tauri/src/multi_rename/`.
 
 - `MultiRenameDialog.svelte` the sheet; `routes/(main)/+page.svelte` opens the backend session first (selection, else
   cursor file) and closes it with the sheet. `PreviewList.svelte` its preview (a `grid` `ColumnList` over the windowed

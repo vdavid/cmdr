@@ -2,8 +2,9 @@
 
 What a photo, video, or music file says about itself: EXIF, video capture dates, and media tags, one read per file
 answering every field (`MediaFacts`). Pure parsing over `Read + Seek`, plus a byte source over `Volume::read_range`. No
-`tauri`, no app types, no wording; Multi-Rename's `[=source.field]` placeholders read it
-(`apps/desktop/src-tauri/src/multi_rename/CLAUDE.md`).
+`tauri`, no app types, no wording; Multi-Rename's `[=source.field]` placeholders read it (`crates/cmdr-multi-rename`
+names the vocabulary; the desktop host calls the readers). It builds for wasm32 with its readers, which the browser demo
+links but never calls.
 
 ## Module map
 

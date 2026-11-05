@@ -96,7 +96,8 @@ Depth for the handlers shared with outside clients. `CLAUDE.md` holds the must-k
   Files come from `resolve_pane_target_paths` (`names`, else the selection, else the cursor item); the preview is the
   sheet's own `multi_rename::plan::preview_names` against the pane's cached listing, so a status here is the sheet's.
   A mask with a `[=source.field]` reads the files' EXIF and tags inline (`read_media`) through the sheet's own
-  `SessionMedia` cache and loader (`multi_rename/DETAILS.md` § Media fields), seeded from the same listing entries the
+  `SessionMedia` cache and loader (`crates/cmdr-multi-rename/DETAILS.md` § Media fields; its own loader is the desktop
+  host's `volume_loader` over `Handle::current()`, with a no-op emit, so it sends no progress event), seeded from the same listing entries the
   preview runs on, so values, `NoValue` / `Unreadable`, and the `|modified` fallback are the sheet's. **Decision:** an
   open sheet over the same folder lends what it already read (`app_multi_rename().media_over` + `SessionMedia::adopt_where`, matched
   by listing size and mtime); the rest is read before answering, at most `MAX_MEDIA_READS` (2,000) files left to read,
