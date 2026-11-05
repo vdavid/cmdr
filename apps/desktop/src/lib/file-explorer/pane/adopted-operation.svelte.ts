@@ -214,13 +214,8 @@ export function createAdoptedOperation(deps: AdoptedOperationDeps) {
     handleError(error: WriteOperationError, progressAtStop: ProgressAtStop | null): void {
       const op = adoptedProps?.operationType ?? 'copy'
       const failedOperationId = getForegroundOperationId()
-      // The typed error itself: `describeForLog` renders it as JSON with each path
-      // and name marked, so a report hashes exactly those values. The bridge forwards
-      // only the rendered message, so the payload must sit in the template.
-      log.error('{op} failed (adopted): {error}', {
-        op: transferOpLabel(op),
-        error,
-      })
+      // No log line here: the adopted progress dialog already logged this failure,
+      // at the level its kind earns (`reportOutcome`).
 
       settle()
       deps.openTransferError(op, error, failedOperationId, progressAtStop)

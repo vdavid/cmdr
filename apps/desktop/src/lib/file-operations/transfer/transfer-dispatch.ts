@@ -30,6 +30,7 @@ import { pathCrossesArchiveBoundary, pathInsideArchive } from '#lib/file-explore
 import type { ItemKinds, SpaceShortfall } from '#lib/ipc/bindings.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { pluralize } from '#lib/utils/pluralize.js'
+import { logLevelFor } from './transfer-error-log-level'
 
 const log = getAppLogger('transferProgress')
 
@@ -157,7 +158,6 @@ export async function startTransferOperation(config: TransferStartConfig): Promi
     }
     return { started: true, operationId }
   } catch (err: unknown) {
-    log.error('Failed to start {op} operation: {error}', { op: config.operationType, error: err })
     // The op never spawned, so the round-trip fails with no operationId.
     if (config.mcpRequestId) {
       const message = err instanceof Error ? err.message : String(err)
@@ -166,14 +166,22 @@ export async function startTransferOperation(config: TransferStartConfig): Promi
     // Tauri commands reject with a structured `WriteOperationError` on a
     // validation failure (like `destination_inside_source`); pass it through so
     // the error dialog can speak to the specific case.
-    const error: WriteOperationError =
-      typeof err === 'object' && err !== null && 'type' in err
-        ? (err as WriteOperationError)
-        : {
-            type: 'io_error',
-            path: config.sourcePaths[0] ?? '',
-            message: `Failed to start ${config.operationType}: ${String(err)}`,
-          }
+    const typed = typeof err === 'object' && err !== null && 'type' in err
+    const error: WriteOperationError = typed
+      ? (err as WriteOperationError)
+      : {
+          type: 'io_error',
+          path: config.sourcePaths[0] ?? '',
+          message: `Failed to start ${config.operationType}: ${String(err)}`,
+        }
+    // The ONE log line for a refused start (the error dialog's opener logs
+    // nothing more): an expected refusal at warn, so it never auto-sends a
+    // report; a `serious` kind, or a rejection that isn't typed at all, at error.
+    if (typed && logLevelFor(error) === 'warn') {
+      log.warn('Failed to start {op} operation: {error}', { op: config.operationType, error })
+    } else {
+      log.error('Failed to start {op} operation: {error}', { op: config.operationType, error: err })
+    }
     return { started: false, error }
   }
 }

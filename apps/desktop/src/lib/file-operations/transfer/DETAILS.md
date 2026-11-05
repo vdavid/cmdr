@@ -329,6 +329,12 @@ destinations".
      `transfer-error-catalog.ts`). All words live on the FE.
    - Container colors and icon vary by category: error-bg + CircleAlert (`serious`), warning-bg + TriangleAlert
      (`transient`), neutral secondary-bg + Info (`needs_action`).
+   - The same category sets the failure's log level (`logLevelFor`, `transfer-error-log-level.ts`): `serious` at error,
+     the rest at warn, a cause-carrying wrapper at its cause's. An error line feeds the auto-sent error report, so an
+     expected refusal (permission, space, a name) must never log at error (ERR-4K2HT, a refused delete in a system
+     folder). Each failure logs ONCE, FE side: `reportOutcome` for a failed run, `startTransferOperation` for a refused
+     start; the pane's `handleTransferError` / adopted `handleError` log nothing, since a second error line pushed one
+     failure over the "two errors in 60 s" threshold by itself.
    - "Retry" button shows when `category === 'transient'` or the variant's `retryHint` is true, AND there's something to
      retry: `DialogManager` passes `onRetry` only when `TransferErrorPropsData.retry` holds the failed operation's birth
      context. Retry settles the failure like Close, then starts that context again through `startBirthOperation` as a

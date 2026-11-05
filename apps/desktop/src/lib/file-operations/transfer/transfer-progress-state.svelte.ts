@@ -81,6 +81,7 @@ import { bindOperationSession } from '../operation-session/bind-operation-sessio
 import type { OperationOutcome, ScanReadout } from '../operation-session/operation-session.svelte'
 import { startTransferOperation, type TransferStartConfig, type TransferStartResult } from './transfer-dispatch'
 import { raiseCancelRollbackToast } from './cancel-rollback-toast'
+import { logLevelFor } from './transfer-error-log-level'
 
 export interface TransferProgressStateConfig extends TransferStartConfig {
   /** An operation already running that this view ADOPTS instead of starting one
@@ -507,11 +508,15 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
           // still carries the OS's words. The bridge forwards only the rendered
           // message, so the payload must sit in the template: riding along as a
           // bare property once cost us the reason for a refused trash
-          // (ERR-BPAPM, 2026-09-08).
-          log.error('{op} error: {error}', {
-            op: operationLabel,
-            error,
-          })
+          // (ERR-BPAPM, 2026-09-08). The ONE log line for this failure: an
+          // expected refusal (permission, space, a name) logs at warn so it never
+          // auto-sends a report, a `serious` kind at error (`logLevelFor`). The
+          // parent's `onError` logs nothing more.
+          if (logLevelFor(error) === 'warn') {
+            log.warn('{op} error: {error}', { op: operationLabel, error })
+          } else {
+            log.error('{op} error: {error}', { op: operationLabel, error })
+          }
         }
         // No floor: the error dialog takes this dialog's place, so there is
         // nothing that could flash.

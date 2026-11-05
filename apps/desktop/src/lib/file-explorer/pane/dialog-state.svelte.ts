@@ -475,10 +475,9 @@ export function createDialogState(deps: DialogStateDeps) {
         promptBackgroundPassword(props, error, null)
         return
       }
-      log.error('{op} in the background was refused: {error}', {
-        op: transferOpLabel(props.operationType),
-        error,
-      })
+      // `startTransferOperation` already logged the refusal itself, at the level
+      // its kind earns; this only says where it went.
+      log.info('{op} in the background was refused; showing why', { op: transferOpLabel(props.operationType) })
       // Nothing ran, so there is no retained failure to claim, and nothing to
       // refresh. The Retry starts it in the background again. Held while another
       // dialog is up, like the password prompt.
@@ -944,13 +943,10 @@ export function createDialogState(deps: DialogStateDeps) {
         return
       }
 
-      // The typed error itself: `describeForLog` renders it as JSON with each path
-      // and name marked, so a report hashes exactly those values. The bridge forwards
-      // only the rendered message, so the payload must sit in the template.
-      log.error('{op} failed: {error}', {
-        op: transferOpLabel(op),
-        error,
-      })
+      // No log line here: the progress dialog already logged this failure, at the
+      // level its kind earns (`reportOutcome`, or `startTransferOperation` for a
+      // refused start). A second error line used to push one expected refusal
+      // over the auto-send threshold on its own (ERR-4K2HT).
 
       paneEffects.refreshPanesAfterTransfer()
       paneEffects.clearSourcePaneAfterTransfer()
