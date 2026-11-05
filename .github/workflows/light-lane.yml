@@ -59,7 +59,13 @@ jobs:
     env:
       # `go test` never reads a result from the restored Go build cache, so every run tests for
       # real, as it did before that cache existed. Other go commands ignore the flag.
-      GOFLAGS: -count=1
+      # `-modcacherw` keeps the module cache deletable: the self-hosted runner's cleanup drops it
+      # when its disk fills, and Go writes it read-only by default.
+      GOFLAGS: -count=1 -modcacherw
+      # The self-hosted runner (`cmdr-light`) keeps its tool caches between jobs: mise's tools,
+      # pnpm's store, and the Go caches, pre-warmed from `main`. There, fetching the same from
+      # the Actions cache only costs time, so those restores skip and nothing saves.
+      HOSTED: ${{ inputs.runs-on == 'ubuntu-latest' }}
 
     steps:
       # Shallow: only `changelog-commit-links` reads history, and it fetches it below.
@@ -152,16 +158,22 @@ jobs:
 
       - name: Install mise
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          cache: ${{ env.HOSTED == 'true' }}
 
       - name: Install tools with mise
         run: mise install
 
+      # On the self-hosted runner, `node_modules` installs from its warm pnpm store (hard links on
+      # one filesystem) and the Go caches are already in place, so only the small, per-checkout
+      # entries come back: the check tool and the scorecard binary.
       - name: Restore the light lane caches
         id: cache
         uses: ./.github/actions/light-cache
         with:
           phase: restore
-          go: ${{ steps.plan.outputs.scripts }}
+          node-modules: ${{ env.HOSTED }}
+          go: ${{ env.HOSTED == 'true' && steps.plan.outputs.scripts == 'true' }}
           scorecard: ${{ steps.plan.outputs.scorecard }}
 
       - name: Install dependencies
@@ -229,11 +241,12 @@ jobs:
 
       # ---- Go (scripts) ----
 
-      # One invocation, so the runner runs the nine in parallel; nilaway alone is about a minute.
+      # One invocation, so the runner runs the eight in parallel. nilaway runs in the `nilaway`
+      # job below, on a hosted runner.
       - name: Run the Go checks and tests
         if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.scripts == 'true' }}
         run: |
-          ./scripts/check/check --ci --check scripts-go-gofmt,scripts-go-vet,scripts-go-staticcheck,scripts-go-ineffassign,scripts-go-misspell,scripts-go-gocyclo,scripts-go-nilaway,scripts-go-deadcode,scripts-go-tests
+          ./scripts/check/check --ci --check scripts-go-gofmt,scripts-go-vet,scripts-go-staticcheck,scripts-go-ineffassign,scripts-go-misspell,scripts-go-gocyclo,scripts-go-deadcode,scripts-go-tests
 
       # ---- API server ----
 
@@ -259,9 +272,11 @@ jobs:
         run: |
           ./scripts/check/check --ci --check dashboard-eslint,dashboard-stylelint,dashboard-svelte-check,dashboard-import-cycles,dashboard-knip,dashboard-tests,dashboard-build
 
-      # `main` only (see the action); `warm-light-cache` covers the `main` pushes that skip this lane.
+      # `main` only (see the action), and hosted only: the self-hosted runner restored part of the
+      # set, so a save from there would write incomplete entries. `warm-light-cache` covers the
+      # `main` pushes this skips.
       - name: Save the light lane caches
-        if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && env.HOSTED == 'true' }}
         uses: ./.github/actions/light-cache
         with:
           phase: save
@@ -271,3 +286,41 @@ jobs:
           check-tool-hit: ${{ steps.cache.outputs.check-tool-hit }}
           go-hit: ${{ steps.cache.outputs.go-hit }}
           scorecard-hit: ${{ steps.cache.outputs.scorecard-hit }}
+
+  # nilaway on a hosted runner, beside `checks`: it passed 2.5 GB and kept growing on the
+  # self-hosted runner, whose job budget is 1.5 GB (`MemoryMax=1536M`). Its own job also takes it
+  # off the Go section's critical path. It saves nothing; `warm-light-cache` (and `checks` on a
+  # hosted `main` run) keep the Go caches it restores current, nilaway's binary among them.
+  nilaway:
+    name: nilaway
+    if: inputs.full || inputs.scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOFLAGS: -count=1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Restore the check tool and the Go caches
+        id: cache
+        uses: ./.github/actions/light-cache
+        with:
+          phase: restore
+          node-modules: 'false'
+          go: 'true'
+
+      - name: Build check tool
+        if: steps.cache.outputs.check-tool-hit != 'true'
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Run nilaway
+        run: ./scripts/check/check --ci --check scripts-go-nilaway

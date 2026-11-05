@@ -8,6 +8,11 @@ name: Rust fixtures lane
 # same cargo flags as `desktop-rust-tests` (`HostCargoLaneArgs`). `docs/tooling/ci.md` § Lane files.
 on:
   workflow_call:
+    inputs:
+      marker-key:
+        description: The lane's marker key from `ci.yml`'s lane plan, saved by the last step once every step passed
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -19,8 +24,11 @@ jobs:
     timeout-minutes: 40
 
     steps:
+      # Two commits, for the Rust test scope below (see `rust-lane.yml`).
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
 
       - name: Free disk space on a small runner
         uses: ./.github/actions/free-disk-if-small
@@ -47,6 +55,12 @@ jobs:
       - name: Build check tool
         run: go build -o check .
         working-directory: ./scripts/check
+
+      # Pull requests only (see `rust-lane.yml`); a scope of `none` skips both fixture lanes
+      # before they build.
+      - name: Scope the Rust tests to the crates this change can affect
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/rust-test-scope
 
       # Two host settings the NFS fixture needs, before its stack comes up:
       # - `modprobe nfsd`: the fixture is the host kernel's own NFS server, and
@@ -79,3 +93,9 @@ jobs:
         run: |
           df -h /
           docker system df
+
+      # Last, with no `if:` (see `rust-lane.yml`). ❌ Nothing after it.
+      - name: Save the lane marker
+        uses: ./.github/actions/lane-marker
+        with:
+          key: ${{ inputs.marker-key }}

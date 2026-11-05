@@ -1,0 +1,73 @@
+name: pnpm store cache
+description: >-
+  Restores (phase `restore`) or saves (phase `save`) pnpm's content-addressed store, so `pnpm install` links packages
+  instead of downloading them. Expects pnpm on the PATH (mise) and, for `save`, the restore phase earlier in the job.
+
+# The path comes from `pnpm store path`, never a guess: pnpm 12 keeps the store under `$XDG_DATA_HOME` (on Linux
+# `~/.local/share/pnpm/store/<version>`), and the `~/.pnpm-store` every job used to cache didn't exist, so they all
+# cached nothing. Inside a `container:` job `HOME` differs, so that job gets an entry of its own (a cache's version
+# hashes its paths).
+# - Saved from `main` only, like every big cache here (`docs/tooling/ci.md` § Build caching): a PR restores `main`'s
+#   entry. `warm-light-cache` keeps the host entry current after a verified land; a `container:` job's entry is saved
+#   when that job runs on `main`.
+# - Only a caller that installs the whole workspace passes `save: 'true'`, so a filtered install can't save a partial
+#   store under the full key.
+# - Exact keys only, no prefix restore: an older store would carry every package a past lockfile named into each new
+#   save, and `pnpm store prune` can't trim it here (after `warm-light-cache`'s `pnpm fetch` no project references the
+#   store, so it would empty it). A new lockfile installs from the registry until `main` saves its store.
+# - `prune-superseded-caches` keeps one `pnpm-store-*` entry per family on `main`.
+inputs:
+  phase:
+    description: '`restore` or `save`'
+    required: true
+  save:
+    description: Whether this caller saves the store (it installs the whole workspace)
+    required: false
+    default: 'false'
+  hit:
+    description: The restore phase's `hit` output (save phase); an exact hit has nothing new to save
+    required: false
+    default: 'false'
+outputs:
+  hit:
+    description: Whether the store came back for the exact key
+    value: ${{ steps.restore.outputs.cache-hit }}
+runs:
+  using: composite
+  steps:
+    - name: Ask pnpm where its store is
+      id: where
+      shell: bash
+      run: |
+        path=$(pnpm store path)
+        if [[ -z "$path" ]]; then
+          echo "::error::pnpm store path printed nothing."
+          exit 1
+        fi
+        # A `container:` job's entry needs a key of its own too: `prune-superseded-caches` keeps one
+        # entry per key family, and two entries under one key (versions differ by path) would look
+        # like a superseded pair.
+        where=host
+        [[ -f /.dockerenv ]] && where=container
+        echo "path=$path" >>"$GITHUB_OUTPUT"
+        echo "where=$where" >>"$GITHUB_OUTPUT"
+        echo "pnpm store ($where): $path"
+
+    - name: Restore the pnpm store
+      id: restore
+      if: inputs.phase == 'restore'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.where.outputs.path }}
+        key:
+          pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ steps.where.outputs.where }}-${{
+          hashFiles('pnpm-lock.yaml', '.mise.toml') }}
+
+    - name: Save the pnpm store
+      if: inputs.phase == 'save' && inputs.save == 'true' && github.ref == 'refs/heads/main' && inputs.hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.where.outputs.path }}
+        key:
+          pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ steps.where.outputs.where }}-${{
+          hashFiles('pnpm-lock.yaml', '.mise.toml') }}

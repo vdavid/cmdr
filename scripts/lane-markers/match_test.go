@@ -60,9 +60,55 @@ func TestGlobMatchesPicomatch(t *testing.T) {
 	}
 }
 
+// goldenClassPaths and goldenClassGlobs pin the character classes the `scorecard` filter uses, run
+// through picomatch 2.3.2 with dorny's options (`picomatch(p, {dot: true}, true)`) on 2026-11-05,
+// the same way as `goldenGlobs`.
+var goldenClassPaths = []string{
+	"Dockerfile", "apps/website/Dockerfile", "x/dockerfile.base", "x/DOCKERFILE", "x/Dockerfile.e2e", "x/docker-compose.yml",
+	"LICENSE", "license.md", "LICENCE", "x/LICENSE", "LICENSES/a.txt", "COPYING", "SECURITY.md", "docs/security.md",
+	"docs/x/SECURITY.md", "security", ".mise.toml", "a/b.ts", "Ab", "ab", "aB", "xb",
+}
+
+var goldenClassGlobs = []struct {
+	pattern string
+	want    []string
+}{
+	{"**/*[Dd][Oo][Cc][Kk][Ee][Rr][Ff][Ii][Ll][Ee]*", []string{"Dockerfile", "apps/website/Dockerfile", "x/dockerfile.base", "x/DOCKERFILE", "x/Dockerfile.e2e"}},
+	{"*[Ll][Ii][Cc][Ee][Nn][CcSs][Ee]*", []string{"LICENSE", "license.md", "LICENCE"}},
+	// picomatch doesn't let a trailing `/**` match the bare name when the segment before it is a
+	// glob (it does for a literal one: `crates/**` matches `crates` above).
+	{"*[Ll][Ii][Cc][Ee][Nn][CcSs][Ee]*/**", []string{"LICENSES/a.txt"}},
+	{"[Ss][Ee][Cc][Uu][Rr][Ii][Tt][Yy].*", []string{"SECURITY.md"}},
+	{"docs/[Ss][Ee][Cc][Uu][Rr][Ii][Tt][Yy].*", []string{"docs/security.md"}},
+	{"[Aa]b", []string{"Ab", "ab"}},
+	{"!**/*[Dd][Oo][Cc][Kk][Ee][Rr][Ff][Ii][Ll][Ee]*", []string{
+		"x/docker-compose.yml", "LICENSE", "license.md", "LICENCE", "x/LICENSE", "LICENSES/a.txt", "COPYING", "SECURITY.md",
+		"docs/security.md", "docs/x/SECURITY.md", "security", ".mise.toml", "a/b.ts", "Ab", "ab", "aB", "xb",
+	}},
+}
+
+func TestClassGlobsMatchPicomatch(t *testing.T) {
+	for _, tc := range goldenClassGlobs {
+		g, err := compileGlob(tc.pattern)
+		if err != nil {
+			t.Fatalf("compile %q: %v", tc.pattern, err)
+		}
+		var got []string
+		for _, p := range goldenClassPaths {
+			if g.matches(p) {
+				got = append(got, p)
+			}
+		}
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("%q:\n got  %q\n want %q", tc.pattern, got, tc.want)
+		}
+	}
+}
+
 func TestCompileGlobRefusesUnsupportedSyntax(t *testing.T) {
 	for _, p := range []string{
-		"src/{a,b}/**", "src/[ab].rs", "src/@(a|b).rs", "!(x)/**", `src/\*.rs`, "a!b", "!!a",
+		"src/{a,b}/**", "src/[a-b].rs", "src/[!a].rs", "src/[^a].rs", "src/[].rs", "src/[ab.rs", "src/a].rs",
+		"src/[[:alpha:]].rs", "src/@(a|b).rs", "!(x)/**", `src/\*.rs`, "a!b", "!!a",
 		"/abs", "./rel", "dir/", "a//b", "a/b**", "", "!",
 	} {
 		if _, err := compileGlob(p); err == nil {

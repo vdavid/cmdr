@@ -221,13 +221,27 @@ func jobNeeds(body []string) []string {
 	return names
 }
 
-// jobScalar returns a job-level `key: value` scalar, unquoted, or "" when absent.
+// jobScalar returns a job-level `key: value` scalar, unquoted, or "" when absent. A folded or
+// literal block (`if: >-` with the expression on the lines below, deeper indented) is joined
+// back into one line, so a long `if:` can't slip past the rules that read it.
 func jobScalar(body []string, key string) string {
 	prefix := "    " + key + ":"
-	for _, line := range body {
-		if strings.HasPrefix(line, prefix) {
-			return strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, prefix)), `'"`)
+	for i, line := range body {
+		if !strings.HasPrefix(line, prefix) {
+			continue
 		}
+		value := strings.TrimSpace(strings.TrimPrefix(line, prefix))
+		if value != ">-" && value != ">" && value != "|" && value != "|-" && value != "" {
+			return strings.Trim(value, `'"`)
+		}
+		var parts []string
+		for _, next := range body[i+1:] {
+			if !strings.HasPrefix(next, "     ") {
+				break
+			}
+			parts = append(parts, strings.TrimSpace(next))
+		}
+		return strings.Join(parts, " ")
 	}
 	return ""
 }

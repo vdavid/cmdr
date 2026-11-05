@@ -12,6 +12,10 @@ on:
         description: 'The pinned Playwright container image the site job runs in (from `changes`)'
         type: string
         required: true
+      marker-key:
+        description: The lane's marker key from `ci.yml`'s lane plan, saved by the `marker` job once both jobs passed
+        type: string
+        required: true
     secrets:
       LHCI_GITHUB_APP_TOKEN:
         required: false
@@ -86,16 +90,22 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # Inside the container `HOME` differs, so this store is an entry of its own, saved here on `main`.
+      - name: Restore the pnpm store
+        id: pnpm-store
+        uses: ./.github/actions/pnpm-store
         with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+          phase: restore
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Save the pnpm store
+        uses: ./.github/actions/pnpm-store
+        with:
+          phase: save
+          save: 'true'
+          hit: ${{ steps.pnpm-store.outputs.hit }}
 
       - name: Build check tool
         run: go build -o check .
@@ -191,3 +201,20 @@ jobs:
           name: lighthouse-report
           path: apps/website/.lighthouseci/
           retention-days: 7
+
+  # The lane's marker, once both jobs passed (`site` needs `demo`, and this needs `site`), on
+  # the bare runner (`scripts/lane-markers/DETAILS.md`).
+  marker:
+    name: Lane marker
+    needs: [demo, site]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Save the lane marker
+        uses: ./.github/actions/lane-marker
+        with:
+          key: ${{ inputs.marker-key }}

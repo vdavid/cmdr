@@ -21,7 +21,9 @@ cache lookup.
 - **Only a lane's last step saves its marker**, on success. ❌ Never save a `lane-green-*` key anywhere else.
 - **`CI OK` runs `verify`**: a lane skipped while its `if:` filter is on is red unless the plan verified it AND this job
   recomputes the same key AND finds the marker in a trusted scope.
-- **Unsupported glob syntax fails loudly** (braces, brackets, extglobs). Extend `match.go` against picomatch first.
+- **Unsupported glob syntax fails loudly** (braces, extglobs, escapes, class ranges or negation). Extend `match.go`
+  against picomatch first: run it (`node`) and pin its verdicts in `match_test.go`.
+- **Saved by `.github/actions/lane-marker`**, as a lane's last step or in a multi-job lane's `marker` job.
 - **Only a lane's own job reads its `.key`**; any other job reading it is refused as a misplaced marker save. A
   prerequisite job may read a lane's `.verified`. `CI OK` reads `toJSON(needs)` and neither.
 - `go run . hash -files` (here) prints each lane's key and inputs at `HEAD`.

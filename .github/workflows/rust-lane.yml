@@ -5,6 +5,11 @@ name: Rust lane
 # (the `rust` filter in `ci.yml` lists it). `docs/tooling/ci.md` § Lane files.
 on:
   workflow_call:
+    inputs:
+      marker-key:
+        description: The lane's marker key from `ci.yml`'s lane plan, saved by the last step once every step passed
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -27,8 +32,12 @@ jobs:
     timeout-minutes: 45
 
     steps:
+      # Two commits: on a pull request the checkout is GitHub's merge commit, and the Rust test
+      # scope below measures the change against its first parent, the base it merged into.
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
 
       - name: Free disk space on a small runner
         uses: ./.github/actions/free-disk-if-small
@@ -72,6 +81,13 @@ jobs:
       - name: Build check tool
         run: go build -o check .
         working-directory: ./scripts/check
+
+      # Pull requests only: the suite runs just the crates the PR can affect plus their
+      # dependents (`scripts/check/checks/DETAILS.md` § "The Rust test scope"). A push, a
+      # dispatch, and `run_all` never set it, so they test everything.
+      - name: Scope the Rust tests to the crates this change can affect
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/rust-test-scope
 
       - name: Check rustfmt
         run: ./scripts/check/check --check desktop-rust-rustfmt --ci
@@ -235,3 +251,10 @@ jobs:
       - name: Report disk usage
         if: always()
         run: df -h /
+
+      # Last, with no `if:`, so it runs only when every step above passed: it records that this
+      # lane's exact inputs passed (`scripts/lane-markers/DETAILS.md`). ❌ Nothing after it.
+      - name: Save the lane marker
+        uses: ./.github/actions/lane-marker
+        with:
+          key: ${{ inputs.marker-key }}
