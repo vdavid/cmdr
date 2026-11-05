@@ -275,53 +275,6 @@ jobs:
           fi
           echo "No green CI OK on $SHA or on the head of a PR it merged; running the lanes."
 
-      # The macOS lane runs on one of the four `cmdr-m1` slots on David's M1 when this is a trusted
-      # run and a slot is online and idle right now; otherwise on GitHub's hosted `macos-26`. The
-      # slots keep their `target/` between jobs (that's the speedup), so code from outside the repo
-      # must never reach them. Trusted is an allowlist, like the light lane's: a push (only `main`),
-      # a dispatch or the schedule (only collaborators start those), or a pull request whose head is
-      # in this repo and whose author isn't a bot. Everything else, a missing token (a fork's run
-      # gets no secrets, and the secret may not exist yet), and any failed lookup go hosted, so the
-      # worst case is the old behavior. Listing a repo's runners needs Administration: read, which
-      # `GITHUB_TOKEN` can't have, hence the fine-grained `RUNNER_STATUS_TOKEN`. Two runs can see
-      # the same idle slot; the loser queues for the next free slot, minutes at worst.
-      # `docs/tooling/ci.md` § macOS lane.
-      - name: Pick the macOS lane's runner
-        id: macos-runner
-        env:
-          GH_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
-          REPO: ${{ github.repository }}
-          TRUSTED:
-            ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name ==
-            'schedule' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name ==
-            github.repository && github.event.pull_request.user.type != 'Bot') }}
-        run: |
-          pick() {
-            echo "runs-on=$1" >>"$GITHUB_OUTPUT"
-            echo "self-hosted=$2" >>"$GITHUB_OUTPUT"
-            echo "macOS lane runner: $1. $3"
-          }
-          hosted='"macos-26"'
-          if [[ "$TRUSTED" != "true" ]]; then
-            pick "$hosted" false "Not a trusted run (a fork or bot PR, or another trigger)."
-            exit 0
-          fi
-          if [[ -z "$GH_TOKEN" ]]; then
-            pick "$hosted" false "No RUNNER_STATUS_TOKEN secret here, so the M1's slots can't be seen."
-            exit 0
-          fi
-          if ! idle=$(gh api "repos/$REPO/actions/runners?per_page=100" --jq \
-            '[.runners[] | select(.status == "online" and (.busy | not) and any(.labels[]; .name == "cmdr-m1"))] | length'); then
-            echo "::warning::Couldn't list the self-hosted runners; the macOS lane goes hosted."
-            pick "$hosted" false "The runner lookup failed."
-            exit 0
-          fi
-          if [[ "$idle" -gt 0 ]]; then
-            pick '["self-hosted","cmdr-m1"]' true "$idle of the M1's slots are online and idle."
-          else
-            pick "$hosted" false "No M1 slot is online and idle."
-          fi
-
       # Pull requests only. A PR whose head tree is byte-identical to its base's changes no file:
       # a `pnpm land -record N` record, an `ours` merge that only makes a contributor's PR head an
       # ancestor of `main` (`docs/guides/handling-prs.md`). Then `hygiene` has nothing to check
@@ -882,6 +835,61 @@ jobs:
           fi
           echo "image=mcr.microsoft.com/playwright:v$version-noble" >>"$GITHUB_OUTPUT"
           echo "Website renderer: mcr.microsoft.com/playwright:v$version-noble"
+
+      # The macOS lane runs on one of the four `cmdr-m1` slots on David's M1 when this is a trusted
+      # run and a slot is online and idle right now; otherwise on GitHub's hosted `macos-26`. The
+      # slots keep their `target/` between jobs (that's the speedup), so code from outside the repo
+      # must never reach them. Trusted is an allowlist, like the light lane's: a push (only `main`),
+      # a dispatch, or a pull request whose head is in this repo and whose author isn't a bot.
+      # Hosted too: a full run (the release gate's `run_all` and the nightly, which should test on
+      # the release builder's image) and a run that compiles the Finder extension (the M1 has only
+      # the Command Line Tools, whose Swift runtime has no x86_64 slice). Everything else, a missing
+      # token (a fork's run gets no secrets, and the secret may not exist yet), and any failed lookup
+      # go hosted, so the worst case is the old behavior. Listing a repo's runners needs
+      # Administration: read, which `GITHUB_TOKEN` can't have, hence the fine-grained
+      # `RUNNER_STATUS_TOKEN`. Two runs can see the same idle slot; the loser queues for the next
+      # free slot. `docs/tooling/ci.md` § The M1 runner.
+      - name: Pick the macOS lane's runner
+        id: macos-runner
+        env:
+          GH_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+          REPO: ${{ github.repository }}
+          TRUSTED:
+            ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name ==
+            'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
+            github.event.pull_request.user.type != 'Bot') }}
+          FULL: ${{ inputs.run_all == true || github.event_name == 'schedule' }}
+          FINDER_EXTENSION: ${{ steps.filter.outputs.finder-extension }}
+        run: |
+          pick() {
+            echo "runs-on=$1" >>"$GITHUB_OUTPUT"
+            echo "self-hosted=$2" >>"$GITHUB_OUTPUT"
+            echo "macOS lane runner: $1. $3"
+          }
+          hosted='"macos-26"'
+          if [[ "$TRUSTED" != "true" ]]; then
+            pick "$hosted" false "Not a trusted run (a fork or bot PR, or another trigger)."
+            exit 0
+          fi
+          if [[ "$FULL" == "true" || "$FINDER_EXTENSION" == "true" ]]; then
+            pick "$hosted" false "A full run or a Finder extension change, which the M1 can't compile for x86_64."
+            exit 0
+          fi
+          if [[ -z "$GH_TOKEN" ]]; then
+            pick "$hosted" false "No RUNNER_STATUS_TOKEN secret here, so the M1's slots can't be seen."
+            exit 0
+          fi
+          if ! idle=$(gh api "repos/$REPO/actions/runners?per_page=100" --jq \
+            '[.runners[] | select(.status == "online" and (.busy | not) and any(.labels[]; .name == "cmdr-m1"))] | length'); then
+            echo "::warning::Couldn't list the self-hosted runners; the macOS lane goes hosted."
+            pick "$hosted" false "The runner lookup failed."
+            exit 0
+          fi
+          if [[ "$idle" -gt 0 ]]; then
+            pick '["self-hosted","cmdr-m1"]' true "$idle of the M1's slots are online and idle."
+          else
+            pick "$hosted" false "No M1 slot is online and idle."
+          fi
 
   # ===========================================
   # The lanes
