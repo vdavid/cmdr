@@ -682,25 +682,31 @@ func errMergeConflict(head string) error {
 // best-effort: the land already happened, so trouble here is a message, not a failure.
 func finish(r runner, branch string) error {
 	syncMain(r)
-	head, err := r.git("rev-parse", "HEAD")
-	if err != nil {
-		return err
-	}
-	remote, err := r.remoteSHA(branch)
-	if err != nil {
-		return err
-	}
-	switch {
-	case remote == "":
-	case remote == head:
-		if _, err := r.git("push", "--quiet", "--no-verify", "origin", "--delete", branch); err != nil {
-			say("Couldn't delete origin/%s: %v", branch, err)
-		}
-	default:
-		say("Left origin/%s alone: it points at %s, which isn't what landed.", branch, remote[:12])
-	}
+	deleteLandedBranch(r, branch)
 	stopLeftoverRuns(r, branch)
 	return nil
+}
+
+// deleteLandedBranch deletes origin's branch once `origin/main` holds all of it, whichever way it
+// landed (a fast-forward, or a merge commit with the head as a parent). It asks `main`, never the
+// local HEAD: a worktree that committed more while CI ran still has a fully landed remote branch.
+// Best-effort, like the rest of `finish`.
+func deleteLandedBranch(r runner, branch string) {
+	remote, err := r.fetchBranch(branch)
+	if err != nil {
+		say("Couldn't read origin/%s, so I left it: %v", branch, err)
+		return
+	}
+	if remote == "" {
+		return
+	}
+	if !r.isAncestor(remote, "origin/main") {
+		say("Left origin/%s alone: it points at %s, which has commits main doesn't.", branch, remote[:12])
+		return
+	}
+	if _, err := r.git("push", "--quiet", "--no-verify", "origin", "--delete", branch); err != nil {
+		say("Couldn't delete origin/%s: %v", branch, err)
+	}
 }
 
 // stopLeftoverRuns cancels the landed branch's unfinished runs (`leftoverRuns`): an older push's

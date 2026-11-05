@@ -69,6 +69,11 @@ commit a formatting fix and stop that push; `pushBranch` then pushes once more w
 don't count as dirty: they can't change what lands, and the main clone, where `release.sh` lands its release commit
 from, often has some.
 
+The remote branch goes once `origin/main` holds all of it (`deleteLandedBranch`), whether it landed by fast-forward or
+as a merge commit's parent. It asks `main`, never the local HEAD: an agent that keeps committing in its worktree while
+CI runs has a newer HEAD than what landed, and comparing against that left landed branches on origin. A remote branch
+with commits `main` lacks (pushed from another machine) stays.
+
 `scripts/release.sh` depends on this interface: `pnpm land -merge` from the main clone on the release branch, exit 0
 only when the release commit is on `origin/main`'s history, and local `main` synced by `fetch origin main:main`. Change
 it with the release flow (`docs/guides/releasing.md`).
