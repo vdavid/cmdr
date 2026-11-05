@@ -1,6 +1,7 @@
 // Pure mapping helpers for the per-drive index freshness badge + its menu.
 //
-// The badge surfaces five visible states (gray/blue/green/yellow/red); the backend
+// The badge surfaces six visible states (gray/blue/green/yellow/red, and red again for a
+// drive paused for disk space); the backend
 // `VolumeIndexStatus` carries `enabled` + a nullable `freshness`. This module is
 // the single source of truth for that mapping and for the badge's tooltip, menu
 // items, and footer copy — kept pure (no Svelte, no DOM) so the state→color and
@@ -10,10 +11,12 @@ import type { MessageKey } from '#lib/intl/keys.gen.js'
 import type { EnableIndexingOutcome, Freshness, DriveIndexRefusal, VolumeIndexStatus } from '#lib/ipc/bindings.js'
 
 /**
- * The five visible badge states. `disabled` is gray (no live index); `failed` is
- * red (the index DB died with a storage error and indexing stopped).
+ * The six visible badge states. `disabled` is gray (no live index); `failed` is
+ * red (the index DB died with a storage error and indexing stopped); `paused` is
+ * red too (the disk the index lives on is nearly full, so indexing waits for room
+ * while the last-known sizes keep showing).
  */
-export type DriveIndexState = 'disabled' | 'scanning' | 'fresh' | 'stale' | 'failed'
+export type DriveIndexState = 'disabled' | 'scanning' | 'fresh' | 'stale' | 'failed' | 'paused'
 
 /**
  * Map a backend status to its visible badge state.
@@ -27,6 +30,7 @@ export type DriveIndexState = 'disabled' | 'scanning' | 'fresh' | 'stale' | 'fai
  */
 export function driveIndexState(status: VolumeIndexStatus): DriveIndexState {
   if (status.freshness === 'failed') return 'failed'
+  if (status.freshness === 'paused') return 'paused'
   if (!status.enabled || status.freshness == null) return 'disabled'
   return freshnessToState(status.freshness)
 }
@@ -41,12 +45,17 @@ function freshnessToState(freshness: Freshness): DriveIndexState {
       return 'stale'
     case 'failed':
       return 'failed'
+    case 'paused':
+      return 'paused'
   }
 }
 
-/** The CSS modifier suffix for a state (`drive-index-badge-{suffix}`). */
+/**
+ * The CSS modifier suffix for a state (`drive-index-badge-{suffix}`). `paused` wears
+ * the `failed` red: both mean indexing stopped, and the tooltip says which and why.
+ */
 export function driveIndexColorClass(state: DriveIndexState): string {
-  return state
+  return state === 'paused' ? 'failed' : state
 }
 
 /**
@@ -89,6 +98,11 @@ function walkingActions(state: DriveIndexState): DriveIndexMenuAction[] {
     // retry), `forget` deletes its dead DB. No `disable` — there's nothing running.
     case 'failed':
       return ['rescan', 'forget']
+    // Paused for disk space: it resumes by itself once there's room, and a rescan now
+    // would only pause again. Turning it off or forgetting it (which frees the space
+    // its index takes) are the choices left.
+    case 'paused':
+      return ['disable', 'forget']
   }
 }
 
@@ -106,6 +120,17 @@ export function driveIndexMenuLabelKey(action: DriveIndexMenuAction): MessageKey
     case 'forget':
       return 'fileExplorer.navigation.driveIndex.menuForget'
   }
+}
+
+/**
+ * The badge tooltip for a drive whose index is paused for disk space. Two copies:
+ * the drive that's full is either this one (it holds the index) or the startup
+ * disk, which a reader of another drive's badge wouldn't otherwise connect to it.
+ */
+export function driveIndexPausedTooltipKey(status: Pick<VolumeIndexStatus, 'holdsIndexStorage'>): MessageKey {
+  return status.holdsIndexStorage
+    ? 'fileExplorer.navigation.driveIndex.tooltipPausedThisDrive'
+    : 'fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive'
 }
 
 /**

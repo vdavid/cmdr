@@ -1774,6 +1774,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "description": "Line in a folder’s size tooltip when the size is exact but was computed at an older point (the drive hasn’t been re-scanned since reconnecting), so it’s accurate-as-of-then but possibly stale now."
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "This size may be out of date: indexing is paused because this drive is almost full.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "description": "Tooltip (and screen-reader label) on a small warning triangle next to a folder’s size. Cmdr’s drive index stopped updating because THIS drive, the one Cmdr keeps its index on (the startup disk), is almost out of free space. The size shown is the last one Cmdr knew. Indexing resumes by itself once there’s room. Calm, not alarming; never use the words “error” or “failed”."
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "This size may be out of date: indexing is paused because your startup disk, where Cmdr keeps its index, is almost full.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "description": "Tooltip (and screen-reader label) on a small warning triangle next to a folder’s size on a drive OTHER than the startup disk (an external drive, a network share, a phone). Cmdr keeps every drive’s index on the startup disk, which is almost full, so indexing paused for this drive too. “Startup disk” is the macOS term for the disk the Mac boots from; use the platform’s usual term. Calm; never use the words “error” or “failed”."
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} branch} other {{countText} branches}}",
   "@fileExplorer.git.size.branches": {
     "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `branches` row, saying how many branches the repository has.",
@@ -2944,7 +2952,15 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexing stopped because of a problem saving this drive’s index. Rescan to rebuild it.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
-    "description": "Hover tooltip on the RED drive-index dot, shown when the drive’s index database hit a fatal storage problem (a disk I/O failure, a full or read-only disk, corruption) and indexing stopped for this drive. The index is a rebuildable cache, so the fix is to rescan. Keep it calm and actionable; active voice; never use the words “error” or “failed”."
+    "description": "Hover tooltip on the RED drive-index dot, shown when the drive’s index database hit a fatal storage problem (a disk I/O failure, a read-only disk, corruption) and indexing stopped for this drive. The index is a rebuildable cache, so the fix is to rescan. Keep it calm and actionable; active voice; never use the words “error” or “failed”."
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "Indexing is paused because this drive is almost full. Folder sizes may be out of date until it resumes, which it does by itself once there’s more free space.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "description": "Hover tooltip on the RED drive-index dot of the startup disk (the drive Cmdr keeps its index on), shown when that disk is almost out of free space and indexing paused. Cmdr keeps showing the last-known folder sizes, which may be out of date, and resumes indexing by itself once there’s room. Calm and reassuring; active voice; never use the words “error” or “failed”."
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Indexing is paused because your startup disk, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "description": "Hover tooltip on the RED drive-index dot of a drive OTHER than the startup disk (an external drive, a network share, a phone). Cmdr keeps every drive’s index on the startup disk, which is almost full, so indexing paused for this drive too. Folder sizes shown may be out of date; indexing resumes by itself once the startup disk has room. “Startup disk” is the macOS term for the disk the Mac boots from. Never use the words “error” or “failed”."
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

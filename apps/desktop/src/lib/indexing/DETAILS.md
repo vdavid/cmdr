@@ -524,6 +524,19 @@ cell), `SelectionInfo.svelte` (Brief-mode status bar, so it matches Full), and `
 `..` parent row carries the flags too (it renders the current dir's own stats), so a partially-scanned dir shows `..` as
 `≥` or the `<dir>` placeholder.
 
+**Paused for disk space: a warning triangle on every folder size.** While the disk the index lives on is nearly full,
+the backend pauses the drive's index and keeps serving its last-known sizes
+(`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "Pausing for disk space"), with freshness `paused`. Those sizes
+stop following the disk, so every cell that shows a number (`showsPausedSizeWarning`: `size`, `size-stale`,
+`lower-bound`, ❌ never the `<dir>` placeholder, which claims nothing) draws a `triangle-alert` in `--color-warning`
+with its own tooltip. Unlike the epoch-stale case above, this is a glyph, not muting, so the column keeps its contrast.
+The same three consumers draw and reserve it. Which volumes are paused is `space-pause.svelte.ts` (fed by
+`index-freshness-changed`, backfilled once per volume for a window that opened mid-pause). The copy has two variants,
+picked by the status's `holdsIndexStorage`: the full disk is this drive, or it's the startup disk where every drive's
+index lives, which a reader of another drive's sizes wouldn't otherwise connect to them. The badge's red `paused` state
+uses the same split (`driveIndexPausedTooltipKey`) and offers only turn off and forget: a rescan would only pause again,
+and forgetting frees the space the index takes.
+
 **Sort-by-size keeps the three classes distinct** and runs in Rust (`crates/cmdr-listing/src/sorting.rs`), not the FE.
 `known_dir_size` returns `None` (sorts LAST, by name, regardless of order) for an unknown dir — either incomplete + size
 0 (the `<dir>` placeholder) or a not-yet-enriched `None`; a genuinely-empty `0 bytes` and a lower-bound both return

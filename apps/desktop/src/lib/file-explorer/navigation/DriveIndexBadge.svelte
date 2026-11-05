@@ -1,7 +1,7 @@
 <script lang="ts">
     /**
      * Per-drive index freshness badge: a small colored dot (gray/blue/green/
-     * yellow) mirroring the existing SMB connection light and USB-speed ring in
+     * yellow/red) mirroring the existing SMB connection light and USB-speed ring in
      * `VolumeBreadcrumb.svelte`. Clicking it opens a small themed menu (turn
      * on/off, rescan, stop) with a "last indexed" footer.
      *
@@ -33,6 +33,8 @@
         driveIndexDuration,
         driveIndexCoalescedNote,
         driveIndexUnreadableNote,
+        driveIndexPausedTooltipKey,
+        driveIndexColorClass,
         hasLastScanFacts,
         type DriveIndexMenuAction,
         type DriveIndexState,
@@ -174,6 +176,8 @@
                     : tString('fileExplorer.navigation.driveIndex.tooltipFreshNoScan')
             case 'failed':
                 return tString('fileExplorer.navigation.driveIndex.tooltipFailed')
+            case 'paused':
+                return tString(driveIndexPausedTooltipKey(status))
         }
     })
 
@@ -248,7 +252,7 @@
 <button
     type="button"
     bind:this={badgeRef}
-    class="drive-index-badge drive-index-badge-{badgeState}"
+    class="drive-index-badge drive-index-badge-{driveIndexColorClass(badgeState)}"
     class:breadcrumb-drive-index-badge={breadcrumb}
     aria-label={`${tString('fileExplorer.navigation.driveIndex.ariaLabel')}: ${tooltipText}`}
     aria-haspopup="menu"
@@ -346,8 +350,9 @@
         background-color: var(--color-warning);
     }
 
-    /* Red: the index DB died with a storage problem and indexing stopped. Distinct
-       from gray (deliberately off) and yellow (stale but browsable). */
+    /* Red: the index DB died with a storage problem and indexing stopped, or it's
+       paused because the disk the index lives on is nearly full (`driveIndexColorClass`).
+       Distinct from gray (deliberately off) and yellow (stale but browsable). */
     /*noinspection CssUnusedSymbol*/
     .drive-index-badge-failed {
         background-color: var(--color-error);

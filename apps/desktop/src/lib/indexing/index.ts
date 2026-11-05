@@ -11,4 +11,5 @@ export {
   destroyIndexState,
 } from './index-state.svelte'
 export type { VolumeIndexActivity } from './index-state.svelte'
+export { initSpacePause, destroySpacePause } from './space-pause.svelte'
 export { initMediaEnrichState, destroyMediaEnrichState, getEnrichingVolumes } from './media-enrich-state.svelte'

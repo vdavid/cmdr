@@ -560,6 +560,16 @@ export function getDirSizeDisplayState(
 }
 
 /**
+ * Whether a folder's size cell carries the "may be out of date" warning: its drive's
+ * index is paused for disk space (`#lib/indexing/space-pause`), and the cell shows a
+ * number. The `<dir>` placeholder claims no size, so there's nothing to warn about.
+ * The one answer the size cell, the status bar, and the column measurer all read.
+ */
+export function showsPausedSizeWarning(state: DirSizeDisplayState | null | undefined, paused: boolean): boolean {
+  return paused && (state === 'size' || state === 'size-stale' || state === 'lower-bound')
+}
+
+/**
  * Whether the dir's size is in flux right now (the orthogonal hourglass): a full
  * scan/aggregation is running globally (`indexing`), OR this dir has live index
  * writes in flight (`pending`, a big delete/copy) even with no full scan. See

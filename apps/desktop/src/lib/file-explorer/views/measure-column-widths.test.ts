@@ -291,6 +291,20 @@ describe('computeFullListColumnWidths', () => {
     expect(busy.size).toBeGreaterThanOrEqual(idle.size)
   })
 
+  it('reserves the paused-for-space warning on folders that show a size, and only those', () => {
+    _setMeasureForTests(fakeMeasure)
+    const sized = [entry({ name: 'd', isDirectory: true, recursiveSize: 123_456_789_012 })]
+    const idle = computeFullListColumnWidths({ ...baseArgs, entries: sized })
+    const paused = computeFullListColumnWidths({ ...baseArgs, sizesPaused: true, entries: sized })
+    expect(paused.size).toBe(idle.size + 14)
+
+    // `<dir>` claims no size, so it draws no warning and reserves none.
+    const unknown = [entry({ name: 'u', isDirectory: true, recursiveSize: undefined })]
+    expect(computeFullListColumnWidths({ ...baseArgs, sizesPaused: true, entries: unknown }).size).toBe(
+      computeFullListColumnWidths({ ...baseArgs, entries: unknown }).size,
+    )
+  })
+
   it('reserves icon width when a directory is per-dir pending with no walk running', () => {
     _setMeasureForTests(fakeMeasure)
     const idle = computeFullListColumnWidths({

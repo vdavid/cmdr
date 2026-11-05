@@ -59,6 +59,8 @@ import {
   destroyIndexState,
   initMediaEnrichState,
   destroyMediaEnrichState,
+  initSpacePause,
+  destroySpacePause,
 } from '#lib/indexing/index.js'
 import { startLowDiskSpaceEventBridge } from '#lib/low-disk-space/event-bridge.svelte.js'
 import { startOpenTerminalMenuGate } from '#lib/open-terminal/menu-gate.svelte.js'
@@ -212,6 +214,11 @@ export async function startWindowServices(scope: MountScope, ctx: WindowServices
     async (s) => {
       s.add(destroyIndexState)
       await initIndexState()
+    },
+    // Which drives are paused for disk space, for the folder-size warning (`#lib/indexing/space-pause.svelte.ts`).
+    async (s) => {
+      s.add(destroySpacePause)
+      await initSpacePause()
     },
     // Image-enrichment progress joins the same top-right indicator, a second publisher;
     // listen-first-then-query, like initIndexState.

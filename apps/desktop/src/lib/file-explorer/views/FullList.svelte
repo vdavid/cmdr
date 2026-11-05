@@ -37,6 +37,7 @@
     import type { PressedPane } from '../pane/pressed-rows'
     import { formatSizeForDisplay, formatNumber } from '../selection/selection-info-utils'
     import { isVolumeAggregating, getWalkedGround } from '#lib/indexing/index-state.svelte.js'
+    import { getSpacePause, pausedSizeTooltipKey } from '#lib/indexing/space-pause.svelte.js'
     import { isPathAffectedByWalk } from '#lib/indexing/walked-ground.js'
     import { isRestricted } from '#lib/stores/restricted-paths-store.svelte.js'
     import { restrictedFolderTooltip } from '#lib/system-strings.svelte.js'
@@ -57,6 +58,7 @@
         getDirSizeDisplayState,
         isDirSizeUpdating,
         LOWER_BOUND_GLYPH,
+        showsPausedSizeWarning,
         hasSizeMismatch,
         extCellText,
         wordResticSnapshot,
@@ -328,6 +330,10 @@
     // Both are per-volume, so another drive's work never lights up these rows.
     const walkedGround = $derived(getWalkedGround(volumeId))
     const aggregating = $derived(isVolumeAggregating(volumeId))
+    // This drive's index is paused for disk space: its folder sizes are the last-known
+    // ones, so each carries a warning (`showsPausedSizeWarning`).
+    const spacePause = $derived(getSpacePause(volumeId))
+    const pausedSizeText = $derived(spacePause ? tString(pausedSizeTooltipKey(spacePause)) : '')
 
     /**
      * Whether THIS row's folder size is in flux. The one answer the size cell and
@@ -544,6 +550,7 @@
             formattedDate,
             sizeDisplayMode,
             isSizeUpdating,
+            sizesPaused: spacePause !== undefined,
             showSizeMismatchWarning,
             sortBy,
             dateColumn,
@@ -569,6 +576,7 @@
             dateFallbackNote,
             showSizeMismatchWarning,
             showExtensionInName,
+            spacePause !== undefined,
             scale,
         ].join('|')
         const rowsKey = `${measureKey}|${String(first)}|${String(last)}`
@@ -1078,6 +1086,15 @@
                                             ><Icon name="hourglass" size={12} /></span
                                         >
                                     {/if}
+                                    {#if showsPausedSizeWarning(dirSizeState, spacePause !== undefined)}
+                                        <span
+                                            class="size-paused icon-indicator"
+                                            role="img"
+                                            aria-label={pausedSizeText}
+                                            use:tooltip={pausedSizeText}
+                                            ><Icon name="triangle-alert" size={12} /></span
+                                        >
+                                    {/if}
                                     {#if showSizeMismatchWarning && hasSizeMismatch(file.recursiveSize, file.recursivePhysicalSize)}
                                         {@const dirTooltip = buildDirSizeTooltip(
                                             file.recursiveSize,
@@ -1489,6 +1506,14 @@
     .size-lower-bound-prefix {
         color: var(--color-text-secondary);
         margin-right: 1px;
+    }
+
+    /* The drive's index is paused for disk space, so this size is the last-known one. */
+    .size-paused {
+        display: inline-flex;
+        align-items: center;
+        cursor: help;
+        color: var(--color-warning);
     }
 
     .size-mismatch {

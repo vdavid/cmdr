@@ -10,6 +10,7 @@ import {
   driveIndexActionFeedback,
   driveIndexCoalescedNote,
   driveIndexUnreadableNote,
+  driveIndexPausedTooltipKey,
   hasLastScanFacts,
 } from './drive-index-status'
 
@@ -27,6 +28,7 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
     unreadableSettled: true,
     nextSweepDueAt: null,
     liveWatch: true,
+    holdsIndexStorage: true,
     ...overrides,
   }
 }
@@ -58,6 +60,32 @@ describe('driveIndexState', () => {
   })
 })
 
+describe('a drive paused for disk space', () => {
+  it('is red, whether or not the index reports itself enabled', () => {
+    expect(driveIndexState(makeStatus({ freshness: 'paused' }))).toBe('paused')
+    expect(driveIndexState(makeStatus({ enabled: false, freshness: 'paused' }))).toBe('paused')
+  })
+
+  it('offers turning it off and forgetting it, never a rescan that would only pause again', () => {
+    expect(driveIndexMenuActions('paused')).toEqual(['disable', 'forget'])
+  })
+
+  it('names the full disk: this drive when it holds the index, the startup disk otherwise', () => {
+    expect(driveIndexPausedTooltipKey({ holdsIndexStorage: true })).toBe(
+      'fileExplorer.navigation.driveIndex.tooltipPausedThisDrive',
+    )
+    expect(driveIndexPausedTooltipKey({ holdsIndexStorage: false })).toBe(
+      'fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive',
+    )
+  })
+
+  it('adds no coalesced or unreadable footnote to the paused line', () => {
+    const paused = makeStatus({ freshness: 'paused', coalescedSignalsSinceSweep: 3, unreadableLocations: 2 })
+    expect(driveIndexCoalescedNote(paused, 1_750_003_600)).toBeNull()
+    expect(driveIndexUnreadableNote(paused)).toBeNull()
+  })
+})
+
 describe('driveIndexColorClass', () => {
   it('returns the four color suffixes', () => {
     expect(driveIndexColorClass('disabled')).toBe('disabled')
@@ -65,6 +93,10 @@ describe('driveIndexColorClass', () => {
     expect(driveIndexColorClass('fresh')).toBe('fresh')
     expect(driveIndexColorClass('stale')).toBe('stale')
     expect(driveIndexColorClass('failed')).toBe('failed')
+  })
+
+  it('paints a drive paused for disk space the same red as a stopped one', () => {
+    expect(driveIndexColorClass('paused')).toBe('failed')
   })
 })
 

@@ -36,10 +36,12 @@ pre-measured column width agree: don't re-inline the decision in any of them.
   that dir) and whether THIS row's ground is being walked. The `'scanning'` tooltip is "Sizes appear as the scan
   progresses", so a fresh install reads as quietly working rather than `Scanning...` on every row. Freshness-stale
   (`'size-stale'`) renders exactly like `'size'`: no glyph, no muting, with the staleness voiced by the per-drive
-  freshness badge and the tooltip's stale line (see `#lib/indexing/DETAILS.md` § Honest size rendering). The per-dir
-  flag rides `DirStats.recursiveSizePending`, copied onto entries by `updateIndexSizesInPlace` / `applyFolderSizes` /
-  `createParentEntry` (backend: `indexing/read/pending_sizes.rs`). The backend already debounces it (on after 2 s of
-  continuous updating, up for at least 1 s), so ❌ don't add a frontend delay on top.
+  freshness badge and the tooltip's stale line (see `#lib/indexing/DETAILS.md` § Honest size rendering). A drive paused
+  for disk space is the exception: every shown folder size gets a warning glyph (`showsPausedSizeWarning`, same
+  section), which the measurer reserves via `sizesPaused`. The per-dir flag rides `DirStats.recursiveSizePending`,
+  copied onto entries by `updateIndexSizesInPlace` / `applyFolderSizes` / `createParentEntry` (backend:
+  `indexing/read/pending_sizes.rs`). The backend already debounces it (on after 2 s of continuous updating, up for at
+  least 1 s), so ❌ don't add a frontend delay on top.
 
 **The walked-ground input is PER ROW, and the measurer contract follows from it.** `getWalkedGround(volumeId)` +
 `isPathAffectedByWalk` (`#lib/indexing/walked-ground.ts`) answer whether one row's folder size can move: the volume is

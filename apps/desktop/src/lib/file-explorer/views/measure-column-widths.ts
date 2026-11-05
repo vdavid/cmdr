@@ -23,6 +23,7 @@ import {
   extCellText,
   getDisplaySize,
   hasSizeMismatch,
+  showsPausedSizeWarning,
   wordGitMeta,
 } from './full-list-utils'
 import { tString } from '#lib/intl/messages.svelte.js'
@@ -253,9 +254,32 @@ function sizeTextForEntry(
   return s !== undefined ? sizeCellText(s, sizeFormatOpts) : ''
 }
 
+/**
+ * Whether this row's size cell draws the paused-for-disk-space warning. Mirrors
+ * FullList: a restricted row or a virtual git row shows an override, never a size,
+ * so neither carries it.
+ */
+function pausedWarningForEntry(
+  entry: FileEntry,
+  ctx: Pick<FoldEntriesContext, 'sizesPaused' | 'sizeDisplayMode'>,
+  isRestricted: boolean,
+  isUpdating: boolean,
+): boolean {
+  if (!ctx.sizesPaused || !entry.isDirectory || isRestricted || entry.gitMeta != null) return false
+  const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, ctx.sizeDisplayMode)
+  const state = getDirSizeDisplayState(s, entry.recursiveSizeComplete, entry.recursiveSizeStale, isUpdating)
+  return showsPausedSizeWarning(state, true)
+}
+
 /** Pixel width of the size-column icons that follow the text for this row. */
-function sizeIconSuffixForEntry(entry: FileEntry, showSizeMismatchWarning: boolean, isUpdating: boolean): number {
+function sizeIconSuffixForEntry(
+  entry: FileEntry,
+  showSizeMismatchWarning: boolean,
+  isUpdating: boolean,
+  pausedWarning: boolean,
+): number {
   let suffix = 0
+  if (pausedWarning) suffix += SIZE_ICON_WIDTH
   if (entry.isDirectory) {
     // FullList draws the hourglass whenever the dir's size is in flux: any
     // size-bearing state plus the `<dir>` placeholder (`'dir'`/`'scanning'`) show
@@ -291,6 +315,9 @@ export function computeFullListColumnWidths(args: {
    *  from (`isDirSizeUpdating` over the pane's walked ground), or the reserved
    *  width and the drawn glyph disagree row by row. */
   isSizeUpdating: (entry: FileEntry) => boolean
+  /** This pane's drive has its index paused for disk space, so every folder size
+   *  carries a warning glyph (`showsPausedSizeWarning`). Defaults to `false`. */
+  sizesPaused?: boolean
   showSizeMismatchWarning: boolean
   /** The REQUESTED sort column (it decides which header draws a caret), or `null` when the rows are in no column's order. */
   sortBy: SortColumn | null
@@ -316,6 +343,7 @@ export function computeFullListColumnWidths(args: {
     formattedDate,
     sizeDisplayMode,
     isSizeUpdating,
+    sizesPaused = false,
     showSizeMismatchWarning,
     sortBy,
     dateColumn,
@@ -372,6 +400,7 @@ export function computeFullListColumnWidths(args: {
     dateMax,
     sizeDisplayMode,
     isSizeUpdating,
+    sizesPaused,
     showSizeMismatchWarning,
     sizeFormatOpts,
     isRestricted,
@@ -418,6 +447,7 @@ interface FoldEntriesContext {
   dateMax: number
   sizeDisplayMode: 'smart' | 'logical' | 'physical'
   isSizeUpdating: (entry: FileEntry) => boolean
+  sizesPaused: boolean
   showSizeMismatchWarning: boolean
   sizeFormatOpts: SizeFormatOpts
   isRestricted?: (path: string) => boolean
@@ -441,14 +471,14 @@ function foldEntries(
     // icon suffix (does it carry an hourglass?) — the same one the size cell
     // renders from, or the two drift.
     const updating = ctx.isSizeUpdating(entry)
-    const sizeText = sizeTextForEntry(
+    const restricted = ctx.isRestricted?.(entry.path) ?? false
+    const sizeText = sizeTextForEntry(entry, ctx.sizeDisplayMode, ctx.sizeFormatOpts, restricted, updating)
+    const iconSuffix = sizeIconSuffixForEntry(
       entry,
-      ctx.sizeDisplayMode,
-      ctx.sizeFormatOpts,
-      ctx.isRestricted?.(entry.path) ?? false,
+      ctx.showSizeMismatchWarning,
       updating,
+      pausedWarningForEntry(entry, ctx, restricted, updating),
     )
-    const iconSuffix = sizeIconSuffixForEntry(entry, ctx.showSizeMismatchWarning, updating)
     const rowSize = (sizeText ? ctx.measureNum(sizeText) : 0) + iconSuffix
     if (rowSize > sizeMax) sizeMax = rowSize
     if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix

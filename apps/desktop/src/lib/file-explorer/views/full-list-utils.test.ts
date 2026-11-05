@@ -13,6 +13,7 @@ import {
   isHiddenRowDimmed,
   extCellText,
   wordResticSnapshot,
+  showsPausedSizeWarning,
 } from './full-list-utils'
 import type { SizeDisplayPick } from './full-list-utils'
 import type { FileEntry } from '../types'
@@ -374,5 +375,20 @@ describe('restic snapshot rows', () => {
   it('leaves out a line the snapshot has nothing for', () => {
     expect(wordResticSnapshot({ hostname: 'm3', tags: [], paths: [] })).toBe('Backed up from m3')
     expect(wordResticSnapshot({ hostname: '', tags: ['daily'], paths: [] })).toBe('Tag: daily')
+  })
+})
+
+describe('showsPausedSizeWarning', () => {
+  it('warns on every folder size while the drive is paused for disk space', () => {
+    for (const state of ['size', 'size-stale', 'lower-bound'] as const) {
+      expect(showsPausedSizeWarning(state, true)).toBe(true)
+      expect(showsPausedSizeWarning(state, false)).toBe(false)
+    }
+  })
+
+  it('stays off the `<dir>` placeholder, which claims no size', () => {
+    expect(showsPausedSizeWarning('dir', true)).toBe(false)
+    expect(showsPausedSizeWarning('scanning', true)).toBe(false)
+    expect(showsPausedSizeWarning(undefined, true)).toBe(false)
   })
 })

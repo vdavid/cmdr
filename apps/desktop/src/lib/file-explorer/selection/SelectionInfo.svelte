@@ -29,8 +29,10 @@
         buildFileSizeTooltip,
         buildDirSizeTooltip,
         buildSelectionSizeTooltip,
+        showsPausedSizeWarning,
     } from '../views/full-list-utils'
     import { isVolumeScanning, isVolumeAggregating, getWalkedGround } from '#lib/indexing/index-state.svelte.js'
+    import { getSpacePause, pausedSizeTooltipKey } from '#lib/indexing/space-pause.svelte.js'
     import { isPathAffectedByWalk } from '#lib/indexing/walked-ground.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { useShortenMiddle } from '#lib/utils/shorten-middle-action.js'
@@ -153,6 +155,11 @@
     const indexing = $derived(
         isVolumeAggregating(volumeId) || isPathAffectedByWalk(getWalkedGround(volumeId), entry?.path ?? ''),
     )
+
+    // Paused for disk space: the folder size is the last-known one, so it carries a
+    // warning, the same one FullList draws (`showsPausedSizeWarning`).
+    const spacePause = $derived(getSpacePause(volumeId))
+    const pausedSizeText = $derived(spacePause ? tString(pausedSizeTooltipKey(spacePause)) : '')
 
     const sizeDisplayMode = $derived(getSizeDisplayMode())
     const sizeFormatOpts = $derived({
@@ -344,6 +351,11 @@
                         <Icon name="hourglass" size={12} />
                     </span>
                 {/if}
+                {#if showsPausedSizeWarning(dirSizeState, spacePause !== undefined)}
+                    <span class="stale-indicator paused-icon" role="img" aria-label={pausedSizeText} use:tooltip={pausedSizeText}>
+                        <Icon name="triangle-alert" size={12} />
+                    </span>
+                {/if}
             {/if}
             {#if showSymlinkHint}
                 <StatusGlyph name="info" label={symlinkHintTooltip} />
@@ -495,5 +507,10 @@
     .stale-icon {
         /* stylelint-disable-next-line declaration-property-value-disallowed-list -- small icon indicator, not body text */
         color: var(--color-accent);
+    }
+
+    /* The drive's index is paused for disk space, so this size is the last-known one. */
+    .paused-icon {
+        color: var(--color-warning);
     }
 </style>
