@@ -186,12 +186,51 @@ pub(in crate::indexing) async fn run_replay_event_loop(
             );
         }
 
-        // HistoryDone marks end of replay phase
-        if event.flags.history_done {
+        // Whether the window drains on this event: always at HistoryDone (which
+        // marks the end of the replay phase, and flushes what's left before it),
+        // otherwise once the window holds its distinct paths.
+        let is_history_done = event.flags.history_done;
+        let drain_now = if is_history_done {
             log::info!("Replay: HistoryDone received after {}", pluralize(event_count, "event"));
+            true
+        } else {
+            // Every delivered event costs fseventsd's time whether or not it dedups
+            // away, and delivery is most of a replay's cost (`replay_cost.rs`).
+            budget.note_event();
+            if budget.exhausted() {
+                fall_back_over_budget(events.as_ref(), &volume_id, &budget, event_count, &mut fallback_tx);
+                commits.abandon(&writer);
+                return Ok(());
+            }
 
-            // Flush remaining deduplicated events before leaving Phase 1, if the
-            // budget still covers them.
+            // Handle MustScanSubDirs: queue for after replay (don't start during replay)
+            if event.flags.must_scan_sub_dirs {
+                // Keep absolute; the reconcile strips at its resolve.
+                defer_replay_rescan(&mut pending_rescans, space.absolute(&event.path));
+                last_event_id = event.event_id;
+                event_count += 1;
+                continue;
+            }
+
+            // Accumulate into dedup buffer instead of processing immediately.
+            // Same pattern as the live event loop: canonicalize path, merge flags.
+            // A clone of eight bools: the borrow checker can't see that this arm and
+            // the HistoryDone arm below that reads `event` never both run.
+            let window_full = window.add(watcher::FsChangeEvent {
+                path: space.absolute(&event.path),
+                event_id: event.event_id,
+                flags: event.flags.clone(),
+            });
+            last_event_id = event.event_id;
+            event_count += 1;
+            window_full
+        };
+
+        // Drain the window. Cost is checked BEFORE the drain: a replay that would
+        // process more paths than the index holds costs more than the reconcile it
+        // replaces (this is also what catches the FDA-toggle flood of previously
+        // hidden paths).
+        if drain_now {
             if budget.would_exceed(window.len() as u64) {
                 fall_back_over_budget(events.as_ref(), &volume_id, &budget, event_count, &mut fallback_tx);
                 commits.abandon(&writer);
@@ -209,7 +248,9 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 &mut pending_rescans,
                 Some(&mut commits),
             ) as u64;
+        }
 
+        if is_history_done {
             // Process the HistoryDone event itself (it may carry other flags).
             // A missing-parent escalation here DEFERS into the pending list (no
             // live queueing during replay), same as a must_scan_sub_dirs event.
@@ -238,58 +279,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
             break; // Exit Phase 1, enter Phase 2
         }
 
-        // Every delivered event costs fseventsd's time whether or not it dedups
-        // away, and delivery is most of a replay's cost (`replay_cost.rs`).
-        budget.note_event();
-        if budget.exhausted() {
-            fall_back_over_budget(events.as_ref(), &volume_id, &budget, event_count, &mut fallback_tx);
-            commits.abandon(&writer);
-            return Ok(());
-        }
-
-        // Handle MustScanSubDirs: queue for after replay (don't start during replay)
-        if event.flags.must_scan_sub_dirs {
-            // Keep absolute; the reconcile strips at its resolve.
-            defer_replay_rescan(&mut pending_rescans, space.absolute(&event.path));
-            last_event_id = event.event_id;
-            event_count += 1;
-            continue;
-        }
-
-        // Accumulate into dedup buffer instead of processing immediately.
-        // Same pattern as the live event loop: canonicalize path, merge flags.
-        let window_full = window.add(watcher::FsChangeEvent {
-            path: space.absolute(&event.path),
-            event_id: event.event_id,
-            flags: event.flags,
-        });
-
-        last_event_id = event.event_id;
-        event_count += 1;
-
-        // Drain the window once it holds its distinct paths, then record how far
-        // the journal got. Cost is checked BEFORE the drain: a replay that would
-        // process more paths than the index holds costs more than the reconcile
-        // it replaces (this is also what catches the FDA-toggle flood of
-        // previously hidden paths).
-        if window_full {
-            if budget.would_exceed(window.len() as u64) {
-                fall_back_over_budget(events.as_ref(), &volume_id, &budget, event_count, &mut fallback_tx);
-                commits.abandon(&writer);
-                return Ok(());
-            }
-            budget.spend(window.len() as u64);
-            deduped_total += flush_replay_batch(
-                window.pending_mut(),
-                &space,
-                &conn,
-                &writer,
-                &work,
-                &mut origin_dirs,
-                &mut origins_overflow,
-                &mut pending_rescans,
-                Some(&mut commits),
-            ) as u64;
+        if drain_now {
             // The window drained whole, so every event up to `last_event_id` is
             // processed: the position and the rescans deferred so far commit together.
             commits.close_window(
