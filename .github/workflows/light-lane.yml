@@ -160,11 +160,12 @@ jobs:
       # Checks whose inputs span apps, so an app-gated lane would skip the edit that breaks them:
       # a mutant record names any file (its fuzz target and input sit under `fuzz/`; the slow half
       # that runs the mutants is in `slow-checks.yml`), the settings-defaults manifest spans the
-      # desktop registry and the dashboard, and the workflow guards read files no app owns.
+      # desktop registry and the dashboard, `pluralize-noun` scans the frontend and the Rust app
+      # alike, and the workflow guards read files no app owns.
       - name: Check the cross-app guards and the workflows
         if: ${{ !cancelled() && steps.ready.outcome == 'success' }}
         run: |
-          ./scripts/check/check --ci --check desktop-rust-property-mutant-records,analytics-event-catalog,analytics-settings-defaults,go-version-single-source,e2e-rust-image-pin,workflows-hardening,workflows-rustup,ci-coverage
+          ./scripts/check/check --ci --check desktop-rust-property-mutant-records,analytics-event-catalog,analytics-settings-defaults,desktop-pluralize-noun,go-version-single-source,e2e-rust-image-pin,workflows-hardening,workflows-rustup,ci-coverage
 
       # ---- Repo hygiene: only when their inputs changed ----
 

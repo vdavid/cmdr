@@ -267,6 +267,13 @@ var rustTestScopeRules = []rustScopeRule{
 	{Glob: ".github/actions/wasm-toolchain/**", Effect: scopeAll, Why: "a composite action the Rust lanes use"},
 	{Glob: ".github/actions/rust-test-scope/**", Effect: scopeAll, Why: "computes this very scope in the Rust lanes"},
 	{Glob: ".github/actions/lane-marker/**", Effect: scopeNothing, Why: "saves the lane's marker after its last check; no test reads it"},
+	{Glob: "clippy.toml", Effect: scopeNothing, Why: "clippy's config; it changes lints, never a test's outcome"},
+	{Glob: "rustfmt.toml", Effect: scopeNothing, Why: "rustfmt's config; it changes formatting checks, never a test's outcome"},
+	{Glob: "deny.toml", Effect: scopeNothing, Why: "the notices and license policy the Linux lane's third-party-notices check reads, not a test"},
+	{Glob: "pnpm-lock.yaml", Effect: scopeNothing, Why: "the npm lockfile; the Linux lane's notices check reads it, no Rust test does"},
+	{Glob: "THIRD-PARTY-NOTICES.md", Effect: scopeNothing, Why: "checked by the notices check, embedded by no crate"},
+	{Glob: "apps/desktop/src/lib/licensing/third-party-packages.gen.json", Effect: scopeNothing, Why: "the frontend's generated notices list, checked by the notices check"},
+	{Glob: "fuzz/Cargo.lock", Effect: scopeNothing, Why: "the fuzz workspace's lockfile, which `desktop-rust-fuzz-lock-in-step` compares; no workspace test reads it"},
 	{Glob: "scripts/check/**", Effect: scopeAll, Why: "the check runner that builds and runs the tests, this scope logic included"},
 	{Glob: "scripts/check.sh", Effect: scopeAll, Why: "the check runner's entry point"},
 

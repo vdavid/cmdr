@@ -204,7 +204,10 @@ is broken — verify against the main clone first, where the answer is not clone
 - `Success(message)` on success with a short, informative message
 - `CheckResult{Code: ResultWarning, Message: ...}` for a non-fatal warning (there is no `Warning()` constructor; build
   the struct directly, as the length and coverage scanners do)
-- `Skipped(reason)` when the check can't run (for example, missing config)
+- `Skipped(reason)` when the tree gives it nothing to do (macOS only, no config, the Rust test scope's `none`)
+- `SkippedNoEnvironment(reason)` when THIS MACHINE can't run it (Docker down, a build output missing): a skip locally, a
+  failure under `--ci` (`runner.go`), because a CI skip leaves the lane green and its lane marker then vouches for a
+  check that never ran
 - `CheckResult{}, error` on failure
 - `SuccessWithChanges(message)` when the check made local fixes (auto-fix mode); CI mode should still error
 
@@ -1638,6 +1641,11 @@ them, transitively. A `cmdr-webdav` change then runs `cmdr-webdav`, the app, and
   covered fewer crates than the fingerprint says, and a later full run would cache-hit on a partial green.
 - **In CI**: the three Rust lanes set it on pull requests only, through `.github/actions/rust-test-scope` (base: the
   merge commit's first parent; `docs/tooling/ci.md` § "Rust test scope in the Rust lanes").
+- **Its trust gaps, and the backstop**: the scope assumes the base tree's untouched crates pass, but a landed GitHub
+  merge makes a `main` tree no run tested, and the out-of-crate scan below can miss a read (a raw string, a literal with
+  `{}` or a space, a `.join("a").join("b")` chain; both tree-walk reader rules exist because a read slipped past it).
+  Either way a scoped PR run can stay green while the full suite would fail. The nightly full run (`ci.yml`'s schedule,
+  unscoped) catches both within a day (`docs/tooling/ci.md` § Nightly full run).
 
 The safety valves (`scopeAll`): the workspace and member manifests (features unify across the whole workspace build, so
 one crate's feature edit can change another's behavior), `Cargo.lock`, `rust-toolchain.toml`, `.mise.toml`,

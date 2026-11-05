@@ -25,12 +25,21 @@ func TestTrustedRefs(t *testing.T) {
 	fork.headRepo = "someone/cmdr"
 	runAll := prCtx()
 	runAll.runAll = true
+	human := prCtx()
+	human.authorType, human.author = "User", "vdavid"
+	botType := prCtx()
+	botType.authorType, botType.author = "Bot", "renovate[bot]"
+	botLogin := prCtx()
+	botLogin.authorType, botLogin.author = "User", "dependabot[bot]"
 	cases := []struct {
 		name string
 		ctx  runContext
 		want []string
 	}{
 		{"same-repo PR trusts main and itself", prCtx(), []string{main_, prRef}},
+		{"same-repo human PR trusts main and itself", human, []string{main_, prRef}},
+		{"bot PR trusts main only", botType, []string{main_}},
+		{"a [bot] login trusts main only, whatever its type says", botLogin, []string{main_}},
 		{"fork PR trusts main only", fork, []string{main_}},
 		{"run_all ignores markers", runAll, nil},
 		{"push to main ignores markers", runContext{event: "push", ref: main_, mainRef: main_, repo: repo}, nil},

@@ -327,7 +327,7 @@ func dockerSucceeds(args ...string) bool {
 // dockerUnavailable returns the skip result when Docker can't run a container here.
 func dockerUnavailable() (CheckResult, bool) {
 	if reason, down := DockerDownReason(); down {
-		return Skipped(reason), true
+		return SkippedNoEnvironment(reason), true
 	}
 	return CheckResult{}, false
 }

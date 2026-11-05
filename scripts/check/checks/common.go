@@ -69,6 +69,20 @@ type CheckResult struct {
 	Total       int  // items checked (-1 = N/A)
 	Issues      int  // items needing attention (-1 = N/A)
 	Changes     int  // files modified (-1 = N/A)
+	// MissingEnvironment marks a skip whose cause is this machine, not the tree: Docker down,
+	// a build output that isn't there. Under `--ci` the runner fails it, because a skipped
+	// check leaves its lane green and the lane then saves a marker vouching for checks that
+	// never ran (the CI gate review of 2026-11-05, F5). Locally it stays a skip.
+	MissingEnvironment bool
+}
+
+// SkippedNoEnvironment is a skip because this machine can't run the check (see
+// `CheckResult.MissingEnvironment`). Deterministic skips (macOS only, nothing in the tree to
+// check, the Rust test scope's `none`) stay `Skipped`.
+func SkippedNoEnvironment(reason string) CheckResult {
+	r := Skipped(reason)
+	r.MissingEnvironment = true
+	return r
 }
 
 // Success creates a success result with the given message (no changes made).

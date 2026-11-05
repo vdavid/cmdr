@@ -11,6 +11,15 @@ on:
   push:
     branches:
       - main
+  # The nightly full run on `main`: every lane, no lane markers, no Rust test scope, as a
+  # `run_all` dispatch runs (`changes`' `full` output). A `main` push that merged a green PR is
+  # `verified` and skips its lanes, so a tree made of two PRs that each passed alone is never
+  # tested on `main`, and later PR runs may skip or scope away the lane that would fail on it;
+  # this catches that within a day. A red scheduled run emails whoever last edited this cron, as
+  # a red `main` push emails its pusher. It doesn't deploy (the deploy jobs run on pushes and
+  # dispatches only). `docs/tooling/ci.md` § Nightly full run.
+  schedule:
+    - cron: '17 2 * * *' # 02:17 UTC daily, off-peak and off the hour
 
 permissions:
   contents: read
@@ -97,6 +106,9 @@ jobs:
       website-changed: ${{ steps.filter.outputs.website }}
       playwright-image: ${{ steps.playwright-image.outputs.image }}
       light-runner: ${{ steps.light-runner.outputs.runner }}
+      # A full run: a `run_all` dispatch (the release gate) or the nightly schedule. Every lane
+      # runs, markers and the Rust test scope are ignored, and `CI OK` reds any skipped lane.
+      full: ${{ inputs.run_all == true || github.event_name == 'schedule' }}
       # Per lane `{hash, key, verified, ref}`: a lane whose exact inputs already passed in a trusted
       # run skips on `verified`, and saves its marker under `key` when it passes
       # (`scripts/lane-markers/DETAILS.md`). Not gated on `steps.verified`: a verified run's lane
@@ -273,7 +285,10 @@ jobs:
       #   jobs never read them, while every docs check and `analytics-event-catalog` (which reads one)
       #   run in the light lane on every change. Other `.md` files stay in: the agent prompts
       #   (`src-tauri/src/agent/prompts/*.md`) and `CHANGELOG.md` compile into the app.
+      # Not on the nightly schedule: a full run reads no filter, and a schedule has no change to
+      # compare against.
       - name: Detect file changes
+        if: github.event_name != 'schedule'
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
@@ -316,6 +331,10 @@ jobs:
               - 'Cargo.lock'
               - '.config/nextest.toml'
               - 'rust-toolchain.toml'
+              # clippy and rustfmt read these (`ci-coverage` rule 8 names every check input
+              # a lane's filter misses).
+              - 'clippy.toml'
+              - 'rustfmt.toml'
               # The check runner builds and runs every Rust check; its tests run in the light
               # lane's Go section.
               - 'scripts/check.sh'
@@ -330,6 +349,13 @@ jobs:
               - '!**/DETAILS.md'
             rust:
               - *rust-inputs
+              # `desktop-third-party-notices` and `desktop-rust-fuzz-lock-in-step`, which only
+              # this lane runs.
+              - 'deny.toml'
+              - 'pnpm-lock.yaml'
+              - 'THIRD-PARTY-NOTICES.md'
+              - 'apps/desktop/src/lib/licensing/third-party-packages.gen.json'
+              - 'fuzz/Cargo.lock'
               - '.github/workflows/rust-lane.yml'
               - '.github/actions/free-disk-if-small/**'
               - '.github/actions/pinned-rust-toolchain/**'
@@ -361,8 +387,22 @@ jobs:
             svelte:
               - 'apps/desktop/src/**'
               - 'apps/desktop/static/**'
-              - 'apps/desktop/test/e2e-shared/**'
-              - 'apps/desktop/test/e2e-playwright/**'
+              # The whole test tree: Vitest, ESLint, and the scans read `e2e-shared/` and
+              # `e2e-playwright/`, and `desktop-svelte-e2e-linux-typecheck` reads `e2e-linux/`.
+              - 'apps/desktop/test/**'
+              - 'apps/desktop/knip.json'
+              - 'apps/desktop/.stylelintrc.mjs'
+              # `desktop-native-strings-fresh` and `desktop-shipped-locales-fresh` compare the
+              # catalogs with these generated Rust, plist, and Finder extension files.
+              - 'apps/desktop/src-tauri/src/intl/**'
+              - 'apps/desktop/src-tauri/Info.plist'
+              - 'apps/desktop/finder-extension/lproj/**'
+              # The Go tools behind the a11y-contrast, btn-restyle, and css-unused checks.
+              - 'scripts/check-a11y-contrast/**'
+              - 'scripts/check-btn-restyle/**'
+              - 'scripts/check-css-unused/**'
+              - 'package.json'
+              - 'pnpm-workspace.yaml'
               - 'apps/desktop/eslint-plugins/**'
               - 'eslint-plugins/**'
               - 'apps/desktop/scripts/**'
@@ -387,6 +427,10 @@ jobs:
               # Rust workspace, so the Rust workspace inputs belong here too.
               - 'apps/desktop/**'
               - 'crates/**'
+              # `e2e-linux.sh` installs the frontend from these.
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
               # Compiled into the app it builds: the patched crates and the embedded changelog.
               - 'vendor/**'
               - 'CHANGELOG.md'
@@ -403,6 +447,7 @@ jobs:
               - 'apps/website/**'
               # The site's ESLint config imports the shared rules.
               - 'eslint-plugins/**'
+              - 'pnpm-workspace.yaml'
               - '.dockerignore'
               - 'CHANGELOG.md'
               - 'pnpm-lock.yaml'
@@ -678,10 +723,12 @@ jobs:
           REF: ${{ github.ref }}
           REPO: ${{ github.repository }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          RUN_ALL: ${{ inputs.run_all == true }}
+          AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          RUN_ALL: ${{ inputs.run_all == true || github.event_name == 'schedule' }}
         run: >-
           ./scripts/lane-markers/lane-markers plan -event "$EVENT" -ref "$REF" -repo "$REPO" -head-repo "$HEAD_REPO"
-          -run-all="$RUN_ALL"
+          -run-all="$RUN_ALL" -author-type "$AUTHOR_TYPE" -author "$AUTHOR"
 
       # The Website job runs inside this image. Its visual baselines
       # (`apps/website/e2e/visual.spec.ts`) are pixel comparisons, so the renderer that verifies
@@ -727,7 +774,7 @@ jobs:
     name: Desktop (Rust)
     needs: changes
     if: >-
-      inputs.run_all || (needs.changes.outputs.rust == 'true' &&
+      needs.changes.outputs.full == 'true' || (needs.changes.outputs.rust == 'true' &&
       !fromJSON(needs.changes.outputs.lanes)['desktop-rust'].verified)
     uses: ./.github/workflows/rust-lane.yml
     with:
@@ -740,7 +787,7 @@ jobs:
     name: Desktop (Rust, fixtures)
     needs: changes
     if: >-
-      inputs.run_all || (needs.changes.outputs.rust-fixtures == 'true' &&
+      needs.changes.outputs.full == 'true' || (needs.changes.outputs.rust-fixtures == 'true' &&
       !fromJSON(needs.changes.outputs.lanes)['desktop-rust-fixtures'].verified)
     uses: ./.github/workflows/rust-fixtures-lane.yml
     with:
@@ -778,14 +825,15 @@ jobs:
     name: Desktop (Rust, macOS)
     needs: changes
     if: >-
-      inputs.run_all || (needs.changes.outputs.rust-macos == 'true' &&
+      needs.changes.outputs.full == 'true' || (needs.changes.outputs.rust-macos == 'true' &&
       !fromJSON(needs.changes.outputs.lanes)['desktop-rust-macos'].verified)
     concurrency:
       group: macos-lane-${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main' || github.run_id }}
       cancel-in-progress: false
     uses: ./.github/workflows/macos-lane.yml
     with:
-      compile-finder-extension: ${{ inputs.run_all || needs.changes.outputs.finder-extension == 'true' }}
+      compile-finder-extension:
+        ${{ needs.changes.outputs.full == 'true' || needs.changes.outputs.finder-extension == 'true' }}
       marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['desktop-rust-macos'].key }}
 
   # The desktop frontend: the Svelte checks, i18n, and Vitest, plus the type-aware ESLint passes
@@ -794,7 +842,7 @@ jobs:
     name: Desktop (Svelte)
     needs: changes
     if: >-
-      inputs.run_all || (needs.changes.outputs.svelte == 'true' &&
+      needs.changes.outputs.full == 'true' || (needs.changes.outputs.svelte == 'true' &&
       !fromJSON(needs.changes.outputs.lanes)['desktop-svelte'].verified)
     uses: ./.github/workflows/svelte-lane.yml
     with:
@@ -819,7 +867,7 @@ jobs:
     # Follows its lane's marker verdict (and saves none): it builds only for the lane it feeds,
     # and the lane's hash already covers it (`scripts/lane-markers/DETAILS.md` § Wiring).
     if: >-
-      inputs.run_all || (needs.changes.outputs.desktop == 'true' &&
+      needs.changes.outputs.full == 'true' || (needs.changes.outputs.desktop == 'true' &&
       !fromJSON(needs.changes.outputs.lanes)['desktop-e2e-linux'].verified)
     permissions:
       contents: read # check out the code
@@ -849,7 +897,7 @@ jobs:
     name: E2E tests (Playwright, Linux)
     needs: [changes, e2e-base-image]
     if: >-
-      inputs.run_all || (needs.changes.outputs.desktop == 'true' &&
+      needs.changes.outputs.full == 'true' || (needs.changes.outputs.desktop == 'true' &&
       !fromJSON(needs.changes.outputs.lanes)['desktop-e2e-linux'].verified)
     permissions:
       contents: read # check out the code
@@ -864,7 +912,7 @@ jobs:
     name: Website
     needs: changes
     if: >-
-      inputs.run_all || (needs.changes.outputs.website == 'true' &&
+      needs.changes.outputs.full == 'true' || (needs.changes.outputs.website == 'true' &&
       !fromJSON(needs.changes.outputs.lanes)['website'].verified)
     uses: ./.github/workflows/website-lane.yml
     with:
@@ -887,7 +935,7 @@ jobs:
     uses: ./.github/workflows/light-lane.yml
     with:
       runs-on: ${{ needs.changes.outputs.light-runner }}
-      full: ${{ inputs.run_all == true }}
+      full: ${{ needs.changes.outputs.full == 'true' }}
       scripts: ${{ needs.changes.outputs.scripts == 'true' }}
       api-server: ${{ needs.changes.outputs.api-server == 'true' }}
       dashboard: ${{ needs.changes.outputs.dashboard == 'true' }}
@@ -1542,7 +1590,9 @@ jobs:
           REF: ${{ github.ref }}
           REPO: ${{ github.repository }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          RUN_ALL: ${{ inputs.run_all == true }}
+          AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          RUN_ALL: ${{ inputs.run_all == true || github.event_name == 'schedule' }}
         run: >-
           ./scripts/lane-markers/lane-markers verify -needs "$NEEDS" -event "$EVENT" -ref "$REF" -repo "$REPO"
-          -head-repo "$HEAD_REPO" -run-all="$RUN_ALL"
+          -head-repo "$HEAD_REPO" -run-all="$RUN_ALL" -author-type "$AUTHOR_TYPE" -author "$AUTHOR"

@@ -7,7 +7,7 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 
 | Workflow                | Trigger                                 | What it does                                                                                        |
 | ----------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `ci.yml`                | PRs, pushes to main, manual             | Main suite: change detection, one `uses:` job per lane (§ Lane files), the deploy, and `CI OK`      |
+| `ci.yml`                | PRs, pushes to main, nightly, manual    | Main suite: change detection, one `uses:` job per lane (§ Lane files), the deploy, and `CI OK`      |
 | `<lane>-lane.yml`       | Called by `ci.yml`                      | One lane's steps each: `rust`, `rust-fixtures`, `macos`, `svelte`, `e2e-linux`, `website`, `light`  |
 | `slow-checks.yml`       | Every 6 days (3 AM UTC), manual         | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                   |
 | `advisories.yml`        | Daily (4:17 AM UTC), manual             | osv-scanner (every lockfile) and cargo-deny (no compile): new advisories surface in a day           |
@@ -133,7 +133,15 @@ server).
    the `finder-extension` filter (which gates one step), and no filter watched `.github/actions/`, so an edit to the
    macOS lane's steps or to a composite action ran nothing that tested it.
 7. Each filter in `ciFilterGatedChecks` covers its check's whole fingerprint, so gating a check that used to run on
-   every change never skips a change it reads. Deliberate narrowings sit in `ciFilterNarrowedInputs` with a reason.
+   every change never skips a change it reads. That's the light lane's sections (`scripts`, `api-server`, `dashboard`)
+   and its three slow hygiene checks. Deliberate narrowings sit in `ciFilterNarrowedInputs` (one pattern) and
+   `ciFilterNarrowedChecks` (`scripts-go-tests`, whose tests read the whole tree) with a reason.
+8. Every path-filtered lane's filters (all that its caller reads, which is exactly what its lane marker hashes) cover
+   the fingerprint of every `--check` its lane file runs, plus what the lane runs outside the runner (`pnpm install`,
+   `e2e-linux.sh`: `laneExtraInputs`), in `scripts/check/checks/ci-lane-check-inputs.go`. Without it a lane skipped on a
+   change to a file only its checks read, and a lane marker vouched for a tree whose `clippy.toml`, `deny.toml`, or
+   `knip.json` it never saw (the CI gate review of 2026-11-05, F1). Narrowings would go in `laneCheckNarrowedInputs`,
+   which is empty: each one is a place a marker vouches for a tree it didn't see.
 
 Practical consequence: **when you add a check, CI fails until you either add a workflow step for it or set `NotInCI`
 with a reason.** When you rename one, CI fails until every workflow catches up. That's the point.
@@ -202,7 +210,12 @@ the opposite of what the box was for. It would only win while hosted runners que
 - **The runner is an input** (`runs-on`, default `ubuntu-latest`). `ci.yml`'s top-level `LIGHT_LANE_RUNNER` is the one
   switch, set to `ubuntu-latest` (above says why). `cmdr-light` is the self-hosted runner on David's Hetzner box (labels
   `self-hosted, Linux, X64, cmdr-light`; its budget, containment, and how to pause it live with the `gha-runner` Ansible
-  role in David's private infra repo); set the switch to it to move trusted runs there.
+  role in David's private infra repo); set the switch to it to move trusted runs there. ❗ Precondition: only same-repo,
+  human-authored code may run there, and that includes an outside contributor's commit cherry-picked onto David's branch
+  per `docs/guides/handling-prs.md` (its PR is same-repo and human-authored, so the allowlist below would send it
+  there). The box shares mise's tools, pnpm's store, and the Go module cache (writable, `-modcacherw`) across jobs, so
+  one job's code can change what every later job on the box runs against, `main`'s included, in a way no tree hash or
+  filter sees. Before flipping the switch, route those PRs to hosted, or make the runner ephemeral.
 - **Only trusted runs reach that runner**, since it keeps state (its tool caches) between jobs. `changes`' runner step
   is an allowlist: a push (only `main`), a dispatch (only collaborators can), or a pull request whose head is in this
   repo and whose author isn't a bot gets `LIGHT_LANE_RUNNER`; everything else gets `ubuntu-latest`. So a fork PR, a
@@ -336,6 +349,18 @@ purpose: the account runs at most 20 jobs at once, five of them macOS, and a sec
 time than the ~5 min it saved (2026-10-20). Sharding the E2E tests (−3 to −4 min) only pays off once the Rust jobs are
 shorter than E2E too. Don't re-add a `needs: desktop-svelte` to the e2e job — it only added ~4 min of latency for a
 compute-saving skip that isn't worth it (see the comment on the job).
+
+## Nightly full run
+
+`ci.yml`'s `schedule` (02:17 UTC daily) runs it in full on `main`: `changes`' `full` output is on for a schedule as for
+a `run_all` dispatch, so every lane runs, lane markers and the Rust test scope are ignored, the paths filter doesn't
+run, and `CI OK` reds any skipped lane. A `main` tree no single run tested (two PRs that each passed alone, then landed
+as `verified` pushes; a scoped PR run that never reached a crate a landed PR broke; a scope rule that missed a read) is
+caught within a day instead of at the next release's gate. Its lanes save fresh markers and Rust caches into `main`'s
+scope, which seeds every PR. It doesn't deploy: the deploy jobs run on pushes and dispatches only. A red one is as
+visible as a red `main` push: GitHub emails a failed scheduled run to whoever last edited the cron, as it emails a
+push's failure to its pusher. A schedule rather than a dispatch from another workflow: dispatching needs
+`actions: write`, which Scorecard's Token-Permissions flags.
 
 ## Slow checks cadence
 

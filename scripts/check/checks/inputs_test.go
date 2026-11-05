@@ -450,6 +450,8 @@ var realTreeReadingTests = map[string][]string{
 	"TestDiskImageLaneMatchesTheDiskImageNextestGroup":         {".config/nextest.toml"},
 	"TestEveryCheckGetsItsOwnRunnerSources":                    {"scripts/check/checks/registry.go"},
 	"TestGatedCheckFiltersCoverTheirChecks":                    {".github/workflows/ci.yml", "scripts/check/checks"},
+	"TestLaneCheckInputsFlagAMissingCheckInput":                {".github/workflows", "scripts/check/checks"},
+	"TestLaneCheckInputsFlagAMissingLaneStepInput":             {".github/workflows", "scripts/check/checks"},
 	"TestGlobalInputsCoverWhatNoCheckCanReach":                 {"scripts/check/checks"},
 	"TestGoCompileLanesReadOnlyGoSources":                      {"scripts", "apps/desktop/scripts"},
 	"TestGoTestsInputsCoverTheRealTreeItsTestsRead":            {"scripts/check/checks"},

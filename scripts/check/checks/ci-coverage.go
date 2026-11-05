@@ -85,6 +85,7 @@ func RunCICoverage(ctx *CheckContext) (CheckResult, error) {
 		violations = append(violations, validateCIOKGate(string(ciYml))...)
 		violations = append(violations, validateLaneFilters(ctx.RootDir, string(ciYml))...)
 		violations = append(violations, validateGatedCheckFilters(ctx.RootDir, string(ciYml))...)
+		violations = append(violations, validateLaneCheckInputs(ctx.RootDir, string(ciYml))...)
 	}
 
 	if len(violations) > 0 {

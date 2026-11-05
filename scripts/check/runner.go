@@ -316,6 +316,9 @@ func (r *Runner) runCheck(state *CheckState) {
 
 	state.mu.Lock()
 	state.Tests = ctx.Tests.Records()
+	if err == nil && result.Code == checks.ResultSkipped && result.MissingEnvironment && ctx.CI {
+		err = fmt.Errorf("can't run here (%s); under --ci that fails, since a skip would leave the lane green, and its marker vouching, for a check that never ran", result.Message)
+	}
 	if err != nil {
 		state.Status = StatusFailed
 		state.Error = err

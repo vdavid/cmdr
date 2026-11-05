@@ -43,6 +43,10 @@ The claim a verified skip makes: "this lane passed, in a run we trust, on exactl
     workflow, which could save a marker for a hash it computed offline, then push a clean workflow plus untested code
     whose lane would skip on it. GitHub's cache isolation keeps that marker out of every other scope, and the fork rule
     keeps it out of the fork's own later runs. Same-repo authors already control the workflow; they're trusted.
+  - A bot's PR (`user.type` `Bot`, or a `[bot]` login: Renovate, Dependabot) trusts `main`'s scope only, never its own:
+    it brings third-party code (an npm install script, a crate's build script) that its own lanes execute, and any
+    process in a job can reach the cache token and save a marker for the tree it has checked out. `plan` and `verify`
+    take `-author-type` and `-author`.
   - Never another PR's, a release branch's, or any other ref, even though the cache API lists them all:
     `parseMarkerList` and `decide` compare the ref by equality.
 - **Who trusts at all**: only `pull_request` runs. A push to `main`, a dispatch (the release gate's `run_all`), and a
@@ -123,7 +127,8 @@ website) saves from a `marker` job that `needs` every other job, so one green jo
 
 Each lane job:
 
-- `if:` becomes `inputs.run_all || (<its filter clause> && !fromJSON(needs.changes.outputs.lanes)['<id>'].verified)`.
+- `if:` becomes
+  `needs.changes.outputs.full == 'true' || (<its filter clause> && !fromJSON(needs.changes.outputs.lanes)['<id>'].verified)`.
 - Last steps: write any small file (say `echo "$GITHUB_RUN_ID" > "$RUNNER_TEMP/lane-green"`), then `actions/cache/save`
   (the SHA-pinned one `ci.yml` already uses) with that `path` and
   `key: ${{ fromJSON(needs.changes.outputs.lanes)['<id>'].key }}`. No `if:` on them, and nothing after them.

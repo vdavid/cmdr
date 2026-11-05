@@ -33,10 +33,28 @@ var ciFilterGatedChecks = map[string][]string{
 	"termbase":  {"desktop-i18n-termbase"},
 	"changelog": {"changelog-commit-links"},
 	"scorecard": {"scorecard-local"},
+	"scripts": {
+		"scripts-go-gofmt", "scripts-go-vet", "scripts-go-staticcheck", "scripts-go-ineffassign", "scripts-go-misspell",
+		"scripts-go-gocyclo", "scripts-go-deadcode", "scripts-go-tests", "scripts-go-nilaway",
+	},
+	"api-server": {"api-server-worker-types", "api-server-eslint", "api-server-typecheck", "api-server-tests"},
+	"dashboard": {
+		"dashboard-eslint", "dashboard-stylelint", "dashboard-svelte-check", "dashboard-import-cycles", "dashboard-knip",
+		"dashboard-tests", "dashboard-build",
+	},
 }
 
 // ciFilterNarrowedInputs names the fingerprint patterns a gated filter deliberately doesn't
 // carry, each with its reason.
+// ciFilterNarrowedChecks names whole checks a gated filter deliberately doesn't cover, each
+// with its reason. The light lane saves no lane marker, so a narrowing here can only skip the
+// check on a change outside its filter, never vouch for a tree it didn't see.
+var ciFilterNarrowedChecks = map[string]map[string]string{
+	"scripts": {
+		"scripts-go-tests": "its tests also read the real tree (crates, the app, the fixture stacks, ci.yml) to hold the check runner's rules to it (`goTestsInputs`); gating it on all of that would run the Go tests on nearly every PR. A tree change that breaks one surfaces on the next `scripts/` change and on the nightly full run",
+	},
+}
+
 var ciFilterNarrowedInputs = map[string]map[string]string{
 	"scorecard": {
 		"**": "Scorecard's file checks read the paths in the filter plus every file's CONTENT for binaries and shell scripts, which the light lane checks on the PR's own files (`docs/tooling/ci.md` § The light lane)",
@@ -303,6 +321,9 @@ func validateGatedCheckFilters(rootDir, ciYml string) []string {
 			continue
 		}
 		for _, id := range ciFilterGatedChecks[name] {
+			if _, narrowed := ciFilterNarrowedChecks[name][id]; narrowed {
+				continue
+			}
 			def := ciCoverageLookup(id)
 			if def == nil {
 				violations = append(violations, fmt.Sprintf("ciFilterGatedChecks names `%s`, which isn't a registry check", id))

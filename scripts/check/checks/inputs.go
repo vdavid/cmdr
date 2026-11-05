@@ -517,8 +517,9 @@ var goTestsInputs = inputs(
 	rustWorkspaceConfigInputs,
 	rustEmbeddedInputs,
 	treeGlobs(frontendSourceRoots...),
-	// ci.yml: `TestWebsiteDemoInputsMatchTheImageKey` reads its `website` filter.
-	[]string{"apps/desktop/package.json", ".github/workflows/ci.yml", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, s3ComposeRel, s3StartRel, nfsComposeRel, nfsStartRel, smbComposeRel},
+	// The workflows: `TestWebsiteDemoInputsMatchTheImageKey` reads ci.yml's `website` filter, and the
+	// `ci-coverage` rule tests read the lane files.
+	[]string{"apps/desktop/package.json", ".github/workflows/**", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, s3ComposeRel, s3StartRel, nfsComposeRel, nfsStartRel, smbComposeRel},
 )
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks

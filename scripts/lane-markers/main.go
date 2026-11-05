@@ -15,7 +15,7 @@
 //	lane-markers plan   <context flags>        the `changes` job: decide every lane, write `lanes=<json>`
 //	lane-markers verify <context flags> -needs JSON   the `CI OK` job: fail on any unproven skip
 //
-// Context flags: -event, -ref, -repo, -head-repo, -run-all, -main-ref.
+// Context flags: -event, -ref, -repo, -head-repo, -run-all, -main-ref, -author-type, -author.
 package main
 
 import (
@@ -67,6 +67,8 @@ func addCommon(fs *flag.FlagSet, withContext bool) *commonFlags {
 		fs.StringVar(&c.ctx.headRepo, "head-repo", "", "github.event.pull_request.head.repo.full_name (empty off PRs)")
 		fs.BoolVar(&c.ctx.runAll, "run-all", false, "this is a run_all dispatch")
 		fs.StringVar(&c.ctx.mainRef, "main-ref", "refs/heads/main", "the default branch's ref")
+		fs.StringVar(&c.ctx.authorType, "author-type", "", "github.event.pull_request.user.type (empty off PRs)")
+		fs.StringVar(&c.ctx.author, "author", "", "github.event.pull_request.user.login (empty off PRs)")
 	}
 	return c
 }

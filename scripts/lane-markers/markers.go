@@ -15,6 +15,15 @@ type runContext struct {
 	repo     string // github.repository
 	headRepo string // the PR head's repository (github.event.pull_request.head.repo.full_name)
 	runAll   bool   // a `run_all` dispatch
+	// The PR author: github.event.pull_request.user.type and .login. A bot's PR (Renovate,
+	// Dependabot) brings third-party code that its own lanes execute, and any process in a job
+	// can save a cache entry in the PR's scope, so a bot PR trusts `main`'s markers only.
+	authorType, author string
+}
+
+// botAuthored reports whether the PR's author is a bot, by type or by the `[bot]` login suffix.
+func (c runContext) botAuthored() bool {
+	return c.authorType == "Bot" || strings.HasSuffix(c.author, "[bot]")
 }
 
 // trustedRefs are the cache scopes whose markers this run may trust, or nil when it must ignore
@@ -23,15 +32,17 @@ type runContext struct {
 //     `run_all`), or a schedule always runs its lanes on their filters alone, so a filter that
 //     misses an input gets caught there rather than skipped forever.
 //   - `main`'s markers count everywhere: only post-land runs on `main` write them.
-//   - The PR's own markers count only when its head lives in this repo. A fork's run executes the
-//     fork's workflow, which could save a marker for a tree its next push brings, and an
-//     Actions cache saved in a PR's scope is readable by that PR's later runs.
+//   - The PR's own markers count only when its head lives in this repo and a human wrote it. A
+//     fork's run executes the fork's workflow, which could save a marker for a tree its next push
+//     brings, and an Actions cache saved in a PR's scope is readable by that PR's later runs. A
+//     bot's PR runs third-party code (an npm install script, a new crate's build script) that can
+//     reach the job's cache token and do the same (the CI gate review of 2026-11-05, F3).
 func (c runContext) trustedRefs() []string {
 	if c.event != "pull_request" || c.runAll || c.mainRef == "" {
 		return nil
 	}
 	refs := []string{c.mainRef}
-	if c.ref != "" && c.ref != c.mainRef && c.headRepo != "" && c.headRepo == c.repo {
+	if c.ref != "" && c.ref != c.mainRef && c.headRepo != "" && c.headRepo == c.repo && !c.botAuthored() {
 		refs = append(refs, c.ref)
 	}
 	return refs

@@ -26,7 +26,7 @@ const websiteDemoImagePlaceholder = "ghcr.io/vdavid/cmdr-demo@sha256:00000000000
 
 func RunWebsiteDockerBuild(ctx *CheckContext) (CheckResult, error) {
 	if !CommandExists("docker") {
-		return Skipped("docker not installed"), nil
+		return SkippedNoEnvironment("docker not installed"), nil
 	}
 
 	args := []string{"build", "-f", "apps/website/Dockerfile", "-t", "getcmdr-check"}

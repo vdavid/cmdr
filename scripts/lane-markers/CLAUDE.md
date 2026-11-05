@@ -16,8 +16,8 @@ cache lookup.
   inputs: the files its filters match at the commit, its workflow file, every local `uses:` it reaches (jobs it `needs`
   included), the toolchain pins, and `scripts/check/**`. Over-inclusion costs a rerun; under-inclusion is the one way to
   report green for untested code.
-- **Only `pull_request` runs trust markers**, from `main`'s scope and (same-repo heads only) the PR's own. Pushes,
-  dispatches, and `run_all` ignore them.
+- **Only `pull_request` runs trust markers**, from `main`'s scope and (same-repo, human-authored heads only) the PR's
+  own. Pushes, dispatches, and `run_all` ignore them.
 - **Only a lane's last step saves its marker**, on success. ❌ Never save a `lane-green-*` key anywhere else.
 - **`CI OK` runs `verify`**: a lane skipped while its `if:` filter is on is red unless the plan verified it AND this job
   recomputes the same key AND finds the marker in a trusted scope.
