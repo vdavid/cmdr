@@ -32,6 +32,13 @@ describe('findCssBeyondSafari15', () => {
     expect(find('.a{background:color-mix(in srgb,red,blue)}')).toEqual(['background: color-mix()'])
   })
 
+  it('passes a keyword an `@supports not (property: keyword)` block names, and only that pair', () => {
+    const fallbacks = supportsNotFallbacks('@supports not (contain: inline-size){.a{width:0;min-width:100%}}')
+    expect(fallbacks.has('contain: inline-size')).toBe(true)
+    expect(find('.a{contain:inline-size}', fallbacks)).toEqual([])
+    expect(find('.a{overflow:clip}', fallbacks)).toEqual(['overflow: clip'])
+  })
+
   it('reads `rect()` by its property: the legacy clip syntax is old, so it rests on the reviewed list', () => {
     // Regression anchor: `clip: rect(0,0,0,0)` in the visually-hidden utility once read as the Safari 17.2 shape.
     expect(find('.sr{clip:rect(0,0,0,0)}')).toEqual([])

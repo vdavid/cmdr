@@ -20,9 +20,14 @@
  * - it sits inside an `@supports` block (whoever wrote that knew);
  * - an unprefixed property has its supported `-webkit-` twin in the same block (the build adds
  *   these for the target);
- * - a value has an earlier declaration of the same property in the block (the fallback);
- * - an `@supports not (…)` block anywhere in the stylesheets names it (the app's `color-mix()`
- *   fallbacks are shaped like this).
+ * - a value has an earlier declaration of the same property in the block (the fallback). This
+ *   reads the MINIFIED output on purpose: Lightning CSS drops the earlier of two plain
+ *   declarations whenever its own data thinks the target has the newer value
+ *   (`overflow: hidden; overflow: clip` ships as `overflow: clip` for `safari15`), so this shape
+ *   can't be trusted to survive (verified on lightningcss 1.33.0, 2026-11-05);
+ * - an `@supports not (…)` block anywhere in the stylesheets names it, a property, a function,
+ *   or a `property: keyword` pair (the app's `color-mix()` fallbacks are shaped like this, and
+ *   it's the shape that always survives the minifier).
  *
  * Custom property values (`--x: …`) aren't parsed: they're inert until a `var()` uses them,
  * and the property that does is what the check reads.
@@ -58,17 +63,10 @@ export const REVIEWED_CSS: Readonly<Record<string, { impact: 'harmless' | 'degra
     impact: 'harmless',
     why: 'the legacy `clip: rect(…)` of the visually-hidden utility, which every WebKit reads',
   },
-  'align-content: start': {
-    impact: 'degrades',
-    why: 'Safari 15.6 has it (a patched Catalina); 15.4–15.5 lose it. #994',
+  '::highlight': {
+    impact: 'harmless',
+    why: "`find-in-dom.ts` outlines the current match's region (`data-find-current`) where the Highlight API is missing",
   },
-  'grid-template-columns: subgrid': {
-    impact: 'degrades',
-    why: 'servers hub and acknowledgements rows stack their cells. #994',
-  },
-  '::highlight': { impact: 'degrades', why: "Ask Cmdr's ⌘F finds matches but paints none. #994" },
-  'contain: inline-size': { impact: 'degrades', why: 'a long name can widen the conflict dialogs. #994' },
-  'overflow: clip': { impact: 'degrades', why: 'the Settings shell falls back to `visible`. #994' },
 }
 
 export interface CssFinding {
@@ -89,7 +87,10 @@ function splitPrefix(name: string): { prefix: string | undefined; name: string }
 /** `@supports`'s own grammar, which a `name(` match would otherwise read as a tested function. */
 const SUPPORTS_KEYWORDS = new Set(['not', 'and', 'or', 'selector', 'font-format', 'font-tech'])
 
-/** The properties and functions every `@supports not (…)` prelude tests. */
+/**
+ * What every `@supports not (…)` prelude tests: each property and function by name, and each
+ * `property: keyword` pair (`contain: inline-size`), matching the findings' labels.
+ */
 export function supportsNotFallbacks(css: string): Set<string> {
   const names = new Set<string>()
   walk(parse(css, { parseValue: false }), {
@@ -102,6 +103,7 @@ export function supportsNotFallbacks(css: string): Set<string> {
       for (const word of prelude.matchAll(/([a-z-]+)\s*[:(]/g)) {
         if (!SUPPORTS_KEYWORDS.has(word[1])) names.add(word[1])
       }
+      for (const pair of prelude.matchAll(/([a-z-]+)\s*:\s*([a-z-]+)\s*\)/g)) names.add(`${pair[1]}: ${pair[2]}`)
     },
   })
   return names
@@ -176,7 +178,7 @@ function checkValue(declaration: CssNode & { type: 'Declaration' }, property: Fe
     enter(node: CssNode) {
       if (node.type === 'Identifier') {
         const keyword = child(property, node.name)
-        if (ctx.beyond(keyword) && !ctx.fallbacks.has(node.name)) {
+        if (ctx.beyond(keyword) && !ctx.fallbacks.has(`${declaration.property}: ${node.name}`)) {
           ctx.report(`${declaration.property}: ${node.name}`, keyword)
         }
       }

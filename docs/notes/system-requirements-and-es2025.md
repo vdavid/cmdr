@@ -185,12 +185,16 @@ check. Two ways, cheapest first:
   `apps/desktop/scripts/vite-webkit-css-floor.ts` checks every emitted stylesheet against BCD (properties, keyword
   values, functions, selectors, at-rules, media features) and fails the build on anything Safari 15.4 drops that the
   cascade doesn't cover; its `REVIEWED_CSS` list holds the accepted ones, `harmless` (scrollbar styling, `text-wrap`) or
-  `degrades` (tracked in #994: `subgrid` rows stack their cells, `::highlight` paints no find matches). Container
-  queries (Safari 16) are also banned by stylelint (`at-rule-disallowed-list` / `property-disallowed-list` in
-  `apps/desktop/.stylelintrc.mjs`); the stand-in is `useInlineSize` in
-  `apps/desktop/src/lib/utils/inline-size-action.ts`. `:has()` (Safari 15.4) sits ON the capability floor, so the boot
-  guard covers it. `color-mix()` over a `var()` can't be lowered, which is why the `@supports not (…)` fallbacks in
-  `app.css` and the runtime mixes behind `webkit-compat.ts` both have to stay (the CSS check reads those fallbacks).
+  `degrades` (none today). A fallback goes in an `@supports not (…)` block: Lightning CSS drops the earlier of two plain
+  declarations whenever its own data thinks the target has the newer value, so `overflow: hidden; overflow: clip` ships
+  as `clip` alone (lightningcss 1.33.0, 2026-11-05). The `subgrid` rows (servers hub, acknowledgements),
+  `contain: inline-size`, and `overflow: clip` fallbacks were checked in Safari 15.6.1 on the Catalina test Mac against
+  the build's real CSS, with a static page (2026-11-05). Container queries (Safari 16) are also banned by stylelint
+  (`at-rule-disallowed-list` / `property-disallowed-list` in `apps/desktop/.stylelintrc.mjs`); the stand-in is
+  `useInlineSize` in `apps/desktop/src/lib/utils/inline-size-action.ts`. `:has()` (Safari 15.4) sits ON the capability
+  floor, so the boot guard covers it. `color-mix()` over a `var()` can't be lowered, which is why the
+  `@supports not (…)` fallbacks in `app.css` and the runtime mixes behind `webkit-compat.ts` both have to stay (the CSS
+  check reads those fallbacks).
 - **llama-server (AI feature only)**: Apple Silicon only (no Intel AI build, rest of app works fine)
 
 **Effective practical floor: macOS 10.15 Catalina (2019-10)**, the version the plist declares, on the best-effort terms

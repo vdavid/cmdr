@@ -473,7 +473,8 @@
            an Ark hidden input, though those are now contained at the control)
            can be programmatically scrolled into view, dragging the whole window
            under the traffic lights. `clip` creates no scroll container, so the
-           shell can never scroll. Belt to the per-control fix in `lib/ui`. */
+           shell can never scroll. Belt to the per-control fix in `lib/ui`. WebKit before
+           Safari 16 (Catalina) drops `clip`: see the `@supports not` block below. */
         overflow: clip;
         display: flex;
         flex-direction: column;
@@ -484,6 +485,15 @@
            content's edges would square-clip against the rounded NSWindow
            corners and leak vibrancy through the gap. */
         border-radius: var(--radius-window);
+    }
+
+    /* Falling back to `visible` would let the page itself scroll under the traffic lights, so
+       old WebKit gets `hidden`. A block, not a second declaration: the minifier keeps only the
+       last of two `overflow` lines. */
+    @supports not (overflow: clip) {
+        .settings-window {
+            overflow: hidden;
+        }
     }
 
     .settings-layout {

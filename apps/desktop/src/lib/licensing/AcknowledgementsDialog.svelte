@@ -225,9 +225,24 @@
         color: var(--color-text-primary);
     }
 
+    .package-list,
+    .package-list li {
+        column-gap: var(--spacing-lg);
+        grid-template-columns: subgrid;
+    }
+
+    /* Where `subgrid` is missing (Safari 15: Catalina, and Big Sur before its updates), each
+       list and row takes fixed tracks of its own: the caps above, as widths, so the columns
+       still line up across rows. */
+    @supports not (grid-template-columns: subgrid) {
+        .package-list,
+        .package-list li {
+            grid-template-columns: minmax(0, 1fr) 10% 30%;
+        }
+    }
+
     .package-list {
         display: grid;
-        grid-template-columns: subgrid;
         list-style: none;
         margin: 0;
         padding: 0;
@@ -236,7 +251,6 @@
     .package-list li {
         grid-column: 1 / -1;
         display: grid;
-        grid-template-columns: subgrid;
         align-items: baseline;
         padding: var(--spacing-xxs) var(--spacing-sm);
         border-radius: var(--radius-sm);

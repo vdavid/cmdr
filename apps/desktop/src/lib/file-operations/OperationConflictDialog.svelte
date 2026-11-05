@@ -149,6 +149,16 @@
         color: var(--color-text-secondary);
     }
 
+    /* Before Safari 16 (Catalina), no `contain: inline-size`: zero width adds nothing to the
+       dialog's `max-content`, and a percentage min-width only resolves once that width is
+       known, so the text still fills it. */
+    @supports not (contain: inline-size) {
+        .context {
+            width: 0;
+            min-width: 100%;
+        }
+    }
+
     .paused-note {
         margin: 0;
         padding: 0 var(--spacing-xl) var(--spacing-lg);

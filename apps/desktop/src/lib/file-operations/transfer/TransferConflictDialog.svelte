@@ -470,6 +470,17 @@
         contain: inline-size;
     }
 
+    /* Before Safari 16 (Catalina): the same effect without `contain`, as in
+       `OperationConflictDialog.svelte`. */
+    @supports not (contain: inline-size) {
+        .conflict-subject,
+        .conflict-comparison,
+        .conflict-warning {
+            width: 0;
+            min-width: 100%;
+        }
+    }
+
     /* Focused only to catch the answer keys when the dialog's own focus was
        lost (see the script); a ring around the whole body would read as a
        control. */

@@ -694,7 +694,31 @@
     .server-row {
         grid-column: 1 / -1;
         display: grid;
+        column-gap: var(--spacing-lg);
         grid-template-columns: subgrid;
+    }
+
+    /* Where `subgrid` is missing (Safari 15: Catalina, and Big Sur before its updates), each
+       row takes fixed tracks of its own, so the columns still line up row to row, where
+       content-sized ones would size each row alone. One template per column set, as above. */
+    @supports not (grid-template-columns: subgrid) {
+        .header-row,
+        .row-list,
+        .server-row {
+            grid-template-columns: minmax(0, 1fr) 6em 20% 8em 9em;
+        }
+
+        .without-address .header-row,
+        .without-address .row-list,
+        .without-address .server-row {
+            grid-template-columns: minmax(0, 1fr) 6em 8em 9em;
+        }
+
+        .without-address.without-status .header-row,
+        .without-address.without-status .row-list,
+        .without-address.without-status .server-row {
+            grid-template-columns: minmax(0, 1fr) 6em 9em;
+        }
     }
 
     /* Anything in the list that isn't a row (the add row's label, the nearby group's
@@ -743,8 +767,17 @@
     }
 
     .row-list {
+        /* `start` reached grid containers in Safari 15.6 (the `@supports not` block below). */
         align-content: start;
         overflow-y: auto;
+    }
+
+    /* `flex-start` means the same in a grid. A block, not an earlier declaration: the minifier
+       keeps only the last of two `align-content` lines. */
+    @supports not (align-content: start) {
+        .row-list {
+            align-content: flex-start;
+        }
     }
 
     .server-row {

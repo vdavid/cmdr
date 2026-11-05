@@ -311,7 +311,8 @@
         font-size: var(--font-size-sm);
         /* `clip`, not `hidden`: keeps the shell from being a scroll container, so
            no stray absolutely-positioned descendant can scroll the window under
-           the traffic lights. See the matching note in `routes/settings/+page.svelte`. */
+           the traffic lights. See the matching note in `routes/settings/+page.svelte`, and
+           its `@supports not` block for old WebKit, mirrored below. */
         overflow: clip;
         display: flex;
         flex-direction: column;
@@ -320,6 +321,12 @@
            lines up with the NSWindow's rounded corners. */
         border-radius: var(--radius-window);
         outline: none;
+    }
+
+    @supports not (overflow: clip) {
+        .debug-window {
+            overflow: hidden;
+        }
     }
 
     /* `--z-sticky`, not `--z-dropdown`, for the reason spelled out in
