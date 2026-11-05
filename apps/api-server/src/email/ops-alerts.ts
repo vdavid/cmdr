@@ -80,7 +80,7 @@ export async function sendDbSizeAlert(params: DbSizeAlertParams): Promise<void> 
       html: documentShell(
         `    <h2 style="color: #d97706;">${escapeHtml(subject)}</h2>
 
-    <p>The telemetry D1 database has reached <strong>${sizeMb} MB</strong>, ${percent}% of the ${capMb} MB cap on the Workers Free plan. Past the cap, D1 refuses writes, so new telemetry stops landing.</p>
+    <p>The telemetry D1 database has reached <strong>${sizeMb} MB</strong>, ${percent}% of the ${capMb} MB cap on the Workers Paid plan. Past the cap, D1 refuses writes, so new telemetry stops landing.</p>
 
     ${growthParagraph(params)}
 

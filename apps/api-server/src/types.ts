@@ -123,6 +123,9 @@ export type Bindings = {
   // The bucket's jurisdiction (`eu`), which picks the presigned URL's host. Unset for a bucket
   // outside any jurisdiction. Must match the ERROR_REPORTS_BUCKET binding in wrangler.toml.
   R2_ERROR_REPORTS_JURISDICTION?: string
+  // D1's per-database cap on the account's plan, in MB (`[vars]` in wrangler.toml, where the plan
+  // is recorded). The daily size check alerts at steps of it.
+  D1_MAX_DB_MB: number
   // Listmonk (the beta-tester, newsletter, and subprocessor-updates lists), at its base URL (for example
   // https://mail.getcmdr.com). The signup routes subscribe by list UUID through the public endpoint,
   // which needs no credentials; the API user and token (sent as `Authorization: token <user>:<token>`)

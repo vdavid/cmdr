@@ -68,6 +68,7 @@ export function createBaseEnv(overrides: Record<string, unknown> = {}) {
     TELEMETRY_DB: createMockD1().db,
     CRASH_NOTIFICATION_EMAIL: 'test@example.com',
     SMTP2GO_API_KEY: 'test-smtp2go-key',
+    D1_MAX_DB_MB: 10240,
     ...overrides,
   }
 }

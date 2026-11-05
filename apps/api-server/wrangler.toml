@@ -220,6 +220,11 @@ SUPPORT_EMAIL = "david@getcmdr.com"
 # which a later `wrangler deploy` would silently clobber back to this value.
 PADDLE_ENVIRONMENT = "live"
 
+# D1's per-database cap on the account's plan, in MB: Workers Paid, 10 GB (the D1 limits page, checked
+# 2026-11-05, the day the account moved from Workers Free's 500 MB). The daily size check alerts at
+# 40/60/80/90% of it, so change it with the plan.
+D1_MAX_DB_MB = 10240
+
 # Listmonk. The signup routes (POST /beta-signup, /newsletter-signup, /subprocessor-updates-signup) subscribe by list UUID through
 # Listmonk's public endpoint, which needs no credentials; the UUIDs are public anyway (Listmonk's own
 # subscription form shows them). The API user + token (`wrangler secret put LISTMONK_API_TOKEN`) are
