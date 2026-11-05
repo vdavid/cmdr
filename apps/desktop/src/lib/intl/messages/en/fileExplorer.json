@@ -124,7 +124,7 @@
   "@fileExplorer.restrictedFolder.label": {
     "description": "Accessible name for the small info glyph marking a folder macOS won't let Cmdr read fully (a TCC-protected one like Desktop or Documents). A screen reader reads it on every restricted row in the file list and on the breadcrumb, so keep it to a couple of words; the full instruction is the separate tooltip on the same glyph. Reads as a noun phrase naming the condition, not a sentence."
   },
-  "fileExplorer.archivedFile.label": "Archived",
+  "fileExplorer.archivedFile.label": "In cold storage",
   "@fileExplorer.archivedFile.label": {
     "description": "Accessible name for the small archive glyph beside a file whose bytes sit in a cloud provider's cold storage tier (for example S3 Glacier), so it can't be opened or copied until it's restored. A screen reader reads it on every such row in the file list, so keep it to one or two words; the explanation is the separate tooltip. NOT about zip or other archive files."
   },
@@ -469,7 +469,7 @@
       "viewKey": "the key the user has bound to View, for example F3 (do not translate)"
     }
   },
-  "fileExplorer.open.didNotOpen": "{fileName} didn’t open. macOS couldn’t find the file, or an app that opens it.",
+  "fileExplorer.open.didNotOpen": "{fileName} didn’t open. macOS couldn’t find the file, or no app opens it.",
   "@fileExplorer.open.didNotOpen": {
     "description": "Warning toast shown when the user pressed Enter, double-clicked, or picked Open on a file, Cmdr handed it to macOS, and macOS said no: the file wasn't where it should be (for example, a network drive dropped off), or no installed app opens this kind of file. Never use the words 'error' or 'failed'.",
     "placeholders": {
@@ -2542,16 +2542,16 @@
   "@fileExplorer.navigation.favoriteShortcutPrompt": {
     "description": "Prompt in the inline one-key capture field on a favorite row. A–Z assigns a letter; Delete removes the existing shortcut."
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Shortcut for {name}. Press A–Z, or Delete to clear.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Shortcut key for {name}. Press A–Z, or Delete to clear.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
-    "description": "Accessibility label for the inline favorite shortcut capture field.",
+    "description": "Accessibility label for the inline field that captures a favorite's shortcut key (opened by menu.volume.editFavoriteShortcut, “Set shortcut key…”). Use the same words for “shortcut key” as that menu item.",
     "placeholders": {
       "name": "the favorite's display name"
     }
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Couldn’t save that shortcut. Try again?",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Couldn’t save that shortcut key. Try again?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "description": "Toast when a favorite's letter shortcut could not be saved."
+    "description": "Toast when a favorite's shortcut key could not be saved. Use the same words for “shortcut key” as menu.volume.editFavoriteShortcut (“Set shortcut key…”)."
   },
   "fileExplorer.navigation.removeFavoriteFailed": "Couldn’t remove that favorite. Try again?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
@@ -2565,10 +2565,11 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "description": "Error toast when reordering favorites did not work, inviting the user to retry."
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening it connects to {place}.",
+  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
     "description": "Second line of the hover tooltip on a dimmed favorite in the favorites menu, under the folder's path. The favorite is on a saved network share, server, or phone that isn't connected right now; picking it still works, because Cmdr connects first and then opens the folder. Reassure, don't warn.",
     "placeholders": {
+      "kind": "what {place} is: share (a network share), server, phone, or other",
       "place": "the name of the share, server, or phone the favorite lives on, for example \"naspi on nas.local\" or \"Pixel 7\""
     },
     "screenshot": "favorites-menu.png",
@@ -2588,11 +2589,11 @@
     "screenshot": "toast-favorite.png",
     "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
-  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "The storage this folder was on isn’t available on {device} right now.",
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "The storage this folder was on isn’t available on “{device}” right now.",
   "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
-    "description": "Info toast after the user picked a favorite folder on a phone that IS connected, but the storage the folder lived on (typically an SD card) isn't there now, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu.",
+    "description": "Info toast after the user picked a favorite folder on a phone or camera (connected over USB) that IS connected, but the storage the folder lived on (typically an SD card) isn't there now, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu. Quote the name like fileExplorer.navigation.favoriteUnreachable.phoneUnplugged does.",
     "placeholders": {
-      "device": "the phone's name, for example \"Pixel 7\""
+      "device": "the phone's or camera's name, for example \"Pixel 7\""
     },
     "screenshot": "toast-favorite.png",
     "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
@@ -2618,10 +2619,11 @@
     "screenshot": "toast-favorite.png",
     "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach “{place}” anymore. Connect to it again from Servers, and this favorite works again.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
     "description": "Info toast after the user picked a favorite folder on a network share or server that was removed (forgotten) from Cmdr's saved servers, so Cmdr has no way to connect to it; the pane stayed where it was. Connecting to the same place again brings the favorite back. \"Servers\" is the name of the place in Cmdr that lists servers (use the same word as fileExplorer.navigation.networkVolume); the toast's button opens it. \"Anymore\" means \"no longer\".",
     "placeholders": {
+      "kind": "what {place} is: share (a network share), server, phone, or other",
       "place": "the share or server's name, for example \"naspi on nas.local\""
     },
     "screenshot": "toast-favorite.png",
@@ -2756,9 +2758,9 @@
       "name": "the server's display name, like \"Naspolya\""
     }
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr is still working with files on this server. Disconnect once that’s done.",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr is still working with files on this server. You can disconnect once that’s done.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "description": "Accessibility label and tooltip on a disconnect control that is disabled because a file operation (a copy, move, or delete) is still running against the server. Says why and when the button comes back, never blames the user. Keep it in step with fileExplorer.navigation.ejectBusyTooltip and adb.disconnectBusyTooltip."
+    "description": "Accessibility label and tooltip on a disconnect control that is disabled because a file operation (a copy, move, or delete) is still running against the server. Says why and when the button comes back, as a statement (“You can disconnect…”), never an order, never blames the user. Keep it in step with fileExplorer.navigation.ejectBusyTooltip and adb.disconnectBusyTooltip."
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} is in your volume switcher now.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -2794,7 +2796,11 @@
   },
   "fileExplorer.navigation.forgetConfirmButton": "Forget",
   "@fileExplorer.navigation.forgetConfirmButton": {
-    "description": "The confirming button of every Forget alert (a server, a share, a saved password). VERB, imperative, one word: the same verb as the menu items “Forget server”, “Forget share”, and “Forget saved password”."
+    "description": "The confirming button of the Forget alerts for a saved server and a saved share. VERB, imperative, one word: the same verb as the menu items “Forget server” and “Forget share”. The saved-password alert has its own button, fileExplorer.navigation.forgetPasswordConfirmButton."
+  },
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "@fileExplorer.navigation.forgetPasswordConfirmButton": {
+    "description": "The confirming button of the “Forget saved password” alert (title fileExplorer.navigation.forgetSecretConfirmTitle): it removes the saved password from the Keychain and keeps the server. VERB, imperative, one word. Use the verb your language uses in the title and the menu item “Forget saved password”; where your language clears a saved password with a different verb than it forgets a server (Chinese 清除), use that verb here."
   },
   "fileExplorer.navigation.forgetServerConfirm": "Forget {name}? Cmdr drops the connection and stops listing it. Your files stay on the server.",
   "@fileExplorer.navigation.forgetServerConfirm": {
@@ -2855,9 +2861,9 @@
     },
     "screenshot": "main-window.png"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr is still working with files on this device. Eject once that’s done.",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr is still working with files on this device. You can eject it once that’s done.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume (a drive, a disk image, or a phone) can’t be ejected yet because a file operation is running on it. Says when the button comes back. Keep it in step with fileExplorer.navigation.disconnectBusyTooltip and adb.disconnectBusyTooltip."
+    "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume (a drive, a disk image, or a phone) can’t be ejected yet because a file operation is running on it. Says when the button comes back, as a statement (“You can eject it…”), never an order. Keep it in step with fileExplorer.navigation.disconnectBusyTooltip and adb.disconnectBusyTooltip."
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Ejecting {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -3112,9 +3118,9 @@
       "name": "the drive’s display name (e.g. Backups)"
     }
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Drive indexing is off in Settings, so {name} stays unindexed. Turn it on under Indexing > Drive indexing.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Drive indexing is off in Settings, so {name} stays unindexed. Turn it on under “Indexing > Drive indexing”.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
-    "description": "Toast shown when a per-drive \"turn on indexing\" request is refused because the master drive-indexing switch is off. Points at the settings page that owns the switch. Sentence case; avoid the words “error” and “failed”.",
+    "description": "Toast shown when a per-drive \"turn on indexing\" request is refused because the master drive-indexing switch is off. Points at the settings page that owns the switch; the quoted path is the Settings sidebar's section and page names, so match them exactly. Sentence case; avoid the words “error” and “failed”.",
     "placeholders": {
       "name": "the drive’s display name (e.g. Backups)"
     }
@@ -3130,7 +3136,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "description": "Hover tooltip on the gray drive-index dot when the master drive-indexing switch is off. Explains that the gray dot is about the global switch, not this one drive."
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Drive indexing is off in Settings. Turn it on under Indexing > Drive indexing, and this drive picks up where it left off.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Drive indexing is off in Settings. Turn it on under “Indexing > Drive indexing”, and this drive picks up where it left off.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "description": "Note replacing the per-drive index menu’s actions while the master drive-indexing switch is off. Says where to turn the switch back on and reassures that the drive’s own on/off choice is remembered. Sentence case."
   },
@@ -3172,9 +3178,9 @@
     "description": "For screen readers only (never shown): said when the Quick filter command switches the badge in a pane to jumping, so every file and folder shows and typed text moves the cursor to the matching name. On screen only the badge's word changes, to fileExplorer.typeToJump.prefix; start with that same word.",
     "screenshot": "quick-filter-mode.png"
   },
-  "fileExplorer.typeToJump.clear": "Clear jump",
+  "fileExplorer.typeToJump.clear": "Clear typed text",
   "@fileExplorer.typeToJump.clear": {
-    "description": "Accessible name of the small × button on the Jump badge in a file pane, which removes the typed text so the pane goes back to how plain typing works. Sits next to fileExplorer.typeToJump.prefix; the Filter badge's own button says fileExplorer.quickFilter.clear.",
+    "description": "Accessible name of the small × button on the Jump badge in a file pane, which removes the typed text (the label names that text, not the Jump mode) so the pane goes back to how plain typing works. Sits next to fileExplorer.typeToJump.prefix; the Filter badge's own button says fileExplorer.quickFilter.clear.",
     "screenshot": "quick-filter-mode.png"
   },
   "fileExplorer.quickFilter.clear": "Clear filter",
@@ -3258,14 +3264,14 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} didn’t confirm the security settings it agreed on with Cmdr, so Cmdr stays on the system connection. A misbehaving server can cause this, and so can someone tampering with the connection.",
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} didn’t confirm the security settings it agreed on with Cmdr, so this share stays on the system connection. A misbehaving server can cause this, and so can someone tampering with the connection.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
     "description": "Toast shown when connecting a network share directly found that the server didn’t confirm the connection’s security settings (the SMB version and options both sides agreed on at the start), so Cmdr closed its own connection and the share stays on the slower macOS one. The innocent cause is a misbehaving server; the serious one is someone tampering with network traffic. Not temporary, so avoid wording like \"try again\". Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
       "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} only accepts encrypted connections, and it didn’t agree on a way to encrypt one with Cmdr, so Cmdr stays on the system connection.",
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} only accepts encrypted connections, and it didn’t agree on a way to encrypt one with Cmdr, so this share stays on the system connection.",
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "description": "Toast shown when connecting a network share directly found that the server (or this share) only accepts encrypted connections, but the server and Cmdr didn’t agree on an encryption method, so the share stays on the slower macOS connection. Not temporary, so avoid wording like \"try again\". Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {

@@ -581,7 +581,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     })
   })
 
-  it('R3 U4: Modified popover preset labels include the "0:00" suffix and a "1st of" month label', async () => {
+  it('R3 U4: Modified popover preset labels include the "0:00" suffix and day-and-month labels', async () => {
     clearSearchState()
     setDateFilter('after')
     const { target, cleanup } = mountChips(baseProps({ dateFilter: 'after' }))
@@ -599,10 +599,10 @@ describe('SearchFilterChips: scope popover behavior', () => {
     // the shape.
     expect(labels[2]).toMatch(/^this \w+ 0:00$/)
     expect(labels[3]).toMatch(/^last \w+ 0:00$/)
-    // Next: "1st of <Month> 0:00" (current month, no year) and
-    // "1st of <Month>, <Year>, 0:00" (last month, with year).
-    expect(labels[4]).toMatch(/^1st of \w+ 0:00$/)
-    expect(labels[5]).toMatch(/^1st of \w+, \d{4}, 0:00$/)
+    // Next: "<Month> 1 0:00" (current month, no year) and
+    // "<Month> 1, <Year>, 0:00" (last month, with year), worded by the date formatter.
+    expect(labels[4]).toMatch(/^\w+ 1 0:00$/)
+    expect(labels[5]).toMatch(/^\w+ 1, \d{4}, 0:00$/)
     // The custom cell label (in lowercase, last in the column).
     expect(labels.some((l) => /^custom…$/.test(l))).toBe(true)
     cleanup()

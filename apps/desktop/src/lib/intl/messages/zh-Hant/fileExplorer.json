@@ -1721,7 +1721,7 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "未連線。開啟它就會連線到 {place}。",
+  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
     "sourceHash": "a30b8cd"
   },
@@ -1749,7 +1749,7 @@
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
     "sourceHash": "4fba610"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr 已經不知道怎麼連到「{place}」了。從「伺服器」重新連線，這個喜好項目就能再用了。",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
     "sourceHash": "842858c"
   },
@@ -1883,6 +1883,10 @@
   },
   "fileExplorer.navigation.forgetConfirmButton": "忘記",
   "@fileExplorer.navigation.forgetConfirmButton": {
+    "sourceHash": "a6bd489"
+  },
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "@fileExplorer.navigation.forgetPasswordConfirmButton": {
     "sourceHash": "a6bd489"
   },
   "fileExplorer.navigation.forgetServerConfirm": "要忘記 {name} 嗎？Cmdr 會中斷連線，也不再列出它。你的檔案會留在伺服器上。",

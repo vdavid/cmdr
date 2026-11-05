@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand/app name; kept verbatim in every locale (do-not-translate list)."
   },
-  "errors.provider.cmVolumes.displayName": "Cloud-Mount",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "deinem Cloud-Anbieter",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Dieser Ordner wird von **MacDroid** verwaltet. Das kannst du versuchen:\n- Öffne MacDroid und prüfe, ob dein Telefon verbunden ist\n- Stelle sicher, dass dein Telefon entsperrt und auf Dateiübertragungsmodus gestellt ist\n- Zieh das USB-Kabel ab und steck es wieder ein, dann navigiere erneut hierher",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

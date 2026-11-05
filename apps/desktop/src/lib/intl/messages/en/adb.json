@@ -81,7 +81,7 @@
       "name": "the device's name, for example Pixel 7"
     }
   },
-  "adb.disconnectBusyTooltip": "Cmdr is still working with files on this device. Disconnect once that’s done.",
+  "adb.disconnectBusyTooltip": "Cmdr is still working with files on this device. You can disconnect it once that’s done.",
   "@adb.disconnectBusyTooltip": {
     "description": "Accessible name and hover tooltip on that Disconnect button while it is greyed out, because a file operation is still copying to or from the phone. States the reason and when the button comes back, never blames the user. “Disconnect” means the person disconnects the device with this button (Cmdr ends its connection to the phone), so use the transitive verb with the device as its object. Keep it in step with fileExplorer.navigation.disconnectBusyTooltip and fileExplorer.navigation.ejectBusyTooltip."
   },

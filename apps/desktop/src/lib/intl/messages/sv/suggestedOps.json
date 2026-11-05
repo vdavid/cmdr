@@ -83,6 +83,10 @@
   "@suggestedOps.action.extract": {
     "sourceHash": "c15301c"
   },
+  "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
+  "@suggestedOps.groupTitle": {
+    "sourceHash": "201c1fc"
+  },
   "suggestedOps.approve.move": "Flytta {countText} {count, plural, one {fil} other {filer}}",
   "@suggestedOps.approve.move": {
     "sourceHash": "4c89041"
@@ -263,6 +267,14 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
+  "suggestedOps.factUnknownSize": "Unknown",
+  "@suggestedOps.factUnknownSize": {
+    "sourceHash": "b764cdc"
+  },
+  "suggestedOps.factUnknownDate": "Unknown",
+  "@suggestedOps.factUnknownDate": {
+    "sourceHash": "b764cdc"
+  },
   "suggestedOps.factChanged": "Ändrad sedan förslaget",
   "@suggestedOps.factChanged": {
     "sourceHash": "958780a"
@@ -290,10 +302,6 @@
   "suggestedOps.sourceGone": "Enheten som filerna låg på finns inte här längre, så deras storlekar och ändringsdatum är från när AI:n föreslog det här.",
   "@suggestedOps.sourceGone": {
     "sourceHash": "1b30de5"
-  },
-  "suggestedOps.factUnknown": "Okänt",
-  "@suggestedOps.factUnknown": {
-    "sourceHash": "b764cdc"
   },
   "suggestedOps.includeFile": "Ta med {name}",
   "@suggestedOps.includeFile": {

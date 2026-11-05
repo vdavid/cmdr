@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand name 'VeraCrypt'. Kept verbatim per errors.provider.* do-not-translate rule."
   },
-  "errors.provider.cmVolumes.displayName": "Felhőcsatolás",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "a felhőszolgáltatód",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Ezt a mappát a **MacDroid** kezeli. Ezeket próbálhatod:\n- Nyisd meg a MacDroidot, és ellenőrizd, hogy a telefonod csatlakozik\n- Győződj meg róla, hogy a telefonod fel van oldva és fájlátviteli módban van\n- Húzd ki és dugd vissza az USB-kábelt, majd lépj ide újra",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

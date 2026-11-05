@@ -26,7 +26,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'app.hideOthers': 'Hide others',
   'app.showAll': 'Show all',
   'app.about': 'About Cmdr',
-  'app.acknowledgements': 'Acknowledgements\u2026',
+  'app.acknowledgements': 'Acknowledgements',
   // 'app.licenseKey' is state-dependent; pinned separately below.
   'app.commandPalette': 'Open command palette',
   'app.settings': 'Open settings',
@@ -129,8 +129,8 @@ const EXPECTED_NAMES: Record<string, string> = {
   'tab.moveRight': 'Move tab right',
   'tab.moveToOtherPane': 'Move tab to other pane',
   'tab.mcpAction': 'Pane tab action',
-  'nav.up': 'Select previous file',
-  'nav.down': 'Select next file',
+  'nav.up': 'Move cursor to previous item',
+  'nav.down': 'Move cursor to next item',
   'nav.open': 'Open file or folder',
   'nav.parent': 'Go to parent folder',
   'nav.home': 'Go to first file',
@@ -252,44 +252,45 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
     'Shows the size of every folder in this pane that doesn’t have one yet. Esc stops the calculation.',
   'file.multiRename':
     'Renames the selected files (or the file under the cursor) with a name mask, counter, and search & replace',
-  'app.checkForUpdates': 'Check whether a newer version of Cmdr is available, and download it if so',
-  'app.toggleCliCommand': 'Type cmdr and a path in a terminal to open that file or folder in Cmdr',
-  'cmdr.openOnboarding': 'Reopen the onboarding wizard to review or change first-launch setup options',
-  'help.openShortcuts': 'Open a read-only window listing every keyboard shortcut, live-synced with your customizations',
-  'help.accessibility': 'Open the guide to Cmdr’s accessibility features on getcmdr.com',
+  'app.checkForUpdates': 'Checks whether a newer version of Cmdr is available, and downloads it if so',
+  'app.toggleCliCommand': 'Lets you type cmdr and a path in a terminal to open that file or folder in Cmdr',
+  'cmdr.openOnboarding': 'Reopens the onboarding wizard to review or change first-launch setup options',
+  'help.openShortcuts':
+    'Opens a read-only window listing every keyboard shortcut, live-synced with your customizations',
+  'help.accessibility': 'Opens the guide to Cmdr’s accessibility features on getcmdr.com',
   'queue.show':
-    'Open a window listing every running and waiting operation, where you can pause, resume, or cancel them',
-  'help.viewDebugLog': 'Watch Cmdr’s debug log live in the file viewer',
-  'help.sendErrorReport': 'Send Cmdr logs to the team to help fix something that went wrong',
-  'help.whatsNew': 'See what changed in the latest releases of Cmdr',
-  'feedback.send': 'Tell the maker of Cmdr what you think: ideas, wishes, anything',
-  'log.operationLog': 'See a history of your file operations, and roll them back',
-  'suggestedOps.show': 'Review the file operations the AI suggested, and decide what runs',
-  'askCmdr.toggle': 'Chat with an AI about your files, drives, and history',
-  'askCmdr.newChat': 'Start a fresh chat with Ask Cmdr, opening it if it’s closed',
-  'file.openTerminalHere': 'Open your terminal app in the folder you’re looking at',
-  'nav.goToPath': 'Jump the focused pane to a typed, pasted, or recent path.',
-  'file.goToTrash': 'Open the trash of the drive you’re browsing',
+    'Opens a window listing every running and waiting operation, where you can pause, resume, or cancel them',
+  'help.viewDebugLog': 'Shows Cmdr’s debug log live in the file viewer',
+  'help.sendErrorReport': 'Sends Cmdr logs to the team to help fix something that went wrong',
+  'help.whatsNew': 'Shows what changed in the latest releases of Cmdr',
+  'feedback.send': 'Tells the maker of Cmdr what you think: ideas, wishes, anything',
+  'log.operationLog': 'Shows a history of your file operations, and lets you roll them back',
+  'suggestedOps.show': 'Shows the file operations the AI suggested, so you can decide what runs',
+  'askCmdr.toggle': 'Opens a chat with an AI about your files, drives, and history',
+  'askCmdr.newChat': 'Starts a fresh chat with Ask Cmdr, opening it if it’s closed',
+  'file.openTerminalHere': 'Opens your terminal app in the folder you’re looking at',
+  'nav.goToPath': 'Jumps the focused pane to a typed, pasted, or recent path.',
+  'file.goToTrash': 'Opens the trash of the drive you’re browsing',
   'favorites.add':
-    'Add the focused pane’s current folder to your favorites, so the favorites menu can take you back to it.',
-  'favorites.open': 'Open the favorites menu on the focused pane, and press a number to jump to that favorite.',
-  'downloads.goToLatest': 'Open ~/Downloads and select the most recent file.',
-  'pane.clone': 'Open this pane’s folder in the other pane too.',
-  'pane.quickFilter': 'Opens the filter badge on the current pattern. Press again to switch between Filter and Jump',
+    'Adds the focused pane’s current folder to your favorites, so the favorites menu can take you back to it.',
+  'favorites.open': 'Opens the favorites menu on the focused pane, where a number key jumps to that favorite.',
+  'downloads.goToLatest': 'Opens ~/Downloads and selects the most recent file.',
+  'pane.clone': 'Opens this pane’s folder in the other pane too.',
+  'pane.quickFilter': 'Opens the badge with what you’ve typed so far. Press again to switch between Filter and Jump',
   'pane.focusControls':
-    'Reach the focused pane’s tabs, location bar, and sort buttons from the keyboard. Arrow keys move between them, and Escape takes you back to the files.',
+    'Moves keyboard focus to the focused pane’s tabs, location bar, and sort buttons. Arrow keys move between them, and Escape takes you back to the files.',
   'app.focusNotifications':
-    'Reach the notifications and their buttons, like Undo, from the keyboard. Arrow keys move between them, and Escape takes you back.',
+    'Moves keyboard focus to the notifications and their buttons, like Undo. Arrow keys move between them, and Escape takes you back.',
   'pane.copyPathLeftToRight':
-    'Open the left pane’s location on the right. When the left pane is focused and the cursor is on a folder, that folder opens on the right instead.',
+    'Opens the left pane’s location on the right. When the left pane is focused and the cursor is on a folder, that folder opens on the right instead.',
   'pane.copyPathRightToLeft':
-    'Open the right pane’s location on the left. When the right pane is focused and the cursor is on a folder, that folder opens on the left instead.',
-  'file.duplicate': 'Make a copy of the selected files in the same folder',
-  'edit.copy': 'Copy selected files to clipboard for pasting',
-  'edit.cut': 'Cut selected files (paste will move them)',
-  'edit.paste': 'Paste files from clipboard into current folder',
-  'edit.pasteAsMove': 'Paste files from clipboard as a move',
-  'edit.undoTrash': 'Put back the files you last moved to the trash',
+    'Opens the right pane’s location on the left. When the right pane is focused and the cursor is on a folder, that folder opens on the left instead.',
+  'file.duplicate': 'Makes a copy of the selected files in the same folder',
+  'edit.copy': 'Copies selected files to the clipboard for pasting',
+  'edit.cut': 'Cuts selected files (pasting moves them)',
+  'edit.paste': 'Pastes files from the clipboard into the current folder',
+  'edit.pasteAsMove': 'Pastes files from the clipboard as a move',
+  'edit.undoTrash': 'Puts back the files you last moved to the trash',
   'file.contextMenu': 'Opens the context menu for the file under the cursor',
   'cloud.makeOffline': 'Downloads a cloud-stored file so it stays available without an internet connection',
   'cloud.removeDownload': 'Removes the local copy of a cloud file, leaving it available online only',
@@ -345,7 +346,7 @@ describe('command registry en parity', () => {
     updateLicenseCommandName(true)
     expect(commands.find((c) => c.id === 'app.licenseKey')?.name).toBe('See license details')
     updateLicenseCommandName(false)
-    expect(commands.find((c) => c.id === 'app.licenseKey')?.name).toBe('Enter license key')
+    expect(commands.find((c) => c.id === 'app.licenseKey')?.name).toBe('Enter license key…')
     updateLicenseCommandName(true) // restore default
   })
 

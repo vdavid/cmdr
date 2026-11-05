@@ -690,7 +690,7 @@
   },
   "menu.volume.editFavoriteShortcut": "Set shortcut key…",
   "@menu.volume.editFavoriteShortcut": {
-    "description": "Right-click action on a favorite: capture one A–Z key for opening that favorite while the Favorites menu is open. The user may also press Delete to clear an existing key. The ellipsis means the key is chosen after this item is picked.",
+    "description": "VERB phrase. An item in the right-click menu on a favorite, in the Favorites menu and the volume switcher's favorites section: capture one A–Z key for opening that favorite while the Favorites menu is open. The user may also press Delete to clear an existing key. “Shortcut key” is one key, never a key combination; fileExplorer.navigation.favoriteShortcutAriaLabel and .favoriteShortcutSaveFailed use the same words. The ellipsis means the key is chosen after this item is picked.",
     "screenshot": "main-window.png"
   },
   "menu.volume.removeFavorite": "Remove",

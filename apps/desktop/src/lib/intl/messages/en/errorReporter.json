@@ -4,34 +4,28 @@
     "description": "Title of the dialog for sending a redacted log bundle to the team. Opened from the Help menu and from a link on error toasts.",
     "screenshot": "error-report.png"
   },
-
   "errorReporter.dialog.description": "This sends the past five hours of Cmdr’s logs to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.",
   "@errorReporter.dialog.description": {
     "description": "Main explanation in the error-report dialog: what is sent (the logs from the past five hours) and that it is redacted for privacy first. Reassuring. \"Cmdr\" is the product name; \"IPs\" means IP addresses (do not translate \"Cmdr\").",
     "screenshot": "error-report.png"
   },
-
   "errorReporter.dialog.referenceIdLabel": "Reference ID:",
   "@errorReporter.dialog.referenceIdLabel": {
     "description": "Label before the report's reference identifier in the dialog. The identifier itself follows in a badge and is not part of this string."
   },
-
   "errorReporter.dialog.copy": "Copy",
   "@errorReporter.dialog.copy": {
     "description": "Button that copies the reference ID to the clipboard. Swaps to the \"copied\" confirmation for two seconds after a click. Keep it short (a tight button)."
   },
-
   "errorReporter.dialog.copied": "Copied",
   "@errorReporter.dialog.copied": {
     "description": "Confirmation shown for two seconds on the copy button right after the reference ID is copied. Keep it short (a tight button)."
   },
-
   "errorReporter.dialog.noteLabel": "Add a note (optional)",
   "@errorReporter.dialog.noteLabel": {
     "description": "Label above the optional free-text box where the user can describe what happened.",
     "screenshot": "error-report.png"
   },
-
   "errorReporter.dialog.counter": "{currentText} / {maxText}",
   "@errorReporter.dialog.counter": {
     "description": "Character counter for the note box, shown once the note gets long. Both values are already-formatted numbers; render them as a fraction (typed so far over the maximum).",
@@ -40,13 +34,11 @@
       "maxText": "the maximum allowed character count, already formatted (e.g. 100,000)"
     }
   },
-
   "errorReporter.dialog.notePlaceholder": "What were you trying to do? What did you expect to happen?",
   "@errorReporter.dialog.notePlaceholder": {
     "description": "Placeholder text inside the empty note box, prompting the user for useful detail.",
     "screenshot": "error-report.png"
   },
-
   "errorReporter.dialog.noteTooLong": "Note is too long. Maximum is {maxText} {max, plural, one {character} other {characters}}.",
   "@errorReporter.dialog.noteTooLong": {
     "description": "Warning shown below the note box when the note exceeds the maximum length.",
@@ -55,18 +47,15 @@
       "maxText": "the maximum allowed character count, already formatted (e.g. 100,000)"
     }
   },
-
   "errorReporter.dialog.detailsToggle": "What’s about to be sent",
   "@errorReporter.dialog.detailsToggle": {
     "description": "Link that opens everything that will be uploaded (the manifest and the full redacted logs) as one text file in Cmdr's file viewer window. Followed by the bundle size in parentheses.",
     "screenshot": "error-report.png"
   },
-
   "errorReporter.dialog.manifestHeading": "Manifest",
   "@errorReporter.dialog.manifestHeading": {
     "description": "Heading above the JSON manifest in the expanded preview panel. A manifest is the metadata describing the report."
   },
-
   "errorReporter.dialog.sampleFirstHeading": "Sample of first {count, plural, one {# line} other {# lines}}",
   "@errorReporter.dialog.sampleFirstHeading": {
     "description": "Heading above a preview of the first few redacted log lines. The number is shown inline (the # is replaced by the count).",
@@ -74,7 +63,6 @@
       "count": "how many log lines are shown in this sample"
     }
   },
-
   "errorReporter.dialog.sampleLastHeading": "Sample of last {count, plural, one {# line} other {# lines}}",
   "@errorReporter.dialog.sampleLastHeading": {
     "description": "Heading above a preview of the last few redacted log lines. The number is shown inline (the # is replaced by the count).",
@@ -82,12 +70,10 @@
       "count": "how many log lines are shown in this sample"
     }
   },
-
   "errorReporter.dialog.noLogLines": "(no log lines available)",
   "@errorReporter.dialog.noLogLines": {
     "description": "Placeholder shown in a log-sample preview box when there are no log lines to show. Shown in parentheses."
   },
-
   "errorReporter.dialog.totalLines": "Total log lines (after redaction): {countText}",
   "@errorReporter.dialog.totalLines": {
     "description": "Summary line under the log samples giving the total number of log lines that will be sent, after privacy redaction.",
@@ -95,28 +81,23 @@
       "countText": "the total number of log lines, already formatted for display (e.g. 1,234)"
     }
   },
-
   "errorReporter.dialog.preparing": "Preparing preview…",
   "@errorReporter.dialog.preparing": {
     "description": "Status line shown while the report preview is still being built. Ends with a single-character ellipsis (…).",
     "screenshot": "error-report.png"
   },
-
   "errorReporter.dialog.prepareFailed": "Couldn’t put the preview together.",
   "@errorReporter.dialog.prepareFailed": {
     "description": "Line shown in the error-report dialog when Cmdr couldn't build the preview of what it would send. A small Try again button (errorReporter.dialog.tryAgain) sits right after it, and the send button stays off until a preview builds. Avoid the words \"error\" and \"failed\" in the translated wording."
   },
-
   "errorReporter.dialog.tryAgain": "Try again",
   "@errorReporter.dialog.tryAgain": {
     "description": "Small button right after the line saying the report preview couldn't be put together (errorReporter.dialog.prepareFailed). Pressing it builds the preview again. Keep it short (a tight button)."
   },
-
   "errorReporter.dialog.bundleUnavailable": "Cmdr couldn’t gather its logs for the report. Try again in a moment.",
   "@errorReporter.dialog.bundleUnavailable": {
     "description": "Sentence explaining why the error report didn't go out: Cmdr couldn't collect its own log files into the report. It's shown right after errorReporter.dialog.sendFailedToast's lead (\"Couldn't send the error report.\"), as a separate sentence in the same toast. \"Cmdr\" is the product name (do not translate). Avoid the words \"error\" and \"failed\" in the translated wording."
   },
-
   "errorReporter.dialog.saveToDisk": "Save bundle to disk (debug)",
   "@errorReporter.dialog.saveToDisk": {
     "description": "Developer-only button (visible in dev builds) that writes the report bundle to disk for inspection. \"debug\" marks it as a developer feature."
@@ -129,24 +110,20 @@
   "@errorReporter.dialog.saveToDiskManaged": {
     "description": "Main button of the error-report dialog when the person's organization turned off sending reports: it saves the report as a zip file on this Mac (a Reveal in Finder button follows), so the person can share it themselves. Keep it short (a tight button)."
   },
-
   "errorReporter.dialog.cancel": "Cancel",
   "@errorReporter.dialog.cancel": {
     "description": "Button that closes the error-report dialog without sending. Keep it short (a tight button).",
     "screenshot": "error-report.png"
   },
-
   "errorReporter.dialog.send": "Send report",
   "@errorReporter.dialog.send": {
     "description": "Primary button that sends the error report. Keep it short (a tight button).",
     "screenshot": "error-report.png"
   },
-
   "errorReporter.dialog.sending": "Sending…",
   "@errorReporter.dialog.sending": {
     "description": "Label on the send button while the report is being sent (button is disabled meanwhile). Ends with a single-character ellipsis (…). Keep it short."
   },
-
   "errorReporter.dialog.sendFailedToast": "Couldn’t send the error report. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
     "description": "Toast shown when sending the error report didn't work. {reason} is one or two complete, already-translated sentences saying why and what to do (for example \"Cmdr couldn't reach its server. Check your internet connection and try again.\"), so end your lead as its own sentence and let the reason follow it. Avoid the words \"error\" and \"failed\" in your wording, apart from the feature's own name, \"error report\".",
@@ -154,7 +131,6 @@
       "reason": "one or two already-translated sentences saying why the report didn't go out and what to do; Cmdr controls the wording but the length varies"
     }
   },
-
   "errorReporter.dialog.saveFailedToast": "Couldn’t save bundle: {error}",
   "@errorReporter.dialog.saveFailedToast": {
     "description": "Developer-only toast shown when saving the bundle to disk didn't work. The reason follows the colon. Avoid the words \"error\" and \"failed\" in the translated wording.",
@@ -162,54 +138,45 @@
       "error": "the technical reason the save didn't work (not translated)"
     }
   },
-
   "errorReporter.amend.title": "Add to your error report",
   "@errorReporter.amend.title": {
     "description": "Title of the dialog when the user is adding a note to a report Cmdr already sent by itself (auto-send). Reached from the \"Error report sent\" toast, never from the Help menu. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "error-report-amend.png"
   },
-
   "errorReporter.amend.description": "Cmdr already sent this report. Write a note, or attach your email, and it’ll join what the team already has.",
   "@errorReporter.amend.description": {
     "description": "Main explanation in the add-a-note dialog: the report is already with the team, and whatever the user writes here is attached to that same report (no second report is sent). It also tells them why the button stays disabled until they write a note or attach an email. Reassuring. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "error-report-amend.png"
   },
-
   "errorReporter.amend.noteLabel": "Your note",
   "@errorReporter.amend.noteLabel": {
     "description": "Label above the free-text box in the add-a-note dialog. Unlike the send dialog’s label, this one is not marked optional: a note or an email address is needed before the button works.",
     "screenshot": "error-report-amend.png"
   },
-
   "errorReporter.amend.detailsToggle": "What was sent",
   "@errorReporter.amend.detailsToggle": {
     "description": "Toggle that expands a panel showing exactly what was already uploaded (manifest and sample log lines). Past tense: it describes the report that has already gone. Preceded by a disclosure triangle; followed by the bundle size in parentheses.",
     "screenshot": "error-report-amend.png"
   },
-
   "errorReporter.amend.submit": "Add to report",
   "@errorReporter.amend.submit": {
     "description": "Primary button that attaches the user’s note to the report that was already sent. Keep it short (a tight button).",
     "screenshot": "error-report-amend.png"
   },
-
   "errorReporter.amend.submitting": "Adding…",
   "@errorReporter.amend.submitting": {
     "description": "Label on the primary button while the note is being attached (button is disabled meanwhile). Ends with a single-character ellipsis (…). Keep it short."
   },
-
   "errorReporter.amend.unavailable": "That report can’t take a note anymore. To get your notes to the team, send a new report from the Help menu.",
   "@errorReporter.amend.unavailable": {
     "description": "Shown instead of the note box when the report can no longer be added to, either because Cmdr restarted since it was sent or because the server left no way to add to it. Points the user at Help > Send error report instead. \"Help\" is the name of the app’s Help menu; use the wording macOS uses for that menu in your language. Avoid the words \"error\" and \"failed\" in the translated wording.",
     "screenshot": "error-report-amend.png"
   },
-
   "errorReporter.amend.close": "Close",
   "@errorReporter.amend.close": {
     "description": "Button that closes the dialog when there is nothing to add to. It is the only button in that state. Keep it short (a tight button).",
     "screenshot": "error-report-amend.png"
   },
-
   "errorReporter.amend.addFailedToast": "Couldn’t add your note. {reason}",
   "@errorReporter.amend.addFailedToast": {
     "description": "Toast shown when attaching the note to the already-sent report didn’t work. {reason} is one or two complete, already-translated sentences saying why and what to do (for example \"Cmdr couldn’t reach its server. Check your internet connection and try again.\"), so end your lead as its own sentence and let the reason follow it. Avoid the words \"error\" and \"failed\" in the translated wording.",
@@ -217,78 +184,63 @@
       "reason": "one or two already-translated sentences saying why the note didn’t get attached and what to do; Cmdr controls the wording but the length varies"
     }
   },
-
-  "errorReporter.sentToast.message": "Error report sent. Your reference ID is",
+  "errorReporter.sentToast.message": "Error report sent. Your reference ID:",
   "@errorReporter.sentToast.message": {
-    "description": "Lead text of the toast confirming the report was sent. The reference ID itself follows immediately in a badge, so this string ends right before it (no trailing punctuation)."
+    "description": "Lead text of the toast confirming the report was sent. The reference ID itself follows immediately in a badge, so this string ends with a colon right before it."
   },
-
   "errorReporter.sentToast.dismiss": "Dismiss",
   "@errorReporter.sentToast.dismiss": {
     "description": "Button that dismisses the report-sent toast. Keep it short (a tight button)."
   },
-
   "errorReporter.sentToast.copyId": "Copy ID",
   "@errorReporter.sentToast.copyId": {
     "description": "Button on the report-sent toast that copies the reference ID. Swaps to the \"copied\" confirmation for two seconds. Keep it short (a tight button)."
   },
-
   "errorReporter.sentToast.copied": "Copied",
   "@errorReporter.sentToast.copied": {
     "description": "Confirmation shown for two seconds on the copy button after the reference ID is copied. Keep it short (a tight button)."
   },
-
-  "errorReporter.amendedToast.message": "Note added to your report. Your reference ID is",
+  "errorReporter.amendedToast.message": "Note added to your report. Your reference ID:",
   "@errorReporter.amendedToast.message": {
-    "description": "Lead text of the toast confirming the user’s note was attached to the report that had already been sent. The reference ID itself follows immediately in a badge, so this string ends right before it (no trailing punctuation)."
+    "description": "Lead text of the toast confirming the user’s note was attached to the report that had already been sent. The reference ID itself follows immediately in a badge, so this string ends with a colon right before it."
   },
-
   "errorReporter.bundleSavedToast.message": "Saved bundle to disk",
   "@errorReporter.bundleSavedToast.message": {
     "description": "Toast confirming the report bundle (a zip of redacted logs) was written to disk, shown in dev builds and when the person's organization turned off sending reports. The file path is shown below it."
   },
-
   "errorReporter.bundleSavedToast.dismiss": "Dismiss",
   "@errorReporter.bundleSavedToast.dismiss": {
     "description": "Button that dismisses the bundle-saved toast. Keep it short (a tight button)."
   },
-
   "errorReporter.bundleSavedToast.reveal": "Reveal in Finder",
   "@errorReporter.bundleSavedToast.reveal": {
     "description": "Button that opens the saved bundle's folder in the macOS file browser. \"Finder\" is the name of Apple's file browser (do not translate)."
   },
-
   "errorReporter.autoSentToast.title": "Error report sent",
   "@errorReporter.autoSentToast.title": {
     "description": "Title of the toast shown after a report was sent automatically (the user opted into auto-send). The reference ID is shown below."
   },
-
   "errorReporter.autoSentToast.referenceIdLabel": "Reference ID:",
   "@errorReporter.autoSentToast.referenceIdLabel": {
     "description": "Label before the reference identifier in the auto-sent toast. The identifier itself follows in a badge and is not part of this string."
   },
-
   "errorReporter.autoSentToast.changeSettings": "Change settings",
   "@errorReporter.autoSentToast.changeSettings": {
     "description": "Button on the auto-sent toast that opens the app's Settings (where auto-send can be turned off). Keep it short (a tight button)."
   },
-
   "errorReporter.autoSentToast.viewOrAddNotes": "View or add notes to the report",
   "@errorReporter.autoSentToast.viewOrAddNotes": {
     "description": "Button on the auto-sent toast. It opens a dialog showing exactly what was sent, where the user can also write a note that gets attached to that same report. Both halves matter: looking, and adding. It sits in a toast next to a shorter \"Change settings\" button, so keep it as compact as your language allows without losing either half."
   },
-
   "errorReporter.offer.send": "Send error report…",
   "@errorReporter.offer.send": {
     "description": "Button or link that opens the Send error report dialog, pre-filled with what just went wrong. It sits on error notifications, the copy and move error dialog, the screen a folder shows when it can’t be listed, a refused new folder or file, and a stopped operation in the operation queue window. Same wording as the Help menu item Send error report…; keep the two the same in your language. The trailing … is U+2026 and must stay.",
     "screenshot": "toast-get-info-not-reached.png"
   },
-
   "errorReporter.offer.slow": "Taking long? Send a report",
   "@errorReporter.offer.slow": {
     "description": "Small link under a notice that says something is slow: the new-folder and new-file dialogs while a slow drive or server is still creating the entry, and a copy or move that has stopped making progress (in its progress dialog and in the operation queue window). Clicking it opens the Send error report dialog, pre-filled with what is slow and for how long. Phrase it as a light question plus an invitation, not an alarm: nothing has gone wrong yet. Avoid the words \"error\" and \"failed\"."
   },
-
   "errorReporter.prefill.slow": "{operation}: taking long, no progress for {duration}.",
   "@errorReporter.prefill.slow": {
     "description": "First line of the note pre-filled into the Send error report dialog when the person reports something slow. The person can edit or delete it before sending, and it reaches the team as part of the report. Avoid the words \"error\" and \"failed\".",
@@ -297,7 +249,6 @@
       "duration": "how long nothing has visibly moved, already formatted, for example \"45s\" or \"2m 30s\""
     }
   },
-
   "errorReporter.prefill.updateNotGenuine": "An update offered as version {version} didn’t carry Cmdr’s signature, so Cmdr didn’t install it.",
   "@errorReporter.prefill.updateNotGenuine": {
     "description": "First line of the note pre-filled into the Send error report dialog when the person reports an update Cmdr refused because it wasn't a genuine Cmdr release (its signature didn't check out). The person can edit or delete it before sending, and it reaches the team as part of the report. \"Cmdr\" is the product name. Avoid the words \"error\" and \"failed\".",
@@ -305,37 +256,30 @@
       "version": "the version number the update said it was, like 0.53.0. Never translated"
     }
   },
-
   "errorReporter.prefill.pageCrash": "This Cmdr window stopped working.",
   "@errorReporter.prefill.pageCrash": {
     "description": "First line of the note pre-filled into the Send error report dialog when the person reports from the screen a Cmdr window shows after its content stopped working (the window went blank apart from that screen). The person can edit or delete it before sending, and it reaches the team as part of the report. \"Cmdr\" is the product name (do not translate). Avoid the words \"error\" and \"failed\"."
   },
-
   "errorReporter.pageCrash.title": "Something went wrong in this window",
   "@errorReporter.pageCrash.title": {
     "description": "Heading of the screen a Cmdr window shows when its content stopped working and couldn't be drawn. It replaces the whole window. Calm and plain; avoid the words \"error\" and \"failed\"."
   },
-
   "errorReporter.pageCrash.body": "Cmdr ran into a problem it didn’t expect. Reloading usually helps. If it keeps happening, send a report so it gets fixed.",
   "@errorReporter.pageCrash.body": {
     "description": "Explanation under the heading of the screen a Cmdr window shows when its content stopped working. Below it are two buttons: Reload (redraws the window) and Send error report. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate). Avoid the words \"error\" and \"failed\"."
   },
-
   "errorReporter.pageCrash.detailsLabel": "Technical details",
   "@errorReporter.pageCrash.detailsLabel": {
     "description": "Label above a box of technical text (the program's own message, in English) on the screen a Cmdr window shows when its content stopped working. The person can copy the text to share it."
   },
-
   "errorReporter.pageCrash.reload": "Reload",
   "@errorReporter.pageCrash.reload": {
     "description": "Button on the screen a Cmdr window shows when its content stopped working. It redraws the window from scratch. A button label, so keep it short."
   },
-
   "errorReporter.preview.unavailableToast": "Couldn’t open the preview. Try again in a moment.",
   "@errorReporter.preview.unavailableToast": {
     "description": "Toast shown when the person asked to see what an error report or a feedback message would send (it opens in the file viewer), but Cmdr couldn't put that file together. Avoid the words \"error\" and \"failed\"."
   },
-
   "errorReporter.prefill.reference": "Reference: {code}",
   "@errorReporter.prefill.reference": {
     "description": "Last line of the note pre-filled into the Send error report dialog when it opens from a specific problem. It names the KIND of problem in a short technical code the team searches for, such as copy/insufficient_space or listing/networkDown: a problem code, not a case or ticket ID (the report’s own ID is shown elsewhere in the dialog). The person can edit or delete it before sending. Translate only the word before the colon.",

@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand name (VeraCrypt); kept verbatim in every locale (do-not-translate list)."
   },
-  "errors.provider.cmVolumes.displayName": "Molnmontering",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "din molnleverantör",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Den här mappen hanteras av **MacDroid**. Så här kan du prova:\n- Öppna MacDroid och kontrollera att din telefon är ansluten\n- Se till att telefonen är upplåst och inställd på filöverföringsläge\n- Dra ur och anslut USB-kabeln igen, och gå sedan hit igen",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

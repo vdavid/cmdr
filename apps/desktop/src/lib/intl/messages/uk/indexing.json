@@ -249,7 +249,7 @@
   "@indexing.enrich.label": {
     "sourceHash": "442068b"
   },
-  "indexing.enrich.progress": "{done, plural, one {Зображень: {doneText} з {totalText}} few {Зображень: {doneText} з {totalText}} many {Зображень: {doneText} з {totalText}} other {Зображень: {doneText} з {totalText}}}",
+  "indexing.enrich.progress": "{total, plural, one {{doneText} of {totalText} image} other {{doneText} of {totalText} images}}",
   "@indexing.enrich.progress": {
     "sourceHash": "b307416"
   },

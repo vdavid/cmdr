@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand name kept verbatim, as the @key says; Ukrainian leaves foreign product names in Latin (style.md § Brand)."
   },
-  "errors.provider.cmVolumes.displayName": "Змонтоване хмарне сховище",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "ваш хмарний сервіс",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Цією папкою керує **MacDroid**. Що можна спробувати:\n- Відкрийте програму MacDroid і перевірте, чи телефон підʼєднано\n- Переконайтеся, що телефон відімкнено і ввімкнено режим передачі файлів\n- Відʼєднайте USB-кабель і підʼєднайте знову, а тоді ще раз перейдіть сюди",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

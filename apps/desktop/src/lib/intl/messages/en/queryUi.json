@@ -1034,22 +1034,21 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.date.preset.thisMonth": "1st of {month} {time}",
+  "queryUi.date.preset.thisMonth": "{date} {time}",
   "@queryUi.date.preset.thisMonth": {
-    "description": "Preset cell in the Modified popover meaning 'since the 1st of the current month'. The year is omitted because it's the current year. '1st' is an ordinal (first day); adapt the ordinal form to your language.",
+    "description": "Preset cell in the Modified popover meaning 'since the 1st of the current month'. The year is omitted because it's the current year.",
     "placeholders": {
-      "month": "the localized current month name (for example May)",
+      "date": "the first day of the current month, already worded by your language's own date format with day and month (for example “May 1”, “1 мая”), so it's in the right case",
       "time": "the start-of-day time, here always '0:00' (midnight)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.date.preset.lastMonth": "1st of {month}, {year}, {time}",
+  "queryUi.date.preset.lastMonth": "{date}, {time}",
   "@queryUi.date.preset.lastMonth": {
-    "description": "Preset cell in the Modified popover meaning 'since the 1st of last month'. The year is always included so a reader in January isn't confused about which December is meant. '1st' is an ordinal (first day).",
+    "description": "Preset cell in the Modified popover meaning 'since the 1st of last month'. The date always carries the year so a reader in January isn't confused about which December is meant.",
     "placeholders": {
-      "month": "the localized previous-month name (for example April)",
-      "year": "the four-digit year of that month (for example 2026)",
+      "date": "the first day of last month with its year, already worded by your language's own date format (for example “April 1, 2026”, “1 апреля 2026 г.”)",
       "time": "the start-of-day time, here always '0:00' (midnight)"
     },
     "screenshot": "search-dialog.png",

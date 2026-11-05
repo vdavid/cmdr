@@ -28,7 +28,7 @@ describe('ui area parity (en)', () => {
     expect(tString('ui.alertDialog.defaultButton')).toBe('OK')
     expect(tString('ui.modalDialog.close')).toBe('Close')
     expect(tString('ui.popover.defaultAriaLabel')).toBe('Options')
-    expect(tString('ui.select.placeholder')).toBe('Select…')
+    expect(tString('ui.select.placeholder')).toBe('Choose…')
     expect(tString('ui.combobox.emptyText')).toBe('No matches. Keep typing to use your own value.')
     expect(tString('ui.toast.dismissAria')).toBe('Dismiss notification')
     expect(tString('ui.copyBox.copy')).toBe('Copy')

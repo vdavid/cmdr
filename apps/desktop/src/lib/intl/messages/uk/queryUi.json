@@ -619,11 +619,11 @@
   "@queryUi.date.preset.lastWeek": {
     "sourceHash": "1e4419c"
   },
-  "queryUi.date.preset.thisMonth": "{month}, 1-ше число, {time}",
+  "queryUi.date.preset.thisMonth": "{date} {time}",
   "@queryUi.date.preset.thisMonth": {
     "sourceHash": "030ee23"
   },
-  "queryUi.date.preset.lastMonth": "{month} {year}, 1-ше число, {time}",
+  "queryUi.date.preset.lastMonth": "{date}, {time}",
   "@queryUi.date.preset.lastMonth": {
     "sourceHash": "0838509"
   },

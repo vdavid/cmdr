@@ -613,6 +613,30 @@
   "@fileOperations.transferProgress.conflictPolicyCaption": {
     "sourceHash": "cec5c27"
   },
+  "fileOperations.transferProgress.policyName.skip": "Skip",
+  "@fileOperations.transferProgress.policyName.skip": {
+    "sourceHash": "28d0359"
+  },
+  "fileOperations.transferProgress.policyName.overwrite": "Overwrite",
+  "@fileOperations.transferProgress.policyName.overwrite": {
+    "sourceHash": "b24963e"
+  },
+  "fileOperations.transferProgress.policyName.overwriteSmaller": "Overwrite if smaller",
+  "@fileOperations.transferProgress.policyName.overwriteSmaller": {
+    "sourceHash": "0473dc5"
+  },
+  "fileOperations.transferProgress.policyName.overwriteOlder": "Overwrite if older",
+  "@fileOperations.transferProgress.policyName.overwriteOlder": {
+    "sourceHash": "6c111a2"
+  },
+  "fileOperations.transferProgress.policyName.askEach": "Ask for each",
+  "@fileOperations.transferProgress.policyName.askEach": {
+    "sourceHash": "4302843"
+  },
+  "fileOperations.transferProgress.policyName.rename": "Rename",
+  "@fileOperations.transferProgress.policyName.rename": {
+    "sourceHash": "3064d79"
+  },
   "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Nichts kopiert} one {{countText} Datei kopiert} other {{countText} Dateien kopiert}}} move {{count, plural, =0 {Nichts bewegt} one {{countText} Datei bewegt} other {{countText} Dateien bewegt}}} delete {{count, plural, =0 {Nichts gelöscht} one {{countText} Datei gelöscht} other {{countText} Dateien gelöscht}}} trash {{count, plural, =0 {Nichts in den Papierkorb bewegt} one {{countText} Datei in den Papierkorb bewegt} other {{countText} Dateien in den Papierkorb bewegt}}} compress {{count, plural, =0 {Nichts komprimiert} one {{countText} Datei komprimiert} other {{countText} Dateien komprimiert}}} other {Fertig}}",
   "@fileOperations.transferProgress.titleDone": {
     "sourceHash": "3db0154"
@@ -1264,11 +1288,11 @@
   "@fileOperations.validation.empty": {
     "sourceHash": "2a25343"
   },
-  "fileOperations.validation.nameTooLong": "{kind, select, folder {Der Ordnername ist zu lang ({byteCount}/{maxBytes} Bytes)} other {Der Dateiname ist zu lang ({byteCount}/{maxBytes} Bytes)}}",
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})} other {Filename is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})}}",
   "@fileOperations.validation.nameTooLong": {
     "sourceHash": "76a85fd"
   },
-  "fileOperations.validation.pathTooLong": "Der vollständige Pfad ist zu lang ({byteCount}/{maxBytes} Bytes)",
+  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathTooLong": {
     "sourceHash": "1658c7a"
   },
@@ -1296,11 +1320,11 @@
   "@fileOperations.validation.pathNullChar": {
     "sourceHash": "271149f"
   },
-  "fileOperations.validation.pathTotalTooLong": "Der Pfad ist zu lang ({byteCount}/{maxBytes} Bytes)",
+  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathTotalTooLong": {
     "sourceHash": "30aca7d"
   },
-  "fileOperations.validation.pathSegmentTooLong": "Ein Ordnername im Pfad ist zu lang ({byteCount}/{maxBytes} Bytes)",
+  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathSegmentTooLong": {
     "sourceHash": "75b2602"
   },

@@ -14,6 +14,7 @@ import {
   resolveDatePreset,
   resolveFirstDayOfWeek,
   buildDatePresets,
+  dayAndMonth,
 } from './filter-popover-helpers'
 
 describe('SIZE_PRESETS', () => {
@@ -145,10 +146,10 @@ describe('buildDatePresets (R3 U4)', () => {
     expect(list[3]).toEqual({ key: 'lastWeek', label: 'last Monday 0:00', resolved: '2026-05-11' })
   })
 
-  it('this month label reads "1st of May 0:00" without the year (current year is implicit)', () => {
+  it('this month label reads "1 May 0:00" without the year (current year is implicit)', () => {
     const list = buildDatePresets(anchor, 'en-GB')
     const thisMonth = list.find((p) => p.key === 'thisMonth')
-    expect(thisMonth).toEqual({ key: 'thisMonth', label: '1st of May 0:00', resolved: '2026-05-01' })
+    expect(thisMonth).toEqual({ key: 'thisMonth', label: '1 May 0:00', resolved: '2026-05-01' })
   })
 
   it('last month label always includes the year', () => {
@@ -156,9 +157,15 @@ describe('buildDatePresets (R3 U4)', () => {
     const lastMonth = list.find((p) => p.key === 'lastMonth')
     expect(lastMonth).toEqual({
       key: 'lastMonth',
-      label: '1st of April, 2026, 0:00',
+      label: '1 April 2026, 0:00',
       resolved: '2026-04-01',
     })
+  })
+
+  // Regression: a bare month name in a "1st of {month}" frame arrived nominative, so
+  // Russian couldn't write "с 1 октября". The formatter declines the month itself.
+  it('words the day and month with the language’s own grammar', () => {
+    expect(dayAndMonth(new Date(2026, 9, 1), 'ru', false)).toBe('1 октября')
   })
 
   it('year start preset appears when neither current nor last month is January', () => {

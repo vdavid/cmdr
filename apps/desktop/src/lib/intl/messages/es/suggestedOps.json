@@ -83,6 +83,10 @@
   "@suggestedOps.action.extract": {
     "sourceHash": "c15301c"
   },
+  "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
+  "@suggestedOps.groupTitle": {
+    "sourceHash": "201c1fc"
+  },
   "suggestedOps.approve.move": "Mover {countText} {count, plural, one {archivo} many {archivos} other {archivos}}",
   "@suggestedOps.approve.move": {
     "sourceHash": "4c89041"
@@ -263,6 +267,14 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
+  "suggestedOps.factUnknownSize": "Unknown",
+  "@suggestedOps.factUnknownSize": {
+    "sourceHash": "b764cdc"
+  },
+  "suggestedOps.factUnknownDate": "Unknown",
+  "@suggestedOps.factUnknownDate": {
+    "sourceHash": "b764cdc"
+  },
   "suggestedOps.factChanged": "Ha cambiado desde la sugerencia",
   "@suggestedOps.factChanged": {
     "sourceHash": "958780a"
@@ -290,10 +302,6 @@
   "suggestedOps.sourceGone": "La unidad donde estaban estos archivos ya no está, así que sus tamaños y fechas son de cuando la IA sugirió esto.",
   "@suggestedOps.sourceGone": {
     "sourceHash": "1b30de5"
-  },
-  "suggestedOps.factUnknown": "Desconocido",
-  "@suggestedOps.factUnknown": {
-    "sourceHash": "b764cdc"
   },
   "suggestedOps.includeFile": "Incluir {name}",
   "@suggestedOps.includeFile": {

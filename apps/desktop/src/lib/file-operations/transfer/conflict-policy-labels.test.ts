@@ -3,9 +3,9 @@ import type { ConflictResolution } from '#lib/file-explorer/types.js'
 import { conflictPolicyCaption } from './conflict-policy-labels'
 
 describe('conflictPolicyCaption', () => {
-  // The setup dialog's own wording for the radio a person picked, so the two
-  // dialogs can't word one policy two ways. "Ask for each" is the radio's
-  // count-free wording, and Rename is only ever reached by "Rename all".
+  // English names each policy with the setup dialog's own words, but through
+  // dedicated `policyName.*` keys: a language whose radios are imperatives
+  // names the policy as a noun phrase here. Rename is only reached by "Rename all".
   const cases: [ConflictResolution, string][] = [
     ['skip', 'If a file already exists: Skip'],
     ['overwrite', 'If a file already exists: Overwrite'],

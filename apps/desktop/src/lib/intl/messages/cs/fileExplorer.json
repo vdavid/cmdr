@@ -1726,7 +1726,7 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "Nepřipojeno. Po otevření se Cmdr připojí k umístění {place}.",
+  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
     "sourceHash": "a30b8cd"
   },
@@ -1754,7 +1754,7 @@
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
     "sourceHash": "4fba610"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr už neví, jak se dostat k umístění „{place}“. Připojte se k němu znovu ze Serverů a tato oblíbená položka bude zase fungovat.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
     "sourceHash": "842858c"
   },
@@ -1888,6 +1888,10 @@
   },
   "fileExplorer.navigation.forgetConfirmButton": "Zapomenout",
   "@fileExplorer.navigation.forgetConfirmButton": {
+    "sourceHash": "a6bd489"
+  },
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "@fileExplorer.navigation.forgetPasswordConfirmButton": {
     "sourceHash": "a6bd489"
   },
   "fileExplorer.navigation.forgetServerConfirm": "Zapomenout server {name}? Cmdr ukončí připojení a přestane server vypisovat. Vaše soubory na serveru zůstanou.",

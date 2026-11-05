@@ -103,7 +103,7 @@
     "description": "Main welcome heading on the first onboarding step (Full Disk Access). Warm, first-impression greeting. \"Cmdr\" is the product name and stays untranslated.",
     "screenshot": "onboarding-fda-notgranted.png"
   },
-  "onboarding.stepFda.revoked.intro": "It looks like you accepted full disk access before but then revoked it.",
+  "onboarding.stepFda.revoked.intro": "It looks like you granted full disk access before but then turned it off.",
   "@onboarding.stepFda.revoked.intro": {
     "description": "Opening line shown when the user previously granted Full Disk Access and later turned it off. \"full disk access\" is the macOS permission name.",
     "screenshot": "onboarding-fda-notgranted.png"
@@ -325,7 +325,7 @@
     "description": "Row label in the comparison table for the bulk-rename task: renaming many files at once. Short.",
     "screenshot": "onboarding-ai.png"
   },
-  "onboarding.stepAi.table.renameWithout": "You set a rename pattern by hand in Multi-rename, then review and apply it.",
+  "onboarding.stepAi.table.renameWithout": "You set a rename pattern by hand in Multi-rename, then review and apply the pattern.",
   "@onboarding.stepAi.table.renameWithout": {
     "description": "Comparison cell: how you bulk-rename without AI, by setting a pattern by hand. \"Multi-rename\" is the name of the app's bulk-rename tool; match multiRename.title.",
     "screenshot": "onboarding-ai.png"

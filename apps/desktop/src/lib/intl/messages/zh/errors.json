@@ -1072,14 +1072,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand/product name \"VeraCrypt\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"VeraCrypt\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
-  "errors.provider.cmVolumes.displayName": "云挂载",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "你的云服务商",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "这个文件夹由 **MacDroid** 管理。可以这样试试：\n- 打开 MacDroid，确认你的手机已连接\n- 确认你的手机已解锁，并设为文件传输模式\n- 拔下再插上 USB 线缆，然后再次进入这里",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

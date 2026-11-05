@@ -167,11 +167,11 @@
     const sizeOptions = $derived({ unit: getFileSizeUnit(), format: getFileSizeFormat() })
 
     function sizeText(bytes: number | null): string {
-        return bytes === null ? tString('suggestedOps.factUnknown') : formatSizeText(bytes, sizeOptions)
+        return bytes === null ? tString('suggestedOps.factUnknownSize') : formatSizeText(bytes, sizeOptions)
     }
 
     function dateText(seconds: number | null): string {
-        return seconds === null ? tString('suggestedOps.factUnknown') : formatDateTime(seconds)
+        return seconds === null ? tString('suggestedOps.factUnknownDate') : formatDateTime(seconds)
     }
 </script>
 

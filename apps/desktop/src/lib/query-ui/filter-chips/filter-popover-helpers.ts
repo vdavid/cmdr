@@ -140,10 +140,18 @@ export function weekdayName(dayOfWeek: WeekStart, language?: string): string {
   return fmt.format(date)
 }
 
-/** Returns the localized full month name for a 0-indexed month. */
-export function monthName(month: number, language?: string): string {
-  const date = new Date(Date.UTC(2024, month, 1))
-  const fmt = new Intl.DateTimeFormat(language, { month: 'long', timeZone: 'UTC' })
+/**
+ * The day and month of a local date, worded by the language itself ("1 May", "May 1",
+ * Russian "1 мая"), optionally with the year. ❗ A preformatted date, never a bare month
+ * name in a "1st of {month}" frame: case languages decline the month after a day number,
+ * and only the formatter knows that form.
+ */
+export function dayAndMonth(date: Date, language: string | undefined, withYear: boolean): string {
+  const fmt = new Intl.DateTimeFormat(language, {
+    day: 'numeric',
+    month: 'long',
+    ...(withYear ? { year: 'numeric' } : {}),
+  })
   return fmt.format(date)
 }
 
@@ -201,8 +209,8 @@ export function buildDatePresets(now: Date = new Date(), language?: string): Dyn
   const yearStartFirst = new Date(today.getFullYear(), 0, 1)
 
   const weekdayLabel = weekdayName(firstDay, nameLang)
-  const thisMonthMonth = monthName(thisMonthFirst.getMonth(), nameLang)
-  const lastMonthMonth = monthName(lastMonthFirst.getMonth(), nameLang)
+  const thisMonthDate = dayAndMonth(thisMonthFirst, nameLang, false)
+  const lastMonthDate = dayAndMonth(lastMonthFirst, nameLang, true)
 
   // Start-of-day time shown on every preset label. Fixed at midnight today; passed
   // as a param so it's single-sourced and translators don't hardcode it.
@@ -227,18 +235,14 @@ export function buildDatePresets(now: Date = new Date(), language?: string): Dyn
     },
     {
       key: 'thisMonth',
-      label: tString('queryUi.date.preset.thisMonth', { month: thisMonthMonth, time }),
+      label: tString('queryUi.date.preset.thisMonth', { date: thisMonthDate, time }),
       resolved: isoLocalDate(thisMonthFirst),
     },
     {
       key: 'lastMonth',
-      // Last month always carries the year, so a "1st of December, 2025" read
-      // in January doesn't get confused for "1st of December, 2026".
-      label: tString('queryUi.date.preset.lastMonth', {
-        month: lastMonthMonth,
-        year: String(lastMonthFirst.getFullYear()),
-        time,
-      }),
+      // Last month always carries the year, so a "December 1, 2025" read in
+      // January doesn't get confused for "December 1, 2026".
+      label: tString('queryUi.date.preset.lastMonth', { date: lastMonthDate, time }),
       resolved: isoLocalDate(lastMonthFirst),
     },
   ]

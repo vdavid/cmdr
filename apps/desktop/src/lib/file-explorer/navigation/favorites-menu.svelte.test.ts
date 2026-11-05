@@ -316,7 +316,7 @@ describe('a favorite the pane can`t open right away', () => {
     expect(row.disabled ?? false).toBe(false)
     const [path, status] = (row.tooltip ?? '').split('\n')
     expect(path).toBe('/Volumes/naspi/docs')
-    expect(status).toBe('Not connected. Opening it connects to naspi on nas.local.')
+    expect(status).toBe('Not connected. Opening this favorite connects to the share “naspi on nas.local”.')
     expect(menu.isDimmed(row.data?.kind === 'favorite' ? row.data.volume : DISK)).toBe(true)
   })
 

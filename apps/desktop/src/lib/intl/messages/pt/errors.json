@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand name 'VeraCrypt'; description marks it do-not-translate."
   },
-  "errors.provider.cmVolumes.displayName": "Montagem na nuvem",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "seu provedor de nuvem",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Esta pasta é gerenciada pelo **MacDroid**. Veja o que tentar:\n- Abra o MacDroid e verifique se o seu celular está conectado\n- Confirme que o seu celular está desbloqueado e no modo de transferência de arquivos\n- Desconecte e reconecte o cabo USB, e navegue até aqui de novo",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

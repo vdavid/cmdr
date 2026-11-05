@@ -339,7 +339,7 @@ describe('the approval note and the sweep heading', () => {
     const host = mountDialog()
     expect(host.textContent).toContain('Apply them only if you agree.')
 
-    host.querySelector<HTMLButtonElement>('[aria-label="Don’t show this again"]')?.click()
+    host.querySelector<HTMLButtonElement>('[aria-label="Don’t show again"]')?.click()
     flushSync()
 
     expect(settings.set).toHaveBeenCalledWith('suggestedOps.suppressApprovalNotice', true)

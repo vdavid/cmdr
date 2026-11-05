@@ -204,7 +204,7 @@ export async function forgetSavedSecret(volumeId: string, volumeName: string): P
   const confirmed = await confirmDialog(
     tString('fileExplorer.navigation.forgetSecretConfirm', { name: volumeName }),
     tString('fileExplorer.navigation.forgetSecretConfirmTitle'),
-    tString('fileExplorer.navigation.forgetConfirmButton'),
+    tString('fileExplorer.navigation.forgetPasswordConfirmButton'),
   )
   if (!confirmed) return
   try {

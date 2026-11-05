@@ -9,7 +9,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.delete": "Delete complete: {countText} {count, plural, one {file} other {files}}",
   "@transfer.delete": {
     "description": "Brief status toast shown right after the user permanently deletes files (Shift+F8), bypassing the Trash. Confirms how many were removed.",
@@ -20,7 +19,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.compress.split": "Compressed {phrase}.",
   "@transfer.compress.split": {
     "description": "Success toast after the user compresses files into a new zip, when Cmdr knows the file-vs-folder breakdown. {phrase} is the already-built '2 files and 1 folder' fragment (shared with copy/move via transfer.movedPhrase). Compress never skips items, so there's no skipped variant.",
@@ -30,7 +28,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.compress.fileOnly": "Compressed {countText} {count, plural, one {file} other {files}}.",
   "@transfer.compress.fileOnly": {
     "description": "Success toast after the user compresses files into a new zip, used when only a flat file count is available (no file-vs-folder split). Confirms how many files were packed.",
@@ -41,7 +38,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {file} other {files}} and {foldersText} {folders, plural, one {folder} other {folders}}} foldersOnly {{foldersText} {folders, plural, one {folder} other {folders}}} other {{filesText} {files, plural, one {file} other {files}}}}",
   "@transfer.movedPhrase": {
     "description": "A reusable sentence fragment, not a full sentence: the \"2 files and 1 folder\" part of a copy/move success toast. Another message wraps it with a verb (\"Copied …\", \"Moved …\"). When only files or only folders were transferred, just that side appears, so the phrase never reads \"0 files and 3 folders\". Build the wording so each branch stands alone grammatically in your language.",
@@ -54,7 +50,6 @@
     },
     "screenshot": "toast-transfer-complete.png"
   },
-
   "transfer.split.clean": "{verb, select, copy {Copied} other {Moved}} {phrase}.",
   "@transfer.split.clean": {
     "description": "Success toast after a copy or move where everything went through and nothing was skipped. Used when Cmdr knows the file-vs-folder breakdown, so it can say \"Copied 2 files and 1 folder.\" The breakdown text comes in ready-made via {phrase}.",
@@ -64,7 +59,6 @@
     },
     "screenshot": "toast-transfer-complete.png"
   },
-
   "transfer.split.skipped": "{verb, select, copy {Copied} other {Moved}} {phrase}, skipped {skippedText} {skipped, plural, one {file} other {files}} (already at the target).",
   "@transfer.split.skipped": {
     "description": "Success toast after a copy or move where some files were skipped because an identical copy was already at the destination. Used when Cmdr knows the file-vs-folder breakdown. \"the target\" means the destination folder the user was copying or moving into.",
@@ -77,7 +71,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.fileOnly.allDone": "{verb, select, copy {Copy} other {Move}} complete: {verb, select, copy {copied} other {moved}} {transferredText} {transferred, plural, one {file} other {files}}.",
   "@transfer.fileOnly.allDone": {
     "description": "Success toast after a copy or move where everything went through and nothing was skipped, used when Cmdr only has a flat file count (a clipboard paste, with no folder breakdown). Counts everything as files. {verb} appears twice: once capitalized to open the sentence (\"Copy complete\") and once lowercase inside it (\"copied\"); keep both natural in your language.",
@@ -89,7 +82,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Copy} other {Move}} complete: file already at the target, not {verb, select, copy {copied} other {moved}}.",
   "@transfer.fileOnly.allSkippedSingle": {
     "description": "Success toast after a copy or move of a single file that was skipped because an identical copy was already at the destination, so nothing actually transferred. Flat-file-count wording (clipboard paste, no folder breakdown). \"the target\" means the destination folder.",
@@ -99,7 +91,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copy} other {Move}} complete: skipped all {skippedText} {skipped, plural, one {file} other {files}} (already at the target), nothing was {verb, select, copy {copied} other {moved}}.",
   "@transfer.fileOnly.allSkippedMany": {
     "description": "Success toast after a copy or move where every selected file (two or more) was skipped because identical copies were already at the destination, so nothing actually transferred. Flat-file-count wording (clipboard paste, no folder breakdown). \"the target\" means the destination folder.",
@@ -111,7 +102,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.fileOnly.mixedCopy": "Copy complete: copied {transferredText}, skipped {skippedText}. All {processedText} of your selected {processed, plural, one {file} other {files}} are now at the target.",
   "@transfer.fileOnly.mixedCopy": {
     "description": "Success toast after a copy where some files copied and some were skipped (identical copies already at the destination). Flat-file-count wording (clipboard paste, no folder breakdown). The closing line reassures the user that every file they picked is now present at the destination, whether freshly copied or already there. \"the target\" means the destination folder.",
@@ -124,7 +114,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.fileOnly.mixedMove": "Move complete: moved {transferredText}, skipped {skippedText}. {skippedText} {skipped, plural, one {file} other {files}} {skipped, plural, one {was} other {were}} already at the target.",
   "@transfer.fileOnly.mixedMove": {
     "description": "Success toast after a move where some files moved and some were skipped (identical copies already at the destination). Flat-file-count wording (clipboard paste, no folder breakdown). The closing line explains the skipped files were already at the destination. \"the target\" means the destination folder.",
@@ -136,7 +125,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.appearedDuringMove": "{countText} {count, plural, one {item} other {items}} appeared in {scope, select, manyFolders {{folderName} and other source folders} other {{folderName}}} during the move and {count, plural, one {stays} other {stay}} there.",
   "@transfer.appearedDuringMove": {
     "description": "Extra sentence appended to the move-complete toast when files turned up in a source folder after Cmdr counted it (a download finishing, a sync app, an editor saving). Cmdr never copied them, so it left them where they were instead of deleting them with the rest. The move itself succeeded, so keep the tone matter-of-fact, not alarming.",
@@ -149,7 +137,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.changedDuringMove": "{countText} {count, plural, one {item} other {items}} changed during the move and {count, plural, one {stays} other {stay}} in {scope, select, manyFolders {{folderName} and other source folders} other {{folderName}}}.",
   "@transfer.changedDuringMove": {
     "description": "Extra sentence appended to the move-complete toast when someone saved over files in the source after Cmdr had already copied them (an app saving a document, a sync app updating a file). The destination got the version Cmdr copied, so Cmdr kept the newer original in the source folder instead of deleting it. Can follow the \"appeared during the move\" sentence in the same toast.",
@@ -162,7 +149,6 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.durabilityUnconfirmed": "Cmdr couldn’t confirm the copies are fully written to {volumeName}. If the drive was unplugged or is failing, check them before you rely on them.",
   "@transfer.durabilityUnconfirmed": {
     "description": "Warning shown in its own pop-up notice (toast) right after a copy finishes, when Cmdr's last step, asking the drive to confirm everything is physically written, didn't get a confirmation. Every file arrived, but they might not survive the drive being unplugged or losing power. Calm and honest: it doesn't say anything was lost. \"Cmdr\" is the product name. Avoid the words \"error\" and \"failed\". Stays on screen until the person closes it.",
@@ -178,11 +164,11 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-  "transfer.metadataLeftBehind": "This server can’t store {classes}, so those stayed behind.",
+  "transfer.metadataLeftBehind": "This destination can’t store some details, so they stayed behind: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "description": "PLACEHOLDER wording: David rewrites this before it ships; translate it as written for now. Extra sentence appended to the copy-complete or move-complete toast when the destination (a server, a phone, a cloud bucket) has no place for some of the information the original files carried beyond their contents, such as creation dates or Finder tags. Every file arrived; only that information stayed behind, and the originals still have it after a copy. Keep it calm and matter-of-fact: nothing went wrong.",
+    "description": "Extra sentence appended to the copy-complete or move-complete toast when the destination (a server, a phone, a cloud bucket) has no place for some of the information the original files carried beyond their contents, such as creation dates or Finder tags. Every file arrived; only that information stayed behind, and the originals still have it after a copy. Keep it calm and matter-of-fact: nothing went wrong.",
     "placeholders": {
-      "classes": "the kinds of information that stayed behind, already joined into a list with the language’s own “or”, e.g. creation dates or Finder tags"
+      "classes": "the kinds of information that stayed behind, already joined into a list with the language’s own “and”, e.g. creation dates and Finder tags"
     },
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
@@ -207,38 +193,33 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.metadataClass.creationDates": "creation dates",
   "@transfer.metadataClass.creationDates": {
-    "description": "PLACEHOLDER wording: David rewrites this before it ships; translate it as written for now. One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“This server can’t store {classes}, so those stayed behind.”), so write it as a lowercase plural noun phrase that reads mid-sentence. This one: the date a file or folder was first created (Finder’s “Date Created”).",
+    "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: the date a file or folder was first created (Finder’s “Date Created”).",
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.metadataClass.permissions": "permissions",
   "@transfer.metadataClass.permissions": {
-    "description": "PLACEHOLDER wording: David rewrites this before it ships; translate it as written for now. One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“This server can’t store {classes}, so those stayed behind.”), so write it as a lowercase plural noun phrase that reads mid-sentence. This one: who may read, change, or run a file (for example, a script marked as runnable).",
+    "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: who may read, change, or run a file (for example, a script marked as runnable).",
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.metadataClass.lockedAndHidden": "Locked and Hidden flags",
   "@transfer.metadataClass.lockedAndHidden": {
-    "description": "PLACEHOLDER wording: David rewrites this before it ships; translate it as written for now. One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“This server can’t store {classes}, so those stayed behind.”), so write it as a lowercase plural noun phrase that reads mid-sentence. This one: Finder’s Locked checkbox and the Hidden flag that keeps a file out of Finder windows. “Locked” and “Hidden” are Finder’s own terms: use the words macOS Finder uses in your language.",
+    "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: Finder’s Locked checkbox and the Hidden flag that keeps a file out of Finder windows. “Locked” and “Hidden” are Finder’s own terms: use the words macOS Finder uses in your language.",
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.metadataClass.extendedAttributes": "Finder tags",
   "@transfer.metadataClass.extendedAttributes": {
-    "description": "PLACEHOLDER wording: David rewrites this before it ships; translate it as written for now. One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“This server can’t store {classes}, so those stayed behind.”), so write it as a lowercase plural noun phrase that reads mid-sentence. This one: Finder’s colored tags, and with them comments, custom icons, and similar extra information apps attach to a file. “Finder” is the macOS app’s name: don’t translate it.",
+    "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: Finder’s colored tags, and with them comments, custom icons, and similar extra information apps attach to a file. “Finder” is the macOS app’s name: don’t translate it.",
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-
   "transfer.metadataClass.folderDates": "folder dates",
   "@transfer.metadataClass.folderDates": {
-    "description": "PLACEHOLDER wording: David rewrites this before it ships; translate it as written for now. One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“This server can’t store {classes}, so those stayed behind.”), so write it as a lowercase plural noun phrase that reads mid-sentence. This one: the date a folder was last changed.",
+    "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: the date a folder was last changed.",
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   }

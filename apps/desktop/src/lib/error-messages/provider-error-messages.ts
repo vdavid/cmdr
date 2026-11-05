@@ -49,9 +49,14 @@ export type Provider =
 
 export type ProviderCategory = 'transient' | 'needs_action' | 'serious'
 
-/** Provider display name (the `**bold**` name shown in suggestions). Catalog copy. */
+/**
+ * Provider display name (the `**bold**` name shown in suggestions). Catalog copy.
+ * The collapsed providers' copy names no provider ("This is a cloud mount."), so they
+ * carry no `displayName` key and nothing asks for one.
+ */
 function displayName(p: Provider): string {
-  return getMessage(`errors.provider.${p}.displayName`)
+  if (COLLAPSED_CATEGORY_PROVIDERS.has(p)) return ''
+  return getMessage(`errors.provider.${p}.displayName` as MessageKey)
 }
 
 /**

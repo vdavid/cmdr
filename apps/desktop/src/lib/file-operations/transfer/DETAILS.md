@@ -140,11 +140,11 @@ live here:
   move still reads as a success, and the toast stays `success`, not a warning: nothing went wrong, some files simply
   arrived too late to travel. Absent on every other ending, so the historic wordings render byte-identical.
 - **A copy or move whose destination couldn't keep some metadata appends one calm sentence**, LAST, naming the classes
-  ("This server can't store creation dates or Finder tags, so those stayed behind."), off
-  `WriteCompleteEvent.metadataLeftBehind`: typed classes and counts, never prose. Names only, joined with the UI
-  language's "or" (`formatDisjunctionList`); the counts go to the backend's log line. The toast stays `success`: every
-  byte landed. ❗ The wording is David's placeholder (the `@key` descriptions say so). There's no queue-row line: the
-  queue window hides finished rows (`queue/CLAUDE.md`), so the toast is the one surface. Backend contract:
+  ("This destination can't store some details, so they stayed behind: creation dates and Finder tags."), off
+  `WriteCompleteEvent.metadataLeftBehind`: typed classes and counts, never prose. Names only, after a colon, joined with
+  the UI language's "and" (`formatConjunctionList`: an "or" inside a negation read stiff in fr, hu, and nl); the counts
+  go to the backend's log line. The toast stays `success`: every byte landed. There's no queue-row line: the queue
+  window hides finished rows (`queue/CLAUDE.md`), so the toast is the one surface. Backend contract:
   `crates/cmdr-operations/src/transfer/volume/DETAILS.md` § "Copies keep the source's metadata".
 - **A move that left Locked items in place appends a sentence per kind**, after the metadata note, off
   `WriteCompleteEvent.lockedKept`: the ones the person chose to skip, then the ones macOS keeps locked. The toast stays

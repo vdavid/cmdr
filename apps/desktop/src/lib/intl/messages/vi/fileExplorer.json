@@ -1727,7 +1727,7 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "Chưa kết nối. Mở thư mục này sẽ kết nối tới {place}.",
+  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
     "sourceHash": "a30b8cd"
   },
@@ -1755,7 +1755,7 @@
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
     "sourceHash": "4fba610"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr không còn biết cách kết nối tới “{place}” nữa. Hãy kết nối lại từ Máy chủ, rồi mục ưa thích này sẽ hoạt động lại.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
     "sourceHash": "842858c"
   },
@@ -1889,6 +1889,10 @@
   },
   "fileExplorer.navigation.forgetConfirmButton": "Quên",
   "@fileExplorer.navigation.forgetConfirmButton": {
+    "sourceHash": "a6bd489"
+  },
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "@fileExplorer.navigation.forgetPasswordConfirmButton": {
     "sourceHash": "a6bd489"
   },
   "fileExplorer.navigation.forgetServerConfirm": "Quên {name}? Cmdr sẽ ngắt kết nối và không hiển thị máy chủ này nữa. Các tệp của bạn vẫn ở trên máy chủ.",

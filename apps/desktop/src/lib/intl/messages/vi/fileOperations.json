@@ -612,6 +612,30 @@
   "@fileOperations.transferProgress.conflictPolicyCaption": {
     "sourceHash": "cec5c27"
   },
+  "fileOperations.transferProgress.policyName.skip": "Skip",
+  "@fileOperations.transferProgress.policyName.skip": {
+    "sourceHash": "28d0359"
+  },
+  "fileOperations.transferProgress.policyName.overwrite": "Overwrite",
+  "@fileOperations.transferProgress.policyName.overwrite": {
+    "sourceHash": "b24963e"
+  },
+  "fileOperations.transferProgress.policyName.overwriteSmaller": "Overwrite if smaller",
+  "@fileOperations.transferProgress.policyName.overwriteSmaller": {
+    "sourceHash": "0473dc5"
+  },
+  "fileOperations.transferProgress.policyName.overwriteOlder": "Overwrite if older",
+  "@fileOperations.transferProgress.policyName.overwriteOlder": {
+    "sourceHash": "6c111a2"
+  },
+  "fileOperations.transferProgress.policyName.askEach": "Ask for each",
+  "@fileOperations.transferProgress.policyName.askEach": {
+    "sourceHash": "4302843"
+  },
+  "fileOperations.transferProgress.policyName.rename": "Rename",
+  "@fileOperations.transferProgress.policyName.rename": {
+    "sourceHash": "3064d79"
+  },
   "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Không sao chép tệp nào} other {Đã sao chép {countText} tệp}}} move {{count, plural, =0 {Không di chuyển tệp nào} other {Đã di chuyển {countText} tệp}}} delete {{count, plural, =0 {Không xóa tệp nào} other {Đã xóa {countText} tệp}}} trash {{count, plural, =0 {Không chuyển tệp nào vào thùng rác} other {Đã chuyển {countText} tệp vào thùng rác}}} compress {{count, plural, =0 {Không nén tệp nào} other {Đã nén {countText} tệp}}} other {Xong}}",
   "@fileOperations.transferProgress.titleDone": {
     "sourceHash": "3db0154"
@@ -1260,11 +1284,11 @@
   "@fileOperations.validation.empty": {
     "sourceHash": "2a25343"
   },
-  "fileOperations.validation.nameTooLong": "{kind, select, folder {Tên thư mục quá dài ({byteCount}/{maxBytes} byte)} other {Tên tệp quá dài ({byteCount}/{maxBytes} byte)}}",
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})} other {Filename is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})}}",
   "@fileOperations.validation.nameTooLong": {
     "sourceHash": "76a85fd"
   },
-  "fileOperations.validation.pathTooLong": "Đường dẫn đầy đủ quá dài ({byteCount}/{maxBytes} byte)",
+  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathTooLong": {
     "sourceHash": "1658c7a"
   },
@@ -1292,11 +1316,11 @@
   "@fileOperations.validation.pathNullChar": {
     "sourceHash": "271149f"
   },
-  "fileOperations.validation.pathTotalTooLong": "Đường dẫn quá dài ({byteCount}/{maxBytes} byte)",
+  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathTotalTooLong": {
     "sourceHash": "30aca7d"
   },
-  "fileOperations.validation.pathSegmentTooLong": "Một tên thư mục trong đường dẫn quá dài ({byteCount}/{maxBytes} byte)",
+  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathSegmentTooLong": {
     "sourceHash": "75b2602"
   },

@@ -4,7 +4,9 @@
     // itself (where the files are and where they'd go), the AI's reason (labelled as its words),
     // the files, and, under them, whether it can be taken back beside the button that names the
     // action. A server card is the same order with no files: its facts are what the click saves.
+    import type { Snippet } from 'svelte'
     import Button from '#lib/ui/Button.svelte'
+    import Trans from '#lib/intl/Trans.svelte'
     import Icon from '#lib/ui/Icon.svelte'
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -70,13 +72,24 @@
     }
 </script>
 
+<!-- One frame key holds both parts, so a verb-final language can put the action last. -->
+{#snippet actionPart(children: Snippet)}
+    <span class="action" class:danger={irreversible}>{@render children()}</span>
+{/snippet}
+{#snippet titlePart(children: Snippet)}
+    <span class="title-text">{@render children()}</span>
+{/snippet}
+
 <SectionCard>
     <article class="group" aria-labelledby={titleId}>
         <header class="group-head">
             <!-- The action leads the title, so what happens reads from the title alone. -->
             <h3 class="group-title" id={titleId}>
-                <span class="action" class:danger={irreversible}>{tString(actionKey(verb))}</span>
-                <span class="title-text">{group.displayName}</span>
+                <Trans
+                    key="suggestedOps.groupTitle"
+                    snippets={{ actionPart, titlePart }}
+                    params={{ action: tString(actionKey(verb)), title: group.displayName }}
+                />
             </h3>
             {#if !group.server}
                 <span class="count">
@@ -244,7 +257,6 @@
 
     /* The action reads first and stands apart from the title the AI wrote. */
     .action {
-        margin-right: var(--spacing-xs);
         color: var(--color-accent-text);
     }
 

@@ -31,7 +31,7 @@
   "@stateRecovery.appStatus.title": {
     "description": "Headline of a notice shown once at launch: the file remembering each pane's folders, tabs, and layout was damaged, so both panes open at the home folder with the default layout. \"Cmdr\" is the product name; a \"pane\" is one of the two side-by-side file lists. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."
   },
-  "stateRecovery.operationLog.title": "Cmdr couldn’t read your operation log, so it starts fresh",
+  "stateRecovery.operationLog.title": "Cmdr couldn’t read your operation log, so the log starts fresh",
   "@stateRecovery.operationLog.title": {
     "description": "Headline of a notice shown once: the operation log (the record of past file operations that undo reads) was damaged, so earlier operations can't be undone any more; new ones can. “Operation log” is the name the rest of Cmdr uses for it: use the same words as operationLog.dialog.title. \"Cmdr\" is the product name. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."
   },

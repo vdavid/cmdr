@@ -1723,7 +1723,7 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "Не підʼєднано. Якщо відкрити, Cmdr підʼєднається до «{place}».",
+  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
     "sourceHash": "a30b8cd"
   },
@@ -1751,7 +1751,7 @@
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
     "sourceHash": "4fba610"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr більше не знає, як звʼязатися з «{place}». Підʼєднайтеся знову в розділі «Сервери», і ця улюблена папка знову запрацює.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
     "sourceHash": "842858c"
   },
@@ -1885,6 +1885,10 @@
   },
   "fileExplorer.navigation.forgetConfirmButton": "Забути",
   "@fileExplorer.navigation.forgetConfirmButton": {
+    "sourceHash": "a6bd489"
+  },
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "@fileExplorer.navigation.forgetPasswordConfirmButton": {
     "sourceHash": "a6bd489"
   },
   "fileExplorer.navigation.forgetServerConfirm": "Забути сервер «{name}»? Cmdr розірве зʼєднання й більше не показуватиме цей сервер у списку. Ваші файли залишаться на сервері.",

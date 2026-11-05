@@ -410,7 +410,7 @@
   "errno:9999": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into an unexpected problem reading `/Volumes/share/&#95;todo&#95;&#42;pics/photo.jpg`. Check the technical details below for the specific system code, which can help with troubleshooting.",
+    "explanation": "Cmdr ran into an unexpected problem reading `/Volumes/share/&#95;todo&#95;&#42;pics/photo.jpg`. Check “Technical details” below for the specific system code, which can help with troubleshooting.",
     "retryHint": true,
     "suggestion": "Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, open **Disk Utility** and run **First Aid** on this volume",
     "title": "Couldn’t read this folder"

@@ -83,6 +83,10 @@
   "@suggestedOps.action.extract": {
     "sourceHash": "c15301c"
   },
+  "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
+  "@suggestedOps.groupTitle": {
+    "sourceHash": "201c1fc"
+  },
   "suggestedOps.approve.move": "移动 {countText} 个{count, plural, other {文件}}",
   "@suggestedOps.approve.move": {
     "sourceHash": "4c89041"
@@ -263,6 +267,14 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
+  "suggestedOps.factUnknownSize": "Unknown",
+  "@suggestedOps.factUnknownSize": {
+    "sourceHash": "b764cdc"
+  },
+  "suggestedOps.factUnknownDate": "Unknown",
+  "@suggestedOps.factUnknownDate": {
+    "sourceHash": "b764cdc"
+  },
   "suggestedOps.factChanged": "建议提出后有改动",
   "@suggestedOps.factChanged": {
     "sourceHash": "958780a"
@@ -290,10 +302,6 @@
   "suggestedOps.sourceGone": "这些文件原来所在的驱动器已经不在了，所以这里的大小和修改日期是 AI 提出建议时的记录。",
   "@suggestedOps.sourceGone": {
     "sourceHash": "1b30de5"
-  },
-  "suggestedOps.factUnknown": "未知",
-  "@suggestedOps.factUnknown": {
-    "sourceHash": "b764cdc"
   },
   "suggestedOps.includeFile": "包含“{name}”",
   "@suggestedOps.includeFile": {

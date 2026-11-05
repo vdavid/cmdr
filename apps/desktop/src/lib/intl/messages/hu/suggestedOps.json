@@ -83,6 +83,10 @@
   "@suggestedOps.action.extract": {
     "sourceHash": "c15301c"
   },
+  "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
+  "@suggestedOps.groupTitle": {
+    "sourceHash": "201c1fc"
+  },
   "suggestedOps.approve.move": "{countText} {count, plural, one {fájl} other {fájl}} áthelyezése",
   "@suggestedOps.approve.move": {
     "sourceHash": "4c89041"
@@ -263,6 +267,14 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
+  "suggestedOps.factUnknownSize": "Unknown",
+  "@suggestedOps.factUnknownSize": {
+    "sourceHash": "b764cdc"
+  },
+  "suggestedOps.factUnknownDate": "Unknown",
+  "@suggestedOps.factUnknownDate": {
+    "sourceHash": "b764cdc"
+  },
   "suggestedOps.factChanged": "Módosult a javaslat óta",
   "@suggestedOps.factChanged": {
     "sourceHash": "958780a"
@@ -290,10 +302,6 @@
   "suggestedOps.sourceGone": "Az a meghajtó, amelyen ezek a fájlok voltak, már nincs itt, ezért a méretük és a dátumuk abból az időből származik, amikor az AI ezt javasolta.",
   "@suggestedOps.sourceGone": {
     "sourceHash": "1b30de5"
-  },
-  "suggestedOps.factUnknown": "Ismeretlen",
-  "@suggestedOps.factUnknown": {
-    "sourceHash": "b764cdc"
   },
   "suggestedOps.includeFile": "Belefoglalás: {name}",
   "@suggestedOps.includeFile": {

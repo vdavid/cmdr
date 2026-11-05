@@ -9,9 +9,9 @@
     "description": "Warning note at the top of the AI suggestions dialog, above the suggested actions: the AI agent made these suggestions, and nothing happens unless the person approves one. It only shows when there is something to approve. The user can close it for good with its × (suggestedOps.approvalNoticeDismiss), and bring it back in Settings > Advanced.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
-  "suggestedOps.approvalNoticeDismiss": "Don’t show this again",
+  "suggestedOps.approvalNoticeDismiss": "Don’t show again",
   "@suggestedOps.approvalNoticeDismiss": {
-    "description": "Tooltip and screen-reader name of the × that closes the note at the top of the AI suggestions dialog (suggestedOps.description) for good. It can be turned back on in Settings > Advanced.",
+    "description": "Tooltip and screen-reader name of the × that closes the note at the top of the AI suggestions dialog (suggestedOps.description) for good. It can be turned back on in Settings > Advanced. Same words as the app's other “Don’t show again” controls (fileExplorer.quickLookHint.dontShowAgain).",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
   "suggestedOps.sweepWhen.justNow": "Suggested just now",
@@ -100,6 +100,14 @@
   "@suggestedOps.action.extract": {
     "description": "The action a suggestion takes, leading its title in the AI suggestions dialog, before the name the AI gave it (for example \"Extract Old installers\"). This one unpacks archives (zip files and the like) into a folder. A short VERB phrase in the imperative, like a menu command; it must read as what happens when the person approves."
   },
+  "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
+  "@suggestedOps.groupTitle": {
+    "description": "Heading of one suggestion in the AI suggestions dialog: the action (one of the suggestedOps.action.* labels, shown in an accent color) and the name the AI gave the suggestion, for example “Move Old installers”. Put the two in the order your language wants (a verb-final language may put the action last) and keep both tags around their placeholders. Add only the spacing or punctuation your language needs between them.",
+    "placeholders": {
+      "action": "the action label, already translated (for example “Move”, “Move to Trash”)",
+      "title": "the suggestion's name as the AI wrote it, in the user's language or not; never translated"
+    }
+  },
   "suggestedOps.approve.move": "Move {countText} {count, plural, one {file} other {files}}",
   "@suggestedOps.approve.move": {
     "description": "Primary button on a suggestion that moves files to another folder. Pressing it starts the move. {countText} is how many files would run (the ones the user left ticked), already formatted.",
@@ -186,7 +194,7 @@
   },
   "suggestedOps.reversible.moveBack": "You can undo this: Cmdr can move {count, plural, one {it} other {them}} back",
   "@suggestedOps.reversible.moveBack": {
-    "description": "Note under a suggestion’s file list, beside its buttons on a suggestion that moves files, saying the user can take it back because Cmdr can move the files back where they were. {count} only picks \"it\" or \"them\". The items can be files or folders.",
+    "description": "Note under a suggestion’s file list, beside its buttons on a suggestion that moves files, saying the user can take it back because Cmdr can move the files back where they were. {count} only picks \"it\" or \"them\"; a language without grammatical number may write one wording in every branch and leave the number out. The items can be files or folders.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
   "suggestedOps.reversible.renameBack": "You can undo this: Cmdr can change the {count, plural, one {name} other {names}} back",
@@ -319,6 +327,14 @@
     "description": "Column heading for when each file was last changed, as Cmdr finds it on disk now. A column heading, so keep it short; a shorter form (“Modified”) is fine.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
+  "suggestedOps.factUnknownSize": "Unknown",
+  "@suggestedOps.factUnknownSize": {
+    "description": "Shown in a file's Size column when Cmdr has no size at all: it couldn't check the file now and recorded nothing when the AI made the suggestion. Never a zero, which would read as an empty file. Agrees with “size” where your language must; its twin suggestedOps.factUnknownDate stands for a date."
+  },
+  "suggestedOps.factUnknownDate": "Unknown",
+  "@suggestedOps.factUnknownDate": {
+    "description": "Shown in a file's Last modified column when Cmdr has no date at all: it couldn't check the file now and recorded nothing when the AI made the suggestion. Agrees with “date” where your language must; its twin suggestedOps.factUnknownSize stands for a size."
+  },
   "suggestedOps.factChanged": "Changed since the suggestion",
   "@suggestedOps.factChanged": {
     "description": "Screen-reader name of a small warning glyph beside a file's size or date when the value on disk now differs from what it was when the AI made the suggestion. The tooltip (suggestedOps.factChangedTooltip) shows both values.",
@@ -351,10 +367,6 @@
   "suggestedOps.sourceGone": "The drive these files were on isn’t here any more, so their sizes and dates are from when the AI suggested this.",
   "@suggestedOps.sourceGone": {
     "description": "Note above a suggestion's file list when the drive or server holding the files was disconnected or removed, so Cmdr couldn't look at them now. The sizes and dates shown are the ones recorded when the AI made the suggestion. \"Dates\" means the files' last-modified dates, not data."
-  },
-  "suggestedOps.factUnknown": "Unknown",
-  "@suggestedOps.factUnknown": {
-    "description": "Shown in a file's Size or Last modified column when Cmdr has no value at all: it couldn't check the file now and recorded nothing when the AI made the suggestion. Never a zero, which would read as an empty file. The same string stands in for either a size or a date, so in a gendered language pick a form that reads right for both (or a neutral one)."
   },
   "suggestedOps.includeFile": "Include {name}",
   "@suggestedOps.includeFile": {
@@ -522,7 +534,7 @@
   },
   "suggestedOps.newNameTaken": "Name already taken",
   "@suggestedOps.newNameTaken": {
-    "description": "Screen-reader name of a small warning glyph beside the new name a suggestion gives a file, when a file or folder with that name is already where the file would land. The tooltip is suggestedOps.newNameTakenTooltip.",
+    "description": "Screen-reader name of a small warning glyph beside the new name a suggestion gives a file, when a file or folder with that name is already where the file would land. The tooltip is suggestedOps.newNameTakenTooltip. Same words as multiRename.status.targetExists.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
   "suggestedOps.newNameTakenTooltip": "Something called “{name}” is already there.",

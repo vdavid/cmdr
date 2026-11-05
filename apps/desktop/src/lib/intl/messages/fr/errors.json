@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand name; kept verbatim per the do-not-translate list."
   },
-  "errors.provider.cmVolumes.displayName": "Montage cloud",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "votre fournisseur cloud",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Ce dossier est géré par **MacDroid**. Voici ce que vous pouvez essayer :\n- Ouvrez MacDroid et vérifiez que votre téléphone est connecté\n- Assurez-vous que votre téléphone est déverrouillé et en mode de transfert de fichiers\n- Débranchez puis rebranchez le câble USB, puis revenez ici",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

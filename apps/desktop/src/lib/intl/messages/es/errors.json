@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand name 'VeraCrypt'; do-not-translate."
   },
-  "errors.provider.cmVolumes.displayName": "Montaje en la nube",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "tu proveedor de la nube",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Esta carpeta la gestiona **MacDroid**. Esto es lo que puedes probar:\n- Abre MacDroid y comprueba que tu teléfono esté conectado\n- Asegúrate de que tu teléfono esté desbloqueado y en modo de transferencia de archivos\n- Desenchufa y vuelve a enchufar el cable USB, y vuelve a abrir esta carpeta",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

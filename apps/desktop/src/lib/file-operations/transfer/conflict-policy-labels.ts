@@ -20,19 +20,23 @@ export const CONFLICT_POLICY_OPTIONS = [
 ] as const satisfies readonly { value: ConflictResolution; labelKey: MessageKey }[]
 
 /**
- * A policy in the radios' count-free wording, the one they show when nobody
- * knows how many files clash: "Overwrite if older", "Ask for each". Rename has
- * no radio (only a clash's "Rename all" reaches it), so it takes that button's
- * word.
+ * Each policy's NAME for the progress dialog's caption, a noun phrase or state
+ * ("Overwrite if older"). ❗ Not the radios' labels: those are commands, which many
+ * languages write as imperatives, and the caption then read as an order
+ * ("…: Overwrite if older!"). A `Record`, so a new policy can't compile without one.
  */
-function conflictPolicyLabel(policy: ConflictResolution): string {
-  if (policy === 'stop') return tString('fileOperations.transferDialog.policyAskEach')
-  if (policy === 'rename') return tString('fileOperations.transferProgress.conflictRename')
-  const option = CONFLICT_POLICY_OPTIONS.find((candidate) => candidate.value === policy)
-  return option === undefined ? '' : tString(option.labelKey, { count: 1 })
+const CONFLICT_POLICY_NAME_KEYS: Record<ConflictResolution, MessageKey> = {
+  skip: 'fileOperations.transferProgress.policyName.skip',
+  overwrite: 'fileOperations.transferProgress.policyName.overwrite',
+  overwrite_smaller: 'fileOperations.transferProgress.policyName.overwriteSmaller',
+  overwrite_older: 'fileOperations.transferProgress.policyName.overwriteOlder',
+  stop: 'fileOperations.transferProgress.policyName.askEach',
+  rename: 'fileOperations.transferProgress.policyName.rename',
 }
 
 /** The progress dialog's one-line caption: "If a file already exists: Skip". */
 export function conflictPolicyCaption(policy: ConflictResolution): string {
-  return tString('fileOperations.transferProgress.conflictPolicyCaption', { policy: conflictPolicyLabel(policy) })
+  return tString('fileOperations.transferProgress.conflictPolicyCaption', {
+    policy: tString(CONFLICT_POLICY_NAME_KEYS[policy]),
+  })
 }

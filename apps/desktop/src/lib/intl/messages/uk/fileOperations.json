@@ -612,6 +612,30 @@
   "@fileOperations.transferProgress.conflictPolicyCaption": {
     "sourceHash": "cec5c27"
   },
+  "fileOperations.transferProgress.policyName.skip": "Skip",
+  "@fileOperations.transferProgress.policyName.skip": {
+    "sourceHash": "28d0359"
+  },
+  "fileOperations.transferProgress.policyName.overwrite": "Overwrite",
+  "@fileOperations.transferProgress.policyName.overwrite": {
+    "sourceHash": "b24963e"
+  },
+  "fileOperations.transferProgress.policyName.overwriteSmaller": "Overwrite if smaller",
+  "@fileOperations.transferProgress.policyName.overwriteSmaller": {
+    "sourceHash": "0473dc5"
+  },
+  "fileOperations.transferProgress.policyName.overwriteOlder": "Overwrite if older",
+  "@fileOperations.transferProgress.policyName.overwriteOlder": {
+    "sourceHash": "6c111a2"
+  },
+  "fileOperations.transferProgress.policyName.askEach": "Ask for each",
+  "@fileOperations.transferProgress.policyName.askEach": {
+    "sourceHash": "4302843"
+  },
+  "fileOperations.transferProgress.policyName.rename": "Rename",
+  "@fileOperations.transferProgress.policyName.rename": {
+    "sourceHash": "3064d79"
+  },
   "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Нічого не скопійовано} one {Скопійовано {countText} файл} few {Скопійовано {countText} файли} many {Скопійовано {countText} файлів} other {Скопійовано {countText} файлу}}} move {{count, plural, =0 {Нічого не переміщено} one {Переміщено {countText} файл} few {Переміщено {countText} файли} many {Переміщено {countText} файлів} other {Переміщено {countText} файлу}}} delete {{count, plural, =0 {Нічого не видалено} one {Видалено {countText} файл} few {Видалено {countText} файли} many {Видалено {countText} файлів} other {Видалено {countText} файлу}}} trash {{count, plural, =0 {Нічого не переміщено в Смітник} one {Переміщено в Смітник {countText} файл} few {Переміщено в Смітник {countText} файли} many {Переміщено в Смітник {countText} файлів} other {Переміщено в Смітник {countText} файлу}}} compress {{count, plural, =0 {Нічого не заархівовано} one {Заархівовано {countText} файл} few {Заархівовано {countText} файли} many {Заархівовано {countText} файлів} other {Заархівовано {countText} файлу}}} other {Готово}}",
   "@fileOperations.transferProgress.titleDone": {
     "sourceHash": "3db0154"
@@ -1260,11 +1284,11 @@
   "@fileOperations.validation.empty": {
     "sourceHash": "2a25343"
   },
-  "fileOperations.validation.nameTooLong": "{kind, select, folder {Назва папки задовга (байтів: {byteCount}/{maxBytes})} other {Назва файлу задовга (байтів: {byteCount}/{maxBytes})}}",
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})} other {Filename is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})}}",
   "@fileOperations.validation.nameTooLong": {
     "sourceHash": "76a85fd"
   },
-  "fileOperations.validation.pathTooLong": "Повний шлях задовгий (байтів: {byteCount}/{maxBytes})",
+  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathTooLong": {
     "sourceHash": "1658c7a"
   },
@@ -1292,11 +1316,11 @@
   "@fileOperations.validation.pathNullChar": {
     "sourceHash": "271149f"
   },
-  "fileOperations.validation.pathTotalTooLong": "Шлях задовгий (байтів: {byteCount}/{maxBytes})",
+  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathTotalTooLong": {
     "sourceHash": "30aca7d"
   },
-  "fileOperations.validation.pathSegmentTooLong": "Назва однієї з папок у шляху задовга (байтів: {byteCount}/{maxBytes})",
+  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathSegmentTooLong": {
     "sourceHash": "75b2602"
   },

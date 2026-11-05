@@ -4,24 +4,20 @@
     "description": "Default label for the single dismiss button in a generic alert dialog, used when the caller passes no custom button text. A confirmation/acknowledgement, like the standard OK button.",
     "screenshot": "alert-long.png"
   },
-
   "ui.alertDialog.copyPathAria": "Copy path to clipboard",
   "@ui.alertDialog.copyPathAria": {
     "description": "aria-label for the Copy button beside the path shown in an alert dialog (for example \"Path is too long\"). Screen-reader-only; the visible button label is the shared \"Copy\" / \"Copied!\" pair. \"Path\" here means a filesystem path such as /Users/dave/photos/img.jpg. Keep it identical in wording to commands.fileCopyPath.label.",
     "screenshot": "alert-long-unbroken-path.png"
   },
-
   "ui.modalDialog.close": "Close",
   "@ui.modalDialog.close": {
     "description": "aria-label for the small × close button in the top-right corner of any modal dialog. Screen-reader-only; the visible glyph is ×.",
     "screenshot": "new-folder-dialog.png"
   },
-
   "ui.menuBar.label": "Menu bar",
   "@ui.menuBar.label": {
     "description": "Screen-reader name of the strip of menus (Cmdr, File, Edit, View, …) at the top of the browser demo on getcmdr.com, which stands in for the macOS menu bar a web page doesn't have. Use the term macOS uses for its own menu bar in this language."
   },
-
   "ui.demoDrop.overBudget": "The demo holds up to {budgetText} of your files per visit, so it left out {countText} {count, plural, one {item} other {items}}.",
   "@ui.demoDrop.overBudget": {
     "description": "Notification in the browser demo on getcmdr.com, shown when a visitor drags files from their own computer into the demo and some of them don't fit the demo's per-visit size limit. The files that fit came in; the rest stayed out. The visitor's own files are never changed, so keep the tone light and reassuring, with no sense of something going wrong.",
@@ -31,17 +27,14 @@
       "count": "the same number (drives the singular/plural form of the noun)"
     }
   },
-
   "ui.popover.defaultAriaLabel": "Options",
   "@ui.popover.defaultAriaLabel": {
     "description": "Default aria-label naming a popover region when the caller passes none. Generic fallback meaning a small floating panel of choices."
   },
-
-  "ui.select.placeholder": "Select…",
+  "ui.select.placeholder": "Choose…",
   "@ui.select.placeholder": {
-    "description": "Default placeholder shown in a dropdown (select) trigger before the user has picked an option."
+    "description": "Default placeholder shown in a dropdown (select) trigger before the user has picked an option. “Choose”, never “Select”, which is the name of Cmdr's Select menu (selecting files)."
   },
-
   "ui.combobox.emptyText": "No matches. Keep typing to use your own value.",
   "@ui.combobox.emptyText": {
     "description": "Shown in a combobox (text field with suggestions) popup when nothing matches what the user typed. Reassures them they can still enter a custom value that isn't in the suggestion list."
@@ -54,7 +47,6 @@
   "@ui.combobox.showSuggestions": {
     "description": "aria-label for the chevron button that opens a combobox's suggestion dropdown."
   },
-
   "ui.copyBox.copyAria": "Copy command to clipboard",
   "@ui.copyBox.copyAria": {
     "description": "aria-label for the Copy button in a CopyBox, the box that shows a string to copy verbatim. This is the DEFAULT, used where the string is a terminal command; a caller showing something else (a file path) passes its own label. Screen-reader-only.",
@@ -93,7 +85,6 @@
   "@ui.copyBox.copied": {
     "description": "Brief confirmation shown on the Copy button right after the string was copied, replacing the word Copy for a couple of seconds. Tight button; keep short."
   },
-
   "ui.shortcutChip.customizeAria": "Customize the {commandName} shortcut",
   "@ui.shortcutChip.customizeAria": {
     "description": "Screen-reader text inside a clickable keyboard-shortcut pill that opens shortcut customization for one command. It's read right after the key the pill shows (\"⌘C Customize the Copy shortcut\"), so keep it a phrase that follows the key naturally.",
@@ -105,7 +96,6 @@
   "@ui.shortcutChip.customizeTooltip": {
     "description": "Tooltip on hovering a clickable keyboard-shortcut pill, hinting that clicking it opens shortcut customization."
   },
-
   "ui.toast.dismissAria": "Dismiss notification",
   "@ui.toast.dismissAria": {
     "description": "aria-label for the × button that closes (dismisses) a toast notification.",
@@ -122,7 +112,6 @@
       "durationText": "how long ago, already formatted as a number plus a one-letter unit, for example 2m (minutes) or 1h (hours)"
     }
   },
-
   "ui.loadingIcon.finalizing": "All {countText} {count, plural, one {file} other {files}} loaded. Sorting your files, preparing view…",
   "@ui.loadingIcon.finalizing": {
     "description": "Loading message shown after all entries arrive, while the list is being sorted and laid out. Appears centered in a pane during a slow directory open.",
@@ -195,7 +184,6 @@
   "@ui.confirmDialog.cancel": {
     "description": "The cancelling button of a native confirmation alert that carries a checkbox (Forget server's \"Also forget the saved password\"). Use the word your language's macOS uses on a Cancel button."
   },
-
   "ui.startedElsewhere.agent": "Ask Cmdr started this.",
   "@ui.startedElsewhere.agent": {
     "description": "A line inside a confirmation dialog, or under the inline rename field, that Ask Cmdr (the app's built-in AI assistant) opened by itself. It tells the person the action wasn't theirs and that nothing happens until they confirm it. Keep the name Ask Cmdr untranslated."
@@ -208,7 +196,6 @@
   "@ui.startedElsewhere.keysWait": {
     "description": "Shown alone, or after the \"started this\" line, while a dialog that opened by itself ignores the keyboard, so that someone typing elsewhere can't confirm it by accident. It goes away about a second after the last key. Escape and clicks still work during this time, so don't word it as the dialog being locked."
   },
-
   "ui.toolAsk.allow": "Allow",
   "@ui.toolAsk.allow": {
     "description": "The confirming button of a dialog that asks a person to allow something an AI assistant wants to do, like opening a file or changing a setting."
@@ -348,7 +335,6 @@
       "name": "the volume's name"
     }
   },
-
   "ui.dialogBoundary.closedToast": "That dialog ran into a problem, so we closed it. Please try again.",
   "@ui.dialogBoundary.closedToast": {
     "description": "Toast shown when any dialog in the app broke unexpectedly, while opening, in use, or while closing. The app has already closed the dialog and put keyboard focus back on the file list, so the person can simply open it again. \"That dialog\" is deliberately generic: the toast doesn't know the dialog's name."

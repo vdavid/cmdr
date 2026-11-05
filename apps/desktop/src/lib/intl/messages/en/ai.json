@@ -138,7 +138,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, when you chat or when it starts a conversation on its own:",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, when you chat or when Cmdr starts a conversation on its own:",
   "@ai.cloudConsent.askCmdr.title": {
     "description": "List item in the Allow cloud AI fold introducing the nested list of what the Ask Cmdr assistant sends (the ai.cloudConsent.askCmdr.item.* keys). \"Ask Cmdr\" is the assistant's product name and stays as it is; keep the <b></b> tags around it. Ends with a colon.",
     "screenshot": "settings-ai-provider.png",
@@ -246,9 +246,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.logsNote": "If you turn on LLM call logging in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those call logs stay local, never sent anywhere.",
+  "ai.cloudConsent.logsNote": "If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those call logs stay local, never sent anywhere.",
   "@ai.cloudConsent.logsNote": {
-    "description": "Shown under Settings > AI > Provider, as a smaller note near the end of the Allow cloud AI fold, about the optional local LLM call log (the logLlmCalls setting): those logs are written to a local folder and never transmitted. It's a different thing from the app's own log, ai.cloudConsent.askCmdr.item.logs, so keep \"call logs\" distinct.",
+    "description": "Shown under Settings > AI > Provider, as a smaller note near the end of the Allow cloud AI fold, about the optional local AI call log (the setting “Log AI model calls”, settings.advanced.logLlmCalls.label, quoted: match its label exactly): those logs are written to a local folder and never transmitted. It's a different thing from the app's own log, ai.cloudConsent.askCmdr.item.logs, so keep \"call logs\" distinct.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -342,9 +342,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.translateError.emptyResponse.body": "Your model may need a bigger budget for this. Try a faster model like gpt-4.1-mini in Settings > AI.",
+  "ai.translateError.emptyResponse.body": "Your model may have used up its token budget before it answered. Try a faster model like gpt-4.1-mini in Settings > AI.",
   "@ai.translateError.emptyResponse.body": {
-    "description": "Next-step line under the AI-came-back-empty toast. gpt-4.1-mini is a model name; keep it as shown. Settings > AI is a navigation path; keep it as shown.",
+    "description": "Next-step line under the AI-came-back-empty toast. A “token budget” is how much text the model may write (its thinking included) for one answer; a slow, thinking model can spend it all before answering. gpt-4.1-mini is a model name; keep it as shown. Settings > AI is a navigation path; keep it as shown.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -549,9 +549,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloud.timedOut": "The server didn’t answer in time. Try again in a moment.",
+  "ai.cloud.timedOut": "The service didn’t answer in time. Try again in a moment.",
   "@ai.cloud.timedOut": {
-    "description": "Status line shown when the cloud AI server took too long to answer the connection test (about 10 seconds). Sits next to a Recheck button. Avoid the words \"error\" or \"failed\".",
+    "description": "Status line shown when the cloud AI service took too long to answer the connection test (about 10 seconds). Sits next to a Recheck button. “The service” matches ai.cloud.providerRefused on the same row. Avoid the words \"error\" or \"failed\".",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

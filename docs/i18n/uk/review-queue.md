@@ -41,8 +41,7 @@ record the outcome in `terms.json` or `decisions.md`).
 - **Software Update** (`main.oldWebkit.body`): is «Оновлення ПЗ» the current System Settings pane name?
 - **Apple status page** (`errors.provider.iCloud.serious`): «сторінку стану систем Apple» vs Apple's own «Стан системи».
 - **VeraCrypt repair** (`errors.provider.veraCrypt.serious`): VeraCrypt's uk UI wasn't available to quote.
-- **Cloud mount** (`errors.provider.cmVolumes.*`, `errors.provider.genericCloudStorage.displayName`): «змонтоване хмарне
-  сховище», «ваш хмарний сервіс»; no template inserts them yet.
+- **Cloud mount** (`errors.provider.cmVolumes.*`): «змонтоване хмарне сховище».
 - **Tag names** (`commands.tagsToggle*.label`): confirm Finder's sidebar says Бузковий and Оранжевий (not Фіолетовий /
   Помаранчевий).
 - **Teal vs cyan** (`settings.tint.teal`, `settings.tint.cyan`): «Бірюзовий» vs «Блакитний»; distinct enough?

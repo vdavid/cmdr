@@ -27,7 +27,7 @@
  */
 
 import { formatNumber } from '#lib/file-explorer/selection/selection-info-utils.js'
-import { formatDisjunctionList } from '#lib/intl/list-format.js'
+import { formatConjunctionList } from '#lib/intl/list-format.js'
 import { joinSentences } from '#lib/intl/sentence-join.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { tString } from '#lib/intl/messages.svelte.js'
@@ -182,7 +182,7 @@ const METADATA_CLASS_KEYS: Record<LostMetadataClass, MessageKey> = {
  */
 function withMetadataLeftBehind(toast: string, left: MetadataLeftBehind | null | undefined): string {
   if (!left || left.classes.length === 0) return toast
-  const classes = formatDisjunctionList(left.classes.map((lost) => tString(METADATA_CLASS_KEYS[lost.class])))
+  const classes = formatConjunctionList(left.classes.map((lost) => tString(METADATA_CLASS_KEYS[lost.class])))
   return `${toast} ${tString('transfer.metadataLeftBehind', { classes })}`
 }
 

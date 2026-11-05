@@ -1564,8 +1564,6 @@ The mechanics:
   (`StreamWritten::nothing_refused`). Pinned by `metadata_loss_tests.rs`, through `InMemoryVolume::with_write_refusing`.
 - **Not counted**: the native engine (local to local keeps everything local disk can hold), and a server-side copy (the
   store keeps its own metadata).
-- ❗ **The wording is David's placeholder** (`transfer.metadataLeftBehind`, `transfer.metadataClass.*`), marked so in
-  the `@key` descriptions.
 
 **Folders keep their source's dates too, set AFTER their contents land.** Writing a child bumps its folder's date on
 every real store, so a folder dated when it's created lists "now" by the end of the copy.

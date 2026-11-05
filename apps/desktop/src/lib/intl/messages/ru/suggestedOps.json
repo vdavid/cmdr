@@ -83,6 +83,10 @@
   "@suggestedOps.action.extract": {
     "sourceHash": "c15301c"
   },
+  "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
+  "@suggestedOps.groupTitle": {
+    "sourceHash": "201c1fc"
+  },
   "suggestedOps.approve.move": "Переместить {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}}",
   "@suggestedOps.approve.move": {
     "sourceHash": "4c89041"
@@ -263,6 +267,14 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
+  "suggestedOps.factUnknownSize": "Unknown",
+  "@suggestedOps.factUnknownSize": {
+    "sourceHash": "b764cdc"
+  },
+  "suggestedOps.factUnknownDate": "Unknown",
+  "@suggestedOps.factUnknownDate": {
+    "sourceHash": "b764cdc"
+  },
   "suggestedOps.factChanged": "Изменено после предложения",
   "@suggestedOps.factChanged": {
     "sourceHash": "958780a"
@@ -290,10 +302,6 @@
   "suggestedOps.sourceGone": "Диска, на котором были эти файлы, больше нет, поэтому их размеры и даты изменения показаны на момент предложения ИИ.",
   "@suggestedOps.sourceGone": {
     "sourceHash": "1b30de5"
-  },
-  "suggestedOps.factUnknown": "Неизвестно",
-  "@suggestedOps.factUnknown": {
-    "sourceHash": "b764cdc"
   },
   "suggestedOps.includeFile": "Включить «{name}»",
   "@suggestedOps.includeFile": {

@@ -622,11 +622,11 @@
   "@queryUi.date.preset.lastWeek": {
     "sourceHash": "1e4419c"
   },
-  "queryUi.date.preset.thisMonth": "{month}1 日 {time}",
+  "queryUi.date.preset.thisMonth": "{date} {time}",
   "@queryUi.date.preset.thisMonth": {
     "sourceHash": "030ee23"
   },
-  "queryUi.date.preset.lastMonth": "{year} 年 {month}1 日 {time}",
+  "queryUi.date.preset.lastMonth": "{date}, {time}",
   "@queryUi.date.preset.lastMonth": {
     "sourceHash": "0838509"
   },

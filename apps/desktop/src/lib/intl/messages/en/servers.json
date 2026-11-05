@@ -8,7 +8,7 @@
   "@servers.pinHint.title": {
     "description": "Title of a one-time notification, shown the first time five servers sit in the volume switcher's Network group. \"Network group\" is the heading in the switcher (the dropdown listing disks and servers) that servers are filed under; use the same wording as that heading. Friendly and factual, never a warning."
   },
-  "servers.pinHint.body": "Right-click a server and choose Unpin from switcher, or use “{command}” from the command palette. It stays in the Servers list.",
+  "servers.pinHint.body": "Right-click a server and choose “Unpin from switcher”, or use “{command}” from the command palette. It stays in the Servers list.",
   "@servers.pinHint.body": {
     "description": "Body of that notification: how to take a server out of the volume switcher, and the reassurance that unpinning loses nothing. “Unpin from switcher” must match the context-menu item menu.network.unpin word for word. \"Servers\" is the hub row in the switcher that lists every saved server. The command name arrives translated in {command}; keep the quotation marks your language uses around a UI label.",
     "placeholders": {
@@ -74,9 +74,9 @@
   "@servers.hub.status.waitingForKey": {
     "description": "Status of an SSH server whose identity key the user hasn’t approved yet. \"The key\" is the server’s SSH host key, a fingerprint a person compares before trusting the server. Address the user directly."
   },
-  "servers.hub.neverUsed": "Never",
+  "servers.hub.neverUsed": "Never used",
   "@servers.hub.neverUsed": {
-    "description": "Shown in the servers hub’s \"Last used\" column for a server the user has never connected to. One word.",
+    "description": "Shown in the servers hub’s \"Last used\" column for a server the user has never connected to. Short.",
     "screenshot": "servers-hub.png"
   },
   "servers.hub.shareAccount": "as {username}",
@@ -604,9 +604,9 @@
     "description": "Small button under the address in the Add server sheet, shown only after Cmdr couldn't reach the server: saves it as typed without checking anything. VERB phrase.",
     "screenshot": "server-sign-in-refused-local-network.png"
   },
-  "servers.sheet.addAnywayHelp": "Cmdr couldn’t check this server, so Add anyway saves it as you typed it.",
+  "servers.sheet.addAnywayHelp": "Cmdr couldn’t check this server, so “Add anyway” saves it as you typed it.",
   "@servers.sheet.addAnywayHelp": {
-    "description": "One line beside the Add anyway button: nothing about the server was checked, so a typo would be saved too. \"Add anyway\" must match servers.sheet.addAnyway word for word.",
+    "description": "One line beside the Add anyway button: nothing about the server was checked, so a typo would be saved too. “Add anyway” is the button's label in quotation marks: it must match servers.sheet.addAnyway word for word.",
     "screenshot": "server-sign-in-refused-local-network.png"
   },
   "servers.sheet.ejectAndSave": "Eject and save",
@@ -774,11 +774,11 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "description": "Under the Other group IDs field in the NFS add and edit forms, when what the user typed isn’t a list of numbers (for example they typed a group’s name). Connect stays disabled until it reads. Keep the example numbers as they are."
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS carries up to 16 other groups, and this lists {count}.",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS sends up to 16 other groups, and this list has {count, plural, one {# group} other {# groups}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
     "description": "Under the Other group IDs field in the NFS add and edit forms, when the user listed more groups than the protocol can send with a request (the limit is always 16, so count is always 17 or more). Connect stays disabled until they remove some. “NFS” is a protocol name; keep it as-is.",
     "placeholders": {
-      "count": "how many different group IDs the user listed, 17 or more"
+      "count": "how many different group IDs the user listed, 17 or more (drives the plural)"
     }
   },
   "servers.sheet.nfsIdentityHelp": "The server decides what you can open by these numbers. NFS doesn’t ask for a password.",
@@ -1321,9 +1321,9 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
-  "servers.paneState.cancelCycleTooltip": "Stop trying for now. The connection stays available. Switch back to retry.",
+  "servers.paneState.cancelCycleTooltip": "Stop trying for now. The connection stays available; open the server again to retry.",
   "@servers.paneState.cancelCycleTooltip": {
-    "description": "Hover tooltip for the button that pauses auto-reconnect while keeping the connection available to resume.",
+    "description": "Hover tooltip for the Cancel button that stops auto-reconnect while keeping the connection available: opening the server again (from the volume switcher or the servers list) starts trying again.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },

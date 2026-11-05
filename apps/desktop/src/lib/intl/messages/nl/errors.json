@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand name (VeraCrypt); kept verbatim in every locale (do-not-translate list)."
   },
-  "errors.provider.cmVolumes.displayName": "Cloudkoppeling",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "je cloudprovider",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Deze map wordt beheerd door **MacDroid**. Dit kun je proberen:\n- Open MacDroid en controleer of je telefoon verbonden is\n- Zorg dat je telefoon ontgrendeld is en op de modus voor bestandsoverdracht staat\n- Koppel de USB-kabel los en sluit die opnieuw aan, en navigeer dan hier opnieuw heen",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

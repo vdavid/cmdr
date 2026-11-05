@@ -519,7 +519,7 @@ function termsSection(ctx: BriefContext): BriefSection {
  * computes. Empty when no target language has an overlay.
  */
 /** The overlays with a drift test that sweeps the base for the forms they replace. */
-const OVERLAY_GUARDS: Readonly<Record<string, { forms: string; test: string }>> = {
+const OVERLAY_GUARDS: Readonly<Partial<Record<string, { forms: string; test: string }>>> = {
   'es-419': { forms: 'Spain-only form (`Ajustes`, `papelera`, `añadir`, …)', test: 'i18n-es-overlay.test.ts' },
 }
 

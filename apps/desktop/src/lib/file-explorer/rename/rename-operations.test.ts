@@ -64,7 +64,7 @@ describe('a name the backend turns down', () => {
     const message = await messageFor({ kind: 'nameTooLong', bytes: 300, max: 255 })
 
     expect(message).toBe(
-      tString('fileOperations.validation.nameTooLong', { kind: 'file', byteCount: '300', maxBytes: '255' }),
+      tString('fileOperations.validation.nameTooLong', { kind: 'file', byteCount: '300', maxBytes: '255', max: 255 }),
     )
   })
 

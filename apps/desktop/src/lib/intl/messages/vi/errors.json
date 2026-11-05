@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand name 'VeraCrypt'; kept verbatim per the do-not-translate rule."
   },
-  "errors.provider.cmVolumes.displayName": "Mục gắn kết đám mây",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "nhà cung cấp đám mây của bạn",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Thư mục này do **MacDroid** quản lý. Bạn có thể thử:\n- Mở MacDroid và kiểm tra xem điện thoại của bạn đã kết nối chưa\n- Đảm bảo điện thoại đã mở khóa và đang ở chế độ truyền tệp\n- Rút rồi cắm lại cáp USB, rồi mở lại nơi này",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

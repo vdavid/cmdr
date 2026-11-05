@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Название сервиса или продукта; сохраняется без перевода, как в официальной локализации macOS."
   },
-  "errors.provider.cmVolumes.displayName": "Облачный том",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "ваш облачный сервис",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Этой папкой управляет **MacDroid**. Что можно сделать:\n- Откройте MacDroid и проверьте подключение телефона\n- Разблокируйте телефон и включите режим передачи файлов\n- Переподключите USB-кабель и откройте это место снова",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

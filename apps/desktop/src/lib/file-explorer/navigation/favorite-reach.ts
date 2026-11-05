@@ -39,6 +39,34 @@ function placeName(favorite: VolumeInfo): string {
   return favorite.favoriteTarget?.volumeName ?? favorite.name
 }
 
+/**
+ * What kind of place the volume is, for the words' `{kind}` select: case languages put a
+ * type noun before the name ("к серверу «…»"), so the sentence has to know which one.
+ */
+type PlaceKind = 'share' | 'server' | 'phone' | 'other'
+
+function placeKind(favorite: VolumeInfo): PlaceKind {
+  const volumeId = favorite.favoriteTarget?.volumeId
+  return volumeId ? PLACE_KINDS[volumeScheme(volumeId)] : 'other'
+}
+
+/** Each scheme's place kind. A `Record`, so a new scheme can't compile without one. */
+const PLACE_KINDS: Record<VolumeScheme, PlaceKind> = {
+  smb: 'share',
+  nfs: 'share',
+  sftp: 'server',
+  webdav: 'server',
+  s3: 'server',
+  mtp: 'phone',
+  adb: 'phone',
+  root: 'other',
+  local: 'other',
+  path: 'other',
+  cloud: 'other',
+  favorite: 'other',
+  unknown: 'other',
+}
+
 /** What a refused pick's toast says, and the one action it offers. */
 export function wordFavoriteRefusal(
   favorite: VolumeInfo,
@@ -53,7 +81,10 @@ export function wordFavoriteRefusal(
         : { message: tString('fileExplorer.navigation.favoriteUnreachable.adbOff'), action: 'open-adb-settings' }
     case 'forgotten':
       return {
-        message: tString('fileExplorer.navigation.favoriteUnreachable.forgotten', { place: placeName(favorite) }),
+        message: tString('fileExplorer.navigation.favoriteUnreachable.forgotten', {
+          place: placeName(favorite),
+          kind: placeKind(favorite),
+        }),
         action: 'open-servers',
       }
     case 'not_found':
@@ -91,7 +122,7 @@ export function favoriteReachStatus(favorite: VolumeInfo): string | null {
     case 'ready':
       return null
     case 'connects':
-      return tString('fileExplorer.navigation.favoriteStatus.connects', { place })
+      return tString('fileExplorer.navigation.favoriteStatus.connects', { place, kind: placeKind(favorite) })
     case 'unplugged':
     case 'access_off':
     case 'forgotten':

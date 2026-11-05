@@ -70,7 +70,7 @@
   },
   "licensing.about.srTitle": "About Cmdr",
   "@licensing.about.srTitle": {
-    "description": "Visually-hidden accessible title of the About dialog, read by screen readers. The dialog has no visible title; the app name below serves as the visual heading. 'Cmdr' is the product name and must NOT be translated.",
+    "description": "Visually-hidden accessible title of the About dialog, read by screen readers. The dialog has no visible title; the app name below serves as the visual heading. 'Cmdr' is the product name and must NOT be translated. Deliberately the same words as menu.app.about, the menu item that opens this window: keep the two identical.",
     "screenshot": "about.png"
   },
   "licensing.about.appName": "Cmdr",
@@ -331,11 +331,11 @@
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
-  "licensing.dialog.pendingHint": "We’ll verify with the server automatically within {days} days.",
+  "licensing.dialog.pendingHint": "We’ll verify with the server automatically within {days, plural, one {# day} other {# days}}.",
   "@licensing.dialog.pendingHint": {
     "description": "Hint under the 'Not yet verified' validity row reassuring the user the app will re-check automatically soon. Always 2 or more days in practice, so plain plural is fine.",
     "placeholders": {
-      "days": "the number of days until automatic re-verification (currently 7)"
+      "days": "the number of days until automatic re-verification (currently 7); drives the plural"
     },
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
@@ -380,11 +380,11 @@
     "description": "Placeholder text inside the license-key input showing the short-code format. 'CMDR-ABCD-EFGH-1234' is a format example and must NOT be translated; only the 'Example:' label is translatable.",
     "screenshot": "license-key-dialog.png"
   },
-  "licensing.dialog.retryExhausted": "We’ve tried {count} times and it didn’t work. We’re sorry for the trouble. Please drop us a message at <supportEmail>{email}</supportEmail> and we’ll sort it out.",
+  "licensing.dialog.retryExhausted": "We’ve tried {count, plural, one {# time} other {# times}} and it didn’t work. We’re sorry for the trouble. Please drop us a message at <supportEmail>{email}</supportEmail> and we’ll sort it out.",
   "@licensing.dialog.retryExhausted": {
     "description": "Help text shown after several failed activation attempts (3 or more) against a server-rejected key, apologizing and pointing to support. Warm and apologetic. <supportEmail> wraps the inline support-email link.",
     "placeholders": {
-      "count": "how many times activation was attempted (always 3 or more here)",
+      "count": "how many times activation was attempted (always 3 or more here); drives the plural",
       "email": "the support email address (shown as the link text), e.g. hello@getcmdr.com"
     },
     "screenshot": "license-key-dialog.png",

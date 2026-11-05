@@ -67,11 +67,13 @@ function validityMessage(error: RenameValidityResult['error'], isDirectory: bool
         kind,
         byteCount: String(error.bytes),
         maxBytes: String(error.max),
+        max: error.max,
       })
     case 'pathTooLong':
       return tString('fileOperations.validation.pathTooLong', {
         byteCount: String(error.bytes),
         maxBytes: String(error.max),
+        max: error.max,
       })
     default:
       return tString('fileOperations.validation.nameNotUsable', { kind })

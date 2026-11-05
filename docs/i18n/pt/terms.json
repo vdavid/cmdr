@@ -3298,10 +3298,7 @@
     "accept": ["desconhecid"],
     "forms": "a bare value for a masculine noun → Desconhecido; (unknown) → (desconhecido)",
     "confidence": "high",
-    "sources": "macOS pt-BR (Desconhecido, (desconhecido), <desconhecido>); catalog (ai.local.modelUnknown Desconhecido, fileOperations.transferProgress.sizeUnknown)",
-    "exceptions": {
-      "suggestedOps.factUnknown": "One string stands in for a size (o tamanho) and a date (a data), so a gendered desconhecido/desconhecida can't agree with both: the neutral Sem informação."
-    }
+    "sources": "macOS pt-BR (Desconhecido, (desconhecido), <desconhecido>); catalog (ai.local.modelUnknown Desconhecido, fileOperations.transferProgress.sizeUnknown)"
   },
   "unlock": {
     "chosen": "Desbloquear",

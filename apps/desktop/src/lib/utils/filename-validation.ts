@@ -61,6 +61,7 @@ export function validateNameLength(name: string, isDir = false): ValidationResul
         kind: nameKind(isDir),
         byteCount: String(byteLength),
         maxBytes: String(maxNameBytes),
+        max: maxNameBytes,
       }),
     }
   }
@@ -77,6 +78,7 @@ export function validatePathLength(parentPath: string, name: string): Validation
       message: tString('fileOperations.validation.pathTooLong', {
         byteCount: String(byteLength),
         maxBytes: String(maxPathBytes),
+        max: maxPathBytes,
       }),
     }
   }
@@ -210,6 +212,7 @@ export function validateDirectoryPath(path: string): ValidationResult {
       message: tString('fileOperations.validation.pathTotalTooLong', {
         byteCount: String(totalBytes),
         maxBytes: String(maxPathBytes),
+        max: maxPathBytes,
       }),
     }
   }
@@ -223,6 +226,7 @@ export function validateDirectoryPath(path: string): ValidationResult {
         message: tString('fileOperations.validation.pathSegmentTooLong', {
           byteCount: String(segmentBytes),
           maxBytes: String(maxNameBytes),
+          max: maxNameBytes,
         }),
       }
     }

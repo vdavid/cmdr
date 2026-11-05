@@ -214,7 +214,7 @@
   "@multiRename.presets.clash": {
     "description": "Shown in the preset-name popup when the typed name belongs to another saved preset. Pressing Enter again or the Replace button replaces that preset. {preset} is its name."
   },
-  "multiRename.presets.listFull": "You have {max, number} presets, the most Cmdr keeps. Delete one to save this.",
+  "multiRename.presets.listFull": "You have {max, plural, one {# preset} other {# presets}}, the most Cmdr keeps. Delete one to save this.",
   "@multiRename.presets.listFull": {
     "description": "Shown in the save-preset popup when the user tries to save a new preset but the list is already at its limit. Nothing was saved; the popup stays open. Deleting a preset (from its submenu in the Presets menu) makes room. {max} is the limit, 200."
   },
@@ -280,13 +280,13 @@
     "description": "Preview note: the new name is the same as the old one, so the file is left alone.",
     "screenshot": "multi-rename.png"
   },
-  "multiRename.status.duplicate": "Same name as another file",
+  "multiRename.status.duplicate": "Same name as another item",
   "@multiRename.status.duplicate": {
     "description": "Preview note: another file in this batch would get the same new name, so neither is renamed."
   },
-  "multiRename.status.targetExists": "Name is taken",
+  "multiRename.status.targetExists": "Name already taken",
   "@multiRename.status.targetExists": {
-    "description": "Preview note: a file that stays in the folder already has this name."
+    "description": "Preview note: an item (file or folder) that stays in the folder already has this name. Same words as suggestedOps.newNameTaken."
   },
   "multiRename.status.invalidName": "Not a valid name",
   "@multiRename.status.invalidName": {
@@ -461,17 +461,17 @@
   "@multiRename.status.ready": {
     "description": "Screen-reader text in the preview's status column for an item (file or folder) that will be renamed. Restructure freely to avoid agreeing with a gendered noun (for example \"Will be renamed\"). Sighted users see no mark on these rows; only the problem rows get a symbol."
   },
-  "multiRename.reason.duplicate": "Another file in this batch gets the same new name, so neither is renamed.",
+  "multiRename.reason.duplicate": "Another item in this batch gets the same new name, so neither is renamed.",
   "@multiRename.reason.duplicate": {
-    "description": "Tooltip on the preview's duplicate symbol: the full reason behind multiRename.status.duplicate. The row can be a file or a folder: where your language’s word for “file” excludes folders, use a neutral word for the item, or restructure."
+    "description": "Tooltip on the preview's duplicate symbol: the full reason behind multiRename.status.duplicate. The row can be a file or a folder, hence “item”."
   },
-  "multiRename.reason.targetExists": "A file that stays in this folder already has this name, so this one keeps its name.",
+  "multiRename.reason.targetExists": "An item that stays in this folder already has this name, so this one keeps its name.",
   "@multiRename.reason.targetExists": {
-    "description": "Tooltip on the preview's \"name is taken\" symbol: the full reason behind multiRename.status.targetExists. The file that holds the name isn't part of the rename (or can't be renamed itself). The row can be a file or a folder: where your language’s word for “file” excludes folders, use a neutral word for the item, or restructure."
+    "description": "Tooltip on the preview's \"name is taken\" symbol: the full reason behind multiRename.status.targetExists. The item that holds the name isn't part of the rename (or can't be renamed itself). The row can be a file or a folder, hence “item”."
   },
-  "multiRename.reason.missing": "This file was moved or deleted after Multi-rename opened, so it’s left out.",
+  "multiRename.reason.missing": "This item was moved or deleted after Multi-rename opened, so it’s left out.",
   "@multiRename.reason.missing": {
-    "description": "Tooltip on the preview's \"gone\" symbol: the full reason behind multiRename.status.missing. \"Multi-rename\" is the tool's name; match multiRename.title. The row can be a file or a folder: where your language’s word for “file” excludes folders, use a neutral word for the item, or restructure."
+    "description": "Tooltip on the preview's \"gone\" symbol: the full reason behind multiRename.status.missing. \"Multi-rename\" is the tool's name; match multiRename.title. The row can be a file or a folder, hence “item”."
   },
   "multiRename.status.reading": "Reading…",
   "@multiRename.status.reading": {
@@ -484,16 +484,16 @@
       "field": "the field's name, like Date taken or Artist"
     }
   },
-  "multiRename.reason.noValue": "This file has no “{field}” value, so it keeps its name.",
+  "multiRename.reason.noValue": "This item has no “{field}” value, so it keeps its name.",
   "@multiRename.reason.noValue": {
-    "description": "Tooltip on the preview's \"field missing\" symbol: the full reason behind multiRename.status.noValue. A field is a piece of the file's own information, like the date a photo was taken or a song's artist. The row can be a file or a folder: where your language’s word for “file” excludes folders, use a neutral word for the item, or restructure.",
+    "description": "Tooltip on the preview's \"field missing\" symbol: the full reason behind multiRename.status.noValue. A field is a piece of the file's own information, like the date a photo was taken or a song's artist. The row can be a file or a folder, hence “item”.",
     "placeholders": {
       "field": "the field's name, like Artist or Camera"
     }
   },
-  "multiRename.reason.noDate": "This file has no “{field}” value, so it keeps its name. The placeholder’s editor can use the date the file was last changed instead.",
+  "multiRename.reason.noDate": "This item has no “{field}” value, so it keeps its name. The placeholder’s editor can use the date the item was last changed instead.",
   "@multiRename.reason.noDate": {
-    "description": "Tooltip on the preview's \"field missing\" symbol for a date field (like the date a photo was taken). The placeholder's editor opens from the placeholder in the name mask; it has a choice to fall back to the file's last-changed date. The row can be a file or a folder: where your language’s word for “file” excludes folders, use a neutral word for the item, or restructure.",
+    "description": "Tooltip on the preview's \"field missing\" symbol for a date field (like the date a photo was taken). The placeholder's editor opens from the placeholder in the name mask; it has a choice to fall back to the file's last-changed date. The row can be a file or a folder, hence “item”.",
     "placeholders": {
       "field": "the date field's name, like Date taken"
     }
@@ -739,9 +739,9 @@
   "@multiRename.selectionChanged": {
     "description": "Warning toast when ⌃M (Multi-rename) didn't open because files appeared or disappeared in the folder at that moment, so the selected rows may no longer be the files the user picked. Nothing was renamed."
   },
-  "multiRename.swapsSkipped": "{count, plural, one {Skipped # rename that swaps names} other {Skipped # renames that swap names}}. Rename them one at a time.",
+  "multiRename.swapsSkipped": "{count, plural, one {Skipped # rename that swaps names} other {Skipped # renames that swap names}}. Rename those items one at a time.",
   "@multiRename.swapsSkipped": {
-    "description": "Warning toast after Rename starts on cloud storage (S3), when some renames swap names with each other (for example a → b and b → a). On S3, renaming a folder copies everything inside it, and copying one folder onto another that is still there would mix their contents, so those renames were skipped and the files kept their names. {count} is how many (always 2 or more). Match the wording of askCmdr.renameUndo.swapsSkipped."
+    "description": "Warning toast after Rename starts on cloud storage (S3), when some renames swap names with each other (for example a → b and b → a). On S3, renaming a folder copies everything inside it, and copying one folder onto another that is still there would mix their contents, so those renames were skipped and the items (files or folders) kept their names. {count} is how many (always 2 or more). Match the wording of askCmdr.renameUndo.swapsSkipped."
   },
   "multiRename.archiveTitle": "Multi-rename doesn’t work inside archives",
   "@multiRename.archiveTitle": {

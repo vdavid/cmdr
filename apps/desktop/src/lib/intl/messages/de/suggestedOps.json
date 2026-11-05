@@ -83,6 +83,10 @@
   "@suggestedOps.action.extract": {
     "sourceHash": "c15301c"
   },
+  "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
+  "@suggestedOps.groupTitle": {
+    "sourceHash": "201c1fc"
+  },
   "suggestedOps.approve.move": "{countText} {count, plural, one {Datei} other {Dateien}} bewegen",
   "@suggestedOps.approve.move": {
     "sourceHash": "4c89041"
@@ -264,6 +268,14 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
+  "suggestedOps.factUnknownSize": "Unknown",
+  "@suggestedOps.factUnknownSize": {
+    "sourceHash": "b764cdc"
+  },
+  "suggestedOps.factUnknownDate": "Unknown",
+  "@suggestedOps.factUnknownDate": {
+    "sourceHash": "b764cdc"
+  },
   "suggestedOps.factChanged": "Seit dem Vorschlag geändert",
   "@suggestedOps.factChanged": {
     "sourceHash": "958780a"
@@ -291,10 +303,6 @@
   "suggestedOps.sourceGone": "Das Laufwerk, auf dem diese Dateien lagen, ist nicht mehr da, deshalb stammen ihre Größen und Änderungsdaten von dem Moment, als die KI das vorgeschlagen hat.",
   "@suggestedOps.sourceGone": {
     "sourceHash": "1b30de5"
-  },
-  "suggestedOps.factUnknown": "Unbekannt",
-  "@suggestedOps.factUnknown": {
-    "sourceHash": "b764cdc"
   },
   "suggestedOps.includeFile": "„{name}“ einbeziehen",
   "@suggestedOps.includeFile": {

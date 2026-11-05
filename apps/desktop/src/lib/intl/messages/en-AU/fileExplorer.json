@@ -55,9 +55,9 @@
   "@fileExplorer.navigation.favoriteStatus.notFound": {
     "sourceHash": "48710a9"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach “{place}” any more. Connect to it again from Servers, and this favourite works again.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} any more. Connect to it again from Servers, and this favourite works again.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
-    "sourceHash": "842858c"
+    "sourceHash": "59f7041"
   },
   "fileExplorer.navigation.favoriteUnreachable.notFound": "“{name}” isn’t at {path} any more.",
   "@fileExplorer.navigation.favoriteUnreachable.notFound": {
@@ -70,5 +70,9 @@
   "fileExplorer.navigation.switcherFavorites": "Favourites",
   "@fileExplorer.navigation.switcherFavorites": {
     "sourceHash": "7a1f2a8"
+  },
+  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favourite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
+  "@fileExplorer.navigation.favoriteStatus.connects": {
+    "sourceHash": "0ed263f"
   }
 }

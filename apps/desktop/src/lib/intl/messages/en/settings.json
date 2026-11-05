@@ -206,9 +206,9 @@
     "description": "Label for the alternating-row-shading toggle in Settings > Appearance > Colors and formats.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.listing.stripedRows.description": "Alternate row shading for easier line tracking. Applies to both Full and Brief view modes.",
+  "settings.listing.stripedRows.description": "Alternate row shading for easier line tracking. Applies to both Full view and Brief view.",
   "@settings.listing.stripedRows.description": {
-    "description": "Help text for the striped-rows toggle. \"Full\" and \"Brief\" are Cmdr file-list view-mode names; translate them consistently with how those view modes are named elsewhere in the app.",
+    "description": "Help text for the striped-rows toggle. “Full view” and “Brief view” are the file list's two layouts, named as in the View menu (menu.view.fullView, menu.view.briefView); use the same words.",
     "screenshot": "settings-appearance.png"
   },
   "settings.listing.stripedRows.keywords": "stripe, zebra, alternate, row, shading, accessibility",
@@ -440,7 +440,7 @@
   },
   "settings.listing.showExtensionInName.description": "Show the full filename (like launch.json) in the Name column and hide the separate Ext column. Affects Full view only.",
   "@settings.listing.showExtensionInName.description": {
-    "description": "Help text for the show-extension-in-name toggle. \"launch.json\" is a literal example filename; keep it. \"Name\", \"Ext\", and \"Full\" are Cmdr column/view names; translate consistently with their use elsewhere.",
+    "description": "Help text for the show-extension-in-name toggle. \"launch.json\" is a literal example filename; keep it. \"Name\" and \"Ext\" are Cmdr column names; “Full view” is the file-list layout named in the View menu; use the same words as there.",
     "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.showExtensionInName.keywords": "extension, ext, filename, name, column, full, split, suffix",
@@ -971,9 +971,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "description": "Help text under the \"Always index this drive\" switch, explaining why the NAS-archive case needs it."
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Always index photos on {name}",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Always index this drive: {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "description": "Accessible label for the \"Always index this drive\" switch.",
+    "description": "Accessible label for the “Always index this drive” switch (settings.mediaIndex.networkVolumes.alwaysLabel): it contains that visible label word for word, then the drive's name, so a voice-control user can say what they see.",
     "placeholders": {
       "name": "The network drive’s name, like \"naspi\"."
     }
@@ -1132,7 +1132,7 @@
       "size": "The approximate disk space that would be freed, preformatted (for example \"1.9 GB\")."
     }
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Delete extra indexed entries",
+  "settings.mediaIndex.reclaim.confirmTitle": "Delete extra indexed entries?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
     "description": "Title of the confirmation dialog shown before deleting leftover indexed image entries."
   },
@@ -1307,7 +1307,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "description": "Search keywords for the “Global go-to-latest-download binding” setting (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label) in Settings > Behavior > Notifications. What it does: the key combination for the jump-to-latest-download shortcut. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Suppress the latest-download shortcut question",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Don’t ask about the latest-download shortcut again",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
     "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time warning toast on the first press of the global shortcut that jumps to the latest download (downloads.warnToast.message), which asks whether to keep the shortcut on. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
   },
@@ -1474,9 +1474,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "description": "Label for the picker that sets how hard the chosen cloud AI model thinks before it answers. Shown under the model in Settings > AI > Provider when the AI service is Google Gemini (Google calls this setting “thinking level” in its docs), and as the general name for services with no name of their own for it (Qwen, Perplexity, Ollama, a custom service). Also this setting’s name in settings search. The same picker reads “Reasoning effort” or “Effort” for other services (settings.ai.reasoningEfforts.label.reasoningEffort, settings.ai.reasoningEfforts.label.effort). Level as in how much, like a dial. A noun phrase. Sentence case."
   },
-  "settings.ai.reasoningEfforts.description": "How long the model thinks before it answers. More effort helps with tricky tasks, but replies come slower and the thinking is billed as output.",
+  "settings.ai.reasoningEfforts.description": "How long the model thinks before it answers. More thinking helps with tricky tasks, but replies come slower and the thinking is billed as output.",
   "@settings.ai.reasoningEfforts.description": {
-    "description": "Help text under the reasoning picker in Settings > AI > Provider (labeled Reasoning effort, Effort, or Thinking level depending on the AI service; see settings.ai.reasoningEfforts.label.*). “effort” here is the plain word, how much work the model puts in. Says what effort does, and its cost and speed tradeoff: thinking longer gives better answers on hard tasks, but takes longer, and the AI service charges for the thinking like it charges for the answer (as output). Sentence case."
+    "description": "Help text under the reasoning picker in Settings > AI > Provider (labeled Reasoning effort, Effort, or Thinking level depending on the AI service; see settings.ai.reasoningEfforts.label.*). Worded around thinking time, so it echoes none of the three per-service labels: say “more thinking”, never a word from a label. Says what thinking longer does, and its cost and speed tradeoff: thinking longer gives better answers on hard tasks, but takes longer, and the AI service charges for the thinking like it charges for the answer (as output). Sentence case."
   },
   "settings.ai.reasoningEfforts.keywords": "reasoning effort, effort, reasoning, thinking, think, speed, cost, quality",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1728,9 +1728,9 @@
     "description": "Label for the toggle adding a per-file git status column. \"git\" is the version-control tool name; keep it. In Settings > File systems > Git.",
     "screenshot": "settings-file-systems-git.png"
   },
-  "settings.fileExplorer.git.showStatusColumn.description": "Add a column showing per-file git status (modified, untracked, etc.) in Full mode.",
+  "settings.fileExplorer.git.showStatusColumn.description": "Add a column showing per-file git status (modified, untracked, etc.) in Full view.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "description": "Help text for the git-status-column toggle. \"git\", \"modified\", and \"untracked\" are git terms; use standard git terminology. \"Full\" is a Cmdr view-mode name; translate consistently.",
+    "description": "Help text for the git-status-column toggle. \"git\", \"modified\", and \"untracked\" are git terms; use standard git terminology. “Full view” is the file-list layout named in the View menu; use the same words as there.",
     "screenshot": "settings-file-systems-git.png"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "status, column, modified, untracked, ignored, added, deleted",
@@ -2071,19 +2071,19 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "description": "Search keywords for the “Suppress the approval note in AI suggestions” setting (settings.suggestedOps.suppressApprovalNotice.label) in Settings > Advanced. What it does: hides the note at the top of the AI suggestions dialog saying nothing runs until you approve it. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Say when a deleted item was already gone",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Show a notice when a deleted item was already gone",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
     "description": "Advanced-section label for the switch that turns on or off a short toast. The toast appears when the user deletes or moves to trash something that another app had already moved or deleted (fileOperations.alreadyGone.one / .many). On by default; its “Never show this again” button (fileOperations.alreadyGone.neverShowAgain) turns it off.",
     "screenshot": "settings-advanced.png"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short note saying so. Turn this off (or click “Never show this again” in the note) to skip the note.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or click “Never show this again” in the notice) to stop these notices.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "description": "Help text for the already-gone note switch. The quoted “Never show this again” must match the toast button (fileOperations.alreadyGone.neverShowAgain); translate it the same way. “Note” is the small toast that appears for a few seconds.",
+    "description": "Help text for the already-gone notice switch. The quoted “Never show this again” must match the toast button (fileOperations.alreadyGone.neverShowAgain); translate it the same way. “Notice” is the small toast that appears for a few seconds.",
     "screenshot": "settings-advanced.png"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "missing, vanished, moved, deleted, gone, toast, notification",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
-    "description": "Search keywords for the “Say when a deleted item was already gone” setting (settings.fileOperations.showAlreadyGoneToast.label) in Settings > Advanced. What it does: turns on or off the note shown when something the user deleted had already been moved or deleted by another app. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+    "description": "Search keywords for the “Show a notice when a deleted item was already gone” setting (settings.fileOperations.showAlreadyGoneToast.label) in Settings > Advanced. What it does: turns on or off the notice shown when something the user deleted had already been moved or deleted by another app. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Number of closed tabs to remember per pane",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -2834,9 +2834,9 @@
     "screenshot": "settings-ai-ask-cmdr.png",
     "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr uses your cloud AI service. Allow cloud AI in AI settings to start chatting.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr uses your cloud AI service. Turn on “Allow cloud AI” in AI settings to start chatting.",
   "@settings.askCmdr.cloudOffHint": {
-    "description": "Shown under the Ask Cmdr switch in Settings > AI > Ask Cmdr when it's on, the AI mode is Cloud, and the Allow cloud AI switch is off. A button to open the AI settings follows it.",
+    "description": "Shown under the Ask Cmdr switch in Settings > AI > Ask Cmdr when it's on, the AI mode is Cloud, and the Allow cloud AI switch is off. A button to open the AI settings follows it. “Allow cloud AI” is that switch's label, quoted: match it exactly.",
     "screenshot": "settings-ai-ask-cmdr.png",
     "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
@@ -3511,29 +3511,29 @@
     "description": "Meaning of the YYYY date token, shown next to it in the format help. \"2025\" is a literal example; \"4-digit\" is the digit count.",
     "screenshot": "settings-appearance-date-format.png"
   },
-  "settings.appearance.formatHelpMonth": "2-digit month (01-12)",
+  "settings.appearance.formatHelpMonth": "2-digit month (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "description": "Meaning of the MM date token. \"01-12\" is a literal example range; keep the numerals. \"2-digit\" is the digit count.",
+    "description": "Meaning of the MM date token. \"01–12\" is a literal example range with an en dash; keep the numerals. \"2-digit\" is the digit count.",
     "screenshot": "settings-appearance-date-format.png"
   },
-  "settings.appearance.formatHelpDay": "2-digit day (01-31)",
+  "settings.appearance.formatHelpDay": "2-digit day (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "description": "Meaning of the DD date token. \"01-31\" is a literal example range; keep the numerals. \"2-digit\" is the digit count.",
+    "description": "Meaning of the DD date token. \"01–31\" is a literal example range with an en dash; keep the numerals. \"2-digit\" is the digit count.",
     "screenshot": "settings-appearance-date-format.png"
   },
-  "settings.appearance.formatHelpHour": "2-digit hour (00-23)",
+  "settings.appearance.formatHelpHour": "2-digit hour (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "description": "Meaning of the HH date token (24-hour clock). \"00-23\" is a literal example range; keep the numerals. \"2-digit\" is the digit count.",
+    "description": "Meaning of the HH date token (24-hour clock). \"00–23\" is a literal example range with an en dash; keep the numerals. \"2-digit\" is the digit count.",
     "screenshot": "settings-appearance-date-format.png"
   },
-  "settings.appearance.formatHelpMinute": "2-digit minute (00-59)",
+  "settings.appearance.formatHelpMinute": "2-digit minute (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "description": "Meaning of the mm date token. \"00-59\" is a literal example range; keep the numerals. \"2-digit\" is the digit count.",
+    "description": "Meaning of the mm date token. \"00–59\" is a literal example range with an en dash; keep the numerals. \"2-digit\" is the digit count.",
     "screenshot": "settings-appearance-date-format.png"
   },
-  "settings.appearance.formatHelpSecond": "2-digit second (00-59)",
+  "settings.appearance.formatHelpSecond": "2-digit second (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "description": "Meaning of the ss date token. \"00-59\" is a literal example range; keep the numerals. \"2-digit\" is the digit count.",
+    "description": "Meaning of the ss date token. \"00–59\" is a literal example range with an en dash; keep the numerals. \"2-digit\" is the digit count.",
     "screenshot": "settings-appearance-date-format.png"
   },
   "settings.appearance.tintGroupDescription": "Adds a faint background tint to panes so you can tell volume types apart at a glance.",
@@ -3784,9 +3784,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "description": "Search keywords for the “Show in Finder” row (settings.securityLog.showInFinder) in Settings > Updates & privacy. What it does: a button that shows the security log file in Finder. Never shown. Search already matches its label, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Change the shortcut under Keyboard shortcuts → Go to latest download (global).",
+  "settings.fileSystemWatching.globalShortcutHint": "Change the shortcut under “Keyboard shortcuts → Go to latest download”.",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "description": "Hint pointing to where the global shortcut is edited. The \"→\" arrow joins a navigation path; keep it. \"Keyboard shortcuts\" is the Cmdr settings section name and \"Go to latest download (global)\" is the shortcut's name there; translate both consistently with their use elsewhere.",
+    "description": "Hint pointing to where the global shortcut is edited. The quoted path is the Keyboard shortcuts settings page and the command's name there (commands.downloadsGoToLatest.label); match both exactly. The \"→\" arrow joins the path; keep it.",
     "screenshot": "settings-behavior-notifications.png"
   },
   "settings.network.localNetworkAccessLabel": "{localNetwork} access",

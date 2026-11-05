@@ -1073,14 +1073,6 @@
     "sourceHash": "46eeb7a",
     "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
   },
-  "errors.provider.cmVolumes.displayName": "Připojený cloudový svazek",
-  "@errors.provider.cmVolumes.displayName": {
-    "sourceHash": "8dabeba"
-  },
-  "errors.provider.genericCloudStorage.displayName": "vaše cloudová služba",
-  "@errors.provider.genericCloudStorage.displayName": {
-    "sourceHash": "1066349"
-  },
   "errors.provider.macDroid.transient": "Tuto složku spravuje **MacDroid**. Co můžete zkusit:\n- Otevřete MacDroid a zkontrolujte, že je telefon připojený\n- Ověřte, že je telefon odemčený a nastavený na režim přenosu souborů\n- Vytáhněte kabel USB, zase ho zapojte a pak sem přejděte znovu",
   "@errors.provider.macDroid.transient": {
     "sourceHash": "5df1c20"

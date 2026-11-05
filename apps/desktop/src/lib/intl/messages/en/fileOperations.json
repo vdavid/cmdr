@@ -387,9 +387,9 @@
     "screenshot": "conflict-dialog.png",
     "screenshotNote": "The copy/move dialog, pictured here. Your string replaces the free-space line next to the destination picker when the destination has no size limit, such as a cloud account with no quota."
   },
-  "fileOperations.transferDialog.smbNativeNote": "This share uses the system connection. Cancellation may be delayed. Use “Connect directly” in the volume picker for faster transfers and reliable cancel.",
+  "fileOperations.transferDialog.smbNativeNote": "This share uses the system connection. Cancellation may be delayed. Use “Connect directly for faster access” in the volume switcher for faster transfers and reliable cancel.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "description": "Note shown when the destination is an SMB share mounted by the operating system rather than connected directly by Cmdr. Warns that canceling a transfer may lag. Keep the quoted “Connect directly” matching that picker action's label."
+    "description": "Note shown when the destination is an SMB share mounted by the operating system rather than connected directly by Cmdr. Warns that canceling a transfer may lag. The quoted “Connect directly for faster access” is the volume switcher's menu item (fileExplorer.navigation.connectDirectly): match it exactly."
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "This folder doesn’t exist yet. Cmdr will create it during the copy.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -949,9 +949,33 @@
   "@fileOperations.transferProgress.conflictPolicyCaption": {
     "description": "Quiet one-line caption in the copy/move progress dialog, right under the 'from → to' folder names. It says what the running transfer does when a file it brings already exists at the destination. It changes mid-transfer when the person answers a clash with an 'all' button (like 'Overwrite all'). Keep it short: it sits on one line in a fixed-width dialog.",
     "placeholders": {
-      "policy": "the chosen option, worded exactly as in the copy dialog's choices, like 'Skip', 'Overwrite if older', or 'Ask for each'"
+      "policy": "the chosen policy's name, from the fileOperations.transferProgress.policyName.* keys (like “Skip”, “Overwrite if older”, “Ask for each”)"
     },
     "screenshot": "conflict-dialog.png"
+  },
+  "fileOperations.transferProgress.policyName.skip": "Skip",
+  "@fileOperations.transferProgress.policyName.skip": {
+    "description": "The “skip” policy's NAME, shown after the colon in fileOperations.transferProgress.conflictPolicyCaption (“If a file already exists: Skip”). A noun phrase or a state, NOT a command: where your language writes buttons as imperatives (the copy dialog's fileOperations.transferDialog.policySkip), word this as what happens (Dutch “Overslaan”, German “Überspringen”). Leave clashing files untouched. Short: one line in a fixed-width dialog."
+  },
+  "fileOperations.transferProgress.policyName.overwrite": "Overwrite",
+  "@fileOperations.transferProgress.policyName.overwrite": {
+    "description": "The “overwrite” policy's NAME after the colon in fileOperations.transferProgress.conflictPolicyCaption: replace clashing files with the ones being transferred. A noun phrase or a state, NOT a command (see fileOperations.transferProgress.policyName.skip). Short."
+  },
+  "fileOperations.transferProgress.policyName.overwriteSmaller": "Overwrite if smaller",
+  "@fileOperations.transferProgress.policyName.overwriteSmaller": {
+    "description": "The “overwrite if smaller” policy's NAME after the colon in fileOperations.transferProgress.conflictPolicyCaption: replace a clashing file only when the existing one is smaller. A noun phrase or a state, NOT a command (see fileOperations.transferProgress.policyName.skip). Short."
+  },
+  "fileOperations.transferProgress.policyName.overwriteOlder": "Overwrite if older",
+  "@fileOperations.transferProgress.policyName.overwriteOlder": {
+    "description": "The “overwrite if older” policy's NAME after the colon in fileOperations.transferProgress.conflictPolicyCaption: replace a clashing file only when the existing one is older. A noun phrase or a state, NOT a command (see fileOperations.transferProgress.policyName.skip). Short."
+  },
+  "fileOperations.transferProgress.policyName.askEach": "Ask for each",
+  "@fileOperations.transferProgress.policyName.askEach": {
+    "description": "The “ask” policy's NAME after the colon in fileOperations.transferProgress.conflictPolicyCaption: Cmdr asks about each clashing file as it comes. A noun phrase or a state, NOT a command (see fileOperations.transferProgress.policyName.skip). Short."
+  },
+  "fileOperations.transferProgress.policyName.rename": "Rename",
+  "@fileOperations.transferProgress.policyName.rename": {
+    "description": "The “rename” policy's NAME after the colon in fileOperations.transferProgress.conflictPolicyCaption: a clashing file lands under a new name with a number added. A noun phrase or a state, NOT a command (see fileOperations.transferProgress.policyName.skip). Short."
   },
   "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the trash} one {Moved {countText} file to the trash} other {Moved {countText} files to the trash}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}",
   "@fileOperations.transferProgress.titleDone": {
@@ -2008,22 +2032,24 @@
       "kind": "what is being named: \"folder\" for a folder, anything else for a file"
     }
   },
-  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} bytes)} other {Filename is too long ({byteCount}/{maxBytes} bytes)}}",
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})} other {Filename is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})}}",
   "@fileOperations.validation.nameTooLong": {
     "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the name exceeds the file system’s per-name byte limit. \"bytes\" is the unit (a name can use more than one byte per character). Write each branch as a complete, natural sentence for a file versus a folder.",
     "placeholders": {
       "kind": "what is being named: \"folder\" for a folder, anything else for a file",
       "byteCount": "how many bytes the typed name currently uses (e.g. 260)",
-      "maxBytes": "the maximum bytes allowed for one name (e.g. 255)"
+      "maxBytes": "the maximum bytes allowed for one name, formatted (e.g. 255)",
+      "max": "the same maximum as a number; drives the plural of “bytes”"
     },
     "screenshot": "mkdir-confirmation-too-long.png"
   },
-  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} bytes)",
+  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathTooLong": {
     "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the resulting full path (parent folder plus the name) exceeds the file system’s total path byte limit. \"bytes\" is the unit. \"Full path\" means the entire path, parent folders included.",
     "placeholders": {
-      "byteCount": "how many bytes the full resulting path currently uses (e.g. 1100)",
-      "maxBytes": "the maximum bytes allowed for a full path (e.g. 1024)"
+      "byteCount": "how many bytes the path currently uses (e.g. 1100)",
+      "maxBytes": "the maximum bytes allowed for a full path, formatted (e.g. 1024)",
+      "max": "the same maximum as a number; drives the plural of “bytes”"
     }
   },
   "fileOperations.validation.extensionChangeBlocked": "Changing the file extension isn’t allowed (was “{oldExt}”)",
@@ -2059,20 +2085,22 @@
   "@fileOperations.validation.pathNullChar": {
     "description": "Inline validation message for a directory-path field, shown when the path contains a null character (forbidden in file-system paths). \"null character\" is the technical name for the zero byte."
   },
-  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} bytes)",
+  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathTotalTooLong": {
     "description": "Inline validation message for a directory-path field, shown when the whole path exceeds the file system’s total byte limit. \"bytes\" is the unit.",
     "placeholders": {
       "byteCount": "how many bytes the path currently uses (e.g. 1100)",
-      "maxBytes": "the maximum bytes allowed for a full path (e.g. 1024)"
+      "maxBytes": "the maximum bytes allowed for a full path, formatted (e.g. 1024)",
+      "max": "the same maximum as a number; drives the plural of “bytes”"
     }
   },
-  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} bytes)",
+  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
   "@fileOperations.validation.pathSegmentTooLong": {
     "description": "Inline validation message for a directory-path field, shown when one folder name inside the path exceeds the per-name byte limit (even though the whole path fits). \"bytes\" is the unit.",
     "placeholders": {
-      "byteCount": "how many bytes the offending folder name uses (e.g. 260)",
-      "maxBytes": "the maximum bytes allowed for one name (e.g. 255)"
+      "byteCount": "how many bytes the name currently uses (e.g. 260)",
+      "maxBytes": "the maximum bytes allowed for one name, formatted (e.g. 255)",
+      "max": "the same maximum as a number; drives the plural of “bytes”"
     }
   },
   "fileOperations.transferTree.treeLabel": "Files in this transfer",

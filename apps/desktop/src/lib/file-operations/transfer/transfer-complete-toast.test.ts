@@ -498,9 +498,9 @@ describe('composeTransferCompleteToast', () => {
 })
 
 describe('the note about metadata the destination couldn’t keep', () => {
-  // The wording is David's placeholder (`transfer.metadataLeftBehind`), pinned
-  // here so a rewrite updates these with it. What's fixed is the shape: one
-  // calm sentence after the outcome, naming the classes, never the counts.
+  // The shape: one calm sentence after the outcome, naming the classes in an
+  // "and" list after a colon (an "or" inside a negation read stiff in fr, hu,
+  // and nl), never the counts.
   const copiedTo = (classes: LostMetadata[] | null) =>
     composeTransferCompleteToast({
       operationType: 'copy',
@@ -513,17 +513,19 @@ describe('the note about metadata the destination couldn’t keep', () => {
 
   it('names the one class that stayed behind after the outcome', () => {
     expect(copiedTo([{ class: 'extendedAttributes', itemCount: 3 }])).toBe(
-      'Copied 214 files. This server can’t store Finder tags, so those stayed behind.',
+      'Copied 214 files. This destination can’t store some details, so they stayed behind: Finder tags.',
     )
   })
 
-  it('lists several classes the way the UI language says "or"', () => {
+  it('lists several classes the way the UI language says "and"', () => {
     expect(
       copiedTo([
         { class: 'creationDates', itemCount: 214 },
         { class: 'extendedAttributes', itemCount: 3 },
       ]),
-    ).toBe('Copied 214 files. This server can’t store creation dates or Finder tags, so those stayed behind.')
+    ).toBe(
+      'Copied 214 files. This destination can’t store some details, so they stayed behind: creation dates and Finder tags.',
+    )
   })
 
   it('says nothing more when nothing stayed behind', () => {
@@ -542,7 +544,7 @@ describe('the note about metadata the destination couldn’t keep', () => {
         metadataLeftBehind: { classes: [{ class: 'folderDates', itemCount: 1 }] },
       }),
     ).toBe(
-      'Moved 1 folder. 1 item appeared in Work during the move and stays there. This server can’t store folder dates, so those stayed behind.',
+      'Moved 1 folder. 1 item appeared in Work during the move and stays there. This destination can’t store some details, so they stayed behind: folder dates.',
     )
   })
 })

@@ -22,13 +22,13 @@ count, and the pills that change the answer on one header row (wrapping inside a
 facts; the AI's reason; the file list; then, on one row under it, the undo note on the left and Reject and the action
 button on the right.
 
-**The title leads with the action** (`actionKey`, in the accent text color: "Move", "Move to Trash", "Delete", "Add a
-server"), so what happens reads from the title alone rather than from the warnings and the button (David, 2026-10-28).
-It names the action that would really run (`shownVerb`), so a trash on a drive with no Trash reads "Delete". A sweep
-opens with a heading for the groups under it, in words (`sweepWhen`: "Suggested 15 minutes ago", "Suggested yesterday at
-14:04", the user's date format for anything older, with the exact moment in a tooltip), then the sweep's own reason. A
-lone sweep from the last ten minutes gets no heading (`sweepHeadingHidden`): the user just asked for it, and the line
-would say nothing.
+**The title leads with the action** (`actionKey`, through the `suggestedOps.groupTitle` frame so a verb-final language
+can reorder it, in the accent text color: "Move", "Move to Trash", "Delete", "Add a server"), so what happens reads from
+the title alone rather than from the warnings and the button (David, 2026-10-28). It names the action that would really
+run (`shownVerb`), so a trash on a drive with no Trash reads "Delete". A sweep opens with a heading for the groups under
+it, in words (`sweepWhen`: "Suggested 15 minutes ago", "Suggested yesterday at 14:04", the user's date format for
+anything older, with the exact moment in a tooltip), then the sweep's own reason. A lone sweep from the last ten minutes
+gets no heading (`sweepHeadingHidden`): the user just asked for it, and the line would say nothing.
 
 **The approval note is a warning the user can close for good.** "The agent suggested the actions below. Apply them only
 if you agree." opens the dialog in the house warning look, only while there are suggestions to approve (never over the

@@ -3066,7 +3066,6 @@
     "sources": "macOS live (Disk Utility) Mount → «Подключить», Mounted → «Подключен», Unmount → «Отключить»; NetAuthAgent «Выберите тома, которые Вы хотите подключить»; MS mount → «подключение»; Double Commander Mount → «Смонтировать»",
     "note": "Russian folds mount into connect («подключить»); where both meet in one string, say what gets connected (том, сервер) to keep them apart.",
     "exceptions": {
-      "errors.provider.cmVolumes.displayName": "\"Cloud mount\" names a kind of volume; macOS calls a mounted thing a volume, so «Облачный том» is the name.",
       "errors.provider.macFuse.transient": "\"a macFUSE mount\" names what appears in the volume list, which macOS calls a volume: «том macFUSE»."
     }
   },
