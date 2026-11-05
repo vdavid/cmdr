@@ -107,7 +107,8 @@ func probeWebsiteContainer(image string) (int, error) {
 		return 0, fmt.Errorf("docker port failed: %w", err)
 	}
 	// `docker port` prints one `127.0.0.1:<port>` line per binding.
-	hostPort := strings.TrimSpace(strings.SplitN(string(portOut), "\n", 2)[0])
+	firstLine, _, _ := strings.Cut(string(portOut), "\n")
+	hostPort := strings.TrimSpace(firstLine)
 	baseURL := "http://" + hostPort
 	client := &http.Client{Timeout: 5 * time.Second}
 
@@ -115,7 +116,7 @@ func probeWebsiteContainer(image string) (int, error) {
 	deadline := time.Now().Add(20 * time.Second)
 	for {
 		resp, err := client.Get(baseURL + "/")
-		if err == nil {
+		if err == nil && resp != nil {
 			_ = resp.Body.Close()
 			break
 		}
@@ -137,7 +138,7 @@ func probeWebsiteContainer(image string) (int, error) {
 
 func runWebsiteServingProbe(client *http.Client, baseURL string, probe websiteServingProbe) []string {
 	resp, err := client.Get(baseURL + probe.path)
-	if err != nil {
+	if err != nil || resp == nil {
 		return []string{fmt.Sprintf("%s: request failed: %v", probe.path, err)}
 	}
 	defer resp.Body.Close()
