@@ -234,7 +234,7 @@ func landOnce(r runner, cfg config) error {
 
 // publish pushes the branch and opens its PR, or reuses the open one, and returns the PR and the
 // SHA on origin. `-no-wait` is a milestone push, which runs light, so a `land` label left by an
-// earlier land comes off before the push; a land opens its PR with the label on.
+// earlier land comes off before the push; a land adds the label after (`askToLand`).
 func publish(r runner, branch string, cfg config) (pullRequest, string, error) {
 	head, err := r.git("rev-parse", "HEAD")
 	if err != nil {
@@ -252,7 +252,7 @@ func publish(r runner, branch string, cfg config) (pullRequest, string, error) {
 	if err != nil {
 		return pullRequest{}, "", err
 	}
-	pr, err := ensurePR(r, branch, commits, !cfg.noWait)
+	pr, err := ensurePR(r, branch, commits)
 	return pr, head, err
 }
 
@@ -373,20 +373,14 @@ func findOpenPR(r runner, branch string) (pullRequest, bool, error) {
 	return pr, ok, nil
 }
 
-// ensurePR reuses the branch's open PR or opens one. land: a new PR carries the `land` label from
-// the start, so its first run is a land run.
-func ensurePR(r runner, branch string, commits []commit, land bool) (pullRequest, error) {
+// ensurePR reuses the branch's open PR or opens one (`prCreateArgs`: without the `land` label,
+// which `askToLand` adds in a call of its own).
+func ensurePR(r runner, branch string, commits []commit) (pullRequest, error) {
 	pr, ok, err := findOpenPR(r, branch)
 	if err != nil || ok {
 		return pr, err
 	}
-	labels := []prLabel{{Name: agentLabel}}
-	args := []string{"pr", "create", "-R", repo, "--base", "main", "--head", branch, "--title", prTitle(commits), "--body", prBody(commits), "--label", agentLabel}
-	if land {
-		args = append(args, "--label", landLabel)
-		labels = append(labels, prLabel{Name: landLabel})
-	}
-	url, err := r.gh(args...)
+	url, err := r.gh(prCreateArgs(repo, branch, commits)...)
 	if err != nil {
 		return pullRequest{}, err
 	}
@@ -395,7 +389,7 @@ func ensurePR(r runner, branch string, commits []commit, land bool) (pullRequest
 	if !ok {
 		return pullRequest{}, fmt.Errorf("gh pr create printed %q, which has no PR number", url)
 	}
-	return pullRequest{Number: number, State: "OPEN", URL: url, Labels: labels, opened: true}, nil
+	return pullRequest{Number: number, State: "OPEN", URL: url, Labels: []prLabel{{Name: agentLabel}}}, nil
 }
 
 // dropLandLabel takes the `land` label off the branch's open PR, so the push that follows runs
@@ -413,17 +407,16 @@ func dropLandLabel(r runner, branch string) error {
 
 // askToLand makes sure a land run is on its way for head (`nextLandAsk`): it adds the PR's `land`
 // label, or takes it off and on again when the label is on but every run on head is light. A PR
-// this land just opened with the label needs nothing: `gh pr create` adds labels after opening, so
-// its light `opened` run may already be listed, and the label's land run replaces it.
+// this land just opened lacks the label, so it gets it here: one `labeled` event, one land run.
 func askToLand(r runner, pr pullRequest, head string, cfg config) error {
-	if pr.opened && pr.hasLabel(landLabel) {
-		return nil
-	}
 	var runs struct {
 		WorkflowRuns []workflowRun `json:"workflow_runs"`
 	}
-	if err := r.ghAPI(&runs, ciRunsPath(head, cfg.merge)); err != nil {
-		return err
+	// Without the label, the runs don't change the answer.
+	if pr.hasLabel(landLabel) {
+		if err := r.ghAPI(&runs, ciRunsPath(head, cfg.merge)); err != nil {
+			return err
+		}
 	}
 	switch nextLandAsk(pr.hasLabel(landLabel), runs.WorkflowRuns) {
 	case askNothing:
@@ -549,6 +542,10 @@ func runJobs(r runner, runID int64) ([]runJob, error) {
 // first thing to try. early: a job `CI OK` needs failed while the rest still run. The run goes on,
 // so every failure still shows on the PR, and GitHub re-runs only a finished run.
 func ciFailure(run workflowRun, jobs []runJob, early bool, again string) error {
+	// A cancelled land run with no newer one beside it (`newestLandRun`): a person stopped it.
+	if run.cancelled() {
+		return fmt.Errorf("CI was cancelled before %s reported, and no newer run is on this head: https://github.com/%s/actions/runs/%d\nRun it again, then land again:\n  gh run rerun %d -R %s && %s", ciCheck, repo, run.ID, run.ID, repo, again)
+	}
 	msg := fmt.Sprintf("CI is red: https://github.com/%s/actions/runs/%d\n", repo, run.ID)
 	for _, job := range jobs {
 		if job.Status == "completed" && job.Conclusion != "success" && job.Conclusion != "skipped" {

@@ -193,6 +193,13 @@ func prTitle(commits []commit) string {
 	return commits[0].Subject
 }
 
+// prCreateArgs opens the branch's PR with only the `claude-created` label. Never `land` too: two
+// labels on `gh pr create` came back as four `labeled` events, each starting a run (§ Gotcha:
+// labels on `gh pr create` in DETAILS.md); `askToLand` adds `land` in a call of its own.
+func prCreateArgs(repo, branch string, commits []commit) []string {
+	return []string{"pr", "create", "-R", repo, "--base", "main", "--head", branch, "--title", prTitle(commits), "--body", prBody(commits), "--label", agentLabel}
+}
+
 // maxPRBodyBytes is GitHub's PR body limit: 65,536 characters, past which `gh pr create`
 // fails. Measured in bytes, which are never fewer than characters however GitHub counts
 // them, so a body under it is under GitHub's limit too.
@@ -372,6 +379,36 @@ func landRuns(runs []workflowRun) []workflowRun {
 	return slices.DeleteFunc(slices.Clone(runs), workflowRun.isLightRun)
 }
 
+// cancelled: the run ended cancelled (a newer run in its concurrency group, or a person).
+func (r workflowRun) cancelled() bool {
+	return r.Status == "completed" && r.Conclusion == "cancelled"
+}
+
+// byAge orders runs oldest first: `created_at` has one-second precision, so a tie goes to the
+// higher ID, the one GitHub made later.
+func byAge(a, b workflowRun) int {
+	return cmp.Or(a.CreatedAt.Compare(b.CreatedAt), cmp.Compare(a.ID, b.ID))
+}
+
+// newestLandRun picks the land run the wait follows: the newest, except that a cancelled one
+// gives way to a live run created in the same second. One PR event burst can start several land
+// runs in one second, and their concurrency group cancels all but one (PR #982, 2026-11-05: three
+// land runs at 11:39:48Z, the first listed a cancelled one). A cancelled run with nothing as new
+// beside it was cancelled by a person, and stays the verdict's run: not green.
+func newestLandRun(runs []workflowRun) workflowRun {
+	newest := slices.MaxFunc(runs, byAge)
+	if !newest.cancelled() {
+		return newest
+	}
+	live := slices.DeleteFunc(slices.Clone(runs), func(r workflowRun) bool {
+		return r.cancelled() || !r.CreatedAt.Equal(newest.CreatedAt)
+	})
+	if len(live) == 0 {
+		return newest
+	}
+	return slices.MaxFunc(live, byAge)
+}
+
 // landAsk is how `land` asks CI to land the head (`ci.yml`'s `mode` step reads the PR's labels).
 type landAsk int
 
@@ -402,7 +439,7 @@ func nextLandAsk(labeled bool, runs []workflowRun) landAsk {
 
 // ciVerdict reads the CI runs and `CI OK` check runs on one SHA. Light runs don't count: they never
 // report `CI OK`, and `land` asks for a land run before it waits (`nextLandAsk`). The newest land
-// run's current attempt's `CI OK` decides as soon as it completes, whatever the run's status says:
+// run's (`newestLandRun`) current attempt's `CI OK` decides as soon as it completes, whatever the run's status says:
 // it's the exact check `main`'s ruleset demands, and GitHub can mark the run completed many minutes
 // later (PR #944, 2026-11-04: `CI OK` done at 16:19:55Z, the run at 16:35:58Z). An earlier
 // attempt's or another run's `CI OK` never counts (`ofAttempt`), so an old green can't beat a
@@ -414,7 +451,7 @@ func ciVerdict(runs []workflowRun, checks []checkRun) (verdict, workflowRun) {
 	if len(runs) == 0 {
 		return verdictMissing, workflowRun{}
 	}
-	run := slices.MaxFunc(runs, func(a, b workflowRun) int { return a.CreatedAt.Compare(b.CreatedAt) })
+	run := newestLandRun(runs)
 	current := slices.DeleteFunc(slices.Clone(checks), func(c checkRun) bool { return !c.ofAttempt(run) })
 	if len(current) == 0 {
 		if run.Status == "completed" {
@@ -560,8 +597,6 @@ type pullRequest struct {
 	State  string    `json:"state"`
 	URL    string    `json:"url"`
 	Labels []prLabel `json:"labels"`
-	// opened: this land just opened it, labels and all, so its first runs are on their way.
-	opened bool
 }
 
 type prLabel struct {

@@ -81,8 +81,9 @@ are never landed as they are, and each one used to pay the macOS lane's ~34 min 
 
 - **Asking** (`askToLand`, `nextLandAsk`): no label adds it, which starts a `labeled` land run on the head. With the
   label on, a push already started one, so it waits; but when every run on the head is light (the label went on before
-  this head, or its run never started), it takes the label off and on again. A PR this land just opened carries the
-  label from `gh pr create`, which adds labels after opening, so its first light run is replaced by the label's.
+  this head, or its run never started), it takes the label off and on again. A PR this land opens carries only
+  `claude-created` (`prCreateArgs`), so it gets the label here like any other: one `gh pr edit --add-label`, one
+  `labeled` land run (§ Gotcha: never two labels on `gh pr create`).
 - **`-no-wait` drops the label before it pushes** (`dropLandLabel`), so a milestone push after an earlier land stays
   light. A failed removal stops before the push, which would otherwise run every lane.
 - **Waiting reads land runs only** (`landRuns`): a run titled `Light: ` (`ci.yml`'s `run-name`) never reports `CI OK`,
@@ -90,10 +91,30 @@ are never landed as they are, and each one used to pay the macOS lane's ~34 min 
   title that lies only makes the wait follow the wrong run: a light run finished without `CI OK` reads red, never green.
 - **Re-runs keep their mode** (a re-run keeps its event payload), so `gh run rerun --failed` on a land run is a land
   run. A newer push while the label is on is a land run too, which is what the conflict rebase needs.
-- **`-record N`** opens the record PR with the label and asks the same way; its tree is `main`'s, so it still goes green
+- **`-record N`** opens the record PR the same way and asks the same way; its tree is `main`'s, so it still goes green
   in about a minute.
-- Unit-tested (`TestNextLandAsk`, `TestCIVerdictIgnoresLightRuns`); the GitHub side on throwaway PR #978
-  (`docs/notes/ci-light-runs-2026-11-05.md`).
+- Unit-tested (`TestNextLandAsk`, `TestCIVerdictIgnoresLightRuns`, `TestPRCreateArgsCarryOnlyTheAgentLabel`); the GitHub
+  side on throwaway PR #978 (`docs/notes/ci-light-runs-2026-11-05.md`).
+
+## Gotcha: never two labels on `gh pr create`
+
+PR #982 (head `1484c2394048`, 2026-11-05): `land` opened it with `--label claude-created --label land`, and the issue
+events API lists four distinct `labeled` events, all by `vdavid` with no app: both labels at 11:39:45Z and both AGAIN at
+11:39:46Z, with no `unlabeled` between. With the `opened` event that made five CI runs, all created 11:39:48Z: two light
+(the `claude-created` events, groups of their own) and three land runs in `pr-982` (the `opened` payload already carried
+`land`, plus the two `land` events), which cancelled each other down to one. `ciVerdict` then broke the three-way
+`created_at` tie toward a cancelled run and reported red with nothing failing (§ Decision: `CI OK` decides).
+
+- **Not `land`, not gh's retries.** gh 2.103.3's
+  [`CreatePullRequest`](https://github.com/cli/cli/blob/v2.103.3/api/queries_pr.go) sends `createPullRequest`, then ONE
+  `updatePullRequest` with every `labelIds`; its HTTP stack doesn't retry, and `land`'s `r.gh` retries only on a spent
+  budget, minutes later. No workflow or hook adds labels. Every earlier land-opened PR carried one label from the same
+  path and got one `labeled` event (#954, #963, #965, #968, #976, #978), so the doubling showed up only with two labels
+  in that mutation. GitHub's side, then; one sample, never reproduced (that would take a real PR and CI).
+- **So `land` opens a PR with `claude-created` alone** (`prCreateArgs`) and adds `land` through `askToLand`'s
+  `gh pr edit --add-label` (`addLabelsToLabelable`, one event per call on #976 and #978). The `opened` payload may still
+  carry `land` if the edit beats GitHub's webhook build (#982's did, a second after `opened`), which makes two land runs
+  in one second; `newestLandRun` follows the survivor.
 
 ## Decision: `CI OK` decides, not the run status
 
@@ -108,6 +129,11 @@ landed it 16 minutes late. `CI OK` is the exact check `main`'s CI ruleset requir
   (`check_suite_id`; the same SHA's other run, a release's dispatch run, has its own) and either still going or started
   no earlier than the attempt (`run_started_at`). An old green can't land a SHA whose re-run is going, and an old red
   can't stop one (`TestCIVerdictAcrossReRuns`).
+- **The newest land run** (`newestLandRun`): by `created_at`, then the higher run ID, since `created_at` has one-second
+  precision and one event burst can start several land runs in a second (§ Gotcha: never two labels on `gh pr create`).
+  A cancelled newest gives way to a live run created in the same second, in case the IDs disagree with the order the
+  concurrency group cancelled them in. A cancelled run with nothing as new beside it was stopped by a person: red, and
+  `ciFailure` says it was cancelled and re-runs the whole run (`TestCIVerdictFollowsTheNewestOfABurst`).
 - **No such check**: a finished run is red (`CI OK` never ran), an unfinished one pending. A queued `CI OK` on a
   finished run is pending (seen 2026-10-22).
 - **Only `success` is green**: GitHub would accept a skipped check, which a finished run should never produce.

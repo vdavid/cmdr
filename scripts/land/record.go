@@ -62,7 +62,7 @@ func recordOnce(r runner, cfg config) error {
 	if err != nil {
 		return err
 	}
-	recordPR, err := ensurePR(r, recordBranch(n), []commit{recordMessage(n)}, true)
+	recordPR, err := ensurePR(r, recordBranch(n), []commit{recordMessage(n)})
 	if err != nil {
 		return err
 	}

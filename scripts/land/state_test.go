@@ -307,6 +307,68 @@ func TestCIVerdictIgnoresLightRuns(t *testing.T) {
 	}
 }
 
+// PR #982 (2026-11-05): one PR open set off three land runs in the same second (`created_at` has
+// one-second precision), and the concurrency group cancelled all but the last. The wait has to
+// follow the survivor, never a cancelled sibling that tied with it.
+func TestCIVerdictFollowsTheNewestOfABurst(t *testing.T) {
+	second := time.Date(2026, 11, 5, 11, 39, 48, 0, time.UTC)
+	burst := func(id int64, status, conclusion string) workflowRun {
+		return workflowRun{ID: id, Status: status, Conclusion: conclusion, DisplayTitle: "feat: a thing", CreatedAt: second, RunStartedAt: second, CheckSuiteID: id}
+	}
+	cancelledA := burst(42020776853, "completed", "cancelled")
+	cancelledB := burst(42020777514, "completed", "cancelled")
+	alive := burst(42020777999, "in_progress", "")
+	// If the IDs ever disagree with the order the group cancelled them in, the live run still wins.
+	cancelledHigh := burst(42020778500, "completed", "cancelled")
+	later := workflowRun{ID: 1, Status: "completed", Conclusion: "cancelled", DisplayTitle: "feat: a thing", CreatedAt: second.Add(time.Minute), CheckSuiteID: 1}
+
+	cases := []struct {
+		name   string
+		runs   []workflowRun
+		want   verdict
+		wantID int64
+	}{
+		{"a cancelled sibling listed first doesn't win the tie", []workflowRun{cancelledA, cancelledB, alive}, verdictPending, alive.ID},
+		{"order in the list doesn't matter", []workflowRun{alive, cancelledB, cancelledA}, verdictPending, alive.ID},
+		{"a cancelled tie with a higher ID doesn't hide the live run", []workflowRun{cancelledHigh, alive}, verdictPending, alive.ID},
+		// Nothing newer runs, so someone cancelled it: not green.
+		{"a cancelled run that is genuinely the newest reads red", []workflowRun{alive, later}, verdictRed, later.ID},
+		{"a whole cancelled burst reads red, on the newest", []workflowRun{cancelledA, cancelledB}, verdictRed, cancelledB.ID},
+	}
+	for _, c := range cases {
+		got, run := ciVerdict(c.runs, nil)
+		if got != c.want || run.ID != c.wantID {
+			t.Errorf("%s: got %d (run %d), want %d (run %d)", c.name, got, run.ID, c.want, c.wantID)
+		}
+	}
+}
+
+// A new PR opens with only `claude-created`; `askToLand` adds `land` in a call of its own, so one
+// event starts the land run (§ Gotcha: labels on `gh pr create` in DETAILS.md).
+func TestPRCreateArgsCarryOnlyTheAgentLabel(t *testing.T) {
+	args := prCreateArgs("vdavid/cmdr", "worktree-x", []commit{first})
+	var labels []string
+	for i, a := range args {
+		if a == "--label" && i+1 < len(args) {
+			labels = append(labels, args[i+1])
+		}
+	}
+	if !slices.Equal(labels, []string{agentLabel}) {
+		t.Errorf("labels: got %q, want only %q", labels, agentLabel)
+	}
+	if !slices.Contains(args, "worktree-x") || !slices.Contains(args, "vdavid/cmdr") || !slices.Contains(args, first.Subject) {
+		t.Errorf("args miss the branch, repo, or title: %q", args)
+	}
+}
+
+func TestCIFailureForACancelledRunSaysSo(t *testing.T) {
+	run := workflowRun{ID: 42, Status: "completed", Conclusion: "cancelled"}
+	msg := ciFailure(run, nil, false, "pnpm land").Error()
+	if !strings.Contains(msg, "cancelled") || !strings.Contains(msg, "gh run rerun 42 -R") || strings.Contains(msg, "--failed") {
+		t.Errorf("a cancelled run should say so and re-run the whole run:\n%s", msg)
+	}
+}
+
 func TestNextLandAsk(t *testing.T) {
 	light := workflowRun{ID: 1, DisplayTitle: "Light: fix: x"}
 	landing := workflowRun{ID: 2, DisplayTitle: "fix: x"}
