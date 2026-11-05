@@ -79,9 +79,9 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
     "sourceHash": "7a0df93"
   },
-  "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr pauses drive indexing when free space on your startup disk drops below this per cent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the low disk space warning is on or off.",
+  "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr pauses drive indexing when free space on your startup disk drops below this per cent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "9db2368"
+    "sourceHash": "4ee1cce"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "disk, space, full, free, index, indexing, pause, storage, threshold, percent, per cent, low",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {

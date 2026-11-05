@@ -1708,7 +1708,7 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "O Cmdr pausa a indexação de discos quando o espaço livre do seu disco de inicialização cai abaixo deste percentual, para que o índice não ocupe o espaço de que seus próprios arquivos precisam. A indexação continua de onde parou assim que o espaço livre sobe um ponto acima desse limite. Isso funciona com o “Aviso de pouco espaço em disco” ativado ou desativado.",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "9db2368"
+    "sourceHash": "4ee1cce"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "disco, espaço, cheio, livre, índice, indexação, pausa, armazenamento, limite, porcentagem, percentual, pouco",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {

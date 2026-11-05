@@ -1713,7 +1713,7 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr met en pause l’indexation des disques quand l’espace libre de votre disque de démarrage descend sous ce pourcentage, pour que l’index ne prenne pas la place dont vos propres fichiers ont besoin. L’indexation reprend là où elle s’était arrêtée dès que l’espace libre remonte d’un point au-dessus de ce seuil. Cela fonctionne que le réglage « Avertissement d’espace disque faible » soit activé ou non.",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "9db2368"
+    "sourceHash": "4ee1cce"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "disque, espace, plein, saturé, libre, index, indexation, pause, stockage, seuil, pourcentage, pour cent, faible",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {

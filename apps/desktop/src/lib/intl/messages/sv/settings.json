@@ -1709,7 +1709,7 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr pausar enhetsindexeringen när det lediga utrymmet på startskivan sjunker under den här procentandelen, så att indexet inte tar platsen som dina egna filer behöver. Indexeringen fortsätter där den slutade när det lediga utrymmet är en procentenhet över gränsen. Det fungerar oavsett om ”Varning vid lågt diskutrymme” är på eller av.",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "9db2368"
+    "sourceHash": "4ee1cce"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "disk, utrymme, diskutrymme, full, ledigt, index, indexering, paus, lagring, tröskel, gräns, procent, lite",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {

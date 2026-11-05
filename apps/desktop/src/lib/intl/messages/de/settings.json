@@ -1710,7 +1710,7 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr hält die Laufwerksindizierung an, wenn der freie Speicherplatz auf deinem Startvolume unter diesen Prozentwert fällt, damit der Index nicht den Platz belegt, den deine eigenen Dateien brauchen. Die Indizierung macht dort weiter, wo sie aufgehört hat, sobald der freie Speicherplatz einen Prozentpunkt darüber liegt. Das gilt unabhängig davon, ob die „Warnung bei wenig Speicherplatz“ ein- oder ausgeschaltet ist.",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "9db2368"
+    "sourceHash": "4ee1cce"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "Festplatte, Speicherplatz, Platz, voll, frei, Index, Indizierung, anhalten, Pause, Speicher, Schwelle, Grenze, Prozent, wenig, knapp",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {

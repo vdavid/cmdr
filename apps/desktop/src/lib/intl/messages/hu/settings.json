@@ -1707,7 +1707,7 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "A Cmdr szünetelteti a meghajtó indexelését, ha az indítólemezeden a szabad hely e százalék alá csökken, hogy az index ne foglalja el a helyet a saját fájljaid elől. Az indexelés ott folytatódik, ahol abbamaradt, amint a szabad hely egy százalékponttal e határ fölé emelkedik. Ez attól függetlenül működik, hogy a „Kevés lemezterület figyelmeztetés” be van-e kapcsolva.",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "9db2368"
+    "sourceHash": "4ee1cce"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "lemez, lemezterület, hely, tele, megtelt, szabad hely, tárhely, küszöb, százalék, kevés, szünet, leállítás",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {

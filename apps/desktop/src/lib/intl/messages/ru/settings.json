@@ -1704,7 +1704,7 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr приостанавливает индексацию дисков, когда свободного места на загрузочном диске становится меньше этого процента, чтобы индекс не занимал место, нужное вашим собственным файлам. Индексация продолжится с того же места, как только свободного места станет на один процентный пункт больше порога. Это работает независимо от того, включен ли параметр «Предупреждать о нехватке места».",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "9db2368"
+    "sourceHash": "4ee1cce"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "диск, место, заполнен, свободное место, индекс, индексация, пауза, хранилище, порог, процент, мало места",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {

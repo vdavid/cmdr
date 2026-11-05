@@ -1704,7 +1704,7 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr tạm dừng lập chỉ mục ổ đĩa khi dung lượng trống trên ổ đĩa khởi động tụt xuống dưới mức phần trăm này, để chỉ mục không chiếm chỗ mà tệp của bạn cần. Việc lập chỉ mục sẽ tiếp tục từ chỗ đã dừng khi dung lượng trống tăng lên cao hơn mức này một điểm phần trăm. Tính năng này hoạt động dù “Cảnh báo thiếu dung lượng đĩa” đang bật hay tắt.",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "9db2368"
+    "sourceHash": "4ee1cce"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "đĩa, ổ đĩa, dung lượng, đầy, sắp đầy, còn trống, chỉ mục, tạm dừng, lưu trữ, ngưỡng, phần trăm, thiếu",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {

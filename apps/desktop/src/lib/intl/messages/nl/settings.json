@@ -1710,7 +1710,7 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr pauzeert het indexeren van schijven wanneer de vrije ruimte op je opstartschijf onder dit percentage zakt, zodat de index niet de ruimte inneemt die je eigen bestanden nodig hebben. Het indexeren gaat verder waar het gebleven was zodra de vrije ruimte één procentpunt hoger ligt. Dit werkt of de ‘Waarschuwing bij weinig schijfruimte’ nu aan of uit staat.",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "9db2368"
+    "sourceHash": "4ee1cce"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "schijf, ruimte, schijfruimte, vol, vrij, index, indexeren, pauze, opslag, drempel, procent, percentage, weinig",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
