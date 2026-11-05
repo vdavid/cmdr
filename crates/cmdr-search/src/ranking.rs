@@ -77,15 +77,49 @@ const RANK_MIN_SPLIT: usize = 8_192;
 /// Only a plain glob substring (`report`, auto-wrapped to `*report*` for matching)
 /// has a meaningful exact-vs-prefix-vs-substring gradient. A wildcard glob
 /// (`report*`, `*.pdf`) or a regex has no such gradient, so it returns `""` and the
-/// whole result set stays in one match-quality band (ranked by recency alone). Under
-/// `NameRules::nfd_patterns` (macOS) the stem is NFD-normalized to match the arena's NFD filenames — the same
-/// normalization the engine's matcher applies to the pattern.
-pub(crate) fn stem_for(query: &SearchQuery, rules: &NameRules) -> String {
+/// whole result set stays in one match-quality band (ranked by recency alone). The
+/// stem takes the same forms the matcher's pattern does ([`NameRules::pattern_forms`]),
+/// so on a Mac a name stored in either normal form lands in the same band.
+pub(crate) fn stem_for(query: &SearchQuery, rules: &NameRules) -> Stem {
     match (&query.pattern_type, &query.name_pattern) {
         (PatternType::Glob, Some(p)) if !p.is_empty() && !p.contains('*') && !p.contains('?') => {
-            rules.normalize_pattern(p).into_owned()
+            let forms = rules.pattern_forms(p);
+            Stem {
+                primary: forms.primary.into_owned(),
+                other_form: forms.other,
+            }
         }
-        _ => String::new(),
+        _ => Stem::default(),
+    }
+}
+
+/// The query stem in every normal form a matched name may hold (see [`stem_for`]).
+/// Empty when the pattern has no quality gradient.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct Stem {
+    primary: String,
+    other_form: Option<String>,
+}
+
+impl Stem {
+    /// A stem in one form, as typed.
+    #[cfg(test)]
+    pub(crate) fn plain(stem: &str) -> Self {
+        Self {
+            primary: stem.to_string(),
+            other_form: None,
+        }
+    }
+
+    /// The best band `name` reaches against any of the stem's forms: a name stored
+    /// in the other form classifies against that form exactly as one in the primary
+    /// form does against the primary.
+    pub(crate) fn classify(&self, name: &str, case_insensitive: bool) -> MatchQuality {
+        let primary = classify_match(name, &self.primary, case_insensitive);
+        match &self.other_form {
+            Some(other) if primary != MatchQuality::Exact => primary.max(classify_match(name, other, case_insensitive)),
+            _ => primary,
+        }
     }
 }
 
@@ -320,7 +354,14 @@ pub(crate) fn rank(
     case_insensitive: bool,
     weights: &ImportanceWeights,
 ) {
-    let ranked = rank_indices(index, matching, stem, case_insensitive, weights, usize::MAX);
+    let ranked = rank_indices(
+        index,
+        matching,
+        &Stem::plain(stem),
+        case_insensitive,
+        weights,
+        usize::MAX,
+    );
     matching.copy_from_slice(&ranked);
 }
 
@@ -345,14 +386,14 @@ pub(crate) fn rank(
 pub(crate) fn rank_indices(
     index: &SearchIndex,
     matching: &[usize],
-    stem: &str,
+    stem: &Stem,
     case_insensitive: bool,
     weights: &ImportanceWeights,
     keep: usize,
 ) -> Vec<usize> {
     let no_weights = weights.is_empty();
     let key_for = |memo: &mut std::collections::HashMap<i64, f64>, idx: usize| {
-        let band = classify_match(index.name(idx), stem, case_insensitive);
+        let band = stem.classify(index.name(idx), case_insensitive);
         let recency = index.modified_at(idx).unwrap_or(0);
         let boosted_recency = if no_weights {
             recency as f64
