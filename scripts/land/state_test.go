@@ -363,7 +363,7 @@ func TestPRCreateArgsCarryOnlyTheAgentLabel(t *testing.T) {
 
 func TestCIFailureForACancelledRunSaysSo(t *testing.T) {
 	run := workflowRun{ID: 42, Status: "completed", Conclusion: "cancelled"}
-	msg := ciFailure(run, nil, false, "pnpm land").Error()
+	msg := ciFailure(run, nil, nil, false, "pnpm land").Error()
 	if !strings.Contains(msg, "cancelled") || !strings.Contains(msg, "gh run rerun 42 -R") || strings.Contains(msg, "--failed") {
 		t.Errorf("a cancelled run should say so and re-run the whole run:\n%s", msg)
 	}
