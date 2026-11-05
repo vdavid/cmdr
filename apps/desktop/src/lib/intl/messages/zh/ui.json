@@ -15,6 +15,10 @@
   "@ui.menuBar.label": {
     "sourceHash": "2d9de7e"
   },
+  "ui.demoDrop.overBudget": "这个在线演示每次访问最多容纳你 {budgetText} 的文件，所以有 {countText} 个{count, plural, other {项目}}没放进来。",
+  "@ui.demoDrop.overBudget": {
+    "sourceHash": "9a11992"
+  },
   "ui.popover.defaultAriaLabel": "选项",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Snälla, radera inte din hemmapp",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Hallå, du kan inte radera din egen hemmapp.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Du kan inte radera <code>{path}</code> eftersom din hemmapp ligger där, och din hemmapp kan du inte radera.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Om du vill bli av med alla dina filer, gå in där, markera allt och radera. Fast ärligt talat låter det fortfarande som en väldigt dålig idé.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Om du vill frigöra utrymme, var lite mer specifik. Om du vill bli av med allt på den här datorn, återställ systemet till fabriksinställningarna.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Den här filen ändrades under kopieringen",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

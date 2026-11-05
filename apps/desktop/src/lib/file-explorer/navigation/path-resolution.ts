@@ -104,7 +104,8 @@ function schemeFloorFor(targetPath: string, volumeRoot: string | undefined): str
  * Resolves a path to a valid existing path by walking up the parent tree, asking
  * `volumeId` about each parent. Each step has a timeout to prevent hanging on dead
  * mounts (default 1s, longer on a live session: `probeTimeoutMs`).
- * Fallback chain: parent tree (up to volumeRoot) → user home (~) → filesystem root (/).
+ * Fallback chain: parent tree (up to volumeRoot), then on the boot disk `/` → `~`, and past another
+ * volume's root `~` → `/`.
  * Returns null if even the root doesn't exist (volume unmounted).
  *
  * ❗ On a `<scheme>://` path the walk stops at the scheme root and RETURNS IT,
@@ -135,13 +136,12 @@ export async function resolveValidPath(
   if (walked !== null) return walked
   // A scheme path stops here: `~` is on another volume entirely.
   if (schemeFloor) return schemeFloor
-  // Try user home before falling back to root (~ is expanded by the backend)
-  if (await bounded(onBootDisk('~'), false)) {
-    return '~'
-  }
-  // Check root
-  if (await bounded(onBootDisk('/'), false)) {
-    return '/'
+  // On the boot disk, `/` is the nearest surviving parent of a deleted top-level folder, so it comes
+  // before `~`. A walk that stopped at another volume's root (an ejected drive) has no parent on
+  // that volume left, so home is the friendlier landing there (`~` is expanded by the backend).
+  const fallbacks = !volumeRoot || volumeRoot === '/' ? ['/', '~'] : ['~', '/']
+  for (const fallback of fallbacks) {
+    if (await bounded(onBootDisk(fallback), false)) return fallback
   }
   return null
 }

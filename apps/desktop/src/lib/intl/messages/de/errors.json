@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Bitte lösch deinen persönlichen Ordner nicht",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Hey, deinen eigenen persönlichen Ordner kannst du nicht löschen.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "<code>{path}</code> lässt sich nicht löschen, weil darin dein persönlicher Ordner liegt, und den kannst du nicht löschen.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Wenn du alle deine Dateien loswerden willst, geh hinein, wähl alles aus und lösch es. Klingt aber trotzdem nach einer ziemlich schlechten Idee.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Wenn du Speicherplatz freigeben willst, sei ein bisschen genauer. Wenn du alles auf diesem Computer loswerden willst, setz das System auf den Werkszustand zurück.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Diese Datei hat sich beim Kopieren geändert",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

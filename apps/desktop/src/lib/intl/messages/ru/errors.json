@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Пожалуйста, не удаляйте папку пользователя",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Эй, свою же папку пользователя удалить нельзя.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Папку <code>{path}</code> удалить нельзя: в ней находится ваша папка пользователя, а ее удалять нельзя.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Если хотите избавиться от всех своих файлов, зайдите в нее, выделите все и удалите. Хотя, честно говоря, это все равно звучит как очень плохая идея.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Если хотите освободить место, выберите что-нибудь поконкретнее. Если хотите избавиться от всего на этом компьютере, сбросьте систему до заводских настроек.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Файл изменился во время копирования",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

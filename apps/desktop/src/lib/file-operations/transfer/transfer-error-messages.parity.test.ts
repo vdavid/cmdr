@@ -835,7 +835,7 @@ const cases: Case[] = [
     error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'delete' },
     op: 'delete',
     expected: {
-      title: 'Your home folder stays',
+      title: 'Please don’t delete your home folder',
       message: 'Hey, you can’t delete your own home folder.',
       suggestion:
         'If you want to get rid of all your files, go in there, select all, and delete. Although, it still sounds like a very bad idea.',
@@ -848,7 +848,7 @@ const cases: Case[] = [
     error: { type: 'home_folder', path: '/Users/<x>', relation: 'holdsHome', action: 'delete' },
     op: 'trash',
     expected: {
-      title: 'Your home folder stays',
+      title: 'Please don’t delete your home folder',
       message:
         'You can’t delete <code>/Users/&lt;x&gt;</code> because it contains your home folder, and you can’t delete your home folder.',
       suggestion:

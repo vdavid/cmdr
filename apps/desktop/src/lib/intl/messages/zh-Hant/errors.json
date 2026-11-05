@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "拜託，別刪掉你的個人專屬資料夾",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "嘿，你可不能刪除自己的個人專屬資料夾。",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "你不能刪除 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而個人專屬資料夾是不能刪的。",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "如果你想刪掉所有檔案，就進到裡面，全選，然後刪除。不過說真的，這聽起來還是個很糟的主意。",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "如果你想騰出空間，就挑得具體一點。如果你想清掉這台電腦上的一切，就重設一下系統。",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "這個檔案在複製時變動了",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Domovskou složku prosím nemažte",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Hej, vlastní domovskou složku přece smazat nemůžete.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Složku <code>{path}</code> smazat nemůžete, protože obsahuje vaši domovskou složku, a tu smazat nejde.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Pokud se chcete zbavit všech svých souborů, jděte dovnitř, vyberte vše a smažte to. Pořád to ale zní jako fakt špatný nápad.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Pokud chcete uvolnit místo, buďte trochu konkrétnější. Pokud se chcete zbavit všeho na tomto počítači, resetujte systém do továrního nastavení.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Tento soubor se během kopírování změnil",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Đừng xóa thư mục chính của bạn nhé",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Này, bạn không xóa được thư mục chính của chính mình đâu.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Bạn không thể xóa <code>{path}</code> vì trong đó có thư mục chính của bạn, mà thư mục chính thì không xóa được.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Nếu muốn bỏ hết tệp của mình, hãy vào trong đó, chọn tất cả rồi xóa. Dù vậy, nghe vẫn là một ý rất tệ đó.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Nếu muốn giải phóng dung lượng, hãy chọn cụ thể hơn một chút. Nếu muốn xóa sạch mọi thứ trên máy tính này, hãy đặt lại hệ điều hành.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Tệp này đã thay đổi trong lúc sao chép",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

@@ -327,6 +327,13 @@ async fn the_path_questions_see_every_write() {
         let answer = call(&demo, command, json!({ "volumeId": "root", "path": "/Users/you/New" })).await;
         assert_eq!(answer, json!({ "data": true, "timedOut": false }), "{command}");
     }
+    // The deleted-folder poll asks this every 2 s with no volume id; a "no" walked a pane on `/` home.
+    let root = call(&demo, "path_exists", json!({ "volumeId": null, "path": "/" })).await;
+    assert_eq!(
+        root,
+        json!({ "data": true, "timedOut": false }),
+        "the volume root is there"
+    );
     let kinds = call(
         &demo,
         "stat_paths_kinds",

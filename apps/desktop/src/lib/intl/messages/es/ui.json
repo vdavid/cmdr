@@ -15,6 +15,10 @@
   "@ui.menuBar.label": {
     "sourceHash": "2d9de7e"
   },
+  "ui.demoDrop.overBudget": "La demo admite hasta {budgetText} de tus archivos por visita, así que ha dejado fuera {countText} {count, plural, one {elemento} many {elementos} other {elementos}}.",
+  "@ui.demoDrop.overBudget": {
+    "sourceHash": "9a11992"
+  },
   "ui.popover.defaultAriaLabel": "Opciones",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

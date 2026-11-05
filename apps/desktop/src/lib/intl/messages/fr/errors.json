@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Ne supprimez pas votre dossier personnel, s’il vous plaît",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Hé, vous ne pouvez pas supprimer votre propre dossier personnel.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Vous ne pouvez pas supprimer <code>{path}</code>, car votre dossier personnel s’y trouve, et vous ne pouvez pas supprimer votre dossier personnel.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Si vous voulez vous débarrasser de tous vos fichiers, allez dedans, sélectionnez tout et supprimez. Cela dit, ça a quand même l’air d’une très, très mauvaise idée.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Si vous voulez libérer de l’espace, visez un peu plus précisément. Si vous voulez vous débarrasser de tout ce qui se trouve sur cet ordinateur, réinitialisez le système.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Ce fichier a changé pendant la copie",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

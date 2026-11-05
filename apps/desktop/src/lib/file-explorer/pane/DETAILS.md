@@ -516,6 +516,10 @@ volume-id string. The record has two halves, and which half answers is the whole
   capabilities: those answer for the drive, and the pane is inside something ON it.
 - **`deleted-dir-poll.ts` drops an answer about a folder the pane has since left**: a share that mounted back elsewhere
   moved the pane mid-poll, and the old path's "missing" walked it off the share.
+- **`deleted-dir-poll.ts` trusts the backend's "missing" for `/` too**: a pane on `/` that hears it twice walks up (the
+  walk never probes `/` itself, and the fallback asks the same disk about `/` before `~`) and lands on `~`. So every
+  host must answer its root "there"; the browser demo's `InMemoryVolume` once didn't (`crates/cmdr-fs/DETAILS.md` §
+  "`InMemoryVolume` honors the contracts data safety leans on").
 - **`paneFolderIsPolledForDeletion(volumeId, path)`** gates `deleted-dir-poll.ts`, which exists only for FSEvents' blind
   spot (macOS doesn't report a watched folder's own deletion). Two halves: the kind's `pollsForDeletedFolder` (true for
   `local`, `smb`, and `archive`; false for the `.git` portal, whose snapshot folders never exist on disk, and for every

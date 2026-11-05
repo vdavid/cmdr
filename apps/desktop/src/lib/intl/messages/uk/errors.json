@@ -1969,6 +1969,26 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Будь ласка, не видаляйте домашню папку",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Гей, свою власну домашню папку видалити не можна.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Папку <code>{path}</code> видалити не можна: у ній ваша домашня папка, а її видаляти не можна.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Якщо хочете позбутися всіх своїх файлів, зайдіть у неї, виберіть усе й видаліть. Хоча, чесно кажучи, це все одно звучить як дуже погана ідея.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Якщо хочете звільнити місце, виберіть щось конкретніше. Якщо хочете позбутися всього на цьому компʼютері, скиньте систему до заводських налаштувань.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
   "errors.write.sourceChanged.title": "Цей файл змінився під час копіювання",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"
