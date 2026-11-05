@@ -133,6 +133,18 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   offers PDF (0) and renders the page in Chrome 156 and Firefox 157 (Playwright's, with `pdfjs.disabled` off: it ships
   pdf.js disabled); headless Chromium has no PDF viewer, so it shows "Couldn't load plugin" there.
 
+## Light and dark
+
+- On desktop, `setTheme` (`plugin:app|set_app_theme`, `settings-applier.ts`'s `applyTheme`) sets the window's appearance
+  and WebKit's `prefers-color-scheme` follows, so every `@media` rule and `matchMedia` query switches. A page can't set
+  `prefers-color-scheme`, so the backend keeps the theme and pins it in every webview (`DemoWebview.setTheme`, also on
+  attach, so a panel opened later starts on it), and `color-scheme.ts` pins the query in that frame: each `@media` rule
+  naming the feature gets an always-true or always-false condition instead (new stylesheets too, through a
+  `MutationObserver`), `matchMedia` answers scheme queries with a list that fires `change` on a flip, and `:root` gets
+  `color-scheme`. System (`null`) puts the rules back, so the browser follows the OS live.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-05): Dark and Light from Settings repaint the main
+  window, the Settings panel, the menu bar, and the lights; System with the OS flipped to dark follows it.
+
 ## The menu bar
 
 - **What**: a strip at the top of the page (`menu-bar.svelte.ts`, first in `<body>`, so the app's flex column starts

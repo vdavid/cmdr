@@ -65,12 +65,18 @@ vi.mock('./menu-engine.js', () => ({
 }))
 
 import { createDemoBackend, type DemoWebview, type EventTarget } from './backend.js'
+import type { AppTheme } from './color-scheme.js'
 import { DEMO_HOME, DEMO_VOLUME_ID } from './demo-tree.js'
 
 function fakeWebview(label: string) {
   const heard: [string, unknown, EventTarget][] = []
-  const webview: DemoWebview = { label, deliver: (event, payload, target) => heard.push([event, payload, target]) }
-  return { webview, heard }
+  const themes: AppTheme[] = []
+  const webview: DemoWebview = {
+    label,
+    deliver: (event, payload, target) => heard.push([event, payload, target]),
+    setTheme: (theme) => themes.push(theme),
+  }
+  return { webview, heard, themes }
 }
 
 describe('demo backend', () => {
@@ -101,6 +107,19 @@ describe('demo backend', () => {
     expect(menu?.textContent).toContain('Pin tab')
     expect([menu?.style.left, menu?.style.top]).toEqual(['12px', '34px'])
     menu?.remove()
+  })
+
+  // Regression: `set_app_theme` was a no-op, so Light and Dark did nothing in the demo.
+  it('pins every window’s appearance on setTheme, and a window that opens later starts on it', async () => {
+    const backend = createDemoBackend()
+    const main = fakeWebview('main')
+    backend.attach(main.webview)
+    expect(await backend.invoke('plugin:app|set_app_theme', { theme: 'dark' })).toBeNull()
+    const settings = fakeWebview('settings')
+    backend.attach(settings.webview)
+    await backend.invoke('plugin:app|set_app_theme', { theme: null })
+    expect(main.themes).toEqual([null, 'dark', null])
+    expect(settings.themes).toEqual(['dark', null])
   })
 
   it('answers plugin, raw, silent, and window commands', async () => {

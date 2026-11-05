@@ -100,7 +100,6 @@ const handlers: Partial<Record<string, PluginHandler>> = {
   'plugin:fs|write_file': () => undefined,
   'plugin:fs|remove': () => undefined,
   'plugin:app|version': () => 'demo',
-  'plugin:app|set_app_theme': () => undefined,
   'plugin:app|name': () => 'Cmdr',
   'plugin:app|tauri_version': () => '2',
   // `openExternalUrl`: a new browser tab, for web and email links only (`opener.ts`).

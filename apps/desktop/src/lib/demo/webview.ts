@@ -7,6 +7,7 @@
 import { mockIPC, mockWindows } from '@tauri-apps/api/mocks'
 import type { Payload } from './answer-types.js'
 import type { DemoBackend, EventTarget } from './backend.js'
+import { installColorScheme } from './color-scheme.js'
 import { installDragRegions } from './drag-regions.js'
 
 /** A listener's target, as `@tauri-apps/api/event`'s `listen` sends it. */
@@ -120,7 +121,15 @@ export function installWebview(
     protocol === 'cmdr-media'
       ? backend.mediaUrl(filePath, label)
       : `${protocol}://localhost/${encodeURIComponent(filePath)}`
-  const detach = backend.attach({ label, deliver })
+  // Light, Dark, or System, as the app's `setTheme` picks it for every window (`color-scheme.ts`).
+  const scheme = installColorScheme(window)
+  const detach = backend.attach({
+    label,
+    deliver,
+    setTheme: (theme) => {
+      scheme.set(theme)
+    },
+  })
   // Tauri's injected drag script, for this window: the backend moves the panel (`windows.ts`).
   installDragRegions((cmd, payload) => invoke(cmd, { ...payload, label }))
   // A secondary window's iframe going away is that window closing: stop sending it events.

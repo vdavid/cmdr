@@ -126,7 +126,6 @@ describe('path and app plugins', () => {
     expect(call('plugin:app|name')).toBe('Cmdr')
     expect(call('plugin:app|version')).toBe('demo')
     expect(call('plugin:app|tauri_version')).toBe('2')
-    expect(call('plugin:app|set_app_theme', { theme: 'dark' })).toBeUndefined()
   })
 
   it('knows no other plugin command', () => {
