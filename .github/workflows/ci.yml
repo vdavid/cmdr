@@ -603,11 +603,9 @@ jobs:
               - 'scripts/check/checks/webdav_ports.go'
               - '.mise.toml'
 
-      # Only Go: the plan step is the one tool this job runs.
-      - name: Install Go
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-        with:
-          install_args: go
+      # The one tool this job runs, from the cache when its sources are unchanged.
+      - name: Get the lane-markers tool
+        uses: ./.github/actions/lane-markers-tool
 
       # Every lane's input hash, and whether a trusted run already passed exactly those inputs
       # (`scripts/lane-markers/DETAILS.md`). Every event, since the lanes' `if:` reads this output;
@@ -624,7 +622,7 @@ jobs:
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           RUN_ALL: ${{ inputs.run_all == true }}
         run: >-
-          go -C scripts/lane-markers run . plan -event "$EVENT" -ref "$REF" -repo "$REPO" -head-repo "$HEAD_REPO"
+          ./scripts/lane-markers/lane-markers plan -event "$EVENT" -ref "$REF" -repo "$REPO" -head-repo "$HEAD_REPO"
           -run-all="$RUN_ALL"
 
       # The Website job runs inside this image. Its visual baselines
@@ -1476,10 +1474,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Install Go
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-        with:
-          install_args: go
+      - name: Get the lane-markers tool
+        uses: ./.github/actions/lane-markers-tool
 
       - name: Prove every lane skip
         env:
@@ -1491,5 +1487,5 @@ jobs:
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           RUN_ALL: ${{ inputs.run_all == true }}
         run: >-
-          go -C scripts/lane-markers run . verify -needs "$NEEDS" -event "$EVENT" -ref "$REF" -repo "$REPO" -head-repo
-          "$HEAD_REPO" -run-all="$RUN_ALL"
+          ./scripts/lane-markers/lane-markers verify -needs "$NEEDS" -event "$EVENT" -ref "$REF" -repo "$REPO"
+          -head-repo "$HEAD_REPO" -run-all="$RUN_ALL"
