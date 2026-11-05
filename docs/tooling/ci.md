@@ -161,6 +161,11 @@ dashboard, CI config) pays setup once and takes one runner. It runs on every unv
 re-run the suite), except a PR that changes no file. Every check step runs once setup is done, even after another
 failed, so a red run lists every failure, like the four separate jobs it replaced did.
 
+Measured on the self-hosted runner (throwaway PRs #971–#973, 2026-11-05, before `main` held the `lane-markers` tool
+cache, which costs ~20 s more in `changes`): a docs-only PR's light job took 61 s (whole run 122 s), a Go-only PR's 174
+s with `hosted-go` beside it at 114 s, and an API-server-only PR's 145 s. The runner takes one job at a time, so PRs
+pushed together queue behind each other there (the Go probe waited 110 s).
+
 - **Repo hygiene, on every change**: the checks whose inputs no per-app filter can cover. `oxfmt` formats the whole
   monorepo (before hygiene ran on every change, a docs-only commit ran zero CI, so unformatted markdown could land on
   `main` and fail the next unrelated PR; locally the git hooks apply all three formatters: `docs/tooling/git-hooks.md`).
