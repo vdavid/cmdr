@@ -83,7 +83,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
         importance: ImportanceCache::new(data_dir),
         settings: settings::load(&app),
         wake_in_flight: false,
-        not_before: 0,
+        pacing: schedule::Pacing::default(),
         forced: None,
         follow_ups: FollowUpQueue::default(),
         budget_noted: None,
@@ -150,9 +150,9 @@ struct WakeLoop {
     settings: WakeSettings,
     /// Whether a wake thread is running right now. See [`WakeLoop::try_wake`].
     wake_in_flight: bool,
-    /// Unix seconds before which no wake is attempted, however overdue the inbox looks. See
-    /// `schedule.rs`.
-    not_before: u64,
+    /// When a wake may next be attempted, however overdue the inbox looks (`not_before`), and the
+    /// busy streak the busy backoff doubles by. See `schedule.rs`.
+    pacing: schedule::Pacing,
     /// A [`WakeControl::ForceWake`] is outstanding: act on the inbox now, whatever the timer
     /// and the proactive toggle say, and on whatever the request narrows it to. Cleared once
     /// the attempt is actually made, so a force arriving while a wake runs lands on the next
@@ -175,7 +175,7 @@ impl WakeLoop {
     fn park(&self) -> Duration {
         let now = now_secs();
         schedule::park_with_follow_up(
-            schedule::park_for(self.inbox.next_deadline(), self.not_before, now),
+            schedule::park_for(self.inbox.next_deadline(), self.pacing.not_before, now),
             self.follow_ups.next_due(),
             now,
         )
@@ -240,7 +240,7 @@ impl WakeLoop {
     /// ⚠️ **The stamp is computed BEFORE the match consumes the message**, so the two stay one
     /// decision per variant rather than drifting apart.
     fn handle_control(&mut self, control: WakeControl) {
-        let stamped = schedule::stamp_after(&control, self.not_before, now_secs());
+        let paced = schedule::pacing_after(&control, self.pacing, now_secs());
         match control {
             WakeControl::SettingsChanged => self.reload_settings(),
             WakeControl::ReadinessChanged => self.purge_inbox_if_ask_cmdr_off(),
@@ -248,7 +248,7 @@ impl WakeLoop {
             WakeControl::ForceWake(request) => self.forced = Some(request),
             WakeControl::SweepRejected { set_id } => self.note_rejection(set_id),
         }
-        self.not_before = stamped;
+        self.pacing = paced;
     }
 
     /// Throw the backlog away, on disk as well as in memory, when Ask Cmdr was switched off.
@@ -313,13 +313,13 @@ impl WakeLoop {
     fn try_wake(&mut self) {
         let now = now_secs();
         let forced = self.forced.is_some();
-        if !schedule::may_attempt(forced, self.inbox.due_at(now), self.not_before, now) {
+        if !schedule::may_attempt(forced, self.inbox.due_at(now), self.pacing.not_before, now) {
             return;
         }
         // ⚠️ Whatever happens below, don't come straight back: the deadline that brought us here
         // has passed and will keep having passed, and a zero-length park is a spin. This is set
         // BEFORE every remaining early return, the in-flight one included.
-        self.not_before = now.saturating_add(schedule::DECLINED_WAKE_BACKOFF.as_secs());
+        self.pacing.not_before = now.saturating_add(schedule::DECLINED_WAKE_BACKOFF.as_secs());
 
         // At most one wake in flight. A second prepared while the first runs would queue behind
         // the same conversation lock for a whole model call, holding rows the first could have

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { TOUCH_HOLD_MS } from '../drag/touch-hold'
 import { createRowActivation, DOUBLE_TAP_MS } from './row-activation'
 
 function setup() {
@@ -8,10 +9,11 @@ function setup() {
   const activation = createRowActivation({
     getListingId: () => listingId,
     activate: (index) => opened.push(index),
+    hold: () => undefined,
     now: () => time,
   })
   const press = (pointerType: string) => {
-    activation.onPointerDown({ pointerType } as PointerEvent)
+    activation.onPointerDown({ pointerType } as PointerEvent, 0)
   }
   return {
     activation,
@@ -120,6 +122,39 @@ describe('createRowActivation', () => {
       s.advance(100)
       s.tap(4)
       expect(s.opened).toEqual([])
+    })
+  })
+
+  describe('a held press', () => {
+    afterEach(() => {
+      document.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, pointerType: 'touch' }))
+      vi.useRealTimers()
+    })
+
+    function holdSetup() {
+      vi.useFakeTimers()
+      const held: { index: number; event: PointerEvent }[] = []
+      const activation = createRowActivation({
+        getListingId: () => 'listing-1',
+        activate: () => undefined,
+        hold: (event, index) => held.push({ event, index }),
+      })
+      return { activation, held }
+    }
+
+    it('hands a touch held still on a row to the row press, as a mouse press would', () => {
+      const { activation, held } = holdSetup()
+      const press = new PointerEvent('pointerdown', { pointerId: 1, pointerType: 'touch', isPrimary: true })
+      activation.onPointerDown(press, 6)
+      vi.advanceTimersByTime(TOUCH_HOLD_MS)
+      expect(held).toEqual([{ event: press, index: 6 }])
+    })
+
+    it('never holds a mouse, whose own mousedown presses the row', () => {
+      const { activation, held } = holdSetup()
+      activation.onPointerDown(new PointerEvent('pointerdown', { pointerType: 'mouse', isPrimary: true }), 6)
+      vi.advanceTimersByTime(TOUCH_HOLD_MS)
+      expect(held).toEqual([])
     })
   })
 })

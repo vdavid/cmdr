@@ -1534,6 +1534,18 @@
   "@settings.network.directSmbConnection.keywords": {
     "description": "Search keywords for the “Connect directly to SMB shares” setting (settings.network.directSmbConnection.label) in Settings > File systems > SMB/Network shares. What it does: makes Cmdr talk to network shares directly for faster transfers. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
+  "settings.network.requireSmbEncryption.label": "Always require SMB encryption",
+  "@settings.network.requireSmbEncryption.label": {
+    "description": "Label for the toggle that makes Cmdr encrypt every SMB connection it opens itself, and refuse a server that can't encrypt. Off by default; an organization can force it on. \"SMB\" is a protocol name; keep it. In Settings > File systems > SMB/Network shares. Other messages name this setting by its label, so keep it short and stable."
+  },
+  "settings.network.requireSmbEncryption.description": "Cmdr encrypts its own connections to SMB shares, even when the server doesn’t ask for it, and doesn’t connect to a server that can’t encrypt. Guest connections can’t be encrypted, so you’ll need to sign in. Takes effect for new connections.",
+  "@settings.network.requireSmbEncryption.description": {
+    "description": "Help text for the \"Always require SMB encryption\" toggle. \"Its own connections\" means the direct connections Cmdr makes (the system mount macOS keeps for Finder isn't covered). \"Guest connections\" are the ones made without signing in to an account. \"Takes effect for new connections\": a connection that's already open keeps going as it is. \"Cmdr\" is the product name and \"SMB\" a protocol name; keep both."
+  },
+  "settings.network.requireSmbEncryption.keywords": "encrypt, encrypted, encryption, security, privacy, secure",
+  "@settings.network.requireSmbEncryption.keywords": {
+    "description": "Search keywords for the “Always require SMB encryption” setting (settings.network.requireSmbEncryption.label) in Settings > File systems > SMB/Network shares. What it does: makes Cmdr encrypt its connections to network shares and refuse a server that can't. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
   "settings.network.shareCacheDuration.label": "Share cache duration",
   "@settings.network.shareCacheDuration.label": {
     "description": "Label for the picker controlling how long the list of a server's shares is cached. In Settings > File systems > SMB/Network shares.",
@@ -3337,6 +3349,19 @@
   "@settings.managed.summary.securityLogRequired": {
     "description": "Value beside the row label 'Security events' in the 'Managed by your organization' card (Settings > Updates & privacy). The organization requires the security event log, so the person can't turn it off. One to three words.",
     "agreesWith": "settings.managed.summary.securityLog",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+  },
+  "settings.managed.summary.smbEncryption": "SMB encryption",
+  "@settings.managed.summary.smbEncryption": {
+    "description": "Row label in the 'Managed by your organization' card: whether Cmdr's connections to network shares (SMB) must be encrypted. The value beside it says what the organization set. Short, sentence case. \"SMB\" is a protocol name; keep it.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+  },
+  "settings.managed.summary.smbEncryptionRequired": "Always required",
+  "@settings.managed.summary.smbEncryptionRequired": {
+    "description": "Value beside the row label 'SMB encryption' in the 'Managed by your organization' card (Settings > Updates & privacy). The organization requires every SMB connection Cmdr opens to be encrypted, so the person can't turn \"Always require SMB encryption\" off. One to three words.",
+    "agreesWith": "settings.managed.summary.smbEncryption",
     "screenshot": "settings-updates.png",
     "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },

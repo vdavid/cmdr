@@ -150,11 +150,25 @@ allows:
 - **What else `rt` carries for the write engine**: `rt::wall_now()` (`std`'s `SystemTime`, re-based from the page's
   clock in the browser), `rt::spawn_ambient` (`tokio::spawn` natively, the page's loop in the browser; only for
   `deadline`'s ambient design), `rt::task::{JoinSet, Id, AbortHandle, yield_now}` (tokio's natively; in the browser a
-  set over `spawn_local` that, like tokio's, aborts what's left when dropped, and a `setTimeout(0)` macrotask yield so
-  the page paints and fires timers, which tokio's microtask-shaped yield with no runtime would starve), and
+  set over `spawn_local` that, like tokio's, aborts what's left when dropped, and a macrotask yield so the page paints
+  and fires timers, which tokio's microtask-shaped yield with no runtime would starve), and
   `rt::time::{timeout_at, interval_delayed, Interval, Elapsed}`. In the browser `JoinError::is_panic` is always `false`:
   `panic = "abort"` ends the module first. `smoke.mjs` runs `rtSelfTest` (`src/rt_self_test.rs`) against the real
-  `.wasm`: join order, abort, drop-aborts, a yield that lets a timer fire, `timeout_at`, the interval, the wall clock.
+  `.wasm`: join order, abort, drop-aborts, a yield that lets a timer fire, what 100 yields cost, `timeout_at`, the
+  interval, the wall clock.
+- **The browser's yield is a turn, ❌ never `setTimeout(0)`** (`rt/wasm.rs`'s `Turns`, picked once as React's scheduler
+  picks it): one shared `MessageChannel` in a browser (each message a task of its own, interleaved with timer tasks),
+  `setImmediate` where the host has it (Node: the smoke and the golden replay). Both are macrotasks (paint, input, and
+  due timers run first), but browsers clamp a nested timer to 4 ms or more, and the copy engine yields once per 64 KiB
+  chunk (`CheckpointStream`), plus the device's own breaths. Measured on the demo's 40 MB/s device, a 120 MB file: 7.2
+  MB/s (16.7 s, about two clamped timers per chunk) on `setTimeout(0)`, 39.8 MB/s (3.0 s) on turns; the 1,200-file
+  delete went from 365 to 200 ms, its longest gap between two timer ticks from 16 to 24 ms, under the smoke's 50 ms
+  (headless Chromium 1248 via Playwright on the built module, M-series Mac, 2026-11-04).
+- **Why not a `MessageChannel` in Node too**: Node drains a port's queue in one go, messages posted meanwhile included,
+  so one shared channel starved every timer for the whole delete (3 s without a tick); a fresh channel per turn is a
+  native handle each and held it up to 130 ms between ticks (Node 26.12, the smoke, 2026-11-04). So the Node smoke runs
+  the `setImmediate` arm, and only a browser runs the channel arm. `rtSelfTest` fails when 100 yields cost 50 ms (a
+  timer-backed yield cost 112 ms in Node).
 - **`Path::is_absolute` is always `false` on that target** (it has no notion of a filesystem root). Code the browser
   build runs checks a leading `/` instead (`crates/cmdr-listing-wasm/src/tree.rs`); `InMemoryVolume::normalize` gets the
   right answer anyway, because joining a rooted path onto `/` replaces it.
@@ -225,7 +239,9 @@ through a local helper, a fully-qualified call inline in an expression, a `use` 
 - **`FileEntry`.** 11 of the ~70 `crate::file_system` references from the index are this type; it isn't skippable. Its
   constructor brings three more predicates with it (below).
 - **`InMemoryVolume`.** The one `Volume` impl that needs no host. It rides with the trait so a test in any crate can
-  build a volume without the app.
+  build a volume without the app. It also hosts the browser demo's one store, so it answers a host question a page can't
+  ask the OS: `canonicalize` is its `realpath` over its own symlinks (`in_memory/links.rs`; the demo's ⌘F scopes resolve
+  through it, `crates/cmdr-listing-wasm/DETAILS.md` § "Where the demo differs from the app").
 - **`ignore_poison`, `pluralize`, `thread_qos`, `thread_cpu`, `process_memory`.** Host primitives with 8–49 references
   from the index trees, none of which can sensibly be injected. `thread_qos` in particular is the property that kept
   indexing in-process at all: a `tokio::runtime::Handle` does nothing for thread scheduling class. `thread_cpu` reads

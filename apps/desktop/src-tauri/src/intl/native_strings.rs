@@ -557,16 +557,22 @@ mod tests {
     ///
     /// It scans for the literal rather than for `menu_t` CALL SITES on purpose:
     /// several keys are held in tables and passed as a variable (the tag colors
-    /// in `file_context_menu.rs`, the image-search items in `media_index_items.rs`,
+    /// in `file_context_menu.rs`, the image-search items in `cmdr-menu`'s `context/image_index.rs`,
     /// the pin/unpin pair), and those are exactly the ones a call-site parser
     /// would miss.
     #[test]
     fn every_menu_key_literal_exists_in_the_english_catalog() {
-        let source_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        // The menus' data lives in `cmdr-menu` (the bar and every context menu), so its keys are
+        // checked here too, where the catalog is.
+        let menu_crate = manifest.join("../../../crates/cmdr-menu/src");
         let mut checked = 0usize;
         let mut missing: Vec<String> = Vec::new();
 
-        for (path, source) in rust_sources(&source_root) {
+        let sources = rust_sources(&manifest.join("src"))
+            .into_iter()
+            .chain(rust_sources(&menu_crate));
+        for (path, source) in sources {
             // The generated table IS the catalog, and this file's own doc
             // comments talk about keys that deliberately don't exist.
             if path.ends_with("native_strings.gen.rs") || path.ends_with("native_strings.rs") {

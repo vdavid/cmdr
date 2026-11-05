@@ -128,7 +128,7 @@ manualLicenses.post('/admin/generate', async (c) => {
       licenses: [{ shortCode, fullKey }],
       productName: c.env.PRODUCT_NAME,
       supportEmail: c.env.SUPPORT_EMAIL,
-      resendApiKey: c.env.RESEND_API_KEY,
+      smtp2goApiKey: c.env.SMTP2GO_API_KEY,
       organizationName: request.organizationName ?? undefined,
       licenseType: request.licenseType,
       expiresAt: request.expiresAt ?? undefined,

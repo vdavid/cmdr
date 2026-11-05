@@ -309,6 +309,11 @@ AOSP: `USB-foutopsporing` (`SettingsLib` `enable_adb`), `‘Toestaan’` (System
 `systeemeigen` (MS) to introduce, `de systeemverbinding` once SMB is clear; `4x zo langzaam als` (tentative, no pile
 precedent); `Probeer direct te verbinden` echoes `Verbind direct`.
 
+## SMB-versleuteling vereisen (`settings.network.requireSmbEncryption.*`, `*encryptionRequired*`, `*EncryptionRequired*`)
+
+Label `Altijd SMB-versleuteling vereisen` (`vereist` is the catalog's verb, 15+ keys); elsewhere quote it plus
+`staat aan` / `aanstaat` (the `… staat uit` pattern), never paraphrase "is set to". Managed value `Altijd vereist`.
+
 ## S3 (`servers.sheet.s3*`, `servers.refusal.s3*`, `*ShareLink*`, `*.coldStorage*`, `fileOperations.s3Cost.*`)
 
 MS `bucket`, `regio`, `toegangssleutel-ID`, `geheime toegangssleutel`, `catalogusprijs`; `deellink`; `gearchiveerd`,

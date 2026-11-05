@@ -434,7 +434,7 @@ current folder, or the volume root when the pane has no real folder behind it. F
   downstream can tell "empty folder" from "wrong folder". `QueryDialog` derives both from `filterChipsExtras` via
   `../query-ui/scope-summary.ts` and hands them to `QueryResults`: a "Searched in: Downloads" bullet, and a "Search this
   volume instead" button (withheld once the run already covered the volume). The engine's log lines carry the same fact
-  via `summarize_scope` (`src-tauri/src/search/query.rs`), which is how an error-report bundle can answer the question
+  via `summarize_scope` (`crates/cmdr-search/src/query.rs`), which is how an error-report bundle can answer the question
   at all.
 - **A defaulted scope is never persisted.** `scope` state stays `''`, so recent searches and snapshots record "wherever
   I was" instead of baking in a machine-specific absolute path nobody chose; replaying one re-resolves against the pane

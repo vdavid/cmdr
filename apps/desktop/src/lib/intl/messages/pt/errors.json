@@ -2449,6 +2449,10 @@
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "ea3a52f"
   },
+  "errors.shareList.encryptionRequired": "“{server}” não consegue criptografar esta conexão, e o ajuste “Sempre exigir criptografia SMB” está ativado no Cmdr. Verifique os ajustes de criptografia SMB do servidor.",
+  "@errors.shareList.encryptionRequired": {
+    "sourceHash": "4dff9ea"
+  },
   "errors.shareList.protocolError": "Algo deu errado ao pedir a lista de compartilhamentos a “{server}”. Tente novamente em instantes.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

@@ -67,9 +67,18 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
   them, as `commands/menu_state.rs` stores them in `MenuState`. `menu.bar()` answers the macOS bar as it stands:
   `[{ id, title, rows }]`, each row `item` / `check` / `submenu` / `system` / `separator` with its label (a catalog key
   plus tokens, or the app menu's literal `Cmdr`), its shortcut in a Mac's glyphs, and its enabled and checked state, all
-  from `cmdr-menu`. `menu.click(id)` answers what the click sends: `{ kind: "emit", event, payload }`
-  (`execute-command`, `settings-changed`, `view-mode-changed`, `menu-sort`, the payloads `handle_menu_event` emits),
-  `nativeEdit`, `closeFocusedWindow`, or `nothing` for a greyed or OS row.
+  from `cmdr-menu`. `menu.click(id)` answers what the click sends: `{ kind: "emit", event, payload, to }`
+  (`execute-command`, `settings-changed`, `view-mode-changed`, `menu-sort`, the payloads `handle_menu_event` emits, `to`
+  the target window's label), `nativeEdit`, `closeFocusedWindow`, or `nothing` for a greyed or OS row.
+- The right-click menus are the same object (`context_menu.rs`). `DemoMenuBar.opensPopup(command)` claims the
+  `show_*_context_menu` commands (`POPUP_COMMANDS`), and `menu.popup(command, args, windowLabel)` stashes what the menu
+  went up over (the row's path, the eject target, the host row, the window), as `commands/menu.rs` stashes it in
+  `MenuState`, and answers `{ rows, anchor }`: `cmdr-menu`'s rows for those args, plus a `header` row kind, minus every
+  OS-filled `Slot`. `update_menu_context` is one more `invoke` push. `menu.contextClick(id)` answers a pick through
+  `cmdr_menu::context::click::context_click`: an `emit` to `main`, `queue`, or the viewer the menu went up over, an
+  `invoke` (`add_favorite`, as `handle_menu_event` calls it directly), or `nothing` for a row the last popup didn't
+  offer live. What the demo has no OS for: no slot, no image-search group, a breadcrumb volume never busy and always
+  "Eject", a servers hub host with nothing mounted.
 
 The volume is built `with_held_folders_only()`, so a folder the tree doesn't hold ends in the typed `notFound`
 `listing-error` a disk's missing folder does (and a file, `NotADirectory`). The tree: dates are JS milliseconds and
@@ -81,7 +90,7 @@ tree lists as a folder (as on disk).
 - `pnpm build:listing-wasm` (`scripts/build-listing-wasm.sh [-out DIR] [-smoke] [-golden]`, a Go program):
   `cargo build -p cmdr-listing-wasm --target wasm32-unknown-unknown --profile wasm-release` (plus the crates the browser
   build is about to link, `browserBound` in `main.go`, so a host-only dep can't creep into them first), then
-  `wasm-bindgen --target web`.
+  `wasm-bindgen --target web`, then `wasm-opt` (below).
 - **The C toolchain**: `cmdr-fs` links SQLite (`rusqlite`, which in the browser swaps in `sqlite-wasm-rs` and compiles
   `sqlite3.c` with `cc`). Apple's clang can't target wasm32, and `sqlite-wasm-rs` 0.5.5 has no precompiled option, so
   the script installs conda-forge's LLVM clang and llvm-ar (pinned in `scripts/build-listing-wasm/toolchain.go`,
@@ -95,8 +104,28 @@ tree lists as a folder (as on disk).
   `.d.ts`, and a `package.json` saying `"type": "module"`.
 - `wasm-release` (root `Cargo.toml`): `opt-level = "s"`, fat LTO, one codegen unit, `panic = "abort"`, stripped. With
   the write engine, SQLite, and the operation log linked: 6.5 MB raw, 2.5 MB gzipped (`gzip -9`, 2026-11-04; the listing
-  engine alone was about 2.5 MB raw, ICU collation data most of it). `wasm-opt` isn't run (no binaryen in the
-  toolchain).
+  engine alone was about 2.5 MB raw, ICU collation data most of it). With the viewer and the search core (rayon among
+  it) too: 9,836,769 bytes raw, 3,565,021 gzipped. Rayon (with `crossbeam`) is about 27 KB of the 7.5 MB of code, about
+  0.4%, and the search core about 120 KB (code naming each, after fat LTO; verified 2026-11-04 with an unstripped build,
+  `CARGO_PROFILE_WASM_RELEASE_STRIP=false pnpm build:listing-wasm`, then the toolchain's own
+  `llvm-nm -S -C --defined-only` over `target/wasm32-unknown-unknown/wasm-release/cmdr_listing_wasm.wasm`).
+- **`wasm-opt -O1 --duplicate-function-elimination`** runs on the bindgen output in place (binaryen pinned in
+  `.mise.toml`; `wasmOptArgs` in `main.go`, with rustc's default wasm32 feature set so it validates what rustc emits).
+  ❌ Don't switch it to `-Oz` or `-Os`: they shrink the raw file most but compress worse, and the page downloads the
+  compressed bytes. Measured on the same engine build (binaryen 133, rustc 1.99.1, `gzip -9`, `brotli -q 11`,
+  2026-11-04), raw / gzip / brotli in bytes:
+  - No `wasm-opt`: 9,840,785 / 3,565,560 / 2,581,959.
+  - `-Oz` (8 s): 8,913,278 / 3,622,720 / 2,657,221, so 75 KB more over the wire. `-Oz --converge` (17 s): 8,907,860 /
+    3,608,262 / 2,648,169.
+  - `-Os` (7 s): 8,970,378 / 3,618,853 / 2,660,197. `-O2`: 9,079,077 / 3,635,131 / 2,667,136. `-O3`: 9,047,078 /
+    3,623,800 / 2,651,647.
+  - `-O1`: 9,381,874 / 3,542,793 / 2,577,048.
+  - **`-O1 --duplicate-function-elimination` (1 s, shipped): 9,358,817 / 3,540,069 / 2,571,369**, smaller on all three
+    (raw −4.9%, brotli −10 KB).
+  - Node's `WebAssembly.compile` took 7–9 ms for every variant (lazy tiers), so the raw size buys no startup time
+    either. What the page actually receives is the precompressed Brotli file (`apps/website/DETAILS.md` § Browser demo).
+    The smoke tests run on the optimized module; the golden replay runs on the dev-profile test build, which `wasm-opt`
+    never touches.
 - **Every crate the module links is a demo image input**: `scripts/website-demo-key.sh`, `websiteDemoInputs` in
   `scripts/check/checks/inputs.go`, and ci.yml's `website` filter each list them (the first two are kept aligned by
   `TestWebsiteDemoInputsMatchTheImageKey`, the filter by hand). A new path dep goes in all three, or an engine-only
@@ -106,10 +135,25 @@ tree lists as a folder (as on disk).
   module; the script reads the lockfile and `cargo install`s that version into `~/.cargo/bin` when it's missing.
 - The check: `desktop-rust-listing-wasm` runs the script with `-smoke -golden` into a temp dir, in CI's "Desktop (Rust)"
   job. The smoke test (`smoke.mjs`) loads the module in Node and drives a listing, a fuzzy jump, a refresh, Brief column
-  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps. Its write half
+  widths from stored font metrics, and a typed rejection, which is what catches the browser-only traps. It also drives
+  ⌘F (a glob, a scope, a folder-size filter, and a streaming run to its `search-complete`) with `debug` logging on: the
+  proof that the scan's rayon fallback runs inline and its timing log reads the page's clock. Its write half
   (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
   delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
-  that fails past a 50 ms hold. Any unhandled rejection fails the run.
+  that fails past a 50 ms hold. The probe runs past the settle until the engine has sent nothing for 200 ms, so the
+  folder-size news that trails the delete is inside it. Any unhandled rejection fails the run.
+  - **The hold is the main thread's CPU time** between two ticks (`process.threadCpuUsage`), with wall time only
+    printed. Decision/Why: wall time failed under machine load (87 ms at a load average of 74–130 from parallel agents'
+    checks, 13–19 ms alone), since a descheduled process ages the wall clock but not its thread's CPU time. Measured
+    together, 2026-11-05 on Node 26.12 at load 85–92: CPU 16–20 ms across four runs while wall swung 16–104 ms. The
+    checker's contention verdict (`contention-verdict.go`) would only have rerun a red; this can't go red from load.
+  - **The runtime self-test's yield-cost probe** (`rt_self_test.rs`) can't use CPU time: the timer clamp it guards
+    against is idle time. So it measures yields against a yardstick in the same run: 10 rounds of 10 yields interleaved
+    with 10 rounds of 10 `setTimeout(0)` sleeps, the fastest round of each, and the yields must win by 4x. Decision/Why:
+    the old fixed budget (100 yields under 50 ms) went red at load 80–92 (57–167 ms); interleaving shares the load, and
+    the fastest round dodges a descheduling burst. Verified 2026-11-05 on Node 26.12 at load 62–78: the real yield won
+    by 22–55x over six runs, and the old timer-based yield fed in its place came in at about 1x (13.9 against 13.3 ms)
+    and failed.
 - **The golden replay** (`-golden`, also in the check): `src/operations_host/golden_test.rs` runs every volume-engine
   scenario in `cmdr_operations::golden` on a real `Demo`'s host (its `DemoVolumes` with the fixtures' `src` and `dst`
   registered beside the page volume, its engine events, name order, and operation log) and compares the trace, as text,
@@ -142,10 +186,11 @@ command to it when `DemoOperations::handles` claims it.
 - **The device**: `with_bandwidth(40 MB/s)` (its burst window keeps a page's late timers from eating the rate, and a
   chunk behind the timeline takes no timer: `crates/cmdr-fs/DETAILS.md` § Bandwidth), so the 1,200 photos (3.59 GB,
   eight streams at once) copy at the full rate, about 90 s, long enough to watch and pause in the queue. One stream
-  stays below it: a 64 KiB chunk per page task caps `Rain sounds.flac` (120 MB) at about 7 MB/s, 17 s end to end
-  (verified in a `pnpm build:demo` under headless Chromium on a loaded Mac: 39 MB/s on the photo copy, 7.1 MB/s on the
-  one file, 2026-11-04), `with_yielding(8 ms)` (the page never waits long on engine work), and `with_capacity` at the
-  disk size the volume list shows, so free space is live. `Pacing` stays the engine's default `None`.
+  reaches it too: `Rain sounds.flac` (120 MB) copies in about 3 s at 39.8 MB/s, because a yield is a `MessageChannel`
+  task, not a clamped timer (it was 7.2 MB/s, 16.7 s, on `setTimeout(0)` yields; why and how measured:
+  `crates/cmdr-fs/DETAILS.md` § "The browser build"), `with_yielding(8 ms)` (the page never waits long on engine work),
+  and `with_capacity` at the disk size the volume list shows, so free space is live. `Pacing` stays the engine's default
+  `None`.
 - **A full disk, on purpose**: the tree's `freeBytes` (the page's `?free=<bytes>`, `listing.ts`'s `freeBytesFromSearch`)
   sizes the disk as what the files hold plus that much room. A copy that doesn't fit then fails the way a real disk does
   (`StorageFull` → `destination_full`), and a backgrounded one stays in the queue as "Couldn't finish", whose Retry
@@ -168,13 +213,40 @@ store (`InMemoryVolume::subtree_totals`, counting the way `cmdr-index`'s aggrega
   the fold counts, it keeps no leaf list.
 - **Changes compose ahead of the panes**, as the app's composer feeds its index first: `BackendListings` hands every
   `directory_changed` to `FolderSizes::changed` (which forgets the changed entry's subtree and its ancestors from the
-  memo), then to the panes, then `FolderSizes::publish_moved` tells every open listing AT or above the change what
-  moved, the app's index-size worker's way: the one folder row on the way down written into the cache by
-  `update_index_sizes` (the pane AT the change has none: it heard the change itself), then `listing-index-sizes-changed`
-  with that row and the listing's own folder (`currentDir`, the `..` row). That event is the only path the frontend has
-  for the `..` row and the status bar to move without a re-read. No cooldown and no hourglass: the app's worker batches
-  a live index, and a fold is never behind.
+  memo), then to the panes, then `FolderSizes::note_moved` gathers its parent. 50 ms after the first note
+  (`SIZES_GATHER` in `backend_listings.rs`, the write engine's progress cadence), `FolderSizes::publish_moved` tells
+  every open listing AT or above a gathered change what moved, the app's index-size worker's way: each folder row on the
+  way down written into the cache by `update_index_sizes` (the pane AT a change has none: it heard the change itself),
+  then ONE `listing-index-sizes-changed` with those rows and the listing's own folder (`currentDir`, the `..` row). That
+  event is the only path the frontend has for the `..` row and the status bar to move without a re-read. No hourglass,
+  and a short gather in place of the app's 2 s cooldown, since a fold is never behind.
+  - **Decision/Why: gathered, not one event per change.** A 1,200-file delete reported 1,200 removals, each its own
+    event per pane; the page took them through the frontend's handler back to back, a ~45 ms hold at the delete's end
+    (#956). Gathered, the smoke's long delete sends one. The app's worker doesn't have this burst: it already merges
+    index batches per listing behind its cooldown (`apps/desktop/src-tauri/src/listing_index_sizes/schedule.rs`), so the
+    fix is the demo's alone. A test waiting on a pane's row after a write waits for the event, not the settle
+    (`folder_sizes_test.rs`'s `heard_size`).
 - **Physical size** is each file's `physical_size`, or its logical size where the store models none.
+
+## Search
+
+`search.rs`'s `DemoSearch` answers the search commands by their Tauri names (`SEARCH_COMMANDS`): the drive search's core
+over the page's one volume, with no index to load.
+
+- **The volume is the index**: a `cmdr_search::MemorySource` built from `InMemoryVolume::held_entries`, rebuilt when
+  `FolderSizes::changes` moved (every write the panes hear moves it first). A few thousand rows rebuild in well under a
+  millisecond, cheaper than any staleness rule. `prepare_search_index` answers `ready: true` on the first ask, and
+  `release_search_index` only stops dialog runs: the arena is tiny, so there's no idle drop.
+- **Folder sizes are the fold's** (`FoldSizes`, a `DirSizeSource` over `FolderSizes::held_at`), read per query: a size
+  filter and a results row read the numbers the panes and `get_dir_stats` show. ❌ Never a second rollup here.
+- **Name rules** (`DEMO_NAME_RULES`): a Mac's case rule and APFS fold (it presents as one), patterns left as typed (the
+  tree's names are NFC, so an NFD pattern would miss every accented one). Home is the tree's `home`, so rows read `~/…`.
+- **A live run covers everything at once**: `search_files_streaming` announces, hands the covered half to
+  `ResultStream`, and finishes with `CoverageFacts::new(NothingToWalk, Covered, ..)`, all before the command answers.
+  The page's sink defers every event a task (`listing.ts`), so the dialog has registered the run first. Payloads mirror
+  the app's `search/live/events.rs`; `search_test.rs` pins their keys against `bindings.ts`.
+- **Results order and recent searches**: `sort_search_results` is `cmdr_listing::sort_search_rows` on the panes'
+  collator; the recent list is `cmdr-recents`' rules over `cmdr_search::history`'s key, in memory.
 
 ## Where the demo differs from the app
 
@@ -195,6 +267,11 @@ store (`InMemoryVolume::subtree_totals`, counting the way `cmdr-index`'s aggrega
   trash route (nothing online-only here).
 - **No host work around writes**: no `~` expansion, no S3 cost pricing (`check_rename_validity` prices nothing), no
   analytics, no indexing priority, and `get_volume_space` answers the one volume's live space for every path.
+- **Search** (`search.rs`): recent searches last the session; a scope resolves its symlinks through
+  `InMemoryVolume::canonicalize` (the tree's `symlinkTarget`s, stored by `tree.rs`) where the desktop calls `realpath`,
+  with exact-case names, so a scope spelled in another case through a link stays the literal (still matched
+  case-insensitively, but as the link, a leaf); no AI (`getAiStatus` answers unavailable, so the dialog's AI mode stays
+  off as on a Mac with AI off); no importance weights, so ties rank by name and id alone.
 - **The viewer** (`viewer.rs`): every call runs inline, with none of the app's 2 s timeouts or stall watches (an
   in-memory read can't hang). No LineIndex upgrade, so a big file keeps its estimated row count; a search scans in 8 ms
   slices on the page's event loop instead of a thread; no watcher, so tail mode never sees a change.

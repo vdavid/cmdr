@@ -108,6 +108,34 @@ fn regex_with_m_flag_is_accepted() {
     assert!(collect_matches(&m, "barfoo").is_empty());
 }
 
+/// A CRLF row keeps its `\r`, but the `\r` is the line's terminator, not its text: `$`
+/// lands before it, and a literal needle can't reach it.
+#[test]
+fn a_crlf_rows_carriage_return_is_not_searched() {
+    use std::sync::Mutex;
+    use std::sync::atomic::AtomicBool;
+
+    use super::search_matcher::scan_line_with_matcher;
+
+    let scan = |query: &str, mode: SearchMode, row: &str| {
+        let matcher = Matcher::build(query, mode).unwrap();
+        let results = Mutex::new(Vec::new());
+        let _ = scan_line_with_matcher(&matcher, row, 0, 0, &AtomicBool::new(false), &results);
+        let found: Vec<(usize, usize)> = results
+            .into_inner()
+            .unwrap()
+            .iter()
+            .map(|m| (m.column, m.length))
+            .collect();
+        found
+    };
+    assert_eq!(scan("e$", regex_mode(true), "one\r"), vec![(2, 1)]);
+    assert_eq!(scan("^one$", regex_mode(true), "one\r"), vec![(0, 3)]);
+    assert!(scan(r"\r", regex_mode(true), "one\r").is_empty());
+    // A `\r` mid-row is text, and stays searchable.
+    assert_eq!(scan(r"\r", regex_mode(true), "a\rb"), vec![(1, 1)]);
+}
+
 #[test]
 fn regex_too_complex_is_rejected() {
     // A pattern whose compiled NFA / DFA exceeds 8 MB; `(?:a|b){20}` style explosions

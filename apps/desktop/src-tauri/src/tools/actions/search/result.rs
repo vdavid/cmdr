@@ -19,7 +19,7 @@ use serde::Serialize;
 
 use crate::pluralize::grouped;
 use crate::search::{
-    AnswerEnding, LiveAnswer, SearchResultEntry, WalkEnding, format_size, format_timestamp, live::SearchRunCoverage,
+    AnswerEnding, LiveAnswer, SearchResultEntry, WalkEnding, format_local_date, format_size, live::SearchRunCoverage,
 };
 
 /// One match, with the raw number beside the spoken one: the raw for filtering
@@ -193,7 +193,7 @@ fn to_hit(entry: SearchResultEntry) -> SearchHit {
         size_bytes: entry.size,
         size_human: entry.size.map(format_size),
         modified: entry.modified_at,
-        modified_human: entry.modified_at.map(format_timestamp),
+        modified_human: entry.modified_at.map(format_local_date),
     }
 }
 

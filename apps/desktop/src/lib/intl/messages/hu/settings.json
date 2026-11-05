@@ -1296,6 +1296,18 @@
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
+  "settings.network.requireSmbEncryption.label": "Mindig kötelező SMB-titkosítás",
+  "@settings.network.requireSmbEncryption.label": {
+    "sourceHash": "4519b09"
+  },
+  "settings.network.requireSmbEncryption.description": "A Cmdr az SMB-megosztásokhoz nyitott saját kapcsolatait akkor is titkosítja, ha a szerver nem kéri, és nem csatlakozik olyan szerverhez, amely nem tud titkosítani. A vendégkapcsolatok nem titkosíthatók, ezért be kell jelentkezned. Az új kapcsolatokra vonatkozik.",
+  "@settings.network.requireSmbEncryption.description": {
+    "sourceHash": "4b8d40b"
+  },
+  "settings.network.requireSmbEncryption.keywords": "titkosít, titkosított, rejtjelezés, biztonság, biztonságos, adatvédelem, védelem",
+  "@settings.network.requireSmbEncryption.keywords": {
+    "sourceHash": "1fc0e27"
+  },
   "settings.network.shareCacheDuration.label": "Megosztásgyorsítótár élettartama",
   "@settings.network.shareCacheDuration.label": {
     "sourceHash": "ff627cd"
@@ -2813,6 +2825,14 @@
   "settings.managed.summary.securityLogRequired": "Mindig rögzítve",
   "@settings.managed.summary.securityLogRequired": {
     "sourceHash": "baf73d6"
+  },
+  "settings.managed.summary.smbEncryption": "SMB-titkosítás",
+  "@settings.managed.summary.smbEncryption": {
+    "sourceHash": "059bf46"
+  },
+  "settings.managed.summary.smbEncryptionRequired": "Mindig kötelező",
+  "@settings.managed.summary.smbEncryptionRequired": {
+    "sourceHash": "8bac3f7"
   },
   "settings.managed.summary.updates": "Frissítések",
   "@settings.managed.summary.updates": {

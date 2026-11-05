@@ -43,6 +43,9 @@ jobs:
   warm-rust-macos-cache:
     needs: changes
 
+  warm-light-cache:
+    needs: changes
+
   prune-superseded-caches:
     needs: [warm-rust-cache, warm-rust-macos-cache]
 
@@ -105,6 +108,18 @@ func TestCIOKGateFlagsALaneThatIgnoresChangeDetection(t *testing.T) {
 	got := validateCIOKGate(yml)
 	if len(got) != 1 || !strings.Contains(got[0], "`lint`") {
 		t.Errorf("want one violation naming `lint`, got:\n%s", strings.Join(got, "\n"))
+	}
+}
+
+// A lane's `if:` folded onto the lines below it (`if: >-`) still reads as gated.
+func TestCIOKGateReadsAFoldedLaneIf(t *testing.T) {
+	yml := strings.Replace(ciOKGateFixture, "    if: needs.changes.outputs.lint == 'true'\n",
+		"    if: >-\n      inputs.run_all || (needs.changes.outputs.lint == 'true' &&\n      !fromJSON(needs.changes.outputs.lanes)['lint'].verified)\n", 1)
+	if got := validateCIOKGate(yml); len(got) != 0 {
+		t.Errorf("want no violations, got:\n%s", strings.Join(got, "\n"))
+	}
+	if got := jobScalar([]string{"    if: >-", "      a &&", "      b", "    uses: x"}, "if"); got != "a && b" {
+		t.Errorf("jobScalar joined the folded block as %q, want %q", got, "a && b")
 	}
 }
 

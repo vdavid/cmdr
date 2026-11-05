@@ -52,7 +52,7 @@ fn open_builds_index() {
     let cancel = AtomicBool::new(false);
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
-    assert_eq!(backend.total_lines(), Some(4)); // 3 lines + trailing empty
+    assert_eq!(backend.total_lines(), Some(3)); // a final newline starts no line
     assert_eq!(backend.file_name(), "test.txt");
     assert_eq!(backend.total_bytes(), 21);
 }
@@ -97,7 +97,7 @@ fn get_lines_from_start() {
         .unwrap();
     assert_eq!(chunk.texts(), vec!["alpha", "beta", "gamma"]);
     assert_eq!(chunk.first_row_number, 0);
-    assert_eq!(chunk.total_rows, super::TotalRows::Exact(5));
+    assert_eq!(chunk.total_rows, super::TotalRows::Exact(4));
 }
 
 #[test]
@@ -127,7 +127,7 @@ fn get_lines_past_end() {
         .get_lines(&SeekTarget::Row(10), 5, &AtomicBool::new(false))
         .unwrap();
     // Should clamp to last line
-    assert_eq!(chunk.first_row_number, 3); // 4 lines (including trailing empty), last is index 3
+    assert_eq!(chunk.first_row_number, 2); // 3 lines, last is index 2
 }
 
 #[test]
@@ -174,7 +174,7 @@ fn sparse_index_checkpoints() {
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
     // Should have total_lines correct
-    assert_eq!(backend.total_lines(), Some(line_count + 1)); // +1 for trailing empty
+    assert_eq!(backend.total_lines(), Some(line_count)); // a final newline starts no line
 
     // Seek to a line past the first checkpoint
     let target_line = INDEX_CHECKPOINT_INTERVAL + 10;
@@ -297,8 +297,8 @@ fn line_count_with_multibyte_chars() {
     let cancel = AtomicBool::new(false);
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
-    // 4 lines + trailing empty = 5
-    assert_eq!(backend.total_lines(), Some(5));
+    // 4 lines; the final newline starts no fifth
+    assert_eq!(backend.total_lines(), Some(4));
 
     let chunk = backend
         .get_lines(&SeekTarget::Row(0), 4, &AtomicBool::new(false))
@@ -429,7 +429,7 @@ fn extend_to_matches_open_at_target_size() {
 
     let cancel = AtomicBool::new(false);
     let small = LineIndexBackend::open(&path, &cancel).unwrap();
-    assert_eq!(small.total_lines(), Some(4));
+    assert_eq!(small.total_lines(), Some(3));
 
     // Append on disk, then call extend_to.
     let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();

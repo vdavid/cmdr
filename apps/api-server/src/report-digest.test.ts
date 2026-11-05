@@ -15,17 +15,14 @@ interface SentEmail {
   replyTo?: string
 }
 
-type SendOutcome = { id: string; error?: never } | { id?: never; error: { message: string } }
-
-const mockSend = vi.fn<(payload: SentEmail) => Promise<SendOutcome>>(() => Promise.resolve({ id: 'test-email-id' }))
-vi.mock('resend', () => ({
-  Resend: class {
-    emails = { send: mockSend }
-  },
+const mockSend = vi.hoisted(() => vi.fn<typeof import('./email/send').sendEmail>(() => Promise.resolve()))
+vi.mock('./email/send', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./email/send')>()),
+  sendEmail: mockSend,
 }))
 
 function lastEmail(): SentEmail {
-  const payload = mockSend.mock.lastCall?.[0]
+  const payload = mockSend.mock.lastCall?.[1]
   if (!payload) throw new Error('No email was sent')
   return payload
 }
@@ -36,7 +33,7 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings {
   return {
     TELEMETRY_DB: db.d1,
     CRASH_NOTIFICATION_EMAIL: 'david@example.com',
-    RESEND_API_KEY: 'test-resend-key',
+    SMTP2GO_API_KEY: 'test-smtp2go-key',
     GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports',
     ...overrides,
   } as Bindings
@@ -131,7 +128,7 @@ function unnotified(table: string): number {
 beforeEach(() => {
   db = createSqliteD1()
   mockSend.mockClear()
-  mockSend.mockImplementation(() => Promise.resolve({ id: 'test-email-id' }))
+  mockSend.mockImplementation(() => Promise.resolve())
 })
 
 describe('when the digest goes out', () => {
@@ -184,10 +181,10 @@ describe('when the digest goes out', () => {
     expect(lastEmail().to).toBe('inbox@example.com')
   })
 
-  it('stays quiet without a recipient or a Resend key', async () => {
+  it('stays quiet without a recipient or an SMTP2Go key', async () => {
     insertFeedback()
     await handleReportDigest(testEnv({ CRASH_NOTIFICATION_EMAIL: undefined }))
-    await handleReportDigest(testEnv({ RESEND_API_KEY: undefined }))
+    await handleReportDigest(testEnv({ SMTP2GO_API_KEY: undefined }))
     expect(mockSend).not.toHaveBeenCalled()
     expect(unnotified('feedback')).toBe(1)
   })
@@ -210,7 +207,7 @@ describe('stamping', () => {
   })
 
   it('leaves everything unstamped when the send is rejected, so the next tick retries', async () => {
-    mockSend.mockImplementation(() => Promise.resolve({ error: { message: 'Resend is unhappy' } }))
+    mockSend.mockImplementation(() => Promise.reject(new Error("SMTP2Go didn't send the report digest email")))
     insertCrash()
     insertFeedback()
 

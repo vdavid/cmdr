@@ -58,6 +58,7 @@ crates/cmdr-listing-wasm/pkg/
 
 # Go-built binaries (one per tool dir, named after the dir by `go build`)
 scripts/check/check
+scripts/lane-markers/lane-markers
 scripts/check-a11y-contrast/check-a11y-contrast
 scripts/check-btn-restyle/check-btn-restyle
 scripts/check-css-unused/check-css-unused

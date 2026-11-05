@@ -378,6 +378,10 @@ logical coordinates, independent of which lines happen to be rendered.
   needs no case of its own: all three backends keep the `\r` inside the line text, so the delimiter is the single `\n`.
   With no line count yet (ByteSeek before its index) no line is known to be last, so every line reports a delimiter: one
   byte over on the whole file, against bands measured in megabytes.
+- **⌘A on a counted file ends at the last row's end**, and that reaches the end of the FILE: no backend serves an empty
+  row past a final newline, so the backend's `range_read` pays the last row's newline when the file has one (the row's
+  off-wire `ends_at_newline`, `crates/cmdr-viewer/DETAILS.md` § "Rows, not lines"). The estimate can't see that flag, so
+  on such a file it counts one byte under; harmless against the bands.
 - **What the copy toast says is MEASURED off the text that was written**, not taken from that estimate
   (`handleSilentCopy`). `selectionBytesFromFileSize` subtracts the unselected remainder from the known file size rather
   than rounding a near-whole-file selection up to it, so a selection stopping partway into the last row reports what it
@@ -425,6 +429,17 @@ What falls out of doing it ourselves, and what the tests pin:
 - **Below the last rendered row** → the end of that line. **Above the first** → offset 0.
 - **Word wrap**: character boxes run in reading order, so the search compares row (`y`) first and `x` only within a row.
   A wrapped logical line spans several rows and each resolves independently.
+- **A point in the leading snaps onto the nearest visual row and keeps its `x`.** A text `Range`'s rect is the font's
+  ascent + descent, not the line box, so a band above and below every visual row belongs to no character. Decision/Why:
+  `findOffsetByGeometry` searches once, and when no box covers `y` it re-runs at the middle of the nearer of the two
+  rows around the answer (two extra probes, only in the gap). Before, a point in the band between rows N and N+1
+  resolved to the wrap point whatever its `x`, so a drag with both ends there selected nothing and ⌘C copied an empty
+  string (#962: with wrap on, the old "drag within viewport" spec aimed at the middle of `.line-text`, which on an even
+  number of visual rows is exactly that band). It's our geometry, not a WebKitGTK quirk: WebKitGTK reports correct glyph
+  boxes with 4 px of leading between visual rows, and the same drag aimed at the glyphs copied fine (verified on the
+  Linux Docker lane, `ubuntu:26.04` WebKitGTK, E2E red/green, 2026-11-05; the cell also passes on macOS WKWebView).
+  Pinned by `viewer-caret-geometry.test.ts` ("glyph boxes shorter than the row pitch") and the "drag across a wrapped
+  no-space row" cell in `viewer-wordwrap-scroll.spec.ts`.
 - **Offsets stay on codepoint boundaries.** `measure` snaps onto the start of the codepoint covering the probe and
   reports its two-unit span, so an astral character is one box and the caret can't land between its surrogates.
 - **Drag and autoscroll aim through `caretFromPointClamped`.** Past the top or bottom edge it snaps horizontally to that
@@ -923,11 +938,11 @@ so the page shows how far it got. Backend half: `apps/desktop/src-tauri/src/file
   another call to "wait for read"); the FE just sends the id with the read request, and the backend keys the cancel flag
   off that id. Uniqueness within the session is the only invariant.
 - **The right-click menu over the text is a native OS menu**, same as every other right-click in the app
-  (`build_viewer_context_menu` in `src-tauri/src/menu/menu_structure.rs`). `handleContextMenu` cancels the webview's own
-  menu and calls the `showContextMenu` dep, which the page wires to `showViewerContextMenu(hasSelection)`: the native
-  menu can't see the viewer's selection model, so the frontend reads it at open time and Rust greys Copy from that. The
-  pick comes back as `ViewerContextMenuAction` to this viewer, and `runViewerContextMenuAction` runs the same
-  `handleCopy` / `handleSelectAllShortcut` the ⌘-chords end in.
+  (`viewer_text_menu` in `crates/cmdr-menu/src/context/popups.rs`). `handleContextMenu` cancels the webview's own menu
+  and calls the `showContextMenu` dep, which the page wires to `showViewerContextMenu(hasSelection)`: the native menu
+  can't see the viewer's selection model, so the frontend reads it at open time and Rust greys Copy from that. The pick
+  comes back as `ViewerContextMenuAction` to this viewer, and `runViewerContextMenuAction` runs the same `handleCopy` /
+  `handleSelectAllShortcut` the ⌘-chords end in.
   - ❗ It's its own event, ❌ never a `ViewerEditAction`: the bar's pair hands Copy and Select all to the search box
     while it has focus, and a right-click on the text doesn't move focus (`handlePointerDown` ignores button 2), so the
     bar's dispatcher would copy the query from a menu opened over the file.

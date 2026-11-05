@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "{provider} đang bận lúc này. Đang thử lại (lần {attemptText} trên {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Nhà cung cấp AI của bạn đang bận lúc này. Đang thử lại (lần {attemptText} trên {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Cuộc trò chuyện này đang dài dần. Một cuộc trò chuyện mới sẽ giúp câu trả lời nhanh và tập trung hơn.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -736,6 +744,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Nhà cung cấp AI của bạn đã từ chối yêu cầu này: giới hạn của gói bạn đang dùng nhỏ hơn một yêu cầu duy nhất từ Cmdr, vì mỗi yêu cầu luôn kèm theo hướng dẫn của Cmdr. Tin nhắn ngắn hơn cũng không giúp được. Hãy thử gói lớn hơn hoặc chọn nhà cung cấp khác trong Cài đặt.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "{provider} đang bận quá nên chưa trả lời được, dù đã thử vài lần. Hãy đợi vài phút rồi gửi lại tin nhắn của bạn.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Nhà cung cấp AI của bạn đang bận quá nên chưa trả lời được, dù đã thử vài lần. Hãy đợi vài phút rồi gửi lại tin nhắn của bạn.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Câu hỏi này đã đạt giới hạn trước khi hoàn tất. Hãy thử hỏi điều gì đó cụ thể hơn.",
   "@askCmdr.error.budgetExhausted": {

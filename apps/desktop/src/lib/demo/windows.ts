@@ -98,6 +98,8 @@ export interface WindowHost {
   handler(cmd: string): Handler | undefined
   /** The panel in front, while one is open: what the menu bar's Close tab closes outside the main window. */
   front(): { label: string; frame: HTMLIFrameElement } | undefined
+  /** The iframe of the panel labeled `label`, while it's open: where its frame sits on the page. */
+  frame(label: string): HTMLIFrameElement | undefined
   /** Closes the panel labeled `label`, as its close button does. */
   close(label: string): void
   /** Draws the main window's traffic lights at its top-left (`traffic-lights.ts`). Call once, in the top frame. */
@@ -355,6 +357,7 @@ export function createWindowHost(emit: Emit, onClosed: (label: string) => void =
   return {
     handler: (cmd) => handlers[cmd],
     front: () => (front ? { label: front.label, frame: front.iframe } : undefined),
+    frame: (label) => panels.get(label)?.iframe,
     close,
     mountMainWindowLights,
   }

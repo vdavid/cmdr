@@ -43,7 +43,9 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
   `readTrackedFile`) that every whole-tree scanner enumerates and reads through. `corpus.go` is the run's one read of
   the tree and `literal-gate.go` the cheap pre-check in front of a per-line regex, both shared by the source scanners (§
   "The shared source corpus"). `property-mutants.go` is the record format and loader both property-mutant checks share,
-  and `property-mutants-<kind>.go` one property family each (§ "Property mutants"). None appears in `AllChecks`.
+  and `property-mutants-<kind>.go` one property family each (§ "Property mutants"). `rust-test-scope.go` decides which
+  crates' tests a change can affect and turns that into the host Rust lanes' nextest filter (§ "The Rust test scope").
+  None appears in `AllChecks`.
 - **`changelog-commit-links.go` resolves every commit hash in `CHANGELOG.md` through ONE `git cat-file --batch-check`
   process**, not a process per reference. The recognition rule is § "CHANGELOG commit refs" below.
 
@@ -144,6 +146,17 @@ can't land inside the walk and outside a fingerprint:
   vetoes across the whole union, and would take `scripts/check/CLAUDE.md` back out of a lane that walks the scripts
   tree.
 
+### nilaway fans out per module, two at a time
+
+**Decision**: `scripts-go-nilaway` runs the same `nilaway ./...` in each of the ~20 modules (`FindAllGoModules`), on
+`nilawayWorkers` (2) goroutines, and joins findings in `GetGoDirectories` + `find` order. **Why**: a single run over a
+`go.work` would be faster, but MVS unifies dependency versions across modules, so it type-checks different code than
+each module builds and its findings could differ. Same per-module commands means identical findings by construction
+(verified 2026-11-05: old serial vs new output byte-identical, clean and with nil derefs planted in three modules). Each
+process already keeps ~6 cores busy and peaks at 0.8–3.5 GB (`scripts/check` is the 3.5 GB one), so wall time flattens
+past two workers while summed RSS keeps climbing (16-core Mac, warm, sampled `ps` sum: 1 → 24.8 s / 3.6 GB, 2 → 15.6 s /
+4.6 GB, 4 → 14.7 s / 8.3 GB, 6 → 13.7 s / 9.9 GB). Its `CpuWeight` (10) is the two-worker busy-core average.
+
 ### ⚠️ A fresh worktree inherits the cache, so a green check can be a stale answer
 
 The fingerprint cache lives under `target/`, and `new-worktree.sh` APFS-clones `target/` from an existing worktree. So a
@@ -191,7 +204,10 @@ is broken — verify against the main clone first, where the answer is not clone
 - `Success(message)` on success with a short, informative message
 - `CheckResult{Code: ResultWarning, Message: ...}` for a non-fatal warning (there is no `Warning()` constructor; build
   the struct directly, as the length and coverage scanners do)
-- `Skipped(reason)` when the check can't run (for example, missing config)
+- `Skipped(reason)` when the tree gives it nothing to do (macOS only, no config, the Rust test scope's `none`)
+- `SkippedNoEnvironment(reason)` when THIS MACHINE can't run it (Docker down, a build output missing): a skip locally, a
+  failure under `--ci` (`runner.go`), because a CI skip leaves the lane green and its lane marker then vouches for a
+  check that never ran
 - `CheckResult{}, error` on failure
 - `SuccessWithChanges(message)` when the check made local fixes (auto-fix mode); CI mode should still error
 
@@ -1599,6 +1615,75 @@ rather than partial counts, because rows are appended chronologically and a trun
 ones. The `Runs` number counts LOGGED ROWS, not runs (clean passes under 1 s are never written), and the summary says so
 under the listing so nobody reads it as a pass rate.
 
+## The Rust test scope (`rust-test-scope.go`)
+
+The host Rust test lanes (`desktop-rust-tests`, `-integration-tests`, `-webdav-nextcloud`, `-disk-images`) can run only
+the workspace members a change can affect: the members whose files changed, plus every member that depends on one of
+them, transitively. A `cmdr-webdav` change then runs `cmdr-webdav`, the app, and the few crates above it, never
+`cmdr-index`. The default is unchanged: with nothing set, every lane runs everything.
+
+- **Compute**: `--print-rust-test-scope <base-ref>` (`-` reads paths from stdin) prints one line: `all`, `none`, or the
+  package names, space-separated. The changed paths are `git diff --name-only --no-renames <base>` (base tree against
+  the working tree, so a move counts in both crates) plus untracked files. Each path goes through `rustTestScopeRules`,
+  first match wins, to one of four effects: `scopeAll` (a safety valve), `scopeOwner` (seeds the member that holds it),
+  `scopeReaders` (seeds the named members that read it, plus its owner), `scopeNothing`. A path no rule matches answers
+  `all`. The seeds then close over reverse dependencies from `cargo metadata --no-deps --offline` (~40 ms, every edge
+  kind: normal, build, and dev, on every target, so a crate whose TESTS use a changed crate is affected too).
+- **Consume**: `CMDR_RUST_TEST_SCOPE` carries that line to the lanes. `runNextestLane` ANDs the scope's
+  `package(=<name>)` union onto the lane's own filter and adds `--no-tests warn`, since a fixture lane can honestly
+  select nothing; `none` skips the lane before it builds (`rustLaneNotRun`). Unset, empty, or `all` is everything. A
+  name that isn't a member fails the lane rather than dropping a crate quietly. Each success message ends in "(scoped to
+  N crates: …)", so a green CI log says it was a scoped one.
+- **The build never narrows**, only the run: `buildNextestLane` still asks `HostCargoLaneArgs`'s workspace-wide question
+  (§ "One feature set across the cargo lanes"), so the shared `target/` doesn't thrash. The saving is test execution,
+  not compile.
+- **A narrowed run writes no cache entry** (`planCache`, through `RustTestScopeNarrowed` in `common.go`): its passes
+  covered fewer crates than the fingerprint says, and a later full run would cache-hit on a partial green.
+- **In CI**: the three Rust lanes set it on pull requests only, through `.github/actions/rust-test-scope` (base: the
+  merge commit's first parent; `docs/tooling/ci.md` § "Rust test scope in the Rust lanes").
+- **Its trust gaps, and the backstop**: the scope assumes the base tree's untouched crates pass, but a landed GitHub
+  merge makes a `main` tree no run tested, and the out-of-crate scan below can miss a read (a raw string, a literal with
+  `{}` or a space, a `.join("a").join("b")` chain; both tree-walk reader rules exist because a read slipped past it).
+  Either way a scoped PR run can stay green while the full suite would fail. The nightly full run (`ci.yml`'s schedule,
+  unscoped) catches both within a day (`docs/tooling/ci.md` § Nightly full run).
+
+The safety valves (`scopeAll`): the workspace and member manifests (features unify across the whole workspace build, so
+one crate's feature edit can change another's behavior), `Cargo.lock`, `rust-toolchain.toml`, `.mise.toml`,
+`.config/nextest.toml`, `vendor/**`, the five fixture-server dirs, `ci.yml`, the three Rust lane files, the composite
+actions they use, and the runner itself (`scripts/check/**`, `scripts/check.sh`). Any unknown path is a valve by
+default, and so is any error computing the scope.
+
+Decision: an out-of-crate input is a `scopeReaders` rule naming its reader, not a valve. Why: the frontend's message
+catalogs, `CHANGELOG.md`, and the shared case tables change in most feature PRs, and only `cmdr` (or
+`cmdr-listing-wasm`) reads them, so a valve would make nearly every Rust PR a full run. It's as safe as a valve because
+the reader is checked against the source that does the reading (below).
+
+What keeps the rule table honest (`rust-test-scope_test.go`):
+
+- `TestEveryOutOfCrateReadIsClassified` scans every member's `.rs` files for string literals that name a real path
+  outside that member (a `..` segment resolved against the source's dir and the member's dir, or a repo-root-relative
+  file) and fails unless the path classifies to a rule that seeds THAT member, or to a valve. It's what found
+  `cmdr-operations` measuring the app's source tree and the app's IPC test reading `bindings.ts`. Mutation-tested
+  2026-11-05: dropping or misnaming any reader rule fails it.
+- `TestNoUnseenManifestDirHops` covers the scan's blind spot, a path climbed to with `.parent()` / `.ancestors()` /
+  `.pop();` from `CARGO_MANIFEST_DIR`: each such file is listed in `rustScopeHopFiles` with why its read needs no rule.
+- `TestEveryRustFilterPathIsClassified`: every include path of ci.yml's Rust lane filters (`rust`, `rust-fixtures`,
+  `rust-macos`, anchors expanded; they decide whether the Rust lanes run at all) has a rule.
+- `TestRustScopeInputsAreInTheRustFilter`: the reverse. Every rule that tests something is in one of those filters, or a
+  change to it alone runs no Rust lane. A known gap would sit in `rustFilterGaps` (empty: every gap the scope found is
+  closed), and the test fails when one closes, so the entry goes.
+- `TestEveryRustScopeRuleIsReachable` (no rule shadowed by an earlier one), `TestEveryWorkspaceMemberIsOwned` (every
+  member's tree has an owner rule), and `TestRustScopeReadersAreWorkspaceMembers`.
+
+Gotchas:
+
+- Dev edges are closed over transitively, which over-approximates (a dev-dependency's own dev-dependencies never reach a
+  dependent's test build). Kept on purpose: the cost is a few extra crates, the alternative is a model of cargo's edge
+  semantics that can be wrong.
+- A base that's behind the tested tree only widens the scope (its newer changes count as changed). Pass the tree the
+  change is measured against: a PR's base commit, which is the merge ref's first parent.
+- The Linux Docker lane (`desktop-rust-tests-linux`) doesn't take the scope; it isn't a CI lane.
+
 ## Workspace geometry: which members a Rust check reaches
 
 `cargo-workspace.go` reads the root `Cargo.toml`'s `[workspace] members` (globs expanded) plus each member's own
@@ -2240,20 +2325,19 @@ and the `#[cfg(any(test, feature = "testing"))]` the `cmdr-fs` host stubs need),
 doubles as production code.
 
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
-  scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —
-  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-mtp`, `cmdr-adb`,
-  `cmdr-git` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its `cargo metadata` tree, plus a per-bucket
-  public-surface ceiling on all of them except `cmdr-fs`, which is permanently uncapped: it's shared vocabulary whose
-  job is to be named from everywhere. An item whose attributes gate it on `cfg(test)` or the `testing`, `tooling`, or
-  `fuzzing` feature (`isGated`; a gate on the enclosing `impl` block, and one above a wrapped multi-line attribute,
-  count too) counts as a gated door, never as public API, so a fuzz entry point doesn't eat a crate's ceiling. See
-  `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in
-  `index-crate-isolation.go` for the backend ones, and why raising any of them needs David's say-so),
-  operations-local-disk-boundary (`cmdr-operations` names `libc`, `cmdr_local`, `objc2`, `xattr`, `trash`, `dirs`, or
-  `std::os::unix` only in `local_disk/` and the local-engine trees `operationsLocalDiskModules` lists, since the crate
-  builds for the browser demo, which has no local disk; test files and `#[cfg(test)]` modules are exempt),
-  nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects a live test, so a per-test cap
-  or `test-group` can't be silently detached by a module move; it lists the workspace's tests with
+  scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate, each one
+  `guardedIndexCrates` in `index-crate-isolation.go` names, reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its
+  `cargo metadata` tree, plus a per-bucket public-surface ceiling on all of them except `cmdr-fs`, which is permanently
+  uncapped: it's shared vocabulary whose job is to be named from everywhere. An item whose attributes gate it on
+  `cfg(test)` or the `testing`, `tooling`, or `fuzzing` feature (`isGated`; a gate on the enclosing `impl` block, and
+  one above a wrapped multi-line attribute, count too) counts as a gated door, never as public API, so a fuzz entry
+  point doesn't eat a crate's ceiling. See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number
+  means, the crate's own entry in `index-crate-isolation.go` for the backend ones, and why raising any of them needs
+  David's say-so), operations-local-disk-boundary (`cmdr-operations` names `libc`, `cmdr_local`, `objc2`, `xattr`,
+  `trash`, `dirs`, or `std::os::unix` only in `local_disk/` and the local-engine trees `operationsLocalDiskModules`
+  lists, since the crate builds for the browser demo, which has no local disk; test files and `#[cfg(test)]` modules are
+  exempt), nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects a live test, so a
+  per-test cap or `test-group` can't be silently detached by a module move; it lists the workspace's tests with
   `cargo nextest list --run-ignored all` and names where a stale atom's leaf went. It judges the HOST platform, so a
   filter for a macOS-only test looks deleted on the Linux lane: those carry
   `# allowed-unmatched-nextest-filter: macos-only, <why>`, which excuses the filter everywhere except the platform it

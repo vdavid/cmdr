@@ -122,6 +122,8 @@ pub(crate) mod smb_connect_directly;
 // The per-share "Use Cmdr's fast direct connection" switch, and the pane-open upgrade.
 pub(crate) mod smb_direct_switch;
 pub(crate) mod smb_pane_upgrade;
+// "Always require SMB encryption": the setting OR the policy, pushed into every SMB session.
+pub mod smb_encryption;
 // Saved SMB share places: recorded when Cmdr mounts a share, brought back by `connect_saved_place`.
 pub(crate) mod smb_saved_shares;
 // Which server each share is on (its NEGOTIATE GUID), so two addresses of one NAS prove one share.

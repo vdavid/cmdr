@@ -831,6 +831,7 @@ export {
   setMaxLogStorageMb,
   setErrorReportsEnabled,
   setSecurityLogEnabled,
+  setRequireSmbEncryption,
   revealSecurityLog,
   setShowVirtualGitPortal,
   setIndexingEnabled,

@@ -25,6 +25,7 @@ paths=(
   apps/desktop/package.json
   apps/desktop/vite.config.js
   apps/desktop/tsconfig.json
+  apps/desktop/scripts/precompress-demo.ts
   apps/website/demo-image.Dockerfile
   crates/cmdr-listing-wasm
   crates/cmdr-listing
@@ -39,6 +40,8 @@ paths=(
   brand/screenshots
   apps/desktop/test/e2e-shared/media-fixtures
   crates/cmdr-sort
+  crates/cmdr-search
+  crates/cmdr-recents
   vendor
   scripts/build-listing-wasm.sh
   scripts/build-listing-wasm
@@ -46,6 +49,7 @@ paths=(
   Cargo.toml
   Cargo.lock
   rust-toolchain.toml
+  .mise.toml
 )
 
 git ls-tree -r "$rev" -- "${paths[@]}" | grep -Ev '/(CLAUDE|DETAILS)\.md$' | git hash-object --stdin

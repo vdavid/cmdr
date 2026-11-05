@@ -528,8 +528,33 @@ telemetry.get('/download/:version/checksums', async (c) => {
     return c.redirect(releasesPageUrl, 302)
   }
 
-  return c.redirect(`https://github.com/vdavid/cmdr/releases/download/v${version}/checksums.txt`, 302)
+  return c.redirect(releaseFileUrl(version, 'checksums.txt'), 302)
 })
+
+/**
+ * The first release the EU mirror holds (backfilled on 2026-11-05; the release pipeline's `publish`
+ * job mirrors every later one before it goes Latest). GitHub Releases keeps every version.
+ */
+const firstMirroredVersion = [0, 59, 0] as const
+
+/** `version` is a validated `X.Y.Z` (`versionPattern`), so a plain numeric compare is exact. */
+function isMirrored(version: string): boolean {
+  const parts = version.split('.').map(Number)
+  for (let i = 0; i < firstMirroredVersion.length; i++) {
+    if (parts[i] !== firstMirroredVersion[i]) return parts[i] > firstMirroredVersion[i]
+  }
+  return true
+}
+
+/**
+ * Where a release file downloads from: the EU R2 mirror behind `download.getcmdr.com` for every
+ * version it holds, else the GitHub release. `docs/guides/releasing.md` § Where downloads are served from.
+ */
+function releaseFileUrl(version: string, file: string): string {
+  return isMirrored(version)
+    ? `https://download.getcmdr.com/v${version}/${file}`
+    : `https://github.com/vdavid/cmdr/releases/download/v${version}/${file}`
+}
 
 telemetry.get('/download/:version/:arch', async (c) => {
   const { version: requestedVersion, arch } = c.req.param()
@@ -553,7 +578,7 @@ telemetry.get('/download/:version/:arch', async (c) => {
   // tauri-action names the Intel DMG `_x64.dmg`, not `_x86_64.dmg`. Map at the boundary;
   // we keep `x86_64` everywhere else (uname, Rust target triple, D1, telemetry, website).
   const fileArch = arch === 'x86_64' ? 'x64' : arch
-  const redirectUrl = `https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${fileArch}.dmg`
+  const redirectUrl = releaseFileUrl(version, `Cmdr_${version}_${fileArch}.dmg`)
 
   // Drop bot/unfurler hits before they reach D1, but still serve the file.
   const userAgent = c.req.header('user-agent')

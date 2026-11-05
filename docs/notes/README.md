@@ -36,6 +36,8 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Runbooks for a one-off operation**, deleted once it's done:
 
+- `eu-data-moves-2026-11.md`: keeping Cmdr's data in the EU (#805): what's live, the email, R2, and D1 cutovers with
+  their rollbacks, the local-only copy tool, and the public passages that changed.
 - `github-org-move.md`: moving the repo from `vdavid/cmdr` to the `getcmdr` org (#476): the swap script, what only David
   can click, the transfer-day order, and how to verify or reverse the move.
 
@@ -195,6 +197,9 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `search-arena-row-2026-08-06.md` — what shrinking `SearchEntry` from 56 to 40 bytes actually bought (−92 MiB of arena,
   measured two ways), that it cost no scan latency, and the A/B method for comparing two builds on a machine running
   other work.
+- `search-crate-baseline-2026-11-04.md` — the arena scan, per-query allocations, and arena load on a 10.8 M-row boot
+  index, before and after the search engine moved into `cmdr-search`. Read it before claiming the move cost or saved any
+  speed.
 - `cargo-lane-feature-thrash.md` — what it cost when the cargo check lanes asked cargo different questions about one
   `target/` (20-100 s of rebuild per flip), the before/after of aligning them, and the two measurements that ruled out
   splitting the Rust test lane per package.

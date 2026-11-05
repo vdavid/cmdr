@@ -114,7 +114,9 @@ Shape decisions worth keeping:
   Scrolling the whole body instead would push the note and the notices link (the legally load-bearing pointer) out of
   sight the moment you move the list. `.packages-scroll` pulls itself out by `--spacing-sm` and pads the same amount
   back, so `.packages`' negative margin lands its margin box exactly on that padding box: the striped rows keep the
-  dialog's left edge, the scrollbar rides just inside the panel edge, and nothing overflows sideways.
+  dialog's left edge, the scrollbar rides just inside the panel edge, and nothing overflows sideways. It also reserves
+  its scrollbar gutter and pulls its right edge out by the bar's width, up to the panel edge, so a classic bar can't pan
+  the list sideways: `#lib/ui/DETAILS.md` § "Scrollbar gutters".
 - **One grid spans every list.** `.packages` is `grid-template-columns: minmax(0, 1fr) auto auto` (name takes the slack,
   version and license size to content); each `ul` and each `li` is `grid-template-columns: subgrid` spanning `1 / -1`.
   That nested subgrid is what makes the crate list and the npm list share identical column widths; a per-list grid would

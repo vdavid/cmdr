@@ -131,6 +131,11 @@ pub enum AgentChatEvent {
     SpendPaused { cost_micros: i64 },
     /// The user pressed Keep going on the spend pause, and the turn runs on.
     SpendResumed,
+    /// The provider answered a model call with "overloaded" before anything streamed, and the
+    /// turn is waiting to try that call again (`retry.rs`). `attempt` is the try about to start
+    /// (2 for the first retry), of `attempts` in all. The rail says the provider is busy; the
+    /// next streamed chunk, or the turn's end, clears it.
+    ProviderBusyRetrying { attempt: u32, attempts: u32 },
 }
 
 /// One call of a round, as [`AgentChatEvent::ToolCallsResolved`] lists it: which tool, what it
@@ -168,6 +173,9 @@ pub enum AgentErrorKind {
     /// The provider won't take a request this big: the account's plan caps a request below
     /// one prompt (Groq's free tier), so every send gets the same answer.
     RequestTooLarge,
+    /// The provider stayed overloaded (HTTP 503 or 529) through every retry. Transient: the key
+    /// and plan are fine, so a later send, or a wake after the busy backoff, goes through.
+    ProviderBusy,
     /// A per-answer limit (a background round cap, or the loop guard) ended the tool loop before an answer.
     BudgetExhausted,
     /// The model kept re-sending a tool call that had already come back with a problem, after
@@ -198,6 +206,7 @@ impl AgentErrorKind {
             AgentErrorKind::RateLimited => "rate_limited",
             AgentErrorKind::ModelNotInPlan => "model_not_in_plan",
             AgentErrorKind::RequestTooLarge => "request_too_large",
+            AgentErrorKind::ProviderBusy => "provider_busy",
             AgentErrorKind::BudgetExhausted => "budget_exhausted",
             AgentErrorKind::RepeatedToolCall => "repeated_tool_call",
             AgentErrorKind::UnfinishedReply => "unfinished_reply",
@@ -228,6 +237,7 @@ impl From<crate::agent::llm::types::AgentLlmError> for AgentErrorKind {
             AgentLlmError::RateLimited(_) => AgentErrorKind::RateLimited,
             AgentLlmError::ModelNotInPlan(_) => AgentErrorKind::ModelNotInPlan,
             AgentLlmError::RequestTooLarge(_) => AgentErrorKind::RequestTooLarge,
+            AgentLlmError::Overloaded { .. } => AgentErrorKind::ProviderBusy,
             AgentLlmError::BudgetExhausted => AgentErrorKind::BudgetExhausted,
             AgentLlmError::Provider(_) => AgentErrorKind::Provider,
             AgentLlmError::Managed(refusal) => AgentErrorKind::ManagedByOrganization(refusal),

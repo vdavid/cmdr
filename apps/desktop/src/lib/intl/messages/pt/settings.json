@@ -1297,6 +1297,18 @@
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
+  "settings.network.requireSmbEncryption.label": "Sempre exigir criptografia SMB",
+  "@settings.network.requireSmbEncryption.label": {
+    "sourceHash": "4519b09"
+  },
+  "settings.network.requireSmbEncryption.description": "O Cmdr criptografa as próprias conexões com compartilhamentos SMB, mesmo quando o servidor não pede, e não se conecta a um servidor que não consegue criptografar. Conexões de convidado não podem ser criptografadas, então você precisa iniciar a sessão. Vale para novas conexões.",
+  "@settings.network.requireSmbEncryption.description": {
+    "sourceHash": "4b8d40b"
+  },
+  "settings.network.requireSmbEncryption.keywords": "criptografar, criptografado, encriptação, cifrar, segurança, seguro, privacidade, proteção",
+  "@settings.network.requireSmbEncryption.keywords": {
+    "sourceHash": "1fc0e27"
+  },
   "settings.network.shareCacheDuration.label": "Duração do cache de compartilhamentos",
   "@settings.network.shareCacheDuration.label": {
     "sourceHash": "ff627cd"
@@ -2814,6 +2826,14 @@
   "settings.managed.summary.securityLogRequired": "Sempre registrados",
   "@settings.managed.summary.securityLogRequired": {
     "sourceHash": "baf73d6"
+  },
+  "settings.managed.summary.smbEncryption": "Criptografia SMB",
+  "@settings.managed.summary.smbEncryption": {
+    "sourceHash": "059bf46"
+  },
+  "settings.managed.summary.smbEncryptionRequired": "Sempre exigida",
+  "@settings.managed.summary.smbEncryptionRequired": {
+    "sourceHash": "8bac3f7"
   },
   "settings.managed.summary.updates": "Atualizações",
   "@settings.managed.summary.updates": {

@@ -2449,6 +2449,10 @@
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "ea3a52f"
   },
+  "errors.shareList.encryptionRequired": "Сервер «{server}» не може зашифрувати це підʼєднання, а в Cmdr увімкнено «Завжди вимагати шифрування SMB». Перевірте параметри шифрування SMB на сервері.",
+  "@errors.shareList.encryptionRequired": {
+    "sourceHash": "4dff9ea"
+  },
   "errors.shareList.protocolError": "Під час запиту списку спільних папок сервера «{server}» щось пішло не так. Спробуйте ще раз за мить.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

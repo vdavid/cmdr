@@ -299,7 +299,7 @@ describe('minting a license in the Worker runtime', () => {
   })
 
   it('keeps the license when delivery falls over, and hands the code back', async () => {
-    // The harness has no Resend key, so asking for the email is a guaranteed delivery failure.
+    // The harness has no SMTP2Go key, so asking for the email is a guaranteed delivery failure.
     const { status, minted } = await generate({
       email: 'undeliverable@example.com',
       note: 'delivery test',

@@ -1,0 +1,173 @@
+name: Light lane caches
+description: >-
+  Restores (phase `restore`) or saves (phase `save`) the light lane's caches: the installed `node_modules` trees, the
+  built check tool, the Go caches the Go checks use (module and build caches plus their `go install`ed tools), and the
+  `go install`ed scorecard binary. Expects a checkout; the save phase also expects the restore phase earlier in the job.
+
+# Used by the light lane (`light-lane.yml`) and `ci.yml`'s `warm-light-cache`, so both read and write the exact same
+# keys and paths (a cache's version hashes its paths, so a mismatch is an invisible entry).
+# - Each key hashes only what decides the entry's content, so a hit is safe to use as is:
+#   - `node_modules` (every workspace's, minus the runner's own `.cache`): the lockfile, the workspace config (build
+#     approvals change what install runs), and `.mise.toml` (the Node and pnpm versions). A hit skips `pnpm install`;
+#     the check runner's own `pnpm install --frozen-lockfile` still runs before each Node check and finds nothing to do.
+#   - The check tool: its non-test Go sources, its module files, and the Go version.
+#   - Go: the module sums, the files that pin each Go check's tool, and the Go version. A stale tool is safe
+#     (`EnsureGoTool` reinstalls one whose module or Go version differs), so this one also restores by prefix.
+#   - Scorecard: the check file that pins it, and the Go version. Its own entry, because a lane run saves only what its
+#     sections installed: in one shared entry, a Go-only run's save (no scorecard) hit exactly on every later run, so
+#     scorecard's ~2 min `go install` never got cached.
+# - The light lane saves from `main` only, like the Rust caches: node_modules is ~1 GB unpacked, and per-PR entries
+#   are what pushed the repo past its 10 GB budget before (`docs/tooling/ci.md` § Build caching). A PR restores
+#   `main`'s entries, which `warm-light-cache` keeps current after every land.
+inputs:
+  phase:
+    description: '`restore` or `save`'
+    required: true
+  node-modules:
+    description: >-
+      Whether to restore `node_modules` (`true` or `false`): off on the self-hosted runner, whose warm pnpm store
+      installs it faster, and for a job that runs no Node check
+    required: false
+    default: 'true'
+  go:
+    description: Whether to restore or save the Go checks' caches too (`true` or `false`)
+    required: false
+    default: 'false'
+  scorecard:
+    description: Whether to restore or save the scorecard binary too (`true` or `false`)
+    required: false
+    default: 'false'
+  node-modules-hit:
+    description: The restore phase's `node-modules-hit` output (save phase); an exact hit has nothing new to save
+    required: false
+    default: 'false'
+  check-tool-hit:
+    description: The restore phase's `check-tool-hit` output (save phase)
+    required: false
+    default: 'false'
+  go-hit:
+    description: The restore phase's `go-hit` output (save phase)
+    required: false
+    default: 'false'
+  scorecard-hit:
+    description: The restore phase's `scorecard-hit` output (save phase)
+    required: false
+    default: 'false'
+outputs:
+  node-modules-hit:
+    description: Whether `node_modules` came back for the exact key
+    value: ${{ steps.node-modules.outputs.cache-hit }}
+  check-tool-hit:
+    description: Whether the check tool came back for the exact key
+    value: ${{ steps.check-tool.outputs.cache-hit }}
+  go-hit:
+    description: Whether the Go caches came back for the exact key
+    value: ${{ steps.go.outputs.cache-hit }}
+  scorecard-hit:
+    description: Whether the scorecard binary came back for the exact key
+    value: ${{ steps.scorecard.outputs.cache-hit }}
+runs:
+  using: composite
+  steps:
+    # Pinned so the paths below are what Go uses, whatever the runner's defaults.
+    - name: Point Go at the cached dirs
+      shell: bash
+      run: |
+        echo "GOCACHE=$HOME/.cache/go-build" >>"$GITHUB_ENV"
+        echo "GOMODCACHE=$HOME/go/pkg/mod" >>"$GITHUB_ENV"
+
+    - name: Restore node_modules
+      id: node-modules
+      if: inputs.phase == 'restore' && inputs.node-modules == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          node_modules
+          apps/*/node_modules
+          eslint-plugins/node_modules
+          !node_modules/.cache
+        key:
+          light-node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml',
+          '.mise.toml') }}
+
+    - name: Restore the check tool
+      id: check-tool
+      if: inputs.phase == 'restore'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: scripts/check/check
+        key:
+          light-check-tool-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/check/**/*.go',
+          '!scripts/check/**/*_test.go', 'scripts/check/go.mod', 'scripts/check/go.sum', '.mise.toml') }}
+
+    - name: Restore the Go caches
+      id: go
+      if: inputs.phase == 'restore' && inputs.go == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+          node_modules/.cache/cmdr-go-tools
+          !node_modules/.cache/cmdr-go-tools/scorecard
+        key:
+          light-go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.mise.toml', 'scripts/**/go.sum',
+          'apps/desktop/scripts/**/go.sum', 'scripts/check/checks/scripts-go-*.go') }}
+        restore-keys: |
+          light-go-${{ runner.os }}-${{ runner.arch }}-
+
+    - name: Restore the scorecard binary
+      id: scorecard
+      if: inputs.phase == 'restore' && inputs.scorecard == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: node_modules/.cache/cmdr-go-tools/scorecard
+        key:
+          light-scorecard-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/check/checks/scorecard-local.go',
+          '.mise.toml') }}
+
+    - name: Save node_modules
+      if: inputs.phase == 'save' && inputs.node-modules-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          node_modules
+          apps/*/node_modules
+          eslint-plugins/node_modules
+          !node_modules/.cache
+        key:
+          light-node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml',
+          '.mise.toml') }}
+
+    - name: Save the check tool
+      if: inputs.phase == 'save' && inputs.check-tool-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: scripts/check/check
+        key:
+          light-check-tool-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/check/**/*.go',
+          '!scripts/check/**/*_test.go', 'scripts/check/go.mod', 'scripts/check/go.sum', '.mise.toml') }}
+
+    # Test results stay out of what's saved: the lane sets `GOFLAGS=-count=1`, so `go test` neither reads nor writes
+    # them, and a restored entry can never stand in for a test run.
+    - name: Save the Go caches
+      if: inputs.phase == 'save' && inputs.go == 'true' && inputs.go-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+          node_modules/.cache/cmdr-go-tools
+          !node_modules/.cache/cmdr-go-tools/scorecard
+        key:
+          light-go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.mise.toml', 'scripts/**/go.sum',
+          'apps/desktop/scripts/**/go.sum', 'scripts/check/checks/scripts-go-*.go') }}
+
+    - name: Save the scorecard binary
+      if: inputs.phase == 'save' && inputs.scorecard == 'true' && inputs.scorecard-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: node_modules/.cache/cmdr-go-tools/scorecard
+        key:
+          light-scorecard-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/check/checks/scorecard-local.go',
+          '.mise.toml') }}

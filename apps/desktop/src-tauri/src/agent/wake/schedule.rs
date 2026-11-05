@@ -50,6 +50,29 @@ pub(super) const MIN_WAKE_SPACING: Duration = Duration::from_secs(15 * 60);
 /// what fixing the key sends) lifts it at once rather than making the user wait it out.
 pub(super) const PROVIDER_REFUSAL_BACKOFF: Duration = Duration::from_secs(6 * 60 * 60);
 
+/// How long the loop stays quiet the first time a wake finds the provider overloaded through all
+/// of its turn's retries; each busy wake in a row doubles it, up to [`PROVIDER_BUSY_BACKOFF_MAX`].
+///
+/// The middle tier between the two above, decided 2026-11-04 (#921): an overload is transient and
+/// the key is fine, so six hours would punish the user for Google's busy night, but the ordinary
+/// fifteen-minute spacing walks a wake straight back into the same overload.
+pub(super) const PROVIDER_BUSY_BACKOFF: Duration = Duration::from_secs(30 * 60);
+
+/// The longest the busy tier holds the loop, however many busy wakes in a row.
+pub(super) const PROVIDER_BUSY_BACKOFF_MAX: Duration = Duration::from_secs(2 * 60 * 60);
+
+/// The loop's whole "may it speak yet" state: the `not_before` stamp, and how many wakes in a row
+/// found the provider busy (what the busy tier doubles by). `writer.rs` holds it; only
+/// [`pacing_after`] moves it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(super) struct Pacing {
+    /// Unix seconds before which no wake is attempted.
+    pub(super) not_before: u64,
+    /// Busy wakes in a row, reset by any wake that got past the overload and by a settings or
+    /// readiness change (which can mean another provider).
+    pub(super) busy_streak: u32,
+}
+
 /// What a control message does to the `not_before` stamp.
 enum ControlWait {
     /// Drop the stamp: whatever the loop last decided may no longer hold, so act now.
@@ -60,22 +83,47 @@ enum ControlWait {
     For(Duration),
 }
 
-/// The `not_before` stamp a control message leaves behind, given the one the loop holds now.
+/// The pacing a control message leaves behind, given the one the loop holds now.
 ///
 /// The whole of the loop's "may it speak yet" policy, in one pure place: a gate moving clears
-/// the wait, a wake that spoke imposes one, and a provider that refused imposes a long one.
-pub(super) fn stamp_after(control: &WakeControl, not_before: u64, now: u64) -> u64 {
-    match wait_after(control) {
+/// the wait, a wake that spoke imposes one, a busy provider a doubling one, and a provider that
+/// refused a long one.
+pub(super) fn pacing_after(control: &WakeControl, pacing: Pacing, now: u64) -> Pacing {
+    let not_before = match wait_after(control, pacing.busy_streak) {
         ControlWait::Clear => 0,
-        ControlWait::Keep => not_before,
+        ControlWait::Keep => pacing.not_before,
         ControlWait::For(wait) => now.saturating_add(wait.as_secs()),
+    };
+    let busy_streak = match control {
+        WakeControl::WakeFinished(WakeCompletion::ProviderBusy) => pacing.busy_streak.saturating_add(1),
+        WakeControl::WakeFinished(WakeCompletion::Wake | WakeCompletion::ProviderRefused)
+        | WakeControl::SettingsChanged
+        | WakeControl::ReadinessChanged => 0,
+        // A follow-up that wasn't busy says nothing about the next wake's provider (it may have
+        // ended on anything), and a force or a rejection is the user, not the provider.
+        WakeControl::WakeFinished(WakeCompletion::FollowUp)
+        | WakeControl::ForceWake(_)
+        | WakeControl::SweepRejected { .. } => pacing.busy_streak,
+    };
+    Pacing {
+        not_before,
+        busy_streak,
     }
 }
 
-fn wait_after(control: &WakeControl) -> ControlWait {
+/// The busy tier's wait after `streak` busy wakes in a row before this one: 30 minutes, then 60,
+/// then two hours from there on.
+fn busy_backoff(streak: u32) -> Duration {
+    PROVIDER_BUSY_BACKOFF
+        .saturating_mul(1 << streak.min(8))
+        .min(PROVIDER_BUSY_BACKOFF_MAX)
+}
+
+fn wait_after(control: &WakeControl, busy_streak: u32) -> ControlWait {
     match control {
         WakeControl::WakeFinished(WakeCompletion::Wake) => ControlWait::For(MIN_WAKE_SPACING),
         WakeControl::WakeFinished(WakeCompletion::ProviderRefused) => ControlWait::For(PROVIDER_REFUSAL_BACKOFF),
+        WakeControl::WakeFinished(WakeCompletion::ProviderBusy) => ControlWait::For(busy_backoff(busy_streak)),
         // A follow-up answers something the user just did, so it neither earns a spacing nor
         // lifts the one a wake left: clearing here would let a rejection the user clicked
         // through pull an unrelated wake in ahead of its turn.
@@ -125,6 +173,85 @@ mod tests {
     const SPACING_SECS: u64 = 15 * 60;
     /// And a provider that refused is left alone for six hours.
     const REFUSAL_SECS: u64 = 6 * 60 * 60;
+    /// A busy provider: half an hour, doubling to two hours.
+    const BUSY_SECS: u64 = 30 * 60;
+    const BUSY_MAX_SECS: u64 = 2 * 60 * 60;
+
+    /// The stamp a control leaves, from a stamp with no busy streak behind it.
+    fn stamp_of(control: &WakeControl, not_before: u64, now: u64) -> u64 {
+        pacing_after(
+            control,
+            Pacing {
+                not_before,
+                busy_streak: 0,
+            },
+            now,
+        )
+        .not_before
+    }
+
+    /// ⚠️ **The busy tier sits between the two others.** An overloaded provider is transient
+    /// (the key is fine), so six hours would punish the user for a busy night, and the ordinary
+    /// spacing walks back into the overload. Half an hour, doubling while it stays busy, never
+    /// past two hours.
+    #[test]
+    fn a_busy_provider_backs_off_half_an_hour_doubling_to_two_hours() {
+        let now = 1_780_000_000;
+        let busy = WakeControl::WakeFinished(WakeCompletion::ProviderBusy);
+        let mut pacing = Pacing::default();
+        let mut waits = Vec::new();
+        for _ in 0..5 {
+            pacing = pacing_after(&busy, pacing, now);
+            waits.push(pacing.not_before - now);
+        }
+
+        assert_eq!(
+            waits,
+            vec![BUSY_SECS, 2 * BUSY_SECS, BUSY_MAX_SECS, BUSY_MAX_SECS, BUSY_MAX_SECS]
+        );
+        const { assert!(BUSY_SECS > SPACING_SECS && BUSY_MAX_SECS < REFUSAL_SECS) };
+    }
+
+    /// A wake that got through ends the streak, so the next overload starts again at half an
+    /// hour; so does a settings or readiness change, which can mean another provider. A force or
+    /// a follow-up that wasn't busy leaves it where it was.
+    #[test]
+    fn the_busy_streak_resets_once_the_provider_answers_or_the_slot_changes() {
+        let now = 1_780_000_000;
+        let busy = WakeControl::WakeFinished(WakeCompletion::ProviderBusy);
+        let streaked = pacing_after(&busy, pacing_after(&busy, Pacing::default(), now), now);
+        assert_eq!(streaked.busy_streak, 2);
+
+        for control in [
+            WakeControl::WakeFinished(WakeCompletion::Wake),
+            WakeControl::WakeFinished(WakeCompletion::ProviderRefused),
+            WakeControl::SettingsChanged,
+            WakeControl::ReadinessChanged,
+        ] {
+            let after = pacing_after(&control, streaked, now);
+            assert_eq!(after.busy_streak, 0, "{control:?} ends the streak");
+            assert_eq!(
+                pacing_after(&busy, after, now).not_before - now,
+                BUSY_SECS,
+                "after {control:?} the next busy wake waits half an hour again"
+            );
+        }
+        assert_eq!(
+            pacing_after(&WakeControl::WakeFinished(WakeCompletion::FollowUp), streaked, now).busy_streak,
+            2
+        );
+    }
+
+    /// Fixing things is felt at once here too: a settings or readiness change lifts a busy wait.
+    #[test]
+    fn a_settings_or_readiness_change_lifts_a_busy_backoff() {
+        let now = 1_780_000_000;
+        let held = stamp_of(&WakeControl::WakeFinished(WakeCompletion::ProviderBusy), 0, now);
+        assert_eq!(held, now + BUSY_SECS);
+        for control in [WakeControl::ReadinessChanged, WakeControl::SettingsChanged] {
+            assert_eq!(stamp_of(&control, held, now), 0, "{control:?} lifts it");
+        }
+    }
 
     /// ⚠️ The spin guard. A deadline that has passed keeps having passed, so a park computed
     /// from it alone is zero-length, and a zero-length `recv_timeout` returns instantly. An
@@ -206,7 +333,7 @@ mod tests {
     fn two_wakes_cannot_run_closer_together_than_the_spacing() {
         let now = 1_780_000_000;
 
-        let stamp = stamp_after(&WakeControl::WakeFinished(WakeCompletion::Wake), 0, now);
+        let stamp = stamp_of(&WakeControl::WakeFinished(WakeCompletion::Wake), 0, now);
 
         assert_eq!(stamp, now + SPACING_SECS);
         assert!(
@@ -228,7 +355,7 @@ mod tests {
         let held = now + SPACING_SECS;
 
         for control in [WakeControl::SettingsChanged, WakeControl::ReadinessChanged] {
-            assert_eq!(stamp_after(&control, held, now), 0, "{control:?} has to be felt now");
+            assert_eq!(stamp_of(&control, held, now), 0, "{control:?} has to be felt now");
         }
         assert!(may_attempt(false, true, 0, now));
     }
@@ -241,11 +368,11 @@ mod tests {
         let now = 1_780_000_000;
         let held = now + 600;
 
-        let stamp = stamp_after(&WakeControl::WakeFinished(WakeCompletion::FollowUp), held, now);
+        let stamp = stamp_of(&WakeControl::WakeFinished(WakeCompletion::FollowUp), held, now);
 
         assert_eq!(stamp, held);
         assert_eq!(
-            stamp_after(&WakeControl::WakeFinished(WakeCompletion::FollowUp), 0, now),
+            stamp_of(&WakeControl::WakeFinished(WakeCompletion::FollowUp), 0, now),
             0,
             "and it invents no wait where there was none"
         );
@@ -258,7 +385,7 @@ mod tests {
     fn a_provider_that_refused_holds_the_agent_off_for_hours() {
         let now = 1_780_000_000;
 
-        let stamp = stamp_after(&WakeControl::WakeFinished(WakeCompletion::ProviderRefused), 0, now);
+        let stamp = stamp_of(&WakeControl::WakeFinished(WakeCompletion::ProviderRefused), 0, now);
 
         assert_eq!(stamp, now + REFUSAL_SECS);
         assert!(
@@ -273,10 +400,10 @@ mod tests {
     #[test]
     fn a_settings_or_readiness_change_lifts_a_dead_keys_backoff() {
         let now = 1_780_000_000;
-        let held = stamp_after(&WakeControl::WakeFinished(WakeCompletion::ProviderRefused), 0, now);
+        let held = stamp_of(&WakeControl::WakeFinished(WakeCompletion::ProviderRefused), 0, now);
 
         for control in [WakeControl::ReadinessChanged, WakeControl::SettingsChanged] {
-            assert_eq!(stamp_after(&control, held, now), 0, "{control:?} lifts it");
+            assert_eq!(stamp_of(&control, held, now), 0, "{control:?} lifts it");
         }
     }
 

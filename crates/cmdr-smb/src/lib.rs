@@ -35,6 +35,9 @@
 //!   share-listing calls, and [`try_open_share`], which asks the server whether an
 //!   identity may open one share.
 //!
+//! Plus [`SmbEncryption`], the process-wide "require encryption" switch every
+//! session this crate builds reads.
+//!
 //! See `CLAUDE.md` for the must-knows and `DETAILS.md` for the boundary's
 //! rationale.
 
@@ -48,12 +51,14 @@ use cmdr_smb as _;
 use xattr as _;
 
 pub mod connection;
+mod encryption;
 pub mod errors;
 mod link_consent;
 pub mod types;
 pub mod volume;
 
 pub use connection::{smb_addr, try_list_shares_as_guest, try_list_shares_authenticated, try_open_share};
+pub use encryption::SmbEncryption;
 pub use errors::{classify_authenticated_error, classify_error, is_auth_error};
 pub use link_consent::LinkConsents;
 pub use types::{AuthMode, ShareInfo, ShareListError, ShareListResult, convert_shares};

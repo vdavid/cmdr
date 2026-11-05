@@ -41,6 +41,12 @@ export function managedPolicySummary(view: ManagedPolicyView): ManagedSummaryLin
       value: tString('settings.managed.summary.securityLogRequired'),
     })
   }
+  if (view.smbEncryptionRequired) {
+    lines.push({
+      label: tString('settings.managed.summary.smbEncryption'),
+      value: tString('settings.managed.summary.smbEncryptionRequired'),
+    })
+  }
   return lines
 }
 

@@ -1,4 +1,4 @@
-import { sendEmailPathProbe } from './email/send'
+import { checkEmailPath } from './email/send'
 import { sendDbSizeAlert } from './email/ops-alerts'
 import type { Bindings } from './types'
 import {
@@ -30,13 +30,13 @@ const dbSizeSampleRetentionDays = 400
 const dbGrowthWindowDays = 30
 
 /**
- * Send one throwaway email a day so a dead `RESEND_API_KEY` surfaces on its own schedule rather
- * than at the moment something important needs to send. Recipient is Resend's simulator address,
- * so nobody receives it. A rejection throws, and `runCronJob` raises the alarm (healthchecks.io).
+ * Check the SMTP2Go key and quota once a day, so a dead `SMTP2GO_API_KEY` or a spent quota surfaces
+ * on its own schedule rather than at the moment something important needs to send. It sends no
+ * email (`checkEmailPath` says why). A failure throws, and `runCronJob` raises the alarm.
  */
 async function handleEmailPathProbe(env: Bindings): Promise<void> {
-  if (!env.RESEND_API_KEY) return
-  await sendEmailPathProbe({ resendApiKey: env.RESEND_API_KEY })
+  if (!env.SMTP2GO_API_KEY) return
+  await checkEmailPath(env.SMTP2GO_API_KEY)
 }
 
 /**
@@ -358,7 +358,7 @@ async function growthRate(db: D1Database, today: string, sizeBytes: number) {
  * to every test here, because a mocked D1 answers whatever it's told to.
  */
 async function handleDbSizeCheck(env: Bindings, now: Date = new Date()): Promise<void> {
-  if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
+  if (!env.CRASH_NOTIFICATION_EMAIL || !env.SMTP2GO_API_KEY) return
 
   const db = env.TELEMETRY_DB
   const today = utcDay(now)
@@ -396,7 +396,7 @@ async function handleDbSizeCheck(env: Bindings, now: Date = new Date()): Promise
     growth,
     tableCounts,
     to: env.CRASH_NOTIFICATION_EMAIL,
-    resendApiKey: env.RESEND_API_KEY,
+    smtp2goApiKey: env.SMTP2GO_API_KEY,
   })
 }
 

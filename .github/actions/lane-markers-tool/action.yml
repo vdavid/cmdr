@@ -1,0 +1,38 @@
+name: lane-markers tool
+description: >-
+  Puts the built `lane-markers` binary at `scripts/lane-markers/lane-markers`, from the Actions cache when its sources
+  are unchanged, else built with the repo's pinned Go (and cached). Expects a checkout.
+
+# `changes` and `CI OK` both run it, and both sit on every run's critical path: installing Go (~12 s) and compiling
+# (~8 s) cost ~20 s in each, a docs-only PR's whole budget twice over. The key hashes every source and the Go pin, so a
+# hit is exactly the binary those sources build. An entry is ~5 MB and per scope; a fork's run can write only its own
+# PR's scope, so it can only affect its own run, whose workflow it controls anyway.
+runs:
+  using: composite
+  steps:
+    - name: Restore the built tool
+      id: restore
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: scripts/lane-markers/lane-markers
+        key:
+          lane-markers-bin-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lane-markers/**/*.go',
+          'scripts/lane-markers/go.mod', 'scripts/lane-markers/go.sum', '.mise.toml') }}
+
+    - name: Install Go
+      if: steps.restore.outputs.cache-hit != 'true'
+      uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+      with:
+        install_args: go
+
+    - name: Build the tool
+      if: steps.restore.outputs.cache-hit != 'true'
+      shell: bash
+      run: go -C scripts/lane-markers build -o lane-markers .
+
+    - name: Save the built tool
+      if: steps.restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: scripts/lane-markers/lane-markers
+        key: ${{ steps.restore.outputs.cache-primary-key }}

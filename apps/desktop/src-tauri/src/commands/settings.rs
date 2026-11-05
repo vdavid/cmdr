@@ -149,6 +149,18 @@ pub fn set_smb_concurrency_cmd(value: u16) {
     set_smb_concurrency(value as usize);
 }
 
+/// The person's "Always require SMB encryption" switch, pushed live from the frontend
+/// whenever `network.requireSmbEncryption` changes. ORed with the managed policy, it reaches
+/// every SMB session built from then on (`network::smb_encryption`).
+#[tauri::command]
+#[specta::specta]
+pub fn set_require_smb_encryption(value: bool) {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    crate::network::smb_encryption::set_user_choice(value);
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    let _ = value;
+}
+
 /// Turn LLM call logging on or off. When on, every AI model request and response is written
 /// to `{app data dir}/llm-logs/` for debugging (local only, never transmitted). Pushed live
 /// from the frontend whenever `advanced.logLlmCalls` changes; runtime-toggleable, no restart.

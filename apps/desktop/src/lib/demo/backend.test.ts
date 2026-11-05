@@ -5,23 +5,41 @@ const engine = vi.hoisted(() => ({
   sink: undefined as ((event: { name: string; payload: unknown; target?: string }) => void) | undefined,
   calls: [] as string[],
   closedWindows: [] as string[],
+  /** Files the volume holds beyond the boot tree (a write landed them). */
+  volumeFiles: new Set<string>(),
+  /** Boot-tree paths the volume no longer holds (a write removed them). */
+  volumeGone: new Set<string>(),
 }))
 
-vi.mock('./listing.js', () => ({
-  startListingEngine: (sink: (event: { name: string; payload: unknown; target?: string }) => void) => {
-    engine.sink = sink
-    return {
-      handles: (cmd: string) => Promise.resolve(cmd === 'get_file_range' || cmd === 'get_default_volume_id'),
-      invoke: (cmd: string) => {
-        engine.calls.push(cmd)
-        return Promise.resolve(`engine:${cmd}`)
-      },
-      closeViewerWindow: (label: string) => engine.closedWindows.push(label),
-      mediaBody: (token: string) =>
-        token === 'known' ? { mime: 'image/png', bytes: Uint8Array.from([1, 2, 3]) } : undefined,
-    }
-  },
-}))
+vi.mock('./listing.js', async () => {
+  const { demoEntries } = await import('./demo-tree.js')
+  // The engine's `stat_paths_kinds` over a volume that starts as the boot tree: `true` a folder,
+  // `false` a file, `null` nothing there.
+  const kindOf = (path: string): boolean | null => {
+    if (engine.volumeGone.has(path)) return null
+    if (engine.volumeFiles.has(path)) return false
+    const entry = demoEntries.find((e) => e.path === path)
+    return entry === undefined ? null : entry.kind === 'dir'
+  }
+  return {
+    startListingEngine: (sink: (event: { name: string; payload: unknown; target?: string }) => void) => {
+      engine.sink = sink
+      return {
+        handles: (cmd: string) => Promise.resolve(cmd === 'get_file_range' || cmd === 'get_default_volume_id'),
+        invoke: (cmd: string, payload: { paths?: string[] }) => {
+          if (cmd === 'stat_paths_kinds') {
+            return Promise.resolve({ data: (payload.paths ?? []).map(kindOf), timedOut: false })
+          }
+          engine.calls.push(cmd)
+          return Promise.resolve(`engine:${cmd}`)
+        },
+        closeViewerWindow: (label: string) => engine.closedWindows.push(label),
+        mediaBody: (token: string) =>
+          token === 'known' ? { mime: 'image/png', bytes: Uint8Array.from([1, 2, 3]) } : undefined,
+      }
+    },
+  }
+})
 
 // A fake menu engine claiming one push, so the test pins that menu pushes reach it, not a TS table.
 vi.mock('./menu-engine.js', () => ({
@@ -34,6 +52,15 @@ vi.mock('./menu-engine.js', () => ({
     },
     bar: () => [],
     click: () => ({ kind: 'nothing' }),
+    opensPopup: (cmd: string) => Promise.resolve(cmd === 'show_tab_context_menu'),
+    popup: (cmd: string, _payload: unknown, label: string) => {
+      engine.calls.push(`popup:${cmd}:${label}`)
+      return Promise.resolve({
+        anchor: null,
+        rows: [{ kind: 'item', id: 'tab_pin', label: { text: 'Pin tab' }, shortcut: null, enabled: true }],
+      })
+    },
+    contextClick: () => ({ kind: 'nothing' }),
   }),
 }))
 
@@ -63,6 +90,17 @@ describe('demo backend', () => {
     const backend = createDemoBackend()
     expect(await backend.invoke('activate_window_menu', { kind: 'main' })).toBeNull()
     expect(engine.calls).toContain('menu:activate_window_menu')
+  })
+
+  it('draws a right-click menu at the pointer of the window that asked, and answers null', async () => {
+    const backend = createDemoBackend()
+    const origin = { label: 'main', pointer: { x: 12, y: 34 } }
+    expect(await backend.invoke('show_tab_context_menu', {}, origin)).toBeNull()
+    expect(engine.calls).toContain('popup:show_tab_context_menu:main')
+    const menu = document.querySelector<HTMLElement>('.cmdr-demo-menu')
+    expect(menu?.textContent).toContain('Pin tab')
+    expect([menu?.style.left, menu?.style.top]).toEqual(['12px', '34px'])
+    menu?.remove()
   })
 
   it('answers plugin, raw, silent, and window commands', async () => {
@@ -156,5 +194,32 @@ describe('demo backend', () => {
     await expect(backend.invoke('open_path', { path: `${DEMO_HOME}/Music`, volumeId: 'root' })).rejects.toMatchObject({
       type: 'unsupported',
     })
+  })
+
+  it('opens a file a write made, because it asks the volume rather than the boot tree', async () => {
+    const backend = createDemoBackend()
+    const main = fakeWebview('main')
+    backend.attach(main.webview)
+    // A copy landed it: only the engine's volume holds it.
+    const copied = `${DEMO_HOME}/Documents/notes copy.md`
+    engine.volumeFiles.add(copied)
+    try {
+      expect(await backend.invoke('open_path', { path: copied, volumeId: 'root' })).toBeNull()
+      expect(main.heard).toEqual([['open-file-viewer', { path: copied }, { kind: 'label', label: 'main' }]])
+    } finally {
+      engine.volumeFiles.delete(copied)
+    }
+  })
+
+  it('keeps the refusal for a file a write removed', async () => {
+    const backend = createDemoBackend()
+    engine.volumeGone.add(`${DEMO_HOME}/notes.md`)
+    try {
+      await expect(backend.invoke('open_path', { path: '~/notes.md', volumeId: 'root' })).rejects.toMatchObject({
+        type: 'unsupported',
+      })
+    } finally {
+      engine.volumeGone.delete(`${DEMO_HOME}/notes.md`)
+    }
   })
 })

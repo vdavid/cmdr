@@ -205,6 +205,11 @@ fn rail_fake_failure(kind: &str) -> crate::agent::llm::types::AgentLlmError {
         "rateLimited" => AgentLlmError::RateLimited("Scripted rate limit".to_string()),
         "modelNotInPlan" => AgentLlmError::ModelNotInPlan("Scripted model not in plan".to_string()),
         "requestTooLarge" => AgentLlmError::RequestTooLarge("Scripted request too large".to_string()),
+        // `Retry-After: 0`, so the turn's retries run without waiting and end on the busy line.
+        "providerBusy" => AgentLlmError::Overloaded {
+            detail: "Scripted overload".to_string(),
+            retry_after: Some(std::time::Duration::ZERO),
+        },
         "budgetExhausted" => AgentLlmError::BudgetExhausted,
         _ => AgentLlmError::Provider("Scripted provider failure".to_string()),
     }

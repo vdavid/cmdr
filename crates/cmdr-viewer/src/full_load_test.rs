@@ -44,7 +44,7 @@ fn open_reads_lines_correctly() {
     fs::write(&file, "line 1\nline 2\nline 3\n").unwrap();
 
     let backend = FullLoadBackend::open(&file).unwrap();
-    assert_eq!(backend.total_lines(), Some(4)); // 3 lines + trailing empty
+    assert_eq!(backend.total_lines(), Some(3)); // a final newline starts no line
     assert_eq!(backend.file_name(), "test.txt");
     assert_eq!(backend.total_bytes(), 21);
 }

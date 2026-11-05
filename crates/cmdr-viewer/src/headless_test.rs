@@ -29,8 +29,8 @@ fn a_small_file_opens_full_load_with_exact_lines() {
     assert!(opened.line_numbers_exact);
     assert_eq!(
         opened.backend.total_lines(),
-        Some(11),
-        "10 lines plus the trailing empty one"
+        Some(10),
+        "10 lines, and no empty one past the final newline"
     );
     let chunk = opened
         .backend
@@ -49,7 +49,7 @@ fn a_large_file_opens_line_index_with_exact_lines() {
     let cancel = AtomicBool::new(false);
     let opened = open_text_backend(&path, FileEncoding::Utf8, &cancel).unwrap();
     assert!(opened.line_numbers_exact);
-    assert_eq!(opened.backend.total_lines(), Some(50_001));
+    assert_eq!(opened.backend.total_lines(), Some(50_000));
     let chunk = opened
         .backend
         .get_lines(&SeekTarget::Row(40_000), 1, &AtomicBool::new(false))
@@ -134,7 +134,7 @@ fn a_scan_backend_skips_the_index_and_still_finds_lines_exactly() {
     let backend = open_scan_backend(&small, FileEncoding::Utf8).unwrap();
     assert_eq!(
         backend.total_lines(),
-        Some(11),
+        Some(10),
         "a small file is loaded whole, lines known"
     );
 }

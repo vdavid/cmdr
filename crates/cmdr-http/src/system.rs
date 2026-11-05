@@ -27,6 +27,19 @@ impl SystemProxies for MacSystem {
     }
 }
 
+/// The system layer [`crate::warm_up_pac`] decides with: [`MacSystem`], but a PAC miss gets
+/// [`pac::WARM_UP_TIMEOUT`](crate::pac::WARM_UP_TIMEOUT), since nothing waits on it but the
+/// requests that would otherwise have run the cold first evaluation themselves.
+#[cfg(target_os = "macos")]
+pub(crate) struct WarmingSystem;
+
+#[cfg(target_os = "macos")]
+impl SystemProxies for WarmingSystem {
+    fn route(&self, url: &Url) -> Route {
+        mac::route_with(url, &crate::pac::shared().with_budget(crate::pac::WARM_UP_TIMEOUT))
+    }
+}
+
 #[cfg(target_os = "macos")]
 pub(crate) mod mac {
     use objc2_cf_network::{CFNetworkCopyProxiesForURL, CFNetworkCopySystemProxySettings};
@@ -35,17 +48,22 @@ pub(crate) mod mac {
 
     use crate::Route;
     use crate::entries::cf::{cf_url, entries_from};
-    use crate::entries::{Entry, first_route};
+    use crate::entries::{Entry, Pac, first_route};
     use crate::pac;
 
     /// The current system settings' verdict for `url`, a PAC file's included.
     pub(crate) fn route(url: &Url) -> Route {
+        route_with(url, pac::shared())
+    }
+
+    /// [`route`], with a PAC entry run by `pac`.
+    pub(crate) fn route_with(url: &Url, pac: &dyn Pac) -> Route {
         // SAFETY: no arguments; the returned dictionary is owned (`Copy` rule) and wrapped in a
         // `CFRetained` by the binding.
         let Some(settings) = (unsafe { CFNetworkCopySystemProxySettings() }) else {
             return Route::Direct;
         };
-        first_route(&entries_for(&settings, url), url, pac::shared())
+        first_route(&entries_for(&settings, url), url, pac)
     }
 
     /// CFNetwork's ordered answer for `url` under `settings`. Split out so a test can pass its own

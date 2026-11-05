@@ -1,0 +1,30 @@
+name: Lane marker
+description: >-
+  Saves a lane's marker: a tiny Actions cache entry under the lane's key from `ci.yml`'s lane plan, which says these
+  exact inputs passed. Only a lane's LAST step uses it, with no `if:`, so it runs only when every step before it passed.
+
+# Why and the trust argument: `scripts/lane-markers/DETAILS.md`. The entry is never restored, only listed by key, so its
+# content and path don't matter; keys are immutable, so a rerun's save of an existing key only warns.
+inputs:
+  key:
+    description: The lane's marker key (`fromJSON(needs.changes.outputs.lanes)['<lane>'].key`)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Write the marker
+      shell: bash
+      env:
+        KEY: ${{ inputs.key }}
+      run: |
+        if [[ "$KEY" != lane-green-* ]]; then
+          echo "::error::'$KEY' isn't a lane marker key; the caller must pass its lane's key from the lane plan."
+          exit 1
+        fi
+        echo "$GITHUB_RUN_ID" >"$RUNNER_TEMP/lane-green"
+
+    - name: Save the marker
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/lane-green
+        key: ${{ inputs.key }}

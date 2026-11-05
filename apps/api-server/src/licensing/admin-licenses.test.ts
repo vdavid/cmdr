@@ -69,7 +69,7 @@ function bindings(params: { rows?: LedgerRow[]; kvPages?: string[][]; token?: st
     LICENSE_CODES: createKv(params.kvPages ?? [[]]),
     TELEMETRY_DB: createD1(params.rows ?? []),
     ED25519_PRIVATE_KEY: 'ab'.repeat(32),
-    RESEND_API_KEY: 'test-resend-key',
+    SMTP2GO_API_KEY: 'test-smtp2go-key',
     PRODUCT_NAME: 'Cmdr',
     SUPPORT_EMAIL: 'david@getcmdr.com',
     ADMIN_API_TOKEN: params.token === undefined ? adminToken : params.token,

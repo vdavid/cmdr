@@ -29,6 +29,7 @@ import { getSetting } from '#lib/settings/settings-store.js'
 import { readPressedRows, type PressedPane } from '../pane/pressed-rows'
 import { cancelClickToRename } from '../rename/rename-activation'
 import { renderDragImage } from './drag-image-renderer'
+import { isTouchPress } from './touch-hold'
 
 /** Gets the drag threshold from settings (minimum distance in pixels to trigger drag) */
 export function getDragThreshold(): number {
@@ -368,8 +369,16 @@ export function startSelectionDragTracking(
   // Cancel any existing drag
   cancelDragTracking()
 
+  // A held touch (`touch-hold.ts`) sends pointer events and no `mousemove`, so its drag follows
+  // that one pointer. A mouse press, and a tap's compatibility `mousedown` (which arrives after the
+  // tap's own `pointerup`), follow the mouse events.
+  const touchPointerId = isTouchPress(event) ? event.pointerId : null
+  const isOurs = (e: MouseEvent) => touchPointerId === null || (e as PointerEvent).pointerId === touchPointerId
+  const moveType = touchPointerId === null ? 'mousemove' : 'pointermove'
+  const upType = touchPointerId === null ? 'mouseup' : 'pointerup'
+
   const handleMouseMove = (moveEvent: MouseEvent) => {
-    if (!activeDrag) return
+    if (!activeDrag || !isOurs(moveEvent)) return
 
     const dx = moveEvent.clientX - activeDrag.startX
     const dy = moveEvent.clientY - activeDrag.startY
@@ -410,11 +419,16 @@ export function startSelectionDragTracking(
     }
   }
 
-  const handleMouseUp = () => {
-    // Mouse released before threshold - cancel
+  // Released before the threshold; for a touch also the browser taking it (`pointercancel`) and
+  // the OS's long press (`contextmenu`), whose menu takes a finger that stayed still.
+  const endTracking = () => {
     activeDrag?.callbacks.onDragCancel?.()
     cancelDragTracking()
   }
+  const handleMouseUp = (upEvent: MouseEvent) => {
+    if (isOurs(upEvent)) endTracking()
+  }
+  const touchEndTypes = touchPointerId === null ? [] : (['pointercancel', 'contextmenu'] as const)
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -425,9 +439,10 @@ export function startSelectionDragTracking(
   }
 
   const cleanup = () => {
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
+    document.removeEventListener(moveType, handleMouseMove)
+    document.removeEventListener(upType, handleMouseUp)
     document.removeEventListener('keydown', handleKeyDown)
+    for (const type of touchEndTypes) document.removeEventListener(type, endTracking)
   }
 
   activeDrag = {
@@ -438,9 +453,10 @@ export function startSelectionDragTracking(
     cleanup,
   }
 
-  document.addEventListener('mousemove', handleMouseMove)
-  document.addEventListener('mouseup', handleMouseUp)
+  document.addEventListener(moveType, handleMouseMove)
+  document.addEventListener(upType, handleMouseUp)
   document.addEventListener('keydown', handleKeyDown)
+  for (const type of touchEndTypes) document.addEventListener(type, endTracking)
 }
 
 /**

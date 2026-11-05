@@ -47,6 +47,7 @@ export function installDemoBackend(): void {
     emit: (event, payload, target) => {
       backend.emit(event, payload, target)
     },
+    invoke: (cmd, payload) => backend.invoke(cmd, payload),
     windows: backend.windows,
   })
 }

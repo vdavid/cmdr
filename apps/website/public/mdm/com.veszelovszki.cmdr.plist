@@ -53,5 +53,9 @@
     <!-- true: the security event log (a local file of security-relevant changes and refusals) stays on, and users can't turn it off. -->
     <key>DisableSecurityLogOptOut</key>
     <false/>
+
+    <!-- true: every connection Cmdr makes to an SMB share is encrypted, and Cmdr doesn't connect to a server that can't encrypt (guest connections can't). Users can't turn "Always require SMB encryption" off. -->
+    <key>RequireSMBEncryption</key>
+    <false/>
 </dict>
 </plist>

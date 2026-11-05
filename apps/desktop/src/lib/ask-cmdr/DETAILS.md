@@ -107,7 +107,14 @@ stays simple:
   the `failed` event carry it as `managed` beside the unit kind. `askCmdr.error.managedByOrganization` is the fallback
   when none came. `requestTooLarge` (HTTP 413: the plan's limit is under one request, Groq's free tier) names the
   provider: the item stores the preset's brand name as `provider`, read from settings when the turn fails so a later
-  provider switch can't rename it, and a local server or custom endpoint gets the unnamed line.
+  provider switch can't rename it, and a local server or custom endpoint gets the unnamed line. `modelNotInPlan` and
+  `providerBusy` (overloaded through every retry) name it the same way (`NAMES_THE_PROVIDER`).
+- `providerBusyRetrying` → the provider turned the call away as overloaded and the backend waits to try it again: the
+  bubble's `busy` (`{ attempt, attempts, provider }`) shows "{provider} is busy right now. Trying again (2 of 4)…" in
+  place of "thinking…" and the stall line, and the event resets the watchdog (the wait is reported progress). The next
+  `textDelta`, `reasoningTick`, or `toolCallStarted`, a spend pause, Stop, or the turn's end clears it. Live only: a
+  reload mid-wait shows the plain working state until the next event. Backend: `src-tauri/src/agent/chat/DETAILS.md` § A
+  busy provider.
 - `stopped` → the backend's terminal for a cancelled turn. After the rail's own Stop it settles the stopped bubble (§
   Stop is local first). With no stop pending here (the status corner stopped a wake) it ends the turn like `done`
   (`endTurn`: stats, finalize, `streaming = false`, the review), so the watchdog never calls an ended turn a timeout.

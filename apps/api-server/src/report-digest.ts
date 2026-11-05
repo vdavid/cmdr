@@ -5,7 +5,7 @@
  *
  * Runs after the outbox on the same tick, so the cards it links were filed seconds earlier.
  *
- * ❗ Stamps AFTER the send. `sendViaResend` throws on a rejected send, so a failure leaves every row
+ * ❗ Stamps AFTER the send. `sendEmail` throws on a failed send, so a failure leaves every row
  * unstamped and the next tick retries it in a bigger digest. Stamping first would drop the alert
  * permanently, and a dead credential is exactly when that happens.
  */
@@ -15,7 +15,8 @@ import type { CrashFate } from './email/crash'
 import type { FeedbackEmailLogs } from './email/feedback'
 import type { BoardCard } from './email/layout'
 import { humanReportRecipient } from './email/send'
-import { SIGNUP_KINDS, type OpsEventKind } from './ops-events'
+// Signups are the morning brief's to count, never an alert, so the digest neither mails nor stamps them.
+import { NOT_A_SIGNUP, type OpsEventKind } from './ops-events'
 import { parseOsFrames } from './report-outbox'
 import { PRESIGN_TTL_HOURS, buildPresignedUrl } from './telemetry/error-report'
 import type { Bindings } from './types'
@@ -111,9 +112,6 @@ interface PendingRows {
   feedback: FeedbackRow[]
   opsAlerts: OpsRow[]
 }
-
-/** Signups are the morning brief's to count, never an alert, so the digest neither mails nor stamps them. */
-const NOT_A_SIGNUP = `kind NOT IN (${SIGNUP_KINDS.map((kind) => `'${kind}'`).join(', ')})`
 
 async function readPending(db: D1Database): Promise<PendingRows> {
   const crashes = await db
@@ -313,10 +311,10 @@ async function stamp(db: D1Database, table: string, ids: number[], now: string):
     .run()
 }
 
-/** Mail whatever arrived since the last digest. A silent no-op without a recipient or a Resend key. */
+/** Mail whatever arrived since the last digest. A silent no-op without a recipient or an SMTP2Go key. */
 export async function handleReportDigest(env: Bindings): Promise<void> {
   const to = humanReportRecipient(env)
-  if (!to || !env.RESEND_API_KEY) return
+  if (!to || !env.SMTP2GO_API_KEY) return
 
   const pending = await readPending(env.TELEMETRY_DB)
   const { alerts, quiet } = splitBelowThreshold(pending.opsAlerts)
@@ -328,7 +326,7 @@ export async function handleReportDigest(env: Bindings): Promise<void> {
     return
   }
 
-  await sendReportDigestEmail({ content, to, resendApiKey: env.RESEND_API_KEY })
+  await sendReportDigestEmail({ content, to, smtp2goApiKey: env.SMTP2GO_API_KEY })
 
   const now = new Date().toISOString()
   await stamp(

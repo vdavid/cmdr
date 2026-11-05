@@ -94,6 +94,13 @@ pub enum ShareListError {
         /// Diagnostic detail, for logs.
         message: String,
     },
+    /// Cmdr requires encryption ([`crate::SmbEncryption`]) and this connection can't have it:
+    /// the server agreed on no cipher, or it answered with a guest session, which has no keys.
+    /// ❌ Never a fallback to another client: the CLI fallback ignores the requirement.
+    EncryptionRequired {
+        /// Diagnostic detail, for logs.
+        message: String,
+    },
     /// The exchange broke down in a way none of the other variants describes.
     ProtocolError {
         /// Diagnostic detail, for logs.
@@ -125,6 +132,7 @@ impl std::fmt::Display for ShareListError {
             Self::SignatureInvalid { message } => write!(f, "Reply refused for its signature: {}", message),
             Self::NegotiationInvalid { message } => write!(f, "Negotiation not confirmed: {}", message),
             Self::EncryptionUnavailable { message } => write!(f, "Encryption unavailable: {}", message),
+            Self::EncryptionRequired { message } => write!(f, "Encryption required by Cmdr: {}", message),
             Self::ProtocolError { message } => write!(f, "Protocol error: {}", message),
             Self::ResolutionFailed { message } => write!(f, "Resolution failed: {}", message),
             Self::MissingDependency { message, .. } => write!(f, "Missing dependency: {}", message),

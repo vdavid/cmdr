@@ -32,7 +32,7 @@ interface FakeLayout {
  * Lays `text` out on a monospace grid that wraps after `cols` cells, one cell per UTF-16
  * code unit (so an astral codepoint spans two cells, exactly as it spans two units).
  */
-function monospaceLayout(text: string, cols = Number.POSITIVE_INFINITY): FakeLayout {
+function monospaceLayout(text: string, cols = Number.POSITIVE_INFINITY, leading = 0): FakeLayout {
   const boxes: CharBox[] = []
   let row = 0
   let col = 0
@@ -49,8 +49,8 @@ function monospaceLayout(text: string, cols = Number.POSITIVE_INFINITY): FakeLay
       rect: {
         left: LEFT + col * CHAR_W,
         right: LEFT + (col + units) * CHAR_W,
-        top: TOP + row * ROW_H,
-        bottom: TOP + (row + 1) * ROW_H,
+        top: TOP + row * ROW_H + leading,
+        bottom: TOP + (row + 1) * ROW_H - leading,
       },
     })
     col += units
@@ -112,10 +112,40 @@ describe('findOffsetByGeometry', () => {
     expect(findOffsetByGeometry({ ...layout, x: colStartX(3), y: rowY(0) })).toBe(3)
   })
 
-  it('resolves a point above the first row to 0 and below the last row to the line end', () => {
+  it('snaps a point above the first row onto it and one below the last row onto that', () => {
+    // Past the rendered rows is the caller's call (`viewer-pointer.ts`); here x still counts.
     const layout = monospaceLayout('abcdefghij', 4)
-    expect(findOffsetByGeometry({ ...layout, x: colStartX(2), y: TOP - 50 })).toBe(0)
-    expect(findOffsetByGeometry({ ...layout, x: colStartX(2), y: TOP + 500 })).toBe(10)
+    expect(findOffsetByGeometry({ ...layout, x: colStartX(2), y: TOP - 50 })).toBe(2)
+    expect(findOffsetByGeometry({ ...layout, x: colStartX(1), y: TOP + 500 })).toBe(9)
+    expect(findOffsetByGeometry({ ...layout, x: 4000, y: TOP + 500 })).toBe(10)
+  })
+
+  describe('glyph boxes shorter than the row pitch (the leading between visual rows)', () => {
+    // A text Range's rect is the font's ascent + descent, not the line box, so the
+    // half-leading above and below each visual row belongs to no character. "abcd" /
+    // "efgh" / "ij" at four columns, with 3 px of leading on each side of every row.
+    const LEADING = 3
+    const rowTop = (row: number): number => TOP + row * ROW_H
+    const layout = (): FakeLayout => monospaceLayout('abcdefghij', 4, LEADING)
+
+    it('keeps x when the point sits in the leading between two rows (#962)', () => {
+      // Upper half of the gap under row 0 is nearer row 0, the lower half nearer row 1.
+      expect(findOffsetByGeometry({ ...layout(), x: colStartX(2), y: rowTop(1) - 1 })).toBe(2)
+      expect(findOffsetByGeometry({ ...layout(), x: colStartX(2), y: rowTop(1) + 1 })).toBe(6)
+    })
+
+    it('keeps x in the leading above the first row and below the last', () => {
+      expect(findOffsetByGeometry({ ...layout(), x: colStartX(1), y: rowTop(0) + 1 })).toBe(1)
+      expect(findOffsetByGeometry({ ...layout(), x: colStartX(1), y: rowTop(3) - 1 })).toBe(9)
+    })
+
+    it('two points in the same gap at different x resolve to different offsets', () => {
+      // The #962 symptom: both ends of a drag collapsed onto the wrap point.
+      const y = rowTop(1)
+      const from = findOffsetByGeometry({ ...layout(), x: colStartX(0), y })
+      const to = findOffsetByGeometry({ ...layout(), x: colStartX(3), y })
+      expect(to - from).toBe(3)
+    })
   })
 
   it('never splits a surrogate pair', () => {

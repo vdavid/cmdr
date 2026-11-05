@@ -441,6 +441,7 @@
   },
   "busy": {
     "accept": ["upptaget", "upptagna"],
+    "proseAccept": ["fullt upp", "för mycket att göra"],
     "chosen": "upptagen",
     "confidence": "high",
     "decision": "Eject and disconnect errors",
@@ -1172,8 +1173,9 @@
     "sources": "macOS/Nautilus (teckenkodning)"
   },
   "encrypted": {
-    "accept": ["krypterat", "krypterade", "kryptering"],
+    "accept": ["krypterat", "krypterade", "kryptering", "kryptera"],
     "chosen": "krypterad",
+    "forms": "the verb kryptera / krypterar / krypteras (Cmdr krypterar sina anslutningar); the setting Kräv alltid SMB-kryptering",
     "confidence": "high",
     "sources": "standard Swedish IT"
   },
@@ -2149,7 +2151,8 @@
       "fileExplorer.network.osMountFallback.otherServerNotAllowed": "macOS inbyggda SMB-anslutning drops network on purpose: SMB is a network, and a triple compound reads heavy.",
       "fileExplorer.network.osMountFallback.shareNotOnServer": "macOS inbyggda SMB-anslutning drops network on purpose: SMB is a network, and a triple compound reads heavy.",
       "fileExplorer.network.osMountFallback.negotiationInvalid": "macOS inbyggda SMB-anslutning drops network on purpose: SMB is a network, and a triple compound reads heavy.",
-      "fileExplorer.network.osMountFallback.encryptionUnavailable": "macOS inbyggda SMB-anslutning drops network on purpose: SMB is a network, and a triple compound reads heavy."
+      "fileExplorer.network.osMountFallback.encryptionUnavailable": "macOS inbyggda SMB-anslutning drops network on purpose: SMB is a network, and a triple compound reads heavy.",
+      "fileExplorer.network.osMountFallback.encryptionRequired": "macOS inbyggda SMB-anslutning drops network on purpose: SMB is a network, and a triple compound reads heavy."
     },
     "forms": "the volume-switcher group Nätverk; network hosts → nätverksvärdar",
     "sources": "macOS, MS"

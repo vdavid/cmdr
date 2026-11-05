@@ -2449,6 +2449,10 @@
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "ea3a52f"
   },
+  "errors.shareList.encryptionRequired": "‘{server}’ kan deze verbinding niet versleutelen, en in Cmdr staat ‘Altijd SMB-versleuteling vereisen’ aan. Controleer de SMB-versleutelingsinstellingen van de server.",
+  "@errors.shareList.encryptionRequired": {
+    "sourceHash": "4dff9ea"
+  },
   "errors.shareList.protocolError": "Er ging iets mis bij het opvragen van de gedeelde mappen van ‘{server}’. Probeer het zo meteen opnieuw.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

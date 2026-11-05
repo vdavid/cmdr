@@ -1,0 +1,514 @@
+//! Assembles a `SearchQuery` from parsed LLM output and generates display values.
+//!
+//! This is the orchestrator: it calls mapping functions from `mappings` to convert
+//! individual fields, then assembles the results into a complete `SearchQuery`.
+
+use crate::types::{PatternType, SearchQuery};
+
+use super::types::{TranslateDisplay, TranslatedQuery};
+
+use super::mappings::{
+    LocalDays, keywords_to_pattern, merge_keyword_and_type, parse_exclude_list, scope_to_paths, size_to_filter,
+    time_to_range, type_to_filter,
+};
+use super::parser::ParsedLlmResponse;
+
+// ── ISO date conversion ──────────────────────────────────────────────
+
+/// The instant an ISO date (YYYY-MM-DD) starts on the user's local calendar, in
+/// seconds since the Unix epoch. An MCP client's `modifiedAfter: "2025-01-01"` means
+/// the user's day, the same day the dialog's date filter and the AI's "today" mean
+/// (`crate::local_days`). `days` is the user's calendar, the host's.
+pub fn iso_date_to_timestamp(date_str: &str, days: &impl LocalDays) -> Result<u64, String> {
+    let format = time::macros::format_description!("[year]-[month]-[day]");
+    let date = time::Date::parse(date_str, &format).map_err(|e| format!("Invalid date '{date_str}': {e}"))?;
+    if date.year() < 1970 {
+        return Err(format!("Date '{date_str}' is before unix epoch"));
+    }
+    Ok(days.midnight(date))
+}
+
+// ── Assembly ─────────────────────────────────────────────────────────
+
+/// Build a `SearchQuery` from a parsed LLM response. `days` is the user's calendar
+/// (what "today" means) and `home` their home folder (what `downloads` and `~` mean),
+/// both the host's.
+pub fn build_search_query(parsed: &ParsedLlmResponse, days: &impl LocalDays, home: Option<&str>) -> SearchQuery {
+    let type_filter = parsed.type_field.as_deref().and_then(type_to_filter);
+    let (time_after, time_before) = parsed
+        .time
+        .as_deref()
+        .map(|t| time_to_range(t, days))
+        .unwrap_or_default();
+    let (size_min, size_max) = parsed.size.as_deref().map(size_to_filter).unwrap_or_default();
+    let scope = parsed.scope.as_deref().map(|s| scope_to_paths(s, home));
+    let exclude = parsed.exclude.as_deref().map(parse_exclude_list);
+    let is_dir = parsed.folders.as_deref().map(|f| f == "yes");
+
+    // Build keyword pattern
+    let kw = parsed.keywords.as_deref().and_then(keywords_to_pattern);
+
+    // Handle dotfiles scope name_prefix: if no keywords, add `.*` glob for dotfile prefix
+    let kw = match (&kw, &scope) {
+        (None, Some(s)) if s.name_prefix == Some(".") => Some((".*".to_string(), PatternType::Glob)),
+        _ => kw,
+    };
+
+    // Merge keywords + type into a single name_pattern + pattern_type
+    let (name_pattern, pattern_type) = merge_keyword_and_type(kw, type_filter.as_ref());
+
+    let include_system_dirs = type_filter.as_ref().is_some_and(|f| f.include_system_dirs);
+
+    SearchQuery {
+        name_pattern,
+        pattern_type,
+        min_size: size_min,
+        max_size: size_max,
+        modified_after: time_after,
+        modified_before: time_before,
+        is_directory: is_dir,
+        include_paths: scope.as_ref().map(|s| s.paths.clone()),
+        exclude_dir_names: exclude,
+        include_path_ids: None,
+        count_only: false,
+        limit: 30,
+        case_sensitive: None,
+        exclude_system_dirs: if include_system_dirs { Some(false) } else { None },
+        sort_by: None,
+    }
+}
+
+// ── Caveat generation ────────────────────────────────────────────────
+
+/// Generate a caveat string based on the parsed LLM response and built query.
+///
+/// Priority: LLM-provided note (truncated 200 chars) > Rust-inferred caveats.
+pub fn generate_caveat(parsed: &ParsedLlmResponse, query: &SearchQuery) -> Option<String> {
+    // LLM provided a note → use it (sanitized: max 200 chars, no HTML)
+    if let Some(note) = &parsed.note {
+        let sanitized: String = note.chars().filter(|c| *c != '<' && *c != '>').take(200).collect();
+        return Some(sanitized);
+    }
+    // No name pattern → very broad search
+    if query.name_pattern.is_none() {
+        return Some(
+            "No filename filter \u{2014} results may be very broad. Add a name or file type to narrow.".into(),
+        );
+    }
+    None
+}
+
+// ── Display value generation ─────────────────────────────────────────
+
+/// Build human-readable display values for the frontend filter UI. Dates read on the
+/// user's calendar (`days`), the one their boundaries were computed on: a range from
+/// local midnight on 2026-10-01 shows "2026-10-01" in every zone.
+pub fn build_translate_display(
+    parsed: &ParsedLlmResponse,
+    query: &SearchQuery,
+    days: &impl LocalDays,
+) -> TranslateDisplay {
+    let local_date = |at: u64| {
+        let format = time::macros::format_description!("[year]-[month]-[day]");
+        let date = days.date_of(at);
+        date.format(&format).unwrap_or_else(|_| date.to_string())
+    };
+    TranslateDisplay {
+        name_pattern: query.name_pattern.clone(),
+        pattern_type: Some(match query.pattern_type {
+            PatternType::Glob => "glob".to_string(),
+            PatternType::Regex => "regex".to_string(),
+        }),
+        min_size: query.min_size,
+        max_size: query.max_size,
+        modified_after: query.modified_after.map(local_date),
+        modified_before: query.modified_before.map(local_date),
+        is_directory: query.is_directory,
+        include_paths: query.include_paths.clone(),
+        exclude_dir_names: query.exclude_dir_names.clone(),
+        case_sensitive: parsed.type_field.as_deref().and(query.case_sensitive),
+    }
+}
+
+// ── Label generation ─────────────────────────────────────────────────
+
+/// Maximum visible characters for a snapshot label. Anything longer gets
+/// truncated with a single-char ellipsis. Mirrors `AI_LABEL_MAX_CHARS` in
+/// `lib/search/snapshot-label.ts`; the two values are kept identical so
+/// truncation behaves the same regardless of whether the label came from the
+/// LLM (this helper) or the frontend fallback path.
+const LABEL_MAX_CHARS: usize = 40;
+
+/// Returns the LLM-produced snapshot label, trimmed and truncated to fit the
+/// breadcrumb. Returns `None` when the LLM omitted the field or the value is
+/// blank after trimming (the frontend then falls back to the original prompt).
+pub fn build_label(parsed: &ParsedLlmResponse) -> Option<String> {
+    let raw = parsed.label.as_deref()?.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    // Strip trailing punctuation the LLM might add despite the prompt rule.
+    let trimmed = raw.trim_end_matches(['.', '!', '?', ';', ':', ',']).trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(truncate_chars(trimmed, LABEL_MAX_CHARS))
+}
+
+/// Truncates `text` to at most `max` chars (Unicode scalars), appending a
+/// single-char ellipsis when a cut happens. Trailing whitespace before the
+/// ellipsis is removed so the visible label still reads cleanly.
+fn truncate_chars(text: &str, max: usize) -> String {
+    if text.chars().count() <= max {
+        return text.to_string();
+    }
+    // Reserve one char for the ellipsis so the visible width stays at `max`.
+    let keep = max.saturating_sub(1).max(1);
+    let kept: String = text.chars().take(keep).collect();
+    let mut trimmed = kept.trim_end().to_string();
+    trimmed.push('\u{2026}');
+    trimmed
+}
+
+/// Build a `TranslatedQuery` from a `SearchQuery` (for IPC serialization).
+pub fn build_translated_query(query: &SearchQuery) -> TranslatedQuery {
+    TranslatedQuery {
+        name_pattern: query.name_pattern.clone(),
+        pattern_type: match query.pattern_type {
+            PatternType::Glob => "glob".to_string(),
+            PatternType::Regex => "regex".to_string(),
+        },
+        min_size: query.min_size,
+        max_size: query.max_size,
+        modified_after: query.modified_after,
+        modified_before: query.modified_before,
+        is_directory: query.is_directory,
+        include_paths: query.include_paths.clone(),
+        exclude_dir_names: query.exclude_dir_names.clone(),
+        case_sensitive: query.case_sensitive,
+        exclude_system_dirs: query.exclude_system_dirs,
+    }
+}
+
+// ── Tests ────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::super::mappings::FixedZone;
+    use super::*;
+
+    /// The assembler on a fixed calendar and home, so every test reads the same on
+    /// any machine.
+    fn build_search_query(parsed: &ParsedLlmResponse) -> SearchQuery {
+        super::build_search_query(parsed, &zone(3_600), Some("/Users/test"))
+    }
+
+    // ── Assembly ─────────────────────────────────────────────────────
+
+    #[test]
+    fn build_full_query() {
+        let parsed = ParsedLlmResponse {
+            keywords: Some("rymd".to_string()),
+            type_field: Some("documents".to_string()),
+            time: Some("recent".to_string()),
+            size: Some("large".to_string()),
+            scope: Some("downloads".to_string()),
+            exclude: Some("node_modules .git".to_string()),
+            folders: Some("no".to_string()),
+            note: None,
+            label: Some("Recent rymd docs".to_string()),
+        };
+        let query = build_search_query(&parsed);
+        assert!(query.name_pattern.is_some());
+        assert_eq!(query.pattern_type, PatternType::Regex);
+        assert!(query.min_size.is_some());
+        assert!(query.modified_after.is_some());
+        assert_eq!(query.is_directory, Some(false));
+        assert!(query.include_paths.is_some());
+        assert!(query.exclude_dir_names.is_some());
+        assert_eq!(query.exclude_dir_names.as_ref().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn build_logs_type_includes_system_dirs() {
+        let parsed = ParsedLlmResponse {
+            type_field: Some("logs".to_string()),
+            ..Default::default()
+        };
+        let query = build_search_query(&parsed);
+        assert_eq!(query.exclude_system_dirs, Some(false));
+    }
+
+    #[test]
+    fn build_dotfiles_scope() {
+        let parsed = ParsedLlmResponse {
+            scope: Some("dotfiles".to_string()),
+            ..Default::default()
+        };
+        let query = build_search_query(&parsed);
+        assert!(query.include_paths.is_some());
+        // Should have a name pattern for dotfiles (starts with ".")
+        assert!(query.name_pattern.is_some());
+    }
+
+    #[test]
+    fn build_folders_yes() {
+        let parsed = ParsedLlmResponse {
+            keywords: Some("node_modules".to_string()),
+            folders: Some("yes".to_string()),
+            ..Default::default()
+        };
+        let query = build_search_query(&parsed);
+        assert_eq!(query.is_directory, Some(true));
+    }
+
+    // ── Caveat generation ────────────────────────────────────────────
+
+    #[test]
+    fn caveat_from_llm_note() {
+        let parsed = ParsedLlmResponse {
+            note: Some("can't filter by photo content".to_string()),
+            ..Default::default()
+        };
+        let query = build_search_query(&parsed);
+        let caveat = generate_caveat(&parsed, &query);
+        assert_eq!(caveat.as_deref(), Some("can't filter by photo content"));
+    }
+
+    #[test]
+    fn caveat_truncated_at_200_chars() {
+        let long_note = "a".repeat(300);
+        let parsed = ParsedLlmResponse {
+            note: Some(long_note),
+            ..Default::default()
+        };
+        let query = build_search_query(&parsed);
+        let caveat = generate_caveat(&parsed, &query).unwrap();
+        assert_eq!(caveat.len(), 200);
+    }
+
+    #[test]
+    fn caveat_no_name_pattern() {
+        let parsed = ParsedLlmResponse {
+            size: Some("large".to_string()),
+            ..Default::default()
+        };
+        let query = build_search_query(&parsed);
+        let caveat = generate_caveat(&parsed, &query);
+        assert!(caveat.is_some());
+        assert!(caveat.unwrap().contains("No filename filter"));
+    }
+
+    #[test]
+    fn caveat_none_when_has_pattern() {
+        let parsed = ParsedLlmResponse {
+            keywords: Some("test".to_string()),
+            ..Default::default()
+        };
+        let query = build_search_query(&parsed);
+        let caveat = generate_caveat(&parsed, &query);
+        assert!(caveat.is_none());
+    }
+
+    // ── Display values ───────────────────────────────────────────────
+
+    #[test]
+    fn display_values_populated() {
+        let parsed = ParsedLlmResponse {
+            keywords: Some("test".to_string()),
+            type_field: Some("rust".to_string()),
+            time: Some("today".to_string()),
+            size: Some("large".to_string()),
+            ..Default::default()
+        };
+        let query = build_search_query(&parsed);
+        let display = build_translate_display(&parsed, &query, &zone(3_600));
+        assert!(display.name_pattern.is_some());
+        assert_eq!(display.pattern_type.as_deref(), Some("regex"));
+        assert!(display.min_size.is_some());
+        assert!(display.modified_after.is_some());
+    }
+
+    // ── Fallback integration ─────────────────────────────────────────
+
+    #[test]
+    fn empty_llm_response_produces_empty_parsed() {
+        let parsed = ParsedLlmResponse::default();
+        assert!(parsed.is_empty());
+    }
+
+    #[test]
+    fn partial_llm_response_builds_partial_query() {
+        let parsed = ParsedLlmResponse {
+            time: Some("recent".to_string()),
+            ..Default::default()
+        };
+        let query = build_search_query(&parsed);
+        // Only time filter set
+        assert!(query.modified_after.is_some());
+        assert!(query.name_pattern.is_none());
+        assert!(query.min_size.is_none());
+    }
+
+    // ── Label generation ─────────────────────────────────────────────
+
+    #[test]
+    fn label_passes_short_value() {
+        let parsed = ParsedLlmResponse {
+            label: Some("Big PDFs from this week".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(build_label(&parsed).as_deref(), Some("Big PDFs from this week"));
+    }
+
+    #[test]
+    fn label_truncates_long_value() {
+        let parsed = ParsedLlmResponse {
+            label: Some("a".repeat(80)),
+            ..Default::default()
+        };
+        let label = build_label(&parsed).unwrap();
+        assert_eq!(label.chars().count(), LABEL_MAX_CHARS);
+        assert!(label.ends_with('\u{2026}'));
+    }
+
+    #[test]
+    fn label_strips_trailing_punctuation() {
+        let parsed = ParsedLlmResponse {
+            label: Some("Recent invoices.".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(build_label(&parsed).as_deref(), Some("Recent invoices"));
+    }
+
+    #[test]
+    fn label_returns_none_when_missing() {
+        let parsed = ParsedLlmResponse::default();
+        assert!(build_label(&parsed).is_none());
+    }
+
+    #[test]
+    fn label_returns_none_when_blank() {
+        let parsed = ParsedLlmResponse {
+            label: Some("   ".to_string()),
+            ..Default::default()
+        };
+        assert!(build_label(&parsed).is_none());
+    }
+
+    #[test]
+    fn label_handles_unicode_width() {
+        // 40 emoji should pass through; 41 should truncate to 39 emoji + ellipsis.
+        let s40: String = "🦀".repeat(40);
+        let p = ParsedLlmResponse {
+            label: Some(s40.clone()),
+            ..Default::default()
+        };
+        assert_eq!(build_label(&p).unwrap().chars().count(), 40);
+
+        let s41: String = "🦀".repeat(41);
+        let p = ParsedLlmResponse {
+            label: Some(s41),
+            ..Default::default()
+        };
+        let out = build_label(&p).unwrap();
+        assert_eq!(out.chars().count(), LABEL_MAX_CHARS);
+        assert!(out.ends_with('\u{2026}'));
+    }
+
+    // ── A whole translation, pinned ──────────────────────────────────
+
+    /// One model reply, start to finish, over a fixed "now" and home: every value the
+    /// mappings compute, so a change to any of them shows here.
+    #[test]
+    fn a_reply_translates_to_the_same_query_every_time() {
+        let reply = "keywords: invoice\ntype: documents\ntime: last_month\nsize: >2mb\nscope: downloads\nexclude: node_modules\nfolders: no\nlabel: Last month's invoices";
+        let parsed = super::super::parser::parse_llm_response(reply);
+        let query = build_search_query(&parsed);
+        let translated = serde_json::to_value(build_translated_query(&query)).expect("serializes");
+        let display = serde_json::to_value(build_translate_display(&parsed, &query, &zone(3_600))).expect("serializes");
+        assert_eq!(
+            translated,
+            serde_json::json!({
+                "namePattern": "(?is)invoice.*\\.(pdf|doc|docx|txt|odt|xls|xlsx)",
+                "patternType": "regex",
+                "minSize": 2_000_000,
+                "maxSize": null,
+                // 2026-10-01 and 2026-11-01 at 00:00, UTC+1.
+                "modifiedAfter": 1_790_809_200,
+                "modifiedBefore": 1_793_487_600,
+                "isDirectory": false,
+                "includePaths": ["/Users/test/Downloads"],
+                "excludeDirNames": ["node_modules"],
+                "caseSensitive": null,
+                "excludeSystemDirs": null,
+            })
+        );
+        // The chip shows the user's days: the range starts on 2026-10-01 and ends at 2026-11-01.
+        assert_eq!(display["modifiedAfter"], "2026-10-01");
+        assert_eq!(display["modifiedBefore"], "2026-11-01");
+        assert_eq!(build_label(&parsed).as_deref(), Some("Last month's invoices"));
+        assert!(
+            query.name_pattern.as_deref().is_some_and(|p| p.contains("invoice")),
+            "{:?}",
+            query.name_pattern
+        );
+    }
+
+    /// A range's chips read as the user's days on either side of UTC, and across a
+    /// summer-time change inside the range.
+    #[test]
+    fn the_date_chips_read_on_the_users_calendar() {
+        let parsed = ParsedLlmResponse {
+            time: Some("last_month".to_string()),
+            ..Default::default()
+        };
+        let stockholm = FixedZone {
+            today: time::macros::date!(2026 - 11 - 04),
+            offset_secs: 7_200,
+            switch_on: Some((time::macros::date!(2026 - 10 - 25), 3_600)),
+        };
+        for (name, days) in [("west", zone(-18_000)), ("east, across DST", stockholm)] {
+            let query = super::build_search_query(&parsed, &days, None);
+            let display = build_translate_display(&parsed, &query, &days);
+            assert_eq!(display.modified_after.as_deref(), Some("2026-10-01"), "{name}");
+            assert_eq!(display.modified_before.as_deref(), Some("2026-11-01"), "{name}");
+        }
+    }
+
+    // ── ISO date conversion ──────────────────────────────────────────
+
+    fn zone(offset_secs: i64) -> FixedZone {
+        FixedZone {
+            today: time::macros::date!(2026 - 11 - 04),
+            offset_secs,
+            switch_on: None,
+        }
+    }
+
+    #[test]
+    fn an_iso_date_starts_at_the_users_local_midnight() {
+        // 2025-01-01 00:00 in Stockholm (UTC+1) is 2024-12-31 23:00 UTC.
+        assert_eq!(
+            iso_date_to_timestamp("2025-01-01", &zone(3_600)),
+            Ok(1_735_689_600 - 3_600)
+        );
+        // 2026-06-15 00:00 at UTC+2 (summer time).
+        assert_eq!(
+            iso_date_to_timestamp("2026-06-15", &zone(7_200)),
+            Ok(1_781_481_600 - 7_200)
+        );
+        // West of UTC the day starts later.
+        assert_eq!(
+            iso_date_to_timestamp("2025-01-01", &zone(-18_000)),
+            Ok(1_735_689_600 + 18_000)
+        );
+    }
+
+    #[test]
+    fn an_iso_date_that_isnt_a_calendar_date_is_refused() {
+        assert!(iso_date_to_timestamp("not-a-date", &zone(0)).is_err());
+        assert!(iso_date_to_timestamp("2025-13-01", &zone(0)).is_err());
+        assert!(iso_date_to_timestamp("2025-01-32", &zone(0)).is_err());
+    }
+}

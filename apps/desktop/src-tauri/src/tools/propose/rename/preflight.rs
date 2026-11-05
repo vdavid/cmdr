@@ -258,6 +258,9 @@ fn expired_preflight() -> BulkRenamePreflight {
     }
 }
 
+/// Whether preflight scans with `std::fs` on a pool thread (the boot disk) or awaits the volume's
+/// own `get_metadata` (everything else). Preflight's question only: the plan boundary stats every
+/// volume the same way, through the volume (`sources.rs`).
 pub(super) fn volume_uses_local_paths(volume_id: &str) -> bool {
     volume_id == "root"
 }

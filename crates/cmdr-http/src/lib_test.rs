@@ -268,3 +268,37 @@ async fn no_proxy_sends_a_host_direct_past_both_proxies() {
     assert!(body(&client, "http://cmdr.invalid/z").await.is_err());
     assert!(proxy_seen.lock().expect("an unpoisoned test log").is_empty());
 }
+
+/// A system layer that records each URL reqwest asks about and answers direct.
+#[derive(Default)]
+struct RecordingSystem(Mutex<Vec<Url>>);
+
+impl SystemProxies for RecordingSystem {
+    fn route(&self, url: &Url) -> Route {
+        self.0.lock().expect("an unpoisoned test log").push(url.clone());
+        Route::Direct
+    }
+}
+
+#[tokio::test]
+async fn the_pac_warm_up_asks_about_a_url_exactly_as_reqwest_does() {
+    // The PAC cache is keyed on the URL reqwest's `Proxy::custom` hands over, so a warm-up under
+    // any other form would warm an entry no request reads.
+    for request in [
+        "https://cmdr.invalid/heartbeat?x=1",
+        "https://cmdr.invalid:443/a",
+        "http://cmdr.invalid:8080/a/b",
+    ] {
+        let system = Arc::new(RecordingSystem::default());
+        let client = builder_with(env(&[]), system.clone()).build().expect("a client");
+        // A `.invalid` host can't resolve; only the routing question matters here.
+        assert!(body(&client, request).await.is_err());
+        let asked = system.0.lock().expect("an unpoisoned test log").clone();
+        assert!(!asked.is_empty(), "reqwest never asked about {request}");
+        assert!(
+            asked.iter().all(|url| Some(url) == as_asked(request).as_ref()),
+            "{request}: reqwest asked {asked:?}, the warm-up asks {:?}",
+            as_asked(request)
+        );
+    }
+}

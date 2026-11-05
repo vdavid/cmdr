@@ -531,9 +531,9 @@ A waiting row's grip (`grip-vertical`, left of its checkbox) drags it among the 
 
 ## The row's right-click menu
 
-A native muda menu (`apps/desktop/src-tauri/src/menu/queue_row_menu.rs`), per `docs/guides/building-ui.md` § Building a
-menu: plain rows, opened by a right-click on a backend object. Right-clicking puts the cursor on the row first, as in
-any list.
+A native muda menu (its rows are `crates/cmdr-menu/src/context/popups.rs`'s `queue_row_menu`), per
+`docs/guides/building-ui.md` § Building a menu: plain rows, opened by a right-click on a backend object. Right-clicking
+puts the cursor on the row first, as in any list.
 
 - **Every row**: Move up (⌥↑), Move down (⌥↓), divider, Select (Space, ticked while the row is selected), divider,
   Cancel (C), or Dismiss (⌫) on a failure. **A running or paused row** leads with Show (↩) and Pause or Resume (P), then

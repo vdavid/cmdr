@@ -1,11 +1,11 @@
 //! Persistent recent-selections store for the Selection dialog.
 //!
 //! The list machinery lives in `crate::recents`; this module owns the entry shape
-//! and the canonical key. Both come from `crate::search::history` narrowed:
+//! and the canonical key. Both come from `cmdr_search::history` narrowed:
 //! Selection runs in the focused folder only, so there's no `scope` and no
 //! `exclude_system_dirs`.
 //!
-//! [`HistoryMode`] and [`HistoryFilters`] are re-exported from `crate::search::history`
+//! [`HistoryMode`] and [`HistoryFilters`] are re-exported from `cmdr_search::history`
 //! so the frontend renders mode badges and filter chips the same way for both
 //! consumers. The entry struct stays separate, so the on-disk schema doesn't bind
 //! Selection to Search's canonical-key shape.
@@ -13,12 +13,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::recents::{RecentEntry, RecentsFile};
-use crate::search::history::{filters_fingerprint, flag, normalize_query};
+use cmdr_recents::RecentItem;
+use cmdr_search::history::{filters_fingerprint, flag, normalize_query};
 
 // Re-export the shared types so the frontend bindings see the same wire shape for both
-// consumers. Keeping these in `search::history` (rather than splitting into a third
-// "history-shared" module) avoids churn until a future consumer actually needs them.
-pub use crate::search::history::{HistoryFilters, HistoryMode};
+// consumers.
+pub use cmdr_search::history::{HistoryFilters, HistoryMode};
 
 /// Default cap when the user hasn't tuned `selection.recentSelections.maxCount`.
 pub const DEFAULT_MAX_COUNT: usize = 1000;
@@ -50,7 +50,9 @@ impl RecentEntry for SelectionHistoryEntry {
     const LOG_TARGET: &'static str = "selection::history";
     const LOG_NAME: &'static str = "selection history";
     const STATE_FILE: crate::state_recovery::StateFile = crate::state_recovery::StateFile::SelectionHistory;
+}
 
+impl RecentItem for SelectionHistoryEntry {
     fn id(&self) -> &str {
         &self.id
     }

@@ -14,7 +14,7 @@ export type Bindings = {
   // Workers rate-limit binding gating POST /heartbeat, keyed by the caller IP (never stored).
   // Optional so tests and incomplete envs can omit it; the route skips the gate when absent.
   HEARTBEAT_LIMITER?: RateLimit
-  // Workers rate-limit binding gating POST /beta-signup and /newsletter-signup (one shared window),
+  // Workers rate-limit binding gating every Listmonk signup route (one shared window),
   // keyed by the caller IP (never stored). Tighter than the heartbeat (signups are rare). Optional;
   // the routes skip the gate when absent.
   SIGNUP_LIMITER?: RateLimit
@@ -67,7 +67,7 @@ export type Bindings = {
   // deployed environment.
   IP_HASH_PEPPER?: string
   // Email
-  RESEND_API_KEY: string
+  SMTP2GO_API_KEY: string
   // Config
   PRODUCT_NAME: string
   SUPPORT_EMAIL: string
@@ -118,9 +118,12 @@ export type Bindings = {
   R2_ACCOUNT_ID?: string
   R2_ACCESS_KEY_ID?: string
   R2_SECRET_ACCESS_KEY?: string
-  // R2 bucket name (used in presigned URL host/path). Defaults to "cmdr-error-reports".
+  // R2 bucket name (used in the presigned URL path). Defaults to "cmdr-error-reports".
   R2_ERROR_REPORTS_BUCKET_NAME?: string
-  // Listmonk (the beta-tester and newsletter lists), at its base URL (for example
+  // The bucket's jurisdiction (`eu`), which picks the presigned URL's host. Unset for a bucket
+  // outside any jurisdiction. Must match the ERROR_REPORTS_BUCKET binding in wrangler.toml.
+  R2_ERROR_REPORTS_JURISDICTION?: string
+  // Listmonk (the beta-tester, newsletter, and subprocessor-updates lists), at its base URL (for example
   // https://mail.getcmdr.com). The signup routes subscribe by list UUID through the public endpoint,
   // which needs no credentials; the API user and token (sent as `Authorization: token <user>:<token>`)
   // are only for GET /admin/funnel. The numeric ids feed the funnel's per-day signups column.
@@ -133,6 +136,10 @@ export type Bindings = {
   LISTMONK_BETA_LIST_UUID?: string
   LISTMONK_NEWSLETTER_LIST_ID?: number
   LISTMONK_NEWSLETTER_LIST_UUID?: string
+  // The "Cmdr subprocessor updates" list (getcmdr.com/trust). The funnel leaves it out on purpose:
+  // it counts interest in Cmdr, and this list is due diligence. The id is kept for parity.
+  LISTMONK_SUBPROCESSOR_LIST_ID?: number
+  LISTMONK_SUBPROCESSOR_LIST_UUID?: string
 }
 
 export interface PaddleWebhookPayload {

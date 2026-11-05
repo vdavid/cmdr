@@ -660,8 +660,8 @@ mcp_tools! {
     },
     "propose_rename_plan" => {
         id: ProposeRenamePlan,
-        brief: "Stage a same-folder image rename plan for a person to review.",
-        desc: "Stage a same-folder image-file rename plan for the user to review; it changes nothing and approves nothing. At most 200 rows.",
+        brief: "Stage a one-folder rename plan for a person to review.",
+        desc: "Stage a rename plan for the files of ONE folder, on any connected volume, for the user to review; it changes nothing and approves nothing. Each row's volumeId comes from a pane or a location. A file that doesn't exist stays in the review, marked missing. At most 200 rows.",
         schema: crate::tools::propose::rename::propose_rename_plan_schema(),
         subject: SubjectSpec::Custom,
         access: Access::Propose,

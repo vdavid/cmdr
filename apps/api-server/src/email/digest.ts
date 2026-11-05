@@ -7,8 +7,7 @@
  * board, so every entry links its card.
  */
 
-import { Resend } from 'resend'
-import { sendViaResend } from './send'
+import { sendEmail } from './send'
 import { renderCrashTable, type CrashEmailRow } from './crash'
 import {
   renderAmendmentCard,
@@ -132,7 +131,7 @@ ${sections.join('\n')}
 interface DigestParams {
   content: DigestContent
   to: string
-  resendApiKey: string
+  smtp2goApiKey: string
 }
 
 /** Send one digest. The caller skips the call when {@link digestSize} is zero. */
@@ -140,8 +139,8 @@ export async function sendReportDigestEmail(params: DigestParams): Promise<void>
   const subject = digestSubject(params.content)
   const replyTo = soleReplyTo(params.content)
 
-  await sendViaResend(
-    new Resend(params.resendApiKey),
+  await sendEmail(
+    params.smtp2goApiKey,
     {
       from: 'Cmdr Digest <noreply@getcmdr.com>',
       to: params.to,

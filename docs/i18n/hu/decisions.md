@@ -549,7 +549,9 @@ Quoted when named; verb `engedélyezd a felhő-AI-t`. `oldalpanel` (tentative). 
 
 ## MDM (`*.managed.*`, `*managedOff`, `updates.status.heldByPolicy`, `errors.serverRequest.blockedByPolicy`)
 
-`A szervezeted kezeli` (MS `kezel`); `IT-csapat`; Off → `Ki`. `legfeljebb ezt a verziót engedi: {ceiling}`.
+`A szervezeted kezeli` (MS `kezel`); `IT-csapat`; Off → `Ki`. `legfeljebb ezt a verziót engedi: {ceiling}`. require →
+`kötelező` (macOS `Kötelező megadni`): `Mindig kötelező SMB-titkosítás` / `Mindig kötelező`; prose quotes it:
+`be van kapcsolva a „…” beállítás`.
 
 ## Csoportos átnevezés súgói (`multiRename.placeholderHelp.*`, `multiRename.searchOptionHelp.*`)
 

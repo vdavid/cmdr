@@ -2449,6 +2449,10 @@
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "ea3a52f"
   },
+  "errors.shareList.encryptionRequired": "„{server}“ kann diese Verbindung nicht verschlüsseln und in Cmdr ist „SMB-Verschlüsselung immer verlangen“ eingeschaltet. Prüfe die SMB-Verschlüsselungseinstellungen des Servers.",
+  "@errors.shareList.encryptionRequired": {
+    "sourceHash": "4dff9ea"
+  },
   "errors.shareList.protocolError": "Beim Abrufen der Freigaben von „{server}“ ist etwas schiefgelaufen. Versuche es gleich noch einmal.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

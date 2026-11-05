@@ -662,10 +662,12 @@ same reason and through the same argument domain: `../e2e-shared/pin-locale.ts`,
 connected. (Verified 2026-11-02 on macOS 27 with a connected Bluetooth mouse: a probe reads 17 px without the argument
 and 0 px with it, on one binary.)
 
-The pin covers the suite, not the product: classic scrollbars have their own layout bug in dialogs, which is a real one
-for people with a mouse. It's in WebKit's relayout, reproduces in plain DOM, and survives every centering and `display`
-variant we tried; only `scrollbar-gutter: stable` avoids it. The measurements and fix options are on issue #889, and a
-fix should run these two specs once without the pin.
+The pin covers the suite, not the product: classic scrollbars had their own layout bug in dialogs (#889), fixed by
+reserving every dialog scroller's gutter (`../../src/lib/ui/DETAILS.md` § "Scrollbar gutters"). Since the suite never
+sees a classic bar, a change to dialog scrolling should run `dialog-inset.spec.ts` and `dialog-wrapping.spec.ts` once
+with classic bars: hand-launch (§ "Running on macOS") with `-AppleShowScrollBars Always` in place of `WhenScrolling`,
+which forces classic bars for that process alone, and run the two specs. (Verified 2026-11-04 on macOS 27: 19 of 19 pass
+that way.)
 
 ## The Full Disk Access pin
 

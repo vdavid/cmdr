@@ -11,6 +11,7 @@ import { feedback } from './telemetry/feedback'
 import { likes } from './website/likes'
 import { betaSignup } from './website/beta-signup'
 import { newsletterSignup } from './website/newsletter-signup'
+import { subprocessorUpdatesSignup } from './website/subprocessor-updates-signup'
 import { linkCodes } from './website/link-codes'
 import { cspReport } from './website/csp-report'
 import { s3Prices } from './s3-prices/s3-prices'
@@ -51,6 +52,7 @@ app.route('/', errorReport)
 app.route('/', errorReportAmend)
 app.route('/', betaSignup)
 app.route('/', newsletterSignup)
+app.route('/', subprocessorUpdatesSignup)
 app.route('/', feedback)
 app.route('/', linkCodes)
 app.route('/', cspReport)
@@ -65,7 +67,7 @@ export { app }
  * `console.error` alone is where cron failures used to go, and Workers logs weren't retained, so a
  * job could throw every three hours forever with nothing to show for it. Two channels carry the
  * alarm now, and they fail independently: the caller reports the failed job to healthchecks.io,
- * which emails through its OWN infrastructure (so a dead Resend key or a broken D1 still alerts),
+ * which emails through its OWN infrastructure (so a dead SMTP2Go key or a broken D1 still alerts),
  * and an ops event puts the cause in the next report digest.
  *
  * A job with grace (`alertAfter` > 1) alerts only once it has thrown on that many ticks in a row

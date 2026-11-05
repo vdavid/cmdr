@@ -67,6 +67,7 @@ pub mod restic_view;
 pub mod rt;
 pub mod sqlite_util;
 pub mod staging;
+pub mod system_dirs;
 pub mod tcc_paths;
 pub mod thread_cpu;
 pub mod thread_qos;

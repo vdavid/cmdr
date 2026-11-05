@@ -1,0 +1,46 @@
+[package]
+name = "cmdr-search"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# Fixtures and test-only entry points a host's tests use (the arena fixture, the
+# pure-engine wrapper, the test context). Gated on `any(test, feature = "testing")`.
+testing = []
+
+[dependencies]
+# `name_fold`, `path_hash`, `pluralize`, `system_dirs`, `log_private`, and `rt::Instant`
+# (the browser-safe clock). No app crate and no `cmdr-index`: the desktop and the
+# browser demo both host this, and `cmdr-index` doesn't build for `wasm32`.
+cmdr-fs = { path = "../cmdr-fs" }
+# The list rules a recent search follows (`history`), the same every host keeps.
+cmdr-recents = { path = "../cmdr-recents" }
+log = "0.4"
+# The scan's one parallelism (`par_chunks`); it runs inline on a thread-less target.
+rayon = "1.11.0"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+# Pinned to the exact pre-release `cmdr-fs` and the app use: two `specta` crates in
+# one graph would make these `Type` impls stop satisfying `tauri-specta`, and the
+# app's command signatures collect them.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+# `format_timestamp` formats a given value and `translate` parses an ISO date;
+# nothing here reads a clock.
+time = { version = "0.3", features = ["formatting", "macros", "parsing"] }
+# `CancellationToken`, the one cancellation primitive every layer speaks: a live
+# run carries the token that stops its walk. `default-features = false` keeps it to
+# `tokio_util::sync`, as `cmdr-fs` and `cmdr-listing` take it.
+tokio-util = { version = "0.7.18", default-features = false }
+unicode-normalization = "0.1"
+
+[dev-dependencies]
+proptest = "1"
+serde_json = "1"

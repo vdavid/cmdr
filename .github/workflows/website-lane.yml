@@ -1,0 +1,220 @@
+name: Website lane
+
+# The website lane, called by `ci.yml` (`website`): the browser demo build, then the site's
+# checks, E2E, and Lighthouse around it. Its own file so an edit here reruns this lane alone (the
+# `website` filter in `ci.yml` lists it). The deploy stays in `ci.yml`, gated on this lane, and
+# reads the demo artifact this lane uploads (artifacts are per run, so the caller's jobs see
+# them). `docs/tooling/ci.md` § Lane files.
+on:
+  workflow_call:
+    inputs:
+      playwright-image:
+        description: 'The pinned Playwright container image the site job runs in (from `changes`)'
+        type: string
+        required: true
+      marker-key:
+        description: The lane's marker key from `ci.yml`'s lane plan, saved by the `marker` job once both jobs passed
+        type: string
+        required: true
+    secrets:
+      LHCI_GITHUB_APP_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  # The browser demo the site publishes at /demo/: the listing engine built to WASM plus the
+  # desktop frontend's demo build (`pnpm build:demo`, `apps/website/DETAILS.md` § Browser demo).
+  # Its own job on the bare runner because `site` runs inside the Playwright image, which has
+  # no Rust toolchain; `site` takes the result as an artifact and builds the site around it, so
+  # its E2E tests the same /demo/ the deploy's Docker build produces from the same sources.
+  demo:
+    name: Demo build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      # Its Rust cache saves from `main` only, like `ci.yml`'s `SAVE_RUST_CACHE` (a called
+      # workflow doesn't inherit the caller's `env`).
+      - name: Build the browser demo
+        uses: ./.github/actions/build-website-demo
+        with:
+          save-rust-cache: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Upload the browser demo
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: website-demo
+          path: apps/desktop/build-demo/
+          if-no-files-found: error
+          retention-days: 1
+
+  site:
+    name: Checks, E2E, and Lighthouse
+    runs-on: ubuntu-latest
+    # Everything in this job runs inside the pinned Playwright image, so the E2E lane renders the
+    # visual baselines in the same environment that shot them (see the `Resolve the Playwright
+    # container image` step in `ci.yml`'s `changes` for why, and `apps/website/DETAILS.md` §
+    # Visual baselines). The build steps ride along rather than running on the host: one
+    # toolchain per job is simpler than two, and the site the baselines are shot against is then
+    # built by the same Node.
+    container:
+      image: ${{ inputs.playwright-image }}
+    timeout-minutes: 20
+    needs: demo
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # The checkout is owned by the host runner's UID, but this job (alone among CI's jobs)
+      # runs inside the pinned Playwright `container:`, whose process UID doesn't match. Git's
+      # dubious-ownership guard then refuses to read repo state, and `go build`'s VCS stamping
+      # fails with "error obtaining VCS status: exit status 128" before it ever reaches our code.
+      - name: Trust the checkout inside the container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      # Inside the container `HOME` differs, so this store is an entry of its own, saved here on `main`.
+      - name: Restore the pnpm store
+        id: pnpm-store
+        uses: ./.github/actions/pnpm-store
+        with:
+          phase: restore
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Save the pnpm store
+        uses: ./.github/actions/pnpm-store
+        with:
+          phase: save
+          save: 'true'
+          hit: ${{ steps.pnpm-store.outputs.hit }}
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Sync Astro types
+        run: pnpm exec astro sync
+        working-directory: ./apps/website
+
+      - name: Run ESLint
+        run: ./scripts/check/check --check website-eslint --ci
+
+      - name: Check CSP connect-src covers every fetch
+        run: ./scripts/check/check --check website-csp-connect-src --ci
+
+      - name: Run typecheck
+        run: ./scripts/check/check --check website-typecheck --ci
+
+      # Where the site's build expects it (src/plugins/demo.ts), which then fails on a missing demo
+      # instead of publishing a site without /demo/.
+      - name: Download the browser demo
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: website-demo
+          path: apps/desktop/build-demo/
+
+      - name: Build website
+        run: ./scripts/check/check --check website-build --ci
+        env:
+          CMDR_WEBSITE_DEMO: '1'
+
+      - name: Run html-validate
+        run: ./scripts/check/check --check website-html-validate --ci
+
+      - name: Check for dead links
+        run: ./scripts/check/check --check website-dead-links --ci
+
+      - name: Check analytics injection
+        run: ./scripts/check/check --check website-analytics-injection --ci
+
+      # No browser install step: the container image ships the browsers this Playwright version
+      # pins, at `PLAYWRIGHT_BROWSERS_PATH`. Installing them again would download a build for
+      # whatever version npm resolved, which is how a render could quietly stop matching the image
+      # the baselines were shot in. If the two ever disagree, Playwright says so ("Executable
+      # doesn't exist at /ms-playwright/chromium-…") instead of rendering on the wrong Chromium.
+      - name: Run E2E tests
+        run: ./scripts/check/check --check website-e2e --ci
+
+      # A visual failure is unreadable without the images: `test-results/` carries the `-actual`,
+      # `-expected`, and `-diff` PNGs plus the retry traces.
+      - name: Upload Playwright results
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: website-playwright-results
+          path: apps/website/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Lighthouse hunts for a system Chrome, which this image doesn't carry: it ships the
+      # browsers Playwright pins, under `PLAYWRIGHT_BROWSERS_PATH`. Point it at that one rather
+      # than installing a second Chrome. (`chromium_headless_shell-*` deliberately doesn't match
+      # the glob; Lighthouse wants the full browser.)
+      #
+      # The build dir is `chrome-linux64` on amd64 (the runner) and `chrome-linux` on arm64
+      # (a local `docker run` on an Apple Silicon laptop), so the glob has to cover both
+      # (verified against `mcr.microsoft.com/playwright:v1.62.1-noble` on both arches,
+      # `docker run ... ls /ms-playwright/chromium-*/`, 2026-09-08).
+      - name: Point Lighthouse at the container's Chromium
+        # Bash arrays and `[[`: this container's default `run:` shell is `sh` (dash), which has
+        # neither, and silently ran this as a syntax error once the job got far enough to reach it.
+        shell: bash
+        run: |
+          shopt -s nullglob
+          chromes=("$PLAYWRIGHT_BROWSERS_PATH"/chromium-*/chrome-linux*/chrome)
+          if [[ ${#chromes[@]} -eq 0 || ! -x "${chromes[0]}" ]]; then
+            echo "No Chromium under $PLAYWRIGHT_BROWSERS_PATH; the image layout changed." >&2
+            ls -la "$PLAYWRIGHT_BROWSERS_PATH" >&2 || true
+            exit 1
+          fi
+          echo "CHROME_PATH=${chromes[0]}" >>"$GITHUB_ENV"
+
+      - name: Run Lighthouse CI
+        run: pnpm test:lighthouse
+        working-directory: ./apps/website
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: lighthouse-report
+          path: apps/website/.lighthouseci/
+          retention-days: 7
+
+  # The lane's marker, once both jobs passed (`site` needs `demo`, and this needs `site`), on
+  # the bare runner (`scripts/lane-markers/DETAILS.md`).
+  marker:
+    name: Lane marker
+    needs: [demo, site]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Save the lane marker
+        uses: ./.github/actions/lane-marker
+        with:
+          key: ${{ inputs.marker-key }}

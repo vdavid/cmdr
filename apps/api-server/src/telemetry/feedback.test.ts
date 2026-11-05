@@ -32,7 +32,7 @@ function createBindings(overrides: Record<string, unknown> = {}) {
     ERROR_REPORTS_BUCKET: {} as R2Bucket,
     ERROR_REPORT_META: {} as KVNamespace,
     ED25519_PRIVATE_KEY: 'deadbeef'.repeat(8),
-    RESEND_API_KEY: 'test-resend-key',
+    SMTP2GO_API_KEY: 'test-smtp2go-key',
     PRODUCT_NAME: 'Cmdr',
     SUPPORT_EMAIL: 'test@example.com',
     ...overrides,

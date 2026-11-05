@@ -5,6 +5,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::recents::{RecentEntry, RecentsFile};
+use cmdr_recents::RecentItem;
 
 use super::plan::MultiRenameSpec;
 
@@ -39,7 +40,9 @@ impl RecentEntry for FieldHistoryEntry {
     const LOG_TARGET: &'static str = "multi_rename::history";
     const LOG_NAME: &'static str = "multi-rename field history";
     const STATE_FILE: crate::state_recovery::StateFile = crate::state_recovery::StateFile::MultiRenameFieldHistory;
+}
 
+impl RecentItem for FieldHistoryEntry {
     fn id(&self) -> &str {
         &self.id
     }

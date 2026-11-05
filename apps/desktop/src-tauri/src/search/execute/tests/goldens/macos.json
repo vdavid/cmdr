@@ -1,0 +1,4890 @@
+{
+  "accented_folder": {
+    "entries": [],
+    "totalCount": 0,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "accented_nfc_pattern": {
+    "entries": [
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      }
+    ],
+    "totalCount": 1,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "accented_nfd_pattern": {
+    "entries": [
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      }
+    ],
+    "totalCount": 1,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "all_by_modified": {
+    "entries": [
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "HEAD",
+        "path": "/cmdr-golden/Projects/cmdr/.git/HEAD",
+        "parentPath": "/cmdr-golden/Projects/cmdr/.git",
+        "isDirectory": false,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "file",
+        "entryId": 22
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "left-pad",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 25
+      }
+    ],
+    "totalCount": 34,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "all_by_size": {
+    "entries": [
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "left-pad",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 25
+      },
+      {
+        "name": "index.js",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad/index.js",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "isDirectory": false,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "ext:js",
+        "entryId": 26
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "HEAD",
+        "path": "/cmdr-golden/Projects/cmdr/.git/HEAD",
+        "parentPath": "/cmdr-golden/Projects/cmdr/.git",
+        "isDirectory": false,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "file",
+        "entryId": 22
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      }
+    ],
+    "totalCount": 34,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "case_platform_default": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 5,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "case_sensitive_off": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      }
+    ],
+    "totalCount": 2,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "case_sensitive_on": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      }
+    ],
+    "totalCount": 1,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "count_only": {
+    "entries": [],
+    "totalCount": 34,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "count_only_folder_size": {
+    "entries": [],
+    "totalCount": 6,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "exclude_a_glob": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "HEAD",
+        "path": "/cmdr-golden/Projects/cmdr/.git/HEAD",
+        "parentPath": "/cmdr-golden/Projects/cmdr/.git",
+        "isDirectory": false,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "file",
+        "entryId": 22
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "left-pad",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 25
+      },
+      {
+        "name": "index.js",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad/index.js",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "isDirectory": false,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "ext:js",
+        "entryId": 26
+      },
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 31,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 3
+  },
+  "exclude_a_name": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "HEAD",
+        "path": "/cmdr-golden/Projects/cmdr/.git/HEAD",
+        "parentPath": "/cmdr-golden/Projects/cmdr/.git",
+        "isDirectory": false,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "file",
+        "entryId": 22
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "left-pad",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 25
+      },
+      {
+        "name": "index.js",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad/index.js",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "isDirectory": false,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "ext:js",
+        "entryId": 26
+      },
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 28,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 6
+  },
+  "exclude_a_path": {
+    "entries": [
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      },
+      {
+        "name": "undated.txt",
+        "path": "/cmdr-golden/Docs/undated.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5,
+        "modifiedAt": null,
+        "iconId": "ext:txt",
+        "entryId": 11
+      }
+    ],
+    "totalCount": 24,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 10
+  },
+  "exclude_unusable_glob": {
+    "error": "Cmdr can’t use the exclusion “????????????????????????????????????????…”. Try a shorter or simpler pattern, or remove it."
+  },
+  "files_at_least_1_mb": {
+    "entries": [
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      }
+    ],
+    "totalCount": 2,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "files_at_most_100_b": {
+    "entries": [
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "HEAD",
+        "path": "/cmdr-golden/Projects/cmdr/.git/HEAD",
+        "parentPath": "/cmdr-golden/Projects/cmdr/.git",
+        "isDirectory": false,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "file",
+        "entryId": 22
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "undated.txt",
+        "path": "/cmdr-golden/Docs/undated.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5,
+        "modifiedAt": null,
+        "iconId": "ext:txt",
+        "entryId": 11
+      }
+    ],
+    "totalCount": 5,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "folder_size_filter": {
+    "entries": [
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      }
+    ],
+    "totalCount": 6,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "folders_by_size": {
+    "entries": [
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "left-pad",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 25
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      }
+    ],
+    "totalCount": 15,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "folders_only": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "left-pad",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 25
+      },
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      }
+    ],
+    "totalCount": 15,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "glob_plain": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 5,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "glob_question_marks": {
+    "entries": [
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      }
+    ],
+    "totalCount": 1,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "glob_wildcard_extension": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      }
+    ],
+    "totalCount": 3,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "home_bare_tilde_scope": {
+    "entries": [
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "~",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "~",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      }
+    ],
+    "totalCount": 2,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "home_only_prefixes_a_folder_name": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 5,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "home_parent_paths_unscoped": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "~",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "~",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 5,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "home_tilde_scope": {
+    "entries": [
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "~/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "~/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      }
+    ],
+    "totalCount": 2,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "limit_past_the_ceiling": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "HEAD",
+        "path": "/cmdr-golden/Projects/cmdr/.git/HEAD",
+        "parentPath": "/cmdr-golden/Projects/cmdr/.git",
+        "isDirectory": false,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "file",
+        "entryId": 22
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "left-pad",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 25
+      },
+      {
+        "name": "index.js",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad/index.js",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "isDirectory": false,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "ext:js",
+        "entryId": 26
+      },
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      },
+      {
+        "name": "undated.txt",
+        "path": "/cmdr-golden/Docs/undated.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5,
+        "modifiedAt": null,
+        "iconId": "ext:txt",
+        "entryId": 11
+      }
+    ],
+    "totalCount": 34,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "limit_three": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      }
+    ],
+    "totalCount": 34,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "live_capped": {
+    "rows": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      }
+    ],
+    "complete": [
+      {
+        "runId": "golden-run",
+        "matchCount": 34,
+        "coverage": {
+          "walk": "nothingToWalk",
+          "kind": "covered",
+          "permissionDenied": [],
+          "declined": [],
+          "stillCovering": [],
+          "unresolvedScopes": [],
+          "uncoveredScopes": [],
+          "abandonedGround": false,
+          "abandonedLocations": 0,
+          "failedRoots": [],
+          "capped": true,
+          "targetVolumeId": "root",
+          "hiddenByExcludes": 0
+        }
+      }
+    ],
+    "cancelled": [],
+    "errors": []
+  },
+  "live_covered": {
+    "rows": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "complete": [
+      {
+        "runId": "golden-run",
+        "matchCount": 5,
+        "coverage": {
+          "walk": "nothingToWalk",
+          "kind": "covered",
+          "permissionDenied": [],
+          "declined": [],
+          "stillCovering": [],
+          "unresolvedScopes": [],
+          "uncoveredScopes": [],
+          "abandonedGround": false,
+          "abandonedLocations": 0,
+          "failedRoots": [],
+          "capped": false,
+          "targetVolumeId": "root",
+          "hiddenByExcludes": 0
+        }
+      }
+    ],
+    "cancelled": [],
+    "errors": []
+  },
+  "live_folder_size_filter": {
+    "rows": [
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      }
+    ],
+    "complete": [
+      {
+        "runId": "golden-run",
+        "matchCount": 6,
+        "coverage": {
+          "walk": "nothingToWalk",
+          "kind": "covered",
+          "permissionDenied": [],
+          "declined": [],
+          "stillCovering": [],
+          "unresolvedScopes": [],
+          "uncoveredScopes": [],
+          "abandonedGround": false,
+          "abandonedLocations": 0,
+          "failedRoots": [],
+          "capped": false,
+          "targetVolumeId": "root",
+          "hiddenByExcludes": 0
+        }
+      }
+    ],
+    "cancelled": [],
+    "errors": []
+  },
+  "live_invalid_regex": {
+    "rows": [],
+    "complete": [],
+    "cancelled": [],
+    "errors": [
+      {
+        "runId": "golden-run",
+        "error": "query",
+        "message": "Invalid pattern: regex parse error:\n    [unclosed\n    ^\nerror: unclosed character class"
+      }
+    ]
+  },
+  "live_scope_half_resolved": {
+    "rows": [
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "undated.txt",
+        "path": "/cmdr-golden/Docs/undated.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5,
+        "modifiedAt": null,
+        "iconId": "ext:txt",
+        "entryId": 11
+      }
+    ],
+    "complete": [
+      {
+        "runId": "golden-run",
+        "matchCount": 7,
+        "coverage": {
+          "walk": "nothingToWalk",
+          "kind": "covered",
+          "permissionDenied": [],
+          "declined": [],
+          "stillCovering": [],
+          "unresolvedScopes": [
+            "/cmdr-golden/Nope"
+          ],
+          "uncoveredScopes": [],
+          "abandonedGround": false,
+          "abandonedLocations": 0,
+          "failedRoots": [],
+          "capped": false,
+          "targetVolumeId": "root",
+          "hiddenByExcludes": 0
+        }
+      }
+    ],
+    "cancelled": [],
+    "errors": []
+  },
+  "modified_after": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "HEAD",
+        "path": "/cmdr-golden/Projects/cmdr/.git/HEAD",
+        "parentPath": "/cmdr-golden/Projects/cmdr/.git",
+        "isDirectory": false,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "file",
+        "entryId": 22
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      }
+    ],
+    "totalCount": 14,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "modified_before": {
+    "entries": [
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 2,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "modified_range": {
+    "entries": [
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      }
+    ],
+    "totalCount": 10,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "newline_in_name": {
+    "entries": [
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      }
+    ],
+    "totalCount": 1,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "no_filter_at_all": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "HEAD",
+        "path": "/cmdr-golden/Projects/cmdr/.git/HEAD",
+        "parentPath": "/cmdr-golden/Projects/cmdr/.git",
+        "isDirectory": false,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "file",
+        "entryId": 22
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "left-pad",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 25
+      }
+    ],
+    "totalCount": 34,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "regex_anchored": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      }
+    ],
+    "totalCount": 3,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "regex_invalid": {
+    "error": "Invalid pattern: regex parse error:\n    [unclosed\n    ^\nerror: unclosed character class"
+  },
+  "scope_half_resolved": {
+    "entries": [
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "undated.txt",
+        "path": "/cmdr-golden/Docs/undated.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5,
+        "modifiedAt": null,
+        "iconId": "ext:txt",
+        "entryId": 11
+      }
+    ],
+    "totalCount": 7,
+    "unresolvedScopes": [
+      "/cmdr-golden/Nope"
+    ],
+    "hiddenByExcludes": 0
+  },
+  "scope_one_folder": {
+    "entries": [
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      }
+    ],
+    "totalCount": 2,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "scope_two_folders": {
+    "entries": [
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "undated.txt",
+        "path": "/cmdr-golden/Docs/undated.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5,
+        "modifiedAt": null,
+        "iconId": "ext:txt",
+        "entryId": 11
+      }
+    ],
+    "totalCount": 11,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "scope_unresolved": {
+    "entries": [],
+    "totalCount": 0,
+    "unresolvedScopes": [
+      "/cmdr-golden/Nope"
+    ],
+    "hiddenByExcludes": 0
+  },
+  "scope_whole_root_volume": {
+    "entries": [
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 5,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "share_case_platform_default": {
+    "entries": [
+      {
+        "name": "IMG_0001.JPG",
+        "path": "/Volumes/cmdr-golden-share/photos/IMG_0001.JPG",
+        "parentPath": "/Volumes/cmdr-golden-share/photos",
+        "isDirectory": false,
+        "size": 3000000,
+        "modifiedAt": 1715000000,
+        "iconId": "ext:jpg",
+        "entryId": 7
+      }
+    ],
+    "totalCount": 1,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "share_scope_mount_root": {
+    "entries": [
+      {
+        "name": "report.txt",
+        "path": "/Volumes/cmdr-golden-share/papers/report.txt",
+        "parentPath": "/Volumes/cmdr-golden-share/papers",
+        "isDirectory": false,
+        "size": 20,
+        "modifiedAt": 1705000000,
+        "iconId": "ext:txt",
+        "entryId": 5
+      }
+    ],
+    "totalCount": 1,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "share_scope_outside_the_mount": {
+    "entries": [],
+    "totalCount": 0,
+    "unresolvedScopes": [
+      "/elsewhere/papers"
+    ],
+    "hiddenByExcludes": 0
+  },
+  "share_scope_subfolder": {
+    "entries": [
+      {
+        "name": "papers",
+        "path": "/Volumes/cmdr-golden-share/papers",
+        "parentPath": "/Volumes/cmdr-golden-share",
+        "isDirectory": true,
+        "size": 30,
+        "modifiedAt": 1705000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "report.txt",
+        "path": "/Volumes/cmdr-golden-share/papers/report.txt",
+        "parentPath": "/Volumes/cmdr-golden-share/papers",
+        "isDirectory": false,
+        "size": 20,
+        "modifiedAt": 1705000000,
+        "iconId": "ext:txt",
+        "entryId": 5
+      },
+      {
+        "name": "invoices paid",
+        "path": "/Volumes/cmdr-golden-share/papers/invoices paid",
+        "parentPath": "/Volumes/cmdr-golden-share/papers",
+        "isDirectory": true,
+        "size": 10,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "hetzner.pdf",
+        "path": "/Volumes/cmdr-golden-share/papers/invoices paid/hetzner.pdf",
+        "parentPath": "/Volumes/cmdr-golden-share/papers/invoices paid",
+        "isDirectory": false,
+        "size": 10,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 4,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "share_unscoped": {
+    "entries": [
+      {
+        "name": "report.txt",
+        "path": "/Volumes/cmdr-golden-share/papers/report.txt",
+        "parentPath": "/Volumes/cmdr-golden-share/papers",
+        "isDirectory": false,
+        "size": 20,
+        "modifiedAt": 1705000000,
+        "iconId": "ext:txt",
+        "entryId": 5
+      }
+    ],
+    "totalCount": 1,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "size_range_any_kind": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      }
+    ],
+    "totalCount": 14,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "system_dirs_hidden": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "Archive",
+        "path": "/cmdr-golden/Archive",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "dir",
+        "entryId": 3
+      },
+      {
+        "name": "old-report.zip",
+        "path": "/cmdr-golden/Archive/old-report.zip",
+        "parentPath": "/cmdr-golden/Archive",
+        "isDirectory": false,
+        "size": 2000,
+        "modifiedAt": 978307200,
+        "iconId": "ext:zip",
+        "entryId": 4
+      },
+      {
+        "name": "undated.txt",
+        "path": "/cmdr-golden/Docs/undated.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5,
+        "modifiedAt": null,
+        "iconId": "ext:txt",
+        "entryId": 11
+      }
+    ],
+    "totalCount": 30,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 4
+  },
+  "system_dirs_shown": {
+    "entries": [
+      {
+        "name": "cmdr",
+        "path": "/cmdr-golden/Projects/cmdr",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": true,
+        "size": 14323,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 20
+      },
+      {
+        "name": "README.md",
+        "path": "/cmdr-golden/Projects/cmdr/README.md",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": false,
+        "size": 1500,
+        "modifiedAt": 1761000000,
+        "iconId": "ext:md",
+        "entryId": 23
+      },
+      {
+        "name": "Docs",
+        "path": "/cmdr-golden/Docs",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 5000050317,
+        "modifiedAt": 1750000000,
+        "iconId": "dir",
+        "entryId": 5
+      },
+      {
+        "name": "big.iso",
+        "path": "/cmdr-golden/Docs/big.iso",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 5000000000,
+        "modifiedAt": 1750000000,
+        "iconId": "ext:iso",
+        "entryId": 7
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Docs/résumé.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 300,
+        "modifiedAt": 1700000300,
+        "iconId": "ext:txt",
+        "entryId": 10
+      },
+      {
+        "name": "line\nbreak.txt",
+        "path": "/cmdr-golden/Docs/line\nbreak.txt",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 12,
+        "modifiedAt": 1700000200,
+        "iconId": "ext:txt",
+        "entryId": 9
+      },
+      {
+        "name": "hardlinked.bin",
+        "path": "/cmdr-golden/Docs/hardlinked.bin",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": null,
+        "modifiedAt": 1700000100,
+        "iconId": "ext:bin",
+        "entryId": 8
+      },
+      {
+        "name": "Report.PDF",
+        "path": "/cmdr-golden/Docs/Report.PDF",
+        "parentPath": "/cmdr-golden/Docs",
+        "isDirectory": false,
+        "size": 50000,
+        "modifiedAt": 1700000000,
+        "iconId": "ext:pdf",
+        "entryId": 6
+      },
+      {
+        "name": "Projects",
+        "path": "/cmdr-golden/Projects",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 94323,
+        "modifiedAt": 1762000000,
+        "iconId": "dir",
+        "entryId": 19
+      },
+      {
+        "name": "report-2026.pdf",
+        "path": "/cmdr-golden/Projects/report-2026.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 70000,
+        "modifiedAt": 1762000000,
+        "iconId": "ext:pdf",
+        "entryId": 30
+      },
+      {
+        "name": "src",
+        "path": "/cmdr-golden/Projects/cmdr/src",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 12000,
+        "modifiedAt": 1761600000,
+        "iconId": "dir",
+        "entryId": 27
+      },
+      {
+        "name": "search.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/search.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 9000,
+        "modifiedAt": 1761600000,
+        "iconId": "ext:rs",
+        "entryId": 29
+      },
+      {
+        "name": "main.rs",
+        "path": "/cmdr-golden/Projects/cmdr/src/main.rs",
+        "parentPath": "/cmdr-golden/Projects/cmdr/src",
+        "isDirectory": false,
+        "size": 3000,
+        "modifiedAt": 1761500000,
+        "iconId": "ext:rs",
+        "entryId": 28
+      },
+      {
+        "name": ".git",
+        "path": "/cmdr-golden/Projects/cmdr/.git",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "dir",
+        "entryId": 21
+      },
+      {
+        "name": "HEAD",
+        "path": "/cmdr-golden/Projects/cmdr/.git/HEAD",
+        "parentPath": "/cmdr-golden/Projects/cmdr/.git",
+        "isDirectory": false,
+        "size": 23,
+        "modifiedAt": 1760000100,
+        "iconId": "file",
+        "entryId": 22
+      },
+      {
+        "name": "Library",
+        "path": "/cmdr-golden/Library",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 12
+      },
+      {
+        "name": "Caches",
+        "path": "/cmdr-golden/Library/Caches",
+        "parentPath": "/cmdr-golden/Library",
+        "isDirectory": true,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "dir",
+        "entryId": 13
+      },
+      {
+        "name": "thumb-report.db",
+        "path": "/cmdr-golden/Library/Caches/thumb-report.db",
+        "parentPath": "/cmdr-golden/Library/Caches",
+        "isDirectory": false,
+        "size": 4096,
+        "modifiedAt": 1760000000,
+        "iconId": "ext:db",
+        "entryId": 14
+      },
+      {
+        "name": "report.pdf",
+        "path": "/cmdr-golden/Projects/report.pdf",
+        "parentPath": "/cmdr-golden/Projects",
+        "isDirectory": false,
+        "size": 10000,
+        "modifiedAt": 1740000000,
+        "iconId": "ext:pdf",
+        "entryId": 31
+      },
+      {
+        "name": "Photos",
+        "path": "/cmdr-golden/Photos",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 2500400,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 15
+      },
+      {
+        "name": "Café",
+        "path": "/cmdr-golden/Photos/Café",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": true,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "dir",
+        "entryId": 16
+      },
+      {
+        "name": "café-terrace.jpg",
+        "path": "/cmdr-golden/Photos/Café/café-terrace.jpg",
+        "parentPath": "/cmdr-golden/Photos/Café",
+        "isDirectory": false,
+        "size": 2500000,
+        "modifiedAt": 1720000000,
+        "iconId": "ext:jpg",
+        "entryId": 17
+      },
+      {
+        "name": "résumé.txt",
+        "path": "/cmdr-golden/Photos/résumé.txt",
+        "parentPath": "/cmdr-golden/Photos",
+        "isDirectory": false,
+        "size": 400,
+        "modifiedAt": 1710000000,
+        "iconId": "ext:txt",
+        "entryId": 18
+      },
+      {
+        "name": "unsized-folder",
+        "path": "/cmdr-golden/unsized-folder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": null,
+        "modifiedAt": 1700000500,
+        "iconId": "dir",
+        "entryId": 34
+      },
+      {
+        "name": "note.md",
+        "path": "/cmdr-golden/unsized-folder/note.md",
+        "parentPath": "/cmdr-golden/unsized-folder",
+        "isDirectory": false,
+        "size": 100,
+        "modifiedAt": 1700000500,
+        "iconId": "ext:md",
+        "entryId": 35
+      },
+      {
+        "name": "line\nfolder",
+        "path": "/cmdr-golden/line\nfolder",
+        "parentPath": "/cmdr-golden",
+        "isDirectory": true,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "dir",
+        "entryId": 32
+      },
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      },
+      {
+        "name": "cmdr-golden",
+        "path": "/cmdr-golden",
+        "parentPath": "/",
+        "isDirectory": true,
+        "size": 5002651243,
+        "modifiedAt": 1700000000,
+        "iconId": "dir",
+        "entryId": 2
+      },
+      {
+        "name": "node_modules",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules",
+        "parentPath": "/cmdr-golden/Projects/cmdr",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 24
+      },
+      {
+        "name": "left-pad",
+        "path": "/cmdr-golden/Projects/cmdr/node_modules/left-pad",
+        "parentPath": "/cmdr-golden/Projects/cmdr/node_modules",
+        "isDirectory": true,
+        "size": 800,
+        "modifiedAt": 1600000000,
+        "iconId": "dir",
+        "entryId": 25
+      }
+    ],
+    "totalCount": 34,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  },
+  "under_a_newline_folder": {
+    "entries": [
+      {
+        "name": "inside.txt",
+        "path": "/cmdr-golden/line\nfolder/inside.txt",
+        "parentPath": "/cmdr-golden/line\nfolder",
+        "isDirectory": false,
+        "size": 7,
+        "modifiedAt": 1700000400,
+        "iconId": "ext:txt",
+        "entryId": 33
+      }
+    ],
+    "totalCount": 1,
+    "unresolvedScopes": [],
+    "hiddenByExcludes": 0
+  }
+}

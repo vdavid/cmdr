@@ -6,18 +6,22 @@
 //!
 //! Every stat is bounded twice: by one shared [`Deadline`] per call (a dead mount costs the
 //! caller one budget, not one per file), and by [`SOURCE_STATS`], which caps how many stats are
-//! in flight across every caller. The dialog re-asks on scroll faster than a slow share answers,
-//! and a stat that outlives its deadline keeps its permit until it really ends, so stragglers on
-//! a dead mount can't pile up pool threads behind the user's back.
+//! in flight on each VOLUME across every caller. The dialog re-asks on scroll faster than a slow
+//! share answers, and a stat that outlives its deadline keeps its permit until it really ends, so
+//! stragglers on a dead mount can't pile up pool threads behind the user's back, and, being that
+//! mount's own permits, can't starve a stat on any other volume.
 
+use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 
-use cmdr_fs::deadline::{BlockingBudget, Deadline, io_budget, timeout_detached_within};
+use cmdr_fs::deadline::{Deadline, io_budget, timeout_detached_within};
 use cmdr_fs::log_error::LogError;
 use futures_util::StreamExt;
+use tokio::sync::Semaphore;
 
+use crate::IgnorePoison;
 use crate::agent::store::proposals::OpSnapshot;
 use crate::agent::types::ProposalVerb;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -30,9 +34,32 @@ pub const SOURCE_STAT_TIMEOUT: Duration = Duration::from_secs(2);
 /// concurrent stats no slower than one, and a page is 50-ish rows.
 const STATS_PER_CALL: usize = 8;
 
-/// Every source stat this module runs, from every caller (the proposal's snapshot and the
-/// dialog's live facts contend for the same volumes). Sized to what a NAS can usefully serve.
-static SOURCE_STATS: BlockingBudget = BlockingBudget::new(8);
+/// How many of this module's stats one volume keeps in flight, across every caller (a proposal's
+/// snapshot, a rename plan's existence check, and the dialog's live facts contend for the same
+/// volume). Sized to what a NAS can usefully serve.
+const STATS_PER_VOLUME: usize = 8;
+
+/// Each volume's stat budget, by volume id.
+///
+/// Per volume, ❌ never one shared cap: a timed-out stat keeps its permit until the kernel lets
+/// go of it, so eight stragglers on one dead share would otherwise make every later stat on
+/// EVERY volume, the boot disk included, wait out its deadline and answer `Unknown`. A rename
+/// plan refuses an unanswered row, so a shared cap let one dead mount block plans everywhere.
+///
+/// An entry lives only while someone holds it: [`budget_for`] drops any budget no caller and no
+/// permit still references (an owned permit holds its semaphore), so the map holds the volumes
+/// with stats in flight, a dead share's stragglers included, and nothing else.
+static SOURCE_STATS: LazyLock<Mutex<HashMap<String, Arc<Semaphore>>>> = LazyLock::new(Default::default);
+
+/// The stat budget of `volume_id`, made on first use.
+fn budget_for(volume_id: &str) -> Arc<Semaphore> {
+    let mut budgets = SOURCE_STATS.lock_ignore_poison();
+    budgets.retain(|id, budget| id == volume_id || Arc::strong_count(budget) > 1);
+    budgets
+        .entry(volume_id.to_string())
+        .or_insert_with(|| Arc::new(Semaphore::new(STATS_PER_VOLUME)))
+        .clone()
+}
 
 /// One source as its volume answers for it right now.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -43,6 +70,9 @@ pub enum SourceStat {
         /// Unix seconds.
         modified: Option<i64>,
         inode: Option<u64>,
+        /// A folder, as the volume says. Its own field because `size: None` also means a file
+        /// whose volume reports no size, and a rename plan must refuse a folder for certain.
+        is_directory: bool,
     },
     /// The volume says there's nothing at that path.
     Missing,
@@ -55,7 +85,9 @@ impl SourceStat {
     /// freeze. A missing or unanswered stat stays `NULL`, ❌ never a zero.
     pub fn snapshot(self) -> Option<OpSnapshot> {
         match self {
-            SourceStat::Present { size, modified, inode } => Some(OpSnapshot {
+            SourceStat::Present {
+                size, modified, inode, ..
+            } => Some(OpSnapshot {
                 size,
                 mtime: modified,
                 inode,
@@ -71,9 +103,15 @@ pub fn stat_deadline(volume: &dyn Volume) -> Deadline {
 }
 
 /// Stat every path on `volume` within `deadline`, answering in the order asked.
-pub async fn stat_sources(volume: Arc<dyn Volume>, paths: Vec<String>, deadline: &Deadline) -> Vec<SourceStat> {
+pub async fn stat_sources(
+    volume_id: &str,
+    volume: Arc<dyn Volume>,
+    paths: Vec<String>,
+    deadline: &Deadline,
+) -> Vec<SourceStat> {
+    let budget = budget_for(volume_id);
     futures_util::stream::iter(paths)
-        .map(|path| stat_one(volume.clone(), path, deadline))
+        .map(|path| stat_one(budget.clone(), volume.clone(), path, deadline))
         .buffered(STATS_PER_CALL)
         .collect()
         .await
@@ -86,23 +124,26 @@ enum StatGap {
     Panicked(String),
 }
 
-async fn stat_one(volume: Arc<dyn Volume>, path: String, deadline: &Deadline) -> SourceStat {
+async fn stat_one(budget: Arc<Semaphore>, volume: Arc<dyn Volume>, path: String, deadline: &Deadline) -> SourceStat {
     // A stat that only got its permit after the caller stopped waiting is work for nobody, so it
     // doesn't start. The instant is fixed here because the detached task outlives `deadline`.
     let give_up_at = tokio::time::Instant::now() + deadline.remaining();
     let runtime = tokio::runtime::Handle::current();
     let answer = timeout_detached_within(deadline, || StatGap::TimedOut, StatGap::Panicked, async move {
-        SOURCE_STATS
-            .run(move || {
-                if tokio::time::Instant::now() >= give_up_at {
-                    return SourceStat::Unknown;
-                }
-                // On a blocking thread, holding the budget's permit until the stat really
-                // ends: that's what keeps a dead mount's stragglers counted.
-                runtime.block_on(async move { classify(volume.get_metadata(Path::new(&path)).await) })
-            })
-            .await
-            .map_err(|e| StatGap::Panicked(e.to_string()))
+        // The permit is taken BEFORE the blocking task spawns (a stat waiting its turn holds no
+        // pool thread) and moves into it, so it's held until the stat really ends: that's what
+        // keeps a dead mount's stragglers counted. The semaphore is never closed, so a failed
+        // acquire can't happen; mapping it to "no permit" runs unbounded rather than deadlocking.
+        let permit = budget.acquire_owned().await.ok();
+        tokio::task::spawn_blocking(move || {
+            let _permit = permit;
+            if tokio::time::Instant::now() >= give_up_at {
+                return SourceStat::Unknown;
+            }
+            runtime.block_on(async move { classify(volume.get_metadata(Path::new(&path)).await) })
+        })
+        .await
+        .map_err(|e| StatGap::Panicked(e.to_string()))
     })
     .await;
     match answer {
@@ -128,6 +169,7 @@ fn classify(answer: Result<cmdr_fs::entry::FileEntry, VolumeError>) -> SourceSta
             size: if entry.is_directory { None } else { entry.size },
             modified: entry.modified_at.map(|at| at as i64),
             inode: entry.inode,
+            is_directory: entry.is_directory,
         },
         Err(VolumeError::NotFound(_)) => SourceStat::Missing,
         Err(e) => {
@@ -269,6 +311,7 @@ mod tests {
 
         let deadline = stat_deadline(volume.as_ref());
         let stats = stat_sources(
+            "test",
             volume,
             vec!["/here.txt".into(), "/gone.txt".into(), "/unanswerable.txt".into()],
             &deadline,
@@ -302,7 +345,7 @@ mod tests {
         volume.create_file(Path::new("/a.txt"), b"a").await.expect("seed file");
         let volume: Arc<dyn Volume> = Arc::new(volume);
 
-        let stats = stat_sources(volume, vec!["/a.txt".into()], &Deadline::new(Duration::ZERO)).await;
+        let stats = stat_sources("test", volume, vec!["/a.txt".into()], &Deadline::new(Duration::ZERO)).await;
 
         assert_eq!(stats, vec![SourceStat::Unknown]);
     }

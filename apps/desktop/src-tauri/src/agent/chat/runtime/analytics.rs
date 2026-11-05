@@ -7,36 +7,95 @@
 //! that separates them, and `proposals` on it is the direct link to the layer below.
 //!
 //! ❌ Every property is categorical: an origin token, an outcome token, a typed failure
-//! kind, the provider tag, and coarse count buckets. Never a prompt, a path, a file name,
-//! a model reply, or anything a tool read.
+//! kind, the provider tag and preset id, a public model id or `other`, coarse count buckets,
+//! and a bool. Never a prompt, a path, a file name, a model reply, or anything a tool read.
 
 use serde_json::{Value, json};
 
 use super::types::{TurnParams, TurnResult, TurnTally};
 use crate::agent::chat::stream::AgentErrorKindView;
+use crate::agent::llm::types::ProviderTag;
+use crate::agent::store::TurnLimitKind;
 use crate::analytics::item_count_bucket;
 
 /// Reports one finished turn.
 pub(super) fn turn_finished(params: &TurnParams<'_>, result: &TurnResult, tally: &TurnTally) {
-    crate::analytics::events::capture("ask_cmdr_turn", turn_props(params, result, tally));
+    let preset = crate::ai::state::get_cloud_provider_id();
+    crate::analytics::events::capture("ask_cmdr_turn", turn_props(params, &preset, result, tally));
 }
 
 /// The event's properties. Pure (no I/O, no gating), so the vocabulary is unit-testable
-/// without a running app — the same split `analytics/events.rs` uses for the body.
-fn turn_props(params: &TurnParams<'_>, result: &TurnResult, tally: &TurnTally) -> Value {
+/// without a running app — the same split `analytics/events.rs` uses for the body. `preset` is
+/// the cloud provider preset id (`ai.cloudProvider`), which the heartbeat's config shape already
+/// ships as categorical.
+fn turn_props(params: &TurnParams<'_>, preset: &str, result: &TurnResult, tally: &TurnTally) -> Value {
     let (outcome, failure) = match result {
         TurnResult::Answered { .. } => ("answered", "none"),
         TurnResult::Cancelled => ("cancelled", "none"),
         TurnResult::Failed(kind) => ("failed", kind.as_token()),
     };
+    let local = params.provider == ProviderTag::Local;
     json!({
         "origin": params.origin.as_token(),
         "outcome": outcome,
         "failure": failure,
         "provider": params.provider.as_token(),
+        "preset": if local { "local" } else { preset_token(preset) },
+        "model": if local { "local" } else { model_token(preset, &params.model) },
         "tool_turns": item_count_bucket(tally.tool_turns),
         "proposals": item_count_bucket(tally.proposals),
+        // How busy the provider and model ran (`retry.rs`), and whether a call went quiet for the
+        // whole stall window: the two "high demand" signals the Gemini default is judged by.
+        "busy_retries": item_count_bucket(tally.busy_retries as usize),
+        "stalled": tally.limit.is_some_and(|limit| limit.kind == TurnLimitKind::Stalled),
     })
+}
+
+/// The cloud presets whose model ids come from the provider's public catalog. The rest name a
+/// model the user named themselves (an Azure deployment, an Ollama or LM Studio tag, a custom
+/// endpoint's model), which could say something about them, so those report `other`. A new
+/// preset reports `other` until it's added here.
+const CATALOG_PRESETS: &[&str] = &[
+    "openai",
+    "anthropic",
+    "google-gemini",
+    "groq",
+    "together-ai",
+    "fireworks-ai",
+    "mistral",
+    "openrouter",
+    "deepseek",
+    "qwen",
+    "xai",
+    "perplexity",
+];
+
+/// The preset id as sent, when it's one of ours (a short lowercase id), else `other`: an empty
+/// id before `configure_ai`, or anything unexpected, never travels.
+fn preset_token(preset: &str) -> &str {
+    let ours = !preset.is_empty()
+        && preset.len() <= 24
+        && preset
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
+    if ours { preset } else { "other" }
+}
+
+/// The model id when it's a public catalog id on a catalog preset (lowercase letters, digits,
+/// dots, and dashes, as `gemini-3.8-flash` or `claude-sonnet-5-5` are), else `other`. ❌ A slash
+/// or colon id stays out: a vendor route or a fine-tune (`ft:…:my-org:…`) can carry an
+/// organization's name.
+fn model_token<'a>(preset: &str, model: &'a str) -> &'a str {
+    let catalog_shaped = !model.is_empty()
+        && model.len() <= 48
+        && model
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-' || b == b'.');
+    if CATALOG_PRESETS.contains(&preset) && catalog_shaped {
+        model
+    } else {
+        "other"
+    }
 }
 
 /// Reports a send refused before a turn ever started.
@@ -59,8 +118,12 @@ fn refusal_props(kind: AgentErrorKindView) -> Value {
         // Three of the four gates fire before the slot resolves, and reporting the settings
         // value instead would claim a provider was chosen for a send that never chose one.
         "provider": "unresolved",
+        "preset": "unresolved",
+        "model": "unresolved",
         "tool_turns": item_count_bucket(0),
         "proposals": item_count_bucket(0),
+        "busy_retries": item_count_bucket(0),
+        "stalled": false,
     })
 }
 
@@ -113,6 +176,7 @@ mod tests {
         let p = params(Some(UserTurn::Text("hi")), ProviderTag::Anthropic, &envelope);
         let props = turn_props(
             &p,
+            "anthropic",
             &TurnResult::Answered {
                 assistant_message_id: 7,
             },
@@ -137,6 +201,7 @@ mod tests {
         let p = params(Some(UserTurn::Text("hi")), ProviderTag::Local, &envelope);
         let props = turn_props(
             &p,
+            "anthropic",
             &TurnResult::Failed(AgentErrorKind::RateLimited),
             &TurnTally::default(),
         );
@@ -153,7 +218,7 @@ mod tests {
     fn a_cancelled_turn_is_not_a_failure() {
         let envelope = envelope();
         let p = params(Some(UserTurn::Text("hi")), ProviderTag::OpenAi, &envelope);
-        let props = turn_props(&p, &TurnResult::Cancelled, &TurnTally::default());
+        let props = turn_props(&p, "anthropic", &TurnResult::Cancelled, &TurnTally::default());
 
         assert_eq!(props["outcome"], json!("cancelled"));
         assert_eq!(props["failure"], json!("none"));
@@ -165,7 +230,7 @@ mod tests {
         // message twice and make the wake/interactive split wrong.
         let envelope = envelope();
         let p = params(None, ProviderTag::Gemini, &envelope);
-        let props = turn_props(&p, &TurnResult::Cancelled, &TurnTally::default());
+        let props = turn_props(&p, "anthropic", &TurnResult::Cancelled, &TurnTally::default());
 
         assert_eq!(props["origin"], json!("resume"));
     }
@@ -183,6 +248,7 @@ mod tests {
         );
         let props = turn_props(
             &p,
+            "anthropic",
             &TurnResult::Answered {
                 assistant_message_id: 1,
             },
@@ -195,12 +261,88 @@ mod tests {
 
         let map = props.as_object().expect("props are an object");
         for (key, value) in map {
-            let s = value.as_str().unwrap_or_else(|| panic!("{key} is a string token"));
+            if value.is_boolean() {
+                continue;
+            }
+            let s = value
+                .as_str()
+                .unwrap_or_else(|| panic!("{key} is a string token or a bool"));
+            // 48: a public model id (`model_token`) is the longest token.
             assert!(
-                !s.contains('/') && !s.contains('\\') && !s.contains('@') && s.len() <= 24,
+                !s.contains('/') && !s.contains('\\') && !s.contains('@') && s.len() <= 48,
                 "prop '{key}' carries a non-categorical value: {s}"
             );
         }
+    }
+
+    /// Per provider and model is what tells a busy Gemini default from a busy afternoon: a turn
+    /// carries its preset, its public model id, how many tries the provider turned away, and
+    /// whether a call went quiet for the whole stall window.
+    #[test]
+    fn a_turn_reports_its_preset_model_and_how_busy_the_provider_was() {
+        let envelope = envelope();
+        let mut p = params(Some(UserTurn::Text("hi")), ProviderTag::Gemini, &envelope);
+        p.model = "gemini-3.8-flash".to_string();
+        let props = turn_props(
+            &p,
+            "google-gemini",
+            &TurnResult::Failed(AgentErrorKind::ProviderBusy),
+            &TurnTally {
+                busy_retries: 3,
+                ..TurnTally::default()
+            },
+        );
+
+        assert_eq!(props["failure"], json!("provider_busy"));
+        assert_eq!(props["preset"], json!("google-gemini"));
+        assert_eq!(props["model"], json!("gemini-3.8-flash"));
+        assert_eq!(props["busy_retries"], json!("2-10"));
+        assert_eq!(props["stalled"], json!(false));
+
+        let stalled = turn_props(
+            &p,
+            "google-gemini",
+            &TurnResult::Failed(AgentErrorKind::Timeout),
+            &TurnTally {
+                limit: Some(crate::agent::store::TurnLimit {
+                    kind: TurnLimitKind::Stalled,
+                    max: 120,
+                    answered: false,
+                }),
+                ..TurnTally::default()
+            },
+        );
+        assert_eq!(stalled["stalled"], json!(true));
+        assert_eq!(stalled["busy_retries"], json!("0"));
+    }
+
+    /// ❌ A model the user named themselves never travels: an Azure deployment, a local tag, a
+    /// custom endpoint's model, a fine-tune, or a vendor route all report `other`.
+    #[test]
+    fn only_a_public_catalog_model_id_is_reported() {
+        assert_eq!(model_token("anthropic", "claude-sonnet-5-5"), "claude-sonnet-5-5");
+        assert_eq!(model_token("openai", "gpt-4.1-mini"), "gpt-4.1-mini");
+        assert_eq!(model_token("azure-openai", "acme-legal-gpt4"), "other");
+        assert_eq!(model_token("custom", "gemma"), "other");
+        assert_eq!(model_token("ollama", "llama3.2"), "other");
+        assert_eq!(model_token("openai", "ft:gpt-4o:acme-corp:legal:abc123"), "other");
+        assert_eq!(model_token("openrouter", "anthropic/claude-sonnet-5-5"), "other");
+        assert_eq!(model_token("openai", "GPT-4o"), "other");
+        assert_eq!(model_token("openai", ""), "other");
+
+        assert_eq!(preset_token("google-gemini"), "google-gemini");
+        assert_eq!(preset_token(""), "other");
+        assert_eq!(preset_token("Weird Preset/1"), "other");
+
+        let envelope = envelope();
+        let p = params(Some(UserTurn::Text("hi")), ProviderTag::Local, &envelope);
+        let props = turn_props(&p, "anthropic", &TurnResult::Cancelled, &TurnTally::default());
+        assert_eq!(
+            props["preset"],
+            json!("local"),
+            "a local model ignores the cloud preset"
+        );
+        assert_eq!(props["model"], json!("local"));
     }
 
     #[test]
@@ -225,7 +367,7 @@ mod tests {
         // query over `ask_cmdr_turn` breaks the moment it includes refusals.
         let envelope = envelope();
         let p = params(Some(UserTurn::Text("hi")), ProviderTag::Anthropic, &envelope);
-        let turn = turn_props(&p, &TurnResult::Cancelled, &TurnTally::default());
+        let turn = turn_props(&p, "anthropic", &TurnResult::Cancelled, &TurnTally::default());
         let refusal = refusal_props(AgentErrorKindView::NotConfigured);
 
         let turn_keys: std::collections::BTreeSet<&String> = turn.as_object().expect("object").keys().collect();
@@ -247,6 +389,7 @@ mod tests {
             AgentErrorKind::RateLimited,
             AgentErrorKind::ModelNotInPlan,
             AgentErrorKind::RequestTooLarge,
+            AgentErrorKind::ProviderBusy,
             AgentErrorKind::BudgetExhausted,
             AgentErrorKind::RepeatedToolCall,
             AgentErrorKind::UnfinishedReply,
@@ -286,6 +429,7 @@ mod tests {
             AgentErrorKind::RateLimited,
             AgentErrorKind::ModelNotInPlan,
             AgentErrorKind::RequestTooLarge,
+            AgentErrorKind::ProviderBusy,
             AgentErrorKind::BudgetExhausted,
             AgentErrorKind::UnfinishedReply,
             AgentErrorKind::Provider,

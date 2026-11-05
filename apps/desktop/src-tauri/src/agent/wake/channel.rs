@@ -147,6 +147,10 @@ pub enum WakeCompletion {
     /// The provider refused for a reason it would refuse the next turn with identically: a
     /// rejected key, or an exhausted quota. Either kind of turn can learn this.
     ProviderRefused,
+    /// The provider stayed overloaded through the turn's own retries. Transient, so neither the
+    /// ordinary spacing (it would ask again into the same overload) nor the six-hour refusal (the
+    /// key is fine): a middle backoff that doubles while the provider stays busy.
+    ProviderBusy,
 }
 
 /// The endpoint: one sender, the receiver waiting to be claimed, and the rollup accounting the

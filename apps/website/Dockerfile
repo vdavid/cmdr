@@ -60,6 +60,7 @@ COPY apps/website/nginx.conf /etc/nginx/conf.d/default.conf
 COPY apps/website/nginx-security-headers-base.conf /etc/nginx/snippets/security-headers-base.conf
 COPY apps/website/nginx-security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY apps/website/nginx-demo-security-headers.conf /etc/nginx/snippets/demo-security-headers.conf
+COPY apps/website/nginx-demo-precompressed.conf /etc/nginx/snippets/demo-precompressed.conf
 # The inline-script hashes the build computed for the CSPs (src/plugins/csp-hashes.ts, src/plugins/demo.ts)
 COPY --from=builder /app/apps/website/nginx-generated/csp-script-hashes.conf /etc/nginx/snippets/csp-script-hashes.conf
 COPY --from=builder /app/apps/website/nginx-generated/csp-demo-script-hashes.conf /etc/nginx/snippets/csp-demo-script-hashes.conf

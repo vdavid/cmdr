@@ -95,3 +95,28 @@ fn a_file_answers_its_own_size_and_a_missing_path_none() {
     assert_eq!(ask(&volume, "/docs/a.txt"), Some(HeldAt::Leaf { size: 100 }));
     assert_eq!(ask(&volume, "/nowhere"), None);
 }
+
+#[test]
+fn held_entries_lists_every_path_below_the_root_with_its_facts() {
+    let mut held = volume().held_entries();
+    held.sort_by(|a, b| a.path.cmp(&b.path));
+    let paths: Vec<&str> = held.iter().map(|e| e.path.as_str()).collect();
+    assert_eq!(
+        paths,
+        [
+            "/docs",
+            "/docs-sibling",
+            "/docs-sibling/c.txt",
+            "/docs/a.txt",
+            "/docs/deep",
+            "/docs/deep/er",
+            "/docs/deep/er/b.bin",
+            "/docs/deep/link",
+            "/empty",
+        ]
+    );
+    let file = held.iter().find(|e| e.path == "/docs/a.txt").expect("held");
+    assert_eq!((file.is_directory, file.size), (false, Some(100)));
+    let link = held.iter().find(|e| e.path == "/docs/deep/link").expect("held");
+    assert!(link.is_symlink);
+}

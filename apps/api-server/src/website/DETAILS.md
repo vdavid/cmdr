@@ -7,27 +7,38 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 
 ## Files
 
-- **`listmonk-signup.ts`**: `handleListSignup`, the whole signup flow both routes below share.
+- **`listmonk-signup.ts`**: `handleListSignup`, the whole signup flow the three routes below share, plus `siteFormCors`
+  (the getcmdr.com-only CORS grant both site routes use).
 - **`beta-signup.ts`**: `POST /beta-signup` — the app's email-only beta-list subscribe, NO install id.
 - **`newsletter-signup.ts`**: `POST /newsletter-signup` (plus its `OPTIONS` preflight) — getcmdr.com's newsletter form,
   CORS for getcmdr.com origins only.
+- **`subprocessor-updates-signup.ts`**: `POST /subprocessor-updates-signup` (plus its `OPTIONS` preflight) —
+  getcmdr.com/trust's form for "Cmdr subprocessor updates", the list that gets 30 days' notice before a subprocessor
+  change. Same CORS as the newsletter.
 - **`likes.ts`**: `/likes/:slug` (GET, POST, DELETE, OPTIONS) — blog-post hearts keyed by a per-post IP pseudonym.
 - **`link-codes.ts`**: `GET /r-codes.json` (public, edge-cached) plus `/admin/r-codes` CRUD. The pure `sanitizeUtmValue`
   and `isValidCode` are unit-tested.
 - **`csp-report.ts`**: `POST /csp-report` (plus its `OPTIONS` preflight) — getcmdr.com's CSP violation reports, our own
   breakage raised as a `csp-violation` ops alert.
 - Tests: `csp-report.test.ts` (both report formats, the noise filter, the daily dedupe, query stripping, the size cap,
-  the rate limit, CORS), `listmonk-signup.test.ts` (both signup routes: the Listmonk call, the failed-send 502, no
-  enumeration, the no-install-id invariant, rate limit, the signup count, the newsletter CORS), `likes.test.ts` (the
+  the rate limit, CORS), `listmonk-signup.test.ts` (every signup route: the Listmonk call, the failed-send 502, no
+  enumeration, the no-install-id invariant, rate limit, the signup count, the site routes' CORS), `likes.test.ts` (the
   slug gate, the rate limit, the salt requirement, and the pseudonym's per-salt/per-slug/per-IP separation),
   `link-codes.test.ts` (the public map, CORS, cache, admin CRUD auth, and the validators).
 
-## Signups (beta and newsletter)
+## Signups (beta, newsletter, and subprocessor updates)
 
-Two routes, one flow (`listmonk-signup.ts::handleListSignup`): `POST /beta-signup` is the desktop app's contact channel
-for early testers, and `POST /newsletter-signup` is getcmdr.com's newsletter form. Each reads ONLY the `email` from a 1
-KB-capped body and subscribes it to its double-opt-in Listmonk list by UUID (`LISTMONK_BETA_LIST_UUID`,
-`LISTMONK_NEWSLETTER_LIST_UUID`, wrangler `[vars]`), gated by the shared `SIGNUP_LIMITER` (5/min/IP).
+Three routes, one flow (`listmonk-signup.ts::handleListSignup`): `POST /beta-signup` is the desktop app's contact
+channel for early testers, `POST /newsletter-signup` is getcmdr.com's newsletter form, and
+`POST /subprocessor-updates-signup` is getcmdr.com/trust's subprocessor-change notice list. Each reads ONLY the `email`
+from a 1 KB-capped body and subscribes it to its double-opt-in Listmonk list by UUID (`LISTMONK_BETA_LIST_UUID`,
+`LISTMONK_NEWSLETTER_LIST_UUID`, `LISTMONK_SUBPROCESSOR_LIST_UUID`, wrangler `[vars]`), gated by the shared
+`SIGNUP_LIMITER` (5/min/IP). The website side is one component, `apps/website/src/components/NewsletterForm.astro`,
+whose `list` prop picks the route.
+
+**Decision: `/admin/funnel` counts the newsletter and beta lists only.** Its signups column measures interest in Cmdr; a
+subprocessor-updates subscriber is doing due diligence, so counting them would inflate the funnel.
+`LISTMONK_SUBPROCESSOR_LIST_ID` exists for parity and nothing reads it yet.
 
 **Decision: Listmonk's public endpoint, not the admin API.** The call is
 `POST <LISTMONK_API_URL>/api/public/subscription` with `{email, list_uuids: [uuid]}` and no credentials. Why (verified
@@ -52,10 +63,10 @@ identical, so the response never reveals whether an address existed.
 **The beta privacy invariant:** `/beta-signup` carries NO install id of any kind, so the email and the analytics ids
 never co-occur on our servers (guarded by `listmonk-signup.test.ts`, including the signup event it writes).
 
-**The signup count:** only when Listmonk mailed a confirmation, a `beta-signup` or `newsletter-signup` ops event (the
-list and the time, nothing else) goes into D1 in `waitUntil` after the 204 ships; the morning brief counts them. It
-carries no email and no install id, and a failed write costs the count, never the signup (`apps/api-server/DETAILS.md` §
-Ops events).
+**The signup count:** only when Listmonk mailed a confirmation, a `beta-signup`, `newsletter-signup`, or
+`subprocessor-updates-signup` ops event (the list and the time, nothing else) goes into D1 in `waitUntil` after the 204
+ships; the morning brief counts them. It carries no email and no install id, and a failed write costs the count, never
+the signup (`apps/api-server/DETAILS.md` § Ops events).
 
 ## Blog likes
 

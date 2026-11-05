@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "{provider} har fullt upp just nu. Försöker igen ({attemptText} av {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Din AI-leverantör har fullt upp just nu. Försöker igen ({attemptText} av {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Den här chatten börjar bli lång. En ny håller svaren snabba och fokuserade.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -736,6 +744,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Din AI-leverantör avvisade det här: gränsen i din plan är lägre än en enda förfrågan från Cmdr, eftersom varje förfrågan alltid innehåller Cmdrs instruktioner. Ett kortare meddelande hjälper inte. Byt till en större plan eller välj en annan leverantör i Inställningar.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "{provider} har för mycket att göra för att svara just nu, även efter några försök. Vänta några minuter och skicka sedan ditt meddelande igen.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Din AI-leverantör har för mycket att göra för att svara just nu, även efter några försök. Vänta några minuter och skicka sedan ditt meddelande igen.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Svaret nådde sin gräns innan det blev klart. Försök fråga något mer specifikt.",
   "@askCmdr.error.budgetExhausted": {

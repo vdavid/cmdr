@@ -154,6 +154,37 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   Tab > New tab adds a tab and reads ⌃T; Cmdr > Settings opens its panel, File's items grey while it's in front, and Tab
   > Close tab closes it; the keyboard path from ⌃F2 reaches the palette; nothing lands in `unanswered`.
 
+## Right-click menus
+
+- **What**: the native popups the app opens (`show_file_context_menu`, the breadcrumb's, a tab's, the date header's Sort
+  by, the function key bar's, the viewer's text, a queue row's, a servers hub host's), drawn as HTML macOS 27 menus
+  (`context-menu.ts`) with the bar's look and keys. The app already cancels the browser's own menu
+  (`#lib/context-menu-ownership.ts`), so a right-click reaches the same `show_*` command it does on desktop.
+- **Decision**: the rows are the desktop's own, through WASM. `crates/cmdr-menu`'s `context` holds every popup's rows
+  and what a pick asks for; `cmdr-listing-wasm`'s `context_menu.rs` answers each `show_*` command with them and stashes
+  what the menu went up over, as `commands/menu.rs` stashes it in `MenuState` (`crates/cmdr-listing-wasm/DETAILS.md` §
+  The JS API). **Why**: the same as the bar's; a TS copy drifts on the first new item, and a pick that sent anything but
+  the native event would need its own handler in the app.
+- **Routing**: the backend asks `menu.opensPopup(cmd)` before the menu-state pushes. Each webview passes its label and
+  where its pointer last went down (`InvokeOrigin`, tracked in `webview.ts`), so the backend draws the menu in the TOP
+  frame at the pointer, offset by the panel's iframe for a secondary window, or at the `anchor` the app names for a
+  keyboard-opened menu (which then starts on its first enabled row). Top frame on purpose: a native popup isn't clipped
+  to its window, and one renderer serves every window. The command answers `null` once the menu is up, as the native one
+  returns while its menu tracks.
+- **Picks**: `menu.contextClick(id)`, then `menu-click.ts` sends it: an event to `main`, `queue`, or the viewer the menu
+  went up over, or the `add_favorite` command (the desktop calls it directly, for its add gate). A row the last popup
+  didn't offer enabled does nothing, in the engine as in the page.
+- **Left out**: every OS-filled group (Open with, Share, the tag colors, the provider's actions, Services): a browser
+  has no OS to ask. The image-search group stays hidden (no media index).
+- **Keys**: ↑/↓, Home/End, → into a submenu, ← or Esc out, Esc closes, Enter / Space pick, Tab closes; every key is kept
+  from the app while the menu is up. The header line is a `presentation` row, never a stop, and names the menu for a
+  screen reader (`aria-label`). A click outside, or the page losing focus, closes it.
+- **Shared with the bar**: `menu-surfaces.ts` (an open menu and its submenus: drawing, placement, highlight, the walk),
+  `menu-click.ts` (performing a pick), and `menu-bar-style.ts`'s `MENU_SURFACE_STYLE`, injected once per document.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-04): right-clicking `Documents` draws the folder menu
+  named by its header, with the live shortcuts (F5, ⌥⌘C) and no OS-filled group; ↓ lands on Selection, hovering it opens
+  the submenu beside it, and Selection > Select all selects the whole pane; no page error.
+
 ## Traffic lights
 
 On desktop the OS draws the close, minimize, and zoom buttons over each window's overlay title bar, at the
@@ -249,7 +280,10 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
    is `refuse('openPath', { type: 'unsupported' })`, typed against that command's error, which `invoke` rejects with as
    it does for a Rust `Err`. Opening a folder or package uses exactly that: the app's own refusal for a platform with no
    opener. Opening a demo FILE (Enter) is the backend's: it sends `open-file-viewer` to the main window, so the demo's
-   default app is Cmdr's own viewer.
+   default app is Cmdr's own viewer. Whether a path is a file is the live volume's answer (the engine's
+   `stat_paths_kinds`), ❌ never the boot tree's `demoEntries`: a set built from the tree once refused every copy, move,
+   and rename the visitor made (the viewer itself already read them, through the volume the write engine wrote to;
+   `viewer_test.rs`'s copied-renamed-moved cell pins that half).
 6. Commands outside the bindings (generic `<R: Runtime>` ones called through raw `invoke`, see `lib/ipc/DETAILS.md`) go
    in `rawAnswers`, keyed by their snake_case wire name, typed by hand against the wrapper's return type.
 7. Plugin commands (`plugin:<name>|<command>`) go in `plugins.ts`, or in `webview.ts`'s `windowAnswer` when they're
@@ -264,8 +298,9 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
 - Gotcha: the unanswered fallback answers `null`, which is only right for a void command. A value command left
   unanswered gets a `null` the app's types say can't happen: `getRecentSearches` did, and the search dialog's render
   threw on it, so ⌘F flashed the dialog and its boundary closed it. Answer every value command the app asks for.
-- Search: `prepareSearchIndex` refuses (the app's own "index not available" path), with empty recent searches and
-  excludes and no cloud consent, until the index runs in the engine (`docs/specs/demo-index-plan.md`).
+- Search: ⌘F is the WASM engine's (`crates/cmdr-listing-wasm/DETAILS.md` § Search), so no TS table answers a search
+  command (`engine-commands.test.ts` pins it). TS answers only `cloudAiConsentStatus` (no consent), which with
+  `getAiStatus` unavailable keeps the dialog's AI mode off.
 
 ## Writes
 
@@ -282,6 +317,39 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
 - There's no ⌘Z for an operation in the app either: undo is the operation log's Roll back (⌘⌥L).
 - Not answered yet: multi-rename (`open_multi_rename`, so its dialog fails to open), tags (`toggle_tags`), and the new
   folder dialog's AI name suggestions (`get_ai_status`).
+
+## Drag and drop
+
+On desktop, `start_drag_paths` hands the files to AppKit, which owns the mouse from then on and reports what it does
+through wry's drag-drop events (`tauri://drag-enter`, `-over`, `-drop`, `-leave`) plus the swizzle's `drag-modifiers`.
+`drag-session.ts` is that OS session for a page: its answer to `start_drag_paths` follows the pointer that's still down
+and sends the same events to the main window. So the app's drag controller
+(`file-explorer/pane/drag-drop-controller.svelte.ts`) runs unchanged: the hit test, the cursor label, auto-scroll, the
+self-drag identity, and the real transfer dialog on the in-browser write engine.
+
+- Events: `drag-modifiers` then `tauri://drag-enter` on the first move (or the release), `-over` per move, `-drop` where
+  it lets go. Positions are client px, which is what the controller reads Tauri's as. Modifiers come off the pointer and
+  key events (Option copies, ⌘ or Shift moves, as on desktop) and go out on enter and on each change.
+- Leaving the page sends `-leave`, coming back `-enter` again (the controller's re-entry fingerprint keeps it a
+  self-drag). Letting go outside the page is a clean no-op: nothing out there takes the files. Escape cancels, kept from
+  the app as AppKit keeps it; so does `pointercancel`, a window `blur`, and a button that was already up when the
+  session began (a quick flick).
+- While it runs, the page's mouse events are kept from the app (`mousedown` through `contextmenu`, plus the release's
+  own `click` a task later), as an OS drag loop keeps them from the webview.
+- Touch: the app arms a drag on a held touch and keeps the page from scrolling under it, generic code for any touch
+  browser (`file-explorer/drag/DETAILS.md` § Touch drags); the session follows that pointer like a mouse.
+- The drag image: the app writes a PNG for the OS session (`tempDir`, `join`, `plugin-fs` `writeFile` / `remove`).
+  `plugins.ts` joins paths for real and takes the writes and drops them, since nothing reads them; `plugins.test.ts`
+  fails if a second app module starts using `plugin-fs`, which would need its own answer. The swizzle's state
+  (`prepare_self_drag_overlay`, `clear_self_drag_overlay`, `set_self_drag_resolved_op`) is silent.
+- Files dragged in from the OS do nothing: the window cancels `dragover` / `drop`, else the browser opens the file in
+  place of the demo. Decision: no import. A browser hands over bytes with no path, and the in-memory volume takes no
+  outside bytes today (the engine would need a create-file-from-bytes write and the controller a non-path drop source),
+  which is a feature, not a drag shim.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-04): a mouse drag of `notes.md` from `~` to the other
+  pane's `~/Downloads` shows "Move to Downloads" and opens Move 1 file, which lands it; with Option it's Copy; dropping
+  onto the Documents row moves it there; an iPad-emulated touch held 450 ms then dragged does the same, and a quick
+  swipe starts no drag; `__cmdrDemo.unanswered` stays empty.
 
 ## Links
 

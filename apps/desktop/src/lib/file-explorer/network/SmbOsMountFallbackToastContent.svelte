@@ -64,6 +64,7 @@
         otherServerNotAllowed: 'fileExplorer.network.osMountFallback.otherServerNotAllowed',
         negotiationInvalid: 'fileExplorer.network.osMountFallback.negotiationInvalid',
         encryptionUnavailable: 'fileExplorer.network.osMountFallback.encryptionUnavailable',
+        encryptionRequired: 'fileExplorer.network.osMountFallback.encryptionRequired',
     }
 
     let connecting = $state(false)

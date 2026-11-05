@@ -50,7 +50,7 @@ More test cards: https://developer.paddle.com/concepts/payment-methods/credit-de
 ## Verify the webhook
 
 After checkout completes, the ngrok terminal should show a `POST /webhook/paddle` request, and the API server terminal
-should log the key generation. The test email address receives a license key via Resend.
+should log the key generation. The test email address receives a license key via SMTP2Go.
 
 If the webhook doesn't arrive, check the Paddle sandbox
 [notification log](https://sandbox-vendors.paddle.com/notifications).
@@ -69,7 +69,7 @@ node apps/api-server/scripts/mint-license.js --email test@example.com --org "Tes
 ```
 
 These keys pass `/validate` too, resolved from the local `license_issuance` ledger rather than from Paddle, so run
-`wrangler d1 migrations apply cmdr-telemetry --local` once first. Flags, revocation, and the production runbook:
+`wrangler d1 migrations apply TELEMETRY_DB --local` once first. Flags, revocation, and the production runbook:
 `apps/api-server/src/licensing/DETAILS.md` § Manual licenses.
 
 ## Refund it

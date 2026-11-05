@@ -199,7 +199,8 @@ RAW family. Finder (`MenuBar.strings`, `LocalizableMerged.strings`) decides, Saf
 ## El aviso de la conexión que macOS presta (`fileExplorer.network.osMountFallback.*`)
 
 `la conexión del sistema` when macOS isn't named. "for most connections" moves to the end, so `más lenta que…` sits
-beside its term.
+beside its term. require → `requerir` (macOS `Requerir contraseña`): `Requerir siempre cifrado SMB`, quoted in prose
+after `Cmdr tiene activado`; `El proveedor {provider}` keeps `ocupado` off the brand.
 
 ## Avisos de una línea de renombrar / crear (`errors.mutation.*`, `errors.volume.*`)
 

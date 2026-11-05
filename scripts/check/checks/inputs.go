@@ -126,8 +126,10 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr-nfs", Kind: KindApp, Glob: "crates/cmdr-nfs/**"},
 	{Pkg: "cmdr-operation-log", Kind: KindApp, Glob: "crates/cmdr-operation-log/**"},
 	{Pkg: "cmdr-operations", Kind: KindApp, Glob: "crates/cmdr-operations/**"},
+	{Pkg: "cmdr-recents", Kind: KindApp, Glob: "crates/cmdr-recents/**"},
 	{Pkg: "cmdr-restic", Kind: KindApp, Glob: "crates/cmdr-restic/**"},
 	{Pkg: "cmdr-s3", Kind: KindApp, Glob: "crates/cmdr-s3/**"},
+	{Pkg: "cmdr-search", Kind: KindApp, Glob: "crates/cmdr-search/**"},
 	{Pkg: "cmdr-sftp", Kind: KindApp, Glob: "crates/cmdr-sftp/**"},
 	{Pkg: "cmdr-smb", Kind: KindApp, Glob: "crates/cmdr-smb/**"},
 	{Pkg: "cmdr-sort", Kind: KindApp, Glob: "crates/cmdr-sort/**"},
@@ -185,7 +187,11 @@ var rustWorkspaceConfigInputs = []string{
 // The app's menu tests read the menu bar's definition and ids from `cmdr-menu`
 // (`menu/menu_items_test.rs`, `menu/context_menu_icons_test.rs`, `menu/macos_appkit.rs`).
 // The space poller's band tests read the free-percent case list the TS formatter shares
-// (`space_poller/readout.rs`).
+// (`space_poller/readout.rs`). Three are read at test time rather than embedded, which makes
+// them inputs all the same: the native-string resolver's tests read the message catalogs
+// (`intl/resolve.rs`), the agent view tests the tool-label key list
+// (`tools/tests/agent_view_tests.rs`), and the encoding-inspect tests their fixtures
+// (`tools/read/inspect/tests.rs`).
 //
 // A lane carries this whenever its own set covers the tree that does the
 // embedding, which is what `TestRustInputsCoverEveryEmbeddedFile` walks the whole
@@ -195,12 +201,15 @@ var rustWorkspaceConfigInputs = []string{
 // edits and reported a green describing the previous content.
 var rustEmbeddedInputs = []string{
 	"CHANGELOG.md",
+	"apps/desktop/src/lib/ask-cmdr/ask-cmdr-tool-label-keys.ts",
 	"apps/desktop/src/lib/commands/command-ids.ts",
+	"apps/desktop/src/lib/intl/messages/**",
 	"apps/desktop/src/lib/ipc/bindings.ts",
 	"apps/desktop/src/lib/logging/bridge-redaction-cases.json",
 	"apps/desktop/src/lib/logging/log-markers.json",
 	"apps/desktop/src/lib/units/drive-figure-cases.json",
 	"apps/desktop/src/lib/units/free-percent-cases.json",
+	"apps/desktop/test/fixtures/encodings/**",
 	"apps/desktop/src-tauri/resources/security-advisories.json",
 	"apps/desktop/src-tauri/tauri.conf.json",
 	"apps/desktop/src-tauri/updater-backup.pub",
@@ -360,6 +369,7 @@ var websiteDemoInputs = []string{
 	"apps/desktop/package.json",
 	"apps/desktop/vite.config.js",
 	"apps/desktop/tsconfig.json",
+	"apps/desktop/scripts/precompress-demo.ts",
 	"apps/website/demo-image.Dockerfile",
 	"crates/cmdr-listing-wasm/**",
 	"crates/cmdr-listing/**",
@@ -374,6 +384,8 @@ var websiteDemoInputs = []string{
 	"brand/screenshots/**",
 	"apps/desktop/test/e2e-shared/media-fixtures/**",
 	"crates/cmdr-sort/**",
+	"crates/cmdr-search/**",
+	"crates/cmdr-recents/**",
 	"vendor/**",
 	"scripts/build-listing-wasm.sh",
 	"scripts/build-listing-wasm/**",
@@ -381,6 +393,7 @@ var websiteDemoInputs = []string{
 	"Cargo.toml",
 	"Cargo.lock",
 	"rust-toolchain.toml",
+	".mise.toml",
 }
 
 // apiServerInputs mirrors ci.yml's `api-server` filter.
@@ -504,8 +517,9 @@ var goTestsInputs = inputs(
 	rustWorkspaceConfigInputs,
 	rustEmbeddedInputs,
 	treeGlobs(frontendSourceRoots...),
-	// ci.yml: `TestWebsiteDemoInputsMatchTheImageKey` reads its `website` filter.
-	[]string{"apps/desktop/package.json", ".github/workflows/ci.yml", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, s3ComposeRel, s3StartRel, nfsComposeRel, nfsStartRel, smbComposeRel},
+	// The workflows: `TestWebsiteDemoInputsMatchTheImageKey` reads ci.yml's `website` filter, and the
+	// `ci-coverage` rule tests read the lane files.
+	[]string{"apps/desktop/package.json", ".github/workflows/**", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, s3ComposeRel, s3StartRel, nfsComposeRel, nfsStartRel, smbComposeRel},
 )
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks

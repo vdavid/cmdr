@@ -49,11 +49,51 @@ export interface CaretGeometrySearch {
  * Clamping is what makes the caret reachable everywhere: a point left of a row's text
  * (the line-number gutter, the row's left padding) lands on the row's first offset, a
  * point right of it on the row's last offset (the wrap point on a wrapped line, matching
- * what an editor does), a point below every row on the end of the line.
+ * what an editor does).
+ *
+ * Vertically, a point that no character box covers snaps onto the nearest visual row and
+ * keeps its x. That's the leading: a text `Range`'s rect is the font's ascent + descent,
+ * not the line box, so a band above and below every visual row belongs to no character.
+ * ❗ Without the snap, a point in the band between rows N and N+1 resolves to the wrap
+ * point whatever its x, and a drag whose ends both sit in it selects nothing (#962). The
+ * same holds above the first row and below the last, so a point above every row lands on
+ * the first row and one below every row on the last; the caller decides what "past the
+ * rendered rows" means before it gets here.
  */
-export function findOffsetByGeometry({ length, measure, x, y }: CaretGeometrySearch): number {
-  if (length <= 0) return 0
+export function findOffsetByGeometry(search: CaretGeometrySearch): number {
+  if (search.length <= 0) return 0
+  const offset = searchByGeometry(search)
+  const y = nearestRowY(search, offset)
+  return y === null ? offset : searchByGeometry({ ...search, y })
+}
 
+/**
+ * When `y` falls on no character box, the vertical middle of the visual row nearest it,
+ * else `null`. `offset` is the first search's answer, so the rows around the point are
+ * the ones holding the characters just before and at it.
+ */
+function nearestRowY({ length, measure, y }: CaretGeometrySearch, offset: number): number | null {
+  const candidates: CaretRect[] = []
+  for (const at of [offset - 1, offset]) {
+    if (at < 0 || at >= length) continue
+    const box = measure(at)
+    if (box === null) return null
+    if (y >= box.rect.top && y < box.rect.bottom) return null
+    candidates.push(box.rect)
+  }
+  let nearest: CaretRect | null = null
+  let nearestDistance = Number.POSITIVE_INFINITY
+  for (const rect of candidates) {
+    const distance = y < rect.top ? rect.top - y : y - rect.bottom
+    if (distance < nearestDistance) {
+      nearest = rect
+      nearestDistance = distance
+    }
+  }
+  return nearest === null ? null : (nearest.top + nearest.bottom) / 2
+}
+
+function searchByGeometry({ length, measure, x, y }: CaretGeometrySearch): number {
   let lo = 0
   let hi = length - 1
   // Smallest offset proven to start after the point; `length` until one is found.

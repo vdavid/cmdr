@@ -290,7 +290,7 @@ fn with_the_lan_share_gone_the_tailscale_index_lists_invoices_paid_offline() {
     assert_eq!(wire["coverage"]["authoritative"], false);
     assert_eq!(
         wire["coverage"]["asOf"],
-        crate::search::format_timestamp(TAILSCALE_AS_OF)
+        crate::search::format_local_date(TAILSCALE_AS_OF)
     );
     assert_eq!(wire["location"], json!({ "volumeId": TAILSCALE, "path": path }));
     assert_eq!(child_names(&wire), ["2025", "hetzner-2026-09.pdf"]);

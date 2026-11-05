@@ -130,7 +130,7 @@ pub async fn suggested_ops_live_facts(
     };
     let deadline = stat_deadline(volume.as_ref());
     let paths = ops.iter().map(|op| op.source_path.clone()).collect();
-    let stats = stat_sources(volume.clone(), paths, &deadline).await;
+    let stats = stat_sources(volume_id, volume.clone(), paths, &deadline).await;
     let landings = new_name_states(&group, volume, &ops, &stats, &deadline).await;
     Ok(ops
         .into_iter()
@@ -189,7 +189,7 @@ async fn new_name_states(
             .collect();
     };
     let asked: Vec<String> = landings.iter().flatten().cloned().collect();
-    let mut answers = stat_sources(target, asked, deadline).await.into_iter();
+    let mut answers = stat_sources(target_id, target, asked, deadline).await.into_iter();
     landings
         .iter()
         .zip(sources)
@@ -241,6 +241,7 @@ mod tests {
             size: Some(7),
             modified: Some(1_700_000_000),
             inode: Some(12),
+            is_directory: false,
         });
         assert_eq!(
             serde_json::to_value(SuggestedOpLiveFact {
@@ -259,6 +260,7 @@ mod tests {
             size: None,
             modified: None,
             inode: None,
+            is_directory: true,
         });
         assert_eq!(
             serde_json::to_value(folder).unwrap(),
@@ -279,6 +281,7 @@ mod tests {
             size: Some(1),
             modified: Some(1),
             inode: Some(inode),
+            is_directory: false,
         }
     }
 

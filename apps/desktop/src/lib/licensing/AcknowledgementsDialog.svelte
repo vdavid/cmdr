@@ -180,6 +180,12 @@
         overflow-y: auto;
         margin-inline: calc(var(--spacing-sm) * -1);
         padding-inline: var(--spacing-sm);
+        /* A reserved gutter (#889), pulled further out into the body's inset by the bar's
+           width, as far as the panel edge. A 17px classic bar doesn't fit beside the 8px
+           row overhang in a 20px inset, so the striped rows end at the bar and their text
+           sits 5px inside the title's inset. `#lib/ui/DETAILS.md` § "Scrollbar gutters". */
+        scrollbar-gutter: stable;
+        margin-right: calc(min(var(--spacing-dialog), var(--spacing-sm) + var(--spacing-scrollbar-width)) * -1);
     }
 
     /* One grid for BOTH lists: each `ul` and each row is a `subgrid`, so the three

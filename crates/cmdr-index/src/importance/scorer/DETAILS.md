@@ -16,8 +16,8 @@ The coefficients are untuned defaults, and the loop that would tune them is `../
 `FolderSignals` carries the raw signal vector.
 
 - **name denylist** (`name_denylisted`): a set-membership check on the folded folder name against the shared
-  `indexing::SYSTEM_DIR_EXCLUDES` list (`node_modules`, `.git`, caches, build output). A FLOOR override, not an additive
-  term. Set-membership, never a substring match.
+  `cmdr_fs::system_dirs::SYSTEM_DIR_EXCLUDES` list (`node_modules`, `.git`, caches, build output). A FLOOR override, not
+  an additive term. Set-membership, never a substring match.
 - **hidden / system** (`hidden_or_system`): also a FLOOR override. A dotfile or system-owned folder scores `0.0`. The
   soft, non-floor side ("being visible is mildly positive") is the separate additive `Visibility` term.
 - **under a floored ancestor** (`under_floored_ancestor`): the third FLOOR override, `true` when a self-flooring

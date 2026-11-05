@@ -18,7 +18,7 @@
  */
 
 /** The release and date the page's claims were checked against. */
-export const verifiedAgainst = { version: '0.59.0', date: '2026-11-04' }
+export const verifiedAgainst = { version: '0.59.0', date: '2026-11-05' }
 
 export interface NetworkConnection {
   id: string
@@ -41,7 +41,7 @@ export const networkConnections: NetworkConnection[] = [
     id: 'updates',
     name: 'Update check and download',
     destination:
-      '<code>api.getcmdr.com</code>, then <code>getcmdr.com/latest.json</code>. The update itself downloads from <code>github.com</code> and <code>release-assets.githubusercontent.com</code>.',
+      '<code>api.getcmdr.com</code>, then <code>getcmdr.com/latest.json</code>. The update itself downloads from <code>download.getcmdr.com</code>, which stores the files in the EU. An update to 0.59.0 or older downloads from <code>github.com</code> and <code>release-assets.githubusercontent.com</code> instead, which stay a public mirror of every release.',
     when: 'In the background, at most once every three hours, counted across relaunches, and whenever the user picks "Check for updates". Users can set the interval from five minutes to 24 hours in Settings &gt; Advanced.',
     sends:
       'The app version and CPU architecture, in the URL. The server keeps a one-way hash of the IP address, the date, the version, and the architecture. It deletes each record after seven days and keeps only daily totals.',
@@ -156,7 +156,11 @@ export const allowlistHosts: { host: string; purpose: string }[] = [
     purpose: 'update checks, license checks, usage stats, reports, feedback, newsletter signup, S3 prices',
   },
   { host: 'getcmdr.com', purpose: 'the update manifest (latest.json)' },
-  { host: 'github.com, release-assets.githubusercontent.com', purpose: 'update downloads' },
+  { host: 'download.getcmdr.com', purpose: 'update downloads' },
+  {
+    host: 'github.com, release-assets.githubusercontent.com',
+    purpose: 'update downloads while 0.59.0 is the newest release (later ones come from download.getcmdr.com)',
+  },
   { host: 'license.getcmdr.com', purpose: 'license checks from older versions only' },
   {
     host: 'huggingface.co, *.hf.co',
@@ -179,9 +183,9 @@ export interface DataLocation {
 export const dataLocations: DataLocation[] = [
   {
     name: 'Cloudflare (Workers, D1, R2, KV, Analytics Engine)',
-    what: 'The API server. Its database holds download records, update checks, usage stats, crash reports, feedback, error-report notes and reply-to addresses, and the list of issued licenses. Its file storage holds error-report zips and a daily backup of the license list. Its key-value store holds license keys, the hashed device ids each license was checked from, and blog like counts. Analytics Engine counts devices per license.',
+    what: 'The API server. Its database holds download records, update checks, usage stats, crash reports, feedback, error-report notes and reply-to addresses, and the list of issued licenses. Its file storage holds error-report zips, a daily backup of the license list, and the release files that <code>download.getcmdr.com</code> serves. Its key-value store holds license keys, the hashed device ids each license was checked from, and blog like counts. Analytics Engine counts devices per license.',
     where:
-      "The database and file storage are placed in Eastern Europe, but not locked to the EU by contract. The API code and the KV key-value store run on Cloudflare's global network.",
+      "US company. The release files are stored in Cloudflare's EU jurisdiction. The database and the error-report storage are placed in Eastern Europe, but not locked to the EU yet. The API code and the KV key-value store run on Cloudflare's global network, so each request is handled at the Cloudflare data center nearest the user, which can be outside the EU. The transfer relies on the EU-US Data Privacy Framework, with the Standard Contractual Clauses in Cloudflare's data processing agreement as a backup.",
     inEu: 'partly',
   },
   {
@@ -198,21 +202,16 @@ export const dataLocations: DataLocation[] = [
   },
   {
     name: 'GitHub',
-    what: "Source code, release downloads and updates (GitHub sees the IP address), and a private issue tracker where crash reports, error reports, and feedback become issues. The email address and an error report's note sit in a separate comment that's deleted on a schedule.",
-    where: 'United States.',
+    what: "Source code, a public mirror of every release (whoever downloads from it, GitHub sees their IP address), and a private issue tracker where crash reports, error reports, and feedback become issues. The email address and an error report's note sit in a separate comment that's deleted on a schedule.",
+    where:
+      "United States. GitHub is certified under the EU-US Data Privacy Framework, which covers the transfer. There's no data processing agreement with GitHub: it offers one only on its paid business plans, and on Cmdr's free account it handles this data as its own controller, under its General Privacy Statement.",
     inEu: 'no',
   },
   {
-    name: 'Resend',
-    what: 'Sends license emails (with the license key), newsletter and confirmation emails, and internal notification emails about reports and feedback.',
-    where: "US company. It sends Cmdr's email from its Ireland region (eu-west-1).",
-    inEu: 'partly',
-  },
-  {
     name: 'SMTP2Go',
-    what: 'Relays the emails we send from @getcmdr.com addresses, like replies to support and security emails, so it sees who they go to and what they say. Mail we receive never passes through it.',
+    what: 'Sends every email Cmdr sends: license emails (with the license key), newsletter and confirmation emails, internal notification emails about reports and feedback, and the emails we write from @getcmdr.com addresses, like replies to support and security emails. So it sees who they go to and what they say. Mail we receive never passes through it.',
     where:
-      'New Zealand company, which the EU recognizes as giving adequate data protection. SMTP2Go says it stores data of EEA customers only in the EEA.',
+      'New Zealand company, which the EU recognizes as giving adequate data protection. Cmdr sends through its EU servers, and SMTP2Go says it stores data of EEA customers only in the EEA.',
     inEu: 'partly',
   },
   {
@@ -220,6 +219,32 @@ export const dataLocations: DataLocation[] = [
     what: "Payments, as merchant of record. Paddle keeps the buyer's payment details; Cmdr never sees card numbers.",
     where: 'United Kingdom.',
     inEu: 'no',
+  },
+]
+
+export interface SubprocessorChange {
+  /** ISO date the entry was published. */
+  date: string
+  /** Inline HTML. One or two sentences: who, what changed, where the data goes now. */
+  change: string
+}
+
+/**
+ * The dated subprocessor change log on `/trust#subprocessor-changes`, newest first. Part of the
+ * 30-day notice commitment published there: an addition, or an existing vendor moving data to a new
+ * country, needs an entry (and an email to the subprocessor updates list) 30 days before it takes
+ * effect. A removal or a pure contact change still gets an entry, with no notice period.
+ */
+export const subprocessorChanges: SubprocessorChange[] = [
+  {
+    date: '2026-11-05',
+    change:
+      'Removed <strong>Resend</strong> (United States). License, newsletter, and notification emails now go through <strong>SMTP2Go</strong>, already a subprocessor, from its EU servers.',
+  },
+  {
+    date: '2026-11-05',
+    change:
+      'Downloads, and updates to every release after 0.59.0, come from <code>download.getcmdr.com</code> instead of GitHub. <strong>Cloudflare</strong>, already a subprocessor, stores the files in its EU jurisdiction. GitHub keeps a public mirror of every release.',
   },
 ]
 
@@ -264,7 +289,7 @@ export const serverRetention: RetentionRule[] = [
     rule: "Deleted after two years, by a monthly job on Cmdr's own server that removes anything older than 23 months.",
   },
   { what: 'Website server logs', rule: 'Deleted after 30 days. They never hold an IP address.' },
-  { what: 'Newsletter list (Listmonk)', rule: 'Kept until the person unsubscribes.' },
+  { what: 'Newsletter and subprocessor updates lists (Listmonk)', rule: 'Kept until the person unsubscribes.' },
   { what: 'Purchase records at Paddle', rule: 'Seven years, as Swedish accounting law requires. Paddle keeps these.' },
 ]
 
@@ -276,12 +301,12 @@ export const serverRetention: RetentionRule[] = [
 export const knownLimitations: string[] = [
   '<strong>No update channels or staged rollout</strong>: every install gets a release at the same time. IT can turn updates off or hold Cmdr at a version (<a href="#mdm">central management</a>), though the updater never installs an older release.',
   '<strong>Four connections have no managed off switch</strong>: license checks, S3 prices, the image-search model download, and web images in a Markdown file the user chose to load, each for a stated reason (<a href="#mdm-not-covered">why each one stays</a>).',
-  '<strong>Some data leaves the EU</strong> (<a href="#eu">details</a>), and Cloudflare storage isn\'t locked to the EU jurisdiction.',
+  '<strong>Some data leaves the EU</strong> (<a href="#eu">details</a>), and Cloudflare\'s database and error-report storage aren\'t locked to the EU jurisdiction yet.',
   '<strong>Error-report cleaning has one known gap</strong>: Cmdr marks every name and path it logs itself, but a file name inside a message from macOS, a server, or a library, with no path on the same line, can get through.',
   "<strong>The local AI model download is checked by size only</strong>, not by a fixed hash, and comes from the model's main branch on Hugging Face. The image-search model has a fixed SHA-256 hash.",
   '<strong>No reproducible builds.</strong> Instead, each release publishes SHA-256 checksums, signed build provenance, and signed SBOMs, and its tag is signed.',
   '<strong>Automated tests run on one macOS version</strong> (macOS 26). A release-time check catches system frameworks and functions too new for older versions.',
-  '<strong>No third-party audit, penetration test, SOC 2, or ISO 27001.</strong> Cmdr is self-assessed instead: the CSA STAR listing and the OpenChain self-certifications above.',
+  '<strong>No third-party audit, penetration test, SOC 2, or ISO 27001.</strong> Cmdr is self-assessed instead: the CSA STAR listing and the OpenChain self-certifications above, and we fill in security questionnaires (<a href="#no-soc2">what you get instead</a>).',
   "<strong>Proxy sign-in is limited</strong> to a user name and password in the proxy's address (<code>HTTPS_PROXY</code> or <code>ALL_PROXY</code>).",
 ]
 

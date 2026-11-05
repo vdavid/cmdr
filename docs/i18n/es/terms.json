@@ -1185,7 +1185,7 @@
   },
   "encrypted": {
     "chosen": "cifrado",
-    "accept": ["cifrad"],
+    "accept": ["cifrad", "cifra", "cifrar"],
     "avoid": [
       {
         "form": "encriptado",

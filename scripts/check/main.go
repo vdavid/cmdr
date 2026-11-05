@@ -58,6 +58,8 @@ type cliFlags struct {
 	docsGraph         bool   // render the doc-discoverability tree (rooted at AGENTS.md) and exit
 	printNightly      bool   // print the pinned nightly toolchain (used by CI) and exit
 	printCargoModules bool   // print the pinned cargo-modules version (used by CI) and exit
+	// print the CMDR_RUST_TEST_SCOPE value for the change since this ref ("-": paths on stdin) and exit
+	printRustTestScope string
 	// ensure the E2E binary is built from the current tree, print its path, and exit
 	ensureE2EBinary bool
 }
@@ -131,7 +133,7 @@ func main() {
 		return
 	}
 
-	if handleEnsureE2EBinaryFlag(flags, rootDir) {
+	if handleOneShotFlags(flags, rootDir) {
 		return
 	}
 
@@ -316,6 +318,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		docsGraph         = fs.Bool("docs-graph", false, "Render the doc-discoverability tree (CLAUDE.md / DETAILS.md / docs, rooted at AGENTS.md) and exit")
 		printNightly      = fs.Bool("print-nightly", false, "Print the pinned nightly toolchain cargo-udeps runs on, and exit")
 		printCargoModules = fs.Bool("print-cargo-modules-version", false, "Print the pinned cargo-modules version module-cycles runs on, and exit")
+		printRustScope    = fs.String("print-rust-test-scope", "", "Print the Rust test scope (CMDR_RUST_TEST_SCOPE) for the change since this ref, or for the paths on stdin with -, and exit")
 		ensureE2E         = fs.Bool("ensure-e2e-binary", false, "Build the E2E binary unless the one on disk matches this tree, print its path, and exit")
 		help              = fs.Bool("help", false, "Show help message")
 		h                 = fs.Bool("h", false, "Show help message")
@@ -359,15 +362,16 @@ func parseFlags(args []string) (*cliFlags, error) {
 		// Quiet is the default; `-v` / `--verbose` opts into the per-check lines.
 		// CI is verbose unconditionally: log volume is free there, and a collapsed
 		// run is much harder to debug after the fact from a job log.
-		quiet:             !(*verbose || *ciMode),
-		allowMain:         *allowMain,
-		fresh:             *fresh,
-		exact:             *exact,
-		graph:             *graph,
-		graphFormat:       *graphFormat,
-		docsGraph:         *docsGraph,
-		printNightly:      *printNightly,
-		printCargoModules: *printCargoModules,
+		quiet:              !(*verbose || *ciMode),
+		allowMain:          *allowMain,
+		fresh:              *fresh,
+		exact:              *exact,
+		graph:              *graph,
+		graphFormat:        *graphFormat,
+		docsGraph:          *docsGraph,
+		printNightly:       *printNightly,
+		printCargoModules:  *printCargoModules,
+		printRustTestScope: *printRustScope,
 
 		ensureE2EBinary: *ensureE2E,
 	}
@@ -689,6 +693,7 @@ func showUsage() {
 	fmt.Println("    --docs-graph             Render the doc-discoverability tree (rooted at AGENTS.md) and exit")
 	fmt.Println("    --print-nightly          Print the pinned nightly toolchain cargo-udeps runs on, and exit")
 	fmt.Println("    --print-cargo-modules-version  Print the pinned cargo-modules version module-cycles runs on, and exit")
+	fmt.Println("    --print-rust-test-scope REF  Print which crates' Rust tests the change since REF can affect (- reads paths from stdin), and exit")
 	fmt.Println("    --ensure-e2e-binary      Build the E2E binary unless the one on disk matches this tree, print its path, and exit")
 	fmt.Println("    -h, --help               Show this help message")
 	fmt.Println()

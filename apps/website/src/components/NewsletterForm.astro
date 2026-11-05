@@ -1,19 +1,42 @@
 ---
+/** The Listmonk list a form joins; each has its own API route (`apps/api-server/src/website/`). */
+type SignupList = 'newsletter' | 'subprocessor-updates'
+
 interface Props {
     variant: 'inline' | 'stacked'
+    /** Defaults to the newsletter. */
+    list?: SignupList
+    /** Optional text above the field. Rendered as a paragraph, so the page keeps its own heading outline. */
+    heading?: string
+    /** Defaults to "Sign up". */
+    buttonLabel?: string
+    /** Shown after a signup goes through. Defaults to the newsletter's confirm-your-inbox line. */
+    successText?: string
     message?: string
     class?: string
 }
 
-const { variant, message, class: className } = Astro.props
+const {
+    variant,
+    list = 'newsletter',
+    heading,
+    buttonLabel = 'Sign up',
+    successText = 'Check your inbox to confirm your subscription!',
+    message,
+    class: className,
+} = Astro.props
 const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)}`
 ---
 
 <form
     class:list={['newsletter-form', `newsletter-form--${variant}`, className]}
     data-newsletter-form
+    data-signup-list={list}
+    data-button-label={buttonLabel}
+    data-success-text={successText}
     novalidate
 >
+    {heading && <p class="newsletter-form__heading">{heading}</p>}
     <label for={uniqueId} class="sr-only">Email address</label>
     <input
         id={uniqueId}
@@ -36,7 +59,7 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
         </label>
     </div>
 
-    <button type="submit" class="newsletter-form__button"> Sign up </button>
+    <button type="submit" class="newsletter-form__button">{buttonLabel}</button>
 
     <div class="newsletter-form__feedback" aria-live="polite"></div>
 
@@ -57,6 +80,14 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
 
     .newsletter-form--stacked {
         flex-direction: column;
+    }
+
+    .newsletter-form__heading {
+        flex-basis: 100%;
+        margin: 0;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
     }
 
     .newsletter-form__input {
@@ -149,6 +180,14 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
 </style>
 
 <script>
+    const signupApi = 'https://api.getcmdr.com'
+
+    /** Each list's route; an unknown `data-signup-list` falls back to the newsletter. */
+    const signupRoutes: Record<string, string> = {
+        newsletter: 'newsletter-signup',
+        'subprocessor-updates': 'subprocessor-updates-signup',
+    }
+
     function signupProblemText(status: number): string {
         if (status === 400 || status === 422) return "That email address doesn't look right. Check it and try again?"
         if (status === 429) return 'Lots of tries in a row. Wait a minute, then try again?'
@@ -165,6 +204,10 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
             const honeypot = form.querySelector<HTMLInputElement>('input[name="hp"]')!
             const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!
             const feedback = form.querySelector<HTMLDivElement>('.newsletter-form__feedback')!
+            const list = form.dataset.signupList ?? 'newsletter'
+            const route = signupRoutes[list] ?? signupRoutes.newsletter
+            const buttonLabel = form.dataset.buttonLabel ?? 'Sign up'
+            const successText = form.dataset.successText ?? ''
 
             function showFeedback(text: string, type: 'success' | 'error') {
                 feedback.textContent = text
@@ -191,15 +234,16 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
                 try {
                     // The API server subscribes through Listmonk and answers 502 when the
                     // confirmation mail didn't go out (apps/api-server/src/website/listmonk-signup.ts).
-                    const res = await fetch('https://api.getcmdr.com/newsletter-signup', {
+                    const res = await fetch(`${signupApi}/${route}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email }),
                     })
 
                     if (res.ok) {
-                        localStorage.setItem('newsletter-subscribed', 'true')
-                        showFeedback('Check your inbox to confirm your subscription!', 'success')
+                        // Only the newsletter hides the site's other newsletter prompts.
+                        if (list === 'newsletter') localStorage.setItem('newsletter-subscribed', 'true')
+                        showFeedback(successText, 'success')
                         emailInput.value = ''
                     } else {
                         showFeedback(signupProblemText(res.status), 'error')
@@ -208,7 +252,7 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
                     showFeedback("Couldn't reach getcmdr.com. Check your connection and try again?", 'error')
                 } finally {
                     button.disabled = false
-                    button.textContent = 'Sign up'
+                    button.textContent = buttonLabel
                 }
             })
         })

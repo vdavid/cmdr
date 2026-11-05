@@ -389,6 +389,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::settings::set_show_safe_save_files_cmd,
                     crate::commands::settings::set_show_staging_temp_files_cmd,
                     crate::commands::settings::set_smb_concurrency_cmd,
+                    crate::commands::settings::set_require_smb_encryption,
                     crate::commands::settings::set_log_llm_calls,
                     crate::commands::settings::set_image_index_enabled,
                     crate::commands::settings::set_operation_log_enabled,

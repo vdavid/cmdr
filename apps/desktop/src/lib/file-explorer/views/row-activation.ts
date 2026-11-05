@@ -10,6 +10,8 @@
  * which a `click` isn't on older WebKit.
  */
 
+import { createTouchHold } from '../drag/touch-hold'
+
 /** Chrome's own double-tap window. */
 export const DOUBLE_TAP_MS = 300
 
@@ -59,19 +61,30 @@ export interface RowActivationDeps {
   getListingId: () => string
   /** Opens the row at `index`. */
   activate: (index: number) => void
+  /**
+   * Presses the row at `index` as its `mousedown` does (select, arm a drag): a touch or pen held
+   * still there (`../drag/touch-hold.ts`), which sends no `mousedown` until it lifts.
+   */
+  hold: (event: PointerEvent, index: number) => void
   now?: () => number
 }
 
 export interface RowActivation {
-  onPointerDown: (event: PointerEvent) => void
+  onPointerDown: (event: PointerEvent, index: number) => void
   onClick: (index: number) => void
   onDoubleClick: (index: number) => void
 }
 
 export function createRowActivation(deps: RowActivationDeps): RowActivation {
   const press = createDoublePress(deps.now)
+  const touchHold = createTouchHold()
   return {
-    onPointerDown: press.onPointerDown,
+    onPointerDown(event, index) {
+      press.onPointerDown(event)
+      touchHold.press(event, () => {
+        deps.hold(event, index)
+      })
+    },
     onClick(index) {
       if (press.isDoubleTap(JSON.stringify([deps.getListingId(), index]))) deps.activate(index)
     },

@@ -126,3 +126,87 @@ fn a_share_the_server_lists_twice_reaches_the_pane_once() {
     );
     assert_eq!(answer.auth_mode, AuthMode::CredsRequired);
 }
+
+// ── Always require SMB encryption ──────────────────────────────────
+
+/// Requires encryption for one test and lifts it when the test ends. Nextest runs
+/// each test in its own process, so no other test sees it.
+struct EncryptionRequired;
+
+impl EncryptionRequired {
+    fn on() -> Self {
+        cmdr_smb::SmbEncryption::set_required(true);
+        Self
+    }
+}
+
+impl Drop for EncryptionRequired {
+    fn drop(&mut self) {
+        cmdr_smb::SmbEncryption::set_required(false);
+    }
+}
+
+/// ❗ The CLIs (`smbutil`, `smbclient`) know nothing about the requirement, so no
+/// listing may fall back to them while it's on.
+#[test]
+fn no_cli_fallback_while_encryption_is_required() {
+    assert!(cli_fallback_allowed(), "off by default");
+    let _on = EncryptionRequired::on();
+    assert!(!cli_fallback_allowed());
+}
+
+/// A guest session can't be encrypted but an account's can, so the guest leg's
+/// encryption refusal asks for an account, the way an auth refusal does.
+#[test]
+fn a_guest_refused_for_encryption_asks_for_an_account() {
+    assert!(guest_refusal_wants_an_account(&smb2::Error::EncryptionRequired));
+    assert!(!guest_refusal_wants_an_account(&smb2::Error::EncryptionUnavailable {
+        share: None
+    }));
+    assert!(!guest_refusal_wants_an_account(&smb2::Error::Timeout));
+}
+
+fn fixture_port(env: &str, default: u16) -> u16 {
+    std::env::var(env).ok().and_then(|v| v.parse().ok()).unwrap_or(default)
+}
+
+/// End to end under the requirement: a guest-friendly server's guest listing turns
+/// into "sign in" (no plaintext guest list, no CLI fallback), and the account's
+/// listing comes back over an encrypted session.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_required_encryption_sends_a_guest_listing_to_sign_in() {
+    let _on = EncryptionRequired::on();
+    let guest_port = fixture_port("SMB_CONSUMER_GUEST_PORT", 10480);
+    let auth_port = fixture_port("SMB_CONSUMER_AUTH_PORT", 10481);
+
+    let guest = list_shares(
+        "smb-integration-encryption-guest",
+        "127.0.0.1",
+        None,
+        guest_port,
+        None,
+        GuestAttempt::Try,
+        None,
+        Some(0),
+    )
+    .await;
+    assert!(
+        matches!(guest, Err(ShareListError::AuthRequired { .. })),
+        "got {guest:?}"
+    );
+
+    let account = list_shares(
+        "smb-integration-encryption-account",
+        "127.0.0.1",
+        None,
+        auth_port,
+        Some(("testuser", "testpass")),
+        GuestAttempt::Try,
+        None,
+        Some(0),
+    )
+    .await
+    .expect("an account's listing encrypts");
+    assert!(!account.shares.is_empty());
+}

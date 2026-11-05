@@ -38,8 +38,8 @@ an interest score, scores deadlines, and a wake turns what waits into one budget
 - **A rejected sweep earns ONE follow-up turn** (`followup.rs`), coalesced per SWEEP. ❌ It never discards its
   thread: that thread is the user's.
 - **Three seatbelts cap PROACTIVE spend** (`schedule.rs` + `spend.rs`): minimum spacing between wakes, a daily token
-  ceiling, a backoff on a typed auth or quota refusal. ⚠️ Spacing is NOT the cadence slider. ❌ Nothing the user types
-  is capped.
+  ceiling, a backoff on a typed auth or quota refusal (plus a shorter, doubling one on a busy provider). ⚠️ Spacing is
+  NOT the cadence slider. ❌ Nothing the user types is capped.
 
 What it produces: `../suggested_ops/CLAUDE.md`. The store: `../store/proposals/CLAUDE.md`.
 

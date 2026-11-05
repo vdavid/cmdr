@@ -158,6 +158,8 @@ and the top traps live in `style.md`; don't repeat them here.
 - Share not on the server is the one case where retrying can't help, so nothing temporary:
   `le serveur indique qu’il n’a aucun partage de ce nom` (over `dit`), `Vous y avez toujours accès`,
   `Cette situation ne se réglera pas d’elle-même`. In the toast, `qui` binds to `ce partage` (`il` could be `{server}`).
+- require → `exiger` (macOS `Exiger un mot de passe`): `Toujours exiger le chiffrement SMB`, in prose
+  `l’option « … » est activée dans Cmdr`.
 
 ## Transferts à l'arrêt et déplacements incomplets (`transferProgress.stall*`, `transferProgress.close`, `errors.write.deviceDisconnected.*`, `errors.write.moveNotConfirmed.*`, `errors.write.sourceNotRemoved.*`, `errors.write.permissionDenied.*`, `errors.write.deletePending.message`, `fileOperations.leftovers.*`)
 

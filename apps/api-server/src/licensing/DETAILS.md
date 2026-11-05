@@ -31,12 +31,12 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **`device-tracking.ts`**: device-set helpers — prune stale devices, alert threshold.
 - Tests: `license.test.ts`, `paddle.test.ts`, `license-issuance.test.ts` (the two pure classifiers), `refunds.test.ts`
   (`classifyAdjustment`), `sale-notices.test.ts` (the sandbox and recipient gates), `device-tracking.test.ts`,
-  `webhook-paddle.test.ts` (first delivery, duplicate, retry after a failed email, concurrent delivery, Resend
-  rejection), `admin-licenses.test.ts` (the states, the orphan and missing-code reconciliation), and two real-runtime
-  suites that run the built Worker in workerd (`../../DETAILS.md` § Test runtimes): `production-runtime.test.ts`
-  (minting, manual validation, revocation) and `webhook-runtime.test.ts` (the purchase and refund paths end to end, with
-  Paddle and Resend stubbed at the socket), plus `sale-notice-runtime.test.ts` (the sale notice and its backfill route,
-  same harness shape).
+  `webhook-paddle.test.ts` (first delivery, duplicate, retry after a failed email, concurrent delivery, SMTP2Go
+  reporting a failed send in a 200), `admin-licenses.test.ts` (the states, the orphan and missing-code reconciliation),
+  and two real-runtime suites that run the built Worker in workerd (`../../DETAILS.md` § Test runtimes):
+  `production-runtime.test.ts` (minting, manual validation, revocation) and `webhook-runtime.test.ts` (the purchase and
+  refund paths end to end, with Paddle and SMTP2Go stubbed at the socket), plus `sale-notice-runtime.test.ts` (the sale
+  notice and its backfill route, same harness shape).
 
 ## Data flow
 
@@ -47,7 +47,7 @@ Paddle webhook → HMAC verify (tries both live + sandbox secrets)
   → Paddle API: fetch customer details
   → per seat: generateLicenseKey() → generateShortCode() → KV.put(code, {fullKey, orgName})
   → store the codes on the row (short_codes, issued_at)
-  → sendLicenseEmail() via Resend
+  → sendLicenseEmail() via SMTP2Go (sendEmail)
   → mark the row delivered (emailed_at)
   → in the background (waitUntil): notifySale() → the sale notice to David (see Sale notices)
 
@@ -132,10 +132,9 @@ mint them by hand until that's built.
 **Decision, why not the Paddle `event_id` as the key:** one purchase must yield one set of licenses however many events
 carry it, so the transaction id is the unit of fulfillment. `event_id` is stored on the row for debugging only.
 
-**Gotcha: Resend reports failures in its response, it doesn't throw.** Every sender goes through `sendViaResend`
-(`../email/send.ts`), which turns an `error` into a thrown one. The app-wide rule is in `../../CLAUDE.md`; the money
-consequence is here: an unchecked `await` marks the purchase delivered and stops Paddle retrying, so the buyer pays and
-gets nothing.
+**Gotcha: SMTP2Go answers 200 OK for a failed send.** Every sender goes through `sendEmail` (`../email/send.ts`), which
+turns a failure in the body into a thrown error. The app-wide rule is in `../../CLAUDE.md`; the money consequence is
+here: an unchecked `await` marks the purchase delivered and stops Paddle retrying, so the buyer pays and gets nothing.
 
 **Decision: a webhook's `ts` must sit within `PADDLE_TIMESTAMP_TOLERANCE_SECONDS` (300 s) of now, either way.** The
 timestamp is inside the HMAC, so a captured webhook can't be freshened. Paddle defines `ts` as when the webhook was
@@ -163,7 +162,7 @@ running count ("That's sale #3!").
   accepted and `emailed_at` is set. `notifySale` never throws, so the notice can't change the response or put a
   fulfilled purchase back up for Paddle to retry.
 - **One sale, one email.** `claimSaleNotice` is `UPDATE ... SET sale_notified_at WHERE sale_notified_at IS NULL`
-  (migration `0029`), so redeliveries and rerun backfills find it taken. A failed send (Paddle or Resend) releases the
+  (migration `0029`), so redeliveries and rerun backfills find it taken. A failed send (Paddle or SMTP2Go) releases the
   claim and writes a `sale-notice-failed` ops event, which the digest mails.
 - **Details come from Paddle, not the webhook body**: `getSaleDetails` fetches the transaction with
   `include=customer,address,business`, so the live path and the backfill share one source.
@@ -402,7 +401,7 @@ needed.
 On each `/validate` call with a `deviceId`, the server tracks the device in KV (`devices:{seatTransactionId}`) and logs
 to Analytics Engine (binding `DEVICE_COUNTS`, dataset `cmdr_device_counts`). Devices older than 90 days are pruned on
 each write. If 6+ devices are active and no alert was sent in the past 30 days, an internal email goes to
-`legal@getcmdr.com` via Resend. The KV value stores a `DeviceSet` of device hashes → last-seen timestamps plus an
+`legal@getcmdr.com` via SMTP2Go. The KV value stores a `DeviceSet` of device hashes → last-seen timestamps plus an
 optional `lastAlertedAt`. Tracking is per SEAT: each seat in a multi-seat purchase has its own transaction id and its
 own 6-device allowance.
 
@@ -448,7 +447,7 @@ node apps/api-server/scripts/mint-license.js --email test@example.com --org "Tes
 ```
 
 It returns a short code like `CMDR-ABCD-EFGH-1234`. Local `/validate` needs the local D1 to have the table, so run
-`wrangler d1 migrations apply cmdr-telemetry --local` once. These keys validate for real (against the local ledger),
+`wrangler d1 migrations apply TELEMETRY_DB --local` once. These keys validate for real (against the local ledger),
 unlike a Paddle purchase; for an end-to-end run through Paddle itself, use the sandbox checkout flow described in
 [testing Paddle checkout](../../README.md#testing-paddle-checkout).
 

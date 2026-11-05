@@ -8,7 +8,7 @@
 
 use serde::Serialize;
 
-use crate::search::{format_size, format_timestamp};
+use crate::search::{format_local_date, format_size};
 
 /// A size string the model can quote verbatim, with any uncertainty INSIDE the
 /// string: `≥` when the number can only be higher (a lower bound), `~` when the
@@ -173,7 +173,8 @@ pub struct ChildEntry {
     pub size_is_updating: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modified: Option<u64>,
-    /// `modified` as a date (`"2023-11-14"`). Absent exactly when `modified` is.
+    /// `modified` as a date on the user's calendar (`"2023-11-14"`). Absent exactly
+    /// when `modified` is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modified_human: Option<String>,
 }
@@ -191,7 +192,7 @@ impl ChildEntry {
             size_is_lower_bound: size.is_lower_bound,
             size_is_updating: size.is_updating,
             modified,
-            modified_human: modified.map(format_timestamp),
+            modified_human: modified.map(format_local_date),
         }
     }
 

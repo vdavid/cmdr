@@ -145,10 +145,10 @@ fn totals_agree_except_that_byte_seek_knows_no_line_count() {
     for which in ALL_BACKENDS {
         let backend = open_backend(which, &file);
         assert_eq!(backend.total_bytes(), 800, "{which:?}");
-        // 41, not 40: a file ending in `\n` gets a trailing empty line from every backend
-        // that counts lines at all. Everything line-count-derived downstream (⌘A's last
-        // line, the scroll scale) is built on that.
-        let expected_lines = if which == Which::ByteSeek { None } else { Some(41) };
+        // 40 lines ending in `\n` are 40 lines, the way `less` and editors count them: no
+        // empty line past the final newline. Everything line-count-derived downstream
+        // (⌘A's last line, the scroll scale, the status bar) is built on that.
+        let expected_lines = if which == Which::ByteSeek { None } else { Some(40) };
         assert_eq!(backend.total_lines(), expected_lines, "{which:?}");
     }
 }
@@ -174,7 +174,7 @@ fn fetching_by_line_number_works_on_the_two_backends_that_claim_to_support_it() 
             ],
             "{which:?}"
         );
-        assert_eq!(chunk.total_rows, TotalRows::Exact(41), "{which:?}");
+        assert_eq!(chunk.total_rows, TotalRows::Exact(40), "{which:?}");
         assert_eq!(chunk.total_bytes, 800, "{which:?}");
     }
 }
@@ -303,12 +303,11 @@ fn range_from_mid_row_to_eof_reaches_the_last_row_in_every_backend() {
     let content = uniform_content();
     let file = fixture(&dir, "uniform.txt", content.as_bytes());
 
-    // ❗ THE TRAILING-NEWLINE ANSWER, picked and pinned for all three
-    // backends: a file ending in a newline has a final EMPTY row, so a read to `Eof`
-    // carries that final newline. FullLoad already did this; the other two stopped one
-    // byte earlier, which made the same gesture on the same file give two answers
-    // depending only on the file's size. FullLoad's answer wins because it is the one a
-    // whole-file copy can be byte-identical to the file under.
+    // ❗ THE TRAILING-NEWLINE ANSWER, pinned for all three backends: a file ending in a
+    // newline has no empty row past it, and a read to `Eof` still carries that final
+    // newline, because the last row says it ended at one (`ViewerRow::ends_at_newline`).
+    // The same gesture on the same file gives one answer whatever the file's size, and a
+    // whole-file copy is byte-identical to the file.
     for which in ALL_BACKENDS {
         let got = read(open_backend(which, &file).as_ref(), at(37, 5), RangeEnd::Eof);
         assert_eq!(got, &content[745..800], "{which:?}");
@@ -322,10 +321,18 @@ fn selecting_the_whole_file_yields_every_byte_in_every_backend() {
     let file = fixture(&dir, "uniform.txt", content.as_bytes());
 
     // ⌘A then ⌘C. All three hand over all 800 bytes, final newline included. Before
-    // rows, ByteSeek and LineIndex handed over 799.
+    // rows, ByteSeek and LineIndex handed over 799. ⌘A on a file whose rows are counted
+    // ends at the last row's end instead of `Eof`, and that is the end of the file too.
     for which in ALL_BACKENDS {
-        let got = read(open_backend(which, &file).as_ref(), at(0, 0), RangeEnd::Eof);
+        let backend = open_backend(which, &file);
+        let got = read(backend.as_ref(), at(0, 0), RangeEnd::Eof);
         assert_eq!(got, content, "{which:?}");
+        let last_row = UNIFORM_LINES as u64 - 1;
+        let got = read(backend.as_ref(), at(0, 0), at(last_row, 19));
+        assert_eq!(got, content, "{which:?}: ⌘A on counted rows");
+        // One character short of the end leaves the newline out, as any row's end does.
+        let got = read(backend.as_ref(), at(0, 0), at(last_row, 18));
+        assert_eq!(got, &content[..798], "{which:?}");
     }
 }
 
@@ -821,11 +828,8 @@ fn a_chunk_ending_on_the_last_row_says_so_instead_of_serving_it_twice() {
     // than at a boundary, so a re-seek re-serves the whole row instead of an empty one.
     let without_newline = with_newline.trim_end_matches('\n').to_string();
 
-    // Rows in each fixture: the newline-terminated one carries the final empty row, the
-    // other doesn't. ❗ `end_byte_offset == total_bytes` is NOT the tell for either: on
-    // the first file it is true one row BEFORE the end, because that empty row still
-    // follows at the same offset. Only "the walk has no row left" is exact.
-    for (name, content, rows) in [("trailing", &with_newline, 4097), ("none", &without_newline, 4096)] {
+    // 4 096 rows in each fixture: a final newline ends the last row and starts none.
+    for (name, content, rows) in [("trailing", &with_newline, 4096), ("none", &without_newline, 4096)] {
         let file = fixture(&dir, &format!("seam_{name}.txt"), content.as_bytes());
         for which in ALL_BACKENDS {
             let backend = open_backend(which, &file);

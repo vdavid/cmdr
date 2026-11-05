@@ -1,23 +1,23 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestHarness } from 'wrangler'
-import { EMAIL_PROBE_RECIPIENT } from './send'
+import { createSmtp2GoStub, type WireEmail } from './smtp2go-test-helpers'
 
 /**
  * Every sender in `src/email/` leaving the REAL Worker: wrangler builds `src/index.ts` and runs it
  * in workerd under the production `wrangler.toml`, so a Node API anywhere between a route (or a
- * cron job) and the Resend call throws here exactly as it throws in production.
+ * cron job) and the SMTP2Go call throws here exactly as it throws in production.
  *
  * `webhook-runtime.test.ts` already covers `sendLicenseEmail` over the purchase path; this file is
  * the rest. The reason they need a runtime lane at all, when `eslint.config.js` already
  * bans Node globals in our own source, is the layer lint structurally can't see: a DEPENDENCY
- * reaching for `Buffer` or `process` on a path we exercise. `resend` and the layout helpers are
+ * reaching for `Buffer` or `process` on a path we exercise. The senders and the layout helpers are
  * only proven safe by being run.
  *
  * ❌ Never give this harness its own compatibility settings, and never reach for `nodejs_compat`.
  *
- * **Resend and Paddle are stubbed at the socket, not in the source.** The harness points the
+ * **SMTP2Go and Paddle are stubbed at the socket, not in the source.** The harness points the
  * Worker's global `fetch` at this process, so replacing `globalThis.fetch` here intercepts every
- * outbound request with the route, the SDK, and the runtime untouched. See
+ * outbound request with the route, the sender, and the runtime untouched. See
  * `../../DETAILS.md` § Test runtimes for the two gotchas in reading an intercepted body.
  *
  * `GITHUB_ISSUES_TOKEN` is deliberately left unset: the board jobs share these ticks, and
@@ -32,7 +32,7 @@ const server = createTestHarness({
     {
       configPath: new URL('../../wrangler.toml', import.meta.url),
       secrets: {
-        RESEND_API_KEY: 'test-resend-key',
+        SMTP2GO_API_KEY: 'test-smtp2go-key',
         CRASH_NOTIFICATION_EMAIL: crashRecipient,
         PADDLE_API_KEY_LIVE: paddleApiKey,
       },
@@ -46,17 +46,8 @@ interface HarnessEnv {
   LICENSE_CODES: KVNamespace
 }
 
-/** One message as it left the Worker, read off the wire rather than off a mocked SDK. */
-interface SentEmail {
-  to: string
-  from: string
-  subject: string
-  html?: string
-  text?: string
-  reply_to?: string | string[]
-}
-
-const resend = { sent: [] as SentEmail[] }
+/** What left the Worker for SMTP2Go, read off the wire. */
+const smtp2go = createSmtp2GoStub()
 
 /** The Paddle transaction `/validate` resolves, and the customer the device alert looks up. */
 const paddleTransaction = { id: 'txn_devicealert', customer_id: 'ctm_01hv8x', custom_data: null }
@@ -79,7 +70,7 @@ afterAll(async () => {
 })
 
 beforeEach(() => {
-  resend.sent.length = 0
+  smtp2go.reset()
 })
 
 afterEach(() => {
@@ -88,10 +79,7 @@ afterEach(() => {
 
 async function stubbedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
-  if (url === 'https://api.resend.com/emails') {
-    resend.sent.push(JSON.parse(await requestBody(input, init)) as SentEmail)
-    return Response.json({ id: `email_${String(resend.sent.length)}` })
-  }
+  if (smtp2go.handles(url)) return await smtp2go.answer(url, input, init)
   if (url.startsWith('https://api.paddle.com/transactions/')) {
     return Response.json({ data: paddleTransaction })
   }
@@ -100,22 +88,6 @@ async function stubbedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
   }
   unexpectedOutbound.push(url)
   return Response.json({ error: 'This host is not stubbed' }, { status: 502 })
-}
-
-/**
- * The body of an outbound request. The harness hands it over as `fetch(url, request)`, so the body
- * rides on the init rather than the input.
- *
- * ❌ No `instanceof Request` here: the init is undici's internal `Request` class, which is NOT the
- * `Request` this module's global resolves to, so the check silently reads false and the body comes
- * back empty. Duck-typing on `text()` is what survives that.
- */
-async function requestBody(input: RequestInfo | URL, init?: RequestInit): Promise<string> {
-  for (const candidate of [init, input]) {
-    const body = candidate as { text?: () => Promise<string> } | undefined
-    if (typeof body?.text === 'function') return await body.text()
-  }
-  return typeof init?.body === 'string' ? init.body : ''
 }
 
 /** The runtime's own logs, for a failure message: a throw inside workerd leaves nothing in the body. */
@@ -133,17 +105,19 @@ function workerLogs(): string {
  * and `runCronJob` swallow it, so the only trace is in the runtime's own logs. They're carried into
  * the assertion message rather than left for someone to go find.
  */
-async function awaitEmails(count = 1): Promise<SentEmail[]> {
+async function awaitEmails(count = 1): Promise<WireEmail[]> {
   try {
-    await expect.poll(() => resend.sent.length).toBeGreaterThanOrEqual(count)
+    await expect.poll(() => smtp2go.sent.length).toBeGreaterThanOrEqual(count)
   } catch {
-    expect.fail(`Expected ${String(count)} email(s), got ${String(resend.sent.length)}.\nWorker logs:\n${workerLogs()}`)
+    expect.fail(
+      `Expected ${String(count)} email(s), got ${String(smtp2go.sent.length)}.\nWorker logs:\n${workerLogs()}`,
+    )
   }
-  return resend.sent
+  return smtp2go.sent
 }
 
 /** The one message the path under test sent. */
-async function awaitEmail(): Promise<SentEmail> {
+async function awaitEmail(): Promise<WireEmail> {
   return (await awaitEmails())[0]
 }
 
@@ -220,16 +194,16 @@ describe('mailing the report digest from the Worker runtime', () => {
     ).run()
 
     // Intake mails nothing on its own: the digest is the one email.
-    expect(resend.sent).toHaveLength(0)
+    expect(smtp2go.sent).toHaveLength(0)
 
     await tick(3)
     const email = await awaitEmail()
 
-    expect(resend.sent).toHaveLength(1)
+    expect(smtp2go.sent).toHaveLength(1)
     expect(email.to).toBe(crashRecipient)
     expect(email.subject).toBe('Cmdr digest: 1 crash, 1 error, 1 note added, 1 feedback in the past 3h')
     // One person left an address (twice), so a plain reply reaches them.
-    expect(email.reply_to).toBe('reporter@example.com')
+    expect(email.replyTo).toBe('reporter@example.com')
     expect(email.html).toContain('Copying to the NAS stalls at 99%')
     expect(email.html).toContain('It also stalls on a local disk')
     expect(email.html).toContain('assertion failed: chunk.len() &gt; 0')
@@ -243,13 +217,36 @@ describe('mailing the report digest from the Worker runtime', () => {
     }
   })
 
-  it('sends the daily path probe, which is the only send that proves the key still works', async () => {
+  it('runs the daily path probe against the email cycle, spending no email on it', async () => {
     await tick(0)
-    const email = await awaitEmail()
 
-    expect(email.to).toBe(EMAIL_PROBE_RECIPIENT)
-    expect(email.subject).toBe('Cmdr email path probe')
-    expect(email.text).toContain('Nobody receives this')
+    expect(smtp2go.cycleChecks, `Worker logs:\n${workerLogs()}`).toBe(1)
+    expect(smtp2go.sent).toHaveLength(0)
+  })
+
+  it('leaves the digest unstamped when SMTP2Go answers 200 but reports the send failed', async () => {
+    const env = await server.getWorker<HarnessEnv>().getEnv()
+    await env.TELEMETRY_DB.prepare(
+      `INSERT INTO feedback (feedback, app_version, os_version, build_mode)
+       VALUES ('The queue could use a pause button', '0.9.1', 'macOS 26.0', 'release')`,
+    ).run()
+    const pending = async (): Promise<number | undefined> =>
+      (
+        await env.TELEMETRY_DB.prepare('SELECT COUNT(*) AS n FROM feedback WHERE notified_at IS NULL').first<{
+          n: number
+        }>()
+      )?.n
+    smtp2go.failAll = true
+
+    await tick(3)
+    await awaitEmail()
+    expect(await pending(), `Worker logs:\n${workerLogs()}`).toBe(1)
+
+    // The next tick retries and stamps, which also keeps the row out of the tests below.
+    smtp2go.reset()
+    await tick(3)
+    await awaitEmail()
+    expect(await pending()).toBe(0)
   })
 })
 
@@ -298,8 +295,8 @@ describe('mailing the DB size alert from the Worker runtime', () => {
 
     await tick(0)
 
-    // The path probe rides the same tick, so the alert is found by subject rather than by position.
-    const sent = await awaitEmails(2)
+    // Other daily jobs ride the same tick, so the alert is found by subject rather than by position.
+    const sent = await awaitEmails(1)
     const email = sent.find((mail) => mail.subject.startsWith('Cmdr: telemetry DB is'))
 
     expect(email, `Sent: ${sent.map((mail) => mail.subject).join(', ')}`).toBeDefined()

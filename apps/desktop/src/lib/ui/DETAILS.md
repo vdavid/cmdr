@@ -11,6 +11,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`modal-resize.ts`**: `ModalDialog`'s edge-and-corner resize geometry as pure functions (`resizeStep`, the limits,
   which bands show)
 - **`modal-drag.ts`**: where `ModalDialog` may be dragged: the clamp that keeps the title bar grabbable
+- **`scrollbar-width.ts`**: `trackScrollbarWidth`, the live `--spacing-scrollbar-width` on `:root`, installed once per
+  window by `routes/+layout.svelte`. § Scrollbar gutters
 - **`focus-trap.ts`**: `use:trapFocus` action: Tab wrapping, focus-leak guard, Escape fallback, trap stack
 - **`dialog-registry.ts`**: `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs
 - **`markdown-link-click.ts`**: `handleMarkdownLinkClick`, the click delegate every `{@html}`-rendered markdown block
@@ -334,6 +336,35 @@ So on a machine whose OS accent is Green while `appearance.appColor` is `cmdr-go
 (`--color-apple-green`, the exact `NSColor.controlAccentColor()` green) in an otherwise gold UI, and the color is no
 help in tracing it back to a focus ring. Any element we focus programmatically and don't style owes itself the same
 `outline: none` (verified on macOS 15 / WKWebView, from a user screenshot of 0.38.1, 2026-08-12).
+
+### Scrollbar gutters
+
+**Every scroller inside a dialog reserves its gutter (`scrollbar-gutter: stable`) and gives it back from its spacing.**
+With a mouse connected, macOS shows classic scrollbars, and WebKit lays out a scroller inside the `position: fixed` flex
+overlay as if its bar weren't there: the content ran 17 px wider than its box and panned sideways, and the right inset
+shrank from 20 px to 3 px (#889). It reproduces in plain DOM and survives every centering, `display`, and containment
+variant tried; only a reserved gutter avoids it, because then the bar never changes the content box.
+
+- **The scroller owns the inset** (`.modal-body.scrolls`, onboarding's `.step-shell`): `padding-right` is the inset
+  minus `--spacing-scrollbar-width`, so the content's right edge sits on the title's inset with or without a bar.
+  `.scrolls` marks the modes whose body IS the scroller (`bodyScrolls`: `growDownward` or `resizable`, minus `resizable`
+  - `fillBody`); a body that doesn't scroll gets no gutter.
+- **The scroller sits inside the body's inset** (What's new `.scroll-area`, Acknowledgements `.packages-scroll`): it
+  pulls its right margin out by the bar's width, so the gutter lands in the inset. `.packages-scroll` already overhangs
+  8 px for its striped rows, and 8 + 17 doesn't fit in 20, so it stops at the panel edge (`min()`): the stripes end at
+  the bar and their text sits 5 px inside the title's inset.
+- **The token** comes from `trackScrollbarWidth` (`scrollbar-width.ts`): an off-screen unstyled probe, read as
+  `offsetWidth - clientWidth`, re-read by a content-box `ResizeObserver`. macOS flips the scrollbar style live (a mouse
+  plugged in or out, "Show scroll bars" changed) and WebKit re-lays-out the scrollers that can scroll, which is why the
+  probe holds an oversized filler: an empty one followed a flip to overlay but not back to classic. (Verified on macOS
+  27 WKWebView, `AppleShowScrollBars` changed with its `AppleShowScrollBarsSettingChanged` distributed notification,
+  both directions, 2026-11-04.)
+- **Measured on 2026-11-04 at 125 % text, classic bars**, content right inset from the panel edge, title at 21:
+  `delete-all-data`, `alert/path-past-display-cap`, `suggested-ops/servers` went from 21 with `scrollWidth` 17 px over
+  `clientWidth` (content under the bar) to 21 with no sideways scroll; What's new's text stayed at 25 (its 4 px
+  breathing room) and Acknowledgements' stripes moved from under the bar to its edge. Overlay bars read the same as
+  before the fix. The E2E lanes pin overlay bars, so this is covered only by the unpinned runs in
+  `test/e2e-playwright/DETAILS.md` § "The scrollbar pin".
 
 ## The started-elsewhere guard
 

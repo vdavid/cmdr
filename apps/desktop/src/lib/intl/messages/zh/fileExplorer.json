@@ -2185,6 +2185,14 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} 无法加密连接，而 Cmdr 已开启“始终要求 SMB 加密”，所以 Cmdr 继续使用系统连接。",
+  "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
+    "sourceHash": "e4af63d"
+  },
+  "fileExplorer.network.osMountFallback.encryptionRequired": "无法直接连接到 <shareName>{share}</shareName>，因为服务器没法加密连接，而 Cmdr 已开启“始终要求 SMB 加密”。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。",
+  "@fileExplorer.network.osMountFallback.encryptionRequired": {
+    "sourceHash": "14a8cb4"
+  },
   "fileExplorer.network.osMountFallback.negotiationInvalid": "无法直接连接到 <shareName>{share}</shareName>，因为服务器没有确认和 Cmdr 商定好的安全设置。服务器运行不正常可能导致这种情况，有人篡改连接也可能导致。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。",
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
     "sourceHash": "758e268"

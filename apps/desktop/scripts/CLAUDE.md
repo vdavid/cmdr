@@ -16,9 +16,10 @@ launch boundary, the llama-server fetch, and the type-drift check.
 - **`gen-native-strings.ts`** (+ `-lib.ts`): the catalog subset Rust draws itself (`menu.`, window title,
   already-running alert), plus the Finder menu item's titles. `pnpm intl:native-strings`, guarded by
   `native-strings-fresh`
-- **`gen-boot-guard-lib.ts`**: the old-WebKit block screen's translated strings, spliced into the app shell by
-  `vite.config.js` at config-load time (no CLI, nothing committed). `src/lib/utils/DETAILS.md` § Old-WebKit boot guard
-- **`vite-webkit-regex-floor.ts`**: fails the build on a regex Safari 15 can't compile
+- **`gen-boot-guard-lib.ts`**: the old-WebKit block screen's strings, spliced in by `vite.config.js` (nothing
+  committed). `src/lib/utils/DETAILS.md` § Old-WebKit boot guard
+- **`vite-webkit-floor.ts`**: fails a build Safari 15.4 can't run (regex, API: `vite-webkit-*-floor.ts`)
+- **`precompress-demo.ts`**: the demo's `.br` files (`apps/website/DETAILS.md` § Browser demo)
 - **`i18n-*.ts`**: catalog lib, locale checks, generators, key sync, `pnpm i18n:brief`, and the termbase/mechanics
   checks (`docs/i18n/termbase.md`)
 - **`gen-analytics-defaults.ts`** (+ `-lib.ts`): the per-version settings-defaults manifest the dashboard resolves
@@ -54,6 +55,6 @@ Wrapper architecture, decisions, instance-isolation reference: `DETAILS.md`, `do
 - **`download-llama-server.go` takes the binaries from the main clone in a worktree when `.version` matches**, as a
   COPY, ❌ never a symlink: the Linux-E2E container bind-mounts only the worktree, where such a symlink dangles. Signing
   is the `sign` subcommand, ❌ never the fetch. DETAILS § "The llama-server fetch".
-- **`--worktree` slug isn't checked against the directory name**, so isolation can be pinned from any shell.
+- **`--worktree` slug isn't checked against the dir**: pin isolation from any shell.
 - **`instance-id.ts` is stdlib-only** (`node:net`/`fs`/`os`/`path`/`child_process`), imported by `tauri-wrapper.ts` and
   the test. New helpers need a default-arg shape so existing wrapper code keeps working.

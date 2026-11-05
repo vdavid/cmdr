@@ -60,6 +60,11 @@ export interface AssistantItem {
   rounds: Round[]
   thinking: boolean
   stalled: boolean
+  /** The provider turned the call away as overloaded and the turn is waiting to try again:
+   * `attempt` is the try about to start, of `attempts`, and `provider` the cloud provider's brand
+   * name (absent for a custom endpoint). Absent while it isn't busy; the next chunk, tool line, or
+   * the turn's end clears it. Live only, so a reload never shows it. */
+  busy?: { attempt: number; attempts: number; provider?: string }
   streaming: boolean
   /** What the turn spent: `null` while it runs, and for a turn that ran no tool. */
   stats: TurnStats | null
@@ -79,8 +84,8 @@ export type RailMessage =
       detail?: string
       /** Which rule of the organization's policy refused, for `managedByOrganization`. */
       managed?: ManagedAiRefusal
-      /** The cloud provider's brand name, for `requestTooLarge` and `modelNotInPlan`, read when the turn failed so a
-       * later provider switch can't rename it. Absent for a custom endpoint or a local server. */
+      /** The cloud provider's brand name, for `requestTooLarge`, `modelNotInPlan`, and `providerBusy`, read when
+       * the turn failed so a later provider switch can't rename it. Absent for a custom endpoint or a local server. */
       provider?: string
     }
   /** What a wake noticed, which opens every thread the agent started for itself. It sits

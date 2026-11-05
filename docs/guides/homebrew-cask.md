@@ -55,11 +55,11 @@ ever touch the tap.
 
 This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so keep it intact.
 
-- **`url` points at `license.getcmdr.com/download/#{version}/universal`, not GitHub.** The 302 to GitHub Releases behind
-  it is fine: `brew audit` regex-matches only the _declared_ `url`/`homepage` strings, and never follows redirects. A
-  `github.com` URL in the cask would auto-fail the notability audit (needs 75+ stars; 225+ for self-submissions). Keep
-  `github.com` out of the cask file. Bonus: the endpoint logs downloads to D1, so brew installs show up in our
-  telemetry.
+- **`url` points at `license.getcmdr.com/download/#{version}/universal`, not GitHub.** The 302 behind it (to the EU
+  mirror, `download.getcmdr.com`, or GitHub for releases before 0.59.0) is fine: `brew audit` regex-matches only the
+  _declared_ `url`/`homepage` strings, and never follows redirects. A `github.com` URL in the cask would auto-fail the
+  notability audit (needs 75+ stars; 225+ for self-submissions). Keep `github.com` out of the cask file. Bonus: the
+  endpoint logs downloads to D1, so brew installs show up in our telemetry.
 - **`livecheck` reads `https://getcmdr.com/latest.json`**, the same Tauri updater manifest the app polls. The release
   flow already publishes it.
 - **`auto_updates true`**: Cmdr ships its own updater, so `brew upgrade` skips it unless `--greedy`.

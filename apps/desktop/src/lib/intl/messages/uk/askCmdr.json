@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "Постачальник {provider} зараз зайнятий. Повторна спроба ({attemptText} з {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Ваш постачальник ШІ зараз зайнятий. Повторна спроба ({attemptText} з {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Цей чат стає задовгим. У новому чаті відповіді будуть швидкими й зосередженими.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -736,6 +744,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Ваш постачальник ШІ відхилив запит: ліміт вашого тарифу менший, ніж один запит від Cmdr, адже кожен запит завжди містить інструкції Cmdr. Коротше повідомлення не допоможе. Перейдіть на більший тариф або виберіть іншого постачальника в Параметрах.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "Постачальник {provider} зараз надто зайнятий, щоб відповісти, навіть після кількох спроб. Зачекайте кілька хвилин, а потім надішліть повідомлення ще раз.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Ваш постачальник ШІ зараз надто зайнятий, щоб відповісти, навіть після кількох спроб. Зачекайте кілька хвилин, а потім надішліть повідомлення ще раз.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Ця відповідь досягла ліміту, перш ніж встигла завершитися. Спробуйте запитати конкретніше.",
   "@askCmdr.error.budgetExhausted": {

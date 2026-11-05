@@ -33,7 +33,7 @@ const baseBindings = {
   DEVICE_COUNTS: createMockAnalyticsEngine(),
   TELEMETRY_DB: createMockD1(),
   ED25519_PRIVATE_KEY: 'deadbeef'.repeat(8),
-  RESEND_API_KEY: 'test-resend-key',
+  SMTP2GO_API_KEY: 'test-smtp2go-key',
   PRODUCT_NAME: 'Cmdr',
   SUPPORT_EMAIL: 'test@example.com',
   ADMIN_API_TOKEN: 'test-admin-token-secret',

@@ -320,6 +320,7 @@ describe('UpdatesSection under an organization’s policy', () => {
     usageStatsDisabled: false,
     reportsDisabled: false,
     securityLogRequired: false,
+    smbEncryptionRequired: false,
     updates: { kind: 'enabled', automaticChecks: true, ceiling: null },
     ai: { mode: 'allowed', allowedCloudHosts: null },
     lockedSettings: [],

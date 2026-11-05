@@ -112,6 +112,21 @@ jobs:
 
           echo "$TAG moves the manifest $CURRENT -> $VERSION. Proceeding."
 
+      # `publish` copies the release into the EU bucket behind `download.getcmdr.com` before it
+      # goes Latest, and `latest.json` names that host. A token that can't write the bucket would
+      # fail `publish` after the hour-long build, so prove it here, in seconds (one small fixed
+      # object, overwritten each time). `docs/guides/releasing.md` § Where downloads are served from.
+      - name: Install Go for the download mirror check
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install_args: go
+
+      - name: Require write access to the EU download bucket
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: ./scripts/release-mirror.sh -preflight
+
   # Only a commit with a fully green CI run ships: a `workflow_dispatch` run of `ci.yml` with
   # `run_all` on the tagged commit (`release.sh` starts it on the release branch as it pushes the
   # tag), never a push or PR run, since those skip every lane whose paths didn't change. Plus
@@ -1076,8 +1091,8 @@ jobs:
       # backup one (`docs/guides/releasing.md` § Rotating to the backup updater key; an empty or foreign
       # one would otherwise land in `latest.json` and strand every install). The same verifier
       # `release-finish.sh` ran before uploading. `ci` mode's signatures come from its own build.
-      - name: Install Go to verify the signatures
-        if: github.event_name == 'workflow_dispatch'
+      # Go is also what the download mirror step below runs, in both modes.
+      - name: Install Go to verify the signatures and mirror the downloads
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
           install_args: go
@@ -1129,7 +1144,9 @@ jobs:
           # Read notes from file, escape for JSON
           NOTES=$(jq -Rs . < /tmp/notes.txt)
 
-          BASE_URL="https://github.com/${{ github.repository }}/releases/download/$TAG"
+          # The EU mirror (`scripts/release-mirror.sh`, run below before the release goes Latest).
+          # Older installs follow any HTTPS URL here: no shipped updater checks the host.
+          BASE_URL="https://download.getcmdr.com/$TAG"
 
           jq -n --indent 2 \
             --arg version "$VERSION" \
@@ -1156,7 +1173,8 @@ jobs:
 
           # Every installed copy of Cmdr fetches these URLs verbatim and has no fallback, so a name
           # that drifts from what the `sign` job uploaded would strand the whole install base. Fail
-          # the release here instead, while nothing has shipped.
+          # the release here instead, while nothing has shipped. (The mirror step checks the same
+          # URLs answer with the release's bytes.)
           for asset in $(jq -r '.platforms[].url | split("/") | last' /tmp/latest.json | sort -u); do
               echo "$RELEASE_JSON" | jq -e --arg name "$asset" 'any(.assets[]; .name == $name)' > /dev/null \
                   || { echo "latest.json points at \"$asset\", which is not an asset on release $TAG"; exit 1; }
@@ -1208,6 +1226,22 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           gh release edit "$TAG" --notes-file /tmp/notes.txt
+
+      # `latest.json` names `download.getcmdr.com`, so every file it or the download redirect can
+      # send a user to must be there first. Copies the update archives, signatures, DMGs, pkg, and
+      # `checksums.txt` from the release (each checked against GitHub's digest and the checksums)
+      # into the EU bucket, reads each back through the public host, and checks the manifest names
+      # only mirrored archives. A failure here leaves the release un-Latest, so nothing moves;
+      # "Re-run failed jobs" retries it (every step above is idempotent). The SBOMs and
+      # attestations stay on GitHub only.
+      - name: Mirror the downloads to the EU bucket
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          ./scripts/release-mirror.sh -manifest /tmp/latest.json "${TAG#v}"
 
       # The switch that ships it. The website serves the `latest.json` of the release marked
       # "Latest" (`apps/website/scripts/fetch-live-manifest.ts`, run by each deploy), and the guard

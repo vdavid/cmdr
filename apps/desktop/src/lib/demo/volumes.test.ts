@@ -48,6 +48,14 @@ describe('volume answers', () => {
     expect((ask('resolvePathVolume', { path: '/' }) as { volume: { id: string } }).volume.id).toBe(DEMO_VOLUME_ID)
   })
 
+  // Regression: unanswered, a search result's Go to file toasted "Couldn't reach that location's drive".
+  it('resolves a navigation edge to the main volume, `~` expanded', () => {
+    expect(ask('resolveLocation', { path: '~/Documents/' })).toEqual({
+      location: { volumeId: DEMO_VOLUME_ID, path: '/Users/you/Documents' },
+      timedOut: false,
+    })
+  })
+
   it('reports nothing syncing and every path stored as given', () => {
     expect(ask('getSyncStatus', { paths: ['~/notes.md'] })).toEqual({ data: {}, timedOut: false })
     expect(ask('storedSpellings', { volumeId: DEMO_VOLUME_ID, paths: ['/a', '/b'] })).toEqual({

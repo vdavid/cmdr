@@ -542,6 +542,13 @@ pub enum AgentLlmError {
     /// whose per-minute token cap is below one prompt (Groq's free tier). Retrying won't help.
     /// The string is for display only.
     RequestTooLarge(String),
+    /// The provider is overloaded right now (HTTP 503, or Anthropic's 529). Transient: the
+    /// runtime retries it while nothing has streamed (`chat::runtime::retry`). `retry_after` is
+    /// the provider's own `Retry-After`, uncapped; `detail` is for display only.
+    Overloaded {
+        detail: String,
+        retry_after: Option<std::time::Duration>,
+    },
     /// A per-message budget (tool turns / wall time / tokens) was exhausted.
     BudgetExhausted,
     /// Any other provider-side failure; the string is for display only.
@@ -561,6 +568,7 @@ impl AgentLlmError {
             | Self::RateLimited(detail)
             | Self::ModelNotInPlan(detail)
             | Self::RequestTooLarge(detail)
+            | Self::Overloaded { detail, .. }
             | Self::Provider(detail) => Some(detail),
             _ => None,
         }
@@ -578,6 +586,7 @@ impl std::fmt::Display for AgentLlmError {
             Self::RateLimited(detail) => write!(f, "the AI provider is rate-limiting or out of quota: {detail}"),
             Self::ModelNotInPlan(detail) => write!(f, "the AI provider's plan doesn't include this model: {detail}"),
             Self::RequestTooLarge(detail) => write!(f, "the AI provider won't take a request this big: {detail}"),
+            Self::Overloaded { detail, .. } => write!(f, "the AI provider is overloaded right now: {detail}"),
             Self::BudgetExhausted => write!(f, "the message budget was exhausted"),
             Self::Provider(detail) => write!(f, "the AI provider returned a problem: {detail}"),
             Self::Managed(refusal) => write!(f, "the organization's policy refuses this AI request ({refusal:?})"),

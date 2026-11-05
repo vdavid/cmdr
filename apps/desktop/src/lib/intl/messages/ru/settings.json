@@ -1294,6 +1294,18 @@
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
+  "settings.network.requireSmbEncryption.label": "Всегда требовать шифрование SMB",
+  "@settings.network.requireSmbEncryption.label": {
+    "sourceHash": "4519b09"
+  },
+  "settings.network.requireSmbEncryption.description": "Cmdr шифрует собственные подключения к общим папкам SMB, даже если сервер этого не просит, и не подключается к серверу, который не может шифровать. Гостевые подключения зашифровать нельзя, поэтому нужно войти. Действует для новых подключений.",
+  "@settings.network.requireSmbEncryption.description": {
+    "sourceHash": "4b8d40b"
+  },
+  "settings.network.requireSmbEncryption.keywords": "шифровать, зашифровано, шифр, безопасность, защита, конфиденциальность, приватность, безопасное соединение",
+  "@settings.network.requireSmbEncryption.keywords": {
+    "sourceHash": "1fc0e27"
+  },
   "settings.network.shareCacheDuration.label": "Время хранения кэша общих папок",
   "@settings.network.shareCacheDuration.label": {
     "sourceHash": "ff627cd"
@@ -2809,6 +2821,14 @@
   "settings.managed.summary.securityLogRequired": "Записываются всегда",
   "@settings.managed.summary.securityLogRequired": {
     "sourceHash": "baf73d6"
+  },
+  "settings.managed.summary.smbEncryption": "Шифрование SMB",
+  "@settings.managed.summary.smbEncryption": {
+    "sourceHash": "059bf46"
+  },
+  "settings.managed.summary.smbEncryptionRequired": "Требуется всегда",
+  "@settings.managed.summary.smbEncryptionRequired": {
+    "sourceHash": "8bac3f7"
   },
   "settings.managed.summary.updates": "Обновления",
   "@settings.managed.summary.updates": {

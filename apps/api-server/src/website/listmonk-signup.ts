@@ -3,8 +3,9 @@ import { type Bindings, enforceIpRateLimit, isValidEmail, readCappedBody, redact
 import { recordOpsEvent } from '../ops-events'
 
 /**
- * The one way an email joins a Listmonk list: `/beta-signup` (the desktop app) and
- * `/newsletter-signup` (getcmdr.com) both run {@link handleListSignup}, differing only in the list.
+ * The one way an email joins a Listmonk list: `/beta-signup` (the desktop app), `/newsletter-signup`
+ * and `/subprocessor-updates-signup` (getcmdr.com) all run {@link handleListSignup}, differing only
+ * in the list.
  *
  * It goes through Listmonk's PUBLIC subscription endpoint (`POST /api/public/subscription`), never
  * the admin `POST /api/subscribers`. That choice is the whole design:
@@ -23,7 +24,20 @@ import { recordOpsEvent } from '../ops-events'
 const maxSignupBytes = 1024
 
 /** Which Listmonk list a signup joined. */
-export type SignupList = 'beta' | 'newsletter'
+export type SignupList = 'beta' | 'newsletter' | 'subprocessor-updates'
+
+const siteOrigins = new Set(['https://getcmdr.com', 'https://www.getcmdr.com'])
+
+/** getcmdr.com's forms post cross-origin and must read failures too; any other origin gets no grant. */
+export function siteFormCors(c: Context<{ Bindings: Bindings }>) {
+  const origin = c.req.header('origin')
+  if (origin && siteOrigins.has(origin)) {
+    c.header('Access-Control-Allow-Origin', origin)
+    c.header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    c.header('Access-Control-Allow-Headers', 'Content-Type')
+    c.header('Vary', 'Origin')
+  }
+}
 
 export interface ListSignupConfig {
   list: SignupList

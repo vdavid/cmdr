@@ -96,6 +96,8 @@ fn rows_chunk(entries: &[(&str, bool)], first_row_number: usize, total_rows: Opt
                 byte_offset: i as u64,
                 continues: *continues,
                 line_number: Some(first_row_number + i),
+                // The chunk ends the file with its last entry, which no newline follows.
+                ends_at_newline: !*continues && i + 1 < entries.len(),
             })
             .collect(),
         first_row_number,
@@ -275,7 +277,15 @@ fn an_ok_row_carries_spoken_size_and_date_beside_the_raw_values() {
     let modified = file.modified.expect("a fresh file has an mtime");
     let human = file.modified_human.expect("and its spoken twin");
     assert!(modified.starts_with(&human), "{modified} should begin with {human}");
-    assert!(modified.ends_with('Z'), "RFC 3339 UTC: {modified}");
+    let offset = &modified[modified.len() - 6..];
+    assert!(
+        offset.starts_with(['+', '-']) && offset.as_bytes()[3] == b':',
+        "RFC 3339 with the local offset: {modified}"
+    );
+    assert_eq!(
+        modified,
+        format_local_datetime(modified_secs(&std::fs::metadata(&path).unwrap()).unwrap())
+    );
 }
 
 // ── The window shaper ─────────────────────────────────────────────────────────
@@ -364,8 +374,8 @@ fn total_lines_is_known_for_a_small_file_and_absent_on_the_byte_seek_fallback() 
     let text = text_of(&inspect(&small)).clone();
     assert_eq!(
         text.total_lines,
-        Some(6),
-        "5 lines plus the trailing empty line, as the viewer counts"
+        Some(5),
+        "5 lines and no empty one past the final newline, as the viewer counts"
     );
     assert!(!text.line_numbers_approximate);
 
@@ -408,20 +418,18 @@ fn a_nine_megabyte_file_reads_from_the_requested_line_and_the_last_page_is_not_t
     );
     assert_eq!(window_of(&text).returned_lines, 3);
     assert!(window_of(&text).truncated);
-    assert_eq!(text.total_lines, Some(lines + 1));
+    assert_eq!(text.total_lines, Some(lines));
     assert!(
         !text.line_numbers_approximate,
         "a 9 MB scan finishes well inside the budget"
     );
 
-    // The last page: the final numbered line, then the empty row a file ending in a
-    // newline carries. All three backends count that row AND hand it over now; the line
-    // index used to count it in `total_lines` and then never return it, so the same file
-    // paged differently depending only on its size.
+    // The last page: the final numbered line, and nothing past it. Every backend counts
+    // and hands over the same rows, so the same file pages the same whatever its size.
     let text = text_of(&inspect_with(&path, opts(lines, 200), &AtomicBool::new(false))).clone();
     assert_eq!(window_of(&text).start_line, lines);
     assert_eq!(window_of(&text).content, "line 360000 padding........\n");
-    assert_eq!(window_of(&text).returned_lines, 2);
+    assert_eq!(window_of(&text).returned_lines, 1);
     assert!(!window_of(&text).truncated);
 
     // And past the end: empty, not truncated, no phantom last line.
@@ -764,9 +772,9 @@ fn every_row_shape_is_text_only_no_byte_fields() {
         .map(|f| f["content"]["kind"].as_str().unwrap())
         .collect();
     assert_eq!(kinds, ["text", "image", "binary", "empty"]);
-    // FullLoad returns the trailing empty line after the final newline, as the viewer shows it.
+    // Two lines and the file's final newline; no empty line past it, as the viewer shows it.
     assert_eq!(json["files"][0]["content"]["window"]["content"], "a\nb\n");
-    assert_eq!(json["files"][0]["content"]["window"]["returnedLines"], 3);
+    assert_eq!(json["files"][0]["content"]["window"]["returnedLines"], 2);
     assert_eq!(json["files"][6]["status"], "unsupportedVolume");
     assert_eq!(json["files"][8]["reason"], "permission");
 }

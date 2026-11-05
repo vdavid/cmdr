@@ -9,6 +9,8 @@
 //     CLI refuses any other version), installing that pinned version when it doesn't.
 //  3. `wasm-bindgen --target web` into the out dir (default `crates/cmdr-listing-wasm/pkg/`,
 //     gitignored): `cmdr_listing_wasm.js`, `cmdr_listing_wasm_bg.wasm`, and their `.d.ts`.
+//     Then `wasm-opt` (binaryen, pinned in `.mise.toml`) shrinks the `.wasm` in place
+//     (`wasmOptArgs`).
 //  4. With `-smoke`, loads the result in Node and drives one listing (`smoke.mjs`).
 //  5. With `-golden`, builds the crate's wasm TEST target (the dev profile, so the shipped `.wasm`
 //     carries no scenarios) and runs it under Node with `wasm-bindgen-test-runner`: the volume
@@ -99,16 +101,8 @@ func run(root, out string, smoke, golden bool) error {
 		return err
 	}
 
-	wasm := filepath.Join(root, "target", wasmTarget, profile, strings.ReplaceAll(crateName, "-", "_")+".wasm")
-	if err := command(root, "wasm-bindgen", "--target", "web", "--out-dir", out, "--out-name", outName, wasm); err != nil {
-		return fmt.Errorf("wasm-bindgen: %w", err)
-	}
-	// The glue is an ES module; saying so keeps Node from guessing (and warning) when it loads it.
-	if err := os.WriteFile(filepath.Join(out, "package.json"), []byte("{ \"type\": \"module\" }\n"), 0o644); err != nil {
+	if err := bindAndOptimize(root, out); err != nil {
 		return err
-	}
-	if info, err := os.Stat(filepath.Join(out, outName+"_bg.wasm")); err == nil {
-		fmt.Printf("build-listing-wasm: %s (%d KiB)\n", out, info.Size()/1024)
 	}
 
 	if smoke {
@@ -120,6 +114,50 @@ func run(root, out string, smoke, golden bool) error {
 		return replayGolden(root, tc)
 	}
 	return nil
+}
+
+// bindAndOptimize turns cargo's `.wasm` into the shipped module in `out`: `wasm-bindgen --target
+// web`, the ES-module marker, then `wasm-opt` in place.
+func bindAndOptimize(root, out string) error {
+	wasm := filepath.Join(root, "target", wasmTarget, profile, strings.ReplaceAll(crateName, "-", "_")+".wasm")
+	if err := command(root, "wasm-bindgen", "--target", "web", "--out-dir", out, "--out-name", outName, wasm); err != nil {
+		return fmt.Errorf("wasm-bindgen: %w", err)
+	}
+	// The glue is an ES module; saying so keeps Node from guessing (and warning) when it loads it.
+	if err := os.WriteFile(filepath.Join(out, "package.json"), []byte("{ \"type\": \"module\" }\n"), 0o644); err != nil {
+		return err
+	}
+	bound := filepath.Join(out, outName+"_bg.wasm")
+	if err := command(root, "wasm-opt", wasmOptArgs(bound)...); err != nil {
+		return fmt.Errorf("wasm-opt (binaryen, pinned in .mise.toml; run `mise install`): %w", err)
+	}
+	if info, err := os.Stat(bound); err == nil {
+		fmt.Printf("build-listing-wasm: %s (%d KiB)\n", out, info.Size()/1024)
+	}
+	return nil
+}
+
+// wasmFeatures are the wasm proposals rustc's `wasm32-unknown-unknown` enables by default
+// (`rustc --print cfg --target wasm32-unknown-unknown`), so `wasm-opt` accepts what rustc emits
+// and uses nothing the browser target doesn't already need. `bulk-memory-opt` is binaryen's
+// split-out half of `bulk-memory` (`memory.copy`/`memory.fill`).
+var wasmFeatures = []string{
+	"--enable-bulk-memory",
+	"--enable-bulk-memory-opt",
+	"--enable-multivalue",
+	"--enable-mutable-globals",
+	"--enable-nontrapping-float-to-int",
+	"--enable-reference-types",
+	"--enable-sign-ext",
+}
+
+// wasmOptArgs optimizes the bindgen output in place. `-O1` plus duplicate-function elimination,
+// not `-Oz`: `-Oz` shrinks the raw file more but makes it compress worse, so the page downloads
+// more (`crates/cmdr-listing-wasm/DETAILS.md` § The build has the measurements).
+func wasmOptArgs(wasm string) []string {
+	args := []string{"-O1", "--duplicate-function-elimination"}
+	args = append(args, wasmFeatures...)
+	return append(args, wasm, "-o", wasm)
 }
 
 // replayGolden builds the crate's wasm test target and runs it under Node.

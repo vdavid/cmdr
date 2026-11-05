@@ -59,6 +59,22 @@ export const fileSystemsSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    // The backend ORs it with the managed policy's `RequireSMBEncryption`, which also locks the row on
+    // (`managed_policy/locked.rs`). What it reaches: `crates/cmdr-smb/DETAILS.md` § "Requiring encryption".
+    id: 'network.requireSmbEncryption',
+    section: ['File systems', 'SMB/Network shares'],
+    labelKey: 'settings.network.requireSmbEncryption.label',
+    descriptionKey: 'settings.network.requireSmbEncryption.description',
+    cardKey: 'settings.network.card.connection',
+    keywordsKey: 'settings.network.requireSmbEncryption.keywords',
+    terms: ['smb', 'smb3', 'aes'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    // ❌ Not even on: an MCP client must not be able to weaken how Cmdr talks to a server.
+    mcpSettable: false,
+  },
+  {
     id: 'network.shareCacheDuration',
     section: ['File systems', 'SMB/Network shares'],
     labelKey: 'settings.network.shareCacheDuration.label',

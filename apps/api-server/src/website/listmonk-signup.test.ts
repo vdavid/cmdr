@@ -10,6 +10,7 @@ function createMockRateLimiter(success = true): { limiter: RateLimit; limitMock:
 
 const betaUuid = 'beta-list-uuid'
 const newsletterUuid = 'newsletter-list-uuid'
+const subprocessorUuid = 'subprocessor-list-uuid'
 const publicSubscriptionUrl = 'https://mail.getcmdr.com/api/public/subscription'
 
 function createBindings(overrides: Record<string, unknown> = {}) {
@@ -19,6 +20,7 @@ function createBindings(overrides: Record<string, unknown> = {}) {
     LISTMONK_API_URL: 'https://mail.getcmdr.com',
     LISTMONK_BETA_LIST_UUID: betaUuid,
     LISTMONK_NEWSLETTER_LIST_UUID: newsletterUuid,
+    LISTMONK_SUBPROCESSOR_LIST_UUID: subprocessorUuid,
     TELEMETRY_DB: db.d1,
     /** Test-only handle on the engine behind `TELEMETRY_DB`, for reading the signup count back. */
     sqlite: db.sqlite,
@@ -31,7 +33,7 @@ function signupEvents(bindings: ReturnType<typeof createBindings>): { kind: stri
   return bindings.sqlite.prepare(`SELECT kind, message FROM ops_events`).all() as { kind: string; message: string }[]
 }
 
-/** Both signup routes share every behavior below; only the list and the event kind differ. */
+/** Every signup route shares every behavior below; only the list and the event kind differ. */
 const routes = [
   { path: '/beta-signup', listUuid: betaUuid, uuidVar: 'LISTMONK_BETA_LIST_UUID', kind: 'beta-signup' },
   {
@@ -40,7 +42,16 @@ const routes = [
     uuidVar: 'LISTMONK_NEWSLETTER_LIST_UUID',
     kind: 'newsletter-signup',
   },
+  {
+    path: '/subprocessor-updates-signup',
+    listUuid: subprocessorUuid,
+    uuidVar: 'LISTMONK_SUBPROCESSOR_LIST_UUID',
+    kind: 'subprocessor-updates-signup',
+  },
 ] as const
+
+/** getcmdr.com's forms post cross-origin; the app's beta signup doesn't. */
+const siteRoutes = ['/newsletter-signup', '/subprocessor-updates-signup'] as const
 
 function post(
   path: string,
@@ -209,10 +220,10 @@ describe('POST /beta-signup privacy invariant', () => {
   })
 })
 
-describe('/newsletter-signup CORS', () => {
+describe.each(siteRoutes)('%s CORS', (path) => {
   it('answers the preflight for getcmdr.com', async () => {
     const res = await app.request(
-      '/newsletter-signup',
+      path,
       { method: 'OPTIONS', headers: { Origin: 'https://getcmdr.com' } },
       createBindings(),
     )
@@ -223,7 +234,7 @@ describe('/newsletter-signup CORS', () => {
 
   it('allows getcmdr.com to read the result, even a failure', async () => {
     fetchMock.mockResolvedValueOnce(new Response('{}', { status: 500 }))
-    const res = await post('/newsletter-signup', { email: 'tester@example.com' }, createBindings(), {
+    const res = await post(path, { email: 'tester@example.com' }, createBindings(), {
       Origin: 'https://getcmdr.com',
     })
     expect(res.status).toBe(502)
@@ -231,7 +242,7 @@ describe('/newsletter-signup CORS', () => {
   })
 
   it('grants no other origin', async () => {
-    const res = await post('/newsletter-signup', { email: 'tester@example.com' }, createBindings(), {
+    const res = await post(path, { email: 'tester@example.com' }, createBindings(), {
       Origin: 'https://evil.example',
     })
     expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull()

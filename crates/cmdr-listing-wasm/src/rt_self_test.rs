@@ -9,6 +9,19 @@ use std::time::Duration;
 use cmdr_fs::rt::{self, Runtime, task::JoinSet, time};
 use wasm_bindgen::prelude::*;
 
+/// How many rounds the yield-cost probe takes, each one run of yields and one of
+/// zero-delay timers, interleaved.
+const PROBE_ROUNDS: u32 = 10;
+/// How many back-to-back yields, and timers, one round takes.
+const PROBE_PER_ROUND: u32 = 10;
+/// How many times cheaper than a zero-delay timer a yield must be. A yield is a task
+/// turn of microseconds; a timer is clamped to 1 ms in Node and 4 ms or more nested in
+/// a browser. A yield that went through a timer costs about the same as one: about 1x.
+const YIELD_BEATS_TIMER_BY: f64 = 4.0;
+
+/// How long yields may go on before a zero-delay timer counts as starved.
+const TIMER_STARVED_AFTER: Duration = Duration::from_secs(1);
+
 /// Runs every check and resolves with a one-line summary, or rejects naming the
 /// first one that failed. `now_ms` is the page's `Date.now()`, for the wall clock.
 #[wasm_bindgen(js_name = rtSelfTest)]
@@ -68,7 +81,9 @@ async fn run(now_ms: f64) -> Result<String, String> {
         return Err("a dropped set's task ran on".into());
     }
 
-    // `yield_now` lets a timer fire: a microtask yield would spin past it forever.
+    // `yield_now` lets a timer fire: a microtask yield would spin past it forever. Bounded
+    // by time, not by count: a yield is a task turn of microseconds, and a zero-delay timer
+    // takes a millisecond or more, so a count would only measure the machine.
     let fired = Rc::new(Cell::new(false));
     let flag = Rc::clone(&fired);
     drop(runtime.spawn(async move {
@@ -76,14 +91,26 @@ async fn run(now_ms: f64) -> Result<String, String> {
         time::sleep(Duration::ZERO).await;
         flag.set(true);
     }));
+    let waiting = time::now();
     let mut yields = 0;
     while !fired.get() {
-        if yields == 100 {
-            return Err("100 yields and a zero-delay timer never fired".into());
+        if time::now().saturating_duration_since(waiting) >= TIMER_STARVED_AFTER {
+            return Err(format!(
+                "{yields} yields over a second and a zero-delay timer never fired"
+            ));
         }
         rt::task::yield_now().await;
         yields += 1;
     }
+
+    // A yield costs a task turn, not a timer: the copy engine yields once per 64 KiB chunk,
+    // so a clamped `setTimeout(0)` (1 ms in Node, 4 ms or more nested in a browser) capped
+    // one stream far below the device's rate. Measured against a timer chain in the same
+    // run, not a wall budget: a loaded machine slows both alike, and the fastest of the
+    // interleaved rounds dodges the descheduling bursts that failed the old 50 ms budget
+    // at load averages of 80–92 (57–167 ms for 100 yields, a few ms alone).
+    let cost = YieldCost::measure(|| rt::task::yield_now()).await;
+    cost.gate()?;
 
     // `timeout_at` answers `Elapsed` once its deadline passes.
     let deadline = time::now() + Duration::from_millis(5);
@@ -108,7 +135,57 @@ async fn run(now_ms: f64) -> Result<String, String> {
         return Err(format!("wall_now is {wall_ms} ms, the page says {now_ms}"));
     }
 
-    Ok(format!("rt OK ({yields} yield(s) to fire a timer)"))
+    Ok(format!("rt OK ({yields} yield(s) to fire a timer, {cost})"))
+}
+
+/// The fastest round of `PROBE_PER_ROUND` yields beside the fastest round of as many
+/// zero-delay timers, the two interleaved so they share the machine's load.
+struct YieldCost {
+    yields: Duration,
+    timers: Duration,
+}
+
+impl YieldCost {
+    async fn measure<F: Future<Output = ()>>(yield_once: impl Fn() -> F) -> Self {
+        let mut cost = Self {
+            yields: Duration::MAX,
+            timers: Duration::MAX,
+        };
+        for _ in 0..PROBE_ROUNDS {
+            let started = time::now();
+            for _ in 0..PROBE_PER_ROUND {
+                yield_once().await;
+            }
+            cost.yields = cost.yields.min(time::now().saturating_duration_since(started));
+            let started = time::now();
+            for _ in 0..PROBE_PER_ROUND {
+                // allowed-test-sleep: the timer chain IS the yardstick of this self-test.
+                time::sleep(Duration::ZERO).await;
+            }
+            cost.timers = cost.timers.min(time::now().saturating_duration_since(started));
+        }
+        cost
+    }
+
+    /// `Err` when the yields didn't beat the timers by [`YIELD_BEATS_TIMER_BY`].
+    fn gate(&self) -> Result<(), String> {
+        if self.timers.as_secs_f64() >= YIELD_BEATS_TIMER_BY * self.yields.as_secs_f64() {
+            return Ok(());
+        }
+        Err(format!("a yield is paying a timer clamp: {self}"))
+    }
+}
+
+impl std::fmt::Display for YieldCost {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            // allowed-pluralize-noun: both counts are constants of 10, never one.
+            "{PROBE_PER_ROUND} yields in {:.2} ms against {:.2} ms for as many timers, fastest of {PROBE_ROUNDS} rounds",
+            self.yields.as_secs_f64() * 1_000.0,
+            self.timers.as_secs_f64() * 1_000.0
+        )
+    }
 }
 
 async fn sleep_then(ms: u64, label: &'static str) -> &'static str {

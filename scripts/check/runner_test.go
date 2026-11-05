@@ -117,6 +117,34 @@ func TestRunner_DifferentResourcesRunConcurrently(t *testing.T) {
 	}
 }
 
+// A skip for a missing environment (Docker down) fails under --ci, so its CI lane can't go
+// green and save a marker for a check that never ran; locally it stays a skip, and a
+// deterministic skip stays a skip everywhere.
+func TestRunner_EnvironmentSkipFailsOnlyUnderCI(t *testing.T) {
+	envSkip := func(*checks.CheckContext) (checks.CheckResult, error) {
+		return checks.SkippedNoEnvironment("Docker daemon not running"), nil
+	}
+	plainSkip := func(*checks.CheckContext) (checks.CheckResult, error) {
+		return checks.Skipped("macOS only"), nil
+	}
+	cases := []struct {
+		name       string
+		ci         bool
+		run        checks.CheckFunc
+		wantFailed bool
+	}{
+		{"environment skip under --ci", true, envSkip, true},
+		{"environment skip locally", false, envSkip, false},
+		{"deterministic skip under --ci", true, plainSkip, false},
+	}
+	for _, tc := range cases {
+		r := NewRunner(&checks.CheckContext{CI: tc.ci}, []checks.CheckDefinition{exclusiveDef("a", "", tc.run)}, nil, false, true, true)
+		if failed, _ := r.Run(); failed != tc.wantFailed {
+			t.Errorf("%s: failed=%v, want %v", tc.name, failed, tc.wantFailed)
+		}
+	}
+}
+
 // A resource is released even when its holder fails, so one red lane can't
 // strand every other lane naming the same resource.
 func TestRunner_ResourceIsReleasedAfterAFailure(t *testing.T) {

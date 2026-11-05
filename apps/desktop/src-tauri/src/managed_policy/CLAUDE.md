@@ -1,6 +1,6 @@
 # Managed policy (MDM)
 
-What an organization's configuration profile restricts: telemetry, updates, and AI. Read from the FORCED layer of the
+What an organization's configuration profile restricts: telemetry, updates, AI, and SMB encryption. Read from the FORCED layer of the
 `com.veszelovszki.cmdr` preferences domain; macOS only (other platforms read "no restriction").
 
 ## Module map

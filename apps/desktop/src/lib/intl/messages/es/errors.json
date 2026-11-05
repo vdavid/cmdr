@@ -2449,6 +2449,10 @@
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "ea3a52f"
   },
+  "errors.shareList.encryptionRequired": "“{server}” no puede cifrar esta conexión y Cmdr tiene activado “Requerir siempre cifrado SMB”. Comprueba los ajustes de cifrado SMB del servidor.",
+  "@errors.shareList.encryptionRequired": {
+    "sourceHash": "4dff9ea"
+  },
   "errors.shareList.protocolError": "Algo ha ido mal al pedirle a “{server}” sus recursos compartidos. Vuelve a intentarlo en un momento.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

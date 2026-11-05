@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "Поставщик {provider} сейчас занят. Повторная попытка ({attemptText} из {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Ваш поставщик ИИ сейчас занят. Повторная попытка ({attemptText} из {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Этот чат становится длинным. В новом чате ответы будут быстрее и точнее.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -736,6 +744,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Ваш поставщик ИИ отклонил запрос: лимит вашего тарифа меньше одного запроса Cmdr, ведь каждый запрос всегда содержит инструкции Cmdr. Более короткое сообщение не поможет. Перейдите на тариф побольше или выберите другого поставщика в настройках.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "Поставщик {provider} сейчас слишком занят и не ответил даже после нескольких попыток. Подождите несколько минут и отправьте сообщение еще раз.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Ваш поставщик ИИ сейчас слишком занят и не ответил даже после нескольких попыток. Подождите несколько минут и отправьте сообщение еще раз.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Этот ответ уперся в лимит, не дойдя до конца. Попробуйте спросить что-то более конкретное.",
   "@askCmdr.error.budgetExhausted": {

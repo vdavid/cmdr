@@ -107,10 +107,8 @@ fn read_range_full_load_eof_selects_to_end() {
         .session_id;
 
     let out = viewer().read_range(&sid, 1, row(0, 0), RangeEnd::Eof).unwrap();
-    // The trailing newline is excluded (half-open semantics; the last line's content is included).
+    // To `Eof` is every byte, the final newline included: "third" ended at it.
     assert_eq!(out, "first\nsecond\nthird\n");
-    // Note: this file *has* a trailing newline; the split gives a 4th empty "line", whose
-    // start is included. Trailing newline trimming leaves "first\nsecond\nthird\n".
 
     viewer().close_session(&sid).unwrap();
 }
@@ -145,16 +143,19 @@ fn read_range_full_load_utf16_surrogate_clamps_down() {
 #[test]
 fn read_range_full_load_only_newlines_file() {
     let dir = create_test_dir("range_only_newlines");
-    // Three empty lines: "\n\n\n" gives 4 entries when split by '\n' (empty, empty, empty, empty).
+    // Three empty lines, and no fourth past the final newline.
     let file = write_test_file(&dir, "test.txt", "\n\n\n");
     let sid = viewer()
         .open_session(file.to_str().unwrap(), "root")
         .unwrap()
         .session_id;
 
-    // Select all up to line 2 offset 0: "(empty)\n(empty)\n" = "\n\n".
+    // Three rows, each an empty line. Selecting to row 1 offset 0 is "\n"; selecting to the
+    // end of the LAST row reaches the end of the file, so its newline comes along too.
+    let out = viewer().read_range(&sid, 1, row(0, 0), row(1, 0)).unwrap();
+    assert_eq!(out, "\n");
     let out = viewer().read_range(&sid, 1, row(0, 0), row(2, 0)).unwrap();
-    assert_eq!(out, "\n\n");
+    assert_eq!(out, "\n\n\n");
 
     viewer().close_session(&sid).unwrap();
 }
@@ -171,8 +172,8 @@ fn read_range_byte_seek_eof_selects_whole_file() {
     let sid = open.session_id.clone();
 
     let out = viewer().read_range(&sid, 1, row(0, 0), RangeEnd::Eof).unwrap();
-    // Every byte, final newline included: a file ending in a newline has a final empty
-    // row, so ⌘A gives the same answer whichever backend a file's size lands it on.
+    // Every byte, final newline included: the last row says it ended at a newline, so ⌘A
+    // gives the same answer whichever backend a file's size lands it on.
     assert_eq!(out, content);
 
     viewer().close_session(&sid).unwrap();
@@ -264,9 +265,8 @@ fn read_range_full_load_crlf_preserves_carriage_returns() {
         .unwrap()
         .session_id;
 
-    // ⌘A-equivalent: read everything. The backend keeps `\r` as part of each line;
-    // `range_read` rejoins with `\n` between lines and trims exactly one trailing
-    // newline at EOF (the same half-open behaviour the LF test asserts). Net: the
+    // ⌘A-equivalent: read everything. The backend keeps `\r` as part of each line, and
+    // `range_read` pays the `\n` each row ended at, the last one included. Net: the
     // original CRLF bytes round-trip exactly.
     let out = viewer().read_range(&sid, 1, row(0, 0), RangeEnd::Eof).unwrap();
     assert_eq!(out, "alpha\r\nbeta\r\ngamma\r\n");
@@ -331,8 +331,9 @@ fn write_range_to_file_writes_atomically() {
     viewer()
         .write_range_to_file(&sid, 1, row(0, 0), row(2, 5), &dest, &session::SaveProgress::new())
         .unwrap();
+    // The end of the last row is the end of the file, final newline included.
     let written = fs::read_to_string(&dest).unwrap();
-    assert_eq!(written, "alpha\nbeta\ngamma");
+    assert_eq!(written, "alpha\nbeta\ngamma\n");
 
     // No leftover temp file in the dir.
     let leftover = fs::read_dir(&dir)
@@ -445,10 +446,8 @@ fn write_range_to_file_matches_the_source_across_chunks() {
         .unwrap()
         .session_id;
 
-    // Explicit end rather than `Eof`: this file opens on ByteSeek and upgrades to
-    // LineIndex in the background, and the two disagree on whether a newline-terminated
-    // file has a trailing empty line. Naming the last line's end keeps the expected
-    // bytes the same whichever backend serves the read.
+    // An explicit end at the last row's end: the same bytes as `Eof`, whichever of
+    // ByteSeek and the LineIndex it upgrades to in the background serves the read.
     let dest = dir.join("out.txt");
     let last_line_len = 92; // "line 029999 " + 80 padding characters
     viewer()
@@ -463,7 +462,7 @@ fn write_range_to_file_matches_the_source_across_chunks() {
         .unwrap();
 
     let written = fs::read_to_string(&dest).unwrap();
-    let expected = content.strip_suffix('\n').unwrap();
+    let expected = content.as_str();
     // Compared with a message rather than `assert_eq!`: a mismatch would otherwise
     // dump megabytes of fixture into the test output.
     assert!(
@@ -498,7 +497,7 @@ fn write_range_to_file_saves_a_utf16_source_as_utf8() {
         .unwrap();
 
     // UTF-8 text, not the source's UTF-16 code units (which would carry NUL bytes).
-    assert_eq!(fs::read(&dest).unwrap(), b"alpha\nbeta\ngamma");
+    assert_eq!(fs::read(&dest).unwrap(), b"alpha\nbeta\ngamma\n");
     assert_eq!(saved, session::SavedAs::Utf8);
 
     viewer().close_session(&sid).unwrap();
@@ -712,7 +711,7 @@ fn a_lossy_utf16_range_saves_in_its_own_encoding_and_says_so() {
     expected.extend_from_slice(&utf16le("et", Some(1)));
     assert_eq!(fs::read(&dest).unwrap(), expected);
 
-    // To the end of the file, its last newline included (the empty row after it ends the range).
+    // To the end of the file, its last newline included (the last row ended at it).
     let saved = viewer()
         .write_range_to_file(&sid, 3, row(1, 0), RangeEnd::Eof, &dest, &session::SaveProgress::new())
         .unwrap();

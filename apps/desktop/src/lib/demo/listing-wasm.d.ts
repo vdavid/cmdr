@@ -42,13 +42,16 @@ declare module 'virtual:cmdr-listing-wasm' {
     closeViewerWindow(windowLabel: string): void
   }
 
-  /** The menu bar (`crates/cmdr-listing-wasm/src/menu.rs`): the menu-state pushes, the bar, a click. */
+  /** The menus (`crates/cmdr-listing-wasm/src/menu.rs`, `context_menu.rs`): the menu-state pushes, the bar, the right-click popups, a click. */
   export class DemoMenuBar {
     constructor()
     static handles(command: string): boolean
     invoke(command: string, args: unknown): unknown
     bar(): unknown
     click(menuId: string): unknown
+    static opensPopup(command: string): boolean
+    popup(command: string, args: unknown, window: string): unknown
+    contextClick(menuId: string): unknown
   }
 
   /** Fetches and instantiates `cmdr_listing_wasm_bg.wasm` next to the glue. */

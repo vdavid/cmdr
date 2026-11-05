@@ -13,7 +13,7 @@ function env(overrides: Partial<Bindings>): Bindings {
     PADDLE_API_KEY_LIVE: 'key',
     PADDLE_API_KEY_SANDBOX: 'key',
     CRASH_NOTIFICATION_EMAIL: 'david@example.com',
-    RESEND_API_KEY: 'resend',
+    SMTP2GO_API_KEY: 'test-smtp2go-key',
     ...overrides,
   } as Bindings
 }

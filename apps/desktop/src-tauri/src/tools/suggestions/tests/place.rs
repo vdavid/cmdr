@@ -448,7 +448,7 @@ fn a_selector_resolves_over_a_sleeping_members_index_when_the_sibling_has_none()
     assert_eq!(wire["groups"][0]["via"], json!({ "volumeId": "ts" }));
     assert_eq!(
         wire["groups"][0]["offlineIndex"],
-        json!({ "volumeId": "ts", "asOf": crate::search::format_timestamp(1_761_000_000) })
+        json!({ "volumeId": "ts", "asOf": crate::search::format_local_date(1_761_000_000) })
     );
 }
 
@@ -600,7 +600,7 @@ fn conversation_179_resolves_a_selector_over_the_tailscale_index_on_disk() {
     let wire = serde_json::to_value(&report).expect("wire");
     assert_eq!(
         wire["groups"][0]["offlineIndex"],
-        json!({ "volumeId": TAILSCALE, "asOf": crate::search::format_timestamp(TAILSCALE_AS_OF) })
+        json!({ "volumeId": TAILSCALE, "asOf": crate::search::format_local_date(TAILSCALE_AS_OF) })
     );
     // A read-only open of a WAL database still makes SQLite's `-wal` / `-shm` sidecars, so
     // read-only means: the database unchanged, nothing in its log, and no other index made.

@@ -175,8 +175,8 @@ async fn smb_integration_a_live_search_scoped_to_an_accented_folder_finds_its_fi
     let scope = share.folder(NFC_FOLDER).to_string_lossy().into_owned();
 
     assert_eq!(
-        volumes::path_namespace(&share.volume_id),
-        volumes::PathNamespace::Backend,
+        crate::search::index_source::path_namespace(&share.volume_id),
+        crate::search::index_source::PathNamespace::Backend,
         "a share's scope never goes through realpath"
     );
     let answer = search(scope.clone(), "faktura").await;

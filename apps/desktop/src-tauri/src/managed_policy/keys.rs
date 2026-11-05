@@ -13,9 +13,10 @@ pub const DISABLE_AI: &str = "DisableAI";
 pub const DISABLE_CLOUD_AI: &str = "DisableCloudAI";
 pub const ALLOWED_CLOUD_AI_HOSTS: &str = "AllowedCloudAIHosts";
 pub const DISABLE_SECURITY_LOG_OPT_OUT: &str = "DisableSecurityLogOptOut";
+pub const REQUIRE_SMB_ENCRYPTION: &str = "RequireSMBEncryption";
 
 /// Every key Cmdr reads. The drift guard compares the sample profile and `/trust` against it.
-pub const ALL_KEYS: [&str; 9] = [
+pub const ALL_KEYS: [&str; 10] = [
     DISABLE_USAGE_STATS,
     DISABLE_CRASH_AND_ERROR_REPORTS,
     DISABLE_AUTOMATIC_UPDATE_CHECKS,
@@ -25,6 +26,7 @@ pub const ALL_KEYS: [&str; 9] = [
     DISABLE_CLOUD_AI,
     ALLOWED_CLOUD_AI_HOSTS,
     DISABLE_SECURITY_LOG_OPT_OUT,
+    REQUIRE_SMB_ENCRYPTION,
 ];
 
 /// A parse result: the policy, plus one line per value we couldn't read as written. The cache logs
@@ -52,6 +54,7 @@ pub fn parse(source: &dyn ManagedPrefsSource) -> Parsed {
     let ai_disabled = flag(DISABLE_AI);
     let cloud_ai_disabled = flag(DISABLE_CLOUD_AI);
     let security_log_required = flag(DISABLE_SECURITY_LOG_OPT_OUT);
+    let smb_encryption_required = flag(REQUIRE_SMB_ENCRYPTION);
 
     let update_ceiling = match source.forced_value(MAX_UPDATE_VERSION) {
         None => None,
@@ -89,6 +92,7 @@ pub fn parse(source: &dyn ManagedPrefsSource) -> Parsed {
             cloud_ai_disabled,
             allowed_cloud_ai_hosts,
             security_log_required,
+            smb_encryption_required,
         },
         warnings,
     }
@@ -108,6 +112,7 @@ pub fn restricting(policy: &ManagedPolicy) -> Vec<&'static str> {
         (DISABLE_CLOUD_AI, policy.cloud_ai_disabled),
         (ALLOWED_CLOUD_AI_HOSTS, policy.allowed_cloud_ai_hosts.is_some()),
         (DISABLE_SECURITY_LOG_OPT_OUT, policy.security_log_required),
+        (REQUIRE_SMB_ENCRYPTION, policy.smb_encryption_required),
     ];
     in_force.into_iter().filter(|(_, on)| *on).map(|(key, _)| key).collect()
 }
@@ -274,6 +279,20 @@ mod tests {
             !parse_one(DISABLE_SECURITY_LOG_OPT_OUT, Value::Boolean(false))
                 .policy
                 .security_log_required()
+        );
+        assert!(
+            parse_one(REQUIRE_SMB_ENCRYPTION, Value::Boolean(true))
+                .policy
+                .smb_encryption_required()
+        );
+        let off = parse_one(REQUIRE_SMB_ENCRYPTION, Value::Boolean(false)).policy;
+        assert!(!off.smb_encryption_required());
+        assert!(!off.is_managed(), "a forced false is no restriction");
+        assert!(
+            parse_one(REQUIRE_SMB_ENCRYPTION, string("maybe"))
+                .policy
+                .smb_encryption_required(),
+            "an unreadable value restricts (rule 4)"
         );
     }
 

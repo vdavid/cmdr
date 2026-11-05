@@ -10,12 +10,11 @@
  * Astro's config loader, whose `import.meta.env` carries only the built-in `BASE_URL`/`MODE`/`DEV`/
  * `PROD`/`SSR` (no `PUBLIC_*` vars). release.ts derives its URLs from `PUBLIC_DOWNLOAD_BASE_URL`,
  * which is therefore always undefined here, so it can't be the source of truth in this context. The
- * URL/size logic below mirrors release.ts's GitHub-fallback branch. Both fall back to the GitHub
- * release URLs because `PUBLIC_DOWNLOAD_BASE_URL` is unset in every build (see apps/website/Dockerfile
- * and .env.example) — keep the two in sync if that ever changes.
+ * URL/size logic below mirrors release.ts's no-download-base branch: direct links to the EU mirror
+ * (`download.getcmdr.com`), so these carry no download telemetry. Keep the two in sync.
  *
  * Register this AFTER rehype-external-links in astro.config.ts: that way external-links never sees
- * the GitHub option links we create, so it won't add `target="_blank"` (and the prose `↗` arrow) to
+ * the mirror option links we create, so it won't add `target="_blank"` (and the prose `↗` arrow) to
  * what are really download links.
  */
 
@@ -38,8 +37,10 @@ const MARKER = 'cmdr:download'
 const latest = JSON.parse(readFileSync(new URL('../../public/latest.json', import.meta.url), 'utf-8')) as LatestRelease
 const version = latest.version
 
+/** The EU mirror's DMG. Release files spell the Intel arch `x64`, never `x86_64`. */
 function dmgUrl(arch: string): string {
-  return `https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${arch}.dmg`
+  const fileArch = arch === 'x86_64' ? 'x64' : arch
+  return `https://download.getcmdr.com/v${version}/Cmdr_${version}_${fileArch}.dmg`
 }
 
 function formatBytes(bytes: number): string {

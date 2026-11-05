@@ -240,6 +240,12 @@ Front the object (`Этим параметром управляет ваша о�
 `Под управлением вашей организации`. IT staff → `ИТ-отдел` (MS `ИТ-службы` reads institutional):
 `В вашем ИТ-отделе подскажут, …`.
 
+## Require SMB encryption (`settings.network.requireSmbEncryption.*`, `*encryptionRequired*`, `*EncryptionRequired*`)
+
+Label `Всегда требовать шифрование SMB`; messages quote it as `в Cmdr включен параметр «…»` (masculine agrees with
+`параметр`). Busy provider: `Поставщик {provider} сейчас занят`, progress `Повторная попытка (2 из 4)…` (catalog's
+form).
+
 ## Servers (`servers.paneState.*`, `*autoReconnect*`, `*needsStoredSecret`, `*editNearbyHint`, `*addedToast`, `*timedOut`, `*.timeout`)
 
 - Retry: `Всего попытки продлятся {duration}.` with accusative branches; `в течение` needs a genitive.

@@ -44,135 +44,17 @@ use std::time::Instant;
 
 use crate::pluralize::{pluralize, pluralize_with};
 use cmdr_index::ReadPool;
-use cmdr_index::store::ROOT_ID;
 
+use super::context::SearchContext;
+use super::engine::ResolvedScope;
 use super::engine::search_ranked;
-use super::index::{OptU64, SearchEntry, SearchIndex, load_search_index};
+use super::index::{SearchEntry, SearchIndex, load_search_index};
 use super::ranking::ImportanceWeights;
 use super::types::{PatternType, SearchQuery};
 
 // ── Fixtures ─────────────────────────────────────────────────────────
 
-/// Word pool for synthetic filenames. 20 words ⇒ a plain-word query matches
-/// roughly 1/20 of the files, the "a common word, lots of hits" shape that makes
-/// the ranking phase visible.
-const WORDS: [&str; 20] = [
-    "report",
-    "invoice",
-    "photo",
-    "screenshot",
-    "notes",
-    "budget",
-    "resume",
-    "draft",
-    "backup",
-    "export",
-    "meeting",
-    "recipe",
-    "receipt",
-    "sketch",
-    "logo",
-    "banner",
-    "config",
-    "readme",
-    "license",
-    "changelog",
-];
-
-const EXTS: [&str; 8] = ["pdf", "jpg", "png", "txt", "md", "rs", "json", "zip"];
-
-/// Build a synthetic index of roughly `n` entries shaped like a real home dir:
-/// a fanned-out tree ~8 levels deep, ~12% directories, mixed sizes and mtimes.
-pub(super) fn build_synthetic_index(n: usize) -> SearchIndex {
-    const FANOUT: usize = 6;
-    const MAX_DEPTH: usize = 8;
-
-    let mut names = String::with_capacity(n * 20);
-    let mut entries: Vec<SearchEntry> = Vec::with_capacity(n + 1);
-
-    let push = |names: &mut String, entries: &mut Vec<SearchEntry>, id, parent_id, name: &str, is_dir, i: usize| {
-        let name_offset = names.len() as u32;
-        let name_len = name.len() as u16;
-        names.push_str(name);
-        entries.push(SearchEntry {
-            id,
-            parent_id,
-            name_offset,
-            name_len,
-            is_directory: is_dir,
-            size: OptU64::new(if is_dir {
-                None
-            } else {
-                Some((i as u64 * 7919) % 50_000_000)
-            }),
-            modified_at: OptU64::new(Some(1_600_000_000 + (i as u64 * 613) % 60_000_000)),
-        });
-    };
-
-    push(&mut names, &mut entries, ROOT_ID, 0, "", true, 0);
-
-    // Directories first, breadth-first, until we've spent ~12% of the budget.
-    let dir_budget = n / 8;
-    let mut next_id: i64 = ROOT_ID + 1;
-    let mut level: Vec<i64> = vec![ROOT_ID];
-    let mut all_dirs: Vec<i64> = Vec::with_capacity(dir_budget);
-    for depth in 0..MAX_DEPTH {
-        let mut next_level = Vec::with_capacity(level.len() * FANOUT);
-        for &parent in &level {
-            for k in 0..FANOUT {
-                if all_dirs.len() >= dir_budget {
-                    break;
-                }
-                let name = format!("{}-{}-{}", WORDS[(next_id as usize + k) % WORDS.len()], depth, next_id);
-                push(&mut names, &mut entries, next_id, parent, &name, true, next_id as usize);
-                all_dirs.push(next_id);
-                next_level.push(next_id);
-                next_id += 1;
-            }
-        }
-        if all_dirs.len() >= dir_budget || next_level.is_empty() {
-            break;
-        }
-        level = next_level;
-    }
-
-    // Files spread evenly across the directories.
-    let mut i = 0usize;
-    while entries.len() < n {
-        let parent = all_dirs[i % all_dirs.len()];
-        let name = format!(
-            "{}-{}.{}",
-            WORDS[i % WORDS.len()],
-            i,
-            EXTS[(i / WORDS.len()) % EXTS.len()]
-        );
-        push(&mut names, &mut entries, next_id, parent, &name, false, i);
-        next_id += 1;
-        i += 1;
-    }
-
-    // Keep the arena in the order the real loader produces (`ORDER BY id`, segments
-    // merged in range order): `index_of_id` binary-searches it.
-    entries.sort_unstable_by_key(|e| e.id);
-    SearchIndex {
-        names,
-        entries,
-        generation: 1,
-    }
-}
-
-/// An importance map covering every directory in `index`, like a real
-/// `importance-root.db` (a weight on most folders the user has touched).
-pub(super) fn synthetic_weights(index: &SearchIndex) -> ImportanceWeights {
-    let mut weights = ImportanceWeights::empty();
-    for (i, e) in index.entries.iter().enumerate() {
-        if e.is_directory && e.id != ROOT_ID {
-            let path = super::engine::reconstruct_path_from_index(index, e.id);
-            weights.insert(&path, ((i % 100) as f64) / 100.0);
-        }
-    }
-    weights
-}
+use cmdr_search::testing::{build_synthetic_index, synthetic_weights};
 
 fn query(pattern: &str, pattern_type: PatternType, count_only: bool) -> SearchQuery {
     SearchQuery {
@@ -205,19 +87,40 @@ fn measure(label: &str, index: &SearchIndex, weights: &ImportanceWeights, patter
     let empty = ImportanceWeights::empty();
 
     let t = Instant::now();
-    let total = search_ranked(index, &query(pattern, pattern_type.clone(), true), &empty, "", None)
-        .expect("count-only search should succeed")
-        .total_count;
+    let total = search_ranked(
+        index,
+        &query(pattern, pattern_type.clone(), true),
+        &ResolvedScope::Whole,
+        &SearchContext::for_test(&empty),
+        "",
+        None,
+    )
+    .expect("count-only search should succeed")
+    .total_count;
     let scan = t.elapsed();
 
     let t = Instant::now();
-    let _ = search_ranked(index, &query(pattern, pattern_type.clone(), false), &empty, "", None)
-        .expect("unweighted search should succeed");
+    let _ = search_ranked(
+        index,
+        &query(pattern, pattern_type.clone(), false),
+        &ResolvedScope::Whole,
+        &SearchContext::for_test(&empty),
+        "",
+        None,
+    )
+    .expect("unweighted search should succeed");
     let unweighted = t.elapsed();
 
     let t = Instant::now();
-    let _ =
-        search_ranked(index, &query(pattern, pattern_type, false), weights, "", None).expect("search should succeed");
+    let _ = search_ranked(
+        index,
+        &query(pattern, pattern_type, false),
+        &ResolvedScope::Whole,
+        &SearchContext::for_test(weights),
+        "",
+        None,
+    )
+    .expect("search should succeed");
     let weighted = t.elapsed();
 
     eprintln!(
@@ -245,7 +148,7 @@ fn bench_synthetic() {
     let index = build_synthetic_index(n);
     eprintln!(
         "\nsynthetic index: {} entries, built in {:.2?}",
-        index.entries.len(),
+        index.len(),
         t.elapsed()
     );
     let t = Instant::now();
@@ -279,7 +182,7 @@ fn bench_real_index() {
     let t = Instant::now();
     let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load index");
     let load = t.elapsed();
-    eprintln!("\n{db}\n  arena load: {} entries in {load:.2?}", index.entries.len());
+    eprintln!("\n{db}\n  arena load: {} entries in {load:.2?}", index.len());
 
     let weights = match std::env::var("CMDR_SEARCH_BENCH_IMPORTANCE_DB") {
         Ok(path) => {
@@ -334,7 +237,7 @@ fn bench_volume_fanout() {
         let t = Instant::now();
         let pool = ReadPool::new(path.into()).expect("open index DB");
         let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load index");
-        (index.entries.len(), t.elapsed())
+        (index.len(), t.elapsed())
     };
 
     eprintln!("\nfirst pass (page cache as found):");
@@ -409,7 +312,7 @@ fn bench_arena_scan() {
     let empty = ImportanceWeights::empty();
     eprintln!(
         "\n{db}\n  {}, size_of::<SearchEntry>() = {} B, best of {repeats}",
-        pluralize_with(index.entries.len() as u64, "entry", "entries"),
+        pluralize_with(index.len() as u64, "entry", "entries"),
         size_of::<SearchEntry>(),
     );
 
@@ -427,9 +330,16 @@ fn bench_arena_scan() {
         let mut total = 0;
         for _ in 0..repeats {
             let t = Instant::now();
-            total = search_ranked(&index, q, &empty, "", None)
-                .expect("count-only search should succeed")
-                .total_count;
+            total = search_ranked(
+                &index,
+                q,
+                &ResolvedScope::Whole,
+                &SearchContext::for_test(&empty),
+                "",
+                None,
+            )
+            .expect("count-only search should succeed")
+            .total_count;
             runs.push(t.elapsed());
         }
         runs.sort_unstable();
@@ -483,7 +393,7 @@ fn bench_query_allocations() {
     let index = load_search_index(&pool, &AtomicBool::new(false)).expect("load index");
     eprintln!(
         "\n{db}\n  {}, {} scored folders, {} rayon threads, {repeats} runs each", // allowed-pluralize-noun: a bench header; an arena, the weights, and the pool are never one
-        pluralize_with(index.entries.len() as u64, "entry", "entries"),
+        pluralize_with(index.len() as u64, "entry", "entries"),
         weights.len(),
         rayon::current_num_threads(),
     );
@@ -495,9 +405,16 @@ fn bench_query_allocations() {
     };
     let allocations = |q: &SearchQuery| {
         allocations_on_pool(rayon::current_num_threads(), || {
-            search_ranked(&index, q, &weights, "", None)
-                .expect("search should succeed")
-                .total_count
+            search_ranked(
+                &index,
+                q,
+                &ResolvedScope::Whole,
+                &SearchContext::for_test(&weights),
+                "",
+                None,
+            )
+            .expect("search should succeed")
+            .total_count
         })
     };
     for (label, pattern) in [
@@ -523,7 +440,15 @@ fn bench_query_allocations() {
         let mut runs: Vec<std::time::Duration> = (0..repeats)
             .map(|_| {
                 let t = Instant::now();
-                search_ranked(&index, &full, &weights, "", None).expect("search should succeed");
+                search_ranked(
+                    &index,
+                    &full,
+                    &ResolvedScope::Whole,
+                    &SearchContext::for_test(&weights),
+                    "",
+                    None,
+                )
+                .expect("search should succeed");
                 t.elapsed()
             })
             .collect();
@@ -571,7 +496,8 @@ fn process_rss_bytes() -> u64 {
 ///
 /// ❌ **Run this one ALONE** (`--exact search::bench::bench_arena_bytes`). The harness
 /// runs `#[test]`s in parallel inside one process, so a sibling bench holding its own
-/// arena lands in the same RSS reading. The heap figure is thread-local and unaffected.
+/// arena lands in the same RSS reading, and in the heap figure too: it counts the whole
+/// process, because the load builds its segments on rayon's workers.
 ///
 /// Point it at a SNAPSHOT of a real index rather than the live file if you're comparing
 /// two builds: the boot volume's index gains rows by the second, and a row count that
@@ -603,9 +529,9 @@ fn bench_arena_bytes() {
     let load = t.elapsed();
     let rss_loaded = process_rss_bytes();
 
-    let rows = index.entries.len() as f64;
+    let rows = index.len() as f64;
     let mb = |bytes: i64| bytes as f64 / (1024.0 * 1024.0);
-    let entries_bytes = (index.entries.capacity() * size_of::<SearchEntry>()) as i64;
+    let entries_bytes = ((index.len() + index.spare_rows_left()) * size_of::<SearchEntry>()) as i64;
     eprintln!(
         "\n{db}\n  {} loaded in {load:.2?}\n  \
          size_of::<SearchEntry>() = {} B\n  \
@@ -613,7 +539,7 @@ fn bench_arena_bytes() {
          of which entries:     {:>9.1} MB\n    \
          names + id map:       {:>9.1} MB\n  \
          process RSS, arena resident: {:.1} MB (empty {:.1} MB)\n",
-        pluralize_with(index.entries.len() as u64, "entry", "entries"),
+        pluralize_with(index.len() as u64, "entry", "entries"),
         size_of::<SearchEntry>(),
         mb(heap),
         heap as f64 / rows,
@@ -624,7 +550,7 @@ fn bench_arena_bytes() {
     );
 
     // Keep the arena alive past the RSS read above.
-    assert!(!index.entries.is_empty(), "the index should hold rows");
+    assert!(!index.is_empty(), "the index should hold rows");
 }
 
 /// Load an importance weight map straight from an `importance-*.db` file (the

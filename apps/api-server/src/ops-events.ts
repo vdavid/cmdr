@@ -24,9 +24,13 @@ export type OpsEventKind =
   | 'sale-notice-failed'
   | 'beta-signup'
   | 'newsletter-signup'
+  | 'subprocessor-updates-signup'
 
 /** Kinds the morning brief counts and the digest leaves out: a signup is news, not an alarm. */
-export const SIGNUP_KINDS: readonly OpsEventKind[] = ['beta-signup', 'newsletter-signup']
+export const SIGNUP_KINDS: readonly OpsEventKind[] = ['beta-signup', 'newsletter-signup', 'subprocessor-updates-signup']
+
+/** SQL that keeps every non-signup `ops_events` row, for the digest's alerts and the brief's alert count. */
+export const NOT_A_SIGNUP = `kind NOT IN (${SIGNUP_KINDS.map((kind) => `'${kind}'`).join(', ')})`
 
 /** Write one event. A no-op without a database (some route tests), and never throws. */
 export async function recordOpsEvent(db: D1Database | undefined, kind: OpsEventKind, message: string): Promise<void> {

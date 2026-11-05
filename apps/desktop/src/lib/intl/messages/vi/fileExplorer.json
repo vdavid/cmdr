@@ -2191,6 +2191,14 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} không thể mã hóa kết nối, còn Cmdr đang bật “Luôn yêu cầu mã hóa SMB”, nên Cmdr vẫn dùng kết nối hệ thống.",
+  "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
+    "sourceHash": "e4af63d"
+  },
+  "fileExplorer.network.osMountFallback.encryptionRequired": "Không thể kết nối trực tiếp tới <shareName>{share}</shareName>, vì máy chủ không thể mã hóa kết nối và Cmdr đang bật “Luôn yêu cầu mã hóa SMB”. Bạn vẫn đang kết nối, nhưng qua kết nối mạng SMB tích hợp sẵn của macOS, vốn chậm hơn nhiều.",
+  "@fileExplorer.network.osMountFallback.encryptionRequired": {
+    "sourceHash": "14a8cb4"
+  },
   "fileExplorer.network.osMountFallback.negotiationInvalid": "Không thể kết nối trực tiếp tới <shareName>{share}</shareName>, vì máy chủ không xác nhận các thiết lập bảo mật đã thống nhất với Cmdr. Một máy chủ hoạt động không bình thường có thể gây ra chuyện này, và ai đó can thiệp vào kết nối cũng vậy. Bạn vẫn đang kết nối, nhưng qua kết nối mạng SMB tích hợp sẵn của macOS, vốn chậm hơn nhiều.",
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
     "sourceHash": "758e268"

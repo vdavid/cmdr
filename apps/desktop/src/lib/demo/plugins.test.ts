@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { browserSafeShortcuts } from './browser-shortcuts.js'
 import { DEMO_HOME } from './demo-tree.js'
@@ -97,6 +99,27 @@ describe('in-memory store plugin', () => {
 describe('path and app plugins', () => {
   it('resolves every standard folder inside the demo home', () => {
     expect(call('plugin:path|resolve_directory', { directory: 1 })).toBe(DEMO_HOME)
+  })
+
+  it('joins paths as the plugin does on macOS', () => {
+    expect(call('plugin:path|join', { paths: ['/Users/you', 'drag-image.png'] })).toBe('/Users/you/drag-image.png')
+    expect(call('plugin:path|join', { paths: ['/a/', './b', '../c//d'] })).toBe('/a/c/d')
+    expect(call('plugin:path|join', { paths: ['a', 'b'] })).toBe('a/b')
+  })
+
+  it('takes the drag image and drops it, for there is no OS drag session to read it', () => {
+    expect(call('plugin:fs|write_file', {})).toBeUndefined()
+    expect(call('plugin:fs|remove', { path: '/Users/you/drag-image.png' })).toBeUndefined()
+  })
+
+  // The demo takes every `plugin-fs` write and keeps nothing, which is only honest while the drag
+  // image is the one writer. A second user needs its own answer (or the volume), not this one.
+  it('has the drag image as the only plugin-fs user in the app', () => {
+    const src = path.resolve(import.meta.dirname, '../..')
+    const users = readdirSync(src, { recursive: true, encoding: 'utf8' })
+      .filter((file) => /\.(ts|svelte)$/.test(file) && !/\.test\.ts$/.test(file))
+      .filter((file) => readFileSync(path.join(src, file), 'utf8').includes("'@tauri-apps/plugin-fs'"))
+    expect(users).toEqual(['lib/file-explorer/drag/drag-drop.ts'])
   })
 
   it('names the app and its version', () => {

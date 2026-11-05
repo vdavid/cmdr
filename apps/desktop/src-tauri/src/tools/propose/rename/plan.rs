@@ -1,26 +1,36 @@
 //! The `propose_rename_plan` tool boundary: schema in, staged proposal or typed refusal
 //! out.
 //!
-//! Everything a plan must survive before a single row is staged lives here — the pane's
-//! effective scope, per-row parameter validation, and the evidence check. One unbacked
-//! content claim refuses the WHOLE plan, so the user never sees a partial plan they'd read
-//! as complete.
+//! Everything a plan must survive before a single row is staged lives here, in order: each
+//! row's own checks and the one-volume, one-folder rule (`rows.rs`), the evidence check, the
+//! folder's placement on a connected volume (the location resolver), and one bounded stat per
+//! source (`sources.rs`). A plan may name any folder on any connected volume; no pane has to
+//! show it. Every refusal names the rows it means, and one bad row refuses the WHOLE plan, so
+//! the user never sees a partial plan they'd read as complete.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
+use std::sync::Arc;
+
+use cmdr_fs::deadline::Deadline;
 
 use serde::Deserialize;
 use serde_json::Value;
 use tauri::{AppHandle, Manager, Runtime};
 
-use super::preflight::volume_uses_local_paths;
+use super::rows::{
+    ROWS_GUIDANCE, RowProblem, RowRejection, most_common, own_problem, rows_rejected, rows_rejected_reason,
+};
 use super::store::{RenameDraft, RenameDraftRow, RenameProposalSnapshot};
 use crate::agent::AgentDb;
 use crate::agent::llm::types::AgentToolResult;
+use crate::file_system::volume::Volume;
+use crate::location::Location;
+use crate::location::miss::{LocationMissResult, volume_not_connected};
+use crate::location::resolve::{LocationInput, VolumeFacts, resolve};
 use crate::tools::params::{ParamViolation, check_object, list_names};
 use crate::tools::propose::evidence::{EvidenceRejection, EvidenceScope, ImageFactsLedger};
 use crate::tools::{ToolError, ToolResult};
-use crate::ui_state::pane_state::{PaneFileEntry, PaneState, PaneStateStore};
 use cmdr_fs::validation::validate_filename;
 
 pub(super) const MAX_RENAMES: usize = 200;
@@ -74,12 +84,18 @@ pub fn propose_rename_plan_schema() -> Value {
     })
 }
 
-/// Why a proposal call didn't stage anything: an ordinary param/scope problem, or evidence
-/// that didn't check out. Kept apart so the model gets the typed per-item verdict for the
-/// second case instead of one flattened sentence.
+/// Why a proposal call didn't stage anything. Each kind keeps its own typed shape so the model
+/// reads which rows to fix rather than one flattened sentence:
+///
+/// - `Problem`: plan-wide, no row to name (no rows, too many, the store isn't there).
+/// - `Rejected`: every row that can't be staged, from every check that could see it, in ONE
+///   answer: the rows' own problems, their evidence, and what the stat found.
+/// - `Location`: the plan's folder can't be placed on a connected volume, in the read tools'
+///   miss shape (`location/miss.rs`), so it carries the same `nearby` next moves.
 pub(super) enum ProposalRefusal {
     Problem(ToolError),
-    Evidence(Vec<EvidenceRejection>),
+    Rejected(Rejected),
+    Location(Box<LocationMissResult>),
 }
 
 impl From<ToolError> for ProposalRefusal {
@@ -88,16 +104,46 @@ impl From<ToolError> for ProposalRefusal {
     }
 }
 
+/// Every row a plan can't stage, collected across the checks so one refusal carries them all.
+#[derive(Default)]
+pub(super) struct Rejected {
+    pub rows: Vec<RowRejection>,
+    pub evidence: Vec<EvidenceRejection>,
+}
+
+impl Rejected {
+    fn is_empty(&self) -> bool {
+        self.rows.is_empty() && self.evidence.is_empty()
+    }
+}
+
+const EVIDENCE_GUIDANCE: &str = "A name based on what's inside an image needs image_facts to have returned that content for that exact path, and the detail must quote it. If you don't have the content, say so and name the file from its old name, its dates, or what the user asked for.";
+
 /// What the model reads when a plan is refused. Typed variants, actionable wording, and
 /// every offending item listed — a refused item is never silently dropped.
 pub(super) fn refusal_content(refusal: &ProposalRefusal) -> Value {
     match refusal {
         ProposalRefusal::Problem(error) => serde_json::json!({ "readyForReview": false, "problem": error.message }),
-        ProposalRefusal::Evidence(rejections) => serde_json::json!({
-            "readyForReview": false,
-            "evidenceRejected": rejections,
-            "guidance": "Nothing was staged, so fix these rows and send the whole plan again. A name based on what's inside an image needs image_facts to have returned that content for that exact path, and the detail must quote it. If you don't have the content, say so and name the file from its old name, its dates, or what the user asked for.",
-        }),
+        ProposalRefusal::Location(miss) => {
+            let mut content = serde_json::to_value(miss.as_ref()).unwrap_or_else(|_| serde_json::json!({}));
+            content["readyForReview"] = serde_json::json!(false);
+            content["refusal"] = serde_json::json!("location");
+            content
+        }
+        ProposalRefusal::Rejected(rejected) => {
+            let mut content = serde_json::json!({ "readyForReview": false });
+            let mut guidance = String::from(ROWS_GUIDANCE);
+            if !rejected.rows.is_empty() {
+                content["rowsRejected"] = rows_rejected(&rejected.rows);
+            }
+            if !rejected.evidence.is_empty() {
+                content["evidenceRejected"] = serde_json::json!(rejected.evidence);
+                guidance.push(' ');
+                guidance.push_str(EVIDENCE_GUIDANCE);
+            }
+            content["guidance"] = serde_json::json!(guidance);
+            content
+        }
     }
 }
 
@@ -108,24 +154,36 @@ pub(super) fn refusal_content(refusal: &ProposalRefusal) -> Value {
 pub(super) fn refusal_reason(refusal: &ProposalRefusal) -> String {
     match refusal {
         ProposalRefusal::Problem(error) => error.message.clone(),
-        ProposalRefusal::Evidence(rejections) => {
-            let named: Vec<String> = rejections
-                .iter()
-                .take(MAX_NAMED_ROWS)
-                .map(|r| format!("{} ({:?})", r.source_path, r.problem))
-                .collect();
-            let rest = match rejections.len().saturating_sub(named.len()) {
-                0 => String::new(),
-                more => format!(" and {more} more"),
-            };
-            let count = rejections.len();
-            let noun = if count == 1 { "row" } else { "rows" };
-            format!(
-                "{count} {noun} carried evidence that didn't check out: {}{rest}",
-                named.join(", ")
-            )
+        ProposalRefusal::Location(miss) => format!("the plan's folder can't be placed ({:?})", miss.miss),
+        ProposalRefusal::Rejected(rejected) => {
+            let mut clauses = Vec::new();
+            if !rejected.rows.is_empty() {
+                clauses.push(rows_rejected_reason(&rejected.rows, MAX_NAMED_ROWS));
+            }
+            if !rejected.evidence.is_empty() {
+                clauses.push(evidence_reason(&rejected.evidence));
+            }
+            clauses.join("; and ")
         }
     }
+}
+
+fn evidence_reason(rejections: &[EvidenceRejection]) -> String {
+    let named: Vec<String> = rejections
+        .iter()
+        .take(MAX_NAMED_ROWS)
+        .map(|r| format!("{} ({:?})", r.source_path, r.problem))
+        .collect();
+    let rest = match rejections.len().saturating_sub(named.len()) {
+        0 => String::new(),
+        more => format!(" and {more} more"),
+    };
+    let count = rejections.len();
+    let noun = if count == 1 { "row" } else { "rows" };
+    format!(
+        "{count} {noun} carried evidence that didn't check out: {}{rest}",
+        named.join(", ")
+    )
 }
 
 pub async fn dispatch<R: Runtime>(
@@ -134,11 +192,8 @@ pub async fn dispatch<R: Runtime>(
     call_id: &str,
     params: &Value,
 ) -> RenameDispatchOutcome {
-    let outcome = match build_draft(app, scope, params) {
-        Ok(mut draft) => {
-            freeze_draft(&mut draft).await;
-            stage_draft(app, scope, &draft)
-        }
+    let outcome = match build_draft(app, scope, params).await {
+        Ok(draft) => stage_draft(app, scope, &draft),
         Err(refusal) => Err(refusal),
     };
     match outcome {
@@ -169,27 +224,6 @@ pub async fn dispatch<R: Runtime>(
                 proposal: None,
             }
         }
-    }
-}
-
-/// Freeze each row's creation snapshot through the plan's volume, the same one-bounded-stat
-/// path `propose_suggestions` uses (`tools/suggestions/snapshot.rs`), so a rename row shows
-/// what the file was when it was suggested.
-pub(super) async fn freeze_draft(draft: &mut RenameDraft) {
-    let volume = crate::file_system::volume::manager::get_volume_manager().get(&draft.volume_id);
-    freeze_draft_on(draft, volume).await;
-}
-
-/// [`freeze_draft`] against a volume in hand, so a test needn't register one.
-pub(super) async fn freeze_draft_on(
-    draft: &mut RenameDraft,
-    volume: Option<std::sync::Arc<dyn crate::file_system::volume::Volume>>,
-) {
-    use crate::tools::suggestions::snapshot::{freeze_paths, snapshot_deadline};
-    let paths = draft.rows.iter().map(|row| row.source_path.clone()).collect();
-    let snapshots = freeze_paths(volume, paths, &snapshot_deadline()).await;
-    for (row, snapshot) in draft.rows.iter_mut().zip(snapshots) {
-        row.snapshot = snapshot;
     }
 }
 
@@ -361,11 +395,71 @@ fn join_clauses(clauses: &[String]) -> String {
     }
 }
 
-fn build_draft<R: Runtime>(
+/// [`check_plan`] over the app's own state: this instant's volume facts, the thread's evidence
+/// ledger, the registered volumes, and the call's one snapshot deadline.
+async fn build_draft<R: Runtime>(
     app: &AppHandle<R>,
     evidence_scope: EvidenceScope,
     params: &Value,
 ) -> Result<RenameDraft, ProposalRefusal> {
+    let facts = VolumeFacts::now().await;
+    // An empty ledger IS the fail-closed ledger, so a missing registration refuses every
+    // content claim rather than waving it through.
+    let no_facts = ImageFactsLedger::default();
+    let registered = app.try_state::<ImageFactsLedger>();
+    let ledger = registered.as_deref().unwrap_or(&no_facts);
+    let volumes = crate::file_system::volume::manager::get_volume_manager();
+    check_plan(
+        params,
+        &facts,
+        ledger,
+        evidence_scope,
+        |volume_id| volumes.get(volume_id),
+        &crate::tools::suggestions::snapshot::snapshot_deadline(),
+    )
+    .await
+}
+
+/// Everything before the write: the pure checks ([`plan_draft`]), then one bounded stat per
+/// source on the plan's volume ([`super::sources::check_sources`]), and ONE refusal carrying
+/// every row any of them rejected. The only async step is that stat, and its shared deadline
+/// is what keeps a dead mount from hanging the turn.
+pub(super) async fn check_plan(
+    params: &Value,
+    facts: &VolumeFacts,
+    ledger: &ImageFactsLedger,
+    evidence_scope: EvidenceScope,
+    volume_for: impl Fn(&str) -> Option<Arc<dyn Volume>>,
+    deadline: &Deadline,
+) -> Result<RenameDraft, ProposalRefusal> {
+    let (mut draft, mut rejected) = plan_draft(params, facts, ledger, evidence_scope)?;
+    // The facts said live a moment ago, so a miss here is a disconnect in between.
+    let volume = volume_for(&draft.volume_id).ok_or_else(|| {
+        invalid_params(
+            "The volume disconnected while the plan was being checked. Call list_volumes, then send the plan again.",
+        )
+    })?;
+    let found = super::sources::check_sources(&draft.volume_id, volume, &mut draft.rows, deadline).await;
+    rejected.rows.extend(found);
+    if rejected.is_empty() {
+        Ok(draft)
+    } else {
+        Err(ProposalRefusal::Rejected(rejected))
+    }
+}
+
+/// Parse, check, and place a plan, with no I/O: each row's own checks and the one-volume,
+/// one-folder rule, then the evidence, then the folder's place. Answers the placed draft of
+/// every row that passed its own checks, beside every row rejected so far, so the stat can add
+/// its findings to the same refusal. Pure over `facts` and the ledger, so a test needs no app
+/// and no registered volume. A plan-wide problem, or one where no row survives to place,
+/// refuses here.
+pub(super) fn plan_draft(
+    params: &Value,
+    facts: &VolumeFacts,
+    ledger: &ImageFactsLedger,
+    evidence_scope: EvidenceScope,
+) -> Result<(RenameDraft, Rejected), ProposalRefusal> {
     let input: RenamePlanInput = serde_json::from_value(params.clone()).map_err(|_| {
         ToolError::invalid_params(rows_problem(params).unwrap_or_else(|| {
             "Provide a rename plan with sourcePath, volumeId, destinationName, and evidence for every row.".to_string()
@@ -377,90 +471,153 @@ fn build_draft<R: Runtime>(
     if input.renames.len() > MAX_RENAMES {
         return Err(invalid_params("A rename plan can contain up to 200 items.".to_string()));
     }
-    let store = app
-        .try_state::<PaneStateStore>()
-        .ok_or_else(|| ToolError::internal("Pane state isn't available yet"))?;
-    let state = focused_state(&store);
-    let volume_id = state
-        .volume_id
-        .clone()
-        .ok_or_else(|| ToolError::invalid_params("The focused pane has no volume id yet."))?;
-    let scope = scoped_files(&state)?;
-    // An empty ledger IS the fail-closed ledger, so a missing registration refuses every
-    // content claim rather than waving it through.
-    let no_facts = ImageFactsLedger::default();
-    let registered = app.try_state::<ImageFactsLedger>();
-    let ledger = registered.as_deref().unwrap_or(&no_facts);
-    let mut source_paths = HashSet::new();
-    let mut destination_names = HashSet::new();
-    let mut parent: Option<String> = None;
-    let mut rows = Vec::with_capacity(input.renames.len());
-    for rename in input.renames {
-        if rename.volume_id != volume_id {
-            return Err(invalid_params("Every rename must use the focused pane's volume id."));
-        }
-        if !source_paths.insert(rename.source_path.clone()) {
-            return Err(invalid_params("A source file can appear only once in a rename plan."));
-        }
-        validate_destination_name(&rename.destination_name)?;
-        if !destination_names.insert(destination_key(&rename.destination_name)) {
-            return Err(invalid_params("Destination names must be unique on this volume."));
-        }
-        if let Some(entry) = scope.get(rename.source_path.as_str()) {
-            if entry.is_directory {
-                return Err(invalid_params("Rename plans can contain files, not folders."));
-            }
-        } else if !missing_local_child(&state, &volume_id, &rename.source_path) {
-            return Err(invalid_params(
-                "Every source must be in the focused pane's effective scope.",
-            ));
-        }
-        if is_archive_inner_path(&rename.source_path) {
-            return Err(invalid_params("Rename plans can't include files inside an archive."));
-        }
-        // A repo's snapshots are read-only for the same reason: `.git/branches/…` has
-        // no file to rename. Asked separately from the archive line above, which is
-        // a different question (a portal path has no archive suffix to find).
-        if crate::file_system::git::wiring::portal_serves(Path::new(&rename.source_path)) {
-            return Err(invalid_params(
-                "Rename plans can't include files inside a repository's history.",
-            ));
-        }
-        // And a restic backup's snapshots, for the same reason. Confirmed, ❌ not
-        // the bare name: a real folder called `Browse snapshots` outside a repo
-        // holds real files a plan may rename. From the hub's memo, no I/O: a pane
-        // only stands in a view after its route confirmed the repo.
-        if crate::file_system::restic::wiring::memo_says_in_a_restic_view(&volume_id, Path::new(&rename.source_path)) {
-            return Err(invalid_params(
-                "Rename plans can't include files inside a backup's snapshots.",
-            ));
-        }
-        // One group is one `start_bulk_rename` call, and that executor refuses a row whose
-        // source and destination parents differ — so the group binds ONE parent folder, and a
-        // plan that spans folders is refused here rather than half-applied later.
-        let row_parent = Path::new(&rename.source_path)
-            .parent()
-            .map(|parent| parent.to_string_lossy().into_owned())
-            .unwrap_or_default();
-        if *parent.get_or_insert(row_parent.clone()) != row_parent {
-            return Err(invalid_params("Every rename must stay in one folder."));
-        }
-        rows.push(RenameDraftRow {
-            source_path: rename.source_path,
-            destination_name: rename.destination_name,
-            evidence: rename.evidence,
-            coverage: None,
-            snapshot: None,
-        });
-    }
-    // One unbacked claim refuses the WHOLE plan: staging the rest would show the user a
-    // partial plan they'd read as complete, and the model needs to resend it anyway.
-    check_row_evidence(ledger, evidence_scope, &mut rows).map_err(ProposalRefusal::Evidence)?;
-    Ok(RenameDraft {
+    let PlannedRows {
         volume_id,
-        parent: parent.unwrap_or_default(),
+        parent,
+        mut rows,
+        rejections,
+    } = plan_rows(input.renames);
+    let mut rejected = Rejected {
+        rows: rejections,
+        evidence: Vec::new(),
+    };
+    // One unbacked claim refuses the WHOLE plan: staging the rest would show the user a
+    // partial plan they'd read as complete, and the model needs to resend it anyway. Checked
+    // on the paths as sent, which are the paths `image_facts` answered for.
+    if let Err(evidence) = check_row_evidence(ledger, evidence_scope, &mut rows) {
+        rejected.evidence = evidence;
+    }
+    if rows.is_empty() {
+        return Err(ProposalRefusal::Rejected(rejected));
+    }
+    let placed = place_folder(facts, &volume_id, &parent).map_err(ProposalRefusal::Location)?;
+    if placed.path != parent {
+        // Rebased onto the volume's current root, or re-addressed onto a live sibling of the
+        // same share: the stored rows are what preflight and apply read, so they say where
+        // the files really are now.
+        for row in &mut rows {
+            let name = Path::new(&row.source_path).file_name().unwrap_or_default();
+            row.source_path = Path::new(&placed.path).join(name).to_string_lossy().into_owned();
+        }
+    }
+    let draft = RenameDraft {
+        volume_id: placed.volume_id,
+        parent: placed.path,
         rows,
-    })
+    };
+    Ok((draft, rejected))
+}
+
+/// A plan's rows, sorted into the ones its own checks pass and the ones they reject.
+struct PlannedRows {
+    /// The volume MOST rows name.
+    volume_id: String,
+    /// The folder MOST plain rows sit in.
+    parent: String,
+    rows: Vec<RenameDraftRow>,
+    rejections: Vec<RowRejection>,
+}
+
+/// Sort the rows by their own checks and the one-volume, one-folder rule. The volume and folder
+/// are the ones MOST rows name, so one stray row is the one named.
+///
+/// One group is one `start_bulk_rename` call, and that executor refuses a row whose source and
+/// destination parents differ, so the group binds ONE parent folder and a plan spanning folders
+/// is refused here rather than half-applied later.
+///
+/// A repeated source is keyed by the fold every proposal name uses ([`destination_key`]) on the
+/// file name (the folder is one by then): on a case-insensitive disk `A.png` and `a.png` are
+/// one file, which would otherwise reach the review as two renames of it, one bound to fail
+/// at apply. The cost, on a case-sensitive disk, is that two files differing only in case
+/// can't share a plan; refusing names the row, so the model splits it.
+fn plan_rows(renames: Vec<RenameInput>) -> PlannedRows {
+    let parents: Vec<String> = renames
+        .iter()
+        .map(|rename| {
+            Path::new(&rename.source_path)
+                .parent()
+                .map(|parent| parent.to_string_lossy().into_owned())
+                .unwrap_or_default()
+        })
+        .collect();
+    let volume_id = most_common(renames.iter().map(|rename| rename.volume_id.as_str()))
+        .unwrap_or_default()
+        .to_string();
+    let parent = most_common(
+        renames
+            .iter()
+            .zip(&parents)
+            .filter(|(rename, _)| is_plain(rename))
+            .map(|(_, parent)| parent.as_str()),
+    )
+    .unwrap_or_default()
+    .to_string();
+
+    let mut rejections = Vec::new();
+    let mut source_names = HashSet::new();
+    let mut destination_names = HashSet::new();
+    let mut rows = Vec::with_capacity(renames.len());
+    for (rename, row_parent) in renames.into_iter().zip(parents) {
+        let source_name = Path::new(&rename.source_path)
+            .file_name()
+            .map(|name| destination_key(&name.to_string_lossy()))
+            .unwrap_or_default();
+        let problem = own_problem(&rename.source_path, &rename.volume_id, &rename.destination_name)
+            .or_else(|| (rename.volume_id != volume_id).then_some(RowProblem::OtherVolume))
+            .or_else(|| (row_parent != parent).then_some(RowProblem::OtherFolder))
+            .or_else(|| (!source_names.insert(source_name)).then_some(RowProblem::RepeatedSource))
+            .or_else(|| {
+                (!destination_names.insert(destination_key(&rename.destination_name)))
+                    .then_some(RowProblem::RepeatedName)
+            });
+        match problem {
+            Some(problem) => rejections.push(RowRejection::new(&rename.source_path, problem)),
+            None => rows.push(RenameDraftRow {
+                source_path: rename.source_path,
+                destination_name: rename.destination_name,
+                evidence: rename.evidence,
+                coverage: None,
+                snapshot: None,
+            }),
+        }
+    }
+    PlannedRows {
+        volume_id,
+        parent,
+        rows,
+        rejections,
+    }
+}
+
+/// Whether a row's path counts toward the plan's folder: a row whose path isn't plain is
+/// refused on its own, and must not out-vote the rest.
+fn is_plain(rename: &RenameInput) -> bool {
+    super::rows::is_plain_path(&rename.source_path)
+}
+
+/// Where the plan's folder is: placed by the location resolver (`crate::location`), on its own
+/// volume when that's live, else on the first live, proven sibling of the same share, else the
+/// read tools' typed miss. Any connected volume's folder qualifies; no pane has to show it.
+pub(super) fn place_folder(
+    facts: &VolumeFacts,
+    volume_id: &str,
+    parent: &str,
+) -> Result<Location, Box<LocationMissResult>> {
+    let input = LocationInput {
+        volume_id: Some(volume_id.to_string()),
+        path: parent.to_string(),
+    };
+    let resolved = resolve(facts, &input).map_err(|miss| Box::new(miss.into()))?;
+    if resolved.live {
+        return Ok(resolved.location);
+    }
+    facts
+        .readers(&resolved)
+        .into_iter()
+        .skip(1)
+        .find(|reader| reader.live)
+        .map(|reader| reader.location)
+        .ok_or_else(|| Box::new(volume_not_connected(facts, &resolved)))
 }
 
 /// Check every row's evidence, recording the accepted rows' display coverage in place, or
@@ -505,54 +662,6 @@ pub(super) fn check_row_evidence(
 pub(super) fn is_archive_inner_path(source_path: &str) -> bool {
     cmdr_fs::archive_format::archive_boundary_candidate(Path::new(source_path))
         .is_some_and(|(_archive, inner)| !inner.as_os_str().is_empty())
-}
-
-/// A model may invent a filename that is not in the pane cache. Keep that row
-/// reviewable only when it names a nonexistent direct child of the focused local
-/// folder; preflight then reports `SourceMissing`. Existing out-of-scope files and
-/// every remote path stay rejected at the proposal boundary.
-pub(super) fn missing_local_child(state: &PaneState, volume_id: &str, source_path: &str) -> bool {
-    if !volume_uses_local_paths(volume_id) || std::fs::symlink_metadata(source_path).is_ok() {
-        return false;
-    }
-    let source = Path::new(source_path);
-    source.parent() == Some(Path::new(&state.path)) && source.file_name().is_some()
-}
-
-fn focused_state(store: &PaneStateStore) -> PaneState {
-    if store.get_focused_pane() == "right" {
-        store.get_right()
-    } else {
-        store.get_left()
-    }
-}
-
-pub(super) fn scoped_files(state: &PaneState) -> Result<HashMap<&str, &PaneFileEntry>, ToolError> {
-    // `selected_indices` are GLOBAL listing indices, while `files` is only the loaded window
-    // from `loaded_start`; convert before indexing (as `read::pane_listing` and
-    // `tools::actions` do) or a scrolled pane scopes the plan to the wrong files. Folder
-    // scope needs no conversion: those indices are already window-local.
-    let indexes: Vec<Option<usize>> = if state.selected_indices.is_empty() {
-        (0..state.files.len()).map(Some).collect()
-    } else {
-        state
-            .selected_indices
-            .iter()
-            // `checked_sub`, never `saturating_sub`: a row scrolled out below the window must
-            // stay unresolvable rather than collapse onto the window's first entry.
-            .map(|index| index.checked_sub(state.loaded_start))
-            .collect()
-    };
-    let mut files = HashMap::with_capacity(indexes.len());
-    for index in indexes {
-        let entry = index.and_then(|index| state.files.get(index)).ok_or_else(|| {
-            ToolError::invalid_params(
-                "The selected files are not fully loaded. Ask the user to narrow or reload the selection.",
-            )
-        })?;
-        files.insert(entry.path.as_str(), entry);
-    }
-    Ok(files)
 }
 
 /// The key two destination names share when a filesystem may consider them one: the same fold

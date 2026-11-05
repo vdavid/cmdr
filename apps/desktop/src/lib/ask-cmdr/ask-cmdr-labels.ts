@@ -461,6 +461,7 @@ const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
   rateLimited: 'askCmdr.error.rateLimited',
   modelNotInPlan: 'askCmdr.error.modelNotInPlan.unnamed',
   requestTooLarge: 'askCmdr.error.requestTooLarge.unnamed',
+  providerBusy: 'askCmdr.error.providerBusy.unnamed',
   budgetExhausted: 'askCmdr.error.budgetExhausted',
   repeatedToolCall: 'askCmdr.error.repeatedToolCall',
   unfinishedReply: 'askCmdr.error.unfinishedReply',
@@ -473,13 +474,23 @@ const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
  * shared copy map, so "only on-device AI" never reads as "doesn't allow this AI service". A plan too
  * small for one request names the provider (`provider`, the preset's brand name, when it has one),
  * so it reads as that provider's limit, not as Cmdr's problem. A plan that lacks the model names the
- * provider the same way, so it doesn't read as the provider being busy.
+ * provider the same way, so it doesn't read as the provider being busy, and so does a provider that
+ * stayed busy through every retry, so it reads as theirs and passing.
  */
 export function errorMessage(kind: AskCmdrErrorKind, managed?: ManagedAiRefusal | null, provider?: string): string {
   if (kind === 'managedByOrganization' && managed) return managedAiRefusalMessage(managed)
   if (kind === 'requestTooLarge' && provider) return tString('askCmdr.error.requestTooLarge.named', { provider })
   if (kind === 'modelNotInPlan' && provider) return tString('askCmdr.error.modelNotInPlan.named', { provider })
+  if (kind === 'providerBusy' && provider) return tString('askCmdr.error.providerBusy.named', { provider })
   return tString(ERROR_KEYS[kind])
+}
+
+/** The bubble's status line while the provider is overloaded and the turn waits to try again:
+ * that it's busy, naming it when it has a name, and which try comes next. */
+export function providerBusyMessage(busy: { attempt: number; attempts: number; provider?: string }): string {
+  const counts = { attemptText: formatInteger(busy.attempt), attemptsText: formatInteger(busy.attempts) }
+  if (busy.provider) return tString('askCmdr.providerBusy.named', { provider: busy.provider, ...counts })
+  return tString('askCmdr.providerBusy.unnamed', counts)
 }
 
 const EVIDENCE_KEYS: Record<RenameEvidenceSource, MessageKey> = {

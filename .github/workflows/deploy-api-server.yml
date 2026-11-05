@@ -26,23 +26,54 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Restore the pnpm store
+        uses: ./.github/actions/pnpm-store
         with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-api-server-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-api-server-
+          phase: restore
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Refuse to deploy code that needs a secret the live Worker doesn't have yet. Without this, landing
+      # a change that reads a new secret (like the SMTP2Go key behind every license email) before
+      # someone ran `wrangler secret put` would replace a working Worker with one that silently can't
+      # send. Failing here keeps the old Worker running. Add a name when the Worker starts depending on
+      # one; optional secrets (the Worker runs fine without them) stay off the list.
+      - name: Check required Worker secrets
+        run: |
+          # A failed `secret list` must fail the step, not read as "every secret is missing".
+          set -euo pipefail
+          required=(
+            SMTP2GO_API_KEY
+            ED25519_PRIVATE_KEY
+            PADDLE_WEBHOOK_SECRET_LIVE
+            PADDLE_API_KEY_LIVE
+            PRICE_ID_COMMERCIAL_PERPETUAL
+            IP_HASH_PEPPER
+          )
+          present=$(pnpm exec wrangler secret list --format json | jq -r '.[].name')
+          missing=()
+          for name in "${required[@]}"; do
+            grep -qx "$name" <<< "$present" || missing+=("$name")
+          done
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::The live Worker is missing required secrets: ${missing[*]}. Set each with 'pnpm --filter @cmdr/api-server exec wrangler secret put <NAME>', then re-run this workflow. The previous Worker is still serving."
+            exit 1
+          fi
+          echo "All ${#required[@]} required secrets are set."
+        working-directory: ./apps/api-server
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       # Apply D1 migrations BEFORE deploying. The new worker code may reference columns a migration adds,
       # so the schema must be ready first. A deploy-then-migrate order silently drops every telemetry
       # write (the D1 inserts are fire-and-forget) until the migration runs. `--remote` targets prod;
       # wrangler auto-confirms in CI (non-interactive). Needs the CF token to have D1 edit permission.
+      # It names the BINDING, not the database, so it always migrates whatever `wrangler.toml` binds:
+      # a database name here would keep migrating the old one after a switch (#805).
       - name: Apply D1 migrations
-        run: pnpm exec wrangler d1 migrations apply cmdr-telemetry --remote
+        run: pnpm exec wrangler d1 migrations apply TELEMETRY_DB --remote
         working-directory: ./apps/api-server
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

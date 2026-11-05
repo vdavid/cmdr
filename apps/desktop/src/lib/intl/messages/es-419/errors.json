@@ -857,6 +857,7 @@
   },
   "errors.shareList.negotiationInvalid": "“{server}” no confirmó la configuración de seguridad que acordó con Cmdr, así que Cmdr cerró la conexión. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión. Si sigue pasando, comprueba tu red y la configuración del servidor.",
   "errors.shareList.encryptionUnavailable": "“{server}” solo acepta conexiones cifradas, pero no acordó con Cmdr una forma de cifrarlas. Comprueba la configuración de cifrado SMB del servidor.",
+  "errors.shareList.encryptionRequired": "“{server}” no puede cifrar esta conexión y Cmdr tiene activado “Requerir siempre cifrado SMB”. Comprueba la configuración de cifrado SMB del servidor.",
   "errors.shareList.protocolError": "Algo salió mal al pedirle a “{server}” sus recursos compartidos. Vuelve a intentarlo en un momento.",
   "@errors.shareList.protocolError": {
     "sourceHash": "a989d95"
@@ -902,5 +903,8 @@
   },
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "9c705d8"
+  },
+  "@errors.shareList.encryptionRequired": {
+    "sourceHash": "38a5e02"
   }
 }

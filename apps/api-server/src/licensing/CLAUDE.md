@@ -13,8 +13,8 @@ signing, id namespaces), `license-issuance.ts` (the D1 ledger), `refunds.ts` (re
   `process` don't exist in production, and a test in the node project sails past one: a `Buffer.from()` in the key
   encoder made every mint throw for real buyers while the suite stayed green. ESLint refuses them across the whole
   Worker at edit time; `production-runtime.test.ts` and `webhook-runtime.test.ts` run the real Worker in workerd to
-  catch what lint structurally can't (a dependency), the second over the purchase path itself (Paddle and Resend stubbed
-  at the socket). `../../DETAILS.md` § Test runtimes.
+  catch what lint structurally can't (a dependency), the second over the purchase path itself (Paddle and SMTP2Go
+  stubbed at the socket). `../../DETAILS.md` § Test runtimes.
 - **Sandbox and live never mix** (accounts, keys, price IDs, webhook secrets, notification targets):
   `PADDLE_ENVIRONMENT` routes. ❌ Never infer the environment from a transaction id, both use `txn_`.
 - **`ED25519_PRIVATE_KEY` is per-environment for the same reason.** `.dev.vars` holds the DEV signer; production's lives

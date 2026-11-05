@@ -5,7 +5,7 @@ The one door every Cmdr HTTP client is built through: `client_builder()` is `req
 
 ## Module map
 
-- `lib.rs`: `client_builder()` and the injectable `builder_with` the end-to-end tests drive.
+- `lib.rs`: `client_builder()`, the injectable `builder_with` the end-to-end tests drive, and `warm_up_pac()`.
 - `route.rs`: the decision order (`decide`) and the loopback / link-local test.
 - `env.rs`: the `*_PROXY` / `NO_PROXY` variables, read once.
 - `system.rs`: CFNetwork's verdict per URL (`mac::entries_for`) and the walk over its list (`first_route`).
@@ -27,6 +27,8 @@ The one door every Cmdr HTTP client is built through: `client_builder()` is `req
   "Exclude simple hostnames" match exactly. About 15 µs a lookup, so that layer has no cache.
 - ❗ **A PAC miss blocks the asking thread for up to 3 s** (reqwest asks synchronously). It runs on a short-lived thread
   with its own run loop; a failure or timeout goes direct, as macOS does, and is cached 30 s, an answer 5 min.
+- **The app calls `warm_up_pac()` at launch** for `api.getcmdr.com`: the process's cold first evaluation runs in the
+  background with a 10 s budget, and a request arriving meanwhile waits on the one-evaluation turn for its answer.
 - ❗ **The PAC `Execute…` functions are declared in `pac.rs`, not taken from `objc2-cf-network`**: its callback type
   says the proxy list is non-null, and CFNetwork passes null on failure.
 - ❗ **A SOCKS proxy from macOS (the manual setting or a PAC) becomes `socks5h://`**: the proxy resolves names, as

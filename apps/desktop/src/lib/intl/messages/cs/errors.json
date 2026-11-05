@@ -2449,6 +2449,10 @@
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "ea3a52f"
   },
+  "errors.shareList.encryptionRequired": "Server „{server}“ toto připojení zašifrovat nedokáže a v Cmdru je zapnutá volba „Vždy vyžadovat šifrování SMB“. Zkontrolujte nastavení šifrování SMB na serveru.",
+  "@errors.shareList.encryptionRequired": {
+    "sourceHash": "4dff9ea"
+  },
   "errors.shareList.protocolError": "Při zjišťování sdílených složek na serveru „{server}“ se něco pokazilo. Zkuste to za chvíli znovu.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

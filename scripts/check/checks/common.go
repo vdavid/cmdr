@@ -69,6 +69,20 @@ type CheckResult struct {
 	Total       int  // items checked (-1 = N/A)
 	Issues      int  // items needing attention (-1 = N/A)
 	Changes     int  // files modified (-1 = N/A)
+	// MissingEnvironment marks a skip whose cause is this machine, not the tree: Docker down,
+	// a build output that isn't there. Under `--ci` the runner fails it, because a skipped
+	// check leaves its lane green and the lane then saves a marker vouching for checks that
+	// never ran (the CI gate review of 2026-11-05, F5). Locally it stays a skip.
+	MissingEnvironment bool
+}
+
+// SkippedNoEnvironment is a skip because this machine can't run the check (see
+// `CheckResult.MissingEnvironment`). Deterministic skips (macOS only, nothing in the tree to
+// check, the Rust test scope's `none`) stay `Skipped`.
+func SkippedNoEnvironment(reason string) CheckResult {
+	r := Skipped(reason)
+	r.MissingEnvironment = true
+	return r
 }
 
 // Success creates a success result with the given message (no changes made).
@@ -232,6 +246,20 @@ const ResourceCargoBuildDir = "cargo-build-dir"
 // `deps_temp_*` → `deps` rename and the loser dies on `ENOTEMPTY`. Declare it on
 // any lane that runs one of those commands.
 const ResourceAstroGeneratedDir = "astro-generated-dir"
+
+// RustTestScopeEnv narrows the host Rust test lanes to the workspace members a
+// change can affect: "all" (or unset/empty, the default), "none", or a list of
+// package names, as `--print-rust-test-scope` prints it (`rust-test-scope.go`).
+// It lives in this core file because the executor reads it too: a scoped pass
+// covers less than the cache key says, so a run with it set records nothing.
+const RustTestScopeEnv = "CMDR_RUST_TEST_SCOPE"
+
+// RustTestScopeNarrowed reports whether this process runs under a narrowed Rust
+// test scope, which is anything but unset, empty, or "all".
+func RustTestScopeNarrowed() bool {
+	raw := strings.TrimSpace(os.Getenv(RustTestScopeEnv))
+	return raw != "" && raw != "all"
+}
 
 // EffectiveCpuWeight returns the scheduling weight clamped to [1, capacity], so
 // an unset weight counts as light (1) and an over-budget weight can still run

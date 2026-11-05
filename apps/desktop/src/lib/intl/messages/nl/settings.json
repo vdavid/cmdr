@@ -1300,6 +1300,18 @@
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
+  "settings.network.requireSmbEncryption.label": "Altijd SMB-versleuteling vereisen",
+  "@settings.network.requireSmbEncryption.label": {
+    "sourceHash": "4519b09"
+  },
+  "settings.network.requireSmbEncryption.description": "Cmdr versleutelt zijn eigen verbindingen met SMB-shares, ook als de server daar niet om vraagt, en maakt geen verbinding met een server die niet kan versleutelen. Gastverbindingen kunnen niet worden versleuteld, dus je moet inloggen. Dit geldt voor nieuwe verbindingen.",
+  "@settings.network.requireSmbEncryption.description": {
+    "sourceHash": "4b8d40b"
+  },
+  "settings.network.requireSmbEncryption.keywords": "versleutelen, versleuteld, encryptie, codering, beveiliging, veilig, privacy, afschermen",
+  "@settings.network.requireSmbEncryption.keywords": {
+    "sourceHash": "1fc0e27"
+  },
   "settings.network.shareCacheDuration.label": "Cacheduur van shares",
   "@settings.network.shareCacheDuration.label": {
     "sourceHash": "ff627cd"
@@ -2822,6 +2834,14 @@
   "settings.managed.summary.securityLogRequired": "Altijd bijgehouden",
   "@settings.managed.summary.securityLogRequired": {
     "sourceHash": "baf73d6"
+  },
+  "settings.managed.summary.smbEncryption": "SMB-versleuteling",
+  "@settings.managed.summary.smbEncryption": {
+    "sourceHash": "059bf46"
+  },
+  "settings.managed.summary.smbEncryptionRequired": "Altijd vereist",
+  "@settings.managed.summary.smbEncryptionRequired": {
+    "sourceHash": "8bac3f7"
   },
   "settings.managed.summary.updates": "Updates",
   "@settings.managed.summary.updates": {

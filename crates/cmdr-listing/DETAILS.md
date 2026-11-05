@@ -563,7 +563,7 @@ at `i` GOES. Applying the un-inverted permutation scrambles the whole listing wi
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to 38 root promises, 47 `Listings` methods, one public module (`host`), and 20
+`index-crate-isolation` holds this crate to 41 root promises, 47 `Listings` methods, one public module (`host`), and 20
 public items inside it. The numbers are exactly what the crate exposes, with no headroom, so an addition has to be
 argued for. Everything counted exists for a named caller:
 
@@ -594,7 +594,9 @@ argued for. Everything counted exists for a named caller:
   (re-exported from `cmdr-sort`, so a crate that only names a sort skips this engine: `crates/cmdr-sort/DETAILS.md`),
   `EffectiveSort`, `SortableEntry`, `entry_comparator`, `sort_entries`, `NameCollator`, and `Listings::collator`.
   `EffectiveSort` is the one input both sort functions take, and `resolve` its only constructor, so a caller outside a
-  listing can't sort by a date without stating which dates its rows carry.
+  listing can't sort by a date without stating which dates its rows carry. `SearchSortRow`, `SearchSortAnswer`, and
+  `sort_search_rows` (`search_rows.rs`) are a search-results pane's order, answered the same by the desktop and the
+  browser demo.
 - **Housekeeping**: `start_orphan_reaper`, `flush_pending_diffs` (the `playwright-e2e` feature only), and
   `stored_spellings` (a Finder drop's foreign spelling, resolved once), and `entries_as_stored` (a typed folder path
   opened the way a pane opens it, for Ask Cmdr's live `list_dir`, which keeps no listing).

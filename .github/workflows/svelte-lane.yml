@@ -1,0 +1,216 @@
+name: Svelte lane
+
+# The desktop frontend lane, called by `ci.yml` (`desktop-svelte`): the Svelte checks, i18n, and
+# Vitest in one job, and the type-aware ESLint passes in a second, so their 2–4 min run beside the
+# first instead of lengthening it. Its own file so an edit here reruns this lane alone (the
+# `svelte` filter in `ci.yml` lists it). `docs/tooling/ci.md` § Lane files.
+on:
+  workflow_call:
+    inputs:
+      marker-key:
+        description: The lane's marker key from `ci.yml`'s lane plan, saved by the `marker` job once both jobs passed
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Restore the pnpm store
+        id: pnpm-store
+        uses: ./.github/actions/pnpm-store
+        with:
+          phase: restore
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # A whole-workspace install, so this job is the one that saves the store (`main` only).
+      - name: Save the pnpm store
+        uses: ./.github/actions/pnpm-store
+        with:
+          phase: save
+          save: 'true'
+          hit: ${{ steps.pnpm-store.outputs.hit }}
+
+      - name: Generate SvelteKit types
+        run: pnpm exec svelte-kit sync
+        working-directory: ./apps/desktop
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      # ESLint runs in the `eslint-typecheck` job below: its two type-aware passes run the full
+      # config over all of `eslint .`, a superset of the no-type-info rules.
+      - name: Run Stylelint
+        run: ./scripts/check/check --check desktop-svelte-stylelint --ci
+
+      - name: Check unused CSS
+        run: ./scripts/check/check --check desktop-svelte-css-unused --ci
+
+      - name: Check a11y contrast
+        run: ./scripts/check/check --check desktop-svelte-a11y-contrast --ci
+
+      - name: Check a11y coverage
+        run: ./scripts/check/check --check desktop-svelte-a11y-coverage --ci
+
+      - name: Check UI primitive coverage
+        run: ./scripts/check/check --check desktop-svelte-ui-primitive-coverage --ci
+
+      - name: Check dialog gallery coverage
+        run: ./scripts/check/check --check desktop-svelte-dialog-gallery-coverage --ci
+
+      - name: Check btn-restyle
+        run: ./scripts/check/check --check desktop-svelte-btn-restyle --ci
+
+      - name: Check bare polls
+        run: ./scripts/check/check --check desktop-svelte-bare-poll --ci
+
+      - name: Check IPC wrappers and commands have callers
+        run: ./scripts/check/check --check desktop-ipc-unused --ci
+
+      - name: Check E2E stale selectors
+        run: ./scripts/check/check --check desktop-svelte-e2e-stale-selector --ci
+
+      - name: Check Vite build target
+        run: ./scripts/check/check --check desktop-vite-build-target --ci
+
+      - name: Run svelte-check
+        run: ./scripts/check/check --check desktop-svelte-check --ci
+
+      - name: Check import cycles
+        run: ./scripts/check/check --check desktop-svelte-import-cycles --ci
+
+      - name: Run jscpd
+        run: ./scripts/check/check --check desktop-svelte-jscpd --ci
+
+      - name: Check message-keys freshness
+        run: ./scripts/check/check --check desktop-message-keys-fresh --ci
+
+      # These two live in the Svelte lane, not the Rust one, even though both
+      # artifacts are Rust: what goes stale is a change under
+      # `apps/desktop/src/lib/intl/messages/` (a catalog directory added, or a
+      # `menu.*` label edited), which only the `svelte` filter sees. Both
+      # generators are dependency-light Node, so they run fine here.
+      - name: Check shipped-locales freshness
+        run: ./scripts/check/check --check desktop-shipped-locales-fresh --ci
+
+      - name: Check native-strings freshness
+        run: ./scripts/check/check --check desktop-native-strings-fresh --ci
+
+      - name: Check message-key naming
+        run: ./scripts/check/check --check desktop-message-key-naming --ci
+
+      # `desktop-message-keys-unused` runs in the light lane: it reads Rust too, which this lane's
+      # filter doesn't watch.
+      - name: Check message screenshot couplings
+        run: ./scripts/check/check --check desktop-message-screenshots-fresh --ci
+
+      - name: Check i18n placeholder/tag parity
+        run: ./scripts/check/check --check desktop-i18n-parity --ci
+
+      - name: Check i18n ICU validity
+        run: ./scripts/check/check --check desktop-i18n-icu --ci
+
+      - name: Check i18n tag/param name collisions
+        run: ./scripts/check/check --check desktop-i18n-tag-param-collision --ci
+
+      - name: Check <Trans> snippet parity
+        run: ./scripts/check/check --check desktop-i18n-trans-snippet-parity --ci
+
+      - name: Check i18n plural-category coverage
+        run: ./scripts/check/check --check desktop-i18n-plural --ci
+
+      - name: Check i18n translation coverage
+        run: ./scripts/check/check --check desktop-i18n-coverage --ci
+
+      - name: Check accessible names still contain their visible label
+        run: ./scripts/check/check --check desktop-i18n-aria-label --ci
+
+      - name: Run Knip
+        run: ./scripts/check/check --check desktop-svelte-knip --ci
+
+      - name: Check type drift
+        run: ./scripts/check/check --check desktop-svelte-type-drift --ci
+
+      - name: Typecheck Linux E2E suite
+        run: ./scripts/check/check --check desktop-svelte-e2e-linux-typecheck --ci
+
+      - name: Run Svelte tests
+        run: ./scripts/check/check --check desktop-svelte-tests --ci
+
+  # The rules that need TypeScript's types (`no-unnecessary-condition`, `no-floating-promises`,
+  # `no-deprecated`, ...), plus every other rule: these two passes are the desktop's only ESLint
+  # job. They used to live only in the every-six-days slow workflow, where 25 errors sat on a
+  # green `main` (2026-10-21), one of them a real toast bug.
+  eslint-typecheck:
+    name: Type-aware ESLint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Restore the pnpm store
+        uses: ./.github/actions/pnpm-store
+        with:
+          phase: restore
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The type-aware config extends `$app/tsconfig`, which only `svelte-kit sync` generates.
+      - name: Generate SvelteKit types
+        run: pnpm exec svelte-kit sync
+        working-directory: ./apps/desktop
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      # Two passes, one projectService batch per file type, each far faster than one combined.
+      - name: Run type-aware ESLint (Svelte files)
+        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-svelte --ci
+
+      - name: Run type-aware ESLint (TypeScript files)
+        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-typescript --ci
+
+  # The lane's marker, once BOTH jobs passed (a job's `needs` without `if:` runs only then), so
+  # one green job can't vouch for the other (`scripts/lane-markers/DETAILS.md`).
+  marker:
+    name: Lane marker
+    needs: [checks, eslint-typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Save the lane marker
+        uses: ./.github/actions/lane-marker
+        with:
+          key: ${{ inputs.marker-key }}

@@ -8,9 +8,8 @@
  * escaping.
  */
 
-import { Resend } from 'resend'
 import type { LicenseType } from '../licensing/license'
-import { sendViaResend } from './send'
+import { sendEmail } from './send'
 import { escapeHtml } from './layout'
 
 /**
@@ -44,7 +43,7 @@ interface RenderParams {
 
 interface EmailParams extends RenderParams {
   to: string
-  resendApiKey: string
+  smtp2goApiKey: string
 }
 
 /**
@@ -205,10 +204,9 @@ Happy file managing! ⌘
 }
 
 export async function sendLicenseEmail(params: EmailParams): Promise<void> {
-  const resend = new Resend(params.resendApiKey)
   const { subject, html, text } = renderLicenseEmail(params)
-  await sendViaResend(
-    resend,
+  await sendEmail(
+    params.smtp2goApiKey,
     { from: `${params.productName} <noreply@getcmdr.com>`, to: params.to, subject, html, text },
     'license',
   )

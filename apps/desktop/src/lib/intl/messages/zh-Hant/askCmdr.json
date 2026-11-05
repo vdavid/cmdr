@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "{provider} 現在很忙，正在重試（第 {attemptText} 次，共 {attemptsText} 次）⋯",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "你的 AI 提供者現在很忙，正在重試（第 {attemptText} 次，共 {attemptsText} 次）⋯",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "這段對話有點長了。開一段新的能讓回覆更快、更聚焦。",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -735,6 +743,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "你的 AI 提供者拒絕了這個請求：你的方案上限比 Cmdr 的一個請求還小，因為每個請求都會帶上 Cmdr 的指示。把訊息寫短也沒用。可以換一個更大的方案，或在「設定」選另一個提供者。",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "{provider} 現在太忙，試了幾次還是沒辦法回答。等幾分鐘，再重新傳送你的訊息。",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "你的 AI 提供者現在太忙，試了幾次還是沒辦法回答。等幾分鐘，再重新傳送你的訊息。",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "這一次還沒答完就到上限了。試著問得更具體一點。",
   "@askCmdr.error.budgetExhausted": {

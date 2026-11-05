@@ -32,8 +32,16 @@ describe('formatDuration (localized)', () => {
   // Pinned to what the platform's own `Intl.DurationFormat` says (Node has it;
   // Cmdr's WebKit floor doesn't, which is why the formatter builds the same
   // string from unit-style number and list formatters).
+  // The cast is because the app's Safari 15.4 type floor (`src/webkit-floor.d.ts`) leaves
+  // `Intl.DurationFormat` out on purpose; this test runs in Node, which has it.
+  const { DurationFormat } = Intl as unknown as {
+    DurationFormat: new (
+      locale: string,
+      options: { style: 'narrow' },
+    ) => { format: (parts: Record<string, number>) => string }
+  }
   const platform = (locale: string, parts: Record<string, number>) =>
-    new Intl.DurationFormat(locale, { style: 'narrow' }).format(parts)
+    new DurationFormat(locale, { style: 'narrow' }).format(parts)
 
   it('speaks the UI language, so a French ETA reads “8min 12s”', () => {
     _setLocaleForTests('fr-FR')

@@ -92,11 +92,11 @@ describe('select-all, as it behaves today', () => {
     expect(makeSelectAll(3, 5)).toEqual({ anchor: { row: 0, offset: 0 }, focus: { row: 2, offset: 5 } })
   })
 
-  it('ends at offset 0 of a trailing empty line when the file DOES end in a newline', () => {
-    // Every backend reports a trailing empty line for a file ending in `\n`, so ⌘A on
-    // "alpha\nbeta\ngamma\n" is 4 lines with a 0-length last one. The range that reaches
-    // the backend therefore stops at the newline, not past it.
-    expect(makeSelectAll(4, 0)).toEqual({ anchor: { row: 0, offset: 0 }, focus: { row: 3, offset: 0 } })
+  it('ends at the last line end when the file DOES end in a newline, too', () => {
+    // No backend reports an empty line past a final `\n`, so ⌘A on "alpha\nbeta\ngamma\n"
+    // is the same three lines. The backend reads the end of the LAST row as the end of
+    // the file and hands over that final newline itself (`range_read.rs`).
+    expect(makeSelectAll(3, 5)).toEqual({ anchor: { row: 0, offset: 0 }, focus: { row: 2, offset: 5 } })
   })
 
   it('is a no-op on an empty file', () => {
@@ -183,11 +183,11 @@ describe('copy size arithmetic, as it behaves today', () => {
     expect(estimate({ anchor: { row: 0, offset: 0 }, focus: { row: 2, offset: 5 } }, noTrailingNewline)).toBe(16)
   })
 
-  it('sizes a whole-file selection of a file WITH a trailing newline exactly', () => {
-    // Same three lines plus the trailing empty line every backend reports: 17 bytes.
-    expect(estimate({ anchor: { row: 0, offset: 0 }, focus: { row: 3, offset: 0 } }, [...noTrailingNewline, ''])).toBe(
-      17,
-    )
+  it('sizes a whole-file selection of a file WITH a trailing newline one byte under', () => {
+    // The same three rows: the frontend can't see whether the last row ended at a
+    // newline, so it counts 16 of the 17 bytes the copy carries. One byte against bands
+    // measured in megabytes, the price of keeping that fact off every row on the wire.
+    expect(estimate({ anchor: { row: 0, offset: 0 }, focus: { row: 2, offset: 5 } }, noTrailingNewline)).toBe(16)
   })
 
   it('sizes a selection inside one line', () => {

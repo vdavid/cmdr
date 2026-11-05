@@ -6,6 +6,7 @@
 import LegalLayout from '../layouts/LegalLayout.astro'
 import DevTodo from '../components/DevTodo.astro'
 import Icon from '../components/icons/Icon.astro'
+import NewsletterForm from '../components/NewsletterForm.astro'
 import { codeRequirement, managedPreferenceKeys } from '../lib/trust-mdm'
 import {
     allowlistHosts,
@@ -14,6 +15,7 @@ import {
     networkConnections,
     knownLimitations,
     serverRetention,
+    subprocessorChanges,
     trustDocuments,
     verifiedAgainst,
     vulnerabilityResponse,
@@ -36,6 +38,7 @@ const toc = [
     { id: 'mdm', label: 'Central management (MDM)' },
     { id: 'eu', label: 'Does data leave the EU?' },
     { id: 'subprocessors', label: 'Subprocessors' },
+    { id: 'subprocessor-changes', label: 'When we change who handles your data' },
     { id: 'storage', label: 'What is stored where, and for how long' },
     { id: 'signing', label: 'Signing, notarization, and updates' },
     { id: 'permissions', label: 'Sandbox and permissions' },
@@ -151,6 +154,32 @@ const toc = [
         }
     </div>
 
+    <h3 id="no-soc2">No SOC 2 yet, and what you get instead</h3>
+    <p>
+        Cmdr has no SOC 2 report or ISO 27001 certificate. For a one-person company, the audit makes sense once a
+        customer's purchase needs it. Until then, these answer most of what an audit would:
+    </p>
+    <ul>
+        <li>
+            <strong>CSA STAR Level 1</strong>: Cmdr's answers to the Cloud Security Alliance's questionnaire (CAIQ v4.1),
+            <a href="https://cloudsecurityalliance.org/star/registry/rymdskottkarra-ab">public in the STAR Registry</a>.
+            A self-assessment, not an audit.
+        </li>
+        <li>
+            <strong>The <a href="https://github.com/vdavid/cmdr/blob/main/docs/threat-model.md">threat model</a></strong>:
+            what Cmdr protects, from whom, and the risks that remain.
+        </li>
+        <li>
+            <strong>The <a href="/trust/accessibility">accessibility conformance report</a></strong> (VPAT®), for Section
+            508 and EN 301 549.
+        </li>
+        <li><strong>This page</strong>, checked against each release, with the source public to check it against.</li>
+    </ul>
+    <p>
+        Evaluating Cmdr for 50 seats or more? We'll fill in your security questionnaire, whether that's SIG Lite,
+        HECVAT, or your own. Send it to <a href="mailto:sales@getcmdr.com">sales@getcmdr.com</a>.
+    </p>
+
     <h2 id="network">What the app sends over the network</h2>
     <p>
         This is every connection a release build of the app makes. All of it comes from the app's native code. The
@@ -263,9 +292,10 @@ const toc = [
 
     <h3 id="mdm-keys">Keys</h3>
     <p>
-        Every key only turns something off or narrows it. The one exception keeps something on:
+        Every key only turns something off or narrows it. Two keep something on, and each takes a choice away:
         <code>DisableSecurityLogOptOut</code> stops users from turning off the local security event log, which never
-        leaves the Mac. No key turns on anything that sends data. A key that's missing, or set to false, leaves that
+        leaves the Mac, and <code>RequireSMBEncryption</code> stops them from connecting to an SMB share without
+        encryption. No key turns on anything that sends data. A key that's missing, or set to false, leaves that
         part up to each user.
     </p>
     <ul>
@@ -386,35 +416,61 @@ const toc = [
 
     <h2 id="eu">Does data leave the EU?</h2>
     <p>
-        <strong>Yes.</strong> Rymdskottkärra AB is in Sweden, and much of the data stays in the EU, but not all of it:
+        <strong>Some of it does.</strong> Rymdskottkärra AB is in Sweden, and most of the data stays in the EU, but not
+        all of it:
     </p>
     <ul>
-        <li>Downloads and updates come from GitHub (United States), which sees the IP address.</li>
+        <li>
+            Downloads and updates come from <code>download.getcmdr.com</code>, which Cloudflare stores in its EU
+            jurisdiction. An update to 0.59.0 or older still comes from GitHub (United States), and so does anything
+            downloaded from GitHub's public mirror of the releases. GitHub sees the IP address then.
+        </li>
         <li>Optional model downloads come from Hugging Face (United States), which sees the IP address.</li>
         <li>
             Crash reports, error reports, and feedback become issues in a private GitHub repository (United States).
             An email address the user attached, and an error report's note, go in a comment that's deleted on a
-            schedule.
+            schedule. GitHub is certified under the EU-US Data Privacy Framework, which covers the transfer. There's no
+            data processing agreement with GitHub: it offers one only on its paid business plans, and on Cmdr's free
+            account it handles the data as its own controller.
         </li>
         <li>
-            Emails with license keys, and notification emails about reports and feedback, pass through Resend (a United
-            States company).
-        </li>
-        <li>
-            Emails we send from @getcmdr.com addresses leave through SMTP2Go, a New Zealand company. The EU recognizes
-            New Zealand as giving adequate data protection, and SMTP2Go says it stores data of EEA customers only in
+            Every email Cmdr sends (license keys, the newsletter, notifications about reports and feedback, and replies
+            from @getcmdr.com addresses) leaves through SMTP2Go's EU servers. SMTP2Go is a New Zealand company, which
+            the EU recognizes as giving adequate data protection, and it says it stores data of EEA customers only in
             the EEA.
         </li>
         <li>
-            Cloudflare runs the API server on its global network. Its database and file storage are placed in Eastern
-            Europe, but that placement isn't a contractual EU guarantee.
+            Cloudflare runs the API server on its global network, so each request is handled at the Cloudflare data
+            center nearest the user, which can be outside the EU. The database and the error-report storage are placed
+            in Eastern Europe, but not locked to the EU yet. Keeping request handling inside the EU too would take
+            Cloudflare's Regional Services, which Cmdr doesn't use.
         </li>
-        <li>Paddle, which handles payments, is in the United Kingdom.</li>
-        <li>If a user sets up cloud AI, their data goes to wherever that provider runs.</li>
+        <li>Paddle, which handles payments, is in the United Kingdom, which the EU recognizes as giving adequate data protection.</li>
+        <li>
+            If a user sets up cloud AI, their data goes to wherever that provider runs. Cmdr's on-device AI keeps
+            everything on the Mac.
+        </li>
     </ul>
     <p>
-        Website visit recordings (PostHog EU cloud), the website and the @getcmdr.com inbox (both self-hosted at
-        Hetzner, Finland) stay in the EU.
+        Website visit recordings (PostHog EU cloud), the website, the newsletter list, and the @getcmdr.com inbox (all
+        three self-hosted at Hetzner, Finland) stay in the EU.
+    </p>
+    <DevTodo>
+        Once the D1 and R2 switches in <code>docs/notes/eu-data-moves-2026-11.md</code> are done, change "placed in
+        Eastern Europe, but not locked to the EU yet" here, in the Cloudflare subprocessor entry (<code>trust.ts</code>),
+        in "Known limitations", and in the privacy policy to "stored in Cloudflare's EU jurisdiction", say "stored in
+        the EU" in the paragraph for reviewers outside the EU, and add a dated line to the change log.
+    </DevTodo>
+
+    <h3 id="outside-eu">Where is my data? For reviewers outside the EU</h3>
+    <p>
+        Cmdr never receives your files: file contents stay on the Mac (or go to the user's own AI provider, if the user
+        sets one up). What reaches Cmdr's servers is license records, usage stats, and the reports and feedback users
+        choose to send. Cloudflare stores them in Eastern Europe, and the update files in its EU jurisdiction. Data
+        that reaches US companies (Cloudflare, GitHub, and PostHog, whose EU cloud holds the website's visit
+        recordings) relies on the EU-US Data Privacy Framework, plus the Standard Contractual Clauses in Cloudflare's and
+        PostHog's data processing agreements. Payments go through Paddle in the United Kingdom. Cmdr doesn't offer US
+        data residency.
     </p>
 
     <h2 id="subprocessors">Subprocessors</h2>
@@ -439,6 +495,49 @@ const toc = [
         source code for leaked secrets). Hugging Face serves optional model downloads that the user starts, so it sees
         the Mac's IP address.
     </p>
+
+    <h2 id="subprocessor-changes">When we change who handles your data</h2>
+    <p>
+        Before a new company starts handling personal data for Cmdr, or an existing one starts keeping it in a new
+        country, we tell you at least 30 days ahead. Each notice says who the company is, what it gets, where it keeps
+        it, and what makes the transfer legal if it's outside the EU.
+    </p>
+    <ul>
+        <li>
+            <strong>Subscribe</strong>: join the subprocessor updates list below and get every notice by email. If your
+            organization signed our data processing agreement, the contact you named gets them automatically.
+        </li>
+        <li><strong>Change log</strong>: every change, dated, is listed below.</li>
+        <li>
+            <strong>Object</strong>: if you hold a paid license and a change is a problem for you, write to
+            <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a> within the 30 days. We'll look for a way around it
+            with you. If there isn't one, you can end the affected service and we'll refund the unused part of what you
+            paid ahead, as long as your update year or subscription period is still running. You keep every version you
+            already have. If your organization signed our data processing agreement, this is also a contractual right.
+        </li>
+    </ul>
+    <p>
+        If a provider fails or is breached and we have to switch faster to keep your data safe, we'll tell you within
+        five business days, and you can still object. Removing a company, or a change to its name or contact details,
+        needs no notice, but it still goes in the log.
+    </p>
+    <NewsletterForm
+        variant="inline"
+        list="subprocessor-updates"
+        heading="Get subprocessor notices by email"
+        buttonLabel="Subscribe"
+        successText="Check your inbox to confirm. Notices come only when we change who handles your data."
+    />
+    <h3 id="subprocessor-change-log">Change log</h3>
+    <ul>
+        {
+            subprocessorChanges.map((entry) => (
+                <li>
+                    <strong>{entry.date}</strong>: <Fragment set:html={entry.change} />
+                </li>
+            ))
+        }
+    </ul>
 
     <h2 id="storage">What is stored where, and for how long</h2>
     <h3>On the user's Mac</h3>
@@ -560,7 +659,7 @@ const toc = [
         </li>
         <li>
             <strong>Downloads</strong>: a disk image (DMG) or an installer package (<code>.pkg</code>, signed with
-            Apple's Developer ID Installer certificate) from GitHub Releases, or the Homebrew cask. Each release
+            Apple's Developer ID Installer certificate) from <code>download.getcmdr.com</code> or its mirror on GitHub Releases, or the Homebrew cask. Each release
             publishes SHA-256 checksums (<a href="#mdm-deploy">deploying Cmdr</a>).
         </li>
         <li>
@@ -787,8 +886,13 @@ const toc = [
         </li>
         <li>
             <strong>Team</strong>: one person, David Veszelovszki, designs, builds, and ships Cmdr (over 98%
-            of all commits are under his name). He holds every signing key. There's no written response time for
-            support questions. Security fixes have one (<a href="#report">Report a vulnerability</a>).
+            of all commits are under his name). He holds every signing key.
+        </li>
+        <li>
+            <strong>Support</strong>: questions to <a href="mailto:hello@getcmdr.com">hello@getcmdr.com</a> get a reply
+            within two business days, Monday to Friday, Stockholm time, and usually sooner. During Swedish
+            holidays and summer breaks, a reply can take up to a week in extreme cases. Security reports have their own
+            response times (<a href="#report">Report a vulnerability</a>).
         </li>
         <li>
             <strong>License</strong>: <a href="https://github.com/vdavid/cmdr/blob/main/LICENSE">Business Source
@@ -808,7 +912,8 @@ const toc = [
         </li>
         <li>
             <strong>Data processing agreement (DPA)</strong>: ready to sign for business customers. It promises notice
-            of a personal data breach within 48 hours and notice before any change to the subprocessors. Write to
+            of a personal data breach within 48 hours and 30 days' notice before a change to the subprocessors
+            (<a href="#subprocessor-changes">how that works</a>). Write to
             <a href="mailto:sales@getcmdr.com">sales@getcmdr.com</a>.
         </li>
         <li>

@@ -22,7 +22,7 @@ import (
 func RunWebsiteDeadLinks(ctx *CheckContext) (CheckResult, error) {
 	distDir := filepath.Join(ctx.RootDir, "apps", "website", "dist")
 	if !hasBuildOutput(distDir) {
-		return Skipped("dist/ not found (run website-build first)"), nil
+		return SkippedNoEnvironment("dist/ not found (run website-build first)"), nil
 	}
 
 	scan, err := scanWebsiteDeadLinks(distDir)

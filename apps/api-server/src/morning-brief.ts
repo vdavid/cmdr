@@ -9,6 +9,7 @@
 
 import { sendMorningBriefEmail, type BriefArrivals, type BriefCard } from './email/morning-brief'
 import { humanReportRecipient } from './email/send'
+import { NOT_A_SIGNUP } from './ops-events'
 import { listOpenCards, resolveIssueTarget } from './github-issues'
 import { NEEDS_REPLY_LABEL, UNPROCESSED_LABEL } from './report-cards'
 import { ERROR_REPORT_PREFIX } from './telemetry/error-report-eviction'
@@ -81,7 +82,8 @@ async function readArrivals(db: D1Database): Promise<BriefArrivals> {
     ),
     betaSignups: await opsCount(`kind = 'beta-signup'`),
     newsletterSignups: await opsCount(`kind = 'newsletter-signup'`),
-    opsAlerts: await opsCount(`kind NOT IN ('beta-signup', 'newsletter-signup')`),
+    subprocessorUpdatesSignups: await opsCount(`kind = 'subprocessor-updates-signup'`),
+    opsAlerts: await opsCount(NOT_A_SIGNUP),
   }
 }
 
@@ -142,10 +144,10 @@ function toBriefCards(cards: { number: number; title: string; url: string; creat
   return cards.map((card) => ({ ...card, openedOn: card.createdAt.slice(0, 10) }))
 }
 
-/** Send the brief. A silent no-op without a recipient or a Resend key. */
+/** Send the brief. A silent no-op without a recipient or an SMTP2Go key. */
 export async function handleMorningBrief(env: Bindings): Promise<void> {
   const to = humanReportRecipient(env)
-  if (!to || !env.RESEND_API_KEY) return
+  if (!to || !env.SMTP2GO_API_KEY) return
 
   const tripwires: string[] = []
   let needsReply: BriefCard[] | null = []
@@ -178,6 +180,6 @@ export async function handleMorningBrief(env: Bindings): Promise<void> {
   await sendMorningBriefEmail({
     content: { needsReply, unprocessed, arrivals: await readArrivals(env.TELEMETRY_DB), tripwires },
     to,
-    resendApiKey: env.RESEND_API_KEY,
+    smtp2goApiKey: env.SMTP2GO_API_KEY,
   })
 }

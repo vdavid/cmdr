@@ -1,22 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { showMainWindow, waitForNextPaint, warn, debug } = vi.hoisted(() => ({
+const { showMainWindow, waitForNextPaint, warn, info, debug } = vi.hoisted(() => ({
   showMainWindow: vi.fn(async () => {}),
   waitForNextPaint: vi.fn(),
   warn: vi.fn(),
+  info: vi.fn(),
   debug: vi.fn(),
 }))
 
 vi.mock('#lib/tauri-commands/index.js', () => ({ showMainWindow }))
 vi.mock('#lib/utils/timing.js', () => ({ waitForNextPaint }))
 vi.mock('#lib/logging/logger.js', () => ({
-  getAppLogger: () => ({ warn, debug, info: vi.fn(), error: vi.fn() }),
+  getAppLogger: () => ({ warn, debug, info, error: vi.fn() }),
 }))
 
 import { showMainOnMount } from './show-main-on-mount'
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  // Reset, not clear: a leftover `mockResolvedValueOnce` would leak into the next test.
+  vi.resetAllMocks()
 })
 
 describe('showMainOnMount', () => {
@@ -47,12 +49,23 @@ describe('showMainOnMount', () => {
     expect(warn).not.toHaveBeenCalled()
   })
 
-  it('re-shows to force a repaint when no frame lands', async () => {
+  it('re-shows, then logs a late frame at info, not warn', async () => {
+    // Regression anchor: the 2015 MacBook Air on Catalina misses the first deadline on every
+    // launch while both panes mount, then paints. A late frame isn't a stuck window, so it
+    // must not warn, or a real stuck window drowns in the noise.
+    waitForNextPaint.mockResolvedValueOnce('timeout').mockResolvedValueOnce('painted')
+    await showMainOnMount()
+    expect(showMainWindow).toHaveBeenCalledTimes(2)
+    expect(info).toHaveBeenCalledOnce()
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('warns only when no frame lands even after the repair', async () => {
     waitForNextPaint.mockResolvedValue('timeout')
     await showMainOnMount()
     expect(showMainWindow).toHaveBeenCalledTimes(2)
     expect(warn).toHaveBeenCalledOnce()
-    expect(debug).not.toHaveBeenCalled()
+    expect(info).not.toHaveBeenCalled()
   })
 
   it('asks the repair re-show not to take the front back', async () => {

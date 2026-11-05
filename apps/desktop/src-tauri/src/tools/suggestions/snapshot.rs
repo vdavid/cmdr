@@ -6,10 +6,12 @@
 //! source volume, before anything is written: a path that answers freezes its size, date, and
 //! inode, and one that doesn't (missing, refused, too slow) stays `NULL`. Never a zero.
 //!
-//! The ONE path for every producer that names sources by hand: `propose_suggestions` (paths and
-//! renames) and `propose_rename_plan` both freeze through [`freeze_paths`]. A call shares ONE
-//! deadline, so a sweep onto a dead mount costs the agent one budget, not one per file; the
-//! stats themselves are capped in `suggested_ops::facts`.
+//! Every producer that names sources by hand stats them through `suggested_ops::facts`'s
+//! `stat_sources` under [`snapshot_deadline`]: `propose_suggestions` (paths and renames) through
+//! [`freeze_paths`], and `propose_rename_plan` directly (`propose/rename/sources.rs`), because its
+//! one stat also answers whether each source exists. A call shares ONE deadline, so a sweep onto
+//! a dead mount costs the agent one budget, not one per file; the stats themselves are capped in
+//! `suggested_ops::facts`.
 
 use std::sync::Arc;
 
@@ -28,12 +30,13 @@ pub(crate) fn snapshot_deadline() -> Deadline {
 /// The creation snapshot of each of `paths` on `volume`, in order. A volume nobody registered
 /// (`None`) answers `None` for every path, which the review words as "no record".
 pub(crate) async fn freeze_paths(
+    volume_id: &str,
     volume: Option<Arc<dyn Volume>>,
     paths: Vec<String>,
     deadline: &Deadline,
 ) -> Vec<Option<OpSnapshot>> {
     match volume {
-        Some(volume) => stat_sources(volume, paths, deadline)
+        Some(volume) => stat_sources(volume_id, volume, paths, deadline)
             .await
             .into_iter()
             .map(|stat| stat.snapshot())
@@ -56,21 +59,39 @@ pub(super) async fn freeze_named_sources(
                 ..
             } => {
                 let paths = ops.iter().map(|op| op.source_path.clone()).collect();
-                let snapshots = freeze_paths(volume_for(&naming.source_volume_id), paths, &deadline).await;
+                let snapshots = freeze_paths(
+                    &naming.source_volume_id,
+                    volume_for(&naming.source_volume_id),
+                    paths,
+                    &deadline,
+                )
+                .await;
                 for (op, snapshot) in ops.iter_mut().zip(snapshots) {
                     op.snapshot = snapshot;
                 }
             }
             PlannedOps::Named { ops, naming, .. } => {
                 let paths = ops.iter().map(|op| op.source_path.clone()).collect();
-                let snapshots = freeze_paths(volume_for(&naming.source_volume_id), paths, &deadline).await;
+                let snapshots = freeze_paths(
+                    &naming.source_volume_id,
+                    volume_for(&naming.source_volume_id),
+                    paths,
+                    &deadline,
+                )
+                .await;
                 for (op, snapshot) in ops.iter_mut().zip(snapshots) {
                     op.snapshot = snapshot;
                 }
             }
             PlannedOps::Rename { renames, naming, .. } => {
                 let paths = renames.iter().map(|op| op.source_path.clone()).collect();
-                let snapshots = freeze_paths(volume_for(&naming.source_volume_id), paths, &deadline).await;
+                let snapshots = freeze_paths(
+                    &naming.source_volume_id,
+                    volume_for(&naming.source_volume_id),
+                    paths,
+                    &deadline,
+                )
+                .await;
                 for (op, snapshot) in renames.iter_mut().zip(snapshots) {
                     op.snapshot = snapshot;
                 }

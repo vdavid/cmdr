@@ -1,7 +1,7 @@
 # Listmonk newsletter setup
 
-Self-hosted [Listmonk](https://listmonk.app/) for the Cmdr newsletter, using [Resend](https://resend.com) as the SMTP
-relay (same provider the API server uses for transactional emails).
+Self-hosted [Listmonk](https://listmonk.app/) for the Cmdr newsletter, using [SMTP2Go](https://www.smtp2go.com/)'s EU
+SMTP relay (same provider and account the API server uses for transactional emails, through its EU API).
 
 ## Architecture
 
@@ -10,18 +10,23 @@ getcmdr.com → Caddy → listmonk:9000 (Docker, proxy-net)
                                      ↓
                      Postgres (listmonk-internal network)
                                      ↓
-                    Resend (SMTP relay for sending emails)
+              SMTP2Go (mail-eu.smtp2go.com, SMTP relay for sending emails)
 ```
 
-- Signups reach Listmonk through the api-server Worker (`/newsletter-signup`, `/beta-signup`), which calls Listmonk's
-  public subscription API at `mail.getcmdr.com`: `apps/api-server/src/website/DETAILS.md` § Signups
+- Signups reach Listmonk through the api-server Worker (`/newsletter-signup`, `/beta-signup`,
+  `/subprocessor-updates-signup`), which calls Listmonk's public subscription API at `mail.getcmdr.com`:
+  `apps/api-server/src/website/DETAILS.md` § Signups
 - Caddy proxies Listmonk's public pages on getcmdr.com (the confirm and unsubscribe links in its emails, the archive)
 - `mail.getcmdr.com` serves the Listmonk admin UI (also proxied by Caddy), Cloudflare-proxied and behind Cloudflare
   Access. Its `/api` path bypasses Access, since the api-server and agents authenticate to Listmonk itself. The DNS
   record and Access apps are code in the infra repo (`cloudflare/getcmdr.com.tf`, `cloudflare/access-apps.tf`)
 - Postgres is isolated on `listmonk-internal`, not reachable from Caddy or the internet
 - No host ports are exposed for either container
-- Resend handles bounce/complaint tracking internally (visible in their dashboard)
+- SMTP2Go suppresses hard bounces itself, so Listmonk needs no bounce webhook (bounces and complaints are visible in its
+  dashboard)
+- The getcmdr.com SMTP2Go account's quota (1,000 emails a cycle) is shared with the API server's license emails and
+  mailcow. The API server's daily probe alarms below 15% left (`apps/api-server/DETAILS.md` § Cron handler, job 9), so
+  check the remaining quota before a big campaign
 
 ## Setup
 
@@ -40,10 +45,16 @@ Inbound mail uses Cloudflare Email Routing. Add an explicit route so `newsletter
 
 Cloudflare dashboard > getcmdr.com > Email > Email Routing > Routes > add `newsletter@getcmdr.com` → your email.
 
-### 3. Resend
+### 3. SMTP2Go
 
-Domain verification (`getcmdr.com`) is already done. The API server uses Resend too. No extra DNS records needed. Just
-grab your API key from the [Resend dashboard](https://resend.com/api-keys) (or create a new one scoped to sending).
+Sender domain verification (`getcmdr.com`) is already done; the API server sends from the same domain. No extra DNS
+records needed.
+
+Listmonk has its own SMTP user, `listmonk.getcmdr`, separate from the API server's API key so one can be rotated or
+revoked without the other. It was created through SMTP2Go's `POST /users/smtp/add` with open tracking, click tracking,
+the unsubscribe footer, and archiving all OFF (Listmonk does its own tracking and unsubscribe links; SMTP2Go's would
+double them and rewrite our links). Its password lives in David's sops store as `SMTP2GO_LISTMONK_SMTP_PASSWORD`
+(`secret SMTP2GO_LISTMONK_SMTP_PASSWORD`).
 
 ### 4. Deploy containers
 
@@ -97,16 +108,17 @@ Reload Caddy: `docker compose restart caddy` in Caddy's folder.
 
 1. Log in at `https://mail.getcmdr.com` (change the admin password immediately)
 2. **SMTP**: Settings > SMTP tab. On the first (enabled) SMTP block:
-   - **Host**: `smtp.resend.com`
+   - **Host**: `mail-eu.smtp2go.com`
    - **Port**: `587`
    - **Auth protocol**: `LOGIN`
-   - **Username**: `resend`
-   - **Password**: your Resend API key (from step 3)
+   - **Username**: `listmonk.getcmdr`
+   - **Password**: `SMTP2GO_LISTMONK_SMTP_PASSWORD` (from step 3)
    - **TLS**: `STARTTLS`
    - **Skip TLS verification**: off
    - Leave max connections, retries, timeouts, and HELO hostname at defaults
    - **Name**: set it to `email-primary`
-   - Delete the second (disabled, Gmail) SMTP block. It's a template and not needed.
+   - The old Resend and SES blocks stay in the list, DISABLED, as a rollback: re-enable one (and disable SMTP2Go) to
+     switch back. Delete the stock Gmail template block if it's there.
    - Click **Save** at the bottom, then click **Test connection** to verify
 3. **General settings**: Settings > General tab:
    - **Site name**: `Cmdr`
@@ -140,8 +152,10 @@ Reload Caddy: `docker compose restart caddy` in Caddy's folder.
 ### 7. Connect the signup routes
 
 The website form and the desktop app sign up through the api-server, which needs each list's UUID (from step 6.4): set
-`LISTMONK_NEWSLETTER_LIST_UUID` and `LISTMONK_BETA_LIST_UUID` under `[vars]` in `apps/api-server/wrangler.toml`, then
-deploy the Worker. The lists must stay **public**: the public subscription API refuses private lists.
+`LISTMONK_NEWSLETTER_LIST_UUID`, `LISTMONK_BETA_LIST_UUID`, and `LISTMONK_SUBPROCESSOR_LIST_UUID` under `[vars]` in
+`apps/api-server/wrangler.toml`, then deploy the Worker. The lists must stay **public**: the public subscription API
+refuses private lists. The live lists: "Cmdr newsletter" (id 3), the beta list (id 4), and "Cmdr subprocessor updates"
+(id 5, getcmdr.com/trust's 30-day notice list), all double opt-in.
 
 ## Maintenance
 
@@ -520,8 +534,8 @@ docker compose logs -f listmonk-db
 > We'll try again in a few months. If approved, SES is cheaper at scale and gives us bounce/complaint webhooks directly
 > into Listmonk.
 
-Switching from Resend to SES requires an IAM user, domain verification in SES, SNS for bounce handling, and a Caddy rule
-for the SES webhook. The SMTP config in Listmonk (step 6.2) would change to the SES values below.
+Switching from SMTP2Go to SES requires an IAM user, domain verification in SES, SNS for bounce handling, and a Caddy
+rule for the SES webhook. The SMTP config in Listmonk (step 6.2) would change to the SES values below.
 
 ### AWS IAM user for CLI access
 
@@ -591,7 +605,7 @@ in `eu-north-1`:
 
 ### Listmonk SMTP config for SES
 
-In step 6.2, use these values instead of the Resend ones:
+In step 6.2, use these values instead of the SMTP2Go ones:
 
 - **Host**: `email-smtp.eu-north-1.amazonaws.com`
 - **Port**: `587`
@@ -606,7 +620,7 @@ In step 6.2, use these values instead of the Resend ones:
 2. Add an HTTPS subscription: `https://getcmdr.com/webhooks/ses`
 3. In SES, configure bounce and complaint feedback to publish to this SNS topic
 
-Also add this Caddy rule inside the `getcmdr.com` block (not needed when using Resend):
+Also add this Caddy rule inside the `getcmdr.com` block (not needed when using SMTP2Go):
 
 ```caddy
 handle /webhooks/ses {
@@ -617,12 +631,12 @@ handle /webhooks/ses {
 
 ## Troubleshooting
 
-| Problem                                                      | Check                                                                                                                        |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Form returns 502                                             | Is the listmonk container running? `docker compose ps`. Then `docker compose logs listmonk`: see the next row                |
-| Listmonk log: `535 Authentication credentials invalid`       | Resend rejected the SMTP key: no opt-in mail goes out. Make a new sending-only key, paste it in Settings > SMTP > Password   |
-| Confirmation email not arriving                              | Check Resend dashboard for delivery status and errors, check Listmonk logs                                                   |
-| Admin UI unreachable                                         | Check `mail.getcmdr.com` DNS, Caddy config, container health                                                                 |
-| Database connection errors                                   | Check `.env` password matches, Postgres container is healthy                                                                 |
-| SMTP connection timeout                                      | Hetzner blocks port 465; use port 587 with STARTTLS instead                                                                  |
-| `listmonk-db` exits 1 on start, log mentions `pg_ctlcluster` | The volume is mounted at the Postgres 17 path. It must be `listmonk-data-pg18:/var/lib/postgresql`, see "Upgrading Postgres" |
+| Problem                                                      | Check                                                                                                                         |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Form returns 502                                             | Is the listmonk container running? `docker compose ps`. Then `docker compose logs listmonk`: see the next row                 |
+| Listmonk log: `535 Authentication credentials invalid`       | SMTP2Go rejected `listmonk.getcmdr`: no opt-in mail goes out. Reset its password in SMTP2Go, update the sops secret, paste it |
+| Confirmation email not arriving                              | Check SMTP2Go's activity log for delivery status and errors (and the quota), check Listmonk logs                              |
+| Admin UI unreachable                                         | Check `mail.getcmdr.com` DNS, Caddy config, container health                                                                  |
+| Database connection errors                                   | Check `.env` password matches, Postgres container is healthy                                                                  |
+| SMTP connection timeout                                      | Hetzner blocks port 465; use port 587 with STARTTLS instead                                                                   |
+| `listmonk-db` exits 1 on start, log mentions `pg_ctlcluster` | The volume is mounted at the Postgres 17 path. It must be `listmonk-data-pg18:/var/lib/postgresql`, see "Upgrading Postgres"  |

@@ -2712,6 +2712,12 @@ export const commands = {
    */
   setSmbConcurrencyCmd: (value: number) => __TAURI_INVOKE<void>('set_smb_concurrency_cmd', { value }),
   /**
+   *  The person's "Always require SMB encryption" switch, pushed live from the frontend
+   *  whenever `network.requireSmbEncryption` changes. ORed with the managed policy, it reaches
+   *  every SMB session built from then on (`network::smb_encryption`).
+   */
+  setRequireSmbEncryption: (value: boolean) => __TAURI_INVOKE<void>('set_require_smb_encryption', { value }),
+  /**
    *  Turn LLM call logging on or off. When on, every AI model request and response is written
    *  to `{app data dir}/llm-logs/` for debugging (local only, never transmitted). Pushed live
    *  from the frontend whenever `advanced.logLlmCalls` changes; runtime-toggleable, no restart.
@@ -5972,6 +5978,11 @@ export type AgentErrorKindView =
    *  the provider, so this doesn't read as Cmdr's own problem.
    */
   | 'requestTooLarge'
+  /**
+   *  The provider stayed overloaded through every retry. The rail names the provider and says
+   *  it's busy, so it doesn't read as a problem with the key or with Cmdr.
+   */
+  | 'providerBusy'
   | 'budgetExhausted'
   /**
    *  The turn went in a circle: the model kept re-sending a tool call that had already come
@@ -6630,6 +6641,12 @@ export type AskCmdrStreamEvent =
   | { type: 'spendPaused'; costMicros: number }
   // Keep going was pressed: the turn runs on, and the question leaves the screen.
   | { type: 'spendResumed' }
+  /**
+   *  The provider is overloaded and the turn waits to try the same model call again, before
+   *  anything of it streamed. `attempt` is the try about to start (2 for the first retry), of
+   *  `attempts` in all. The rail says the provider is busy until the next chunk or the end.
+   */
+  | { type: 'providerBusyRetrying'; attempt: number; attempts: number }
   /**
    *  The user answered a suggestion this thread made, and the line saying so just landed in
    *  its timeline. The persisted event row's identity rides along, so a subscriber that also
@@ -7706,20 +7723,9 @@ export type ConnectionState =
   | 'saved'
 
 /**
- *  The user's keyboard shortcuts as they stand right now: command-registry id → the
- *  combo in the frontend's canonical spelling (`⌘⇧C`, `F5`, `Space`). The frontend
- *  pushes it with every popup, straight out of the shortcut registry, so a command
- *  nobody has bound is simply absent.
- *
- *  This is how a popup menu's accelerator labels stay true after a rebind. They were
- *  literals once, and a literal starts lying the moment the user changes a key in
- *  Settings > Shortcuts.
- *
- *  ❗ These accelerators never FIRE. A popup's key equivalents are never registered
- *  with the app (only the menu bar's are), so every one of them is display text. That
- *  is why the lookup goes through `frontend_shortcut_to_menu_text` and ❌ never
- *  `frontend_shortcut_to_accelerator`: the menu bar's modifier floor would drop a bare
- *  `Space` or `F5`, which is right there and wrong here.
+ *  The user's keyboard shortcuts as they stand right now: command-registry id → the combo in the
+ *  frontend's canonical spelling (`⌘⇧C`, `F5`, `Space`). The frontend pushes it with every popup,
+ *  straight out of the shortcut registry, so a command nobody has bound is simply absent.
  */
 export type ContextMenuShortcuts = { [key in string]: string }
 
@@ -12154,6 +12160,8 @@ export type ManagedPolicyView = {
   reportsDisabled: boolean
   // The organization requires the security event log, so its switch is pinned on.
   securityLogRequired: boolean
+  // The organization requires every SMB session to be encrypted, so that switch is pinned on.
+  smbEncryptionRequired: boolean
   updates: UpdatePolicyView
   ai: AiPolicyView
   lockedSettings: LockedSetting[]
@@ -14412,14 +14420,19 @@ export type PaneFileEntry = {
   isDirectory: boolean
   size: number | null
   recursiveSize: number | null
-  modified: string | null
-  // When the item was made, ISO 8601, if its volume records it.
-  created?: string | null
   /**
-   *  When the item landed in its folder (Finder's "Date Added"), ISO 8601, if its
-   *  volume records it.
+   *  Last modified, seconds since the Unix epoch. Raw seconds rather than a string
+   *  so `cmdr://state` renders every date through the one formatter, in the user's
+   *  zone (`search::format_local_datetime`).
    */
-  added?: string | null
+  modified: number | null
+  // When the item was made, seconds since the Unix epoch, if its volume records it.
+  created?: number | null
+  /**
+   *  When the item landed in its folder (Finder's "Date Added"), seconds since the
+   *  Unix epoch, if its volume records it.
+   */
+  added?: number | null
   /**
    *  `Some(true)` while this directory's recursive size can still move: a walk
    *  is on it, above it, or below it (the roll-up repairs ancestors), the
@@ -15112,10 +15125,9 @@ export type QueueRowContextAction = {
 }
 
 /**
- *  One thing a queue row's menu can do. Pause and Resume share a key but are separate
- *  actions, so the label can say which one this click is, and so a pick that went stale
- *  while the menu was up can be told apart. Its menu ids, labels, and commands live with the
- *  menu builder (`menu/queue_row_menu.rs`).
+ *  One thing a queue row's menu can do. Pause and Resume share a key but are separate actions, so
+ *  the label can say which one this click is, and so a pick that went stale while the menu was up
+ *  can be told apart. Its menu ids, labels, and commands are this enum's methods in `cmdr-menu`.
  */
 export type QueueRowMenuAction =
   | 'moveEarlier'
@@ -15128,7 +15140,10 @@ export type QueueRowMenuAction =
   | 'resume'
   | 'rollback'
 
-// One line of a queue row's menu, as the window lists it.
+/**
+ *  One entry of a queue row's menu, as the queue window lists it
+ *  (`lib/file-operations/queue/queue-row-menu.ts`): every fact behind it lives there.
+ */
 export type QueueRowMenuEntry =
   | { kind: 'item'; action: QueueRowMenuAction; enabled: boolean }
   /**
@@ -18121,6 +18136,16 @@ export type ShareListError =
       // Diagnostic detail, for logs.
       message: string
     }
+  /**
+   *  Cmdr requires encryption ([`crate::SmbEncryption`]) and this connection can't have it:
+   *  the server agreed on no cipher, or it answered with a guest session, which has no keys.
+   *  ❌ Never a fallback to another client: the CLI fallback ignores the requirement.
+   */
+  | {
+      type: 'encryption_required'
+      // Diagnostic detail, for logs.
+      message: string
+    }
   // The exchange broke down in a way none of the other variants describes.
   | {
       type: 'protocol_error'
@@ -20312,6 +20337,12 @@ export type UpgradeFailure =
    *  to encrypt. Repeating gets the same negotiation, so it isn't offered.
    */
   | 'encryptionUnavailable'
+  /**
+   *  "Always require SMB encryption" is on, and this connection can't encrypt (the server
+   *  agreed on no cipher, or answered with a guest session). Repeating gets the same answer
+   *  until the server or the setting changes, so it isn't offered.
+   */
+  | 'encryptionRequired'
 
 /**
  *  Where a "Connect directly" left the volume.
@@ -20461,9 +20492,9 @@ export type ViewerEditAction = {
 }
 
 /**
- *  Which item of the viewer menu bar's Edit submenu was picked. A typed variant rather
- *  than the menu id as a string: the viewer frontend dispatches on it, and an id is a
- *  backend detail nothing across IPC should be matching on.
+ *  Which item of the viewer menu bar's Edit submenu (or the viewer's text menu) was picked. A
+ *  typed variant rather than the menu id as a string: the viewer frontend dispatches on it, and an
+ *  id is a backend detail nothing across IPC should be matching on.
  */
 export type ViewerEditActionKind =
   // Edit > Copy (⌘C).

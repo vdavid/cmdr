@@ -99,7 +99,12 @@ describe('the OS-mount fallback notice', () => {
   // A connection whose security didn't check out (smb2 0.41): repeating gets the
   // same negotiation, so the notice says why instead of offering a button.
   it('offers no retry, and says why, when the connection’s security didn’t check out', () => {
-    for (const reason of ['negotiationInvalid', 'encryptionUnavailable', 'otherServerNotAllowed'] as const) {
+    for (const reason of [
+      'negotiationInvalid',
+      'encryptionUnavailable',
+      'encryptionRequired',
+      'otherServerNotAllowed',
+    ] as const) {
       addToast.mockClear()
       emitFallback({ volumeId: `smb-${reason}`, share: 'archive', reason, displayName: 'Naspolya' })
 

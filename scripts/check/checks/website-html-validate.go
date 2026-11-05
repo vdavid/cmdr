@@ -12,7 +12,7 @@ func RunWebsiteHTMLValidate(ctx *CheckContext) (CheckResult, error) {
 	distDir := filepath.Join(websiteDir, "dist")
 
 	if !hasBuildOutput(distDir) {
-		return Skipped("dist/ not found (run website-build first)"), nil
+		return SkippedNoEnvironment("dist/ not found (run website-build first)"), nil
 	}
 
 	cmd := exec.Command("pnpm", "exec", "html-validate", "dist/**/*.html")

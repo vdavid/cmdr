@@ -57,7 +57,7 @@ const README: &str = "# Hello\n\nSee [the notes](notes.txt), ![a dot](dot.png), 
 struct Fixture {
     demo: Demo,
     events: Arc<Collector>,
-    _runtime: tokio::runtime::Runtime,
+    runtime: tokio::runtime::Runtime,
 }
 
 impl Fixture {
@@ -84,6 +84,8 @@ fn fixture() -> Fixture {
         "root": "/",
         "entries": [
             { "path": "/docs", "kind": "dir" },
+            { "path": "/docs/sub", "kind": "dir" },
+            { "path": "/out", "kind": "dir" },
             { "path": "/docs/notes.txt", "kind": "file", "size": 1 },
             { "path": "/docs/README.md", "kind": "file" },
             { "path": "/docs/dot.png", "kind": "file" },
@@ -107,11 +109,7 @@ fn fixture() -> Fixture {
         let _entered = runtime.enter();
         Demo::new(tree, Arc::clone(&events) as _).expect("the demo builds")
     };
-    Fixture {
-        demo,
-        events,
-        _runtime: runtime,
-    }
+    Fixture { demo, events, runtime }
 }
 
 #[test]
@@ -183,6 +181,85 @@ fn a_text_file_opens_reads_searches_and_closes() {
     f.call("viewer_close", json!({ "sessionId": session })).expect("close");
     let gone = f.call("viewer_get_status", json!({ "sessionId": session }));
     assert!(matches!(gone, Err(Value::String(_))), "{gone:?}");
+}
+
+impl Fixture {
+    /// Runs one write command to its `write-settled`, answering how it ended.
+    fn write(&self, command: &str, args: Value) -> String {
+        let started = self
+            .runtime
+            .block_on(self.demo.invoke(command, args))
+            .unwrap_or_else(|e| panic!("{command} refused: {e}"));
+        let id = started["operationId"].clone();
+        wait_until(Duration::from_secs(10), "the write settles", || {
+            self.events
+                .named("write-settled")
+                .iter()
+                .any(|(_, p)| p["operationId"] == id)
+        });
+        ["write-complete", "write-cancelled", "write-error"]
+            .into_iter()
+            .find(|name| self.events.named(name).iter().any(|(_, p)| p["operationId"] == id))
+            .expect("a terminal event")
+            .to_string()
+    }
+
+    /// The first rows' text of `path`, opened in a viewer of its own.
+    fn first_rows(&self, path: &str) -> Vec<String> {
+        let opened = self.open(path, "viewer-w");
+        assert_eq!(opened["totalBytes"], NOTES.len(), "{path}");
+        let session = opened["sessionId"].as_str().expect("a session id").to_string();
+        let lines = self
+            .call(
+                "viewer_get_lines",
+                json!({ "sessionId": session, "targetType": "row", "targetValue": 0, "count": 3 }),
+            )
+            .expect("lines");
+        self.call("viewer_close", json!({ "sessionId": session }))
+            .expect("close");
+        lines["rows"]
+            .as_array()
+            .expect("rows")
+            .iter()
+            .map(|r| r["text"].as_str().expect("text").to_string())
+            .collect()
+    }
+}
+
+/// What a write lands, the viewer reads: the copy, its rename, and its move all show the
+/// source's text, because the viewer reads the volume the write engine wrote to.
+#[test]
+fn a_copied_renamed_and_moved_file_views_with_its_content() {
+    let f = fixture();
+    let config = json!({ "progressIntervalMs": 50, "conflictResolution": "stop", "maxConflictsToShow": 100 });
+    let expected = ["first line", "second line has a needle", "third line"];
+
+    let copied = f.write(
+        "copy_between_volumes",
+        json!({
+            "sourceVolumeId": "root", "sourcePaths": ["/docs/notes.txt"], "destVolumeId": "root",
+            "destPath": "/out", "config": config, "initiator": "user",
+        }),
+    );
+    assert_eq!(copied, "write-complete");
+    assert_eq!(f.first_rows("/out/notes.txt"), expected);
+
+    let renamed = f
+        .runtime
+        .block_on(f.demo.invoke(
+            "rename_file",
+            json!({ "from": "/out/notes.txt", "to": "/out/renamed.txt", "force": false, "volumeId": "root", "initiator": "user" }),
+        ))
+        .expect("the rename");
+    assert_eq!(renamed["type"], "done", "{renamed}");
+    assert_eq!(f.first_rows("/out/renamed.txt"), expected);
+
+    let moved = f.write(
+        "move_files",
+        json!({ "sources": ["/out/renamed.txt"], "destination": "/docs/sub", "config": config, "initiator": "user" }),
+    );
+    assert_eq!(moved, "write-complete");
+    assert_eq!(f.first_rows("/docs/sub/renamed.txt"), expected);
 }
 
 #[test]

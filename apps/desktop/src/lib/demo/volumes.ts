@@ -65,6 +65,12 @@ export const volumeAnswers: AnswerTable = {
   getDefaultVolumeId: () => DEMO_VOLUME_ID,
   getE2eStartPath: () => null,
   resolvePathVolume: () => ({ volume: mainVolume, timedOut: false }),
+  // Every path is on the one volume, as `resolvePathVolume` says: the navigation edges (a search
+  // result's Go to file, ⌘G) route through this.
+  resolveLocation: (p) => ({
+    location: { volumeId: DEMO_VOLUME_ID, path: demoPath(String(p.path)) },
+    timedOut: false,
+  }),
   // `pathExists` and `statPathsKinds` are the engine's: the volume they ask changes with every write.
   // Nothing on the demo volume syncs, and it stores every path as given.
   getSyncStatus: () => ({ data: {}, timedOut: false }),

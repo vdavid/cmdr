@@ -51,10 +51,14 @@ pub fn local_path_is_in_a_restic_view(path: &Path) -> bool {
 }
 
 /// Whether `path` on `volume_id` sits at or inside the view of a repo the hub
-/// has CONFIRMED, from its memo alone: zero I/O, for a validator that must
-/// never probe a mount (the agent's rename plan). A pane only ever stands inside
-/// a view after the route confirmed its repo, so a path the pane offers is
-/// covered; one the hub never met answers `false`.
+/// has CONFIRMED, from its memo alone: zero I/O, for the agent's rename plan,
+/// which names a row's own problem before it stats anything. A repo a pane
+/// opened is covered (its route confirmed it); a plan may also name a view the
+/// hub never met, which answers `false`. That stays safe: the plan's stat goes
+/// through the plain volume, finds nothing there (a view isn't on disk), and
+/// words a plan where nothing exists by the view
+/// (`tools/propose/rename/rows.rs`, `MissingUnderSnapshots`); apply's
+/// `is_a_view_row` refuses such a row regardless.
 pub fn memo_says_in_a_restic_view(volume_id: &str, path: &Path) -> bool {
     restic_route_candidates(path).any(|repo_root| repos().serves_confirmed(volume_id, &repo_root) == Some(true))
 }

@@ -414,6 +414,10 @@ pub fn scan_line_with_matcher(
     results: &Mutex<Vec<SearchMatch>>,
 ) -> LineScan {
     let mut outcome = LineScan::Done;
+    // A CRLF row keeps its `\r` (the row's bytes stay true to the file), but it is the
+    // line's terminator, not its text: searched, it would stop `e$` matching every line of
+    // a Windows file. Trimming the END keeps every column where it was.
+    let line = line.strip_suffix('\r').unwrap_or(line);
     let line = matcher.rows.render(line);
     let line = line.as_ref();
     matcher.find_matches(line, |start_byte, end_byte| {

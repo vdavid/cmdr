@@ -234,6 +234,30 @@ only ever builds passwordless `//host` / `//host:port` URLs, used by the guest (
 old URL-embedded-password leak is closed. The primary macOS mount path (`NetFSMountURLSync`) and smb2 share enumeration
 also never expose the password.
 
+### Requiring SMB encryption
+
+"Always require SMB encryption" (`network.requireSmbEncryption`, default off) or the managed policy's
+`RequireSMBEncryption`: `smb_encryption.rs` ORs the two (`effective`) into `cmdr_smb::SmbEncryption`, which every SMB
+session Cmdr builds reads at that moment (`crates/cmdr-smb/DETAILS.md` § "Requiring encryption"). Inputs: the stored
+setting at launch (`init`, beside `load_smb_link_consents`, before any volume is built), the settings applier's push
+(`set_require_smb_encryption`), and each policy change (`managed_policy::apply_change`). ❗ A session that's up keeps
+going until it's rebuilt; nothing is torn down on a flip (it would cut a running copy).
+
+What changes in this module while it's on:
+
+- **No CLI fallback at all** (`smb_client.rs::cli_fallback_allowed`): not the guest `smbutil view -G` on a
+  `ProtocolError`, not the Keychain `smbutil view -N`, and not Linux's `smbclient -A`. The CLIs know nothing about the
+  requirement, so their answer would come over a connection nobody checked.
+- **A guest listing refused for encryption reads as `AuthRequired`** (`guest_refusal_wants_an_account`): a guest
+  session has no keys, an account's may, so the frontend takes it to the Keychain and the sign-in sheet as it does for
+  any guest refusal. A server that can't encrypt at all then refuses the account too, and that listing answers
+  `ShareListError::EncryptionRequired` with its own words (`errors.shareList.encryptionRequired`).
+- **A direct connection refused for it is `UpgradeFailure::EncryptionRequired`**, a stuck reason with its own sentence
+  and no retry button (§ "Telling the user about a kernel-mount fallback").
+- **The kernel mount isn't covered.** macOS (or GVFS) negotiates it, and a share whose direct connection is refused
+  stays on it. Pinned by `smb_client_test.rs::smb_integration_required_encryption_sends_a_guest_listing_to_sign_in`
+  against the `guest` and `auth` fixtures (verified on smb2 0.41.0, 2026-11-05).
+
 ### A listing names each share once
 
 Gotcha: a server can list one share name twice, and the frontend's share list (`PlacesBrowser.svelte`) keys its rows on
@@ -848,6 +872,8 @@ drop the button too, each with its own sentence: smb2 closed a connection whose 
 (`ErrorKind::NegotiateValidationFailed`, SMB 3.0 / 3.0.2; possible tampering), or the share requires encryption the
 connection agreed on no cipher for (`Error::EncryptionUnavailable`, read by variant since `EncryptionRequired` shares
 its `Unsupported` kind). Repeating gets the same negotiation. The kernel mount stays, and it checks its own negotiation.
+`EncryptionRequired` (Cmdr's own "Always require SMB encryption", § "Requiring SMB encryption") is the third such
+reason: the same server gets the same answer until it or the setting changes.
 
 **The reason rides along so the notice can drop that button.** `UpgradeFailure::ShareNotOnServer` (the server answering
 `STATUS_BAD_NETWORK_NAME` at TreeConnect) is the one failure here that repeating cannot fix: the same identity asking

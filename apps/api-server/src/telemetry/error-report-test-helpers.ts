@@ -1,6 +1,6 @@
 /**
  * R2, KV, D1, and binding fakes shared by the `POST /error-report` route tests
- * (`error-report.test.ts` and `error-report-amend.test.ts`). The Resend mock stays per-file:
+ * (`error-report.test.ts` and `error-report-amend.test.ts`). The `sendEmail` mock stays per-file:
  * `vi.mock` is hoisted into the file it appears in, so it can't be shared from here.
  */
 import { vi, type Mock } from 'vitest'
@@ -142,7 +142,7 @@ export function createBindings(overrides: Record<string, unknown> = {}) {
     ERROR_REPORT_META: createKv(),
     ERROR_REPORT_LIMITER: createMockRateLimiter().limiter,
     ED25519_PRIVATE_KEY: 'deadbeef'.repeat(8),
-    RESEND_API_KEY: 'test-resend-key',
+    SMTP2GO_API_KEY: 'test-smtp2go-key',
     PRODUCT_NAME: 'Cmdr',
     SUPPORT_EMAIL: 'test@example.com',
     ADMIN_API_TOKEN: 'test-admin-token-secret',

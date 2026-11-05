@@ -69,7 +69,7 @@ fn loads_non_root_volume_with_mount_root_from_meta() {
     // volume being mounted or registered.
     assert_eq!(loaded.mount_root.as_deref(), Some("/Volumes/nas"));
     // Root sentinel + `sub` + `report.pdf`.
-    assert_eq!(loaded.index.entries.len(), 3);
+    assert_eq!(loaded.index.len(), 3);
 }
 
 #[test]

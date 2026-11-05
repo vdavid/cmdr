@@ -82,6 +82,9 @@ pub struct Settings {
     pub verbose_logging: Option<bool>,
     #[serde(alias = "network.directSmbConnection", default)]
     pub direct_smb_connection: Option<bool>,
+    /// "Always require SMB encryption", read at launch before any SMB session is built.
+    #[serde(alias = "network.requireSmbEncryption", default)]
+    pub require_smb_encryption: Option<bool>,
     #[serde(alias = "advanced.showSafeSaveFiles", default)]
     pub show_safe_save_files: Option<bool>,
     #[serde(alias = "advanced.showStagingTempFiles", default)]
@@ -211,6 +214,7 @@ impl Default for Settings {
             ai_provider: None,
             verbose_logging: None,
             direct_smb_connection: None,
+            require_smb_encryption: None,
             show_safe_save_files: None,
             show_staging_temp_files: None,
             mtp_enabled: None,
@@ -328,6 +332,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let ai_provider = json.get("ai.provider").and_then(|v| v.as_str()).map(String::from);
     let verbose_logging = json.get("developer.verboseLogging").and_then(|v| v.as_bool());
     let direct_smb_connection = json.get("network.directSmbConnection").and_then(|v| v.as_bool());
+    let require_smb_encryption = json.get("network.requireSmbEncryption").and_then(|v| v.as_bool());
     let show_safe_save_files = json.get("advanced.showSafeSaveFiles").and_then(|v| v.as_bool());
     let show_staging_temp_files = json.get("advanced.showStagingTempFiles").and_then(|v| v.as_bool());
     let mtp_enabled = json.get("fileOperations.mtpEnabled").and_then(|v| v.as_bool());
@@ -388,6 +393,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         ai_provider,
         verbose_logging,
         direct_smb_connection,
+        require_smb_encryption,
         show_safe_save_files,
         show_staging_temp_files,
         mtp_enabled,

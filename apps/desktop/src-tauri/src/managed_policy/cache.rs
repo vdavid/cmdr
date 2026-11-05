@@ -125,6 +125,7 @@ fn apply_change(change: &Change) {
         summary(&change.old)
     );
     crate::security_log::on_policy_applied(Some(&change.old), &change.new);
+    crate::network::smb_encryption::on_policy_applied(&change.new);
     if let Some(app) = APP.get() {
         let payload = ManagedPolicyChanged {
             policy: ManagedPolicyView::from(&*change.new),

@@ -7,8 +7,7 @@
  * a missing brief is itself the signal that something broke.
  */
 
-import { Resend } from 'resend'
-import { sendViaResend } from './send'
+import { sendEmail } from './send'
 import { CARD_BODY_STYLE, documentShell, escapeHtml, signoffParagraph } from './layout'
 
 /** One card in a brief list. */
@@ -29,6 +28,7 @@ export interface BriefArrivals {
   feedback: number
   betaSignups: number
   newsletterSignups: number
+  subprocessorUpdatesSignups: number
   opsAlerts: number
 }
 
@@ -99,6 +99,7 @@ function arrivalsList(arrivals: BriefArrivals): string {
     counted(arrivals.feedback, 'feedback message', 'feedback messages'),
     counted(arrivals.betaSignups, 'beta signup', 'beta signups'),
     counted(arrivals.newsletterSignups, 'newsletter signup', 'newsletter signups'),
+    counted(arrivals.subprocessorUpdatesSignups, 'subprocessor updates signup', 'subprocessor updates signups'),
     counted(arrivals.opsAlerts, 'ops alert', 'ops alerts'),
   ]
   return `<h3 style="color: #111827; margin: 24px 0 8px;">In the last day</h3><ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`
@@ -123,11 +124,11 @@ function renderBody(subject: string, content: BriefContent): string {
 export async function sendMorningBriefEmail(params: {
   content: BriefContent
   to: string
-  resendApiKey: string
+  smtp2goApiKey: string
 }): Promise<void> {
   const subject = briefSubject(params.content)
-  await sendViaResend(
-    new Resend(params.resendApiKey),
+  await sendEmail(
+    params.smtp2goApiKey,
     {
       from: 'Cmdr Morning Brief <noreply@getcmdr.com>',
       to: params.to,

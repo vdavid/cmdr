@@ -72,3 +72,29 @@ func TestCheckManifest(t *testing.T) {
 		}
 	}
 }
+
+const mirroredManifest = `{
+  "version": "0.60.0",
+  "platforms": {
+    "darwin-aarch64": {"url": "https://download.getcmdr.com/v0.60.0/Cmdr_0.60.0_aarch64.app.tar.gz"},
+    "darwin-universal": {"url": "https://download.getcmdr.com/v0.60.0/Cmdr_0.60.0_universal.app.tar.gz"},
+    "darwin-x86_64": {"url": "https://download.getcmdr.com/v0.60.0/Cmdr_0.60.0_x64.app.tar.gz"}
+  }
+}`
+
+// Releases from the EU mirror on name `download.getcmdr.com`; older ones name GitHub, and both
+// still have to verify.
+func TestCheckManifestAcceptsTheEUMirror(t *testing.T) {
+	urls, err := checkManifest([]byte(mirroredManifest), "0.60.0", "vdavid/cmdr")
+	if err != nil || len(urls) != 3 || !strings.HasPrefix(urls[0], "https://download.getcmdr.com/v0.60.0/") {
+		t.Fatalf("got %v %v", urls, err)
+	}
+	for name, body := range map[string]string{
+		"other release on the mirror": strings.Replace(mirroredManifest, "v0.60.0/Cmdr_0.60.0_x64", "v0.59.0/Cmdr_0.60.0_x64", 1),
+		"lookalike host":              strings.Replace(mirroredManifest, "download.getcmdr.com/v0.60.0/Cmdr_0.60.0_x64", "download.getcmdr.com.evil.example/v0.60.0/Cmdr_0.60.0_x64", 1),
+	} {
+		if _, err := checkManifest([]byte(body), "0.60.0", "vdavid/cmdr"); err == nil {
+			t.Errorf("%s: want an error", name)
+		}
+	}
+}

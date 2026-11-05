@@ -1,8 +1,9 @@
 //! Turns a failed provider call into a typed [`AiError`]: by HTTP status, plus the response's
-//! request-limit headers for a 429, never by the provider's wording. Pure functions;
+//! request-limit headers for a 429 and `Retry-After` for a 503, never by the provider's wording. Pure functions;
 //! `client_unit_test.rs` pins them without a network.
 
 use std::fmt::Display;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde_json::Value;
 
@@ -13,25 +14,52 @@ use super::AiError;
 /// on the numeric status, never the message body. 429 covers both rate-limiting and
 /// OpenAI's `insufficient_quota`; 413 is a request past what the provider (or the account's
 /// plan) takes in one go; 401/403 is a rejected key; 404 is a model id the provider
-/// doesn't serve (a typo, or one it decommissioned) or a base URL with the wrong path.
+/// doesn't serve (a typo, or one it decommissioned) or a base URL with the wrong path; 503 (and
+/// Anthropic's 529) is a provider overloaded right now, the one server-side status worth a retry.
 pub(super) fn ai_error_for_status(status: u16, detail: String) -> AiError {
     match status {
         401 | 403 => AiError::AuthFailed(detail),
         404 => AiError::NotFound(detail),
         413 => AiError::RequestTooLarge(detail),
         429 => AiError::RateLimited(detail),
+        503 | 529 => AiError::Overloaded {
+            detail,
+            retry_after: None,
+        },
         _ => AiError::ServerError(detail),
     }
 }
 
-/// [`ai_error_for_status`], plus the one case the status alone can't tell: a 429 whose
-/// response says the account may send NO requests to this model ([`plan_allows_no_requests`]),
-/// which is a plan without the model rather than a busy provider or a spent quota.
+/// [`ai_error_for_status`], plus what only the headers can tell: a 429 whose response says the
+/// account may send NO requests to this model ([`plan_allows_no_requests`]), which is a plan
+/// without the model rather than a busy provider or a spent quota, and an overloaded provider's
+/// `Retry-After`.
 fn ai_error_for_response(status: u16, headers: &reqwest::header::HeaderMap, detail: String) -> AiError {
     if status == 429 && plan_allows_no_requests(headers) {
         return AiError::ModelNotInPlan(detail);
     }
-    ai_error_for_status(status, detail)
+    match ai_error_for_status(status, detail) {
+        AiError::Overloaded { detail, .. } => AiError::Overloaded {
+            detail,
+            retry_after: headers
+                .get(reqwest::header::RETRY_AFTER)
+                .and_then(|value| value.to_str().ok())
+                .and_then(|value| parse_retry_after(value, SystemTime::now())),
+        },
+        other => other,
+    }
+}
+
+/// A `Retry-After` value as a wait from `now`: whole seconds, or an HTTP date (RFC 9110 §10.2.3;
+/// a date already past is no wait at all). `None` for anything else.
+pub(super) fn parse_retry_after(value: &str, now: SystemTime) -> Option<Duration> {
+    let value = value.trim();
+    if let Ok(secs) = value.parse::<u64>() {
+        return Some(Duration::from_secs(secs));
+    }
+    let at = chrono::DateTime::parse_from_rfc2822(value).ok()?;
+    let at = UNIX_EPOCH + Duration::from_secs(u64::try_from(at.timestamp()).ok()?);
+    Some(at.duration_since(now).unwrap_or(Duration::ZERO))
 }
 
 /// Request-limit headers that state the account's per-window CAP (not what's left of it).

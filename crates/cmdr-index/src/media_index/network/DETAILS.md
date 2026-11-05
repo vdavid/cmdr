@@ -230,7 +230,7 @@ back the chosen-folders list in Settings > AI > Image search (`MediaIndexChosenF
 folder picker). In the `ChosenFolders` scope these folders ARE the coverage (`../DETAILS.md` § The indexing scope). A
 folder's context menu drives the SAME setter through the same FE helper (`always-index-folders.ts`), so a folder added
 by right-click shows up in the Settings list and vice versa; the menu's label/enabled decision lives in
-`menu/media_index_items.rs` (§ Image-search group in `menu/DETAILS.md`).
+`crates/cmdr-menu/src/context/image_index.rs` (§ Image-search group in `apps/desktop/src-tauri/src/menu/DETAILS.md`).
 
 ## Testing
 

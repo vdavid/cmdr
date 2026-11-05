@@ -26,13 +26,13 @@ func linuxE2EReportPath(pid int) string {
 func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 	// Check if Docker is available
 	if !CommandExists("docker") {
-		return Skipped("Docker not installed"), nil
+		return SkippedNoEnvironment("Docker not installed"), nil
 	}
 
 	// Check if Docker daemon is running
 	checkCmd := exec.Command("docker", "info")
 	if _, err := RunCommand(checkCmd, true); err != nil {
-		return Skipped("Docker daemon not running"), nil
+		return SkippedNoEnvironment("Docker daemon not running"), nil
 	}
 
 	// OrbStack mounts Linux VM files at ~/OrbStack via NFS. Under heavy Docker I/O

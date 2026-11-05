@@ -9,19 +9,24 @@
 pub mod ai;
 #[cfg(test)]
 mod bench;
-pub(crate) mod engine;
-pub(crate) mod excludes;
+#[cfg(test)]
+mod diagnostics_tests;
 pub(crate) mod execute;
 pub mod history;
 pub(crate) mod index;
+pub(crate) mod index_source;
 pub(crate) mod live;
-pub(crate) mod matcher;
-pub(crate) mod query;
-pub(crate) mod ranking;
-pub(crate) mod types;
 pub(crate) mod volumes;
+pub(crate) mod zone;
+
+// The core lives in `cmdr-search`; its modules keep their old paths here
+// (`crate::search::matcher`, …) so the host reads the same either way.
+pub(crate) use cmdr_search::{context, engine, excludes, matcher, query, ranking, seam, types};
 
 // Flat re-exports so consumers can `use crate::search::{SearchQuery, ...}`
+
+// The name rules (a private leaf in the crate, promised at its root)
+pub(crate) use cmdr_search::NameRules;
 
 // types.rs
 pub use types::{ParsedScope, PatternType, SearchQuery, SearchResult, SearchResultEntry, SearchSort};
@@ -49,6 +54,17 @@ pub(crate) use live::{
 
 // query.rs
 pub use query::SYSTEM_DIR_EXCLUDES;
-pub(crate) use query::{
-    format_size, format_timestamp, parse_scope, parse_size, summarize_query, summarize_query_for_diagnostics,
-};
+pub(crate) use query::{format_size, parse_size, summarize_query_for_diagnostics};
+pub(crate) use zone::{format_local_date, format_local_datetime, summarize_query};
+
+/// This machine's home folder, as the search core takes it: a value, so the core
+/// never reads it ambiently and a test can pass its own.
+pub(crate) fn host_home_dir() -> Option<String> {
+    dirs::home_dir().map(|home| home.to_string_lossy().into_owned())
+}
+
+/// Parse a scope string (`~/projects, !node_modules`) with `~` expanded against
+/// this machine's home folder.
+pub(crate) fn parse_scope(input: &str) -> ParsedScope {
+    query::parse_scope(input, host_home_dir().as_deref())
+}

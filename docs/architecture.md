@@ -284,7 +284,8 @@ All under `apps/desktop/src-tauri/src/`.
   of each call. The promise is in `apps/desktop/src-tauri/src/agent/DETAILS.md` § The promise. See its
   `apps/desktop/src-tauri/src/agent/CLAUDE.md`
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
-- `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
+- `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + the host of AI query translation
+  (`apps/desktop/src-tauri/src/search/ai.rs`; the pipeline is `cmdr_search::translate`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
   itself runs in JS
 - `multi_rename/`: Multi-Rename Tool engine (Total Commander's masks, search & replace, diacritics), preview, apply
@@ -401,12 +402,12 @@ All under `apps/desktop/src-tauri/src/`.
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
 `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-http`, `cmdr-listing`,
 `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-menu`, `cmdr-operation-log`,
-`cmdr-operations`, and `cmdr-update-trust` carry no `tauri` dependency and no reach into the app, and neither do
-`cmdr-listing-wasm` and the two dev CLIs; `index-crate-isolation` enforces that against the `cargo metadata` graph, and
-caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`,
-`cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-listing`, `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`,
-`cmdr-local`, `cmdr-operation-log`, and `cmdr-operations` at the numbers their audits landed on. The vendored fork is an
-ordinary member.
+`cmdr-operations`, `cmdr-recents`, `cmdr-search`, and `cmdr-update-trust` carry no `tauri` dependency and no reach into
+the app, and neither do `cmdr-listing-wasm` and the two dev CLIs; `index-crate-isolation` enforces that against the
+`cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
+`cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-listing`, `cmdr-collation`,
+`cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`, `cmdr-operations`, `cmdr-recents`, and
+`cmdr-search` at the numbers their audits landed on. The vendored fork is an ordinary member.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -448,6 +449,14 @@ ordinary member.
 - `crates/cmdr-brief-columns/`: Brief mode's column widths: the font metrics store (per-code-point widths the frontend
   measured) and each column's widest name over a pane's rows. Hosted by the app (`font_metrics/`, which persists the
   store) and the browser demo. See `crates/cmdr-brief-columns/CLAUDE.md`
+- `crates/cmdr-search/`: the drive search's core (⌘F): the query model, the one matcher and exclusion set, ranking, and
+  the in-memory arena it scans, a live run's reporting (registry, result stream, terminal report), fed through a narrow
+  seam (`SearchRows`, `DirSizeSource`) asked per query, never per row. Hosted by the app (`src-tauri/src/search/`,
+  answering from the drive index) and the browser demo (`cmdr-listing-wasm`'s `search.rs`, through `MemorySource`, which
+  answers from rows in memory, proven identical). See `crates/cmdr-search/CLAUDE.md`
+- `crates/cmdr-recents/`: the rules of a most-recently-used list (newest first, dedupe, cap, unique ids), pure `Vec`
+  work every recents list keeps; the app's `src-tauri/src/recents/` persists each one. See
+  `crates/cmdr-recents/CLAUDE.md`
 - `crates/cmdr-menu/`: the menu bar as data: both platforms' rows, the item ids and their commands, the enabled-state
   fold, and what a click asks for. The desktop's `menu/` builds native menus from it; the browser demo draws the macOS
   bar from it through `cmdr-listing-wasm`. See `crates/cmdr-menu/CLAUDE.md`
@@ -632,11 +641,13 @@ ordinary member.
 ## Search
 
 Whole-drive file search powered by the index DB. The search index lazy-loads all entries into memory (~600 MB for 5M
-files), scans them with rayon in parallel, returns results by recency, and drops after an idle timeout. Backend: a pure
-`search()` function (no I/O) in `search/engine.rs`, the compiled query it matches with in `search/matcher.rs`,
-DB-touching ops in `query.rs`, global index lifecycle in `index.rs`, AI query translation in `search/ai/`. The dialog is
-the first `query-ui` consumer; "Open in pane" hands off to a frontend-only virtual `search-results` volume (snapshot
-store, refcounted). Full detail: `src-tauri/src/search/CLAUDE.md` and `apps/desktop/src/lib/search/CLAUDE.md`.
+files), scans them with rayon in parallel, returns results by recency, and drops after an idle timeout. Backend: the
+Tauri-free core in `crates/cmdr-search/` (engine, matcher, ranking, arena, the seam, and a live run's reporting), hosted
+by `src-tauri/src/search/` (routing, the SQL-backed `IndexSource`, arena loading and lifecycle, the live walk, history),
+with AI query translation in `cmdr_search::translate` (hosted by `apps/desktop/src-tauri/src/search/ai.rs`). The browser
+demo runs the same core over its in-memory tree (`crates/cmdr-listing-wasm/DETAILS.md` § Search). The dialog is the
+first `query-ui` consumer; "Open in pane" hands off to a frontend-only virtual `search-results` volume (snapshot store,
+refcounted). Full detail: `src-tauri/src/search/CLAUDE.md` and `apps/desktop/src/lib/search/CLAUDE.md`.
 
 ## Cross-cutting patterns
 

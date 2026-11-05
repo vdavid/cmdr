@@ -6,8 +6,7 @@
  * without any of the product voice the license mail carries.
  */
 
-import { Resend } from 'resend'
-import { sendViaResend } from './send'
+import { sendEmail } from './send'
 import { paddleTransactionUrl } from './sale'
 import {
   CELL_STYLE,
@@ -29,7 +28,7 @@ interface DbSizeAlertParams {
   growth: { mbPerMonth: number; overDays: number } | null
   tableCounts: Record<string, number>
   to: string
-  resendApiKey: string
+  smtp2goApiKey: string
 }
 
 const SPELLED = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
@@ -53,7 +52,6 @@ function growthParagraph(params: DbSizeAlertParams): string {
  * fast it grows, and the per-table row counts that say where the size went.
  */
 export async function sendDbSizeAlert(params: DbSizeAlertParams): Promise<void> {
-  const resend = new Resend(params.resendApiKey)
   const sizeMb = String(Math.round(params.sizeMb))
   const capMb = String(Math.round(params.capMb))
   const percent = String(Math.round((params.sizeMb / params.capMb) * 100))
@@ -73,8 +71,8 @@ export async function sendDbSizeAlert(params: DbSizeAlertParams): Promise<void> 
     )
     .join('\n')
 
-  await sendViaResend(
-    resend,
+  await sendEmail(
+    params.smtp2goApiKey,
     {
       from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
       to: params.to,
@@ -113,7 +111,7 @@ interface DeviceCountAlertParams {
   baseTransactionId: string
   deviceCount: number
   customerEmail: string
-  resendApiKey: string
+  smtp2goApiKey: string
   paddleEnvironment: 'sandbox' | 'live'
 }
 
@@ -122,12 +120,11 @@ interface DeviceCountAlertParams {
  * are in the email because the answer is a conversation with the customer, not a lockout.
  */
 export async function sendDeviceCountAlert(params: DeviceCountAlertParams): Promise<void> {
-  const resend = new Resend(params.resendApiKey)
   const paddleUrl = paddleTransactionUrl(params.baseTransactionId, params.paddleEnvironment)
   const labelCell = `${CELL_STYLE} font-weight: bold;`
 
-  await sendViaResend(
-    resend,
+  await sendEmail(
+    params.smtp2goApiKey,
     {
       from: 'Cmdr License Alerts <noreply@getcmdr.com>',
       to: 'legal@getcmdr.com',

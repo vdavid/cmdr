@@ -173,6 +173,8 @@ pub(super) enum Program {
     Silent,
     /// Never even open the stream: a request stuck before the provider answered.
     NeverOpens,
+    /// Refuse to open the call with this typed error (a non-streaming failure).
+    FailsToOpen(AgentLlmError),
     /// Send `beats` keep-alives `every` apart (virtual time, under `start_paused`), then answer:
     /// a model thinking quietly while its provider pings.
     KeepAliveThenAnswer { beats: u32, every: Duration },
@@ -228,6 +230,7 @@ impl AgentLlm for ProgrammableLlm {
             let cancel_signal = cancel.clone();
             let stream: AgentDeltaStream = match program {
                 Program::NeverOpens => return std::future::pending().await,
+                Program::FailsToOpen(error) => return Err(error),
                 Program::Silent => stream::pending().boxed(),
                 Program::KeepAliveThenAnswer { beats, every } => {
                     let answer = program_to_deltas(Program::Answer {
@@ -315,7 +318,7 @@ fn program_to_deltas(program: Program) -> Vec<Result<AgentDelta, AgentLlmError>>
             deltas.push(Err(error));
             deltas
         }
-        Program::Silent | Program::NeverOpens | Program::KeepAliveThenAnswer { .. } => {
+        Program::Silent | Program::NeverOpens | Program::FailsToOpen(_) | Program::KeepAliveThenAnswer { .. } => {
             unreachable!("respond streams these itself, with time in them")
         }
     }

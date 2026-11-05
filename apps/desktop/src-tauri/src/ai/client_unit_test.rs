@@ -209,6 +209,97 @@ fn ai_error_for_status_classifies_by_code() {
     // 404: a model id the provider doesn't serve (decommissioned, or a typo), or a base
     // URL with the wrong path. The `<provider>-smoke` lanes branch on this variant.
     assert!(matches!(ai_error_for_status(404, "x".into()), AiError::NotFound(_)));
+    // 503: a provider overloaded right now (Gemini's `UNAVAILABLE`, "high demand"), and 529:
+    // Anthropic's `overloaded_error`. Both are worth a retry, unlike a plain 500.
+    assert!(matches!(
+        ai_error_for_status(503, "x".into()),
+        AiError::Overloaded { retry_after: None, .. }
+    ));
+    assert!(matches!(
+        ai_error_for_status(529, "x".into()),
+        AiError::Overloaded { retry_after: None, .. }
+    ));
+    assert!(matches!(ai_error_for_status(502, "x".into()), AiError::ServerError(_)));
+}
+
+/// An overloaded provider's 503 reaches us on BOTH shapes genai uses, and its `Retry-After`
+/// rides along, so the agent's retry waits as long as the provider asked. Classified from the
+/// status and the header, never from the body's "high demand" wording.
+#[test]
+fn an_overloaded_provider_is_typed_with_its_retry_after() {
+    fn headers(pairs: &[(&'static str, &'static str)]) -> reqwest::header::HeaderMap {
+        let mut map = reqwest::header::HeaderMap::new();
+        for (name, value) in pairs {
+            map.insert(*name, reqwest::header::HeaderValue::from_static(value));
+        }
+        map
+    }
+    fn stream_503(pairs: &[(&'static str, &'static str)]) -> genai::Error {
+        genai::Error::WebStream {
+            model_iden: ModelIden::new(AdapterKind::Gemini, "gemini-3.8-flash"),
+            cause: String::from("HTTP error"),
+            error: Box::new(genai::Error::HttpError {
+                status: reqwest::StatusCode::SERVICE_UNAVAILABLE,
+                canonical_reason: "Service Unavailable".to_string(),
+                body: r#"{"error":{"code":503,"message":"The model is overloaded.","status":"UNAVAILABLE"}}"#
+                    .to_string(),
+                headers: Box::new(headers(pairs)),
+            }),
+        }
+    }
+    fn one_shot_503(pairs: &[(&'static str, &'static str)]) -> genai::Error {
+        genai::Error::WebModelCall {
+            model_iden: ModelIden::new(AdapterKind::Gemini, "gemini-3.8-flash"),
+            webc_error: genai::webc::Error::ResponseFailedStatus {
+                status: reqwest::StatusCode::SERVICE_UNAVAILABLE,
+                body: "overloaded".to_string(),
+                headers: Box::new(headers(pairs)),
+            },
+        }
+    }
+
+    match map_genai_error(stream_503(&[("retry-after", "7")])) {
+        AiError::Overloaded { detail, retry_after } => {
+            assert_eq!(retry_after, Some(Duration::from_secs(7)));
+            assert!(
+                detail.starts_with("HTTP 503"),
+                "the detail keeps the provider's line: {detail}"
+            );
+        }
+        other => panic!("expected Overloaded, got {other:?}"),
+    }
+    assert!(matches!(
+        map_genai_error(one_shot_503(&[("retry-after", "3")])),
+        AiError::Overloaded { retry_after: Some(d), .. } if d == Duration::from_secs(3)
+    ));
+    assert!(matches!(
+        map_genai_error(stream_503(&[])),
+        AiError::Overloaded { retry_after: None, .. }
+    ));
+    assert!(matches!(
+        map_genai_error(stream_503(&[("retry-after", "soon")])),
+        AiError::Overloaded { retry_after: None, .. }
+    ));
+}
+
+/// `Retry-After` is either whole seconds or an HTTP date; a date already past means "now".
+#[test]
+fn retry_after_reads_seconds_and_http_dates() {
+    use std::time::UNIX_EPOCH;
+    let now = UNIX_EPOCH + Duration::from_secs(784_111_777); // Sun, 06 Nov 1994 08:49:37 GMT
+
+    assert_eq!(parse_retry_after("12", now), Some(Duration::from_secs(12)));
+    assert_eq!(parse_retry_after(" 0 ", now), Some(Duration::ZERO));
+    assert_eq!(
+        parse_retry_after("Sun, 06 Nov 1994 08:50:07 GMT", now),
+        Some(Duration::from_secs(30))
+    );
+    assert_eq!(
+        parse_retry_after("Sun, 06 Nov 1994 08:49:00 GMT", now),
+        Some(Duration::ZERO)
+    );
+    assert_eq!(parse_retry_after("-5", now), None);
+    assert_eq!(parse_retry_after("later", now), None);
 }
 
 /// A 429 whose request limit is ZERO isn't the provider being busy: the account's plan doesn't

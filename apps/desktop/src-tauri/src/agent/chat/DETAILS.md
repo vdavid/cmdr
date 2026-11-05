@@ -261,6 +261,9 @@ turn runs on an approval today; the `Outcomes` follow-up a rejection opens runs 
   that room; a dead connection still ends well inside the rail's watchdog, which gives up at 150 s
   (`apps/desktop/src/lib/ask-cmdr/DETAILS.md` § The streaming model). Unverified: a chat-completions OpenAI reasoning
   model with no summary may think silently for longer at its highest effort.
+- `OVERLOAD_ATTEMPTS = 4`, backoff 2, 4, 8 s (±25% jitter), `RETRY_AFTER_CAP = 30s` (`runtime/retry.rs`) — how hard
+  one model call tries an overloaded provider before the turn ends as `ProviderBusy`. Decided 2026-11-04 (#921). § A
+  busy provider.
 - The spend pause, default `$2` (`askCmdr.spendPause`, Settings › AI › Ask Cmdr: $0.50, $1, $2, $5, $10, Never;
   `settings::DEFAULT_ASK_CMDR_SPEND_PAUSE_MICROS`) — a user-started turn whose estimated spend (`agent::pricing`, the
   cost footer's estimate) passes the threshold pauses between rounds and asks; past Keep going it asks again at the
@@ -498,11 +501,12 @@ the test and this section together.
 
 ## The runtime (`runtime/`)
 
-Ten files plus `ChatRuntime` in `mod.rs`: `types.rs` (what a turn IS as data), `events.rs`
+Eleven files plus `ChatRuntime` in `mod.rs`: `types.rs` (what a turn IS as data), `events.rs`
 (the `AgentChatEvent` seam and the typed `AgentErrorKind`), `dispatch.rs` (the
 `ToolDispatcher` seam and `AppHandleDispatcher`; every call carries a `CallContext`, the turn's origin and its Stop,
 and runs under `dispatch_until_stopped`, § Stop reaches every tool call), `turn.rs` (`run_turn` and everything it
-drives), `consume.rs` (reading one stream, Stop and the stall check included), `limits.rs` (the loop guard and what
+drives), `retry.rs` (one model call: opened, read, and sent again while the provider is overloaded, § A busy
+provider), `consume.rs` (reading one stream, Stop and the stall check included), `limits.rs` (the loop guard and what
 each wrap-up records), `repeats.rs` (the turn's memory of calls that already failed), `cost.rs` (metering one
 completed `respond`), `cmdr_md.rs` (which `CMDR.md`, and how much of it), `analytics.rs` (the
 anonymous `ask_cmdr_turn` event). `mod.rs` re-exports all of it, so callers keep saying
@@ -525,6 +529,30 @@ single-flight guard. ⚠️ **A wake must not bypass this**: a wake thread is a 
 user can reply to, so calling `run_turn` directly would let the reply and the wake's own turn
 run concurrently in one thread. It also means TWO write connections to `main.db` during a wake,
 this one and the wake loop's; WAL makes that fine (`wake/DETAILS.md` says why).
+
+### A busy provider (`retry.rs`)
+
+An overloaded provider answers 503 (Gemini's `UNAVAILABLE`, "high demand"; Anthropic's 529), typed upstream as
+`AiError::Overloaded` → `AgentLlmError::Overloaded`, carrying the response's `Retry-After`. That's transient (the key
+and plan are fine), and the same request a few seconds later usually goes through, so `call_model` tries one model
+call up to four times: waits of about 2, 4, then 8 s with ±25% jitter, or the provider's `Retry-After` capped at 30 s.
+Each wait emits `ProviderBusyRetrying { attempt, attempts }` (the rail says the provider is busy and which try comes
+next) and races Stop, which ends it at once with no further call. A call still overloaded on its fourth try ends the
+turn as `AgentErrorKind::ProviderBusy` (wire `providerBusy`), whose line names the provider; nothing reached `End`,
+so nothing is stored (crash case b) and the user sends again.
+
+- ⚠️ **Only before anything streamed.** genai delivers the 503 as the stream's FIRST error, after the call opened
+  (verified against genai 0.7.2's Gemini adapter, `../llm/genai_impl/tests/overloaded.rs`, 2026-11-05; a `Start` keep-alive
+  comes first), so the check reads the consumed stream (`StreamOutcome::overloaded_before_streaming`) as well as a
+  call that failed to open. "Streamed" means the rail saw something: text, a reasoning tick, a tool line. A keep-alive
+  doesn't count. A reply that already showed something is never sent again: it would repeat on screen, and a tool may
+  be under way.
+- `AssistantStarted` goes out once per call, on its first opening, so a retried reply is still one bubble.
+- `STREAM_STALL_TIMEOUT` bounds each try on its own, and is untouched by this: a slow provider is a stall, not an
+  overload.
+- A wake retries the same way, and one still busy earns the wake loop's busy tier (`../wake/DETAILS.md` § Three).
+- The turn's `busy_retries` and whether it stalled ride `ask_cmdr_turn`, per preset and model (§ The turn event), so
+  the Gemini default can be judged from data (#921).
 
 ### The repeat breaker (`repeats.rs`)
 
@@ -575,7 +603,14 @@ meet; scattering a capture across those returns is how one gets missed.
 
 The tally is a `&mut` the loop increments as it goes (`tool_turns`, `tool_calls`, the summed
 `prompt_tokens` / `completion_tokens`, and `proposals` for tool calls that staged something to
-review), so a turn that fails on its fourth tool round still reports four, not zero.
+review, plus `busy_retries`), so a turn that fails on its fourth tool round still reports four, not zero.
+
+The event names the provider twice: `provider` is the coarse `ProviderTag` (every chat-completions host is `openai`),
+and `preset` the cloud preset id (`ai.cloudProvider`, already categorical in the heartbeat's config shape), with `model`
+beside it. ❌ `model` is the id only on a catalog preset (`CATALOG_PRESETS`) and only in a public catalog id's shape
+(lowercase, digits, `.`, `-`); everything else is `other`, because an Azure deployment, a local tag, a custom
+endpoint's model, a fine-tune (`ft:…:org:…`), or a vendor route can name a person or organization. `busy_retries`
+(a bucket) and `stalled` (a bool, from the `Stalled` limit) are the two "high demand" signals.
 
 **Why the event has to exist at all.** The proposal events downstream
 (`../suggested_ops/analytics.rs`) carry the agent's north-star acceptance rate, and a zero on

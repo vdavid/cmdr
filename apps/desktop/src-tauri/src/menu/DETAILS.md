@@ -24,27 +24,22 @@ window focus context.
   registers the tracked items, and hands back `MenuItems`.
 - `display_accelerators.rs` (macOS): `set_display_accelerators`, the pass that draws a shortcut the bar can't register
   as a right-aligned, dimmed run on an item's attributed title. See "Display-only accelerators" below.
-- `menu_items.rs`: small shared pieces: `APP_MENU_TITLE`, `pin_tab_label`, `truncate_for_menu_label`, the
-  `SameKindTarget` payload and `same_kind_menu_label` behind "Select all of the same kind"'s live wording, plus
-  `DetachWord` / `detach_label`, which decide whether a row's leave-this-volume item reads `Eject ({name})` or
+- `menu_items.rs`: small shared pieces: `APP_MENU_TITLE`, `resolve` (a crate `LabelText` through `menu_t`),
+  `pin_tab_label`, `same_kind_menu_label` and `undo_trash_menu_label` (the bar's live wordings), plus
+  `detach_word_for_volume_id`, which decides whether a row's leave-this-volume item reads `Eject ({name})` or
   `Disconnect` (a phone gets the second: `adb` has no per-client detach, so nothing is made safe to unplug).
-- `file_context_menu.rs`: the file context menu (`build_context_menu`), its pane facts and result
-  (`ContextMenuPaneFacts`, `ContextMenuResult`, and the empty non-macOS `FileContextInfo`), plus `append_tag_color_group`. Its own file because
-  it is by far the biggest menu here, and the only one whose shape depends on the row, the pane, the cloud provider,
-  and the OS at once. ❗ `context_menu_icons_test.rs`'s guard test `include_str!`s THIS file to check every icon names an
-  item the menu actually builds; a builder moving out of it has to take that `include_str!` along.
-- `menu_structure.rs`: the smaller context menus — breadcrumb (with the `detach_label` item) / parent-row / tab /
-  network-host / function-key-bar / the viewer's text (`build_viewer_context_menu`) — the viewer-window menu (`build_viewer_menu`), and the `ContextMenuShortcuts` /
-  `context_item` vocabulary every popup here shares. A volume switcher row's, a favorite's, and a servers-hub place's
-  actions are NOT here: they're the in-app `Menu`'s, one list in
-  `apps/desktop/src/lib/file-explorer/navigation/row-menu.ts`.
-- `date_sort_menu.rs`: a file list header's Sort by popup (`build_date_sort_menu`): Date modified, Date created, and
-  Date added as check items, the pane's requested one checked, with its own pane-carrying ids and `DateSortMenuPick`.
-- `queue_row_menu.rs`: a queue row's right-click menu (`build_queue_row_context_menu`), built from the entries the
-  queue window lists (`QueueRowMenuEntry`), each item's accelerator looked up by its own COMMAND id
-  (`ContextMenuShortcuts::for_command`), since these items have no menu-bar twin in `menu_id_to_command`.
-- `selection_submenu.rs`: the file context menu's `Selection >` submenu, its rows held as data (`SELECTION_ROWS`) so a
-  unit test can pin their order without building a `muda::Menu`.
+- **Every context menu is data in `cmdr-menu`** (`crates/cmdr-menu/DETAILS.md` § Context menus): its rows for a set of
+  facts, their labels, accelerator sources, and enabled state, and what a pick asks for (`context_click`). The demo
+  draws the same rows. A volume switcher row's, a favorite's, and a servers-hub place's actions are NOT among them:
+  they're the in-app `Menu`'s, one list in `apps/desktop/src/lib/file-explorer/navigation/row-menu.ts`.
+- `context_rows.rs`: rows into muda: `build_popup` for every popup with no OS-filled group, and `append_rows` with a
+  slot filler for the file menu. The header row becomes the disabled `CONTEXT_MENU_TARGET_ID` item.
+- `file_context_menu.rs`: the file context menu (`build_context_menu`): the crate's `file_menu` rows with each macOS
+  `Slot` filled from `FileContextInfo` (`fill_slot`), plus `ContextMenuResult`, the empty non-macOS `FileContextInfo`,
+  and `append_tag_color_group`.
+- `menu_structure.rs`: the viewer-window menu bar (`build_viewer_menu`).
+- `date_sort_menu.rs`: the header Sort by popup's pick event, `DateSortMenuPick` (the popup's rows are the crate's
+  `date_sort_menu`, with pane-carrying ids).
 - `install.rs`: `at_startup`, the single call `lib.rs` makes in `setup`: pin the UI language, build the bar,
   run the macOS AppKit passes, and place the `MenuState` everything else mutates. Order inside is load-bearing.
 - `item_states.rs`: `apply_menu_item_states` (the one writer of every menu item's enabled state, derived from stored
@@ -58,7 +53,7 @@ window focus context.
   post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` and
   `send_native_edit_action` over the pure `native_edit_selector_for` (the actual objc2 FFI lives in `macos_appkit.rs`)
   and `focused_viewer_label` / `viewer_edit_action_for`, which route the viewer bar's own items to the viewer in front.
-- `accelerators.rs`: `frontend_shortcut_to_accelerator` / `frontend_shortcut_to_menu_text` (the crate's conversion for
+- `accelerators.rs`: `frontend_shortcut_to_accelerator` (the crate's bar conversion for
   this platform), `update_menu_item_accelerator` (swapping one on a live item), and the muda-parsing tests.
 - `view_mode_items.rs`: `rebuild_view_mode_items` (full remove/recreate/reinsert when the active pane
   or a shortcut moved) and `sync_view_mode_check_states` (the cheap check-state-only path).
@@ -98,18 +93,15 @@ window focus context.
   "Images on a CONTEXT menu".
 - `provider_logos.rs` (macOS): `PROVIDER_LOGOS`, which provider's logo is which, matched by app bundle ID, embedding the
   SVGs in `provider_logos/`. See "Provider logos on a CONTEXT menu".
-- `context_menu_header.rs`: the file context menu's first line, naming what the menu will act on.
-  `append_context_menu_header` (the disabled item plus its separator, both platforms), the `ContextMenuTargetFacts` the
-  builder takes, the `ContextMenuTarget` the IPC command deserializes (the field's rationale is this feature's, so it
-  lives with the feature rather than beside `PaneContextMenuFacts`), and — macOS only, in a nested `macos` module —
-  `lend_context_menu_header`, which restyles it as a header on the tracking notification. See "The context menu's header
-  line".
+- `context_menu_header.rs`: the file context menu's first line, naming what the menu will act on (its words are the
+  crate's `header_label`): the `ContextMenuTarget` the IPC command deserializes (the field's rationale is this
+  feature's, so it lives with the feature rather than beside `PaneContextMenuFacts`), and, macOS only, in a nested
+  `macos` module, `lend_context_menu_header`, which restyles it as a header on the tracking notification. See "The
+  context menu's header line".
 - `tag_row/` (macOS): the file context menu's Finder tag colors as one row of circles. `model.rs` holds the portable
   rules (the `SWATCHES` color table, layout, hit-testing, glyphs, captions, `find_tag_run`), `view.rs` the `NSView` that
   draws them, and `loan.rs` `lend_tag_row`, which installs the row on the tracking notification. See "The tag row".
 - `tag_icons.rs` (macOS): the circle PNGs for the seven plain tag items, the look the row falls back to.
-- `media_index_items.rs`: `image_index_menu_items`, which decides the image-search group's labels and which of them are
-  clickable.
 - `rebuild.rs`: `rebuild_menu_bar`, which throws the bar away and builds a new one in the current UI language.
 - `mnemonics.rs`: `Mnemonics`, the per-submenu allocator for the Linux underline letter.
 
@@ -184,7 +176,10 @@ looks up the clicked menu item ID via `menu_id_to_command()`, which returns the 
 and a `CommandScope` (App or FileScoped). File-scoped commands check `main_window.is_focused()`
 before emitting. The frontend has one listener that calls `handleCommandExecute(commandId)`.
 
-Exceptions that do NOT use `"execute-command"`:
+Exceptions that do NOT use `"execute-command"`. Every context-menu lane among them is read off the id by
+`cmdr_menu::context::click::context_click` (the answer the browser demo's context menu gets too) and run by
+`dispatch_context_click`; a slot's rows (Open with, Share, tags, the provider) keep their prefix lanes here.
+
 - **CheckMenuItems** (show hidden files, view modes): toggling checked state + emitting would
   double-toggle, so these emit `"settings-changed"` / `"view-mode-changed"` directly
 - **Close tab** (⌘W): checks if a non-main window has focus and closes it instead of emitting
@@ -206,13 +201,13 @@ Exceptions that do NOT use `"execute-command"`:
   bar's `VIEWER_EDIT_COPY_ID` / `VIEWER_SELECT_ALL_ID`: those defer to the search box, this pair always acts on the file
   (`src/routes/viewer/DETAILS.md` § Gotchas)
 - **File list header's Sort by popup**: `date_sort_menu_{left|right}_{modified|created|added}` ids
-  (`DateSortMenuPick::from_menu_id`), emitting `DateSortMenuPick { pane, column }` to the main window. ❗ Never the
+  (`context_click`'s `DateSort`), emitting `DateSortMenuPick { pane, column }` to the main window. ❗ Never the
   bar's `SORT_BY_*_ID`: those reach `menu-sort`, which sorts the FOCUSED pane, and a right-click on the other pane's
   header must sort that one. The frontend ignores a pick of the requested (checked) column
   (`src/lib/file-explorer/views/DETAILS.md`, the date header's Sort by chevron)
-- **Queue row right-click menu**: `queue_row_*` ids (`QueueRowMenuAction::from_menu_id`), emitting
-  `QueueRowContextAction` to the `queue` window (both payload types live in `window_events.rs`, the enum's inherent impl
-  in `queue_row_menu.rs`, so `window_events` never names `menu`), which runs the pick on the row it opened the menu over
+- **Queue row right-click menu**: `queue_row_*` ids (`context_click`'s `QueueRow`), emitting
+  `QueueRowContextAction` to the `queue` window (the action enum, its ids, labels, and commands are the crate's
+  `context::popups::QueueRowMenuAction`, re-exported by `window_events.rs`), which runs the pick on the row it opened the menu over
   (`apps/desktop/src/lib/file-operations/queue/DETAILS.md` § "The row's right-click menu")
 - **Open with** (macOS): items have dynamic IDs like `open-with:com.apple.Xcode` that can't be
   enumerated in `menu_id_to_command`. `on_menu_event` prefix-matches `open-with:` and calls
@@ -265,7 +260,7 @@ Exceptions that do NOT use `"execute-command"`:
   folder" / "Index images here again", `media_index_{exclude,include}_folder`). `show_file_context_menu`
   reads the four live facts into an `ImageIndexMenuState` (`gate::is_enabled` plus
   `network::config::{is_excluded, is_chosen_folder, is_covered_by_parent_folder}`) and the pure
-  `media_index_items::image_index_menu_items` turns them into labels + enabled flags.
+  `cmdr_menu::context::image_index::image_index_menu_items` turns them into labels + enabled flags.
 
   **Decision: an add that would do nothing is DISABLED, never silently accepted.** The veto beats
   membership backend-side, and an ancestor entry already covers a child, so in both cases the add item
@@ -356,7 +351,7 @@ The numpad spelling is the command's SECOND default (`['⌥⇧=', '⌥+']`), not
 **The modifier floor** is where that rule lives. `frontend_shortcut_to_accelerator` answers `None` for any combo
 without one of the three (Shift alone doesn't clear it, since `⇧8` IS `*`), so a bare key can't reach a menu item by
 accident — including through a rebind in Settings > Keyboard shortcuts, which is how one used to. The unfloored
-conversion is `frontend_shortcut_to_menu_text`, and it belongs to popups alone (above).
+conversion is `cmdr_menu::accelerators::to_menu_text`, and it belongs to popups alone (above).
 
 **The second refusal is a key muda can't name** (`is_codeable_key`). muda parses an accelerator into a `Code`, a
 PHYSICAL key, so every shifted character falls in a hole: `+`, `*`, `(`, `_` have no `Code` of their own, only the
@@ -462,12 +457,12 @@ tracking, no remove/reinsert, and no sync: it just reads the registry as it stan
 The frontend sends it. `showFileContextMenu` / `showBreadcrumbContextMenu` (`lib/tauri-commands/file-actions.ts`) put a
 `shortcuts` map in the payload — every command that has a binding right now, as `commandId → combo`, in the frontend's
 canonical spelling. It arrives as `ContextMenuShortcuts`, and each item asks it by MENU id
-(`ContextMenuShortcuts::for_menu_item`), which resolves through `menu_id_to_command`, so an item's label can't come to
-describe a different command than the item runs. `context_item()` takes that id once and uses it for both.
+(`ContextMenuShortcuts::for_menu_item`, through a row's `Shortcut`), which resolves through `menu_id_to_command`, so an item's label can't come to
+describe a different command than the item runs. A row's `Shortcut::OfMenuId` is its own id, so one id builds the item and labels it.
 
 Two things to keep straight:
 
-- ❌ **Never `frontend_shortcut_to_accelerator` here — `frontend_shortcut_to_menu_text` is the popup's door.** A popup's
+- ❌ **Never `frontend_shortcut_to_accelerator` here — `cmdr_menu::accelerators::to_menu_text` is the popup's door.** A popup's
   key equivalents are never registered with the app, so its accelerators are pure display text and a bare `Space` (the
   only place the toggle-selection key is discoverable) or `F5` is fine. The bar's modifier floor would silently drop
   nine of the file menu's fifteen labels.
@@ -486,7 +481,7 @@ drawing a wrong one.
 
 ### The `Selection >` submenu
 
-The file context menu's selection group is a submenu (`selection_submenu.rs`), keyed `menu.context.selection`, holding
+The file context menu's selection group is a submenu (the crate's `SELECTION_ROWS`), keyed `menu.context.selection`, holding
 everything the Select menu bar has plus Toggle selection at the head. Order: Toggle selection, Select all, Deselect all,
 Select all of the same kind, Invert selection, separator, Select files…, Deselect files….
 
@@ -1122,7 +1117,7 @@ selected item would have to land in its own real folder, which one transfer can'
 `plus.square.on.square`, the Linux mnemonic is `D&uplicate`. What the command does once dispatched:
 `apps/desktop/src/lib/file-explorer/pane/DETAILS.md`. The file context menu runs the same group in the same order, with
 `Rename` after `Compress…`; `Compress…` stays on the search-results pane because, like Copy and Move, it writes into
-the other pane. Its ⌥F5 label comes from the registry through `context_item`, like every other row.
+the other pane. Its ⌥F5 label comes from the registry through its row's `Shortcut`, like every other row.
 
 The **creation** group is `New folder…` (F7) then `New file…` (⇧F4), in the File menu and the file context menu alike:
 both create into the active pane's folder, so they read as a pair and stay adjacent. Like `Duplicate` and `Rename`, both

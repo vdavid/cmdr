@@ -39,6 +39,8 @@ keychain, mounts, and human-facing words stay in the app's `network/`.
 - **A rebuilt session names only its OWN dead predecessor** (`retired_session_id`), ❌ never a live one.
 - **smb2 bounds every wait itself**: ❌ no timeout layer of ours.
 - **A path call follows a DFS link only via `or_through_link`**; ❌ a bare `Tree` call fails there.
+- **Every `ClientConfig` ends `..encryption::session_config()`** (encryption, link consent), ❌ never
+  `..Default::default()`.
 - ❗ **A link to another host sends nothing until a person allows the pair** (`link_consent.rs`, DETAILS § "Signing in
   through a link"): ❌ never `FollowAll`.
 - **An xattr is a named stream** (`xattrs.rs`): ❌ never `remove_xattr` to clear a Finder tag (a QNAP keeps it). A copy

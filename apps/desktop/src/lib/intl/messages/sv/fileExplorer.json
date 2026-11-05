@@ -2191,6 +2191,14 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} kan inte kryptera anslutningen och inställningen ”Kräv alltid SMB-kryptering” är aktiverad, så Cmdr stannar kvar på systemanslutningen.",
+  "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
+    "sourceHash": "e4af63d"
+  },
+  "fileExplorer.network.osMountFallback.encryptionRequired": "Det gick inte att ansluta direkt till <shareName>{share}</shareName>, eftersom servern inte kan kryptera anslutningen och inställningen ”Kräv alltid SMB-kryptering” är aktiverad i Cmdr. Du är fortfarande ansluten, men via macOS inbyggda SMB-anslutning, som är mycket långsammare.",
+  "@fileExplorer.network.osMountFallback.encryptionRequired": {
+    "sourceHash": "14a8cb4"
+  },
   "fileExplorer.network.osMountFallback.negotiationInvalid": "Det gick inte att ansluta direkt till <shareName>{share}</shareName>, eftersom servern inte bekräftade de säkerhetsinställningar som hade avtalats med Cmdr. Det kan bero på en server som krånglar, men också på att någon manipulerar anslutningen. Du är fortfarande ansluten, men via macOS inbyggda SMB-anslutning, som är mycket långsammare.",
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
     "sourceHash": "758e268"

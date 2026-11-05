@@ -480,13 +480,18 @@ pub(crate) fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
         let raw = form.chunk_raw(row.byte_offset, chunk.end_byte_offset)?;
         let chunk_raw = raw.as_deref().map(|raw| (row.byte_offset, raw));
         match form.piece(row, chunk.end_byte_offset, chunk_raw, lo, hi)? {
-            Piece::Row { body, .. } => emit.push(&body)?,
+            Piece::Row { body, newline } => {
+                emit.push(&body)?;
+                if row.ends_at_newline && hi == row.text.len() && chunk.end == ChunkEnd::EndOfFile {
+                    emit.end_line(newline);
+                }
+            }
             Piece::Stop(walked) => return Ok(walked),
         }
         if cancel.load(Ordering::Relaxed) {
             return Err(ViewerError::Cancelled);
         }
-        return emit.finish(/*keep_trailing_newline=*/ false);
+        return emit.finish(/*keep_trailing_newline=*/ true);
     }
 
     // Multi-row streaming read. First chunk is keyed by start row (only call that
@@ -584,11 +589,21 @@ pub(crate) fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
                 // no trailing delimiter (the range is half-open). Exits the walk here, so
                 // it never reaches the `end_line()` below.
                 let end_byte = clamp_utf16_offset_to_byte(line, end_offset_utf16);
+                let is_files_last_row = index + 1 == chunk.rows.len() && chunk.end == ChunkEnd::EndOfFile;
                 match form.piece(row, row_end, chunk_raw, 0, end_byte)? {
-                    Piece::Row { body, .. } => emit.push(&body)?,
+                    Piece::Row { body, newline } => {
+                        emit.push(&body)?;
+                        // ❗ The end of the file's LAST row is the end of the file: no row
+                        // follows a final newline for a caret to sit on, so a selection
+                        // reaching it (⌘A on a counted file sends exactly this) carries
+                        // that newline, and a whole-file copy stays byte-identical.
+                        if row.ends_at_newline && end_byte == line.len() && is_files_last_row {
+                            emit.end_line(newline);
+                        }
+                    }
                     Piece::Stop(walked) => return Ok(walked),
                 }
-                return emit.finish(/*keep_trailing_newline=*/ false);
+                return emit.finish(/*keep_trailing_newline=*/ true);
             } else {
                 0
             };
@@ -601,7 +616,7 @@ pub(crate) fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
             // line that had to change for rows: ❗ a break Cmdr made is NOT a newline,
             // so joining a continuing row to the next would put a line break in the
             // clipboard and in save-as that the file never contained.
-            if !row.continues {
+            if row.ends_at_newline {
                 emit.end_line(newline);
             }
             lines_since_cancel_check += 1;
@@ -621,11 +636,10 @@ pub(crate) fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
         next_target = SeekTarget::ByteOffset(chunk_end_offset);
     }
 
-    // For the Eof case (or a short file that ended before reaching an explicit end), the
-    // newline owed to the very last line emitted is dropped rather than paid: half-open
-    // semantics say "include the last line's full content but not a final implicit
-    // newline boundary marker beyond it".
-    emit.finish(/*keep_trailing_newline=*/ false)
+    // The walk ran off the end of the file (an `Eof` end, or an explicit end past the last
+    // row), so the range holds every byte to EOF: the last row's newline is paid exactly
+    // when the file has one, since only a row that `ends_at_newline` owes one.
+    emit.finish(/*keep_trailing_newline=*/ true)
 }
 
 #[cfg(test)]

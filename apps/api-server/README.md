@@ -12,7 +12,7 @@ User clicks "Buy" on getcmdr.com
   → Paddle checkout
   → User pays → Paddle sends webhook to this server
   → Server generates Ed25519-signed license key
-  → Server emails license key to user via Resend
+  → Server emails license key to user via SMTP2Go (EU endpoint)
   → User enters key in Cmdr app
   → App validates signature locally (no server call needed)
 ```
@@ -30,8 +30,9 @@ in [CLAUDE.md](CLAUDE.md).
    [`verification.rs`](../desktop/src-tauri/src/licensing/verification.rs): the dev key under `debug_assertions`, the
    production key under `not(debug_assertions)`. That mirrors `LICENSE_SERVER_URL`, so a build trusts exactly the server
    it talks to. The private halves go to `.dev.vars` (dev, step 10) and `wrangler secret put` (production, step 9).
-4. **Resend**: Create API key at https://resend.com/api-keys. Add `getcmdr.com` domain at https://resend.com/domains
-   (adds DNS records to Cloudflare automatically).
+4. **SMTP2Go**: Verify `getcmdr.com` as a sender domain (its DNS records go in Cloudflare), then create an API key in
+   the dashboard allowed ONLY `/email/send` and `/stats/email_cycle`. A broader key can delete the sending domain;
+   [DETAILS.md](DETAILS.md#configuration) says why.
 5. **Paddle**: Create accounts at https://paddle.com (live) and https://sandbox-vendors.paddle.com (sandbox).
 6. **Paddle (both environments)**: Create product "Cmdr" (standard tax category), then one price:
    - Commercial license: $59, one-time, `tax_mode: external` so VAT is added on top. Point both
@@ -50,7 +51,7 @@ in [CLAUDE.md](CLAUDE.md).
    npx wrangler secret put PADDLE_API_KEY_LIVE
    npx wrangler secret put PADDLE_API_KEY_SANDBOX
    npx wrangler secret put ED25519_PRIVATE_KEY
-   npx wrangler secret put RESEND_API_KEY
+   npx wrangler secret put SMTP2GO_API_KEY
    npx wrangler secret put PADDLE_ENVIRONMENT              # "live"
    npx wrangler secret put PRICE_ID_COMMERCIAL_PERPETUAL   # live price ID of the $59 one-time price
    npx wrangler secret put PRICE_ID_COMMERCIAL_SUBSCRIPTION # retired $59/year price; stays mapped, one live customer

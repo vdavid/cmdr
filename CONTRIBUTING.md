@@ -378,7 +378,7 @@ See the ngrok generic tooling doc for API recipes.
 ## API server local dev
 
 To run the API server locally (for testing license activation, generating test keys, etc.), you need a `.dev.vars` file
-with Paddle and Resend secrets. See the [API server README](apps/api-server/README.md#local-development) for the full
+with Paddle and SMTP2Go secrets. See the [API server README](apps/api-server/README.md#local-development) for the full
 setup. Ask a maintainer for the current values if you don't have dashboard access.
 
 ## Self-hosted GitHub Actions macOS runner (maintainers)

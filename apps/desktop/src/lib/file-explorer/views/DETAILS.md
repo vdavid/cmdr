@@ -214,6 +214,10 @@ its old rows mounted until the replacement range lands, so an index alone is not
 listing followed quickly by row zero from the new one must remain two single taps. Otherwise the second tap can open the
 new listing's `..` row and immediately navigate back to its parent.
 
+A touch or pen held still on a row presses it as a mouse does: `row-activation.ts`'s `onPointerDown` hands the press to
+`../drag/touch-hold.ts`, which calls the view's own `handleMouseDown` (the `hold` dep) once the finger stays put, so the
+select and drag rules stay one code path. Why and how the touch drag then runs: `../drag/DETAILS.md` § Touch drags.
+
 **Key**: Data lives in the Rust listing cache (`cmdr-listing`). Frontend fetches visible ranges on-demand via
 `getFileRange(listingId, start, count, includeHidden)`.
 
@@ -319,11 +323,12 @@ from a full-width header, and every column would drift.
 bindings observe the BORDER box, which a scrollbar appearing doesn't move, so they kept the pre-overflow numbers. The
 action observes the content box, so a window resize, a font-scale change, and a listing that starts or stops overflowing
 all re-measure without a manual trigger. `BriefList` reads its client box through the same action. The number reaches
-CSS as `--spacing-scrollbar-width` (declared `0px` in `app.css`, overridden inline on `.header-row`), and
-`FullListHeader` spends it as `padding-right: calc(var(--spacing-md) + var(--spacing-scrollbar-width))`. The header's
-background still runs edge to edge, over the scrollbar's column, as a native list header does. It travels as a custom
-property rather than a ready-made `padding-right` so the `calc` stays in the stylesheet, and because jsdom drops an
-inline `calc()` containing a `var()` (which is why `FullListHeader.test.ts` asserts on the property).
+CSS as `--spacing-scrollbar-width` (overridden inline on `.header-row`: the lists style their bars, so the `:root` value
+`#lib/ui/scrollbar-width.ts` measures from an unstyled probe isn't theirs), and `FullListHeader` spends it as
+`padding-right: calc(var(--spacing-md) + var(--spacing-scrollbar-width))`. The header's background still runs edge to
+edge, over the scrollbar's column, as a native list header does. It travels as a custom property rather than a
+ready-made `padding-right` so the `calc` stays in the stylesheet, and because jsdom drops an inline `calc()` containing
+a `var()` (which is why `FullListHeader.test.ts` asserts on the property).
 
 **Decision**: both lists style `::-webkit-scrollbar` (`src/app-file-list.css`), so the bar is always visible while the
 list overflows and takes its own strip instead of floating over rows. **Why**: macOS overlay scrollbars fade out and

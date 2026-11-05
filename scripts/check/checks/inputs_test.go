@@ -449,6 +449,9 @@ var realTreeReadingTests = map[string][]string{
 	"TestCommittedFrameworkVersionsMatchTheBundleFloor":        {"apps/desktop/src-tauri/tauri.conf.json", "scripts/check/checks/macos-framework-versions.json"},
 	"TestDiskImageLaneMatchesTheDiskImageNextestGroup":         {".config/nextest.toml"},
 	"TestEveryCheckGetsItsOwnRunnerSources":                    {"scripts/check/checks/registry.go"},
+	"TestGatedCheckFiltersCoverTheirChecks":                    {".github/workflows/ci.yml", "scripts/check/checks"},
+	"TestLaneCheckInputsFlagAMissingCheckInput":                {".github/workflows", "scripts/check/checks"},
+	"TestLaneCheckInputsFlagAMissingLaneStepInput":             {".github/workflows", "scripts/check/checks"},
 	"TestGlobalInputsCoverWhatNoCheckCanReach":                 {"scripts/check/checks"},
 	"TestGoCompileLanesReadOnlyGoSources":                      {"scripts", "apps/desktop/scripts"},
 	"TestGoTestsInputsCoverTheRealTreeItsTestsRead":            {"scripts/check/checks"},
@@ -485,7 +488,17 @@ var realTreeReadingTests = map[string][]string{
 	"TestSmbPinnedPortsCoverEveryVendoredService":              {smbComposeRel},
 	// Reads only the crate directories `fixtureIntegrationFilter` stats to
 	// decide whether a `package(…)` clause parses.
-	"TestEveryOwnLaneFixtureHasALaneOfItsOwn":                      {"Cargo.toml", "crates/cmdr-webdav/Cargo.toml"},
+	"TestEveryOwnLaneFixtureHasALaneOfItsOwn": {"Cargo.toml", "crates/cmdr-webdav/Cargo.toml"},
+	// The Rust test scope's rule table against the tree (`rust-test-scope_test.go`): the
+	// member manifests, every member's sources (the out-of-crate read scan), and ci.yml's
+	// `rust` filter.
+	"TestEveryOutOfCrateReadIsClassified":                          {"Cargo.toml", "apps/desktop/src-tauri/src", "crates/cmdr-fs/src"},
+	"TestNoUnseenManifestDirHops":                                  {"Cargo.toml", "apps/desktop/src-tauri/src", "crates/cmdr-fs/src"},
+	"TestEveryRustFilterPathIsClassified":                          {".github/workflows/ci.yml"},
+	"TestRustScopeInputsAreInTheRustFilter":                        {".github/workflows/ci.yml"},
+	"TestEveryWorkspaceMemberIsOwned":                              {"Cargo.toml", "crates/cmdr-fs/Cargo.toml"},
+	"TestRustScopeReadersAreWorkspaceMembers":                      {"Cargo.toml", "crates/cmdr-fs/Cargo.toml"},
+	"TestRustTestScopeOnTheRealWorkspace":                          {"Cargo.toml", "crates/cmdr-webdav/Cargo.toml", "apps/desktop/src-tauri/Cargo.toml"},
 	"TestSiblingToolDirsAreFingerprintedByTheirCheck":              {"scripts/check-a11y-contrast", "scripts/check-css-unused", "scripts/check-btn-restyle"},
 	"TestVendoredCreditsCoverOnlyFilesTheNoticesCheckFingerprints": {"scripts/check/checks/registry.go", "scripts/check/checks/third-party-vendored.json"},
 }

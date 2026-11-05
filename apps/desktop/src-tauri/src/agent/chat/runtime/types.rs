@@ -128,6 +128,9 @@ pub struct TurnTally {
     /// What the turn's completed calls cost, estimated by `agent::pricing` (micro-USD; an
     /// unpriced call adds nothing). What the spend pause compares against its threshold.
     pub cost_micros: i64,
+    /// How many times a model call was sent again because the provider was overloaded
+    /// (`retry.rs`), for the turn's analytics: how busy each provider and model runs.
+    pub busy_retries: u32,
 }
 
 impl TurnTally {

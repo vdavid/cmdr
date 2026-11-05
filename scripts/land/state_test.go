@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 func TestNextStartStep(t *testing.T) {
@@ -157,6 +158,41 @@ func TestPRBodyListsEveryCommit(t *testing.T) {
 		"### docs: the search guide covers size\n\nTwo lines\nof body\n"
 	if got := prBody([]commit{first, second, third}); got != want {
 		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestPRBodyPastGitHubsLimitListsSubjectsAndSaysWhereTheMessagesAre(t *testing.T) {
+	long := commit{Subject: "feat: a huge change", Body: strings.Repeat("x", maxPRBodyBytes)}
+	got := prBody([]commit{long, second})
+	want := prBodyTooLongNote + "\n\n- feat: a huge change\n- fix: the size filter rounds like Finder\n"
+	if got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestPRBodyWithTooManySubjectsTruncatesOnARuneBoundary(t *testing.T) {
+	// Two-byte runes, offset by one byte, so a cut at the byte limit would split one.
+	commits := make([]commit, 0, 40_000)
+	for range 40_000 {
+		commits = append(commits, commit{Subject: "fix: é"})
+	}
+	got := prBody(commits)
+	if len(got) > maxPRBodyBytes {
+		t.Fatalf("the body is %d bytes, past the %d GitHub takes", len(got), maxPRBodyBytes)
+	}
+	if !utf8.ValidString(got) {
+		t.Fatal("the body was cut inside a rune")
+	}
+	if !strings.HasPrefix(got, prBodyTooLongNote) || !strings.HasSuffix(got, "\n…\n") {
+		t.Errorf("want the note first and an ellipsis last, got the tail %q", got[len(got)-40:])
+	}
+}
+
+func TestPRBodyAtExactlyTheLimitIsKeptWhole(t *testing.T) {
+	// "### " + subject + "\n" is 5 bytes around the subject.
+	exact := commit{Subject: strings.Repeat("y", maxPRBodyBytes-5)}
+	if got := prBody([]commit{exact}); got != "### "+exact.Subject+"\n" {
+		t.Errorf("a body of exactly %d bytes must stay whole, got %d bytes", maxPRBodyBytes, len(got))
 	}
 }
 

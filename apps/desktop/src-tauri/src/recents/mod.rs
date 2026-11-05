@@ -3,9 +3,9 @@
 //! Three dialogs keep one: Search ("Recent searches"), Selection ("Recent
 //! selections"), and Go to path ("Recent paths"). They agree on everything except
 //! what an entry IS and what makes two entries the same, so that's all
-//! [`RecentEntry`] asks for; [`RecentsFile`] owns the rest: newest first, dedupe on
-//! add, cap from the tail, one durable JSON file, and a quarantine for a file it
-//! can't read.
+//! [`RecentEntry`] asks for; [`RecentsFile`] owns the rest: one durable JSON file and
+//! a quarantine for a file it can't read, over the list rules every host shares
+//! (newest first, dedupe on add, cap from the tail), which are `cmdr-recents`'.
 //!
 //! Declare one per list as a `static` (`RecentsFile::new()` is `const`) and call it
 //! from the IPC layer. The cap is a per-call argument, never a property of the
@@ -21,11 +21,14 @@ use serde::de::DeserializeOwned;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
+use cmdr_recents::{RecentItem, add_to, dedupe_keeping_newest, remove_from, trim_to};
+
 use crate::ignore_poison::IgnorePoison;
 
 /// One entry in a recents list, plus the handful of facts [`RecentsFile`] needs to
-/// keep a list of them.
-pub trait RecentEntry: Clone + Send + Serialize + DeserializeOwned + 'static {
+/// keep a file of them. Its id and dedupe key are [`cmdr_recents::RecentItem`]'s, the
+/// list rules' half.
+pub trait RecentEntry: RecentItem + Clone + Send + Serialize + DeserializeOwned + 'static {
     /// Filename inside `{app_data_dir}/`.
     const FILENAME: &'static str;
     /// `log::warn!` target for this list's diagnostics.
@@ -38,17 +41,6 @@ pub trait RecentEntry: Clone + Send + Serialize + DeserializeOwned + 'static {
     /// Bump when this list's on-disk shape changes in a way an older build can't
     /// read. A file stamped with an unknown version is quarantined, not migrated.
     const SCHEMA_VERSION: u32 = 1;
-
-    /// The entry's unique id, which the frontend removes by.
-    fn id(&self) -> &str;
-
-    /// Replaces the id. Called only when a caller hands over an id the list already
-    /// holds, so two rows can't share one.
-    fn set_id(&mut self, id: String);
-
-    /// What makes two entries "the same thing". Adding an entry drops every earlier
-    /// one with an equal key, so the newest copy ends up on top.
-    fn dedupe_key(&self) -> String;
 }
 
 /// A recents list of `E`, cached in memory and backed by one JSON file in the app
@@ -113,7 +105,7 @@ impl<E: RecentEntry> RecentsFile<E> {
 
     pub(crate) fn add_at(&self, path: Option<&Path>, entry: E, max_count: usize) {
         self.update(path, "an add", |entries| {
-            add_to(entries, entry, max_count);
+            add_to(entries, entry, max_count, || uuid::Uuid::new_v4().to_string());
             true
         });
     }
@@ -141,19 +133,14 @@ impl<E: RecentEntry> RecentsFile<E> {
                 changed |= change(entry);
             }
             if changed {
-                let mut seen = std::collections::HashSet::new();
-                entries.retain(|e| seen.insert(e.dedupe_key()));
+                dedupe_keeping_newest(entries);
             }
             changed
         });
     }
 
     pub(crate) fn apply_max_count_at(&self, path: Option<&Path>, max_count: usize) {
-        self.update(path, "a cap change", |entries| {
-            let before = entries.len();
-            trim_to(entries, max_count);
-            entries.len() != before
-        });
+        self.update(path, "a cap change", |entries| trim_to(entries, max_count));
     }
 
     /// Mutates the cached list, then flushes it. `change` returns `false` to say
@@ -206,7 +193,7 @@ impl<E: RecentEntry> RecentsFile<E> {
     }
 
     /// Puts `entry` on top, dropping any earlier entry with the same
-    /// [`RecentEntry::dedupe_key`], and trims the tail to `max_count`.
+    /// [`RecentItem::dedupe_key`], and trims the tail to `max_count`.
     /// `max_count = 0` empties the list and drops the entry.
     ///
     /// The disk write is best-effort: a failure is logged and the in-memory list
@@ -240,48 +227,6 @@ impl<E: RecentEntry> RecentsFile<E> {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Pure list operations, so dedupe and cap are testable without a file.
-// ---------------------------------------------------------------------------
-
-/// Puts `entry` on top, dropping earlier entries with the same dedupe key, and
-/// enforces `max_count` from the tail (the oldest end).
-fn add_to<E: RecentEntry>(entries: &mut Vec<E>, mut entry: E, max_count: usize) {
-    // A cap of zero means the user wants no list at all: drop what's there and the
-    // new entry with it.
-    if max_count == 0 {
-        entries.clear();
-        return;
-    }
-
-    // Drop every earlier copy, not just the first: a list that somehow grew two
-    // rows for one key heals here.
-    let key = entry.dedupe_key();
-    entries.retain(|e| e.dedupe_key() != key);
-
-    // Keep ids unique even when the caller hands over one we already hold.
-    if entries.iter().any(|e| e.id() == entry.id()) {
-        entry.set_id(uuid::Uuid::new_v4().to_string());
-    }
-
-    entries.insert(0, entry);
-    trim_to(entries, max_count);
-}
-
-/// Drops entries past `max_count`, oldest first. A cap of zero empties the list.
-fn trim_to<E>(entries: &mut Vec<E>, max_count: usize) {
-    if entries.len() > max_count {
-        entries.truncate(max_count);
-    }
-}
-
-/// Returns whether anything was actually removed.
-fn remove_from<E: RecentEntry>(entries: &mut Vec<E>, id: &str) -> bool {
-    let before = entries.len();
-    entries.retain(|e| e.id() != id);
-    entries.len() != before
-}
-
 #[cfg(test)]
 pub(crate) mod test_support {
     use super::*;
@@ -298,7 +243,9 @@ pub(crate) mod test_support {
         const LOG_TARGET: &'static str = "recents::test";
         const LOG_NAME: &'static str = "test recents";
         const STATE_FILE: crate::state_recovery::StateFile = crate::state_recovery::StateFile::SearchHistory;
+    }
 
+    impl RecentItem for TestEntry {
         fn id(&self) -> &str {
             &self.id
         }
@@ -333,105 +280,6 @@ mod tests {
 
     fn list() -> RecentsFile<TestEntry> {
         RecentsFile::new()
-    }
-
-    // -- add_to: dedupe, move-to-top, cap --
-
-    #[test]
-    fn add_puts_the_newest_entry_on_top() {
-        let mut entries = Vec::new();
-        add_to(&mut entries, entry("a"), 10);
-        add_to(&mut entries, entry("b"), 10);
-        assert_eq!(keys(&entries), ["b", "a"]);
-    }
-
-    #[test]
-    fn add_dedupes_by_key_and_moves_to_top() {
-        let mut entries = Vec::new();
-        add_to(&mut entries, entry("a"), 10);
-        add_to(&mut entries, entry("b"), 10);
-
-        let again = entry("a");
-        let again_id = again.id.clone();
-        add_to(&mut entries, again, 10);
-
-        assert_eq!(keys(&entries), ["a", "b"], "the duplicate should have collapsed");
-        assert_eq!(entries[0].id, again_id, "the newest copy should win");
-    }
-
-    #[test]
-    fn add_collapses_every_earlier_copy_of_a_key() {
-        // Self-heal: a list that somehow holds two copies of one key comes back with
-        // one, not one fewer.
-        let mut entries = vec![entry("a"), entry("a"), entry("b")];
-        add_to(&mut entries, entry("a"), 10);
-        assert_eq!(keys(&entries), ["a", "b"]);
-    }
-
-    #[test]
-    fn add_enforces_the_cap_by_dropping_the_oldest() {
-        let mut entries = Vec::new();
-        for i in 0..5 {
-            add_to(&mut entries, entry(&format!("q{i}")), 3);
-        }
-        assert_eq!(keys(&entries), ["q4", "q3", "q2"]);
-    }
-
-    #[test]
-    fn add_with_a_zero_cap_empties_the_list() {
-        let mut entries = vec![entry("a")];
-        add_to(&mut entries, entry("b"), 0);
-        assert!(entries.is_empty(), "a zero cap should clear the list");
-    }
-
-    #[test]
-    fn add_assigns_a_fresh_id_when_the_caller_collides() {
-        let mut entries = Vec::new();
-        let mut first = entry("a");
-        first.id = "fixed-id".to_string();
-        add_to(&mut entries, first, 10);
-
-        let mut second = entry("b");
-        second.id = "fixed-id".to_string();
-        add_to(&mut entries, second, 10);
-
-        assert_eq!(entries.len(), 2);
-        assert_ne!(entries[0].id, entries[1].id);
-    }
-
-    // -- trim_to --
-
-    #[test]
-    fn trim_drops_the_oldest() {
-        let mut entries = vec![entry("c"), entry("b"), entry("a")];
-        trim_to(&mut entries, 2);
-        assert_eq!(keys(&entries), ["c", "b"]);
-    }
-
-    #[test]
-    fn trim_to_zero_empties_the_list() {
-        let mut entries = vec![entry("a")];
-        trim_to(&mut entries, 0);
-        assert!(entries.is_empty());
-    }
-
-    #[test]
-    fn trim_leaves_a_list_under_the_cap_alone() {
-        let mut entries = vec![entry("b"), entry("a")];
-        trim_to(&mut entries, 10);
-        assert_eq!(keys(&entries), ["b", "a"]);
-    }
-
-    // -- remove_from --
-
-    #[test]
-    fn remove_reports_whether_it_found_anything() {
-        let mut entries = vec![entry("a")];
-        entries[0].id = "abc".to_string();
-
-        assert!(remove_from(&mut entries, "abc"));
-        assert!(entries.is_empty());
-        assert!(!remove_from(&mut entries, "abc"), "a second remove finds nothing");
     }
 
     // -- entries(limit) --

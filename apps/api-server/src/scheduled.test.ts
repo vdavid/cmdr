@@ -12,23 +12,24 @@ import { ERROR_REPORT_PREFIX, EVICTION_MIN_AGE_DAYS, TOTAL_BYTES_KEY } from './t
 import { INTAKE_PAUSED_KEY } from './telemetry/error-report-intake'
 import { createBaseEnv, createMockD1 } from './cron-test-helpers'
 import { createSqliteD1 } from './sqlite-d1-test-helper'
+import type { EmailMessage } from './email/send'
 
 /** Fixtures age relative to now, so eviction eligibility never depends on the calendar. */
 function daysAgo(days: number): Date {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
 }
 
-// Mock Resend: intercept email sends
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock stands in for Resend's send; a precise signature adds no test value
-const mockSend = vi.fn<any>(() => Promise.resolve({ id: 'test-email-id' }))
-vi.mock('resend', () => ({
-  Resend: class {
-    emails = { send: mockSend }
-  },
+// Intercept email sends at our one door, so no email leaves the test.
+const mockSend = vi.hoisted(() => vi.fn<typeof import('./email/send').sendEmail>(() => Promise.resolve()))
+vi.mock('./email/send', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./email/send')>()),
+  sendEmail: mockSend,
 }))
 
-function lastEmailCall(): { subject: string; to: string; from: string; html: string } {
-  return mockSend.mock.lastCall?.[0] as { subject: string; to: string; from: string; html: string }
+function lastEmailCall(): EmailMessage {
+  const message = mockSend.mock.lastCall?.[1]
+  if (!message) throw new Error('No email was sent')
+  return message
 }
 
 beforeEach(() => {

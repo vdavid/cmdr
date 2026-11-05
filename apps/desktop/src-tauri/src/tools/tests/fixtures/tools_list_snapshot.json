@@ -987,11 +987,11 @@
           },
           "modifiedAfter": {
             "type": "string",
-            "description": "ISO date, for example \"2025-01-01\""
+            "description": "ISO date, for example \"2025-01-01\": files modified on or after the start of that day in the user's local time zone"
           },
           "modifiedBefore": {
             "type": "string",
-            "description": "ISO date"
+            "description": "ISO date: files modified before the start of that day in the user's local time zone"
           },
           "type": {
             "type": "string",
@@ -1812,7 +1812,7 @@
     },
     {
       "name": "propose_rename_plan",
-      "description": "Stage a same-folder image-file rename plan for the user to review; it changes nothing and approves nothing. At most 200 rows.",
+      "description": "Stage a rename plan for the files of ONE folder, on any connected volume, for the user to review; it changes nothing and approves nothing. Each row's volumeId comes from a pane or a location. A file that doesn't exist stays in the review, marked missing. At most 200 rows.",
       "inputSchema": {
         "type": "object",
         "properties": {

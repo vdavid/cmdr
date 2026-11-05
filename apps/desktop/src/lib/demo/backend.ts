@@ -7,18 +7,30 @@
 import type { AnswerTable, Payload } from './answer-types.js'
 import { appAnswers, rawAnswers, silentCommands } from './answers.js'
 import { startListingEngine, type ListingEngineHandle } from './listing.js'
-import { startMenuEngine, type MenuEngineHandle } from './menu-engine.js'
+import { createContextMenuHost, type ContextMenuHost } from './context-menu.js'
+import { startMenuEngine, type ContextPopup, type MenuEngineHandle } from './menu-engine.js'
 import { pluginHandler } from './plugins.js'
 import { openInBrowserTab } from './opener.js'
 import { noteUnanswered } from './unanswered.js'
-import { demoEntries } from './demo-tree.js'
+import type { TimedOut } from '#lib/ipc/bindings.js'
 import { demoPath, volumeAnswers } from './volumes.js'
+import { createDragSessions } from './drag-session.js'
 import { createWindowHost, type WindowHost } from './windows.js'
 
 type Handler = (payload: Payload) => unknown
 
 /** Where an event goes: everyone (`emit`), or the webviews of one label (`emit_to`). */
 export type EventTarget = { kind: 'everyone' } | { kind: 'label'; label: string }
+
+/**
+ * Which webview an invoke came from, and where its pointer last was (its frame's CSS pixels): what
+ * a right-click menu needs to open over the window it was asked from, at the pointer, as a native
+ * popup does. `null` before the frame saw a pointer.
+ */
+export interface InvokeOrigin {
+  label: string
+  pointer: { x: number; y: number } | null
+}
 
 /** One webview attached to the backend: its label, and how to hand it an event. */
 export interface DemoWebview {
@@ -28,7 +40,7 @@ export interface DemoWebview {
 
 export interface DemoBackend {
   /** Answers one IPC call (snake_case wire name, JSON-shaped payload), as the Rust process would. */
-  invoke(cmd: string, payload: Payload): Promise<unknown>
+  invoke(cmd: string, payload: Payload, origin?: InvokeOrigin): Promise<unknown>
   /** Sends an event to the attached webviews, as Tauri's `emit` / `emit_to` do. */
   emit(event: string, payload: unknown, target: EventTarget): void
   /** Attaches a webview to the event fan-out. Returns the detach. */
@@ -43,9 +55,6 @@ export interface DemoBackend {
 
 /** The engine's own notices, which no Tauri listener knows (`crates/cmdr-listing-wasm/src/viewer.rs`). */
 const DEMO_EVENT_PREFIX = 'demo://'
-
-/** Every file in the demo tree: what Enter opens in the viewer. */
-const demoFiles = new Set(demoEntries.filter((entry) => entry.kind === 'file').map((entry) => entry.path))
 
 function camelCase(snake: string): string {
   return snake.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())
@@ -106,21 +115,48 @@ export function createDemoBackend(): DemoBackend {
   })
   // The backend lives in the top frame, which is the main window.
   windows.mountMainWindowLights()
+  // Drags happen in the main window, the only one with file panes; its events go there, as wry's do.
+  const drags = createDragSessions(window, (event, payload) => {
+    emit(event, payload, { kind: 'label', label: 'main' })
+  })
   const menu = startMenuEngine()
 
   // The demo's "default app" for a file is Cmdr's own viewer: Enter opens it, through the event the
   // main window already answers (`open-file-viewer`). A folder or package keeps `openPath`'s refusal.
-  function openInViewer(payload: Payload): boolean {
+  // What's a file is the live volume's answer (`stat_paths_kinds`), so a file a copy, move, or
+  // rename landed opens too, and one a delete removed doesn't.
+  async function openInViewer(payload: Payload): Promise<boolean> {
     const path = demoPath(String(payload.path))
-    if (!demoFiles.has(path)) return false
+    const kinds = (await engine.invoke('stat_paths_kinds', { paths: [path] })) as TimedOut<(boolean | null)[]>
+    if (kinds.data[0] !== false) return false
     emit('open-file-viewer', { path }, { kind: 'label', label: 'main' })
     return true
   }
 
-  async function invoke(cmd: string, payload: Payload): Promise<unknown> {
-    if (cmd === 'open_path' && openInViewer(payload)) return null
-    const handler = windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
+  // The right-click menus, drawn in this (the top) frame the first time one opens.
+  let contextMenus: ContextMenuHost | undefined
+
+  /**
+   * A `show_*` command: the engine's rows, drawn at the anchor the app named (a keyboard-opened
+   * menu) or at the pointer, in the top frame's pixels. Answers `null` once it's up, as the
+   * native command returns while its menu tracks.
+   */
+  async function openPopup(cmd: string, payload: Payload, origin: InvokeOrigin): Promise<null> {
+    const popup: ContextPopup = await menu.popup(cmd, payload, origin.label)
+    const frame = origin.label === 'main' ? undefined : windows.frame(origin.label)
+    const offset = frame?.getBoundingClientRect() ?? { left: 0, top: 0 }
+    const point = popup.anchor ?? origin.pointer ?? { x: 0, y: 0 }
+    contextMenus ??= createContextMenuHost({ menu, emit, invoke, windows })
+    contextMenus.open(popup, { x: point.x + offset.left, y: point.y + offset.top }, popup.anchor !== null)
+    return null
+  }
+
+  async function invoke(cmd: string, payload: Payload, origin?: InvokeOrigin): Promise<unknown> {
+    if (cmd === 'open_path' && (await openInViewer(payload))) return null
+    const handler =
+      drags.handler(cmd) ?? windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
     if (handler) return handler(payload)
+    if (await menu.opensPopup(cmd)) return openPopup(cmd, payload, origin ?? { label: 'main', pointer: null })
     if (await menu.handles(cmd)) return menu.invoke(cmd, payload)
     if (await engine.handles(cmd)) return engine.invoke(cmd, payload)
     return noteUnanswered(cmd, payload)

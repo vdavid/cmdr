@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "{provider} 现在很忙，正在重试（第 {attemptText} 次，共 {attemptsText} 次）…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "你的 AI 提供方现在很忙，正在重试（第 {attemptText} 次，共 {attemptsText} 次）…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "这段聊天已经有点长了，开一段新的能让回复更快、更专注。",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -735,6 +743,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "你的 AI 提供方拒绝了这个请求：你的套餐上限比 Cmdr 的一个请求还小，因为每个请求都会带上 Cmdr 的指令。把消息写短也没用。可以换一个更大的套餐，或者在“设置”中换一个提供方。",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "{provider} 现在太忙，试了几次还是没能回答。等几分钟，再重新发送你的消息。",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "你的 AI 提供方现在太忙，试了几次还是没能回答。等几分钟，再重新发送你的消息。",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "这次回答在完成前达到了限制，试着问一些更具体的问题吧。",
   "@askCmdr.error.budgetExhausted": {

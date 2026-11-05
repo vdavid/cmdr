@@ -35,7 +35,7 @@ export type SaleNoticeOutcome =
   | 'not_completed'
   /** A $0 purchase (a 100% discount): a license handed out, not a sale. */
   | 'free'
-  /** Paddle or Resend failed. The claim is released, so a backfill run can retry. */
+  /** Paddle or SMTP2Go failed. The claim is released, so a backfill run can retry. */
   | 'failed'
 
 /** Send the sale notice for one Paddle transaction. Never throws. */
@@ -76,7 +76,7 @@ async function notifySaleUnsafe(env: Bindings, transactionId: string): Promise<S
     await sendSaleNotice({
       notice: { ...details, saleNumber, paddleEnvironment: paddleConfig.environment },
       to,
-      resendApiKey: env.RESEND_API_KEY,
+      smtp2goApiKey: env.SMTP2GO_API_KEY,
     })
   } catch (error) {
     await releaseSaleNotice(env.TELEMETRY_DB, transactionId, claimedAt)

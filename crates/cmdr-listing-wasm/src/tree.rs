@@ -161,6 +161,13 @@ impl DemoTree {
         if let Some(home) = self.home {
             volume = volume.standing_in_for_own_disk(home);
         }
+        // Each link knows where it points, so ⌘F resolves a scope through it as the
+        // desktop's `realpath` does (`InMemoryVolume::canonicalize`).
+        for entry in self.entries.iter().filter(|e| e.kind == DemoKind::Symlink) {
+            if let Some(target) = &entry.symlink_target {
+                volume = volume.with_link_target(Path::new(&entry.path), Path::new(target));
+            }
+        }
         // Every file reads as many bytes as its listing says: its stored ones, or
         // generated ones seeded from its path, so a copy moves real-sized data without
         // the page holding gigabytes (`crates/cmdr-fs/src/volume/in_memory/device.rs`).

@@ -207,10 +207,33 @@ impl DemoMenuBar {
         serde_json::to_value(self.menu.bar()).map_or(JsValue::NULL, |bar| to_js(&bar))
     }
 
-    /// What a click on `menu_id` asks the page to do: `{ kind: "emit", event, payload }`,
+    /// What a click on `menu_id` asks the page to do: `{ kind: "emit", event, payload, to }`,
     /// `{ kind: "nativeEdit", action }`, `{ kind: "closeFocusedWindow" }`, or `{ kind: "nothing" }`.
     pub fn click(&self, menu_id: &str) -> JsValue {
         serde_json::to_value(self.menu.click(menu_id)).map_or(JsValue::NULL, |click| to_js(&click))
+    }
+
+    /// Whether [`popup`](Self::popup) answers `command` (a `show_*` context-menu command).
+    #[wasm_bindgen(js_name = opensPopup)]
+    pub fn opens_popup(command: &str) -> bool {
+        DemoMenu::opens_popup(command)
+    }
+
+    /// Answers one `show_*` command opened over the window labeled `window`: `{ rows, anchor }`
+    /// for the page to draw, or throws what the command's promise rejects with.
+    pub fn popup(&self, command: &str, args: JsValue, window: &str) -> Result<JsValue, JsValue> {
+        let args = from_js(&args).map_err(JsValue::from)?;
+        match self.menu.popup(command, args, window) {
+            Ok(popup) => Ok(serde_json::to_value(popup).map_or(JsValue::NULL, |popup| to_js(&popup))),
+            Err(error) => Err(to_js(&error)),
+        }
+    }
+
+    /// What a pick of `menu_id` from the last popup asks the page to do: a click, as
+    /// [`click`](Self::click) answers, or `{ kind: "invoke", command, args }`.
+    #[wasm_bindgen(js_name = contextClick)]
+    pub fn context_click(&self, menu_id: &str) -> JsValue {
+        serde_json::to_value(self.menu.context_click(menu_id)).map_or(JsValue::NULL, |click| to_js(&click))
     }
 }
 

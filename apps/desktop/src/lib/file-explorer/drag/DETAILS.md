@@ -68,6 +68,30 @@ Key files:
 - `native_drag.rs`: Builds `NSPasteboardItem`s as above, wraps each in an `NSDraggingItem`, and begins the dragging
   session via a custom `CmdrDragSource` that returns the permissive op mask
 
+### Touch drags
+
+A finger can't arm a drag on the press: a press and a swipe start the same way, and a swipe scrolls the list. So:
+
+- **Hold to arm** (`touch-hold.ts`): a touch or pen `pointerdown` on a row starts a 300 ms timer (`TOUCH_HOLD_MS`).
+  Moving more than 10 px first, lifting, `pointercancel`, or the OS's long-press `contextmenu` cancels it. On firing it
+  calls the view's own mousedown handler with the `pointerdown` (a `PointerEvent` is a `MouseEvent`), through
+  `../views/row-activation.ts`'s `hold` dep, so select-on-press, deferred selection, and the drag payload stay ONE path.
+- **Pointer tracking** (`drag-drop.ts::startSelectionDragTracking`): a press that `isTouchPress` names follows its own
+  `pointerId` through `pointermove` / `pointerup`, and also ends on `pointercancel` and `contextmenu`. A mouse press,
+  AND a tap's compatibility `mousedown` (which arrives after the tap's own `pointerup`), keep `mousemove` / `mouseup`.
+  Why not pointer events for both: the compatibility `mousedown` brings no `pointerup` after it, so a pointer-tracked
+  tap would wait for a release that never comes and drag on the next mouse move.
+- **No scroll while held**: one non-passive `touchmove` listener on the window, installed by the first view, cancels
+  every `touchmove` while a hold is active, until that finger lifts (through the async gap before the drag session too,
+  where a scroll would turn into a `pointercancel`). Why one listener from the start: a browser decides whether a touch
+  may scroll before any hold exists, and a `preventDefault` from a listener added mid-gesture is ignored (iOS Safari;
+  dnd-kit's `TouchSensor` registers the same no-op listener for this reason). It blocks nothing until a hold is active.
+- **Hold and move drags; hold still opens the menu**, as iPadOS Files does. 300 ms is under every OS long press, so the
+  menu only wins when the finger stays put past it.
+- The native desktop app never sees a touch, so this serves touch browsers (the browser demo, `../../demo/DETAILS.md` §
+  Drag and drop). Pinned by `touch-hold.test.ts`, `drag-drop.touch.test.ts`, and
+  `../views/row-activation.views.test.ts`.
+
 ### Drop-in (receiving drops)
 
 Uses Tauri 2's `onDragDropEvent` (window-level) with DOM hit-testing to resolve target pane/folder.
@@ -270,6 +294,11 @@ Key files:
     dialog still catches mistakes, so we don't lose the safety net.
   - The same `pickDropOperation` runs for both the live overlay (`handleDragOver`) and the actual drop (`handleDrop`),
     so the two can't diverge.
+  - **Gotcha**: a pane can sit at `~` or `~/Downloads` (a first run, the Home shortcut), which no volume root matches,
+    so a same-disk drop onto such a pane read as cross-volume and preselected Copy, and the descendant guard compared
+    two spellings of one folder. `targetPathOf` spells a `~` pane path out from the home folder (`toCanonical`, home
+    fetched once by the controller, injectable as `homeDir`) before either rule reads it. Found on the browser demo,
+    whose panes start at `~` (2026-11-04).
 - **Decision**: Internal-drop modifier semantics align with the outgoing arbitration macOS does for us
   - **Why**: For drags out to other apps, AppKit arbitrates the operation from the source mask plus modifiers (Alt →
     Copy, Cmd → Move, Ctrl-Alt → Link). We own the choice for internal drops, so we replicate the same Alt/Cmd

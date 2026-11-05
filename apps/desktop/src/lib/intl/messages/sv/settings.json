@@ -1298,6 +1298,18 @@
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
+  "settings.network.requireSmbEncryption.label": "Kräv alltid SMB-kryptering",
+  "@settings.network.requireSmbEncryption.label": {
+    "sourceHash": "4519b09"
+  },
+  "settings.network.requireSmbEncryption.description": "Cmdr krypterar sina egna anslutningar till SMB-resurser, även när servern inte ber om det, och ansluter inte till en server som inte kan kryptera. Gästanslutningar kan inte krypteras, så du behöver logga in. Gäller nya anslutningar.",
+  "@settings.network.requireSmbEncryption.description": {
+    "sourceHash": "4b8d40b"
+  },
+  "settings.network.requireSmbEncryption.keywords": "kryptera, krypterad, chiffrera, säkerhet, säker, integritet, skydd, skyddad anslutning",
+  "@settings.network.requireSmbEncryption.keywords": {
+    "sourceHash": "1fc0e27"
+  },
   "settings.network.shareCacheDuration.label": "Cachetid för delade mappar",
   "@settings.network.shareCacheDuration.label": {
     "sourceHash": "ff627cd"
@@ -2820,6 +2832,14 @@
   "settings.managed.summary.securityLogRequired": "Loggas alltid",
   "@settings.managed.summary.securityLogRequired": {
     "sourceHash": "baf73d6"
+  },
+  "settings.managed.summary.smbEncryption": "SMB-kryptering",
+  "@settings.managed.summary.smbEncryption": {
+    "sourceHash": "059bf46"
+  },
+  "settings.managed.summary.smbEncryptionRequired": "Krävs alltid",
+  "@settings.managed.summary.smbEncryptionRequired": {
+    "sourceHash": "8bac3f7"
   },
   "settings.managed.summary.updates": "Uppdateringar",
   "@settings.managed.summary.updates": {

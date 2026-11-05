@@ -1,6 +1,6 @@
 /**
  * D1 and env fakes shared by the mock-D1 cron-job tests (`scheduled.test.ts`,
- * `cron-alarm.test.ts`, and the probe). The Resend mock stays per-file: `vi.mock` is hoisted
+ * `cron-alarm.test.ts`, and the probe). The `sendEmail` mock stays per-file: `vi.mock` is hoisted
  * into the file it appears in, so it can't be shared from here.
  */
 import { vi } from 'vitest'
@@ -67,7 +67,7 @@ export function createBaseEnv(overrides: Record<string, unknown> = {}) {
   return {
     TELEMETRY_DB: createMockD1().db,
     CRASH_NOTIFICATION_EMAIL: 'test@example.com',
-    RESEND_API_KEY: 'test-resend-key',
+    SMTP2GO_API_KEY: 'test-smtp2go-key',
     ...overrides,
   }
 }

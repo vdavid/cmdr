@@ -159,6 +159,17 @@
     },
     {
       "page": "/trust",
+      "anchor": "subprocessor-changes",
+      "paths": [
+        "apps/website/src/lib/trust.ts",
+        "apps/website/src/components/NewsletterForm.astro",
+        "apps/api-server/src/website/**",
+        "apps/api-server/wrangler.toml",
+        "infra/listmonk/**"
+      ]
+    },
+    {
+      "page": "/trust",
       "anchor": "storage",
       "paths": [
         "apps/desktop/src-tauri/src/config.rs",
@@ -247,7 +258,9 @@
         "apps/desktop/src/lib/settings/cloud-providers.ts",
         "apps/desktop/src-tauri/src/ai/**",
         "apps/desktop/src-tauri/src/selection/ai/**",
-        "apps/desktop/src-tauri/src/search/ai/**",
+        "apps/desktop/src-tauri/src/search/ai.rs",
+        "crates/cmdr-search/src/translate.rs",
+        "crates/cmdr-search/src/translate/**",
         "apps/desktop/src-tauri/src/tools/**",
         "apps/desktop/src-tauri/src/agent/tool_gate.rs",
         "apps/desktop/src-tauri/src/agent/line/**",

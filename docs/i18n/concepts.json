@@ -292,7 +292,8 @@
       "ask the ai to",
       "ask it to",
       "ask you to",
-      "asks you to"
+      "asks you to",
+      "ask for it"
     ],
     "sense": "A setting option meaning \"ask me every time\"."
   },

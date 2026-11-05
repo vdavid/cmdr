@@ -14,8 +14,8 @@ does. Depth: `DETAILS.md`.
 - `names.rs`: the names a group gives its files (a rename's, a move's or copy's), checked by the engine's own rules on
   the placed group. ❌ Never a second copy of those rules.
 - `propose.rs`: the schema, the handler, and the write path (resolve → check → write). `snapshot.rs`: one bounded
-  stat per hand-listed source, frozen as its creation snapshot before the write (also
-  `propose_rename_plan`'s).
+  stat per hand-listed source, frozen as its creation snapshot before the write (its deadline is
+  `propose_rename_plan`'s too).
 - `server.rs` (+ `server_plan.rs`): `propose_server` and its checks. The saved servers they read, and the checks the
   approval re-runs, are `../../agent/suggested_ops/server/`'s.
 - `list.rs` / `group.rs`: the two reads and their pure shapers.

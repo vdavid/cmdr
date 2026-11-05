@@ -1294,6 +1294,18 @@
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
+  "settings.network.requireSmbEncryption.label": "Завжди вимагати шифрування SMB",
+  "@settings.network.requireSmbEncryption.label": {
+    "sourceHash": "4519b09"
+  },
+  "settings.network.requireSmbEncryption.description": "Cmdr шифрує власні підʼєднання до спільних папок SMB, навіть без запиту від сервера, і не підʼєднується до сервера, який не може шифрувати. Гостьові підʼєднання зашифрувати не можна, тож доведеться ввійти. Діє для нових підʼєднань.",
+  "@settings.network.requireSmbEncryption.description": {
+    "sourceHash": "4b8d40b"
+  },
+  "settings.network.requireSmbEncryption.keywords": "шифр, шифрувати, зашифровано, захист, безпека, приватність, конфіденційність, підключення, мережа",
+  "@settings.network.requireSmbEncryption.keywords": {
+    "sourceHash": "1fc0e27"
+  },
   "settings.network.shareCacheDuration.label": "Тривалість кешу спільних папок",
   "@settings.network.shareCacheDuration.label": {
     "sourceHash": "ff627cd"
@@ -2809,6 +2821,14 @@
   "settings.managed.summary.securityLogRequired": "Завжди записуються",
   "@settings.managed.summary.securityLogRequired": {
     "sourceHash": "baf73d6"
+  },
+  "settings.managed.summary.smbEncryption": "Шифрування SMB",
+  "@settings.managed.summary.smbEncryption": {
+    "sourceHash": "059bf46"
+  },
+  "settings.managed.summary.smbEncryptionRequired": "Завжди обовʼязкове",
+  "@settings.managed.summary.smbEncryptionRequired": {
+    "sourceHash": "8bac3f7"
   },
   "settings.managed.summary.updates": "Оновлення",
   "@settings.managed.summary.updates": {

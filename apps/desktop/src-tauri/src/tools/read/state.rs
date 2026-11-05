@@ -25,8 +25,8 @@ use crate::ui_state::pane_state::PaneState;
 pub struct PaneSnapshot {
     /// The pane's current folder.
     pub path: String,
-    /// The backing volume for this pane. Rename proposals use this exact id to keep
-    /// image-facts reads and the staged plan on the focused volume.
+    /// The backing volume for this pane: the `volumeId` a rename plan for this pane's folder
+    /// names.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volume_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

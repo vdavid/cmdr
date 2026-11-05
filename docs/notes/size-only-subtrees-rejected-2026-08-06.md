@@ -63,9 +63,9 @@ arithmetic, not measurement.**
 - **✅ Done: sentinel-encoding the two `Option<u64>` in `SearchEntry`.** The row is 40 bytes, the arena is 92 MiB
   cheaper, and the scan is no slower. Measurements and the A/B method: `search-arena-row-2026-08-06.md`.
 - **⚠️ Removing `id_to_index: HashMap<i64, usize>` is NOT a free win.** It has four production call sites in
-  `search/engine.rs` (lines 70, 98, 498, 540), all ancestor walking for scope and path building, so it's hit once per
-  ancestor per candidate inside an interactive loop. Binary search trades ~144 MB for ~23 cache-missing comparisons per
-  lookup and has to be measured on BOTH axes before anyone calls it a win.
+  `crates/cmdr-search/src/engine.rs` (lines 70, 98, 498, 540), all ancestor walking for scope and path building, so it's
+  hit once per ancestor per candidate inside an interactive loop. Binary search trades ~144 MB for ~23 cache-missing
+  comparisons per lookup and has to be measured on BOTH axes before anyone calls it a win.
 - **The better first experiment on that map**: entries already arrive rowid-ordered (`id INTEGER PRIMARY KEY`), so a
   sorted `Vec<(i64, u32)>` at 12 B/row (or an offset table exploiting id contiguity) likely gets most of the memory
   while staying O(1)-ish.

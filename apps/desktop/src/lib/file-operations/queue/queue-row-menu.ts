@@ -1,6 +1,6 @@
 /**
  * A queue row's right-click menu: what it lists, and what a pick does. The menu is a
- * native one (`src-tauri/src/menu/queue_row_menu.rs` builds it from these entries),
+ * native one (`crates/cmdr-menu/src/context/popups.rs`'s `queue_row_menu` lays it out from these entries),
  * and every pick runs the keyboard action the same item's key runs, so the two can't
  * drift (`routes/queue/+page.svelte`). DETAILS § "The row's right-click menu".
  */

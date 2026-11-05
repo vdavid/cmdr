@@ -15,21 +15,18 @@ use tauri::{AppHandle, Manager};
 
 use crate::ignore_poison::IgnorePoison;
 use crate::volume_broadcast::VolumeContextActionKind;
-use crate::window_events::{QueueRowMenuAction, ViewerEditActionKind, ViewerHistoryDirection};
+use crate::window_events::{ViewerEditActionKind, ViewerHistoryDirection};
 
 use cmdr_menu::click::{BarClick, bar_click};
+use cmdr_menu::context::click::{ContextClick, NetworkHostAction, VolumeAction, context_click};
 use cmdr_menu::spec::{Pane, Platform};
 
 use super::{
-    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_ALL_VOLUMES_ID, EJECT_VOLUME_ID,
-    FAVORITES_ADD_CONTEXT_ID, FUNCTION_KEY_BAR_HIDE_ID, MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID,
-    MEDIA_INDEX_INCLUDE_FOLDER_ID, MEDIA_INDEX_REMOVE_FOLDER_ID, MediaIndexFolderChoice, MediaIndexFolderExclusion,
-    MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_EDIT_ID, NETWORK_HOST_FORGET_SECRET_ID,
-    NETWORK_HOST_FORGET_SERVER_ID, SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID, SHOW_SEARCH_RESULT_IN_FOLDER_ID,
-    SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_SET_MODE_COMMAND_ID,
-    VIEW_SHOW_HIDDEN_COMMAND_ID, VIEWER_CONTEXT_COPY_ID, VIEWER_CONTEXT_SELECT_ALL_ID, VIEWER_EDIT_COPY_ID,
-    VIEWER_EDIT_CUT_ID, VIEWER_EDIT_PASTE_ID, VIEWER_GO_BACK_ID, VIEWER_GO_FORWARD_ID, VIEWER_SELECT_ALL_ID,
-    VIEWER_WORD_WRAP_ID, ViewModeChanged, menu_id_to_command,
+    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, MediaIndexFolderChoice,
+    MediaIndexFolderExclusion, MenuSort, MenuState, SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID, SettingsChanged,
+    VIEW_SET_MODE_COMMAND_ID, VIEW_SHOW_HIDDEN_COMMAND_ID, VIEWER_EDIT_COPY_ID, VIEWER_EDIT_CUT_ID,
+    VIEWER_EDIT_PASTE_ID, VIEWER_GO_BACK_ID, VIEWER_GO_FORWARD_ID, VIEWER_SELECT_ALL_ID, VIEWER_WORD_WRAP_ID,
+    ViewModeChanged, menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -228,16 +225,6 @@ fn viewer_history_direction_for(menu_id: &str) -> Option<ViewerHistoryDirection>
     }
 }
 
-/// The viewer right-click menu's action a clicked item id names, or `None` when the id isn't one
-/// of them.
-fn viewer_context_action_for(menu_id: &str) -> Option<ViewerEditActionKind> {
-    match menu_id {
-        VIEWER_CONTEXT_COPY_ID => Some(ViewerEditActionKind::Copy),
-        VIEWER_CONTEXT_SELECT_ALL_ID => Some(ViewerEditActionKind::SelectAll),
-        _ => None,
-    }
-}
-
 /// Dispatches a global-menu click to the right window or frontend command.
 ///
 /// Wired into the Tauri builder as `.on_menu_event(menu::handle_menu_event)`. Most items flow
@@ -247,17 +234,15 @@ fn viewer_context_action_for(menu_id: &str) -> Option<ViewerEditActionKind> {
 pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEvent) {
     let id = event.id().as_ref();
 
-    if id == SHOW_SEARCH_RESULT_IN_FOLDER_ID {
-        let state = app.state::<MenuState<tauri::Wry>>();
-        let path = {
-            let context = state.context.lock_ignore_poison();
-            search_result_reveal_path(id, &context)
-        };
-        if let Some(path) = path {
-            use tauri_specta::Event as _;
-            let _ = crate::window_events::ShowSearchResultInFolder { path }.emit_to(app, "main");
+    // === A context-menu row's own lane: what it asks for comes off its id (`cmdr_menu::context::click`),
+    // the same answer the browser demo's context menu gets. A plain command falls through to the
+    // unified dispatch at the bottom, with the bar's.
+    match context_click(id) {
+        Some(ContextClick::Command { .. }) | None => {}
+        Some(click) => {
+            dispatch_context_click(app, click);
+            return;
         }
-        return;
     }
 
     // === CheckMenuItem exceptions: sync checked state and emit directly ===
@@ -333,70 +318,6 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
-    // === Add to favorites (folder-row + parent-row context menus) ===
-    // Favorites the right-clicked path stashed in `MenuState.context.path` (the folder for a folder
-    // row, the parent dir for `..`). Intercepted here so it never routes through `favorites.add`
-    // (which favorites the focused-pane dir instead). ❗ It goes through the `add_favorite` COMMAND
-    // rather than `favorites::store::add`, so this surface meets the same add gate as the palette
-    // and the MCP tool; a `store::add` here would let a right-click inside an archive or on a phone
-    // store a favorite nothing can ever show. The command also owns the blocking pool, the timeout,
-    // and the `volumes-changed` re-emit.
-    if id == FAVORITES_ADD_CONTEXT_ID {
-        let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let path = menu_state.context.lock_ignore_poison().path.clone();
-        if path.is_empty() {
-            log::warn!(target: "favorites", "Add to favorites: empty context path, ignoring");
-            return;
-        }
-        tauri::async_runtime::spawn(async move {
-            if let Err(e) = crate::commands::favorites::add_favorite(path, None).await {
-                log::warn!(target: "favorites", "Add to favorites: {e}");
-            }
-        });
-        return;
-    }
-
-    // === Image-search folder exclusion (media_index privacy veto) ===
-    // Acts on the RIGHT-CLICKED folder in `MenuState.context.path` (not the focused-pane
-    // selection), so it can't route through `execute-command`. Emit the target folder +
-    // state to the FE, which persists `mediaIndex.excludedFolders` and calls
-    // `media_index_set_excluded_folder` (the native menu can't write the FE store).
-    if id == MEDIA_INDEX_EXCLUDE_FOLDER_ID || id == MEDIA_INDEX_INCLUDE_FOLDER_ID {
-        let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let folder = menu_state.context.lock_ignore_poison().path.clone();
-        if folder.is_empty() {
-            log::warn!(target: "media_index", "folder exclusion clicked with no context path, ignoring");
-            return;
-        }
-        use tauri_specta::Event as _;
-        let _ = MediaIndexFolderExclusion {
-            folder,
-            excluded: id == MEDIA_INDEX_EXCLUDE_FOLDER_ID,
-        }
-        .emit_to(app, "main");
-        return;
-    }
-
-    // === Image-search chosen-folder membership (media_index "Folders to index") ===
-    // Same shape as the exclusion above: acts on the RIGHT-CLICKED folder and emits the
-    // target membership to the FE, which persists `mediaIndex.alwaysIndexFolders` and
-    // calls `media_index_set_always_index_folder` (adding kicks a pass backend-side).
-    if id == MEDIA_INDEX_ADD_FOLDER_ID || id == MEDIA_INDEX_REMOVE_FOLDER_ID {
-        let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let folder = menu_state.context.lock_ignore_poison().path.clone();
-        if folder.is_empty() {
-            log::warn!(target: "media_index", "folder choice clicked with no context path, ignoring");
-            return;
-        }
-        use tauri_specta::Event as _;
-        let _ = MediaIndexFolderChoice {
-            folder,
-            chosen: id == MEDIA_INDEX_ADD_FOLDER_ID,
-        }
-        .emit_to(app, "main");
-        return;
-    }
-
     // === Viewer word wrap: emit to the focused viewer window ===
     if id == VIEWER_WORD_WRAP_ID {
         if let Some(label) = focused_viewer_label(app) {
@@ -430,37 +351,6 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
-    // === The viewer's right-click menu: emit to the viewer it was popped over ===
-    // `show_viewer_context_menu` focused that window before the popup, so the focused one is it.
-    if let Some(action) = viewer_context_action_for(id) {
-        let Some(label) = focused_viewer_label(app) else {
-            log::warn!(target: "menu", "Viewer context item {id} clicked with no viewer focused, ignoring");
-            return;
-        };
-        use tauri_specta::Event as _;
-        let _ = crate::window_events::ViewerContextMenuAction { action }.emit_to(app, &label);
-        return;
-    }
-
-    // === A queue row's right-click menu: emit to the queue window, which knows the row ===
-    if let Some(action) = QueueRowMenuAction::from_menu_id(id) {
-        use tauri_specta::Event as _;
-        let event = crate::window_events::QueueRowContextAction { action };
-        if let Err(e) = event.emit_to(app, "queue") {
-            log::warn!(target: "menu", "failed to emit queue-row-context-action: {e}");
-        }
-        return;
-    }
-
-    // === A file list header's Sort by popup: emit to the main window with the pane it opened over ===
-    if let Some(pick) = super::DateSortMenuPick::from_menu_id(id) {
-        use tauri_specta::Event as _;
-        if let Err(e) = pick.emit_to(app, "main") {
-            log::warn!(target: "menu", "failed to emit date-sort-menu-pick: {e}");
-        }
-        return;
-    }
-
     // === Viewer Edit > Cut / Paste: forward the native selector to the focused text field ===
     // The viewer's search box, the only editable thing in that window, which is also why
     // `apply_menu_item_states` greys these two out while it doesn't have focus. ❗ Never the
@@ -485,71 +375,6 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             value: value.to_string(),
         }
         .emit_to(app, "main");
-        return;
-    }
-
-    // === Tab context menu actions: emit tab-context-action directly ===
-    if id == TAB_PIN_ID || id == TAB_CLOSE_OTHERS_ID || id == TAB_CLOSE_ID {
-        use tauri_specta::Event as _;
-        let _ = crate::window_events::TabContextAction { action: id.to_string() }.emit_to(app, "main");
-        return;
-    }
-
-    // === Function key bar context menu: emit function-key-bar-hide-requested ===
-    // No context to stash: the frontend owns both the setting write and the toast.
-    if id == FUNCTION_KEY_BAR_HIDE_ID {
-        use tauri_specta::Event as _;
-        let _ = crate::window_events::FunctionKeyBarHideRequested.emit_to(app, "main");
-        return;
-    }
-
-    // === The breadcrumb menu's Eject ===
-    // Routed back to the frontend through the `volume-context-action` event with the target
-    // stashed in `volume_row_context`. (A switcher row's and a favorite's actions never come
-    // through here: they're the in-app `Menu`'s, picked in the frontend.)
-    if let Some(action) = volume_row_action(id) {
-        let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let ctx = menu_state.volume_row_context.lock_ignore_poison();
-        if ctx.volume_id.is_empty() {
-            log::warn!(target: "menu", "Volume row menu item {id} clicked with no volume_id stashed");
-            return;
-        }
-        use tauri_specta::Event as _;
-        let payload = crate::volume_broadcast::VolumeContextAction {
-            action,
-            volume_id: ctx.volume_id.clone(),
-            volume_name: ctx.volume_name.clone(),
-        };
-        let _ = payload.emit_to(app, "main");
-        return;
-    }
-
-    // === Network host context menu actions ===
-    if id == NETWORK_HOST_FORGET_SERVER_ID
-        || id == NETWORK_HOST_FORGET_SECRET_ID
-        || id == NETWORK_HOST_DISCONNECT_ID
-        || id == NETWORK_HOST_EDIT_ID
-    {
-        use crate::network::NetworkHostContextActionKind;
-        let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let ctx = menu_state.network_host_context.lock_ignore_poison();
-        let action = if id == NETWORK_HOST_FORGET_SERVER_ID {
-            NetworkHostContextActionKind::ForgetServer
-        } else if id == NETWORK_HOST_FORGET_SECRET_ID {
-            NetworkHostContextActionKind::ForgetSecret
-        } else if id == NETWORK_HOST_EDIT_ID {
-            NetworkHostContextActionKind::Edit
-        } else {
-            NetworkHostContextActionKind::Disconnect
-        };
-        use tauri_specta::Event as _;
-        let payload = crate::network::NetworkHostContextAction {
-            action,
-            row_id: ctx.row_id.clone(),
-            host_id: ctx.host_id.clone(),
-            host_name: ctx.host_name.clone(),
-        };
-        let _ = payload.emit_to(app, "main");
         return;
     }
 
@@ -770,48 +595,168 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     // Unknown menu ID: no-op (all known IDs are handled above)
 }
 
-/// The primary row path carried by the snapshot-only context action.
-fn search_result_reveal_path(menu_id: &str, context: &super::MenuContext) -> Option<String> {
-    (menu_id == SHOW_SEARCH_RESULT_IN_FOLDER_ID && !context.path.is_empty()).then(|| context.path.clone())
+/// Runs a context-menu row's own lane. Every one acts on what the popup was opened over, which the
+/// `show_*` command stashed in `MenuState` (a path, a volume, a host row), or carries it in the id
+/// (a tab action, a date-sort pane).
+fn dispatch_context_click(app: &AppHandle<tauri::Wry>, click: ContextClick) {
+    use tauri_specta::Event as _;
+    let menu_state = app.state::<MenuState<tauri::Wry>>();
+    let context_path = || menu_state.context.lock_ignore_poison().path.clone();
+    match click {
+        // Handled by the caller: it shares the bar's unified dispatch.
+        ContextClick::Command { .. } => {}
+        ContextClick::ShowSearchResultInFolder => {
+            let path = search_result_reveal_path(&menu_state.context.lock_ignore_poison());
+            if let Some(path) = path {
+                let _ = crate::window_events::ShowSearchResultInFolder { path }.emit_to(app, "main");
+            }
+        }
+        // Favorites the right-clicked path (the folder for a folder row, the parent dir for `..`),
+        // never the focused pane's folder. ❗ Through the `add_favorite` COMMAND rather than
+        // `favorites::store::add`, so this surface meets the same add gate as the palette and the
+        // MCP tool; a `store::add` here would let a right-click inside an archive or on a phone
+        // store a favorite nothing can ever show. The command also owns the blocking pool, the
+        // timeout, and the `volumes-changed` re-emit.
+        ContextClick::AddFavorite => {
+            let path = context_path();
+            if path.is_empty() {
+                log::warn!(target: "favorites", "Add to favorites: empty context path, ignoring");
+                return;
+            }
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = crate::commands::favorites::add_favorite(path, None).await {
+                    log::warn!(target: "favorites", "Add to favorites: {e}");
+                }
+            });
+        }
+        // The image-search pair act on the RIGHT-CLICKED folder and drive a frontend persist path
+        // (the native menu can't write the frontend store): the frontend writes
+        // `mediaIndex.excludedFolders` / `alwaysIndexFolders` and calls the matching command.
+        ContextClick::MediaIndexExclusion { excluded } => {
+            let folder = context_path();
+            if folder.is_empty() {
+                log::warn!(target: "media_index", "folder exclusion clicked with no context path, ignoring");
+                return;
+            }
+            let _ = MediaIndexFolderExclusion { folder, excluded }.emit_to(app, "main");
+        }
+        ContextClick::MediaIndexChoice { chosen } => {
+            let folder = context_path();
+            if folder.is_empty() {
+                log::warn!(target: "media_index", "folder choice clicked with no context path, ignoring");
+                return;
+            }
+            let _ = MediaIndexFolderChoice { folder, chosen }.emit_to(app, "main");
+        }
+        ContextClick::Tab(action) => {
+            let _ = crate::window_events::TabContextAction {
+                action: action.to_string(),
+            }
+            .emit_to(app, "main");
+        }
+        // No context to stash: the frontend owns both the setting write and the toast.
+        ContextClick::HideFunctionKeyBar => {
+            let _ = crate::window_events::FunctionKeyBarHideRequested.emit_to(app, "main");
+        }
+        // The breadcrumb's detach items. (A switcher row's and a favorite's actions never come
+        // through here: they're the in-app `Menu`'s, picked in the frontend.)
+        ContextClick::Volume(action) => {
+            let ctx = menu_state.volume_row_context.lock_ignore_poison();
+            if ctx.volume_id.is_empty() {
+                log::warn!(target: "menu", "Volume row menu item {action:?} clicked with no volume_id stashed");
+                return;
+            }
+            let _ = crate::volume_broadcast::VolumeContextAction {
+                action: volume_action_kind(action),
+                volume_id: ctx.volume_id.clone(),
+                volume_name: ctx.volume_name.clone(),
+            }
+            .emit_to(app, "main");
+        }
+        ContextClick::NetworkHost(action) => {
+            let ctx = menu_state.network_host_context.lock_ignore_poison();
+            let _ = crate::network::NetworkHostContextAction {
+                action: network_host_action_kind(action),
+                row_id: ctx.row_id.clone(),
+                host_id: ctx.host_id.clone(),
+                host_name: ctx.host_name.clone(),
+            }
+            .emit_to(app, "main");
+        }
+        // `show_viewer_context_menu` focused the viewer before the popup, so the focused one is
+        // the one it was popped over.
+        ContextClick::ViewerText(action) => {
+            let Some(label) = focused_viewer_label(app) else {
+                log::warn!(target: "menu", "Viewer context item {action:?} clicked with no viewer focused, ignoring");
+                return;
+            };
+            let _ = crate::window_events::ViewerContextMenuAction { action }.emit_to(app, &label);
+        }
+        ContextClick::QueueRow(action) => {
+            let event = crate::window_events::QueueRowContextAction { action };
+            if let Err(e) = event.emit_to(app, "queue") {
+                log::warn!(target: "menu", "failed to emit queue-row-context-action: {e}");
+            }
+        }
+        ContextClick::DateSort { pane, column } => {
+            if let Err(e) = (super::DateSortMenuPick { pane, column }).emit_to(app, "main") {
+                log::warn!(target: "menu", "failed to emit date-sort-menu-pick: {e}");
+            }
+        }
+    }
 }
 
-/// The action a volume menu id stands for, or `None` when the id belongs to some
-/// other menu.
-///
-/// ❗ One table, so the ids the handler recognizes and the actions it emits can't
-/// drift apart: every id that reaches the branch above answers here, and every
-/// answer is a typed variant rather than a string the frontend has to guess.
-fn volume_row_action(id: &str) -> Option<VolumeContextActionKind> {
-    match id {
-        EJECT_VOLUME_ID => Some(VolumeContextActionKind::Eject),
-        EJECT_ALL_VOLUMES_ID => Some(VolumeContextActionKind::EjectAll),
-        _ => None,
+/// The frontend's volume action for a breadcrumb detach item. Exhaustive both ways, so a new
+/// variant on either side is a compile error here.
+fn volume_action_kind(action: VolumeAction) -> VolumeContextActionKind {
+    match action {
+        VolumeAction::Eject => VolumeContextActionKind::Eject,
+        VolumeAction::EjectAll => VolumeContextActionKind::EjectAll,
+    }
+}
+
+/// The frontend's host action for a servers hub host item.
+fn network_host_action_kind(action: NetworkHostAction) -> crate::network::NetworkHostContextActionKind {
+    use crate::network::NetworkHostContextActionKind as Kind;
+    match action {
+        NetworkHostAction::ForgetServer => Kind::ForgetServer,
+        NetworkHostAction::ForgetSecret => Kind::ForgetSecret,
+        NetworkHostAction::Disconnect => Kind::Disconnect,
+        NetworkHostAction::Edit => Kind::Edit,
     }
 }
 
 #[cfg(test)]
-mod volume_row_action_tests {
+mod context_click_wire_tests {
     use super::*;
 
+    /// The demo reads these lanes' wire words off the crate (`VolumeAction::wire`), and the
+    /// desktop emits its own enums: the two have to serialize alike.
     #[test]
-    fn the_breadcrumb_eject_id_maps_to_eject() {
-        assert_eq!(volume_row_action(EJECT_VOLUME_ID), Some(VolumeContextActionKind::Eject));
-        assert_eq!(
-            volume_row_action(EJECT_ALL_VOLUMES_ID),
-            Some(VolumeContextActionKind::EjectAll)
-        );
+    fn the_crate_s_wire_words_are_the_events_own() {
+        for action in [VolumeAction::Eject, VolumeAction::EjectAll] {
+            assert_eq!(
+                serde_json::to_value(volume_action_kind(action)).expect("serializes"),
+                action.wire()
+            );
+        }
+        for action in [
+            NetworkHostAction::ForgetServer,
+            NetworkHostAction::ForgetSecret,
+            NetworkHostAction::Disconnect,
+            NetworkHostAction::Edit,
+        ] {
+            assert_eq!(
+                serde_json::to_value(network_host_action_kind(action)).expect("serializes"),
+                action.wire()
+            );
+        }
     }
+}
 
-    /// ❗ The SMB hub's host menu rides its OWN event with a host id, so an id
-    /// from it must not fall into the volume-row branch and emit a volume action
-    /// against whatever id happened to be stashed.
-    #[test]
-    fn a_network_host_menu_id_is_not_a_volume_row_action() {
-        assert_eq!(volume_row_action(NETWORK_HOST_DISCONNECT_ID), None);
-        assert_eq!(volume_row_action(NETWORK_HOST_FORGET_SERVER_ID), None);
-        assert_eq!(volume_row_action(NETWORK_HOST_FORGET_SECRET_ID), None);
-        assert_eq!(volume_row_action("tab_close"), None);
-    }
+/// The primary row path carried by the snapshot-only context action.
+fn search_result_reveal_path(context: &super::MenuContext) -> Option<String> {
+    (!context.path.is_empty()).then(|| context.path.clone())
 }
 
 #[cfg(test)]
@@ -844,7 +789,15 @@ mod viewer_history_direction_tests {
 #[cfg(test)]
 mod viewer_edit_action_tests {
     use super::*;
-    use crate::menu::{EDIT_COPY_ID, SELECT_ALL_ID};
+    use crate::menu::{EDIT_COPY_ID, SELECT_ALL_ID, VIEWER_CONTEXT_COPY_ID, VIEWER_CONTEXT_SELECT_ALL_ID};
+
+    /// The viewer text menu's action, as the context-menu lane reads it.
+    fn viewer_context_action_for(menu_id: &str) -> Option<ViewerEditActionKind> {
+        match context_click(menu_id) {
+            Some(ContextClick::ViewerText(action)) => Some(action),
+            _ => None,
+        }
+    }
 
     #[test]
     fn the_viewer_bars_edit_items_name_their_action() {
@@ -952,7 +905,7 @@ mod native_edit_selector_tests {
 #[cfg(test)]
 mod search_result_reveal_tests {
     use super::*;
-    use crate::menu::{MenuContext, SHOW_IN_FINDER_ID};
+    use crate::menu::MenuContext;
 
     #[test]
     fn show_in_folder_carries_the_primary_right_clicked_path_not_the_selection() {
@@ -962,10 +915,7 @@ mod search_result_reveal_tests {
             ..MenuContext::default()
         };
 
-        assert_eq!(
-            search_result_reveal_path(SHOW_SEARCH_RESULT_IN_FOLDER_ID, &context),
-            Some("/share/B.txt".to_string())
-        );
-        assert_eq!(search_result_reveal_path(SHOW_IN_FINDER_ID, &context), None);
+        assert_eq!(search_result_reveal_path(&context), Some("/share/B.txt".to_string()));
+        assert_eq!(search_result_reveal_path(&MenuContext::default()), None);
     }
 }

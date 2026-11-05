@@ -11,8 +11,11 @@
 //!
 //! `crates/cmdr-fs/DETAILS.md` § "The browser build" has the why.
 
+use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::future::Future;
 use std::pin::Pin;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 use std::time::Duration;
@@ -132,7 +135,6 @@ pub mod task {
     use std::collections::HashMap;
     use std::future::Future;
     use std::sync::atomic::{AtomicU64, Ordering};
-    use std::time::Duration;
 
     use futures_util::future::{AbortHandle as Abort, abortable};
     use tokio::sync::mpsc;
@@ -252,12 +254,17 @@ pub mod task {
         }
     }
 
-    /// Hands the page back to the browser for one macrotask (`setTimeout(0)`), so
-    /// it paints, takes input, and fires timers before this task continues. A
-    /// microtask yield (tokio's, with no runtime here) would wake at once and
-    /// starve all three.
+    /// Hands the page back to the browser for one macrotask, so it paints, takes
+    /// input, and fires timers before this task continues. A microtask yield
+    /// (tokio's, with no runtime here) would wake at once and starve all three.
+    ///
+    /// The macrotask is a turn ([`super::Turns`]: a `MessageChannel` message in a
+    /// browser, `setImmediate` in Node), ❌ never a `setTimeout(0)`: browsers
+    /// clamp a nested timer to 4 ms or more, and the copy engine yields once per
+    /// 64 KiB chunk, which held one stream on the demo's 40 MB/s device near
+    /// 7 MB/s (`crates/cmdr-fs/DETAILS.md` § "The browser build").
     pub async fn yield_now() {
-        super::Sleep::new(Duration::ZERO).await;
+        super::Yield::new().await;
     }
 }
 
@@ -346,6 +353,129 @@ extern "C" {
     fn set_timeout(handler: &JsValue, timeout_ms: f64) -> JsValue;
     #[wasm_bindgen(js_name = clearTimeout)]
     fn clear_timeout(id: f64);
+
+    // The global `MessageChannel` (a window, a worker, and Node all have it):
+    // [`Yield`]'s unclamped macrotask.
+    type MessageChannel;
+    #[wasm_bindgen(constructor)]
+    fn new() -> MessageChannel;
+    #[wasm_bindgen(method, getter)]
+    fn port1(this: &MessageChannel) -> MessagePort;
+    #[wasm_bindgen(method, getter)]
+    fn port2(this: &MessageChannel) -> MessagePort;
+
+    type MessagePort;
+    #[wasm_bindgen(method, setter)]
+    fn set_onmessage(this: &MessagePort, handler: &JsValue);
+    #[wasm_bindgen(method, js_name = postMessage)]
+    fn post_message(this: &MessagePort, message: &JsValue);
+
+    // Node's `setImmediate`, `undefined` in a browser (read off `globalThis`, so
+    // a page that lacks it reads `undefined` rather than throwing).
+    #[wasm_bindgen(thread_local_v2, js_namespace = globalThis, js_name = setImmediate)]
+    static SET_IMMEDIATE: JsValue;
+    #[wasm_bindgen(js_namespace = globalThis, js_name = setImmediate)]
+    fn set_immediate(handler: &JsValue);
+}
+
+/// One macrotask turn ([`Turns`]): after paint, input, and any due timer had
+/// their chance, with none of a nested `setTimeout`'s 4 ms clamp. `Send` for the
+/// same reason [`Sleep`] is: only the shared flag stays here.
+struct Yield {
+    state: Arc<Mutex<SleepState>>,
+}
+
+impl Yield {
+    fn new() -> Self {
+        let state = Arc::new(Mutex::new(SleepState::default()));
+        TURNS.with(|turns| turns.take(Arc::clone(&state)));
+        Self { state }
+    }
+}
+
+thread_local! {
+    /// The page's one source of turns: the page has one thread.
+    static TURNS: Turns = Turns::new();
+}
+
+/// Where a turn comes from, picked once, as React's scheduler picks it:
+///
+/// - **`setImmediate` where the host has it** (Node: the smoke test and the
+///   golden replay). Node drains a `MessagePort`'s queue in one go, messages
+///   posted meanwhile included, so one shared channel starved every timer for
+///   the whole 1,200-file delete (3 s without a tick); a fresh channel per turn
+///   is a native handle each, and held that delete up to 130 ms between ticks.
+///   `setImmediate` runs once per loop pass, after the timers.
+/// - **One `MessageChannel` otherwise** (a browser): each message is a task of
+///   its own, and the event loop interleaves timer tasks with them. Each
+///   message wakes the oldest waiter.
+enum Turns {
+    Immediate,
+    Channel {
+        sender: MessagePort,
+        waiting: Rc<RefCell<VecDeque<Arc<Mutex<SleepState>>>>>,
+        _on_message: Closure<dyn FnMut()>,
+    },
+}
+
+impl Turns {
+    fn new() -> Self {
+        if SET_IMMEDIATE.with(JsValue::is_function) {
+            return Self::Immediate;
+        }
+        let channel = MessageChannel::new();
+        let waiting: Rc<RefCell<VecDeque<Arc<Mutex<SleepState>>>>> = Rc::default();
+        let queue = Rc::clone(&waiting);
+        let on_message = Closure::<dyn FnMut()>::new(move || {
+            let next = queue.borrow_mut().pop_front();
+            if let Some(state) = next {
+                fire(&state);
+            }
+        });
+        channel.port1().set_onmessage(on_message.as_ref());
+        Self::Channel {
+            sender: channel.port2(),
+            waiting,
+            _on_message: on_message,
+        }
+    }
+
+    /// Fires `state` on the next turn.
+    fn take(&self, state: Arc<Mutex<SleepState>>) {
+        match self {
+            Self::Immediate => set_immediate(&Closure::once_into_js(move || fire(&state))),
+            Self::Channel { sender, waiting, .. } => {
+                waiting.borrow_mut().push_back(state);
+                sender.post_message(&JsValue::UNDEFINED);
+            }
+        }
+    }
+}
+
+/// Marks `state` fired and wakes its task: what a timer or a turn does when it lands.
+fn fire(state: &Mutex<SleepState>) {
+    let waker = {
+        let mut state = state.lock_ignore_poison();
+        state.fired = true;
+        state.waker.take()
+    };
+    if let Some(waker) = waker {
+        waker.wake();
+    }
+}
+
+impl Future for Yield {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {
+        let mut state = self.state.lock_ignore_poison();
+        if state.fired {
+            Poll::Ready(())
+        } else {
+            state.waker = Some(cx.waker().clone());
+            Poll::Pending
+        }
+    }
 }
 
 /// `setTimeout` beyond `2^31 - 1` ms fires at once, so a longer wait is capped
@@ -372,16 +502,7 @@ impl Sleep {
     fn new(duration: Duration) -> Self {
         let state = Arc::new(Mutex::new(SleepState::default()));
         let fired = Arc::clone(&state);
-        let callback = Closure::once_into_js(move || {
-            let waker = {
-                let mut state = fired.lock_ignore_poison();
-                state.fired = true;
-                state.waker.take()
-            };
-            if let Some(waker) = waker {
-                waker.wake();
-            }
-        });
+        let callback = Closure::once_into_js(move || fire(&fired));
         let ms = (duration.as_secs_f64() * 1000.0).min(MAX_TIMEOUT_MS);
         let timer = set_timeout(&callback, ms).as_f64();
         Self { state, timer }

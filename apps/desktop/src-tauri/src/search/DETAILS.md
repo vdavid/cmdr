@@ -23,27 +23,29 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   results. Trivially testable without mocks; the hot path is isolated from side effects.
 - **`types.rs` (data) separate from `query.rs` (operations)**: `types.rs` is imported by everything, so keeping it
   logic-free prevents circular dependencies and makes the data model easy to find.
-- **AI pipeline lives in `search::ai`, not `commands/`**: the parser, prompt, and query builder are search domain logic,
-  not IPC concerns; `commands/search.rs` stays a thin wrapper. AI-internal decisions live in `ai/CLAUDE.md`.
-- **The translation DTOs live with the code that fills them**: `TranslatedQuery` and `TranslateDisplay` are defined in
-  `ai/types.rs` and `pub use`d from `commands/search.rs`, so the IPC path callers import is unchanged while
-  `search::ai` no longer depends on `commands`. specta names a type by its struct identity, not its module, so
-  `bindings.ts` doesn't move either. Define a new translation DTO in `ai/types.rs` and re-export it, not the reverse:
-  the reverse is what made `commands::search ↔ search::ai ↔ query_builder` a cycle. The one remaining edge from
-  `search/` up into `commands/` is `expand_tilde` in `ai/mappings/size_scope_mapping.rs` (see `CLAUDE.md`).
+- **The AI pipeline is `cmdr_search::translate`, not `commands/`**: the parser, prompt, and query builder are search
+  domain logic with no I/O, so they live in the crate (`crates/cmdr-search/src/translate/CLAUDE.md`), and the
+  translation DTOs (`TranslatedQuery`, `TranslateDisplay`) with them, `pub use`d from `commands/search.rs` so the IPC
+  path is unchanged (specta names a type by its struct identity, so `bindings.ts` doesn't move either). `ai.rs` is
+  the host's half: `SystemZone` (this machine's calendar, through `chrono::Local`) and the home folder, passed in as
+  values. Nothing under `search/` reaches `commands/`.
 - **Add history only on "Open in pane"**: David's explicit call. The 1000-entry budget stays signal-rich when it tracks
   results worth acting on, not every keystroke-debounced filename search. The gate is a frontend convention, not
   Rust-enforced.
-- **Scope include-paths are canonicalized before the DB walk** (`resolve_include_paths` → `canonicalize_scope_path`):
+- **Scope include-paths are canonicalized before the DB walk** (`index_source::scope_pairs` →
+  `canonicalize_scope_path`):
   the scanner walks the real filesystem, so the index stores canonical paths (`/private/tmp/…`), while panes and agents
   report the symlinked form (`scope:/tmp/…`). Without resolving symlinks first, `store::resolve_path`'s literal
   component walk finds nothing → silent empty results. Canonicalization happens ONCE per include path (a handful),
   outside the hot per-entry scan, on a detached thread under a 2 s deadline (`realpath` blocks on a dead mount, and
-  `resolve_include_paths` is sync — the sync analog of `blocking_with_timeout`); a non-existent / timed-out path keeps
-  its literal so an offline-index scope still gets a best-effort match. Applies to `search`, `ai_search`, and the FE
-  search dialog — all route through the one `resolve_include_paths`.
-- **Only a volume read through `std::fs` is canonicalized** (`volumes::PathNamespace`, decided once per `Target` from
-  the registered volume's `BackendKind`, and the one `Target::canonical_scope` every site calls, since the coverage
+  the callers are sync — the sync analog of `blocking_with_timeout`); a non-existent / timed-out path keeps its
+  literal so an offline-index scope still gets a best-effort match. Applies to `search`, `ai_search`, and the FE search
+  dialog — all route through the one `scope_pairs`. The pipeline's order is `~` (`query::expand_tilde`, against the
+  search context's home), then `realpath` (the host's), then the mount strip (`seam::resolve_scope`), because an
+  index-relative path can't be canonicalized.
+- **Only a volume read through `std::fs` is canonicalized** (`index_source::PathNamespace`, decided once per `Target` from
+  the registered volume's `BackendKind`, and the one `Target::canonical_scope` (through
+  `index_source::canonicalize_scope_path`) every site calls, since the coverage
   question, the index lookup, and the walk's frontier are matched by string). A backend volume's paths are in the
   backend's namespace, and the OS mount at the same mount point spells names its own way: macOS smbfs returns every
   name decomposed (NFD) while a QNAP stores NFC, so a canonicalized `Rymdskottkärra AB` reached both the index and the
@@ -56,11 +58,8 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   `engine::search_ranked` computes `total_count` from the filtered matches but skips ranking, truncation, and per-row
   path materialization (the expensive parts) and returns no rows. The one wrinkle is directory size filters: directory
   sizes live in `dir_stats` (the volume's DB), not the in-memory index, so the pure engine can't size-filter
-  directories. So when a size filter is set AND directories aren't excluded (`is_directory != Some(false)`),
-  `search_ranked` hands the matching directories back in its ranked slice (with the total still counting every match,
-  files already size-filtered), and `run_blocking` fills their sizes via `fill_dir_sizes` then calls
-  `count_only_volume_total`, which subtracts the directories outside the filter. Net: an exact count in every case,
-  materializing only the matching directories (never the -- usually far larger -- file set), and never building rows.
+  directories by itself. The passing set arrives up front (§ Directory size filters), so the scan applies it like
+  any other filter and the count is exact in every case, with no rows built.
   The MCP `search` tool answers a count-only run with an empty `entries`, the number in `matchCount` and
   `matchCountHuman`, and the same typed coverage block every other run carries (`tools/actions/search/result.rs`); the
   dialog shows it as a prominent count instead of the list (`QueryResults` count-only branch).
@@ -68,36 +67,9 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   be speculative. When v2 lands, replace the quarantine branch with a `match` on the version calling a
   `migrate_v1_to_v2` helper.
 
-## The arena row (`index.rs`)
+## The arena row
 
-The arena holds one `SearchEntry` per file on the volume — 6,045,549 rows on David's boot disk — and it stays resident
-for as long as someone is searching, so **what a row costs IS the app's peak footprint**. That makes the row's size a
-design constraint, and `search/index/memory_tests.rs` pins it at 40 bytes.
-
-**`size` and `modified_at` are `OptU64`, not `Option<u64>`.** A `u64` uses every one of its bit patterns, so `Option`
-has no niche to hide `None` in and Rust adds a whole discriminant word: the two fields were 32 of the struct's 56 bytes
-for two values needing 8 each. Sentinel-encoding them took the row to 40 and the loaded root arena from 689.5 MiB to
-597.2 MiB, with no measurable change to scan latency (`docs/notes/search-arena-row-2026-08-06.md` has the before/after
-and the A/B method).
-
-- **`u64::MAX` is the absent marker and cannot collide.** Both values come out of SQLite `INTEGER` columns, which are
-  SIGNED 64-bit, so the index can't store or return anything above `i64::MAX` — the sentinel is outside the
-  representable range by construction, not merely an implausible value inside it. (It's unreachable physically too:
-  16 EiB is twice APFS's own per-file ceiling.)
-- **❌ Never collapse `None` into `0`.** `logical_size` is NULL on every 2nd+ name of a hardlinked inode — the index
-  counts an inode's bytes once and stores NULL on the rest, 934,793 of 6.0 M rows here — so the two mean different
-  things, and conflating them would change what folder totals and size filters report on a hardlink-heavy tree.
-  Symmetrically, a real zero-byte file must not read back as "unknown". `index.rs`'s
-  `a_hardlink_deduped_row_loads_back_as_unknown_size` pins both directions.
-- **❌ Never compare against the sentinel at a call site.** `OptU64`'s inner `u64` is private and `get()` is the only
-  way in, so the encoding is invisible outside the type; its `Debug` prints as the `Option` it stands for, so a log
-  line never shows a bare `18446744073709551615`.
-- **The arena readers are `engine.rs`** (the `Candidate` build, the `sortBy` key, `build_result_entry`) **and
-  `ranking.rs`** (the recency key). `Candidate`, `CoveredEntry`, and `SearchResultEntry` keep plain `Option<u64>`:
-  they're per-result or per-batch, not per-row, so the 16 bytes buy readability there instead of costing memory.
-
-**The next lever is the names arena.** `id_to_index` is already gone (the "no `id_to_index` map" decision below); the
-measurement that ranked the two is in `docs/notes/size-only-subtrees-rejected-2026-08-06.md` § The search arena.
+The row, its `OptU64` encoding, and the builder are the core's: `crates/cmdr-search/DETAILS.md` § The arena row.
 
 ## Single-volume search
 
@@ -189,18 +161,7 @@ only sizes an allocation, so a wrong one costs a realloc, never a wrong answer.
 
 ### Finding a row by id
 
-`entries` is sorted by `id`, ascending, and `SearchIndex::index_of_id` binary-searches it. `id` is the `entries` table's
-`INTEGER PRIMARY KEY`, hence its rowid, so a table scan already yields that order; the loader still says `ORDER BY id`
-so the guarantee is written down rather than inherited, `merge_segments` debug-asserts it, and every test fixture sorts
-the same way.
-
-**Decision: no `id_to_index` map.** A `HashMap<i64, usize>` over the same rows cost ~143 MB on a 5.39 M-row boot index
-(5.39 M entries round up to 8,388,608 hashbrown buckets at 17 bytes apiece) and bought a ~20 ns lookup instead of a
-~23-probe one. The callers are the four parent-chain walks in `engine.rs`, a few hundred probes per search, which is
-microseconds either way against a 100-400 ms scan. ❌ Don't reintroduce it without measuring the ranking phase first.
-
-**Gotcha**: this is why an out-of-order fixture is now a bug rather than a curiosity. `ranking/tests.rs` built rows in
-spec order, which the hash map tolerated and a binary search silently answers wrong on.
+The id-sorted arena and its binary search: `crates/cmdr-search/DETAILS.md` § Finding a row by id.
 
 ### Waiting for a cold arena
 
@@ -287,11 +248,12 @@ A non-root volume's index `ROOT_ID` is its MOUNT ROOT, so it stores mount-relati
 
 - **Read side** — `engine::search_ranked` takes a `path_prefix` (the mount root, empty for root) and PREPENDS it to
   every reconstructed path, so a NAS result reports `/Volumes/naspi/sub/file` and opens in a pane.
-- **Scope side** — `query::resolve_include_scope` STRIPS the mount root from each include path before
-  `store::resolve_path` (which walks from `ROOT_ID`), with two special cases:
+- **Scope side** — `seam::resolve_scope` STRIPS the mount root from each include path (`query::to_index_relative`)
+  before the source looks it up (`IndexSource` through `store::resolve_path`, which walks from `ROOT_ID`), with two
+  special cases:
   - **The mount root itself** (`/Volumes/naspi` → stripped to `/`) means the WHOLE VOLUME — routing already scoped to
-    this volume, so there's no sub-restriction. `run_blocking` then leaves `include_path_ids` `None` (search everything
-    in that volume). Without this, the empty strip resolved to nothing and every volume-root scope returned 0.
+    this volume, so there's no sub-restriction: `ResolvedScope::Whole`. Without this, the empty strip resolved to
+    nothing and every volume-root scope returned 0.
   - **A path not found in the volume's index** (a typo, a since-deleted folder, or one outside the mount root) is
     collected into `unresolved` and surfaces as `SearchResult::unresolved_scopes` (see Honesty below), instead of the
     engine silently matching nothing.
@@ -301,7 +263,7 @@ Without the strip, an indexed NAS folder would show bare paths that don't open, 
 ### The result slice
 
 `search_ranked` returns entries already ranked best-first (band + importance-boosted recency + id, see
-[`RankKey`](ranking.rs)), so `run_blocking` never sorts: it fills directory sizes from the volume's `dir_stats`, applies
+`RankKey` (`crates/cmdr-search/src/ranking.rs`)), so `run_blocking` never sorts: it fills directory sizes from the volume's `dir_stats`, applies
 the size post-filter, and truncates the engine's dir over-fetch back to the caller's limit. `total_count` is the
 engine's own match total, adjusted by that post-filter.
 
@@ -342,36 +304,8 @@ field:
 
 ### Directory size filters and `sortBy`
 
-A directory's size lives in `dir_stats`, not in the search arena, so the parallel scan can't judge it on its own. The
-answer is `engine::DirSizes`: `execute.rs::dir_sizes_for` reads the passing set (`IndexStore::dir_sizes_in_range`) BEFORE
-the engine runs and hands it in, so the scan filters directories on size like everything else.
-
-**Why the order matters.** Applying it afterwards, to the ranked top-k, answers from a recency-ordered sample instead of
-from the drive: `sizeMin: 50 GB` over a real machine returned four folders and missed a 1.7 TB `~/Library`, because a
-folder nobody touched today loses the importance-boosted recency ranking against hundreds of thousands of freshly-touched
-ones long before anything reads its size. Filtering inside the scan also makes `total_count` exact by construction, which
-is why count-only no longer needs a correction pass (no over-fetch, no returned directory rows, no subtraction).
-
-`dir_sizes_for` builds the map only for a query that filters or sorts directories by size, because it's a full scan of
-`dir_stats`. That table is deliberately NOT indexed on `recursive_logical_size`: the index would be rewritten by every
-rollup update on the indexing hot path, to speed up a query that runs only when someone asks about sizes. The scan is
-cheap enough to keep it that way — over a 574,927-row `dir_stats`, a 50 GB floor returns 30 rows in 33 ms and the
-unbounded form (what `sortBy: "size"` with no size filter asks for) returns all of them in 40 ms (verified on the
-shipped `index-root.db` via read-only `sqlite3`, 2026-08-06).
-
-❌ **A failed read must fail the search.** The engine reads a missing map as "no directory size filter to apply", so
-falling back to `None` on a DB error would answer with every matching directory regardless of size — a wrong answer
-wearing a right one's clothes.
-
-`sort_by` (`SearchSort`) rides the same map. `Relevance` is the default and what `ranking.rs` owns; `Size` and `Modified`
-REPLACE that ranking rather than reordering its top-k, because "the biggest matches" means the biggest that exist. A
-directory is compared on its recursive size and a file on its own, so one enormous file can outrank every folder around
-it. Unknown keys sort last in both directions (`sort_indices`), ties break on entry id, and the top-k is taken with
-`select_nth_unstable_by` so a broad query pays a partition rather than a full sort.
-
-**Over live-walked ground this filter can't apply**: a walked directory has no `dir_stats` row yet, which is Accepted
-difference 5 (§ The accepted differences below). The index half is exact; the walked half doesn't match directories on
-size.
+Why a folder's size arrives before ranking, and through the seam: `crates/cmdr-search/DETAILS.md` § Directory size
+filters and `sortBy`. The desktop's answer is `IndexSource`, a full `dir_stats` scan (`IndexStore::dir_sizes_in_range`).
 
 ### Honesty: `hidden_by_excludes`
 
@@ -447,7 +381,8 @@ the index alone and says nothing about reporting; `execute/live_run.rs` is the r
    ground needs ("nothing for you to do, Cmdr comes back to it") is a footnote under the two lists, not a third one
    beside them.
 2. **Load the arena** — after step 1, deliberately (below).
-3. **The covered half** — `search_covered_half`, the identical engine pass `run_blocking` runs. The frontier is exactly
+3. **The covered half** — `search_covered_half` (the seam's `seam::search_covered` over an `IndexSource`), the
+   identical engine pass `run_blocking` runs. The frontier is exactly
    the ground the arena has nothing to say about, so an unfiltered pass over the scope IS the covered half; nothing
    enumerates covered subtrees.
 4. **Walk the rest** — `Index::cover(volume, frontier, Listing, token)`, called through the drive-release gate
@@ -525,7 +460,7 @@ of all 6.3 M rows and a peak ~450 MiB higher, where the catch-up reads 0–2,400
   extra result or a stale size, never a missing one, which is the lag background indexing leaves in any warm arena
   (Accepted difference 6). The background refresh in `get_loaded` still rebuilds a stale arena whole, 30 s apart, while
   the dialog stays open.
-- **In place, no copy, in the normal case.** The loader reserves 1/128 of the rows as spare capacity (`spare_rows`, ~2
+- **In place, no copy, in the normal case.** The arena keeps 1/128 of its rows as spare capacity (`index::spare_rows`, ~2
   MB of rows and ~1 MB of names at 6.3 M), and the caller drops its own handle before catching up. A search still
   holding the arena, or a catch-up bigger than the room, gets ONE new copy sized with fresh room; the reader keeps the
   arena it was handed.
@@ -667,80 +602,21 @@ found later belongs here. Each item names its canonical doc rather than restatin
     confident-looking half-answer this path exists to remove). The starkest item in this register, and the one a user
     is most likely to read as a bug: § The compiled query below.
 
-## The compiled query (`matcher.rs`)
+## The compiled query
 
-The per-entry predicates (name pattern, type, size, date) are a `CompiledQuery`, not part of the arena scan. The reason
-is the second evaluator: a search over ground the index doesn't cover walks it live and matches the entries the walk
-emits (`docs/specs/unindexed-search-plan.md` Decision 3). If those entries were judged by a second copy of the
-rules, the same query would answer differently depending on whether the drive happened to be indexed, which is the one
-thing that plan forbids. So both paths call `CompiledQuery::matches`, and the module owns the rules that break
-silently when duplicated: the case-folding resolution (the scope filter and the ranker read it back rather than
-deriving it again) and the NFD normalization of the pattern.
-
-It sits app-side rather than in `cmdr-index` because `index-crate-isolation` forbids the crate from depending on the
-app. That constraint is also why `Index::cover` hands back `CoveredEntry` batches instead of taking a match callback.
-
-**What stays outside, and why:**
-
-- **Directory size filters.** A directory's size isn't in the entries table; it's written over the ranked results from
-  `dir_stats` afterwards (`execute.rs::fill_dir_sizes`, then `filter_dirs_by_size`). So the matcher's size predicate is
-  files-only on both paths, and a directory passes a size filter untouched. Dropping directories in the matcher would
-  drop them before the only place that knows their size.
-- **The scope filter.** Include roots are arena entry ids and the exclusion check is an ancestor walk through
-  `id_to_index`, so neither means anything for an entry that isn't in the arena. The live path applies the same policy
-  against a walked entry's own path instead.
-
-**A glob's `.` crosses a newline; a user's regex keeps standard semantics.** Filenames may contain newlines, and a
-glob's `*` and `?` mean "any characters" and "one character", so `glob_to_regex` prefixes its output with `(?s)`. It
-lives in the translation rather than at each `RegexBuilder` — a property of what a glob MEANS, not of one caller — so a
-new call site can't get it wrong; two of them disagreeing is how newline-named files went unfindable in the first place.
-It composes with `RegexBuilder::case_insensitive` (an inline `(?s)` sets that one flag and leaves the builder's alone),
-pinned by `matcher::tests::a_case_insensitive_accented_glob_still_crosses_a_newline`.
-
-A user-typed regex never goes through `glob_to_regex` and deliberately keeps the standard rule: someone writing one
-expects `.` to stop at a newline and `(?s)` to be their own call. ❌ Don't "unify" the two — the asymmetry is the
-decision, and the line it's drawn on is **authorship, not notation**. Which is what settles the two neighbours:
-
-- **The AI mappings emit `PatternType::Regex` matched against FILENAMES, and carry `(?is)` inline.** A mapping table
-  isn't an author, so the reasoning that protects a person's own regex doesn't reach them; they take the flags a
-  filename matcher needs. `keyword_mapping::merge_keyword_and_type` is the single place that prefixes them, so
-  ❌ `type_mapping`'s `TypeFilter.pattern` entries carry no inline flags of their own.
-- **The file viewer takes a third position: it REFUSES.** `crates/cmdr-viewer/src/search_matcher.rs` rejects a pattern that would
-  need to cross a newline with a typed `MultilineNotSupported`, because its streaming model is line-at-a-time. Different
-  problem (file CONTENTS, not names), already explicit in its own code.
-
-**The broad-query guard is per evaluator.** An arena's cost is known before the scan, so a query with no narrowing
-predicate is refused only above `ARENA_BROAD_QUERY_CEILING` rows; below it, "show me everything, by recency" is a fair
-ask. A live walk has no such bound (an unknown filesystem, over a network in the worst case), so it refuses outright.
-❌ Don't collapse the two back into one row-count rule: an unindexed volume's arena holds zero rows, so a count-based
-ceiling is precisely the guard that can't fire on the path that needs it.
-
-**Two asymmetries survive the shared matcher**, both bounded and both deliberate:
-
-- A `CoveredEntry` carries the entry's OWN size, before hardlink dedup, because that's what a listing shows. The index
-  stores the deduplicated size, so a 2nd+ hardlink to one file is sizeless there. A size bound therefore keeps it in a
-  live result and drops it from an indexed one. The live answer is the truthful one, so it stays.
-- A walked entry's name is derived from its path (`covered_name`), byte-identically to how `insert_visitor` derives the
-  row name it writes. For the trait walk (`network_scanner/cover_scan.rs`) the row name is the listing's own `name`
-  field while the path is its `path`, so the two agree only as long as a `Volume` backend reports a path whose last
-  component IS that name. ⚠️ A backend that broke that would make live and indexed results disagree on the affected
-  names with nothing failing loudly.
+One matcher, two evaluators, and the rules that break silently when duplicated: `crates/cmdr-search/DETAILS.md` § The
+compiled query. The walk's half of the adapter is `live/walked.rs`.
 
 ## History store (`history.rs`)
 
-The list itself (persistence to `{app_data_dir}/search-history.json`, dedupe, cap, quarantine, locking) is
-`crate::recents`; see `apps/desktop/src-tauri/src/recents/DETAILS.md`. What lives here:
+The entry and its key are `crates/cmdr-search/DETAILS.md` § Recent searches; the list rules are `cmdr-recents`'; the
+file (persistence to `{app_data_dir}/search-history.json`, quarantine, locking) is `crate::recents`
+(`apps/desktop/src-tauri/src/recents/DETAILS.md`). What lives here:
 
-- **`RECENT_SEARCHES`**, the `RecentsFile<HistoryEntry>` static, plus the entry shape and its `RecentEntry` impl.
-- **Canonical dedupe key** (compare-time only, never persisted): `mode | normalized_query | filters | scope |
-  case_sensitive | exclude_system_dirs`. Same key = same search; the most recent copy wins (move-to-top). Six segments
-  against Selection's four, pinned by `key_carries_scope_and_exclude_system_dirs` in `history.rs`.
-- **Cap**: `search.recentSearches.maxCount` (`DEFAULT_MAX_COUNT` = 1000), resolved per call in `commands/search.rs`.
-  `apply_max_count` trims in-memory on live-apply; `0` clears and short-circuits future adds.
-- **Shared types**: `HistoryMode`, `HistoryFilters`, and the key-building helpers (`normalize_query`,
-  `filters_fingerprint`, `flag`) live here and `selection/` uses them one-way; the entry structs stay separate. Sharing
-  the helpers is what keeps a newly-added filter field from reaching one key and not the other. If the two mode sets ever
-  fork, copy the types rather than widening the re-export.
+- **`RECENT_SEARCHES`**, the `RecentsFile<HistoryEntry>` static, and the entry's `RecentEntry` impl (file name, log
+  target, schema version), plus the on-disk compatibility test.
+- **Cap**: `search.recentSearches.maxCount` (`DEFAULT_MAX_COUNT` = 1000, the crate's), resolved per call in
+  `commands/search.rs`. `apply_max_count` trims in-memory on live-apply; `0` clears and short-circuits future adds.
 
 ## AI backend resolution
 
@@ -758,111 +634,10 @@ that store's `platform_case`/one-writer invariants don't leak into a second subs
 snippet is the highlighted "why matched" reason). The frontend query-ui that blends OCR hits into the results surface is a later
 slice; `search/` itself takes no dependency on `media_index` today.
 
-## Importance ranking (`ranking.rs`)
+## Importance ranking
 
-Search ranks interesting files toward the top by blending a result's match quality with its parent folder's importance
-weight (the first consumer of the `crates/cmdr-index/src/importance/DETAILS.md` subsystem). The ranker is a pure module; `engine.rs` stays
-pure by receiving importance as DATA (a prebuilt weight map), never querying a DB.
-
-### The blend: quality bands, importance within a band
-
-The load-bearing requirement is that **match quality dominates**: an exact/prefix name match must beat a weaker match no
-matter how important the weaker match's folder is. We get this BY CONSTRUCTION with a lexicographic sort:
-
-1. **Match-quality band first** (`MatchQuality`: `Exact` > `Prefix` > `Other`). Importance is applied only WITHIN a band,
-   so it can never lift a result across a band boundary — "exact filename in a boring folder beats fuzzy match in
-   Documents" holds for any weight. The dominance property is pinned by
-   `exact_match_beats_fuzzy_match_regardless_of_importance` (written first against a deliberately-wrong blend that folds
-   importance into the band comparison, seen to fail, then fixed).
-2. **Importance-boosted recency within a band**: the key is `recency * (1 + IMPORTANCE_BLEND_COEFF * weight)`. A modest
-   multiplicative nudge (`IMPORTANCE_BLEND_COEFF = 0.5`, a named future tunable): at max weight `1.0` a result's recency
-   key scales by `1.5`, enough to win a same-quality tie against a result up to ~half a recency-order newer, never enough
-   to matter across bands. With weight `0.0` the multiplier is exactly `1.0`, so within-band order collapses to pure
-   recency.
-3. **Id-ascending final tiebreak** for run-to-run determinism.
-
-**A file takes its parent folder's weight; a folder takes its own.** The engine reconstructs the folder's absolute path
-and looks it up in the weight map. Absent a weight (unscored, floored, or missing DB), the lookup is `0.0` — neutral,
-never a penalty.
-
-**Only a wildcard-free plain query has a quality gradient.** The `stem` fed to the ranker is the raw pattern only when
-it's a glob with no `*`/`?` (the auto-wrapped `*stem*` case); a wildcard glob or regex yields an empty stem, so every
-result lands in the `Other` band and recency alone orders — unchanged from before this feature (and matching how those
-patterns behaved). On macOS the stem is NFD-normalized like the matcher's pattern, so it compares against the arena's NFD
-filenames.
-
-### The degradation contract
-
-**Absent importance data, ranking equals today's behavior.** When the weight map is empty (offline volume, fresh
-install, disabled indexing, a purged `importance.db`, or a recompute that hasn't run yet), every weight is `0.0`, so the
-within-band multiplier is `1.0` and the sort is pure recency within each band — byte-for-byte the pre-importance
-ordering. Pinned by `empty_weights_within_band_is_pure_recency` and `empty_weights_and_no_stem_is_pure_recency`. The
-engine also takes an empty-map fast path (skipping the per-result parent-path reconstruction entirely).
-
-### Scan cost: allocations per query, never per row
-
-A query costs a fixed few thousand allocations whatever the arena size, and nothing per scanned row. Allocating per row
-meant 1–1.3 M allocations for a query matching nothing on a 5.2 M-row arena, 93 M for a one-letter query, and a 1.4×
-penalty under the system allocator. Evidence and before/after numbers:
-`docs/notes/performance/search-loop-allocations-2026-09-27.md`. Three things hold it:
-
-- **Each scan chunk clones the compiled query and the scope filter** (`SCAN_CHUNK_ROWS`, 32,768 rows). A cloned
-  `regex::Regex` gets a cache pool of its own, and the one thread scanning the chunk becomes its owner, so every
-  `is_match` takes the pool's lock-free path. ❌ Don't share one `Regex` across the workers: all but one then go
-  through the pool's eight mutex-guarded stacks (`regex_automata::util::pool::Pool`, 0.4), and a worker that loses a
-  `try_lock` builds and drops a whole cache. That lock traffic, not the allocator, was most of the cost: 64 → 10 ms
-  for a no-match query under mimalloc. `ExcludeRules` and `ScopeFilter` share their sets behind `Arc`s so the clone is
-  cheap. `collect()` over the chunks still preserves arena order.
-- **Each scan chunk memoizes the name-exclusion walk** (`AncestorVerdicts`: folder id → "a name rule excludes this
-  folder or one above it"). A match walks up only until a folder the chunk already judged, then records the answer for
-  every folder it passed, so each folder is judged once per chunk rather than once per match under it. That halved a
-  one-letter query (~300 → ~175 ms on a 5.6 M-row arena). The memo is per chunk, ❌ never shared across workers: a
-  shared map is a lock on the hot path.
-- **`ExcludeRules::excludes_dir_name` folds an ASCII name on the stack** (`with_ascii_folded`), byte-identical to
-  `fold` (pinned by `the_ascii_fold_agrees_with_the_general_one`). A non-ASCII or over-long name still takes `fold`'s
-  `String`s (~1% of directory names on a real boot volume), now once per folder per chunk thanks to the memo. ❌ Don't
-  make that path allocation-free by folding char by char here: it would re-derive `normalize_for_comparison`'s NFD and
-  case rules (final sigma included), the fork `CLAUDE.md` forbids.
-- **Ranking hashes a folder's path off a stack buffer**, and its memos are few and warm (§ Ranking cost below).
-
-Pinned per query, not per row, by `engine/tests/allocations.rs` over `test_support::allocations_on_pool`, which counts a
-dedicated rayon pool's threads. ⚠️ The regex half isn't reliably red there: a debug build rarely contends the pool's
-lock. `bench::bench_query_allocations` measures it on a release build against a real index, split into full search,
-scan, and scan without excludes.
-
-### Ranking cost: the top-k pass (`rank_decorated`)
-
-Ranking runs once per MATCHED entry, and a one-letter query matches millions (4.6 M of 6.96 M on a real
-home dir), so this pass — not the rayon scan — was the search's dominant cost: 11.9 s for that query,
-~75% of it the importance blend. Four things keep it bounded, all order-preserving:
-
-- **A per-task `folder_id → weight` memo.** Matches cluster hard by folder, and a weight lookup means
-  walking the folder's parent chain. `map_init` builds one memo per rayon split, so `RANK_MIN_SPLIT` (8,192
-  matches) keeps the splits few and the memos warm.
-- **The folder path is HASHED, never built.** `engine::hash_path_from_index` streams the parent chain's
-  components into `cmdr_fs::path_hash::PathHasher` (incremental FNV-1a + the same splitmix finalizer), so the
-  `String` that existed only to be hashed and dropped is gone, and the components sit in a 64-deep stack buffer
-  (a deeper chain spills the rest to a `Vec`). It's byte-identical to
-  `hash_path(reconstruct_path_from_index(..))`, pinned by `streamed_hash_matches_whole_path_hash` (and
-  `…_past_the_inline_depth`) — a
-  drift there would silently read the wrong weight, with no symptom beyond subtly worse ranking.
-- **`classify_match` allocates nothing** for a case-sensitive compare or an ASCII name+stem (nearly
-  every real filename). Non-ASCII case-insensitive names still take the `to_lowercase()` path, so
-  Unicode folding (final sigma and friends) is unchanged.
-- **Top-k, not a full sort.** `select_nth_unstable_by` partitions to the caller's limit, then only that
-  prefix is sorted. Safe because `RankKey::cmp_best_first` is a TOTAL order (the final tiebreak is the
-  unique entry id), so the top-k set and its order are unique — an unstable partition returns exactly
-  what the full stable sort did. The count-only directory pass passes `usize::MAX`: it needs every
-  matching directory, since the caller subtracts the out-of-range ones from the volume total.
-
-Measurements and the before/after table: `docs/notes/search-latency-2026-07-28.md`. The harness is
-`bench.rs` (`#[ignore]`d; it can run against a real `index-*.db`). Two of its benches answer the arena-SHAPE
-questions rather than the ranking ones: `bench_arena_bytes` (what a loaded arena costs, in heap bytes and in process
-RSS) and `bench_arena_scan` (the count-only pass, best-of-N, with and without the size/date filters that read an
-entry's `OptU64` fields). A third, `bench_query_allocations`, asks the way the dialog and MCP do (excludes on,
-optional real weights) and reports allocations as well as latency. ❌ Don't reach for `bench_real_index` to answer "did the row's shape make scanning slower":
-its queries set no size or date bound, so the matcher skips those predicates, and one run per pattern is swamped by
-machine noise.
+The blend, the degradation contract, and the scan and ranking costs: `crates/cmdr-search/DETAILS.md` § Importance
+ranking. The weight map's lifecycle is the host's, below.
 
 ### The weight-map lifecycle (`volumes/weights.rs`)
 
@@ -908,3 +683,26 @@ ranks tens of thousands of candidates):
 
 The blend coefficient is an unvalidated starting point (the importance weights themselves are too — see
 `crates/cmdr-index/src/importance/scorer/weights.rs`).
+
+## The goldens (`execute/tests/goldens.rs`)
+
+End-to-end answers pinned as JSON (`execute/tests/goldens/macos.json`, `linux.json`): a fixed corpus written into a
+real index through `IndexStore`, loaded by the production loader, and about 45 queries plus five live-run traces through
+ONE entry, `golden_run`, whose signature stays fixed while its body follows the code. They're the proof a refactor
+changed nothing; a moved golden is a bug, ❌ never a re-record, apart from a deliberate behavior change said in its
+commit.
+
+- **Hermetic**: the corpus sits under `/cmdr-golden` and `/Volumes/cmdr-golden-share`, which exist nowhere and live
+  under no `$HOME`, so `realpath` keeps them literal and the `~` substitution never fires. Weights go in as an argument.
+- **Id order**: root, then depth-first with each folder's children in byte order of their names, so an in-memory source
+  that assigns ids the same way can be required to agree on every `entry_id`.
+- **Per platform**: case folding and NFD normalization differ, so each platform has its own file. Record the Linux one
+  in the Linux check container (`scripts/check/checks/desktop-rust-linux-container.go` names the image), with
+  `CMDR_RECORD_SEARCH_GOLDENS=1`.
+- **They bite**: dropping the NFD step, reversing a tie-break, or double-counting an exclusion each moves goldens (seen
+  red, 2026-11-04).
+- **What they pinned that's worth knowing**: on macOS an NFC-spelled name (`Café`, as a browser or a newer API writes
+  it) is found by no typed pattern, because every pattern is NFD-normalized and the arena keeps names as stored
+  (`accented_folder` answers nothing).
+- **Speed**: the scan, allocation, and load numbers the extraction stays within:
+  `docs/notes/search-crate-baseline-2026-11-04.md`.

@@ -35,6 +35,12 @@ import (
 //     few, runs with `always()`, and the `pull_request` trigger has no path
 //     filter (`ci-ok-gate.go`). (`changes` sat outside its needs, so a failed
 //     change detection skipped every lane and `CI OK` went green.)
+//  6. Every filter a lane's caller reads lists its lane file, the composite
+//     actions it uses, `ci.yml`, and `.mise.toml`; no filter names another
+//     lane's file; every `*-lane.yml` is called (`ci-lane-files.go`).
+//     (`macos-lane.yml` and `.github/actions/` sat in no filter that ran them.)
+//  7. A filter that gates one light-lane check covers that check's whole
+//     fingerprint (`ci-lane-files.go`), so gating it never skips a change it reads.
 //
 // Scope notes: rule 1 only scans lines that invoke the check tool (the line
 // must mention `scripts/check`), so prose in workflow comments doesn't count
@@ -77,6 +83,9 @@ func RunCICoverage(ctx *CheckContext) (CheckResult, error) {
 	violations = append(violations, validateCheckInputsExist(ctx.RootDir)...)
 	if ciYml, readErr := os.ReadFile(filepath.Join(wfDir, "ci.yml")); readErr == nil {
 		violations = append(violations, validateCIOKGate(string(ciYml))...)
+		violations = append(violations, validateLaneFilters(ctx.RootDir, string(ciYml))...)
+		violations = append(violations, validateGatedCheckFilters(ctx.RootDir, string(ciYml))...)
+		violations = append(violations, validateLaneCheckInputs(ctx.RootDir, string(ciYml))...)
 	}
 
 	if len(violations) > 0 {
@@ -186,7 +195,8 @@ func validateFilterPathsExist(rootDir, ciPath string) []string {
 	}
 	var violations []string
 	for _, p := range extractCIFilterPaths(string(ciContent)) {
-		probe := staticPathPrefix(p)
+		// An exclusion names real paths too, so a stale one is checked like an include.
+		probe := staticPathPrefix(strings.TrimPrefix(p, "!"))
 		if probe == "" {
 			continue // pattern starts with a glob; nothing concrete to verify
 		}

@@ -15,7 +15,7 @@ runs:
     - name: Keep only the pinned Rust toolchain
       uses: ./.github/actions/pinned-rust-toolchain
 
-    # Its own small entry (four crates for wasm32, plus `wasm-bindgen-cli` in `~/.cargo/bin`),
+    # Its own small entry (the demo engine's crates for wasm32, plus `wasm-bindgen-cli` in `~/.cargo/bin`),
     # not `desktop-rust`'s ~1.8 GB native tree it would never use.
     - name: Cache Rust build
       uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
@@ -30,13 +30,11 @@ runs:
       with:
         save-cache: ${{ inputs.save-rust-cache }}
 
-    - name: Cache pnpm
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Restore only: the install below is filtered, so it mustn't save a partial store.
+    - name: Restore the pnpm store
+      uses: ./.github/actions/pnpm-store
       with:
-        path: ~/.pnpm-store
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-
+        phase: restore
 
     - name: Install dependencies
       shell: bash

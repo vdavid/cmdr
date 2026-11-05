@@ -14,7 +14,7 @@ use crate::agent::AgentDb;
 use crate::agent::store::proposals::{GroupSummary, ProposalSweep, ServerDraft, get_sweep, list_groups};
 use crate::agent::suggested_ops::facts::{RunsAs, source_runs_as};
 use crate::agent::types::{ProposalStatus, ProposalVerb, Reversibility};
-use crate::search::format_timestamp;
+use crate::search::format_local_date;
 use crate::tools::{ToolError, ToolResult};
 
 /// Which groups to list. Defaults to `pending` — what's waiting on the user is the question
@@ -224,7 +224,7 @@ pub(super) fn shape_list(
             None => out.push(SweepOut {
                 sweep_id: sweep.id,
                 created_at: sweep.created_at,
-                created_at_human: format_timestamp(sweep.created_at.max(0) as u64),
+                created_at_human: format_local_date(sweep.created_at.max(0) as u64),
                 rationale: sweep.rationale.clone(),
                 groups: vec![group],
             }),

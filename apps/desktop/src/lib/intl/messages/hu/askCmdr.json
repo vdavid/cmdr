@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "{provider} most elfoglalt. Újrapróbálás ({attemptText}. próbálkozás, összesen {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Az AI-szolgáltatód most elfoglalt. Újrapróbálás ({attemptText}. próbálkozás, összesen {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Ez a csevegés egyre hosszabb lesz. Egy új csevegésben gyorsabbak és célratörőbbek maradnak a válaszok.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -736,6 +744,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Az AI-szolgáltatód ezt elutasította: a csomagod korlátja kisebb, mint a Cmdr egyetlen kérése, mert az mindig tartalmazza a Cmdr utasításait. Egy rövidebb üzenet nem segít. Válts nagyobb csomagra, vagy válassz másik szolgáltatót a beállításokban.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "{provider} most annyira elfoglalt, hogy pár próbálkozás után sem válaszolt. Várj néhány percet, aztán küldd el újra az üzenetedet.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Az AI-szolgáltatód most annyira elfoglalt, hogy pár próbálkozás után sem válaszolt. Várj néhány percet, aztán küldd el újra az üzenetedet.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Ez elérte a korlátját, mielőtt befejezhette volna. Próbálj valami konkrétabbat kérdezni.",
   "@askCmdr.error.budgetExhausted": {

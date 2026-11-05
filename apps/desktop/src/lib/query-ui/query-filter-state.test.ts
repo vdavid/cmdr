@@ -41,6 +41,13 @@ describe('parseDateToTimestamp (pure helper)', () => {
     expect(ts).toBeGreaterThan(0)
   })
 
+  it("starts a date at the user's local midnight", () => {
+    // `new Date('2025-01-01')` is UTC midnight; the user means their own day (as the AI's
+    // date chips and the MCP dates do). Bites on any machine east or west of UTC.
+    expect(parseDateToTimestamp('2025-01-01')).toBe(new Date(2025, 0, 1).getTime() / 1000)
+    expect(parseDateToTimestamp('2026-06-15')).toBe(new Date(2026, 5, 15).getTime() / 1000)
+  })
+
   it('returns undefined for empty / invalid input', () => {
     expect(parseDateToTimestamp('')).toBeUndefined()
     expect(parseDateToTimestamp('not-a-date')).toBeUndefined()

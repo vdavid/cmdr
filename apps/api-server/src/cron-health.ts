@@ -8,7 +8,7 @@
  * surface within the grace period.
  *
  * It's also a second channel for a tick that DID throw, and an independent one: healthchecks.io
- * sends its alerts through its own infrastructure, not Resend. When the thing that broke is our
+ * sends its alerts through its own infrastructure, not SMTP2Go. When the thing that broke is our
  * email path, an alarm that mails through that same path can't tell us. This one can.
  */
 

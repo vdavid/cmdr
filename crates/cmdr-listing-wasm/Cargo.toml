@@ -36,6 +36,10 @@ cmdr-collation = { path = "../cmdr-collation" }
 rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
 # The file viewer's core, over the same volume, answering the viewer's commands.
 cmdr-viewer = { path = "../cmdr-viewer" }
+# The drive search's core, over the same volume, answering ⌘F (`src/search.rs`), and the
+# recents-list rules its session list of recent searches follows.
+cmdr-search = { path = "../cmdr-search" }
+cmdr-recents = { path = "../cmdr-recents" }
 log = "0.4"
 # The wire shapes: every answer and event crosses as the same JSON Tauri sends.
 serde = { version = "1", features = ["derive"] }

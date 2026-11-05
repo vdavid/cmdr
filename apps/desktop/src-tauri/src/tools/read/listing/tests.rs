@@ -449,7 +449,11 @@ fn a_modified_epoch_comes_with_the_date_it_means() {
     );
     let rows = result.children.as_ref().expect("an indexed listing");
     assert_eq!(rows[0].modified, Some(1_700_000_000));
-    assert_eq!(rows[0].modified_human.as_deref(), Some("2023-11-14"));
+    // The date on the user's calendar: 2023-11-14 in UTC, the 15th east of +01:47.
+    assert_eq!(
+        rows[0].modified_human.as_deref(),
+        Some(crate::search::format_local_date(1_700_000_000).as_str())
+    );
     // No timestamp, no date: nothing invented for a row the index has no mtime for.
     let no_mtime = row("x", RowKind::File, None);
     assert_eq!(no_mtime.modified_human, None);
@@ -918,7 +922,10 @@ fn an_offline_answer_is_dated_stale_and_never_authoritative() {
     assert_eq!(wire["coverage"]["source"], "offlineIndex");
     assert_eq!(wire["coverage"]["indexStatus"], "stale");
     assert_eq!(wire["coverage"]["authoritative"], false);
-    assert_eq!(wire["coverage"]["asOf"], crate::search::format_timestamp(1_761_000_000));
+    assert_eq!(
+        wire["coverage"]["asOf"],
+        crate::search::format_local_date(1_761_000_000)
+    );
     let note = wire["coverage"]["note"].as_str().expect("a note");
     assert!(
         note.contains("naspi on 100.127.48.122") && note.contains("Connect it"),

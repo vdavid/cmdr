@@ -2449,6 +2449,10 @@
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "ea3a52f"
   },
+  "errors.shareList.encryptionRequired": "「{server}」無法加密這個連線，而 Cmdr 已啟用「一律要求 SMB 加密」。請檢查伺服器的 SMB 加密設定。",
+  "@errors.shareList.encryptionRequired": {
+    "sourceHash": "4dff9ea"
+  },
   "errors.shareList.protocolError": "向「{server}」取得共享資料夾列表時出了點狀況。請稍後再試一次。",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"
