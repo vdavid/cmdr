@@ -402,7 +402,7 @@ pub async fn start_scan_preview(
     let Ok(engine) = operations() else {
         return Ok(refuse_scan_preview_not_installed(&*events));
     };
-    Ok(engine.start_scan_preview(events, sources, source_volume, volume_id, progress_interval, purpose))
+    engine.start_scan_preview(events, sources, source_volume, volume_id, progress_interval, purpose)
 }
 
 #[tauri::command]

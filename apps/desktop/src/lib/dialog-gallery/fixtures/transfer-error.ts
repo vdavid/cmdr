@@ -324,6 +324,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'delete',
     error: { type: 'mounted_volume_inside', mountPoint: '/Users/david/projects/backup/nas', action: 'delete' },
   },
+  // A permanent delete an agent started on the person's own home folder.
+  home_folder: {
+    operationType: 'delete',
+    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome' },
+  },
   // A move within an S3 account whose source another app replaced mid-copy.
   source_changed: {
     operationType: 'move',
@@ -481,6 +486,11 @@ const extraStates: Record<string, TransferErrorFixture> = {
   'mounted_volume_inside-move': {
     operationType: 'move',
     error: { type: 'mounted_volume_inside', mountPoint: '/Users/david/projects/backup/nas', action: 'move' },
+  },
+  // A trash of `/Users`, which holds the home folder.
+  'home_folder-holds': {
+    operationType: 'trash',
+    error: { type: 'home_folder', path: '/Users', relation: 'holdsHome' },
   },
   'files_too_large_for_filesystem-single': {
     operationType: 'copy',

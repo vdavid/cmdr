@@ -409,3 +409,60 @@ fn every_write_command_is_routed_to_the_write_engine() {
     assert!(Demo::handles("copy_between_volumes"));
     assert!(Demo::handles("list_operations"));
 }
+
+/// The visitor's home folder, and every folder holding it, refuse delete and the
+/// delete dialog's preview, typed, as on the desktop. Regression anchor: deleting
+/// `/Users` used to go through and land the pane on "Path not found".
+#[tokio::test(flavor = "multi_thread")]
+async fn the_home_folder_and_its_holders_refuse_delete() {
+    let tree: DemoTree = serde_json::from_value(json!({
+        "volumeId": "root",
+        "root": "/",
+        "home": "/Users/you",
+        "entries": [
+            { "path": "/Users", "kind": "dir" },
+            { "path": "/Users/you", "kind": "dir" },
+            { "path": "/Users/you/a.txt", "kind": "file", "size": 10 },
+            { "path": "/Users/guest", "kind": "dir" },
+        ],
+    }))
+    .expect("tree parses");
+    let events = Arc::new(Collector::default());
+    let demo = Demo::new(tree, Arc::clone(&events) as _).expect("valid tree");
+
+    for (source, relation) in [
+        ("~", "isHome"),
+        ("/Users/you/", "isHome"),
+        ("/Users", "holdsHome"),
+        ("/", "holdsHome"),
+    ] {
+        let refused = demo
+            .invoke(
+                "delete_files",
+                json!({ "sources": [source], "volumeId": "root", "initiator": "user" }),
+            )
+            .await
+            .expect_err("a delete of the home folder refuses");
+        assert_eq!(refused["type"], "home_folder", "{source}: {refused}");
+        assert_eq!(refused["relation"], relation, "{source}: {refused}");
+
+        let preview = demo
+            .invoke(
+                "start_scan_preview",
+                json!({ "sources": [source], "sourceVolumeId": "root", "purpose": "delete" }),
+            )
+            .await
+            .expect_err("the delete dialog's preview refuses");
+        assert_eq!(preview["type"], "home_folder", "{source}: {preview}");
+    }
+
+    // Another user's home folder deletes as before.
+    let deleted = call(
+        &demo,
+        "delete_files",
+        json!({ "sources": ["/Users/guest"], "volumeId": "root", "initiator": "user" }),
+    )
+    .await;
+    let deleted = deleted["operationId"].as_str().expect("id").to_string();
+    assert_eq!(events.settled(&deleted).await, "write-complete");
+}

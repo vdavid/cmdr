@@ -44,7 +44,7 @@ mod scan_preview_sink;
 pub mod testing;
 mod volumes;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use cmdr_fs::rt::Runtime as Handle;
@@ -84,6 +84,9 @@ pub struct EngineHost {
     index: Arc<dyn OperationIndex>,
     pacing: Arc<dyn Pacing>,
     name_order: Arc<dyn NameOrder>,
+    /// The person's own home folder on the default volume, which no delete or
+    /// trash may remove (`home_folder.rs`). `None` guards nothing.
+    home_folder: Option<PathBuf>,
 }
 
 impl EngineHost {
@@ -104,6 +107,7 @@ impl EngineHost {
             index: Arc::new(NoOperationIndex),
             pacing: Arc::new(NoPacing),
             name_order: Arc::new(EnglishNameOrder::new()),
+            home_folder: None,
         }
     }
 
@@ -136,6 +140,17 @@ impl EngineHost {
     pub(crate) fn with_name_order(mut self, name_order: Arc<dyn NameOrder>) -> Self {
         self.name_order = name_order;
         self
+    }
+
+    /// Guards `home` (on the default volume) against delete and trash.
+    pub(crate) fn with_home_folder(mut self, home: PathBuf) -> Self {
+        self.home_folder = Some(home);
+        self
+    }
+
+    /// The person's own home folder, as the host gave it.
+    pub(crate) fn home_folder(&self) -> Option<&Path> {
+        self.home_folder.as_deref()
     }
 
     /// A host that answers nothing: no volumes, no events, and `cmdr-fs`'s shared fallback

@@ -212,7 +212,7 @@ pub(crate) fn test_engine_journaling_into(log: &cmdr_operations::testing::TestOp
 /// where the engine-wide events go out, if anywhere, and `operation_log` the
 /// journal it records into.
 fn app_answers(app: Option<AppHandle>, operation_log: OperationLog) -> OperationsBuilder {
-    Operations::builder(
+    let builder = Operations::builder(
         Arc::new(AppOperationVolumes),
         Arc::new(events::TauriEngineEvents::new(app)),
     )
@@ -221,7 +221,14 @@ fn app_answers(app: Option<AppHandle>, operation_log: OperationLog) -> Operation
     .own_writes(Arc::new(own_writes::AppOwnWrites))
     .index(Arc::new(index::AppOperationIndex))
     .pacing(Arc::new(pacing::AppPacing))
-    .name_order(Arc::new(name_order::AppNameOrder))
+    .name_order(Arc::new(name_order::AppNameOrder));
+    // The person's own home folder, which no delete or trash may remove
+    // (`cmdr-operations`' `home_folder.rs`). No home answer guards nothing,
+    // the same as before the guard existed.
+    match dirs::home_dir() {
+        Some(home) => builder.home_folder(home),
+        None => builder,
+    }
 }
 
 #[cfg(test)]

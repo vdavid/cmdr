@@ -29,6 +29,7 @@
     import StartInBackgroundButton from '../StartInBackgroundButton.svelte'
     import { createDeleteScanState } from './delete-scan-state.svelte'
     import { isStartInBackgroundKey, swallowHeldKeyRepeat } from '../start-in-background-key'
+    import { homeFolderMessage } from '../transfer/transfer-error-messages'
 
     const log = getAppLogger('deleteDialog')
 
@@ -127,6 +128,14 @@
      *  trash), and goes the moment it reads "Delete permanently". */
     const canTrashInBackground = $derived(!isPermanent && onConfirmInBackground !== undefined)
 
+    /** The backend won't delete this: it's the person's own home folder, or holds
+     *  it. The dialog then says why and offers only Close (`home_folder.rs`). */
+    const homeFolderRefusal = $derived(scan.homeFolderRefusal)
+    /** The refusal's words, the same the error dialog shows for a start that skipped this dialog. */
+    const refusalText = $derived(
+        homeFolderRefusal ? homeFolderMessage(homeFolderRefusal.path, homeFolderRefusal.relation) : null,
+    )
+
     const dialogTitle = $derived(generateDeleteTitle(sourceItems, isFromCursor))
     const abbreviatedPath = $derived(abbreviatePath(sourceFolderPath))
     const symlinkNotice = $derived(getSymlinkNotice(sourceItems))
@@ -140,10 +149,13 @@
             : tString('fileOperations.delete.confirmMoveToTrash'),
     )
     const confirmVariant = $derived<'primary' | 'danger'>(isPermanent ? 'danger' : 'primary')
-    const dialogRole = $derived<'dialog' | 'alertdialog'>(isPermanent ? 'alertdialog' : 'dialog')
+    const dialogRole = $derived<'dialog' | 'alertdialog'>(isPermanent && !refusalText ? 'alertdialog' : 'dialog')
     // `delete-warning-text` only exists while a banner renders, so point
     // `aria-describedby` at the banner's condition, not at `isPermanent`.
     const hasWarningBanner = $derived(isArchive || routedForOnlineOnly || !supportsTrash)
+    const describedBy = $derived(
+        refusalText ? 'delete-refusal-text' : hasWarningBanner ? 'delete-warning-text' : undefined,
+    )
 
     // True once the user confirms. On confirm the delete/trash op (or the
     // progress dialog) takes over the same scan and consumes the cached result,
@@ -238,6 +250,11 @@
         // The scan-preview IPC only mints an id and spawns the walk, so it
         // answers promptly even on a wedged share. See `scan.scanStarted`.
         await scan.scanStarted
+        // Refused for the home folder's sake: there's nothing to confirm, only Close.
+        if (scan.homeFolderRefusal) {
+            confirming = false
+            return false
+        }
 
         if (cloudFolderMayHoldOnlineOnly && !routedForOnlineOnly) {
             // A selected folder in a cloud drive: the walk decides whether this is
@@ -341,13 +358,28 @@
     {startedBy}
     role={dialogRole}
     onclose={handleCancel}
-    ariaDescribedby={hasWarningBanner ? 'delete-warning-text' : undefined}
+    ariaDescribedby={describedBy}
     containerStyle="width: 500px"
     resizable="horizontal"
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
     <div class="dialog-body">
+        {#if refusalText}
+            <!-- The home folder, or a folder holding it: why not, in place of the
+                 whole confirm UI. The backend refuses the delete itself too. -->
+            <div class="refusal" role="alert" data-test="delete-home-folder-refusal">
+                <span class="refusal-icon" aria-hidden="true">
+                    <Icon name="house" size={18} />
+                </span>
+                <div id="delete-refusal-text" class="refusal-text">
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -- Built by homeFolderMessage from the catalog with the path escaped; no other input. -->
+                    <p>{@html refusalText.message}</p>
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -- Catalog text only. -->
+                    <p>{@html refusalText.suggestion}</p>
+                </div>
+            </div>
+        {:else}
         <!-- Warning banner: archive deletes are permanent (no Trash inside a zip);
              a selection holding online-only cloud content says so in its own words,
              since the person pressed Trash and got a delete; other no-trash volumes
@@ -507,13 +539,14 @@
                 {tString('fileOperations.delete.cloudOnlineOnlyHandedBack')}
             </p>
         {/if}
+        {/if}
     </div>
 
     <!-- Trash (on, the safe default) vs. permanent delete (off). Rides the footer
          row so it reads as a modifier on the confirm button beside it. Holding Shift
          flips it too, for as long as the key is down. -->
     {#snippet footerLeading()}
-        {#if trashAvailable}
+        {#if trashAvailable && !refusalText}
             <Switch checked={!isPermanent} onCheckedChange={(toTrash) => (switchIsPermanent = !toTrash)}
                 >{tString('fileOperations.delete.trashSwitch')}</Switch
             >
@@ -521,6 +554,9 @@
     {/snippet}
 
     {#snippet footer()}
+        {#if refusalText}
+            <Button variant="primary" onclick={handleCancel}>{tString('fileOperations.button.close')}</Button>
+        {:else}
         <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
         {#if canTrashInBackground}
             <StartInBackgroundButton
@@ -531,6 +567,7 @@
         <Button variant={confirmVariant} onclick={() => void handleConfirm()}>
             {#if confirming}<span class="confirm-spinner"><Spinner size="sm" /></span>{/if}{confirmLabel}
         </Button>
+        {/if}
     {/snippet}
 </ModalDialog>
 
@@ -572,6 +609,30 @@
         margin: 0;
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
+    }
+
+    /* The home-folder refusal, in place of the confirm UI. */
+    .refusal {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    .refusal-icon {
+        flex-shrink: 0;
+        color: var(--color-text-secondary);
+        margin-top: 1px;
+    }
+
+    .refusal-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .refusal-text p {
+        margin: 0;
+        color: var(--color-text-primary);
     }
 
     /* Scrollable file list */

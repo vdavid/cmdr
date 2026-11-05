@@ -298,6 +298,8 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'mounted_volume_inside', label: 'Delete reaches a mounted drive' },
       { id: 'mounted_volume_inside-copy', label: 'Overwrite reaches a mounted drive' },
       { id: 'mounted_volume_inside-move', label: 'Move reaches a mounted drive' },
+      { id: 'home_folder', label: 'Delete of the home folder' },
+      { id: 'home_folder-holds', label: 'Delete of a folder holding the home folder' },
       { id: 'files_too_large_for_filesystem', label: 'Too large for the filesystem (three files)' },
       { id: 'files_too_large_for_filesystem-single', label: 'Too large for the filesystem (one file)' },
       { id: 'new_data_kept_at', label: 'New file kept under another name' },

@@ -1,6 +1,6 @@
 # Delete + trash
 
-A local-FS walker (`walkdir` + `fs::remove_file`), a volume walker (every backend), and OS-native trash.
+A local-FS walker, a volume walker (every backend), and OS-native trash.
 
 `../../CLAUDE.md` holds the shared `WriteOperationState`, `OperationIntent`, cancel, ETA, and settle contracts;
 `../transfer/CLAUDE.md` is the copy + move parallel. Frontend counterpart:
@@ -14,12 +14,11 @@ A local-FS walker (`walkdir` + `fs::remove_file`), a volume walker (every backen
 - **`outage.rs`**: waits out a dropped share. ❗ A re-run re-checks the entry (kind, size); a mismatch stops the delete
   (`ChangedWhileDisconnected`); `NotFound` means deleted ONLY after a wait. ❌ No `through_outages` around a delete.
   DETAILS § "Waiting out a dropped share".
-- **`trash.rs`**: `move_to_trash_sync()` (macOS `trashItemAtURL`; Linux `trash` crate; reused by
-  `trash_single_journaled`), `trash_files_with_progress()` (batch, per-item progress, cancel), and
+- **`trash.rs`**: `move_to_trash_sync()`, `trash_files_with_progress()` (batch, per-item progress, cancel), and
   `trash_dir_for_path()` (❌ keep its ancestor walk, DETAILS § Where a trash is). Each item it can't take emits a
   `Failed` source-item event.
-- **`cloud_trash.rs`**: `routing_for_selection()` behind the `trash_routing_for_paths` command, plus `is_online_only`
-  (the one `SF_DATALESS` read). DETAILS § "A trash of online-only cloud content becomes a delete".
+- **`cloud_trash.rs`**: `routing_for_selection()` behind the `trash_routing_for_paths` command. DETAILS § "A trash of
+  online-only cloud content becomes a delete".
 - **`volume_start.rs`**: a volume delete's managed lifecycle (an `async` body). DETAILS § "The volume delete's own
   lifecycle".
 - **`already_gone.rs`**: an already-gone item counts as done, ❌ never `SourceNotFound`. DETAILS § "An item that's
@@ -38,6 +37,8 @@ A local-FS walker (`walkdir` + `fs::remove_file`), a volume walker (every backen
   links (`listings_mark_links`). DETAILS § "A link is a leaf".
 - **A delete reaching a mount point refuses WHOLE, up front** (`MountedVolumeInside`), in both walkers and the delete
   preview, and again right before deleting. DETAILS § "A mount is a wall".
+- **Never the person's home folder or a folder holding it**: delete, trash, and the delete preview refuse up front
+  (`../home_folder.rs`). DETAILS § "The home folder stays".
 - **❌ Never resolve a top-level source's type with `.unwrap_or(false)`.** Hand the `Option` to `scan_volume_recursive`,
   which propagates a failed probe: a guessed "file" books zero bytes for a whole tree.
 - **Trash has no scan phase**: `trashItemAtURL` is atomic per top-level item, so progress tracks items. A PARTLY refused
@@ -45,15 +46,14 @@ A local-FS walker (`walkdir` + `fs::remove_file`), a volume walker (every backen
   reads as a clean success.
 - **ONLINE-ONLY content (`SF_DATALESS`) in `~/Library/CloudStorage/<domain>/` trashes as a permanent delete**: trashing
   an evicted file DOWNLOADS it first. ❌ Never route on the folder alone (an ordinary Dropbox file trashes fine; routing
-  it is data loss), ❌ never on the refusal (two `NSError` codes, non-deterministic) or "no trash here"; only a provider
-  we know by name, all-or-nothing. A FOLDER is answered by the scan preview's walk (`OnlineOnlyWatch`), ❌ no second
-  walk. DETAILS.
+  it is data loss), ❌ never on the refusal; only a provider we know by name, all-or-nothing. A FOLDER is answered by
+  the scan preview's walk (`OnlineOnlyWatch`), ❌ no second walk. DETAILS.
 - **A refusal carries a typed `TrashRefusalKind`, read from the `NSError` DOMAIN + CODE**, ❌ never its localized words
   (`error-string-match` forbids it). A failed batch is `WriteOperationError::TrashRefused`, ❌ not an `IoError` (that
   leaves the dialog only "try again"), reporting `strongest_refusal`, ❌ not the most common one.
 - **A test that really trashes holds `testing::TrashCleanup`** (`docs/testing.md`).
-- **Delete and trash don't `fsync`, and ❌ never a global `sync(2)`** (it stalled every other app; `clippy.toml`
-  disallows `libc::sync`).
+- **Delete and trash don't `fsync`, and ❌ never a global `sync(2)`** (it stalled every other app; `clippy.toml` bans
+  `libc::sync`).
 - **A scan bailing with `Err(Cancelled)` emits no `write-cancelled`; its top-level caller does**
   (`emit_cancelled_if_aborted`), or it fires once per frame.
 

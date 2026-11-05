@@ -142,10 +142,18 @@ impl Demo {
             searched,
             Arc::clone(&sizes),
             Arc::clone(&sink),
-            home,
+            home.clone(),
             listings.collator(),
         ));
-        let operations = DemoOperations::new(volume_id, volume, volume_host, &listings, Arc::clone(&sizes) as _, sink);
+        let operations = DemoOperations::new(
+            volume_id,
+            volume,
+            volume_host,
+            &listings,
+            Arc::clone(&sizes) as _,
+            sink,
+            home.map(PathBuf::from),
+        );
         Ok(Self {
             listings,
             events,

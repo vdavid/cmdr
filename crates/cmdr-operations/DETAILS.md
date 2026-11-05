@@ -155,7 +155,8 @@ The full top-level inventory is here:
   (Shuttle)"), `human_wait.rs` (how long a person, or a volume that left, has kept the operation waiting),
   `metadata_losses.rs` (per-class counts of the metadata a destination couldn't keep, for the completion's note:
   `src/transfer/volume/DETAILS.md` § "Copies keep the source's metadata"), `mount_boundary.rs` (where a delete's walk
-  stops: `src/delete/DETAILS.md` § "A mount is a wall"), `archive_edit/` (the zip-edit driver).
+  stops: `src/delete/DETAILS.md` § "A mount is a wall"), `home_folder.rs` (the home folder no delete or trash removes:
+  `src/delete/DETAILS.md` § "The home folder stays"), `archive_edit/` (the zip-edit driver).
 - The in-flight ledgers and what reverses them: `ledger.rs` (`CopyTransaction` and `WrittenFile`, the vocabulary of what
   an operation currently has at the destination, plus the `Drop` panic net) and `reversal.rs` (the policy over it: the
   recheck before each destructive act, and `ReversalTally`), plus `unblocked_removal.rs` (the one removal every reversal
