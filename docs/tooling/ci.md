@@ -169,20 +169,24 @@ failed, so a red run lists every failure, like the four separate jobs it replace
   territory). Grouped a few per step: one invocation runs its checks in parallel.
 - **Per filter**: the Go checks (`scripts`, one invocation, so they overlap), the API server (`api-server`), and the
   dashboard (`dashboard`).
-- **nilaway runs in a job of its own on `ubuntu-latest`** (`nilaway`, gated on `scripts` or a full run): on the
-  self-hosted runner it passed 2.5 GB and kept growing against a 1.5 GB job budget. Its own job also takes it off the Go
-  section's critical path. It restores the check tool and the Go caches (nilaway's binary among them) and saves nothing.
-  The check fans out two modules at a time (`scripts/check/checks/DETAILS.md`).
-- **Three slow hygiene checks, per filter** (each filter carries the check's fingerprint, `ci-coverage` rule 7):
+- **nilaway and Scorecard run in `hosted-go`, a second job on `ubuntu-latest`**, gated on `scripts` (nilaway),
+  `scorecard` (Scorecard), or a full run, so the self-hosted runner keeps only the fast checks: there nilaway passed 2.5
+  GB and kept growing against a 1.5 GB job budget, and Scorecard's cold `go install` pulled ~2.3 GB of Go modules and
+  filled its disk (run 41949695576, 2026-11-05). Beside the light job, it also takes both off that job's critical path.
+  It restores the check tool, the Go caches (nilaway's binary among them), and the scorecard binary, and saves nothing.
+  nilaway fans out two modules at a time (`scripts/check/checks/DETAILS.md`).
+- **Two slow hygiene checks, per filter** (each filter carries the check's fingerprint, `ci-coverage` rule 7):
   `desktop-i18n-termbase` (~40 s) on `termbase`; `changelog-commit-links` on `changelog`, which alone needs history, so
-  the lane fetches it (`git fetch --unshallow`) only then; `scorecard-local` on `scorecard`.
-- **Scorecard's trigger has two halves.** Its file checks read workflows, Dockerfiles, the Renovate config, the license,
-  security policy, and fuzz harness: the `scorecard` filter. But Binary-Artifacts and Pinned-Dependencies' shell half
-  read EVERY file, by content (read in ossf/scorecard v5.5.0's source, 2026-11-05: its raw Binary-Artifacts check
-  matches magic bytes or a binary extension, and its shell-download validator a shell extension or shebang), so on a PR
-  the lane's first step reads the PR's file list (`pulls/{n}/files`) and runs Scorecard when a file, a deleted one or a
-  rename's old path included, has a binary or shell extension, a Dockerfile or `.github/` path, a shebang, or a NUL in
-  its first 1,024 bytes. 3,000+ files (the API's cap) or a failed lookup runs it. A push or dispatch always runs it.
+  the lane fetches it (`git fetch --unshallow`) only then. `scorecard-local` on `scorecard` is the third, in
+  `hosted-go`.
+- **Scorecard's trigger has two halves**, both decided in `changes`. Its file checks read workflows, Dockerfiles, the
+  Renovate config, the license, security policy, and fuzz harness: the `scorecard` filter. But Binary-Artifacts and
+  Pinned-Dependencies' shell half read EVERY file, by content (read in ossf/scorecard v5.5.0's source, 2026-11-05: its
+  raw Binary-Artifacts check matches magic bytes or a binary extension, and its shell-download validator a shell
+  extension or shebang), so on a PR the `scorecard-scan` step reads the PR's file list (`pulls/{n}/files`) and runs
+  Scorecard when a file, a deleted one or a rename's old path included, has a binary or shell extension, a Dockerfile or
+  `.github/` path, a shebang, or a NUL in its first 1,024 bytes. 3,000+ files (the API's cap) or a failed lookup runs
+  it. A push or dispatch always runs it.
 - **The runner is an input** (`runs-on`, default `ubuntu-latest`). `ci.yml`'s top-level `LIGHT_LANE_RUNNER` is the one
   switch, set to `cmdr-light`: the self-hosted runner on David's Hetzner box (labels
   `self-hosted, Linux, X64, cmdr-light`; its budget, containment, and how to pause it live with the `gha-runner` Ansible
@@ -197,10 +201,10 @@ failed, so a red run lists every failure, like the four separate jobs it replace
   `all_external_contributors`, read with `gh api` on 2026-11-05).
 - **What changes on that runner** (`HOSTED` in `light-lane.yml`): `jdx/mise-action` gets `cache: false` and the
   `node_modules` and Go cache restores skip, because the box keeps mise's tools, pnpm's store, and the Go caches between
-  jobs, pre-warmed from `main`; `pnpm install` links from the warm store. The small per-checkout entries (the check
-  tool, the scorecard binary) still restore, and nothing saves from there (it restored only part of the set), so
-  `warm-light-cache` runs after every `main` push whose light lane ran on the box. `GOFLAGS` adds `-modcacherw`, so the
-  box's disk cleanup can delete the module cache.
+  jobs, pre-warmed from `main`; `pnpm install` links from the warm store. The check tool (small, per checkout) still
+  restores, and nothing saves from there (it restored only part of the set), so `warm-light-cache` runs after every
+  `main` push whose light lane ran on the box. `GOFLAGS` adds `-modcacherw`, so the box's disk cleanup can delete the
+  module cache.
 
 **A PR whose head tree equals its base branch's skips it** (`changes`' `same-tree` step, pull requests only). That's a
 `pnpm land -record N` record (`docs/guides/handling-prs.md`): an `ours` merge that changes no file, only ancestry, so
