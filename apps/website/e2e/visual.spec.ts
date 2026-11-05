@@ -146,11 +146,13 @@ test.describe('committed baselines', () => {
   })
 
   // The home fold: nav, hero, download split button, theme toggle. Everything below it is copy.
+  // The hero's window holds the live browser demo, which loads after idle and runs real app state,
+  // so its iframe is masked: the shot covers our window, copy, and note, never the app's pixels.
   test('home fold', async ({ page }) => {
     await preparePage(page, 'light')
     await settle(page, '/')
     await expect(page).toHaveScreenshot('home-fold.png', {
-      mask: volatileMasks(page),
+      mask: [...volatileMasks(page), page.locator('[data-live-demo-frame]')],
       maxDiffPixelRatio: 0.01,
     })
   })
