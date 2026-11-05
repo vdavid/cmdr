@@ -34,7 +34,7 @@ pub struct SearchQuery {
     #[serde(default)]
     pub exclude_dir_names: Option<Vec<String>>,
     /// Never sent from the frontend or MCP, and never read by a search: the scope
-    /// reaches the engine as a resolved `seam::ResolvedScope`. Only the pure-engine
+    /// reaches the engine as a resolved `engine::ResolvedScope`. Only the pure-engine
     /// test wrapper (`engine::search`) reads it, as a fixture's shorthand.
     #[serde(skip)]
     pub include_path_ids: Option<Vec<i64>>,

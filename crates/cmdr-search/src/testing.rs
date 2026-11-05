@@ -133,7 +133,7 @@ pub fn synthetic_weights(index: &SearchIndex) -> ImportanceWeights {
     let mut weights = ImportanceWeights::empty();
     for i in 0..index.len() {
         if index.is_directory(i) && index.id(i) != ROOT_ID {
-            let path = crate::engine::reconstruct_path_from_index(index, index.id(i));
+            let path = crate::arena::reconstruct_path_from_index(index, index.id(i));
             weights.insert(&path, ((i % 100) as f64) / 100.0);
         }
     }

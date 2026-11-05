@@ -1,7 +1,7 @@
 //! The exclusion rules both evaluators share, and the live one in particular.
 
 use super::*;
-use crate::context::NameRules;
+use crate::name_rules::NameRules;
 use crate::types::{PatternType, SearchQuery};
 
 /// Compile a query's exclusions under this machine's own name fold, as the desktop does.

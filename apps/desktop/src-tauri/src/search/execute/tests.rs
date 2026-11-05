@@ -7,10 +7,10 @@ use super::coverage::coverage_kind;
 use super::*;
 use crate::search::context::SearchContext;
 use crate::search::engine;
+use crate::search::engine::ResolvedScope;
 use crate::search::index::{ArenaBuilder, SearchIndex};
 use crate::search::live::CoverageKind;
 use crate::search::ranking::ImportanceWeights;
-use crate::search::seam::ResolvedScope;
 use crate::search::types::{PatternType, SearchResultEntry};
 use cmdr_index::ROOT_VOLUME_ID;
 

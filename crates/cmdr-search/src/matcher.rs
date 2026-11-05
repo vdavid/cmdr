@@ -44,7 +44,7 @@
 
 use regex::{Regex, RegexBuilder};
 
-use super::context::NameRules;
+use super::name_rules::NameRules;
 use super::query::glob_to_regex;
 use super::types::{PatternType, SearchQuery};
 

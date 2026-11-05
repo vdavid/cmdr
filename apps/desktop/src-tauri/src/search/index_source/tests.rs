@@ -7,9 +7,10 @@ use cmdr_index::ReadPool;
 use cmdr_index::store::{IndexStore, ROOT_ID};
 
 use super::*;
+use crate::search::engine::ResolvedScope;
 use crate::search::index::load_search_index;
 use crate::search::index_source::PathNamespace;
-use crate::search::seam::{ResolvedScope, resolve_scope};
+use crate::search::seam::resolve_scope;
 use crate::test_support::TestDir;
 
 // ── canonicalize_scope_path ─────────────────────────────────────

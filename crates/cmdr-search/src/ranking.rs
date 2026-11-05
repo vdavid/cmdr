@@ -2,7 +2,7 @@
 //! importance weight, so interesting files rise toward the top without ever
 //! letting importance override a clearly-better name match.
 //!
-//! This is a pure module (no I/O, no DB): [`engine`](super::engine) hands it the
+//! This is a pure module (no I/O, no DB): `engine.rs` hands it the
 //! matched entries plus an importance lookup (a closure over a per-volume weight
 //! map, built in `commands/search.rs`), and it returns the ranked order. Keeping
 //! it separate from the hot scan loop makes the ranking policy directly testable
@@ -32,8 +32,8 @@
 use cmdr_fs::path_hash::{PrehashedState, hash_path};
 use rayon::prelude::*;
 
-use super::arena::SearchIndex;
-use super::context::NameRules;
+use super::arena::{SearchIndex, hash_path_from_index};
+use super::name_rules::NameRules;
 use super::types::{PatternType, SearchQuery};
 
 /// How well a result's name matches the user's search pattern, as a coarse band.
@@ -365,7 +365,7 @@ pub(crate) fn rank_indices(
             };
             let weight = *memo
                 .entry(folder_id)
-                .or_insert_with(|| weights.weight_for_hash(super::engine::hash_path_from_index(index, folder_id)));
+                .or_insert_with(|| weights.weight_for_hash(hash_path_from_index(index, folder_id)));
             boosted_recency_key(recency, weight)
         };
         (

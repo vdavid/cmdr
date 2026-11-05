@@ -18,7 +18,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::location::Location;
-use crate::search::context::NameRules;
+use crate::search::NameRules;
 use crate::search::matcher::{Candidate, CompiledQuery, Evaluator};
 use crate::search::types::{PatternType, SearchQuery};
 

@@ -29,7 +29,8 @@ use cmdr_index::store::{DirStatsById, IndexStore, ROOT_ID};
 use serde_json::{Value, json};
 
 use super::*;
-use crate::search::context::{NameRules, SearchContext};
+use crate::search::NameRules;
+use crate::search::context::SearchContext;
 use crate::search::index::load_search_index;
 use crate::search::live::events::CollectorSearchEventSink;
 use crate::search::live::{

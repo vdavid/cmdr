@@ -1,5 +1,5 @@
 use super::*;
-use crate::seam::ResolvedScope;
+use crate::engine::ResolvedScope;
 use crate::types::PatternType;
 
 // ── Size filters ─────────────────────────────────────────────────

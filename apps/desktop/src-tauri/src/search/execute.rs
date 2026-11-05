@@ -36,7 +36,8 @@
 use crate::index_host::index;
 use cmdr_index::ROOT_VOLUME_ID;
 
-use super::context::{NameRules, SearchContext};
+use super::NameRules;
+use super::context::SearchContext;
 use super::index_source::{IndexSource, scope_pairs};
 use super::ranking::ImportanceWeights;
 use super::seam::{CoveredHalf, SearchError, search_covered};

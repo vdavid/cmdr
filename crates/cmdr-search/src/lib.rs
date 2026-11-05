@@ -17,6 +17,7 @@ pub mod history;
 mod local_days;
 pub mod matcher;
 mod memory;
+mod name_rules;
 pub mod query;
 pub mod ranking;
 pub mod run;
@@ -30,11 +31,12 @@ mod test_alloc;
 pub mod testing;
 
 pub use arena::{ARENA_ROOT_ID, ArenaBuilder, OptU64, SearchEntry, SearchIndex};
-pub use context::{NameFold, NameRules, SearchContext};
+pub use context::SearchContext;
+pub use engine::ResolvedScope;
 pub use memory::{MemoryRow, MemorySource, MemorySourceError};
+pub use name_rules::{NameFold, NameRules};
 pub use seam::{
-    CoveredHalf, DirSizeSource, ResolvedScope, ScopeResolution, SearchError, SearchRows, SourceError, SourceRead,
-    search_covered,
+    CoveredHalf, DirSizeSource, ScopeResolution, SearchError, SearchRows, SourceError, SourceRead, search_covered,
 };
 pub use types::{ParsedScope, PatternType, SearchQuery, SearchResult, SearchResultEntry, SearchSort};
 

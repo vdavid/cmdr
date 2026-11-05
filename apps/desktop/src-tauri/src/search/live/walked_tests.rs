@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use cmdr_index::CoveredEntry;
 
 use super::{covered_name, matches_walked};
-use crate::search::context::NameRules;
+use crate::search::NameRules;
 use crate::search::matcher::{Candidate, CompiledQuery, Evaluator};
 use crate::search::types::{PatternType, SearchQuery};
 

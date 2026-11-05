@@ -24,8 +24,8 @@ use std::sync::Arc;
 
 use regex::{Regex, RegexBuilder};
 
-use super::context::NameFold;
 use super::matcher::CompileError;
+use super::name_rules::NameFold;
 use super::query::{SYSTEM_DIR_EXCLUDES, glob_to_regex};
 use super::types::SearchQuery;
 

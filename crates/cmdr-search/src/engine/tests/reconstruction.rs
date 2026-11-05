@@ -1,4 +1,5 @@
 use super::*;
+use crate::arena::hash_path_from_index;
 
 // ── Path reconstruction ──────────────────────────────────────────
 

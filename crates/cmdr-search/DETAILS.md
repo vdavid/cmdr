@@ -82,13 +82,19 @@ would be millions of virtual calls and, worse, a `dyn` iterator can't `par_chunk
   reports, the canonical is what is looked up.
 - **`ResolvedScope`** (`Whole`, `Ids`, `Nothing`) replaced the `[i64::MIN]` sentinel; the engine takes it as a
   parameter. `SearchQuery::include_path_ids` stays on the wire type, read only by the test wrapper `engine::search`.
+- **Decision: the seam sits ABOVE the engine, never beside it.** `seam.rs` resolves and orchestrates, `engine.rs` scans,
+  so the scan's own input and output types (`ResolvedScope`, `DirSizes`, `Ranked`) live in `engine.rs` and the seam
+  imports them. Likewise `context.rs` aggregates `NameRules` (a leaf) and ranking's weights, and both parent-chain path
+  walks live in `src/arena/paths.rs` under ranking and the scan. Why: a type the lower layer needs but the upper one
+  defines welds the two into a circle, which `module-cycles` fails on (`scripts/check/checks/DETAILS.md` § "Rust module
+  cycles").
 - **Errors are typed**: `SearchError::Query` (an invalid pattern or exclusion, or too broad) and
   `SearchError::SourceUnreadable` (`SourceRead::Scope`, `SizeRange`, `SizeFill`). The desktop's live run maps the second
   to `IndexUnreadable` with a sentence a person can act on.
-- **`NameRules`** (`context.rs`) carries the default case rule, whether a pattern is NFD-normalized, and the `NameFold`
-  an exclusion keys on. `NameRules::host()` is the `cfg`-derived desktop answer, pinned to the old answers by
-  `the_host_rules_are_what_this_machine_always_answered`; `MACOS` and `LINUX` let any machine run either platform's
-  rules (the host's goldens do, both ways).
+- **`NameRules`** (`name_rules.rs`, a private leaf promised at the crate root) carries the default case rule, whether a
+  pattern is NFD-normalized, and the `NameFold` an exclusion keys on. `NameRules::host()` is the `cfg`-derived desktop
+  answer, pinned to the old answers by `the_host_rules_are_what_this_machine_always_answered`; `MACOS` and `LINUX` let
+  any machine run either platform's rules (the host's goldens do, both ways).
 
 ## Rows held in memory (`memory.rs`)
 
@@ -131,7 +137,8 @@ rules dedupe on, so every host's list (the desktop's file, the browser demo's se
 `index-crate-isolation` pins the surface at extraction (2026-11-04): 32 root promises (the nine modules plus the flat
 re-exports), nine public modules, 86 items inside them. An item is `pub` only because the host reaches it:
 
-- **The seam and context**: everything in `seam.rs` and `context.rs` the host composes.
+- **The seam and context**: everything in `seam.rs` and `context.rs` the host composes, plus `NameRules` / `NameFold` at
+  the root and `engine::ResolvedScope`.
 - **The live walk's judge** (host-side, it consumes `cmdr-index`'s walk):
   `matcher::{CompiledQuery, Candidate, Evaluator, CompileError}`,
   `excludes::ExcludeRules::{from_query, excludes_walked}`, `engine::{home_relative_parent, derive_icon_id}`.
@@ -139,8 +146,8 @@ re-exports), nine public modules, 86 items inside them. An item is `pub` only be
   `query::{parse_scope, parse_size, format_size, summarize_query, summarize_query_for_diagnostics}`,
   `translate::LocalDays` (with its `format_date` / `format_datetime`), `types::MAX_RESULT_ROWS`.
 - **The host's loader and weights**: `arena::*`, `ranking::ImportanceWeights` and its map verbs.
-- **The host's tests and benches**: `engine::{search_ranked, Ranked, DirSizes, reconstruct_path_from_index}`; the
-  `testing`-gated fixtures and wrappers count apart.
+- **The host's tests and benches**: `engine::{search_ranked, Ranked, DirSizes}`, `arena::reconstruct_path_from_index`;
+  the `testing`-gated fixtures and wrappers count apart.
 - **A live run's reporting** (raised 2026-11-04 to 33 / 10 / 104, when it joined the crate): `run::*`, the registry
   value, `ResultStream` and its `RunSink` facts, the run-state DTOs, the terminal report's inputs, and `BATCH_ROWS` /
   `BATCH_INTERVAL` (the host's pump and tests). § "A live run's reporting".
@@ -219,8 +226,9 @@ and the fixture helper (`index::arena_of`) sorts its rows first.
 
 **Decision: no `id_to_index` map.** A `HashMap<i64, usize>` over the same rows cost ~143 MB on a 5.39 M-row boot index
 (5.39 M entries round up to 8,388,608 hashbrown buckets at 17 bytes apiece) and bought a ~20 ns lookup instead of a
-~23-probe one. The callers are the four parent-chain walks in `engine.rs`, a few hundred probes per search, which is
-microseconds either way against a 100-400 ms scan. ❌ Don't reintroduce it without measuring the ranking phase first.
+~23-probe one. The callers are the four parent-chain walks in `engine.rs` and `src/arena/paths.rs`, a few hundred probes
+per search, which is microseconds either way against a 100-400 ms scan. ❌ Don't reintroduce it without measuring the
+ranking phase first.
 
 **Gotcha**: this is why an out-of-order fixture is now a bug rather than a curiosity. `ranking/tests.rs` built rows in
 spec order, which the hash map tolerated and a binary search silently answers wrong on.
@@ -268,7 +276,7 @@ emits (`docs/specs/unindexed-search-plan.md` Decision 3). If those entries were 
 the same query would answer differently depending on whether the drive happened to be indexed, which is the one thing
 that plan forbids. So both paths call `CompiledQuery::matches`, and the module owns the rules that break silently when
 duplicated: the case-folding resolution (the scope filter and the ranker read it back rather than deriving it again) and
-the NFD normalization of the pattern. Both come from the volume's `NameRules` (`context.rs`), a value the host passes
+the NFD normalization of the pattern. Both come from the volume's `NameRules` (`name_rules.rs`), a value the host passes
 in: `NameRules::host()` is the `cfg`-derived desktop answer, and `MACOS` / `LINUX` let a test run either platform's
 rules anywhere (`the_other_platforms_goldens_hold_under_its_rules`).
 
@@ -403,7 +411,7 @@ Four things keep it bounded, all order-preserving:
 - **A per-task `folder_id → weight` memo.** Matches cluster hard by folder, and a weight lookup means walking the
   folder's parent chain. `map_init` builds one memo per rayon split, so `RANK_MIN_SPLIT` (8,192 matches) keeps the
   splits few and the memos warm.
-- **The folder path is HASHED, never built.** `engine::hash_path_from_index` streams the parent chain's components into
+- **The folder path is HASHED, never built.** `arena::hash_path_from_index` streams the parent chain's components into
   `cmdr_fs::path_hash::PathHasher` (incremental FNV-1a + the same splitmix finalizer), so the `String` that existed only
   to be hashed and dropped is gone, and the components sit in a 64-deep stack buffer (a deeper chain spills the rest to
   a `Vec`). It's byte-identical to `hash_path(reconstruct_path_from_index(..))`, pinned by

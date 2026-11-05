@@ -22,7 +22,8 @@ use super::coverage::{
     every_frontier_root_is_another_walks,
 };
 use super::{CoveredHalf, Target, host_context, resolve_target, search_covered_half, target_on};
-use crate::search::context::{NameRules, SearchContext};
+use crate::search::NameRules;
+use crate::search::context::SearchContext;
 use crate::search::excludes::ExcludeRules;
 use crate::search::live::{
     self, CollectingSink, CoverageFacts, CoverageKind, LiveAnswer, LiveRun, ResultStream, RunOrigin, RunSink,

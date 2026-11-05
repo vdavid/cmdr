@@ -46,10 +46,10 @@ use crate::pluralize::{pluralize, pluralize_with};
 use cmdr_index::ReadPool;
 
 use super::context::SearchContext;
+use super::engine::ResolvedScope;
 use super::engine::search_ranked;
 use super::index::{SearchEntry, SearchIndex, load_search_index};
 use super::ranking::ImportanceWeights;
-use super::seam::ResolvedScope;
 use super::types::{PatternType, SearchQuery};
 
 // ── Fixtures ─────────────────────────────────────────────────────────

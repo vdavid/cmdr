@@ -3,10 +3,15 @@
 //! One `SearchIndex` per volume. A host reads its rows from wherever they live (the
 //! desktop from the index database, the demo from its tree) and pushes them through
 //! [`ArenaBuilder`]; the arena's lifecycle (caching, idle drops, catch-up timing) is
-//! the host's policy.
+//! the host's policy. An entry's full path, walked off its `parent_id` chain, is
+//! `arena/paths.rs`.
 
 #[cfg(test)]
 mod memory_tests;
+mod paths;
+
+pub(crate) use paths::hash_path_from_index;
+pub use paths::reconstruct_path_from_index;
 
 // ── An optional u64 that costs eight bytes ───────────────────────────
 

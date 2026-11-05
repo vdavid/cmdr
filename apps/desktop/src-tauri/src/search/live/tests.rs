@@ -111,13 +111,13 @@ impl Judged {
         let compiled = CompiledQuery::compile(
             query,
             crate::search::matcher::Evaluator::LiveWalk,
-            &crate::search::context::NameRules::host(),
+            &crate::search::NameRules::host(),
         )
         .expect("the test queries all narrow something");
         let excludes = ExcludeRules::from_query(
             query,
             compiled.case_insensitive(),
-            crate::search::context::NameRules::host().fold,
+            crate::search::NameRules::host().fold,
         )
         .expect("the test excludes compile");
         Self { compiled, excludes }

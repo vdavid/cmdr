@@ -19,7 +19,7 @@ use super::goldens::{
     root_corpus, root_weights, scoped, share_corpus, share_weights, target_for,
 };
 use super::*;
-use crate::search::context::NameRules;
+use crate::search::NameRules;
 use crate::search::index_source::scope_pairs;
 
 /// A corpus held in memory under `rules`, with its folder sizes.

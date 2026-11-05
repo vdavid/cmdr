@@ -17,7 +17,7 @@
 use std::collections::HashMap;
 
 use super::arena::{ARENA_ROOT_ID, ArenaBuilder, SearchIndex};
-use super::context::{NameFold, NameRules};
+use super::name_rules::{NameFold, NameRules};
 use super::seam::{SearchRows, SourceError};
 
 /// The parent id the root row carries: no row has it (the desktop index's

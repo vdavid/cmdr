@@ -11,7 +11,7 @@ use std::collections::HashMap;
 
 use super::arena::SearchIndex;
 use super::context::SearchContext;
-use super::engine::{self, DirSizes, Ranked};
+use super::engine::{self, DirSizes, Ranked, ResolvedScope};
 use super::matcher::CompileError;
 use super::query::to_index_relative;
 use super::types::{SearchQuery, SearchResultEntry, SearchSort};
@@ -98,17 +98,6 @@ impl From<SourceError> for SearchError {
     fn from(error: SourceError) -> Self {
         Self::SourceUnreadable(error)
     }
-}
-
-/// Which part of a volume a search covers.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ResolvedScope {
-    /// The whole volume: no scope, or a scope at its mount root.
-    Whole,
-    /// Under any of these entries (an entry counts as under itself).
-    Ids(Vec<i64>),
-    /// Nothing: every scope path was outside the volume or not in it.
-    Nothing,
 }
 
 /// A query's scope, resolved: what it covers, and the paths that named nothing here.

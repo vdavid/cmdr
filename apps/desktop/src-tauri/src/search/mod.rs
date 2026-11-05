@@ -25,6 +25,9 @@ pub(crate) use cmdr_search::{context, engine, excludes, matcher, query, ranking,
 
 // Flat re-exports so consumers can `use crate::search::{SearchQuery, ...}`
 
+// The name rules (a private leaf in the crate, promised at its root)
+pub(crate) use cmdr_search::NameRules;
+
 // types.rs
 pub use types::{ParsedScope, PatternType, SearchQuery, SearchResult, SearchResultEntry, SearchSort};
 
