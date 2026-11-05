@@ -83,7 +83,9 @@ The six path-filtered lanes are wired (`desktop-rust`, `desktop-rust-fixtures`, 
 (`lanes` output), each lane's `if:` adds `!fromJSON(needs.changes.outputs.lanes)['<id>'].verified` and passes its `.key`
 as `marker-key`, `e2e-base-image` follows the E2E lane's verdict, and `CI OK` runs `lane-markers verify` after its jq
 gate. In each lane file, the `lane-marker` action saves the key: as the last step of a one-job lane, or in a `marker`
-job that `needs` every other job of a multi-job lane (Rust, Svelte, website), so one green job can't vouch for another.
+job that `needs` every other job of a multi-job lane (Rust, Svelte, website, macOS), so one green job can't vouch for
+another. macOS's `finder-extension` job runs only on demand, so its `marker` takes a skip only when the compile wasn't
+asked for.
 
 A PR run hashes `refs/pull/N/merge`, the PR merged with the current `main`. So a follow-up push skips a lane only while
 `main` hasn't moved any of that lane's inputs since the run that passed; a land that touched them makes a new tree and
@@ -464,8 +466,10 @@ GB, the box his agent loops run on) carries four self-hosted runner slots, `m1-c
 `self-hosted, macOS, ARM64, cmdr-m1`. Each slot keeps its own warm `CARGO_TARGET_DIR` outside the job workspace (one
 shared dir would serialize them on cargo's build-directory lock), so a run there compiles only what changed. The lane's
 checks took 6.4 min there after an edit to the `cmdr` crate (clippy 41 s, rustdoc 27 s, tests 147 s, module cycles 165
-s) and 11 min cold, at nice 10 (2026-11-05, timed step by step on the box); hosted, the same lane took 29–50 min, median
-~38, over the 24 green runs of 2026-11-04 and 11-05 (tests alone 17–32 min).
+s) and 11 min cold, at nice 10 (2026-11-05, timed step by step on the box). The first real job on a warm slot took 9 min
+end to end, 70 s of it a one-off cargo-modules install (run 42046885435, slot `m1-cmdr-1`: clippy 59 s, rustdoc 28 s,
+tests 154 s, module cycles 174 s). Hosted, the same lane took 29–50 min, median ~38, over the 24 green runs of
+2026-11-04 and 11-05 (tests alone 17–32 min). The first job on a fresh slot builds cold, so a slot pays ~11 min once.
 
 - **Routing** (`changes`' `macos-runner` step, the last one, output `macos-runs-on` as JSON for `runs-on`): a trusted
   run gets the M1 when the repo's runners API lists a `cmdr-m1` runner that's online and not busy; else hosted. Trusted
