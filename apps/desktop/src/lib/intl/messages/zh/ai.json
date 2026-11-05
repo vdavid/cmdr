@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>，在你聊天时，或它主动开启对话时：",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>，在你聊天时，或 Cmdr 主动开启对话时：",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "你的消息，包括你在里面输入的、用来解锁压缩文件或备份的任何密码",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "如果你在“高级”设置中开启 AI 模型调用日志记录，Cmdr 还会把每次请求和回复保存到你 Mac 上的一个文件夹里。这些调用日志只保存在本地，从不会发送到任何地方。",
+  "ai.cloudConsent.logsNote": "如果你在“高级”设置中开启“记录 AI 模型调用”，Cmdr 还会把每次请求和回复保存到你 Mac 上的一个文件夹里。这些调用日志只保存在本地，从不会发送到任何地方。",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "随时可以关闭这一项，Cmdr 会立即停止发送。你的服务、密钥和聊天记录都会保持原样。",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "你的模型可能需要更大的预算才能完成这个。试试在“设置 > AI”中换一个更快的模型，比如 gpt-4.1-mini。",
+  "ai.translateError.emptyResponse.body": "你的模型可能还没回答就用完了 token 预算。试试在“设置 > AI”中换一个更快的模型，比如 gpt-4.1-mini。",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "你的 AI 提供方遇到了问题",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "服务器没能及时响应。请稍后再试。",
+  "ai.cloud.timedOut": "服务没能及时响应。请稍后再试。",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "这个地址看起来不对。请使用以 https:// 开头的完整地址。",
   "@ai.cloud.invalidEndpoint": {

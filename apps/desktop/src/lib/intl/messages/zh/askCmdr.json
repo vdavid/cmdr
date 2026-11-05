@@ -770,7 +770,7 @@
   },
   "askCmdr.limit.repeatedCall.answered": "这次回答反复进行同一次查询，所以 Cmdr 让它停止查找，用已经找到的内容作答。",
   "@askCmdr.limit.repeatedCall.answered": {
-    "sourceHash": "884a9ae"
+    "sourceHash": "c603b8c"
   },
   "askCmdr.limit.repeatedCall.unfinished": "这次回答反复进行同一次查询，所以 Cmdr 在它完成前就停止了它。",
   "@askCmdr.limit.repeatedCall.unfinished": {
@@ -778,7 +778,7 @@
   },
   "askCmdr.limit.noProgress.answered": "这次回答最近 {maxText} {max, plural, other {轮查询}}都没有找到新内容，所以 Cmdr 让它停止查找，用已经找到的内容作答。",
   "@askCmdr.limit.noProgress.answered": {
-    "sourceHash": "6dc1bc0"
+    "sourceHash": "574fe02"
   },
   "askCmdr.limit.noProgress.unfinished": "这次回答最近 {maxText} {max, plural, other {轮查询}}都没有找到新内容，所以 Cmdr 在它完成前就停止了它。",
   "@askCmdr.limit.noProgress.unfinished": {
@@ -916,9 +916,9 @@
   "@askCmdr.sessions.renameLabel": {
     "sourceHash": "17a3048"
   },
-  "askCmdr.sessions.archive": "存档",
+  "askCmdr.sessions.archive": "存档聊天",
   "@askCmdr.sessions.archive": {
-    "sourceHash": "66f4804"
+    "sourceHash": "9bd687c"
   },
   "askCmdr.sessions.unarchive": "取消存档",
   "@askCmdr.sessions.unarchive": {
@@ -1224,17 +1224,17 @@
   "@askCmdr.renameReview.stopChecking": {
     "sourceHash": "4373037"
   },
-  "askCmdr.renameReview.checkUnfinished": "Cmdr 还有 {count, plural, other {# 个文件}}没检查完，所以还不能重命名。",
+  "askCmdr.renameReview.checkUnfinished": "{count, plural, other {# 个文件}}还没检查，所以 Cmdr 还不能重命名。",
   "@askCmdr.renameReview.checkUnfinished": {
-    "sourceHash": "c3c05ce"
+    "sourceHash": "1160511"
   },
   "askCmdr.renameReview.checkAgain": "再次检查",
   "@askCmdr.renameReview.checkAgain": {
     "sourceHash": "fb7099a"
   },
-  "askCmdr.renameReview.needsAnotherLook": "在 Cmdr 检查这些名称之后，有些地方变了，所以 Cmdr 什么都没有重命名。请再看一遍，然后再试一次。",
+  "askCmdr.renameReview.needsAnotherLook": "在 Cmdr 检查这些名称之后，有些地方变了，所以 Cmdr 什么都没有重命名。请检查一下这些名称，然后再试一次。",
   "@askCmdr.renameReview.needsAnotherLook": {
-    "sourceHash": "36c6050"
+    "sourceHash": "5e7d2da"
   },
   "askCmdr.renameReview.couldntStart": "Cmdr 无法开始这次重命名，什么都没有改变。请稍后重试。",
   "@askCmdr.renameReview.couldntStart": {
@@ -1256,9 +1256,9 @@
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },
-  "askCmdr.renameUndo.swapsSkipped": "已跳过 {countText} {count, plural, other {项互换名称的重命名}}。请一个一个地重命名这些文件。",
+  "askCmdr.renameUndo.swapsSkipped": "已跳过 {countText} {count, plural, other {项互换名称的重命名}}。请一个一个地重命名这些项目。",
   "@askCmdr.renameUndo.swapsSkipped": {
-    "sourceHash": "90e8dfc"
+    "sourceHash": "bb3ee75"
   },
   "askCmdr.renameUndo.notRecorded": "操作日志已关闭，所以没法恢复原来的名称。",
   "@askCmdr.renameUndo.notRecorded": {
@@ -1300,9 +1300,9 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "保留了 {countText} {count, plural, other {个文件}}：重命名后它们有改动。",
+  "askCmdr.renameUndo.skipReason.drift.counted": "保留了 {countText} {count, plural, other {个项目}}：重命名后它们有改动。",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "217d1e8"
+    "sourceHash": "dbeb782"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "找不到 {name}：重命名后它被移动或删除了。",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
@@ -1316,17 +1316,17 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "保留了 {countText} {count, plural, other {个文件}}：它们原来的名称已被占用。",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "保留了 {countText} {count, plural, other {个项目}}：它们原来的名称已被占用。",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "2fd2e7a"
+    "sourceHash": "409140a"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "保留了 {name}：Cmdr 无法确认它有没有改动。",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "保留了 {countText} {count, plural, other {个文件}}：Cmdr 无法确认它们有没有改动。",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "保留了 {countText} {count, plural, other {个项目}}：Cmdr 无法确认它们有没有改动。",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "5964166"
+    "sourceHash": "25fe620"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "保留了文件夹 {name}：里面现在有东西了。",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
@@ -1340,9 +1340,9 @@
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "保留了 {countText} {count, plural, other {个文件}}：Cmdr 无法把原来的名称改回去。",
+  "askCmdr.renameUndo.skipReason.failed.counted": "保留了 {countText} {count, plural, other {个项目}}：Cmdr 无法把原来的名称改回去。",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "f13c021"
+    "sourceHash": "cf38d62"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr 无法撤销 {countText} {count, plural, other {批}}。详情请看操作日志。",
   "@askCmdr.renameUndo.refusedBatches": {

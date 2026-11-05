@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "右键点击某台服务器，选择“从宗卷选择器中取消固定”，或者在命令面板里使用“{command}”。它仍然留在“服务器”列表里。",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "知道了",
   "@servers.pinHint.gotIt": {
@@ -63,9 +63,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "从未",
+  "servers.hub.neverUsed": "从未使用",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "身份：{username}",
   "@servers.hub.shareAccount": {
@@ -381,7 +381,7 @@
   },
   "servers.sheet.addAnywayHelp": "Cmdr 没能检查这台服务器，所以“仍然添加”会按你输入的原样保存它。",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "推出并保存",
   "@servers.sheet.ejectAndSave": {
@@ -527,9 +527,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS 最多能带 16 个其他群组，而这里列出了 {count} 个。",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS 最多能发送 16 个其他群组，而这个列表里有 {count, plural, other {# 个群组}}。",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "服务器根据这两个数字决定你能打开什么。NFS 不会问你要密码。",
   "@servers.sheet.nfsIdentityHelp": {
@@ -928,9 +928,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "暂时停止尝试。连接仍然可用。切换回来即可重试。",
+  "servers.paneState.cancelCycleTooltip": "暂时停止尝试。连接仍然可用，再次打开这台服务器即可重试。",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "停止尝试并断开与服务器的连接。",
   "@servers.paneState.disconnectCycleTooltip": {

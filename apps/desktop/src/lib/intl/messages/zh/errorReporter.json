@@ -144,9 +144,9 @@
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "02f82ce"
   },
-  "errorReporter.sentToast.message": "错误报告已发送。你的参考编号是",
+  "errorReporter.sentToast.message": "错误报告已发送。你的参考编号：",
   "@errorReporter.sentToast.message": {
-    "sourceHash": "75be6ba"
+    "sourceHash": "d1e9bfc"
   },
   "errorReporter.sentToast.dismiss": "关闭",
   "@errorReporter.sentToast.dismiss": {
@@ -160,9 +160,9 @@
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
   },
-  "errorReporter.amendedToast.message": "备注已添加到你的报告。你的参考编号是",
+  "errorReporter.amendedToast.message": "备注已添加到你的报告。你的参考编号：",
   "@errorReporter.amendedToast.message": {
-    "sourceHash": "5471d7f"
+    "sourceHash": "fc7535b"
   },
   "errorReporter.bundleSavedToast.message": "已将报告包保存到磁盘",
   "@errorReporter.bundleSavedToast.message": {

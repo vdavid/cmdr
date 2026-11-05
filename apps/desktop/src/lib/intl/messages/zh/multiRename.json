@@ -171,9 +171,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "你已经有 {max, number} 个预置，达到了 Cmdr 的上限。删除一个就能保存这个了。",
+  "multiRename.presets.listFull": "你已经有 {max, plural, other {# 个预置}}，达到了 Cmdr 的上限。删除一个就能保存这个了。",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "替换",
   "@multiRename.presets.replace": {
@@ -223,13 +223,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "与另一个文件同名",
+  "multiRename.status.duplicate": "与另一个项目同名",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
   "multiRename.status.targetExists": "名称已被占用",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "名称无效",
   "@multiRename.status.invalidName": {
@@ -383,17 +383,17 @@
   "@multiRename.status.ready": {
     "sourceHash": "f032574"
   },
-  "multiRename.reason.duplicate": "这一批里的另一个文件也会得到同样的新名称，所以两个都不会重命名。",
+  "multiRename.reason.duplicate": "这一批里的另一个项目也会得到同样的新名称，所以两个都不会重命名。",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
-  "multiRename.reason.targetExists": "留在这个文件夹里的另一个文件已经用了这个名称，所以这个文件保留原来的名称。",
+  "multiRename.reason.targetExists": "留在这个文件夹里的另一个项目已经用了这个名称，所以这一项保留原来的名称。",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
-  "multiRename.reason.missing": "打开“批量重命名”之后，这个文件被移动或删除了，所以跳过它。",
+  "multiRename.reason.missing": "打开“批量重命名”之后，这个项目被移动或删除了，所以跳过它。",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "正在读取…",
   "@multiRename.status.reading": {
@@ -403,13 +403,13 @@
   "@multiRename.status.noValue": {
     "sourceHash": "619464f"
   },
-  "multiRename.reason.noValue": "这个文件没有“{field}”信息，所以保留原来的名称。",
+  "multiRename.reason.noValue": "这个项目没有“{field}”信息，所以保留原来的名称。",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "这个文件没有“{field}”信息，所以保留原来的名称。占位符的编辑器可以改用文件的修改日期。",
+  "multiRename.reason.noDate": "这个项目没有“{field}”信息，所以保留原来的名称。占位符的编辑器可以改用这个项目的修改日期。",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "无法读取标签",
   "@multiRename.status.unreadable": {
@@ -632,9 +632,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "已跳过 {count, plural, other {# 项互换名称的重命名}}。请一个一个地重命名这些文件。",
+  "multiRename.swapsSkipped": "已跳过 {count, plural, other {# 项互换名称的重命名}}。请一个一个地重命名这些项目。",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "“批量重命名”无法在压缩文件里使用",
   "@multiRename.archiveTitle": {

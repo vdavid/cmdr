@@ -33,7 +33,7 @@
   },
   "stateRecovery.operationLog.title": "Cmdr 无法读取你的操作日志，所以日志从头开始记录",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "Cmdr 无法读取你的 Ask Cmdr 聊天记录，所以聊天列表现在是空的",
   "@stateRecovery.chatHistory.title": {

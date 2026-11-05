@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Cmdr 在读取 `{path}` 时遇到了意外问题。查看下方的技术详情，里面有具体的系统代码，有助于排查。",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr 在读取 `{path}` 时遇到了意外问题。查看下方的“技术详情”，里面有具体的系统代码，有助于排查。",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "可以这样试试：\n- 确认磁盘或设备仍连接着\n- 再次进入这里重试\n- 如果一直这样，打开**磁盘工具**，对这个宗卷运行**急救**",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -593,7 +593,7 @@
   },
   "errors.listing.linkTargetUnreachable.explanation": "访问 `{path}` 要通过一个指向另一台服务器的链接，而 Cmdr 现在连不上那台服务器。这个共享的其余部分都正常，也没有任何东西被删除。",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "可以这样试试：\n- 确认另一台服务器在运行，并且你的网络能连到它\n- 再次进入这里重试",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1486,7 +1486,7 @@
   },
   "errors.write.replySignatureRefused.message": "服务器的回复没有有效签名，所以 Cmdr 停止了这项操作。",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "网络设备不稳定可能导致这种情况，有人篡改你和服务器之间的通信也可能导致。请重新连接，如果再次出现，请检查你的网络。",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1888,9 +1888,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "目标设备",
+  "errors.write.readOnlyDevice.destination.fallbackName": "目标位置",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "文件已锁定",
   "@errors.write.fileLocked.title": {
@@ -2220,9 +2220,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "访问这里要通过一个指向另一台服务器的链接，而 Cmdr 现在连不上那台服务器。",
+  "errors.volume.linkTargetUnreachable": "访问这个路径要通过一个指向另一台服务器的链接，而 Cmdr 现在连不上那台服务器。",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "设备的连接已重启。请等待几秒钟，然后重试。",
   "@errors.volume.deviceSessionReset": {
@@ -2236,9 +2236,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "连接没能及时响应。",
+  "errors.volume.connectionTimeout": "服务器或设备没能及时响应。",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr 按你的要求停止了这项操作。",
   "@errors.volume.cancelled": {
@@ -2290,7 +2290,7 @@
   },
   "errors.volume.signatureInvalid": "服务器的回复没有有效签名，所以 Cmdr 停止了这项操作。",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "这个宗卷没能完成这项操作。",
   "@errors.volume.ioError": {
@@ -2368,13 +2368,13 @@
   "@errors.eject.unmountRefused": {
     "sourceHash": "f855a33"
   },
-  "errors.eject.unmountRefusedByApp": "{app} 还在使用那里的某些内容。请把它关掉，然后再试一次。",
+  "errors.eject.unmountRefusedByApp": "{app} 还在使用那里的某些内容。请关掉这个 App，然后再试一次。",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
-  "errors.eject.unmountRefusedByApps": "{apps} 还在使用那里的某些内容。请把它们关掉，然后再试一次。",
+  "errors.eject.unmountRefusedByApps": "{apps} 还在使用那里的某些内容。请关掉这些 App，然后再试一次。",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "其他 App",
   "@errors.eject.otherApps": {
@@ -2544,17 +2544,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "所选内容有一部分在只读视图里",
+  "errors.write.sourcesSpanVolumes.title": "所选内容有一部分在备份、压缩文件或 git 历史记录里",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} 在备份的快照、压缩文件或仓库历史里，而所选的其他项目不在，所以 Cmdr 没法同时读取它们。什么都没有改变。",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "分两步来做：先单独处理只读视图里的项目，再处理其余项目。",
+  "errors.write.sourcesSpanVolumes.suggestion": "分两步来做：先单独处理这些项目，再处理其余项目。",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "一个一个地移动，或者先给其中一个改名。",
   "@errors.write.duplicateSourceNames.suggestion.move": {

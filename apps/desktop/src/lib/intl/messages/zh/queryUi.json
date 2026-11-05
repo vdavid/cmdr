@@ -624,11 +624,12 @@
   },
   "queryUi.date.preset.thisMonth": "{date} {time}",
   "@queryUi.date.preset.thisMonth": {
-    "sourceHash": "030ee23"
+    "sourceHash": "ed860a4",
+    "sameAsSourceJustification": "Placeholder-only: {date} arrives already worded by Intl for zh (4月1日), and Chinese separates it from the time with a space, as `queryUi.date.preset.today` (今天 {time}) does."
   },
-  "queryUi.date.preset.lastMonth": "{date}, {time}",
+  "queryUi.date.preset.lastMonth": "{date} {time}",
   "@queryUi.date.preset.lastMonth": {
-    "sourceHash": "0838509"
+    "sourceHash": "1a88956"
   },
   "queryUi.date.preset.yearStart": "{year} 年 1 月 1 日 {time}",
   "@queryUi.date.preset.yearStart": {

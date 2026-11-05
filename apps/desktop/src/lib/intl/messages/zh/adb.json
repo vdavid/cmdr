@@ -75,9 +75,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "Cmdr 还在处理这个设备上的文件。完成后再断开连接。",
+  "adb.disconnectBusyTooltip": "Cmdr 还在处理这个设备上的文件。完成后就可以断开它的连接了。",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "73c355e"
+    "sourceHash": "7a49436"
   },
   "adb.disconnectingDeviceAriaLabel": "正在断开连接：{name}…",
   "@adb.disconnectingDeviceAriaLabel": {

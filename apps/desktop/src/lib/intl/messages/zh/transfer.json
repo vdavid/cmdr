@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "这台服务器无法存储 {classes}，所以这些信息没有一起带过去。",
+  "transfer.metadataLeftBehind": "目标位置无法存储部分信息，所以这些信息没有一起带过去：{classes}。",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, other {有 {countText} 个已锁定的项目留在了原处。}}",
   "@transfer.lockedSkipped": {

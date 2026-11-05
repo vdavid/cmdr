@@ -19,17 +19,17 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "致谢…",
+  "commands.appAcknowledgements.label": "致谢",
   "@commands.appAcknowledgements.label": {
-    "sourceHash": "7d0e506"
+    "sourceHash": "c9015d5"
   },
   "commands.appLicenseKey.seeDetails.label": "查看许可证详情",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
   },
-  "commands.appLicenseKey.enterKey.label": "输入许可证密钥",
+  "commands.appLicenseKey.enterKey.label": "输入许可证密钥…",
   "@commands.appLicenseKey.enterKey.label": {
-    "sourceHash": "357d05e"
+    "sourceHash": "24a8d77"
   },
   "commands.appCommandPalette.label": "打开命令面板",
   "@commands.appCommandPalette.label": {
@@ -45,7 +45,7 @@
   },
   "commands.appCheckForUpdates.description": "检查是否有 Cmdr 的新版本，有的话就下载",
   "@commands.appCheckForUpdates.description": {
-    "sourceHash": "c53dab0"
+    "sourceHash": "90523c6"
   },
   "commands.cmdrOpenOnboarding.label": "入门引导…",
   "@commands.cmdrOpenOnboarding.label": {
@@ -53,7 +53,7 @@
   },
   "commands.cmdrOpenOnboarding.description": "重新打开入门引导向导，回顾或更改首次启动时的设置选项",
   "@commands.cmdrOpenOnboarding.description": {
-    "sourceHash": "a45c542"
+    "sourceHash": "fc0a198"
   },
   "commands.appToggleCliCommand.install.label": "安装“cmdr”命令",
   "@commands.appToggleCliCommand.install.label": {
@@ -69,7 +69,7 @@
   },
   "commands.appToggleCliCommand.description": "在终端里输入 cmdr 和一个路径，就能在 Cmdr 中打开那个文件或文件夹",
   "@commands.appToggleCliCommand.description": {
-    "sourceHash": "ce7efbd"
+    "sourceHash": "73b4f32"
   },
   "commands.helpOpenShortcuts.label": "键盘快捷键",
   "@commands.helpOpenShortcuts.label": {
@@ -77,7 +77,7 @@
   },
   "commands.helpOpenShortcuts.description": "打开一个只读窗口，列出所有键盘快捷键，并与你的自定义实时同步",
   "@commands.helpOpenShortcuts.description": {
-    "sourceHash": "a9a1e0d"
+    "sourceHash": "caa15c9"
   },
   "commands.helpAccessibility.label": "辅助功能指南",
   "@commands.helpAccessibility.label": {
@@ -85,7 +85,7 @@
   },
   "commands.helpAccessibility.description": "打开 getcmdr.com 上的 Cmdr 辅助功能指南",
   "@commands.helpAccessibility.description": {
-    "sourceHash": "2ece797"
+    "sourceHash": "7104ee3"
   },
   "commands.helpSendErrorReport.label": "发送错误报告…",
   "@commands.helpSendErrorReport.label": {
@@ -93,7 +93,7 @@
   },
   "commands.helpSendErrorReport.description": "把 Cmdr 的日志发给团队，帮忙解决出问题的地方",
   "@commands.helpSendErrorReport.description": {
-    "sourceHash": "021d333"
+    "sourceHash": "7615640"
   },
   "commands.queueShow.label": "操作队列",
   "@commands.queueShow.label": {
@@ -101,32 +101,32 @@
   },
   "commands.queueShow.description": "打开一个窗口，列出每个正在进行和等待中的操作，你可以在其中暂停、继续或取消它们",
   "@commands.queueShow.description": {
-    "sourceHash": "37b616a"
+    "sourceHash": "4511b63"
   },
   "commands.helpWhatsNew.label": "新增功能",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "37e6112"
   },
-  "commands.helpWhatsNew.description": "查看 Cmdr 最新版本里有哪些变化",
+  "commands.helpWhatsNew.description": "显示 Cmdr 最新版本里有哪些变化",
   "@commands.helpWhatsNew.description": {
-    "sourceHash": "f8ad411"
+    "sourceHash": "4e04cc8"
   },
   "commands.logOperationLog.label": "操作日志",
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
-  "commands.logOperationLog.description": "查看你的文件操作历史记录，并回滚它们",
+  "commands.logOperationLog.description": "显示你的文件操作历史记录，并可以回滚它们",
   "@commands.logOperationLog.description": {
-    "sourceHash": "ea2d082"
+    "sourceHash": "70b7bcd"
   },
   "commands.askCmdrToggle.label": "Ask Cmdr",
   "@commands.askCmdrToggle.label": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name, kept verbatim across the whole zh catalog per the @key description (\"keep it as-is\")."
   },
-  "commands.askCmdrToggle.description": "和 AI 聊聊你的文件、驱动器和历史记录",
+  "commands.askCmdrToggle.description": "打开和 AI 的聊天，聊聊你的文件、驱动器和历史记录",
   "@commands.askCmdrToggle.description": {
-    "sourceHash": "c520468"
+    "sourceHash": "a25a7a4"
   },
   "commands.askCmdrNewChat.label": "新建 Ask Cmdr 聊天",
   "@commands.askCmdrNewChat.label": {
@@ -134,7 +134,7 @@
   },
   "commands.askCmdrNewChat.description": "在 Ask Cmdr 中开始新的聊天，如果已关闭就先打开",
   "@commands.askCmdrNewChat.description": {
-    "sourceHash": "957741b"
+    "sourceHash": "aa3c28c"
   },
   "commands.askCmdrFind.label": "在聊天中查找",
   "@commands.askCmdrFind.label": {
@@ -154,7 +154,7 @@
   },
   "commands.feedbackSend.description": "告诉 Cmdr 的作者你的想法：点子、心愿，什么都行",
   "@commands.feedbackSend.description": {
-    "sourceHash": "89d08a8"
+    "sourceHash": "30c0620"
   },
   "commands.searchOpen.label": "搜索文件",
   "@commands.searchOpen.label": {
@@ -166,7 +166,7 @@
   },
   "commands.navGoToPath.description": "让焦点窗格跳转到你输入、粘贴或最近用过的路径。",
   "@commands.navGoToPath.description": {
-    "sourceHash": "fc6a00c"
+    "sourceHash": "0b91354"
   },
   "commands.favoritesAdd.label": "加入个人收藏",
   "@commands.favoritesAdd.label": {
@@ -174,7 +174,7 @@
   },
   "commands.favoritesAdd.description": "把焦点窗格的当前文件夹加入个人收藏，以后从个人收藏菜单就能回到这里。",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "999aa52"
+    "sourceHash": "43043e8"
   },
   "commands.favoritesOpen.label": "显示个人收藏",
   "@commands.favoritesOpen.label": {
@@ -182,7 +182,7 @@
   },
   "commands.favoritesOpen.description": "在焦点窗格上打开个人收藏菜单，按数字键前往对应的文件夹。",
   "@commands.favoritesOpen.description": {
-    "sourceHash": "d188872"
+    "sourceHash": "5fcfcee"
   },
   "commands.favoritesOpenByNumber.label": "打开数字键对应的个人收藏",
   "@commands.favoritesOpenByNumber.label": {
@@ -194,7 +194,7 @@
   },
   "commands.downloadsGoToLatest.description": "打开 ~/Downloads 并选中最新的文件。",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "42a26a2"
+    "sourceHash": "6b3fe83"
   },
   "commands.viewShowHidden.label": "切换隐藏文件",
   "@commands.viewShowHidden.label": {
@@ -298,23 +298,23 @@
   },
   "commands.paneClone.description": "在另一个窗格中也打开这个窗格的文件夹。",
   "@commands.paneClone.description": {
-    "sourceHash": "8a13dc9"
+    "sourceHash": "fcbddd9"
   },
   "commands.paneFocusControls.label": "将焦点移到窗格控制项",
   "@commands.paneFocusControls.label": {
     "sourceHash": "b71f4ad"
   },
-  "commands.paneFocusControls.description": "用键盘访问焦点窗格的标签页、位置栏和排序按钮。用方向键在它们之间移动，按 Esc 键返回文件列表。",
+  "commands.paneFocusControls.description": "将键盘焦点移到焦点窗格的标签页、位置栏和排序按钮。用方向键在它们之间移动，按 Esc 键返回文件列表。",
   "@commands.paneFocusControls.description": {
-    "sourceHash": "e5828ae"
+    "sourceHash": "ffce489"
   },
   "commands.appFocusNotifications.label": "将焦点移到通知",
   "@commands.appFocusNotifications.label": {
     "sourceHash": "628f0e5"
   },
-  "commands.appFocusNotifications.description": "用键盘访问通知和通知上的按钮（比如“撤销”）。用方向键在它们之间移动，按 Esc 键返回。",
+  "commands.appFocusNotifications.description": "将键盘焦点移到通知和通知上的按钮（比如“撤销”）。用方向键在它们之间移动，按 Esc 键返回。",
   "@commands.appFocusNotifications.description": {
-    "sourceHash": "87886a4"
+    "sourceHash": "8157823"
   },
   "commands.editUndoTrash.label": "撤销移到废纸篓",
   "@commands.editUndoTrash.label": {
@@ -330,7 +330,7 @@
   },
   "commands.editUndoTrash.description": "把你上次移到废纸篓的文件放回原处",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "3aa756f"
+    "sourceHash": "dca1b63"
   },
   "commands.paneLeftVolumeChooser.label": "打开左侧宗卷选择器",
   "@commands.paneLeftVolumeChooser.label": {
@@ -346,7 +346,7 @@
   },
   "commands.paneCopyPathLeftToRight.description": "在右侧打开左窗格的位置。当左窗格处于焦点且光标停在某个文件夹上时，改为在右侧打开那个文件夹。",
   "@commands.paneCopyPathLeftToRight.description": {
-    "sourceHash": "07ac6a1"
+    "sourceHash": "d866ae5"
   },
   "commands.paneCopyPathRightToLeft.label": "把路径从右窗格拷贝到左窗格",
   "@commands.paneCopyPathRightToLeft.label": {
@@ -354,7 +354,7 @@
   },
   "commands.paneCopyPathRightToLeft.description": "在左侧打开右窗格的位置。当右窗格处于焦点且光标停在某个文件夹上时，改为在左侧打开那个文件夹。",
   "@commands.paneCopyPathRightToLeft.description": {
-    "sourceHash": "95c566f"
+    "sourceHash": "052c7cd"
   },
   "commands.paneRefresh.label": "刷新窗格",
   "@commands.paneRefresh.label": {
@@ -416,13 +416,13 @@
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
-  "commands.navUp.label": "选中上一个文件",
+  "commands.navUp.label": "把光标移到上一个项目",
   "@commands.navUp.label": {
-    "sourceHash": "40dca00"
+    "sourceHash": "6197d1a"
   },
-  "commands.navDown.label": "选中下一个文件",
+  "commands.navDown.label": "把光标移到下一个项目",
   "@commands.navDown.label": {
-    "sourceHash": "61e81ee"
+    "sourceHash": "8b5b37b"
   },
   "commands.navOpen.label": "打开文件或文件夹",
   "@commands.navOpen.label": {
@@ -504,9 +504,9 @@
   "@commands.paneQuickFilter.label": {
     "sourceHash": "e731882"
   },
-  "commands.paneQuickFilter.description": "打开筛选标记，沿用当前输入的内容。再按一次，在“筛选”和“跳转”之间切换",
+  "commands.paneQuickFilter.description": "打开标记，显示你目前输入的内容。再按一次，在“筛选”和“跳转”之间切换",
   "@commands.paneQuickFilter.description": {
-    "sourceHash": "2778526"
+    "sourceHash": "e531430"
   },
   "commands.fileMultiRename.label": "批量重命名",
   "@commands.fileMultiRename.label": {
@@ -726,7 +726,7 @@
   },
   "commands.fileDuplicate.description": "在当前文件夹中为选中的文件创建副本",
   "@commands.fileDuplicate.description": {
-    "sourceHash": "2c038a2"
+    "sourceHash": "5c02b66"
   },
   "commands.fileCompress.label": "压缩",
   "@commands.fileCompress.label": {
@@ -738,7 +738,7 @@
   },
   "commands.editCopy.description": "把选中的文件拷贝到剪贴板，以便粘贴",
   "@commands.editCopy.description": {
-    "sourceHash": "5c769a7"
+    "sourceHash": "3ded30a"
   },
   "commands.editCut.label": "剪切到剪贴板",
   "@commands.editCut.label": {
@@ -746,7 +746,7 @@
   },
   "commands.editCut.description": "剪切选中的文件（粘贴时会移动它们）",
   "@commands.editCut.description": {
-    "sourceHash": "5bc3870"
+    "sourceHash": "1e03b84"
   },
   "commands.editPaste.label": "粘贴",
   "@commands.editPaste.label": {
@@ -754,7 +754,7 @@
   },
   "commands.editPaste.description": "把剪贴板里的文件粘贴到当前文件夹",
   "@commands.editPaste.description": {
-    "sourceHash": "32545d7"
+    "sourceHash": "9eca6d3"
   },
   "commands.editPasteAsMove.label": "移动到此处",
   "@commands.editPasteAsMove.label": {
@@ -762,7 +762,7 @@
   },
   "commands.editPasteAsMove.description": "把剪贴板里的文件以移动方式粘贴",
   "@commands.editPasteAsMove.description": {
-    "sourceHash": "961316d"
+    "sourceHash": "41e9245"
   },
   "commands.fileNewFolder.label": "新建文件夹",
   "@commands.fileNewFolder.label": {
@@ -786,7 +786,7 @@
   },
   "commands.fileGoToTrash.description": "打开你正在浏览的驱动器上的废纸篓",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "73eae92"
+    "sourceHash": "6496c25"
   },
   "commands.dialogConfirm.label": "确认屏幕上的对话框",
   "@commands.dialogConfirm.label": {
@@ -806,7 +806,7 @@
   },
   "commands.fileOpenTerminalHere.description": "在你正在查看的文件夹里打开你的终端 App",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "ac0ddb8"
+    "sourceHash": "f03d961"
   },
   "commands.fileCopyPath.label": "拷贝路径到剪贴板",
   "@commands.fileCopyPath.label": {
@@ -1280,17 +1280,17 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "1a1f5b9"
   },
-  "commands.suggestedOpsShow.description": "复查 AI 建议的文件操作，并决定执行哪些",
+  "commands.suggestedOpsShow.description": "显示 AI 建议的文件操作，由你决定执行哪些",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "7efe8c9"
+    "sourceHash": "5468fcf"
   },
   "commands.helpViewDebugLog.label": "查看调试日志",
   "@commands.helpViewDebugLog.label": {
     "sourceHash": "007c98d"
   },
-  "commands.helpViewDebugLog.description": "在文件查看器中实时查看 Cmdr 的调试日志",
+  "commands.helpViewDebugLog.description": "在文件查看器中实时显示 Cmdr 的调试日志",
   "@commands.helpViewDebugLog.description": {
-    "sourceHash": "a937e6e"
+    "sourceHash": "06f49ab"
   },
   "commands.handler.viewDebugLog.disabled": "日志存储已关闭。在“设置 > 高级”中把磁盘空间上限设为大于 0，然后重启 Cmdr 来查看调试日志。",
   "@commands.handler.viewDebugLog.disabled": {

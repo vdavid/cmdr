@@ -2246,8 +2246,7 @@
     "chosen": "备注",
     "confidence": "high",
     "exceptions": {
-      "ai.cloudConsent.askCmdr.protectedContents": "Names Apple's Notes app, “备忘录” (Notes.app zh_CN CFBundleName, macOS 26), not a note the user writes.",
-      "settings.fileOperations.showAlreadyGoneToast.description": "This “note” is the short toast Cmdr shows, not text the user writes: 提示."
+      "ai.cloudConsent.askCmdr.protectedContents": "Names Apple's Notes app, “备忘录” (Notes.app zh_CN CFBundleName, macOS 26), not a note the user writes."
     },
     "forms": "a note on an error report 备注 (添加备注（可选）); the feedback message 留言; Ask Cmdr's saved notes 笔记; saving one 记下",
     "sources": "macOS"
@@ -2479,8 +2478,7 @@
     "chosen": "模式",
     "confidence": "high",
     "exceptions": {
-      "queryUi.bar.placeholder.regex": "\"Regular expression pattern\" folds into 正则表达式; the noun needs no second word in Chinese.",
-      "commands.paneQuickFilter.description": "The pattern is the typed text (quick-filter-session.svelte.ts carries it over), and beside 筛选 / 跳转 the word 模式 would read as the typing mode, so 当前输入的内容, like fileExplorer.quickFilter.intro.title's 输入内容."
+      "queryUi.bar.placeholder.regex": "\"Regular expression pattern\" folds into 正则表达式; the noun needs no second word in Chinese."
     },
     "forms": "a match pattern 模式; a rename pattern 重命名规则",
     "sources": "standard"
@@ -3232,9 +3230,6 @@
   "skip": {
     "chosen": "跳过",
     "confidence": "confirmed",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "“Skip the note” means not seeing a toast, not leaving an item out of an operation: 就不会再看到这条提示."
-    },
     "forms": "Skip all 全部跳过 (Chinese collapses one/other, so the single case reads 全部 too); skipped 已跳过",
     "sources": "Double Commander; Nautilus"
   },
@@ -3301,6 +3296,9 @@
     "chosen": "停止",
     "confidence": "confirmed",
     "decision": "Awaiting-answer row + rollback confirm",
+    "exceptions": {
+      "settings.fileOperations.showAlreadyGoneToast.description": "“Stop these notices” means the toasts no longer appear, not halting a running task: 就不会再看到这类提示."
+    },
     "forms": "the rollback tooltip's stop 停止 (never 取消); you stopped opening your phone 你停止了打开手机",
     "sources": "macOS AppKit"
   },

@@ -251,9 +251,9 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "这个共享使用系统连接。取消可能会有延迟。在宗卷选择器中选择“直接连接”可获得更快的传输速度和可靠的取消。",
+  "fileOperations.transferDialog.smbNativeNote": "这个共享使用系统连接，取消可能会有延迟。在宗卷选择器中使用“直接连接，访问更快”，传输会更快，取消也更可靠。",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "60af535"
+    "sourceHash": "95b30c0"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "这个文件夹还不存在。Cmdr 会在拷贝时自动创建它。",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -611,27 +611,27 @@
   "@fileOperations.transferProgress.conflictPolicyCaption": {
     "sourceHash": "cec5c27"
   },
-  "fileOperations.transferProgress.policyName.skip": "Skip",
+  "fileOperations.transferProgress.policyName.skip": "全部跳过",
   "@fileOperations.transferProgress.policyName.skip": {
     "sourceHash": "28d0359"
   },
-  "fileOperations.transferProgress.policyName.overwrite": "Overwrite",
+  "fileOperations.transferProgress.policyName.overwrite": "全部覆盖",
   "@fileOperations.transferProgress.policyName.overwrite": {
     "sourceHash": "b24963e"
   },
-  "fileOperations.transferProgress.policyName.overwriteSmaller": "Overwrite if smaller",
+  "fileOperations.transferProgress.policyName.overwriteSmaller": "覆盖全部较小的",
   "@fileOperations.transferProgress.policyName.overwriteSmaller": {
     "sourceHash": "0473dc5"
   },
-  "fileOperations.transferProgress.policyName.overwriteOlder": "Overwrite if older",
+  "fileOperations.transferProgress.policyName.overwriteOlder": "覆盖全部较旧的",
   "@fileOperations.transferProgress.policyName.overwriteOlder": {
     "sourceHash": "6c111a2"
   },
-  "fileOperations.transferProgress.policyName.askEach": "Ask for each",
+  "fileOperations.transferProgress.policyName.askEach": "逐个询问",
   "@fileOperations.transferProgress.policyName.askEach": {
     "sourceHash": "4302843"
   },
-  "fileOperations.transferProgress.policyName.rename": "Rename",
+  "fileOperations.transferProgress.policyName.rename": "重命名",
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
@@ -1283,13 +1283,13 @@
   "@fileOperations.validation.empty": {
     "sourceHash": "2a25343"
   },
-  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})} other {Filename is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})}}",
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {文件夹名太长（{byteCount} / {maxBytes} {max, plural, other {字节}}）} other {文件名太长（{byteCount} / {maxBytes} {max, plural, other {字节}}）}}",
   "@fileOperations.validation.nameTooLong": {
-    "sourceHash": "76a85fd"
+    "sourceHash": "4978a6f"
   },
-  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathTooLong": "完整路径太长（{byteCount} / {maxBytes} {max, plural, other {字节}}）",
   "@fileOperations.validation.pathTooLong": {
-    "sourceHash": "1658c7a"
+    "sourceHash": "9aa3b43"
   },
   "fileOperations.validation.extensionChangeBlocked": "不允许更改文件扩展名（原为“{oldExt}”）",
   "@fileOperations.validation.extensionChangeBlocked": {
@@ -1315,13 +1315,13 @@
   "@fileOperations.validation.pathNullChar": {
     "sourceHash": "271149f"
   },
-  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathTotalTooLong": "路径太长（{byteCount} / {maxBytes} {max, plural, other {字节}}）",
   "@fileOperations.validation.pathTotalTooLong": {
-    "sourceHash": "30aca7d"
+    "sourceHash": "dd75780"
   },
-  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathSegmentTooLong": "路径中有一个文件夹名太长（{byteCount} / {maxBytes} {max, plural, other {字节}}）",
   "@fileOperations.validation.pathSegmentTooLong": {
-    "sourceHash": "75b2602"
+    "sourceHash": "c0773d3"
   },
   "fileOperations.transferTree.treeLabel": "这次传输中的文件",
   "@fileOperations.transferTree.treeLabel": {

@@ -166,9 +166,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "交替的行底纹，方便逐行查看。完整和简洁视图模式都适用。",
+  "settings.listing.stripedRows.description": "交替的行底纹，方便逐行查看。完整视图和简洁视图都适用。",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "条纹、斑马纹、交替、隔行、行、底色、辅助功能、可读性",
   "@settings.listing.stripedRows.keywords": {
@@ -822,9 +822,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "始终为 {name} 上的照片建立索引",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "始终索引此驱动器：{name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "已暂停，将在此驱动器重新连接时继续",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -942,9 +942,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "删除多余的已索引条目",
+  "settings.mediaIndex.reclaim.confirmTitle": "要删除多余的已索引条目吗？",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "删除 {doomed, plural, one {{doomedText} 个已索引条目} other {{doomedText} 个已索引条目}} 以释放约 {size}？你之后可以重新为这些图像建立索引，但重新读取需要时间。",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1091,9 +1091,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "不显示最新下载快捷键的询问",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "不再询问最新下载快捷键的事",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "你第一次在任意 App 中按下跳转到最新下载的快捷键时，Cmdr 会问你要不要保持开启。更改快捷键会关闭这一项，这样新的按键组合也会被问到。关闭这一项，就能再看一次这个询问。",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1240,9 +1240,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "模型在回答前思考多久。强度越高，越能处理棘手的任务，但回复会更慢，思考过程也按输出计费。",
+  "settings.ai.reasoningEfforts.description": "模型在回答前思考多久。思考越多，越能处理棘手的任务，但回复会更慢，思考过程也按输出计费。",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "推理强度、努力程度、推理、思考、强度、深度、速度、费用、成本、质量",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1460,9 +1460,9 @@
   "@settings.fileExplorer.git.showStatusColumn.label": {
     "sourceHash": "0f6a836"
   },
-  "settings.fileExplorer.git.showStatusColumn.description": "在完整模式下添加一列，显示每个文件的 git 状态（已修改、未跟踪等）。",
+  "settings.fileExplorer.git.showStatusColumn.description": "在完整视图中添加一列，显示每个文件的 git 状态（已修改、未跟踪等）。",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "状态、列、已修改、未跟踪、已忽略、已添加、已删除",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1762,11 +1762,11 @@
   },
   "settings.fileOperations.showAlreadyGoneToast.label": "要删除的项目已经不在时显示提示",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "如果你删除的东西已经被其他 App 移走或删除，Cmdr 会当作已完成，并显示一条简短的提示。关闭这个选项（或在提示里点按“不再显示”），就不会再看到这条提示。",
+  "settings.fileOperations.showAlreadyGoneToast.description": "如果你删除的东西已经被其他 App 移走或删除，Cmdr 会当作已完成，并显示一条简短的提示。关闭这个选项（或在提示里点按“不再显示”），就不会再看到这类提示。",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "消失、不见了、找不到、移走、通知、提示、弹出",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2427,9 +2427,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr 使用你的云端 AI 服务。在 AI 设置中允许使用云端 AI，即可开始聊天。",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr 使用你的云端 AI 服务。在 AI 设置中开启“允许使用云端 AI”，即可开始聊天。",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "打开 AI 设置",
   "@settings.askCmdr.openAiSettings": {
@@ -2938,25 +2938,25 @@
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "2 位月份（01-12）",
+  "settings.appearance.formatHelpMonth": "2 位月份（01–12）",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
-  "settings.appearance.formatHelpDay": "2 位日期（01-31）",
+  "settings.appearance.formatHelpDay": "2 位日期（01–31）",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
-  "settings.appearance.formatHelpHour": "2 位小时（00-23）",
+  "settings.appearance.formatHelpHour": "2 位小时（00–23）",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
-  "settings.appearance.formatHelpMinute": "2 位分钟（00-59）",
+  "settings.appearance.formatHelpMinute": "2 位分钟（00–59）",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
-  "settings.appearance.formatHelpSecond": "2 位秒（00-59）",
+  "settings.appearance.formatHelpSecond": "2 位秒（00–59）",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "为窗格添加一层淡淡的背景着色，让你一眼就能区分宗卷类型。",
   "@settings.appearance.tintGroupDescription": {
@@ -3163,9 +3163,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "在“键盘快捷键 → 前往最新下载（全局）”下更改这个快捷键。",
+  "settings.fileSystemWatching.globalShortcutHint": "在“键盘快捷键 → 前往最新下载”下更改这个快捷键。",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "{localNetwork}访问权限",
   "@settings.network.localNetworkAccessLabel": {

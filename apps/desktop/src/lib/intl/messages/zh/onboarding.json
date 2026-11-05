@@ -75,9 +75,9 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "看起来你之前授予过完全磁盘访问权限，后来又撤销了。",
+  "onboarding.stepFda.revoked.intro": "看起来你之前授予过完全磁盘访问权限，后来又把它关掉了。",
   "@onboarding.stepFda.revoked.intro": {
-    "sourceHash": "9087914"
+    "sourceHash": "6759357"
   },
   "onboarding.stepFda.revoked.noAccess": "这个应用当前没有完全磁盘访问权限。",
   "@onboarding.stepFda.revoked.noAccess": {
@@ -239,9 +239,9 @@
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "5cc5e7f"
   },
-  "onboarding.stepAi.table.renameWithout": "你在“批量重命名”里手动设置重命名规则，然后检查并应用。",
+  "onboarding.stepAi.table.renameWithout": "你在“批量重命名”里手动设置重命名规则，然后检查并应用这个规则。",
   "@onboarding.stepAi.table.renameWithout": {
-    "sourceHash": "e7531dc"
+    "sourceHash": "1b85bf6"
   },
   "onboarding.stepAi.table.renameWith": "你说“加上 ISO 日期前缀”，代理就帮你设好重命名规则，你检查后随时应用。",
   "@onboarding.stepAi.table.renameWith": {
