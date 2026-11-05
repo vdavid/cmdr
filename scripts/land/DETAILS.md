@@ -171,7 +171,7 @@ from minute four at minute 20.
   (a compile error, a test that fails for the reason the summary shows) and the jobs still running can't tell you
   anything new, cancel to free the runners (five macOS at most for the whole account). Keep it running when another
   failure is plausible (other lanes touch what you changed, or the red one stopped early), so one fix-up push covers
-  both instead of costing a second 25–35 min round.
+  both instead of costing a second full round.
 - **Required jobs come from head's own `ci.yml`** (`git show <head>:.github/workflows/ci.yml`, `requiredJobNames`): the
   `ci-ok` job's `needs`, mapped to each job's `name:` (else its ID), which is what the jobs API reports. A line-based
   read, the same layout `scripts/check/checks/ci-ok-gate.go` relies on. No hardcoded list: `ci-coverage` keeps those
@@ -262,7 +262,7 @@ and skips the suite (`docs/tooling/ci.md` § Landing doesn't re-run the suite). 
 `main`'s CI runs, and doesn't wait for them. Why a merge commit and never GitHub's rebase merge: § Decision: every
 commit on `main` is signed.
 
-Why: with many sessions landing at once, each land that saw `main` move rebased and re-ran CI (25–35 min), which moved
+Why: with many sessions landing at once, each land that saw `main` move rebased and re-ran the whole CI, which moved
 nobody forward. On 2026-10-20 eight-plus PRs went green two or three times each and none landed. Big teams accept the
 same trade: patches that passed CI on a slightly older base. A rare semantic clash between two such PRs surfaces on the
 next PR's run (it tests the PR merged with the current `main`) and on the release gate's full run, not on `main`'s own.
@@ -294,7 +294,7 @@ record never rides a branch (§ Decision: record a contributor PR in its own lan
 ## Decision: every commit on `main` is signed
 
 Decision: everything `land` puts on `main` carries a verified signature, so `main` can require signed commits. David
-picked a merge commit on a moved `main` over a local rebase plus another CI run (2026-10-30): no extra 25–35 min, at the
+picked a merge commit on a moved `main` over a local rebase plus another CI run (2026-10-30): no extra CI run, at the
 cost of a non-linear history.
 
 - **The fast-forward** pushes David's own commits, signed locally (`commit.gpgSign`, SSH key).
@@ -321,8 +321,8 @@ rebasing here. A plain land refuses to rebase a branch carrying a tagged commit 
 Why: a release is tagged on its `chore(release)` commit before it reaches `main`, and that commit is the one its full CI
 run tested and the pipeline built (`docs/guides/releasing.md` § The CI gate). A rebase would give `main` a different
 SHA, leaving the tag off `main`'s history. A merge commit made locally can't land either: `main` takes about eight lands
-an hour against a 25–35 min CI, so it'd rebuild and re-run forever (the reason `-record` exists). GitHub's merge needs
-no rebuild (§ Decision: merge a green PR onto a moved `main`).
+an hour, more than one per land run, so it'd rebuild and re-run forever (the reason `-record` exists). GitHub's merge
+needs no rebuild (§ Decision: merge a green PR onto a moved `main`).
 
 - **The CI wait reads only the PR's runs** (`ciRunsPath`): the release commit also has its release's full dispatch run,
   and the CI ruleset reads only the newest run on a commit, which is the PR's once it starts. Landing on the older green
@@ -341,10 +341,10 @@ Decision: `pnpm land -record N` lands the cherry-picked branch exactly like `pnp
 separately: a `record-pr-N` branch holding the current `origin/main` plus an `ours` merge of `refs/pull/N/head`,
 fast-forwarded onto `main` once `CI OK` is green on it (`record.go`).
 
-Why: a merge commit can't ride a rebase, and `main` gets about eight lands an hour against a 25–35 min CI, so a content
-branch carrying the record almost never found `main` still under it, and `land` refused it. PR #393 (2026-10-21) needed
-a manual `git rebase --rebase-merges`, which replayed the `ours` merge as a conflicting real merge that had to be redone
-by hand. Split off, the record's tree equals `main`'s, so CI skips every lane, the light lane's hygiene included
+Why: a merge commit can't ride a rebase, and `main` gets about eight lands an hour, more than one per land run, so a
+content branch carrying the record almost never found `main` still under it, and `land` refused it. PR #393 (2026-10-21)
+needed a manual `git rebase --rebase-merges`, which replayed the `ours` merge as a conflicting real merge that had to be
+redone by hand. Split off, the record's tree equals `main`'s, so CI skips every lane, the light lane's hygiene included
 (`docs/tooling/ci.md` § The light lane), and goes green in about a minute: the window `main` has to stay still shrinks
 from half an hour to one minute.
 
@@ -371,6 +371,41 @@ So `finish` cancels every unfinished run on the branch (`leftoverRuns`: this rep
 - **Here, not in a workflow on `pull_request: closed`**: that would cover every way a PR closes, but it needs
   `actions: write`, a Scorecard Token-Permissions finding. `land` cancels with the user's own `gh` token. Renovate's
   automerge isn't covered, but it merges only on green, so it leaves little running.
+
+## Decision: the ETA comes from recent runs, never a number in a doc
+
+Agents kept quoting a CI duration remembered from a doc, long after CI got faster. So `land` works it out live (`eta.go`
+decides, `etagh.go` fetches), and the docs point at `pnpm land eta` rather than carry a figure.
+
+- **When**: once the run's `Detect changes` job ends, the lanes that need only it are listed (run or skipped), so the
+  lane plan is known. `land` prints one line then ("CI runs E2E, Rust, ... Expect CI OK around 00:31, in about 19 min
+  (up to 24 min)."), and again only when the estimate moves more than `etaSlip` (3 min).
+- **Per lane, never per job**: a lane is a top-level `ci.yml` job (a reusable workflow's jobs show as `<lane> / <job>`).
+  Its jobs chain, and a lane that needs another (Linux E2E needs the base image) isn't listed until that one ends, so
+  `plannedLanes` adds it from `ci.yml`'s `needs` when recent land runs ran it.
+- **The history**: the newest 15 green first-attempt land runs and 10 light ones on `pull_request`, each read into a
+  `runSample`: per lane, how long after the run's start it ended (`end`, which carries its queueing and what it waits
+  on) and how long it ran once started (`took`); plus the gate's own time. Median and nearest-rank 90th percentile
+  (`spreadOf`). A lane's history is keyed by its runners (`laneKey`), so the macOS lane on the M1 doesn't inherit the
+  hosted runners' times.
+- **A lane's end**: the latest of the run's start plus its typical `end`, its start (or now plus the queue wait, if not
+  started) plus its typical `took`, and now. Finished lanes count where they ended. `CI OK` follows the latest lane by
+  the gate's own time. The "up to" figure uses the 90th percentiles. Backtested on four green land runs of 2026-11-05:
+  within 3 min of the real `CI OK` from minute three on.
+- **The runners' load** (`measureLoad`): every unfinished run's jobs, any workflow, counted per pool against
+  `runnerSlots` (the free plan's 20 Linux jobs and 5 hosted macOS, the M1's 4 `cmdr-m1` slots). When every slot of a
+  pool is busy, a queued lane counts about half a typical lane per slot-full of jobs ahead of it, and the line says how
+  many are ahead.
+- **Cost**: the cache is `<git common dir>/land/ci-durations.json`, shared by every worktree, refreshed after 15 min:
+  one list call plus one jobs call per run it hasn't sampled. The load is one list call per status plus one jobs call
+  per unfinished run, read once when the plan is known, then every 2 min while a lane hasn't started. A poll adds no
+  call: the jobs read the early-red check makes (§ Decision: stop waiting at the first required failure) feeds the ETA
+  too. Every call goes through `ghAPI` (§ Decision: cheap polling that outlasts the API budget).
+- **Fallbacks**: `fallbackLane` and `fallbackGate` only when no green run ran that lane, the one place durations are
+  fixed in code. Bump `historyVersion` when a sample's meaning changes, which drops older caches.
+- **`pnpm land eta`** (read-only) prints the load, the typical land and light runs, each lane's typical end, and, when
+  HEAD has a land run going, its live ETA. It can't say which lanes a future land run would pick: `changes`' outputs
+  aren't in the REST API.
 
 ## Open points
 
