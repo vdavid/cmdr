@@ -66,9 +66,12 @@ describe('multi-rename wrappers', () => {
   it('opens a session over a selection, or says the selection moved on', async () => {
     vi.mocked(commands.openMultiRename).mockResolvedValueOnce({
       status: 'ok',
-      data: { sessionId: 'S', count: 2 },
+      data: { sessionId: 'S', count: 2, resultsAvailable: true },
     } as never)
-    expect(await openMultiRename('L', false, [2, 5], 7)).toEqual({ ok: true, value: { sessionId: 'S', count: 2 } })
+    expect(await openMultiRename('L', false, [2, 5], 7)).toEqual({
+      ok: true,
+      value: { sessionId: 'S', count: 2, resultsAvailable: true },
+    })
     expect(commands.openMultiRename).toHaveBeenCalledWith('L', false, [2, 5], 7)
 
     vi.mocked(commands.openMultiRename).mockResolvedValueOnce({

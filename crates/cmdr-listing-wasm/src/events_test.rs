@@ -16,7 +16,7 @@ use crate::events::{
 /// Read at test time rather than embedded: the compiling lanes fingerprint it
 /// (`rustEmbeddedInputs` in `scripts/check/checks/inputs.go`), and the source
 /// scanners, which never run this, needn't.
-static BINDINGS: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+pub(crate) static BINDINGS: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
     let path = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../apps/desktop/src/lib/ipc/bindings.ts"

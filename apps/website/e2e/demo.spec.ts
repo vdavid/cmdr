@@ -210,6 +210,75 @@ test.describe('Browser demo', () => {
       expect(errors.map((error) => error.message)).toEqual([])
     })
 
+    // ⌃M runs the real Multi-Rename engine in the WASM module (crates/cmdr-listing-wasm, `multi_rename.rs`) over
+    // the panes and the write engine, so a rename lands in the pane and the operation log rolls it back.
+    const multiRename = (page: Page) => page.getByRole('dialog').filter({ hasText: 'Multi-rename' })
+
+    /** Opens the folder `name` in the left pane, then waits for its first row. */
+    async function enterFolder(page: Page, name: string, firstRow: string) {
+      await row(left(page), name).dblclick()
+      await expect(row(left(page), firstRow)).toBeVisible()
+    }
+
+    /** Types `mask` over the sheet's name mask. */
+    async function typeMask(page: Page, mask: string) {
+      const field = multiRename(page).getByRole('textbox', { name: 'Name mask' })
+      await field.fill(mask)
+    }
+
+    /** The demo's commands nobody answered, by name (`apps/desktop/src/lib/demo/unanswered.ts`). */
+    async function unanswered(page: Page): Promise<string[]> {
+      return page.evaluate(() => [
+        ...(window as unknown as { __cmdrDemo: { unanswered: Map<string, number> } }).__cmdrDemo.unanswered.keys(),
+      ])
+    }
+
+    test('Multi-Rename renames a selection, and the operation log rolls it back', async ({ page }) => {
+      const errors = collectPageErrors(page)
+      await openDemo(page)
+      await enterFolder(page, 'Documents', 'Annual report')
+      // Select `Annual report.pdf` and `Budget 2026.xlsx` (Insert toggles a row and moves down).
+      await row(left(page), 'Annual report').click()
+      await page.keyboard.press('Insert')
+      await page.keyboard.press('Insert')
+      await pressUntil(page, 'Control+m', multiRename(page))
+      await typeMask(page, '[N]_[C:2]')
+      await expect(multiRename(page).getByText('Annual report_01.pdf')).toBeVisible()
+      await expect(multiRename(page).getByText('Budget 2026_02.xlsx')).toBeVisible()
+      await multiRename(page)
+        .getByRole('button', { name: /^Rename 2 files/ })
+        .click()
+      await expect(row(left(page), 'Annual report_01')).toBeVisible()
+      await expect(row(left(page), 'Budget 2026_02')).toBeVisible()
+
+      await pressUntil(page, 'Meta+Alt+l', page.getByText('Operation log', { exact: true }))
+      await page.getByRole('button', { name: 'Roll back', exact: true }).first().click()
+      const confirm = page.locator('[role=dialog], [role=alertdialog]').filter({ hasText: 'Roll this operation back?' })
+      await confirm.getByRole('button', { name: 'Roll back', exact: true }).click()
+      await expect(page.getByText('Rolled back', { exact: true })).toBeVisible()
+      await expect(row(left(page), 'Annual report_01')).toHaveCount(0)
+      await expect(row(left(page), 'Annual report')).toBeVisible()
+      expect((await unanswered(page)).filter((name) => name.includes('multi_rename'))).toEqual([])
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
+
+    test('Multi-Rename says a photo’s fields can’t be read, and Results needs the desktop app', async ({ page }) => {
+      const errors = collectPageErrors(page)
+      await openDemo(page)
+      await enterFolder(page, 'Desktop', 'todo')
+      await row(left(page), 'Screenshot').click()
+      await pressUntil(page, 'Control+m', multiRename(page))
+      await typeMask(page, '[=exif.taken]')
+      await expect(multiRename(page).getByLabel('Can’t read tags')).toBeVisible()
+
+      const results = multiRename(page).getByRole('button', { name: /^Results…/ })
+      await expect(results).toHaveAttribute('aria-disabled', 'true')
+      await results.focus()
+      await expect(page.getByText('Results needs the Cmdr desktop app')).toBeVisible()
+      expect((await unanswered(page)).filter((name) => name.includes('multi_rename'))).toEqual([])
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
+
     /**
      * Drops files from the computer onto `target`, as a browser hands a Finder drag to the page: a
      * `DataTransfer` of `File`s on `dragenter`, `dragover`, and `drop` (apps/desktop/src/lib/demo/os-drop.ts).

@@ -66,8 +66,12 @@ fn an_opened_session() {
     let opened = MultiRenameOpened {
         session_id: "s1".to_string(),
         count: 2,
+        results_available: true,
     };
-    assert_eq!(wire(opened), json!({ "sessionId": "s1", "count": 2 }));
+    assert_eq!(
+        wire(opened),
+        json!({ "sessionId": "s1", "count": 2, "resultsAvailable": true })
+    );
 }
 
 #[test]

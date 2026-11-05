@@ -31,6 +31,7 @@ use crate::events::{DemoEvents, EventSink, ListingPathEvent};
 use crate::folder_sizes::FolderSizes;
 use crate::imports::{DemoImports, IMPORT_BUDGET_BYTES, ImportWatch};
 use crate::invoke::{answer, ok, parse};
+use crate::multi_rename::{DemoMultiRename, MULTI_RENAME_COMMANDS};
 use crate::operations_host::DemoOperations;
 use crate::search::{DemoSearch, SEARCH_COMMANDS};
 use crate::tree::{DemoTree, TreeError};
@@ -101,6 +102,8 @@ pub struct Demo {
     search: Arc<DemoSearch>,
     /// Files dropped in from the visitor's computer, onto the same volume (`imports.rs`).
     imports: Arc<DemoImports>,
+    /// ⌃M over the same panes, renaming through the same write engine (`multi_rename.rs`).
+    multi_rename: Arc<DemoMultiRename>,
 }
 
 impl Demo {
@@ -151,19 +154,27 @@ impl Demo {
         ));
         // The write engine's events pass the imports first: a transfer's end sweeps the drop it read from.
         let operations_sink: Arc<dyn EventSink> = Arc::new(ImportWatch {
-            inner: sink,
+            inner: Arc::clone(&sink),
             imports: Arc::clone(&imports),
             runtime: page_runtime(),
         });
         let operations = DemoOperations::new(
-            volume_id,
-            volume,
+            volume_id.clone(),
+            Arc::clone(&volume),
             volume_host,
             &listings,
             Arc::clone(&sizes) as _,
             operations_sink,
             home.map(PathBuf::from),
         );
+        let multi_rename = Arc::new(DemoMultiRename::new(
+            listings.clone(),
+            page_runtime(),
+            volume_id,
+            volume,
+            operations.clone(),
+            sink,
+        ));
         Ok(Self {
             listings,
             events,
@@ -173,6 +184,7 @@ impl Demo {
             viewer,
             search,
             imports,
+            multi_rename,
         })
     }
 
@@ -188,6 +200,7 @@ impl Demo {
             || DemoOperations::handles(command)
             || DemoViewer::handles(command)
             || DemoSearch::handles(command)
+            || DemoMultiRename::handles(command)
     }
 
     /// Every command [`Demo::invoke`] answers, by its Tauri name.
@@ -196,6 +209,7 @@ impl Demo {
             .iter()
             .chain(VIEWER_COMMANDS)
             .chain(SEARCH_COMMANDS)
+            .chain(MULTI_RENAME_COMMANDS)
             .copied()
             .chain(DemoOperations::commands())
     }
@@ -411,6 +425,7 @@ impl Demo {
             }
             _ if DemoViewer::handles(command) => self.viewer.invoke(command, args),
             _ if DemoSearch::handles(command) => self.search.invoke(command, args),
+            _ if DemoMultiRename::handles(command) => self.multi_rename.invoke(command, args).await,
             _ => Err(Value::String(format!("the browser demo doesn't answer `{command}`"))),
         }
     }
@@ -435,8 +450,8 @@ impl Demo {
     }
 }
 
-/// The runtime the viewer bridges on: the page's event loop in the browser, the caller's
-/// tokio runtime in native tests.
+/// The runtime the engines' background work runs on (the viewer, the folder-size gather, Multi-Rename's media
+/// reads): the page's event loop in the browser, the caller's tokio runtime in native tests.
 fn page_runtime() -> cmdr_fs::rt::Runtime {
     #[cfg(target_family = "wasm")]
     return cmdr_fs::rt::Runtime::default();

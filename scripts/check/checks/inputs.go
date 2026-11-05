@@ -390,6 +390,8 @@ var websiteDemoInputs = []string{
 	"crates/cmdr-sort/**",
 	"crates/cmdr-search/**",
 	"crates/cmdr-recents/**",
+	"crates/cmdr-multi-rename/**",
+	"crates/cmdr-media-meta/**",
 	"vendor/**",
 	"scripts/build-listing-wasm.sh",
 	"scripts/build-listing-wasm/**",

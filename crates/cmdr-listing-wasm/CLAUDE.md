@@ -10,25 +10,27 @@ The engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`. Not
   (`cmdr-brief-columns`, memory only). `menu.rs`: `DemoMenu`, the menu-state pushes stored and the macOS bar drawn from
   `cmdr-menu`; `context_menu.rs`: its right-click popups, the `show_*` commands answered with rows. `folder_sizes.rs`:
   the drive index's stand-in, a fold over the volume behind both engines' index seams (DETAILS § Folder sizes).
-  `viewer.rs`: the file viewer's commands (`cmdr-viewer`, same volume). `search.rs`: ⌘F (`cmdr-search` over the same
-  volume, sized by the fold; DETAILS § Search). `imports.rs`: files dropped in from the computer, staged under
+  `viewer.rs`: the file viewer's commands (`cmdr-viewer`, same volume). `multi_rename.rs`: ⌃M (`cmdr-multi-rename`, same
+  panes and write engine; no media reads, no Results; DETAILS § Multi-Rename). `search.rs`: ⌘F (`cmdr-search` over the
+  same volume, sized by the fold; DETAILS § Search). `imports.rs`: files dropped in from the computer, staged under
   `/.drops/` within a 10 MB per-visit budget (DETAILS § Files dropped in from the computer). `invoke.rs`: the
   args/answer JSON helpers every command family shares, a leaf so no family imports `commands.rs`. `bindings.rs` (wasm
   only): the `wasm-bindgen` API.
 - `operations_host/`: the write engine's host (seams, sinks, `wire.rs` event names, `commands/` by domain), on the same
   volume and `Listings` the listing engine uses. DETAILS § Writes.
-- `smoke.mjs` (+ `smoke-writes.mjs`, `smoke-viewer.mjs`): loads the built module in Node and drives a listing, every
-  write, every viewer command, and a search. Build: `pnpm build:listing-wasm`.
+- `smoke.mjs` (+ `smoke-writes.mjs`, `smoke-multi-rename.mjs`, `smoke-viewer.mjs`): loads the built module in Node and
+  drives a listing, every write, a Multi-Rename, every viewer command, and a search. Build: `pnpm build:listing-wasm`.
 
 ## Must-knows
 
 - **Same wire as the desktop, or the frontend breaks silently.** Command names, camelCase args, answers, rejections, and
   event payloads all mirror `commands/file_system/listing.rs`, `commands/font_metrics.rs`, `commands/menu_state.rs`,
-  `commands/menu.rs`, `commands/file_viewer.rs`, `commands/search.rs`, and `listing_host/events.rs` (writes: the
-  desktop's `operations_host/` and its write commands; search events: `search/live/events.rs`). A change there needs one
-  here; `events_test.rs`, `menu_test.rs`, `context_menu_test.rs`, and `search_test.rs` pin event keys and names against
-  `bindings.ts`.
-- **One volume, one `Listings`, shared by every engine** (listing, writes, viewer), or a copy lands unseen by the panes.
+  `commands/menu.rs`, `commands/file_viewer.rs`, `commands/search.rs`, `commands/multi_rename.rs`, and
+  `listing_host/events.rs` (writes: the desktop's `operations_host/` and its write commands; search events:
+  `search/live/events.rs`). A change there needs one here; `events_test.rs`, `menu_test.rs`, `context_menu_test.rs`,
+  `search_test.rs`, and `multi_rename_test.rs` pin event keys and names against `bindings.ts`.
+- **One volume, one `Listings`, shared by every engine** (listing, writes, viewer, Multi-Rename), or a copy lands unseen
+  by the panes.
 - **Everything but `bindings.rs` builds natively**, so the tests run with `cargo nextest` like any crate. Keep JS types
   out of `commands.rs`, `events.rs`, and `tree.rs`.
 - **The runtime traps are browser-only**: `std::time::Instant::now` and `SystemTime::now` panic, `Path::is_absolute` is

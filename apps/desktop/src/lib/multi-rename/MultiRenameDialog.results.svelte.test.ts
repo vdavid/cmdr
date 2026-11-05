@@ -79,14 +79,14 @@ async function settlePreview(): Promise<void> {
 /** The mounted sheets, unmounted after each test so no window listener outlives it. */
 let mounted: ReturnType<typeof mount>[] = []
 
-async function mountSheet(onApplied = vi.fn()): Promise<HTMLElement> {
+async function mountSheet(onApplied = vi.fn(), resultsAvailable = true): Promise<HTMLElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mounted.push(
     mount(MultiRenameDialog, {
       target,
       props: {
-        session: { sessionId: 'S', count: 1 },
+        session: { sessionId: 'S', count: 1, resultsAvailable },
         onApplied,
         onUndoStarted: vi.fn(),
         onClose: vi.fn(),
@@ -190,6 +190,32 @@ describe('MultiRenameDialog Results', () => {
     expect(notice(root)).toContain('1 name comes from your edited list')
     const mark = root.querySelector('[role="gridcell"][data-column="arrow"] .edited-mark')
     expect(mark?.textContent).toContain('You typed this name in Results')
+  })
+
+  it('where the app has no Results (the browser demo), the button says why and nothing writes the list', async () => {
+    const root = await mountSheet(vi.fn(), false)
+    const results = footerButton(root, 'Results…')
+    if (!results) throw new Error('no Results… button')
+    // Focusable, so its tooltip can show: `aria-disabled`, never `disabled`.
+    expect(results.getAttribute('aria-disabled')).toBe('true')
+    expect(results.disabled).toBe(false)
+    results.focus()
+    const tip = await vi.waitFor(
+      () => {
+        const id = results.getAttribute('aria-describedby')
+        expect(id).toBeTruthy()
+        return document.getElementById(id ?? '')
+      },
+      { timeout: 4000 },
+    )
+    expect(tip?.textContent).toContain('Results needs the Cmdr desktop app')
+
+    results.click()
+    const event = pressResults(root)
+    await settle()
+    expect(event.defaultPrevented).toBe(true)
+    expect(ipc.writeMultiRenameNames).not.toHaveBeenCalled()
+    expect(editor.openFileInEditor).not.toHaveBeenCalled()
   })
 
   it('focus does nothing before Results opened a file', async () => {

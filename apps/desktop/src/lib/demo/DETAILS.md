@@ -342,8 +342,11 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
   `destination`, `from`, `to`, `dir`), as the desktop's commands do for `root`: the dialogs name the home folder `~`.
 - TS answers only what isn't the engine's: `estimateOperationCost` is `[]` (only an S3 transfer has a bill).
 - There's no ⌘Z for an operation in the app either: undo is the operation log's Roll back (⌘⌥L).
-- Not answered yet: multi-rename (`open_multi_rename`, so its dialog fails to open), tags (`toggle_tags`), and the new
-  folder dialog's AI name suggestions (`get_ai_status`).
+- Multi-Rename (⌃M) runs the real engine in the WASM module over the same panes and write engine, so a rename lands in
+  the pane, the queue shows it, and Roll back undoes it. No media reads (a mask with an EXIF or tag field shows its rows
+  couldn't be read), and Results is disabled (`resultsAvailable: false`, tooltip: it needs the desktop app);
+  `crates/cmdr-listing-wasm/DETAILS.md` § Multi-Rename.
+- Not answered yet: tags (`toggle_tags`) and the new folder dialog's AI name suggestions (`get_ai_status`).
 
 ## Drag and drop
 
@@ -536,8 +539,11 @@ demo can't ask it, so `getIcons` answers every id with the app's bundled generic
   `destination`, `from`, `to`, `dir`), as the desktop's commands do for `root`: the dialogs name the home folder `~`.
 - TS answers only what isn't the engine's: `estimateOperationCost` is `[]` (only an S3 transfer has a bill).
 - There's no ⌘Z for an operation in the app either: undo is the operation log's Roll back (⌘⌥L).
-- Not answered yet: multi-rename (`open_multi_rename`, so its dialog fails to open), tags (`toggle_tags`), and the new
-  folder dialog's AI name suggestions (`get_ai_status`).
+- Multi-Rename (⌃M) runs the real engine in the WASM module over the same panes and write engine, so a rename lands in
+  the pane, the queue shows it, and Roll back undoes it. No media reads (a mask with an EXIF or tag field shows its rows
+  couldn't be read), and Results is disabled (`resultsAvailable: false`, tooltip: it needs the desktop app);
+  `crates/cmdr-listing-wasm/DETAILS.md` § Multi-Rename.
+- Not answered yet: tags (`toggle_tags`) and the new folder dialog's AI name suggestions (`get_ai_status`).
 
 ## Drag and drop
 

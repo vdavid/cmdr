@@ -14016,6 +14016,11 @@ export type MultiRenameOpened = {
   sessionId: string
   // How many files the session renames.
   count: number
+  /**
+   *  Whether this app can open Results (⌥⏎): `false` in the browser demo, which has
+   *  no text editor to hand the names list to, so the sheet disables it.
+   */
+  resultsAvailable: boolean
 }
 
 // One saved preset.

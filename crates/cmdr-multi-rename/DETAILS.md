@@ -33,6 +33,10 @@ it. The pipeline, placeholder grammar, and TC semantics are documented in
     volume manager under `io_budget_for_volume`). A host with no reader answers `ReadError::NotSupported` per file,
     which `store` turns into `Unreadable` without counting toward `give_up`, so the read ends `done` at once.
   - `results_path(session_id)`: where Results writes; `None` makes `write_names` refuse `CouldntWriteNames`.
+  - `results_supported()`: whether the host has Results at all, sent as `MultiRenameOpened.resultsAvailable` so the
+    sheet disables it (the demo's `false`). **Decision/Why: a capability, never `results_path(..).is_some()`**: a
+    desktop whose cache dir is missing keeps its `CouldntWriteNames` wording instead of reading as "needs the desktop
+    app".
   - `rename_place(volume_id, dir, ready)`: ONE resolve answering `RenamePlace` (`ReadOnly`, `LocalDisk`, `Volume`,
     `NotConnected`). ❌ Don't split it into a read-only check plus a lookup: two resolves could disagree on
     `(volume_id, dir)`. `LocalDisk` fingerprints through `std::fs` on the runtime's blocking pool; `Volume` through the
@@ -63,16 +67,18 @@ item is argued here first.
 
 ## The browser build
 
-- `cargo build -p cmdr-multi-rename --target wasm32-unknown-unknown` passes with `cmdr-media-meta`'s default features
-  (its readers, `lofty`, `kamadak-exif`, and `tokio/rt`, compile there; verified 2026-11-05 with that command). Whether
-  to drop the readers from the browser build is a size question, measured when the demo links the crate.
-- Until the demo links it, `scripts/build-listing-wasm/main.go`'s `browserBound` compiles it for wasm32 so a host-only
-  dependency can't creep in.
+- The browser demo links it (`crates/cmdr-listing-wasm/src/multi_rename.rs`, its host: no media reader, no Results).
+  `cmdr-media-meta` comes with its default features, readers included: they compile for wasm32, and fat LTO drops them
+  since nothing there calls them (measured, and the `read` feature decided against, in
+  `crates/cmdr-listing-wasm/DETAILS.md` § The build).
 - In the browser, `spawn_blocking_on` runs the read inline and queues it as a finished task, so a whole media read runs
   in one task (no tokio coop budget there) and the throttle sends only the first and the final event.
 - The loader's `catch_unwind` does nothing under the browser build's `panic = "abort"`; harmless while the demo's reader
   can't panic.
 - `names_file.rs` uses `libc` and `std::os::unix` only under `cfg(unix)`; the browser never writes a Results file.
+- The engine's own session-level cells over an in-memory volume are the demo's (`multi_rename_test.rs` there), and the
+  Node smoke (`smoke-multi-rename.mjs`) is what proves the browser half: open, a media read to `done`, preview, apply,
+  and undo on the real `.wasm`.
 - `chrono::Local` reads the offset from JS `Date` there (chrono's default `wasmbind`), and uuid's `js` feature comes
   from `cmdr-fs`.
 

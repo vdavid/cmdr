@@ -40,6 +40,12 @@ cmdr-viewer = { path = "../cmdr-viewer" }
 # recents-list rules its session list of recent searches follows.
 cmdr-search = { path = "../cmdr-search" }
 cmdr-recents = { path = "../cmdr-recents" }
+# The Multi-Rename Tool's engine (⌃M, `src/multi_rename.rs`), over the same panes and write
+# engine, and the media vocabulary its demo reader answers with (`ReadError::NotSupported`).
+cmdr-multi-rename = { path = "../cmdr-multi-rename" }
+cmdr-media-meta = { path = "../cmdr-media-meta" }
+# The host seam's `rename_place` future.
+futures-util = "0.3"
 log = "0.4"
 # The wire shapes: every answer and event crosses as the same JSON Tauri sends.
 serde = { version = "1", features = ["derive"] }

@@ -55,6 +55,9 @@ pub struct MultiRenameOpened {
     pub session_id: String,
     /// How many files the session renames.
     pub count: usize,
+    /// Whether this app can open Results (⌥⏎): `false` in the browser demo, which has
+    /// no text editor to hand the names list to, so the sheet disables it.
+    pub results_available: bool,
 }
 
 /// How a preview's rows add up, for the footer and the Rename button.
@@ -260,7 +263,11 @@ impl MultiRename {
                 media,
             },
         );
-        Ok(MultiRenameOpened { session_id, count })
+        Ok(MultiRenameOpened {
+            session_id,
+            count,
+            results_available: self.host().results_supported(),
+        })
     }
 
     /// Starts reading the session's media files in the background, on the engine's

@@ -5,7 +5,7 @@ import { volumeAnswers } from './volumes.js'
 
 /**
  * The commands the WASM engine answers (`crates/cmdr-listing-wasm/src/operations_host/commands/`,
- * `folder_sizes.rs`, and `search.rs`).
+ * `folder_sizes.rs`, `search.rs`, and `multi_rename.rs`).
  * The backend tries its TS tables first, so a TS answer for one of these would silently shadow the
  * real write engine, its journal, or its undo planner.
  */
@@ -55,6 +55,31 @@ const engineCommands = [
   'remove_recent_search',
   'clear_recent_searches',
   'apply_recent_searches_max_count',
+  // ⌃M, the Multi-Rename engine over the same panes and write engine (`src/multi_rename.rs`).
+  'open_multi_rename',
+  'preview_multi_rename',
+  'get_multi_rename_preview_rows',
+  'move_multi_rename_row',
+  'get_multi_rename_range_samples',
+  'get_multi_rename_media_progress',
+  'get_multi_rename_media_overview',
+  'get_multi_rename_field_samples',
+  'prioritize_multi_rename_media',
+  'render_multi_rename_examples',
+  'apply_multi_rename',
+  'get_multi_rename_history',
+  'write_multi_rename_names',
+  'read_multi_rename_names',
+  'clear_multi_rename_names',
+  'close_multi_rename',
+  'get_multi_rename_last_settings',
+  'save_multi_rename_last_settings',
+  'get_multi_rename_presets',
+  'save_multi_rename_preset',
+  'delete_multi_rename_preset',
+  'rename_multi_rename_preset',
+  'update_multi_rename_preset',
+  'move_multi_rename_preset',
 ]
 
 const camelCase = (snake: string) => snake.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())

@@ -31,6 +31,12 @@ pub trait MultiRenameHost: Send + Sync {
     /// nowhere to, which `write_names` refuses with `CouldntWriteNames`.
     fn results_path(&self, session_id: &str) -> Option<PathBuf>;
 
+    /// Whether this host can open Results at all (the sheet's `resultsAvailable`):
+    /// a capability, never derived from [`results_path`](Self::results_path), so a
+    /// desktop that momentarily has nowhere to write keeps its `CouldntWriteNames`
+    /// wording instead of reading as a host without Results.
+    fn results_supported(&self) -> bool;
+
     /// Where a rename of `ready` (rows of the folder `dir` on `volume_id`) lands,
     /// decided in ONE resolve: a read-only route (the folder's, else the first row
     /// whose old or new name a route serves), the local disk, a connected volume,

@@ -70,7 +70,7 @@ async function mountSheet(onApplied = vi.fn(), onClose = vi.fn(), onUndoStarted 
   document.body.appendChild(target)
   mount(MultiRenameDialog, {
     target,
-    props: { session: { sessionId: 'S', count: 1 }, onApplied, onUndoStarted, onClose },
+    props: { session: { sessionId: 'S', count: 1, resultsAvailable: true }, onApplied, onUndoStarted, onClose },
   })
   await settle()
   return target
@@ -154,7 +154,7 @@ describe('MultiRenameDialog', () => {
     const sheet = mount(MultiRenameDialog, {
       target,
       props: {
-        session: { sessionId: 'S', count: 1 },
+        session: { sessionId: 'S', count: 1, resultsAvailable: true },
         onApplied: vi.fn(),
         onUndoStarted: vi.fn(),
         onClose: vi.fn(),

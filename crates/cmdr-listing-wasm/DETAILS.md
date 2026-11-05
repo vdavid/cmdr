@@ -59,7 +59,8 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
   (`commands.rs`'s `COMMANDS`), so a mock routes those here and fakes the rest. Beside the listing commands, that's
   Brief mode's widths (`get_brief_column_text_widths`) and the font metrics behind them (`store_font_metrics`,
   `extend_font_metrics`, `has_font_metrics`), answered by `cmdr-brief-columns`, the code the desktop's commands run. The
-  page measures its own fonts with the Canvas API and stores them, as the desktop's frontend does.
+  page measures its own fonts with the Canvas API and stores them, as the desktop's frontend does. Beside those, the
+  viewer's, search's, writes', and Multi-Rename's commands (§ Multi-Rename).
 - `demo.importPlan(items): Promise<ImportPlan>`, `demo.importFile(batch, index, bytes: Uint8Array): Promise<null>`,
   `demo.importHandOff(batch, offered)`, and `demo.importReleaseOffered()`: files dropped in from the computer (§ Files
   dropped in from the computer). Both reject with an `ImportError`
@@ -113,6 +114,16 @@ tree lists as a folder (as on disk).
   0.4%, and the search core about 120 KB (code naming each, after fat LTO; verified 2026-11-04 with an unstripped build,
   `CARGO_PROFILE_WASM_RELEASE_STRIP=false pnpm build:listing-wasm`, then the toolchain's own
   `llvm-nm -S -C --defined-only` over `target/wasm32-unknown-unknown/wasm-release/cmdr_listing_wasm.wasm`).
+- **Multi-Rename** (`cmdr-multi-rename`, with `cmdr-media-meta` beside it) adds 335,351 bytes raw, 111,589 gzipped, and
+  76,705 Brotli'd (shipped build after `wasm-opt`, raw / `gzip -9` / `brotli -q 11`: 9,447,722 / 3,568,545 / 2,589,429
+  without it, 9,783,073 / 3,680,134 / 2,666,134 with it; rustc 1.99.1, binaryen 133, 2026-11-05). `regex` and
+  `unicode-normalization` were already linked (search, viewer), so that's the engine itself.
+  - **Decision: no `read` feature in `cmdr-media-meta`.** The media readers (`lofty`, `kamadak-exif`, the byte source's
+    `tokio/rt` bridge) cost the browser build nothing worth a feature: built with them gated off (a trial `read`
+    feature, `default-features = false` on both edges), the module was 9,782,207 / 3,680,195 / 2,656,733, so 866 bytes
+    raw, nothing gzipped (61 bytes the other way), and 9 KB Brotli'd. Why: the demo's reader never calls
+    `read_media_from`, so fat LTO drops the parsers. The bar was 50 KB gzipped; a feature would be a second build shape
+    of the crate to keep compiling for that.
 - **`wasm-opt -O1 --duplicate-function-elimination`** runs on the bindgen output in place (binaryen pinned in
   `.mise.toml`; `wasmOptArgs` in `main.go`, with rustc's default wasm32 feature set so it validates what rustc emits).
   ❌ Don't switch it to `-Oz` or `-Os`: they shrink the raw file most but compress worse, and the page downloads the
@@ -145,7 +156,9 @@ tree lists as a folder (as on disk).
   (`smoke-writes.mjs`) runs a copy and its undo, a conflict answered Skip, a cancel, a new folder, a rename, a move, a
   delete, and the journal read back, each with its `directory-diff`; then a 1,200-file delete under a `setTimeout` probe
   that fails past a 50 ms hold. The probe runs past the settle until the engine has sent nothing for 200 ms, so the
-  folder-size news that trails the delete is inside it. Any unhandled rejection fails the run.
+  folder-size news that trails the delete is inside it. Its Multi-Rename half (`smoke-multi-rename.mjs`) opens a sheet,
+  previews a counter mask, moves a row, renames and rolls back, then reads 1,200 photos' media fields to `done` under
+  the same probe. Any unhandled rejection fails the run.
   - **The hold is the main thread's CPU time** between two ticks (`process.threadCpuUsage`), with wall time only
     printed. Decision/Why: wall time failed under machine load (87 ms at a load average of 74–130 from parallel agents'
     checks, 13–19 ms alone), since a descheduled process ages the wall clock but not its thread's CPU time. Measured
@@ -256,6 +269,32 @@ over the page's one volume, with no index to load.
 - **Results order and recent searches**: `sort_search_results` is `cmdr_listing::sort_search_rows` on the panes'
   collator; the recent list is `cmdr-recents`' rules over `cmdr_search::history`'s key, in memory.
 
+## Multi-Rename
+
+`multi_rename.rs`'s `DemoMultiRename` answers the sheet's 24 commands by their Tauri names (`MULTI_RENAME_COMMANDS`,
+pinned against `bindings.ts` by `multi_rename_test.rs`): `cmdr-multi-rename`'s `MultiRename` engine, built in
+`Demo::new` over the panes' `Listings`, the page runtime, and `DemoHost`.
+
+- **One volume, one `Listings`, one write engine**: the host's `rename_place` answers the page volume (or `NotConnected`
+  for another id), so fingerprints go through `capture_remote`, and `operations()` is `DemoOperations`' engine. Apply's
+  events go through `DemoOperations::op_sink`, the sink every write uses, so a rename passes `ImportWatch` and the queue
+  like a copy.
+- **Media fields**: the host's loader answers `ReadError::NotSupported` for every file, which the engine stores as
+  `Unreadable` without counting toward giving up. The whole read runs in ONE task (an inline `spawn_blocking_on` leaves
+  `join_next` always ready, and the browser has no coop budget), so the throttle sends the first and the final `done`
+  event. Measured by the smoke: 1,200 photos in two events and a 2 ms hold of the main thread's CPU (2026-11-05). A
+  sheet that subscribes late asks `get_multi_rename_media_progress`, which answers `done` from the cache. The progress
+  payload is the crate's `MediaProgressEvent`, sent as is under `multi-rename-media-progress`.
+- **Results**: `results_supported` is `false`, so `open_multi_rename` answers `resultsAvailable: false` and the sheet
+  disables Results with a tooltip saying it needs the desktop app. `results_path` is `None`, so a
+  `write_multi_rename_names` anyway refuses `couldntWriteNames`.
+- **Persistence in memory**: presets (`PresetList`, seeded once on the first `get_multi_rename_presets`, as
+  `PresetStore` does), the last settings, and the field history (started from `history_seed()`, as a new install's,
+  added to after each apply with `cmdr_recents::add_to`). Gone on reload, like the volume.
+- Tests: `multi_rename_test.rs` (open, a counter preview, a moved row retiring the preview, apply and its
+  `directory-diff`, roll back, history, a media mask ending `unreadable` with one final `done` event, Results' refusal,
+  presets, last settings); `smoke-multi-rename.mjs` runs the same on the real `.wasm`, plus the 1,200-photo probe.
+
 ## Files dropped in from the computer
 
 `imports.rs`'s `DemoImports` lands a visitor's dropped files on the page's volume through `InMemoryVolume`'s import door
@@ -319,6 +358,9 @@ from the computer. Nothing leaves the page.
   with exact-case names, so a scope spelled in another case through a link stays the literal (still matched
   case-insensitively, but as the link, a leaf); no AI (`getAiStatus` answers unavailable, so the dialog's AI mode stays
   off as on a Mac with AI off); no importance weights, so ties rank by name and id alone.
+- **Multi-Rename** (`multi_rename.rs`, § Multi-Rename): no media reads (every media field reads as couldn't-read), no
+  Results, presets and history in memory, and every call runs inline with none of the desktop's IPC deadlines or preview
+  budget.
 - **The viewer** (`viewer.rs`): every call runs inline, with none of the app's 2 s timeouts or stall watches (an
   in-memory read can't hang). No LineIndex upgrade, so a big file keeps its estimated row count; a search scans in 8 ms
   slices on the page's event loop instead of a thread; no watcher, so tail mode never sees a change.

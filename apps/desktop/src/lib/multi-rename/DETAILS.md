@@ -90,7 +90,10 @@
   again" (`clearNames`) or a read that fails (`namesFileGone`, worded in the error line). The line under the fields says
   quietly what's going on (`results.editing`, then `results.edited` with the count) with "Read names now" and "Use the
   settings again" links; an error wins the line. A row with a typed name shows an accent pencil where its arrow is
-  (`PreviewList.svelte`). The footer offers it as a house `Button`, "Results…", its key chip on it. The ellipsis follows
+  (`PreviewList.svelte`). A host without Results (the browser demo) opens the session with `resultsAvailable: false`:
+  the button stays focusable but `ariaDisabled`, its tooltip says Results needs the desktop app
+  (`multiRename.resultsUnavailable`), and ⌥⏎ does nothing. That's a permanent block, kept apart from `canResults`'
+  transient ones. The footer offers it as a house `Button`, "Results…", its key chip on it. The ellipsis follows
   `docs/style-guide.md` § Writing: the editor is where the user changes what the rename will do, so the next step steers
   the command. **Decision/Why:** ⌥⏎, the PR's key: Enter stays Rename, and Enter's handler skips any modifier, so the
   two never meet. The matching is the backend's (`multi_rename/DETAILS.md` § Session); the sheet holds no names. Ported

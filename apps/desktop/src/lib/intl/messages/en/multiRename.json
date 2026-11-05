@@ -407,6 +407,10 @@
     "description": "Tooltip of the Results… footer button (multiRename.results): it opens the list of old and new names in the user’s text editor, one file per line, to change any new name by hand; the sheet reads the list back when the user returns to the window. The tooltip shows the button’s keyboard shortcut after this text.",
     "screenshot": "multi-rename.png"
   },
+  "multiRename.resultsUnavailable": "Results needs the Cmdr desktop app: it opens the names in your text editor.",
+  "@multiRename.resultsUnavailable": {
+    "description": "Tooltip of the Results… footer button (multiRename.results) when it’s unavailable: in the browser demo of Cmdr on the website, which can’t open a text editor on the visitor’s computer. Results there opens the list of old and new names in the user’s text editor to change them by hand. \"Cmdr\" is the brand name; keep it as is."
+  },
   "multiRename.editedName": "You typed this name in Results",
   "@multiRename.editedName": {
     "description": "Tooltip and screen-reader text of a small pencil mark beside a row of the preview whose new name the user typed by hand in the list the Results… button opens (multiRename.results). “Results” here names that button: write it the way your multiRename.results label reads (without the “…”), quoted if your language quotes UI labels in running text rather than one the settings made."

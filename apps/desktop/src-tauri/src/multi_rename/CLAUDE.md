@@ -10,7 +10,7 @@ in `media.rs`, apply in `run.rs`), re-exported here so the app names it `crate::
 host:
 
 - `app_host.rs` the app's engine (`app_multi_rename`, a `LazyLock` on Tauri's runtime), its `MultiRenameHost` answers
-  (volume reads, `rename_place`, `io_budget`, the write engine), and the `MultiRenameMediaProgress` event.
+  (volume reads, Results offered, `rename_place`, `io_budget`, the write engine), and the `MultiRenameMediaProgress` event.
 - `app_files.rs` the app's files: `LAST_SPEC` (last settings), `FIELD_HISTORY`, and `results_path`.
   `preset_store.rs` the presets file (`PRESETS`).
 

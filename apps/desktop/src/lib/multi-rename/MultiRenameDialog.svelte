@@ -164,6 +164,8 @@
     )
     /** Results writes what the preview shows, so it waits for the same settled preview Start does. */
     const canResults = $derived(tool.error === null && !tool.pending && !tool.applying)
+    /** Whether this app can open Results at all (the browser demo can't): a permanent block, apart from `canResults`. */
+    const resultsAvailable = $derived(session.resultsAvailable)
     const shownError = $derived(tool.error ?? tool.applyError ?? results.error)
     /** The error line's words: the preview's, Start's, or Results' error, else why Undo rename didn't go. */
     const shownMessage = $derived(shownError ? errorText(shownError) : undoNotice ? tString(undoNotice) : '')
@@ -228,7 +230,7 @@
     }
 
     function openResults(): void {
-        if (canResults) void results.start()
+        if (resultsAvailable && canResults) void results.start()
     }
 
     /** Hands the last run's reversal to the queue, as the operation log's Roll back does. */
@@ -539,10 +541,14 @@
                     {tString('multiRename.undo')}
                 </Button>
             {/if}
+            <!-- Without Results, stays focusable (`ariaDisabled`) so its tooltip can say why. -->
             <Button
-                disabled={!canResults}
+                disabled={resultsAvailable && !canResults}
+                ariaDisabled={!resultsAvailable}
                 onclick={openResults}
-                tooltipContent={{ text: tString('multiRename.resultsTooltip'), shortcut: resultsShortcut }}
+                tooltipContent={resultsAvailable
+                    ? { text: tString('multiRename.resultsTooltip'), shortcut: resultsShortcut }
+                    : { text: tString('multiRename.resultsUnavailable') }}
                 keyHint={{ commandId: 'multiRename.results' }}
             >
                 {tString('multiRename.results')}

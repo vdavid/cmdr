@@ -18,6 +18,16 @@ fn keep_names() -> MultiRenameSpec {
     }
 }
 
+#[test]
+fn the_desktop_offers_results_on_every_session() {
+    let (_dir, listing) = folder("multi-rename-results-offered", &["a.txt"]);
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
+    assert!(session.results_available, "the sheet enables Results on the desktop");
+    app_multi_rename().close(&session.session_id);
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_name_typed_in_the_results_file_is_the_one_the_rename_uses() {
     let (dir, listing) = folder("multi-rename-results", &["a.txt", "b.txt"]);

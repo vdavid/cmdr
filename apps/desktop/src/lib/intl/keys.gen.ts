@@ -3450,6 +3450,7 @@ export type MessageKey =
   | 'multiRename.results.gone'
   | 'multiRename.results.readNow'
   | 'multiRename.resultsTooltip'
+  | 'multiRename.resultsUnavailable'
   | 'multiRename.search'
   | 'multiRename.searchOptionHelp.off'
   | 'multiRename.searchOptionHelp.on'

@@ -103,8 +103,7 @@ impl DemoOperations {
     }
 
     /// The engine itself, for a caller driving its entry points directly (the
-    /// golden replay).
-    #[cfg(test)]
+    /// golden replay, the Multi-Rename host's apply).
     pub(crate) fn engine(&self) -> &Operations {
         &self.engine
     }
@@ -132,7 +131,7 @@ impl DemoOperations {
     }
 
     /// A fresh sink for one operation.
-    fn op_sink(&self) -> Arc<dyn OperationEventSink> {
+    pub(crate) fn op_sink(&self) -> Arc<dyn OperationEventSink> {
         Arc::new(sinks::DemoOperationSink {
             sink: Arc::clone(&self.sink),
             engine: self.engine.clone(),

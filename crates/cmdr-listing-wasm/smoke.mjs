@@ -1,4 +1,5 @@
-// Loads the built module the way a page does and drives one listing through it, so a
+// Loads the built module the way a page does and drives one listing through it (then search,
+// every write, Multi-Rename, and the viewer), so a
 // runtime trap only the browser build has (a `std` clock, a thread spawn) fails a check
 // instead of a visitor's tab. Run by `scripts/build-listing-wasm.sh -smoke`.
 //
@@ -7,6 +8,7 @@ import { readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { multiRenameTree, smokeMultiRename } from './smoke-multi-rename.mjs'
 import { smokeViewer } from './smoke-viewer.mjs'
 import { smokeWrites, writesTree } from './smoke-writes.mjs'
 
@@ -33,6 +35,7 @@ const tree = {
     { path: '/Users/you/notes 9.txt', kind: 'file', size: 20 },
     { path: '/Users/you/.zshrc', kind: 'file', size: 12 },
     ...writesTree(),
+    ...multiRenameTree(),
   ],
 }
 
@@ -162,6 +165,7 @@ try {
   console.log(`listing-wasm smoke: ${await smokeSearch()}`)
 
   console.log(`listing-wasm smoke: ${await smokeWrites(demo, { events: recent, waitFor })}`)
+  console.log(`listing-wasm smoke: ${await smokeMultiRename(demo, { events: recent, waitFor })}`)
   console.log(`listing-wasm smoke: ${await smokeViewer(glue, fail)}`)
 } catch (error) {
   fail(error?.stack ?? String(error))

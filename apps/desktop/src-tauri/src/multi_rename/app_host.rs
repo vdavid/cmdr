@@ -144,6 +144,10 @@ impl MultiRenameHost for AppHost {
         results_path(session_id)
     }
 
+    fn results_supported(&self) -> bool {
+        true
+    }
+
     fn rename_place<'a>(
         &'a self,
         volume_id: &'a str,

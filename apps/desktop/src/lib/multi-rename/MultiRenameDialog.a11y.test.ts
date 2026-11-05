@@ -82,7 +82,7 @@ async function mountSheet(): Promise<HTMLElement> {
   mount(MultiRenameDialog, {
     target,
     props: {
-      session: { sessionId: 'S', count: 5 },
+      session: { sessionId: 'S', count: 5, resultsAvailable: true },
       onApplied: () => {},
       onUndoStarted: () => {},
       onClose: () => {},

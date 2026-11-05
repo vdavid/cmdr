@@ -6,7 +6,7 @@
 // time, through the size news that trails it). Called from `smoke.mjs`.
 
 /** The longest the engine may hold the page between two timer ticks, in main-thread CPU time. */
-const MAX_GAP_MS = 50
+export const MAX_GAP_MS = 50
 /** The files the long-task probe deletes in one go. */
 const MANY = 1_200
 
@@ -191,7 +191,7 @@ export async function smokeWrites(demo, bus) {
  * machine stretches wall time by descheduling the process, but can't add CPU time to the
  * thread, so the gate fails only when the engine itself holds the page.
  */
-function holdProbe() {
+export function holdProbe() {
   const cpuMs = () => {
     const { user, system } = process.threadCpuUsage()
     return (user + system) / 1000
@@ -223,7 +223,7 @@ function holdProbe() {
 const QUIET_MS = 200
 
 /** Resolves once `events` has stopped growing for `QUIET_MS`. */
-async function quiet(events) {
+export async function quiet(events) {
   let seen = -1
   while (seen !== events.length) {
     seen = events.length
