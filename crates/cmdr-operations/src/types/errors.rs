@@ -517,6 +517,13 @@ pub enum WriteOperationError {
         path: String,
         message: cmdr_fs::error_detail::ErrorDetail,
     },
+    /// "Always require SMB encryption" is on, and a share this transfer reads or writes can't
+    /// encrypt its connection, so Cmdr sent nothing over it (`VolumeError::EncryptionRequired`,
+    /// SMB-only). Its own variant so the stopped state names the setting: the same server gives
+    /// the same answer until it or the setting changes, so it's ❌ never a blip to retry.
+    SmbEncryptionRequired {
+        path: String,
+    },
     /// Couldn't read from the source.
     ReadError {
         path: String,
@@ -714,6 +721,7 @@ macro_rules! item_path_of {
             | WriteOperationError::ServerConnectionLost { path, .. }
             | WriteOperationError::ChangedWhileDisconnected { path, .. }
             | WriteOperationError::ReplySignatureRefused { path, .. }
+            | WriteOperationError::SmbEncryptionRequired { path }
             | WriteOperationError::FileLocked { path }
             | WriteOperationError::MoveNotConfirmed { path, .. }
             | WriteOperationError::NameTooLong { path }

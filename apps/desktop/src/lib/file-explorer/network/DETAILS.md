@@ -632,6 +632,14 @@ the backoff like `handleNeedsHostKey` (the same login gets the same guest offer)
 `RemoteConnectView`'s `guest_session_refused`: "Try another password…" is the signed-out banner's own Sign in (arm 2),
 and Disconnect the cycle's. The volume store shows it as `needs_sign_in`.
 
+❗ `encryption_required` is the sixth state, SMB only: "Always require SMB encryption" is on and the rebuilt session
+can't encrypt (a guest session, or a server with no cipher), so the backend refused it (#966). Its own status
+(`encryption-required`), set by the event OR by the command's typed refusal (`volume` / `encryptionRequired`), so the
+cycle stops even if the event lands after the failed attempt returns. `STOPPED_STATUSES` is the one list of statuses the
+backoff stops at. The pane renders `RemoteConnectView`'s `refused` with the sentence, "Open Settings" (deep-linked to
+the switch through `smb-encryption-setting.ts`), and Disconnect, ❌ no retry: the server answers the same until it or
+the setting changes. The volume store shows it as `disconnected`.
+
 Lazy-nav path: opening a share that's already `Disconnected` (no fresh event in flight), the `smb-view-state.svelte.ts`
 subscription `$effect` notices `currentVolumeInfo?.connectionState === 'disconnected'` and calls
 `connectPlace({ volumeId, connectionState: 'disconnected' })`. ❗ Through `#lib/servers/connect-flow.ts`'s arm 1 rather

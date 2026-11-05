@@ -83,6 +83,8 @@ export type SettingsSurface =
   | 'volume-breadcrumb'
   /** The servers hub's "Turn it on in Settings" link, deep-linking to `network.enabled`. */
   | 'servers-hub'
+  /** A share refused under "Always require SMB encryption" (the pane's error screen or reconnect view), deep-linking to that switch. */
+  | 'smb-encryption-refusal'
   /** A pane's ADB refusal with no platform tools to talk to, deep-linking to the Android section. */
   | 'adb-refusal'
   /** The downloads "Stop showing these" notification toast. */

@@ -3998,6 +3998,48 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.smbEncryptionRequired.title": "This share’s connection isn’t encrypted",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "description": "Title of the folder error screen when Cmdr's own \"Always require SMB encryption\" setting is on (set by the person in Settings > File systems > SMB/Network shares, or forced on by their organization) and the connection to this network share (SMB) isn't encrypted, so Cmdr didn't open the folder. Usually the share is connected as a guest, or the server doesn't offer encryption. Plain text. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "Cmdr is set to always require SMB encryption, and the connection to `{path}` can’t encrypt, so Cmdr didn’t open it. Nothing went over that connection.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "description": "Body of the folder error screen for that case. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder's path, which Cmdr doesn't control: any length. \"Always require SMB encryption\" names the setting; word it the way your language words that setting's label (settings.network.requireSmbEncryption.label). The last sentence reassures that nothing was sent unencrypted. \"SMB\" is a name; keep it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Here’s what to try:\n- Sign in with an account: guest connections can’t be encrypted\n- Turn on SMB encryption on the server\n- Turn off “Always require SMB encryption” in Settings, if you don’t need it",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "description": "Recovery suggestion for that case. Markdown bullet list. A guest connection (no account) has no keys to encrypt with; the server's own settings can turn encryption on; the last bullet names Cmdr's setting, which an \"Open SMB settings\" button (fileExplorer.errorPane.openSmbEncryptionSetting) right below opens. \"SMB\" is a name; keep it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.volume.encryptionRequired": "This share’s connection can’t encrypt, and Cmdr is set to always require SMB encryption.",
+  "@errors.volume.encryptionRequired": {
+    "description": "Shown when Cmdr's own \"Always require SMB encryption\" setting is on and a network share's (SMB) connection can't be encrypted, so a rename, new folder, or new file there didn't happen. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. \"Always require SMB encryption\" names the setting (settings.network.requireSmbEncryption.label). \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
+  "errors.write.smbEncryptionRequired.title": "Connection not encrypted",
+  "@errors.write.smbEncryptionRequired.title": {
+    "description": "Title of the copy/move error dialog when Cmdr's own \"Always require SMB encryption\" setting is on and a network share (SMB) the transfer reads from or writes to can't encrypt its connection, so Cmdr stopped and sent nothing over it. Short. Plain text. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.smbEncryptionRequired.message": "The share’s connection can’t encrypt, and Cmdr is set to always require SMB encryption, so Cmdr stopped.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "description": "Body of the copy/move error dialog for that case. One sentence, plain text. \"Always require SMB encryption\" names the setting (settings.network.requireSmbEncryption.label). \"SMB\" is a name; keep it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Sign in with an account rather than as a guest, or turn on SMB encryption on the server. You can also turn off “Always require SMB encryption” in Settings.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "description": "What to do, under that body: a guest connection (no account) can't be encrypted, the server's own settings can turn encryption on, and Cmdr's setting (settings.network.requireSmbEncryption.label, in Settings > File systems > SMB/Network shares) can be turned off. Plain text. \"SMB\" is a name; keep it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.listing.linkNeedsConsent.title": "This folder is on another server",
   "@errors.listing.linkNeedsConsent.title": {
     "description": "Title of the listing error panel when a folder in an SMB network share is really a link (a DFS link) to a folder on a different server, and the person hasn’t allowed Cmdr to sign in there yet. Plain text.",

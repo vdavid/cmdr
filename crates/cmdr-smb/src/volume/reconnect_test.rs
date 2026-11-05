@@ -241,6 +241,23 @@ fn a_guest_session_offered_for_a_named_login_is_its_own_state() {
     assert_eq!(credentials_refusal_state(&wrong), VolumeConnection::NeedsCredentials);
 }
 
+/// A session refused under "Always require SMB encryption" is its own state, wherever in the
+/// reconnect it surfaces, and it stops the watcher-death backoff like a credentials refusal does:
+/// the server answers the same until it or the setting changes (#966).
+#[test]
+fn a_session_that_cant_encrypt_is_its_own_state_and_ends_the_backoff() {
+    assert_eq!(
+        credentials_refusal_state(&smb2::Error::EncryptionRequired),
+        VolumeConnection::EncryptionRequired
+    );
+    assert!(reconnect_backoff_should_give_up(&VolumeError::EncryptionRequired(
+        "/Volumes/public".into()
+    )));
+    assert!(!reconnect_backoff_should_give_up(&VolumeError::ConnectionTimeout(
+        "slow".into()
+    )));
+}
+
 /// A refused reply leaves the signed session in a state nothing can vouch for, so it's dropped
 /// like a lost connection: the next operation, the pane's reconnect, or the notice's Reconnect
 /// builds a fresh, freshly signed one (#457).

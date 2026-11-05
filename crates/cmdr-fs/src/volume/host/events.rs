@@ -40,6 +40,11 @@ pub enum VolumeConnection {
     /// [`NeedsCredentials`](Self::NeedsCredentials): the pane names what it refused, and
     /// another password is what moves it forward.
     GuestSessionRefused,
+    /// "Always require SMB encryption" is on, and the rebuilt session can't encrypt (the server
+    /// agreed on no cipher, or answered with a guest session), so the backend refused it. The same
+    /// server gives the same answer until it or the setting changes, so a backoff only repeats
+    /// it: the pane says why and points at the setting.
+    EncryptionRequired,
 }
 
 /// Something a backend turned away for the user's safety, for the host's security record (and,

@@ -44,6 +44,7 @@ vi.mock('#lib/logging/logger.js', () => ({
   getAppLogger: () => ({ warn, info: vi.fn(), debug: vi.fn(), error }),
 }))
 
+import { ReconnectFailure } from './reconnect-error'
 import {
   smbReconnectManager,
   RECONNECT_DELAYS_MS,
@@ -192,6 +193,50 @@ describe('smbReconnectManager', () => {
     emit('vol-guest', 'connected')
     expect(smbReconnectManager.getState('vol-guest')).toBeNull()
     smbReconnectManager.cancel('vol-guest')
+    unsub()
+  })
+
+  /**
+   * "Always require SMB encryption" on, and a server that can't encrypt (#966): the same server
+   * answers the same until it or the setting changes, so the backoff stops on the event.
+   */
+  it('stops the backoff and flips to encryption-required on an `encryption_required` event', async () => {
+    await smbReconnectManager.init()
+    const unsub = smbReconnectManager.subscribe('vol-enc')
+    mockReconnect.mockRejectedValue(new Error('refused'))
+
+    smbReconnectManager.startCycle('vol-enc')
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    emit('vol-enc', 'encryption_required')
+    expect(smbReconnectManager.getState('vol-enc')?.status).toBe('encryption-required')
+
+    const callsAtFlip = mockReconnect.mock.calls.length
+    for (const delay of RECONNECT_DELAYS_MS) {
+      await vi.advanceTimersByTimeAsync(delay)
+    }
+    expect(mockReconnect.mock.calls.length).toBe(callsAtFlip)
+    smbReconnectManager.cancel('vol-enc')
+    unsub()
+  })
+
+  /** The command's typed refusal says it too, so the cycle stops even before the event lands. */
+  it('stops the backoff on a typed encryptionRequired refusal from the command', async () => {
+    await smbReconnectManager.init()
+    const unsub = smbReconnectManager.subscribe('vol-enc-typed')
+    mockReconnect.mockRejectedValue(
+      new ReconnectFailure({ type: 'volume', error: { type: 'encryptionRequired', data: '/Volumes/public' } }),
+    )
+
+    smbReconnectManager.startCycle('vol-enc-typed')
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    expect(smbReconnectManager.getState('vol-enc-typed')?.status).toBe('encryption-required')
+
+    const callsAtFlip = mockReconnect.mock.calls.length
+    for (const delay of RECONNECT_DELAYS_MS) {
+      await vi.advanceTimersByTimeAsync(delay)
+    }
+    expect(mockReconnect.mock.calls.length).toBe(callsAtFlip)
+    smbReconnectManager.cancel('vol-enc-typed')
     unsub()
   })
 

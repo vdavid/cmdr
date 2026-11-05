@@ -358,6 +358,26 @@ async fn a_reconnect_refused_for_its_credentials_stops_the_wait() {
     );
 }
 
+/// A reconnect refused because the server can't encrypt (with "Always require SMB encryption" on)
+/// gets the same answer until the server or the setting changes, so the wait stops at once
+/// instead of spending the item's outage budget on it (#966).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_reconnect_refused_for_encryption_stops_the_wait() {
+    let engine = TestOperations::new();
+    let op = engine.register_state("outage-encryption", quick_state(&engine));
+    let (nas, volume) = nas("outage-encryption");
+    nas.go_away();
+    nas.refuse_for_encryption();
+
+    let ended = wait_while_out(op.state(), &[&volume], None).await;
+
+    assert!(
+        matches!(ended, OutageEnd::NotWaitable),
+        "the clock can't fix an encryption refusal: {ended:?}"
+    );
+    assert_eq!(nas.reconnect_attempts(), 1, "one answer is enough");
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_volume_that_is_not_out_is_not_waited_for() {
     let engine = TestOperations::new();

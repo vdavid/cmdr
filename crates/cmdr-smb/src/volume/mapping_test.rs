@@ -466,6 +466,17 @@ fn a_refused_signature_maps_to_its_typed_volume_error() {
     ));
 }
 
+/// Cmdr's own "Always require SMB encryption" refusing a session that can't encrypt is its own
+/// typed answer (#966): a generic `IoError` read as a blip and sent the reconnect backoff round
+/// again, while the server gives the same answer until it or the setting changes.
+#[test]
+fn a_session_that_cant_meet_the_encryption_requirement_maps_to_its_typed_volume_error() {
+    assert!(matches!(
+        map_smb_error(smb2::Error::EncryptionRequired, "/Volumes/naspi"),
+        VolumeError::EncryptionRequired(path) if path == "/Volumes/naspi"
+    ));
+}
+
 #[test]
 fn a_refused_guest_session_maps_like_a_wrong_password() {
     let err = smb2::Error::GuestSessionRefused {

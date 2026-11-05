@@ -520,6 +520,11 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
             path: context_path.to_string(),
             message,
         },
+        // A share that can't encrypt while "Always require SMB encryption" is on: the stopped state
+        // names the setting, and nothing retries it (#966).
+        VolumeError::EncryptionRequired(_) => WriteOperationError::SmbEncryptionRequired {
+            path: context_path.to_string(),
+        },
         // Reading from a locked archive or repo: a typed signal the FE prompts on
         // (then retries via `unlock_container`), never a generic read error.
         VolumeError::NeedsPassword {

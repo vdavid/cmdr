@@ -722,6 +722,18 @@ const cases: Case[] = [
     },
   },
   {
+    // A share that can't encrypt under "Always require SMB encryption" has its own stopped state (#966).
+    name: 'smb_encryption_required',
+    error: { type: 'smb_encryption_required', path: '/p' },
+    expected: {
+      title: 'Connection not encrypted',
+      message:
+        'The share’s connection can’t encrypt, and Cmdr is set to always require SMB encryption, so Cmdr stopped.',
+      suggestion:
+        'Sign in with an account rather than as a guest, or turn on SMB encryption on the server. You can also turn off “Always require SMB encryption” in Settings.',
+    },
+  },
+  {
     // The write itself was refused for lack of room, so nothing was measured:
     // the copy names no sizes, where "needs 0 bytes but only has 0 bytes" used
     // to render.

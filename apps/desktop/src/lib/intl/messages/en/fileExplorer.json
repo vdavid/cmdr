@@ -327,6 +327,10 @@
   "@fileExplorer.errorPane.tryAgain": {
     "description": "Button on the error screen shown in place of a file list when a folder could not be opened. Retries opening it."
   },
+  "fileExplorer.errorPane.openSmbEncryptionSetting": "Open SMB settings",
+  "@fileExplorer.errorPane.openSmbEncryptionSetting": {
+    "description": "Button on the folder error screen shown when Cmdr's own \"Always require SMB encryption\" setting kept it from opening a network share whose connection isn't encrypted. Opens Cmdr's own Settings window at File systems > SMB/Network shares, where that setting lives. VERB phrase, imperative. \"SMB\" is a name; keep it. \"Settings\" is the app's own Settings window."
+  },
   "fileExplorer.errorPane.openSystemSettings": "Open {systemSettings}",
   "@fileExplorer.errorPane.openSystemSettings": {
     "description": "Button on the folder error screen that opens the macOS System Settings app (so the user can grant access). {systemSettings} is the OS name for that app.",

@@ -66,6 +66,8 @@ const REFUSALS: ReadonlySet<ListingErrorReason['reason']> = new Set([
   'remotePermissionDenied',
   'objectStoreRefused',
   'linkNeedsConsent',
+  // Cmdr's own "Always require SMB encryption" turned the share away, as asked.
+  'smbEncryptionRequired',
 ])
 
 /** Whether the error screen offers "Send error report…". An untyped failure does: it may be a bug. */

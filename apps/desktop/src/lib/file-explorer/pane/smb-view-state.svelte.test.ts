@@ -47,6 +47,7 @@ vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: resolveValid
 vi.mock('#lib/servers/open-sign-in.js', () => ({ openSignInForPlace: vi.fn().mockResolvedValue({ signedIn: false }) }))
 vi.mock('#lib/ui/toast/index.js', () => ({ addToast: addToastSpy }))
 vi.mock('#lib/intl/messages.svelte.js', () => ({ tString: (key: string) => key }))
+vi.mock('../network/smb-encryption-setting', () => ({ openSettingsToSmbEncryption: vi.fn() }))
 vi.mock('../network/smb-reconnect-manager.svelte', () => ({
   smbReconnectManager: manager,
   reconnectCycleLines: () => ['keeps trying'],
@@ -179,6 +180,23 @@ describe('createSmbViewState', () => {
     manager.getSignInShape.mockReturnValue({ kind: 'nothing' })
     const state = create().sub.remoteConnectState
     expect(state).toEqual({ kind: 'signed_out', signIn: null })
+  })
+
+  it('names an encryption refusal and offers the setting or Disconnect, never a retry (#966)', () => {
+    manager.getState.mockReturnValue({
+      status: 'encryption-required',
+      attemptIndex: 0,
+      currentDelayMs: 0,
+      waitStartedAt: 0,
+    })
+    const state = create().sub.remoteConnectState
+    expect(state?.kind).toBe('refused')
+    if (state?.kind !== 'refused') throw new Error('unreachable')
+    expect(state.refusal).toBe('servers.paneState.encryptionRequired')
+    expect(state.retry).toBeUndefined()
+    expect(state.openSettings).toBeTypeOf('function')
+    state.disconnect?.()
+    expect(manager.cancel).toHaveBeenCalledWith('smb-vol')
   })
 
   it('names a refused guest session and offers another password or Disconnect (#457)', async () => {

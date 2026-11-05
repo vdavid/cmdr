@@ -381,6 +381,24 @@ fn test_map_volume_error_needs_password() {
     ));
 }
 
+/// A share that can't encrypt while "Always require SMB encryption" is on stops the transfer with
+/// its own typed reason (#966), ❌ never the generic `IoError` a retry would chase.
+#[test]
+fn a_share_that_cant_encrypt_stops_with_its_own_reason() {
+    let err = map_volume_error(
+        "/Volumes/naspi/photos/a.jpg",
+        PathRole::Destination,
+        VolumeError::EncryptionRequired("/Volumes/naspi".into()),
+    );
+    assert!(
+        matches!(
+            &err,
+            WriteOperationError::SmbEncryptionRequired { path } if path == "/Volumes/naspi/photos/a.jpg"
+        ),
+        "got {err:?}"
+    );
+}
+
 /// A server reply refused for its signature stops the transfer with its own typed reason (#457),
 /// ❌ never the generic `IoError`: the stopped state says the reply wasn't signed, and the backend
 /// already knows a retry invites the same answer.

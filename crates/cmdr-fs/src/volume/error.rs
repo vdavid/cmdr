@@ -225,6 +225,15 @@ pub enum VolumeError {
     /// between the Mac and the server (or a broken network device), not a transport blip, so
     /// it's never retried and the host records it (`SecurityRefusal`). SMB-only today.
     SignatureInvalid(ErrorDetail),
+    /// "Always require SMB encryption" is on, and the connection this path would ride can't
+    /// encrypt, so nothing went over it. Carries the path.
+    ///
+    /// Two sources: a rebuilt smb2 session the server can't encrypt (`smb2::Error::EncryptionRequired`),
+    /// and a macOS or GVFS kernel mount that isn't encrypted, which the app refuses to browse while
+    /// the requirement is on. Typed rather than an [`IoError`](Self::IoError): the same server
+    /// gives the same answer until it or the setting changes, so it's ❌ never retried, and the
+    /// person is pointed at the setting. SMB-only.
+    EncryptionRequired(String),
     /// Anything the backend couldn't classify further. The classifier
     /// re-dispatches on `raw_os_error` when one is present.
     IoError {
@@ -303,6 +312,10 @@ impl ErrorLogText for VolumeError {
             ),
             Self::SourceChanged(path) => ("The source changed during the copy: ", LogPrivate::file_path(path)),
             Self::NoContent(path) => ("No bytes to copy (a link or a special file): ", LogPrivate::path(path)),
+            Self::EncryptionRequired(path) => (
+                "SMB encryption is required and this connection can't encrypt: ",
+                LogPrivate::path(path),
+            ),
             Self::NotSupported => return out.write_str("Operation not supported"),
             Self::DeviceDisconnected(msg) => return detail_line(out, "Device disconnected: ", msg),
             Self::DeviceSessionReset(msg) => return detail_line(out, "Device session restarted: ", msg),

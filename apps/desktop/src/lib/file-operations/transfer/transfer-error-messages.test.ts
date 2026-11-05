@@ -985,6 +985,8 @@ describe('getErrorDisplayMeta', () => {
       category: 'needs_action',
       retryHint: false,
     },
+    // No Retry: the server answers the same until it or the setting changes.
+    { error: { type: 'smb_encryption_required', path: '/p' }, category: 'needs_action', retryHint: false },
     {
       error: { type: 'destination_inside_source', source: '/a', destination: '/a/b' },
       category: 'needs_action',

@@ -23,10 +23,17 @@ use std::time::Duration;
 /// offered for a named login is its own state (the pane names the refusal), anything else asks
 /// for a sign-in. Read by kind, ❌ never the message.
 fn credentials_refusal_state(err: &smb2::Error) -> VolumeConnection {
-    match err.kind() {
+    encryption_refusal_state(err).unwrap_or(match err.kind() {
         smb2::ErrorKind::GuestSessionRefused => VolumeConnection::GuestSessionRefused,
         _ => VolumeConnection::NeedsCredentials,
-    }
+    })
+}
+
+/// A rebuilt session refused under "Always require SMB encryption": its own state, so the
+/// frontend stops a backoff that would only get the same answer (#966). Read by variant, since
+/// smb2 files it under `ErrorKind::Unsupported` beside `EncryptionUnavailable`.
+fn encryption_refusal_state(err: &smb2::Error) -> Option<VolumeConnection> {
+    matches!(err, smb2::Error::EncryptionRequired).then_some(VolumeConnection::EncryptionRequired)
 }
 
 impl SmbVolumeInner {
@@ -235,6 +242,9 @@ impl SmbVolumeInner {
                     LogPrivate::volume(&self.share_name),
                     e
                 );
+                if let Some(state) = encryption_refusal_state(&e) {
+                    self.emit_state_change_for_id(state);
+                }
                 return Err(map_smb_error(e, &share_root));
             }
         };
@@ -366,10 +376,15 @@ pub(super) const WATCHER_DEATH_RECONNECT_BACKOFF: [Duration; 6] = [
 /// transient (keep backing off). An auth failure (`PermissionDenied`) is terminal:
 /// `do_attempt_reconnect` already re-pulled credentials and emitted `needs_credentials`,
 /// so only the user's "Sign in" (the FE flow) can fix it, and retrying risks
-/// locking the account. Everything else (network down, timeout, server rebooting)
-/// is transient.
+/// locking the account. So is a session "Always require SMB encryption" refused
+/// (`EncryptionRequired`): the server answers the same until it or the setting
+/// changes, and the pane already says why. Everything else (network down, timeout,
+/// server rebooting) is transient.
 fn reconnect_backoff_should_give_up(err: &VolumeError) -> bool {
-    matches!(err, VolumeError::PermissionDenied { .. })
+    matches!(
+        err,
+        VolumeError::PermissionDenied { .. } | VolumeError::EncryptionRequired(_)
+    )
 }
 
 /// Drive backend-autonomous reconnection after the live SMB watcher's session
@@ -448,7 +463,7 @@ pub(super) fn spawn_watcher_death_reconnect(share: SelfHandle<SmbVolumeInner>, g
                 }
                 Err(e) if reconnect_backoff_should_give_up(&e) => {
                     info!(
-                        "smb backend reconnect: '{}' needs credentials ({}); stopping — the Sign-in flow owns recovery",
+                        "smb backend reconnect: '{}' can't come back on its own ({}); stopping: the pane owns recovery",
                         volume_id,
                         LogError(&e)
                     );

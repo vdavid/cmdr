@@ -168,6 +168,7 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         // A refused reply: the generic serious reason until the notice work (#457) gives it its
         // own words. Never a retry hint: asking again over the same path invites the same answer.
         VolumeError::SignatureInvalid(_) => kinds::io_serious(&path_display, &raw, raw.clone()),
+        VolumeError::EncryptionRequired(_) => kinds::smb_encryption_required(&path_display, raw),
         VolumeError::IsADirectory(_) => ListingError {
             category: ErrorCategory::NeedsAction,
             reason: ListingErrorReason::IsADirectory { path: path_display },

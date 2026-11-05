@@ -125,6 +125,10 @@ pub enum VolumeConnection {
     /// ❗ Not [`NeedsCredentials`](Self::NeedsCredentials), whose prompt doesn't say what
     /// happened: usually a wrong password, rarely something tampering with the connection.
     GuestSessionRefused,
+    /// SMB: "Always require SMB encryption" is on and a reconnect's session can't encrypt, so
+    /// the backend refused it. The reconnect manager stops its backoff (the server answers the
+    /// same until it or the setting changes), and the pane says why and offers the setting.
+    EncryptionRequired,
 }
 
 /// Typed `volume-connection-changed` Tauri event. The frontend reconnect manager

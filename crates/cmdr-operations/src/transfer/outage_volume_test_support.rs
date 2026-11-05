@@ -65,6 +65,9 @@ pub(crate) struct OutageVolume {
     reachable: AtomicBool,
     /// A reconnect is refused for its credentials, as after a password change.
     needs_sign_in: AtomicBool,
+    /// A reconnect is refused because the server can't encrypt and "Always require SMB
+    /// encryption" is on.
+    encryption_refused: AtomicBool,
     reconnect_attempts: AtomicUsize,
     /// A reconnect attempt never returns while this is set.
     hang_reconnects: AtomicBool,
@@ -148,6 +151,7 @@ impl OutageVolume {
             up: AtomicBool::new(true),
             reachable: AtomicBool::new(true),
             needs_sign_in: AtomicBool::new(false),
+            encryption_refused: AtomicBool::new(false),
             reconnect_attempts: AtomicUsize::new(0),
             hang_reconnects: AtomicBool::new(false),
             abandoned_reconnects: AtomicUsize::new(0),
@@ -221,6 +225,12 @@ impl OutageVolume {
 
     pub(crate) fn require_sign_in(&self) {
         self.needs_sign_in.store(true, Ordering::SeqCst);
+    }
+
+    /// Every reconnect from now on is refused for encryption ("Always require SMB encryption"
+    /// on, a server that can't encrypt).
+    pub(crate) fn refuse_for_encryption(&self) {
+        self.encryption_refused.store(true, Ordering::SeqCst);
     }
 
     /// The session drops (and the server goes away) the moment read-stream open

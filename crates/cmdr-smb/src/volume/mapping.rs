@@ -139,6 +139,13 @@ pub(super) fn map_smb_error(err: smb2::Error, path: &str) -> VolumeError {
         };
     }
 
+    // Cmdr's own requirement the session can't meet. Read by variant: smb2 files it under
+    // `ErrorKind::Unsupported` beside `EncryptionUnavailable`. Typed, never an `IoError`: the
+    // reconnect backoff would retry an answer that can't change on its own (#966).
+    if matches!(err, smb2::Error::EncryptionRequired) {
+        return VolumeError::EncryptionRequired(path.to_string());
+    }
+
     match err.kind() {
         ErrorKind::NotFound => VolumeError::NotFound(path.to_string()),
         ErrorKind::AlreadyExists => VolumeError::AlreadyExists(path.to_string()),
