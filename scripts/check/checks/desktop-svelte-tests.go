@@ -104,20 +104,90 @@ type coverageRun struct {
 	jsonReport string
 }
 
+// The env vars that split one svelte-tests run across CI jobs (`svelte-lane.yml`). Unset, the
+// check runs the whole suite and judges coverage, as it always does locally.
+const (
+	// VitestShardEnv names this job's slice, `<index>/<count>` (vitest's `--shard`). The run
+	// tests only that slice and writes vitest's blob report into VitestBlobDirEnv; coverage
+	// isn't judged, since one slice covers a fraction of each file.
+	VitestShardEnv = "CMDR_VITEST_SHARD"
+	// VitestBlobDirEnv is the dir a shard writes its blob into (`blob-<index>-<count>.json`).
+	VitestBlobDirEnv = "CMDR_VITEST_BLOB_DIR"
+	// VitestMergeDirEnv names a dir of every shard's blob. The run then runs no test: it merges
+	// the blobs (`--merge-reports`), coverage included, and judges coverage like a whole run.
+	VitestMergeDirEnv = "CMDR_VITEST_MERGE_DIR"
+)
+
+// vitestShardPattern is what vitest's `--shard` accepts.
+var vitestShardPattern = regexp.MustCompile(`^([1-9][0-9]*)/([1-9][0-9]*)$`)
+
+// vitestSplit is how this invocation takes part in a split run: a whole run (zero value), one
+// shard, or the merge of every shard's blob.
+type vitestSplit struct {
+	shard    string // `<index>/<count>`, or empty
+	blobDir  string // where a shard writes its blob
+	mergeDir string // the blobs a merge reads, or empty
+}
+
+// vitestSplitFromEnv reads the split from VitestShardEnv, VitestBlobDirEnv, and VitestMergeDirEnv,
+// refusing a half-set or contradictory one rather than silently running the whole suite.
+func vitestSplitFromEnv(getenv func(string) string) (vitestSplit, error) {
+	split := vitestSplit{
+		shard:    strings.TrimSpace(getenv(VitestShardEnv)),
+		blobDir:  strings.TrimSpace(getenv(VitestBlobDirEnv)),
+		mergeDir: strings.TrimSpace(getenv(VitestMergeDirEnv)),
+	}
+	switch {
+	case split.shard != "" && split.mergeDir != "":
+		return vitestSplit{}, fmt.Errorf("%s and %s are both set; a run is either one shard or the merge", VitestShardEnv, VitestMergeDirEnv)
+	case split.shard != "":
+		m := vitestShardPattern.FindStringSubmatch(split.shard)
+		if m == nil {
+			return vitestSplit{}, fmt.Errorf("%s is %q; it must be <index>/<count>, like 2/4", VitestShardEnv, split.shard)
+		}
+		index, _ := strconv.Atoi(m[1])
+		count, _ := strconv.Atoi(m[2])
+		if index > count {
+			return vitestSplit{}, fmt.Errorf("%s is %q; the index can't exceed the count", VitestShardEnv, split.shard)
+		}
+		if split.blobDir == "" {
+			return vitestSplit{}, fmt.Errorf("%s is set but %s isn't, so the shard's results would go nowhere", VitestShardEnv, VitestBlobDirEnv)
+		}
+	case split.blobDir != "":
+		return vitestSplit{}, fmt.Errorf("%s is set without %s", VitestBlobDirEnv, VitestShardEnv)
+	}
+	return split, nil
+}
+
+// blobFile is where a shard writes its blob report.
+func (s vitestSplit) blobFile() string {
+	return filepath.Join(s.blobDir, "blob-"+strings.ReplaceAll(s.shard, "/", "-")+".json")
+}
+
 // newCoverageRun creates a fresh per-invocation coverage output dir under the
 // OS temp dir and configures the vitest command to write there. The caller
 // removes reportsDir when done.
-func newCoverageRun(desktopDir string) (*coverageRun, error) {
+func newCoverageRun(desktopDir string, split vitestSplit) (*coverageRun, error) {
 	reportsDir, err := os.MkdirTemp("", "cmdr-svelte-coverage-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create coverage temp dir: %w", err)
 	}
 	jsonReport := filepath.Join(reportsDir, "test-results.json")
-	cmd := exec.Command("pnpm", "test:coverage")
-	cmd.Dir = desktopDir
-	cmd.Env = append(os.Environ(),
+	args := []string{"test:coverage"}
+	env := append(os.Environ(),
 		"VITEST_COVERAGE_DIR="+reportsDir,
 		"VITEST_JSON_REPORT="+jsonReport)
+	switch {
+	case split.shard != "":
+		args = append(args, "--shard="+split.shard)
+		// `vitest.config.ts` adds the blob reporter when this is set.
+		env = append(env, "VITEST_BLOB_REPORT="+split.blobFile())
+	case split.mergeDir != "":
+		args = append(args, "--merge-reports="+split.mergeDir)
+	}
+	cmd := exec.Command("pnpm", args...)
+	cmd.Dir = desktopDir
+	cmd.Env = env
 	return &coverageRun{
 		cmd:        cmd,
 		reportsDir: reportsDir,
@@ -134,8 +204,13 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 	// this is what collects the old ones.
 	sweepStaleCheckArtifacts(time.Now())
 
+	split, err := vitestSplitFromEnv(os.Getenv)
+	if err != nil {
+		return CheckResult{}, err
+	}
+
 	// Run tests with coverage using pnpm, into a private per-invocation dir.
-	run, err := newCoverageRun(desktopDir)
+	run, err := newCoverageRun(desktopDir, split)
 	if err != nil {
 		return CheckResult{}, err
 	}
@@ -160,6 +235,13 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 	testCount := "all"
 	if len(testMatches) > 1 {
 		testCount = testMatches[1]
+	}
+
+	// One shard covers a slice of each file, so its coverage says nothing; the merge judges it.
+	if split.shard != "" {
+		result := buildSvelteTestResult(ctx, testCount, nil, false, coverageStaleness{})
+		result.Message += fmt.Sprintf(" (shard %s; coverage is judged once the shards merge)", split.shard)
+		return result, nil
 	}
 
 	// Parse coverage summary

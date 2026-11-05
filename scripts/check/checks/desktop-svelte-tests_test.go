@@ -10,12 +10,12 @@ import (
 func TestNewCoverageRun_IsolatesReportsDir(t *testing.T) {
 	desktopDir := t.TempDir()
 
-	a, err := newCoverageRun(desktopDir)
+	a, err := newCoverageRun(desktopDir, vitestSplit{})
 	if err != nil {
 		t.Fatalf("newCoverageRun: %v", err)
 	}
 	defer os.RemoveAll(a.reportsDir)
-	b, err := newCoverageRun(desktopDir)
+	b, err := newCoverageRun(desktopDir, vitestSplit{})
 	if err != nil {
 		t.Fatalf("newCoverageRun: %v", err)
 	}

@@ -58,9 +58,17 @@ export default defineConfig({
     // scripts/check/DETAILS.md § "The per-test log"). The default reporter stays
     // first either way: the check parses its `Tests N passed` tally and its
     // worker-death lines, so replacing it would blind the coverage failure path.
-    reporters: process.env.VITEST_JSON_REPORT
-      ? ['default', ['json', { outputFile: process.env.VITEST_JSON_REPORT }]]
-      : ['default'],
+    // VITEST_BLOB_REPORT is set by a CI shard (`CMDR_VITEST_SHARD`): the blob carries its results
+    // and coverage to the job that merges every shard (`--merge-reports`) and judges coverage.
+    reporters: [
+      'default',
+      ...(process.env.VITEST_JSON_REPORT
+        ? [['json', { outputFile: process.env.VITEST_JSON_REPORT }] satisfies [string, object]]
+        : []),
+      ...(process.env.VITEST_BLOB_REPORT
+        ? [['blob', { outputFile: process.env.VITEST_BLOB_REPORT }] satisfies [string, object]]
+        : []),
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],

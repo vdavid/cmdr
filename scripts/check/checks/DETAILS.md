@@ -1179,6 +1179,25 @@ tests: CPU (user + sys) was ~1,017 s without coverage and ~1,117 s with it (~100
 without and 95–98 s with, inside the noise. The lane's real cost is per-file setup, so dropping coverage would buy
 little. Don't re-measure unless the suite's shape changes a lot.
 
+## Sharded Vitest in CI
+
+**Decision**: CI runs `svelte-tests` as four slices plus a merge (`svelte-lane.yml`'s `tests` matrix and `coverage`
+job), steered by env, so the check ID, its `Inputs`, and every local run stay as they are. **Why**: the whole suite took
+15.2 of the lane's 17.7 min on one 4-CPU runner (19,814 tests, run 42116859486, 2026-11-05), the longest single job on
+the land path.
+
+- `CMDR_VITEST_SHARD=<i>/<n>` plus `CMDR_VITEST_BLOB_DIR`: the run passes `--shard`, and `vitest.config.ts` adds the
+  `blob` reporter (`VITEST_BLOB_REPORT`, `blob-<i>-<n>.json`), which carries the slice's results and its coverage. The
+  slice records its tests and fails on a red test as usual, but judges no coverage: one slice covers a fraction of each
+  file.
+- `CMDR_VITEST_MERGE_DIR`: the run passes `--merge-reports=<dir>`, which re-runs no test. It merges every blob's results
+  and coverage (verified on vitest 5.0.5 with two `src/lib/utils` slices: the merged summary covered more lines than
+  either slice, 2026-11-06), then the coverage threshold and the allowlist shrink-wrap run on the merged summary exactly
+  as after a whole run.
+- `vitestSplitFromEnv` refuses a half-set or contradictory split (a shard without a blob dir, shard and merge at once, a
+  malformed `<i>/<n>`), so a typo in the workflow fails loudly instead of quietly running the whole suite.
+- Unset, the check runs the whole suite and judges coverage in one go, as it always has.
+
 ## Nothing a shard owns is shared between runs
 
 **Decision**: every resource an E2E run touches is scoped to the RUN, not to the shard name. The MCP ports come from the
