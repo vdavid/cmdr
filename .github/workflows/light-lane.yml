@@ -6,17 +6,13 @@ name: Light lane
 #   (oxfmt over the whole monorepo, the docs, translator guides, workflow guards, `ci-coverage`).
 # - The rest runs per filter (`ci.yml` passes one input each): the Go checks, the API server,
 #   the dashboard, and the slow hygiene checks, each gated on exactly what it reads.
-# - nilaway and Scorecard run in `hosted-go`, on a hosted runner (the job says why).
+# - nilaway and Scorecard run in `go-tools`, a job of their own beside it (the job says why).
 # - Every check step runs once setup is done, even after another one failed, so a red run lists
 #   every failure, like the separate jobs did.
 # `docs/tooling/ci.md` § The light lane.
 on:
   workflow_call:
     inputs:
-      runs-on:
-        description: The runner label (`ci.yml` picks it, and never a self-hosted one for a fork PR)
-        type: string
-        default: ubuntu-latest
       full:
         description: A `run_all` dispatch, which runs every section
         type: boolean
@@ -52,20 +48,14 @@ permissions:
 jobs:
   checks:
     name: Checks
-    runs-on: ${{ inputs.runs-on }}
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read # check out the code
     env:
       # `go test` never reads a result from the restored Go build cache, so every run tests for
       # real, as it did before that cache existed. Other go commands ignore the flag.
-      # `-modcacherw` keeps the module cache deletable: the self-hosted runner's cleanup drops it
-      # when its disk fills, and Go writes it read-only by default.
-      GOFLAGS: -count=1 -modcacherw
-      # The self-hosted runner (`cmdr-light`) keeps its tool caches between jobs: mise's tools,
-      # pnpm's store, and the Go caches, pre-warmed from `main`. There, fetching the same from
-      # the Actions cache only costs time, so those restores skip and nothing saves.
-      HOSTED: ${{ inputs.runs-on == 'ubuntu-latest' }}
+      GOFLAGS: -count=1
 
     steps:
       # Shallow: only `changelog-commit-links` reads history, and it fetches it below.
@@ -103,21 +93,19 @@ jobs:
       - name: Install mise
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
-          cache: ${{ env.HOSTED == 'true' }}
+          # Saved from `main` only, so a PR reads `main`'s entry and adds none (`docs/tooling/ci.md` § Build caching).
+          cache_save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install tools with mise
         run: mise install
 
-      # On the self-hosted runner, `node_modules` installs from its warm pnpm store (hard links on
-      # one filesystem) and the Go caches are already in place, so only the check tool, small and
-      # per checkout, comes back.
+      # Restore only: `warm-light-cache` writes every entry, from `main` (see the action).
       - name: Restore the light lane caches
         id: cache
         uses: ./.github/actions/light-cache
         with:
           phase: restore
-          node-modules: ${{ env.HOSTED }}
-          go: ${{ env.HOSTED == 'true' && steps.plan.outputs.scripts == 'true' }}
+          go: ${{ steps.plan.outputs.scripts }}
 
       - name: Install dependencies
         if: steps.cache.outputs.node-modules-hit != 'true'
@@ -180,7 +168,7 @@ jobs:
 
       # ---- Go (scripts) ----
 
-      # One invocation, so the runner runs the eight in parallel. nilaway runs in the `hosted-go`
+      # One invocation, so the runner runs the eight in parallel. nilaway runs in the `go-tools`
       # job below.
       - name: Run the Go checks and tests
         if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.scripts == 'true' }}
@@ -211,29 +199,12 @@ jobs:
         run: |
           ./scripts/check/check --ci --check dashboard-eslint,dashboard-stylelint,dashboard-svelte-check,dashboard-import-cycles,dashboard-knip,dashboard-tests,dashboard-build
 
-      # `main` only (see the action), and hosted only: the self-hosted runner restored part of the
-      # set, so a save from there would write incomplete entries. `warm-light-cache` covers the
-      # `main` pushes this skips.
-      - name: Save the light lane caches
-        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && env.HOSTED == 'true' }}
-        uses: ./.github/actions/light-cache
-        with:
-          phase: save
-          go: ${{ steps.plan.outputs.scripts }}
-          node-modules-hit: ${{ steps.cache.outputs.node-modules-hit }}
-          check-tool-hit: ${{ steps.cache.outputs.check-tool-hit }}
-          go-hit: ${{ steps.cache.outputs.go-hit }}
-
-  # The two heavy Go tools, on a hosted runner beside `checks`, so the self-hosted runner keeps
-  # only the fast checks:
-  # - nilaway passed 2.5 GB and kept growing there, against a 1.5 GB job budget (`MemoryMax`).
-  # - Scorecard's cold `go install` pulls ~2.3 GB of Go modules, which filled the runner's disk
-  #   (run 41949695576, attempt 4, 2026-11-05).
-  # Its own job also takes both off the light job's critical path. It saves nothing:
-  # `warm-light-cache` (and `checks` on a hosted `main` run) keep the Go caches and the scorecard
-  # binary it restores current.
-  hosted-go:
-    name: Hosted Go tools (nilaway, Scorecard)
+  # The two slow Go tools, in a job of their own beside `checks`, so neither sits on the light
+  # job's critical path: nilaway is the slowest Go check, and a cold Scorecard `go install` takes
+  # ~2 min. It saves nothing: `warm-light-cache` keeps the Go caches and the scorecard binary it
+  # restores current.
+  go-tools:
+    name: Go tools (nilaway, Scorecard)
     if: inputs.full || inputs.scripts || inputs.scorecard
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -248,6 +219,9 @@ jobs:
 
       - name: Install mise
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          # Saved from `main` only, so a PR reads `main`'s entry and adds none (`docs/tooling/ci.md` § Build caching).
+          cache_save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install tools with mise
         run: mise install
