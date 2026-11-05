@@ -15,8 +15,8 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
 ### Dependency upgrades
 
 - **Bump npm packages**: Bump everything in `pnpm-lock.yaml` across all apps (desktop, api-server, website,
-  analytics-dashboard) to latest minus ~3-4 weeks to dodge zero-day vulns. Run `pnpm dedupe` after, then the full check
-  suite. Frequency: monthly, on the 10th.
+  analytics-dashboard) to latest minus ~3-4 weeks to dodge zero-day vulns. Run `pnpm dedupe` after; `pnpm land`'s CI
+  runs the full suite. Frequency: monthly, on the 10th.
 - **Bump Rust crates**: Bump `Cargo.toml` and `Cargo.lock` across the workspace. Patch + minor first; majors in a
   separate commit so each migration is reviewable. Frequency: monthly, batched with the npm sweep.
 - **Bump Go modules**: Run `go get -u ./... && go mod tidy` in `scripts/check/`. Tiny but worth tracking. Frequency:
