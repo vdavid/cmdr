@@ -841,11 +841,11 @@ jobs:
       # slots keep their `target/` between jobs (that's the speedup), so code from outside the repo
       # must never reach them. Trusted is an allowlist, like the light lane's: a push (only `main`),
       # a dispatch, or a pull request whose head is in this repo and whose author isn't a bot.
-      # Hosted too: a full run (the release gate's `run_all` and the nightly, which should test on
-      # the release builder's image) and a run that compiles the Finder extension (the M1 has only
-      # the Command Line Tools, whose Swift runtime has no x86_64 slice). Everything else, a missing
-      # token (a fork's run gets no secrets, and the secret may not exist yet), and any failed lookup
-      # go hosted, so the worst case is the old behavior. Listing a repo's runners needs
+      # Hosted too: a full run (the release gate's `run_all` and the nightly), so a release is
+      # tested on the release builder's own image. (The Finder extension compiles in a hosted job
+      # of the lane's own either way.) A missing token (a fork's run gets no secrets, and the secret
+      # may not exist yet) and any failed lookup go hosted, so the worst case is the old behavior.
+      # Listing a repo's runners needs
       # Administration: read, which `GITHUB_TOKEN` can't have, hence the fine-grained
       # `RUNNER_STATUS_TOKEN`. Two runs can see the same idle slot; the loser queues for the next
       # free slot. `docs/tooling/ci.md` § The M1 runner.
@@ -859,7 +859,6 @@ jobs:
             'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
             github.event.pull_request.user.type != 'Bot') }}
           FULL: ${{ inputs.run_all == true || github.event_name == 'schedule' }}
-          FINDER_EXTENSION: ${{ steps.filter.outputs.finder-extension }}
         run: |
           pick() {
             echo "runs-on=$1" >>"$GITHUB_OUTPUT"
@@ -871,8 +870,8 @@ jobs:
             pick "$hosted" false "Not a trusted run (a fork or bot PR, or another trigger)."
             exit 0
           fi
-          if [[ "$FULL" == "true" || "$FINDER_EXTENSION" == "true" ]]; then
-            pick "$hosted" false "A full run or a Finder extension change, which the M1 can't compile for x86_64."
+          if [[ "$FULL" == "true" ]]; then
+            pick "$hosted" false "A full run, which tests on the release builder's image."
             exit 0
           fi
           if [[ -z "$GH_TOKEN" ]]; then
