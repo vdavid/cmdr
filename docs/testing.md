@@ -861,6 +861,9 @@ E2E test hooks split along two axes:
     so a spec wanting an ordinary wake afterwards passes it explicitly. It also forwards `cmdr-nfs/playwright-e2e`,
     under which `CMDR_NFS_PORTMAP_PORT` moves where every `NfsServer::new` asks the portmapper (the NFS Docker fixture's
     `rpcbind` is on 15480, and 111 on a Mac takes root); `crates/cmdr-nfs/DETAILS.md` § "The E2E portmapper override".
+    And `cmdr-index/playwright-e2e`, under which the media index runs on `FakeVisionBackend` off macOS, so the
+    image-indexing specs keep running on Linux, where a shipped build has no image engine
+    (`media_index/scheduler/lifecycle.rs::platform_backends`).
   - `virtual-mtp`: virtual MTP device with deterministic fixtures.
   - `smb-e2e`: virtual SMB hosts injected into mDNS discovery.
 

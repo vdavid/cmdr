@@ -21,7 +21,7 @@ workspace = true
 # builds and clippies this feature so the unused path can't rot.
 mimalloc = ["cmdr-fs/mimalloc"]
 # Playwright E2E testing plugin (socket bridge to real webview). Never enable in production builds.
-playwright-e2e = ["dep:tauri-plugin-playwright", "cmdr-fs/playwright-e2e", "cmdr-listing/playwright-e2e", "cmdr-local/playwright-e2e", "cmdr-nfs/playwright-e2e"]
+playwright-e2e = ["dep:tauri-plugin-playwright", "cmdr-fs/playwright-e2e", "cmdr-index/playwright-e2e", "cmdr-listing/playwright-e2e", "cmdr-local/playwright-e2e", "cmdr-nfs/playwright-e2e"]
 # Virtual MTP device for E2E testing (registers a fake Android device). Never enable in production builds.
 #
 # It forwards through `cmdr-mtp`, which owns the session layer and the virtual

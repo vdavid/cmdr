@@ -400,19 +400,7 @@ pub(crate) fn remove(dirs: &StoreDirs, volume_id: &str, why: Removal) -> Result<
             );
             continue;
         }
-        release_holders(store, &dirs.data, volume_id);
-        if let Err(e) = sqlite_util::delete_database(&db_path) {
-            first_refusal.get_or_insert(format!("Failed to delete {}: {e}", db_path.display()));
-        }
-        for file in store.derived_files(&db_path) {
-            match std::fs::remove_file(&file) {
-                Ok(()) => {}
-                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-                Err(e) => {
-                    first_refusal.get_or_insert(format!("Failed to delete {}: {e}", file.display()));
-                }
-            }
-        }
+        delete_store(dirs, store, volume_id, &mut first_refusal);
     }
     if why.takes(VolumeStore::Visits) {
         let combined = VolumeStore::Importance.db_path(&dirs.data, volume_id);
@@ -421,6 +409,39 @@ pub(crate) fn remove(dirs: &StoreDirs, volume_id: &str, why: Removal) -> Result<
         }
     }
     first_refusal.map_or(Ok(()), Err)
+}
+
+/// Remove every volume's media store in `dirs`, for a platform with no on-device image
+/// engine: whatever a `media-*.db` holds there was written by something other than
+/// one, and nothing can ever enrich it honestly (#1001). Holders let go first, then
+/// the database and its vector-index sidecars go, as in [`remove`]. Every other store
+/// stays. Every volume is attempted even when one refuses; the first refusal comes back.
+pub(crate) fn remove_every_media_store(dirs: &StoreDirs) -> Result<(), String> {
+    let mut first_refusal = None;
+    for volume_id in VolumeStore::Media.volume_ids_in(dirs.of(VolumeStore::Media)) {
+        delete_store(dirs, VolumeStore::Media, &volume_id, &mut first_refusal);
+    }
+    first_refusal.map_or(Ok(()), Err)
+}
+
+/// Delete one store's files for `volume_id`: ask its holders to let go, then the
+/// database (through [`sqlite_util::delete_database`]), then what it derives. A file
+/// that isn't there is fine; a refusal lands in `first_refusal` unless one already did.
+fn delete_store(dirs: &StoreDirs, store: VolumeStore, volume_id: &str, first_refusal: &mut Option<String>) {
+    let db_path = dirs.db_path(store, volume_id);
+    release_holders(store, &dirs.data, volume_id);
+    if let Err(e) = sqlite_util::delete_database(&db_path) {
+        first_refusal.get_or_insert(format!("Failed to delete {}: {e}", db_path.display()));
+    }
+    for file in store.derived_files(&db_path) {
+        match std::fs::remove_file(&file) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                first_refusal.get_or_insert(format!("Failed to delete {}: {e}", file.display()));
+            }
+        }
+    }
 }
 
 /// Whether the database at `db_path` has a `visits` table with at least one row.

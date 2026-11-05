@@ -27,10 +27,10 @@
 //! The conversion that produces the shipped `.mlpackage` towers is an out-of-tree dev
 //! script (`apps/desktop/scripts/convert-clip-model/`), never run by CI/pnpm.
 
-// Test-only: the fakes' shared embedding space. Off macOS CLIP is unavailable
-// (`encode_text_query` answers `NotAvailable` and no image tower exists), so nothing
-// in production encodes through here.
-#[cfg(test)]
+// The fakes' shared embedding space, for tests and the fake Vision backend the Linux E2E
+// build runs. Off macOS CLIP is unavailable (`encode_text_query` answers `NotAvailable`
+// and no image tower exists), so nothing in a shipped build encodes through here.
+#[cfg(any(test, all(feature = "playwright-e2e", not(target_os = "macos"))))]
 pub(crate) mod backend;
 pub mod install;
 #[cfg(target_os = "macos")]

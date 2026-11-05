@@ -23,6 +23,14 @@ vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
   isMacOS: () => isMacOS(),
 }))
 
+/** Not an E2E run by default; the Linux E2E case says so. */
+const isE2eRun = vi.hoisted(() => vi.fn(() => false))
+
+vi.mock('#lib/app-mode.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('#lib/app-mode.js')>()),
+  isE2eRun: () => isE2eRun(),
+}))
+
 describe('settingsRegistry', () => {
   it('should have at least one setting defined', () => {
     expect(settingsRegistry.length).toBeGreaterThan(0)
@@ -349,7 +357,10 @@ describe('appearance.showFunctionKeyBar', () => {
 })
 
 describe('buildSectionTree', () => {
-  afterEach(() => isMacOS.mockReturnValue(true))
+  afterEach(() => {
+    isMacOS.mockReturnValue(true)
+    isE2eRun.mockReturnValue(false)
+  })
 
   function indexingPages(): string[] {
     const indexing = buildSectionTree().find((s) => s.name === 'Indexing')
@@ -367,10 +378,17 @@ describe('buildSectionTree', () => {
     expect(indexingPages()).toEqual(['Drive indexing'])
   })
 
-  it('keeps every image-indexing setting macOS-only, so search agrees with the sidebar', () => {
+  // The Linux E2E build runs a fake engine, so the image-indexing specs keep running there.
+  it('keeps the Image indexing page in an E2E run off macOS', () => {
+    isMacOS.mockReturnValue(false)
+    isE2eRun.mockReturnValue(true)
+    expect(indexingPages()).toEqual(['Drive indexing', 'Image indexing'])
+  })
+
+  it('gates every image-indexing setting on the image engine, so search agrees with the sidebar', () => {
     const imageIndexing = settingsRegistry.filter((s) => s.section[1] === 'Image indexing')
     expect(imageIndexing.length).toBeGreaterThan(0)
-    for (const s of imageIndexing) expect(s.macOSOnly, s.id).toBe(true)
+    for (const s of imageIndexing) expect(s.needsImageIndexing, s.id).toBe(true)
   })
 
   it('should build a tree from settings', () => {

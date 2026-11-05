@@ -141,8 +141,11 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 ### Phase 0: quick fixes
 
 1. [XS] Win. **Done** ([#943](https://github.com/vdavid/cmdr/issues/943)). Media ML off macOS is unavailable: no backend
-   (`platform_backends` answers `None`), so the scheduler doesn't start, and the image-indexing settings are
-   `macOSOnly`, which drops their page from the sidebar. Task 25's capability set can take over that flag later.
+   (`platform_backends` answers `None`), so the scheduler doesn't start, an older build's invented `media.db` rows go at
+   launch ([#1001](https://github.com/vdavid/cmdr/issues/1001)), and the image-indexing settings carry
+   `needsImageIndexing`, which drops their page from the sidebar. The Linux E2E build keeps a fake engine
+   (`cmdr-index/playwright-e2e`) so its specs still run. Task 25's capability set can take over the frontend half
+   (`imageIndexingAvailable()`) later.
 2. [XS] Win. Small fixes: `macOsLabel` prefixing non-mac OS names, the MCP instructions' "for macOS", `'Cascadia Mono'`
    before `Consolas` in `--font-mono`.
 

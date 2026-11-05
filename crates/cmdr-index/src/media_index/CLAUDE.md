@@ -26,9 +26,10 @@ This file owns the leaves: `coverage/`, `gate.rs` (toggle / scope / threshold / 
   Paths live ONCE in `media_file(id, path)`, so a raw `path =` query against another media table is the bug.
   `store/CLAUDE.md`.
 - **Deletion is data-safety.** Exactly four paths delete a row: whole-store GC (ONLY on a `Completed` bus edge or the
-  Fresh sweep, never on volume-absence), the live tick's dir-scoped GC, the reclaim prune, the privacy retro-delete. ❌
-  Nothing else may run whole-store `gc_targets` / `enrich_and_gc`. Uncovered rows STAY: narrowing a setting deletes
-  nothing. The exclusion veto reads LIVE `is_excluded`, ❌ never a pass snapshot. DETAILS § GC safety argument.
+  Fresh sweep, never on volume-absence), the live tick's dir-scoped GC, the reclaim prune, the privacy retro-delete
+  (plus the no-engine file purge, never on macOS). ❌ Nothing else may run whole-store `gc_targets` / `enrich_and_gc`.
+  Uncovered rows STAY: narrowing a setting deletes nothing. The exclusion veto reads LIVE `is_excluded`, ❌ never a pass
+  snapshot. DETAILS § GC safety argument.
 - **Coverage = scope + importance.** Scope is an EXPLICIT `gate::IndexScope`, ❌ never a sentinel threshold. Resolve it
   ONLY via `lifecycle::pass_coverage` and hand the SAME scope to `coverage::stored_row_survives`, or reclaim drifts from
   what a pass keeps. EXCLUDED beats every override.

@@ -28,6 +28,12 @@ testing = ["dep:tempfile", "cmdr-fs/testing"]
 # corpus — and because those are BINARIES in another crate, which `cfg(test)` can
 # never reach. Never enable in a production build.
 tooling = []
+# The Playwright E2E build. Off macOS it runs the media index on `FakeVisionBackend`,
+# so the image-indexing specs keep running on Linux against a throwaway data dir
+# (`media_index/scheduler/lifecycle.rs::platform_backends`). Never enable in a
+# production build: as a shipped backend the fake wrote invented OCR text into the
+# real `media.db` (#943).
+playwright-e2e = []
 
 [dependencies]
 # The filesystem vocabulary this crate indexes: the `Volume` trait it walks,

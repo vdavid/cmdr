@@ -118,7 +118,6 @@ async function openSettings(tauriPage: TauriPage): Promise<TauriPage> {
 }
 
 test.describe('Image-content indexing toggle', () => {
-  test.skip(process.platform !== 'darwin', 'Image indexing is macOS-only: off macOS the settings page is gone (#943).')
   test('persists across a settings-window reload', async ({ tauriPage }) => {
     const main = tauriPage as TauriPage
 

@@ -674,11 +674,14 @@ element and widen that signature — deliberately not done for an unused capabil
 - **Settings take the same flag.** `SettingDefinition.macOSOnly` drops a setting from the index off macOS
   (`buildSearchIndex` in `settings-search.ts`, pinned by `settings-search.test.ts`), for a setting whose section renders
   it on macOS only. Off macOS `buildSectionTree` skips it too, so a page whose every visible setting is macOS-only
-  leaves the sidebar: that's how Indexing › Image indexing disappears off macOS, where the backend starts no image
-  engine (#943; pinned by `settings-registry.test.ts`). Beyond that it decides nothing about rendering: a hand-rendering
-  section gates its own markup on `isMacOS()`, and `AdvancedSection` drops `macOSOnly` rows off macOS itself
-  (`behavior.textEditorHintSeen` and the other macOS-only hint flags). Hidden settings still enter search, so a
-  macOS-only feature's hidden flags take it too.
+  leaves the sidebar. Beyond that it decides nothing about rendering: a hand-rendering section gates its own markup on
+  `isMacOS()`, and `AdvancedSection` drops `macOSOnly` rows off macOS itself (`behavior.textEditorHintSeen` and the
+  other macOS-only hint flags). Hidden settings still enter search, so a macOS-only feature's hidden flags take it too.
+- **Image indexing takes its own flag, `needsImageIndexing`.** Both filters ask one predicate, `settingRendersHere`
+  (`settings-registry.ts`), and it drops these where `imageIndexingAvailable()` (`#lib/media-index/availability.ts`)
+  says no: a shipped build off macOS, where the backend starts no image engine (#943). It's not `macOSOnly` because the
+  Linux E2E build runs a fake engine, so its specs keep the page. That check reads the app mode, so the settings window
+  settles `initAppMode()` before it renders. Pinned by `settings-registry.test.ts`.
 
 ## OS-backed rows (a control whose value lives outside Cmdr)
 

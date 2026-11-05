@@ -83,9 +83,9 @@ export const indexingSettings: SettingDefinitionSource[] = [
   // its "Enable indexing" card; the rest are `hidden`, backing the bespoke scope /
   // slider / chosen-folder / network-volume / CLIP components.
   //
-  // Every row is `macOSOnly`: Vision and the CLIP towers are macOS frameworks, so off
-  // macOS the backend starts no scheduler (#943), and with no visible setting left,
-  // `buildSectionTree` drops the whole page from the sidebar.
+  // Every row is `needsImageIndexing`: Vision and the CLIP towers are macOS frameworks,
+  // so a shipped build elsewhere starts no scheduler (#943), and where
+  // `imageIndexingAvailable()` says no, `buildSectionTree` and search drop the page.
   // ========================================================================
   {
     // Master toggle for image-content (OCR) indexing. Off by default; live-applied to
@@ -94,7 +94,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // that card's title renders (searching the visible title has to reach the row).
     id: 'mediaIndex.enabled',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.enabled.label',
     descriptionKey: 'settings.mediaIndex.enabled.description',
     cardKey: 'settings.mediaIndex.cards.enable',
@@ -111,7 +111,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // `ImageIndexingSection.svelte`, gated on `mediaIndex.enabled`.
     id: 'mediaIndex.showFileStatusIcons',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.showFileStatusIcons.label',
     descriptionKey: 'settings.mediaIndex.showFileStatusIcons.description',
     cardKey: 'settings.mediaIndex.cards.enable',
@@ -131,7 +131,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // so SCHEMA_VERSION doesn't move.
     id: 'mediaIndex.showInSearch',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.showInSearch.label',
     descriptionKey: 'settings.mediaIndex.showInSearch.description',
     cardKey: 'settings.mediaIndex.cards.enable',
@@ -148,7 +148,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // calling `media_index_set_network_volume_enabled`. Read by the Rust loader as an array.
     id: 'mediaIndex.networkVolumes',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.networkVolumes.label',
     descriptionKey: 'settings.mediaIndex.networkVolumes.description',
     type: 'string-array',
@@ -161,7 +161,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // AND pushed via `media_index_set_always_index_volume`.
     id: 'mediaIndex.alwaysIndexVolumes',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.alwaysIndexVolumes.label',
     descriptionKey: 'settings.mediaIndex.alwaysIndexVolumes.description',
     type: 'string-array',
@@ -180,7 +180,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // Live-applied via the `settings-applier.ts` passthrough → `media_index_set_scope`.
     id: 'mediaIndex.scope',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.scope.label',
     descriptionKey: 'settings.mediaIndex.scope.description',
     keywordsKey: 'settings.mediaIndex.scope.keywords',
@@ -202,7 +202,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // `media_index_set_always_index_folder` (which kicks a pass when a folder is added).
     id: 'mediaIndex.alwaysIndexFolders',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.alwaysIndexFolders.label',
     descriptionKey: 'settings.mediaIndex.alwaysIndexFolders.description',
     type: 'string-array',
@@ -217,7 +217,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // an array.
     id: 'mediaIndex.excludedFolders',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.excludedFolders.label',
     descriptionKey: 'settings.mediaIndex.excludedFolders.description',
     type: 'string-array',
@@ -234,7 +234,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // Live-applied via the `settings-applier.ts` passthrough → `media_index_set_importance_threshold`.
     id: 'mediaIndex.importanceThreshold',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.importanceThreshold.label',
     descriptionKey: 'settings.mediaIndex.importanceThreshold.description',
     keywordsKey: 'settings.mediaIndex.importanceThreshold.keywords',
@@ -254,7 +254,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // `1..=CPU-count` and a running pass resizes its pool between images).
     id: 'mediaIndex.parallelism',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.parallelism.label',
     descriptionKey: 'settings.mediaIndex.parallelism.description',
     cardKey: 'settings.mediaIndex.cards.enable',
@@ -275,7 +275,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // at startup, so a sparse (unpersisted) store and the UI agree on the `true` default.
     id: 'mediaIndex.semanticSearch.enabled',
     section: ['Indexing', 'Image indexing'],
-    macOSOnly: true,
+    needsImageIndexing: true,
     labelKey: 'settings.mediaIndex.semanticSearch.label',
     descriptionKey: 'settings.mediaIndex.clip.description',
     cardKey: 'settings.mediaIndex.clip.title',

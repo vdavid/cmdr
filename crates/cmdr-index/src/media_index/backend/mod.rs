@@ -5,10 +5,11 @@
 //! - `vision::VisionOcrBackend` (macOS): real OCR via `VNRecognizeTextRequest` over
 //!   a downscaled in-memory ImageIO decode, on a dedicated 8 MB-stack OS thread inside
 //!   `objc2::rc::autoreleasepool` — production selects it in `scheduler::start`.
-//! - `fake::FakeVisionBackend`: deterministic, zero-FFI, injected by every test.
+//! - `fake::FakeVisionBackend`: deterministic, zero-FFI, injected by every test (and
+//!   by the never-shipped Linux E2E build).
 //!
-//! Off macOS there is no backend at all: image enrichment is unavailable and the
-//! scheduler doesn't start (`scheduler/lifecycle.rs::platform_backends`).
+//! Off macOS a shipped build has no backend at all: image enrichment is unavailable
+//! and the scheduler doesn't start (`scheduler/lifecycle.rs::platform_backends`).
 //!
 //! Nothing above the seam knows which backend it holds.
 //!
@@ -21,9 +22,10 @@
 //! embeddings and face detect/embed become sibling methods as those
 //! milestones land.
 
-// Test-only on every platform: as production's off-macOS backend it wrote invented
-// OCR text and tags into the real `media.db` (#943).
-#[cfg(test)]
+// Tests, plus the never-shipped Linux E2E build (`scheduler/lifecycle.rs::platform_backends`).
+// ❌ Never in a shipped build: as production's off-macOS backend it wrote invented OCR text
+// and tags into the real `media.db` (#943).
+#[cfg(any(test, all(feature = "playwright-e2e", not(target_os = "macos"))))]
 pub(crate) mod fake;
 
 #[cfg(target_os = "macos")]

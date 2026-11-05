@@ -26,6 +26,7 @@ import type {
 import { SettingValidationError } from './types'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { imageIndexingAvailable } from '#lib/media-index/availability.js'
 import { appearanceSettings } from './definitions/appearance'
 import { behaviorSettings } from './definitions/behavior'
 import { indexingSettings } from './definitions/indexing'
@@ -274,6 +275,17 @@ export interface SettingsSection {
 }
 
 /**
+ * Whether `setting` can render on this run: a `macOSOnly` one needs macOS, and a
+ * `needsImageIndexing` one needs an image engine (`imageIndexingAvailable()`). The nav
+ * tree and the search index both ask this, so a search hit never opens a missing page.
+ */
+export function settingRendersHere(setting: SettingDefinition): boolean {
+  if (setting.macOSOnly === true && !isMacOS()) return false
+  if (setting.needsImageIndexing === true && !imageIndexingAvailable()) return false
+  return true
+}
+
+/**
  * Build the nav tree: every (sub)section that has something to show, in
  * first-appearance order.
  *
@@ -284,12 +296,11 @@ export interface SettingsSection {
  * put in the sidebar. So `section.settings` stays controls only, and a row still
  * never decides what renders.
  *
- * Off macOS a `macOSOnly` setting renders nowhere, so it neither lands in a node nor
- * creates one: a page whose every visible setting is macOS-only (Image indexing) leaves
- * the sidebar there.
+ * A setting that can't render on this run ([`settingRendersHere`]) neither lands in a
+ * node nor creates one, so a page whose every visible setting is out (Image indexing
+ * without an image engine) leaves the sidebar.
  */
 export function buildSectionTree(): SettingsSection[] {
-  const onMacOS = isMacOS()
   const root: SettingsSection[] = []
   const sectionMap = new Map<string, SettingsSection>()
 
@@ -335,7 +346,7 @@ export function buildSectionTree(): SettingsSection[] {
     // Internal-only settings (e.g. `network.firstTriggerDone`) are not nav rows,
     // and don't create one either.
     if (setting.hidden) continue
-    if (!onMacOS && setting.macOSOnly === true) continue
+    if (!settingRendersHere(setting)) continue
     ensureSection(setting.section).settings.push(setting)
   }
 

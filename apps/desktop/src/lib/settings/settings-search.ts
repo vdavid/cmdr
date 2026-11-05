@@ -7,11 +7,10 @@ import { foldForSearch, fuzzySearch, type FoldedText } from '#lib/utils/unicode-
 import { availableLocales, manifestMessage, tStringIn, uiCatalogLocale } from '#lib/intl/messages.svelte.js'
 import { localeDisplayName, localeEnglishName } from '#lib/intl/locale-display-names.js'
 import type { SearchableEntry, SettingSearchResult } from './types'
-import { settingsRegistry } from './settings-registry'
+import { settingRendersHere, settingsRegistry } from './settings-registry'
 import { searchableRowEntries } from './sections/searchable-rows'
 import { sectionTitle } from './section-i18n'
 import { searchAllCommands } from '#lib/commands/fuzzy-search.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
 
 // ============================================================================
 // Search Index
@@ -86,11 +85,11 @@ function buildSearchIndex(): SearchIndex {
   // license") join here as equal entries. They carry no `SettingsValues` key and
   // add no nav entry — `buildSectionTree` reads the registry alone.
   //
-  // A `macOSOnly` setting renders nowhere else, so off macOS it stays out, the
-  // same rule `searchableRowEntries` applies to rows. Read when the index builds
-  // rather than at import, so a test can flip the platform.
-  const onMacOS = isMacOS()
-  const settings = settingsRegistry.filter((setting) => onMacOS || setting.macOSOnly !== true)
+  // A setting that can't render on this run (`settingRendersHere`: a `macOSOnly` one
+  // off macOS, an image-indexing one without an image engine) stays out, the same
+  // rule the nav tree applies and `searchableRowEntries` applies to rows. Read when
+  // the index builds rather than at import, so a test can flip the platform.
+  const settings = settingsRegistry.filter(settingRendersHere)
   const entries = [...settings, ...searchableRowEntries()].map((entry) => indexEntry(entry, locale))
   searchIndex = { locale, entries, haystack: entries.map((e) => e.searchableText) }
 

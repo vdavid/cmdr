@@ -1,4 +1,5 @@
-//! A deterministic, zero-FFI [`VisionBackend`] for tests.
+//! A deterministic, zero-FFI [`VisionBackend`] for tests and the never-shipped Linux
+//! E2E build (`playwright-e2e`).
 //!
 //! It never touches the ANE, the filesystem, or `objc2`: every output (OCR text,
 //! tags, feature-print embedding) is either scripted per path or derived
@@ -47,7 +48,10 @@ impl FakeVisionBackend {
     }
 }
 
-/// The scripting surface: what a test tells the fake to return.
+/// The scripting surface: what a test tells the fake to return. `cfg(test)`, not the
+/// module's wider gate: the Linux E2E build runs the fake unscripted, and under
+/// `#[deny(unused)]` an ungated builder is a hard error there.
+#[cfg(test)]
 impl FakeVisionBackend {
     /// Script the exact OCR text for a path.
     pub fn with_text(mut self, path: impl Into<String>, text: impl Into<String>) -> Self {

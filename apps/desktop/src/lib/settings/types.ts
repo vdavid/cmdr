@@ -245,6 +245,13 @@ export interface SettingDefinition {
    */
   macOSOnly?: true
   /**
+   * The setting belongs to image indexing, which runs only where
+   * `imageIndexingAvailable()` (`#lib/media-index/availability.ts`) says so: macOS, plus
+   * the Linux E2E build's fake engine. Elsewhere it stays out of `buildSectionTree` and
+   * search, like `macOSOnly`, so the Image indexing page leaves the sidebar (#943).
+   */
+  needsImageIndexing?: true
+  /**
    * How far MCP `set_setting` may write this consent-bearing setting (`mcp-main-bridge.ts`), so an
    * AI client never undoes a person's answer. `false`: never (the terms acceptance, a held "no").
    * `'offOnly'`: a data-sharing switch a client may turn off, never on. ❌ The bridge reads this

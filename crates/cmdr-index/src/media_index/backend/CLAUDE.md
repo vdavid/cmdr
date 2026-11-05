@@ -27,8 +27,9 @@ print), `vision/spike.rs` the throughput measurement harness.
   OS version; `needs_enrichment` keys on it, so any component bump re-runs the whole analysis. Adding an output means
   folding its revision in, or an OS change silently leaves stale derived data.
 - **Every test injects `FakeVisionBackend`** (deterministic, zero-FFI). New trait methods need a fake impl, or the whole
-  suite loses its seam. ❌ It's `cfg(test)` and never a production backend: off macOS it once filled the real `media.db`
-  with OCR text and tags made up from file names (#943). Off macOS there's no backend and the scheduler doesn't start.
+  suite loses its seam. ❌ Never a shipped backend: off macOS it once filled the real `media.db` with OCR text and tags
+  made up from file names (#943). It compiles for tests and for the Linux E2E build (`cmdr-index/playwright-e2e`, never
+  shipped) only; a shipped build off macOS has no backend and the scheduler doesn't start.
 
 The Vision request details, the analyze outputs, the taxonomy evidence, and the FFI notes: `DETAILS.md`. Read it before
 any non-trivial work here: editing, planning, reorganizing, or advising.

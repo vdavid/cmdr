@@ -328,3 +328,27 @@ fn a_drive_index_kept_apart_is_found_and_removed_in_its_own_folder() {
         assert!(!file.exists(), "{} must go", file.display());
     }
 }
+
+/// #1001: where there's no image engine, every `media-*.db` was written by something
+/// other than one (the test fake that used to be Linux's production backend). They all
+/// go, with their vector-index sidecars, and every other store stays.
+#[test]
+fn removing_every_media_store_takes_each_volumes_media_files_and_nothing_else() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let dirs = StoreDirs::single(dir.path());
+    let written: Vec<_> = ["root", VOLUME_ID]
+        .iter()
+        .flat_map(|volume_id| write_every_file(&dirs, volume_id))
+        .collect();
+
+    remove_every_media_store(&dirs).expect("remove media");
+
+    for (store, file) in &written {
+        assert_eq!(
+            file.exists(),
+            *store != VolumeStore::Media,
+            "{} after the media purge",
+            file.display()
+        );
+    }
+}

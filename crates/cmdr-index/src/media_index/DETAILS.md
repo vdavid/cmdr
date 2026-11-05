@@ -205,6 +205,12 @@ and the reclaim prune (both USER-EXPLICIT, settings-derived — § Per-folder ph
 § Reclaim space), and the live-tick scoped GC (INDEX-CONFIRMED, scoped to the touched dirs — `scheduler/DETAILS.md` §
 Live enrichment). None may run the whole-store `gc_targets` outside a completed pass.
 
+One more removal sits outside GC altogether, and never runs on macOS: a shipped build with no image engine
+(`scheduler/lifecycle.rs::retire_media_without_an_engine`) deletes every volume's `media-*.db` at launch, through
+`volume_files::remove_every_media_store`. Before #943 the test fake was that platform's backend, so every row there is
+text made up from file names, and no engine can ever enrich it honestly (#1001). It's PLATFORM-derived, not
+settings-derived, and it takes nothing a real engine wrote.
+
 ## The image-qualification predicate (`predicate.rs`)
 
 Pure over a directory's file names (sibling-aware): images enrich (JPEG/PNG/HEIC/…); videos skip (out of scope, also a

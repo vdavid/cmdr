@@ -20,7 +20,7 @@
  * simulates a webview reload re-reading the file. The store's module-scoped
  * cache/explicit-set start empty on each import.
  */
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeAll, beforeEach } from 'vitest'
 import { getDefaultValue } from './settings-registry'
 import { SCHEMA_VERSION } from './settings-migrations'
 
@@ -82,6 +82,13 @@ vi.mock('#lib/tauri-commands/settings.js', () => ({
 vi.mock('./settings-registry', async (importOriginal) => await importOriginal())
 vi.mock('./settings-migrations', async (importOriginal) => await importOriginal())
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => await importOriginal())
+
+/** jsdom isn't a Mac; migration 9's macOS case flips this. */
+const onMacOS = vi.hoisted(() => vi.fn(() => false))
+vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
+  isMacOS: () => onMacOS(),
+}))
 // Warm Vite's transform cache: `settings-store` transitively pulls the whole
 // intl catalog, a cold transform runs several seconds and would race the
 // per-test timeout. A `beforeAll` gets the longer hook budget.
@@ -552,6 +559,40 @@ describe('migration 8: a leftover plaintext OpenAI key is deleted', () => {
 
     expect(disk.has('ai.openaiApiKey')).toBe(false)
     expect(disk.get('_schemaVersion')).toBe(SCHEMA_VERSION)
+  })
+})
+
+/**
+ * Migration 9 (#1001): before #943, a Linux install could turn image indexing on and the
+ * test fake filled its `media.db`. Without an image engine the backend now purges those
+ * stores, and the switch that would bring the page's badges and grid back goes too.
+ * Vitest's jsdom isn't a Mac (`isMacOS()` reads the user agent), so these run "off macOS"
+ * unless a test says otherwise.
+ */
+describe('migration 9: image indexing turns off where there is no image engine', () => {
+  afterEach(() => onMacOS.mockReturnValue(false))
+
+  it('drops a stored "on" off macOS, so the switch reads off', async () => {
+    disk.set('mediaIndex.enabled', true)
+    disk.set('_schemaVersion', 8)
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect(disk.has('mediaIndex.enabled')).toBe(false)
+    expect(store.getSetting('mediaIndex.enabled')).toBe(false)
+    expect(disk.get('_schemaVersion')).toBe(SCHEMA_VERSION)
+  })
+
+  it('keeps it on a Mac, where the engine is real', async () => {
+    onMacOS.mockReturnValue(true)
+    disk.set('mediaIndex.enabled', true)
+    disk.set('_schemaVersion', 8)
+
+    const store = await loadStore()
+    await store.initializeSettings()
+
+    expect(disk.get('mediaIndex.enabled')).toBe(true)
   })
 })
 

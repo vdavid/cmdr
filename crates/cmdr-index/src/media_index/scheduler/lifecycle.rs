@@ -185,9 +185,19 @@ pub(super) fn kick_ready_passes_from(scheduler: &Arc<MediaScheduler>, ready: Vec
 }
 
 /// Build and wire the scheduler, behind [`MediaScheduler::start`], which carries the
-/// contract this fulfils.
+/// contract this fulfils. Availability is decided FIRST: a platform without an image
+/// engine registers no watchdog hook, subscribes to nothing, and holds no scheduler; it
+/// only settles what an older build left behind ([`retire_media_without_an_engine`]).
 pub(super) fn start() -> Option<Arc<MediaScheduler>> {
-    start_with(platform_backends)
+    let Some((backend, factory)) = platform_backends() else {
+        log::info!(target: "media_index", "media scheduler not started: no on-device image engine on this platform");
+        match crate::volume_files::StoreDirs::configured() {
+            Ok(dirs) => retire_media_without_an_engine(&dirs),
+            Err(e) => log::warn!(target: "media_index", "media stores not checked: {e}"),
+        }
+        return None;
+    };
+    start_with_backends(backend, factory)
 }
 
 /// The production inference backends on this platform: the representative backend
@@ -197,9 +207,11 @@ pub(super) fn start() -> Option<Arc<MediaScheduler>> {
 ///
 /// `None` where no on-device engine exists (Linux, Windows): Vision and CLIP's Core ML
 /// towers are macOS frameworks, so image enrichment is unavailable there and the
-/// scheduler doesn't start. ❌ Never fall back to `FakeVisionBackend`: it derives OCR
-/// text and tags from file names, and as production's backend it filled the real
-/// `media.db` with invented data (#943). Tests inject their own fake via
+/// scheduler doesn't start. ❌ Never fall back to `FakeVisionBackend` in a shipped
+/// build: it derives OCR text and tags from file names, and as production's backend it
+/// filled the real `media.db` with invented data (#943). The ONE exception is the Linux
+/// E2E build (`playwright-e2e`, never shipped), so the image-indexing specs keep running
+/// there against a throwaway data dir. Unit tests inject their own fake via
 /// `MediaScheduler::new`, never through `start`.
 fn platform_backends() -> Option<(Arc<dyn VisionBackend>, BackendFactory)> {
     #[cfg(target_os = "macos")]
@@ -210,23 +222,34 @@ fn platform_backends() -> Option<(Arc<dyn VisionBackend>, BackendFactory)> {
             Arc::new(|| Arc::new(VisionOcrBackend::new()) as Arc<dyn VisionBackend>),
         ))
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(all(not(target_os = "macos"), feature = "playwright-e2e"))]
+    {
+        use crate::media_index::backend::fake::FakeVisionBackend;
+        Some((
+            Arc::new(FakeVisionBackend::new()),
+            Arc::new(|| Arc::new(FakeVisionBackend::new()) as Arc<dyn VisionBackend>),
+        ))
+    }
+    #[cfg(all(not(target_os = "macos"), not(feature = "playwright-e2e")))]
     {
         None
     }
 }
 
-/// [`start`] over an injectable backend selector, so a test can pin the unavailable
-/// platform's path on any host. Availability is decided FIRST: an unavailable platform
-/// registers no watchdog hook, subscribes to nothing, and holds no scheduler.
-fn start_with(
-    backends: impl FnOnce() -> Option<(Arc<dyn VisionBackend>, BackendFactory)>,
-) -> Option<Arc<MediaScheduler>> {
-    let Some((backend, factory)) = backends() else {
-        log::info!(target: "media_index", "media scheduler not started: no on-device image engine on this platform");
-        return None;
-    };
+/// Settle a platform with no image engine: the master toggle goes off and every
+/// volume's media store goes. Before #943 the test fake ran as this platform's backend,
+/// so any `media.db` here holds OCR text and tags invented from file names (#1001), and
+/// nothing can ever enrich it honestly. Runs every launch; with nothing on disk it reads
+/// one folder. The frontend turns the persisted setting off (`settings-migrations.ts`).
+fn retire_media_without_an_engine(dirs: &crate::volume_files::StoreDirs) {
+    gate::set_enabled(false);
+    if let Err(e) = crate::volume_files::remove_every_media_store(dirs) {
+        log::warn!(target: "media_index", "couldn't remove a media store on a platform without an image engine: {e}");
+    }
+}
 
+/// The rest of [`start`], once there are backends to run on.
+fn start_with_backends(backend: Arc<dyn VisionBackend>, factory: BackendFactory) -> Option<Arc<MediaScheduler>> {
     // Every policy value the scheduler runs on was applied when the app called
     // `host::config::set_config`; nothing here reads a settings file.
     let data_dir = match crate::indexing::host::config::data_dir() {
@@ -564,17 +587,29 @@ mod tests {
     use super::*;
     use crate::media_index::network::enrich::PauseReason;
 
-    /// Regression anchor for #943: off macOS the scheduler used to run on the test fake,
-    /// writing OCR text and tags derived from file names into the real `media.db`. With no
-    /// on-device engine there's no scheduler at all, decided before anything is wired.
+    /// #1001: an install that turned image indexing on before #943 had the fake fill
+    /// its `media.db`. With no engine, the toggle goes off and those stores go.
     #[test]
-    fn a_platform_without_an_inference_engine_starts_no_scheduler() {
-        assert!(start_with(|| None).is_none());
+    fn without_an_engine_the_toggle_goes_off_and_the_media_stores_go() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dirs = crate::volume_files::StoreDirs::single(dir.path());
+        let media_db = dirs.db_path(crate::volume_files::VolumeStore::Media, "root");
+        let index_db = dirs.db_path(crate::volume_files::VolumeStore::Index, "root");
+        std::fs::write(&media_db, b"invented rows").expect("media db");
+        std::fs::write(&index_db, b"drive index").expect("index db");
+        gate::set_enabled(true);
+
+        retire_media_without_an_engine(&dirs);
+
+        assert!(!gate::is_enabled(), "the master toggle is off");
+        assert!(!media_db.exists(), "the invented media rows are gone");
+        assert!(index_db.exists(), "the drive index stays");
     }
 
-    /// Runs in the Linux lane: the real selector, so a fake slipping back in as the
-    /// off-macOS production backend fails here.
-    #[cfg(not(target_os = "macos"))]
+    /// Regression anchor for #943, run in the Linux lane against the real selector: the
+    /// test fake used to be Linux's production backend, writing OCR text and tags derived
+    /// from file names into the real `media.db`. A shipped build has no engine there.
+    #[cfg(all(not(target_os = "macos"), not(feature = "playwright-e2e")))]
     #[test]
     fn off_macos_the_platform_has_no_inference_engine() {
         assert!(platform_backends().is_none());

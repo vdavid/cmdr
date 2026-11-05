@@ -10,9 +10,11 @@ tags + feature print from ONE decode), and the provenance stamps `engine_version
 
 - `fake::FakeVisionBackend` — deterministic, zero-FFI (scripted/derived OCR text, tags, and a stem-derived unit
   embedding). Every test injects it via `MediaScheduler::new`. It exposes `with_engine_version` /
-  `with_taxonomy_version` to simulate a stamp bump, and `missing_for` to script a vanished file.
+  `with_taxonomy_version` to simulate a stamp bump, and `missing_for` to script a vanished file (all `cfg(test)`). The
+  Linux E2E build (`cmdr-index/playwright-e2e`, never shipped) runs it unscripted as its backend.
 - `vision::VisionOcrBackend` (macOS only) — the real OCR + classify + feature print. `MediaScheduler::start` selects it
-  on macOS; off macOS there is no backend, so the scheduler doesn't start (#943).
+  on macOS. A shipped build off macOS has no backend: the scheduler doesn't start (#943), the master toggle goes off,
+  and `volume_files::remove_every_media_store` deletes what an older build's fake left there (#1001).
 
 Faces become sibling methods on this trait as later work lands, each returning its own typed result, each fakeable the
 same way. CLIP is deliberately NOT a method here: it rides `analyze_media(input, want_vision, want_clip)` and hands the

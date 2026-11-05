@@ -85,13 +85,9 @@ test.describe('Settings page', () => {
       'Advanced',
     ]
 
-    // Image indexing is macOS-only: off macOS its page leaves the sidebar (#943).
-    const expectedHere =
-      process.platform === 'darwin' ? expectedOrder : expectedOrder.filter((name) => name !== 'Image indexing')
-
     const sectionTexts = await settings.allTextContents('.section-item')
     const trimmed = sectionTexts.map((t) => t.trim())
-    expect(trimmed).toEqual(expectedHere)
+    expect(trimmed).toEqual(expectedOrder)
   })
 
   test('clicking a subsection routes to the matching section component', async () => {

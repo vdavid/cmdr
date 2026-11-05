@@ -7,6 +7,8 @@ import { getDefaultValue } from './settings-registry'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { pluralize } from '#lib/utils/pluralize.js'
 import { ARCHIVE_ENTER_FORMATS, isEnterAction } from '#lib/file-explorer/pane/archive-enter-policy.js'
+import { initAppMode } from '#lib/app-mode.js'
+import { imageIndexingAvailable } from '#lib/media-index/availability.js'
 
 const log = getAppLogger('settings')
 
@@ -25,6 +27,7 @@ const MIGRATIONS: { to: number; run: (store: Store) => Promise<boolean> }[] = [
   { to: 7, run: dropOldHourlyUpdateCheckDefault },
   // TODO(2027-01-14): delete `dropLeftoverOpenaiApiKey`, keeping this slot as `run: () => Promise.resolve(false)`.
   { to: 8, run: dropLeftoverOpenaiApiKey },
+  { to: 9, run: turnOffImageIndexingWithoutAnEngine },
 ]
 
 /** The schema version `settings.json` is at once every migration has run. */
@@ -88,6 +91,28 @@ async function dropOldHourlyUpdateCheckDefault(store: Store): Promise<boolean> {
  */
 async function dropLeftoverOpenaiApiKey(store: Store): Promise<boolean> {
   return await store.delete('ai.openaiApiKey')
+}
+
+/**
+ * Migration 9 (#1001): before #943, a Linux install could turn image indexing on, and the test
+ * fake that was its backend filled `media.db` with text made up from file names. Without an image
+ * engine the backend now purges those stores and starts nothing, and the Settings page is gone,
+ * so a stored "on" would leave the file-list badges and the search grid pointing at nothing, with
+ * no switch to turn them off. Dropping the key reads as the default, off. Reads the key first, so
+ * an install that never turned it on doesn't wait on the app mode.
+ */
+async function turnOffImageIndexingWithoutAnEngine(store: Store): Promise<boolean> {
+  if ((await store.get<boolean>('mediaIndex.enabled')) !== true) return false
+  // `imageIndexingAvailable()` reads the launch mode for the Linux E2E build's fake engine.
+  // Unsettled, it reads "not an E2E run", the safe side for a shipped build.
+  try {
+    await initAppMode()
+  } catch (error) {
+    log.warn('App mode unknown, so image indexing counts as unavailable here: {error}', { error })
+  }
+  if (imageIndexingAvailable()) return false
+  await store.delete('mediaIndex.enabled')
+  return true
 }
 
 /**
