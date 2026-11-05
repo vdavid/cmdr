@@ -1035,9 +1035,9 @@
   "@askCmdr.cost.tokens": {
     "sourceHash": "6718764"
   },
-  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {jeton} many {jetons} other {jetons}}, dont {cachedText} en cache",
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {jeton} many {jetons} other {jetons}}, {cached, plural, one {dont {cachedText} en cache} many {dont {cachedText} en cache} other {dont {cachedText} en cache}}",
   "@askCmdr.cost.tokensWithCache": {
-    "sourceHash": "ec0bb4b"
+    "sourceHash": "243a4d9"
   },
   "askCmdr.cost.free": "gratuit, en local",
   "@askCmdr.cost.free": {

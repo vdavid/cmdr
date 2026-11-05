@@ -38,7 +38,11 @@ export function formatTokenCount(tokens: number): string {
 export function exactTokensText(tokens: number, cacheReadTokens: number): string {
   const params = { count: tokens, countText: formatInteger(tokens) }
   if (cacheReadTokens <= 0) return tString('askCmdr.cost.tokens', params)
-  return tString('askCmdr.cost.tokensWithCache', { ...params, cachedText: formatInteger(cacheReadTokens) })
+  return tString('askCmdr.cost.tokensWithCache', {
+    ...params,
+    cached: cacheReadTokens,
+    cachedText: formatInteger(cacheReadTokens),
+  })
 }
 
 /**

@@ -38,8 +38,6 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `fileOperations.cancelRollback.reason.unverifiable.named`, `askCmdr.renameUndo.skipReason.unverifiable.named`:
   byte-identical English, but one is about items and the other about files; split the wording or say so. (ru)
 - `servers.paneState.cancelCycleTooltip`: "Switch back to retry" doesn't say switch back to what. (ru, uk)
-- `askCmdr.cost.tokensWithCache`: `{cachedText}` has no raw count, so "cached" can't agree with it; cs, ru, and uk fell
-  back to a colon (`в том числе из кэша: {cachedText}`). Pass a `{cached}` integer for a plural arm. (cs, ru, uk)
 - `fileExplorer.navigation.favoriteStatus.connects`, `favoriteUnreachable.forgotten`: `{place}` is a share, a server, or
   a phone, and nothing says which, so case languages can't put a type noun before it (`к серверу «…»`) and fall back to
   a parenthesis or colon. Pass a `{kind}` select (share / server / phone) alongside it. (ru)

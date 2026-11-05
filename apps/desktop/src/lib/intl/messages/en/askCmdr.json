@@ -1628,13 +1628,14 @@
     },
     "screenshot": "ask-cmdr-empty.png"
   },
-  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {tokens}}, {cachedText} of them cached",
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {tokens}}, {cached, plural, other {{cachedText} of them cached}}",
   "@askCmdr.cost.tokensWithCache": {
     "description": "Exact token usage, plus how many of those tokens the AI provider served from its prompt cache (parts of the chat it already read on an earlier call, billed at a much lower price). Shown in the tooltip on the token count in the Ask Cmdr chat's cost footer and under an answer, and as a day's usage in Settings > AI > Ask Cmdr > Spend. Shown only when some tokens were cached. Lowercase “cached”; keep “tokens” as the AI term, matching the other token counts.",
     "placeholders": {
       "countText": "The total token count, already formatted with thousands separators, like 48,213.",
       "count": "The raw total token count as an integer, used only to pick the singular or plural word.",
-      "cachedText": "How many of those tokens came from the provider’s cache, already formatted, like 41,002. Always smaller than the total."
+      "cachedText": "How many of those tokens came from the provider’s cache, already formatted, like 41,002. Never more than the total, and always at least 1.",
+      "cached": "The same cached count as a raw integer, used only to pick the plural form of the words around it (for example so “cached” agrees with the number). English needs no plural here, so it has only the other form."
     }
   },
   "askCmdr.cost.free": "free, on-device",

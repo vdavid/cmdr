@@ -1037,9 +1037,9 @@
     "sourceHash": "6718764",
     "sameAsSourceJustification": "'token' is the established Portuguese loanword for an LLM token, used across the rest of the catalog (askCmdr.context.tooltip, settings.ai.localContextSize.description, settings.askCmdr.spend.empty). Only the CLDR `many` category is new here; the words are the same in both numbers."
   },
-  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} many {tokens} other {tokens}}, {cachedText} deles em cache",
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} many {tokens} other {tokens}}, {cached, plural, one {{cachedText} deles em cache} many {{cachedText} deles em cache} other {{cachedText} deles em cache}}",
   "@askCmdr.cost.tokensWithCache": {
-    "sourceHash": "ec0bb4b"
+    "sourceHash": "243a4d9"
   },
   "askCmdr.cost.free": "grátis, no dispositivo",
   "@askCmdr.cost.free": {

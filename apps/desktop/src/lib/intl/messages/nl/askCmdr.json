@@ -1039,9 +1039,9 @@
     "sourceHash": "6718764",
     "sameAsSourceJustification": "Dutch CLDR has the same one/other plural categories as English, and 'token(s)' is the settled kept AI loanword (glossary: token (AI) -> token, high) - so the whole ICU string is identical to the English source."
   },
-  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {tokens}}, waarvan {cachedText} uit de cache",
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {tokens}}, {cached, plural, one {waarvan {cachedText} uit de cache} other {waarvan {cachedText} uit de cache}}",
   "@askCmdr.cost.tokensWithCache": {
-    "sourceHash": "ec0bb4b"
+    "sourceHash": "243a4d9"
   },
   "askCmdr.cost.free": "gratis, lokaal",
   "@askCmdr.cost.free": {

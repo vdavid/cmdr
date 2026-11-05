@@ -1034,9 +1034,9 @@
     "sourceHash": "6718764",
     "sameAsSourceJustification": "'token'/'tokens' kept as the shared Swedish tech loanword for LLM tokens; no attested native Swedish plural in the reference pile (too new a sense), and Swedish tech press consistently uses the bare English plural 'tokens'."
   },
-  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {tokens}}, varav {cachedText} cachade",
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {tokens}}, {cached, plural, one {varav {cachedText} cachad} other {varav {cachedText} cachade}}",
   "@askCmdr.cost.tokensWithCache": {
-    "sourceHash": "ec0bb4b"
+    "sourceHash": "243a4d9"
   },
   "askCmdr.cost.free": "gratis, på enheten",
   "@askCmdr.cost.free": {

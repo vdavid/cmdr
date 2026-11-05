@@ -1033,9 +1033,9 @@
   "@askCmdr.cost.tokens": {
     "sourceHash": "6718764"
   },
-  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {токен} few {токена} many {токенов} other {токена}}, в том числе из кэша: {cachedText}",
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {токен} few {токена} many {токенов} other {токена}}, {cached, plural, one {из них {cachedText} из кэша} few {из них {cachedText} из кэша} many {из них {cachedText} из кэша} other {из них {cachedText} из кэша}}",
   "@askCmdr.cost.tokensWithCache": {
-    "sourceHash": "ec0bb4b"
+    "sourceHash": "243a4d9"
   },
   "askCmdr.cost.free": "бесплатно, на устройстве",
   "@askCmdr.cost.free": {

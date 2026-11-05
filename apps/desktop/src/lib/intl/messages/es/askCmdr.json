@@ -1037,9 +1037,9 @@
     "sourceHash": "6718764",
     "sameAsSourceJustification": "'token' is the established Spanish loanword for an LLM token, used across the rest of the catalog (askCmdr.context.tooltip, settings.ai.localContextSize.description, settings.askCmdr.spend.empty). Only the CLDR `many` category is new here; the words are the same in both numbers."
   },
-  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} many {tokens} other {tokens}}, {cachedText} de ellos en caché",
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} many {tokens} other {tokens}}, {cached, plural, one {{cachedText} de ellos en caché} many {{cachedText} de ellos en caché} other {{cachedText} de ellos en caché}}",
   "@askCmdr.cost.tokensWithCache": {
-    "sourceHash": "ec0bb4b"
+    "sourceHash": "243a4d9"
   },
   "askCmdr.cost.free": "gratis, en el dispositivo",
   "@askCmdr.cost.free": {
