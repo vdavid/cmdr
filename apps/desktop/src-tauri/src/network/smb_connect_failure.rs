@@ -363,18 +363,38 @@ pub(crate) enum DirectConnectOutcome {
 /// dial. Read by kind, ❌ never the message.
 ///
 /// [`SmbSignatureSource::DirectConnection`]: crate::security_log::SmbSignatureSource::DirectConnection
-pub(crate) fn record_security_refusal(volume_id: &str, dial: &FailedDial) {
+pub(crate) fn record_security_refusal(volume_id: &str, dial: &FailedDial) -> SecurityRecord {
     use crate::security_log::{SmbScope, SmbSignatureSource};
     match dial.error.kind() {
         ErrorKind::NegotiateValidationFailed => {
             crate::security_log::note_smb_negotiation_rejection(SmbScope::Volume(volume_id.to_string()));
+            SecurityRecord::RecordOnly
         }
-        ErrorKind::SignatureInvalid => crate::security_log::note_smb_signature_rejection(
-            SmbScope::Volume(volume_id.to_string()),
-            SmbSignatureSource::DirectConnection,
-        ),
-        _ => {}
+        ErrorKind::SignatureInvalid => {
+            crate::security_log::note_smb_signature_rejection(
+                SmbScope::Volume(volume_id.to_string()),
+                SmbSignatureSource::DirectConnection,
+            );
+            SecurityRecord::RaisesNotice
+        }
+        _ => SecurityRecord::NotASecurityRefusal,
     }
+}
+
+/// What [`record_security_refusal`] did with a failed dial, which decides whether the kernel-mount
+/// fallback notice still speaks for it. Mirrors `security_notices::notice_for` for the two direct
+/// connection events: keep them in step.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SecurityRecord {
+    /// Not a tampering signal; nothing recorded.
+    NotASecurityRefusal,
+    /// Recorded, with no security notice (an unconfirmed negotiation), so the fallback notice's
+    /// own sentence is what tells the person.
+    RecordOnly,
+    /// Recorded, and it raises its own security notice (a refused signature,
+    /// `AccessNotice::SmbDirectSignatureRefused`). The fallback notice stays quiet: its "Try
+    /// connecting directly" would only be refused again (#1013).
+    RaisesNotice,
 }
 
 /// Writes down why a direct smb2 connection didn't happen, naming who was turned

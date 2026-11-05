@@ -901,7 +901,10 @@ paths; a share listing's through `smb_client.rs`, which also records a listing r
 `../security_log/DETAILS.md`. So does a dial whose sign-in reply was refused for its signature
 (`ErrorKind::SignatureInvalid`), marked `SmbSignatureSource::DirectConnection`: it raises its own security notice with no
 Reconnect, since the share stays on the kernel mount and there's no Cmdr session to reconnect (#1007,
-`../security_notices/DETAILS.md`).
+`../security_notices/DETAILS.md`). That notice replaces the fallback notice for this case: `record_security_refusal`
+answers `SecurityRecord::RaisesNotice`, and the auto path then skips `announce_os_mount_fallback`, whose "Try connecting
+directly" would only be refused again (#1013). An unconfirmed negotiation answers `RecordOnly`, so its fallback notice
+stays.
 `EncryptionRequired` (Cmdr's own "Always require SMB encryption", § "Requiring SMB encryption") is the third such
 reason: the same server gets the same answer until it or the setting changes.
 

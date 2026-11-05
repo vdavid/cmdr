@@ -32,9 +32,10 @@ Issue #457. Must-knows in `CLAUDE.md`.
   disconnect yet.
 - **SMB, direct connection refused for its signature** (`source: direct_connection`, #1007): `SmbDirectSignatureRefused
   { volume_id }`, one per volume, its own gate key and toast beside a session's. Explains only, with Dismiss: the share
-  stays on the kernel mount, so there's no Cmdr session to reconnect (David's call 2026-11-06, option (c)). It overlaps
-  the direct-connection fallback notice, which says the connection didn't happen; this one says why it's a security
-  matter.
+  stays on the kernel mount, so there's no Cmdr session to reconnect (David's call 2026-11-06, option (c)). On the auto
+  upgrade path it replaces the kernel-mount fallback notice, whose retry would only be refused again (#1013,
+  `../network/DETAILS.md`). ❗ `network::smb_connect_failure::SecurityRecord` mirrors which direct-connection events
+  notify here: change both together.
 - **SMB, guest session offered for a named login**: no notice. It happens at connect, so it's a pane state
   (`VolumeConnection::GuestSessionRefused`), also for a background reconnect.
 - **Update, signature doesn't hold** (minisign on the archive, or the Developer ID on the bundle): `UpdateNotGenuine
