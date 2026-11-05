@@ -340,9 +340,9 @@ per-repo ceiling**, and lane markers are the first LRU victims, since nothing ev
 the repo sat at ~9.5 GB (`gh api repos/vdavid/cmdr/actions/caches`): `desktop-rust-macos` 3.6, `desktop-rust` 2.7,
 `light-go` 1.6, `docker-e2e` ~1.2, four mise entries ~0.9 between `main` and one PR, `light-*` `node_modules` 0.27, and
 the pnpm store 0.2. The fixes above put `desktop-rust` at ~1.1, `light-go` at ~0.23, and `light-node-modules` at ~0.19,
-and PRs no longer add mise. Every PR saves only its markers and the lane-markers tool (~2 MB). Before the Rust caches
-went main-only, every PR also saved ~1.7 GB of Rust and ~1.2 GB of E2E target, the repo sat at ~12 GB, and LRU evicted
-entries within minutes.
+`desktop-rust-macos` keeps no `target/` (§ The M1 runner), and PRs no longer add mise. Every PR saves only its markers
+and the lane-markers tool (~2 MB). Before the Rust caches went main-only, every PR also saved ~1.7 GB of Rust and ~1.2
+GB of E2E target, the repo sat at ~12 GB, and LRU evicted entries within minutes.
 
 **Load-bearing companion: the `prune-superseded-caches` job.** A new `Cargo.lock` gives each big entry a new key, and
 the old one lingers until 7 unused days pass, so two generations put the repo at ~11.5 GB (2026-10-22). Post-land on
