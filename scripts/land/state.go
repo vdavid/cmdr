@@ -323,6 +323,34 @@ func missingRunGivesUp(seen bool, waited time.Duration) bool {
 	return !seen && waited > appearWithin
 }
 
+// cancelledRunGivesUp says whether a newest run that was cancelled ends the wait, given how long
+// polls have seen it cancelled with nothing newer listed. A run a newer one replaced (a push and
+// the `land` label's run start together, and the later cancels the earlier) has a successor that
+// GitHub's list can lag behind, so it waits `successorWithin` first; only a run still alone after
+// that was stopped by a person.
+func cancelledRunGivesUp(cancelledFor time.Duration) bool {
+	return cancelledFor > successorWithin
+}
+
+// cancelWait remembers when polls first saw the newest run cancelled with nothing newer listed.
+type cancelWait struct{ since time.Time }
+
+// verdict turns a red verdict on a cancelled run into pending while its successor may still
+// show up (`cancelledRunGivesUp`), and passes every other verdict through, resetting the clock.
+func (c *cancelWait) verdict(v verdict, run workflowRun, now time.Time) verdict {
+	if v != verdictRed || !run.cancelled() {
+		c.since = time.Time{}
+		return v
+	}
+	if c.since.IsZero() {
+		c.since = now
+	}
+	if cancelledRunGivesUp(now.Sub(c.since)) {
+		return v
+	}
+	return verdictPending
+}
+
 // pollDelay is how long to wait before the next CI poll, before jitter. attemptAge is the age of
 // the run's current attempt. Most polls are free 304s (§ Decision: cheap polling in DETAILS.md),
 // so the fast start costs little budget; the cap keeps the request rate low with many lands.

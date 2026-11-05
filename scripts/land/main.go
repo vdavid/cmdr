@@ -67,6 +67,8 @@ const (
 	landLabel = "land"
 	// How long a CI run gets to show up after the push that starts it.
 	appearWithin = 5 * time.Minute
+	// successorWithin: how long a cancelled newest run waits for the run that replaced it to be listed.
+	successorWithin = 2 * time.Minute
 	// How many CI runs one land waits through when each green head needs a rebase here before it
 	// can land. A `main` that clashes with it this often needs a person, not a ninth run.
 	maxCIRuns = 8
@@ -464,6 +466,7 @@ func waitForCI(r runner, head string, cfg config) error {
 	// Whether a run on head showed up yet. Once one has, a poll that lists none is GitHub's
 	// list lagging, never a push that started nothing.
 	seen := false
+	var cancelled cancelWait
 	for {
 		// The runs, then the `CI OK` check runs once a run exists: `CI OK` decides even while
 		// GitHub still calls the run in progress. An unchanged answer is a free 304.
@@ -482,6 +485,7 @@ func waitForCI(r runner, head string, cfg config) error {
 			}
 		}
 		v, run := ciVerdict(runs.WorkflowRuns, checks.CheckRuns)
+		v = cancelled.verdict(v, run, time.Now())
 		switch v {
 		case verdictGreen:
 			say("%s is green.", ciCheck)

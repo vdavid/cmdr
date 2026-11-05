@@ -244,6 +244,10 @@ answered 403 after CI was green, and that land was lost. So:
 - **A run that showed up never makes the wait give up** (`missingRunGivesUp`): on 2026-10-20 a queued run printed
   "Waiting for CI OK", then dropped out of the `head_sha` list, and the land quit with "no CI run after 5m0s". Only a
   push that started no run at all stops at `appearWithin`; a seen run waits out the usual timeout.
+- **A cancelled newest run waits `successorWithin` (2 min) for its successor** (`cancelledRunGivesUp`): on 2026-11-05
+  (PR #999) the push's run and the `land` label's run started in the same second, the later cancelled the earlier, and
+  the next poll listed only the cancelled one, so the land quit while its land run was going. Only a run still alone
+  after the grace was stopped by a person.
 - **The budget comes from the failing response's own headers** (`gh api --include`, parsed by `net/http`, so no stderr
   matching). Gotcha: `gh api rate_limit` can disagree with them (2026-10-20: `core` showed 2,862 left while the Actions
   API answered `X-RateLimit-Remaining: 0`), so it's only the fallback for `gh pr` / `gh run` calls, which print no

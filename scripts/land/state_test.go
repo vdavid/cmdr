@@ -664,3 +664,42 @@ func TestNextStartStepKeepsAPushedMergeableHead(t *testing.T) {
 		t.Errorf("a dirty tree still refuses: got %d, want %d", got, stepRefuseDirty)
 	}
 }
+
+// Regression: on 2026-11-05 (PR #999) the push's run and the `land` label's run started in the
+// same second; the label's cancelled the push's, and the next poll listed only the cancelled one,
+// so `land` quit with "CI was cancelled" while the land run was going. A cancelled newest run
+// waits a while for the run that replaced it to show up before it counts as stopped by hand.
+func TestCancelledRunGivesUp(t *testing.T) {
+	cases := []struct {
+		name  string
+		since time.Duration
+		want  bool
+	}{
+		{"just cancelled: its successor may not be listed yet", 10 * time.Second, false},
+		{"still alone after the grace", successorWithin + time.Second, true},
+	}
+	for _, c := range cases {
+		if got := cancelledRunGivesUp(c.since); got != c.want {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+// A cancelled newest run reads as pending through the grace, then red; anything else resets it.
+func TestCancelWaitHoldsACancelledRunThroughTheGrace(t *testing.T) {
+	t0 := time.Date(2026, 11, 5, 18, 56, 47, 0, time.UTC)
+	gone := workflowRun{Status: "completed", Conclusion: "cancelled"}
+	var c cancelWait
+	if got := c.verdict(verdictRed, gone, t0); got != verdictPending {
+		t.Errorf("first sight: got %d, want pending", got)
+	}
+	if got := c.verdict(verdictRed, gone, t0.Add(successorWithin+time.Second)); got != verdictRed {
+		t.Errorf("after the grace: got %d, want red", got)
+	}
+	if got := c.verdict(verdictRed, workflowRun{Status: "completed", Conclusion: "failure"}, t0); got != verdictRed {
+		t.Errorf("a real failure: got %d, want red", got)
+	}
+	if got := c.verdict(verdictRed, gone, t0.Add(time.Hour)); got != verdictPending {
+		t.Errorf("a later cancel restarts the grace: got %d, want pending", got)
+	}
+}
