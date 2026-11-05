@@ -40,14 +40,33 @@ import { loaders, manifestMessages, shippedLocales } from 'virtual:cmdr-locale-m
 const BASE_LOCALE = 'en'
 
 /**
- * Logs a catalog that didn't load. The logger is imported lazily, on this rare path only: it
- * pulls in IPC and the settings store, which the always-loaded i18n runtime (and every test
- * file, through `test-setup.ts`) must not.
+ * What the runtime needs from the rest of the app, handed in by the boot code
+ * (`routes/+layout.ts`) and, in tests, by `test-setup.ts`. ❌ Never import the logger or
+ * the settings store here, not even lazily: they reach IPC, all of `tauri-commands/`, and
+ * the settings registry, and `test-setup.ts` loads this module, so every one of those
+ * modules would select the whole vitest suite in `svelte-tests-related`
+ * (`src/test-setup-closure.test.ts` guards it).
  */
+export interface MessageRuntimeHooks {
+  /** Logs a warning under the `i18n` category. */
+  warn: (message: string, properties: Record<string, unknown>) => void
+  /** Writes the `appearance.textSize` setting. Only the E2E capture API calls it. */
+  setTextSize: (percent: number) => void
+}
+
+let hooks: MessageRuntimeHooks | undefined
+/** Warnings raised before the boot code installed the hooks, flushed on install. */
+const pendingWarnings: Array<[string, Record<string, unknown>]> = []
+
+/** Boot seam: wire in the logger and the settings writer. The latest call wins. */
+export function installMessageRuntimeHooks(next: MessageRuntimeHooks): void {
+  hooks = next
+  for (const [message, properties] of pendingWarnings.splice(0)) next.warn(message, properties)
+}
+
 function warnCatalogLoad(message: string, properties: Record<string, unknown>): void {
-  void import('#lib/logging/logger.js').then(({ getAppLogger }) => {
-    getAppLogger('i18n').warn(message, properties)
-  })
+  if (hooks) hooks.warn(message, properties)
+  else pendingWarnings.push([message, properties])
 }
 
 /**
@@ -307,10 +326,10 @@ interface I18nCaptureApi {
    * supported zoom while the pseudolocale already inflates the strings. Drives
    * the exact production path the Language/zoom UI uses: `setSetting` updates the
    * store, which cross-window-syncs and re-runs `text-size.svelte`'s
-   * `computeAndApply` (the `--font-scale` root var + the reactive scale). Lazily
-   * imports `#lib/settings` so the intl runtime stays decoupled from settings
-   * outside an E2E build. Returns a promise the driver awaits before the
-   * shot so the new scale has applied.
+   * `computeAndApply` (the `--font-scale` root var + the reactive scale). The
+   * write goes through the boot-installed `MessageRuntimeHooks.setTextSize`, so
+   * the intl runtime stays decoupled from settings. Returns a promise the driver
+   * awaits before the shot so the new scale has applied.
    */
   setTextSize: (percent: number | string) => Promise<void>
 }
@@ -343,15 +362,14 @@ if (__CMDR_E2E_BUILD__ && typeof window !== 'undefined') {
       // Returned so the driver's `captureCall` (a `page.evaluate`) waits for the catalog.
       return setLocale(tag)
     },
-    async setTextSize(percent: number | string) {
-      // Lazy import: keeps the always-loaded intl runtime free of a settings
-      // dependency; this method only ever runs in a capture run.
-      const { setSetting } = await import('#lib/settings/index.js')
+    setTextSize(percent: number | string) {
+      if (!hooks) return Promise.reject(new Error('The message runtime hooks are not installed yet'))
       // Coerce: the E2E driver reaches this through `captureCall`, which
       // JSON-stringifies every arg, so `percent` arrives as a string ("100").
       // `appearance.textSize` is a typed number setting and rejects a string, so
       // normalize before writing (hence `number | string` on the signature).
-      setSetting('appearance.textSize', Number(percent))
+      hooks.setTextSize(Number(percent))
+      return Promise.resolve()
     },
   }
   ;(window as unknown as { __cmdrI18nCapture?: I18nCaptureApi }).__cmdrI18nCapture = api

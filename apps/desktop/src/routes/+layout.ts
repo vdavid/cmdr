@@ -11,9 +11,22 @@ import '#lib/hmr-recovery.js'
 // Same reason, same place: an uncaught throw or unhandled rejection is otherwise
 // invisible in the Rust log, in error-report bundles, and in CI.
 import { registerUncaughtErrorLogging } from '#lib/logging/uncaught-errors.js'
-import { startupCatalogsReady } from '#lib/intl/messages.svelte.js'
+import { getAppLogger } from '#lib/logging/logger.js'
+import { setSetting } from '#lib/settings/index.js'
+import { installMessageRuntimeHooks, startupCatalogsReady } from '#lib/intl/messages.svelte.js'
 
 registerUncaughtErrorLogging()
+
+// The message runtime takes the logger and the settings writer from here, never by import:
+// `test-setup.ts` loads the runtime, and those two reach half the app (`MessageRuntimeHooks`).
+installMessageRuntimeHooks({
+  warn: (message, properties) => {
+    getAppLogger('i18n').warn(message, properties)
+  },
+  setTextSize: (percent) => {
+    setSetting('appearance.textSize', percent)
+  },
+})
 
 /**
  * The startup gate for every window: SvelteKit renders no layout or page until this root

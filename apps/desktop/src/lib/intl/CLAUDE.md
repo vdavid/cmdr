@@ -33,21 +33,21 @@ Two locale sources: the UI LANGUAGE for catalog text and numbers, the OS REGION 
 - **A window holds `en` + its language's catalogs; the rest load on demand** (`scripts/vite-locale-catalogs.ts`).
   `setLocale()` loads, THEN switches in one step; latest call wins. `test-setup.ts` preloads all; a `vi.resetModules()`
   test must await. Text from EVERY language: the manifest (`manifestMessage`).
+- **❌ The runtime never imports the logger or `#lib/settings`**: boot hands them in (`DETAILS.md` § Tests).
 - **Locale dirs come from the plugin's `listLocales()` alone**, keeping `screenshots/` out. ❌ No second discovery path.
 - **❌ A fallback never crosses a SCRIPT boundary**, so `zh-Hant` skips Simplified `zh` and lands on English. Go through
-  `inheritableAncestors()`; the checks and Rust obey the same rule. Regional fallback (`pt-PT` → `pt`) must keep
-  working: `DETAILS.md`.
+  `inheritableAncestors()`, as the checks and Rust do. Regional fallback (`pt-PT` → `pt`) must keep working:
+  `DETAILS.md`.
 - **Picker labels take the WHOLE shipped list** (`zh` is `简体中文` only beside `zh-Hant`). ❌ Never decorate
   unconditionally.
 - **Both locale answers come from Rust, ❌ never the webview tag**, which drops the region override. Go through
   `pickUiLocale()`; secondary windows call `initWindowLanguageSync()` (`routes/window-route-coverage.test.ts`).
   `watchSystemLocales()` takes ONE subscriber per window: hang new reactions off it. Depth: `DETAILS.md`,
   `apps/desktop/src-tauri/src/intl/DETAILS.md`.
-- **Error copy uses `getMessage()` (raw), NOT `t()`/ICU**: the pipeline's `{system_settings}` tokens and `esc()` HTML
-  entities collide with ICU grammar. Only plural/select sentences go through `t()`.
+- **Error copy uses `getMessage()` (raw), NOT `t()`/ICU**: its `{system_settings}` tokens and `esc()` entities collide
+  with ICU. Only plural/select sentences use `t()`.
 - **`<Trans>` renders tag content via a zero-arg `{#snippet content()}`** (snippets aren't callable:
-  `invalid_snippet_arguments`). No `{@html}`, so XSS-safe. An unmatched tag renders NOTHING (`i18n-trans-snippets`
-  enforces pairing).
+  `invalid_snippet_arguments`). No `{@html}`, so XSS-safe. An unmatched tag renders NOTHING (`i18n-trans-snippets`).
 - **Only the runtime writes `<html lang>`** (`setLocale()` and the startup catalog), with the RESOLVED catalog tag
   (`ja-JP` → `en`). ❌ No per-window write.
 - **Copy reads `getUiLocale()`, numbers and joins `getCatalogLocale()`, dates `getFormatLocale()`; nothing else resolves
@@ -57,7 +57,6 @@ Two locale sources: the UI LANGUAGE for catalog text and numbers, the OS REGION 
   `formatSizeForDisplay`, `formatDateForDisplay`). ❌ Never hardcode a locale or build an `Intl` formatter in feature
   code (`cmdr/no-raw-locale-format`).
 - **Both readers stay SSR-safe and uncached** (a cache here would hide a switch), but **keep `Intl` formatters memoized
-  by (locale, options)**: they run per visible entry in render AND the column fold, so per-call construction regresses
-  scroll.
+  by (locale, options)**: they run per visible row, so per-call construction regresses scroll.
 
 Depth (runtime, catalog loading, ICU split, `'system'`, language vs region, grouping, titles): `DETAILS.md`.

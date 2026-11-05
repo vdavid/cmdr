@@ -1,8 +1,9 @@
 # The four costliest local check lanes (2026-11-05)
 
 Why `clippy`, `svelte-tests-related`, `eslint-typecheck-svelte`, and `eslint-typecheck-ts` cost ~42 machine-hours of
-local `pnpm check` in 14 days, where the time goes inside each, and the ranked cuts. Investigation only: nothing here is
-landed. Runner background: `scripts/check/DETAILS.md` § "Input fingerprint cache".
+local `pnpm check` in 14 days, where the time goes inside each, and the ranked cuts. Cuts 1–4 and the catalog bug have
+landed: § "Results" has the before/after numbers. Runner background: `scripts/check/DETAILS.md` § "Input fingerprint
+cache".
 
 ## Method
 
@@ -206,3 +207,20 @@ Considered and not proposed:
   run changes some input.
 - **Narrowing clippy's flags or adding `-p` lanes**: closed by the measurements in `cargo-lane-feature-thrash.md`; warm
   clippy is already 15–20 s per edit.
+
+## Results
+
+Measured in `worktree-agent-ad744b063f60c1fb9` on 2026-11-05, same Mac and tool versions as § Method, under heavy
+contention from other agents (load average 55–170), so wall times are inflated; the spec counts are exact.
+
+1. **Setup closure cut** (`installMessageRuntimeHooks`; guard: `apps/desktop/src/test-setup-closure.test.ts`).
+   - Closure: 185 modules (173 ours) before, 8 after (the setup file, the message runtime, its three locale helpers,
+     `startup-catalog.ts`, `display-path.ts`, and the layout shim).
+   - Every module of the old closure (172 by a static walk from `test-setup.ts`, the logger, and `#lib/settings`), fed
+     one at a time to Vitest's `related` selection: before, all 172 selected the full suite (1,392 spec files); after, 8
+     do (the new closure), and the median selects 425 (mean 507).
+   - Hubs: `ipc/bindings.ts` 1,392 → 691 spec files, `tauri-commands/index.ts` 1,392 → 392, `logging/logger.ts` 1,392 →
+     629, `settings/definitions/ai.ts` 1,392 → 485.
+   - Wall: the full suite took 311 s (load 55–120); `vitest related` for `settings/definitions/ai.ts` now runs 485 files
+     in 124 s (load 100 → 55). At the report's load 5–7 that's roughly 112 s → 40–45 s for a hub edit, and a leaf
+     formerly in the closure (most of `settings/`, `logging/`) now runs only its own tests.
