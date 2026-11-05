@@ -511,6 +511,13 @@ type runJob struct {
 	Conclusion string `json:"conclusion"`
 	URL        string `json:"html_url"`
 	RunAttempt int    `json:"run_attempt"`
+	RunID      int64  `json:"run_id"`
+	// The timings and runner labels the ETA reads (`eta.go`). A job not yet finished has no
+	// CompletedAt (zero); a queued one's StartedAt is unreliable, so only a started job's counts.
+	CreatedAt   time.Time `json:"created_at"`
+	StartedAt   time.Time `json:"started_at"`
+	CompletedAt time.Time `json:"completed_at"`
+	Labels      []string  `json:"labels"`
 }
 
 // failed: the job ended red. Cancelled and skipped aren't failures (a lane change detection
@@ -532,6 +539,37 @@ var (
 // job. Line-based, like `scripts/check/checks/ci-ok-gate.go`: ci.yml keeps the standard
 // two-space layout. A name with an expression in it can't be matched, so it's left out.
 func requiredJobNames(ciYml string) []string {
+	jobs := workflowJobBodies(ciYml)
+	gate, ok := jobs[ciGateJob]
+	if !ok {
+		return nil
+	}
+	var names []string
+	for _, id := range gateNeeds(gate) {
+		body, ok := jobs[id]
+		if !ok {
+			continue
+		}
+		if name := jobDisplayName(id, body); !strings.Contains(name, "${{") {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// jobDisplayName is a job's `name:`, else its ID.
+func jobDisplayName(id string, body []string) string {
+	for _, line := range body {
+		if v, ok := strings.CutPrefix(line, "    name:"); ok {
+			return strings.Trim(strings.TrimSpace(v), `'"`)
+		}
+	}
+	return id
+}
+
+// workflowJobBodies maps each top-level job ID in `ci.yml` to its body lines (indented four
+// spaces or more).
+func workflowJobBodies(ciYml string) map[string][]string {
 	jobs := map[string][]string{}
 	inJobs, current := false, ""
 	for line := range strings.SplitSeq(ciYml, "\n") {
@@ -554,28 +592,7 @@ func requiredJobNames(ciYml string) []string {
 			jobs[current] = append(jobs[current], line)
 		}
 	}
-	gate, ok := jobs[ciGateJob]
-	if !ok {
-		return nil
-	}
-	var names []string
-	for _, id := range gateNeeds(gate) {
-		body, ok := jobs[id]
-		if !ok {
-			continue
-		}
-		name := id
-		for _, line := range body {
-			if v, ok := strings.CutPrefix(line, "    name:"); ok {
-				name = strings.Trim(strings.TrimSpace(v), `'"`)
-				break
-			}
-		}
-		if !strings.Contains(name, "${{") {
-			names = append(names, name)
-		}
-	}
-	return names
+	return jobs
 }
 
 // gateNeeds returns the job IDs in a job's `needs`: a scalar, a flow sequence on one or several

@@ -42,6 +42,7 @@
 //	pnpm land -record N       land, then record contributor PR N as merged
 //	pnpm land -merge          land without rebasing: fast-forward, or a GitHub merge commit
 //	pnpm land rulesets [-apply]
+//	pnpm land eta             CI load, typical run times, and this commit's live ETA
 //
 // Docs: `scripts/land/CLAUDE.md`.
 package main
@@ -134,6 +135,7 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage: pnpm land [-no-wait] [-squash [-m MESSAGE]] [-record N] [-merge] [-timeout 2h]")
 		fmt.Fprintln(os.Stderr, "       pnpm land rulesets [-apply]")
+		fmt.Fprintln(os.Stderr, "       pnpm land eta              CI load, typical run times, and this commit's ETA")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -148,11 +150,16 @@ func main() {
 	}
 	repo = resolved
 	if flag.NArg() > 0 {
-		if flag.Arg(0) != "rulesets" {
+		switch flag.Arg(0) {
+		case "rulesets":
+			err = rulesets(r, flag.Args()[1:])
+		case "eta":
+			err = etaCommand(r)
+		default:
 			flag.Usage()
 			os.Exit(2)
 		}
-		if err := rulesets(r, flag.Args()[1:]); err != nil {
+		if err != nil {
 			fail(err)
 		}
 		return
@@ -467,6 +474,7 @@ func waitForCI(r runner, head string, cfg config) error {
 	// list lagging, never a push that started nothing.
 	seen := false
 	var cancelled cancelWait
+	var eta etaTracker
 	for {
 		// The runs, then the `CI OK` check runs once a run exists: `CI OK` decides even while
 		// GitHub still calls the run in progress. An unchanged answer is a free 304.
@@ -505,7 +513,7 @@ func waitForCI(r runner, head string, cfg config) error {
 				say("Waiting for %s: https://github.com/%s/actions/runs/%d", ciCheck, repo, run.ID)
 				announced = true
 			}
-			if jobs, red := earlyRed(r, run, required); red {
+			if jobs, red := earlyRed(r, head, run, required, &eta); red {
 				return ciFailure(run, jobs, jobLogSummaries(r, jobs), true, cfg.command())
 			}
 		}
@@ -544,15 +552,20 @@ func gateJobs(r runner, head string) []string {
 	return required
 }
 
-// earlyRed reads a running run's jobs and reports whether one `CI OK` needs already failed, with
-// the jobs for the report. Same cadence, one more call, and most polls of it are a free 304 too.
-// A failed read only skips this poll's look, since `CI OK` still decides in the end.
-func earlyRed(r runner, run workflowRun, required []string) ([]runJob, bool) {
-	if run.Status == "completed" || len(required) == 0 {
+// earlyRed reads a running run's jobs, feeds them to the ETA, and reports whether one `CI OK`
+// needs already failed, with the jobs for the report. Same cadence, one more call, and most polls
+// of it are a free 304 too. A failed read only skips this poll's look, since `CI OK` still decides
+// in the end.
+func earlyRed(r runner, head string, run workflowRun, required []string, eta *etaTracker) ([]runJob, bool) {
+	if run.Status == "completed" {
 		return nil, false
 	}
 	jobs, err := runJobs(r, run.ID)
-	return jobs, err == nil && len(failedRequiredJobs(jobs, required, run.RunAttempt)) > 0
+	if err != nil {
+		return nil, false
+	}
+	eta.observe(r, head, run, jobs, time.Now())
+	return jobs, len(failedRequiredJobs(jobs, required, run.RunAttempt)) > 0
 }
 
 // runJobs lists the run's jobs in its latest attempt, so a `gh run rerun --failed` reads its

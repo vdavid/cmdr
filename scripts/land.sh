@@ -4,6 +4,7 @@
 #
 # Usage: pnpm land [-no-wait] [-squash [-m MESSAGE]] [-record N]
 #        pnpm land rulesets [-apply]
+#        pnpm land eta
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

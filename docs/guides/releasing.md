@@ -343,9 +343,10 @@ check.
    it syncs `main`, runs the release-prep checks (§ Release prep checks that abort before tagging), commits
    `chore(release): vX.Y.Z` (call it R) on a `release/vX.Y.Z` branch on top of `origin/main`, signs the tag on R, pushes
    the branch, and starts R's full CI run and CodeQL on it. In `local` mode it pushes the tag right away, so the build
-   (about an hour) runs beside CI (25–40 min); in `ci` mode, whose tag push publishes on its own, it waits for green CI
-   first. Re-run it with the same version after any stop: it resumes. If it stops before tagging, fix what it says and
-   re-run; if CI goes red later, § The CI gate says what to do.
+   (about an hour) runs beside CI (well under the build; `pnpm land eta` prints its typical length); in `ci` mode, whose
+   tag push publishes on its own, it waits for green CI first. Re-run it with the same version after any stop: it
+   resumes. If it stops before tagging, fix what it says and re-run; if CI goes red later, § The CI gate says what to
+   do.
 8. **`local` mode: start `./scripts/release-finish.sh X.Y.Z` right after `release.sh`**, as a background command. It
    waits for the build and R's CI together, printing each job as it moves, and stops at the first red CI job (§ The CI
    gate: a flake gets its failed jobs re-run, a real failure aborts the release). Once both are green it requires the
@@ -752,7 +753,7 @@ commit.
 - **Its PR's CI reports green in about a minute when `main` hasn't moved since R's parent**: the run tests R's exact
   tree, which the release's `run_all` run already passed, so `changes`' `verified` step skips every lane
   (`docs/tooling/ci.md` § Landing doesn't re-run the suite). If `main` moved, the merged tree is new and the lanes run
-  (~30 min). Nothing users get waits for either.
+  (a full land run). Nothing users get waits for either.
 
 ## Release prep checks that abort before tagging
 
