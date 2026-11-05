@@ -278,82 +278,59 @@ func TestEveryWorkspaceMemberIsOwned(t *testing.T) {
 	}
 }
 
-// rustFilterPaths returns the include patterns of one dorny/paths-filter block in
-// ci.yml (`rust:`), dropping the `!` exclusions.
-func rustFilterPaths(t *testing.T, root, name string) []string {
+// rustLaneFilters are the ci.yml filters that start a Rust test lane: the Linux
+// lane, the fixtures lane, and the macOS lane. They share `rust-inputs` (a YAML
+// anchor) and each adds its own lane file and composite actions.
+var rustLaneFilters = []string{"rust", "rust-fixtures", "rust-macos"}
+
+// rustFilterPaths returns the include patterns of the Rust lanes' filters in
+// ci.yml, anchors expanded (`parseCIFilters`), `!` exclusions dropped, deduplicated.
+func rustFilterPaths(t *testing.T, root string) []string {
 	t.Helper()
 	raw, err := os.ReadFile(filepath.Join(root, ".github", "workflows", "ci.yml"))
 	if err != nil {
 		t.Fatalf("reading ci.yml: %v", err)
 	}
+	filters := parseCIFilters(string(raw))
 	var paths []string
-	in, indent := false, 0
-	for _, line := range strings.Split(string(raw), "\n") {
-		trimmed := strings.TrimLeft(line, " ")
-		lineIndent := len(line) - len(trimmed)
-		if !in {
-			if trimmed == name+":" {
-				in, indent = true, lineIndent
+	for _, name := range rustLaneFilters {
+		if len(filters[name]) == 0 {
+			t.Fatalf("found no `%s` filter in ci.yml; the parse is broken, not the workflow", name)
+		}
+		for _, p := range filters[name] {
+			if !strings.HasPrefix(p, "!") && !slices.Contains(paths, p) {
+				paths = append(paths, p)
 			}
-			continue
 		}
-		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
-			continue
-		}
-		if lineIndent <= indent {
-			break
-		}
-		if m := filterPathRe.FindStringSubmatch(line); m != nil && !strings.HasPrefix(m[1], "!") {
-			paths = append(paths, m[1])
-		}
-	}
-	if len(paths) == 0 {
-		t.Fatalf("found no `%s` filter in ci.yml; the parse is broken, not the workflow", name)
 	}
 	return paths
 }
 
-// TestEveryRustFilterPathIsClassified ties the table to ci.yml's `rust` filter,
-// which decides whether the Rust lanes run at all: every path that can start a
-// Rust lane has a deliberate answer here, not the "all" an unknown path gets.
+// TestEveryRustFilterPathIsClassified ties the table to ci.yml's Rust lane
+// filters, which decide whether the Rust lanes run at all: every path that can
+// start a Rust lane has a deliberate answer here, not the "all" an unknown path gets.
 func TestEveryRustFilterPathIsClassified(t *testing.T) {
 	root := repoRootForTest(t)
-	for _, pattern := range rustFilterPaths(t, root, "rust") {
+	for _, pattern := range rustFilterPaths(t, root) {
 		if matchRustScopeRule(rustTestScopeRules, ruleProbe(pattern)) == nil {
-			t.Errorf("ci.yml's `rust` filter lists %q, which no `rustTestScopeRules` entry classifies", pattern)
+			t.Errorf("ci.yml's Rust lane filters list %q, which no `rustTestScopeRules` entry classifies", pattern)
 		}
 	}
 }
 
 // rustFilterGaps are the paths the scope says can change a Rust test's outcome,
-// yet ci.yml's `rust` filter doesn't list, so a change to them ALONE doesn't run
-// the Rust lanes at all. Each was a gap before the scope existed.
-// `TestRustScopeInputsAreInTheRustFilter` fails on a new gap and on a closed one,
-// so add the path to the filter and delete its entry here.
-var rustFilterGaps = map[string]string{
-	"vendor/**":                        "patched crates swapped into every build; a vendor-only patch bump skips the Rust lanes",
-	".github/workflows/macos-lane.yml": "in the `finder-extension` filter only; a macOS-lane-only edit skips the Rust lanes",
-	".github/actions/**":               "the pinned-toolchain action the Rust lanes use",
-	"scripts/check/**":                 "the runner's own edits run the Go lanes (`scripts` filter), never the Rust lanes they change",
-	"scripts/check.sh":                 "same as `scripts/check/**`",
-	"CHANGELOG.md":                     "`whats_new` embeds it; a changelog-only edit skips the Rust lanes",
-	"apps/desktop/src/lib/commands/command-ids.ts":              "`build.rs` and a drift test read it",
-	"apps/desktop/src/lib/logging/bridge-redaction-cases.json":  "the bridge redaction test embeds it",
-	"apps/desktop/src/lib/logging/log-markers.json":             "the bridge redaction test embeds it",
-	"apps/desktop/src/lib/units/drive-figure-cases.json":        "the space poller's tests embed it",
-	"apps/desktop/src/lib/units/free-percent-cases.json":        "the space poller's tests embed it",
-	"apps/desktop/src/lib/intl/messages/**":                     "the native-string resolver's tests read it",
-	"apps/desktop/src/lib/ask-cmdr/ask-cmdr-tool-label-keys.ts": "the agent view tests read it",
-	"apps/desktop/test/fixtures/encodings/**":                   "the encoding-inspect tests read it",
-	"apps/desktop/scripts/download-llama-server.go":             "the app's `build.rs` reruns on it",
-}
+// yet no Rust lane filter in ci.yml lists, so a change to them ALONE doesn't run
+// the Rust lanes at all. `TestRustScopeInputsAreInTheRustFilter` fails on a new
+// gap and on a closed one, so add the path to the filter and delete its entry here.
+// Empty is the goal: every gap the scope found when it landed is closed.
+var rustFilterGaps = map[string]string{}
 
 // TestRustScopeInputsAreInTheRustFilter is the other direction: a path the scope
 // tests something for has to be able to start the lanes, or a change to it alone
 // tests nothing. Known gaps live in `rustFilterGaps`, exactly.
 func TestRustScopeInputsAreInTheRustFilter(t *testing.T) {
 	root := repoRootForTest(t)
-	filter := rustFilterPaths(t, root, "rust")
+	filter := rustFilterPaths(t, root)
 	for _, rule := range rustTestScopeRules {
 		if rule.Effect == scopeNothing {
 			continue

@@ -187,7 +187,11 @@ var rustWorkspaceConfigInputs = []string{
 // The app's menu tests read the menu bar's definition and ids from `cmdr-menu`
 // (`menu/menu_items_test.rs`, `menu/context_menu_icons_test.rs`, `menu/macos_appkit.rs`).
 // The space poller's band tests read the free-percent case list the TS formatter shares
-// (`space_poller/readout.rs`).
+// (`space_poller/readout.rs`). Three are read at test time rather than embedded, which makes
+// them inputs all the same: the native-string resolver's tests read the message catalogs
+// (`intl/resolve.rs`), the agent view tests the tool-label key list
+// (`tools/tests/agent_view_tests.rs`), and the encoding-inspect tests their fixtures
+// (`tools/read/inspect/tests.rs`).
 //
 // A lane carries this whenever its own set covers the tree that does the
 // embedding, which is what `TestRustInputsCoverEveryEmbeddedFile` walks the whole
@@ -197,12 +201,15 @@ var rustWorkspaceConfigInputs = []string{
 // edits and reported a green describing the previous content.
 var rustEmbeddedInputs = []string{
 	"CHANGELOG.md",
+	"apps/desktop/src/lib/ask-cmdr/ask-cmdr-tool-label-keys.ts",
 	"apps/desktop/src/lib/commands/command-ids.ts",
+	"apps/desktop/src/lib/intl/messages/**",
 	"apps/desktop/src/lib/ipc/bindings.ts",
 	"apps/desktop/src/lib/logging/bridge-redaction-cases.json",
 	"apps/desktop/src/lib/logging/log-markers.json",
 	"apps/desktop/src/lib/units/drive-figure-cases.json",
 	"apps/desktop/src/lib/units/free-percent-cases.json",
+	"apps/desktop/test/fixtures/encodings/**",
 	"apps/desktop/src-tauri/resources/security-advisories.json",
 	"apps/desktop/src-tauri/tauri.conf.json",
 	"apps/desktop/src-tauri/updater-backup.pub",

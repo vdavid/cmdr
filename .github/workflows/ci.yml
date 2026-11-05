@@ -282,11 +282,30 @@ jobs:
               # Built and smoke-run by `desktop-rust-listing-wasm`.
               - 'scripts/build-listing-wasm.sh'
               - 'scripts/build-listing-wasm/**'
+              # Files outside every crate that the app's build or tests read
+              # (`rustTestScopeRules` names each reader; `rust-test-scope_test.go` keeps
+              # this list and those rules in step).
+              - 'CHANGELOG.md'
+              - 'apps/desktop/src/lib/commands/command-ids.ts'
+              - 'apps/desktop/src/lib/logging/bridge-redaction-cases.json'
+              - 'apps/desktop/src/lib/logging/log-markers.json'
+              - 'apps/desktop/src/lib/units/drive-figure-cases.json'
+              - 'apps/desktop/src/lib/units/free-percent-cases.json'
+              - 'apps/desktop/src/lib/intl/messages/**'
+              - 'apps/desktop/src/lib/ask-cmdr/ask-cmdr-tool-label-keys.ts'
+              - 'apps/desktop/test/fixtures/encodings/**'
+              - 'apps/desktop/scripts/download-llama-server.go'
               - 'crates/**'
+              - 'vendor/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - '.config/nextest.toml'
               - 'rust-toolchain.toml'
+              # The check runner builds and runs every Rust check; its tests run in the light
+              # lane's Go section.
+              - 'scripts/check.sh'
+              - 'scripts/check/**'
+              - '!scripts/check/**/*_test.go'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
               - '!**/CLAUDE.md'
@@ -333,6 +352,9 @@ jobs:
               - 'apps/desktop/eslint.config.js'
               - 'apps/desktop/tsconfig.json'
               - 'pnpm-lock.yaml'
+              - 'scripts/check.sh'
+              - 'scripts/check/**'
+              - '!scripts/check/**/*_test.go'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
               - '.github/workflows/svelte-lane.yml'
@@ -343,6 +365,9 @@ jobs:
               # Rust workspace, so the Rust workspace inputs belong here too.
               - 'apps/desktop/**'
               - 'crates/**'
+              # Compiled into the app it builds: the patched crates and the embedded changelog.
+              - 'vendor/**'
+              - 'CHANGELOG.md'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
@@ -398,6 +423,9 @@ jobs:
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
+              - 'scripts/check.sh'
+              - 'scripts/check/**'
+              - '!scripts/check/**/*_test.go'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
             api-server:
@@ -405,6 +433,9 @@ jobs:
               # Its ESLint config imports the shared rules.
               - 'eslint-plugins/**'
               - 'pnpm-lock.yaml'
+              - 'scripts/check.sh'
+              - 'scripts/check/**'
+              - '!scripts/check/**/*_test.go'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
               - '.github/workflows/light-lane.yml'
@@ -413,6 +444,9 @@ jobs:
               - 'apps/analytics-dashboard/**'
               - 'eslint-plugins/**'
               - 'pnpm-lock.yaml'
+              - 'scripts/check.sh'
+              - 'scripts/check/**'
+              - '!scripts/check/**/*_test.go'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
               - '.github/workflows/light-lane.yml'
