@@ -673,9 +673,12 @@ element and widen that signature — deliberately not done for an unused capabil
   `macOSOnly: true` keeps it out of the index everywhere else (`searchable-rows.ts`, pinned by its test).
 - **Settings take the same flag.** `SettingDefinition.macOSOnly` drops a setting from the index off macOS
   (`buildSearchIndex` in `settings-search.ts`, pinned by `settings-search.test.ts`), for a setting whose section renders
-  it on macOS only. It decides nothing about rendering: a hand-rendering section gates its own markup on `isMacOS()`,
-  and `AdvancedSection` drops `macOSOnly` rows off macOS itself (`behavior.textEditorHintSeen` and the other macOS-only
-  hint flags). Hidden settings still enter search, so a macOS-only feature's hidden flags take it too.
+  it on macOS only. Off macOS `buildSectionTree` skips it too, so a page whose every visible setting is macOS-only
+  leaves the sidebar: that's how Indexing › Image indexing disappears off macOS, where the backend starts no image
+  engine (#943; pinned by `settings-registry.test.ts`). Beyond that it decides nothing about rendering: a hand-rendering
+  section gates its own markup on `isMacOS()`, and `AdvancedSection` drops `macOSOnly` rows off macOS itself
+  (`behavior.textEditorHintSeen` and the other macOS-only hint flags). Hidden settings still enter search, so a
+  macOS-only feature's hidden flags take it too.
 
 ## OS-backed rows (a control whose value lives outside Cmdr)
 

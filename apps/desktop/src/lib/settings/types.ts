@@ -239,8 +239,9 @@ export interface SettingDefinition {
   /**
    * The setting renders only on macOS, so it joins the search index only there
    * (`settings-search.ts`); off macOS a hit would open a page with nothing to show
-   * for it. Same meaning as `SearchableRow.macOSOnly`. It decides nothing about
-   * rendering: the section gates its own markup.
+   * for it. Same meaning as `SearchableRow.macOSOnly`. Off macOS it also stays out of
+   * `buildSectionTree`, so a page whose every visible setting carries it leaves the
+   * sidebar. It decides nothing else about rendering: the section gates its own markup.
    */
   macOSOnly?: true
   /**

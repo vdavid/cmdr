@@ -381,7 +381,11 @@ for (const mode of ['light', 'dark'] as const) {
 
         const allViolations: { section: string; violations: AxeViolation[] }[] = []
 
-        for (const section of sections) {
+        // Image indexing is macOS-only: off macOS its page leaves the sidebar (#943).
+        const sectionsHere =
+          process.platform === 'darwin' ? sections : sections.filter((s) => s.sectionId !== 'indexing-image-indexing')
+
+        for (const section of sectionsHere) {
           // Click sidebar to navigate to the section
           await settings.evaluate(`(function() {
               var items = document.querySelectorAll('.section-item');

@@ -80,7 +80,7 @@ Pattern: `target_os = "macos"|"linux"`, `cfg(unix)`, `not(unix)`, `std::os::unix
    the production backend off macOS. The fake derives OCR text, a tag, and an 8-float embedding from the file stem
    (`backend/fake.rs`). Media indexing is off by default, but a Linux user who turns it on gets invented OCR/tags
    written to their real `media.db`. Worth verifying; the fix (an "unavailable" backend that reports the feature off) is
-   the same thing Windows needs (T13).
+   the same thing Windows needs (T13). Fixed in #943: off macOS the scheduler doesn't start.
 
 ## Per-crate inventory
 

@@ -117,6 +117,7 @@ async function openSettings(tauriPage: TauriPage): Promise<TauriPage> {
 }
 
 test.describe('Image-index importance slider', () => {
+  test.skip(process.platform !== 'darwin', 'Image indexing is macOS-only: off macOS the settings page is gone (#943).')
   test('persists a new level and updates its preview label', async ({ tauriPage }) => {
     const main = tauriPage as TauriPage
     const settings = await openSettings(main)

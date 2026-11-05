@@ -1,5 +1,4 @@
-//! A deterministic, zero-FFI [`VisionBackend`] for tests and for the pipeline on
-//! platforms without Vision.
+//! A deterministic, zero-FFI [`VisionBackend`] for tests.
 //!
 //! It never touches the ANE, the filesystem, or `objc2`: every output (OCR text,
 //! tags, feature-print embedding) is either scripted per path or derived
@@ -48,11 +47,7 @@ impl FakeVisionBackend {
     }
 }
 
-/// The scripting surface: what a test tells the fake to return. `cfg(test)`, not
-/// the module's wider gate, because off macOS this fake is PRODUCTION's backend and
-/// nothing there scripts it — under `#[deny(unused)]` an ungated builder is a hard
-/// error on the Linux build.
-#[cfg(test)]
+/// The scripting surface: what a test tells the fake to return.
 impl FakeVisionBackend {
     /// Script the exact OCR text for a path.
     pub fn with_text(mut self, path: impl Into<String>, text: impl Into<String>) -> Self {

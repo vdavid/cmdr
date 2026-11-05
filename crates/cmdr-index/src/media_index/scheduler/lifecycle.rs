@@ -10,10 +10,6 @@
 use std::time::Duration;
 
 use crate::IndexVolumeKind;
-// The fake backend is production's fallback only off-macOS (macOS uses real Vision);
-// tests import it themselves.
-#[cfg(not(target_os = "macos"))]
-use crate::media_index::backend::fake::FakeVisionBackend;
 
 use super::{
     BackendFactory, BeginOutcome, ConservativeFetchPolicy, FinishOutcome, MediaScheduler, PauseReason, VisionBackend,
@@ -191,6 +187,46 @@ pub(super) fn kick_ready_passes_from(scheduler: &Arc<MediaScheduler>, ready: Vec
 /// Build and wire the scheduler, behind [`MediaScheduler::start`], which carries the
 /// contract this fulfils.
 pub(super) fn start() -> Option<Arc<MediaScheduler>> {
+    start_with(platform_backends)
+}
+
+/// The production inference backends on this platform: the representative backend
+/// (worker 0) and a factory that builds INDEPENDENT extra backends for parallel workers
+/// 1..N (plan M2). Each real `VisionOcrBackend` owns its own 8 MB-stack Vision thread, so
+/// N workers run N concurrent inference streams.
+///
+/// `None` where no on-device engine exists (Linux, Windows): Vision and CLIP's Core ML
+/// towers are macOS frameworks, so image enrichment is unavailable there and the
+/// scheduler doesn't start. ❌ Never fall back to `FakeVisionBackend`: it derives OCR
+/// text and tags from file names, and as production's backend it filled the real
+/// `media.db` with invented data (#943). Tests inject their own fake via
+/// `MediaScheduler::new`, never through `start`.
+fn platform_backends() -> Option<(Arc<dyn VisionBackend>, BackendFactory)> {
+    #[cfg(target_os = "macos")]
+    {
+        use crate::media_index::backend::vision::VisionOcrBackend;
+        Some((
+            Arc::new(VisionOcrBackend::new()),
+            Arc::new(|| Arc::new(VisionOcrBackend::new()) as Arc<dyn VisionBackend>),
+        ))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        None
+    }
+}
+
+/// [`start`] over an injectable backend selector, so a test can pin the unavailable
+/// platform's path on any host. Availability is decided FIRST: an unavailable platform
+/// registers no watchdog hook, subscribes to nothing, and holds no scheduler.
+fn start_with(
+    backends: impl FnOnce() -> Option<(Arc<dyn VisionBackend>, BackendFactory)>,
+) -> Option<Arc<MediaScheduler>> {
+    let Some((backend, factory)) = backends() else {
+        log::info!(target: "media_index", "media scheduler not started: no on-device image engine on this platform");
+        return None;
+    };
+
     // Every policy value the scheduler runs on was applied when the app called
     // `host::config::set_config`; nothing here reads a settings file.
     let data_dir = match crate::indexing::host::config::data_dir() {
@@ -215,24 +251,6 @@ pub(super) fn start() -> Option<Arc<MediaScheduler>> {
         crate::media_index::vector::cache::clear_all();
     }));
 
-    // Production selects the REAL Vision OCR backend on macOS; other platforms (where
-    // Vision doesn't exist) fall back to the deterministic fake so the crate still
-    // builds and the scheduler still runs. Tests inject their own fake directly via
-    // `MediaScheduler::new`, never through `start`.
-    // The representative backend (worker 0) AND a factory that builds INDEPENDENT extra
-    // backends for parallel workers 1..N (plan M2): each real `VisionOcrBackend` owns its
-    // own 8 MB-stack Vision thread, so N workers actually run N concurrent inference
-    // streams. Off macOS both are the fake.
-    #[cfg(target_os = "macos")]
-    let (backend, factory): (Arc<dyn VisionBackend>, BackendFactory) = (
-        Arc::new(crate::media_index::backend::vision::VisionOcrBackend::new()),
-        Arc::new(|| Arc::new(crate::media_index::backend::vision::VisionOcrBackend::new()) as Arc<dyn VisionBackend>),
-    );
-    #[cfg(not(target_os = "macos"))]
-    let (backend, factory): (Arc<dyn VisionBackend>, BackendFactory) = (
-        Arc::new(FakeVisionBackend::new()),
-        Arc::new(|| Arc::new(FakeVisionBackend::new()) as Arc<dyn VisionBackend>),
-    );
     log::info!(target: "media_index", "media enrichment scheduler starting");
     let events = crate::indexing::host::events::current();
     let scheduler = Arc::new(MediaScheduler::new_with_events(data_dir, backend, factory, events));
@@ -545,6 +563,22 @@ fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String, kind: PassKind)
 mod tests {
     use super::*;
     use crate::media_index::network::enrich::PauseReason;
+
+    /// Regression anchor for #943: off macOS the scheduler used to run on the test fake,
+    /// writing OCR text and tags derived from file names into the real `media.db`. With no
+    /// on-device engine there's no scheduler at all, decided before anything is wired.
+    #[test]
+    fn a_platform_without_an_inference_engine_starts_no_scheduler() {
+        assert!(start_with(|| None).is_none());
+    }
+
+    /// Runs in the Linux lane: the real selector, so a fake slipping back in as the
+    /// off-macOS production backend fails here.
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn off_macos_the_platform_has_no_inference_engine() {
+        assert!(platform_backends().is_none());
+    }
 
     /// A config with one always-index folder, for the coverage-gate tests.
     fn config_with_folder(folder: &str) -> network::config::NetworkEnrichConfig {

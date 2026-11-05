@@ -25,6 +25,7 @@ import type {
 } from './types'
 import { SettingValidationError } from './types'
 import { tString } from '#lib/intl/messages.svelte.js'
+import { isMacOS } from '#lib/shortcuts/key-capture.js'
 import { appearanceSettings } from './definitions/appearance'
 import { behaviorSettings } from './definitions/behavior'
 import { indexingSettings } from './definitions/indexing'
@@ -282,8 +283,13 @@ export interface SettingsSection {
  * is action rows (`Servers (SFTP, WebDAV)`), which no setting would otherwise
  * put in the sidebar. So `section.settings` stays controls only, and a row still
  * never decides what renders.
+ *
+ * Off macOS a `macOSOnly` setting renders nowhere, so it neither lands in a node nor
+ * creates one: a page whose every visible setting is macOS-only (Image indexing) leaves
+ * the sidebar there.
  */
 export function buildSectionTree(): SettingsSection[] {
+  const onMacOS = isMacOS()
   const root: SettingsSection[] = []
   const sectionMap = new Map<string, SettingsSection>()
 
@@ -329,6 +335,7 @@ export function buildSectionTree(): SettingsSection[] {
     // Internal-only settings (e.g. `network.firstTriggerDone`) are not nav rows,
     // and don't create one either.
     if (setting.hidden) continue
+    if (!onMacOS && setting.macOSOnly === true) continue
     ensureSection(setting.section).settings.push(setting)
   }
 

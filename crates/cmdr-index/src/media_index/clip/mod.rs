@@ -27,9 +27,10 @@
 //! The conversion that produces the shipped `.mlpackage` towers is an out-of-tree dev
 //! script (`apps/desktop/scripts/convert-clip-model/`), never run by CI/pnpm.
 
-// Not `cfg(test)`: the fake text encoder here is what `backend::fake` uses, and
-// off macOS that fake IS the production backend.
-#[cfg(any(test, not(target_os = "macos")))]
+// Test-only: the fakes' shared embedding space. Off macOS CLIP is unavailable
+// (`encode_text_query` answers `NotAvailable` and no image tower exists), so nothing
+// in production encodes through here.
+#[cfg(test)]
 pub(crate) mod backend;
 pub mod install;
 #[cfg(target_os = "macos")]

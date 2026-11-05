@@ -121,7 +121,8 @@ Settled:
 - **Linux: image indexing writes invented data.** Off macOS the production media backend is `FakeVisionBackend`
   (`crates/cmdr-index/src/media_index/scheduler/lifecycle.rs:231`), and the setting isn't hidden
   (`apps/desktop/src/lib/settings/definitions/indexing.ts:91`), so turning it on fills `media.db` with OCR text and tags
-  derived from file names. Task 1 fixes it ([#943](https://github.com/vdavid/cmdr/issues/943)).
+  derived from file names. Fixed in [#943](https://github.com/vdavid/cmdr/issues/943) (task 1): off macOS the scheduler
+  doesn't start, and the Image indexing settings page is gone.
 - **Linux: dialog backdrops leave a 29px strip live** at the top (`--titlebar-height` is unconditional, the title bar
   renders only on macOS). Task 24.
 - **Off macOS, `Ctrl+D` is bound twice**, so favorites never fires in the file list. Task 26.
@@ -139,8 +140,9 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 
 ### Phase 0: quick fixes
 
-1. [XS] Win. Media ML off macOS reports "unavailable": an explicit unavailable `VisionBackend` and CLIP backend, the
-   scheduler doesn't run, the image-indexing settings hide via a capability. Fixes the Linux fake-data bug.
+1. [XS] Win. **Done** ([#943](https://github.com/vdavid/cmdr/issues/943)). Media ML off macOS is unavailable: no backend
+   (`platform_backends` answers `None`), so the scheduler doesn't start, and the image-indexing settings are
+   `macOSOnly`, which drops their page from the sidebar. Task 25's capability set can take over that flag later.
 2. [XS] Win. Small fixes: `macOsLabel` prefixing non-mac OS names, the MCP instructions' "for macOS", `'Cascadia Mono'`
    before `Consolas` in `--font-mono`.
 

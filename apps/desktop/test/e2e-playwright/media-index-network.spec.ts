@@ -49,6 +49,7 @@ async function runAllSteps(steps: { what: string; run: () => Promise<unknown> }[
 }
 
 test.describe('Media index — network volume opt-in', () => {
+  test.skip(process.platform !== 'darwin', 'Image indexing is macOS-only: off macOS the settings page is gone (#943).')
   test.beforeEach(async ({ tauriPage }) => {
     await initMcpClient(tauriPage)
     // Establish the preconditions rather than inheriting them. Both tests assume

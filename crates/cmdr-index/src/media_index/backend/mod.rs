@@ -5,8 +5,10 @@
 //! - `vision::VisionOcrBackend` (macOS): real OCR via `VNRecognizeTextRequest` over
 //!   a downscaled in-memory ImageIO decode, on a dedicated 8 MB-stack OS thread inside
 //!   `objc2::rc::autoreleasepool` — production selects it in `scheduler::start`.
-//! - `fake::FakeVisionBackend`: deterministic, zero-FFI, injected by every test (and
-//!   the production fallback off-macOS, where Vision doesn't exist).
+//! - `fake::FakeVisionBackend`: deterministic, zero-FFI, injected by every test.
+//!
+//! Off macOS there is no backend at all: image enrichment is unavailable and the
+//! scheduler doesn't start (`scheduler/lifecycle.rs::platform_backends`).
 //!
 //! Nothing above the seam knows which backend it holds.
 //!
@@ -19,9 +21,9 @@
 //! embeddings and face detect/embed become sibling methods as those
 //! milestones land.
 
-// Not `cfg(test)`: off macOS this IS the production backend (there's no Vision
-// framework to fall back from), and `scheduler/lifecycle.rs` selects it there.
-#[cfg(any(test, not(target_os = "macos")))]
+// Test-only on every platform: as production's off-macOS backend it wrote invented
+// OCR text and tags into the real `media.db` (#943).
+#[cfg(test)]
 pub(crate) mod fake;
 
 #[cfg(target_os = "macos")]

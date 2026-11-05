@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { _setSystemLocalesForTests } from '#lib/intl/os-locales.js'
 import {
   settingsRegistry,
@@ -11,6 +11,17 @@ import {
 } from './settings-registry'
 import { searchSettings, clearSearchIndex } from './settings-search'
 import { tString } from '#lib/intl/messages.svelte.js'
+
+/**
+ * On a Mac by default, so the tree under test holds every setting, `macOSOnly` ones too
+ * (`isMacOS()` reads false under jsdom). Tests that need another platform say so.
+ */
+const isMacOS = vi.hoisted(() => vi.fn(() => true))
+
+vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
+  isMacOS: () => isMacOS(),
+}))
 
 describe('settingsRegistry', () => {
   it('should have at least one setting defined', () => {
@@ -338,6 +349,30 @@ describe('appearance.showFunctionKeyBar', () => {
 })
 
 describe('buildSectionTree', () => {
+  afterEach(() => isMacOS.mockReturnValue(true))
+
+  function indexingPages(): string[] {
+    const indexing = buildSectionTree().find((s) => s.name === 'Indexing')
+    return indexing?.subsections.map((s) => s.name) ?? []
+  }
+
+  it('lists the Image indexing page on macOS', () => {
+    expect(indexingPages()).toEqual(['Drive indexing', 'Image indexing'])
+  })
+
+  // #943: off macOS there's no on-device image engine, so the backend starts no
+  // scheduler and the page has nothing it can honestly offer.
+  it('drops the Image indexing page off macOS, keeping Drive indexing', () => {
+    isMacOS.mockReturnValue(false)
+    expect(indexingPages()).toEqual(['Drive indexing'])
+  })
+
+  it('keeps every image-indexing setting macOS-only, so search agrees with the sidebar', () => {
+    const imageIndexing = settingsRegistry.filter((s) => s.section[1] === 'Image indexing')
+    expect(imageIndexing.length).toBeGreaterThan(0)
+    for (const s of imageIndexing) expect(s.macOSOnly, s.id).toBe(true)
+  })
+
   it('should build a tree from settings', () => {
     const tree = buildSectionTree()
     expect(Array.isArray(tree)).toBe(true)
