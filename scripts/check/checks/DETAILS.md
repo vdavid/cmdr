@@ -1636,12 +1636,14 @@ them, transitively. A `cmdr-webdav` change then runs `cmdr-webdav`, the app, and
   not compile.
 - **A narrowed run writes no cache entry** (`planCache`, through `RustTestScopeNarrowed` in `common.go`): its passes
   covered fewer crates than the fingerprint says, and a later full run would cache-hit on a partial green.
+- **In CI**: the three Rust lanes set it on pull requests only, through `.github/actions/rust-test-scope` (base: the
+  merge commit's first parent; `docs/tooling/ci.md` § "Rust test scope in the Rust lanes").
 
 The safety valves (`scopeAll`): the workspace and member manifests (features unify across the whole workspace build, so
 one crate's feature edit can change another's behavior), `Cargo.lock`, `rust-toolchain.toml`, `.mise.toml`,
-`.config/nextest.toml`, `vendor/**`, the five fixture-server dirs, `ci.yml`, `macos-lane.yml`, `.github/actions/**`, and
-the runner itself (`scripts/check/**`, `scripts/check.sh`). Any unknown path is a valve by default, and so is any error
-computing the scope.
+`.config/nextest.toml`, `vendor/**`, the five fixture-server dirs, `ci.yml`, the three Rust lane files, the composite
+actions they use, and the runner itself (`scripts/check/**`, `scripts/check.sh`). Any unknown path is a valve by
+default, and so is any error computing the scope.
 
 Decision: an out-of-crate input is a `scopeReaders` rule naming its reader, not a valve. Why: the frontend's message
 catalogs, `CHANGELOG.md`, and the shared case tables change in most feature PRs, and only `cmdr` (or
@@ -1657,11 +1659,11 @@ What keeps the rule table honest (`rust-test-scope_test.go`):
   2026-11-05: dropping or misnaming any reader rule fails it.
 - `TestNoUnseenManifestDirHops` covers the scan's blind spot, a path climbed to with `.parent()` / `.ancestors()` /
   `.pop();` from `CARGO_MANIFEST_DIR`: each such file is listed in `rustScopeHopFiles` with why its read needs no rule.
-- `TestEveryRustFilterPathIsClassified`: every include path of ci.yml's `rust` filter (which decides whether the Rust
-  lanes run at all) has a rule.
-- `TestRustScopeInputsAreInTheRustFilter`: the reverse. Every rule that tests something is in the `rust` filter, or a
-  change to it alone runs no Rust lane. The gaps that predate the scope are listed exactly in `rustFilterGaps`, and the
-  test fails when one closes, so the entry goes.
+- `TestEveryRustFilterPathIsClassified`: every include path of ci.yml's Rust lane filters (`rust`, `rust-fixtures`,
+  `rust-macos`, anchors expanded; they decide whether the Rust lanes run at all) has a rule.
+- `TestRustScopeInputsAreInTheRustFilter`: the reverse. Every rule that tests something is in one of those filters, or a
+  change to it alone runs no Rust lane. A known gap would sit in `rustFilterGaps` (empty: every gap the scope found is
+  closed), and the test fails when one closes, so the entry goes.
 - `TestEveryRustScopeRuleIsReachable` (no rule shadowed by an earlier one), `TestEveryWorkspaceMemberIsOwned` (every
   member's tree has an owner rule), and `TestRustScopeReadersAreWorkspaceMembers`.
 

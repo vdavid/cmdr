@@ -23,6 +23,12 @@ inputs:
   phase:
     description: '`restore` or `save`'
     required: true
+  node-modules:
+    description: >-
+      Whether to restore `node_modules` (`true` or `false`): off on the self-hosted runner, whose warm pnpm store
+      installs it faster, and for a job that runs no Node check
+    required: false
+    default: 'true'
   go:
     description: Whether to restore or save the Go checks' caches too (`true` or `false`)
     required: false
@@ -72,7 +78,7 @@ runs:
 
     - name: Restore node_modules
       id: node-modules
-      if: inputs.phase == 'restore'
+      if: inputs.phase == 'restore' && inputs.node-modules == 'true'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |

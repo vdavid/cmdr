@@ -34,13 +34,13 @@ concurrency:
 # Named so it doesn't start with `RUST` or `CARGO`: rust-cache hashes env vars with those
 # prefixes into its key. The lane files restate it (a called workflow doesn't inherit `env`).
 #
-# `LIGHT_LANE_RUNNER` is the light lane's runner, the one switch that moves it to the
-# self-hosted `cmdr-light` runner. A fork PR never gets it, whatever this says: the `changes`
-# job's runner step hands a fork PR `ubuntu-latest` (a self-hosted runner must never run code
-# from outside the repo).
+# `LIGHT_LANE_RUNNER` is the light lane's runner, the one switch between the self-hosted
+# `cmdr-light` runner (on David's Hetzner box) and `ubuntu-latest`. Only trusted runs get it,
+# whatever this says: the `changes` job's runner step hands everything else `ubuntu-latest` (a
+# self-hosted runner keeps state between jobs, so it must never run code from outside the repo).
 env:
   SAVE_RUST_CACHE: ${{ github.ref == 'refs/heads/main' }}
-  LIGHT_LANE_RUNNER: ubuntu-latest
+  LIGHT_LANE_RUNNER: cmdr-light
 
 jobs:
   # ===========================================
@@ -62,6 +62,7 @@ jobs:
       contents: read # check out the code
       checks: read # look up this commit's `CI OK` from its PR run
       pull-requests: read # find the PR a GitHub merge commit came from
+      actions: read # list the lane markers (`lane-markers plan`)
     # A landed commit already passed every lane on its PR. `pnpm land` either fast-forwards (same
     # SHA, so its PR run's green `CI OK` is on it) or has GitHub merge a green PR into a moved
     # `main` (a new merge commit; the PR's head carries the green `CI OK`). Either way the push sets
@@ -94,6 +95,11 @@ jobs:
       website-changed: ${{ steps.filter.outputs.website }}
       playwright-image: ${{ steps.playwright-image.outputs.image }}
       light-runner: ${{ steps.light-runner.outputs.runner }}
+      # Per lane `{hash, key, verified, ref}`: a lane whose exact inputs already passed in a trusted
+      # run skips on `verified`, and saves its marker under `key` when it passes
+      # (`scripts/lane-markers/DETAILS.md`). Not gated on `steps.verified`: a verified run's lane
+      # outputs already read `false`, and the lanes' `if:` reads both.
+      lanes: ${{ steps.lanes.outputs.lanes }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -209,23 +215,30 @@ jobs:
             echo "The PR changes the tree ($base_tree to $head_tree), so hygiene runs."
           fi
 
-      # The light lane's runner: `LIGHT_LANE_RUNNER` (top of file), except on a PR from a fork,
-      # which always gets `ubuntu-latest`. A self-hosted runner keeps state between jobs and sits
-      # on our own network, so code from outside the repo must never reach it. Pushes and
-      # dispatches come from the repo itself.
+      # The light lane's runner: `LIGHT_LANE_RUNNER` (top of file) for trusted runs only, and
+      # `ubuntu-latest` for everything else. A self-hosted runner keeps state between jobs (its
+      # tool caches), so code from outside the repo must never reach it. An allowlist, so a new
+      # trigger (`pull_request_target`, `merge_group`, ...) lands on `ubuntu-latest` by default:
+      # - a push (only `main`) or a dispatch: the repo's own branches, which only collaborators write;
+      # - a pull request whose head is in this repo and whose author isn't a bot (Renovate and
+      #   Dependabot PRs bring third-party code a test run executes).
+      # This keeps OUR workflow from routing a fork's code there; a fork that edits this file is
+      # stopped by the repo's approval rule for every outside contributor's run
+      # (`docs/tooling/ci.md` § The light lane).
       - name: Pick the light lane's runner
         id: light-runner
         env:
           WANT: ${{ env.LIGHT_LANE_RUNNER }}
-          FROM_REPO:
-            ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-            github.repository }}
+          TRUSTED:
+            ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name ==
+            'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
+            github.event.pull_request.user.type != 'Bot') }}
         run: |
-          if [[ "$FROM_REPO" == true ]]; then
+          if [[ "$TRUSTED" == true ]]; then
             runner="$WANT"
           else
             runner=ubuntu-latest
-            echo "A fork PR, so the light lane runs on ubuntu-latest."
+            echo "Not a trusted run (a fork or bot PR, or another trigger), so the light lane runs on ubuntu-latest."
           fi
           echo "runner=$runner" >>"$GITHUB_OUTPUT"
           echo "Light lane runner: $runner"
@@ -308,6 +321,9 @@ jobs:
               - '!scripts/check/**/*_test.go'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
+              # The composite actions all three Rust lane files use.
+              - '.github/actions/lane-marker/**'
+              - '.github/actions/rust-test-scope/**'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
             rust:
@@ -333,7 +349,9 @@ jobs:
               - 'apps/desktop/finder-extension/**'
               - 'scripts/check/checks/desktop-finder-extension-compile.go'
               - '.github/workflows/macos-lane.yml'
+              - '.github/actions/lane-marker/**'
               - '.github/actions/pinned-rust-toolchain/**'
+              - '.github/actions/rust-test-scope/**'
               - '.mise.toml'
               - '.github/workflows/ci.yml'
               - '!**/CLAUDE.md'
@@ -358,6 +376,8 @@ jobs:
               - '.mise.toml'
               - '.github/workflows/ci.yml'
               - '.github/workflows/svelte-lane.yml'
+              - '.github/actions/lane-marker/**'
+              - '.github/actions/pnpm-store/**'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
             desktop:
@@ -374,6 +394,7 @@ jobs:
               - '.mise.toml'
               - '.github/workflows/ci.yml'
               - '.github/workflows/e2e-linux-lane.yml'
+              - '.github/actions/lane-marker/**'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
             website:
@@ -387,6 +408,8 @@ jobs:
               - '.github/workflows/ci.yml'
               - '.github/workflows/website-lane.yml'
               - '.github/actions/build-website-demo/**'
+              - '.github/actions/lane-marker/**'
+              - '.github/actions/pnpm-store/**'
               - '.github/actions/pinned-rust-toolchain/**'
               - '.github/actions/wasm-toolchain/**'
               # The browser demo the site publishes at /demo/ (`website-demo` builds it), so a
@@ -577,6 +600,30 @@ jobs:
               - 'scripts/check/checks/webdav_ports.go'
               - '.mise.toml'
 
+      # Only Go: the plan step is the one tool this job runs.
+      - name: Install Go
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install_args: go
+
+      # Every lane's input hash, and whether a trusted run already passed exactly those inputs
+      # (`scripts/lane-markers/DETAILS.md`). Every event, since the lanes' `if:` reads this output;
+      # only a pull request trusts markers, so a push, a dispatch, and `run_all` plan "run" for
+      # every lane and still hand each its key to save. A failed marker lookup warns and verifies
+      # nothing.
+      - name: Plan the lanes from their markers
+        id: lanes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REPO: ${{ github.repository }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          RUN_ALL: ${{ inputs.run_all == true }}
+        run: >-
+          go -C scripts/lane-markers run . plan -event "$EVENT" -ref "$REF" -repo "$REPO" -head-repo "$HEAD_REPO"
+          -run-all="$RUN_ALL"
+
       # The Website job runs inside this image. Its visual baselines
       # (`apps/website/e2e/visual.spec.ts`) are pixel comparisons, so the renderer that verifies
       # them has to be the renderer that shot them, and
@@ -620,8 +667,12 @@ jobs:
   desktop-rust:
     name: Desktop (Rust)
     needs: changes
-    if: inputs.run_all || needs.changes.outputs.rust == 'true'
+    if: >-
+      inputs.run_all || (needs.changes.outputs.rust == 'true' &&
+      !fromJSON(needs.changes.outputs.lanes)['desktop-rust'].verified)
     uses: ./.github/workflows/rust-lane.yml
+    with:
+      marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['desktop-rust'].key }}
 
   # The fixture lanes (SMB, SFTP, WebDAV, S3, and NFS containers, plus a real Nextcloud) in their
   # own lane, so their ~10 min of container bring-up runs alongside `desktop-rust` instead of
@@ -629,8 +680,12 @@ jobs:
   desktop-rust-fixtures:
     name: Desktop (Rust, fixtures)
     needs: changes
-    if: inputs.run_all || needs.changes.outputs.rust-fixtures == 'true'
+    if: >-
+      inputs.run_all || (needs.changes.outputs.rust-fixtures == 'true' &&
+      !fromJSON(needs.changes.outputs.lanes)['desktop-rust-fixtures'].verified)
     uses: ./.github/workflows/rust-fixtures-lane.yml
+    with:
+      marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['desktop-rust-fixtures'].key }}
 
   # Cmdr ships on macOS, but every other lane runs on ubuntu, so the code under
   # `cfg(target_os = "macos")` (FSEvents, AppKit, DiskArbitration, File Provider, TCC, the
@@ -663,21 +718,28 @@ jobs:
   desktop-rust-macos:
     name: Desktop (Rust, macOS)
     needs: changes
-    if: inputs.run_all || needs.changes.outputs.rust-macos == 'true'
+    if: >-
+      inputs.run_all || (needs.changes.outputs.rust-macos == 'true' &&
+      !fromJSON(needs.changes.outputs.lanes)['desktop-rust-macos'].verified)
     concurrency:
       group: macos-lane-${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main' || github.run_id }}
       cancel-in-progress: false
     uses: ./.github/workflows/macos-lane.yml
     with:
       compile-finder-extension: ${{ inputs.run_all || needs.changes.outputs.finder-extension == 'true' }}
+      marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['desktop-rust-macos'].key }}
 
   # The desktop frontend: the Svelte checks, i18n, and Vitest, plus the type-aware ESLint passes
   # in a parallel job.
   desktop-svelte:
     name: Desktop (Svelte)
     needs: changes
-    if: inputs.run_all || needs.changes.outputs.svelte == 'true'
+    if: >-
+      inputs.run_all || (needs.changes.outputs.svelte == 'true' &&
+      !fromJSON(needs.changes.outputs.lanes)['desktop-svelte'].verified)
     uses: ./.github/workflows/svelte-lane.yml
+    with:
+      marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['desktop-svelte'].key }}
 
   # The E2E lane's Docker base image (apt packages, Node, Rust: `Dockerfile.base`) lives in
   # GitHub's container registry, tagged by the hash of `Dockerfile.base`. This job builds and
@@ -695,7 +757,11 @@ jobs:
     # ~5 min to build on healthy apt mirrors; slow ones have stretched it past 30.
     timeout-minutes: 60
     needs: changes
-    if: inputs.run_all || needs.changes.outputs.desktop == 'true'
+    # Follows its lane's marker verdict (and saves none): it builds only for the lane it feeds,
+    # and the lane's hash already covers it (`scripts/lane-markers/DETAILS.md` § Wiring).
+    if: >-
+      inputs.run_all || (needs.changes.outputs.desktop == 'true' &&
+      !fromJSON(needs.changes.outputs.lanes)['desktop-e2e-linux'].verified)
     permissions:
       contents: read # check out the code
       packages: write # push the image when the registry lacks it
@@ -723,21 +789,28 @@ jobs:
   desktop-e2e-linux:
     name: E2E tests (Playwright, Linux)
     needs: [changes, e2e-base-image]
-    if: inputs.run_all || needs.changes.outputs.desktop == 'true'
+    if: >-
+      inputs.run_all || (needs.changes.outputs.desktop == 'true' &&
+      !fromJSON(needs.changes.outputs.lanes)['desktop-e2e-linux'].verified)
     permissions:
       contents: read # check out the code
       packages: read # pull the E2E base image
     uses: ./.github/workflows/e2e-linux-lane.yml
+    with:
+      marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['desktop-e2e-linux'].key }}
 
   # The browser demo build, then the site's checks, E2E, and Lighthouse inside the pinned
   # Playwright image (`changes` resolves it, since `container:` can't read a step output).
   website:
     name: Website
     needs: changes
-    if: inputs.run_all || needs.changes.outputs.website == 'true'
+    if: >-
+      inputs.run_all || (needs.changes.outputs.website == 'true' &&
+      !fromJSON(needs.changes.outputs.lanes)['website'].verified)
     uses: ./.github/workflows/website-lane.yml
     with:
       playwright-image: ${{ needs.changes.outputs.playwright-image }}
+      marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['website'].key }}
     secrets:
       LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
@@ -1005,9 +1078,11 @@ jobs:
   # Keep the light lane's caches warm on main
   # ===========================================
   # The light lane saves its caches (`node_modules`, the check tool, the Go caches) from `main`
-  # only, and a verified `main` push skips it, so this job fills `main`'s entries for every PR to
-  # restore. Same shape as `warm-rust-cache`: post-land, exempt from `ci-ok` (`ciOKGateExempt`),
-  # skipped when the lane runs on this push (it saves the same keys). On exact hits it only looks
+  # only, from a hosted runner only, and a verified `main` push skips it, so this job fills
+  # `main`'s entries for every hosted run to restore: fork and bot PRs' light lane, the `nilaway`
+  # job, and the host-side pnpm store the Svelte lane and the deploys restore. Same shape as
+  # `warm-rust-cache`: post-land, exempt from `ci-ok` (`ciOKGateExempt`), skipped when the lane
+  # ran on a hosted runner on this push (it saved the same keys). On exact hits it only looks
   # (~30 s); on a miss it does what the lane would: installs, builds the check tool, and runs the
   # checks that `go install` their tools and fill the Go build cache. Same keys and paths as the
   # lane, through the same `light-cache` action.
@@ -1018,7 +1093,7 @@ jobs:
     needs: changes
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
-      needs.changes.outputs.verified == 'true'
+      (needs.changes.outputs.verified == 'true' || needs.changes.outputs.light-runner != 'ubuntu-latest')
     env:
       GOFLAGS: -count=1 # as in the lane, so the Go build cache it saves holds no test results
 
@@ -1039,6 +1114,25 @@ jobs:
           phase: restore
           go: 'true'
           scorecard: 'true'
+
+      - name: Restore the pnpm store
+        id: pnpm-store
+        uses: ./.github/actions/pnpm-store
+        with:
+          phase: restore
+
+      # The store from the lockfile alone, so it's whole even when `node_modules` hit and no
+      # install runs below.
+      - name: Fill the pnpm store
+        if: steps.pnpm-store.outputs.hit != 'true'
+        run: pnpm fetch
+
+      - name: Save the pnpm store
+        uses: ./.github/actions/pnpm-store
+        with:
+          phase: save
+          save: 'true'
+          hit: ${{ steps.pnpm-store.outputs.hit }}
 
       - name: Install dependencies
         if: steps.cache.outputs.node-modules-hit != 'true'
@@ -1097,6 +1191,7 @@ jobs:
       [
         desktop-rust,
         desktop-rust-macos,
+        desktop-svelte,
         desktop-e2e-linux,
         warm-e2e-linux-cache,
         warm-rust-cache,
@@ -1111,7 +1206,7 @@ jobs:
       actions: write # delete caches
 
     steps:
-      - name: Keep the most recently used main entry of each Rust, E2E, and light lane cache family
+      - name: Keep the most recently used main entry of each Rust, E2E, light lane, and pnpm store cache family
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -1121,7 +1216,7 @@ jobs:
             --json id,key --jq '.[] | "\(.id) \(.key)"' >caches.txt
           while read -r id key; do
             case "$key" in
-              v0-rust-* | *-docker-e2e-* | light-*) ;;
+              v0-rust-* | *-docker-e2e-* | light-* | pnpm-store-*) ;;
               *) continue ;;
             esac
             family=$(sed -E 's/(-[0-9a-f]{8,})+$//' <<<"$key")
@@ -1331,6 +1426,9 @@ jobs:
         light,
       ]
     if: always()
+    permissions:
+      contents: read # check out the code, compare commits
+      actions: read # list the lane markers (`lane-markers verify`)
     steps:
       - name: Check all jobs passed
         env:
@@ -1366,3 +1464,29 @@ jobs:
             exit 1
           fi
           echo "All jobs passed or were skipped by change detection"
+
+      # The check above passes any skipped lane. This one re-proves every skip of a lane whose
+      # filter was on: it must be a marker skip the plan made, with the key this job recomputes
+      # from its own checkout, and that marker must still sit in a trusted scope, listed again
+      # here. Anything else (a wiring slip, a skipped prerequisite, a plan that lied) is red.
+      # `scripts/lane-markers/DETAILS.md` § Trust argument.
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install Go
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install_args: go
+
+      - name: Prove every lane skip
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REPO: ${{ github.repository }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          RUN_ALL: ${{ inputs.run_all == true }}
+        run: >-
+          go -C scripts/lane-markers run . verify -needs "$NEEDS" -event "$EVENT" -ref "$REF" -repo "$REPO" -head-repo
+          "$HEAD_REPO" -run-all="$RUN_ALL"
