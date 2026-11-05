@@ -793,9 +793,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "Это примерная стоимость по базовым тарифам. Из-за кэширования у вашего поставщика реальная стоимость обычно ниже.",
+  "askCmdr.spendPause.estimateNote": "Это примерная стоимость по базовым тарифам. Токены из кэша учтены по сниженной цене.",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "Продолжить",
   "@askCmdr.spendPause.keepGoing": {
@@ -1033,6 +1033,10 @@
   "@askCmdr.cost.tokens": {
     "sourceHash": "6718764"
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {токен} few {токена} many {токенов} other {токена}}, в том числе из кэша: {cachedText}",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "бесплатно, на устройстве",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1045,9 +1049,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "Сумма указана в USD и не учитывает кэширование у вашего поставщика. Реальный счет, скорее всего, составит лишь долю этой суммы, потому что общий контекст наших вызовов кэшируется.",
+  "askCmdr.cost.estimateTooltip": "Это примерная стоимость в USD по базовым тарифам вашего поставщика. Токены из кэша учтены по сниженной цене.",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "стоимость неизвестна",
   "@askCmdr.cost.unknown": {

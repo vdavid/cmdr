@@ -792,9 +792,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "这是按标价估算的金额。提供方那边的缓存通常会让实际费用更低。",
+  "askCmdr.spendPause.estimateNote": "这是按标价估算的金额，缓存的 token 按较低的价格计算。",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "继续",
   "@askCmdr.spendPause.keepGoing": {
@@ -1032,6 +1032,10 @@
   "@askCmdr.cost.tokens": {
     "sourceHash": "6718764"
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, other {个 token}}，其中 {cachedText} 个来自缓存",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "免费，本地运行",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1044,9 +1048,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "金额以 USD 计，且没有算上你的提供方那边的缓存。你实际的账单很可能只是这个数的一小部分，因为我们各次调用之间共享的上下文会被缓存。",
+  "askCmdr.cost.estimateTooltip": "这是按你的提供方的标价估算的 USD 金额，缓存的 token 按较低的价格计算。",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "费用未知",
   "@askCmdr.cost.unknown": {

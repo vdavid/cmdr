@@ -793,9 +793,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "Це орієнтовна вартість за публічними цінами. Завдяки кешуванню у вашого постачальника реальна вартість зазвичай нижча.",
+  "askCmdr.spendPause.estimateNote": "Це орієнтовна вартість за публічними цінами. Токени з кешу враховано за зниженим тарифом.",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "Продовжити",
   "@askCmdr.spendPause.keepGoing": {
@@ -1033,6 +1033,10 @@
   "@askCmdr.cost.tokens": {
     "sourceHash": "6718764"
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {токен} few {токени} many {токенів} other {токена}}, зокрема з кешу: {cachedText}",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "безкоштовно, на пристрої",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1045,9 +1049,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "Сума вказана в USD і не враховує кешування на боці вашого постачальника. Ваш реальний рахунок, імовірно, становить лише частку цієї суми, бо спільний для наших викликів контекст кешується.",
+  "askCmdr.cost.estimateTooltip": "Це орієнтовна вартість у USD за публічними цінами вашого постачальника. Токени з кешу враховано за зниженим тарифом.",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "вартість невідома",
   "@askCmdr.cost.unknown": {

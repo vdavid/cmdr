@@ -795,9 +795,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "Estimation au prix catalogue. Grâce à la mise en cache chez votre fournisseur, le coût réel est généralement plus bas.",
+  "askCmdr.spendPause.estimateNote": "Estimation au prix catalogue, les jetons en cache étant comptés à leur tarif réduit.",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "Continuer",
   "@askCmdr.spendPause.keepGoing": {
@@ -1035,6 +1035,10 @@
   "@askCmdr.cost.tokens": {
     "sourceHash": "6718764"
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {jeton} many {jetons} other {jetons}}, dont {cachedText} en cache",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "gratuit, en local",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1047,9 +1051,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "Le montant est en USD et ne tient pas compte de la mise en cache chez votre fournisseur. Votre facture réelle n’en représente sans doute qu’une fraction, car le contexte partagé entre nos appels est mis en cache.",
+  "askCmdr.cost.estimateTooltip": "Estimation en USD au prix catalogue de votre fournisseur, les jetons en cache étant comptés à leur tarif réduit.",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "coût inconnu",
   "@askCmdr.cost.unknown": {

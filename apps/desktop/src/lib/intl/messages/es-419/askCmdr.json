@@ -291,10 +291,6 @@
   "@askCmdr.limit.stalled": {
     "sourceHash": "e382c98"
   },
-  "askCmdr.spendPause.estimateNote": "Es una estimación con precios de lista. La caché de tu proveedor suele hacer que el costo real sea menor.",
-  "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "6e64f0a"
-  },
   "askCmdr.limit.fixed": "Es un límite fijo y no hay ninguna opción para cambiarlo. Si te estorba, <feedback>cuéntanoslo</feedback>.",
   "@askCmdr.limit.fixed": {
     "sourceHash": "77becec"

@@ -793,9 +793,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "Đây là ước tính theo giá niêm yết. Nhờ việc lưu vào bộ đệm ở phía nhà cung cấp, chi phí thực tế thường thấp hơn.",
+  "askCmdr.spendPause.estimateNote": "Đây là ước tính theo giá niêm yết, trong đó token lấy từ bộ đệm được tính theo mức giá thấp hơn.",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "Tiếp tục",
   "@askCmdr.spendPause.keepGoing": {
@@ -1034,6 +1034,10 @@
     "sourceHash": "6718764",
     "sameAsSourceJustification": "'token' is the established Vietnamese loanword for an LLM token, used across the rest of the catalog (askCmdr.context.tooltip, settings.ai.localContextSize.description, settings.askCmdr.spend.empty). Vietnamese has one CLDR category and no plural marking, so the single branch reads 'token'."
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, other {token}}, trong đó {cachedText} token lấy từ bộ đệm",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "miễn phí, cục bộ",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1046,9 +1050,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "Số tiền tính bằng USD và chưa tính đến việc lưu vào bộ đệm ở phía nhà cung cấp của bạn. Hóa đơn thực tế của bạn có lẽ chỉ bằng một phần nhỏ con số này, vì ngữ cảnh dùng chung giữa các lệnh gọi của Cmdr được lưu vào bộ đệm.",
+  "askCmdr.cost.estimateTooltip": "Đây là ước tính bằng USD theo giá niêm yết của nhà cung cấp của bạn, trong đó token lấy từ bộ đệm được tính theo mức giá thấp hơn.",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "chi phí không rõ",
   "@askCmdr.cost.unknown": {

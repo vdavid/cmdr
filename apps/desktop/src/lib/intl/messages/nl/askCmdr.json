@@ -794,9 +794,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "Een schatting op basis van lijstprijzen. Door het cachen bij je aanbieder vallen de echte kosten meestal lager uit.",
+  "askCmdr.spendPause.estimateNote": "Een schatting op basis van lijstprijzen, met tokens uit de cache tegen hun lagere tarief.",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "Ga door",
   "@askCmdr.spendPause.keepGoing": {
@@ -1039,6 +1039,10 @@
     "sourceHash": "6718764",
     "sameAsSourceJustification": "Dutch CLDR has the same one/other plural categories as English, and 'token(s)' is the settled kept AI loanword (glossary: token (AI) -> token, high) - so the whole ICU string is identical to the English source."
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {tokens}}, waarvan {cachedText} uit de cache",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "gratis, lokaal",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1051,9 +1055,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "Het bedrag is in USD en houdt geen rekening met het cachen bij je aanbieder. Je echte rekening is waarschijnlijk maar een fractie hiervan, omdat de context die onze aanroepen delen in de cache staat.",
+  "askCmdr.cost.estimateTooltip": "Een schatting in USD op basis van de lijstprijzen van je aanbieder, met tokens uit de cache tegen hun lagere tarief.",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "kosten onbekend",
   "@askCmdr.cost.unknown": {

@@ -793,9 +793,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "En uppskattning efter listpris. Med cachelagring hos din leverantör blir den verkliga kostnaden oftast lägre.",
+  "askCmdr.spendPause.estimateNote": "En uppskattning efter listpriser, där cachade tokens räknas till sitt lägre pris.",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "Fortsätt",
   "@askCmdr.spendPause.keepGoing": {
@@ -1034,6 +1034,10 @@
     "sourceHash": "6718764",
     "sameAsSourceJustification": "'token'/'tokens' kept as the shared Swedish tech loanword for LLM tokens; no attested native Swedish plural in the reference pile (too new a sense), and Swedish tech press consistently uses the bare English plural 'tokens'."
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {tokens}}, varav {cachedText} cachade",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "gratis, på enheten",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1047,9 +1051,9 @@
     "sourceHash": "4d8de57",
     "sameAsSourceJustification": "Swedish shares the preposition: “under” is the everyday word for below a price (under 10 kr), so the frame is correctly identical."
   },
-  "askCmdr.cost.estimateTooltip": "Beloppet är i USD och räknar inte med cachelagring hos din leverantör. Din faktiska faktura är troligen bara en bråkdel av det här, eftersom kontexten som våra anrop delar cachelagras.",
+  "askCmdr.cost.estimateTooltip": "En uppskattning i USD efter din leverantörs listpriser, där cachade tokens räknas till sitt lägre pris.",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "kostnad okänd",
   "@askCmdr.cost.unknown": {

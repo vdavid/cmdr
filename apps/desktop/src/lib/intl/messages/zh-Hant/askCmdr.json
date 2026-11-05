@@ -792,9 +792,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "這是依定價估算的金額。提供者那邊的快取通常會讓實際費用更低。",
+  "askCmdr.spendPause.estimateNote": "這是依定價估算的金額，快取的 token 以較低的價格計算。",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "繼續",
   "@askCmdr.spendPause.keepGoing": {
@@ -1032,6 +1032,10 @@
   "@askCmdr.cost.tokens": {
     "sourceHash": "6718764"
   },
+  "askCmdr.cost.tokensWithCache": "{countText} 個 {count, plural, other {token}}，其中 {cachedText} 個來自快取",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "免費，在裝置上跑",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1044,9 +1048,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "金額以 USD 計算，而且沒有算進你的提供者那邊的快取。你實際的帳單很可能只有這個數字的一小部分，因為我們每次呼叫之間共用的上下文會被快取。",
+  "askCmdr.cost.estimateTooltip": "這是依你的提供者定價估算的 USD 金額，快取的 token 以較低的價格計算。",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "費用未知",
   "@askCmdr.cost.unknown": {

@@ -793,9 +793,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "Es una estimación con precios de tarifa. La caché de tu proveedor suele hacer que el coste real sea menor.",
+  "askCmdr.spendPause.estimateNote": "Es una estimación según los precios de lista, con los tokens en caché calculados a su precio más bajo.",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "Continuar",
   "@askCmdr.spendPause.keepGoing": {
@@ -1037,6 +1037,10 @@
     "sourceHash": "6718764",
     "sameAsSourceJustification": "'token' is the established Spanish loanword for an LLM token, used across the rest of the catalog (askCmdr.context.tooltip, settings.ai.localContextSize.description, settings.askCmdr.spend.empty). Only the CLDR `many` category is new here; the words are the same in both numbers."
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} many {tokens} other {tokens}}, {cachedText} de ellos en caché",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "gratis, en el dispositivo",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1049,9 +1053,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "El importe está en USD y no tiene en cuenta la caché de tu proveedor. Lo más probable es que tu factura real sea una fracción de esto, porque el contexto que comparten nuestras llamadas se guarda en caché.",
+  "askCmdr.cost.estimateTooltip": "Es una estimación en USD según los precios de lista de tu proveedor, con los tokens en caché calculados a su precio más bajo.",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "coste desconocido",
   "@askCmdr.cost.unknown": {

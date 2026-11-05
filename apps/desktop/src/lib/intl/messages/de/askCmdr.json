@@ -793,9 +793,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "Eine Schätzung nach Listenpreisen. Durch das Zwischenspeichern bei deinem Anbieter sind die echten Kosten meist niedriger.",
+  "askCmdr.spendPause.estimateNote": "Eine Schätzung nach Listenpreisen. Zwischengespeicherte Tokens sind zu ihrem niedrigeren Preis eingerechnet.",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "Weitermachen",
   "@askCmdr.spendPause.keepGoing": {
@@ -1035,6 +1035,10 @@
   "@askCmdr.cost.tokens": {
     "sourceHash": "6718764"
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {Token} other {Tokens}}, davon {cachedText} zwischengespeichert",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "kostenlos, lokal",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1047,9 +1051,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "Der Betrag ist in USD und lässt das Zwischenspeichern bei deinem Anbieter außer Acht. Deine echte Rechnung ist wahrscheinlich nur ein Bruchteil davon, weil der Kontext, den unsere Aufrufe gemeinsam nutzen, zwischengespeichert wird.",
+  "askCmdr.cost.estimateTooltip": "Eine Schätzung in USD nach den Listenpreisen deines Anbieters. Zwischengespeicherte Tokens sind zu ihrem niedrigeren Preis eingerechnet.",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "Kosten unbekannt",
   "@askCmdr.cost.unknown": {

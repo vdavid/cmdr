@@ -793,9 +793,9 @@
   "@askCmdr.spendPause.question": {
     "sourceHash": "a59f9e2"
   },
-  "askCmdr.spendPause.estimateNote": "Listaárakkal számolt becslés. A szolgáltatódnál történő gyorsítótárazás miatt a valódi költség általában alacsonyabb.",
+  "askCmdr.spendPause.estimateNote": "Listaárakkal számolt becslés. A gyorsítótárazott tokenek alacsonyabb áron szerepelnek benne.",
   "@askCmdr.spendPause.estimateNote": {
-    "sourceHash": "0ca2362"
+    "sourceHash": "cc8b4d1"
   },
   "askCmdr.spendPause.keepGoing": "Folytatás",
   "@askCmdr.spendPause.keepGoing": {
@@ -1034,6 +1034,10 @@
     "sourceHash": "6718764",
     "sameAsSourceJustification": "'token' is the established Hungarian loanword for an LLM token, used across the rest of the catalog (askCmdr.context.tooltip, settings.ai.localContextSize.description, settings.askCmdr.spend.empty). Hungarian keeps the noun singular after a number, so both branches read 'token'."
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {token}}, ebből {cachedText} gyorsítótárazott",
+  "@askCmdr.cost.tokensWithCache": {
+    "sourceHash": "ec0bb4b"
+  },
   "askCmdr.cost.free": "ingyenes, az eszközön",
   "@askCmdr.cost.free": {
     "sourceHash": "f04f869"
@@ -1046,9 +1050,9 @@
   "@askCmdr.cost.underAmount": {
     "sourceHash": "4d8de57"
   },
-  "askCmdr.cost.estimateTooltip": "Az összeg USD-ben van, és nem számol a szolgáltatódnál történő gyorsítótárazással. A valódi számlád valószínűleg csak a töredéke ennek, mert a hívásaink közös kontextusa gyorsítótárba kerül.",
+  "askCmdr.cost.estimateTooltip": "A szolgáltatód listaárai alapján számolt becslés USD-ben. A gyorsítótárazott tokenek alacsonyabb áron szerepelnek benne.",
   "@askCmdr.cost.estimateTooltip": {
-    "sourceHash": "200cd80"
+    "sourceHash": "d2b6d84"
   },
   "askCmdr.cost.unknown": "költség ismeretlen",
   "@askCmdr.cost.unknown": {
