@@ -63,6 +63,10 @@ pub struct TurnStats {
     pub wall_ms: Option<u64>,
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
+    /// Of `prompt_tokens`, what the provider's prompt cache served. 0 for a turn recorded before
+    /// this was stored, and for one rebuilt from its rows (message rows don't carry it).
+    #[serde(default)]
+    pub cache_read_tokens: u32,
     /// The user (or the progress watchdog) stopped the turn, so the footer says so after a reload
     /// too. `false` for a turn recorded before this was stored: its rows can't tell a stop apart.
     #[serde(default)]

@@ -186,6 +186,7 @@ export type MessageKey =
   | 'askCmdr.cost.free'
   | 'askCmdr.cost.label'
   | 'askCmdr.cost.tokens'
+  | 'askCmdr.cost.tokensWithCache'
   | 'askCmdr.cost.underAmount'
   | 'askCmdr.cost.unknown'
   | 'askCmdr.decision.approved'

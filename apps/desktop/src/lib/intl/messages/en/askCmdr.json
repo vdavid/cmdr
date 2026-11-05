@@ -1316,9 +1316,9 @@
       "cost": "The estimated cost so far, already formatted as money for the locale (for example $2.14)."
     }
   },
-  "askCmdr.spendPause.estimateNote": "An estimate at list prices. Your provider’s caching usually makes the real cost lower.",
+  "askCmdr.spendPause.estimateNote": "An estimate at list prices, with cached tokens counted at their lower rate.",
   "@askCmdr.spendPause.estimateNote": {
-    "description": "Small second line on the card that pauses an Ask Cmdr answer over its cost. Says the amount is an estimate from the provider's published prices, and that the AI provider's prompt caching (reusing the parts of the chat it already read) usually makes the actual bill smaller."
+    "description": "Small second line on the card that pauses an Ask Cmdr answer over its cost. Says the amount is an estimate from the provider's published prices, and that tokens the AI provider served from its prompt cache (the parts of the chat it already read, billed more cheaply) are already priced at that cheaper rate."
   },
   "askCmdr.spendPause.keepGoing": "Keep going",
   "@askCmdr.spendPause.keepGoing": {
@@ -1628,6 +1628,15 @@
     },
     "screenshot": "ask-cmdr-empty.png"
   },
+  "askCmdr.cost.tokensWithCache": "{countText} {count, plural, one {token} other {tokens}}, {cachedText} of them cached",
+  "@askCmdr.cost.tokensWithCache": {
+    "description": "Exact token usage, plus how many of those tokens the AI provider served from its prompt cache (parts of the chat it already read on an earlier call, billed at a much lower price). Shown in the tooltip on the token count in the Ask Cmdr chat's cost footer and under an answer, and as a day's usage in Settings > AI > Ask Cmdr > Spend. Shown only when some tokens were cached. Lowercase “cached”; keep “tokens” as the AI term, matching the other token counts.",
+    "placeholders": {
+      "countText": "The total token count, already formatted with thousands separators, like 48,213.",
+      "count": "The raw total token count as an integer, used only to pick the singular or plural word.",
+      "cachedText": "How many of those tokens came from the provider’s cache, already formatted, like 41,002. Always smaller than the total."
+    }
+  },
   "askCmdr.cost.free": "free, on-device",
   "@askCmdr.cost.free": {
     "description": "Cost readout for a chat answered entirely by the local on-device model: it costs nothing. Lowercase, shown after the token count.",
@@ -1647,9 +1656,9 @@
       "amount": "The smallest amount shown, already formatted: one US cent, like $0.01."
     }
   },
-  "askCmdr.cost.estimateTooltip": "The amount is in USD, and it doesn’t count caching on your provider’s side. Your real bill is probably a fraction of this, because the context shared between our calls is cached.",
+  "askCmdr.cost.estimateTooltip": "An estimate in USD at your provider’s list prices, with cached tokens counted at their lower rate.",
   "@askCmdr.cost.estimateTooltip": {
-    "description": "Tooltip on the estimated cost in the Ask Cmdr chat's footer. It explains the amount is in US dollars, and that the estimate ignores the provider's prompt caching (the AI service reuses the repeated parts of a conversation more cheaply), so the real bill is usually much lower. “USD” is the currency code; keep it. “Provider” is the AI service the person set up."
+    "description": "Tooltip on the estimated cost in the Ask Cmdr chat's footer. It explains the amount is in US dollars, worked out from the provider's published prices, and that tokens the provider served from its prompt cache (the repeated parts of a conversation, which it bills more cheaply) are already priced at that cheaper rate. “USD” is the currency code; keep it. “Provider” is the AI service the person set up."
   },
   "askCmdr.cost.unknown": "cost unknown",
   "@askCmdr.cost.unknown": {

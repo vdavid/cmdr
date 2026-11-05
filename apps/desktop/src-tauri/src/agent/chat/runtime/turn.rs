@@ -375,6 +375,7 @@ async fn drive(
         };
         tally.prompt_tokens = tally.prompt_tokens.saturating_add(usage.prompt_tokens);
         tally.completion_tokens = tally.completion_tokens.saturating_add(usage.completion_tokens);
+        tally.cache_read_tokens = tally.cache_read_tokens.saturating_add(usage.cache_read_tokens);
         transcript.push(message.clone());
         tally.cost_micros = tally.cost_micros.saturating_add(meter_cost(conn, params, usage));
         emit(sink, AgentChatEvent::CostMetered);

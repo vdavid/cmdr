@@ -118,6 +118,8 @@ pub struct TurnTally {
     /// meter sums.
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
+    /// Of `prompt_tokens`, what the provider's prompt cache served.
+    pub cache_read_tokens: u32,
     /// How many tool calls staged a proposal for the user to review. The funnel's join to
     /// `suggestion_group_proposed`: turns with proposals but no proposal events downstream
     /// would be a real instrumentation bug, and nothing else could tell us.
@@ -143,6 +145,7 @@ impl TurnTally {
             wall_ms: Some(wall_ms),
             prompt_tokens: self.prompt_tokens,
             completion_tokens: self.completion_tokens,
+            cache_read_tokens: self.cache_read_tokens,
             stopped,
             limit: self.limit,
         })

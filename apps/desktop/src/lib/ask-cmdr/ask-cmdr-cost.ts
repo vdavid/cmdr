@@ -31,6 +31,26 @@ export function formatTokenCount(tokens: number): string {
 }
 
 /**
+ * A token count spelled out exactly, plus how many of the prompt tokens the provider's cache
+ * served when any were ("48,213 tokens, 41,002 of them cached"). What the tooltips behind a
+ * compact count say, and what the settings spend list shows.
+ */
+export function exactTokensText(tokens: number, cacheReadTokens: number): string {
+  const params = { count: tokens, countText: formatInteger(tokens) }
+  if (cacheReadTokens <= 0) return tString('askCmdr.cost.tokens', params)
+  return tString('askCmdr.cost.tokensWithCache', { ...params, cachedText: formatInteger(cacheReadTokens) })
+}
+
+/**
+ * The tooltip behind a compact token count: the exact count, with the cached share. `undefined`
+ * when the visible count already says it all (exact, and nothing came from the cache).
+ */
+export function tokensTooltip(tokens: number, cacheReadTokens: number): string | undefined {
+  if (cacheReadTokens <= 0 && formatTokenCount(tokens) === formatInteger(tokens)) return undefined
+  return exactTokensText(tokens, cacheReadTokens)
+}
+
+/**
  * Format an integer micro-USD estimate as a USD amount rounded to cents ("$0.83"), symbol,
  * placement, and digits all in the UI language. The tooltip beside it says it's USD, so the
  * symbol stays narrow.
@@ -67,6 +87,8 @@ export function isLocalOnly(providers: string[]): boolean {
 /** The footer's cost line as data: a token count and, when there is something to price, how. */
 export type CostReading = {
   tokens: number
+  /** Of the prompt tokens, how many the provider's cache served. */
+  cacheReadTokens: number
   price: { kind: 'free' } | { kind: 'unknown' } | { kind: 'estimate'; micros: number } | null
 }
 
@@ -79,12 +101,14 @@ export type CostReading = {
  */
 export function costReading(threadCost: ConversationCost | null, nextCall: NextCallPricing | null): CostReading {
   if (threadCost && totalTokens(threadCost) > 0) {
-    if (isLocalOnly(threadCost.providers)) return { tokens: totalTokens(threadCost), price: { kind: 'free' } }
-    if (!threadCost.fullyPriced) return { tokens: totalTokens(threadCost), price: { kind: 'unknown' } }
-    return { tokens: totalTokens(threadCost), price: { kind: 'estimate', micros: threadCost.costMicros } }
+    const metered = { tokens: totalTokens(threadCost), cacheReadTokens: threadCost.cacheReadTokens }
+    if (isLocalOnly(threadCost.providers)) return { ...metered, price: { kind: 'free' } }
+    if (!threadCost.fullyPriced) return { ...metered, price: { kind: 'unknown' } }
+    return { ...metered, price: { kind: 'estimate', micros: threadCost.costMicros } }
   }
-  if (!nextCall) return { tokens: 0, price: null }
-  if (nextCall.provider === 'local') return { tokens: 0, price: { kind: 'free' } }
-  if (!nextCall.priced) return { tokens: 0, price: { kind: 'unknown' } }
-  return { tokens: 0, price: { kind: 'estimate', micros: 0 } }
+  const nothing = { tokens: 0, cacheReadTokens: 0 }
+  if (!nextCall) return { ...nothing, price: null }
+  if (nextCall.provider === 'local') return { ...nothing, price: { kind: 'free' } }
+  if (!nextCall.priced) return { ...nothing, price: { kind: 'unknown' } }
+  return { ...nothing, price: { kind: 'estimate', micros: 0 } }
 }

@@ -433,6 +433,24 @@ fn cost_upsert_accumulates_onto_the_same_key() {
     assert!(day.fully_priced);
 }
 
+/// The cache-read share reaches both wire totals, so the footer and the settings spend list can
+/// say how much of the prompt the provider's cache served.
+#[test]
+fn cost_totals_carry_the_cache_read_share() {
+    let conn = migrated_conn();
+    let id = create_conversation(&conn, "T", 1, None).expect("create");
+    let mut first = cost("2026-07-12", id, ProviderTag::Anthropic, 1_000, 10, 300);
+    first.cache_read_tokens = 800;
+    first.cache_write_tokens = 150;
+    let mut second = cost("2026-07-12", id, ProviderTag::Anthropic, 1_200, 10, 200);
+    second.cache_read_tokens = 950;
+    record_cost(&conn, &first).expect("first");
+    record_cost(&conn, &second).expect("second");
+
+    assert_eq!(conversation_cost(&conn, id).expect("cost").cache_read_tokens, 1_750);
+    assert_eq!(cost_summary(&conn).expect("summary").days[0].cache_read_tokens, 1_750);
+}
+
 #[test]
 fn cost_rollup_sums_across_threads_per_day() {
     let conn = migrated_conn();

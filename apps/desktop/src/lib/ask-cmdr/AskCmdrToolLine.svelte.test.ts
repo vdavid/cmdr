@@ -212,6 +212,11 @@ describe('AskCmdrTurnStats', () => {
     expect(turnStatsTokensTooltip({ toolCalls: 1, wallMs: 1, promptTokens: 9, completionTokens: 1 })).toBeUndefined()
   })
 
+  it('names how much of the turn the provider’s cache served', () => {
+    const stats = { toolCalls: 2, wallMs: 1, promptTokens: 1_500, completionTokens: 40, cacheReadTokens: 1_200 }
+    expect(turnStatsTokensTooltip(stats)).toBe('1,540 tokens, 1,200 of them cached')
+  })
+
   it('marks a stopped turn', () => {
     const target = renderStats({
       toolCalls: 2,

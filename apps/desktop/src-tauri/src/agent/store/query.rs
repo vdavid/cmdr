@@ -99,6 +99,8 @@ pub struct CostDay {
     pub day: String,
     pub prompt_tokens: u64,
     pub completion_tokens: u64,
+    /// Of `prompt_tokens`, what the provider's prompt cache served.
+    pub cache_read_tokens: u64,
     pub cost_micros: i64,
     /// True only when every contributing row was priced. False ⇒ the day's cost is a
     /// lower bound (some model was unpriced), shown as "unknown", never a silent $0
@@ -541,6 +543,8 @@ pub fn record_cost(conn: &Connection, record: &CostRecord) -> Result<(), AgentSt
 pub struct ConversationCost {
     pub prompt_tokens: u64,
     pub completion_tokens: u64,
+    /// Of `prompt_tokens`, what the provider's prompt cache served.
+    pub cache_read_tokens: u64,
     pub cost_micros: i64,
     /// True only when every contributing row was priced. False ⇒ the cost is a lower
     /// bound (some model was unpriced), shown "unknown", never a silent $0 (spec §2.4).
@@ -554,9 +558,10 @@ pub struct ConversationCost {
 /// The cumulative token + cost total for one conversation (all days, all models). Zeroed
 /// when the thread has metered no turn yet. Drives the per-thread footer.
 pub fn conversation_cost(conn: &Connection, conversation_id: i64) -> Result<ConversationCost, AgentStoreError> {
-    let (prompt_tokens, completion_tokens, cost_micros, fully_priced) = conn.query_row(
+    let (prompt_tokens, completion_tokens, cache_read_tokens, cost_micros, fully_priced) = conn.query_row(
         "SELECT COALESCE(SUM(prompt_tokens), 0),
                 COALESCE(SUM(completion_tokens), 0),
+                COALESCE(SUM(cache_read_tokens), 0),
                 COALESCE(SUM(cost_micros), 0),
                 COALESCE(MIN(priced), 1)
          FROM cost_meter WHERE conversation_id = ?1",
@@ -565,8 +570,9 @@ pub fn conversation_cost(conn: &Connection, conversation_id: i64) -> Result<Conv
             Ok((
                 row.get::<_, i64>(0)? as u64,
                 row.get::<_, i64>(1)? as u64,
-                row.get::<_, i64>(2)?,
-                row.get::<_, i64>(3)? != 0,
+                row.get::<_, i64>(2)? as u64,
+                row.get::<_, i64>(3)?,
+                row.get::<_, i64>(4)? != 0,
             ))
         },
     )?;
@@ -585,6 +591,7 @@ pub fn conversation_cost(conn: &Connection, conversation_id: i64) -> Result<Conv
     Ok(ConversationCost {
         prompt_tokens,
         completion_tokens,
+        cache_read_tokens,
         cost_micros,
         fully_priced,
         providers,
@@ -622,6 +629,7 @@ pub fn cost_summary(conn: &Connection) -> Result<CostSummary, AgentStoreError> {
         "SELECT day,
                 SUM(prompt_tokens),
                 SUM(completion_tokens),
+                SUM(cache_read_tokens),
                 SUM(cost_micros),
                 MIN(priced)
          FROM cost_meter
@@ -635,8 +643,9 @@ pub fn cost_summary(conn: &Connection) -> Result<CostSummary, AgentStoreError> {
             day: row.get(0)?,
             prompt_tokens: row.get::<_, i64>(1)? as u64,
             completion_tokens: row.get::<_, i64>(2)? as u64,
-            cost_micros: row.get(3)?,
-            fully_priced: row.get::<_, i64>(4)? != 0,
+            cache_read_tokens: row.get::<_, i64>(3)? as u64,
+            cost_micros: row.get(4)?,
+            fully_priced: row.get::<_, i64>(5)? != 0,
         });
     }
     Ok(CostSummary { days })

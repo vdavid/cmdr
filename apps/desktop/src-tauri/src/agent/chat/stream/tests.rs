@@ -242,10 +242,11 @@ fn terminal_events_carry_what_the_turn_spent() {
         wall_ms: Some(4_250),
         prompt_tokens: 1_800,
         completion_tokens: 90,
+        cache_read_tokens: 1_200,
         stopped: true,
         limit: None,
     };
-    let expected = json!({ "toolCalls": 3, "wallMs": 4250, "promptTokens": 1800, "completionTokens": 90, "stopped": true, "limit": null });
+    let expected = json!({ "toolCalls": 3, "wallMs": 4250, "promptTokens": 1800, "completionTokens": 90, "cacheReadTokens": 1200, "stopped": true, "limit": null });
     assert_eq!(wire(AgentChatEvent::Stopped { turn: Some(stats) })["turn"], expected);
     let failed = wire(AgentChatEvent::Failed {
         kind: AgentErrorKind::BudgetExhausted,

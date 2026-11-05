@@ -15,14 +15,13 @@
 -->
 <script lang="ts">
     import { tString } from '#lib/intl/messages.svelte.js'
-    import { formatInteger } from '#lib/intl/number-format.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { askCmdrConversationCost, type ConversationCost } from '#lib/tauri-commands/index.js'
     import { dependOn } from '#lib/utils/reactivity.js'
     import AskCmdrContextGauge from './AskCmdrContextGauge.svelte'
     import { gaugeReading } from './ask-cmdr-context-usage'
     import { tooltip } from '#lib/tooltip/tooltip.js'
-    import { costEstimateText, costReading, formatTokenCount } from './ask-cmdr-cost'
+    import { costEstimateText, costReading, formatTokenCount, tokensTooltip } from './ask-cmdr-cost'
     import { slotStatusState } from './ask-cmdr-slot-status.svelte'
     import { askCmdrState } from './ask-cmdr-trigger.svelte'
 
@@ -72,18 +71,16 @@
     // Only an estimate carries the "USD, before caching" caveat; free and unknown say it all.
     const priceTooltip = $derived(reading.price?.kind === 'estimate' ? tString('askCmdr.cost.estimateTooltip') : undefined)
 
-    // Compact from 2,000 up ("194.8K tokens"); the exact count waits in the tooltip.
+    // Compact from 2,000 up ("194.8K tokens"); the exact count and the cached share wait in the tooltip.
     const tokensText = $derived(
         tString('askCmdr.cost.tokens', { count: reading.tokens, countText: formatTokenCount(reading.tokens) }),
     )
-    const exactTokensText = $derived(
-        tString('askCmdr.cost.tokens', { count: reading.tokens, countText: formatInteger(reading.tokens) }),
-    )
+    const exactTokens = $derived(tokensTooltip(reading.tokens, reading.cacheReadTokens))
 </script>
 
 <div class="cost-footer">
     <span class="cost" aria-label={tString('askCmdr.cost.label')}>
-        <span use:tooltip={exactTokensText !== tokensText ? exactTokensText : undefined}>{tokensText}</span>
+        <span use:tooltip={exactTokens}>{tokensText}</span>
         {#if priceText}
             <span class="dot" aria-hidden="true">·</span>
             <span use:tooltip={priceTooltip}>{priceText}</span>

@@ -8240,6 +8240,8 @@ export type ContextUsageView = {
 export type ConversationCost = {
   promptTokens: number
   completionTokens: number
+  // Of `prompt_tokens`, what the provider's prompt cache served.
+  cacheReadTokens: number
   costMicros: number
   /**
    *  True only when every contributing row was priced. False ⇒ the cost is a lower
@@ -8353,6 +8355,8 @@ export type CostDay = {
   day: string
   promptTokens: number
   completionTokens: number
+  // Of `prompt_tokens`, what the provider's prompt cache served.
+  cacheReadTokens: number
   costMicros: number
   /**
    *  True only when every contributing row was priced. False ⇒ the day's cost is a
@@ -20591,6 +20595,11 @@ export type TurnStats = {
   wallMs: number | null
   promptTokens: number
   completionTokens: number
+  /**
+   *  Of `prompt_tokens`, what the provider's prompt cache served. 0 for a turn recorded before
+   *  this was stored, and for one rebuilt from its rows (message rows don't carry it).
+   */
+  cacheReadTokens?: number
   /**
    *  The user (or the progress watchdog) stopped the turn, so the footer says so after a reload
    *  too. `false` for a turn recorded before this was stored: its rows can't tell a stop apart.

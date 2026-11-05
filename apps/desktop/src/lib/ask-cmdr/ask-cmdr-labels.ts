@@ -24,7 +24,7 @@ import type {
   TurnStats,
 } from '#lib/ipc/bindings.js'
 import { managedAiRefusalMessage } from '#lib/managed-policy/ai-refusal.js'
-import { formatTokenCount, totalTokens } from './ask-cmdr-cost'
+import { formatTokenCount, tokensTooltip, totalTokens } from './ask-cmdr-cost'
 import type { RailToolCall } from './ask-cmdr-messages'
 import { outcomeOk, placeName, type PathTarget } from './ask-cmdr-tool-line'
 import {
@@ -401,13 +401,11 @@ export function turnStatsText(stats: TurnStats | null): string | null {
   return stats.stopped === true ? tString('askCmdr.turnStats.stopped', { summary }) : summary
 }
 
-/** The exact token count behind a stats line's compact one ("194,776 tokens"), or `undefined`
- * when the line already shows it exactly. */
+/** The exact token count behind a stats line's compact one, with the cached share ("194,776
+ * tokens, 160,002 of them cached"), or `undefined` when the line already says it all. */
 export function turnStatsTokensTooltip(stats: TurnStats | null): string | undefined {
   if (stats === null || stats.toolCalls === 0) return undefined
-  const tokens = totalTokens(stats)
-  if (formatTokenCount(tokens) === formatInteger(tokens)) return undefined
-  return tString('askCmdr.cost.tokens', { count: tokens, countText: formatInteger(tokens) })
+  return tokensTooltip(totalTokens(stats), stats.cacheReadTokens ?? 0)
 }
 
 /**

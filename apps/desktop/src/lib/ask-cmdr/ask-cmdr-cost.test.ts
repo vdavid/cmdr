@@ -9,9 +9,11 @@ import type { ConversationCost } from '#lib/tauri-commands/index.js'
 import {
   costEstimateText,
   costReading,
+  exactTokensText,
   formatTokenCount,
   formatUsdMicros,
   isLocalOnly,
+  tokensTooltip,
   totalTokens,
 } from './ask-cmdr-cost'
 
@@ -101,6 +103,19 @@ describe('formatTokenCount', () => {
   })
 })
 
+describe('exactTokensText and tokensTooltip', () => {
+  it('names the cached share only when the cache served something', () => {
+    expect(exactTokensText(48_213, 41_002)).toBe('48,213 tokens, 41,002 of them cached')
+    expect(exactTokensText(48_213, 0)).toBe('48,213 tokens')
+  })
+
+  it('shows a tooltip when the count is compact or anything came from the cache', () => {
+    expect(tokensTooltip(194_776, 0)).toBe('194,776 tokens')
+    expect(tokensTooltip(900, 600)).toBe('900 tokens, 600 of them cached')
+    expect(tokensTooltip(900, 0)).toBeUndefined()
+  })
+})
+
 describe('isLocalOnly', () => {
   it('is true only when every provider is local', () => {
     expect(isLocalOnly(['local'])).toBe(true)
@@ -118,6 +133,7 @@ describe('costReading', () => {
   const metered = (over: Partial<ConversationCost>): ConversationCost => ({
     promptTokens: 1_000,
     completionTokens: 200,
+    cacheReadTokens: 0,
     costMicros: 1_500,
     fullyPriced: true,
     providers: ['anthropic'],
@@ -127,19 +143,43 @@ describe('costReading', () => {
   const cloud = { provider: 'anthropic' as const, priced: true }
 
   it('reads a metered thread from the meter, whatever the next call would use', () => {
-    expect(costReading(metered({}), cloud)).toEqual({ tokens: 1_200, price: { kind: 'estimate', micros: 1_500 } })
-    expect(costReading(metered({ providers: ['local'] }), cloud)).toEqual({ tokens: 1_200, price: { kind: 'free' } })
-    expect(costReading(metered({ fullyPriced: false }), cloud)).toEqual({ tokens: 1_200, price: { kind: 'unknown' } })
+    expect(costReading(metered({}), cloud)).toEqual({
+      tokens: 1_200,
+      cacheReadTokens: 0,
+      price: { kind: 'estimate', micros: 1_500 },
+    })
+    expect(costReading(metered({ providers: ['local'] }), cloud)).toEqual({
+      tokens: 1_200,
+      cacheReadTokens: 0,
+      price: { kind: 'free' },
+    })
+    expect(costReading(metered({ fullyPriced: false }), cloud)).toEqual({
+      tokens: 1_200,
+      cacheReadTokens: 0,
+      price: { kind: 'unknown' },
+    })
   })
 
   it('reads an unmetered thread as zero, priced the way its first call would be', () => {
     // A brand-new chat shows "0 tokens" plus an honest word, never a silent $0 for an unpriced model.
-    expect(costReading(null, cloud)).toEqual({ tokens: 0, price: { kind: 'estimate', micros: 0 } })
-    expect(costReading(empty, { provider: 'local', priced: true })).toEqual({ tokens: 0, price: { kind: 'free' } })
-    expect(costReading(empty, { provider: 'openAi', priced: false })).toEqual({ tokens: 0, price: { kind: 'unknown' } })
+    expect(costReading(null, cloud)).toEqual({ tokens: 0, cacheReadTokens: 0, price: { kind: 'estimate', micros: 0 } })
+    expect(costReading(empty, { provider: 'local', priced: true })).toEqual({
+      tokens: 0,
+      cacheReadTokens: 0,
+      price: { kind: 'free' },
+    })
+    expect(costReading(empty, { provider: 'openAi', priced: false })).toEqual({
+      tokens: 0,
+      cacheReadTokens: 0,
+      price: { kind: 'unknown' },
+    })
+  })
+
+  it("carries the meter's cached share", () => {
+    expect(costReading(metered({ cacheReadTokens: 800 }), cloud).cacheReadTokens).toBe(800)
   })
 
   it('names no price while AI is off: there is nothing to price', () => {
-    expect(costReading(null, null)).toEqual({ tokens: 0, price: null })
+    expect(costReading(null, null)).toEqual({ tokens: 0, cacheReadTokens: 0, price: null })
   })
 })

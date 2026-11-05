@@ -13,6 +13,7 @@ pub async fn ask_cmdr_conversation_cost(app: AppHandle, id: i64) -> Result<store
     let empty = store::ConversationCost {
         prompt_tokens: 0,
         completion_tokens: 0,
+        cache_read_tokens: 0,
         cost_micros: 0,
         fully_priced: true,
         providers: Vec::new(),

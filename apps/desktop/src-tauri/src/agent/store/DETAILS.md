@@ -217,7 +217,9 @@ own sidecar: `proposals/DETAILS.md` § A server group.
 How much of each prompt the provider's cache served and stored, both SHARES of `prompt_tokens` (which stays the whole
 input, so every existing reader keeps its meaning). `record_cost` and `discard_conversation_keeping_cost` accumulate them
 like the other counts. `cost_micros` already prices the two at their own rates (`agent::pricing`); the columns say why a
-cached thread costs what it does. Rows metered before v14 read 0. Nothing on the wire reads them yet.
+cached thread costs what it does. Rows metered before v14 read 0. `conversation_cost` and `cost_summary` carry the read
+share (`cache_read_tokens`) to the footer tooltip and the settings spend list; writes stay backend-only (they only
+explain a surcharge, which `cost_micros` already holds).
 
 ## No auto-retention in v1
 

@@ -13,7 +13,6 @@
     import { getSetting, onSpecificSettingChange, getSettingDefinition, type AiProvider } from '#lib/settings/index.js'
     import { anyVisible, createShouldShow } from '#lib/settings/settings-search.js'
     import { tString } from '#lib/intl/messages.svelte.js'
-    import { formatInteger } from '#lib/intl/number-format.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import SettingSelect from '../components/SettingSelect.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
@@ -31,7 +30,7 @@
     } from '#lib/tauri-commands/index.js'
     import { cloudAiBlocked, openCloudConsentSettings, refreshCloudConsent } from '#lib/ai/cloud-consent.svelte.js'
     import { getManagedPolicyView } from '#lib/managed-policy/managed-policy.svelte.js'
-    import { costEstimateText } from '#lib/ask-cmdr/ask-cmdr-cost.js'
+    import { costEstimateText, exactTokensText } from '#lib/ask-cmdr/ask-cmdr-cost.js'
     import ForgetMemoryDialog from './ForgetMemoryDialog.svelte'
     import type { MessageKey } from '#lib/intl/keys.gen.js'
     import { dependOn } from '#lib/utils/reactivity.js'
@@ -355,10 +354,7 @@
                 <li class="spend-row">
                     <span class="spend-day">{day.day}</span>
                     <span class="spend-tokens">
-                        {tString('askCmdr.cost.tokens', {
-                            count: day.promptTokens + day.completionTokens,
-                            countText: formatInteger(day.promptTokens + day.completionTokens),
-                        })}
+                        {exactTokensText(day.promptTokens + day.completionTokens, day.cacheReadTokens)}
                     </span>
                     <span class="spend-cost">{dayCostText(day)}</span>
                 </li>

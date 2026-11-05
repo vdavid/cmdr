@@ -1065,12 +1065,15 @@ backend's slot status does that (`ask_cmdr_slot_status` reads `test_mode::ask_cm
   model reads "cost unknown", a priced thread shows "about {amount}" — never a silent $0. The amount rounds to cents
   ("about $0.83", `costEstimateText`), and a real cost below half a cent reads "under $0.01" so it never looks free. The
   money is written wholly in the UI language (`getNumberFormatter`, so an English app on a Swedish-formatted Mac reads
-  "$0.83"; `#lib/intl/number-format.ts`). Its tooltip says it's USD and ignores provider-side prompt caching (the meter
-  prices every prompt token at the full rate, `src-tauri/src/agent/pricing.rs`). Token counts (here and in the per-turn
-  stats line) go compact from 2,000 up through `formatTokenCount` (`Intl` compact notation in the UI language: "2.2K",
-  "1.3M", zh "2.2万", one decimal at most), with the exact count in a tooltip. Always shown with the chat; a thread with
-  nothing metered reads zero (§ The context gauge). A fetched total is keyed by the thread it was read for: a thread
-  switch drops it at once, and a slow read for a thread the user already left is dropped.
+  "$0.83"; `#lib/intl/number-format.ts`). Its tooltip says it's USD at list prices, cached tokens at their lower rate
+  (the meter prices cache reads and writes at their own rates, `src-tauri/src/agent/pricing.rs`). Token counts (here and
+  in the per-turn stats line) go compact from 2,000 up through `formatTokenCount` (`Intl` compact notation in the UI
+  language: "2.2K", "1.3M", zh "2.2万", one decimal at most), with the exact count in a tooltip (`tokensTooltip`), which
+  also names the share the provider's cache served ("48,213 tokens, 41,002 of them cached") whenever it's above zero.
+  The settings spend list shows that same exact wording per day (`exactTokensText`). A turn's cached share rides
+  `TurnStats.cacheReadTokens`, absent (read as 0) on turns recorded before it was stored. Always shown with the chat; a
+  thread with nothing metered reads zero (§ The context gauge). A fetched total is keyed by the thread it was read for:
+  a thread switch drops it at once, and a slow read for a thread the user already left is dropped.
 - **Settings section** (`settings/sections/AskCmdrSection.svelte`, top-level `Ask Cmdr`): the `askCmdr.enabled` switch,
   a "cloud AI is off" hint plus an "Open AI settings" button when it's on over Cloud without consent, the provider hint
   (reads `ai.provider`) + the interactive-model row (`askCmdr.interactiveModel`), the two memory controls, and the

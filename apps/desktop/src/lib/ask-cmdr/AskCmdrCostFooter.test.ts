@@ -69,6 +69,7 @@ async function renderWith(cost: ConversationCost): Promise<HTMLElement> {
 const base: ConversationCost = {
   promptTokens: 300,
   completionTokens: 70,
+  cacheReadTokens: 0,
   costMicros: 0,
   fullyPriced: true,
   providers: [],

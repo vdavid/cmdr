@@ -324,6 +324,7 @@ fn a_recorded_turn_carries_its_stored_stats_on_its_last_assistant_view() {
         wall_ms: Some(4_200),
         prompt_tokens: 30,
         completion_tokens: 3,
+        cache_read_tokens: 0,
         stopped: false,
         limit: None,
     };
@@ -359,6 +360,7 @@ fn an_old_turn_with_tools_gets_fallback_stats_rebuilt_from_its_rows() {
             wall_ms: None,
             prompt_tokens: 30,
             completion_tokens: 3,
+            cache_read_tokens: 0,
             stopped: false,
             limit: None,
         })
