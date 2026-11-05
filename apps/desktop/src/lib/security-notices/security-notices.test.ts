@@ -73,6 +73,16 @@ describe('announceSecurityNotice', () => {
     expect(lastToast().options.id).toBe('security-notice:smb-signature:smb-other')
   })
 
+  /** Its own toast beside a session's on the same share: the two say different things (#1007). */
+  it('raises a direct connection refused for its signature as a persistent warning, apart from a session’s', () => {
+    announceSecurityNotice({ notice: { kind: 'smbDirectSignatureRefused', volumeId: 'smb-nas-photos' }, count: 1 })
+    expect(lastToast().options).toMatchObject({
+      id: 'security-notice:smb-direct-signature:smb-nas-photos',
+      level: 'warn',
+      dismissal: 'persistent',
+    })
+  })
+
   it('raises an update that isn’t genuine as a persistent error that offers a report with the typed facts', () => {
     announceSecurityNotice({ notice: update, count: 1 })
     expect(lastToast().options).toMatchObject({

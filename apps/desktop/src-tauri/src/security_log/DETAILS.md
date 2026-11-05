@@ -5,11 +5,11 @@ Issue #456. Must-knows in `CLAUDE.md`; this is the why and the catalog.
 ## The file
 
 - `security-events.jsonl` in `config::resolved_app_data_dir`, one JSON object per line:
-  `{"v":2,"at":"<UTC ISO 8601, ms>","event":{"kind":"<token>", …typed fields}}`. The stamp is taken at `record` time,
+  `{"v":3,"at":"<UTC ISO 8601, ms>","event":{"kind":"<token>", …typed fields}}`. The stamp is taken at `record` time,
   so lines stay in order however late the writer gets to them.
 - `v` (`types::FORMAT_VERSION`) goes up on any change to an existing token or field. 2 (#1000): the SMB signature
-  events carry `scope` where 1 carried `volume_id`, so a file can hold both shapes, told apart by each line's `v`.
-  Nothing in Cmdr reads the file back, so there's no migration.
+  events carry `scope` where 1 carried `volume_id`. 3 (#1007): they also carry `source`. A file can hold every shape,
+  told apart by each line's `v`. Nothing in Cmdr reads the file back, so there's no migration.
 - Rotates past 1 MiB into `security-events.jsonl.1`, keeping one rotated file: at most about 2 MiB, which at a handful
   of events a day is years. No age limit (decided 2026-10-16): the size cap and the opt-out cover it.
 - Plain text on purpose: "Show in Finder" (`reveal_target`: the file, or the data dir while there's no file yet) hands
@@ -38,12 +38,16 @@ Issue #456. Must-knows in `CLAUDE.md`; this is the why and the catalog.
   `update_signature_invalid` (`check`: `minisign` | `code_signature`): `../updater/security_events.rs`, one-line hooks in
   `updater/mod.rs`. The installed version is the one the bundle's own `Info.plist` names (`installer::install` answers
   it), not the one the unsigned manifest offered.
-- `smb_signature_rejections_started` / `_ended` (`scope`: `{"volume": <volume id>}` | `{"host": <host id>}`): an SMB
-  reply refused for a bad or missing signature (`smb2::ErrorKind::SignatureInvalid`), one episode per scope. Two
-  sources: a share's session (`cmdr-smb` reports each refused reply through the volume host's `security_refusal` seam,
-  and `events/volume_mapping.rs` hands it on, volume-scoped) and a share listing (`ShareListError::SignatureInvalid`,
-  `network/smb_client.rs` `record_security_refusal`, host-scoped, #1000). Only a volume-scoped start raises a notice
-  (`../security_notices/DETAILS.md`); a listing's error already says it. A guest session offered
+- `smb_signature_rejections_started` / `_ended` (`scope`: `{"volume": <volume id>}` | `{"host": <host id>}`,
+  `source`: `session` | `direct_connection` | `share_listing`): an SMB reply refused for a bad or missing signature
+  (`smb2::ErrorKind::SignatureInvalid`), one episode per scope and source. Three sources: a share's session
+  (`session`: `cmdr-smb` reports each refused reply through the volume host's `security_refusal` seam, and
+  `events/volume_mapping.rs` hands it on, volume-scoped), a direct connection's sign-in (`direct_connection`:
+  `network/smb_connect_failure.rs` `record_security_refusal`, both upgrade paths, volume-scoped, #1007), and a share
+  listing (`share_listing`: `ShareListError::SignatureInvalid`, `network/smb_client.rs` `record_security_refusal`,
+  host-scoped, #1000). `source` exists because each leaves the person a different move: a session reconnects, a direct
+  connection that never got in leaves the share on the kernel mount. Session and direct connection each raise their
+  own notice (`../security_notices/DETAILS.md`); a listing's error already says it. A guest session offered
   for a named login (`GuestSessionRefused`) isn't recorded: it reads as a wrong password, and the pane names it
   (`VolumeConnection::GuestSessionRefused`).
 - `smb_negotiation_rejections_started` / `_ended` (`scope`: `{"volume": <volume id>}` | `{"host": <host id>}`): an SMB
@@ -97,8 +101,8 @@ closer hasn't swept yet ends the old episode before starting the new one, so two
   side would open and close an episode on every alternation, which is the flood this exists to stop.
 - The closer is a thread that starts with the first open episode, ticks every minute, and exits once nothing is open,
   so an idle app runs no thread for it. `on_exit` ends every open episode so its count lands.
-- MCP keys by reason (a local process can't be told apart reliably), SMB by scope (volume or host), content refusals by tool and
-  reason.
+- MCP keys by reason (a local process can't be told apart reliably), SMB signatures by scope and source, SMB
+  negotiations by scope (volume or host), content refusals by tool and reason.
 
 ## Consumers
 

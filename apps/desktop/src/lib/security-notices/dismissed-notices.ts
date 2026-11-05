@@ -14,6 +14,8 @@ export function securityNoticeId(notice: AccessNotice): string {
       return 'security-notice:mcp-foreign-origin'
     case 'smbSignatureRefused':
       return `security-notice:smb-signature:${notice.volumeId}`
+    case 'smbDirectSignatureRefused':
+      return `security-notice:smb-direct-signature:${notice.volumeId}`
     case 'updateNotGenuine':
       return `security-notice:update-not-genuine:${notice.version}`
   }

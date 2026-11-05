@@ -19,7 +19,7 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 
 use crate::ignore_poison::IgnorePoison;
-use crate::security_log::{self, Heard, McpRejection, SecurityEvent, SignatureCheck, SmbScope};
+use crate::security_log::{self, Heard, McpRejection, SecurityEvent, SignatureCheck, SmbScope, SmbSignatureSource};
 
 const LOG_TARGET: &str = "security_notices";
 
@@ -35,8 +35,13 @@ pub enum AccessNotice {
     /// A web page in a browser tried to reach the MCP server (a non-loopback `Origin`). The
     /// origin itself is in the log, never here: it's a site the person visits.
     McpForeignOrigin,
-    /// A server reply on a signed session carried a bad or missing signature.
+    /// A server reply on a signed session carried a bad or missing signature. The session was
+    /// dropped, so Reconnect builds a fresh one.
     SmbSignatureRefused { volume_id: String },
+    /// Cmdr's direct connection to a share macOS mounted got a sign-in reply with a bad or missing
+    /// signature, so it never connected. The share stays on the kernel mount, so there's no Cmdr
+    /// session to reconnect (#1007).
+    SmbDirectSignatureRefused { volume_id: String },
     /// An offered update didn't carry Cmdr's signature, so nothing was installed.
     UpdateNotGenuine { version: String, check: SignatureCheck },
 }
@@ -64,7 +69,14 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
         } => Some(AccessNotice::McpForeignOrigin),
         SecurityEvent::SmbSignatureRejectionsStarted {
             scope: SmbScope::Volume(volume_id),
+            source: SmbSignatureSource::Session,
         } => Some(AccessNotice::SmbSignatureRefused {
+            volume_id: volume_id.clone(),
+        }),
+        SecurityEvent::SmbSignatureRejectionsStarted {
+            scope: SmbScope::Volume(volume_id),
+            source: SmbSignatureSource::DirectConnection,
+        } => Some(AccessNotice::SmbDirectSignatureRefused {
             volume_id: volume_id.clone(),
         }),
         SecurityEvent::UpdateSignatureInvalid { version, check } => Some(AccessNotice::UpdateNotGenuine {
@@ -77,9 +89,15 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
         | SecurityEvent::McpRejectionsEnded { .. }
         | SecurityEvent::SmbSignatureRejectionsEnded { .. }
         // A share listing's refusal: the listing's own error says it, and there's no share to
-        // reconnect or disconnect yet.
+        // reconnect or disconnect yet. Any source on a host scope is a listing's.
         | SecurityEvent::SmbSignatureRejectionsStarted {
             scope: SmbScope::Host(_),
+            ..
+        }
+        // A listing's source on a volume scope doesn't happen; no notice for a pairing nobody records.
+        | SecurityEvent::SmbSignatureRejectionsStarted {
+            scope: SmbScope::Volume(_),
+            source: SmbSignatureSource::ShareListing,
         }
         // Every place it happens already says so where the person is looking: the share list's
         // error, the direct-connection notice, and the reconnecting pane (#931).
@@ -188,7 +206,8 @@ mod tests {
         );
         assert_eq!(
             notice_for(&SecurityEvent::SmbSignatureRejectionsStarted {
-                scope: SmbScope::Volume("smb-nas".into())
+                scope: SmbScope::Volume("smb-nas".into()),
+                source: SmbSignatureSource::Session,
             }),
             Some(AccessNotice::SmbSignatureRefused {
                 volume_id: "smb-nas".into()
@@ -206,6 +225,21 @@ mod tests {
                 })
             );
         }
+    }
+
+    /// A direct connection refused for its signature never got a session, so its notice is its own
+    /// kind, one with no Reconnect: the share stays on the kernel mount (#1007).
+    #[test]
+    fn a_direct_connection_refused_for_its_signature_raises_a_notice_without_a_session() {
+        assert_eq!(
+            notice_for(&SecurityEvent::SmbSignatureRejectionsStarted {
+                scope: SmbScope::Volume("smb-nas".into()),
+                source: SmbSignatureSource::DirectConnection,
+            }),
+            Some(AccessNotice::SmbDirectSignatureRefused {
+                volume_id: "smb-nas".into()
+            })
+        );
     }
 
     /// A missing or wrong MCP token is the record's alone (cases 1 and 2 of #457), and so is
@@ -226,11 +260,13 @@ mod tests {
             },
             SecurityEvent::SmbSignatureRejectionsEnded {
                 scope: SmbScope::Volume("smb-nas".into()),
+                source: SmbSignatureSource::Session,
                 count: 3,
             },
             // A share listing's refusal: the listing's own error says it where the person looks.
             SecurityEvent::SmbSignatureRejectionsStarted {
                 scope: SmbScope::Host("naspolya".into()),
+                source: SmbSignatureSource::ShareListing,
             },
             SecurityEvent::UpdateInstalled {
                 from_version: "0.52.0".into(),

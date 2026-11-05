@@ -355,15 +355,25 @@ pub(crate) enum DirectConnectOutcome {
     SurfacedToCaller,
 }
 
-/// A direct connection the server didn't confirm the negotiation for is a tampering signal, so it
-/// reaches the security log under the share's `volume_id`, beside a reconnect's (which the
-/// backend reports through the volume host). Both upgrade paths call it on a failed dial. Read by
-/// kind, ❌ never the message.
+/// A direct connection the server didn't confirm the negotiation for, or whose sign-in reply was
+/// refused for its signature, is a tampering signal, so it reaches the security log under the
+/// share's `volume_id`, beside a reconnect's (which the backend reports through the volume host).
+/// A refused signature is marked [`SmbSignatureSource::DirectConnection`], so its notice offers no
+/// Reconnect: the share stays on the kernel mount (#1007). Both upgrade paths call it on a failed
+/// dial. Read by kind, ❌ never the message.
+///
+/// [`SmbSignatureSource::DirectConnection`]: crate::security_log::SmbSignatureSource::DirectConnection
 pub(crate) fn record_security_refusal(volume_id: &str, dial: &FailedDial) {
-    if dial.error.kind() == ErrorKind::NegotiateValidationFailed {
-        crate::security_log::note_smb_negotiation_rejection(crate::security_log::SmbScope::Volume(
-            volume_id.to_string(),
-        ));
+    use crate::security_log::{SmbScope, SmbSignatureSource};
+    match dial.error.kind() {
+        ErrorKind::NegotiateValidationFailed => {
+            crate::security_log::note_smb_negotiation_rejection(SmbScope::Volume(volume_id.to_string()));
+        }
+        ErrorKind::SignatureInvalid => crate::security_log::note_smb_signature_rejection(
+            SmbScope::Volume(volume_id.to_string()),
+            SmbSignatureSource::DirectConnection,
+        ),
+        _ => {}
     }
 }
 

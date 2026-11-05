@@ -215,7 +215,7 @@ async fn smb_integration_required_encryption_sends_a_guest_listing_to_sign_in() 
 /// host, like a share's own refusal does under its volume (#1000).
 #[test]
 fn a_refused_signature_on_a_listing_reaches_the_security_log() {
-    use crate::security_log::{SecurityEvent, SmbScope, testing};
+    use crate::security_log::{SecurityEvent, SmbScope, SmbSignatureSource, testing};
     let capture = testing::capture_events();
     let refused: Result<ShareListResult, ShareListError> = Err(ShareListError::SignatureInvalid {
         message: "the reply's signature didn't match".to_string(),
@@ -225,7 +225,8 @@ fn a_refused_signature_on_a_listing_reaches_the_security_log() {
     assert_eq!(
         capture.events(),
         vec![SecurityEvent::SmbSignatureRejectionsStarted {
-            scope: SmbScope::Host("naspolya".into())
+            scope: SmbScope::Host("naspolya".into()),
+            source: SmbSignatureSource::ShareListing,
         }]
     );
 }

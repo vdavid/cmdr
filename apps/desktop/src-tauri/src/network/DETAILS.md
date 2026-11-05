@@ -898,7 +898,10 @@ connection agreed on no cipher for (`Error::EncryptionUnavailable`, read by vari
 its `Unsupported` kind). Repeating gets the same negotiation. The kernel mount stays, and it checks its own negotiation.
 An unconfirmed negotiation also reaches the security log (`smb_connect_failure::record_security_refusal`, both upgrade
 paths; a share listing's through `smb_client.rs`, which also records a listing reply refused for its signature),
-`../security_log/DETAILS.md`.
+`../security_log/DETAILS.md`. So does a dial whose sign-in reply was refused for its signature
+(`ErrorKind::SignatureInvalid`), marked `SmbSignatureSource::DirectConnection`: it raises its own security notice with no
+Reconnect, since the share stays on the kernel mount and there's no Cmdr session to reconnect (#1007,
+`../security_notices/DETAILS.md`).
 `EncryptionRequired` (Cmdr's own "Always require SMB encryption", § "Requiring SMB encryption") is the third such
 reason: the same server gets the same answer until it or the setting changes.
 

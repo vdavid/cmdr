@@ -25,6 +25,29 @@ fn an_unconfirmed_negotiation_on_a_direct_connection_reaches_the_security_log() 
     );
 }
 
+/// A direct connection whose sign-in reply was refused for its signature reaches the security log
+/// under the share's volume, marked as a direct connection so its notice offers no Reconnect: the
+/// share stays on the kernel mount, with no Cmdr session to reconnect (#1007).
+#[test]
+fn a_refused_signature_on_a_direct_connection_reaches_the_security_log() {
+    use crate::security_log::{SecurityEvent, SmbScope, SmbSignatureSource, testing};
+    let capture = testing::capture_events();
+    let refused = || smb2::Error::SignatureInvalid {
+        command: Command::SessionSetup,
+        message_id: smb2::types::MessageId(3),
+        reason: smb2::error::SignatureFailure::Mismatch,
+    };
+    record_security_refusal("smb-nas-share", &dial(refused(), std::time::Duration::from_secs(1)));
+    record_security_refusal("smb-nas-share", &dial(refused(), std::time::Duration::from_secs(1)));
+    assert_eq!(
+        capture.events(),
+        vec![SecurityEvent::SmbSignatureRejectionsStarted {
+            scope: SmbScope::Volume("smb-nas-share".into()),
+            source: SmbSignatureSource::DirectConnection,
+        }]
+    );
+}
+
 /// A namespace on another server nobody allowed stays on the system connection,
 /// with its own typed reason.
 #[test]

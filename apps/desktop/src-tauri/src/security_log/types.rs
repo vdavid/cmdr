@@ -9,8 +9,9 @@
 use serde::{Deserialize, Serialize};
 
 /// The format version written as `v` on every line. 2: the SMB signature events carry `scope`
-/// (`{"volume": …}` or `{"host": …}`) where 1 carried `volume_id` (#1000).
-pub const FORMAT_VERSION: u32 = 2;
+/// (`{"volume": …}` or `{"host": …}`) where 1 carried `volume_id` (#1000). 3: they also carry
+/// `source`, which path refused the reply (#1007).
+pub const FORMAT_VERSION: u32 = 3;
 
 /// One security-relevant thing that happened. The one enum both the log and any other consumer
 /// (see `subscribe` in `mod.rs`) match on.
@@ -63,13 +64,15 @@ pub enum SecurityEvent {
         version: String,
         check: SignatureCheck,
     },
-    /// The first SMB reply refused for a bad or missing signature on `scope` since its last quiet
-    /// spell.
+    /// The first SMB reply refused for a bad or missing signature on `scope`, through `source`,
+    /// since its last quiet spell.
     SmbSignatureRejectionsStarted {
         scope: SmbScope,
+        source: SmbSignatureSource,
     },
     SmbSignatureRejectionsEnded {
         scope: SmbScope,
+        source: SmbSignatureSource,
         count: u64,
     },
     /// The first SMB connection closed since its last quiet spell because the server didn't
@@ -116,6 +119,22 @@ pub enum SmbScope {
     Volume(String),
     /// A server's host id, the one its share listing is cached under.
     Host(String),
+}
+
+/// Which path met a reply refused for its signature. It decides what the person can do about it:
+/// a session can reconnect, a direct connection that never got in leaves the share on the kernel
+/// mount with no Cmdr session to reconnect, and a listing has no share open at all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SmbSignatureSource {
+    /// A share's established session (a transfer, a listing inside it, or a reconnect's), on
+    /// [`SmbScope::Volume`].
+    Session,
+    /// Cmdr's direct connection to a share mounted by macOS, refused while signing in, on
+    /// [`SmbScope::Volume`]. The share stays on the kernel mount.
+    DirectConnection,
+    /// A server's share listing, on [`SmbScope::Host`].
+    ShareListing,
 }
 
 /// An AI tool that reads file contents or image-derived text.
@@ -266,7 +285,7 @@ pub enum StateFile {
     Credentials,
 }
 
-/// One line of the file: `{"v":2,"at":"<UTC ISO 8601>","event":{"kind":…}}`.
+/// One line of the file: `{"v":3,"at":"<UTC ISO 8601>","event":{"kind":…}}`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LogLine {
     pub v: u32,
@@ -302,8 +321,8 @@ mod tests {
             SecurityEvent::UpdateInstalled { .. } => &["from_version", "to_version"],
             SecurityEvent::UpdateRefusedByPolicy { .. } => &["version", "reason"],
             SecurityEvent::UpdateSignatureInvalid { .. } => &["version", "check"],
-            SecurityEvent::SmbSignatureRejectionsStarted { .. } => &["scope"],
-            SecurityEvent::SmbSignatureRejectionsEnded { .. } => &["scope", "count"],
+            SecurityEvent::SmbSignatureRejectionsStarted { .. } => &["scope", "source"],
+            SecurityEvent::SmbSignatureRejectionsEnded { .. } => &["scope", "source", "count"],
             SecurityEvent::SmbNegotiationRejectionsStarted { .. } => &["scope"],
             SecurityEvent::SmbNegotiationRejectionsEnded { .. } => &["scope", "count"],
             SecurityEvent::RecordingTurnedOn { .. } | SecurityEvent::RecordingTurnedOff { .. } => &["by"],
@@ -378,15 +397,24 @@ mod tests {
             (
                 SecurityEvent::SmbSignatureRejectionsStarted {
                     scope: SmbScope::Volume("smb-nas".into()),
+                    source: SmbSignatureSource::Session,
                 },
-                r#"{"kind":"smb_signature_rejections_started","scope":{"volume":"smb-nas"}}"#,
+                r#"{"kind":"smb_signature_rejections_started","scope":{"volume":"smb-nas"},"source":"session"}"#,
+            ),
+            (
+                SecurityEvent::SmbSignatureRejectionsStarted {
+                    scope: SmbScope::Volume("smb-nas".into()),
+                    source: SmbSignatureSource::DirectConnection,
+                },
+                r#"{"kind":"smb_signature_rejections_started","scope":{"volume":"smb-nas"},"source":"direct_connection"}"#,
             ),
             (
                 SecurityEvent::SmbSignatureRejectionsEnded {
                     scope: SmbScope::Host("naspolya".into()),
+                    source: SmbSignatureSource::ShareListing,
                     count: 3,
                 },
-                r#"{"kind":"smb_signature_rejections_ended","scope":{"host":"naspolya"},"count":3}"#,
+                r#"{"kind":"smb_signature_rejections_ended","scope":{"host":"naspolya"},"source":"share_listing","count":3}"#,
             ),
             (
                 SecurityEvent::SmbNegotiationRejectionsStarted {
@@ -469,7 +497,7 @@ mod tests {
     fn a_line_carries_the_format_version_and_a_utc_timestamp() {
         let line = LogLine::now(SecurityEvent::CloudAiConsentGiven);
         let json = serde_json::to_string(&line).expect("serializes");
-        assert!(json.starts_with(r#"{"v":2,"at":""#), "{json}");
+        assert!(json.starts_with(r#"{"v":3,"at":""#), "{json}");
         assert!(
             json.ends_with(r#"","event":{"kind":"cloud_ai_consent_given"}}"#),
             "{json}"

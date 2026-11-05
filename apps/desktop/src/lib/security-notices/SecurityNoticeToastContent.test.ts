@@ -86,6 +86,26 @@ describe('a refused server reply', () => {
   })
 })
 
+describe('a direct connection refused for its signature', () => {
+  /** The share stays on the system connection, so there's no Cmdr session to reconnect (#1007). */
+  it('names the share and only explains, with nothing to reconnect', async () => {
+    const notice: AccessNotice = { kind: 'smbDirectSignatureRefused', volumeId: 'smb-nas-photos' }
+    const target = await mountNotice(notice)
+    expect(target.textContent).toContain('Cmdr didn’t connect directly to photos')
+    expect(target.textContent).toContain('system connection')
+    const labels = [...target.querySelectorAll('button')].map((b) => b.textContent.trim())
+    expect(labels).toEqual(['Dismiss'])
+    click(target, 'Dismiss')
+    expect(dismissSecurityNotice).toHaveBeenCalledWith(notice)
+    expect(ipc.reconnectVolume).not.toHaveBeenCalled()
+  })
+
+  it('still reads once the share is gone from the volume list', async () => {
+    const target = await mountNotice({ kind: 'smbDirectSignatureRefused', volumeId: 'smb-gone' })
+    expect(target.textContent).toContain('Cmdr didn’t connect directly to a share')
+  })
+})
+
 describe('an update that isn’t genuine', () => {
   it('says nothing was installed, and opens the website or the report', async () => {
     const report: ReportIncident = { kind: 'updateNotGenuine', version: '0.53.0', check: 'minisign' }

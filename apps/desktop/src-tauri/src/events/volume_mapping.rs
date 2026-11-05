@@ -72,6 +72,7 @@ fn record_security_refusal(volume_id: &str, refusal: SecurityRefusal) {
     match refusal {
         SecurityRefusal::ReplySignatureInvalid => crate::security_log::note_smb_signature_rejection(
             crate::security_log::SmbScope::Volume(volume_id.to_string()),
+            crate::security_log::SmbSignatureSource::Session,
         ),
         SecurityRefusal::NegotiationInvalid => crate::security_log::note_smb_negotiation_rejection(
             crate::security_log::SmbScope::Volume(volume_id.to_string()),
@@ -88,7 +89,7 @@ mod tests {
     /// reach the frontend as the matching wire variant, never a neighboring one.
     #[test]
     fn a_refused_signature_reaches_the_security_log_once_per_episode() {
-        use crate::security_log::{SecurityEvent, SmbScope, testing};
+        use crate::security_log::{SecurityEvent, SmbScope, SmbSignatureSource, testing};
         let capture = testing::capture_events();
         for _ in 0..3 {
             record_security_refusal("smb-nas-share", SecurityRefusal::ReplySignatureInvalid);
@@ -96,7 +97,8 @@ mod tests {
         assert_eq!(
             capture.events(),
             vec![SecurityEvent::SmbSignatureRejectionsStarted {
-                scope: SmbScope::Volume("smb-nas-share".into())
+                scope: SmbScope::Volume("smb-nas-share".into()),
+                source: SmbSignatureSource::Session,
             }]
         );
     }
