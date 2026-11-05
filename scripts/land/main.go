@@ -60,6 +60,10 @@ const (
 	ciCheck    = "CI OK"
 	// Every PR this script opens is an agent's, and agent-made issues and PRs carry this label.
 	agentLabel = "claude-created"
+	// landLabel asks CI to land the PR's head: while it's on, a PR run is a land run (every lane
+	// the change needs, gate `CI OK`); without it, a light run (the cheap lanes, gate `CI light`,
+	// which `main` doesn't accept). `ci.yml`'s `mode` step reads it.
+	landLabel = "land"
 	// How long a CI run gets to show up after the push that starts it.
 	appearWithin = 5 * time.Minute
 	// How many CI runs one land waits through when each green head needs a rebase here before it
@@ -208,23 +212,16 @@ func landOnce(r runner, cfg config) error {
 			return err
 		}
 	}
-	head, err := r.git("rev-parse", "HEAD")
-	if err != nil {
-		return err
-	}
-	if head, err = pushBranch(r, state.branch, head); err != nil {
-		return err
-	}
-	if commits, err = r.commits("origin/main..HEAD"); err != nil {
-		return err
-	}
-	pr, err := ensurePR(r, state.branch, commits)
+	pr, head, err := publish(r, state.branch, cfg)
 	if err != nil {
 		return err
 	}
 	if cfg.noWait {
-		say("CI is on it: %s\nLand it when you're ready: %s", pr.URL, cfg.command())
+		say("CI runs the cheap lanes: %s\nThe Rust lanes and Linux E2E run when you land it: %s", pr.URL, cfg.command())
 		return nil
+	}
+	if err := askToLand(r, pr, head, cfg); err != nil {
+		return err
 	}
 	if err := waitForCI(r, head, cfg); err != nil {
 		return err
@@ -233,6 +230,30 @@ func landOnce(r runner, cfg config) error {
 		return err
 	}
 	return finish(r, state.branch)
+}
+
+// publish pushes the branch and opens its PR, or reuses the open one, and returns the PR and the
+// SHA on origin. `-no-wait` is a milestone push, which runs light, so a `land` label left by an
+// earlier land comes off before the push; a land opens its PR with the label on.
+func publish(r runner, branch string, cfg config) (pullRequest, string, error) {
+	head, err := r.git("rev-parse", "HEAD")
+	if err != nil {
+		return pullRequest{}, "", err
+	}
+	if cfg.noWait {
+		if err := dropLandLabel(r, branch); err != nil {
+			return pullRequest{}, "", err
+		}
+	}
+	if head, err = pushBranch(r, branch, head); err != nil {
+		return pullRequest{}, "", err
+	}
+	commits, err := r.commits("origin/main..HEAD")
+	if err != nil {
+		return pullRequest{}, "", err
+	}
+	pr, err := ensurePR(r, branch, commits, !cfg.noWait)
+	return pr, head, err
 }
 
 // start acts on the start step: it refuses, finishes an earlier land, or rebases. It reports
@@ -342,15 +363,30 @@ func pushToOrigin(r runner, branch string) error {
 	return err
 }
 
-func ensurePR(r runner, branch string, commits []commit) (pullRequest, error) {
+// findOpenPR finds the branch's open PR, with its labels.
+func findOpenPR(r runner, branch string) (pullRequest, bool, error) {
 	var prs []pullRequest
-	if err := r.ghJSON(&prs, "pr", "list", "-R", repo, "--head", branch, "--state", "all", "--json", "number,state,url"); err != nil {
-		return pullRequest{}, err
+	if err := r.ghJSON(&prs, "pr", "list", "-R", repo, "--head", branch, "--state", "all", "--json", "number,state,url,labels"); err != nil {
+		return pullRequest{}, false, err
 	}
-	if pr, ok := openPR(prs); ok {
-		return pr, nil
+	pr, ok := openPR(prs)
+	return pr, ok, nil
+}
+
+// ensurePR reuses the branch's open PR or opens one. land: a new PR carries the `land` label from
+// the start, so its first run is a land run.
+func ensurePR(r runner, branch string, commits []commit, land bool) (pullRequest, error) {
+	pr, ok, err := findOpenPR(r, branch)
+	if err != nil || ok {
+		return pr, err
 	}
-	url, err := r.gh("pr", "create", "-R", repo, "--base", "main", "--head", branch, "--title", prTitle(commits), "--body", prBody(commits), "--label", agentLabel)
+	labels := []prLabel{{Name: agentLabel}}
+	args := []string{"pr", "create", "-R", repo, "--base", "main", "--head", branch, "--title", prTitle(commits), "--body", prBody(commits), "--label", agentLabel}
+	if land {
+		args = append(args, "--label", landLabel)
+		labels = append(labels, prLabel{Name: landLabel})
+	}
+	url, err := r.gh(args...)
 	if err != nil {
 		return pullRequest{}, err
 	}
@@ -359,7 +395,50 @@ func ensurePR(r runner, branch string, commits []commit) (pullRequest, error) {
 	if !ok {
 		return pullRequest{}, fmt.Errorf("gh pr create printed %q, which has no PR number", url)
 	}
-	return pullRequest{Number: number, State: "OPEN", URL: url}, nil
+	return pullRequest{Number: number, State: "OPEN", URL: url, Labels: labels, opened: true}, nil
+}
+
+// dropLandLabel takes the `land` label off the branch's open PR, so the push that follows runs
+// light. No PR, or no label, is nothing to do.
+func dropLandLabel(r runner, branch string) error {
+	pr, ok, err := findOpenPR(r, branch)
+	if err != nil || !ok || !pr.hasLabel(landLabel) {
+		return err
+	}
+	if _, err := r.gh("pr", "edit", fmt.Sprint(pr.Number), "-R", repo, "--remove-label", landLabel); err != nil {
+		return fmt.Errorf("couldn't take the %q label off %s, so I didn't push (the push would run every lane):\n%w", landLabel, pr.URL, err)
+	}
+	return nil
+}
+
+// askToLand makes sure a land run is on its way for head (`nextLandAsk`): it adds the PR's `land`
+// label, or takes it off and on again when the label is on but every run on head is light. A PR
+// this land just opened with the label needs nothing: `gh pr create` adds labels after opening, so
+// its light `opened` run may already be listed, and the label's land run replaces it.
+func askToLand(r runner, pr pullRequest, head string, cfg config) error {
+	if pr.opened && pr.hasLabel(landLabel) {
+		return nil
+	}
+	var runs struct {
+		WorkflowRuns []workflowRun `json:"workflow_runs"`
+	}
+	if err := r.ghAPI(&runs, ciRunsPath(head, cfg.merge)); err != nil {
+		return err
+	}
+	switch nextLandAsk(pr.hasLabel(landLabel), runs.WorkflowRuns) {
+	case askNothing:
+		return nil
+	case askRelabel:
+		if _, err := r.gh("pr", "edit", fmt.Sprint(pr.Number), "-R", repo, "--remove-label", landLabel); err != nil {
+			return fmt.Errorf("couldn't take the %q label off %s to put it back on:\n%w", landLabel, pr.URL, err)
+		}
+	case askAddLabel:
+	}
+	if _, err := r.gh("pr", "edit", fmt.Sprint(pr.Number), "-R", repo, "--add-label", landLabel); err != nil {
+		return fmt.Errorf("couldn't add the %q label to %s, which asks CI for the land run:\n%w", landLabel, pr.URL, err)
+	}
+	say("Asked CI to land %s: every lane it needs runs now.", head[:12])
+	return nil
 }
 
 func waitForCI(r runner, head string, cfg config) error {

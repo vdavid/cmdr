@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       verified: ${{ steps.verified.outputs.verified }}
+      land: ${{ steps.mode.outputs.land }}
       lint: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.lint || 'false' }}
       lint-changed: ${{ steps.filter.outputs.lint }}
 
@@ -50,7 +51,8 @@ jobs:
     needs: [warm-rust-cache, warm-rust-macos-cache]
 
   ci-ok:
-    name: CI OK
+    name:
+      ${{ (github.event_name != 'pull_request' || needs.changes.outputs.land == 'true') && 'CI OK' || 'CI light' }}
     needs:
       [
         changes,
@@ -82,6 +84,26 @@ func TestCIOKGateFlagsASkippableGate(t *testing.T) {
 	got := validateCIOKGate(yml)
 	if len(got) != 1 || !strings.Contains(got[0], "always()") {
 		t.Errorf("want one violation about always(), got:\n%s", strings.Join(got, "\n"))
+	}
+}
+
+// A light run skips the heavy lanes because nobody asked to land; a gate named `CI OK` there would
+// be a green required check over lanes that never ran.
+func TestCIOKGateFlagsAGateNamedCIOKOnEveryRun(t *testing.T) {
+	yml := strings.Replace(ciOKGateFixture,
+		"    name:\n      ${{ (github.event_name != 'pull_request' || needs.changes.outputs.land == 'true') && 'CI OK' || 'CI light' }}\n",
+		"    name: CI OK\n", 1)
+	got := validateCIOKGate(yml)
+	if len(got) != 1 || !strings.Contains(got[0], "CI light") {
+		t.Errorf("want one violation about the gate's name, got:\n%s", strings.Join(got, "\n"))
+	}
+}
+
+func TestCIOKGateFlagsALandOutputNotFromTheModeStep(t *testing.T) {
+	yml := strings.Replace(ciOKGateFixture, "land: ${{ steps.mode.outputs.land }}", "land: 'true'", 1)
+	got := validateCIOKGate(yml)
+	if len(got) != 1 || !strings.Contains(got[0], "`land`") {
+		t.Errorf("want one violation about the `land` output, got:\n%s", strings.Join(got, "\n"))
 	}
 }
 

@@ -1,5 +1,15 @@
 name: CI
 
+# A light run (a PR push nobody asked to land yet) is titled `Light: <PR title>`, so `pnpm land`
+# can tell it from a land run on the same head before either finishes; every other run keeps
+# GitHub's default title (an empty `run-name` falls back to it). The condition mirrors `changes`'
+# `mode` step; drift only makes `land` wait on the wrong run, never land one: the gate's name
+# comes from `mode` alone (`docs/tooling/ci.md` § Light runs and land runs).
+run-name: >-
+  ${{ github.event_name == 'pull_request' && ((github.event.action == 'labeled' && github.event.label.name != 'land') ||
+  (!contains(github.event.pull_request.labels.*.name, 'land') && github.event.pull_request.user.type != 'Bot')) &&
+  format('Light: {0}', github.event.pull_request.title) || '' }}
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,7 +17,11 @@ on:
         description: 'Run all checks (bypass change detection)'
         type: boolean
         default: true
+  # `labeled` is how `pnpm land` asks to land the head: it adds the `land` label, and that run
+  # (and every later one while the label stays) runs every lane the change needs. Any other label
+  # starts a run that checks nothing (the `verified` step) in a concurrency group of its own.
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches:
       - main
@@ -29,10 +43,12 @@ permissions:
 # and the release gates. A new push to a PR cancels that PR's older run. `main` pushes and dispatches
 # each get a group of their own (the run ID): a shared group would queue them, and GitHub cancels a QUEUED run
 # when a newer one joins even without `cancel-in-progress`, which would drop a deploy or leave a
-# release commit without its run.
+# release commit without its run. An unrelated label's run (it checks nothing) gets its own group
+# too, so it can't cancel the PR's real run.
 concurrency:
   group:
-    ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+    ci-${{ github.event_name == 'pull_request' && !(github.event.action == 'labeled' && github.event.label.name !=
+    'land') && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # The Rust caches (`rust-cache` in the Rust jobs) save only from `main`; a PR run restores
@@ -85,11 +101,25 @@ jobs:
     outputs:
       verified: ${{ steps.verified.outputs.verified }}
       same-tree: ${{ steps.same-tree.outputs.same-tree }}
-      rust: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust || 'false' }}
-      rust-fixtures: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust-fixtures || 'false' }}
-      rust-macos: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust-macos || 'false' }}
+      # A land run: every event but a pull request, and a pull request that `pnpm land` asked to
+      # land (the `land` label) or a bot opened (Renovate automerges on green `CI OK`). Only a land
+      # run runs the heavy lanes and names its gate `CI OK`; a light run's gate is `CI light`,
+      # which `main`'s ruleset doesn't accept (`mode` step).
+      land: ${{ steps.mode.outputs.land }}
+      # The heavy lanes (the three Rust lanes and Linux E2E) run on a land run only.
+      rust:
+        ${{ steps.verified.outputs.verified != 'true' && steps.mode.outputs.land == 'true' && steps.filter.outputs.rust
+        || 'false' }}
+      rust-fixtures:
+        ${{ steps.verified.outputs.verified != 'true' && steps.mode.outputs.land == 'true' &&
+        steps.filter.outputs.rust-fixtures || 'false' }}
+      rust-macos:
+        ${{ steps.verified.outputs.verified != 'true' && steps.mode.outputs.land == 'true' &&
+        steps.filter.outputs.rust-macos || 'false' }}
       svelte: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.svelte || 'false' }}
-      desktop: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.desktop || 'false' }}
+      desktop:
+        ${{ steps.verified.outputs.verified != 'true' && steps.mode.outputs.land == 'true' &&
+        steps.filter.outputs.desktop || 'false' }}
       website: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.website || 'false' }}
       api-server: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.api-server || 'false' }}
       dashboard: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.dashboard || 'false' }}
@@ -118,6 +148,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # Light run or land run. A pull request runs light (the cheap lanes, gate `CI light`) until
+      # `pnpm land` asks to land it by adding the `land` label; then that run, any re-run of it, and
+      # every later push while the label stays run as a land run (every lane the change needs, gate
+      # `CI OK`). Everything here is the event payload GitHub writes: only someone with triage
+      # access can label a PR, so a fork PR can't ask, and a bot's PR (Renovate, which automerges
+      # on green) always lands. Pushes, dispatches (`run_all`), and the schedule always land.
+      # `ignored` is a run started by some other label: it checks nothing (the `verified` step).
+      # `run-name` at the top mirrors this. `docs/tooling/ci.md` § Light runs and land runs.
+      - name: Decide between a light run and a land run
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          LABEL: ${{ github.event.label.name }}
+          HAS_LAND_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'land') }}
+          AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+        run: |
+          land=false ignored=false
+          if [[ "$EVENT" != "pull_request" ]]; then
+            land=true
+            echo "A $EVENT run: a land run."
+          elif [[ "$ACTION" == "labeled" && "$LABEL" != "land" ]]; then
+            ignored=true
+            echo "Started by the '$LABEL' label, which asks for nothing: this run checks nothing."
+          elif [[ "$HAS_LAND_LABEL" == "true" ]]; then
+            land=true
+            echo "The PR carries the 'land' label (pnpm land asked to land it): a land run, every lane the change needs."
+          elif [[ "$AUTHOR_TYPE" == "Bot" ]]; then
+            land=true
+            echo "A bot's PR, which lands on green CI by itself: a land run."
+          else
+            echo "Nobody asked to land this PR yet: a light run. The Rust lanes and Linux E2E wait for 'pnpm land', and the gate reports 'CI light', which main doesn't accept."
+          fi
+          echo "land=$land" >>"$GITHUB_OUTPUT"
+          echo "ignored=$ignored" >>"$GITHUB_OUTPUT"
+
       # Pushes and pull requests: a dispatch (the release gate's `run_all`) always runs in full.
       # Only a completed, successful `CI OK` from GitHub Actions counts; this run's own is still
       # pending. An API hiccup falls back to running the lanes, never to a skip.
@@ -143,7 +209,13 @@ jobs:
           SHA: ${{ github.sha }}
           EVENT: ${{ github.event_name }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          IGNORED: ${{ steps.mode.outputs.ignored }}
         run: |
+          if [[ "$IGNORED" == "true" ]]; then
+            echo "verified=true" >>"$GITHUB_OUTPUT"
+            echo "An unrelated label started this run, so every lane skips; its gate reports 'CI light'."
+            exit 0
+          fi
           green_ci_ok() {
             gh api "repos/$REPO/commits/$1/check-runs?check_name=CI%20OK&filter=all" \
               --jq '[.check_runs[] | select(.app.slug == "github-actions" and .conclusion == "success")] | length'
@@ -1513,9 +1585,14 @@ jobs:
   # - One exception: on a `main` push, a `cancelled` `desktop-rust-macos` passes when `main`
   #   has moved past this commit, because a newer push replaced it in the lane's shared group
   #   and that run checks this code too. Any failed lookup keeps it red.
+  # - Its name is `CI OK` only on a land run (`changes`' `mode`; every non-PR event is one). A
+  #   light run skipped the heavy lanes because nobody asked to land, so its gate is `CI light`:
+  #   green when the lanes that ran passed, and never the check `main` requires. A failed
+  #   `changes` on a pull request names it `CI light` too, red either way. The name is never
+  #   `CI OK` on a skipped job, since this job never skips (`always()`).
   # `docs/tooling/ci.md` § Branch protection.
   ci-ok:
-    name: CI OK
+    name: ${{ (github.event_name != 'pull_request' || needs.changes.outputs.land == 'true') && 'CI OK' || 'CI light' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs:
@@ -1570,6 +1647,9 @@ jobs:
             exit 1
           fi
           echo "All jobs passed or were skipped by change detection"
+          if [[ "$EVENT" == "pull_request" && "$(jq -r '.changes.outputs.land' <<<"$NEEDS")" != "true" ]]; then
+            echo "A light run: the Rust lanes and Linux E2E wait for 'pnpm land', so this gate is 'CI light', never the 'CI OK' main requires."
+          fi
 
       # The check above passes any skipped lane. This one re-proves every skip of a lane whose
       # filter was on: it must be a marker skip the plan made, with the key this job recomputes

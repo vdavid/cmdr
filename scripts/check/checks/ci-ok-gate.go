@@ -10,6 +10,16 @@ import (
 // ciOKJobID is the job behind the `CI OK` status check that `main`'s ruleset requires.
 const ciOKJobID = "ci-ok"
 
+// ciOKGateName is the gate's `name:`. Only a land run (`changes`' `land` output; every non-PR
+// event is one) reports `CI OK`; a light run, which skipped the heavy lanes because nobody asked
+// to land, reports `CI light`, a check `main`'s ruleset doesn't accept. GitHub names a job's check
+// run when the job is queued, after its `needs` finish, so the name is always the evaluated one
+// (`docs/tooling/ci.md` § Light runs and land runs).
+const ciOKGateName = "${{ (github.event_name != 'pull_request' || needs.changes.outputs.land == 'true') && 'CI OK' || 'CI light' }}"
+
+// ciOKLandOutput is `changes`' `land` output, which the gate's name reads.
+const ciOKLandOutput = "${{ steps.mode.outputs.land }}"
+
 // ciOKGateExempt names the ci.yml jobs `ci-ok` deliberately doesn't wait for, each with
 // its reason. Everything else must be in its `needs`.
 var ciOKGateExempt = map[string]string{
@@ -67,6 +77,16 @@ func validateCIOKGate(ciYml string) []string {
 
 	violations = append(violations, validateVerifiedPushSkipsLanes(jobs, jobNeeds(gate))...)
 
+	if name := jobScalar(gate, "name"); name != ciOKGateName {
+		violations = append(violations, fmt.Sprintf(
+			"ci.yml: `%s`'s name must be exactly %q (has %q): a light run skips the heavy lanes, so it must never report the `CI OK` main requires",
+			ciOKJobID, ciOKGateName, name))
+	}
+	if land := jobOutputs(jobs["changes"])["land"]; land != ciOKLandOutput {
+		violations = append(violations, fmt.Sprintf(
+			"ci.yml: `changes` output `land` must be exactly %q (has %q): it names the gate `CI OK`, so only the `mode` step may decide it",
+			ciOKLandOutput, land))
+	}
 	if cond := jobScalar(gate, "if"); cond != "always()" && cond != "${{ always() }}" {
 		violations = append(violations, fmt.Sprintf(
 			"ci.yml: `%s` must run with `if: always()` (has %q); a skipped required check counts as passing",

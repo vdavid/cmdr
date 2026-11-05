@@ -62,8 +62,11 @@ func recordOnce(r runner, cfg config) error {
 	if err != nil {
 		return err
 	}
-	recordPR, err := ensurePR(r, recordBranch(n), []commit{recordMessage(n)})
+	recordPR, err := ensurePR(r, recordBranch(n), []commit{recordMessage(n)}, true)
 	if err != nil {
+		return err
+	}
+	if err := askToLand(r, recordPR, sha, cfg); err != nil {
 		return err
 	}
 	if err := waitForCI(r, sha, cfg); err != nil {

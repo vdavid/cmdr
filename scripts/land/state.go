@@ -259,6 +259,9 @@ type workflowRun struct {
 	Status     string    `json:"status"`
 	Conclusion string    `json:"conclusion"`
 	CreatedAt  time.Time `json:"created_at"`
+	// DisplayTitle is the run's name: `ci.yml`'s `run-name` starts a light run's with
+	// `lightRunPrefix`.
+	DisplayTitle string `json:"display_title"`
 	// RunAttempt goes up with each `gh run rerun`, and RunStartedAt moves to that attempt's start.
 	RunAttempt   int       `json:"run_attempt"`
 	RunStartedAt time.Time `json:"run_started_at"`
@@ -353,15 +356,61 @@ const (
 	verdictRed
 )
 
-// ciVerdict reads the CI runs and `CI OK` check runs on one SHA. The newest run's current
-// attempt's `CI OK` decides as soon as it completes, whatever the run's status says: it's the
-// exact check `main`'s ruleset demands, and GitHub can mark the run completed many minutes later
-// (PR #944, 2026-11-04: `CI OK` done at 16:19:55Z, the run at 16:35:58Z). An earlier attempt's or
-// another run's `CI OK` never counts (`ofAttempt`), so an old green can't beat a re-run in
-// flight. With no such check, a finished run is red (`CI OK` never ran) and an unfinished one
-// pending. Only `success` is green: GitHub would also accept a skipped check, which is never what
-// a finished CI run should produce.
+// lightRunPrefix starts a light run's title (`ci.yml`'s `run-name`): a PR run nobody asked to land,
+// which skips the heavy lanes and reports `CI light`, never `CI OK`.
+const lightRunPrefix = "Light: "
+
+// isLightRun tells a light run from a land run before either finishes. A title that lies only
+// makes the wait follow the wrong run: a light run never reports `CI OK`, so it reads red, never
+// green.
+func (r workflowRun) isLightRun() bool {
+	return strings.HasPrefix(r.DisplayTitle, lightRunPrefix)
+}
+
+// landRuns drops the light runs: only a land run can report the `CI OK` that lands a head.
+func landRuns(runs []workflowRun) []workflowRun {
+	return slices.DeleteFunc(slices.Clone(runs), workflowRun.isLightRun)
+}
+
+// landAsk is how `land` asks CI to land the head (`ci.yml`'s `mode` step reads the PR's labels).
+type landAsk int
+
+const (
+	// askAddLabel: the PR lacks the `land` label; adding it starts a land run on the head.
+	askAddLabel landAsk = iota
+	// askNothing: the label is on, so the head's land run exists or is on its way (a push while
+	// the label is on runs as a land run).
+	askNothing
+	// askRelabel: the label is on, yet every run on the head is light (it went on before this
+	// head, or its run never started), so taking it off and on again starts one.
+	askRelabel
+)
+
+// nextLandAsk decides how to get a land run on the head, from whether the PR has the label and
+// the CI runs on the head so far. No run at all with the label on is a push whose land run hasn't
+// shown up yet.
+func nextLandAsk(labeled bool, runs []workflowRun) landAsk {
+	switch {
+	case !labeled:
+		return askAddLabel
+	case len(runs) > 0 && len(landRuns(runs)) == 0:
+		return askRelabel
+	default:
+		return askNothing
+	}
+}
+
+// ciVerdict reads the CI runs and `CI OK` check runs on one SHA. Light runs don't count: they never
+// report `CI OK`, and `land` asks for a land run before it waits (`nextLandAsk`). The newest land
+// run's current attempt's `CI OK` decides as soon as it completes, whatever the run's status says:
+// it's the exact check `main`'s ruleset demands, and GitHub can mark the run completed many minutes
+// later (PR #944, 2026-11-04: `CI OK` done at 16:19:55Z, the run at 16:35:58Z). An earlier
+// attempt's or another run's `CI OK` never counts (`ofAttempt`), so an old green can't beat a
+// re-run in flight. With no such check, a finished run is red (`CI OK` never ran) and an unfinished
+// one pending. Only `success` is green: GitHub would also accept a skipped check, which is never
+// what a finished CI run should produce.
 func ciVerdict(runs []workflowRun, checks []checkRun) (verdict, workflowRun) {
+	runs = landRuns(runs)
 	if len(runs) == 0 {
 		return verdictMissing, workflowRun{}
 	}
@@ -505,11 +554,23 @@ func failedRequiredJobs(jobs []runJob, required []string, attempt int) []runJob 
 	return out
 }
 
-// pullRequest is one row of `gh pr list --json number,state,url`.
+// pullRequest is one row of `gh pr list --json number,state,url,labels`.
 type pullRequest struct {
-	Number int    `json:"number"`
-	State  string `json:"state"`
-	URL    string `json:"url"`
+	Number int       `json:"number"`
+	State  string    `json:"state"`
+	URL    string    `json:"url"`
+	Labels []prLabel `json:"labels"`
+	// opened: this land just opened it, labels and all, so its first runs are on their way.
+	opened bool
+}
+
+type prLabel struct {
+	Name string `json:"name"`
+}
+
+// hasLabel says whether the PR carries the label.
+func (p pullRequest) hasLabel(name string) bool {
+	return slices.ContainsFunc(p.Labels, func(l prLabel) bool { return l.Name == name })
 }
 
 // pullDetails is the part of `repos/{repo}/pulls/{n}` a GitHub merge decides on. Mergeable is

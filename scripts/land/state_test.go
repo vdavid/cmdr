@@ -272,6 +272,71 @@ func TestCIVerdict(t *testing.T) {
 	}
 }
 
+// A light run (a `-no-wait` push nobody asked to land) never reports `CI OK`, so the wait follows
+// the newest land run and ignores light ones, however new or green.
+func TestCIVerdictIgnoresLightRuns(t *testing.T) {
+	at := func(m int) time.Time { return time.Date(2026, 11, 5, 9, m, 0, 0, time.UTC) }
+	run := func(id int64, status, title string, created int) workflowRun {
+		return workflowRun{ID: id, Status: status, DisplayTitle: title, CreatedAt: at(created), RunStartedAt: at(created), CheckSuiteID: 100 + id}
+	}
+	green := func(suite int64) checkRun {
+		c := checkRun{ID: suite, Status: "completed", Conclusion: "success", StartedAt: at(30)}
+		c.CheckSuite.ID = suite
+		return c
+	}
+	light := run(1, "completed", "Light: feat: a thing", 1)
+	newerLight := run(3, "in_progress", "Light: feat: a thing", 9)
+	landing := run(2, "in_progress", "feat: a thing", 5)
+
+	cases := []struct {
+		name   string
+		runs   []workflowRun
+		checks []checkRun
+		want   verdict
+		wantID int64
+	}{
+		{"a finished light run alone is no run yet, never red", []workflowRun{light}, nil, verdictMissing, 0},
+		{"the land run decides over an older light run", []workflowRun{light, landing}, nil, verdictPending, 2},
+		{"a newer light run (another label) doesn't shadow the land run", []workflowRun{light, landing, newerLight}, []checkRun{green(102)}, verdictGreen, 2},
+	}
+	for _, c := range cases {
+		got, run := ciVerdict(c.runs, c.checks)
+		if got != c.want || run.ID != c.wantID {
+			t.Errorf("%s: got %d (run %d), want %d (run %d)", c.name, got, run.ID, c.want, c.wantID)
+		}
+	}
+}
+
+func TestNextLandAsk(t *testing.T) {
+	light := workflowRun{ID: 1, DisplayTitle: "Light: fix: x"}
+	landing := workflowRun{ID: 2, DisplayTitle: "fix: x"}
+	cases := []struct {
+		name    string
+		labeled bool
+		runs    []workflowRun
+		want    landAsk
+	}{
+		{"no label: add it", false, nil, askAddLabel},
+		{"no label, a light run on head: add it", false, []workflowRun{light}, askAddLabel},
+		// A push while the label is on starts a land run; it may not be listed yet.
+		{"label on, no run yet: wait for the push's land run", true, nil, askNothing},
+		{"label on, a land run on head: wait for it", true, []workflowRun{light, landing}, askNothing},
+		{"label on, only light runs on head: off and on again", true, []workflowRun{light}, askRelabel},
+	}
+	for _, c := range cases {
+		if got := nextLandAsk(c.labeled, c.runs); got != c.want {
+			t.Errorf("%s: got %d, want %d", c.name, got, c.want)
+		}
+	}
+}
+
+func TestHasLabel(t *testing.T) {
+	pr := pullRequest{Labels: []prLabel{{Name: agentLabel}, {Name: landLabel}}}
+	if !pr.hasLabel(landLabel) || (pullRequest{Labels: []prLabel{{Name: agentLabel}}}).hasLabel(landLabel) {
+		t.Error("hasLabel should find exactly the labels the PR carries")
+	}
+}
+
 // A re-run reopens the run as a new attempt in the same check suite, and the earlier attempt's
 // `CI OK` stays in the list (run 41854674280, 2026-11-04). Only the current attempt's counts, so
 // an old green can't land a SHA whose re-run is still going, and an old red can't stop one.
