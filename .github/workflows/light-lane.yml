@@ -1,4 +1,4 @@
-name: Light lane # probe
+name: Light lane # probe 2
 
 # The light lane, called by `ci.yml` (`light`): one runner for everything that needs no Rust and
 # no browser, so a narrow PR (docs, Go, API server, dashboard, CI config) pays setup once.
