@@ -2,7 +2,8 @@
 //!
 //! Every source is stat'ed ONCE through the plan's volume, local disk and remote alike, under
 //! one shared deadline (`agent::suggested_ops::facts::stat_sources`: bounded, detached, capped
-//! in flight). That one answer does two jobs:
+//! in flight PER VOLUME, so a dead share's stragglers never starve a plan on another volume).
+//! That one answer does two jobs:
 //!
 //! - **Existence**: a missing file stays in the plan and preflight shows it as "(doesn't
 //!   exist)", so one invented name costs that row and not the plan. A folder refuses its row. A
@@ -15,40 +16,55 @@ use std::sync::Arc;
 
 use cmdr_fs::deadline::Deadline;
 
-use super::rows::{RowProblem, RowRejection};
+use super::rows::{RowProblem, RowRejection, looks_like_a_snapshot_view};
 use super::store::RenameDraftRow;
 use crate::agent::suggested_ops::facts::{SourceStat, stat_sources};
 use crate::file_system::volume::Volume;
 
 /// Stat every row's source on `volume` within `deadline`, freezing each present file's snapshot
-/// in place, or refuse with every row that can't be staged.
+/// in place, and answer every row that can't be staged (empty: all of them can).
 ///
-/// A plan where EVERY source is missing refuses too, each row as `missing`: nothing the user
-/// could approve would rename anything, so the plan names the wrong folder or invented names.
+/// When no row is a file the volume vouched for (each is missing, or a folder, and none went
+/// unanswered), the missing ones refuse too: nothing the user could approve would rename
+/// anything, so the plan names the wrong folder or invented names. Reported in the same answer
+/// as the folders, so the model doesn't learn it one retry later.
 pub(super) async fn check_sources(
+    volume_id: &str,
     volume: Arc<dyn Volume>,
     rows: &mut [RenameDraftRow],
     deadline: &Deadline,
-) -> Result<(), Vec<RowRejection>> {
+) -> Vec<RowRejection> {
     let paths = rows.iter().map(|row| row.source_path.clone()).collect();
-    let stats = stat_sources(volume, paths, deadline).await;
+    let stats = stat_sources(volume_id, volume, paths, deadline).await;
     let mut rejections = Vec::new();
-    let mut missing = 0;
+    let mut missing = Vec::new();
+    let mut files = 0;
+    let mut unanswered = 0;
     for (row, stat) in rows.iter_mut().zip(stats) {
         match stat {
             SourceStat::Present { is_directory: true, .. } => {
                 rejections.push(RowRejection::new(&row.source_path, RowProblem::Folder));
             }
-            SourceStat::Unknown => rejections.push(RowRejection::new(&row.source_path, RowProblem::Unreachable)),
-            SourceStat::Missing => missing += 1,
-            SourceStat::Present { .. } => row.snapshot = stat.snapshot(),
+            SourceStat::Unknown => {
+                unanswered += 1;
+                rejections.push(RowRejection::new(&row.source_path, RowProblem::Unreachable));
+            }
+            SourceStat::Missing => missing.push(row.source_path.clone()),
+            SourceStat::Present { .. } => {
+                files += 1;
+                row.snapshot = stat.snapshot();
+            }
         }
     }
-    if rejections.is_empty() && missing == rows.len() {
-        rejections = rows
-            .iter()
-            .map(|row| RowRejection::new(&row.source_path, RowProblem::Missing))
-            .collect();
+    if files == 0 && unanswered == 0 {
+        rejections.extend(missing.into_iter().map(|path| {
+            let problem = if looks_like_a_snapshot_view(&path) {
+                RowProblem::MissingUnderSnapshots
+            } else {
+                RowProblem::Missing
+            };
+            RowRejection::new(&path, problem)
+        }));
     }
-    if rejections.is_empty() { Ok(()) } else { Err(rejections) }
+    rejections
 }

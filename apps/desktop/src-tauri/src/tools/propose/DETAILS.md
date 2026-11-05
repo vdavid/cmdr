@@ -77,30 +77,45 @@ pane shows it, and a selection no longer narrows what it may include. The case t
 move the panes to `~/Documents`, then ask to rename the invoices in `~/Downloads/something`; a focused-pane rule refused
 it. The user's review, preflight's live re-check, and apply's re-check are the safety; the chat defines intent.
 
-`plan.rs::build_draft` runs, in order, and each step refuses before the next spends anything:
+`plan.rs::check_plan` (behind `build_draft`, which only supplies the app's volume facts, ledger, and volumes) runs, in
+order:
 
 1. **Each row on its own** (`rows.rs::own_problem`, no I/O): a plain full path (`rows.rs::is_plain_path`: no relative
    path, no empty, `.`, or `..` segment, so one folder can't be spelled two ways past the one-folder check), not inside
    an archive, a repo's history, or a backup's snapshots, and a valid new name.
-2. **Across rows**: one `volumeId`, one folder, no repeated source, no repeated name (`destination_key`). The volume and
-   folder are the ones MOST rows name (`rows.rs::most_common`), so one stray row is the one refused, ❌ not the 39 that
-   agree.
+2. **Across rows**: one `volumeId`, one folder, no repeated source, no repeated name. The volume and folder are the ones
+   MOST rows name (`rows.rs::most_common`), so one stray row is the one refused, ❌ not the 39 that agree. A repeated
+   source is keyed by the same fold as a repeated name (`destination_key` on the file name): on a case-insensitive disk
+   `A.png` and `a.png` are one file, and two rows for it would reach the review as two renames, one bound to fail at
+   apply (preflight has no file-identity dedupe). The cost, on a case-sensitive disk, is that two files differing only
+   in case can't share one plan; the refusal names the row.
 3. **Evidence** (§ Evidence), on the paths as sent, which are the paths `image_facts` answered for.
-4. **Placement** (`plan.rs::place_folder`): the shared folder goes through `crate::location`'s resolver over one
-   `VolumeFacts` snapshot. An unknown id, a path off the named volume, or a volume that isn't connected refuses in the
-   read tools' miss shape (`refusal: "location"`, plus `nearby` and `sameShareAs`), the same next moves `list_dir`
-   gives. A not-live share with a live, proven sibling is re-addressed onto it, as `propose_suggestions` does, and the
-   rows' paths are rewritten to where the files are now: the stored rows are what preflight and apply read.
+4. **Placement** (`plan.rs::place_folder`), of the rows that passed step 1–2: the shared folder goes through
+   `crate::location`'s resolver over one `VolumeFacts` snapshot. An unknown id, a path off the named volume, or a volume
+   that isn't connected refuses in the read tools' miss shape (`refusal: "location"`, plus `nearby` and `sameShareAs`),
+   the same next moves `list_dir` gives. A not-live share with a live, proven sibling is re-addressed onto it, as
+   `propose_suggestions` does, and a rebased root likewise: the rows' paths are rewritten to where the files are now,
+   because the stored rows are what preflight and apply read.
 5. **One bounded stat per source** (`sources.rs::check_sources`), through the placed volume, under the one
-   `snapshot_deadline()` the whole call shares (10 s), via `suggested_ops::facts::stat_sources` (detached, capped in
-   flight, a spent deadline asks nothing). Boot disk and remote volumes take the same path; the local volume's
-   `get_metadata` reads `lstat`, so a symlink stays a link.
+   `snapshot_deadline()` the whole call shares (10 s), via `suggested_ops::facts::stat_sources` (detached, a spent
+   deadline asks nothing). Boot disk and remote volumes take the same path; the local volume's `get_metadata` reads
+   `lstat`, so a symlink stays a link.
+
+**Decision: the in-flight cap is per volume** (`facts.rs::SOURCE_STATS`, eight per volume id). A timed-out stat keeps its
+permit until the kernel lets go, which on a dead OS mount may be never. With one cap shared by every volume, eight rows
+on a dead share made every later stat anywhere (the boot disk included, and the review dialog's live facts) wait out its
+deadline, and since a plan refuses an unanswered row, one dead mount blocked rename plans everywhere. Per volume, the
+stragglers hold only their own share's permits. The map keeps an entry only while a caller or permit holds it.
 
 What the stat's three answers mean:
 
 - **Missing**: the row stays, with no snapshot, and preflight shows it as "(doesn't exist)" (`SourceMissing`). One
-  invented name costs that row, not the plan. **Except when EVERY row is missing**: nothing the user could approve would
-  rename anything, so the plan names the wrong folder or invented every name, and it refuses with each row as `missing`.
+  invented name costs that row, not the plan. **Except when no row is a file** (each is missing or a folder, and none
+  went unanswered): nothing the user could approve would rename anything, so the missing rows refuse as `missing`. A
+  path that reads as inside a restic `Browse snapshots` view (lexically, `rows.rs::looks_like_a_snapshot_view`) refuses
+  as `missingUnderSnapshots` instead: a view the hub never confirmed isn't on disk, so the stat finds nothing, and "doesn't
+  exist" would send the model hunting for names it already has. Lexical is enough there because it only words a refusal
+  the stat already earned; it never refuses a row by itself.
 - **Present**: a folder refuses its row (`SourceStat::Present::is_directory`, its own field because `size: None` also
   means a file whose volume reports no size). A file's size, date, and inode freeze as the row's creation snapshot: one
   stat does both jobs.
@@ -109,11 +124,13 @@ What the stat's three answers mean:
   unanswered row as missing: "I couldn't check" is not "it isn't there", and the review would tell the user a real file
   doesn't exist.
 
-**Decision: every refusal about rows names them, all at once.** `RowProblem` is typed per source path, collected over
-the whole plan, and grouped by problem in the result (`rowsRejected: [{ problem, detail, sourcePaths }]`), so 40 rows on
-one unreachable share read as one sentence. A model that only learns one bad row per retry burns its turn budget; one
-fixed sentence that names no row ("Every source must be in the focused pane's effective scope.") gave it nothing to fix
-at all. Plan-wide problems (no rows, too many, the store isn't there) stay a plain `problem`: there's no row to name.
+**Decision: every refusal about rows names them, from every stage, in one answer.** `plan.rs::Rejected` collects the
+rows' own problems, the evidence rejections, and the stat's findings (the rows that passed steps 1–2 are still placed and
+stat'ed when another row failed), and the result carries `rowsRejected: [{ problem, detail, sourcePaths }]` (grouped, so
+40 rows on one unreachable share read as one sentence) beside `evidenceRejected`. A model that learns one bad row, or one
+stage, per retry burns its turn budget; one fixed sentence that names no row ("Every source must be in the focused
+pane's effective scope.") gave it nothing to fix at all. Plan-wide problems (no rows, too many, a folder that can't be
+placed, the store isn't there) stay their own shape: there's no row to name.
 
 ## A check with no time limit
 

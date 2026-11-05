@@ -19,7 +19,8 @@ pub(super) enum RowProblem {
     /// Not an absolute path, or one with an empty, `.`, or `..` segment: its folder can't be
     /// read off it with certainty.
     NotAPlainPath,
-    /// The same source as an earlier row.
+    /// The same source as an earlier row, compared by the fold every proposal name uses
+    /// (`destination_key`), so `A.png` and `a.png` are one file on a case-insensitive disk.
     RepeatedSource,
     /// The new name is a path, a dot entry, or not a valid filename.
     InvalidName,
@@ -39,13 +40,19 @@ pub(super) enum RowProblem {
     /// Nothing is there. Only ever a refusal when it's true of EVERY row: one missing row is a
     /// "(doesn't exist)" row in the review, but a plan where nothing exists names the wrong folder.
     Missing,
+    /// [`Self::Missing`], for a path that reads as inside a restic backup's `Browse snapshots`
+    /// view: the boot disk has nothing there because the view is the backup's, and a model told
+    /// only "doesn't exist" would go looking for the right names instead of telling the user.
+    MissingUnderSnapshots,
 }
 
 impl RowProblem {
     fn detail(self) -> &'static str {
         match self {
             Self::NotAPlainPath => "Each sourcePath must be the file's full path, with no empty, `.`, or `..` parts.",
-            Self::RepeatedSource => "A source file can appear only once in a rename plan.",
+            Self::RepeatedSource => {
+                "A source file can appear only once in a rename plan, and names differing only in case or accents count as one file."
+            }
             Self::InvalidName => "Each destinationName must be one valid filename, not a path.",
             Self::RepeatedName => "Destination names must be unique in the folder, ignoring case.",
             Self::OtherVolume => "Every row must use the same volumeId; these use a different one from the rest.",
@@ -61,6 +68,9 @@ impl RowProblem {
             }
             Self::Missing => {
                 "None of these files exist. Check the folder with list_dir or list_pane_files and use the names it shows."
+            }
+            Self::MissingUnderSnapshots => {
+                "None of these files exist on disk: they look like a restic backup's snapshot view, which is read-only and can't be renamed. Tell the user so."
             }
         }
     }
@@ -124,21 +134,20 @@ pub(super) fn is_plain_path(path: &str) -> bool {
     !rest.is_empty() && rest.split('/').all(|segment| !matches!(segment, "" | "." | ".."))
 }
 
-/// What the model reads: every rejected row, grouped by problem so 40 rows on one unreachable
-/// share read as one sentence and one list.
-pub(super) fn rows_rejected_content(rejections: &[RowRejection]) -> Value {
+/// What the model reads as `rowsRejected`: every rejected row, grouped by problem so 40 rows on
+/// one unreachable share read as one sentence and one list.
+pub(super) fn rows_rejected(rejections: &[RowRejection]) -> Value {
     let groups: Vec<Value> = by_problem(rejections)
         .into_iter()
         .map(|(problem, paths)| {
             serde_json::json!({ "problem": problem, "detail": problem.detail(), "sourcePaths": paths })
         })
         .collect();
-    serde_json::json!({
-        "readyForReview": false,
-        "rowsRejected": groups,
-        "guidance": "Nothing was staged. Drop or fix these rows and send the whole plan again. A file that doesn't exist needs no fixing: the review shows it as missing.",
-    })
+    Value::Array(groups)
 }
+
+/// The sentence beside `rowsRejected`.
+pub(super) const ROWS_GUIDANCE: &str = "Nothing was staged. Drop or fix these rows and send the whole plan again. A file that doesn't exist needs no fixing unless every file is missing: the review shows it as missing.";
 
 /// The same refusal as a log line: each problem and up to `max_named` of its paths. Paths only,
 /// never the proposed names (`DETAILS.md` § A refused plan says so, in the log).
@@ -157,6 +166,13 @@ pub(super) fn rows_rejected_reason(rejections: &[RowRejection], max_named: usize
     let count = rejections.len();
     let noun = if count == 1 { "row" } else { "rows" };
     format!("{count} {noun} couldn't be staged: {}", clauses.join("; "))
+}
+
+/// Whether `path` reads as inside a restic backup's `Browse snapshots` view, lexically. Only
+/// ever words a refusal the stat already earned (every row missing), so a real folder of that
+/// name outside a repo costs at most a more specific sentence, never a refused row.
+pub(super) fn looks_like_a_snapshot_view(path: &str) -> bool {
+    cmdr_fs::restic_view::restic_route(Path::new(path)).is_some()
 }
 
 fn by_problem(rejections: &[RowRejection]) -> BTreeMap<RowProblem, Vec<&str>> {

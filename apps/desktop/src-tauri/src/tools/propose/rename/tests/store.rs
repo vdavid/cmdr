@@ -659,13 +659,14 @@ async fn a_staged_rename_plan_freezes_each_rows_creation_snapshot() {
     };
 
     // The plan's existence check is what freezes the snapshot: one stat per row, both jobs.
-    super::super::sources::check_sources(
+    let rejected = super::super::sources::check_sources(
+        "root",
         volume,
         &mut draft.rows,
         &crate::tools::suggestions::snapshot::snapshot_deadline(),
     )
-    .await
-    .expect("one present file keeps the plan");
+    .await;
+    assert!(rejected.is_empty(), "one present file keeps the plan: {rejected:?}");
     let conn = migrated_conn();
     super::super::store::stage(&conn, None, &draft, 100)
         .expect("stage")

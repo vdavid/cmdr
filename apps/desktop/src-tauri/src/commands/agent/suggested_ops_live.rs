@@ -130,7 +130,7 @@ pub async fn suggested_ops_live_facts(
     };
     let deadline = stat_deadline(volume.as_ref());
     let paths = ops.iter().map(|op| op.source_path.clone()).collect();
-    let stats = stat_sources(volume.clone(), paths, &deadline).await;
+    let stats = stat_sources(volume_id, volume.clone(), paths, &deadline).await;
     let landings = new_name_states(&group, volume, &ops, &stats, &deadline).await;
     Ok(ops
         .into_iter()
@@ -189,7 +189,7 @@ async fn new_name_states(
             .collect();
     };
     let asked: Vec<String> = landings.iter().flatten().cloned().collect();
-    let mut answers = stat_sources(target, asked, deadline).await.into_iter();
+    let mut answers = stat_sources(target_id, target, asked, deadline).await.into_iter();
     landings
         .iter()
         .zip(sources)

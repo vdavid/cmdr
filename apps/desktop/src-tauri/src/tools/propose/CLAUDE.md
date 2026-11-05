@@ -9,12 +9,14 @@ folder is placed by `crate::location`'s resolver (a miss refuses in the read too
 preflight's and apply's live re-checks are the safety; the chat defines intent.
 
 **The plan's one live touch is ONE bounded stat per source** (`sources.rs`, through `suggested_ops::facts::stat_sources`
-under one shared deadline), on every volume alike. Missing → a "(doesn't exist)" row, not a refusal (unless EVERY row is
-missing); folder or unanswered → that row refuses. ❌ Never an unbounded stat or a bare `std::fs` call here: the shared
-deadline IS the dead-mount guarantee. The same stat freezes the row's snapshot.
+under one shared deadline and a PER-VOLUME in-flight cap), on every volume alike. Missing → a "(doesn't exist)" row, not
+a refusal (unless no row is a file); folder or unanswered → that row refuses. ❌ Never an unbounded stat, a bare
+`std::fs` call, or a cap shared across volumes here: the deadline plus the per-volume cap IS the dead-mount guarantee.
+The same stat freezes the row's snapshot.
 
-**Every refusal about rows names them** (`rows.rs`: typed `RowProblem` per source path, collected over the whole plan),
-so the agent can drop or fix them and propose again. ❌ Never return on the first bad row.
+**Every refusal about rows names them, from every check, in ONE answer** (`rows.rs`: typed `RowProblem` per source
+path; `plan.rs::Rejected` adds evidence and the stat's findings), so the agent can fix them all and propose again. ❌
+Never return on the first bad row or the first stage.
 
 Files: `plan.rs` (schema, dispatch, placement, the evidence check), `rows.rs`, `sources.rs`, `store.rs` (what a staged
 proposal IS), `preflight.rs` (user-action-time revalidation), `check.rs` (keeps it honest on a slow volume; ❌ never a

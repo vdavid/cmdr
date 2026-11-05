@@ -30,12 +30,13 @@ pub(crate) fn snapshot_deadline() -> Deadline {
 /// The creation snapshot of each of `paths` on `volume`, in order. A volume nobody registered
 /// (`None`) answers `None` for every path, which the review words as "no record".
 pub(crate) async fn freeze_paths(
+    volume_id: &str,
     volume: Option<Arc<dyn Volume>>,
     paths: Vec<String>,
     deadline: &Deadline,
 ) -> Vec<Option<OpSnapshot>> {
     match volume {
-        Some(volume) => stat_sources(volume, paths, deadline)
+        Some(volume) => stat_sources(volume_id, volume, paths, deadline)
             .await
             .into_iter()
             .map(|stat| stat.snapshot())
@@ -58,21 +59,39 @@ pub(super) async fn freeze_named_sources(
                 ..
             } => {
                 let paths = ops.iter().map(|op| op.source_path.clone()).collect();
-                let snapshots = freeze_paths(volume_for(&naming.source_volume_id), paths, &deadline).await;
+                let snapshots = freeze_paths(
+                    &naming.source_volume_id,
+                    volume_for(&naming.source_volume_id),
+                    paths,
+                    &deadline,
+                )
+                .await;
                 for (op, snapshot) in ops.iter_mut().zip(snapshots) {
                     op.snapshot = snapshot;
                 }
             }
             PlannedOps::Named { ops, naming, .. } => {
                 let paths = ops.iter().map(|op| op.source_path.clone()).collect();
-                let snapshots = freeze_paths(volume_for(&naming.source_volume_id), paths, &deadline).await;
+                let snapshots = freeze_paths(
+                    &naming.source_volume_id,
+                    volume_for(&naming.source_volume_id),
+                    paths,
+                    &deadline,
+                )
+                .await;
                 for (op, snapshot) in ops.iter_mut().zip(snapshots) {
                     op.snapshot = snapshot;
                 }
             }
             PlannedOps::Rename { renames, naming, .. } => {
                 let paths = renames.iter().map(|op| op.source_path.clone()).collect();
-                let snapshots = freeze_paths(volume_for(&naming.source_volume_id), paths, &deadline).await;
+                let snapshots = freeze_paths(
+                    &naming.source_volume_id,
+                    volume_for(&naming.source_volume_id),
+                    paths,
+                    &deadline,
+                )
+                .await;
                 for (op, snapshot) in renames.iter_mut().zip(snapshots) {
                     op.snapshot = snapshot;
                 }
