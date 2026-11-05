@@ -145,7 +145,7 @@ type CheckDefinition struct {
 	CIOnly          bool // true = run only when --ci is set (or when explicitly named via --check)
 	JoinsScopedRuns bool // true = added to every scoped local run (app/tech selector, named checks); cheap doc/size scanners only
 	// IsPreRelease puts the check in the pre-release lane and nowhere else: `pnpm check
-	// --pre-release` runs exactly these (before every release tag, and every six days in
+	// --pre-release` runs exactly these (before every release tag, and nightly in
 	// `slow-checks.yml`), every other run leaves them out, and naming one still runs it. For
 	// gates that guard what a release ships but move too slowly to earn a seat on every run.
 	IsPreRelease bool

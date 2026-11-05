@@ -1,20 +1,18 @@
 name: Slow checks
 
-# Security, dependency, and thorough lint checks: things too slow or too
-# cadence-driven for per-push CI. Runs every 6 days at 4 AM CET (3 AM UTC).
-# (Was nightly; reduced to weekly, then to every-6-days in June 2026. The 6-day
-# cadence is deliberate, NOT weekly: it keeps the gap under GitHub's 7-day cache
-# eviction so this job's rust-cache (cargo-udeps's nightly target) survives run
-# to run. `*/6` on day-of-month fires on the 1st/7th/13th/19th/25th/31st — gaps
-# are always ≤6 days, including across month boundaries. Don't switch it back to
-# a weekly `* * 1` form: that reintroduces a 7-day gap and the cache goes cold.
+# Security, dependency, and thorough checks: things too slow or too
+# cadence-driven for per-push CI. Runs nightly at 03:00 UTC, so a red run points
+# at one day's commits (`docs/tooling/ci.md` § Slow checks cadence). The repo is
+# public, so the runner minutes cost nothing. Kani and Shuttle run on the landing
+# path instead, as jobs of the Rust lane (`rust-lane.yml`).
 # If runs ever stop appearing, check the workflow isn't disabled in GitHub's UI:
 # a manual disable survives file changes; `gh workflow enable "Slow checks"`
-# re-enables.)
-# GitHub automatically emails repo admins on failure
+# re-enables.
+# A red run on `main` opens (or comments on) one `slow-checks` issue, and the next
+# green run closes it: the `report` job at the bottom.
 on:
   schedule:
-    - cron: '0 3 */6 * *' # every 6 days, 4 AM CET = 3 AM UTC (≤6-day gap < 7-day cache eviction)
+    - cron: '0 3 * * *' # nightly, 03:00 UTC
   workflow_dispatch: # Allow manual trigger
 
 permissions:
@@ -49,8 +47,8 @@ jobs:
       # Caches target/ + cargo deps so cargo-udeps's nightly compile is incremental
       # across runs. rust-cache keys per-job, so this is a SEPARATE cache from the
       # per-push desktop-rust one (different job, nightly vs stable). GitHub evicts
-      # caches after 7 days unused — the every-6-days schedule (see the cron above)
-      # is what keeps THIS cache warm run to run. Caveat: this is a third multi-GB
+      # caches after 7 days unused; the nightly cron keeps THIS one warm run to
+      # run. Caveat: this is a third multi-GB
       # Rust cache (with desktop-rust + the e2e Docker cache); if the repo total
       # crosses GitHub's 10 GB ceiling, LRU may evict the least-used (this one)
       # regardless of the cron. Watch `gh cache list` sizes.
@@ -200,6 +198,8 @@ jobs:
   # The modules whose `unsafe` is pure Rust, interpreted by Miri on the pinned nightly
   # (`checks/desktop-rust-miri.go` lists them). macOS because every target is the macOS build
   # of its module. About a minute warm; the cold part is Miri building its own sysroot.
+  # Nightly here rather than in the macOS lane: the account runs at most five macOS jobs at
+  # once, and a second macOS job per land run queues (`docs/tooling/ci.md` § macOS lane).
   miri:
     name: Miri
     runs-on: macos-26
@@ -235,50 +235,13 @@ jobs:
         run: ./scripts/check/check --check desktop-rust-miri --ci
 
   # ===========================================
-  # Kani proofs (the small safety decisions, for every input up to a bound)
-  # ===========================================
-  # Every `#[kani::proof]`, one `cargo kani` per crate. The check installs the pinned Kani,
-  # which brings its own nightly and CBMC. No build cache: Kani builds only the crates
-  # under proof, in seconds. `docs/tooling/testing.md` § "Kani proofs".
-  kani:
-    name: Kani proofs
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Keep only the pinned Rust toolchain
-        uses: ./.github/actions/pinned-rust-toolchain
-
-      # Same reason as the fuzz job: `cmdr-fs` links `libacl` on Linux.
-      - name: Install native build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libacl1-dev
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      - name: Run Kani proofs
-        run: ./scripts/check/check --check desktop-rust-kani --ci
-
-  # ===========================================
   # Property mutants (each property fails under its recorded mutant)
   # ===========================================
   # Applies every `*.mutants.json` record in a mirror of the tree and runs its catcher, so
   # a property that can't fail turns this job red. A build per mutant: a fuzz record on the
   # fuzz nightly, a Kani record on the Kani the check installs.
   # No build cache on purpose: the repo's Rust caches already press GitHub's 10 GB ceiling,
-  # and a cold run every six days costs less than evicting a per-push one.
+  # and a cold nightly run costs less than evicting a per-push one.
   # `scripts/check/checks/DETAILS.md` § Property mutants.
   property-mutants:
     name: Property mutants
@@ -315,48 +278,11 @@ jobs:
         run: ./scripts/check/check --check desktop-rust-property-mutants --ci
 
   # ===========================================
-  # Thread interleavings (Shuttle)
-  # ===========================================
-  # The `shuttle_*` tests, built with each crate's `shuttle` feature in a target dir of
-  # their own. Seconds to run, minutes to build cold, hence here rather than per push.
-  # `scripts/check/checks/DETAILS.md` § Interleaving tests (Shuttle).
-  shuttle:
-    name: Thread interleavings (Shuttle)
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Keep only the pinned Rust toolchain
-        uses: ./.github/actions/pinned-rust-toolchain
-
-      # `cmdr-fs` links `libacl` on Linux.
-      - name: Install native build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libacl1-dev
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      - name: Run the interleaving tests
-        run: ./scripts/check/check --check desktop-rust-shuttle --ci
-
-  # ===========================================
   # Pre-release gates
   # ===========================================
   # The checks `release.sh` runs before every tag (`IsPreRelease`: clippy with mimalloc on
   # macOS, the desktop bundle-size gate). They also run here so a regression surfaces within
-  # six days instead of on release morning. macOS because `clippy-mimalloc` lints macOS-only
+  # a day instead of on release morning. macOS because `clippy-mimalloc` lints macOS-only
   # code (it skips anywhere else). Lane and decision: `scripts/check/DETAILS.md` § Pre-release lane.
   pre-release:
     name: Pre-release gates
@@ -379,7 +305,7 @@ jobs:
       - name: Keep only the pinned Rust toolchain
         uses: ./.github/actions/pinned-rust-toolchain
 
-      # Its own per-job cache, kept warm by the six-day cron like the others here.
+      # Its own per-job cache, kept warm by the nightly cron like the others here.
       - name: Cache Rust build
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
@@ -476,3 +402,51 @@ jobs:
       - name: Stop Docker SMB containers
         if: always()
         run: ./apps/desktop/test/smb-servers/stop.sh || true
+
+  # ===========================================
+  # Red-run issue
+  # ===========================================
+  # A red run on `main` opens one issue labeled `slow-checks` (or comments on the open one), and
+  # a fully green run closes it, so the issue's state is the workflow's. GitHub's failure email
+  # alone let this workflow stay red for four weeks (2026-10-13 to 2026-11-05). The board's
+  # "Auto-add to project" workflow puts the issue on the backlog board. A cancelled run says
+  # nothing (`!cancelled()`); a timed-out job reads as `failure`. Branch dispatches stay out
+  # (`refs/heads/main`), since a branch's red says nothing about `main`.
+  report:
+    name: Open or close the red-run issue
+    needs: [dependency-checks, fuzz, miri, property-mutants, pre-release, website-docker, smb-soak]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write # open, comment on, and close the `slow-checks` issue
+
+    steps:
+      - name: Open, update, or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          NEEDS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          failed=$(jq -r 'to_entries[] | select(.value.result == "failure") | "- `\(.key)`"' <<<"$NEEDS")
+          open=$(gh issue list --label slow-checks --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [[ -n "$failed" ]]; then
+            body="Slow checks went red on \`main\`: $RUN_URL
+
+          Failing jobs:
+          $failed
+
+          Read the failing step's log, fix the cause, and land it. The next fully green run closes this issue."
+            if [[ -n "$open" ]]; then
+              gh issue comment "$open" --body "$body"
+              echo "Commented on #$open."
+            else
+              gh issue create --title "Slow checks are red on main" --label bug,claude-created,slow-checks --body "$body"
+            fi
+          elif [[ -n "$open" ]]; then
+            gh issue close "$open" --comment "Every slow-checks job passed: $RUN_URL"
+            echo "Closed #$open."
+          else
+            echo "Green, and no issue is open."
+          fi

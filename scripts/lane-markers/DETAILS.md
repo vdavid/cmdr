@@ -112,8 +112,8 @@ All six path-filtered lanes in `ci.yml` follow this (`docs/tooling/ci.md` § "La
 inputs already passed)" lists them). `changes` and `CI OK` get the built binary from `.github/actions/lane-markers-tool`
 (the Actions cache, keyed on its sources and the Go pin; a miss installs Go with mise, builds, and saves), which saves
 ~20 s in each of those jobs, both on every run's critical path. The save is the `lane-marker` composite action
-(`.github/actions/lane-marker`), which refuses a key without the `lane-green-` prefix; a multi-job lane file (Svelte,
-website) saves from a `marker` job that `needs` every other job, so one green job can't vouch for another.
+(`.github/actions/lane-marker`), which refuses a key without the `lane-green-` prefix; a multi-job lane file (Rust,
+Svelte, website) saves from a `marker` job that `needs` every other job, so one green job can't vouch for another.
 
 `changes` job:
 

@@ -47,6 +47,14 @@
       "find": "if entry_type == EntryType::Dir && created_in_place {",
       "replace": "if entry_type == EntryType::Dir && created_in_place && kind != OpKind::Move {",
       "expect": "a created folder isn't removed"
+    },
+    {
+      "property": "kani:cmdr-operation-log/rollback::proofs::every_item_gets_the_inverse_its_kind_promises",
+      "why": "a tag write's undo moves the file onto itself rather than writing its prior tags back, so the tags stay changed",
+      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "find": "OpKind::Tag => Some(InverseAction::RestoreTags),",
+      "replace": "OpKind::Tag => Some(InverseAction::RestoreMove),",
+      "expect": "a tag write undone some other way"
     }
   ]
 }
