@@ -252,7 +252,7 @@ pub mod testing {
         pub events: Vec<SecurityEvent>,
         pub repeats: Vec<SecurityEvent>,
         pub mcp: Episodes<McpRejection>,
-        pub smb: Episodes<String>,
+        pub smb: Episodes<SmbScope>,
         pub smb_negotiation: Episodes<SmbScope>,
         pub content: Episodes<(ContentTool, ProtectedContent)>,
     }

@@ -19,7 +19,7 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 
 use crate::ignore_poison::IgnorePoison;
-use crate::security_log::{self, Heard, McpRejection, SecurityEvent, SignatureCheck};
+use crate::security_log::{self, Heard, McpRejection, SecurityEvent, SignatureCheck, SmbScope};
 
 const LOG_TARGET: &str = "security_notices";
 
@@ -62,7 +62,9 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
         SecurityEvent::McpRejectionsStarted {
             reason: McpRejection::ForeignOrigin,
         } => Some(AccessNotice::McpForeignOrigin),
-        SecurityEvent::SmbSignatureRejectionsStarted { volume_id } => Some(AccessNotice::SmbSignatureRefused {
+        SecurityEvent::SmbSignatureRejectionsStarted {
+            scope: SmbScope::Volume(volume_id),
+        } => Some(AccessNotice::SmbSignatureRefused {
             volume_id: volume_id.clone(),
         }),
         SecurityEvent::UpdateSignatureInvalid { version, check } => Some(AccessNotice::UpdateNotGenuine {
@@ -74,6 +76,11 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
         }
         | SecurityEvent::McpRejectionsEnded { .. }
         | SecurityEvent::SmbSignatureRejectionsEnded { .. }
+        // A share listing's refusal: the listing's own error says it, and there's no share to
+        // reconnect or disconnect yet.
+        | SecurityEvent::SmbSignatureRejectionsStarted {
+            scope: SmbScope::Host(_),
+        }
         // Every place it happens already says so where the person is looking: the share list's
         // error, the direct-connection notice, and the reconnecting pane (#931).
         | SecurityEvent::SmbNegotiationRejectionsStarted { .. }
@@ -181,7 +188,7 @@ mod tests {
         );
         assert_eq!(
             notice_for(&SecurityEvent::SmbSignatureRejectionsStarted {
-                volume_id: "smb-nas".into()
+                scope: SmbScope::Volume("smb-nas".into())
             }),
             Some(AccessNotice::SmbSignatureRefused {
                 volume_id: "smb-nas".into()
@@ -218,8 +225,12 @@ mod tests {
                 count: 3,
             },
             SecurityEvent::SmbSignatureRejectionsEnded {
-                volume_id: "smb-nas".into(),
+                scope: SmbScope::Volume("smb-nas".into()),
                 count: 3,
+            },
+            // A share listing's refusal: the listing's own error says it where the person looks.
+            SecurityEvent::SmbSignatureRejectionsStarted {
+                scope: SmbScope::Host("naspolya".into()),
             },
             SecurityEvent::UpdateInstalled {
                 from_version: "0.52.0".into(),

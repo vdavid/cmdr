@@ -3,13 +3,14 @@
 //! renaming a Rust variant is free.
 //!
 //! ❌ No free-text field, and no `String` built from an error's `Display`. The only strings are
-//! versions, volume ids, and managed-policy key names, so a secret can't slip in by accident;
+//! versions, volume and host ids, and managed-policy key names, so a secret can't slip in by accident;
 //! `tests::no_variant_grows_a_field_unnoticed` pins each variant's field list.
 
 use serde::{Deserialize, Serialize};
 
-/// The format version written as `v` on every line.
-pub const FORMAT_VERSION: u32 = 1;
+/// The format version written as `v` on every line. 2: the SMB signature events carry `scope`
+/// (`{"volume": …}` or `{"host": …}`) where 1 carried `volume_id` (#1000).
+pub const FORMAT_VERSION: u32 = 2;
 
 /// One security-relevant thing that happened. The one enum both the log and any other consumer
 /// (see `subscribe` in `mod.rs`) match on.
@@ -62,13 +63,13 @@ pub enum SecurityEvent {
         version: String,
         check: SignatureCheck,
     },
-    /// The first SMB reply refused for a bad or missing signature on `volume_id` since its last
-    /// quiet spell.
+    /// The first SMB reply refused for a bad or missing signature on `scope` since its last quiet
+    /// spell.
     SmbSignatureRejectionsStarted {
-        volume_id: String,
+        scope: SmbScope,
     },
     SmbSignatureRejectionsEnded {
-        volume_id: String,
+        scope: SmbScope,
         count: u64,
     },
     /// The first SMB connection closed since its last quiet spell because the server didn't
@@ -265,7 +266,7 @@ pub enum StateFile {
     Credentials,
 }
 
-/// One line of the file: `{"v":1,"at":"<UTC ISO 8601>","event":{"kind":…}}`.
+/// One line of the file: `{"v":2,"at":"<UTC ISO 8601>","event":{"kind":…}}`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LogLine {
     pub v: u32,
@@ -301,8 +302,8 @@ mod tests {
             SecurityEvent::UpdateInstalled { .. } => &["from_version", "to_version"],
             SecurityEvent::UpdateRefusedByPolicy { .. } => &["version", "reason"],
             SecurityEvent::UpdateSignatureInvalid { .. } => &["version", "check"],
-            SecurityEvent::SmbSignatureRejectionsStarted { .. } => &["volume_id"],
-            SecurityEvent::SmbSignatureRejectionsEnded { .. } => &["volume_id", "count"],
+            SecurityEvent::SmbSignatureRejectionsStarted { .. } => &["scope"],
+            SecurityEvent::SmbSignatureRejectionsEnded { .. } => &["scope", "count"],
             SecurityEvent::SmbNegotiationRejectionsStarted { .. } => &["scope"],
             SecurityEvent::SmbNegotiationRejectionsEnded { .. } => &["scope", "count"],
             SecurityEvent::RecordingTurnedOn { .. } | SecurityEvent::RecordingTurnedOff { .. } => &["by"],
@@ -376,16 +377,16 @@ mod tests {
             ),
             (
                 SecurityEvent::SmbSignatureRejectionsStarted {
-                    volume_id: "smb-nas".into(),
+                    scope: SmbScope::Volume("smb-nas".into()),
                 },
-                r#"{"kind":"smb_signature_rejections_started","volume_id":"smb-nas"}"#,
+                r#"{"kind":"smb_signature_rejections_started","scope":{"volume":"smb-nas"}}"#,
             ),
             (
                 SecurityEvent::SmbSignatureRejectionsEnded {
-                    volume_id: "smb-nas".into(),
+                    scope: SmbScope::Host("naspolya".into()),
                     count: 3,
                 },
-                r#"{"kind":"smb_signature_rejections_ended","volume_id":"smb-nas","count":3}"#,
+                r#"{"kind":"smb_signature_rejections_ended","scope":{"host":"naspolya"},"count":3}"#,
             ),
             (
                 SecurityEvent::SmbNegotiationRejectionsStarted {
@@ -468,7 +469,7 @@ mod tests {
     fn a_line_carries_the_format_version_and_a_utc_timestamp() {
         let line = LogLine::now(SecurityEvent::CloudAiConsentGiven);
         let json = serde_json::to_string(&line).expect("serializes");
-        assert!(json.starts_with(r#"{"v":1,"at":""#), "{json}");
+        assert!(json.starts_with(r#"{"v":2,"at":""#), "{json}");
         assert!(
             json.ends_with(r#"","event":{"kind":"cloud_ai_consent_given"}}"#),
             "{json}"

@@ -50,10 +50,10 @@ Here, because the answer is yes:
   `session::report_security_refusal` to tell the host's `security_refusal` seam about a tampering signal: a refused
   signature (`SecurityRefusal::ReplySignatureInvalid`) or an unconfirmed negotiation (`NegotiationInvalid`, #931). A
   session build never passes that funnel, so a failed reconnect reports its error itself (`report_reconnect_refusal`);
-  the app records a listing's and a direct connection's (`apps/desktop/src-tauri/src/security_log/DETAILS.md`). A
-  refused signature also drops the main session, like a lost connection (`state::ends_the_session`): nothing can vouch
-  for a signed session's state after a refused reply, so the next dial (the pane's reconnect, the notice's Reconnect)
-  builds a fresh, freshly signed one (#457).
+  the app records a listing's (a refused signature or an unconfirmed negotiation, both host-scoped) and a direct
+  connection's (`apps/desktop/src-tauri/src/security_log/DETAILS.md`). A refused signature also drops the main session,
+  like a lost connection (`state::ends_the_session`): nothing can vouch for a signed session's state after a refused
+  reply, so the next dial (the pane's reconnect, the notice's Reconnect) builds a fresh, freshly signed one (#457).
 - A reconnect the saved credentials can't bring back emits `VolumeConnection::GuestSessionRefused` when the server
   answered the named login with a guest session, else `NeedsCredentials` (`reconnect::credentials_refusal_state`), so
   the pane names what Cmdr refused.

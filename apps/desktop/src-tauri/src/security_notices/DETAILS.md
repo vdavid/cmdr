@@ -26,7 +26,8 @@ Issue #457. Must-knows in `CLAUDE.md`.
   reliably). No innocent setup story, so it's a persistent warning. The origin stays in the log.
 - **SMB, reply refused for its signature**: `SmbSignatureRefused { volume_id }`, one per volume. The transfer that hit it
   also stops with its own typed reason (`WriteOperationError::ReplySignatureRefused`), and `cmdr-smb` drops the session
-  so the next dial is a fresh, freshly signed one (`crates/cmdr-smb/DETAILS.md`).
+  so the next dial is a fresh, freshly signed one (`crates/cmdr-smb/DETAILS.md`). A share listing's refusal (host-scoped
+  in the log) raises no notice: the listing's own error says it, and there's no share to reconnect or disconnect yet.
 - **SMB, guest session offered for a named login**: no notice. It happens at connect, so it's a pane state
   (`VolumeConnection::GuestSessionRefused`), also for a background reconnect.
 - **Update, signature doesn't hold** (minisign on the archive, or the Developer ID on the bundle): `UpdateNotGenuine

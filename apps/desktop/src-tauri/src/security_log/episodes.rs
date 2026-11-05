@@ -103,7 +103,7 @@ impl<K: Eq + Hash + Clone> Episodes<K> {
 const CLOSER_TICK: Duration = Duration::from_secs(60);
 
 static MCP: LazyLock<Mutex<Episodes<McpRejection>>> = LazyLock::new(|| Mutex::new(Episodes::new(QUIET)));
-static SMB: LazyLock<Mutex<Episodes<String>>> = LazyLock::new(|| Mutex::new(Episodes::new(QUIET)));
+static SMB: LazyLock<Mutex<Episodes<SmbScope>>> = LazyLock::new(|| Mutex::new(Episodes::new(QUIET)));
 static SMB_NEGOTIATION: LazyLock<Mutex<Episodes<SmbScope>>> = LazyLock::new(|| Mutex::new(Episodes::new(QUIET)));
 static CONTENT: LazyLock<Mutex<Episodes<(ContentTool, ProtectedContent)>>> =
     LazyLock::new(|| Mutex::new(Episodes::new(QUIET)));
@@ -123,16 +123,14 @@ pub fn note_mcp_rejection(reason: McpRejection) {
     ensure_closer();
 }
 
-/// An SMB reply on `volume_id` was refused for a bad or missing signature.
-pub fn note_smb_signature_rejection(volume_id: &str) {
-    let started = SecurityEvent::SmbSignatureRejectionsStarted {
-        volume_id: volume_id.to_string(),
-    };
+/// An SMB reply on `scope` was refused for a bad or missing signature.
+pub fn note_smb_signature_rejection(scope: SmbScope) {
+    let started = SecurityEvent::SmbSignatureRejectionsStarted { scope: scope.clone() };
     #[cfg(test)]
-    if let Some(transitions) = captured(|c| c.smb.note(volume_id.to_string(), Instant::now())) {
+    if let Some(transitions) = captured(|c| c.smb.note(scope.clone(), Instant::now())) {
         return settle(transitions, smb_event, started);
     }
-    let transitions = SMB.lock_ignore_poison().note(volume_id.to_string(), Instant::now());
+    let transitions = SMB.lock_ignore_poison().note(scope, Instant::now());
     settle(transitions, smb_event, started);
     ensure_closer();
 }
@@ -196,10 +194,10 @@ fn mcp_event(transition: Transition<McpRejection>) -> SecurityEvent {
     }
 }
 
-fn smb_event(transition: Transition<String>) -> SecurityEvent {
+fn smb_event(transition: Transition<SmbScope>) -> SecurityEvent {
     match transition {
-        Transition::Started(volume_id) => SecurityEvent::SmbSignatureRejectionsStarted { volume_id },
-        Transition::Ended(volume_id, count) => SecurityEvent::SmbSignatureRejectionsEnded { volume_id, count },
+        Transition::Started(scope) => SecurityEvent::SmbSignatureRejectionsStarted { scope },
+        Transition::Ended(scope, count) => SecurityEvent::SmbSignatureRejectionsEnded { scope, count },
     }
 }
 
@@ -345,13 +343,13 @@ mod tests {
         for _ in 0..3 {
             note_mcp_rejection(McpRejection::ForeignOrigin);
         }
-        note_smb_signature_rejection("smb-nas");
-        note_smb_signature_rejection("smb-nas");
+        note_smb_signature_rejection(SmbScope::Volume("smb-nas".into()));
+        note_smb_signature_rejection(SmbScope::Volume("smb-nas".into()));
         let mcp = SecurityEvent::McpRejectionsStarted {
             reason: McpRejection::ForeignOrigin,
         };
         let smb = SecurityEvent::SmbSignatureRejectionsStarted {
-            volume_id: "smb-nas".into(),
+            scope: SmbScope::Volume("smb-nas".into()),
         };
         assert_eq!(capture.events(), vec![mcp.clone(), smb.clone()]);
         assert_eq!(capture.repeats(), vec![mcp.clone(), mcp, smb]);

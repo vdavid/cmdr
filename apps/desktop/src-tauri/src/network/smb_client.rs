@@ -106,12 +106,15 @@ pub async fn list_shares(
     Ok(result)
 }
 
-/// A listing the server didn't confirm the negotiation for is a tampering signal, so it reaches
-/// the security log under `host_id` (no share is open yet, so there's no volume to name). Read by
-/// the typed variant, ❌ never the message.
+/// A listing whose reply was refused for its signature, or whose negotiation the server didn't
+/// confirm, is a tampering signal, so it reaches the security log under `host_id` (no share is open
+/// yet, so there's no volume to name). Read by the typed variant, ❌ never the message.
 fn record_security_refusal(host_id: &str, listed: &Result<ShareListResult, ShareListError>) {
-    if matches!(listed, Err(ShareListError::NegotiationInvalid { .. })) {
-        crate::security_log::note_smb_negotiation_rejection(crate::security_log::SmbScope::Host(host_id.to_string()));
+    let scope = || crate::security_log::SmbScope::Host(host_id.to_string());
+    match listed {
+        Err(ShareListError::SignatureInvalid { .. }) => crate::security_log::note_smb_signature_rejection(scope()),
+        Err(ShareListError::NegotiationInvalid { .. }) => crate::security_log::note_smb_negotiation_rejection(scope()),
+        _ => {}
     }
 }
 
