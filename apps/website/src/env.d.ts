@@ -6,7 +6,7 @@
  *
  * Without these declarations `import.meta.env.PUBLIC_ANYTHING` is `any`, so a typo in a variable
  * name reads as `undefined` and the feature quietly turns itself off (an unset
- * `PUBLIC_DOWNLOAD_BASE_URL`, for instance, sends every download button to GitHub with no
+ * `PUBLIC_DOWNLOAD_BASE_URL`, for instance, sends every download button straight to the EU mirror with no
  * telemetry). Every one is optional: builds run with most of them unset.
  */
 interface ImportMetaEnv {

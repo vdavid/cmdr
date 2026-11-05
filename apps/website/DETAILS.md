@@ -138,9 +138,9 @@ was deleted.)
   `[data-download-split-btn]`/`[data-download-chevron]`/`[data-download-dropdown]`. Arch auto-detection (the recommended
   ✓) is a separate inline script in `Layout.astro`. Because all three are global and attribute-driven, the dropdown also
   works when the `rehypeDownloadDropdown` plugin (`src/plugins/download-dropdown.ts`) emits an inline copy into a blog
-  post from the `[download](cmdr:download)` marker. That plugin must run after `rehype-external-links` (so its GitHub
+  post from the `[download](cmdr:download)` marker. That plugin must run after `rehype-external-links` (so its mirror
   links don't get `target="_blank"`) and reads `public/latest.json` directly, mirroring `src/lib/release.ts`'s
-  GitHub-fallback URL/size logic.
+  no-download-base URL/size logic (direct links to `download.getcmdr.com`).
 - **`public/latest.json` is live only in production.** The committed copy is frozen (dev and the check lanes build with
   it, so they never touch the network for it). The Docker build overwrites it with the live update manifest, the
   `latest.json` of the GitHub release marked "Latest" (`scripts/fetch-live-manifest.ts`), and a failed fetch fails the

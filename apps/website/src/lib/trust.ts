@@ -41,7 +41,7 @@ export const networkConnections: NetworkConnection[] = [
     id: 'updates',
     name: 'Update check and download',
     destination:
-      '<code>api.getcmdr.com</code>, then <code>getcmdr.com/latest.json</code>. The update itself downloads from <code>github.com</code> and <code>release-assets.githubusercontent.com</code>.',
+      '<code>api.getcmdr.com</code>, then <code>getcmdr.com/latest.json</code>. The update itself downloads from <code>download.getcmdr.com</code>, which stores the files in the EU. An update to 0.59.0 or older downloads from <code>github.com</code> and <code>release-assets.githubusercontent.com</code> instead, which stay a public mirror of every release.',
     when: 'In the background, at most once every three hours, counted across relaunches, and whenever the user picks "Check for updates". Users can set the interval from five minutes to 24 hours in Settings &gt; Advanced.',
     sends:
       'The app version and CPU architecture, in the URL. The server keeps a one-way hash of the IP address, the date, the version, and the architecture. It deletes each record after seven days and keeps only daily totals.',
@@ -156,7 +156,11 @@ export const allowlistHosts: { host: string; purpose: string }[] = [
     purpose: 'update checks, license checks, usage stats, reports, feedback, newsletter signup, S3 prices',
   },
   { host: 'getcmdr.com', purpose: 'the update manifest (latest.json)' },
-  { host: 'github.com, release-assets.githubusercontent.com', purpose: 'update downloads' },
+  { host: 'download.getcmdr.com', purpose: 'update downloads' },
+  {
+    host: 'github.com, release-assets.githubusercontent.com',
+    purpose: 'update downloads while 0.59.0 is the newest release (later ones come from download.getcmdr.com)',
+  },
   { host: 'license.getcmdr.com', purpose: 'license checks from older versions only' },
   {
     host: 'huggingface.co, *.hf.co',
