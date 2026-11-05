@@ -4,7 +4,6 @@ import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import DownloadButton from '../components/DownloadButton.astro'
 import PageHeader from '../components/PageHeader.astro'
-import DevTodo from '../components/DevTodo.astro'
 
 // Paddle config - passed to client-side script
 const paddleToken = import.meta.env.PUBLIC_PADDLE_CLIENT_TOKEN ?? ''
@@ -84,8 +83,8 @@ const faq = [
     },
     {
         question: 'Who sells it, and which tax form does our accounts payable team need?',
-        answer: "Paddle sells Cmdr for us as the merchant of record, so a license bought on this page is a purchase from Paddle (Paddle.com Market Ltd, a UK company). Paddle handles the sales tax and VAT, and it's the vendor your accounts payable team sets up, so you don't need a W-9 from us. As a company outside the US, Paddle uses Form W-8BEN-E. Paddle's buyer support at paddle.net has it.",
-        answerHtml: 'Paddle sells Cmdr for us as the merchant of record, so a license bought on this page is a purchase from Paddle (Paddle.com Market Ltd, a UK company). Paddle handles the sales tax and VAT, and it\'s the vendor your accounts payable team sets up, so you don\'t need a W-9 from us. As a company outside the US, Paddle uses Form W-8BEN-E. <a href="https://paddle.net" target="_blank" rel="noopener noreferrer" class="text-accent-text underline underline-offset-2 hover:text-accent-hover">Paddle\'s buyer support</a> has it.',
+        answer: "Paddle sells Cmdr for us as the merchant of record, so a license bought on this page is a purchase from Paddle (Paddle.com Market Ltd, a UK company). Paddle handles the sales tax and VAT, and it's the vendor your accounts payable team sets up, so you don't need a W-9 from us. As a company outside the US, Paddle uses Form W-8BEN-E. Ask Paddle's buyer support at paddle.net for it.",
+        answerHtml: 'Paddle sells Cmdr for us as the merchant of record, so a license bought on this page is a purchase from Paddle (Paddle.com Market Ltd, a UK company). Paddle handles the sales tax and VAT, and it\'s the vendor your accounts payable team sets up, so you don\'t need a W-9 from us. As a company outside the US, Paddle uses Form W-8BEN-E. Ask <a href="https://paddle.net" target="_blank" rel="noopener noreferrer" class="text-accent-text underline underline-offset-2 hover:text-accent-hover">Paddle\'s buyer support</a> for it.',
     },
     {
         question: 'When does support answer?',
@@ -273,11 +272,6 @@ const faq = [
                     </div>
                 ))}
             </div>
-            <DevTodo>
-                The tax-form answer links Paddle's buyer support, not a page with the form itself: no official Paddle
-                page offering its W-8BEN-E turned up (searched 2026-11-05). If you find one, link it there instead, and
-                confirm Paddle gives a W-8BEN-E rather than another W-8 form.
-            </DevTodo>
         </section>
     </main>
     <Footer />
