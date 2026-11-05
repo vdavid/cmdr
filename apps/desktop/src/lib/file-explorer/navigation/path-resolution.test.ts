@@ -200,3 +200,23 @@ describe('resolveValidPath on the volume it was given', () => {
     expect(pathExists.mock.calls).toEqual([['~']])
   })
 })
+
+describe('resolveValidPath falling back off a deleted folder', () => {
+  const onlyRootAndHome = (p: string) => Promise.resolve(p === '/' || p === '~')
+
+  it('lands a deleted top-level folder on the boot disk on `/`, its nearest surviving parent', async () => {
+    expect(await resolveValidPath('/foo', { pathExistsFn: onlyRootAndHome, timeoutMs: 0 })).toBe('/')
+    expect(await resolveValidPath('/foo/bar', { pathExistsFn: onlyRootAndHome, volumeRoot: '/', timeoutMs: 0 })).toBe(
+      '/',
+    )
+  })
+
+  it('still sends a gone volume home, since its parents are another drive', async () => {
+    const resolved = await resolveValidPath('/Volumes/Gone/Docs', {
+      pathExistsFn: onlyRootAndHome,
+      volumeRoot: '/Volumes/Gone',
+      timeoutMs: 0,
+    })
+    expect(resolved).toBe('~')
+  })
+})
