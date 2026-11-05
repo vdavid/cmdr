@@ -23,9 +23,10 @@
  * - `/d1/bump?db=eu&by=1000000`: raise each AUTOINCREMENT sequence in `db` by `by`, so rows the new
  *   Worker writes can never take an id the old database handed out during the cutover window.
  * - `/d1/reconcile?from=old&to=eu&marks=<json>&apply=0|1`: rows in `from` with id above their mark go
- *   to `to` WITH their ids (`INSERT OR IGNORE`, so a rerun is harmless). `apply=0` (the default)
- *   only counts. Then it lists rows at or below the mark that differ between the two in the columns
- *   request handlers or the cron change in place, for a human to settle.
+ *   to `to` WITH their ids (`INSERT OR IGNORE`, so a rerun is harmless), keyed rows only `from` has
+ *   are copied too, and forward-only stamps (`STAMP_COLUMNS`) `from` set and `to` lacks are carried
+ *   over. `apply=0` (the default) only counts. What's left (rows both hold that differ in another
+ *   in-place column) is listed under `differing` for a human to settle.
  */
 
 // A Worker, not a Node script like its neighbors in `scripts/`, so it runs on the web globals.
@@ -68,6 +69,19 @@ const MUTABLE_COLUMNS = {
   ops_events: ['notified_at', 'occurrences'],
   daily_active_users: ['unique_users'],
   downloads_daily_unique: ['unique_downloaders'],
+}
+
+/**
+ * The `MUTABLE_COLUMNS` that only ever go from NULL to a value (the outbox's card number, the
+ * digest's and board's stamps). The reconcile carries these forward on its own; the email and
+ * diagnostics scrubs go the other way and the next retention sweep repeats them.
+ */
+const STAMP_COLUMNS = {
+  crash_reports: ['notified_at', 'issue_number'],
+  error_report_amendments: ['board_done_at', 'notified_at'],
+  error_reports: ['issue_number', 'notified_at'],
+  feedback: ['notified_at', 'issue_number'],
+  ops_events: ['notified_at'],
 }
 
 const ALL_TABLES = [...ID_TABLES, ...Object.keys(KEYED_TABLES), 'd1_migrations']
@@ -274,13 +288,29 @@ async function d1Compare(from, to, table) {
   return { allSame: Object.values(out).every((r) => r.same), tables: out }
 }
 
-/** @param {any} d @param {number} by */
+/**
+ * Set every `ID_TABLES` sequence to `max(seq, max(id)) + by`. A table that never had a row has no
+ * `sqlite_sequence` entry and would start at id 1, colliding with a row the old database hands out
+ * in the window (which `INSERT OR IGNORE` would then drop), so a missing entry gets inserted.
+ * @param {any} d @param {number} by
+ */
 async function d1Bump(d, by) {
   const before = (await d.prepare('SELECT name, seq FROM sqlite_sequence ORDER BY name').all()).results
-  const names = before.map((r) => r.name).filter((n) => ID_TABLES.includes(n))
-  await d.batch(names.map((n) => d.prepare('UPDATE sqlite_sequence SET seq = seq + ? WHERE name = ?').bind(by, n)))
+  const seqOf = new Map(before.map((r) => [r.name, r.seq]))
+  const stmts = []
+  for (const t of ID_TABLES) {
+    const row = await d.prepare(`SELECT max(id) AS m FROM ${t}`).first()
+    const target = Math.max(seqOf.get(t) ?? 0, row.m ?? 0) + by
+    stmts.push(
+      seqOf.has(t)
+        ? d.prepare('UPDATE sqlite_sequence SET seq = ? WHERE name = ?').bind(target, t)
+        : d.prepare('INSERT INTO sqlite_sequence (name, seq) VALUES (?, ?)').bind(t, target),
+    )
+  }
+  await d.batch(stmts)
   const after = (await d.prepare('SELECT name, seq FROM sqlite_sequence ORDER BY name').all()).results
-  return { before, after }
+  const short = ID_TABLES.filter((t) => !after.some((r) => r.name === t && r.seq >= by))
+  return { before, after, ok: short.length === 0, short }
 }
 
 /**
@@ -288,42 +318,79 @@ async function d1Bump(d, by) {
  */
 async function d1Reconcile(from, to, marks, apply) {
   if (!marks || typeof marks !== 'object') throw new Error('marks (the JSON from /d1/marks at the export) is required')
+  // Rows `from` gained after the export. `appended` counts what reached `to`; `ignored` what
+  // `INSERT OR IGNORE` dropped (a UNIQUE clash or an id `to` already used), for a human to read.
   const appended = {}
+  const ignored = {}
   for (const t of ID_TABLES) {
     const mark = marks[t]
     if (!Number.isSafeInteger(mark)) throw new Error(`no mark for ${t}`)
     const { results } = await from.prepare(`SELECT * FROM ${t} WHERE id > ? ORDER BY id`).bind(mark).all()
     appended[t] = results.length
     if (!apply || results.length === 0) continue
-    const cols = Object.keys(results[0])
-    const sql = `INSERT OR IGNORE INTO ${t} (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`
-    for (let i = 0; i < results.length; i += INSERT_BATCH) {
-      const chunk = results.slice(i, i + INSERT_BATCH)
-      await to.batch(chunk.map((r) => to.prepare(sql).bind(...cols.map((c) => r[c]))))
-    }
+    const written = await insertOrIgnore(to, t, results)
+    appended[t] = written
+    if (written !== results.length) ignored[t] = results.length - written
   }
 
-  // In-place changes: rows both sides have, differing in a column that gets updated after insert.
+  // Keyed rows only `from` has (a license minted, refunded, or claimed in the window) are copied,
+  // or `/validate` would miss them and a Paddle redelivery would mint a second set of licenses.
+  // Rows both hold that differ stay a human's call: either side may be the newer one.
+  const keyedCopied = {}
   const differing = {}
-  for (const [t, cols] of Object.entries(MUTABLE_COLUMNS)) {
-    const watched = cols
-    const sel = `SELECT id, ${watched.join(', ')} FROM ${t} WHERE id <= ? ORDER BY id`
-    const [a, b] = await Promise.all([from.prepare(sel).bind(marks[t]).all(), to.prepare(sel).bind(marks[t]).all()])
-    const byId = new Map(b.results.map((r) => [r.id, r]))
-    const rows = a.results.filter((r) => {
-      const other = byId.get(r.id)
-      return other && watched.some((c) => r[c] !== other[c])
-    })
-    if (rows.length) differing[t] = rows.map((r) => ({ id: r.id, from: r, to: byId.get(r.id) }))
-  }
   for (const [t, key] of Object.entries(KEYED_TABLES)) {
     const [a, b] = await Promise.all([
       from.prepare(`SELECT * FROM ${t} ORDER BY ${key}`).all(),
       to.prepare(`SELECT * FROM ${t} ORDER BY ${key}`).all(),
     ])
     const byKey = new Map(b.results.map((r) => [r[key], JSON.stringify(r)]))
-    const rows = a.results.filter((r) => byKey.get(r[key]) !== JSON.stringify(r))
-    if (rows.length) differing[t] = rows.map((r) => ({ key: r[key], from: r, to: byKey.get(r[key]) ?? null }))
+    const missing = a.results.filter((r) => !byKey.has(r[key]))
+    keyedCopied[t] = apply && missing.length ? await insertOrIgnore(to, t, missing) : missing.length
+    const rows = a.results.filter((r) => byKey.has(r[key]) && byKey.get(r[key]) !== JSON.stringify(r))
+    if (rows.length) differing[t] = rows.map((r) => ({ key: r[key], from: r, to: byKey.get(r[key]) }))
   }
-  return { applied: apply, appended, differing }
+
+  // In-place changes on rows both sides have. A forward-only stamp `from` set in the window and `to`
+  // lacks is carried over, or `to`'s next cron tick would file the card or send the digest again.
+  // Every other difference is reported.
+  const stamped = {}
+  for (const [t, cols] of Object.entries(MUTABLE_COLUMNS)) {
+    const sel = `SELECT id, ${cols.join(', ')} FROM ${t} WHERE id <= ? ORDER BY id`
+    const [a, b] = await Promise.all([from.prepare(sel).bind(marks[t]).all(), to.prepare(sel).bind(marks[t]).all()])
+    const byId = new Map(b.results.map((r) => [r.id, r]))
+    const stamps = STAMP_COLUMNS[t] ?? []
+    const updates = []
+    const rows = []
+    for (const r of a.results) {
+      const other = byId.get(r.id)
+      if (!other) continue
+      const carry = stamps.filter((c) => r[c] !== null && other[c] === null)
+      for (const c of carry) {
+        updates.push(to.prepare(`UPDATE ${t} SET ${c} = ? WHERE id = ? AND ${c} IS NULL`).bind(r[c], r.id))
+      }
+      if (cols.some((c) => !carry.includes(c) && r[c] !== other[c])) rows.push({ id: r.id, from: r, to: other })
+    }
+    stamped[t] = updates.length
+    if (apply) {
+      for (let i = 0; i < updates.length; i += INSERT_BATCH) await to.batch(updates.slice(i, i + INSERT_BATCH))
+    }
+    if (rows.length) differing[t] = rows
+  }
+  return { applied: apply, appended, ignored, keyedCopied, stamped, differing }
+}
+
+/**
+ * `INSERT OR IGNORE` `rows` (one table's, all with the same columns) into `d`; returns how many landed.
+ * @param {any} d @param {string} table @param {Record<string, unknown>[]} rows
+ */
+async function insertOrIgnore(d, table, rows) {
+  const cols = Object.keys(rows[0])
+  const sql = `INSERT OR IGNORE INTO ${table} (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`
+  let written = 0
+  for (let i = 0; i < rows.length; i += INSERT_BATCH) {
+    const chunk = rows.slice(i, i + INSERT_BATCH)
+    const results = await d.batch(chunk.map((r) => d.prepare(sql).bind(...cols.map((c) => r[c]))))
+    for (const res of results) written += res.meta?.changes ?? 0
+  }
+  return written
 }
