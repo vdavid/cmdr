@@ -136,9 +136,6 @@ first. For everything the local guarded walker reads, in the order the function 
   covered in phases can take it. Its phased counterpart is `ensure_branch_watch`'s conditional epoch bump: a resume that
   can't replay the gap keeps the rows and says they're stale (`a_relaunch_with_no_replayable_journal_bumps_the_epoch`).
 - **journal replayable** ⇒ `start_replay`. An install that already finished its first index loses nothing.
-- **`scan_completed_at` set, and the start is a disk-space pause ending on a volume with no event journal**
-  (`walk_declined`) ⇒ `KeepTheRows`: no walk, no watcher, `Stale` until the user rescans. Nothing can replay what the
-  pause missed, and a full walk would spend the room that just came back. A journaled volume replays as usual.
 - **`scan_completed_at` set** ⇒ `start_scan("rescan of existing index")`, which reconciles in place. ⚠️ This is the path
   a `LocalExternal` drive takes at EVERY mount (`has_event_journal()` is `Local`-only) and the Linux boot disk's normal
   launch. ❌ The phased answers must never swallow it, or a finished external drive is treated as one nobody indexed.
@@ -1004,9 +1001,11 @@ still work. Per-drive intent is untouched.
   gates it (`start_indexing_for`).
 - **What the restart does, by capability** (`IndexVolumeKind::has_event_journal`, ❌ never by id): a journaled volume
   replays from its last committed chunk (`../watch/DETAILS.md` § "A replay commits in chunks"), falling back to the walk
-  the launch table gives a journal it can't serve; a volume with no journal and a completed index takes `KeepTheRows`
-  (`Stale`, no walk, no watcher, the user rescans from the badge). A trait-scanned volume already loads `Stale` with no
-  walk (`resume_or_scan_network`); a first index still in phases carries on, add-only. Pinned by
+  the launch table gives a journal it can't serve. A `LocalExternal` drive has its own `.fseventsd`, but Cmdr doesn't
+  replay it (`../watch/DETAILS.md`, #808: a same-UUID journal can hide a hole nothing reports), so it takes the walk it
+  takes at every mount: a whole-volume reconcile in place, sizes serving throughout, ending `Fresh`. Only a volume with
+  no event history at all comes back `Stale` with no walk for the user to rescan: a trait-scanned share or phone
+  (`resume_or_scan_network`). A first index still in phases carries on, add-only. Pinned by
   `cover::cold_drive_tests::space`.
 - **A volume that fills the disk straight back up backs off**: each pause within an hour doubles the first wait, capped
   at 30 minutes, so a threshold set lower than one chunk needs can't churn a replay every 30 s.

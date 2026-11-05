@@ -30,12 +30,14 @@ fn pause_for_low_disk(drive: &ColdDrive, host: &FakeHostPolicy) {
 
 /// The headline of #1002: while paused, the drive's database keeps answering (its
 /// sizes serve as they were, stale), the badge reads `paused` with its last-scan
-/// facts intact, and once there's room it comes back. A drive with no event
-/// journal (this one, a `LocalExternal`) comes back `Stale` with NO walk: nothing
-/// can replay what it missed, and a full walk would spend the room that just came
-/// back, so the user rescans from the badge.
+/// facts intact, and once there's room it comes back. A `LocalExternal` drive has
+/// its own `.fseventsd`, but Cmdr doesn't replay it (`watch/DETAILS.md`, #808: a
+/// same-UUID journal can hide a hole), so it does what it does at every mount:
+/// walks itself whole, reconciling in place while its sizes keep serving, and ends
+/// Fresh. ❌ Not Stale: David's order is replay, else rescan, and Stale only for a
+/// drive with no event history at all (a share, a phone).
 #[test]
-fn a_paused_drive_keeps_serving_its_sizes_and_comes_back_stale_without_a_walk() {
+fn a_paused_external_drive_keeps_serving_its_sizes_and_rescans_itself_when_room_returns() {
     let drive = an_indexed_drive("cover-space-pause-reads-test");
     assert_eq!(
         state::volume_kind(drive.volume_id),
@@ -80,8 +82,12 @@ fn a_paused_drive_keeps_serving_its_sizes_and_comes_back_stale_without_a_walk() 
     host.note_index_storage_low(false);
     cmdr_fs::testing::wait_until(
         std::time::Duration::from_secs(20),
-        "the drive to come back once there's room",
-        || state::is_active(drive.volume_id) && state::get_freshness(drive.volume_id) == Some(Freshness::Stale),
+        "the drive to come back and rescan itself once there's room",
+        || {
+            state::is_active(drive.volume_id)
+                && drive.scans_started() > scans_before
+                && state::get_freshness(drive.volume_id) == Some(Freshness::Fresh)
+        },
     );
     assert!(
         drive
@@ -91,20 +97,15 @@ fn a_paused_drive_keeps_serving_its_sizes_and_comes_back_stale_without_a_walk() 
             .is_some(),
         "the restart serves the same sizes"
     );
-    assert_eq!(
-        drive.scans_started(),
-        scans_before,
-        "no walk: the user rescans from the badge"
-    );
     assert!(
         drive.events.events().iter().any(|event| matches!(
             event,
             crate::IndexEvent::FreshnessChanged {
-                freshness: Freshness::Stale,
+                freshness: Freshness::Fresh,
                 ..
             }
         )),
-        "the badge was told it's back, Stale"
+        "the badge was told it's back, Fresh"
     );
 }
 

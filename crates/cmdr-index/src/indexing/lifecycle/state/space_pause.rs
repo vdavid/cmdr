@@ -12,8 +12,9 @@
 //! restart is an ordinary start that takes the paused slot over: a journaled
 //! volume replays from the position its last committed chunk stored, so nothing is
 //! lost and nothing is applied twice (`watch/DETAILS.md` § "A replay commits in
-//! chunks"); a volume with no event journal comes back `Stale` with no walk, for
-//! the user to rescan from the badge (`LaunchRoute::KeepTheRows`).
+//! chunks"); a local volume Cmdr can't replay (an external drive) walks itself
+//! whole, reconciling in place; a share or a phone, with no event history at all,
+//! comes back `Stale` for the user to rescan.
 //!
 //! Why a stop rather than a writer that waits in place: a parked writer backs its
 //! bounded channel up into every sender, and a replay or a live loop blocked on a

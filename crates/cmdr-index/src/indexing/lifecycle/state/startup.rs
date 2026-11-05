@@ -239,7 +239,6 @@ fn start_the_volume(volume_id: &str, request: StartRequest) -> Result<(), String
     let kind = request.kind;
     let inodes_trustworthy = request.inodes_trustworthy;
     let activation = request.activation;
-    let cause = request.cause;
     // The master switch is a HARD gate on BACKGROUND indexing, at the one choke
     // point every transport funnels through, so no start or autonomous resume path
     // can slip past it (an SMB reconnect used to, and re-indexed a whole NAS the
@@ -423,7 +422,7 @@ fn start_the_volume(volume_id: &str, request: StartRequest) -> Result<(), String
     };
 
     let scan_result = match activation {
-        Activation::IndexTheVolume => manager.resume_or_scan(cause),
+        Activation::IndexTheVolume => manager.resume_or_scan(),
         // Nothing to resume and nothing to scan: the walk that asked for this
         // writer is the only thing that will write through it.
         Activation::WriterOnly => Ok(()),
