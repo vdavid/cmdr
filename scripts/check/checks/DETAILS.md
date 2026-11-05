@@ -3026,3 +3026,17 @@ toolchain, then execs the x86 nextest binary and OrbStack crashes with
 whose output is captured whole and shown only when the build fails, so there's no denylist treadmill (every Debian
 version adds new dpkg verbs, and multi-line apt prompts have no stable shape). `trimBuildNoise` only cuts everything
 before the last `Compiling …` line; when no such line exists, the output is returned verbatim.
+
+## Clippy's fix pass runs only on a machine-fixable finding
+
+`desktop-rust-clippy` runs its `-D warnings` verdict with `--message-format=json`, and `parseClippyJSON`
+(`desktop-rust-clippy-json.go`) turns the output back into rendered diagnostics plus cargo's own lines, noting whether
+any diagnostic (or child) carries a `MachineApplicable` suggestion, the only kind `cargo fix` applies. Locally, a red
+verdict enters the `--fix` → touch every crate root → re-verdict branch only then; otherwise it reports at once ("no
+automatic fix").
+
+**Decision**: gate on cargo's typed `suggestion_applicability` field. **Why**: nearly every red run was a compile error
+or a lint with no machine fix, yet each paid `--fix` (167 s: cargo fix re-lints every member through its own wrapper), a
+forced re-verdict (61 s), and full-workspace rebuilds in the next Rust lanes (the touched crate roots).
+`docs/notes/performance/local-check-lanes-2026-11-05.md`. The message format isn't part of cargo's fingerprint, so the
+JSON verdict shares the warm cache with a plain one.

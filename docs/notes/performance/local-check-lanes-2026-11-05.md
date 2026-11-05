@@ -224,3 +224,11 @@ contention from other agents (load average 55–170), so wall times are inflated
    - Wall: the full suite took 311 s (load 55–120); `vitest related` for `settings/definitions/ai.ts` now runs 485 files
      in 124 s (load 100 → 55). At the report's load 5–7 that's roughly 112 s → 40–45 s for a hub edit, and a leaf
      formerly in the closure (most of `settings/`, `logging/`) now runs only its own tests.
+2. **Clippy fix gate** (`parseClippyJSON`, `scripts/check/checks/desktop-rust-clippy-json.go`).
+   - Planted an `#[allow(dead_code)]` with no reason in `cmdr-sort` (unfixable: `allow_attributes_without_reason`,
+     `items_after_test_module`) and timed `pnpm check clippy` on a warm tree: **379 s** with the old lane (load 119 →
+     33; `--fix`, the crate-root touch, and the re-verdict), **6 s** with the new one (load ~120), same diagnostics.
+   - The old run's crate-root touch then cost the next clippy a rebuild of every member; the new lane touches nothing on
+     this path.
+   - Warm no-op: 13 s total under load (`--message-format=json` reuses the cached plain verdict: cargo doesn't
+     fingerprint the message format).

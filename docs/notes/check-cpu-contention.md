@@ -97,7 +97,8 @@ The four heavy normal-suite Rust checks (clippy, bindings-fresh, rust-tests, rus
   cached) and are re-surfaced on every run until fixed (verified: warm re-runs of an injected `needless_return` all
   caught it; clean stays clean). clippy dropped ~32 s → ~1-2 s warm, and the others stopped rebuilding. The `--fix`
   failure branch keeps its touch (different transition: `--fix` succeeds with unfixable warnings; only runs locally on
-  an already-failing clippy, so it never poisons the shared warm cache).
+  an already-failing clippy with a machine-fixable finding, so it never poisons the shared warm cache):
+  `scripts/check/checks/DETAILS.md` § "Clippy's fix pass runs only on a machine-fixable finding".
 - **`integration-tests` builds in `--release`**: a separate profile from `rust-tests`' debug, so they share no artifacts
   and integration always pays a full release compile. Open question: if the SMB tests don't truly need `-O`, switching
   to debug would let them reuse the test build. Left as-is pending a check that the timing-sensitive SMB tests still

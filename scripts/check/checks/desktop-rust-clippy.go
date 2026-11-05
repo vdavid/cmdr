@@ -43,17 +43,28 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 	// the only build pass we do. --fix is reserved for the failure branch
 	// because it ignores -D warnings, can rewrite source files, and re-running
 	// it speculatively doubled wall time on every clean run.
-	enforcingArgs := append([]string{"clippy", "--locked", "--all-targets"}, selection...)
+	//
+	// JSON messages carry each suggestion's applicability, so a red verdict can tell
+	// whether `--fix` has anything to apply. Most red runs are compile errors or lints
+	// with no machine-applicable fix: those report at once, skipping a `--fix` pass
+	// (~170 s, a re-lint of every member) and the forced re-check after it (~60 s),
+	// which also left every crate root touched for the next Rust lane.
+	// `docs/notes/performance/local-check-lanes-2026-11-05.md`.
+	enforcingArgs := append([]string{"clippy", "--locked", "--all-targets", "--message-format=json"}, selection...)
 	enforcingArgs = append(enforcingArgs, "--", "-D", "warnings")
 	cmd := exec.Command("cargo", enforcingArgs...)
 	cmd.Dir = ctx.RootDir
-	output, err := RunCommand(cmd, true)
+	rawOutput, err := RunCommand(cmd, true)
+	output, fixable := parseClippyJSON(rawOutput)
 	if err != nil {
 		if ctx.CI {
 			return CheckResult{}, fmt.Errorf("clippy errors found, run the check script locally\n%s", indentOutput(output))
 		}
+		if !fixable {
+			return CheckResult{}, fmt.Errorf("clippy found issues with no automatic fix\n%s", indentOutput(output))
+		}
 
-		// Locally: try to auto-fix, then re-check.
+		// Locally, with something machine-fixable: auto-fix, then re-check.
 		fixArgs := append([]string{"clippy", "--locked", "--all-targets"}, selection...)
 		fixArgs = append(fixArgs, "--fix", "--allow-dirty", "--allow-staged")
 		fixCmd := exec.Command("cargo", fixArgs...)
@@ -70,7 +81,8 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 		touchWorkspaceCrateRoots(ctx.RootDir)
 		cmd = exec.Command("cargo", enforcingArgs...)
 		cmd.Dir = ctx.RootDir
-		output, err = RunCommand(cmd, true)
+		rawOutput, err = RunCommand(cmd, true)
+		output, _ = parseClippyJSON(rawOutput)
 		if err != nil {
 			return CheckResult{}, fmt.Errorf("clippy found unfixable issues\n%s", indentOutput(output))
 		}
