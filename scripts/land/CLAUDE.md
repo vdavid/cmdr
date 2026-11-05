@@ -38,14 +38,14 @@ only way commits reach `main`: nobody, admin included, lands a SHA without a gre
   record a contributor PR in its own land).
 - **It never overwrites commits only origin's branch has** (another machine, GitHub's "Update branch"): it stops and
   says how to bring them in. Keep the bare lease plus `--force-if-includes` (`DETAILS.md` § Gotcha: the branch push).
-- ❌ **Don't use the PR page's merge button.** `land` picks the fast-forward when it can (the SHAs CI tested), syncs
-  local `main`, and tidies the branch.
+- ❌ **Don't use the PR page's merge button.** `land` fast-forwards when it can, syncs `main`, and tidies up.
+- **The current attempt's `CI OK` decides**, never the lagging run status nor an earlier attempt's `CI OK` (`DETAILS.md`
+  § Decision: `CI OK` decides, not the run status).
 - **A newer push cancels the PR's running CI** (`cancel-in-progress` in `ci.yml`), so a watcher follows the newest run.
-- **The landing push uses `--no-verify`.** CI passed on that exact SHA, and a pre-push hook that adds a commit would
-  land something CI never saw.
-- **Only a lead agent lands**, in the background (CI takes 25–35 min). A subagent runs `-no-wait` and hands over: a
-  background command never wakes it.
-- ❌ **Never commit on local `main`.** It mirrors `origin/main`; `land` fast-forwards it wherever it's checked out, and
-  only when that tree is clean.
+- **The landing push uses `--no-verify`**: a pre-push hook's commit would land something CI never saw.
+- **Only a lead agent lands**, in the background. A subagent runs `-no-wait` and hands over: nothing background wakes
+  it.
+- ❌ **Never commit on local `main`.** It mirrors `origin/main`; `land` fast-forwards it wherever it's checked out
+  (clean trees only).
 
 Rulesets, the probe, and decisions: `DETAILS.md`.

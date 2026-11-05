@@ -73,9 +73,26 @@ from, often has some.
 only when the release commit is on `origin/main`'s history, and local `main` synced by `fetch origin main:main`. Change
 it with the release flow (`docs/guides/releasing.md`).
 
-`ciVerdict` takes the newest CI run on the SHA (a `gh run rerun` reopens it, so an in-flight re-run reads as pending,
-not red) and the newest `CI OK` check run. Only `success` is green: GitHub would accept a skipped check, which a
-finished run should never produce.
+## Decision: `CI OK` decides, not the run status
+
+Decision: `ciVerdict` takes the newest CI run on the SHA and the newest `CI OK` check run of that run's current attempt,
+and a completed one is the verdict whatever the run's status says. Why: GitHub can mark the run completed long after its
+last job: PR #944's `CI OK` finished at 16:19:55Z, the run at 16:35:58Z (2026-11-04), and waiting for the run status
+landed it 16 minutes late. `CI OK` is the exact check `main`'s CI ruleset requires, so it's safe to trust alone.
+
+- **Only the current attempt's `CI OK` counts** (`checkRun.ofAttempt`). A `gh run rerun` reopens the run as a new
+  attempt in the same check suite, and the earlier attempt's `CI OK` stays in the list (verified on run 41854674280's
+  three attempts, `gh api .../check-runs`, 2026-11-05). So a check counts when it's in the run's suite
+  (`check_suite_id`; the same SHA's other run, a release's dispatch run, has its own) and either still going or started
+  no earlier than the attempt (`run_started_at`). An old green can't land a SHA whose re-run is going, and an old red
+  can't stop one (`TestCIVerdictAcrossReRuns`).
+- **No such check**: a finished run is red (`CI OK` never ran), an unfinished one pending. A queued `CI OK` on a
+  finished run is pending (seen 2026-10-22).
+- **Only `success` is green**: GitHub would accept a skipped check, which a finished run should never produce.
+- **A red `CI OK` on a run still in progress** reports like an early stop: `gh run rerun --failed` works once the run
+  finishes.
+- `finish` may then cancel that same run as a leftover (GitHub still calls it in progress); its jobs are done, and
+  `CI OK` stays green on the SHA.
 
 ## Decision: stop waiting at the first required failure
 
@@ -126,12 +143,20 @@ always matches, so origin's branch gets overwritten whatever it holds. It clobbe
 Many sessions landing at once poll one account, and on 2026-10-20 they spent its 5,000/h REST budget: `gh run list`
 answered 403 after CI was green, and that land was lost. So:
 
-- **One REST call per poll** (`repos/{repo}/actions/workflows/ci.yml/runs?head_sha=`), plus the run's jobs while it runs
-  (§ Decision: stop waiting at the first required failure) and the `CI OK` check runs only once it finished.
-  `gh run list --workflow` cost two calls (it resolves the workflow first).
-- **Poll by run age** (`pollDelay`): 20 s until the run shows up, every 3 min while it's younger than 15 min (CI takes
-  25–35 min), then every minute, each plus up to 25% jitter. About 15–25 polls per CI run (two calls each, many of them
-  free 304s), down from ~180 calls (three every 30 s).
+- **Three REST calls per poll at most**: the runs (`repos/{repo}/actions/workflows/ci.yml/runs?head_sha=`), the `CI OK`
+  check runs once a run exists (§ Decision: `CI OK` decides, not the run status), and the run's jobs while it runs (§
+  Decision: stop waiting at the first required failure). `gh run list --workflow` cost two calls (it resolves the
+  workflow first).
+- **Poll fast early, then back off** (`pollDelay`): every 5 s until the run shows up and through its attempt's first 50
+  s, then a tenth of the attempt's age (a re-run restarts the clock), capped at 30 s from minute five, each plus up to
+  25% jitter. No guess about the diff: a CI that skips every lane (about a minute) is seen within seconds, a 30-min one
+  within half a minute, for about 90 polls.
+- **Why that fits the budget**: what GitHub charges is bounded by how often the answers change, not by the cadence.
+  While a run went, the runs list and the `CI OK` list each answered five 304s in a row after the first 200, and the
+  jobs list one 200 in five polls (10 s apart, `X-RateLimit-Remaining` unmoved by the 304s, run 41945435107,
+  2026-11-05). So a land costs about one charged call per job state change, well under 200, and ten lands at once stay
+  far from 5,000/h. The 30 s cap keeps the request rate (304s included, which secondary limits may count) near six a
+  minute per land; the 5 s start is about 36 a minute for one minute.
 - **An unchanged poll is free** (`responseCache`, `ghbudget.go`): `ghAPI` sends the path's last ETag as `If-None-Match`,
   and GitHub answers an unchanged list with a 304 that it doesn't charge to the primary budget (verified 2026-10-21:
   `X-RateLimit-Remaining` stayed at 4,942 across two 304s on the workflow-runs list). Most polls of a running CI see

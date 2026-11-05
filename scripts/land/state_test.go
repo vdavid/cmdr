@@ -225,12 +225,20 @@ func TestNeedsSquash(t *testing.T) {
 
 func TestCIVerdict(t *testing.T) {
 	at := func(m int) time.Time { return time.Date(2026, 10, 18, 12, m, 0, 0, time.UTC) }
-	running := workflowRun{ID: 2, Status: "in_progress", CreatedAt: at(5)}
-	red := workflowRun{ID: 1, Status: "completed", Conclusion: "failure", CreatedAt: at(1)}
-	done := workflowRun{ID: 2, Status: "completed", Conclusion: "success", CreatedAt: at(5)}
-	ok := checkRun{ID: 20, Status: "completed", Conclusion: "success"}
-	failed := checkRun{ID: 10, Status: "completed", Conclusion: "failure"}
-	skipped := checkRun{ID: 30, Status: "completed", Conclusion: "skipped"}
+	run := func(id int64, status string, created int) workflowRun {
+		return workflowRun{ID: id, Status: status, CreatedAt: at(created), RunStartedAt: at(created), CheckSuiteID: 100 + id}
+	}
+	check := func(id int64, status, conclusion string, suite int64, started int) checkRun {
+		c := checkRun{ID: id, Status: status, Conclusion: conclusion, StartedAt: at(started)}
+		c.CheckSuite.ID = suite
+		return c
+	}
+	running := run(2, "in_progress", 5)
+	red := run(1, "completed", 1)
+	done := run(2, "completed", 5)
+	ok := check(20, "completed", "success", 102, 30)
+	failed := check(10, "completed", "failure", 101, 20)
+	skipped := check(30, "completed", "skipped", 102, 30)
 
 	cases := []struct {
 		name   string
@@ -243,17 +251,61 @@ func TestCIVerdict(t *testing.T) {
 		{"running", []workflowRun{running}, nil, verdictPending, 2},
 		{"a re-run in flight outranks the old red check", []workflowRun{red, running}, []checkRun{failed}, verdictPending, 2},
 		{"green", []workflowRun{done}, []checkRun{failed, ok}, verdictGreen, 2},
-		{"the newest check decides", []workflowRun{done}, []checkRun{ok, {ID: 40, Status: "completed", Conclusion: "failure"}}, verdictRed, 2},
+		{"the newest check decides", []workflowRun{done}, []checkRun{ok, check(40, "completed", "failure", 102, 31)}, verdictRed, 2},
 		{"red run", []workflowRun{red}, []checkRun{failed}, verdictRed, 1},
 		{"finished with no CI OK at all", []workflowRun{red}, nil, verdictRed, 1},
 		{"a skipped CI OK is not green", []workflowRun{done}, []checkRun{skipped}, verdictRed, 2},
 		// GitHub can mark the run completed while its `CI OK` is still queued (seen 2026-10-22).
-		{"a finished run whose CI OK has not run yet", []workflowRun{done}, []checkRun{{ID: 50, Status: "queued"}}, verdictPending, 2},
+		{"a finished run whose CI OK has not run yet", []workflowRun{done}, []checkRun{check(50, "queued", "", 102, 0)}, verdictPending, 2},
+		// PR #944 (2026-11-04): `CI OK` went green 16 minutes before GitHub marked the run done.
+		{"a green CI OK beats a run still in progress", []workflowRun{running}, []checkRun{ok}, verdictGreen, 2},
+		{"a red CI OK beats a run still in progress", []workflowRun{running}, []checkRun{check(20, "completed", "failure", 102, 30)}, verdictRed, 2},
+		{"a running CI OK is pending", []workflowRun{running}, []checkRun{check(20, "in_progress", "", 102, 30)}, verdictPending, 2},
+		// The same SHA's other run (a release's dispatch run beside its PR run) has its own suite.
+		{"another run's green CI OK doesn't count", []workflowRun{red, running}, []checkRun{check(15, "completed", "success", 101, 3)}, verdictPending, 2},
 	}
 	for _, c := range cases {
 		got, run := ciVerdict(c.runs, c.checks)
 		if got != c.want || run.ID != c.wantID {
 			t.Errorf("%s: got %d (run %d), want %d (run %d)", c.name, got, run.ID, c.want, c.wantID)
+		}
+	}
+}
+
+// A re-run reopens the run as a new attempt in the same check suite, and the earlier attempt's
+// `CI OK` stays in the list (run 41854674280, 2026-11-04). Only the current attempt's counts, so
+// an old green can't land a SHA whose re-run is still going, and an old red can't stop one.
+func TestCIVerdictAcrossReRuns(t *testing.T) {
+	at := func(m int) time.Time { return time.Date(2026, 11, 4, 15, m, 0, 0, time.UTC) }
+	attempt := func(n int, status string, started int) workflowRun {
+		return workflowRun{ID: 7, Status: status, CreatedAt: at(0), RunAttempt: n, RunStartedAt: at(started), CheckSuiteID: 70}
+	}
+	check := func(id int64, status, conclusion string, started int) checkRun {
+		c := checkRun{ID: id, Status: status, Conclusion: conclusion, StartedAt: at(started)}
+		c.CheckSuite.ID = 70
+		return c
+	}
+	oldGreen := check(1, "completed", "success", 30)
+	oldRed := check(1, "completed", "failure", 30)
+	reRun := attempt(2, "in_progress", 40)
+
+	cases := []struct {
+		name   string
+		run    workflowRun
+		checks []checkRun
+		want   verdict
+	}{
+		{"the first attempt's green", attempt(1, "in_progress", 0), []checkRun{oldGreen}, verdictGreen},
+		{"a re-run in flight outranks the old green", reRun, []checkRun{oldGreen}, verdictPending},
+		{"a re-run in flight outranks the old red", reRun, []checkRun{oldRed}, verdictPending},
+		{"the re-run's CI OK is queued", reRun, []checkRun{oldGreen, check(2, "queued", "", 0)}, verdictPending},
+		{"the re-run's red beats the old green", reRun, []checkRun{oldGreen, check(2, "completed", "failure", 55)}, verdictRed},
+		{"the re-run's green beats the old red", reRun, []checkRun{oldRed, check(2, "completed", "success", 55)}, verdictGreen},
+		{"a finished re-run that never reached CI OK", attempt(2, "completed", 40), []checkRun{oldGreen}, verdictRed},
+	}
+	for _, c := range cases {
+		if got, _ := ciVerdict([]workflowRun{c.run}, c.checks); got != c.want {
+			t.Errorf("%s: got %d, want %d", c.name, got, c.want)
 		}
 	}
 }
@@ -285,14 +337,28 @@ func TestPollDelay(t *testing.T) {
 		runAge time.Duration
 		want   time.Duration
 	}{
-		{"waiting for the run to show up", verdictMissing, 0, appearPoll},
-		{"a young run can't be done yet", verdictPending, 2 * time.Minute, earlyPoll},
-		{"an older run may finish any time", verdictPending, 20 * time.Minute, latePoll},
+		{"waiting for the run to show up", verdictMissing, 0, fastPoll},
+		{"a just-started run may skip every lane", verdictPending, 10 * time.Second, fastPoll},
+		{"still fast at the minute a skipping CI takes", verdictPending, 50 * time.Second, fastPoll},
+		{"backing off with age", verdictPending, 2 * time.Minute, 12 * time.Second},
+		{"a long run stays at the cap", verdictPending, 20 * time.Minute, slowPoll},
 	}
 	for _, c := range cases {
 		if got := pollDelay(c.v, c.runAge); got != c.want {
 			t.Errorf("%s: got %s, want %s", c.name, got, c.want)
 		}
+	}
+}
+
+// A re-run restarts the clock, so its first minute is polled fast too.
+func TestAttemptStart(t *testing.T) {
+	created := time.Date(2026, 11, 4, 15, 0, 0, 0, time.UTC)
+	if got := (workflowRun{CreatedAt: created}).attemptStart(); !got.Equal(created) {
+		t.Errorf("no run_started_at: got %s, want the creation time", got)
+	}
+	reRun := workflowRun{CreatedAt: created, RunStartedAt: created.Add(time.Hour)}
+	if got := reRun.attemptStart(); !got.Equal(reRun.RunStartedAt) {
+		t.Errorf("a re-run: got %s, want its attempt's start", got)
 	}
 }
 
