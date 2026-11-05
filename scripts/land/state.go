@@ -225,8 +225,11 @@ type workflowRun struct {
 	Status     string    `json:"status"`
 	Conclusion string    `json:"conclusion"`
 	CreatedAt  time.Time `json:"created_at"`
-	// RunAttempt goes up with each `gh run rerun`.
-	RunAttempt     int `json:"run_attempt"`
+	// RunAttempt goes up with each `gh run rerun`, and RunStartedAt moves to that attempt's start.
+	RunAttempt   int       `json:"run_attempt"`
+	RunStartedAt time.Time `json:"run_started_at"`
+	// CheckSuiteID is shared by every attempt of the run, and by every job's check run.
+	CheckSuiteID   int64 `json:"check_suite_id"`
 	HeadRepository struct {
 		FullName string `json:"full_name"`
 	} `json:"head_repository"`
@@ -246,14 +249,22 @@ func leftoverRuns(runs []workflowRun, repo string) []workflowRun {
 	return out
 }
 
+// attemptStart is when the run's current attempt started: a re-run starts the clock over.
+func (r workflowRun) attemptStart() time.Time {
+	if r.RunStartedAt.IsZero() {
+		return r.CreatedAt
+	}
+	return r.RunStartedAt
+}
+
 const (
-	// A run shows up seconds after the push.
-	appearPoll = 20 * time.Second
-	// CI takes 25–35 min (a warm re-run about 18), so a run younger than `earlyFor` is checked
-	// rarely, and an older one every minute, since it may finish any time.
-	earlyPoll = 3 * time.Minute
-	earlyFor  = 15 * time.Minute
-	latePoll  = time.Minute
+	// A run shows up seconds after the push, and a CI that skips every lane is green about a
+	// minute later, so a young run is polled every `fastPoll`.
+	fastPoll = 5 * time.Second
+	// The delay grows with the attempt's age (a tenth of it), up to `slowPoll` from minute five:
+	// a 30-minute CI is found green within half a minute, and costs about 90 polls.
+	pollAgeShare = 10
+	slowPoll     = 30 * time.Second
 )
 
 // missingRunGivesUp says whether a poll that found no CI run on the head ends the wait. Only a
@@ -264,23 +275,38 @@ func missingRunGivesUp(seen bool, waited time.Duration) bool {
 	return !seen && waited > appearWithin
 }
 
-// pollDelay is how long to wait before the next CI poll, before jitter.
-func pollDelay(v verdict, runAge time.Duration) time.Duration {
-	switch {
-	case v == verdictMissing:
-		return appearPoll
-	case runAge < earlyFor:
-		return earlyPoll
-	default:
-		return latePoll
+// pollDelay is how long to wait before the next CI poll, before jitter. attemptAge is the age of
+// the run's current attempt. Most polls are free 304s (§ Decision: cheap polling in DETAILS.md),
+// so the fast start costs little budget; the cap keeps the request rate low with many lands.
+func pollDelay(v verdict, attemptAge time.Duration) time.Duration {
+	if v == verdictMissing {
+		return fastPoll
 	}
+	return min(max(attemptAge/pollAgeShare, fastPoll), slowPoll)
 }
 
 // checkRun is one `CI OK` check run on the head SHA; a re-run adds a new one with a higher id.
 type checkRun struct {
-	ID         int64  `json:"id"`
-	Status     string `json:"status"`
-	Conclusion string `json:"conclusion"`
+	ID         int64     `json:"id"`
+	Status     string    `json:"status"`
+	Conclusion string    `json:"conclusion"`
+	StartedAt  time.Time `json:"started_at"`
+	CheckSuite struct {
+		ID int64 `json:"id"`
+	} `json:"check_suite"`
+}
+
+// ofAttempt says whether the check belongs to the run's current attempt. Every attempt shares
+// the run's check suite, so an earlier attempt's `CI OK` (it stays in the list) is told apart by
+// starting before this attempt did; one still going can't be an earlier attempt's, since a
+// re-run starts only once the run finished (verified on run 41854674280's three attempts,
+// `gh api .../check-runs`, 2026-11-05). Another run on the same SHA (a release's dispatch run
+// beside its PR run) has a suite of its own.
+func (c checkRun) ofAttempt(run workflowRun) bool {
+	if run.CheckSuiteID != 0 && c.CheckSuite.ID != run.CheckSuiteID {
+		return false
+	}
+	return c.Status != "completed" || !c.StartedAt.Before(run.attemptStart())
 }
 
 type verdict int
@@ -293,30 +319,36 @@ const (
 	verdictRed
 )
 
-// ciVerdict reads the CI runs and `CI OK` check runs on one SHA. The run says whether CI is
-// still going (a re-run reopens it), and the newest `CI OK` says how it ended, because that's
-// the exact check `main`'s ruleset demands. Only `success` is green: GitHub would also accept a
-// skipped check, which is never what a finished CI run should produce.
+// ciVerdict reads the CI runs and `CI OK` check runs on one SHA. The newest run's current
+// attempt's `CI OK` decides as soon as it completes, whatever the run's status says: it's the
+// exact check `main`'s ruleset demands, and GitHub can mark the run completed many minutes later
+// (PR #944, 2026-11-04: `CI OK` done at 16:19:55Z, the run at 16:35:58Z). An earlier attempt's or
+// another run's `CI OK` never counts (`ofAttempt`), so an old green can't beat a re-run in
+// flight. With no such check, a finished run is red (`CI OK` never ran) and an unfinished one
+// pending. Only `success` is green: GitHub would also accept a skipped check, which is never what
+// a finished CI run should produce.
 func ciVerdict(runs []workflowRun, checks []checkRun) (verdict, workflowRun) {
 	if len(runs) == 0 {
 		return verdictMissing, workflowRun{}
 	}
 	run := slices.MaxFunc(runs, func(a, b workflowRun) int { return a.CreatedAt.Compare(b.CreatedAt) })
-	if run.Status != "completed" {
+	current := slices.DeleteFunc(slices.Clone(checks), func(c checkRun) bool { return !c.ofAttempt(run) })
+	if len(current) == 0 {
+		if run.Status == "completed" {
+			return verdictRed, run
+		}
 		return verdictPending, run
 	}
-	if len(checks) == 0 {
+	check := slices.MaxFunc(current, func(a, b checkRun) int { return cmp.Compare(a.ID, b.ID) })
+	switch {
+	// GitHub can report the run completed a moment before its `CI OK` job runs.
+	case check.Status != "completed":
+		return verdictPending, run
+	case check.Conclusion == "success":
+		return verdictGreen, run
+	default:
 		return verdictRed, run
 	}
-	check := slices.MaxFunc(checks, func(a, b checkRun) int { return cmp.Compare(a.ID, b.ID) })
-	// GitHub can report the run completed a moment before its `CI OK` job runs.
-	if check.Status != "completed" {
-		return verdictPending, run
-	}
-	if check.Conclusion == "success" {
-		return verdictGreen, run
-	}
-	return verdictRed, run
 }
 
 // runJob is one of `repos/{repo}/actions/runs/{id}/jobs`' `jobs`.

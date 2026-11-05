@@ -371,7 +371,8 @@ func waitForCI(r runner, head string, cfg config) error {
 	// list lagging, never a push that started nothing.
 	seen := false
 	for {
-		// One REST call per poll; the `CI OK` check runs only matter once the run finished.
+		// The runs, then the `CI OK` check runs once a run exists: `CI OK` decides even while
+		// GitHub still calls the run in progress. An unchanged answer is a free 304.
 		var runs struct {
 			WorkflowRuns []workflowRun `json:"workflow_runs"`
 		}
@@ -381,7 +382,7 @@ func waitForCI(r runner, head string, cfg config) error {
 		var checks struct {
 			CheckRuns []checkRun `json:"check_runs"`
 		}
-		if v, _ := ciVerdict(runs.WorkflowRuns, nil); v != verdictMissing && v != verdictPending {
+		if len(runs.WorkflowRuns) > 0 {
 			if err := r.ghAPI(&checks, fmt.Sprintf("repos/%s/commits/%s/check-runs?check_name=%s&filter=all", repo, head, url.PathEscape(ciCheck))); err != nil {
 				return err
 			}
@@ -393,7 +394,8 @@ func waitForCI(r runner, head string, cfg config) error {
 			return nil
 		case verdictRed:
 			jobs, _ := runJobs(r, run.ID)
-			return ciFailure(run, jobs, false, cfg.command())
+			// `CI OK` can be red while GitHub still calls the run in progress.
+			return ciFailure(run, jobs, run.Status != "completed", cfg.command())
 		case verdictMissing:
 			if missingRunGivesUp(seen, time.Since(start)) {
 				return fmt.Errorf("no CI run on %s after %s. Check the PR's Checks tab, then land again: %s", head[:12], appearWithin, cfg.command())
@@ -411,7 +413,7 @@ func waitForCI(r runner, head string, cfg config) error {
 		if time.Since(start) > cfg.timeout {
 			return fmt.Errorf("CI is still running after %s; land again to keep waiting: %s", cfg.timeout, cfg.command())
 		}
-		delay := pollDelay(v, time.Since(run.CreatedAt))
+		delay := pollDelay(v, time.Since(run.attemptStart()))
 		time.Sleep(delay + jitter(delay/4))
 	}
 }
