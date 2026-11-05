@@ -9,7 +9,10 @@ name: macOS lane
 # It runs on one of two kinds of runner, picked by `ci.yml`'s `changes` job: a `cmdr-m1` slot on
 # David's M1 (trusted runs, while a slot is idle), or GitHub's hosted `macos-26`. A slot keeps its
 # own warm `CARGO_TARGET_DIR` outside the workspace, so it restores and saves no Rust cache; the
-# hosted runner restores only a small registry-and-tools entry and builds the rest.
+# hosted runner restores only a small registry-and-tools entry and builds the rest. The Finder
+# extension compiles in a job of its own on hosted `macos-26` either way (the M1 has only the
+# Command Line Tools, which can't link its x86_64 slice), and `marker` saves the lane marker once
+# both passed.
 on:
   workflow_call:
     inputs:
@@ -34,12 +37,42 @@ permissions:
   contents: read
 
 jobs:
+  # Nothing else compiles the extension before a release build, which is where `Logger` (macOS 11)
+  # broke the 10.15 x86_64 slice. About a minute on a cold runner (`swiftc` loading the macOS
+  # frameworks), so only when its files changed or on a `run_all`, which the release gate always
+  # is. Always hosted: it needs full Xcode's Swift runtime for the x86_64 slice, which the M1's
+  # Command Line Tools lack (`swiftCompatibility*` undefined, 2026-11-05).
+  finder-extension:
+    name: Finder extension
+    if: inputs.compile-finder-extension
+    runs-on: macos-26
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          cache_save: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Compile the Finder extension
+        run: ./scripts/check/check --check desktop-finder-extension-compile --ci
+
   lane:
     name: Clippy, rustdoc, tests, module cycles
     # Hosted: pinned to the release builder's image so the lanes lint against the SDK the app ships
     # with; see the `runs-on` comment in `release-pipeline.yml` for why it's never `macos-latest`.
-    # Self-hosted: the M1 runs the same macOS major, provisioned by David's infra repo
-    # (`m1mbp/ansible`, the `ci_runner` role).
+    # Self-hosted: the M1, on a newer macOS than `macos-26`, provisioned by David's infra repo (the
+    # `ci_runner` role); full runs stay hosted, so a release is gated on the shipping image.
     runs-on: ${{ fromJSON(inputs.runs-on) }}
     # Near the real runtime, so a dead box or a wedged step fails the run instead of hanging it. An
     # M1 slot ran the lane's checks in 6.4 min warm and 11 min cold (2026-11-05, nice 10, one slot
@@ -106,13 +139,6 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: ./.github/actions/rust-test-scope
 
-      # Nothing else compiles the extension before a release build. About a minute on a cold
-      # runner (`swiftc` loading the macOS frameworks), so only when its files changed or on a
-      # `run_all`, which the release gate always is. First, so a broken slice fails fast.
-      - name: Compile the Finder extension
-        if: inputs.compile-finder-extension
-        run: ./scripts/check/check --check desktop-finder-extension-compile --ci
-
       - name: Run clippy
         run: ./scripts/check/check --check desktop-rust-clippy --ci
 
@@ -133,7 +159,23 @@ jobs:
       - name: Check Rust module cycles
         run: ./scripts/check/check --check desktop-rust-module-cycles --ci
 
-      # Last, with no `if:` (see `rust-lane.yml`). ❌ Nothing after it.
+  # The lane's marker, once `lane` passed and `finder-extension` passed or wasn't asked for, so one
+  # green job can't vouch for the other (`scripts/lane-markers/DETAILS.md`). A skipped need would
+  # skip a plain `needs` job, hence the explicit `if:`; `!cancelled()` keeps a cancelled run from
+  # saving one.
+  marker:
+    name: Lane marker
+    needs: [finder-extension, lane]
+    if: >-
+      !cancelled() && needs.lane.result == 'success' && (needs.finder-extension.result == 'success' ||
+      (needs.finder-extension.result == 'skipped' && !inputs.compile-finder-extension))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Save the lane marker
         uses: ./.github/actions/lane-marker
         with:

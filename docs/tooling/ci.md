@@ -413,12 +413,16 @@ three questions Linux can't answer for that code: `desktop-rust-clippy`, `deskto
 
 Its steps live in the reusable `macos-lane.yml`, called by `ci.yml`'s `desktop-rust-macos` (§ Lane files).
 
-First, before clippy, it runs `desktop-finder-extension-compile`: both slices of the Swift Finder extension,
-cross-compiled by `swiftc` on the one runner. Nothing else compiles it before a release build, which is where `Logger`
-(macOS 11) broke the 10.15 x86_64 slice (`v0.58.1-pipelinetest.1`, 2026-11-03). It took 65 s on a cold runner (mostly
-`swiftc` loading the macOS frameworks; 4 s on a warm Mac, 2026-11-03), so the step runs only when the `finder-extension`
-filter matches (the extension, its check, or `macos-lane.yml`) or on `run_all`, which the release gate always is. The
-`rust` filter carries `apps/desktop/finder-extension/**` too, so a Swift-only change starts the lane at all.
+Beside it, in a job of its own on hosted `macos-26` (`finder-extension`), it runs `desktop-finder-extension-compile`:
+both slices of the Swift Finder extension, cross-compiled by `swiftc`. Nothing else compiles it before a release build,
+which is where `Logger` (macOS 11) broke the 10.15 x86_64 slice (`v0.58.1-pipelinetest.1`, 2026-11-03). It took 65 s on
+a cold runner (mostly `swiftc` loading the macOS frameworks; 4 s on a warm Mac, 2026-11-03), so the job runs only when
+the `finder-extension` filter matches (the extension, its check, the lane file, `ci.yml`, or `.mise.toml`) or on
+`run_all`, which the release gate always is. It's always hosted because the M1 has only the Command Line Tools, whose
+Swift runtime has no x86_64 slice, so the 10.15 slice fails to link there (`swiftCompatibility*` undefined, 2026-11-05).
+The lane file's `marker` job saves the lane marker once the main job passed and this one passed or wasn't asked for, so
+neither can vouch for the other. The `rust` filter carries `apps/desktop/finder-extension/**` too, so a Swift-only
+change starts the lane at all.
 
 Gotcha for any second gate on a commit (a dispatched run, a merge queue): GitHub's ruleset reads only the newest run of
 a workflow on a commit. A `ci.yml` dispatch's green `CI OK` was shadowed by that commit's PR run, which started three
@@ -470,11 +474,9 @@ s) and 11 min cold, at nice 10 (2026-11-05, timed step by step on the box); host
   `RUNNER_STATUS_TOKEN` secret (a fine-grained PAT on `vdavid/cmdr` only, Administration read-only). No secret (a fork's
   run gets none) or a failed lookup routes hosted, so the worst case is the old behavior.
 - **Always hosted**: a full run (the release gate's `run_all`, the nightly), so a release is gated on the release
-  builder's own image and SDK; and a run that compiles the Finder extension (the `finder-extension` filter). The M1 has
-  only the Command Line Tools, whose Swift runtime has no x86_64 slice, so the extension's 10.15 slice fails to link
-  there (`swiftCompatibility*` undefined, 2026-11-05). The M1 also runs a newer macOS than `macos-26`, so a test that
-  depends on the OS version can pass on one and fail on the other; the nightly and the release gate catch the hosted
-  side.
+  builder's own image and SDK, and the Finder extension compile (its own job, § above). The M1 runs a newer macOS than
+  `macos-26`, so a test that depends on the OS version can pass on one and fail on the other; the nightly and the
+  release gate catch the hosted side.
 - **What the M1 path changes** (`self-hosted` input): no rust-cache and no mise Actions cache (the box keeps both); the
   pinned toolchain installs under a `shlock` (four slots share one rustup home, and rustup has no lock of its own);
   `timeout-minutes` is 30 instead of 90, so a box dying mid-job fails the run instead of hanging it.
@@ -491,8 +493,14 @@ s) and 11 min cold, at nice 10 (2026-11-05, timed step by step on the box); host
   private infra repo: the `ci_runner` Ansible role of its M1 host, and that host's CLAUDE.md § CI runner.
 
 **Why the hosted fallback caches no `target/`** (#981): the `desktop-rust-macos` entry was 3.8 GB of the repo's 10 GB
-budget (`gh cache list`, 2026-11-05), and with the M1 taking trusted runs, the hosted lane runs only on overflow, an M1
-outage, and untrusted runs. MEASURE.
+budget (`gh cache list`, 2026-11-05), and with the M1 taking trusted runs, the hosted lane runs only on full runs, bot
+and fork PRs, overflow, and an M1 outage. The price, measured fully cold (no entry at all, run 42029203873, 2026-11-05):
+73.7 min, against ~38 warm with the old entry (clippy 13 min, rustdoc 4, tests 43, cargo-modules install 6, module
+cycles 6). The small entry spares the tool installs and the crate downloads, so a hosted run lands near 65 min, under
+the 90-min cap. A slim `target/` entry (dependency debuginfo off, ~1.1 GB on Linux) would buy those ~27 min back on each
+hosted run, at ~1.3 GB of budget plus a ~60-min hosted rebuild in `warm-rust-macos-cache` on every lockfile change, for
+runs mostly nobody waits on. The one that's waited on is the release gate's; if that wait starts to hurt, that's the
+trade to revisit.
 
 The CI failure history that motivated it: `docs/notes/ci-health-2026-10.md`.
 
