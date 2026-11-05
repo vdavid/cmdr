@@ -455,12 +455,13 @@ rendering `SmbOsMountFallbackToastContent.svelte`, dedup id `smb-os-mount:<volum
 
 **A notice that can't offer a retry doesn't.** The bridge turns `reason` into a `retryable` prop, false for
 `shareNotOnServer` and the `STUCK_REASONS` (`upgrade-messages.ts`: `otherServerNotAllowed`, `negotiationInvalid`,
-`encryptionUnavailable`), and the toast then renders a sentence with no button instead of `osMountFallback.message` with
-one: `osMountFallback.shareNotOnServer` by default, or the stuck reason's own (`stuckReason` prop). The same ask gets
-the same answer, so a button could only fail; the copy says why instead. ❌ Don't pass the raw `reason` to the toast:
-the component's questions are "is there anything to offer" and, when not, "which sentence", and every retryable variant
-answers them the same way. Which reasons are which, and the two look-alikes that never arrive as this one:
-`src-tauri/src/network/DETAILS.md` § "Telling the user about a kernel-mount fallback".
+`encryptionUnavailable`, `encryptionRequired`), and the toast then renders a sentence with no button instead of
+`osMountFallback.message` with one: `osMountFallback.shareNotOnServer` by default, or the stuck reason's own
+(`stuckReason` prop). The same ask gets the same answer, so a button could only fail; the copy says why instead. ❌
+Don't pass the raw `reason` to the toast: the component's questions are "is there anything to offer" and, when not,
+"which sentence", and every retryable variant answers them the same way. Which reasons are which, and the two
+look-alikes that never arrive as this one: `src-tauri/src/network/DETAILS.md` § "Telling the user about a kernel-mount
+fallback".
 
 **This Mac blocked the connection.** For `blockedByThisMac` (the backend's evidence rule and the ERR-XGS9X incident:
 `src-tauri/src/network/DETAILS.md` § "This Mac refusing the route") the bridge also passes `blockedServer` (the event's

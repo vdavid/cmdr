@@ -35,6 +35,7 @@ const SHARE_LIST_MESSAGE: { [K in ShareListError['type']]: (server: string) => s
   signature_invalid: (server) => raw('errors.shareList.signatureInvalid', { server }),
   negotiation_invalid: (server) => raw('errors.shareList.negotiationInvalid', { server }),
   encryption_unavailable: (server) => raw('errors.shareList.encryptionUnavailable', { server }),
+  encryption_required: (server) => raw('errors.shareList.encryptionRequired', { server }),
   protocol_error: (server) => raw('errors.shareList.protocolError', { server }),
   resolution_failed: (server) => raw('errors.shareList.resolutionFailed', { server }),
   missing_dependency: () => raw('errors.shareList.missingDependency'),

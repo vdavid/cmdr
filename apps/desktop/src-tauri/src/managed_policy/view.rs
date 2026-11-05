@@ -16,6 +16,8 @@ pub struct ManagedPolicyView {
     pub reports_disabled: bool,
     /// The organization requires the security event log, so its switch is pinned on.
     pub security_log_required: bool,
+    /// The organization requires every SMB session to be encrypted, so that switch is pinned on.
+    pub smb_encryption_required: bool,
     pub updates: UpdatePolicyView,
     pub ai: AiPolicyView,
     pub locked_settings: Vec<LockedSetting>,
@@ -65,6 +67,7 @@ impl From<&ManagedPolicy> for ManagedPolicyView {
             usage_stats_disabled: policy.usage_stats_disabled(),
             reports_disabled: policy.reports_disabled(),
             security_log_required: policy.security_log_required(),
+            smb_encryption_required: policy.smb_encryption_required(),
             updates,
             ai: AiPolicyView {
                 mode: policy.ai(),
@@ -100,6 +103,7 @@ mod tests {
                 usage_stats_disabled: false,
                 reports_disabled: false,
                 security_log_required: false,
+                smb_encryption_required: false,
                 updates: UpdatePolicyView::Enabled {
                     automatic_checks: true,
                     ceiling: None
@@ -123,6 +127,7 @@ mod tests {
                 "usageStatsDisabled": false,
                 "reportsDisabled": false,
                 "securityLogRequired": false,
+                "smbEncryptionRequired": false,
                 "updates": { "kind": "enabled", "automaticChecks": true, "ceiling": null },
                 "ai": { "mode": "allowed", "allowedCloudHosts": null },
                 "lockedSettings": [],
@@ -161,6 +166,7 @@ mod tests {
                 usage_stats_disabled: false,
                 reports_disabled: true,
                 security_log_required: false,
+                smb_encryption_required: false,
                 updates: UpdatePolicyView::Enabled {
                     automatic_checks: false,
                     ceiling: Some("0.52".into())

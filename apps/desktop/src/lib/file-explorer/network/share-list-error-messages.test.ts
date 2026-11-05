@@ -32,6 +32,7 @@ const CASES: { [K in ShareListError['type']]: Extract<ShareListError, { type: K 
   signature_invalid: { type: 'signature_invalid', message: DIAGNOSTIC },
   negotiation_invalid: { type: 'negotiation_invalid', message: DIAGNOSTIC },
   encryption_unavailable: { type: 'encryption_unavailable', message: DIAGNOSTIC },
+  encryption_required: { type: 'encryption_required', message: DIAGNOSTIC },
   protocol_error: { type: 'protocol_error', message: DIAGNOSTIC },
   resolution_failed: { type: 'resolution_failed', message: DIAGNOSTIC },
   missing_dependency: { type: 'missing_dependency', message: DIAGNOSTIC, installCommand: 'sudo apt install smbclient' },

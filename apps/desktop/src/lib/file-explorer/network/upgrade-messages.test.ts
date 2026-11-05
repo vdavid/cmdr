@@ -16,6 +16,7 @@ const ALL_REASONS: UpgradeFailure[] = [
   'blockedByThisMac',
   'negotiationInvalid',
   'encryptionUnavailable',
+  'encryptionRequired',
 ]
 
 describe('directConnectionUnavailableMessage', () => {

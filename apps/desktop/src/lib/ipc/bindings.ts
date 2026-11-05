@@ -2712,6 +2712,12 @@ export const commands = {
    */
   setSmbConcurrencyCmd: (value: number) => __TAURI_INVOKE<void>('set_smb_concurrency_cmd', { value }),
   /**
+   *  The person's "Always require SMB encryption" switch, pushed live from the frontend
+   *  whenever `network.requireSmbEncryption` changes. ORed with the managed policy, it reaches
+   *  every SMB session built from then on (`network::smb_encryption`).
+   */
+  setRequireSmbEncryption: (value: boolean) => __TAURI_INVOKE<void>('set_require_smb_encryption', { value }),
+  /**
    *  Turn LLM call logging on or off. When on, every AI model request and response is written
    *  to `{app data dir}/llm-logs/` for debugging (local only, never transmitted). Pushed live
    *  from the frontend whenever `advanced.logLlmCalls` changes; runtime-toggleable, no restart.
@@ -12154,6 +12160,8 @@ export type ManagedPolicyView = {
   reportsDisabled: boolean
   // The organization requires the security event log, so its switch is pinned on.
   securityLogRequired: boolean
+  // The organization requires every SMB session to be encrypted, so that switch is pinned on.
+  smbEncryptionRequired: boolean
   updates: UpdatePolicyView
   ai: AiPolicyView
   lockedSettings: LockedSetting[]
@@ -18128,6 +18136,16 @@ export type ShareListError =
       // Diagnostic detail, for logs.
       message: string
     }
+  /**
+   *  Cmdr requires encryption ([`crate::SmbEncryption`]) and this connection can't have it:
+   *  the server agreed on no cipher, or it answered with a guest session, which has no keys.
+   *  ❌ Never a fallback to another client: the CLI fallback ignores the requirement.
+   */
+  | {
+      type: 'encryption_required'
+      // Diagnostic detail, for logs.
+      message: string
+    }
   // The exchange broke down in a way none of the other variants describes.
   | {
       type: 'protocol_error'
@@ -20319,6 +20337,12 @@ export type UpgradeFailure =
    *  to encrypt. Repeating gets the same negotiation, so it isn't offered.
    */
   | 'encryptionUnavailable'
+  /**
+   *  "Always require SMB encryption" is on, and this connection can't encrypt (the server
+   *  agreed on no cipher, or answered with a guest session). Repeating gets the same answer
+   *  until the server or the setting changes, so it isn't offered.
+   */
+  | 'encryptionRequired'
 
 /**
  *  Where a "Connect directly" left the volume.

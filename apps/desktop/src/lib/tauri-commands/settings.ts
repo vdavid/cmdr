@@ -186,6 +186,15 @@ export async function setSecurityLogEnabled(value: boolean): Promise<void> {
   await commands.setSecurityLogEnabled(value)
 }
 
+/**
+ * The person's "Always require SMB encryption" switch. Pushed live whenever
+ * `network.requireSmbEncryption` changes; the backend ORs it with the organization's policy and
+ * applies it to every SMB session built from then on.
+ */
+export async function setRequireSmbEncryption(value: boolean): Promise<void> {
+  await commands.setRequireSmbEncryption(value)
+}
+
 /** Shows the security event log in Finder (its folder while there's no file yet). `null` when it worked. */
 export async function revealSecurityLog(): Promise<RevealSecurityLogError | null> {
   const res = await commands.revealSecurityLog()

@@ -309,6 +309,11 @@ fn a_connection_whose_security_does_not_check_out_says_why() {
             },
             UpgradeFailure::EncryptionUnavailable,
         ),
+        (
+            "Cmdr requires encryption the connection can't have",
+            smb2::Error::EncryptionRequired,
+            UpgradeFailure::EncryptionRequired,
+        ),
     ];
     for (what, error, expected) in &cases {
         assert_eq!(UpgradeFailure::from_smb_error(error), *expected, "{what}");

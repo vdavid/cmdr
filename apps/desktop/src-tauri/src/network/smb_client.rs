@@ -133,7 +133,9 @@ async fn list_shares_uncached(
         Ok(result) => Ok(result),
         // ❗ The CLI fallback lists as GUEST (`smbutil view -G`), so a host that
         // wants an account never reaches it: the protocol error is the answer.
-        Err(ShareListError::ProtocolError { ref message }) if guest == GuestAttempt::Try => {
+        // Nor does a listing under "Always require SMB encryption", which the CLI
+        // can't honor.
+        Err(ShareListError::ProtocolError { ref message }) if guest == GuestAttempt::Try && cli_fallback_allowed() => {
             // Protocol error (likely RPC incompatibility with Samba). Try the
             // platform fallback: smbutil (macOS) / smbclient (Linux).
             // Logged at warn! so it's visible in the default E2E log without
@@ -215,7 +217,7 @@ async fn list_shares_smb2(
             debug!("Guest access succeeded, got {} shares", shares.len());
             Ok(converted(shares, AuthMode::GuestAllowed))
         }
-        Err(e) if is_auth_error(&e) => {
+        Err(e) if guest_refusal_wants_an_account(&e) => {
             // Guest refused. No credentials reach this leg (they skip guest), so
             // try smbutil, which reads the macOS Keychain itself.
             debug!(
@@ -224,6 +226,14 @@ async fn list_shares_smb2(
                 e.status(),
                 cmdr_fs::log_detail::LogDetail(&e.to_string())
             );
+            if !cli_fallback_allowed() {
+                // The frontend takes `AuthRequired` to the Keychain and then the
+                // sign-in sheet, and the account's listing goes through smb2, encrypted.
+                return Err(ShareListError::AuthRequired {
+                    message: "Encryption is required, so the guest listing can't be used and smbutil isn't tried"
+                        .to_string(),
+                });
+            }
             match list_shares_smbutil_authenticated_from_keychain(hostname, ip_address, port).await {
                 Ok(result) => {
                     debug!("smbutil with Keychain succeeded, got {} shares", result.shares.len());
@@ -311,6 +321,14 @@ async fn list_authenticated(
             }
             #[cfg(not(target_os = "macos"))]
             {
+                if !cli_fallback_allowed() {
+                    return match inner {
+                        Ok(_) => Err(ShareListError::AuthFailed {
+                            message: "Invalid username or password".to_string(),
+                        }),
+                        Err(e) => Err(cmdr_smb::classify_authenticated_error(&e)),
+                    };
+                }
                 let _ = inner;
                 debug!("smb2 auth returned empty or failed, trying smbclient with credentials");
                 match list_shares_smbutil_with_auth(hostname, ip_address, port, user, pass).await {
@@ -357,6 +375,21 @@ fn with_unique_share_names(mut result: ShareListResult) -> ShareListResult {
         );
     }
     result
+}
+
+/// Whether a listing may fall back to `smbutil` / `smbclient`. ❌ Never under "Always
+/// require SMB encryption": the CLIs know nothing about it, so a fallback would answer
+/// over a connection nobody checked (`network/DETAILS.md` § "Requiring SMB encryption").
+fn cli_fallback_allowed() -> bool {
+    !cmdr_smb::SmbEncryption::is_required()
+}
+
+/// Whether the guest leg's refusal means "an account may get further": an auth
+/// refusal, or a guest session refused under the encryption requirement (a guest
+/// session has no keys, an account's may). A server that can't encrypt at all
+/// refuses the account too, and that listing words it (`EncryptionRequired`).
+fn guest_refusal_wants_an_account(err: &smb2::Error) -> bool {
+    is_auth_error(err) || matches!(err, smb2::Error::EncryptionRequired)
 }
 
 /// smb2's shares in Cmdr's `ShareInfo` shape, as a fresh listing.

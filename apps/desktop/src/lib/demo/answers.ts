@@ -121,6 +121,7 @@ export const appAnswers: AnswerTable = {
     usageStatsDisabled: false,
     reportsDisabled: false,
     securityLogRequired: false,
+    smbEncryptionRequired: false,
     // No updater in a browser: nothing to check for.
     updates: { kind: 'disabled' },
     ai: { mode: 'allowed', allowedCloudHosts: null },

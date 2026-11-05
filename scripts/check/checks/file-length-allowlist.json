@@ -126,7 +126,7 @@
       "reason": "TODO: split it, because most of its lines are script and the markup is small. (Bumped for SMB's Eject and save, which joined the edit save path below as `ejectAndSave` / `settleSmbSave` / `cancel`.) The round machinery (`run`, `applyOutcome`, `refuse`, `focusField`, the refusal and hint state, `refusalSubject`) is pure state with no markup dependency beyond the field refs, and belongs in a `sign-in-sheet-rounds.svelte.ts` the component drives, the pattern `sign-in-sheet-state.svelte.ts` already sets beside it. Edit mode's save path (`save`, `saveTarget`, `saveS3Account`, `saveSmbHost`, `ejectAndSave`, `settleSmbSave`, `writeRememberFlip`, `writeTypedSecret`, `s3EditScope` / `storeId`) is the second seam: it reads the form and the opened-with flags and writes through `saved-server-io.ts`, so it fits a `sign-in-sheet-edit.ts` beside it. The sheet then sits near 500 lines."
     },
     "apps/desktop/src/lib/settings/types.ts": {
-      "lines": 800,
+      "lines": 881,
       "reason": "TODO: two concerns share the file. Move `SettingsValues` (the stored-value map, one line per setting, about 370 lines) and the value unions it uses (`UiDensity` through `LanguageSetting`) into `settings-values.ts`, re-exported from here, so this file keeps only the registry's definition, constraint, and search shapes."
     },
     "apps/desktop/src/lib/tauri-commands/index.ts": {

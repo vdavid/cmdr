@@ -13,6 +13,7 @@ const AUTO_CHECK: &str = "updates.autoCheck";
 const AI_PROVIDER: &str = "ai.provider";
 const ASK_CMDR_ENABLED: &str = "askCmdr.enabled";
 const SECURITY_LOG_ENABLED: &str = "securityLog.enabled";
+const REQUIRE_SMB_ENCRYPTION: &str = "network.requireSmbEncryption";
 
 /// A setting value the policy pins. Typed rather than `serde_json::Value`, which can't cross IPC
 /// (`src/lib/ipc/CLAUDE.md`); crosses as a plain `boolean | string`.
@@ -101,14 +102,19 @@ pub fn locked_settings(policy: &ManagedPolicy) -> Vec<LockedSetting> {
             off(ASK_CMDR_ENABLED),
         ]),
     }
+    // The two locks that pin a switch ON: each takes a choice away (an opt-out, a plaintext
+    // connection), so they still only restrict.
+    let on = |id: &str| LockedSetting {
+        id: id.to_string(),
+        lock: SettingLock::Fixed {
+            value: LockedValue::Bool(true),
+        },
+    };
     if policy.security_log_required() {
-        // The one lock that pins a switch ON: it takes an opt-out away, so it still only restricts.
-        locked.push(LockedSetting {
-            id: SECURITY_LOG_ENABLED.to_string(),
-            lock: SettingLock::Fixed {
-                value: LockedValue::Bool(true),
-            },
-        });
+        locked.push(on(SECURITY_LOG_ENABLED));
+    }
+    if policy.smb_encryption_required() {
+        locked.push(on(REQUIRE_SMB_ENCRYPTION));
     }
     locked
 }
@@ -267,6 +273,19 @@ mod tests {
         let mut settings = json!({ "securityLog.enabled": false });
         overlay(&policy, &mut settings);
         assert_eq!(settings, json!({ "securityLog.enabled": true }));
+    }
+
+    #[test]
+    fn required_smb_encryption_pins_its_switch_on() {
+        let policy = ManagedPolicy {
+            smb_encryption_required: true,
+            ..Default::default()
+        };
+        assert_eq!(locked_settings(&policy), vec![fixed_bool(REQUIRE_SMB_ENCRYPTION, true)]);
+        assert!(refuses_write(&policy, REQUIRE_SMB_ENCRYPTION, &json!(false)));
+        let mut settings = json!({ "network.requireSmbEncryption": false });
+        overlay(&policy, &mut settings);
+        assert_eq!(settings, json!({ "network.requireSmbEncryption": true }));
     }
 
     #[test]

@@ -556,6 +556,7 @@ export interface SettingsValues {
   /** Internal: the servers hub's "found nearby" group, as the person last left it. */
   'network.nearbyServersGroup': NearbyServersGroupChoice
   'network.directSmbConnection': boolean
+  'network.requireSmbEncryption': boolean
   'network.shareCacheDuration': number
   'network.timeoutMode': NetworkTimeoutMode
   'network.customTimeout': number

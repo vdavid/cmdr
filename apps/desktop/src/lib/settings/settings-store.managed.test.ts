@@ -65,6 +65,7 @@ function policy(lockedSettings: LockedSetting[]): ManagedPolicyView {
     usageStatsDisabled: false,
     reportsDisabled: false,
     securityLogRequired: false,
+    smbEncryptionRequired: false,
     updates: { kind: 'enabled', automaticChecks: true, ceiling: null },
     ai: { mode: 'allowed', allowedCloudHosts: null },
     lockedSettings,

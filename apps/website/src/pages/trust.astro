@@ -263,9 +263,10 @@ const toc = [
 
     <h3 id="mdm-keys">Keys</h3>
     <p>
-        Every key only turns something off or narrows it. The one exception keeps something on:
+        Every key only turns something off or narrows it. Two keep something on, and each takes a choice away:
         <code>DisableSecurityLogOptOut</code> stops users from turning off the local security event log, which never
-        leaves the Mac. No key turns on anything that sends data. A key that's missing, or set to false, leaves that
+        leaves the Mac, and <code>RequireSMBEncryption</code> stops them from connecting to an SMB share without
+        encryption. No key turns on anything that sends data. A key that's missing, or set to false, leaves that
         part up to each user.
     </p>
     <ul>

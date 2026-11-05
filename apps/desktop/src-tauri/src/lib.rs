@@ -577,6 +577,9 @@ pub fn run() {
             // servers. Before any volume is built, so the first dial of a session
             // recognizes a server the user already trusted instead of asking again.
             network::load_smb_link_consents(app.handle());
+            // "Always require SMB encryption", for the same reason: the first session a
+            // launch builds (a saved share's upgrade) must already honor it.
+            network::smb_encryption::init(saved_settings.require_smb_encryption);
             network::load_sftp_stores(app.handle());
             // And the WebDAV server list, for the same picker.
             network::load_webdav_stores(app.handle());

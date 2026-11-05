@@ -22,6 +22,12 @@ describe('managedPolicySummary', () => {
     ])
   })
 
+  it('names required SMB encryption', () => {
+    expect(managedPolicySummary(view({ smbEncryptionRequired: true }))).toEqual([
+      { label: 'SMB encryption', value: 'Always required' },
+    ])
+  })
+
   it('lists nothing when nothing is managed', () => {
     expect(managedPolicySummary(UNMANAGED)).toEqual([])
   })

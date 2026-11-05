@@ -23,6 +23,7 @@
     const defaultDef = { label: '', description: '' }
     const networkEnabledDef = getSettingDefinition('network.enabled') ?? defaultDef
     const directSmbDef = getSettingDefinition('network.directSmbConnection') ?? defaultDef
+    const requireEncryptionDef = getSettingDefinition('network.requireSmbEncryption') ?? defaultDef
     const cacheDurationDef = getSettingDefinition('network.shareCacheDuration') ?? defaultDef
     const timeoutModeDef = getSettingDefinition('network.timeoutMode') ?? defaultDef
 
@@ -36,7 +37,7 @@
 </script>
 
 <SettingsSection title={tString('settings.section.smbNetworkShares')}>
-    {#if anyVisible(shouldShow, 'network.enabled', 'network.directSmbConnection')}
+    {#if anyVisible(shouldShow, 'network.enabled', 'network.directSmbConnection', 'network.requireSmbEncryption')}
         <SectionCard label={tString('settings.network.card.connection')}>
             {#if shouldShow('network.enabled')}
                 <SettingRow
@@ -80,6 +81,17 @@
                     {searchQuery}
                 >
                     <SettingSwitch id="network.directSmbConnection" />
+                </SettingRow>
+            {/if}
+
+            {#if shouldShow('network.requireSmbEncryption')}
+                <SettingRow
+                    id="network.requireSmbEncryption"
+                    label={requireEncryptionDef.label}
+                    description={requireEncryptionDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="network.requireSmbEncryption" />
                 </SettingRow>
             {/if}
         </SectionCard>

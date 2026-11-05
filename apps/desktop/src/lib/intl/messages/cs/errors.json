@@ -2449,6 +2449,10 @@
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "ea3a52f"
   },
+  "errors.shareList.encryptionRequired": "“{server}” can’t encrypt this connection, and Cmdr is set to always require SMB encryption. Check the server’s SMB encryption settings.",
+  "@errors.shareList.encryptionRequired": {
+    "sourceHash": "4dff9ea"
+  },
   "errors.shareList.protocolError": "Při zjišťování sdílených složek na serveru „{server}“ se něco pokazilo. Zkuste to za chvíli znovu.",
   "@errors.shareList.protocolError": {
     "sourceHash": "da302ca"

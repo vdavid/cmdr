@@ -71,6 +71,8 @@ pub struct ManagedPolicy {
     allowed_cloud_ai_hosts: Option<Vec<HostPattern>>,
     /// `DisableSecurityLogOptOut`: the security event log records whatever the person's switch says.
     security_log_required: bool,
+    /// `RequireSMBEncryption`: every SMB session Cmdr builds must be encrypted.
+    smb_encryption_required: bool,
 }
 
 /// How updates may run.
@@ -126,6 +128,13 @@ impl ManagedPolicy {
     /// Whether the organization requires the security event log, so the person can't turn it off.
     pub fn security_log_required(&self) -> bool {
         self.security_log_required
+    }
+
+    /// Whether the organization requires every SMB session Cmdr builds to be encrypted, so the
+    /// person can't turn "Always require SMB encryption" off. `network::smb_encryption` ORs it
+    /// with the setting.
+    pub fn smb_encryption_required(&self) -> bool {
+        self.smb_encryption_required
     }
 
     /// `DisableUpdates` wins over the other two update keys, which combine with each other.

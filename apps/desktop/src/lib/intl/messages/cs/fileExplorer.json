@@ -2192,6 +2192,14 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} can’t encrypt the connection, and Cmdr is set to always require SMB encryption, so Cmdr stays on the system connection.",
+  "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
+    "sourceHash": "e4af63d"
+  },
+  "fileExplorer.network.osMountFallback.encryptionRequired": "Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through macOS’s native SMB network connection, which is a lot slower.",
+  "@fileExplorer.network.osMountFallback.encryptionRequired": {
+    "sourceHash": "14a8cb4"
+  },
   "fileExplorer.network.osMountFallback.negotiationInvalid": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože server nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.",
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
     "sourceHash": "758e268"

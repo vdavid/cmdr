@@ -3816,6 +3816,15 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
   },
+  "errors.shareList.encryptionRequired": "“{server}” can’t encrypt this connection, and Cmdr is set to always require SMB encryption. Check the server’s SMB encryption settings.",
+  "@errors.shareList.encryptionRequired": {
+    "description": "Shown when Cmdr's own \"Always require SMB encryption\" setting is on (set by the person in Settings, or forced on by their organization) and this server can't encrypt the connection, so Cmdr didn't connect. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. \"Always require SMB encryption\" names the setting in Settings > File systems > SMB/Network shares; word it the way your language words that setting's label. Plain text, one or two short sentences, no markdown. \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
+  },
   "errors.shareList.protocolError": "Something went wrong while asking “{server}” for its shares. Try again in a moment.",
   "@errors.shareList.protocolError": {
     "description": "The catch-all shown when nothing more specific applies. Keep it short and general rather than guessing at a reason; the technical reason is written to the log. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",

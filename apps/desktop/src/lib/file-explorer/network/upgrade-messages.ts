@@ -36,6 +36,8 @@ export function directConnectionUnavailableMessage(reason: UpgradeFailure, serve
       return tString('fileExplorer.pane.directConnectionNegotiationInvalidToast', { server })
     case 'encryptionUnavailable':
       return tString('fileExplorer.pane.directConnectionEncryptionUnavailableToast', { server })
+    case 'encryptionRequired':
+      return tString('fileExplorer.pane.directConnectionEncryptionRequiredToast', { server })
     case 'unexpected':
       return tString('fileExplorer.pane.directConnectionUnexpectedToast', { server })
     case 'blockedByThisMac':
@@ -93,6 +95,7 @@ export const STUCK_REASONS = [
   'otherServerNotAllowed',
   'negotiationInvalid',
   'encryptionUnavailable',
+  'encryptionRequired',
 ] as const satisfies readonly UpgradeFailure[]
 
 /** One of {@link STUCK_REASONS}: what the notice says instead of offering a retry. */

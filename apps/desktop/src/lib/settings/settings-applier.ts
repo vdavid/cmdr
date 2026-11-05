@@ -37,6 +37,7 @@ import {
   setMaxLogStorageMb,
   setErrorReportsEnabled,
   setSecurityLogEnabled,
+  setRequireSmbEncryption,
   setShowVirtualGitPortal,
   setNetworkEnabled,
   syncMenuShowHidden,
@@ -148,6 +149,9 @@ async function applyBackendSettings(): Promise<void> {
   // Security event log switch: read at startup too; a same-value push is no change backend-side.
   await setSecurityLogEnabled(getSetting('securityLog.enabled'))
 
+  // "Always require SMB encryption": read at startup too, before any SMB session is built.
+  await setRequireSmbEncryption(getSetting('network.requireSmbEncryption'))
+
   // Virtual `.git` portal toggle. Same rationale as above: backend reads at startup,
   // but a re-push keeps dev/hot-reload aligned with whatever the user persisted.
   await setShowVirtualGitPortal(getSetting('fileExplorer.git.showVirtualGitPortal'))
@@ -249,6 +253,7 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   'advanced.showStagingTempFiles': (v) => void setShowStagingTempFiles(v as boolean),
   'advanced.logLlmCalls': (v) => void setLogLlmCalls(v as boolean),
   'network.smbConcurrency': (v) => void setSmbConcurrency(v as number),
+  'network.requireSmbEncryption': (v) => void setRequireSmbEncryption(v as boolean),
   'updates.errorReports': (v) => void setErrorReportsEnabled(v as boolean),
   'securityLog.enabled': (v) => void setSecurityLogEnabled(v as boolean),
   'fileExplorer.git.showVirtualGitPortal': (v) => void setShowVirtualGitPortal(v as boolean),

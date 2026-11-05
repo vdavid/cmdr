@@ -3016,6 +3016,7 @@
     "network.directSmbConnection": true,
     "network.enabled": true,
     "network.firstTriggerDone": false,
+    "network.requireSmbEncryption": false,
     "network.shareCacheDuration": 30000,
     "network.smbConcurrency": 10,
     "network.timeoutMode": "normal",

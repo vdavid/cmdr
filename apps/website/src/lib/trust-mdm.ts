@@ -85,4 +85,10 @@ export const managedPreferenceKeys: ManagedPreferenceKey[] = [
     effect:
       'The security event log stays on, and users can\'t turn it off. It\'s a small local file of security-relevant changes and refusals (a policy taking effect, an update installed or refused, the MCP server switching on, a rejected access attempt). It never leaves the Mac, and "Delete all Cmdr data" still removes it.',
   },
+  {
+    key: 'RequireSMBEncryption',
+    type: 'Boolean',
+    effect:
+      "Every connection Cmdr makes to an SMB share is encrypted, even when the server doesn't ask for it, and Cmdr doesn't connect to a server that can't encrypt. Guest connections can't be encrypted, so users sign in. \"Always require SMB encryption\" stays on, and users can't turn it off. It covers Cmdr's own connections: the macOS connection a mounted share keeps for Finder follows macOS's settings. A connection that's already open when the policy arrives keeps going until it reconnects.",
+  },
 ]

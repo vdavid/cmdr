@@ -158,6 +158,10 @@ pub enum UpgradeFailure {
     /// The share or server only accepts encrypted connections, and this one agreed on no way
     /// to encrypt. Repeating gets the same negotiation, so it isn't offered.
     EncryptionUnavailable,
+    /// "Always require SMB encryption" is on, and this connection can't encrypt (the server
+    /// agreed on no cipher, or answered with a guest session). Repeating gets the same answer
+    /// until the server or the setting changes, so it isn't offered.
+    EncryptionRequired,
 }
 
 /// The longest one dial attempt may take to fail and still count as this Mac
@@ -250,10 +254,12 @@ impl UpgradeFailure {
         if err.kind() == ErrorKind::NegotiateValidationFailed {
             return Self::NegotiationInvalid;
         }
-        // By variant: `EncryptionRequired` shares the `Unsupported` kind, and Cmdr never sets
-        // `ClientConfig::require_encryption`, so only the server's requirement arrives here.
-        if let smb2::Error::EncryptionUnavailable { .. } = err {
-            return Self::EncryptionUnavailable;
+        // By variant: the two share the `Unsupported` kind. The first is the server's
+        // requirement, the second Cmdr's own (`cmdr_smb::SmbEncryption`).
+        match err {
+            smb2::Error::EncryptionUnavailable { .. } => return Self::EncryptionUnavailable,
+            smb2::Error::EncryptionRequired => return Self::EncryptionRequired,
+            _ => {}
         }
         // ❌ Read the kind AND the command, like `RefusedAt::of` above: the same
         // kind at another command is another thing entirely. At TreeConnect,
